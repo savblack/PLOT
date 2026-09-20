@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { configure } from '@plot/core/config.js';
-import { captureAttribution } from './utils/attribution.js';
+import { captureAttribution, currentArticleAttribution } from './utils/attribution.js';
 import { analyticsAllowed } from './utils/analyticsHost.js';
 import { isChunkError, markChunkReload, recentlyReloaded } from './utils/chunkError.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
@@ -109,6 +109,7 @@ const posthogToken = !isDnt && analyticsAllowed() && import.meta.env.VITE_PUBLIC
 // (utm_*, click ids, referrer, src) and attach it to every event + the person,
 // so signup / activation stay traceable to their source. First-touch wins.
 const attribution = captureAttribution();
+const currentArticle = currentArticleAttribution();
 
 // posthog-js is the single largest chunk in the app —
 // bigger than React itself — so it's dynamically imported after the app has
@@ -215,6 +216,12 @@ if (posthogToken) {
       // these are already first-touch by construction and are what the
       // acquisition cohorts break down on.
       posthog.setPersonProperties(undefined, attribution);
+    }
+    // First touch remains immutable above. This session-scoped property names
+    // the What’s On article being acted on now, even for a returning visitor
+    // whose original acquisition source came from somewhere else.
+    if (Object.keys(currentArticle).length > 0) {
+      posthog.register_for_session(currentArticle);
     }
     _setPostHogClient(posthog);
   });

@@ -79,6 +79,25 @@ export function captureAttribution() {
   return attribution;
 }
 
+/**
+ * Current What’s On article for this app entry.
+ *
+ * Unlike first-touch attribution, this intentionally reflects the link being
+ * acted on now. It becomes a session property, so signup events can answer both
+ * “where did this person first find PLOT?” and “which article converted them?”.
+ */
+export function currentArticleAttribution() {
+  if (!canUseDOM()) return {};
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (clean(params.get('src')) !== 'whats_on_article') return {};
+    const slug = clean(params.get('utm_content'));
+    return slug ? { current_article_slug: slug } : {};
+  } catch {
+    return {};
+  }
+}
+
 /** Bind referral mutation authority to a successful new-account creation. */
 export function markSignupReferralPending(email) {
   if (!getAttribution().ref || !email) return;

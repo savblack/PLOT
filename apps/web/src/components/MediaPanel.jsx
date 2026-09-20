@@ -1087,7 +1087,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   );
 }
 
-export default function MediaPanel({ itemId, itemType, closing, onClose }) {
+export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose }) {
   const { watchlist, watching, user, profile, favorites, customLists, openPanel } = useApp();
   const [talentId, setTalentId] = useState(null);
   const [talentPerson, setTalentPerson] = useState(null);
@@ -1161,7 +1161,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const [criticScore,    setCriticScore]    = useState(null);
   const [audienceQuote,  setAudienceQuote]  = useState(null);
 
-  const [showListSheet,     setShowListSheet]     = useState(false);
+  const [showListSheet,     setShowListSheet]     = useState(initialListOpen);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   // Where to watch opens closed — its logos say enough at a glance. The foot
   // bar owns its own open state, inside TakeBar.

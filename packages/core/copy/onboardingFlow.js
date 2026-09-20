@@ -10,6 +10,13 @@ export const ONBOARDING_FLOW = {
     subtitle: 'So we can make plot yours.',
     placeholder: 'First name',
   },
+  savedTitle: {
+    eyebrow: 'Your first pick',
+    title: 'Start with this one.',
+    subtitle: (title) => `${title || 'This title'} will open as soon as setup is done.`,
+    cta: 'Set up my PLOT →',
+    ctaLabel: 'Set up my PLOT',
+  },
   // Genre picking used to be step 2. It was the only step that couldn't render
   // without a live TMDB call, and nothing downstream read profiles.genres, so it
   // was cut from signup — genres are set in Settings instead.

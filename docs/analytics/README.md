@@ -192,6 +192,11 @@ Every surface forwards the visitor's real `utm_*`, click ids, `ref`, `src` and
 referrer host onto app links, with existing params winning so each page keeps
 its own `src` identity. Page identity belongs in `src`, never in `utm_source`.
 
+What’s On article save links also put the exact article slug in `utm_content`.
+It is retained in first-touch attribution and registered separately as the
+session property `current_article_slug`, so a signup can be analysed by both
+the person's original acquisition source and the article they acted on now.
+
 **The live gap:** almost nothing inbound carries a `utm_source` at all, so
 `$initial_utm_source` is empty for every person. The vanity links (`/ig`, `/x`,
 `/th`) cover the bio link; per-post social links are still untagged, and mobile

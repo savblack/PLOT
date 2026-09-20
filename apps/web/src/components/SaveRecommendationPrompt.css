@@ -1,0 +1,77 @@
+.save-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 475;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 72px 1rem 1rem;
+  background: rgba(0, 0, 0, 0.28);
+  animation: overlayIn 0.15s ease;
+}
+[data-theme="dark"] .save-prompt-backdrop { background: rgba(0, 0, 0, 0.6); }
+
+.save-prompt {
+  position: relative;
+  width: min(100%, 560px);
+  padding: 1.4rem;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  animation: fadeUp 0.18s var(--ease);
+}
+.save-prompt-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font: 400 1.35rem/1 var(--font-sans);
+  cursor: pointer;
+}
+.save-prompt-close:hover { background: var(--surface-sunken); color: var(--text-primary); }
+.save-prompt-loading { min-height: 220px; display: grid; place-items: center; }
+.save-prompt-content { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 1.35rem; align-items: center; }
+.save-prompt-poster {
+  width: 112px;
+  aspect-ratio: 2 / 3;
+  display: block;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-sunken);
+}
+.save-prompt-kicker {
+  margin: 0 2.5rem 0.45rem 0;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.save-prompt-copy h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 4vw, 2rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+.save-prompt-year { margin: 0.35rem 0 0; color: var(--text-muted); font-size: 0.82rem; }
+.save-prompt-body { margin: 0.85rem 0 1.1rem; color: var(--text-secondary); font-size: 0.86rem; line-height: 1.5; }
+.save-prompt-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+@media (max-width: 520px) {
+  .save-prompt-backdrop { align-items: flex-end; padding: 1rem; }
+  .save-prompt { padding: 1.25rem; }
+  .save-prompt-content { grid-template-columns: 82px minmax(0, 1fr); gap: 1rem; align-items: start; }
+  .save-prompt-poster { width: 82px; }
+  .save-prompt-actions { grid-column: 1 / -1; }
+}

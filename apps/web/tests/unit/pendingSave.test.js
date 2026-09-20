@@ -84,13 +84,14 @@ const EVENTS = { WATCHLIST_SAVED: 'watchlist_saved' };
 
 // Build an injected-deps bag with recording spies and a scripted getDetails.
 function makeDeps({ getDetails, isInList = () => false, addToList = async () => true } = {}) {
-  const calls = { track: [], activated: [], opened: [], results: [], added: [], addedOpts: [] };
+  const calls = { track: [], activated: [], opened: [], prompted: [], results: [], added: [], addedOpts: [] };
   return {
     deps: {
       getDetails,
       isInList,
       addToList: async (item, opts) => { calls.added.push(item); calls.addedOpts.push(opts); return addToList(item); },
       openPanel: (id, mediaType) => calls.opened.push([id, mediaType]),
+      openSavePrompt: (id, mediaType, source) => calls.prompted.push([id, mediaType, source]),
       track: (event, props) => calls.track.push([event, props]),
       markActivated: (name, props) => calls.activated.push([name, props]),
       EVENTS,
@@ -101,6 +102,20 @@ function makeDeps({ getDetails, isInList = () => false, addToList = async () => 
 }
 
 const okDetails = (data) => async () => ({ ok: true, data, retryable: false });
+
+test('drainPendingSave: editorial CTA opens the title without silently choosing the watchlist', async () => {
+  let fetched = false;
+  const { deps, calls } = makeDeps({
+    getDetails: async () => { fetched = true; return { ok: true, data: {}, retryable: false }; },
+  });
+  const out = await drainPendingSave({ intent: { tmdb_id: 270476, media_type: 'tv', source: 'whats_on_article' } }, deps);
+  assert.deepEqual(out, { terminal: true, status: 'opened' });
+  assert.equal(fetched, false, 'the title panel owns its own detail fetch');
+  assert.equal(calls.added.length, 0, 'the default watchlist must remain untouched');
+  assert.deepEqual(calls.prompted[0], [270476, 'tv', 'whats_on_article']);
+  assert.equal(calls.opened.length, 0, 'the full title panel is deferred until the viewer chooses another list');
+  assert.equal(calls.results.length, 0, 'opening a choice is not a save confirmation');
+});
 
 test('drainPendingSave: transient 429 → not terminal, intent preserved, no error toast', async () => {
   const { deps, calls } = makeDeps({

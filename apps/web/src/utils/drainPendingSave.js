@@ -2,9 +2,11 @@
  * Pure, framework-free core of the /save deep-link processor.
  *
  * The React hook (src/hooks/usePendingSave.js) handles timing, the re-entrancy
- * guard, and effect teardown; the actual "resolve the title, add it, decide
+ * guard, and effect teardown; the actual "open or save the title, then decide
  * whether the intent is done" decision tree lives here so it can be unit-tested
- * without a DOM. All side-effecting collaborators are injected.
+ * without a DOM. All side-effecting collaborators are injected. Editorial
+ * recommendations open the title panel so the viewer can choose the watchlist
+ * or a custom list; direct shares retain the one-click watchlist behaviour.
  *
  * Rate-limit resilience: the title detail fetch goes through `getDetails`, which
  * reports transient (429 / network) vs. terminal (404 / bad id) failure. We only
@@ -20,10 +22,11 @@
  * @param {(id: number) => boolean}            deps.isInList
  * @param {(item: object, opts?: { source?: string }) => Promise<any>} deps.addToList
  * @param {(id: number, mediaType: string) => void} deps.openPanel
+ * @param {(id: number, mediaType: string, source: string) => void} [deps.openSavePrompt]
  * @param {(event: string, props?: object) => void} deps.track
  * @param {object}   deps.EVENTS
  * @param {(result: { status: string, message: string, title?: string }) => void} [deps.onResult]
- * @returns {Promise<{ terminal: boolean, status: 'success'|'already_saved'|'error'|'retry' }>}
+ * @returns {Promise<{ terminal: boolean, status: 'opened'|'success'|'already_saved'|'error'|'retry' }>}
  *
  * Analytics note: a genuinely NEW save is emitted by watchlist.addToList via the
  * core `onWatchlistSave` seam (with source 'deep_link'), so we don't fire
@@ -31,9 +34,16 @@
  * already-saved branch below, where addToList is never called.
  */
 export async function drainPendingSave({ intent }, deps) {
-  const { getDetails, isInList, addToList, openPanel, track, EVENTS, onResult } = deps;
+  const { getDetails, isInList, addToList, openPanel, openSavePrompt, track, EVENTS, onResult } = deps;
   const { tmdb_id, media_type, source } = intent;
   const src = source || 'deep_link';
+
+  // These surfaces promise a route into PLOT, not a silent write to the
+  // default watchlist. The title panel exposes both Add to watchlist and List.
+  if (['whats_on_article', 'whats_on_guide', 'chart', 'newsletter'].includes(src)) {
+    (openSavePrompt || openPanel)(tmdb_id, media_type, src);
+    return { terminal: true, status: 'opened' };
+  }
 
   const confirm = ({ title, message }) => {
     openPanel(tmdb_id, media_type);
