@@ -72,7 +72,7 @@ export default function AppSidebar({
         aria-label={collapsed ? APP_SHELL.expandNavigation : APP_SHELL.collapseNavigation}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <polyline points={collapsed ? '15 18 9 12 15 6' : '9 18 15 12 9 6'} />
+          <polyline points={collapsed ? '9 18 15 12 9 6' : '15 18 9 12 15 6'} />
         </svg>
       </button>
       <button
@@ -81,9 +81,11 @@ export default function AppSidebar({
         onClick={() => onNavigate('home')}
         aria-label={APP_SHELL.goToHome}
       >
-        {collapsed
-          ? <span className="app-sidebar-brand-mark" aria-hidden="true">p</span>
-          : <><PlotLogo className="app-sidebar-brand-text" style={{ fontSize: '2.35rem' }} /><span className="app-sidebar-beta">{APP_SHELL.beta}</span></>}
+        <PlotLogo
+          className="app-sidebar-brand-text"
+          style={{ fontSize: collapsed ? '1.35rem' : '2.35rem' }}
+        />
+        {!collapsed && <span className="app-sidebar-beta">{APP_SHELL.beta}</span>}
       </button>
 
       <div className="app-sidebar-scroll">
