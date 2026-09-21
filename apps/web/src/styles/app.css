@@ -507,13 +507,13 @@ svg { stroke-width: 1.5; }
   top: 1.5rem;
   right: 0;
   z-index: 2;
-  width: 24px;
-  height: 44px;
+  width: 20px;
+  height: 36px;
   padding: 0;
   border: 1px solid var(--border);
   border-right: 0;
   border-radius: var(--radius-md) 0 0 var(--radius-md);
-  background: var(--surface-sunken);
+  background: var(--surface);
   color: var(--text-primary);
   cursor: pointer;
   display: flex;
@@ -521,8 +521,8 @@ svg { stroke-width: 1.5; }
   justify-content: center;
 }
 .app-sidebar-collapse-rail svg {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -678,11 +678,14 @@ svg { stroke-width: 1.5; }
   .app-shell.sidebar-collapsed {
     --sidebar-w: 80px;
   }
+  .app-shell.sidebar-collapsed.panel-docked {
+    --gut: 2rem;
+  }
   .sidebar-collapsed .app-sidebar {
     overflow: visible;
   }
   .sidebar-collapsed .app-sidebar-collapse-rail {
-    right: -24px;
+    right: -20px;
     border-right: 1px solid var(--border);
     border-left: 0;
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
@@ -3855,14 +3858,14 @@ svg { stroke-width: 1.5; }
 .panel-close-rail {
   position: fixed;
   top: 1.5rem;
-  right: calc(min(var(--panel-w), 100vw) - 24px);
+  right: calc(min(var(--panel-w), 100vw) - 20px);
   z-index: 502;
-  width: 24px;
-  height: 44px;
+  width: 20px;
+  height: 36px;
   padding: 0;
   border: 1px solid var(--border);
   border-left: 0;
-  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
   background: var(--surface-sunken);
   color: var(--text-primary);
   cursor: pointer;
@@ -3872,8 +3875,8 @@ svg { stroke-width: 1.5; }
   animation: panelCloseRailIn 0.32s var(--ease);
 }
 .panel-close-rail svg {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
