@@ -135,7 +135,7 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
         {PLANS_PAGE.premiumFeatures.map(feature => <View key={feature.id} style={{ gap: spacing.xs }}>
           <Text style={{ color: colors.textPrimary }}>{feature.label}</Text>
           <Text style={{ color: colors.textSecondary }}>{feature.description}</Text>
-          <Text style={{ color: colors.textMuted }}>{feature.pendingValidation ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
+          <Text style={{ color: colors.textMuted }}>{('pendingValidation' in feature && feature.pendingValidation) ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
         </View>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
         <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}

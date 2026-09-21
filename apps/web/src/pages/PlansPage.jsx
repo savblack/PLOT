@@ -13,8 +13,13 @@ const COMPARISON = [
   ...PLANS_PAGE.freeFeatures.map(feature => ({
     label: feature.label,
     description: feature.description,
-    free: feature.planned ? PLANS_PAGE.plannedFree : true,
-    premium: feature.planned ? PLANS_PAGE.plannedFree : true,
+    free: feature.planned
+      ? PLANS_PAGE.plannedFree
+      : (feature.freeValue ?? true),
+    // Limited Free rows still show Premium as coming soon (full/extra entitlement).
+    premium: feature.planned
+      ? PLANS_PAGE.plannedFree
+      : (feature.freeValue ? PLANS_PAGE.comingSoon : true),
   })),
   ...PLANS_PAGE.premiumFeatures.map(feature => ({
     label: feature.label,

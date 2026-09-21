@@ -43,7 +43,7 @@ export const SETTINGS_VIEW = {
     intro: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch.',
     // Keep this list aligned with PLANS_PAGE.planSummary — SettingsBilling also
     // reads the plans catalog for price copy so the two surfaces cannot drift.
-    features: ['Pick a movie by runtime and service', 'Follow actors and directors for new releases', 'Choose together and share lists', 'Build unlimited and smart lists'],
+    features: ['Pick a movie by runtime and service', 'Automatic Plex and Trakt syncing', 'Deeper viewing stats', 'Choose together and share lists'],
     cycle: 'Choose your billing cycle',
     monthly: 'Monthly',
     yearly: 'Yearly',
@@ -193,8 +193,8 @@ export const SETTINGS_VIEW = {
 
   kidsContent: {
     label: 'Kids content',
-    onHint: 'Show movies and shows made for kids in Discover and recommendations.',
-    offHint: 'Kids and family content is hidden from Discover and recommendations.',
+    onHint: 'Show movies and shows made for kids in Discover and More like this.',
+    offHint: 'Kids and family content is hidden from Discover and More like this.',
   },
 
   // Deliberately makes no promise about frequency — the digest is sent by hand,
