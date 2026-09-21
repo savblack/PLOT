@@ -4414,6 +4414,62 @@ svg { stroke-width: 1.5; }
 .panel-consensus { flex: 1; min-width: 0; margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); }
 
 /* ═══════════════════════════════════════
+   ENGAGEMENT PROMPT (PLO-473 / PLO-474)
+   Compact sticky bar on the title panel: post-save “Watched it?” then
+   post–mark-watched rating. Same chrome slot as TakeBar; never a full-screen
+   interrupt.
+═══════════════════════════════════════ */
+
+.panel-engagement {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  padding: 0.85rem 1.25rem;
+}
+.panel-engagement-copy b {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.panel-engagement-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+.panel-engagement-actions .btn-primary {
+  flex: 0 0 auto;
+}
+.panel-engagement-stars {
+  display: flex;
+  gap: 2px;
+  color: var(--accent);
+}
+.panel-engagement-star {
+  display: inline-flex;
+  padding: 0.15rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.panel-engagement-star:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.panel-engagement-star svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ═══════════════════════════════════════
    YOUR TAKE
    Pinned to the foot of the panel, expanding upward. Sticky inside the panel's
    own scroll, so it holds whatever the rest of the panel is doing.
