@@ -35,7 +35,7 @@ import {
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import SheetHeader from './SheetHeader.jsx';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 import TitleReview from './TitleReview.jsx';
@@ -807,55 +807,100 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     }
   };
 
+  const leaveCreate = () => {
+    if (isCreating) return;
+    setShowCreate(false);
+    setCreateError('');
+  };
+
+  const footer = !showCreate ? (
+    <>
+      <button
+        type="button"
+        className="add-list-new"
+        onClick={() => {
+          setShowCreate(true);
+          setCreateError('');
+        }}
+      >
+        <span aria-hidden="true">+</span>
+        Create new list
+      </button>
+      <button type="button" className="btn btn-primary btn-sm" onClick={onClose}>{COMMON.done}</button>
+    </>
+  ) : null;
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1100,
-      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
-      <div style={{
-        position: 'relative',
-        background: 'var(--surface)',
-        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        maxHeight: '70vh',
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
-        <SheetHeader title="Add to list" onClose={onClose} bordered={false} />
+    <ResponsiveDialog
+      title={showCreate ? 'New list' : 'Add to list'}
+      onClose={onClose}
+      onBack={showCreate ? leaveCreate : undefined}
+      contentClassName="responsive-dialog-content--flush"
+      footer={footer}
+      zIndex={1100}
+    >
+      {showCreate ? (
+        <form
+          className="add-list-create"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleCreate();
+          }}
+        >
+          <label htmlFor="media-list-name">List name</label>
+          <input
+            id="media-list-name"
+            type="text"
+            placeholder="e.g. Rainy Sunday films"
+            value={creatingName}
+            disabled={isCreating}
+            onChange={event => {
+              setCreatingName(event.target.value);
+              if (createError) setCreateError('');
+            }}
+            autoFocus
+          />
+          <p>You can customise the cover and list details after creating it.</p>
+          {createError && <div className="add-list-error">{createError}</div>}
+          <div className="add-list-create-actions">
+            <button type="button" className="btn btn-ghost btn-sm" disabled={isCreating} onClick={leaveCreate}>{COMMON.cancel}</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={!creatingName.trim() || isCreating}>
+              {isCreating ? MEDIA_PANEL.creating : 'Create list'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="responsive-dialog-picker">
+          <div className="add-list-context">
+            <span className="add-list-context-poster">
+              {details?.poster_path && <img src={posterUrl(details.poster_path, 'w92')} alt="" />}
+            </span>
+            <span>
+              <small>Adding</small>
+              <strong>{item.title || MEDIA.unknown}</strong>
+            </span>
+          </div>
         {!!topLists && (
-          <div style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className={`add-list-top-five${topOpen ? ' open' : ''}`}>
             <button
+              type="button"
               onClick={() => setTopOpen(o => !o)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                width: '100%', padding: '0.75rem 1rem',
-                border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
-              }}
+              aria-expanded={topOpen}
+              className="add-list-top-row"
             >
-              <div>
-                <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+              <span className="add-list-rank-mark">5</span>
+              <span className="add-list-copy">
+                <strong>
                   {topListType === 'tv' ? MEDIA_PANEL.topFiveTvShows : MEDIA_PANEL.topFiveMovies}
-                </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                </strong>
+                <small>
                   {currentRank ? MEDIA_PANEL.currentlyRanked(currentRank) : MEDIA_PANEL.notRanked}
-                </div>
-              </div>
-              <div style={{
-                width: 20, height: 20, borderRadius: 4,
-                border: `2px solid ${currentRank ? 'var(--accent)' : 'var(--border-strong)'}`,
-                background: currentRank ? 'var(--accent)' : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, fontSize: '0.7rem', color: '#fff', fontWeight: 600,
-              }}>
-                {currentRank || ''}
-              </div>
+                </small>
+              </span>
+              <span className="add-list-chevron" aria-hidden="true">⌄</span>
             </button>
             {topOpen && (
-              <div style={{
-                display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem',
-                padding: '0 1rem 0.75rem',
-              }}>
+              <div className="add-list-rank-grid">
                 {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1).map(rank => {
                   const occupant = topItems.find(t => t.rank === rank);
                   const isThis = occupant?.tmdb_id === itemId;
@@ -869,7 +914,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                       }}
                       style={{
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                        padding: '0.4rem 0.2rem', minHeight: 44,
+                        padding: '0.4rem 0.2rem', minHeight: 48,
                         border: `1px solid ${isThis ? 'var(--accent)' : 'var(--border)'}`,
                         borderRadius: 8,
                         background: isThis ? 'var(--accent)' : 'transparent',
@@ -979,8 +1024,9 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
             </div>
           </div>
         )}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          {lists.length === 0 && !showCreate && (
+        <div className="responsive-dialog-scroll add-list-rows">
+          <div className="add-list-section-label">Your lists</div>
+          {lists.length === 0 && (
             <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               No lists yet
             </div>
@@ -991,92 +1037,23 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
               <button
                 key={list.id}
                 onClick={() => checked ? removeItem(list.id, itemId) : addItem(list.id, item)}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  width: '100%', padding: '0.75rem 1rem',
-                  border: 'none', borderBottom: '1px solid var(--border)',
-                  background: 'none', cursor: 'pointer', textAlign: 'left',
-                }}
+                className={`add-list-row${checked ? ' selected' : ''}`}
               >
-                <div>
-                  <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{list.name}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{(list.items || []).length} items</div>
-                </div>
-                <div style={{
-                  width: 20, height: 20, borderRadius: 4,
-                  border: `2px solid ${checked ? 'var(--accent)' : 'var(--border-strong)'}`,
-                  background: checked ? 'var(--accent)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
+                <span className="add-list-cover" aria-hidden="true"><i /><i /><i /></span>
+                <span className="add-list-copy">
+                  <strong>{list.name}</strong>
+                  <small>{(list.items || []).length} items</small>
+                </span>
+                <span className="add-list-check">
                   {checked && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 12, height: 12 }}><polyline points="20 6 9 17 4 12"/></svg>}
-                </div>
+                </span>
               </button>
             );
           })}
-          {showCreate ? (
-            <>
-              <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="text"
-                  placeholder="List name…"
-                  value={creatingName}
-                  disabled={isCreating}
-                  onChange={e => {
-                    setCreatingName(e.target.value);
-                    if (createError) setCreateError('');
-                  }}
-                  onKeyDown={e => e.key === 'Enter' && !isCreating && handleCreate()}
-                  autoFocus
-                  style={{
-                    flex: 1, padding: '0.4rem 0.6rem',
-                    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                    background: 'var(--bg)', color: 'var(--text-primary)',
-                    fontSize: '0.875rem', outline: 'none',
-                  }}
-                />
-                <button className="btn btn-primary btn-xs" disabled={!creatingName.trim() || isCreating} onClick={handleCreate}>
-                  {isCreating ? MEDIA_PANEL.creating : MEDIA_PANEL.create}
-                </button>
-                <button
-                  className="icon-btn"
-                  style={{ width: 32, height: 32 }}
-                  disabled={isCreating}
-                  aria-label="Cancel"
-                  onClick={() => {
-                    setShowCreate(false);
-                    setCreateError('');
-                  }}
-                >
-                  <CloseIcon />
-                </button>
-              </div>
-              {createError && (
-                <div style={{ padding: '0 1rem 0.75rem', color: 'var(--danger)', fontSize: '0.75rem' }}>
-                  {createError}
-                </div>
-              )}
-            </>
-          ) : (
-            <button
-              onClick={() => {
-                setShowCreate(true);
-                setCreateError('');
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                width: '100%', padding: '0.75rem 1rem',
-                border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
-                color: 'var(--text-secondary)', fontSize: '0.875rem',
-              }}
-            >
-              <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>+</span>
-              Create new list
-            </button>
-          )}
         </div>
-      </div>
-    </div>
+        </div>
+      )}
+    </ResponsiveDialog>
   );
 }
 

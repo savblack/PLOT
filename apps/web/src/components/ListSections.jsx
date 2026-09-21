@@ -1,7 +1,6 @@
 import PrivateNote from './PrivateNote.jsx';
 import { customListCreationError } from '@plot/core/customListCreation.js';
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip } from '../utils/countdown.js';
 import { posterUrl } from '../utils/images.js';
@@ -14,7 +13,7 @@ import KebabMenu from './KebabMenu.jsx';
 import { useSelection } from '../hooks/useSelection.js';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
-import SheetHeader from './SheetHeader.jsx';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
 import { DiscoverSectionHeader } from './DiscoverView.jsx';
 import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { CardGrid, ListCard, SelectCircle } from './ListCards.jsx';
@@ -94,22 +93,14 @@ export function AddToRankModal({ listType, rank, onAdd, onClose }) {
     onClose();
   };
 
-  return createPortal(
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: '58px', zIndex: 1000,
-      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
-      <div style={{
-        position: 'relative',
-        background: 'var(--surface)',
-        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        height: '80vh',
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
-        <SheetHeader title={`Select #${rank} ${listType === 'movies' ? 'Movie' : 'TV Show'}`} onClose={onClose} bordered={false} />
+  return (
+    <ResponsiveDialog
+      title={`Select #${rank} ${listType === 'movies' ? 'Movie' : 'TV Show'}`}
+      onClose={onClose}
+      tall
+      contentClassName="responsive-dialog-content--flush"
+    >
+      <div className="responsive-dialog-picker">
         <div style={{ padding: '0 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <button
@@ -141,7 +132,7 @@ export function AddToRankModal({ listType, rank, onAdd, onClose }) {
           />
         </div>
 
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <div className="responsive-dialog-scroll">
           {searching && (
             <div className="loading-state" style={{ minHeight: 80 }}><PlotLoader size="sm" /></div>
           )}
@@ -168,8 +159,7 @@ export function AddToRankModal({ listType, rank, onAdd, onClose }) {
           )}
         </div>
       </div>
-    </div>,
-    document.body
+    </ResponsiveDialog>
   );
 }
 
@@ -241,22 +231,9 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
     onClose();
   };
 
-  return createPortal(
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: '58px', zIndex: 1000,
-      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
-      <div style={{
-        position: 'relative',
-        background: 'var(--surface)',
-        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        height: '80vh',
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
-        <SheetHeader title={title} onClose={onClose} bordered={false} />
+  return (
+    <ResponsiveDialog title={title} onClose={onClose} tall contentClassName="responsive-dialog-content--flush">
+      <div className="responsive-dialog-picker">
         <div style={{ padding: '0 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <button className={`sub-tab-btn${tab === 'history' ? ' active' : ''}`} onClick={() => { setTab('history'); setQuery(''); }}>From history</button>
@@ -276,7 +253,7 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
             }}
           />
         </div>
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <div className="responsive-dialog-scroll">
           {searching && <div className="loading-state" style={{ minHeight: 80 }}><PlotLoader size="sm" /></div>}
           {tab === 'history' && historyFiltered.map(entry => (
             <ModalResultRow key={entry.id} item={entry} onSelect={handleSelect} />
@@ -295,8 +272,7 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
           )}
         </div>
       </div>
-    </div>,
-    document.body
+    </ResponsiveDialog>
   );
 }
 
@@ -329,19 +305,13 @@ export function CreateListModal({ lists, onConfirm, onClose }) {
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
-      <div style={{
-        position: 'relative',
-        background: 'var(--surface)',
-        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        padding: '1.25rem 1rem 2rem',
-      }}>
-        <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '1rem' }}>New list</div>
+    <ResponsiveDialog title="New list" onClose={onClose} size="compact">
+      <div style={{ padding: '1.25rem' }}>
+        <label htmlFor="new-list-name" style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', marginBottom: '0.45rem' }}>
+          List name
+        </label>
         <input
+          id="new-list-name"
           type="text"
           placeholder="List name…"
           value={name}
@@ -353,7 +323,7 @@ export function CreateListModal({ lists, onConfirm, onClose }) {
           autoFocus
           onKeyDown={e => e.key === 'Enter' && name.trim() && !isSubmitting && handleSubmit()}
           style={{
-            width: '100%', padding: '0.6rem 0.75rem', marginBottom: '0.75rem',
+            width: '100%', padding: '0.7rem 0.8rem', marginBottom: '0.75rem',
             border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
             background: 'var(--bg)', color: 'var(--text-primary)',
             fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
@@ -364,14 +334,14 @@ export function CreateListModal({ lists, onConfirm, onClose }) {
             {error}
           </div>
         )}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-primary btn-sm" style={{ flex: 1 }} disabled={!name.trim() || isSubmitting} onClick={handleSubmit}>
-            {isSubmitting ? 'Creating…' : 'Create'}
-          </button>
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
           <button className="btn btn-ghost btn-sm" disabled={isSubmitting} onClick={onClose}>{COMMON.cancel}</button>
+          <button className="btn btn-primary btn-sm" disabled={!name.trim() || isSubmitting} onClick={handleSubmit}>
+            {isSubmitting ? 'Creating…' : 'Create list'}
+          </button>
         </div>
       </div>
-    </div>
+    </ResponsiveDialog>
   );
 }
 

@@ -20,6 +20,7 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import UserList from '../components/UserList.jsx';
 import ProfileBadges from '../components/ProfileBadges.jsx';
 import SheetHeader from '../components/SheetHeader.jsx';
+import ResponsiveDialog from '../components/ResponsiveDialog.jsx';
 import ListCover from '../components/ListCover.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
@@ -257,25 +258,18 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
     supabase.rpc(rpc, { p_target: targetId }).then(({ data }) => { if (!cancelled) setUsers(data || []); });
     return () => { cancelled = true; };
   }, [kind, targetId]);
-  const modal = (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)', width: '100%', maxWidth: 520, maxHeight: '75vh', borderTopLeftRadius: 16, borderTopRightRadius: 16, overflowY: 'auto', paddingBottom: '2rem' }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
-        <SheetHeader title={kind === 'followers' ? PUBLIC_PROFILE_PAGE.followersTitle : PUBLIC_PROFILE_PAGE.followingTitle} onClose={onClose} bordered={false} />
-        <div style={{ padding: '0 1.25rem' }}>
-          {users === null
-            ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader size="sm" /></div>
-            : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
-        </div>
+  return (
+    <ResponsiveDialog
+      title={kind === 'followers' ? PUBLIC_PROFILE_PAGE.followersTitle : PUBLIC_PROFILE_PAGE.followingTitle}
+      onClose={onClose}
+    >
+      <div style={{ padding: '0 1.25rem 1.5rem' }}>
+        {users === null
+          ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader size="sm" /></div>
+          : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
       </div>
-    </div>
+    </ResponsiveDialog>
   );
-
-  // Portal to <body> — this component renders inside .app-main, whose
-  // animate-in class leaves a non-'none' transform after the entrance
-  // animation, which makes position:fixed descendants fix to that ancestor
-  // instead of the viewport (clipped, scrolls with the page).
-  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal;
 }
 
 /* ── Edit profile — display name, username (availability), visibility, photo ── */
