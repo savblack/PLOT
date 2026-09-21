@@ -73,7 +73,28 @@ export function CardGrid({ children }) {
 /* One title: poster, title, an optional meta line and an optional progress
    bar. The "view details" control is a real button; the select circle is a
    sibling anchored to the card so no control nests inside another. */
-export function ListCard({ title, img, meta, progress, onOpen, editMode = false, selected = false, onToggleSelect, overlay }) {
+function HeartIcon({ filled }) {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" fill={filled ? 'currentColor' : 'none'} /></svg>;
+}
+
+function BookmarkIcon({ filled }) {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z" fill={filled ? 'currentColor' : 'none'} /></svg>;
+}
+
+function LockIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>;
+}
+
+function ReviewIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z" /></svg>;
+}
+
+export function ListCard({
+  title, img, meta, progress, onOpen, editMode = false, selected = false,
+  onToggleSelect, hasPrivateNote = false, hasReview = false,
+  isFavorite = false, onToggleFavorite, isBookmarked = false, onToggleBookmark,
+  favoriteLabel = 'Favorite', bookmarkLabel = MEDIA.saveToWatchlist,
+}) {
   const press = editMode ? onToggleSelect : onOpen;
   const label = editMode
     ? (selected ? `Deselect ${title}` : `Select ${title}`)
@@ -91,7 +112,6 @@ export function ListCard({ title, img, meta, progress, onOpen, editMode = false,
           {img
             ? <img src={img} alt="" loading="lazy" />
             : <span className="mylists-card-placeholder">{title}</span>}
-          {overlay}
         </div>
         <div className="mylists-card-title">{title}</div>
         {meta ? <div className="mylists-card-meta">{meta}</div> : null}
@@ -101,6 +121,18 @@ export function ListCard({ title, img, meta, progress, onOpen, editMode = false,
           </div>
         )}
       </button>
+      {!editMode && (onToggleFavorite || onToggleBookmark) && (
+        <div className="mylists-card-actions">
+          {onToggleFavorite && <button type="button" className={`mylists-card-action mylists-card-action--favorite${isFavorite ? ' active' : ''}`} onClick={onToggleFavorite} aria-label={favoriteLabel}><HeartIcon filled={isFavorite} /></button>}
+          {onToggleBookmark && <button type="button" className={`mylists-card-action mylists-card-action--bookmark${isBookmarked ? ' active' : ''}`} onClick={onToggleBookmark} aria-label={bookmarkLabel}><BookmarkIcon filled={isBookmarked} /></button>}
+        </div>
+      )}
+      {!editMode && (hasPrivateNote || hasReview) && (
+        <div className="mylists-card-indicators" aria-hidden="true">
+          {hasPrivateNote && <span className="mylists-card-indicator mylists-card-indicator--note" title="Has a private note"><LockIcon /></span>}
+          {hasReview && <span className="mylists-card-indicator mylists-card-indicator--review" title={HISTORY_VIEW.reviewed}><ReviewIcon /></span>}
+        </div>
+      )}
       {editMode && (
         <SelectCircle
           variant="grid"

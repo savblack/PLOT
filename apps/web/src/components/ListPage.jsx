@@ -16,6 +16,7 @@ import { CustomListSection, FavoritesSection, WantToWatchSection } from './ListS
 import { IconSearch } from './navIcons.jsx';
 import SideFilters from './SideFilters.jsx';
 import KebabMenu from './KebabMenu.jsx';
+import { useHistory } from '../hooks/useHistory.js';
 
 const GridIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></svg>;
 const RowsIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="5.5" height="5.5" rx="1.5" /><rect x="3" y="13.5" width="5.5" height="5.5" rx="1.5" /><path d="M12 6.5h9M12 9.5h6M12 15h9M12 18h6" /></svg>;
@@ -63,6 +64,7 @@ export default function ListPage() {
   const { key } = useParams();
   const navigate = useNavigate();
   const { user, profile, topLists, favorites, customLists, watching, watchlist } = useApp();
+  const history = useHistory(user?.id);
   const { genres } = useGenres();
   const fw = favoriteWords(profile?.region);
   const { share, copied } = useShare();
@@ -136,10 +138,10 @@ export default function ListPage() {
 
   if (key === 'want') {
     const items = sortItems(matchQuery(filterByTypeAndGenre(want, typeFilters, genreFilters)));
-    return <WantToWatchSection items={items} count={want.length} narrowed={false} Frame={Frame} pageLayout />;
+    return <WantToWatchSection items={items} count={want.length} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
   }
   if (key === 'favorites') {
-    return <FavoritesSection favorites={favorites} visibleItems={sortItems(matchQuery(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters)))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout />;
+    return <FavoritesSection favorites={favorites} visibleItems={sortItems(matchQuery(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters)))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
   }
   if (list) {
     return (
@@ -157,6 +159,7 @@ export default function ListPage() {
         onDeleted={() => navigate('/my-lists')}
         Frame={Frame}
         pageLayout
+        historyEntries={history.entries}
       />
     );
   }

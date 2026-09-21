@@ -33,6 +33,19 @@ export const WatchingCard = {
   ),
 };
 
+export const IndividualListStates = {
+  render: () => (
+    <div style={{ display: 'flex', gap: '1rem' }}>
+      <div style={{ width: 150 }}>
+        <ListCard title="Private note and review" img={null} meta="Movie" hasPrivateNote hasReview isFavorite onToggleFavorite={noop} onToggleBookmark={noop} onOpen={noop} />
+      </div>
+      <div style={{ width: 150 }}>
+        <ListCard title="Saved to watchlist" img={null} meta="Series" isBookmarked onToggleFavorite={noop} onToggleBookmark={noop} onOpen={noop} />
+      </div>
+    </div>
+  ),
+};
+
 export const Selecting = {
   render: () => (
     <div style={{ display: 'flex', gap: '0.75rem' }}>
