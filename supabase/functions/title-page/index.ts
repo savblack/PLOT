@@ -12,7 +12,7 @@
  *
  * slug = "<slugified-title>-<tmdb_id>" (e.g. dune-part-two-693134). The trailing
  * integer is the source of truth; the title segment is decorative. A bare numeric
- * slug also resolves; a mismatched title segment 301s to the canonical URL.
+ * slug or a mismatched title segment 301s to the canonical URL.
  *
  * Public function: verify_jwt = false in supabase/config.toml.
  */
@@ -432,7 +432,10 @@ Deno.serve(async (req) => {
   const canonicalSlug = `${slugify(title)}-${id}`;
 
   // Canonicalise the URL (decorative title segment): 301 if it doesn't match.
-  if (slug !== canonicalSlug && slug !== String(id)) {
+  // ID-only slugs (/movie/123) used to 200 with a canonical tag; Google filed
+  // those as "Alternate page with proper canonical". Redirect instead so only
+  // one URL is crawlable.
+  if (slug !== canonicalSlug) {
     return new Response(null, {
       status: 301,
       headers: { Location: `${SITE}/${type}/${canonicalSlug}`, 'Cache-Control': 'public, s-maxage=86400' },

@@ -63,4 +63,4 @@ These endpoints exist to run theplot.tv. They are not a product, they carry no
 uptime commitment, and their shape can change. Anything that matters to you
 belongs behind your own check rather than an assumption that this page stays
 true. If you are building something that needs more than this, say hello through
-[the About page](https://theplot.tv/about.html).
+[the About page](https://theplot.tv/about).

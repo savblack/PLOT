@@ -23,5 +23,5 @@ test('omits the Plans link while pricing is hidden (no env, or flag off)', async
 test('includes the Plans link once SHOW_PRICING_PAGE is enabled', async () => {
   const req = new Request('https://theplot.tv/', { headers: { Accept: 'text/markdown' } });
   const text = await homepageMarkdownResponse(req, { SHOW_PRICING_PAGE: 'true' }).text();
-  assert.match(text, /\[Plans\]\(https:\/\/theplot\.tv\/plans\.html\)/);
+  assert.match(text, /\[Plans\]\(https:\/\/theplot\.tv\/plans\)/);
 });

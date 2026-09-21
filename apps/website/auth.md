@@ -36,5 +36,5 @@ settings. That export belongs to them, not to whoever asked for it.
 ## If you are building something
 
 The public surface is small on purpose. If you need more than it offers, get in
-touch through [the About page](https://theplot.tv/about.html) rather than
+touch through [the About page](https://theplot.tv/about) rather than
 scraping or guessing at internal endpoints.
