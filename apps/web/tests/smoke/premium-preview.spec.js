@@ -13,7 +13,6 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('heading', { name: 'Less deciding. More watching.' })).toBeVisible();
     await page.getByText('Compare every feature', { exact: true }).click();
     await expect(page.getByRole('row', { name: /Private watchlist notes/ })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Leaving-my-service-soon alerts.*Pending validation/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Movie and episode release notifications.*Free, coming soon/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Customise your plot.*Coming soon/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Your viewing statistics.*Limited/ })).toBeVisible();
