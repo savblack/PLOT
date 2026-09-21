@@ -13,7 +13,9 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('heading', { name: 'Less deciding. More watching.' })).toBeVisible();
     await page.getByText('Compare every feature', { exact: true }).click();
     await expect(page.getByRole('row', { name: /Private watchlist notes/ })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Leaving-my-service-soon alerts.*Coming soon/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Leaving-my-service-soon alerts.*Pending validation/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Movie and episode release notifications.*Free, coming soon/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Customise your plot.*Coming soon/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Your viewing statistics.*Limited/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Automatic Plex and Trakt syncing.*Coming soon/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Deeper viewing stats.*Coming soon/ })).toBeVisible();
@@ -22,7 +24,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByText('A$5', { exact: true })).toBeVisible();
     await expect(page.getByText('or A$40/year', { exact: true })).toBeVisible();
     await expect(page.getByRole('row', { name: /Up to five custom lists/ })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Configurable iOS widgets/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Customise your plot/ })).toBeVisible();
     await page.getByRole('button', { name: 'Upgrade to Premium' }).click();
     await expect(page.getByRole('status')).toContainText('Checkout is not open yet');
     expect(billingRequests).toEqual([]);

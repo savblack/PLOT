@@ -43,7 +43,7 @@ export const SETTINGS_VIEW = {
     intro: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch.',
     // Keep this list aligned with PLANS_PAGE.planSummary — SettingsBilling also
     // reads the plans catalog for price copy so the two surfaces cannot drift.
-    features: ['Pick a movie by runtime and service', 'Automatic Plex and Trakt syncing', 'Deeper viewing stats', 'Choose together and share lists'],
+    features: ['Pick a movie by runtime and service', 'Automatic Plex and Trakt syncing', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
     cycle: 'Choose your billing cycle',
     monthly: 'Monthly',
     yearly: 'Yearly',
