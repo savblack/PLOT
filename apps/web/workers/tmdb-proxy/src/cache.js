@@ -39,7 +39,19 @@ const DEFAULT_TTL = 900;
  * @param {string} path the `path` query parameter, without a leading slash
  * @returns {number} seconds
  */
-export function ttlFor(path) {
+export function ttlFor(path, params = new URLSearchParams()) {
+  // Anniversary and archive discovery windows ended years ago. Refreshing
+  // those seven "On this day" lookups every hour cannot improve today's
+  // result, but it can repeatedly spend TMDB quota at every cache location.
+  // Current/future discovery windows keep the normal one-hour policy below.
+  if (/^discover\/(movie|tv)$/.test(path)) {
+    const upperBound = params.get('release_date.lte')
+      || params.get('primary_release_date.lte')
+      || params.get('first_air_date.lte');
+    if (upperBound && /^\d{4}-\d{2}-\d{2}$/.test(upperBound) && upperBound < new Date().toISOString().slice(0, 10)) {
+      return 86400;
+    }
+  }
   for (const [pattern, ttl] of TTLS) if (pattern.test(path)) return ttl;
   return DEFAULT_TTL;
 }

@@ -698,7 +698,9 @@ function PlatformCharts({ id, platformList, openPanel, watchlist, typeFilters, g
 function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr }) {
   const navigate = useNavigate();
   const { data, loading } = useDiscover();
-  const { data: releases } = useNewReleases();
+  // Home only renders the recent rail. Loading every per-genre New Releases
+  // rail here bursts past the TMDB proxy limit before most users visit that page.
+  const { data: releases } = useNewReleases({ includeGenreRails: false });
   // Hard-coded official-chart platforms — the same set for everyone, unrelated
   // to the user's own streaming selections. The hook returns only platforms
   // with synced rows; PlatformCharts fills in the rest as unavailable.

@@ -24,78 +24,116 @@ const dedupeByMediaId = items => {
 // dropped, so sections rarely fall short of a full row.
 const MIN_RAIL_SIZE = 14;
 
+const emptyDiscoverData = () => ({
+  hero: null,
+  heroByType: {},
+  onThisDay: null,
+  hotRail: [],
+  weekly: [],
+  bingedShows: [],
+  cinemaMovies: [],
+  anticipatedMovies: [],
+});
+
+/**
+ * Load above-the-fold discovery first, then complete the slower release rails.
+ * Every request and result is retained; only their priority changes.
+ *
+ * @param {{ hideKids?: boolean, client?: typeof tmdb, onPrimary?: (data:any)=>void }} [options]
+ */
+export async function loadDiscoverData({ hideKids = false, client = tmdb, onPrimary } = {}) {
+  const [trendingDay, trendingWeek, trendingTVDay, trendingMovieDay] = await Promise.all([
+    client.getTrending('all', 'day'),
+    client.getTrending('all', 'week'),
+    client.getTrending('tv', 'day'),
+    client.getTrending('movie', 'day'),
+  ]);
+
+  const trendingItems = dedupeByMediaId(excludeKidsContent((trendingDay?.results || []).filter(isEnglishOriginTitle), hideKids)).slice(0, 20);
+  const hero = trendingItems[0] || null;
+  const trendingTVItems = dedupeByMediaId(
+    excludeKidsContent((trendingTVDay?.results || []).filter(isEnglishOriginTitle), hideKids)
+      .map(show => ({ ...show, media_type: 'tv' })),
+  );
+  const trendingMovieItems = dedupeByMediaId(
+    excludeKidsContent((trendingMovieDay?.results || []).filter(isEnglishOriginTitle), hideKids)
+      .map(movie => ({ ...movie, media_type: 'movie' })),
+  );
+  const primary = {
+    ...emptyDiscoverData(),
+    hero,
+    heroByType: {
+      overall: hero,
+      tv: trendingTVItems[0] || null,
+      movie: trendingMovieItems[0] || null,
+      cinema: null,
+    },
+    hotRail: trendingItems.slice(1, 10),
+    weekly: dedupeByMediaId(excludeKidsContent((trendingWeek?.results || []).filter(isEnglishOriginTitle), hideKids)).slice(0, 20),
+    bingedShows: trendingTVItems.filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18)),
+  };
+  onPrimary?.(primary);
+
+  const [onThisDay, upcoming, nowPlaying] = await Promise.all([
+    client.getOnThisDay().catch(() => null),
+    client.getUpcoming().catch(() => null),
+    client.getNowPlaying().catch(() => null),
+  ]);
+
+  // Now and next are separate rails, split strictly on today's date, so
+  // neither can show the other's titles.
+  const today = localDateStr();
+  const currentCinemaMovies = dedupeByMediaId(
+    excludeKidsContent((nowPlaying?.results || []).filter(isEnglishOriginTitle), hideKids)
+      .filter(movie => (movie.release_date || '') <= today)
+      .map(movie => ({ ...movie, media_type: 'movie', _cinema: true })),
+  );
+  const cinemaMovies = currentCinemaMovies.slice(0, 10);
+  const anticipatedMovies = dedupeByMediaId(
+    excludeKidsContent((upcoming?.results || []).filter(isEnglishOriginTitle), hideKids)
+      .filter(movie => (movie.release_date || '') > today)
+      .map(movie => ({ ...movie, media_type: 'movie' })),
+  ).slice(0, 10);
+  const trendingCinema = trendingMovieItems
+    .map(movie => currentCinemaMovies.find(cinema => cinema.id === movie.id))
+    .find(Boolean) || cinemaMovies[0] || null;
+
+  return {
+    ...primary,
+    onThisDay,
+    heroByType: { ...primary.heroByType, cinema: trendingCinema },
+    cinemaMovies,
+    anticipatedMovies,
+  };
+}
+
 /**
  * @param {{ hideKids?: boolean }} [options] Each app resolves `hideKids` from
  *   its own profile context (web: `useApp()`, mobile: `useAuth()`) and passes
  *   it in, so core stays free of app context.
  */
 export function useDiscover({ hideKids = false } = {}) {
-  const [data, setData]       = useState({ hero: null, heroByType: {}, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], cinemaMovies: [], anticipatedMovies: [] });
+  const [data, setData]       = useState(emptyDiscoverData);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    const emptyData = { hero: null, heroByType: {}, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], cinemaMovies: [], anticipatedMovies: [] };
+    const emptyData = emptyDiscoverData();
 
     async function load() {
       setLoading(true);
       setData(emptyData);
       try {
-        const [trendingDay, trendingWeek, trendingTVDay, trendingMovieDay, onThisDay, upcoming, nowPlaying] = await Promise.all([
-          tmdb.getTrending('all', 'day'),
-          tmdb.getTrending('all', 'week'),
-          tmdb.getTrending('tv', 'day'),
-          tmdb.getTrending('movie', 'day'),
-          tmdb.getOnThisDay().catch(() => null),
-          tmdb.getUpcoming().catch(() => null),
-          tmdb.getNowPlaying().catch(() => null),
-        ]);
-
+        const nextData = await loadDiscoverData({
+          hideKids,
+          onPrimary: (primary) => {
+            if (cancelled) return;
+            setData(primary);
+            setLoading(false);
+          },
+        });
         if (cancelled) return;
-
-        const trendingItems = dedupeByMediaId(excludeKidsContent((trendingDay?.results || []).filter(isEnglishOriginTitle), hideKids)).slice(0, 20);
-        const hero    = trendingItems[0] || null;
-        const hotRail = trendingItems.slice(1, 10);
-        const weekly  = dedupeByMediaId(excludeKidsContent((trendingWeek?.results || []).filter(isEnglishOriginTitle), hideKids)).slice(0, 20);
-        const trendingTVItems = dedupeByMediaId(
-          excludeKidsContent((trendingTVDay?.results || []).filter(isEnglishOriginTitle), hideKids)
-            .map(show => ({ ...show, media_type: 'tv' }))
-        );
-        const trendingMovieItems = dedupeByMediaId(
-          excludeKidsContent((trendingMovieDay?.results || []).filter(isEnglishOriginTitle), hideKids)
-            .map(movie => ({ ...movie, media_type: 'movie' }))
-        );
-        const bingedShows = trendingTVItems.filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18));
-        // Now and next are separate rails, split strictly on today's date, so
-        // neither can show the other's titles. The date TMDB reports on a
-        // discover result is the film's *primary* release date, so a film that
-        // opened in another market first can arrive in the upcoming feed already
-        // dated in the past — those belong in the cinemas rail, not next to
-        // Avengers: Doomsday with a stale year on the card.
-        const today = localDateStr();
-        const currentCinemaMovies = dedupeByMediaId(
-          excludeKidsContent((nowPlaying?.results || []).filter(isEnglishOriginTitle), hideKids)
-            .filter(movie => (movie.release_date || '') <= today)
-            .map(movie => ({ ...movie, media_type: 'movie', _cinema: true }))
-        );
-        const cinemaMovies = currentCinemaMovies.slice(0, 10);
-        const anticipatedMovies = dedupeByMediaId(
-          excludeKidsContent((upcoming?.results || []).filter(isEnglishOriginTitle), hideKids)
-            .filter(movie => (movie.release_date || '') > today)
-            .map(movie => ({ ...movie, media_type: 'movie' }))
-        ).slice(0, 10);
-
-        const trendingCinema = trendingMovieItems
-          .map(movie => currentCinemaMovies.find(cinema => cinema.id === movie.id))
-          .find(Boolean) || cinemaMovies[0] || null;
-        const heroByType = {
-          overall: hero,
-          tv: trendingTVItems[0] || null,
-          movie: trendingMovieItems[0] || null,
-          cinema: trendingCinema,
-        };
-
-        setData({ hero, heroByType, onThisDay, hotRail, weekly, bingedShows, cinemaMovies, anticipatedMovies });
+        setData(nextData);
       } catch (error) {
         console.error('Discover load failed:', error);
         if (!cancelled) setData(emptyData);

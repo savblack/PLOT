@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildGenreRailDefinitions,
+  loadNewReleaseData,
   prepareNewReleaseGenreRails,
   tagCinemaReleases,
 } from '../../useNewReleases.js';
@@ -48,4 +49,26 @@ test('tagCinemaReleases makes regional now-playing movies available to the cinem
 
   assert.deepEqual(prepared.map(rail => rail.key), ['action']);
   assert.equal(prepared[0].items[0]._cinema, true);
+});
+
+test('recent-only loading skips the per-genre catalogue Home does not render', async () => {
+  const calls = [];
+  const client = {
+    async getRecentReleases() {
+      calls.push('recent');
+      return {
+        movies: [{ id: 1, media_type: 'movie', title: 'Recent', release_date: '2026-09-20', original_language: 'en', poster_path: '/recent.jpg' }],
+        tv: [],
+      };
+    },
+    async getGenreCatalog() { calls.push('genres'); throw new Error('should not load genres'); },
+    async getNowPlaying() { calls.push('cinema'); throw new Error('should not load cinema'); },
+    async discoverNewestByGenre() { calls.push('genre rail'); throw new Error('should not load genre rails'); },
+  };
+
+  const data = await loadNewReleaseData({ includeGenreRails: false, client });
+
+  assert.deepEqual(calls, ['recent']);
+  assert.deepEqual(data.genreRails, []);
+  assert.deepEqual(data.recent.map(item => item.id), [1]);
 });
