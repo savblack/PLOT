@@ -1153,10 +1153,11 @@ Deno.serve(async (req) => {
     .order('started_at', { ascending: false })
     .limit(10);
 
+  // Health chips for workflows that still exist. The Sunday learning loop's
+  // marketing-learning-prep.yml was removed; do not put a chip back for it.
   const WORKFLOWS = [
     { id: 'marketing-weekly-batch.yml', label: 'Weekly batch' },
     { id: 'marketing-publish.yml', label: 'Publish' },
-    { id: 'marketing-learning-prep.yml', label: 'Learning prep' },
   ];
   const workflowStatuses = await Promise.all(WORKFLOWS.map((w) => workflowStatus(w.id)));
 

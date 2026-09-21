@@ -417,13 +417,28 @@ Not production. Useful when the batch is down or a wording rule changes after po
 
 ## 16. Removed: the Sunday learning loop
 
-Documented so it is not rebuilt by accident.
+The loop is not running. Nothing in CI, the admin desk, or the copy worker rewrites the voice from last week's posts.
 
-[`supabase/migrations/20260813120000_remove_marketing_learning_loop.sql`](../../supabase/migrations/20260813120000_remove_marketing_learning_loop.sql) dropped `marketing_learning_runs`. The loop was `marketing/learning/*`, a `marketing-learning-prep` workflow, three `learn:*` commands, and a launchd job that was supposed to apply the result locally. Production had seven rows, all status `prepared`, all with an empty summary. The local apply step never ran. No learning was ever folded back into `VOICE.md`.
+What was removed:
 
-`generated_copy`, `sent_text`, and `sent_payload` were kept as a record of what was written and what went out. Nothing reads them to update the voice.
+- `marketing/learning/*`
+- GitHub workflow `marketing-learning-prep.yml`
+- three `learn:*` commands
+- a launchd job that was supposed to apply the result on a Mac
+- table `marketing_learning_runs`, dropped in [`supabase/migrations/20260813120000_remove_marketing_learning_loop.sql`](../../supabase/migrations/20260813120000_remove_marketing_learning_loop.sql)
+- the admin-desk health chip labelled "Learning prep" ([`supabase/functions/admin-review/index.ts`](../../supabase/functions/admin-review/index.ts)). It only asked GitHub for runs of the missing workflow. It did not schedule or send anything. The Weekly batch and Publish chips stay.
 
-The admin desk still lists a button labelled "Learning prep" for `marketing-learning-prep.yml` ([`supabase/functions/admin-review/index.ts`](../../supabase/functions/admin-review/index.ts)). That workflow file is gone. Clicking it cannot start a run. Removing the button would be a behaviour change and is not part of this inventory.
+Production held seven learning rows, every one status `prepared` with an empty summary. The local apply step never ran. No week was ever folded back into `VOICE.md`.
+
+What still governs tone, and is edited by hand:
+
+- [`marketing/VOICE.md`](../../marketing/VOICE.md), injected into every brief
+- [`marketing/copy/WHATSON_GUIDELINES.md`](../../marketing/copy/WHATSON_GUIDELINES.md) and [`marketing/copy/AGENT.md`](../../marketing/copy/AGENT.md)
+- [`supabase/functions/_shared/articleRules.js`](../../supabase/functions/_shared/articleRules.js), the regex gate on articles and captions
+
+`generated_copy`, `sent_text`, and `sent_payload` stay as a record of what was written and what Buffer sent. Nothing reads them to update the voice.
+
+A new eval and tone loop is planned and not built. The notes under "Tone and an eval loop" below are a wishlist, not a system you can run.
 
 ---
 
@@ -451,7 +466,7 @@ Post types and their card templates live in [`marketing/lib/post-types.mjs`](../
 
 ## Where tone, prompts, and templates live
 
-There is no eval harness and no prompt registry. Tone is a set of files a person edits. The model is told to follow them. A validator then rejects a list of known failure shapes.
+There is no eval harness and no prompt registry. The Sunday learning loop that used to rewrite these files is gone (section 16). A replacement eval loop is planned and not built. Tone is a set of files a person edits. The model is told to follow them. A validator then rejects a list of known failure shapes.
 
 | Path | What it governs |
 | --- | --- |
@@ -507,7 +522,7 @@ Gaps:
 5. **Two models.** CI is Claude (pinned CLI `2.1.226`). Local default is Codex. A prompt change tested locally is not the prompt that will run on Sunday unless you pass `--copy-runner=claude`.
 6. **Regenerate is all or nothing.** `/regenerate` throws the copy away. There is no "rewrite the closer, keep the rest" in the production path. `sweep-closer.mjs` and `rewrite-published.mjs` are one-off scripts for that kind of repair.
 7. **Guides and questions sit outside the review you see.** Guides have an article and a card but no social preview. Questions have social and no card. A tone pass that only reads Linear misses the questions. A pass that only reads Buffer misses the guides.
-8. **The admin desk still offers a dead "Learning prep" action.** It looks like a tone loop you can run. It is not.
+8. **Nothing closes the loop.** The Learning prep chip is gone, and so is the workflow behind it. Shipped copy still does not teach the next week. That gap is intentional until an eval loop is actually built.
 
 ---
 
@@ -533,9 +548,8 @@ Documentation only. None of this is built here.
 
 1. Treat this file plus `marketing/README.md` as the pair: map here, weekly operating steps there. When a workflow changes, update both.
 2. Add one diagram to the Sunday review email: article path (Linear to /whats-on) and social path (Buffer), and the sentence "rejecting the card does not delete the posts".
-3. Remove or relabel the dead "Learning prep" button on the admin desk so it stops implying a loop that is gone.
-4. Decide where `/marketing-week` lives. The email tells you to run it. The repo only has `marketing/REVIEW.md`.
-5. Confirm, in one place, whether the newsletter and the trending snapshot are meant to stay manual.
+3. Decide where `/marketing-week` lives. The email tells you to run it. The repo only has `marketing/REVIEW.md`.
+4. Confirm, in one place, whether the newsletter and the trending snapshot are meant to stay manual.
 
 ### b. Standing health visibility
 
@@ -563,9 +577,8 @@ These are ambiguous from the repo alone.
 3. **Trending snapshot.** Manual, with a Friday fallback. Is a weekly cron wanted so the chart page cannot go stale if the Friday post is rejected?
 4. **Social analytics.** The Meta insights path is gone and the report script is manual. Should reach stay a Buffer-side glance, or is a replacement in scope?
 5. **`/marketing-week`.** The review email names it. The skill is not in the repo. Is it a local Claude command you still use, or is `marketing/REVIEW.md` the thing to point at?
-6. **Dead learning button.** Confirm before anyone removes it from the admin desk. That would be a product change, not a doc change.
-7. **Empty timeline notes.** The Monday PR auto-merges even when the new title has no joke. The Linear card is only a record. Is that still what you want?
-8. **Guide indexing.** Guides do not pass through Buffer, so IndexNow does not hear about them. Is the sitemap enough?
+6. **Empty timeline notes.** The Monday PR auto-merges even when the new title has no joke. The Linear card is only a record. Is that still what you want?
+7. **Guide indexing.** Guides do not pass through Buffer, so IndexNow does not hear about them. Is the sitemap enough?
 
 ---
 

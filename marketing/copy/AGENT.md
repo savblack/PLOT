@@ -83,5 +83,8 @@ regex, and only you know what the reader will already have seen.
 ## Updating these rules
 
 This file is maintained by hand. An automated Sunday learning loop used to
-rewrite it from the previous week's shipped copy; that loop has been removed, so
-a rule here only changes when a person changes it.
+rewrite it from the previous week's shipped copy. That loop has been removed
+(the workflow, the admin-desk chip, and the `learn:*` commands). Tone now comes
+only from this file, `VOICE.md`, `WHATSON_GUIDELINES.md`, and
+`supabase/functions/_shared/articleRules.js`. A replacement eval loop is planned
+and not built, so a rule here only changes when a person changes it.

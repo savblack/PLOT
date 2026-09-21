@@ -28,8 +28,12 @@ same rows, so a decision made in either place shows up in both. Linear is a
 second surface onto one database, not a second database.
 
 The voice and spec rules in `VOICE.md` and `copy/AGENT.md` are maintained by
-hand. They were previously rewritten each Sunday by an automated learning loop;
-that loop is gone, so a rule only changes when someone changes it.
+hand. An automated Sunday learning loop used to rewrite them from the previous
+week's shipped copy. That loop is gone: no workflow, no admin control, no
+`learn:*` command. What still governs tone is `VOICE.md`,
+`copy/WHATSON_GUIDELINES.md`, and `supabase/functions/_shared/articleRules.js`.
+A replacement eval loop is planned and not built. A rule changes only when
+someone edits those files.
 
 The production worker is **Claude Code CLI** (`marketing-weekly-batch.yml` runs
 `--copy-runner=claude`). Codex remains the default for local/manual runs and is
