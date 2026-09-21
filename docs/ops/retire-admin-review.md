@@ -2,20 +2,19 @@
 
 The hosted page at `admin.theplot.tv` (`supabase/functions/admin-review`) should go away. Articles are reviewed in Linear. Social posts are reviewed in Buffer. This note is the cutover. It does not delete the desk.
 
-**Phase 1 is implemented** (PR #1017). Savannah confirmed she does not use the desk. The weekly email now links Linear and Buffer, and the operator docs no longer tell anyone to approve or reject the way the desk still does. The host, the Edge Function, the Pages custom domain, and DNS are unchanged.
+**Phase 1 is implemented. Phase 2 is planned and awaiting a human cutover** (PR #1017). Savannah does not use the desk. Rejecting an article leaves social posts alone (Linear's behavior, and the agent runbook). This PR does not remove the Cloudflare domain, does not unset secrets, and does not undeploy `admin-review`.
 
-What changed:
+Already done in this PR:
 
-- `marketing/generate/generate.mjs` (`notifyReview`): the email's buttons are the Content Automation project and `https://publish.buffer.com`. The "Read the full week" sheet link and the desk link are gone. The sheet is still uploaded so an old `/?view=sheet` bookmark renders.
-- `marketing/REVIEW.md`: approve and reject set `marketing_posts.status` only. They do not re-queue publication rows or skip captions. Newsletter preview is the local dry-run.
-- `marketing/README.md`, `marketing/manual/README.md`, `marketing/preview/week.mjs`, and the batch log line in `marketing/scripts/automation.mjs`: routine review is Linear and Buffer. The desk is named only as still hosted and not for review.
+- `marketing/generate/generate.mjs` (`notifyReview`): the email's buttons are the Content Automation project and `https://publish.buffer.com`. No desk link.
+- The weekly batch no longer uploads `week.html`. Nothing else reads that object except the desk's Sheet view, which Savannah does not use. The last uploaded object stays in the private `marketing-review` bucket until the cutover deletes it. `marketing/preview/week.mjs` still builds a local file when someone runs it.
+- `marketing/REVIEW.md`: approve and reject set `marketing_posts.status` only.
+- Operator docs name the desk only as still hosted.
 
-What still blocks deleting the host (phase 3, not this change):
+Not done here, on purpose:
 
-- The function, the Pages proxy, and the custom domain are still live. The desk's own Approve, Reject, and Save buttons still rewrite publication rows if someone opens the page.
-- `hostReviewSheet` still uploads `week.html` on each weekly batch.
-- Captions that have not entered Buffer yet can still be edited only in the database (`marketing/REVIEW.md`, or `copy-export`). Linear will not edit them. Buffer does not have them yet.
-- Phase 3 needs an explicit OK to remove the Cloudflare Pages custom domain and the `ADMIN_PASSWORD` / `ADMIN_TOKEN` secrets. This PR does not do that.
+- The live function, the Pages proxy, the custom domain, and DNS. The desk's Approve, Reject, and Save buttons still rewrite publication rows if someone opens the page. There is no feature flag, and the function has no tests, so this PR does not turn those buttons into no-ops. Stopping them means undeploying the function, which is a human step below.
+- Captions that have not entered Buffer yet can still be edited only in the database (`marketing/REVIEW.md`, or `copy-export`). Linear will not edit them. That is not a reason to keep the host.
 
 `docs/ops/operator-desk-shelved.md` is a different thing: an unmerged React replacement from July 2026. Do not revive it as the way off this page.
 
@@ -81,73 +80,135 @@ Until those three match Linear, the desk is not a harmless second window. It is 
 These are the reasons the page is not dead yet.
 
 1. **Captions that are not in Buffer yet.** The plan holds about 10 scheduled posts per channel. A week is about 16. The visible Buffer queue is roughly four days. Captions past that window live only in `marketing_posts.copy`. Linear will not edit them. Buffer does not have them. The desk form, the marketing-week skill, and `marketing/preview/copy-export.mjs` are the editors. Waiting until the daily top-up pushes them, then editing in Buffer, is the path that needs no new tool.
-2. **The week sheet upload.** The weekly email no longer links `/?view=sheet`. The batch still uploads `week.html` (`hostReviewSheet` in `marketing/generate/generate.mjs`) so the desk's Sheet view keeps working until phase 3. Newsletter preview for an agent is the local dry-run of `send-digest.mjs`.
-3. **Approve-the-week.** One button. Linear is one card at a time. There is no `/approve-week`.
-4. **Reject that also holds back captions not yet in Buffer.** Only the desk (and `marketing/REVIEW.md`) do this. Linear will not, on purpose.
+2. **The week sheet.** The batch no longer uploads it. The desk's Sheet view still serves whatever object was uploaded last, until that object is deleted at cutover. A local preview is `marketing/preview/week.mjs`. Newsletter preview is `DRY_RUN=1` on `send-digest.mjs`.
+3. **Approve-the-week.** One button on the desk. Linear is one card at a time. Not required. Do not add `/approve-week` unless asked.
+4. **Reject that also holds back captions.** The desk still does this if someone clicks Reject. Linear does not, and that is the decision: leave social posts alone. The runbook matches Linear. The live button does not, until the function is undeployed.
 5. **A screen for "what ran" and "what did the last fortnight get".** Batch rows, the audit list, and the views/likes strip have no other UI. GitHub Actions and the manual metrics email cover the same facts with worse browsing.
 
-None of these require a new product. They require a decision about which of them you still use.
+None of these are a new product. The host can go without them.
 
-## Phased retirement
+## Phase 1: stop using the desk as the publisher
 
-Do not delete the host in the first change. The page is live, and the unsafe buttons are the thing to stop relying on before the URL goes away.
+Done. See the top of this file.
 
-### Phase 1: stop using the desk as the publisher
+## Phase 2: teardown planned, awaiting cutover
 
-Done in this change. No DNS, no function delete.
+Do these in order. Steps 1 and 2 are merges. Step 3 is a later code PR (not this one): merging it deploys the marketing site, because Cloudflare Pages deploys `plot-site` on merge to `main`. Steps 4 through 8 are clicks and CLI commands. This run does not execute 4 through 8.
 
-- Linear is the documented place an article is approved, rejected, edited, rescheduled, or published now.
-- Buffer is the documented place a caption is edited, moved, or deleted. A caption that is not in the queue yet is still a database edit (`marketing/REVIEW.md`, or `copy-export` / `copy-import`), and that edit does not update Buffer.
-- `marketing/REVIEW.md` section 4 matches `marketing-linear-sync`: approve and reject change `marketing_posts.status` only. No re-queue, no skip. Section 6 previews the newsletter with `DRY_RUN=1`.
-- The weekly email in `marketing/generate/generate.mjs` links the Linear project and Buffer. It does not link the sheet or the desk.
-- `docs/ops/gtm-automations.md` is still only on PR #1016. The paragraph to add is at the bottom of this file.
-- `admin.theplot.tv` stays up so a bookmark still loads.
+Nothing in GitHub Actions calls `admin-review`. The only caller is the Pages proxy in `apps/website/functions/_middleware.js`, which forwards `admin.theplot.tv` to the function. The weekly batch does not POST to it. The raw function URL is still public at the gateway (`verify_jwt = false` in `supabase/config.toml`), gated by `ADMIN_PASSWORD` / `ADMIN_TOKEN`: `https://mkegtssedjyqldysvzga.supabase.co/functions/v1/admin-review`. Deleting the domain does not close that URL. Deleting the function does.
 
-### Phase 2: close the gaps you still feel
+### 1. Merge PR #1016 first (code, GitHub)
 
-Only build the ones you answer "yes" to in the questions below. Prefer Linear and Buffer.
+Still open as of this plan. It removes the dead Learning prep chip from the desk. Merge it while the function file still exists. The teardown PR below deletes that file, so landing #1016 first avoids a modify/delete conflict. If #1016 is closed instead, do not re-add the chip.
 
-- **Bulk article approve**, if one click still matters: a week-scoped `/approve-week` in `linearCommands.js` + `marketing-linear-sync` that sets `needs_review` rows to `approved` and does **not** call anything like `requeuePubs`.
-- **Captions outside the Buffer window**, if waiting four days is too late: keep editing them through `copy-export` / the skill, or accept Buffer-only once they land. Do not add social fields back onto the Linear card.
-- **Newsletter preview**, if you still open the sheet for it: attach the dry-run HTML to the existing review email, or keep running `send-digest.mjs` with `DRY_RUN=1` locally. Do not stand up another hosted page.
-- **Metrics and run history**, if you still open the desk for them: the emailed report and GitHub Actions are enough. A Linear view of `marketing_batch_runs` is optional and not required to delete the page.
-- **Week sheet**: stop uploading it once nothing links to `/?view=sheet`. `marketing/preview/week.mjs` can stay as a local script.
+### 2. Merge PR #1017 (code, GitHub)
 
-PR #1016 already deletes the Learning prep chip. Do not re-add it. No other route in the function exists only for that loop.
+This PR. After it is on `main`, the next `marketing-weekly-batch.yml` run stops uploading `week.html` and keeps emailing Linear and Buffer. The host stays up. No Cloudflare or Supabase click is required for that.
 
-### Phase 3: delete the host
+### 3. Teardown code PR (code, a later agent or you)
 
-After a week in which you have not needed the page:
+Branch off `main` after steps 1 and 2. Do not call Cloudflare or Supabase from CI. Merging deploys `plot-site` only (the website). It does not undeploy the Edge Function. Supabase functions deploy only when someone runs the CLI.
 
-- Remove the `admin.theplot.tv` branch in `apps/website/functions/_middleware.js`, `apps/website/functions/_lib/admin.js`, and the robots test in `apps/website/functions/_lib/middleware.test.js`.
-- Remove `supabase/functions/admin-review/` and the `[functions.admin-review]` block in `supabase/config.toml`. Deploy that absence (`supabase functions delete admin-review`) only after the proxy is gone, or the proxy 502s.
-- Remove the custom domain `admin.theplot.tv` from the marketing site's Cloudflare Pages project. This repo does not declare that domain in wrangler. It is dashboard DNS plus a Pages custom domain.
-- Unset the Edge secrets `ADMIN_PASSWORD` and `ADMIN_TOKEN`. Nothing else reads them.
-- Stop `hostReviewSheet` in `marketing/generate/generate.mjs`. The private `marketing-review` bucket can stay until you are sure; dropping a bucket is a separate, explicit step.
-- Update the pointers in `marketing/README.md`, `marketing/REVIEW.md`, `marketing/manual/README.md`, and the admin-desk sentence in `AGENTS.md`.
-- `apps/web/tests/unit/analyticsHost.test.js` asserts `admin.theplot.tv` is **not** an analytics host. Keep that assertion until the hostname is gone, then delete the case with the hostname.
+Replace the admin host with a plain 410, then delete the proxy. If you only delete the host check, `admin.theplot.tv` falls through to the marketing site and serves theplot.tv on the admin hostname. A 410 avoids that for as long as the domain still points at Pages.
 
-Do not drop `auth_fail_attempts`. Signup bypass and `media-sync` use the same table, with their own scopes. Do not drop `marketing_review_events`, `marketing_posts`, or `marketing_settings`. Do not drop the empty `operator_*` tables. Those belong to the shelved desk, not this page.
+- `apps/website/functions/_middleware.js`: for host `admin.theplot.tv`, return `410 Gone`, `content-type: text/plain`, body `This page has been removed.`, and `X-Robots-Tag: noindex, nofollow`. Keep the `robots.txt` disallow. Do not call `admin()`.
+- Delete `apps/website/functions/_lib/admin.js` once nothing imports it.
+- `apps/website/functions/_lib/middleware.test.js`: expect 410 on `https://admin.theplot.tv/` and keep the robots test.
+- Delete `supabase/functions/admin-review/` (the whole directory).
+- Delete the `[functions.admin-review]` block in `supabase/config.toml`.
+- `apps/web/tests/unit/analyticsHost.test.js`: the assertion that `admin.theplot.tv` is not an analytics host can go once the hostname is gone. Leave it until this PR if you want the allowlist comment to stay accurate one commit longer. Deleting the case in this same PR is fine.
+- Point `marketing/README.md`, `marketing/REVIEW.md`, `marketing/manual/README.md`, and the admin-desk sentence in `AGENTS.md` at this file, and drop "still hosted" once the 410 is the behavior.
+- Do not drop `auth_fail_attempts`. Signup bypass and `media-sync` use that table. Do not drop `marketing_review_events`, `marketing_posts`, or `marketing_settings`. Do not drop the empty `operator_*` tables (`docs/ops/operator-desk-shelved.md`).
+- Do not touch `GH_DISPATCH_TOKEN_CONTENT`. Linear `/generate` and `/regenerate` use it. The desk's Regenerate button uses the same secret. Keep the secret.
+
+### 4. Confirm the 410, then remove the custom domain (Cloudflare, you)
+
+Pages project name is `plot-site` (theplot.tv). The app project is `plot` (`app.theplot.tv`). The domain is not in wrangler. See the comment in `apps/web/wrangler.toml`.
+
+1. Wait until the teardown PR's Pages deploy for `plot-site` is finished.
+2. Open `https://admin.theplot.tv/`. You want `410` and the plain sentence. You do not want the marketing homepage, and you do not want the review UI.
+3. Dashboard: Workers & Pages → `plot-site` → Custom domains → `admin.theplot.tv` → Remove domain.
+4. Dashboard: the `theplot.tv` zone → DNS → Records. If an `admin` CNAME (or A/AAAA) is still there, delete that record. Pages often removes it with the custom domain. Check anyway.
+5. Do not remove `theplot.tv` or `app.theplot.tv`.
+
+Rollback for this step: Workers & Pages → `plot-site` → Custom domains → Set up a custom domain → `admin.theplot.tv`. Pages recreates the DNS record when the zone is on the same account. If the teardown code is still deployed, the hostname comes back as the 410, not as the old desk. To restore the desk, also revert that PR and redeploy the function (step 6) before the domain is useful again.
+
+### 5. Undeploy the function (Supabase, you)
+
+Do this after step 4, or any time after step 3 has stopped the proxy from calling it. Doing it earlier makes the still-connected domain return the proxy's "Review desk is briefly unavailable" 502.
+
+Dashboard: Edge Functions → `admin-review` → Delete. That is the click that takes the page off production.
+
+CLI, from a checkout already linked to that project. The command deletes the deployed function only. It does not delete the files in git. Official usage is `supabase functions delete <name>` against the linked project (`project_id` in `supabase/config.toml` is `mkegtssedjyqldysvzga`):
+
+```sh
+supabase link --project-ref mkegtssedjyqldysvzga
+supabase functions delete admin-review
+```
+
+Rollback: from a git revision that still contains `supabase/functions/admin-review/`,
+
+```sh
+supabase functions deploy admin-review --project-ref mkegtssedjyqldysvzga
+```
+
+`config.toml` must still have `verify_jwt = false` for that deploy, or the gateway rejects the page before the password check. If the teardown PR already deleted that block, deploy from the parent commit, or put the block back first.
+
+### 6. Unset the two secrets (Supabase, you)
+
+Nothing else reads them. Do this after the function is deleted, so a rollback deploy in the same hour still has a password.
+
+Dashboard: Project Settings → Edge Functions → Secrets. Remove `ADMIN_PASSWORD` and `ADMIN_TOKEN` only.
+
+CLI, same linked project. Official usage is `supabase secrets unset [NAME] ...`:
+
+```sh
+supabase secrets unset ADMIN_PASSWORD ADMIN_TOKEN
+```
+
+Rollback: set both secrets again before you expect the login page to accept a password. This repo does not store the values.
+
+### 7. Delete the stale sheet object (Supabase, you)
+
+Storage → bucket `marketing-review` → delete `week.html`. The bucket is private. The weekly batch no longer writes it. Drop the bucket only after you look inside and it has no other objects. Do not delete the public `marketing` bucket (card images).
+
+### 8. Verify (you)
+
+| Check | Pass |
+| --- | --- |
+| https://linear.app/savblack/project/content-automation-2ce2d56ced11 | Project opens. A `/approve` on a card still only changes article status. |
+| https://publish.buffer.com | Queue opens. Nothing in the teardown edits Buffer. |
+| Weekly email after the next batch | Buttons are still Linear and Buffer. No admin link. |
+| https://theplot.tv and https://app.theplot.tv | Unchanged. |
+| https://admin.theplot.tv | Fails closed. Acceptable: DNS does not resolve, or a Cloudflare error for a removed custom domain, or `410` if the domain was not removed yet. Not acceptable: the marketing homepage, the review UI, or a 502 from the proxy. |
+| `https://mkegtssedjyqldysvzga.supabase.co/functions/v1/admin-review` | 404 from Supabase after the function delete. A password page here means the undeploy did not happen. |
+| Old bookmark | Will not load. That is the point. There is no redirect. |
+
+### What this PR deliberately did not soft-disable
+
+Turning Approve, Reject, and Save into no-ops would be an edit to `supabase/functions/admin-review/index.ts` plus `supabase functions deploy admin-review`. That is a production deploy of the function, which this run must not do, and the page has no test suite. Leave the buttons until step 5. Do not click them. They still re-queue publication rows and, on Reject, skip captions that have not reached Buffer.
 
 ## Hosting and deploy pieces that go away
 
 | Piece | Role | When it can go |
 | --- | --- | --- |
-| Cloudflare Pages custom domain `admin.theplot.tv` on the marketing site | Every request on that host is routed to the proxy | Phase 3, after the function is unused |
-| `apps/website/functions/_middleware.js` host check | Sends that host to `admin()`, plus a disallow-all `robots.txt` | Phase 3 |
-| `apps/website/functions/_lib/admin.js` | Forwards GET/POST, cookie, and client IP to the Edge Function. Does not forward `?key=` | Phase 3 |
-| `supabase/functions/admin-review` | The page. `verify_jwt = false` because it does its own password check | Phase 3, then delete the deployed function |
-| Secrets `ADMIN_PASSWORD`, `ADMIN_TOKEN` | Login | Phase 3 |
-| Bucket `marketing-review` object `week.html` | The sheet | After the email and the page no longer fetch it |
-| `GH_DISPATCH_TOKEN_CONTENT` on the function | Desk Regenerate dispatches the weekly batch | The Linear sync uses the same secret. Keep it. |
+| Cloudflare Pages custom domain `admin.theplot.tv` on `plot-site` | Every request on that host is routed to the proxy | Cutover step 4, after the 410 code is deployed |
+| `apps/website/functions/_middleware.js` host check | Sends that host to `admin()`, plus a disallow-all `robots.txt` | Teardown code PR (step 3), replaced with a 410 |
+| `apps/website/functions/_lib/admin.js` | Forwards GET/POST, cookie, and client IP to the Edge Function. Does not forward `?key=` | Same PR, once the middleware no longer imports it |
+| `supabase/functions/admin-review` source | The page. `verify_jwt = false` because it does its own password check | Same PR deletes the source. Step 5 undeploys production |
+| Secrets `ADMIN_PASSWORD`, `ADMIN_TOKEN` | Login. Only this function reads them | Step 6, after the undeploy |
+| Bucket `marketing-review` object `week.html` | Last sheet. The batch no longer uploads it | Step 7 |
+| `GH_DISPATCH_TOKEN_CONTENT` | Desk Regenerate and Linear `/generate` / `/regenerate` | Keep it. Linear still uses it. |
 
 The marketing site itself (theplot.tv) stays. Only the admin host on that Pages project goes.
 
 ## Risks and rollback
 
-- **Using the desk during the cutover can double-post or suppress a caption.** Approve re-queues failed and skipped rows. Reject skips rows that are still `queued`. Linear does neither. Phase 1 is "stop clicking those buttons", not "turn the site off".
-- **Deleting the function while the custom domain still points at Pages** serves the proxy's "briefly unavailable" 502, or a login that 404s upstream. Remove the host route and the domain together.
-- **Rollback of phase 3** is reverting the commit and confirming the Edge Function and the two secrets still exist. DNS for a removed custom domain is the slow part. Do not unset secrets in the same hour as the code delete.
+- **Using the desk before step 5 can double-post or suppress a caption.** Approve re-queues failed and skipped rows. Reject skips rows that are still `queued`. Linear does neither. Rejecting an article should leave social posts alone.
+- **Deleting the function while the custom domain still points at Pages** serves the proxy's "briefly unavailable" 502. Undeploy after the proxy is gone (step 5 after step 3, ideally after step 4).
+- **Removing the host check without a 410** makes `admin.theplot.tv` serve the marketing site. The teardown PR must return 410 first.
+- **An old bookmark** stops loading. No redirect is planned. The raw Supabase function URL keeps working until step 5.
+- **Rollback** is at each step above. Do not unset secrets in the same hour as a function delete you might want to undo. DNS for a removed custom domain is the slow part.
 - **The marketing-week skill** writes the database directly. Deleting the page does not stop it. Phase 1 rewrote `marketing/REVIEW.md` so approve and reject no longer re-queue or skip rows. An agent that ignores the runbook can still do those writes by hand.
 - **`/regenerate` and a desk Regenerate** clear copy and start the weekly worker. They do not edit or delete the Buffer post already scheduled. A regenerated caption can sit in the database beside an older Buffer post. That is true today on both surfaces.
 - **Pause** never empties Buffer. Retiring the desk does not change that.
@@ -160,22 +221,22 @@ That file is added in PR #1016 and is not on `main`. When it merges, add this se
 ## Admin desk (retiring)
 
 `https://admin.theplot.tv` is still up. It is not where a week is reviewed.
-The weekly email links Linear and Buffer. Approve and reject in
+The weekly email links Linear and Buffer. The weekly batch no longer uploads
+the week sheet. Approve and reject in
 [`marketing/REVIEW.md`](../../marketing/REVIEW.md) change article status only.
-The cutover, including what the page itself still does, is
+Teardown is planned and waiting on a human cutover:
 [`docs/ops/retire-admin-review.md`](retire-admin-review.md).
 
 Do not click Approve, Reject, or Save on the desk while it is still up. Those
 buttons still change publication rows in ways Linear stopped doing, and a desk
-edit of a caption does not update a post Buffer already has. The page is a
-later delete. The host was left in place on purpose.
+edit of a caption does not update a post Buffer already has.
 ```
 
-## Questions only Savannah can answer
+## Decisions already made
 
-Answered for phase 1: she does not use the admin desk for anything. The email no longer sends her there. These are the ones that still change phase 2 or the teardown.
+- The desk is unused. Do not preserve it as a review surface.
+- Rejecting an article leaves social posts alone, including captions that have not reached Buffer yet. Delete those in Buffer if they should not go out.
+- Question posts stay Buffer-only. The mirror already skips them.
+- No replacement UI.
 
-1. When you reject an article, do you also want captions that have **not** reached Buffer yet to stay out of the queue? The desk used to do that. Linear does not, and phase 1 stopped the agent runbook from doing it too. Default from here is Linear's behavior: the caption still goes out unless you delete it in Buffer.
-2. For a caption more than about four days out (not in Buffer yet), is "wait until it lands, then edit in Buffer" acceptable? The fallback that already exists is the copy spreadsheet and the marketing-week skill, not a new UI.
-3. Confirm question posts stay Buffer-only (no Linear card), which is already how the mirror works.
-4. Confirm the Cloudflare Pages custom domain `admin.theplot.tv` can be removed in phase 3, along with the `admin-review` function and the `ADMIN_PASSWORD` / `ADMIN_TOKEN` secrets. This change does not touch DNS.
+Still yours to click, not to redesign: steps 4 through 8 above. Merging the teardown code PR (step 3) is the other explicit go, because Pages will deploy it.

@@ -9,10 +9,6 @@
 // is reviewed on. That is a scheduled sweep rather than anything this script
 // calls, so the Linear credential lives only in Supabase and a Linear outage
 // cannot fail a render run.
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
 import { renderCard, closeBrowser } from '../lib/render.mjs';
 import { uploadMedia } from '../lib/storage.mjs';
@@ -20,9 +16,6 @@ import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
 import { feedHeroUrl, guideHeroUrl } from '../lib/images.mjs';
 import { postSlug } from '../lib/feed.mjs';
-
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const REVIEW_BUCKET = 'marketing-review';
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
 
@@ -130,36 +123,12 @@ const applyAnnounceState = async (supabase, post) => {
   await supabase.from('marketing_tracked_titles').update(update).eq('id', announce.tracked_id);
 };
 
-const REVIEW_URL = 'https://admin.theplot.tv';
 // Team PLO, project Content Automation. Resolved from Linear, not guessed.
 // The mirror writes each post's linear_issue_url a few minutes after this
 // email, so the message links the project rather than a card that does not
 // exist yet. There is no per-organization Buffer queue URL in the database.
 const LINEAR_PROJECT_URL = 'https://linear.app/savblack/project/content-automation-2ce2d56ced11';
 const BUFFER_URL = 'https://publish.buffer.com';
-
-// Build the readable week sheet (week.mjs) and store it in a PRIVATE bucket. The
-// admin-review function serves it as real HTML at REVIEW_URL/?view=sheet (Supabase
-// storage itself serves stored HTML as text/plain, so it must be proxied). Private
-// so unpublished copy isn't world-readable; refreshed every batch. The weekly
-// email no longer links this page. The upload stays so an old bookmark still
-// renders until the host is removed.
-const hostReviewSheet = async (supabase) => {
-  try {
-    execFileSync('node', ['marketing/preview/week.mjs'], {
-      cwd: ROOT, env: process.env, stdio: ['ignore', 'ignore', 'inherit'], maxBuffer: 64 * 1024 * 1024,
-    });
-    const html = readFileSync(join(ROOT, 'marketing/preview/out/week.html'), 'utf8');
-    await supabase.storage.createBucket(REVIEW_BUCKET, { public: false }).catch(() => {});
-    const up = await supabase.storage.from(REVIEW_BUCKET)
-      .upload('week.html', html, { upsert: true, contentType: 'text/html; charset=utf-8' });
-    if (up.error) throw up.error;
-    return `${REVIEW_URL}/?view=sheet`;
-  } catch (err) {
-    console.error('Review sheet hosting failed:', err.message);
-    return null;
-  }
-};
 
 // Ping the admin that the week's posts are ready to review. Articles are
 // judged in Linear. Captions are judged in Buffer. The admin desk is not a
@@ -242,9 +211,8 @@ const main = async () => {
     }
 
     await closeBrowser();
-    const sheetUrl = count ? await hostReviewSheet(supabase) : null;
     await notifyReview(count);
-    console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.${sheetUrl ? ' Sheet hosted.' : ''}`);
+    console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.`);
     await finishBatchRun(supabase, runId, {
       status: 'succeeded',
       counts: { pending: (pending || []).length, rendered: count, failed: (pending || []).length - count },

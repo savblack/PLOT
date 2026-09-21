@@ -100,8 +100,8 @@ need to read all of that in one place:
 node --env-file=.env marketing/preview/week.mjs && open marketing/preview/out/week.html
 ```
 Re-run after edits to refresh. Do not tell the human to open
-`https://admin.theplot.tv/?view=sheet`. That host is retiring. The weekly email
-links Linear and Buffer instead.
+`https://admin.theplot.tv/?view=sheet`. The weekly batch no longer uploads that
+page. The weekly email links Linear and Buffer instead.
 
 **QA scan before approving** — flag (don't silently pass) anything off:
 - A card date in the PAST or that contradicts the copy ("Streaming · 31 March" on an
