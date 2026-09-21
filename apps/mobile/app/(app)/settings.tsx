@@ -116,9 +116,9 @@ function SettingsGroup({ title, children }: { title: string; children: React.Rea
 }
 
 // Reuse the existing Settings surface; this preview never opens a purchase link.
-function PremiumPreview() {
+function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean }) {
   const { colors } = useTheme();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initialExpanded);
   return (
     <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
       <SettingsRow icon={null} label={PLANS_PAGE.previewAction} value={PLANS_PAGE.comingSoon}
@@ -650,8 +650,9 @@ export default function SettingsScreen() {
   const [showName,       setShowName]       = useState(false);
   const [showRegion,     setShowRegion]     = useState(false);
   const [showTimezone,   setShowTimezone]   = useState(false);
-  const { feedback: feedbackParam } = useLocalSearchParams<{ feedback?: string }>();
+  const { feedback: feedbackParam, premium: premiumParam } = useLocalSearchParams<{ feedback?: string; premium?: string }>();
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
+  const [premiumExpanded, setPremiumExpanded] = useState(premiumParam === '1');
   const [showImport,     setShowImport]     = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [clearingHist,   setClearingHist]   = useState(false);
@@ -663,6 +664,13 @@ export default function SettingsScreen() {
     setFeedbackType(feedbackParam);
     router.setParams({ feedback: undefined });
   }, [feedbackParam, router]);
+
+  useEffect(() => {
+    if (premiumParam !== '1') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPremiumExpanded(true);
+    router.setParams({ premium: undefined });
+  }, [premiumParam, router]);
 
   const providers     = profile?.streaming_providers || [];
   const genres        = profile?.genres || [];
@@ -1019,7 +1027,7 @@ export default function SettingsScreen() {
           </SettingsGroup>
         )}
 
-        {!profile?.is_premium && <PremiumPreview />}
+        {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
 
         {/* Integrations — held for post-launch, same as web. Import Watch
             History (under Support) stays available; it needs no credentials. */}

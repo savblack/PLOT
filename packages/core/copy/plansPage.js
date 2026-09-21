@@ -1,6 +1,7 @@
 // Shared plan preview for web and mobile. Planned features are never shown as live entitlements.
 export const PLANS_PAGE = {
   back: '← Back',
+  backToApp: '← Back to plot',
   eyebrow: 'plot Premium',
   title: 'Less deciding. More watching.',
   lede: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch. Make more of the time you set aside for it.',

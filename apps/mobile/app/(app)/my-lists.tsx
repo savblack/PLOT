@@ -4,7 +4,9 @@ import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
 import { customListCreationError } from '@plot/core/customListCreation.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { useState, useMemo } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
   Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, LayoutAnimation,
@@ -407,6 +409,7 @@ export default function MyListsScreen() {
   // Watching into select mode leaves Favourites alone.
   const watchingSel = useSelection();
   const wantSel     = useSelection();
+  const router = useRouter();
   const favSel      = useSelection();
 
   const [showAddFav,     setShowAddFav]     = useState(false);
@@ -416,7 +419,10 @@ export default function MyListsScreen() {
   // (RLS insert policy) is the authority — this is just friendlier UX.
   const requestCreateList = () => {
     if (!canCreateCustomList(customLists.lists.length, profile)) {
-      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage);
+      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage, [
+        { text: COMMON.cancel, style: 'cancel' },
+        { text: PLANS_PAGE.previewAction, onPress: () => router.push('/(app)/settings?premium=1' as any) },
+      ]);
       return;
     }
     setShowCreateList(true);
