@@ -513,8 +513,29 @@ function wantMeta(item) {
   return parts.join(' · ');
 }
 
-function NoteLock() {
-  return <span className="list-page-note-lock" title="Has a private note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg></span>;
+function cardState(item, historyEntries, privateNotes) {
+  const id = Number(item.tmdb_id);
+  const type = item.media_type || 'movie';
+  return {
+    hasPrivateNote: !!privateNotes?.rows?.[privateNoteKey(id, type)]?.note,
+    hasReview: historyEntries?.some(entry => entry.tmdb_id === id && entry.media_type === type && !!entry.note) || false,
+  };
+}
+
+function cardActions(item, favorites, watchlist, fw) {
+  const id = Number(item.tmdb_id);
+  const type = item.media_type || 'movie';
+  const normalized = { ...item, id, tmdb_id: id, media_type: type };
+  const isFavorite = favorites.isFavorite(id);
+  const isBookmarked = watchlist.isInList(id);
+  return {
+    isFavorite,
+    isBookmarked,
+    favoriteLabel: isFavorite ? `Remove ${item.title || item.name} from ${fw.pluralLower}` : `Add ${item.title || item.name} to ${fw.pluralLower}`,
+    bookmarkLabel: isBookmarked ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist,
+    onToggleFavorite: () => favorites.toggleFavorite(normalized),
+    onToggleBookmark: () => watchlist.toggle(normalized),
+  };
 }
 
 function ListPageRow({ item, title, meta, open, selection, note }) {
@@ -531,8 +552,9 @@ function ListPageRow({ item, title, meta, open, selection, note }) {
   );
 }
 
-export function WantToWatchSection({ items, count = items.length, narrowed, Frame = ListSection, pageLayout = false }) {
-  const { openPanel, watchlist, privateNotes } = useApp();
+export function WantToWatchSection({ items, count = items.length, narrowed, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
+  const { openPanel, watchlist, privateNotes, favorites, profile } = useApp();
+  const fw = favoriteWords(profile?.region);
   const selection = useSelection();
   const [showAdd, setShowAdd] = useState(false);
 
@@ -571,8 +593,7 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
           {pageLayout && <CardGrid>{items.map(item => {
             const title = item.title || item.name || MEDIA.unknown;
             const type = item.media_type || 'movie';
-            const note = privateNotes?.rows?.[privateNoteKey(Number(item.tmdb_id), type)]?.note;
-            return <ListCard key={`${type}:${item.tmdb_id}`} title={title} img={posterUrl(item.poster_path, 'w185')} meta={wantMeta(item)} overlay={note ? <NoteLock /> : null} onOpen={() => openPanel(item.tmdb_id, type)} editMode={selection.editMode} selected={selection.selected.has(item.tmdb_id)} onToggleSelect={() => selection.toggle(item.tmdb_id)} />;
+            return <ListCard key={`${type}:${item.tmdb_id}`} title={title} img={posterUrl(item.poster_path, 'w185')} meta={wantMeta(item)} {...cardState(item, historyEntries, privateNotes)} {...cardActions(item, favorites, watchlist, fw)} onOpen={() => openPanel(item.tmdb_id, type)} editMode={selection.editMode} selected={selection.selected.has(item.tmdb_id)} onToggleSelect={() => selection.toggle(item.tmdb_id)} />;
           })}</CardGrid>}
           <div className="private-watchlist">
             {items.map(item => {
@@ -606,8 +627,8 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
 }
 
 /* ── Favourites ── */
-export function FavoritesSection({ favorites: favsHook, visibleItems, count, typeFilters, genreFilters = [], narrowed, Frame = ListSection, pageLayout = false }) {
-  const { openPanel, profile } = useApp();
+export function FavoritesSection({ favorites: favsHook, visibleItems, count, typeFilters, genreFilters = [], narrowed, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
+  const { openPanel, profile, watchlist, privateNotes } = useApp();
   const fw = favoriteWords(profile?.region);
   const [showAdd, setShowAdd] = useState(false);
   const selection = useSelection();
@@ -659,6 +680,8 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
                 title={title}
                 img={posterUrl(item.poster_path, 'w185')}
                 meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}
+                {...(pageLayout ? cardState(item, historyEntries, privateNotes) : {})}
+                {...(pageLayout ? cardActions(item, favsHook, watchlist, fw) : {})}
                 onOpen={() => openPanel(item.tmdb_id, item.media_type)}
                 editMode={selection.editMode}
                 selected={selection.selected.has(item.tmdb_id)}
@@ -690,8 +713,9 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
 
 
 /* ── One custom list, as a page: grid plus rename / public / share / delete ── */
-export function CustomListSection({ list, visibleItems, count, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection, pageLayout = false }) {
-  const { openPanel } = useApp();
+export function CustomListSection({ list, visibleItems, count, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
+  const { openPanel, favorites, watchlist, privateNotes, profile } = useApp();
+  const fw = favoriteWords(profile?.region);
   const { renameList, setListPublic, addItem, removeItem, deleteList } = customLists;
   const selection = useSelection();
   const [renaming, setRenaming] = useState(false);
@@ -770,6 +794,8 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
                 title={title}
                 img={posterUrl(item.poster_path, 'w185')}
                 meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}
+                {...(pageLayout ? cardState(item, historyEntries, privateNotes) : {})}
+                {...(pageLayout ? cardActions(item, favorites, watchlist, fw) : {})}
                 onOpen={() => openPanel(item.tmdb_id, item.media_type)}
                 editMode={selection.editMode}
                 selected={selection.selected.has(item.tmdb_id)}
