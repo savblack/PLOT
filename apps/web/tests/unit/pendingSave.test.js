@@ -223,6 +223,7 @@ function withFakeFetch(responses, fn) {
     return {
       ok: r.status >= 200 && r.status < 300,
       status: r.status,
+      headers: new Headers(r.headers),
       json: async () => r.body ?? {},
     };
   };
@@ -248,6 +249,21 @@ test('fetchFromTMDBResolved: 429 then 200 → retried, resolves ok', async () =>
     assert.equal(res.ok, true);
     assert.deepEqual(res.data, { id: 5 });
     assert.equal(count(), 2, 'one retry after the 429');
+  });
+});
+
+test('fetchFromTMDBResolved: honours the proxy Retry-After window', async () => {
+  await withFakeFetch([
+    { status: 429, headers: { 'Retry-After': '10' } },
+    { status: 200, body: { id: 6 } },
+  ], async () => {
+    const waits = [];
+    const res = await fetchFromTMDBResolved('/movie/6', {}, {
+      retryDelays: [1],
+      sleepFn: async ms => { waits.push(ms); },
+    });
+    assert.equal(res.ok, true);
+    assert.deepEqual(waits, [10000]);
   });
 });
 
@@ -328,4 +344,34 @@ test('different params are different cache entries', async () => {
     await fetchFromTMDBResolved('/trending/all/day', { page: 2 });
     assert.equal(count(), 2, 'page 2 is not served page 1');
   });
+});
+
+test('different TMDB reads share an eight-request concurrency ceiling', async () => {
+  const realFetch = globalThis.fetch;
+  const releases = [];
+  let active = 0;
+  let maximum = 0;
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  _resetTmdbCache();
+  globalThis.fetch = async () => {
+    active += 1;
+    maximum = Math.max(maximum, active);
+    await new Promise(resolve => { releases.push(resolve); });
+    active -= 1;
+    return { ok: true, status: 200, headers: new Headers(), json: async () => ({}) };
+  };
+
+  try {
+    const pending = Array.from({ length: 12 }, (_, i) => fetchFromTMDBResolved(`/movie/${100 + i}`));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(releases.length, 8, 'only eight network reads start together');
+    releases.slice(0, 8).forEach(resolve => resolve());
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(releases.length, 12, 'queued reads start as slots become available');
+    releases.slice(8).forEach(resolve => resolve());
+    await Promise.all(pending);
+    assert.equal(maximum, 8);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });

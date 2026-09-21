@@ -51,6 +51,9 @@ const handler = {
         headers: {
           'content-type': 'application/json',
           'Access-Control-Allow-Origin': origin,
+          // The binding's window is ten seconds. Shorter blind retries only
+          // spend more client work inside the same exhausted window.
+          'Retry-After': '10',
           'Vary': 'Origin',
         },
       });
@@ -69,7 +72,7 @@ const handler = {
     // Only success is worth keeping. Caching a 429 or a 502 would hold every
     // caller on a failure that lasted seconds for as long as the TTL.
     if (cacheable && resp.ok) {
-      const ttl = ttlFor((url.searchParams.get('path') || '').replace(/^\/+/, ''));
+      const ttl = ttlFor((url.searchParams.get('path') || '').replace(/^\/+/, ''), url.searchParams);
       headers.set('Cache-Control', `public, max-age=${ttl}`);
       const response = new Response(resp.body, { status: resp.status, headers });
       ctx.waitUntil(cache.put(key, response.clone()));

@@ -36,3 +36,17 @@ test('what changes rarely is held longer than what changes hourly', () => {
 test('an unrecognised path still gets a conservative TTL rather than none', () => {
   assert.ok(ttlFor('something/new') > 0);
 });
+
+test('historical discovery windows are cached for a day', () => {
+  const historical = new URLSearchParams({
+    'release_date.gte': '1996-09-21',
+    'release_date.lte': '1996-09-21',
+  });
+  const current = new URLSearchParams({
+    'release_date.gte': '2026-09-01',
+    'release_date.lte': new Date().toISOString().slice(0, 10),
+  });
+
+  assert.equal(ttlFor('discover/movie', historical), 86400);
+  assert.equal(ttlFor('discover/movie', current), 3600);
+});

@@ -74,10 +74,10 @@ export function tagCinemaReleases(genreRails, nowPlaying) {
   }));
 }
 
-async function loadGenreRail({ movieGenreId, tvGenreId }, hideKids) {
+async function loadGenreRail({ movieGenreId, tvGenreId }, hideKids, client = tmdb) {
   const [movieGenreRes, tvGenreRes] = await Promise.all([
-    movieGenreId   ? tmdb.discoverNewestByGenre('movie', movieGenreId).catch(() => null)     : Promise.resolve(null),
-    tvGenreId       ? tmdb.discoverNewestByGenre('tv', tvGenreId).catch(() => null)     : Promise.resolve(null),
+    movieGenreId ? client.discoverNewestByGenre('movie', movieGenreId).catch(() => null) : Promise.resolve(null),
+    tvGenreId ? client.discoverNewestByGenre('tv', tvGenreId).catch(() => null) : Promise.resolve(null),
   ]);
   const movies = (movieGenreRes?.results || []).map(m => ({ ...m, media_type: 'movie' }));
   const tv = (tvGenreRes?.results || []).map(s => ({ ...s, media_type: 'tv' }));
@@ -87,8 +87,56 @@ async function loadGenreRail({ movieGenreId, tvGenreId }, hideKids) {
     .slice(0, Math.max(MIN_RAIL_SIZE, 18));
 }
 
-/** @param {{ hideKids?: boolean }} [options] See {@link useDiscover} — the app supplies `hideKids`. */
-export function useNewReleases({ hideKids = false } = {}) {
+function prepareRecentReleases(recentReleases, hideKids) {
+  const recentByDate = excludeKidsContent([...(recentReleases?.tv || []), ...(recentReleases?.movies || [])]
+    .filter(isEnglishOriginTitle), hideKids)
+    .sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''));
+  const seenIds = new Set();
+  return recentByDate.filter(item => {
+    const key = `${item.media_type}-${item.id}`;
+    if (seenIds.has(key)) return false;
+    seenIds.add(key);
+    return true;
+  }).filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18));
+}
+
+/**
+ * Load either the full New Releases catalogue or the recent rail used on Home.
+ * Home must not pay for every per-genre discovery request it never renders.
+ *
+ * @param {{ hideKids?: boolean, includeGenreRails?: boolean, client?: typeof tmdb }} [options]
+ */
+export async function loadNewReleaseData({ hideKids = false, includeGenreRails = true, client = tmdb } = {}) {
+  const recentPromise = client.getRecentReleases(30, []);
+  if (!includeGenreRails) {
+    return { recent: prepareRecentReleases(await recentPromise, hideKids), genreRails: [] };
+  }
+
+  const genreDefinitions = buildGenreRailDefinitions(await client.getGenreCatalog());
+  const [recentReleases, nowPlaying, ...genreResults] = await Promise.all([
+    recentPromise,
+    client.getNowPlaying(),
+    ...genreDefinitions.map(rail => loadGenreRail(rail, hideKids, client)),
+  ]);
+
+  const genreRails = tagCinemaReleases(
+    genreDefinitions.map((rail, i) => ({
+      key: rail.key,
+      label: rail.label,
+      genreIds: rail.genreIds,
+      items: genreResults[i],
+    })),
+    nowPlaying?.results || [],
+  );
+
+  return { recent: prepareRecentReleases(recentReleases, hideKids), genreRails };
+}
+
+/**
+ * @param {{ hideKids?: boolean, includeGenreRails?: boolean }} [options]
+ * See {@link useDiscover} — the app supplies `hideKids`.
+ */
+export function useNewReleases({ hideKids = false, includeGenreRails = true } = {}) {
   const [data,    setData]    = useState({ recent: [], genreRails: [] });
   const [loading, setLoading] = useState(true);
 
@@ -100,37 +148,9 @@ export function useNewReleases({ hideKids = false } = {}) {
       setLoading(true);
       setData(emptyData);
       try {
-        const genreDefinitions = buildGenreRailDefinitions(await tmdb.getGenreCatalog());
-        const [recentReleases, nowPlaying, ...genreResults] = await Promise.all([
-          tmdb.getRecentReleases(30, []),
-          tmdb.getNowPlaying(),
-          ...genreDefinitions.map(rail => loadGenreRail(rail, hideKids)),
-        ]);
-
+        const nextData = await loadNewReleaseData({ hideKids, includeGenreRails });
         if (cancelled) return;
-
-        const recentByDate = excludeKidsContent([...(recentReleases?.tv || []), ...(recentReleases?.movies || [])]
-          .filter(isEnglishOriginTitle), hideKids)
-          .sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''));
-        const seenIds = new Set();
-        const recent = recentByDate.filter(item => {
-          const key = `${item.media_type}-${item.id}`;
-          if (seenIds.has(key)) return false;
-          seenIds.add(key);
-          return true;
-        }).filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18));
-
-        const genreRails = tagCinemaReleases(
-          genreDefinitions.map((rail, i) => ({
-            key: rail.key,
-            label: rail.label,
-            genreIds: rail.genreIds,
-            items: genreResults[i],
-          })),
-          nowPlaying?.results || [],
-        );
-
-        setData({ recent, genreRails });
+        setData(nextData);
       } catch (error) {
         console.error('New releases load failed:', error);
         if (!cancelled) setData(emptyData);
@@ -140,7 +160,7 @@ export function useNewReleases({ hideKids = false } = {}) {
     }
     load();
     return () => { cancelled = true; };
-  }, [hideKids]);
+  }, [hideKids, includeGenreRails]);
 
   return { data, loading };
 }
