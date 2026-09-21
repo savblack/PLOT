@@ -4,4 +4,4 @@ PLOT is a film and television companion for tracking what you watch, keeping a w
 
 This is the signed-in PLOT web app. Personal viewing history, lists, ratings, notes, and account details are private. Agents must not claim access to them without the member's authenticated, explicit permission.
 
-There is no public API for member data. PLOT's public endpoints are listed at https://theplot.tv/.well-known/api-catalog and cover newsletter signup only. For public product information, see https://theplot.tv/about.html and https://theplot.tv/plans.html.
+There is no public API for member data. PLOT's public endpoints are listed at https://theplot.tv/.well-known/api-catalog and cover newsletter signup only. For public product information, see https://theplot.tv/about and https://theplot.tv/plans.

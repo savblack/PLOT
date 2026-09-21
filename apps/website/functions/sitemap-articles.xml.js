@@ -10,7 +10,9 @@ export async function onRequest() {
   try {
     upstream = await fetch(UPSTREAM, { headers: { accept: 'application/xml', ...AUTH_HEADERS } });
   } catch {
-    return new Response(EMPTY, { status: 502, headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'no-store' } });
+    // Prefer an empty 200 over a 5xx: Search Console counts sitemap fetch
+    // failures as server errors and slows re-crawl of every article URL.
+    return new Response(EMPTY, { status: 200, headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'no-store' } });
   }
   const body = await upstream.text();
   return new Response(body, {
