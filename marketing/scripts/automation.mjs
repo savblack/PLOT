@@ -189,7 +189,7 @@ const runWeekly = (args) => {
     console.log('\nNo posts need copy.');
   }
 
-  run('Render posts onto the review desk', process.execPath, ['marketing/generate/generate.mjs']);
+  run('Render posts for review', process.execPath, ['marketing/generate/generate.mjs']);
 
   // Straight into Buffer, dated. Not gated on the Linear review: that review is
   // about the website article now, and holding the social queue behind it would
