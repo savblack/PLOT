@@ -22,9 +22,32 @@ function friendlyError(msg) {
   if (msg.includes('Email not confirmed'))          return AUTH_PAGE.activationEmailWaiting;
   if (msg.includes('User already registered'))      return AUTH_PAGE.accountAlreadyExists;
   if (msg.includes('Password should be at least'))  return AUTH_PAGE.weakPassword;
+  // Empty password reaching GoTrue — same user-facing fix as a short password.
+  if (msg.includes('Signup requires a valid password')) return AUTH_PAGE.weakPassword;
+  if (msg.includes('Anonymous sign-ins are disabled'))  return AUTH_PAGE.weakPassword;
   if (msg.includes('Unable to validate email'))     return AUTH_PAGE.invalidEmail;
   if (msg.includes('rate limit') || msg.includes('too many')) return AUTH_PAGE.rateLimited;
   return msg;
+}
+
+/**
+ * Read email/password from the live DOM, not React state.
+ *
+ * Password managers (and some mobile browsers) fill inputs without firing
+ * `onChange`, so controlled state can still be '' while the field looks filled.
+ * The form also uses `noValidate`, so HTML5 `required`/`minLength` never catch
+ * that. Reading `.value` at submit time is what actually gets sent to Supabase.
+ *
+ * @param {HTMLFormElement | null} form
+ * @returns {{ email: string, password: string }}
+ */
+function readAuthFormFields(form) {
+  const emailEl = form?.querySelector('#auth-email');
+  const passwordEl = form?.querySelector('#auth-password');
+  return {
+    email: (emailEl instanceof HTMLInputElement ? emailEl.value : '').trim(),
+    password: passwordEl instanceof HTMLInputElement ? passwordEl.value : '',
+  };
 }
 
 // Short, stable slugs for signup_submit_failed — group failures in PostHog
@@ -151,12 +174,35 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    // Prefer the live input values over React state. Password managers often
+    // fill the DOM without firing onChange; with `noValidate` on the form,
+    // that used to ship an empty password to GoTrue and show up in PostHog as
+    // signup_submit_failed reason=unknown ("Signup requires a valid password"
+    // / "Anonymous sign-ins are disabled").
+    const fields = readAuthFormFields(e.currentTarget);
+    const submittedEmail = fields.email;
+    const submittedPassword = fields.password;
+    setEmail(submittedEmail);
+    setPassword(submittedPassword);
+
+    if (!submittedEmail) {
+      setError(AUTH_PAGE.invalidEmail);
+      return;
+    }
+    if (mode !== 'forgot') {
+      if (!submittedPassword || (mode === 'signup' && submittedPassword.length < 6)) {
+        setError(AUTH_PAGE.weakPassword);
+        return;
+      }
+    }
+
+    setLoading(true);
     const supabase = await loadSupabase();
 
     if (mode === 'forgot') {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(submittedEmail, {
         redirectTo: getAuthCallbackUrl(),
         captchaToken,
       });
@@ -170,8 +216,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
     if (mode === 'login') {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: submittedEmail,
+        password: submittedPassword,
         options: { captchaToken },
       });
       if (error) {
@@ -191,13 +237,13 @@ export default function AuthPage({ initialMode = 'signup' }) {
       // Turnstile has persistently failed in this browser — route through
       // the bypass function's own bot mitigation instead of hard-blocking.
       if (captchaPersistentlyBlocked && !captchaToken) {
-        await submitViaBypass();
+        await submitViaBypass(submittedEmail, submittedPassword);
         return;
       }
 
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: submittedEmail,
+        password: submittedPassword,
         options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
       });
       if (error) {
@@ -209,12 +255,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
       else {
         // Identify on signup (not just login) so the anonymous pre-signup
         // session — carrying first-touch attribution — stitches to this user.
-        identifyUser(data.user?.id, { email: data.user?.email || email });
+        identifyUser(data.user?.id, { email: data.user?.email || submittedEmail });
         track(EVENTS.USER_SIGNED_UP, { method: 'email' });
         // Supabase returns an obfuscated user with no identities when the email
         // already exists. Only a genuinely new account may authorize the
         // referral follow mutation after signup.
-        if (data.user?.identities?.length) markSignupReferralPending(data.user.email || email);
+        if (data.user?.identities?.length) markSignupReferralPending(data.user.email || submittedEmail);
         // Confirm email is off, so signUp returns a live session immediately —
         // let them straight into the app instead of gating on the inbox click.
         // Users still get the confirmation email and can verify any time from
@@ -235,11 +281,16 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // timing, per-IP rate limit) and creates the account via the Admin API,
   // bypassing the need for a Turnstile token. On success it hands back a
   // confirmation link delivered only to the supplied mailbox.
-  const submitViaBypass = async () => {
+  const submitViaBypass = async (submittedEmail, submittedPassword) => {
     const supabase = await loadSupabase();
     const { data, error } = await supabase.functions.invoke('signup-bypass', {
       method: 'POST',
-      body: { email, password, website, formToken: formTokenRef.current },
+      body: {
+        email: submittedEmail,
+        password: submittedPassword,
+        website,
+        formToken: formTokenRef.current,
+      },
     });
     if (error) {
       setError(COMMON.genericError);
@@ -261,7 +312,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       setSuccess(true);
       return;
     }
-    markSignupReferralPending(email);
+    markSignupReferralPending(submittedEmail);
     setLoading(false);
     setSuccess(true);
   };
@@ -316,13 +367,19 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Passwordless: email a one-time sign-in link. Works for new and returning
   // users alike; the callback completes auth and reports the method.
   const sendMagicLink = async () => {
-    if (!email) { setError('Enter your email address first, then request a link.'); return; }
+    // Same autofill caveat as handleSubmit — read the live email field.
+    const emailEl = document.getElementById('auth-email');
+    const submittedEmail = (
+      emailEl instanceof HTMLInputElement ? emailEl.value : email
+    ).trim();
+    setEmail(submittedEmail);
+    if (!submittedEmail) { setError('Enter your email address first, then request a link.'); return; }
     setLoading(true);
     setError(null);
     try { sessionStorage.setItem('plot_auth_method', 'magic_link'); } catch { /* ignore */ }
     const supabase = await loadSupabase();
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: submittedEmail,
       options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
     });
     setLoading(false);
@@ -455,6 +512,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
               )}
 
               <form onSubmit={handleSubmit} className="auth-form" noValidate>
+                {/* noValidate: we show branded errors instead of native tooltips.
+                    Client-side checks in handleSubmit replace required/minLength,
+                    and read the live DOM so password-manager autofill is not lost. */}
                 {error && (
                   <div className={error.startsWith('__warning__') ? 'auth-warning' : 'auth-error'}>
                     {error.replace('__warning__', '')}

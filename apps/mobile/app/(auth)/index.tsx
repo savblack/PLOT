@@ -130,6 +130,9 @@ function friendlyAuthError(msg?: string) {
   if (msg.includes('Email not confirmed'))         return 'Almost in! Your activation email is waiting in your inbox.';
   if (msg.includes('User already registered'))     return AUTH_PAGE.accountAlreadyExists;
   if (msg.includes('Password should be at least')) return AUTH_PAGE.weakPassword;
+  // Empty password reaching GoTrue — same user-facing fix as a short password.
+  if (msg.includes('Signup requires a valid password')) return AUTH_PAGE.weakPassword;
+  if (msg.includes('Anonymous sign-ins are disabled'))  return AUTH_PAGE.weakPassword;
   if (msg.includes('Unable to validate email'))    return AUTH_PAGE.invalidEmail;
   if (msg.includes('rate limit') || msg.includes('too many')) return AUTH_PAGE.rateLimited;
   return msg;
