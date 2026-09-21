@@ -79,6 +79,13 @@ Worker caches upstream responses (`apps/web/workers/tmdb-proxy/src/cache.js`),
 which caps what an unwanted caller can cost at one upstream request per query
 per TTL. It ships on its own `wrangler deploy`, not with this site.
 
+## Public changelog
+
+`/changelog` is the public product changelog (newest first, New / Improved /
+Fixed). Process and the entry template live in `docs/ops/changelog.md`. Edit
+`changelog.html` (and mirror strings in `copy/changelog.js`) on the same day as
+each public ship.
+
 ## Agent-facing files
 
 Beyond `llms.txt` and the API catalog above:

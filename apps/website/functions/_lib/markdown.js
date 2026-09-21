@@ -3,6 +3,7 @@
 function homepageMarkdown(showPricingPage) {
   const moreInfo = [
     '- [About plot](https://theplot.tv/about)',
+    '- [Changelog](https://theplot.tv/changelog)',
     ...(showPricingPage ? ['- [Plans](https://theplot.tv/plans)'] : []),
     '- [Privacy policy](https://theplot.tv/privacy)',
     '- [Terms of service](https://theplot.tv/terms)',

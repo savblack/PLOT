@@ -53,21 +53,21 @@
     }
   </script>
   <!-- End Google Tag Manager -->
-  <title>About — plot</title>
-  <meta name="description" content="plot is a movie and TV journal built for anyone who loves movies and TV. A note from the solo builder behind it." />
-  <link rel="canonical" href="https://theplot.tv/about" />
+  <title>Changelog — plot</title>
+  <meta name="description" content="What is new, improved, and fixed in plot. Dated release notes for the movie and TV companion." />
+  <link rel="canonical" href="https://theplot.tv/changelog" />
   <meta name="theme-color" content="#ffffff" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="plot" />
-  <meta property="og:title" content="About — plot" />
-  <meta property="og:description" content="plot is a movie and TV journal built for anyone who loves movies and TV. A note from the solo builder behind it." />
+  <meta property="og:title" content="Changelog — plot" />
+  <meta property="og:description" content="What is new, improved, and fixed in plot. Dated release notes for the movie and TV companion." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:url" content="https://theplot.tv/about" />
+  <meta property="og:url" content="https://theplot.tv/changelog" />
 
   <!-- Favicon / app icon -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
@@ -98,11 +98,8 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Navbar styling lives in the shared /nav.css (matches the home page). */
-
-    /* ── Content ─────────────────────────────────────────────── */
     .page-wrap {
-      max-width: 680px;
+      max-width: 720px;
       margin: 0 auto;
       padding: 120px 2rem 80px;
     }
@@ -118,61 +115,80 @@
 
     h1 {
       font-family: var(--display);
-      font-size: clamp(2.4rem, 6vw, 3.4rem);
+      font-size: clamp(2rem, 4vw, 2.8rem);
       font-weight: 400;
       letter-spacing: -0.02em;
-      line-height: 1.1;
+      line-height: 1.15;
       color: var(--text);
       margin-bottom: 0.5rem;
     }
 
     .page-meta {
-      font-size: 0.95rem;
-      font-family: var(--display);
+      font-size: 0.82rem;
       color: var(--text-secondary);
       margin-bottom: 3rem;
       padding-bottom: 2rem;
       border-bottom: 1px solid rgba(0,0,0,0.08);
     }
 
-    /* Narrative prose reads as a letter — left-aligned, roomy, no justify
-       rivers. The lead paragraph gets a touch more size to pull you in. */
-    p {
-      font-size: 1rem;
+    .page-intro {
+      font-size: 0.93rem;
       color: #333;
-      line-height: 1.75;
-      margin-bottom: 1.35rem;
-      text-align: left;
+      margin-bottom: 2.5rem;
     }
-    .lead { font-size: 1.12rem; color: var(--text); line-height: 1.6; }
-    .credits-title {
-      font-size: 0.72rem;
+
+    .changelog-entry {
+      padding-bottom: 2.5rem;
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .changelog-entry:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .changelog-entry-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.4rem 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .changelog-entry h2 {
+      font-family: var(--sans);
+      font-size: 1.15rem;
       font-weight: 600;
-      letter-spacing: 0.1em;
+      color: var(--text);
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .changelog-entry time {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+
+    .changelog-entry h3 {
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-secondary);
-      margin: 3rem 0 0.75rem;
-      padding-top: 2rem;
-      border-top: 1px solid var(--border);
+      margin: 1.4rem 0 0.55rem;
     }
-    .credits-intro { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem; }
-    .credits-list { list-style: none; padding: 0; margin: 0; }
-    .credits-list li {
-      font-size: 0.85rem;
-      line-height: 1.5;
-      color: var(--text-secondary);
-      padding: 0.6rem 0;
-      border-top: 1px solid var(--border);
+
+    .page-wrap ul {
+      font-size: 0.93rem;
+      color: #333;
+      margin: 0 0 0.25rem 1.15rem;
     }
-    .credits-list strong { color: var(--text); font-weight: 600; }
-    p strong { color: var(--text); font-weight: 600; }
+    .page-wrap ul li { margin-bottom: 0.45rem; }
 
     a { color: var(--text); }
     a:hover { opacity: 0.7; }
-
-    @media (max-width: 600px) {
-      .nav-links { gap: 1rem; }
-    }
 
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
@@ -183,7 +199,7 @@
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PC72PHBN"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
+<!-- End Google Tag Manager -->
 
   <nav id="navbar">
     <a href="/" class="nav-logo">plot</a>
@@ -198,44 +214,42 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </nav>
 
   <main class="page-wrap">
-    <p class="page-label">About</p>
-    <h1>About plot</h1>
-    <p class="page-meta">A note from the person building it.</p>
+    <p class="page-label">Product</p>
+    <h1>Changelog</h1>
+    <p class="page-meta">What shipped in plot, newest first.</p>
 
-    <p class="lead">You don't have to call yourself a cinephile to belong here. plot is built for anyone who just genuinely loves movies and TV. That's it.</p>
+    <p class="page-intro">Every public ship lands here the same day, in plain language. Entries use <strong>New</strong>, <strong>Improved</strong>, and <strong>Fixed</strong>.</p>
 
-    <p>plot started because of a real lack of enthusiasm for the apps that already exist. They're clunky, seemingly only ever in dark mode, and bluntly, no fun to look at. A place to track what you watch shouldn't have to be hard on the eyes or a chore to use.</p>
+    <article class="changelog-entry" id="2026.9.21">
+      <header class="changelog-entry-header">
+        <h2>2026.9.21</h2>
+        <time datetime="2026-09-21">21 September 2026</time>
+      </header>
 
-    <p>Then there was the pressure. The pressure of writing reviews, of performing how you felt about something in the "right" way. plot is for people who love TV, who love movies, who love the cinema and aren't afraid to say exactly how something made them feel. If all you have to say about a movie is that it made you cry 14 separate times, firstly, shout out to my emotional baddies, and secondly, thanks for the heads up! That one's getting saved for when a good cry is needed. Sometimes the only review worth writing is "I fucking loved that", and then moving on.</p>
+      <h3>New</h3>
+      <ul>
+        <li>A public changelog at theplot.tv/changelog, so you can see what shipped without digging store notes</li>
+        <li>A collapsible navigation rail on web that gives the page you are on more room</li>
+        <li>A redesigned New Releases page with clearer browsing and filters</li>
+        <li>A refreshed notifications layout that is easier to scan</li>
+      </ul>
 
-    <p>That's why plot caps the characters in your reviews. The point is to capture your immediate, true reaction, the way you would in a journal. Nobody delivers a measured critique the second the credits roll. You have a feeling. That's what movies and TV are designed to give us. They're not made to be picked apart frame by frame.</p>
+      <h3>Improved</h3>
+      <ul>
+        <li>Mobile navigation and sheets feel tighter and more consistent across the app</li>
+        <li>List controls and recovery when something goes wrong mid-edit</li>
+        <li>More film and TV title pages for search and sharing</li>
+        <li>Saving an article from What's On hands off more cleanly into the app</li>
+      </ul>
 
-    <p>plot is here to bring the feeling back. The joy of watching and weeding out the performance of it.</p>
-
-    <p>But that's only half the story. Building in this space, you notice the small frustrations you'd usually ignore. Never knowing when a show drops or the next episode lands. Forgetting the movie a friend swore by. The nightly hunt across seven platforms only to give up and pick the first thing on Netflix.</p>
-
-    <p>plot remembers all of it. It builds you your own movie and TV calendar, so there's always something to look forward to. Share it with your family so they know not to call you during the Summer House reunion. And when you don't know what to watch, search your plot to see what's hot across platforms in one place. No loading screens. No logging in. That's the old way. plot is the way forward.</p>
-
-    <p>plot is built by one person. A solo builder. Someone who wanted a better way to track what I love. Building plot is both exciting and scary, and I've got a lot more I want to do: AI-powered recommendations, a fully personalised feed, plot profiles to share what you're watching with friends, and eventually plot watch parties to watch together in real time. I'm building as fast as I can and as best as I can around a full-time job.</p>
-
-    <p>I value each and every person who takes the time to sign up and use plot. Any feedback, good or bad, and any feature request or bug you spot is incredibly helpful to me. It's the core driver behind every improvement I make in the app. You can share your thoughts anytime via the settings. What has already shipped is on the <a href="/changelog" data-cta="about-changelog">changelog</a>.</p>
-
-    <p>plot is still early, so if you're using it now, you're an early user too, bugs and all. When something breaks or feels off, tell me. That feedback is what's shaped almost everything here and it's what'll keep shaping it. <strong>I don't take that kind of patience lightly, and it's already more than enough.</strong></p>
-
-    <p>If you ever want to do more than that, plot is on <a href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener" data-cta="about-kofi">Ko-fi</a>. It helps cover what it actually costs to run, and it buys me more time to keep building.</p>
-
-    <p>Thank you for reading this. Thank you for considering plot. And if you're already a user, thank you for backing a solo builder trying to make a life out of building beautiful things.</p>
-
-    <!-- Credits. TMDB's API terms require their notice verbatim and ask for it on
-         an About or Credits surface rather than only in the legal pages. Keep in
-         sync with copy/about.js and with the app's Settings credits group. -->
-    <h2 class="credits-title">Credits</h2>
-    <p class="credits-intro">plot is built on data from these sources.</p>
-    <ul class="credits-list">
-      <li><strong>TMDB:</strong> This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
-      <li><strong>TVmaze:</strong> Episode air dates and the TV guide use the TVmaze API.</li>
-      <li><strong>OMDb:</strong> Critic scores are retrieved through the OMDb API.</li>
-    </ul>
+      <h3>Fixed</h3>
+      <ul>
+        <li>Poster quick actions on lists working again</li>
+        <li>Genre filtering on New Releases completing as expected</li>
+        <li>Favourites shelf staying compact on profiles</li>
+        <li>Navigation rail and title panel polish that left controls misaligned</li>
+      </ul>
+    </article>
   </main>
 
   <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
@@ -273,5 +287,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <script src="js/config.js"></script>
   <script src="js/nav.js"></script>
+
 </body>
 </html>
