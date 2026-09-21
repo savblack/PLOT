@@ -4004,8 +4004,9 @@ svg { stroke-width: 1.5; }
    dark mode), so a white ✕ vanishes against it and the panel looks stuck.
    Fall back to the regular text colour there. */
 .panel-header-wrap--no-backdrop .panel-close-btn {
-  background: var(--surface-sunken);
+  background: transparent;
   color: var(--text-primary);
+  filter: none;
 }
 .panel-close-btn svg {
   width: 16px;
@@ -4427,6 +4428,9 @@ svg { stroke-width: 1.5; }
 }
 .panel-take-head[aria-expanded="false"] > svg:last-child { transform: rotate(-90deg); }
 .panel-take-body { padding-bottom: 0.9rem; }
+.panel-action-scrim,
+.panel-action-heading,
+.panel-action-handle { display: none; }
 .panel-take-body .review-slip,
 .panel-take-body .review-empty { border-top: 1px solid var(--border); }
 .panel-take-note {
@@ -4449,6 +4453,58 @@ svg { stroke-width: 1.5; }
      instead of being pushed to the right of the row. */
   .panel-actions-row { flex-wrap: wrap; }
   .panel-icon-group { margin-left: 0; }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .panel-action-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+  }
+  .panel-action-scrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border: 0;
+    background: rgba(0, 0, 0, 0.42);
+  }
+  .panel-action-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 50dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 18px 18px 0 0;
+    background: var(--surface);
+    box-shadow: var(--shadow-overlay);
+    animation: nestedSheetIn 0.28s var(--ease);
+  }
+  .panel-action-handle {
+    display: block;
+    width: 32px;
+    height: 3px;
+    margin: 10px auto 5px;
+    border-radius: 3px;
+    background: var(--border-strong);
+  }
+  .panel-action-heading {
+    min-height: 58px;
+    padding: 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-action-heading h3 { margin: 0; font-family: var(--font-display); font-size: 1.25rem; }
+  .panel-action-close { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; color: var(--text-secondary); }
+  .panel-action-close svg { width: 16px; height: 16px; }
+  .panel-action-sheet .panel-take-body { min-height: 0; padding: 1rem; overflow-y: auto; overscroll-behavior: contain; }
+  .panel-list-sheet { max-height: 50dvh !important; }
+  @keyframes nestedSheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
 }
 
 .panel-section-title {
@@ -7129,30 +7185,35 @@ a.provider-chip--link:hover {
 
   /* ── Bottom sheet on mobile ── */
   .panel {
-    top: 0;
+    top: auto;
     right: 0;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 100dvh;
+    height: 67dvh;
     border-radius: 20px 20px 0 0;
     box-shadow: var(--shadow-overlay);
     animation: panelSheetIn 0.38s var(--ease);
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    overscroll-behavior-y: contain;
+    background: var(--surface);
+    will-change: transform;
+    transition: height 0.34s var(--ease), transform 0.34s var(--ease);
   }
 
   .panel.closing {
-    animation: panelSheetOut 0.28s var(--ease) forwards;
+    animation: none;
+    transform: translate3d(0, 100%, 0);
+    transition: transform 0.28s var(--ease);
   }
+
+  .panel.panel--mobile-collapsed { height: 67dvh; }
+  .panel.panel--mobile-expanded { height: 100dvh; }
+  .panel.is-dragging { animation: none; transition: none; }
 
   @keyframes panelSheetIn {
     from { transform: translateY(100%); }
     to   { transform: translateY(0); }
-  }
-
-  @keyframes panelSheetOut {
-    from { transform: translateY(0); }
-    to   { transform: translateY(100%); }
   }
 
   /* Drag handle pill, overlaid on the header image — doubles as the
@@ -7180,6 +7241,9 @@ a.provider-chip--link:hover {
     height: 44px;
     top: 0.5rem;
     left: 0.5rem;
+    border-radius: 0;
+    background: transparent;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7));
   }
 
   .panel-body {
@@ -7841,30 +7905,38 @@ a.provider-chip--link:hover {
   position: absolute;
   bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   width: 100%;
-  max-height: calc(90dvh - 60px - env(safe-area-inset-bottom, 0px));
+  height: min(50dvh, calc(100dvh - 60px - env(safe-area-inset-bottom, 0px)));
   display: flex;
   flex-direction: column;
   overflow: hidden;
   overscroll-behavior: contain;
   background: var(--surface);
   border-radius: 18px 18px 0 0;
-  padding: 10px 20px 20px;
+  padding: 0 20px 20px;
+  transform: translateY(var(--sheet-drag-y, 0));
+  transition: height 0.28s var(--ease), transform 0.28s var(--ease);
+  box-shadow: var(--shadow-overlay);
 }
+.mobile-controls-sheet--expanded { height: min(67dvh, calc(100dvh - 60px - env(safe-area-inset-bottom, 0px))); }
+.mobile-controls-sheet.is-dragging { transition: none; }
 .mobile-controls-scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .mobile-controls-handle, .mobile-controls-heading, .mobile-controls-footer { flex-shrink: 0; }
-.mobile-controls-handle { width: 32px; height: 3px; border-radius: 3px; background: var(--border-strong); margin: 0 auto 14px; }
-.mobile-controls-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.mobile-controls-heading h2 { font-family: var(--font-display); font-size: 26px; font-weight: 400; }
+.mobile-controls-grab { flex-shrink: 0; touch-action: none; }
+.mobile-controls-handle { width: 32px; height: 3px; border-radius: 3px; background: var(--border-strong); margin: 10px auto 5px; }
+.mobile-controls-heading { display: flex; align-items: center; justify-content: space-between; min-height: 62px; border-bottom: 1px solid var(--border); }
+.mobile-controls-heading h2 { margin: 0; font-family: var(--font-display); font-size: 25px; font-weight: 700; letter-spacing: var(--font-display-tracking); }
 .mobile-controls-close { width: 44px; height: 44px; border: 0; background: none; color: var(--text-secondary); font-size: 24px; }
-.mobile-controls-option { width: 100%; min-height: 52px; padding: 12px 0; display: flex; align-items: center; justify-content: space-between; border: 0; border-top: 1px solid var(--border); background: none; font: inherit; font-size: 14px; color: var(--text-secondary); text-align: left; }
-.mobile-controls-option[aria-pressed="true"] { color: var(--text-primary); font-weight: 600; }
-.mobile-controls-option span { color: var(--accent); }
-.mobile-controls-group { border: 0; padding: 0; margin: 16px 0; min-width: 0; }
-.mobile-controls-group legend { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
-.mobile-controls-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.mobile-controls-chips button { min-height: 44px; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); background: none; padding: 8px 14px; font: inherit; font-size: 13px; color: var(--text-secondary); }
-.mobile-controls-chips button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); background: var(--accent-dim); }
-.mobile-controls-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; }
+.mobile-controls-group { border: 0; padding: 0; margin: 0; min-width: 0; }
+.mobile-controls-group legend { width: 100%; padding: 20px 0 8px; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+.mobile-controls-rows { display: grid; grid-template-columns: minmax(0, 1fr); }
+.mobile-controls-rows--two { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
+.mobile-controls-rows--two .mobile-controls-row--all { grid-column: 1 / -1; }
+.mobile-controls-row { width: 100%; min-height: 48px; padding: 0 2px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 0; border-top: 1px solid var(--border); background: none; color: var(--text-secondary); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.mobile-controls-row:first-child { border-top: 0; }
+.mobile-controls-row[aria-pressed="true"] { color: var(--text-primary); font-weight: 600; }
+.mobile-controls-tick { width: 22px; color: transparent; font-weight: 700; text-align: center; }
+.mobile-controls-row[aria-pressed="true"] .mobile-controls-tick { color: var(--accent); }
+.mobile-controls-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; margin-top: 10px; border-top: 1px solid var(--border); }
 .mobile-controls-footer .btn { min-height: 44px; background: var(--accent); color: #fff; }
 .mobile-controls-reset { min-height: 44px; border: 0; background: none; font: inherit; font-size: 13px; color: var(--text-secondary); }
 .mobile-controls-dialog button { cursor: pointer; }
@@ -7876,6 +7948,7 @@ a.provider-chip--link:hover {
   .app-header { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; padding-inline: 12px; }
   .app-header .icon-btn { position: relative; width: 44px; height: 44px; }
   .app-header .app-page-title { position: static; transform: none; max-width: none; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .app-main-inner { padding-top: 16px; }
   .app-main { bottom: 0; }
   .app-shell:has(.mobile-controls-anchor) .app-main { bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
   .scroll-top-btn { bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
@@ -7883,12 +7956,11 @@ a.provider-chip--link:hover {
   .desktop-page-filter, .cal-toolbar .cal-scope { display: none; }
   .page-toolbar-date { display: none; }
   .page-toolbar, .page-toolbar.cal-toolbar { padding: 0; height: 0; margin: 0; }
-  .page-toolbar.cal-toolbar--search {
-    height: auto;
-    padding: 12px var(--gut) 0;
-  }
+  .page-toolbar.cal-toolbar--search { height: 0; padding: 0; }
   .cal-toolbar-controls { width: 100%; }
-  .cal-search { width: 100%; }
+  .hist-search,
+  .home-search-trigger,
+  .list-page-search { display: none; }
   .mobile-page-controls { position: fixed; bottom: 0; left: 0; right: 0; z-index: 210; display: flex; justify-content: center; align-items: center; height: calc(60px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--border); background: var(--surface); }
   .mobile-controls-trigger { min-width: 124px; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 9px; background: none; border: 0; color: var(--text-primary); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
   .mobile-controls-trigger svg { width: 12px; height: 12px; stroke: var(--text-muted); stroke-width: 1.7; fill: none; }

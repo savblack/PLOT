@@ -179,6 +179,7 @@ export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, set
             {
               heading: MEDIA.genreHeading,
               allLabel: MEDIA.allGenres,
+              columns: 2,
               options: genres.map(genre => ({ id: genre.id, label: genre.name })),
               value: genreFilters,
               onChange: setGenreFilters,

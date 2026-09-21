@@ -4,6 +4,7 @@
 // the web app and the Storybook Content page look for copy.
 
 export const MEDIA_PANEL = {
+  titleDetails: 'Title details',
   talentFallback: 'Talent',
   episodesLoadError: 'Could not load episodes. Try again later.',
   noEpisodesAvailable: 'No episodes available yet.',

@@ -9,8 +9,10 @@ import { useFilteredUpcoming } from '../hooks/useFilteredUpcoming.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
 import { COMMON } from '../copy/common.js';
+import { MEDIA } from '../copy/media.js';
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
 import { titleMatchesQuery } from '@plot/core/media.js';
+import { TYPE_ROWS } from './sideFilterRows.js';
 import CalendarSidePanel from './CalendarSidePanel.jsx';
 import CalendarStream from './CalendarStream.jsx';
 import CalendarEventRows from './CalendarEventRows.jsx';
@@ -171,7 +173,35 @@ export default function CalendarView() {
         </div>
       </div>
 
-      <MobilePageControls title={MOBILE_CONTROLS.calendarView} label={CALENDAR_VIEW.scope[view]} value={view} onChange={setView} options={[{ id: 'mine', label: CALENDAR_VIEW.scope.mine }, { id: 'all', label: CALENDAR_VIEW.scope.all }]} />
+      <MobilePageControls
+        title={MOBILE_CONTROLS.filters}
+        groups={[
+          {
+            heading: MOBILE_CONTROLS.calendarView,
+            mode: 'single',
+            value: view,
+            defaultValue: 'mine',
+            onChange: setView,
+            options: [{ id: 'mine', label: CALENDAR_VIEW.scope.mine }, { id: 'all', label: CALENDAR_VIEW.scope.all }],
+          },
+          {
+            heading: MEDIA.typeHeading,
+            value: typeFilters,
+            defaultValue: ALL_TYPES,
+            onChange: setTypeFilters,
+            options: TYPE_ROWS,
+          },
+          {
+            heading: MEDIA.genreHeading,
+            allLabel: MEDIA.allGenres,
+            columns: 2,
+            value: genreFilters,
+            defaultValue: [],
+            onChange: setGenreFilters,
+            options: genres.map(genre => ({ id: genre.id, label: genre.name })),
+          },
+        ]}
+      />
 
       <div className="cal-page">
         <div className="cal-body">

@@ -41,7 +41,7 @@ export function TypeGenreFilter({ ariaLabel, typeFilters, setTypeFilters, genreF
       label={filterSummary(typeFilters, genreFilters, genres)}
       groups={[
         { heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes, options: TYPE_OPTIONS, value: typeFilters, onChange: setTypeFilters, defaultValue: ALL_TYPES },
-        { heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres, options: genres.map(g => ({ id: g.id, label: g.name })), value: genreFilters, onChange: setGenreFilters },
+        { heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres, columns: 2, options: genres.map(g => ({ id: g.id, label: g.name })), value: genreFilters, onChange: setGenreFilters },
       ]}
     />
   );

@@ -16,8 +16,10 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { IconChevronLeft, IconChevronRight, IconSearch } from './navIcons.jsx';
 import SideFilters, { FilterRow } from './SideFilters.jsx';
+import MobilePageControls from './MobilePageControls.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { HISTORY_VIEW as T } from '../copy/historyView.js';
+import { MEDIA } from '../copy/media.js';
 
 /* History is its own page: the poster shelf, one month at a time, with a
    sticky column of small cards beside it that say something about the year
@@ -349,6 +351,48 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
           </label>
         </div>
       </div>
+
+      <MobilePageControls
+        groups={[
+          {
+            heading: 'Year',
+            mode: 'single',
+            value: activeYear,
+            defaultValue: years[0],
+            onChange: onYear,
+            options: [...years].reverse().map(year => ({ id: year, label: String(year) })),
+          },
+          {
+            heading: MEDIA.typeHeading,
+            value: types,
+            defaultValue: ALL_HISTORY_TYPES,
+            onChange: setTypes,
+            options: HISTORY_TYPE_ROWS,
+          },
+          {
+            heading: MEDIA.genreHeading,
+            allLabel: MEDIA.allGenres,
+            columns: 2,
+            value: genres,
+            defaultValue: [],
+            onChange: setGenres,
+            options: genreOptions.map(genre => ({ id: genre.id, label: genre.name })),
+          },
+          {
+            heading: T.filterStatus,
+            value: [reviewed ? 'reviewed' : null, dnf ? 'dnf' : null].filter(Boolean),
+            defaultValue: [],
+            onChange: values => {
+              setReviewed(values.includes('reviewed'));
+              setDnf(values.includes('dnf'));
+            },
+            options: [
+              { id: 'reviewed', label: T.filterReviewed },
+              { id: 'dnf', label: T.filterDidntFinish },
+            ],
+          },
+        ]}
+      />
 
       <div className="hist-body">
         <aside className="hist-side">

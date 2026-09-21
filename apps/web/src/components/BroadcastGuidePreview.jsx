@@ -9,6 +9,7 @@ import { GUIDE_REGIONS, guideDay, isOnNow, broadcastTime, broadcastDayLabel, gro
 import { useBroadcastAgenda } from '@plot/core/useBroadcastAgenda.js';
 import { BROADCAST_GUIDE as COPY } from '@plot/core/copy/broadcastGuide.js';
 import { FilterRow } from './SideFilters.jsx';
+import MobilePageControls from './MobilePageControls.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import './BroadcastGuidePreview.css';
 
@@ -147,6 +148,45 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
         <label className="hist-search guide-search"><SearchIcon /><input type="search" placeholder={COPY.search} aria-label={COPY.search} value={query} onChange={event => setQuery(event.target.value)} /></label>
       </div>
     </div>
+
+    <MobilePageControls
+      groups={[
+        {
+          heading: COPY.title,
+          mode: 'single',
+          value: mode,
+          defaultValue: 'all',
+          onChange: next => { setMode(next); if (next === 'now') setOffset(0); },
+          options: [{ id: 'all', label: COPY.allDay }, { id: 'now', label: COPY.now }],
+        },
+        {
+          heading: COPY.week,
+          mode: 'single',
+          value: offset,
+          defaultValue: 0,
+          onChange: pickDay,
+          options: Array.from({ length: market.days }, (_, index) => {
+            const day = guideDay(today, index);
+            return { id: index, label: broadcastDayLabel(day, { weekday: 'long', day: 'numeric', month: 'short' }) };
+          }),
+        },
+        {
+          heading: COPY.jumpToTime,
+          mode: 'single',
+          value: jumpTarget,
+          defaultValue: '',
+          onChange: next => { setJumpTarget(next); if (next) setMode('all'); },
+          options: [{ id: '', label: COPY.chooseTime }, ...jumpHours.map(group => ({ id: group.key, label: group.label }))],
+        },
+        {
+          heading: `${COPY.channels} · ${market.name}`,
+          value: visibleChannels.map(channel => channel.id),
+          defaultValue: channels.map(channel => channel.id),
+          onChange: persist,
+          options: channels.map(channel => ({ id: channel.id, label: channel.name })),
+        },
+      ]}
+    />
 
     <div className="cal-body">
       <aside className="cal-side guide-side">

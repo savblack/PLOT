@@ -13,6 +13,7 @@ import { localDateStr } from '../utils/date.js';
 import { getEpisodeGuideState } from '../utils/episodeProgress.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatus.js';
 import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
+import { nextSheetSnap } from '../utils/mobileSheets.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
@@ -697,11 +698,44 @@ function pillButtonStyle(variant) {
 function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note, dnf, watchedAt, onSave, onClear, user }) {
   const { privateNotes } = useApp();
   const [open, setOpen] = useState(false);
+  const actionSheet = useRef(null);
   const hasPrivateNote = !!privateNotes?.rows?.[privateNoteKey(itemId, itemType)]?.note;
   const hasTake = !!(rating || note.trim() || dnf);
   const preview = hasTake
     ? (note.trim() || MEDIA_PANEL.watchedOnDate(formatWatchedOn(watchedAt)))
     : MEDIA_PANEL.takeHint;
+
+  useEffect(() => {
+    if (!open || !window.matchMedia('(hover: none), (pointer: coarse)').matches) return undefined;
+    const sheet = actionSheet.current;
+    const opener = document.activeElement;
+    const focusable = () => [...sheet.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')];
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const elements = focusable();
+      if (!elements.length) return;
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    sheet.addEventListener('keydown', onKeyDown);
+    focusable()[0]?.focus();
+    return () => {
+      sheet.removeEventListener('keydown', onKeyDown);
+      opener?.focus?.();
+    };
+  }, [open]);
 
   return (
     <div className={`panel-take${open ? ' panel-take--open' : ''}`}>
@@ -725,21 +759,31 @@ function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note,
       </button>
 
       {open && (
-        <div className="panel-take-body">
-          {watched ? (
-            <TitleReview
-              entry={watchedEntry}
-              rating={rating}
-              note={note}
-              dnf={dnf}
-              watchedAt={watchedAt}
-              onSave={onSave}
-              onClear={onClear}
-            />
-          ) : (
-            <p className="panel-take-note">{MEDIA_PANEL.takeNeedsWatch}</p>
-          )}
-          {user && <PrivateNote id={itemId} type={itemType} title={title} />}
+        <div className="panel-action-layer">
+          <button type="button" className="panel-action-scrim" aria-label={COMMON.close} onClick={() => setOpen(false)} />
+          <section ref={actionSheet} className="panel-action-sheet" role="dialog" aria-modal="true" aria-label={MEDIA_PANEL.leaveNoteOrReview}>
+            <div className="panel-action-handle" aria-hidden="true" />
+            <div className="panel-action-heading">
+              <h3>{MEDIA_PANEL.leaveNoteOrReview}</h3>
+              <button type="button" className="panel-action-close" onClick={() => setOpen(false)} aria-label={COMMON.close}><CloseIcon /></button>
+            </div>
+            <div className="panel-take-body">
+              {watched ? (
+                <TitleReview
+                  entry={watchedEntry}
+                  rating={rating}
+                  note={note}
+                  dnf={dnf}
+                  watchedAt={watchedAt}
+                  onSave={onSave}
+                  onClear={onClear}
+                />
+              ) : (
+                <p className="panel-take-note">{MEDIA_PANEL.takeNeedsWatch}</p>
+              )}
+              {user && <PrivateNote id={itemId} type={itemType} title={title} />}
+            </div>
+          </section>
         </div>
       )}
     </div>
@@ -836,6 +880,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
       onClose={onClose}
       onBack={showCreate ? leaveCreate : undefined}
       contentClassName="responsive-dialog-content--flush"
+      surfaceClassName="panel-list-sheet"
       footer={footer}
       zIndex={1100}
     >
@@ -1210,34 +1255,51 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [closing, onClose, showListSheet, navStack]); // eslint-disable-line react-hooks/exhaustive-deps -- goBack is a stable closure over local state, re-declaring it every render would thrash this listener
 
-  // Swipe-down-to-close (mobile/tablet bottom sheet only)
-  const [dragY, setDragY] = useState(0);
-  const dragStateRef = useRef({ active: false, startY: 0, startTime: 0 });
+  // Mobile title details open at two-thirds height, can expand to full height,
+  // then collapse or dismiss in order. Pointer motion writes straight to the
+  // panel transform so a finger drag never waits on a React render.
+  const [sheetSnap, setSheetSnap] = useState('collapsed');
+  const panelRef = useRef(null);
+  const dragStateRef = useRef({ active: false, startY: 0, startTime: 0, snap: 'collapsed' });
+
+  useEffect(() => { setSheetSnap('collapsed'); }, [itemId]); // eslint-disable-line react-hooks/set-state-in-effect -- each newly opened title starts at the preview snap
 
   const isBottomSheet = () =>
     typeof window !== 'undefined' && window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
   const handleDragStart = useCallback((e) => {
     if (e.pointerType === 'mouse' || !isBottomSheet()) return;
-    dragStateRef.current = { active: true, startY: e.clientY, startTime: Date.now() };
+    dragStateRef.current = { active: true, startY: e.clientY, startTime: performance.now(), snap: sheetSnap };
     e.currentTarget.setPointerCapture?.(e.pointerId);
-  }, []);
+    panelRef.current?.classList.add('is-dragging');
+  }, [sheetSnap]);
 
   const handleDragMove = useCallback((e) => {
-    if (!dragStateRef.current.active) return;
+    if (!dragStateRef.current.active || !panelRef.current) return;
     const delta = e.clientY - dragStateRef.current.startY;
-    setDragY(delta > 0 ? delta : 0);
+    const baseHeight = window.innerHeight * (dragStateRef.current.snap === 'expanded' ? 1 : 0.67);
+    if (dragStateRef.current.snap === 'collapsed' && delta > 0) {
+      panelRef.current.style.transform = `translate3d(0, ${delta}px, 0)`;
+      return;
+    }
+    panelRef.current.style.height = `${Math.min(window.innerHeight, Math.max(window.innerHeight * 0.5, baseHeight - delta))}px`;
   }, []);
 
-  const endDrag = useCallback(() => {
+  const endDrag = useCallback((e) => {
     if (!dragStateRef.current.active) return;
-    const delta = dragY;
-    const elapsed = Date.now() - dragStateRef.current.startTime;
+    const delta = e.clientY - dragStateRef.current.startY;
+    const elapsed = performance.now() - dragStateRef.current.startTime;
     const velocity = delta / Math.max(elapsed, 1);
+    const next = nextSheetSnap({ snap: dragStateRef.current.snap, delta, velocity });
     dragStateRef.current.active = false;
-    setDragY(0);
-    if (delta > 120 || velocity > 0.5) onClose();
-  }, [dragY, onClose]);
+    panelRef.current?.classList.remove('is-dragging');
+    if (panelRef.current) {
+      panelRef.current.style.transform = '';
+      panelRef.current.style.height = '';
+    }
+    if (next === 'dismissed') onClose();
+    else setSheetSnap(next);
+  }, [onClose]);
 
   const loadDetails = useCallback(async () => {
     if (!itemId) return;
@@ -1444,8 +1506,11 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
       <div className={`panel-overlay${closing ? ' closing' : ''}`} onClick={onClose} />
       <PanelCloseRail closing={closing} onClose={onClose} />
       <div
-        className={`panel${closing ? ' closing' : ''}`}
-        style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
+        ref={panelRef}
+        className={`panel panel--mobile-${sheetSnap}${closing ? ' closing' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={details?.title || details?.name || MEDIA_PANEL.titleDetails}
       >
         {navStack.length > 0 ? (
           /* Every step deeper than the title you first opened — cast → title →
