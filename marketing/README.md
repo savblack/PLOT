@@ -1,5 +1,9 @@
 # PLOT marketing automation
 
+The inventory of every automation (what starts it, which secrets it uses, where
+the content lands) is [`docs/ops/gtm-automations.md`](../docs/ops/gtm-automations.md).
+This file is the operator manual for the weekly flow.
+
 Every post has two halves, and they are reviewed in different places.
 
 1. GitHub prepares the week.
