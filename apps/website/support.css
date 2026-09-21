@@ -1,0 +1,49 @@
+/* Support uses the pricing page's content width, typography and shared surfaces. */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-weight: 400; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-underline-offset: 4px; }
+a:hover { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+.page-wrap { max-width: 1144px; margin: 0 auto; padding: 96px 2rem 36px; }
+.support-opening { display: grid; grid-template-columns: 1.35fr 1fr; gap: 5rem; align-items: center; padding: 4.5rem 0 4rem; }
+.hero { text-align: left; }
+h1, h2 { font-family: var(--display); font-weight: 400; letter-spacing: -.025em; }
+h1 { font-size: clamp(3.5rem, 6.5vw, 5.7rem); line-height: 1.02; margin: 1.25rem 0 1.5rem; }
+h2 { font-size: 2rem; line-height: 1.15; }
+.hero-lede { font-size: 1rem; color: var(--text-secondary); max-width: 39ch; line-height: 1.75; }
+.hero-lede br { display: none; }
+.contact-panel { padding: 1.8rem; border: 1px solid var(--rule); border-radius: var(--r-md); background: var(--surface); }
+.contact-panel h2 { font-size: 1.7rem; margin-bottom: 1.3rem; }
+.contact-panel p { font-size: .85rem; line-height: 1.75; color: var(--text-secondary); }
+.contact-panel .desktop-break { display: none; }
+.contact-panel .btn { margin-top: 1.5rem; min-height: 44px; white-space: nowrap; }
+.help-section { margin: 2rem 0 3rem; }
+.help-section > h2 { margin-bottom: 1.5rem; scroll-margin-top: 100px; }
+.faq-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 3rem; }
+.faq-item { padding: 1.25rem 0; border-top: 1px solid var(--rule); }
+.faq-item dt { font-weight: 600; font-size: .85rem; margin-bottom: .5rem; }
+.answer { font-size: .8rem; color: var(--text-secondary); line-height: 1.7; margin: 0; }
+.answer p + p, .answer > a { margin-top: .8rem; }
+.answer > a { display: inline-block; min-height: 44px; padding-top: .5rem; }
+.policy-section { margin: 3rem 0 0; padding: 2rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); }
+.policy-section h2 { font-size: 1.3rem; }
+.policy-section p { margin: .6rem 0 1rem; font-size: .9rem; color: var(--text-secondary); }
+.policy-links { display: flex; gap: .5rem 1.5rem; flex-wrap: wrap; font-size: .85rem; }
+.policy-links a { padding: .5rem 0; }
+.skip-link { position: absolute; left: 1rem; top: -100px; z-index: 2000; background: var(--bg); padding: .7rem 1rem; }
+.skip-link:focus { top: 1rem; }
+    footer { margin-top: 5rem; }
+
+
+@media (max-width: 760px) {
+  .page-wrap { padding: 88px 1.5rem 24px; }
+  .support-opening { grid-template-columns: 1fr; gap: 2rem; padding: 2.5rem 0 3rem; }
+  h1 { font-size: clamp(3.1rem, 12vw, 5rem); }
+  .contact-panel, .policy-section { padding: 1.5rem; }
+  .faq-list { grid-template-columns: 1fr; }
+  .help-section { margin-top: 1rem; }
+  footer { padding: 2rem 1.5rem; margin-top: 3rem; }
+}
+/* Keep support actions neutral; reserve the accent for interaction states. */
+#navbar .nav-cta { background: var(--ink); color: var(--bg); }
+#navbar .nav-cta:hover { background: var(--ink-hover); }
