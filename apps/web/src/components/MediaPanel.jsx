@@ -1284,7 +1284,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const dragStateRef = useRef({ active: false, startY: 0, startTime: 0, snap: 'collapsed' });
 
   useEffect(() => { setSheetSnap('collapsed'); }, [itemId]); // eslint-disable-line react-hooks/set-state-in-effect -- each newly opened title starts at the preview snap
-  useEffect(() => { setEngagementPrompt(null); setEngagementBusy(false); }, [itemId, itemType]);
+  useEffect(() => { setEngagementPrompt(null); setEngagementBusy(false); }, [itemId, itemType]); // eslint-disable-line react-hooks/set-state-in-effect -- drop the prior title's prompt when the open title changes
 
   const isBottomSheet = () =>
     typeof window !== 'undefined' && window.matchMedia('(hover: none), (pointer: coarse)').matches;
