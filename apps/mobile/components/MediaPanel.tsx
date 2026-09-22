@@ -37,8 +37,22 @@ import {
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { ENGAGEMENT_PROMPT } from '@plot/core/copy/engagementPrompt.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
+import {
+  ENGAGEMENT_SNOOZE_KEY,
+  WATCH_PROMPT_SNOOZE_MS,
+  RATE_PROMPT_SNOOZE_MS,
+  engagementTitleKey,
+  parseEngagementSnooze,
+  serialiseEngagementSnooze,
+  isEngagementSnoozed,
+  snoozeEngagement,
+  canShowWatchPrompt,
+  canShowRatePrompt,
+} from '@plot/core/engagementPrompt.js';
+import { readStorage, writeStorage } from '../lib/storage';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
@@ -654,6 +668,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const [pickingDate, setPickingDate] = useState(false);
   const [localDnf,    setLocalDnf]    = useState(false);
   const [savingReview, setSavingReview] = useState(false);
+  // PLO-473 / PLO-474: compact post-save watch → post–mark-watched rate prompts.
+  const [engagementPrompt, setEngagementPrompt] = useState<'watch' | 'rate' | null>(null);
+  const [engagementBusy, setEngagementBusy] = useState(false);
 
   const slideY = useRef(new Animated.Value(PANEL_H)).current;
 
@@ -679,18 +696,34 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   // state can't be left behind. Shared by the Watched button and by the
   // episode guide, which calls it when the final episode of an ended series
   // is ticked.
-  const markWatchedNow = async () => markMediaAsWatched({
-    logWatched: () => history.logWatched(
-      { ...details, id: itemId, media_type: itemType },
-      { watchedAt: defaultWatchedAt },
-    ),
-    clearWatching:   () => watching.stopWatching(itemId),
-    removeFromSaved: () => watchlist.removeFromList(itemId),
-    rollbackHistory: () => history.removeEntry(itemId, itemType),
-    mediaType: itemType,
-    isWatching,
-    inList,
-  });
+  const markWatchedNow = async () => {
+    const result = await markMediaAsWatched({
+      logWatched: () => history.logWatched(
+        { ...details, id: itemId, media_type: itemType },
+        { watchedAt: defaultWatchedAt },
+      ),
+      clearWatching:   () => watching.stopWatching(itemId),
+      removeFromSaved: () => watchlist.removeFromList(itemId),
+      rollbackHistory: () => history.removeEntry(itemId, itemType),
+      mediaType: itemType,
+      isWatching,
+      inList,
+    });
+    if (result.ok) {
+      const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+      const snoozed = isEngagementSnoozed(
+        parseEngagementSnooze(raw),
+        engagementTitleKey(itemId, itemType),
+        'rate',
+      );
+      if (canShowRatePrompt({ watched: true, hasRating: !!(watchedEntry?.rating), snoozed })) {
+        setEngagementPrompt('rate');
+      } else {
+        setEngagementPrompt(null);
+      }
+    }
+    return result;
+  };
 
   // Already-watched shows are a no-op rather than a toggle-off: this fires
   // from episode ticks, not from a button the user aimed at it.
@@ -703,6 +736,106 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       if (detail) captureException(new Error(detail), { surface: 'media_panel', action: 'watched_status' });
     }
     return result;
+  };
+
+  const offerWatchPrompt = async () => {
+    if (watched) return;
+    const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+    const snoozed = isEngagementSnoozed(
+      parseEngagementSnooze(raw),
+      engagementTitleKey(itemId, itemType),
+      'watch',
+    );
+    if (!canShowWatchPrompt({ watched, snoozed })) return;
+    setEngagementPrompt('watch');
+  };
+
+  const dismissWatchPrompt = async () => {
+    const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+    const next = snoozeEngagement(
+      parseEngagementSnooze(raw),
+      engagementTitleKey(itemId, itemType),
+      'watch',
+      WATCH_PROMPT_SNOOZE_MS,
+    );
+    await writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(next));
+    setEngagementPrompt(null);
+  };
+
+  const skipRatePrompt = async () => {
+    const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+    const next = snoozeEngagement(
+      parseEngagementSnooze(raw),
+      engagementTitleKey(itemId, itemType),
+      'rate',
+      RATE_PROMPT_SNOOZE_MS,
+    );
+    await writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(next));
+    setEngagementPrompt(null);
+  };
+
+  const handleSaveFromPanel = async () => {
+    if (!details) return;
+    if (inList) {
+      await watchlist.removeFromList(itemId);
+      return;
+    }
+    const saved = await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
+    if (saved) await offerWatchPrompt();
+  };
+
+  const handlePromptMarkWatched = async () => {
+    if (engagementBusy) return;
+    setEngagementBusy(true);
+    try {
+      const result = await markWatchedNow();
+      if (!result.ok) {
+        const detail = history.getLastError();
+        if (detail) captureException(new Error(detail), { surface: 'media_panel', action: 'watched_status' });
+        Alert.alert('Could not update', result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+      }
+    } finally {
+      setEngagementBusy(false);
+    }
+  };
+
+  const handlePromptStartWatching = async () => {
+    if (engagementBusy || isMovie) return;
+    setEngagementBusy(true);
+    try {
+      if (isWatching) {
+        await watching.stopWatching(itemId);
+        setEngagementPrompt(null);
+        return;
+      }
+      const result = await moveSavedShowToWatching({
+        startWatching: () => watching.startWatching({ ...details, id: itemId, media_type: 'tv' }),
+        removeFromSaved: () => inList ? watchlist.removeFromList(itemId) : Promise.resolve(true),
+        rollbackWatching: () => watching.stopWatching(itemId),
+      });
+      if (result.ok) setEngagementPrompt(null);
+      else Alert.alert('Could not update', result.error);
+    } finally {
+      setEngagementBusy(false);
+    }
+  };
+
+  const handlePromptRate = async (rating: number) => {
+    if (!rating) return;
+    setEngagementBusy(true);
+    try {
+      const ok = await history.updateEntry(
+        itemId,
+        { rating, note: localReview.trim() || null, dnf: localDnf, watched_at: localWatchedAt || defaultWatchedAt },
+        itemType,
+      );
+      if (ok) {
+        setLocalRating(rating);
+        setEngagementPrompt(null);
+      }
+    } finally {
+      setEngagementBusy(false);
+    }
   };
 
   const handleShare = () => shareLink({
@@ -722,6 +855,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       setLocalWatchedAt(String(watchedEntry.watched_at || defaultWatchedAt).slice(0, 10));
     }
   }, [watchedEntry?.id]);
+
+  // Clear the engagement prompt when the open title changes.
+  useEffect(() => {
+    setEngagementPrompt(null);
+    setEngagementBusy(false);
+  }, [itemId, itemType]);
 
   // Slide in on mount
   useEffect(() => {
@@ -803,6 +942,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         tmdb_id: itemId, media_type: itemType,
         provider: p.provider_name ?? null, link_kind: link.kind ?? null,
       });
+      if (inList && !watched) {
+        void offerWatchPrompt();
+      }
       Linking.openURL(link.url).catch((e) => {
         console.warn('[MediaPanel] failed to open watch link', e);
         Alert.alert("Couldn't open link", 'Please try again in a moment.');
@@ -944,7 +1086,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     {!isWatching && (
                       <TouchableOpacity
                         style={[styles.btnPrimary, styles.btnHalf, inList && styles.btnSaved]}
-                        onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
+                        onPress={handleSaveFromPanel}
                       >
                         {inList && <IconCheck color={colors.statusWatched} />}
                         <Text style={[styles.btnPrimaryText, inList && { color: colors.statusWatched }]}>
@@ -1226,6 +1368,56 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
             )}
           </View>
         </ScrollView>
+
+        {engagementPrompt && !loading && !error && details && (
+          <View style={styles.engagementBar} accessibilityRole="summary">
+            {engagementPrompt === 'watch' ? (
+              <>
+                <Text style={styles.engagementTitle}>{ENGAGEMENT_PROMPT.watchedIt}</Text>
+                <View style={styles.engagementActions}>
+                  <TouchableOpacity
+                    style={[styles.engagementPrimary, engagementBusy && styles.engagementDisabled]}
+                    disabled={engagementBusy}
+                    onPress={handlePromptMarkWatched}
+                  >
+                    <Text style={styles.engagementPrimaryText}>{ENGAGEMENT_PROMPT.markAsWatched}</Text>
+                  </TouchableOpacity>
+                  {!isMovie && !isWatching && (
+                    <TouchableOpacity
+                      style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
+                      disabled={engagementBusy}
+                      onPress={handlePromptStartWatching}
+                    >
+                      <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.imWatching}</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
+                    disabled={engagementBusy}
+                    onPress={dismissWatchPrompt}
+                  >
+                    <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.notYet}</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.engagementTitle}>{ENGAGEMENT_PROMPT.howWasIt}</Text>
+                <StarRow
+                  rating={localRating}
+                  onChange={(r) => { void handlePromptRate(r); }}
+                />
+                <TouchableOpacity
+                  style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
+                  disabled={engagementBusy}
+                  onPress={skipRatePrompt}
+                >
+                  <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.skipForNow}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        )}
       </Animated.View>
     </Modal>
 
@@ -1268,6 +1460,49 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
 
   body: { padding: spacing.xl },
+
+  engagementBar: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surfaceSunken,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  engagementTitle: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.sm,
+    color: colors.textPrimary,
+  },
+  engagementActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
+  engagementPrimary: {
+    backgroundColor: colors.accentFill,
+    borderRadius: radii.md,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+  },
+  engagementPrimaryText: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.sm,
+    color: colors.onAccentFill,
+  },
+  engagementGhost: {
+    borderRadius: radii.md,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+  },
+  engagementGhostText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  engagementDisabled: { opacity: 0.55 },
 
   title:    { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, marginBottom: spacing.sm },
   metaRow:  { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm, flexWrap: 'wrap' },

@@ -43,6 +43,20 @@ import TitleReview from './TitleReview.jsx';
 import StarIcon from './StarIcon.jsx';
 import KebabMenu from './KebabMenu.jsx';
 import PanelCloseRail from './PanelCloseRail.jsx';
+import {
+  ENGAGEMENT_SNOOZE_KEY,
+  WATCH_PROMPT_SNOOZE_MS,
+  RATE_PROMPT_SNOOZE_MS,
+  engagementTitleKey,
+  parseEngagementSnooze,
+  serialiseEngagementSnooze,
+  isEngagementSnoozed,
+  snoozeEngagement,
+  canShowWatchPrompt,
+  canShowRatePrompt,
+} from '@plot/core/engagementPrompt.js';
+import { readStorage, writeStorage } from '../utils/storage.js';
+import EngagementPromptBar from './EngagementPromptBar.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
@@ -631,7 +645,7 @@ function StopSmallIcon() {
 
 /* ── Where-to-watch provider chip ── */
 // Clickable only for a verified provider offer or the region-specific title page.
-function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink }) {
+function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink, onWatchLinkClick }) {
   const link = buildWatchLink({
     providerUrl: provider.providerUrl,
     justwatchLink,
@@ -654,15 +668,18 @@ function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink }) {
       href={link.url}
       target="_blank"
       rel={link.kind === 'provider' ? 'noopener nofollow sponsored' : 'noopener'}
-      onClick={() => track(EVENTS.WATCH_LINK_CLICKED, {
-        provider_id: provider.providerId,
-        provider_name: provider.providerName,
-        tmdb_id: tmdbId,
-        media_type: mediaType,
-        monetization: provider.offerType.toLowerCase().replaceAll(' ', '_'),
-        link_kind: link.kind,
-        region,
-      })}
+      onClick={() => {
+        track(EVENTS.WATCH_LINK_CLICKED, {
+          provider_id: provider.providerId,
+          provider_name: provider.providerName,
+          tmdb_id: tmdbId,
+          media_type: mediaType,
+          monetization: provider.offerType.toLowerCase().replaceAll(' ', '_'),
+          link_kind: link.kind,
+          region,
+        });
+        onWatchLinkClick?.();
+      }}
     >
       {inner}
     </a>
@@ -1183,6 +1200,10 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const [watchOpen, setWatchOpen] = useState(false);
   const [statusActionPending, setStatusActionPending] = useState('');
   const [statusActionError, setStatusActionError] = useState('');
+  // PLO-473 / PLO-474: compact post-save watch prompt → post–mark-watched rate.
+  // 'watch' | 'rate' | null. Cleared when the open title changes.
+  const [engagementPrompt, setEngagementPrompt] = useState(null);
+  const [engagementBusy, setEngagementBusy] = useState(false);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -1263,6 +1284,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const dragStateRef = useRef({ active: false, startY: 0, startTime: 0, snap: 'collapsed' });
 
   useEffect(() => { setSheetSnap('collapsed'); }, [itemId]); // eslint-disable-line react-hooks/set-state-in-effect -- each newly opened title starts at the preview snap
+  useEffect(() => { setEngagementPrompt(null); setEngagementBusy(false); }, [itemId, itemType]); // eslint-disable-line react-hooks/set-state-in-effect -- drop the prior title's prompt when the open title changes
 
   const isBottomSheet = () =>
     typeof window !== 'undefined' && window.matchMedia('(hover: none), (pointer: coarse)').matches;
@@ -1438,6 +1460,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     const isSameWatchedState = watched && (!!watchedEntry?.dnf === dnf);
     if (isSameWatchedState) {
       const removed = await history.removeEntry(itemId, itemType);
+      if (removed) setEngagementPrompt(null);
       return removed
         ? { ok: true }
         : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
@@ -1464,8 +1487,22 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     if (realError) {
       captureException(new Error(realError), { surface: 'media_panel', action: 'watched_status' });
     }
+    // PLO-474: same chrome as the watch prompt, offered after any successful
+    // mark-watched (status menu, episode finish, or the watch prompt itself).
+    if (result.ok) {
+      const snoozed = isEngagementSnoozed(
+        parseEngagementSnooze(readStorage(ENGAGEMENT_SNOOZE_KEY, '{}')),
+        engagementTitleKey(itemId, itemType),
+        'rate',
+      );
+      if (canShowRatePrompt({ watched: true, hasRating: !!watchedEntry?.rating, snoozed })) {
+        setEngagementPrompt('rate');
+      } else {
+        setEngagementPrompt(null);
+      }
+    }
     return result;
-  }, [defaultWatchedAt, details, history, inList, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
+  }, [defaultWatchedAt, details, history, inList, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchedEntry?.rating, watchlist, watching]);
 
   /* Watching the final episode of a finished series completes it. Reuses the
      same transition as the Watched status action, so a show finished by
@@ -1492,6 +1529,84 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     }
     return { ok: true };
   }, [history, isWatching, itemId, itemType, watched, watching]);
+
+  const titleSnoozeKey = engagementTitleKey(itemId, itemType);
+
+  const readSnoozeMap = useCallback(
+    () => parseEngagementSnooze(readStorage(ENGAGEMENT_SNOOZE_KEY, '{}')),
+    [],
+  );
+
+  const writeSnoozeMap = useCallback((map) => {
+    writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(map));
+  }, []);
+
+  const offerWatchPrompt = useCallback(() => {
+    const snoozed = isEngagementSnoozed(readSnoozeMap(), titleSnoozeKey, 'watch');
+    if (!canShowWatchPrompt({ watched, snoozed })) return;
+    setEngagementPrompt('watch');
+  }, [readSnoozeMap, titleSnoozeKey, watched]);
+
+  const dismissWatchPrompt = useCallback(() => {
+    writeSnoozeMap(snoozeEngagement(readSnoozeMap(), titleSnoozeKey, 'watch', WATCH_PROMPT_SNOOZE_MS));
+    setEngagementPrompt(null);
+  }, [readSnoozeMap, titleSnoozeKey, writeSnoozeMap]);
+
+  const skipRatePrompt = useCallback(() => {
+    writeSnoozeMap(snoozeEngagement(readSnoozeMap(), titleSnoozeKey, 'rate', RATE_PROMPT_SNOOZE_MS));
+    setEngagementPrompt(null);
+  }, [readSnoozeMap, titleSnoozeKey, writeSnoozeMap]);
+
+  const handleSaveFromPanel = useCallback(async () => {
+    if (!details) return;
+    if (inList) {
+      await watchlist.removeFromList(itemId);
+      return;
+    }
+    const saved = await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
+    if (saved) offerWatchPrompt();
+  }, [details, inList, itemId, itemType, offerWatchPrompt, watchlist]);
+
+  const handleWatchLinkPrompt = useCallback(() => {
+    // Second trigger: outbound watch link when the title is already on the list
+    // and not yet marked watched.
+    if (!inList || watched) return;
+    offerWatchPrompt();
+  }, [inList, offerWatchPrompt, watched]);
+
+  const handlePromptMarkWatched = useCallback(async () => {
+    if (engagementBusy) return;
+    setEngagementBusy(true);
+    try {
+      const result = await handleWatchedStatus(false);
+      if (!result?.ok && result?.error) setStatusActionError(result.error);
+    } finally {
+      setEngagementBusy(false);
+    }
+  }, [engagementBusy, handleWatchedStatus]);
+
+  const handlePromptStartWatching = useCallback(async () => {
+    if (engagementBusy || isMovie) return;
+    setEngagementBusy(true);
+    try {
+      const result = await handleWatchingStatus();
+      if (result?.ok) setEngagementPrompt(null);
+      else if (result?.error) setStatusActionError(result.error);
+    } finally {
+      setEngagementBusy(false);
+    }
+  }, [engagementBusy, handleWatchingStatus, isMovie]);
+
+  const handlePromptRate = useCallback(async (rating) => {
+    if (!rating) return;
+    const ok = await saveReview({
+      rating,
+      note: savedReview || null,
+      dnf: savedDnf,
+      watchedAt: savedWatchedAt,
+    });
+    if (ok) setEngagementPrompt(null);
+  }, [saveReview, savedDnf, savedReview, savedWatchedAt]);
 
   return (
     <>
@@ -1597,7 +1712,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
             <div className="panel-actions-row">
               <button
                 className={`panel-pill${inList ? ' panel-pill--saved' : ' panel-pill--primary'}`}
-                onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
+                onClick={handleSaveFromPanel}
               >
                 {inList ? <CheckIcon /> : <BookmarkIcon />}
                 {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
@@ -1736,6 +1851,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                             tmdbId={itemId}
                             region={whereToWatch.region}
                             justwatchLink={whereToWatch.justwatchLink}
+                            onWatchLinkClick={handleWatchLinkPrompt}
                           />
                         ))}
                       </div>
@@ -1754,6 +1870,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                               tmdbId={itemId}
                               region={whereToWatch.region}
                               justwatchLink={whereToWatch.justwatchLink}
+                              onWatchLinkClick={handleWatchLinkPrompt}
                             />
                           ))}
                         </div>
@@ -1937,21 +2054,35 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
         )}
 
         {!talentId && !loading && !detailsError && details && (
-          <TakeBar
-            key={`${itemType}:${itemId}`}
-            itemId={itemId}
-            itemType={itemType}
-            title={title}
-            watched={watched}
-            watchedEntry={watchedEntry}
-            rating={savedRating}
-            note={savedReview}
-            dnf={savedDnf}
-            watchedAt={savedWatchedAt}
-            onSave={saveReview}
-            onClear={clearReview}
-            user={user}
-          />
+          engagementPrompt ? (
+            <EngagementPromptBar
+              mode={engagementPrompt}
+              isTv={!isMovie}
+              showWatchingCta={!isMovie && !isWatching}
+              busy={engagementBusy || !!statusActionPending}
+              onMarkWatched={handlePromptMarkWatched}
+              onStartWatching={handlePromptStartWatching}
+              onDismissWatch={dismissWatchPrompt}
+              onRate={handlePromptRate}
+              onSkipRate={skipRatePrompt}
+            />
+          ) : (
+            <TakeBar
+              key={`${itemType}:${itemId}`}
+              itemId={itemId}
+              itemType={itemType}
+              title={title}
+              watched={watched}
+              watchedEntry={watchedEntry}
+              rating={savedRating}
+              note={savedReview}
+              dnf={savedDnf}
+              watchedAt={savedWatchedAt}
+              onSave={saveReview}
+              onClear={clearReview}
+              user={user}
+            />
+          )
         )}
       </div>
     </>
