@@ -1,10 +1,12 @@
-// Weekly review sheet: one readable HTML page that mirrors the web desk
-// (admin.theplot.tv) — every active post's full copy (X / Instagram / Threads /
-// article), card images, the "why" + platform targets + sources, per-platform
-// publish status, a paused banner, a recent-published history panel, and the
-// rendered subscriber newsletter. Read-only — pulls live state via the Supabase
-// REST API + the newsletter builder. The /marketing-week skill opens this. Run
-// from a checkout on `main`:
+// Local week sheet: one readable HTML page of every active post's full copy
+// (X / Instagram / Threads / article), card images, the "why" + platform
+// targets + sources, per-platform publish status, a paused banner, a
+// recent-published history panel, and the rendered subscriber newsletter.
+// Read-only. Pulls live state via the Supabase REST API + the newsletter
+// builder. The /marketing-week skill can open this locally. Routine review is
+// Linear and Buffer. The weekly batch no longer uploads this file. A previous
+// copy may still sit in the private `marketing-review` bucket until the
+// teardown deletes that object. Run from a checkout on `main`:
 //   node --env-file=.env marketing/preview/week.mjs   ->  marketing/preview/out/week.html
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';

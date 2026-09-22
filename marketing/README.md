@@ -23,9 +23,10 @@ calendar, so it is where a caption should be judged; it has no idea the article
 exists. Linear can render 600 words of prose, so it is where the writing should
 be judged; it cannot show you how a tweet will look.
 
-The admin desk at `admin.theplot.tv` still exists and still works. It reads the
-same rows, so a decision made in either place shows up in both. Linear is a
-second surface onto one database, not a second database.
+`admin.theplot.tv` is still hosted. It is not where a week is reviewed. Its
+Approve, Reject, and Save buttons still change publication rows in ways Linear
+does not, so do not use them. The cutover is `docs/ops/retire-admin-review.md`.
+Linear and Buffer are the two surfaces. The database is what they both write.
 
 The voice and spec rules in `VOICE.md` and `copy/AGENT.md` are maintained by
 hand. An automated Sunday learning loop used to rewrite them from the previous
@@ -76,8 +77,10 @@ can never fail a render or a publish run.
 
 ## Operator surfaces
 
-- **Primary operator UI:** Linear — team PLO, project **Content Automation**
-- **Secondary operator UI (same data):** `https://admin.theplot.tv`
+- **Articles:** Linear, team PLO, project **Content Automation**
+  (`https://linear.app/savblack/project/content-automation-2ce2d56ced11`)
+- **Social posts:** Buffer (`https://publish.buffer.com`)
+- **Not for review:** `https://admin.theplot.tv` is still hosted and is retiring
 - **Primary automation layer:** GitHub Actions
 - **Primary copy worker:** Claude Code CLI in CI; Codex is the local/manual default
 - **Fallback/debug only:** local commands from `marketing/`
@@ -578,7 +581,9 @@ and `marketing-linear-sync` on copy edited from a Linear comment.
    needed by **both** `marketing-weekly-batch.yml` (which ends by pushing the
    week into Buffer) and `marketing-publish.yml` (which reads it back) — the
    batch job never needed it before.
-3. Set `ADMIN_PASSWORD` on `admin-review` for `admin.theplot.tv`.
+3. `ADMIN_PASSWORD` on `admin-review` only keeps the leftover `admin.theplot.tv`
+   bookmark from answering 503. Review does not happen there. Leave the secret
+   until that host is removed (`docs/ops/retire-admin-review.md`).
 4. Ensure Codex CLI is installed on the Mac if you want to run the local
    fallback commands (CI uses the Claude Code CLI).
 5. Brevo contact sync (optional): set `BREVO_API_KEY`, run

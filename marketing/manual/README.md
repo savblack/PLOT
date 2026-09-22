@@ -2,11 +2,15 @@
 
 This is the fallback/debug path for building a day's posts by hand.
 
-Primary production flow is still:
+Primary production flow is:
 
-- GitHub prepares
-- `admin.theplot.tv` reviews
-- approved posts publish
+- GitHub prepares the week
+- Linear reviews the article (team PLO, project Content Automation)
+- Buffer reviews and sends the social posts
+- An approved article goes on theplot.tv once its day arrives
+
+`admin.theplot.tv` is still hosted and is not part of this flow. See
+`docs/ops/retire-admin-review.md`.
 
 Use this manual flow only when you intentionally want a local, operator-led run.
 
