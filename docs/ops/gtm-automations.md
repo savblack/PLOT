@@ -31,7 +31,7 @@ outside the repo (Linear, a doc, a manual Buffer post).
    article (team PLO, project Content Automation).
 3. You edit or delete the social captions in Buffer. Buffer sends them on the
    day the planner chose, at an hour Buffer's own schedule picked.
-4. You approve or reject the article in Linear (or on the admin desk). That
+4. You approve or reject the article in Linear. That
    decision is about theplot.tv only. It does not pull a post out of Buffer.
 5. On the article's day, if it was approved, it appears on
    [theplot.tv/whats-on](https://theplot.tv/whats-on).
@@ -78,7 +78,9 @@ stripped environment (no database or Buffer key). See
 
 - Rows in `marketing_posts` (status `needs_review` when render succeeds, `failed` when it does not) and `marketing_post_publications`.
 - JPEG cards in the public Supabase Storage bucket `marketing`.
-- A private HTML review sheet in bucket `marketing-review` (`week.html`), served at `https://admin.theplot.tv/?view=sheet`.
+- A private HTML week sheet used to be uploaded to bucket `marketing-review`
+  (`week.html`). That upload stopped; build a local sheet with
+  `marketing/preview/week.mjs` if you need one.
 - An email to `MARKETING_ADMIN_EMAIL`: "N posts ready to review".
 - A `marketing_batch_runs` row with `run_type = 'generate'`.
 - Buffer scheduled posts, as many as each channel's cap allows.
@@ -95,7 +97,7 @@ Resend.
 4. Claude reads [`marketing/copy/AGENT.md`](../../marketing/copy/AGENT.md) and each brief, searches the web for the article, and writes one JSON file per post. It runs in a temp folder so it cannot see `.env`.
 5. `save.mjs` checks the JSON against the copy contract. Bad copy is rejected. Good copy is stored as both `copy` (what we will use) and `generated_copy` (what the model first wrote).
 6. Playwright screenshots the HTML card templates into portrait and landscape JPEGs and uploads them. The website hero is a plain TMDB still, not the branded card. Trending charts are the exception: the branded chart is the hero.
-7. The script emails you and hosts the week sheet.
+7. The script emails you with links to Linear and Buffer.
 8. It then pushes social copy into Buffer. It does not wait for you to approve the article.
 
 Local equivalent: `pnpm run mkt:plan` through `mkt:generate` and `mkt:schedule`, or from `marketing/`: `pnpm run weekly`. Local runs default to Codex, not Claude. Pass `--copy-runner=claude` to match CI.
@@ -135,7 +137,7 @@ You review, edit, reschedule, and delete in Buffer. Those edits are not checked 
 
 **What it is.** Bookkeeping plus the thing that keeps the queue from running dry. Buffer has no webhook, so this job is how the database learns that a post sent, failed, was rewritten, or was deleted.
 
-**Trigger.** [`.github/workflows/marketing-publish.yml`](../../.github/workflows/marketing-publish.yml). The filename still says "publish". The workflow no longer sends. It is also what `/publish-now` and the admin desk dispatch, and what you rerun with `retry_failed`.
+**Trigger.** [`.github/workflows/marketing-publish.yml`](../../.github/workflows/marketing-publish.yml). The filename still says "publish". The workflow no longer sends. It is also what you rerun with `retry_failed`.
 
 **Schedule.** Cron `0 2 * * *`. The file's own comment, from ten consecutive runs, says it really starts around 07:10 UTC (about 17:10 Sydney), five-plus hours after the stated time. Buffer itself is punctual. What the drift costs is how fast freed slots get refilled.
 
@@ -417,7 +419,7 @@ Not production. Useful when the batch is down or a wording rule changes after po
 
 ## 16. Removed: the Sunday learning loop
 
-The loop is not running. Nothing in CI, the admin desk, or the copy worker rewrites the voice from last week's posts.
+The loop is not running. Nothing in CI or the copy worker rewrites the voice from last week's posts.
 
 What was removed:
 
@@ -426,7 +428,9 @@ What was removed:
 - three `learn:*` commands
 - a launchd job that was supposed to apply the result on a Mac
 - table `marketing_learning_runs`, dropped in [`supabase/migrations/20260813120000_remove_marketing_learning_loop.sql`](../../supabase/migrations/20260813120000_remove_marketing_learning_loop.sql)
-- the admin-desk health chip labelled "Learning prep" ([`supabase/functions/admin-review/index.ts`](../../supabase/functions/admin-review/index.ts)). It only asked GitHub for runs of the missing workflow. It did not schedule or send anything. The Weekly batch and Publish chips stay.
+- the admin-desk health chip labelled "Learning prep". It only asked GitHub for
+  runs of the missing workflow. The desk itself is retired
+  ([`docs/ops/retire-admin-review.md`](retire-admin-review.md)).
 
 Production held seven learning rows, every one status `prepared` with an empty summary. The local apply step never ran. No week was ever folded back into `VOICE.md`.
 
@@ -496,8 +500,9 @@ What you can already see:
 - **`marketing_review_events`.** Approve, reject, edit, reschedule, with actor `web_desk`, `marketing_week_skill`, or `linear`.
 - **`marketing_posts.error` and `linear_sync_error`.** Per-post failure text.
 - **`sent_text` / `sent_payload` / `generated_copy`.** What the model wrote versus what Buffer sent. Nothing alerts on the diff.
-- **Admin desk** at `https://admin.theplot.tv` ([`supabase/functions/admin-review/index.ts`](../../supabase/functions/admin-review/index.ts)). Password is `ADMIN_PASSWORD` or `ADMIN_TOKEN`. Same rows as Linear. Can dispatch the weekly and daily workflows.
-- **Linear** is the place a person actually looks. The daily token probe emails you if `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN_WEBSITE` stops answering.
+- **Linear** is the place a person looks for articles. The daily token probe emails you if `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN_WEBSITE` stops answering.
+- **Buffer** is the place a person looks for captions.
+- The old **admin desk** (`admin.theplot.tv`) is retired. See [`docs/ops/retire-admin-review.md`](retire-admin-review.md).
 - **Broadcast guide** (not content, listed under Adjacent) uploads a `broadcast-guide-health` artifact for 7 days. The content pipelines do not do that.
 
 Gaps:

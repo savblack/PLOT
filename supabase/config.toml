@@ -23,11 +23,6 @@ verify_jwt = false
 [functions.title-page]
 verify_jwt = false
 
-# Admin review desk — public at the gateway (reachable via admin.theplot.tv),
-# gated by ADMIN_TOKEN inside the function.
-[functions.admin-review]
-verify_jwt = false
-
 [functions.newsletter-subscribe]
 verify_jwt = false
 

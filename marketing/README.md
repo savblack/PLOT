@@ -23,10 +23,9 @@ calendar, so it is where a caption should be judged; it has no idea the article
 exists. Linear can render 600 words of prose, so it is where the writing should
 be judged; it cannot show you how a tweet will look.
 
-`admin.theplot.tv` is still hosted. It is not where a week is reviewed. Its
-Approve, Reject, and Save buttons still change publication rows in ways Linear
-does not, so do not use them. The cutover is `docs/ops/retire-admin-review.md`.
-Linear and Buffer are the two surfaces. The database is what they both write.
+Articles are reviewed in Linear. Social posts are reviewed in Buffer. The
+hosted desk at `admin.theplot.tv` is retired: see `docs/ops/retire-admin-review.md`.
+The database is what Linear and Buffer both write.
 
 The voice and spec rules in `VOICE.md` and `copy/AGENT.md` are maintained by
 hand. An automated Sunday learning loop used to rewrite them from the previous
@@ -80,10 +79,10 @@ can never fail a render or a publish run.
 - **Articles:** Linear, team PLO, project **Content Automation**
   (`https://linear.app/savblack/project/content-automation-2ce2d56ced11`)
 - **Social posts:** Buffer (`https://publish.buffer.com`)
-- **Not for review:** `https://admin.theplot.tv` is still hosted and is retiring
 - **Primary automation layer:** GitHub Actions
 - **Primary copy worker:** Claude Code CLI in CI; Codex is the local/manual default
 - **Fallback/debug only:** local commands from `marketing/`
+- The old `admin.theplot.tv` desk is retired: `docs/ops/retire-admin-review.md`
 
 ## Local commands
 
@@ -249,8 +248,7 @@ empty it. Changing or dropping a post that is already scheduled is done in
 Buffer, on the post.
 
 `/retry` is gone. It re-queued failed publication rows, which is a question about
-sending — use the `retry_failed` input on `marketing-publish.yml`, or the admin
-desk, both of which can actually see the queue.
+sending. Use the `retry_failed` input on `marketing-publish.yml`.
 
 `/pause`, `/resume`, `/generate` and `/help` act on the whole pipeline rather
 than on one post, so you can comment them on any card in the project — including
@@ -581,9 +579,9 @@ and `marketing-linear-sync` on copy edited from a Linear comment.
    needed by **both** `marketing-weekly-batch.yml` (which ends by pushing the
    week into Buffer) and `marketing-publish.yml` (which reads it back) — the
    batch job never needed it before.
-3. `ADMIN_PASSWORD` on `admin-review` only keeps the leftover `admin.theplot.tv`
-   bookmark from answering 503. Review does not happen there. Leave the secret
-   until that host is removed (`docs/ops/retire-admin-review.md`).
+3. The admin desk is gone. Do not set `ADMIN_PASSWORD` / `ADMIN_TOKEN` for a
+   review UI. See `docs/ops/retire-admin-review.md` if an old secret is still
+   hanging around to unset.
 4. Ensure Codex CLI is installed on the Mac if you want to run the local
    fallback commands (CI uses the Claude Code CLI).
 5. Brevo contact sync (optional): set `BREVO_API_KEY`, run

@@ -5,18 +5,17 @@ coding agent can follow (Claude Code, Codex, and others).
 
 Article actions match `supabase/functions/marketing-linear-sync/index.ts`.
 That function is the source of truth for approve, reject, unapprove, reschedule,
-and publish-now. **Do not copy `admin-review`.** Its Approve, Reject, and Save
-buttons still re-queue publication rows and skip captions. Those writes can
-push a second copy into Buffer or hold a caption back. This runbook must not
-do either.
+and publish-now. Do not re-queue publication rows or skip captions as a side
+effect of approve or reject. Those writes can push a second copy into Buffer or
+hold a caption back.
 
 > Two review surfaces, one database. **Linear** (team PLO, project Content
 > Automation, `https://linear.app/savblack/project/content-automation-2ce2d56ced11`)
 > is where an article is approved or edited. **Buffer**
 > (`https://publish.buffer.com`) is where a caption is edited, moved, or deleted.
-> `admin.theplot.tv` is still hosted and is not a review step. If the human asks
-> for something you can do here, do it here, and say when it will show up on the
-> Linear board (the mirror sweep, within about five minutes).
+> The old `admin.theplot.tv` desk is gone (`docs/ops/retire-admin-review.md`). If
+> the human asks for something you can do here, do it here, and say when it will
+> show up on the Linear board (the mirror sweep, within about five minutes).
 
 You load the week from the database, show the human everything, and apply their
 edits/approvals via the Supabase REST API. Everything is $0 and uses the repo's
@@ -64,8 +63,8 @@ existing contracts.
   reject, or publish action in §3–§5, POST one row here.** Nothing else logs
   actions taken through you. Skipping it is a permanent blind spot in the trail,
   not a cosmetic gap. `actor` is always `marketing_week_skill`, never a name.
-  (Linear writes `linear`. The retiring web desk writes `web_desk`. The surface
-  is the only attribution there is.)
+  (Linear writes `linear`. Historical rows may say `web_desk` from the retired
+  admin page. The surface is the only attribution there is.)
   ```bash
   node --env-file=.env -e '
     const u=process.env.SUPABASE_URL||process.env.VITE_SUPABASE_URL, k=process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY;
@@ -88,8 +87,7 @@ Give a tight summary: counts (needs review / approved / rejected), then per post
 day, the **why** (decode `topic_key`+`payload`+`tmdb_refs` like `reason()` in
 `supabase/functions/_shared/postSummary.js`), status, target platforms, and
 `linear_issue_url` when the post has one. Lead with what needs review. Send the
-human to that Linear URL for the article, and to Buffer for the caption. Do not
-send them to `admin.theplot.tv`.
+human to that Linear URL for the article, and to Buffer for the caption.
 
 ## 2. Read the week locally when you need the full copy
 One local page with every post's full copy (X / Instagram / Threads / article), its
@@ -99,9 +97,7 @@ need to read all of that in one place:
 ```bash
 node --env-file=.env marketing/preview/week.mjs && open marketing/preview/out/week.html
 ```
-Re-run after edits to refresh. Do not tell the human to open
-`https://admin.theplot.tv/?view=sheet`. The weekly batch no longer uploads that
-page. The weekly email links Linear and Buffer instead.
+Re-run after edits to refresh. The weekly email links Linear and Buffer.
 
 **QA scan before approving** — flag (don't silently pass) anything off:
 - A card date in the PAST or that contradicts the copy ("Streaming · 31 March" on an
@@ -126,7 +122,7 @@ a paid API; see `marketing/copy/AGENT.md`).
   in Buffer once the post is scheduled there. A database edit does not update a
   post Buffer already has. If the publication row is still `queued` (not in Buffer
   yet), patching those fields changes what the next push sends. Say which case
-  you are in. Do not use the admin desk's editor.
+  you are in.
 - **Edit copy shape**: `page_body` is an array of paragraphs. For a **guide** post
   with `copy.inline_titles === true`, that array is a strict 1:1 shape the renderer
   depends on — `page_body[0]` is the intro, `page_body[1..tmdb_refs.length]` is exactly
@@ -155,8 +151,8 @@ a paid API; see `marketing/copy/AGENT.md`).
 ## 4. Approve / reject (article status only)
 Touch `marketing_posts.status` and nothing else. Do not update
 `marketing_post_publications`. Do not re-queue `skipped` or `failed` rows.
-Do not set `queued` rows to `skipped`. Those were the admin desk's buttons,
-and they do not match Linear.
+Do not set `queued` rows to `skipped`. Those side effects belonged to the old
+desk and do not match Linear.
 
 - **Approve**: `status='approved'`. The article goes on theplot.tv once its day
   arrives. Social posts are unaffected. Tell the human that.
@@ -199,7 +195,7 @@ After a run, verify each post's `marketing_post_publications.status`/`permalink`
   `pause`, or `resume` (the last two take no `post_id`).
 
 ## 6. Newsletter
-Preview it locally. Do not use the admin desk sheet.
+Preview it locally:
 ```bash
 DRY_RUN=1 node --env-file=.env marketing/newsletter/send-digest.mjs
 ```
@@ -214,7 +210,5 @@ all `active` subscribers): `node --env-file=.env marketing/newsletter/send-diges
   this runbook can undo, because it cannot see Buffer's editor.
 - **$0 only**: never use a paid API. You write copy yourself per the contract.
 - Verify state with a read before and after each write. Report exactly what changed,
-  plus Linear links.
-- Do not send the human to `admin.theplot.tv`, and do not reproduce its Approve,
-  Reject, or Save effects. Article status shows up on the Linear board on the
+  plus Linear links. Article status shows up on the Linear board on the
   next mirror sweep.
