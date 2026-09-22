@@ -340,8 +340,9 @@ than shipping a guess.
 
 - Reviewing/approving/publishing the week's posts & newsletter → follow `marketing/REVIEW.md`.
 - Writing post copy → follow `marketing/copy/AGENT.md`.
-- Tempted to build a richer admin UI than `admin-review`? Read
-  `docs/ops/operator-desk-shelved.md` first — that's already been tried once.
+- Tempted to rebuild a hosted marketing review UI? Read
+  `docs/ops/retire-admin-review.md` and `docs/ops/operator-desk-shelved.md`
+  first. Articles are reviewed in Linear; social posts in Buffer.
 
 Model-agnostic runbooks: run from repo root on `main` with `.env` present, never a paid API
 for copy, and **confirm before anything posts publicly.**

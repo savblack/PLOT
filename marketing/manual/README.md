@@ -9,7 +9,7 @@ Primary production flow is:
 - Buffer reviews and sends the social posts
 - An approved article goes on theplot.tv once its day arrives
 
-`admin.theplot.tv` is still hosted and is not part of this flow. See
+`admin.theplot.tv` is retired. Review is Linear and Buffer. See
 `docs/ops/retire-admin-review.md`.
 
 Use this manual flow only when you intentionally want a local, operator-led run.

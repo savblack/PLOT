@@ -40,3 +40,11 @@ test('admin host serves a disallow-all robots.txt', async () => {
   assert.match(await res.text(), /Disallow: \//);
   assert.equal(res.headers.get('X-Robots-Tag'), 'noindex, nofollow');
 });
+
+test('admin host returns 410 for the retired desk', async () => {
+  const res = await onRequest(ctx('https://admin.theplot.tv/'));
+  assert.equal(res.status, 410);
+  assert.equal(await res.text(), 'This page has been removed.');
+  assert.equal(res.headers.get('X-Robots-Tag'), 'noindex, nofollow');
+  assert.match(res.headers.get('Content-Type') || '', /text\/plain/);
+});

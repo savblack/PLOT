@@ -1,9 +1,8 @@
-// Host-based routing. On Vercel this was a redirect in vercel.json
-// (host admin.theplot.tv, "/" -> /api/admin). On Cloudflare Pages the admin
-// subdomain is a second custom domain on this project, so we route every
-// admin.theplot.tv request straight to the admin-review proxy and let all other
-// hosts (theplot.tv) fall through to the static site + its functions.
-import { admin } from './_lib/admin.js';
+// Host-based routing. admin.theplot.tv used to proxy to the admin-review Edge
+// Function; that desk is retired (docs/ops/retire-admin-review.md). While the
+// custom domain still points at this Pages project, answer 410 so the hostname
+// cannot fall through to the marketing site. Other hosts (theplot.tv) fall
+// through to the static site + its functions.
 import { acceptsMarkdown, homepageMarkdownResponse } from './_lib/markdown.js';
 import { vanityTarget } from './_lib/vanity.js';
 
@@ -12,8 +11,6 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const host = url.hostname;
   if (host === 'admin.theplot.tv') {
-    // Don't proxy /robots.txt into the auth wall — Google would record every
-    // admin URL as a 401 instead of "blocked by robots.txt".
     if (url.pathname === '/robots.txt') {
       return new Response('User-agent: *\nDisallow: /\n', {
         headers: {
@@ -23,12 +20,13 @@ export async function onRequest(context) {
         },
       });
     }
-    const response = await admin(request);
-    // Belt-and-braces: the upstream HTML already noindexes, but a 401 body
-    // before login can still be thin enough that the header is what GSC sees.
-    const headers = new Headers(response.headers);
-    headers.set('X-Robots-Tag', 'noindex, nofollow');
-    return new Response(response.body, { status: response.status, headers });
+    return new Response('This page has been removed.', {
+      status: 410,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Robots-Tag': 'noindex, nofollow',
+      },
+    });
   }
   // Social bio links (/ig, /x, /th) pick up their utm_* here rather than in the
   // profile field itself, so the bio shows a clean URL and the visit is still
