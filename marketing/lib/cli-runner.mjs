@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 
-// Central place to build and validate CLI invocations for the copy/learning
-// workers. Both d1caa11 (Claude's variadic --allowedTools swallowed the
+// Central place to build and validate CLI invocations for the copy worker.
+// Both d1caa11 (Claude's variadic --allowedTools swallowed the
 // prompt) and 31f4d72 (Codex removed a flag this code still passed) were
 // CLI-shape bugs that broke a live batch mid-run. preflight() below exists to
 // catch that class of bug before the real, expensive/mutating call runs, not
