@@ -33,7 +33,7 @@ jobs:
         run: python3 scripts/guide/refresh.py --publish
       - name: Retain per-channel coverage report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: broadcast-guide-health
           path: .guide-cache/refresh/health.json
