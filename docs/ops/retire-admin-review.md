@@ -3,10 +3,8 @@
 Articles are reviewed in Linear. Social posts are reviewed in Buffer. The hosted
 desk at `admin.theplot.tv` (`supabase/functions/admin-review`) is retired.
 
-**Status:** teardown code is in this change. Merging deploys a `410 Gone` on
-`admin.theplot.tv` via the marketing site Pages project (`plot-site`). The live
-Edge Function, custom domain, secrets, and stale `week.html` still need the
-human steps below after Pages is green.
+**Status:** retired in production (2026-09-22). Code on `main` (#1018). Cutover
+below is done.
 
 `docs/ops/operator-desk-shelved.md` is a different thing: an unmerged React
 replacement from July 2026. Do not revive it.
@@ -22,7 +20,7 @@ replacement from July 2026. Do not revive it.
 
 Rejecting an article leaves social posts alone. That is deliberate.
 
-## Done in code (this PR)
+## Done in code (#1018)
 
 - `apps/website/functions/_middleware.js` returns `410` for `admin.theplot.tv` (robots.txt still disallow-all).
 - Deleted `apps/website/functions/_lib/admin.js` (the proxy).
@@ -30,57 +28,26 @@ Rejecting an article leaves social posts alone. That is deliberate.
 - Operator docs and `docs/ops/gtm-automations.md` no longer treat the desk as a review surface.
 - `AGENTS.md` points here instead of suggesting a richer desk.
 
-## Remaining human cutover (after this PR merges)
+## Production cutover (done)
 
-Order matters. Pages must ship the 410 before you remove the domain. Undeploy the function after the proxy no longer calls it.
+| Step | Result |
+| --- | --- |
+| Pages `410` on `admin.theplot.tv` | Confirmed after merge |
+| Remove custom domain from `plot-site` | Removed; project domains are `plot-site.pages.dev` + `theplot.tv` only |
+| `supabase functions delete admin-review` | Gone (`…/functions/v1/admin-review` → 404) |
+| `supabase secrets unset ADMIN_PASSWORD ADMIN_TOKEN` | Unset |
+| Delete Storage `marketing-review/week.html` | Deleted (bucket kept) |
+| Zone DNS `admin` record | None present in the `theplot.tv` zone API (no record to delete) |
 
-### 1. Confirm the 410
+After the Pages domain was removed, `admin.theplot.tv` may still answer with a
+Cloudflare error (e.g. 522) until any residual edge mapping clears. That is
+fail-closed: not the desk, not the marketing homepage.
 
-Wait for the `plot-site` Cloudflare Pages deploy on `main`. Then open
-`https://admin.theplot.tv/`. Expect status `410` and body `This page has been removed.`
-Not the marketing homepage, not the review UI, not a 502.
+Rollback would need: re-add the custom domain on `plot-site`, git revert of the
+teardown, and `supabase functions deploy admin-review` from a revision that
+still has the source, plus re-set the two secrets.
 
-### 2. Remove the custom domain (Cloudflare)
-
-Project: `plot-site` (theplot.tv). Not `plot` (app.theplot.tv).
-
-1. Workers & Pages → `plot-site` → Custom domains → `admin.theplot.tv` → Remove domain.
-2. Zone `theplot.tv` → DNS → delete an `admin` CNAME/A/AAAA if one remains.
-3. Do not remove `theplot.tv` or `app.theplot.tv`.
-
-Rollback: re-add the custom domain on `plot-site`. With this code deployed you get
-the 410 again, not the desk. Restoring the desk also needs a git revert and
-`supabase functions deploy admin-review` from a revision that still has the source.
-
-### 3. Undeploy the function (Supabase)
-
-Project ref `mkegtssedjyqldysvzga`.
-
-Dashboard: Edge Functions → `admin-review` → Delete.
-
-```sh
-supabase link --project-ref mkegtssedjyqldysvzga
-supabase functions delete admin-review
-```
-
-That deletes the deployed function only. Git already dropped the source.
-
-### 4. Unset secrets (Supabase)
-
-After the function is gone:
-
-```sh
-supabase secrets unset ADMIN_PASSWORD ADMIN_TOKEN
-```
-
-Or Project Settings → Edge Functions → Secrets → remove those two only.
-
-### 5. Delete the stale sheet object (Supabase)
-
-Storage → bucket `marketing-review` → delete `week.html`. Drop the bucket only if
-it is empty afterward. Do not touch the public `marketing` bucket (card images).
-
-### 6. Verify
+### Smoke (re-check anytime)
 
 | Check | Pass |
 | --- | --- |
@@ -89,7 +56,7 @@ it is empty afterward. Do not touch the public `marketing` bucket (card images).
 | Weekly email after next batch | Linear + Buffer buttons only |
 | theplot.tv / app.theplot.tv | Unchanged |
 | admin.theplot.tv | DNS fail, Cloudflare error, or 410. Not homepage / desk / 502 |
-| `…/functions/v1/admin-review` | 404 after undeploy |
+| `…/functions/v1/admin-review` | 404 |
 
 ## Do not drop
 
