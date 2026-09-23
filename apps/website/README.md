@@ -82,9 +82,10 @@ per TTL. It ships on its own `wrangler deploy`, not with this site.
 ## Public changelog
 
 `/changelog` is the public product changelog (newest first, New / Improved /
-Fixed). Process and the entry template live in `docs/ops/changelog.md`. Edit
-`changelog.html` (and mirror strings in `copy/changelog.js`) on the same day as
-each public ship.
+Fixed). Source of truth is `data/changelog.json`. Run `pnpm run changelog` to
+regenerate `changelog.html` and `copy/changelog.js`; CI runs `changelog:check`.
+Scaffold a blank entry with `pnpm run changelog:add`. Process and post/don't-post
+rules live in `docs/ops/changelog.md`.
 
 ## Agent-facing files
 

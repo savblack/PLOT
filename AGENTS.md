@@ -183,7 +183,8 @@ These checks fail the build if two sources drift. Fix by regenerating both, not 
 
 - `tokens:check` — `apps/web/src/styles/tokens.css` must match `@plot/core/tokens.js`
   (canonical colors/radii; also feeds mobile).
-- `footer:check` · `tokens:marketing` · `emails:check` — shared footer / website+email
+- `footer:check` · `changelog:check` · `tokens:marketing` · `emails:check` — shared
+  footer / public changelog (`apps/website/data/changelog.json`) / website+email
   tokens / auth email templates.
 - `migrations:check` — no migration may recreate a function with a different
   `ON CONFLICT` target without acknowledging it. See below.

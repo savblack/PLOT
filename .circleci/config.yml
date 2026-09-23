@@ -141,6 +141,7 @@ jobs:
           name: Check generated and shared sources
           command: |
             pnpm run footer:check
+            pnpm run changelog:check
             pnpm run skills:check
             pnpm run tokens:check
             pnpm run colors:check
