@@ -9,6 +9,7 @@ import {
   META, HERO, MANIFESTO, GUIDE_DEMO, TIMELINE, CALENDAR_DEMO, LISTS_DEMO, APP_SOON, TICKER, WHATS_ON_CTA,
 } from '../copy/index.js';
 import { ABOUT_PAGE } from '../copy/about.js';
+import { CHANGELOG_PAGE } from '../copy/changelog.js';
 import { PLANS_PAGE } from '../copy/plans.js';
 import { NOT_FOUND_PAGE } from '../copy/404.js';
 import { FOOTER_PARTIAL } from '../copy/footer.js';
@@ -33,6 +34,7 @@ const MODULES = {
   'index.ticker': TICKER,
   'index.whatsOnCta': WHATS_ON_CTA,
   about: ABOUT_PAGE,
+  changelog: CHANGELOG_PAGE,
   plans: PLANS_PAGE,
   '404': NOT_FOUND_PAGE,
   footerPartial: FOOTER_PARTIAL,
