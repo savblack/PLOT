@@ -3,7 +3,14 @@
 // Web does the equivalent in src/main.jsx. Core reads these via getConfig().
 import 'react-native-url-polyfill/auto';
 import { configure } from '@plot/core/config.js';
+import {
+  ENGAGEMENT_PENDING_KEY,
+  buildPendingWatch,
+  serialiseEngagementPending,
+  notifyPendingWatchQueued,
+} from '@plot/core/engagementPrompt.js';
 import { secureSessionStorage } from './secureStorage';
+import { writeStorage } from './storage';
 import { initAnalytics, track, EVENTS } from './analytics';
 
 initAnalytics();
@@ -19,8 +26,15 @@ configure({
   // action, whatever surface triggered it, so mobile gets the same engagement
   // events as web without instrumenting every screen. Same wiring as the web
   // app's src/main.jsx — see packages/core/config.js for the payloads.
-  onWatchlistSave: ({ tmdb_id, media_type, source }) =>
-    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false }),
+  onWatchlistSave: ({ tmdb_id, media_type, source }) => {
+    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false });
+    if (source === 'onboarding') return;
+    void writeStorage(
+      ENGAGEMENT_PENDING_KEY,
+      serialiseEngagementPending(buildPendingWatch(tmdb_id, media_type)),
+    );
+    notifyPendingWatchQueued({ tmdb_id, media_type, source });
+  },
   onWatchlistRemove: ({ tmdb_id, media_type, source }) =>
     track(EVENTS.WATCHLIST_REMOVED, { tmdb_id, media_type, source }),
   onWatched: ({ tmdb_id, media_type }) =>

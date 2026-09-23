@@ -3,8 +3,10 @@ import test from 'node:test';
 
 import {
   ENGAGEMENT_SNOOZE_KEY,
+  ENGAGEMENT_PENDING_KEY,
   WATCH_PROMPT_SNOOZE_MS,
   RATE_PROMPT_SNOOZE_MS,
+  PENDING_WATCH_TTL_MS,
   engagementTitleKey,
   parseEngagementSnooze,
   serialiseEngagementSnooze,
@@ -13,6 +15,13 @@ import {
   clearEngagementSnooze,
   canShowWatchPrompt,
   canShowRatePrompt,
+  parseEngagementPending,
+  serialiseEngagementPending,
+  buildPendingWatch,
+  isPendingWatchFresh,
+  pendingWatchMatches,
+  onPendingWatchQueued,
+  notifyPendingWatchQueued,
 } from '../../engagementPrompt.js';
 
 test('engagementTitleKey normalises id + media type', () => {
@@ -76,4 +85,36 @@ test('canShowRatePrompt requires watched, no rating, not snoozed', () => {
   assert.equal(canShowRatePrompt({ watched: false, hasRating: false, snoozed: false }), false);
   assert.equal(canShowRatePrompt({ watched: true, hasRating: true, snoozed: false }), false);
   assert.equal(canShowRatePrompt({ watched: true, hasRating: false, snoozed: true }), false);
+});
+
+test('ENGAGEMENT_PENDING_KEY is stable across platforms', () => {
+  assert.equal(ENGAGEMENT_PENDING_KEY, 'plot_engagement_prompt_pending');
+});
+
+test('buildPendingWatch / parse / serialise round-trip', () => {
+  const pending = buildPendingWatch(550, 'movie', 1_000);
+  assert.deepEqual(pending, { kind: 'watch', tmdbId: 550, mediaType: 'movie', at: 1_000 });
+  assert.deepEqual(parseEngagementPending(serialiseEngagementPending(pending)), pending);
+  assert.equal(parseEngagementPending(null), null);
+  assert.equal(parseEngagementPending('nope'), null);
+});
+
+test('isPendingWatchFresh and pendingWatchMatches honour the session TTL', () => {
+  const pending = buildPendingWatch(9, 'tv', 1_000);
+  assert.equal(isPendingWatchFresh(pending, 1_000), true);
+  assert.equal(isPendingWatchFresh(pending, 1_000 + PENDING_WATCH_TTL_MS), true);
+  assert.equal(isPendingWatchFresh(pending, 1_000 + PENDING_WATCH_TTL_MS + 1), false);
+  assert.equal(pendingWatchMatches(pending, 9, 'tv', 1_500), true);
+  assert.equal(pendingWatchMatches(pending, 9, 'movie', 1_500), false);
+  assert.equal(pendingWatchMatches(pending, 8, 'tv', 1_500), false);
+});
+
+test('onPendingWatchQueued notifies subscribers and unsubscribe stops delivery', () => {
+  const seen = [];
+  const stop = onPendingWatchQueued((p) => seen.push(p));
+  notifyPendingWatchQueued({ tmdb_id: 1, media_type: 'movie', source: 'in_app' });
+  assert.equal(seen.length, 1);
+  stop();
+  notifyPendingWatchQueued({ tmdb_id: 2, media_type: 'tv' });
+  assert.equal(seen.length, 1);
 });

@@ -34,6 +34,7 @@ import { readCachedSession, writeCachedSession, clearCachedSession } from './uti
 import { markKnownAccountBrowser } from './utils/accountRecognition.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
+import { onPendingWatchQueued } from '@plot/core/engagementPrompt.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { AppContext, useApp } from './hooks/useApp.js';
 
@@ -252,6 +253,18 @@ export default function App() {
     setPanelClosing(true);
     setTimeout(() => { setPanelItem(null); setPanelClosing(false); }, 280);
   }, []);
+
+  // Out-of-panel save (Discover card, search row, …): open the title so the
+  // watch prompt can show in the same session. Skip if that title is already open.
+  const panelItemRef = useRef(panelItem);
+  useEffect(() => {
+    panelItemRef.current = panelItem;
+  }, [panelItem]);
+  useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type }) => {
+    const open = panelItemRef.current;
+    if (open && Number(open.id) === Number(tmdb_id) && open.type === media_type) return;
+    openPanel(tmdb_id, media_type, 'engagement_prompt');
+  }), [openPanel]);
 
   /* ── Navigation ── */
   const navigateTo = useCallback((view) => navigate(pathForView(view)), [navigate]);

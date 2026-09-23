@@ -4486,6 +4486,28 @@ svg { stroke-width: 1.5; }
   height: 20px;
 }
 
+@media (max-width: 560px) {
+  /* Narrow panels: keep the question on its own line so the CTAs wrap as a
+     clean action row rather than fighting for space with "I'm watching". */
+  .panel-engagement {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+  .panel-engagement-actions {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+  .panel-engagement .btn-sm {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.74rem;
+  }
+  .panel-engagement-star svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
 /* ═══════════════════════════════════════
    YOUR TAKE
    Pinned to the foot of the panel, expanding upward. Sticky inside the panel's

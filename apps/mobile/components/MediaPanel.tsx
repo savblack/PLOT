@@ -42,6 +42,7 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import {
   ENGAGEMENT_SNOOZE_KEY,
+  ENGAGEMENT_PENDING_KEY,
   WATCH_PROMPT_SNOOZE_MS,
   RATE_PROMPT_SNOOZE_MS,
   engagementTitleKey,
@@ -51,8 +52,10 @@ import {
   snoozeEngagement,
   canShowWatchPrompt,
   canShowRatePrompt,
+  parseEngagementPending,
+  pendingWatchMatches,
 } from '@plot/core/engagementPrompt.js';
-import { readStorage, writeStorage } from '../lib/storage';
+import { readStorage, writeStorage, removeStorage } from '../lib/storage';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
@@ -689,8 +692,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   // PLO-473 / PLO-474: compact post-save watch → post–mark-watched rate prompts.
   const [engagementPrompt, setEngagementPrompt] = useState<'watch' | 'rate' | null>(null);
   const [engagementBusy, setEngagementBusy] = useState(false);
+  const [focusReviewAfterPrompt, setFocusReviewAfterPrompt] = useState(false);
 
   const slideY = useRef(new Animated.Value(PANEL_H)).current;
+  const scrollRef = useRef<ScrollView>(null);
+  const reviewSectionY = useRef(0);
+  const reviewInputRef = useRef<TextInput>(null);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -765,6 +772,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       'watch',
     );
     if (!canShowWatchPrompt({ watched, snoozed })) return;
+    await removeStorage(ENGAGEMENT_PENDING_KEY);
     setEngagementPrompt('watch');
   };
 
@@ -777,6 +785,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       WATCH_PROMPT_SNOOZE_MS,
     );
     await writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(next));
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'watch',
+      action: 'not_yet',
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
     setEngagementPrompt(null);
   };
 
@@ -789,6 +803,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       RATE_PROMPT_SNOOZE_MS,
     );
     await writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(next));
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'rate',
+      action: 'skip',
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
     setEngagementPrompt(null);
   };
 
@@ -838,6 +858,14 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     }
   };
 
+  const scrollToReviewAndFocus = () => {
+    setFocusReviewAfterPrompt(true);
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, reviewSectionY.current - 24), animated: true });
+      setTimeout(() => reviewInputRef.current?.focus(), 280);
+    });
+  };
+
   const handlePromptRate = async (rating: number) => {
     if (!rating) return;
     setEngagementBusy(true);
@@ -850,16 +878,23 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       if (ok) {
         setLocalRating(rating);
         setEngagementPrompt(null);
+        scrollToReviewAndFocus();
       }
     } finally {
       setEngagementBusy(false);
     }
   };
 
-  // Leave the rate prompt without snoozing so the written-review fields in
-  // the panel body stay the next thing to use.
+  // Leave the rate prompt without snoozing and land on the written-review fields.
   const handlePromptWriteReview = () => {
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'rate',
+      action: 'write_review',
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
     setEngagementPrompt(null);
+    scrollToReviewAndFocus();
   };
 
   const handleShare = () => shareLink({
@@ -884,7 +919,40 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   useEffect(() => {
     setEngagementPrompt(null);
     setEngagementBusy(false);
+    setFocusReviewAfterPrompt(false);
   }, [itemId, itemType]);
+
+  // Out-of-panel save left a pending watch prompt for this title.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (watched) return;
+      const raw = await readStorage(ENGAGEMENT_PENDING_KEY, null);
+      if (cancelled) return;
+      const pending = parseEngagementPending(raw);
+      if (!pendingWatchMatches(pending, itemId, itemType)) return;
+      await removeStorage(ENGAGEMENT_PENDING_KEY);
+      const snoozeRaw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+      if (cancelled) return;
+      const snoozed = isEngagementSnoozed(
+        parseEngagementSnooze(snoozeRaw),
+        engagementTitleKey(itemId, itemType),
+        'watch',
+      );
+      if (!canShowWatchPrompt({ watched: false, snoozed })) return;
+      setEngagementPrompt('watch');
+    })();
+    return () => { cancelled = true; };
+  }, [itemId, itemType, watched]);
+
+  useEffect(() => {
+    if (!engagementPrompt) return;
+    track(EVENTS.ENGAGEMENT_PROMPT_SHOWN, {
+      kind: engagementPrompt,
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
+  }, [engagementPrompt, itemId, itemType]);
 
   // Slide in on mount
   useEffect(() => {
@@ -1014,7 +1082,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           <View style={styles.handle} />
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView
+          ref={scrollRef}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Backdrop image */}
           <View style={styles.backdropWrap}>
             {details?.backdrop_path
@@ -1202,7 +1275,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                 <PrivateNote id={itemId} type={itemType} title={title} />
 
                 {watched && (
-                  <View style={{ marginBottom: spacing.lg }}>
+                  <View
+                    style={{ marginBottom: spacing.lg }}
+                    onLayout={(e) => { reviewSectionY.current = e.nativeEvent.layout.y; }}
+                  >
                     {/* Date watched — mirrors web's "Watched on" row. Capped at
                         today: a future watch date would sort into a month group
                         that hasn't happened. */}
@@ -1259,9 +1335,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       </TouchableOpacity>
                     </View>
                     <TextInput
-                      style={styles.reviewInput}
+                      ref={reviewInputRef}
+                      style={[styles.reviewInput, focusReviewAfterPrompt && styles.reviewInputFocused]}
                       value={localReview}
                       onChangeText={t => { if (t.length <= 280) setLocalReview(t); }}
+                      onBlur={() => setFocusReviewAfterPrompt(false)}
                       placeholder="Write a quick review…"
                       placeholderTextColor={colors.textMuted}
                       multiline
@@ -1633,6 +1711,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, borderRadius: radii.md,
     padding: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary,
     minHeight: 72, textAlignVertical: 'top', backgroundColor: colors.surface,
+  },
+  reviewInputFocused: {
+    borderColor: colors.accentFill,
   },
 
   providerChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border },
