@@ -23,7 +23,9 @@ follow it without being re-told. Tickets say only *what* to build.
   Bypassing this is the #1 cause of web↔mobile drift.
 - **Never commit secrets.** Browser-safe values are `VITE_*` only. Service-role keys,
   `TMDB_API_KEY`, `RESEND_API_KEY`, etc. stay server/script-side and
-  out of tracked files. Add new required vars to `.env.example`.
+  out of tracked files. Document new required vars (web `VITE_*` in the README's
+  local-setup list; mobile in `apps/mobile/.env.example`). There is no root
+  `.env.example`.
 - **Never touch real user data in Supabase** without asking — PLOT has live end users.
   No auth-admin writes, password changes, or destructive migrations unprompted.
 - **Never import bare `@plot/core`** — the barrel is intentionally empty. Import subpaths
