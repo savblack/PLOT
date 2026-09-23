@@ -15,7 +15,9 @@
 #   set -a; . .env; set +a          # from the MAIN checkout
 #   scripts/db-migration-test.sh
 #
-# Requires: brew install postgresql@17
+# Requires: PostgreSQL 17 client+server on PATH
+#   macOS:        brew install postgresql@17
+#   Cloud Agent:  already in the image (.cursor/Dockerfile)
 #
 # FIDELITY LIMITS — read these before trusting a pass:
 #   * Vault and pg_net are stubbed (they are Supabase-only). SQL correctness is

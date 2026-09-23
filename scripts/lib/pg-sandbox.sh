@@ -11,7 +11,7 @@
 # into pg_restore. The cluster holds real password hashes and PII and is
 # destroyed on exit.
 
-export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
+export PATH="/opt/homebrew/opt/postgresql@17/bin:/usr/lib/postgresql/17/bin:$PATH"
 # Without this, PG17 on macOS dies with "postmaster became multithreaded during
 # startup".
 export LC_ALL=C LANG=C
@@ -27,7 +27,7 @@ SANDBOX_PASSWORD=""
 
 sandbox_require_pg17() {
   if ! command -v pg_dump >/dev/null 2>&1; then
-    echo "pg_dump not found. Production is PG17 and macOS ships 16, so: brew install postgresql@17" >&2
+    echo "pg_dump not found. Production is PG17. On macOS: brew install postgresql@17. On the Cloud Agent image: postgresql-17 is already on PATH." >&2
     return 1
   fi
   case "$(pg_dump --version)" in
