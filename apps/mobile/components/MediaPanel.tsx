@@ -183,21 +183,28 @@ function StarRow({
   // Engagement prompt stars match the pink fill button; the take editor keeps
   // the amber --rating colour used everywhere else in the panel.
   color,
+  // Wider tap targets for the sticky prompt (44px min). The take editor keeps
+  // the tighter default so the review section stays compact.
+  largeHit = false,
 }: {
   rating: number;
   onChange: (r: number) => void;
   color?: string;
+  largeHit?: boolean;
 }) {
   const { colors } = useTheme();
   const starColor = color ?? colors.rating;
   const displayStars = ratingToStars(rating);
   return (
-    <View style={{ flexDirection: 'row', gap: 4 }}>
+    <View style={{ flexDirection: 'row', gap: largeHit ? 2 : 4 }}>
       {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
         <TouchableOpacity
           key={n}
           onPress={() => onChange(starsToRating(displayStars === n ? 0 : n))}
-          hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+          hitSlop={largeHit
+            ? { top: 10, bottom: 10, left: 8, right: 8 }
+            : { top: 6, bottom: 6, left: 4, right: 4 }}
+          style={largeHit ? { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' } : undefined}
           accessibilityLabel={displayStars === n ? 'Clear rating' : `Rate ${n} star${n > 1 ? 's' : ''}`}
           accessibilityRole="button"
         >
@@ -1509,6 +1516,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   <StarRow
                     rating={localRating}
                     color={colors.accentFill}
+                    largeHit
                     onChange={(r) => { void handlePromptRate(r); }}
                   />
                   <TouchableOpacity
@@ -1582,25 +1590,23 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingBottom: spacing.md,
   },
   engagementRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    // Label on its own line, CTAs below. Phone width cannot fit "How was it?"
+    // + five stars + two buttons on one row without an ugly mid-CTA wrap.
+    flexDirection: 'column',
+    alignItems: 'stretch',
     gap: spacing.sm,
   },
   engagementTitle: {
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.sm,
     color: colors.textPrimary,
-    flexShrink: 0,
   },
   engagementActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    flexGrow: 1,
+    justifyContent: 'flex-start',
   },
   engagementPrimary: {
     backgroundColor: colors.accentFill,

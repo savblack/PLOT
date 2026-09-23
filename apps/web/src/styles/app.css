@@ -4470,7 +4470,13 @@ svg { stroke-width: 1.5; }
 }
 .panel-engagement-star {
   display: inline-flex;
-  padding: 0.1rem;
+  align-items: center;
+  justify-content: center;
+  /* Compact glyph, 44px tap target so half-star picks stay usable in the
+     coarse-pointer bottom sheet (and on narrow panels generally). */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: inherit;
@@ -4501,10 +4507,6 @@ svg { stroke-width: 1.5; }
   .panel-engagement .btn-sm {
     padding: 0.35rem 0.75rem;
     font-size: 0.74rem;
-  }
-  .panel-engagement-star svg {
-    width: 18px;
-    height: 18px;
   }
 }
 
