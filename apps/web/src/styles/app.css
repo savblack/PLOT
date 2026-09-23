@@ -7232,11 +7232,10 @@ a.provider-chip--link:hover {
     height: 15px;
   }
 
-  /* Hover-only reveal doesn't exist on touch — these three surfaces show
-     their favourite/save/bookmark buttons the way desktop shows them on
-     hover, permanently. Pairs with hiding the elements they'd otherwise
-     sit on top of (the status chip below). */
-  .discover-hero-corner-btns,
+  /* Hover-only reveal doesn't exist on touch — show favourite/save permanently.
+     Only the real buttons get pointer-events:auto. `.discover-hero-corner-btns`
+     stays pointer-events:none (its base rule): it is inset:0 over the card, and
+     enabling it here swallowed every tap before the hero/binge hit button. */
   .discover-hero-corner-btn,
   .discover-chart-card .discover-chart-actions {
     opacity: 1;
@@ -7354,7 +7353,8 @@ a.provider-chip--link:hover {
     height: 15px;
   }
 
-  .discover-hero-corner-btns,
+  /* Same as the (hover:none) block above: never enable pointer-events on the
+     full-card `.discover-hero-corner-btns` tray. */
   .discover-hero-corner-btn,
   .discover-chart-card .discover-chart-actions {
     opacity: 1;
