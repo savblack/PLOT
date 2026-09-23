@@ -189,16 +189,39 @@ These checks fail the build if two sources drift. Fix by regenerating both, not 
 - `core:check` — every `@plot/core/…` import must resolve to a file in this checkout.
 
 **Why `core:check` exists when `tsc` already does this:** `tsc` is only reliable
-from the repo root. Git worktrees live at `<repo>/.claude/worktrees/<name>`, i.e.
-*inside* the main checkout, so a failed module lookup walks up the ancestor
-`node_modules` chain and lands on the **parent** checkout's `@plot/core`. You
-then typecheck against a tree you are not editing: a core module you deleted
-still resolves, and a core export you just added does not — both pass silently.
-A `tsconfig` `paths` mapping does **not** fix it (a mapping is a first attempt;
-when it misses, resolution falls back to the same walk). If you need to trust a
-local typecheck of `@plot/*`, run it from the main checkout or put the worktree
-outside the repo. This blind spot is how #446 deleted `core/onboarding.js` with
-a live importer still on `main`.
+from the repo root of the tree you are editing. Worktrees nested *inside* the
+main checkout (e.g. `<repo>/.claude/worktrees/<name>`) are unsafe: a failed
+module lookup walks up the ancestor `node_modules` chain and lands on the
+**parent** checkout's `@plot/core`. You then typecheck against a tree you are
+not editing: a core module you deleted still resolves, and a core export you
+just added does not — both pass silently. A `tsconfig` `paths` mapping does
+**not** fix it (a mapping is a first attempt; when it misses, resolution falls
+back to the same walk). This blind spot is how #446 deleted `core/onboarding.js`
+with a live importer still on `main`.
+
+**PLOT convention (source of truth):** agent worktrees are a **sibling** of this
+repo, never nested inside it:
+
+```
+Sites/Cursor/PLOT/                 ← this checkout
+Sites/Cursor/PLOT-worktrees/<task> ← worktrees live here
+```
+
+From the main checkout root:
+
+```bash
+mkdir -p ../PLOT-worktrees
+git worktree add ../PLOT-worktrees/<task-name> \
+  -b agent/<task-name> origin/main
+```
+
+Never use `.claude/worktrees/` or `.worktrees/` under this checkout. If a harness
+opens a nested worktree anyway, that is a **fallback only**: stop, tell the user,
+and recreate under `../PLOT-worktrees/` before writing code. Do not keep working
+nested and "just run `core:check`" unless the user explicitly insists, and never
+for changes under `packages/core`. Procedure: `.agents/skills/plot-worktree/SKILL.md`
+(PLOT-owned; not overwritten by `npx skills update`). This section wins if
+anything else disagrees.
 
 ## Copy lives in `packages/core/copy` — never retype a shared string
 
@@ -348,6 +371,37 @@ Model-agnostic runbooks: run from repo root on `main` with `.env` present, never
 for copy, and **confirm before anything posts publicly.**
 
 ## Agent skills
+
+Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills`
+(via `skills-lock.json`), minus `code-structure` and minus upstream
+`new-feature` (PLOT replaces isolate with a local skill). Typical flow:
+
+1. **Isolate** — `/plot-worktree`: sibling worktree at
+   `../PLOT-worktrees/<task>` (never nest under this checkout; nested harness
+   trees are fallback-only, see CI sync-guards). Local skill; `npx skills update`
+   does not touch it. Commands are also inlined under CI sync-guards above.
+2. **Build** — follow this file (shared logic in `@plot/core`, not a generic
+   actions/services split).
+3. **Prove** — `/evidence-driven-testing` when the change needs runtime proof;
+   always run the checks listed under Commands / Completion format.
+4. **Ship** — open the PR, then work this checklist (skip items that do not
+   apply; do not invent extra process):
+   - [ ] Title and body through `/unslop`; body covers what changed, how
+         verified, risks / follow-ups
+   - [ ] `/before-and-after` only when there is a visible UI surface
+   - [ ] `/greploop` (or `/greploop-apps` for huge diffs) **only when the user
+         asks, or for larger / risky PRs** — not every tiny PR. Treat it as a
+         checklist item you invoke, not a merge gate.
+         - Cap the loop (`--max-iterations` low, default mindset: a few passes).
+         - Fix real bugs and AGENTS.md / design-system violations.
+         - Stop if Greptile is repeating style nits, disagreeing with this file,
+           or thrashing with no new substance. Report what is left; do not chase
+           5/5 for its own sake.
+         - Upstream greploop text says "until 5/5"; **this section wins**.
+5. **Write for humans** — `/unslop` on commit messages, PR title/body, and
+   other prose you wrote (also: no em dashes in user-facing copy).
+
+Do not merge the PR unless explicitly asked.
 
 ### Issue tracker
 
