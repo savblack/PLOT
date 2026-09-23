@@ -172,8 +172,19 @@ function IconShare() {
 // this file. This picker is whole-star-only (no half-star touch target), so
 // it converts at its own boundary: ratingToStars for what to display,
 // starsToRating for what a tap writes back.
-function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) => void }) {
+function StarRow({
+  rating,
+  onChange,
+  // Engagement prompt stars match the pink fill button; the take editor keeps
+  // the amber --rating colour used everywhere else in the panel.
+  color,
+}: {
+  rating: number;
+  onChange: (r: number) => void;
+  color?: string;
+}) {
   const { colors } = useTheme();
+  const starColor = color ?? colors.rating;
   const displayStars = ratingToStars(rating);
   return (
     <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -188,8 +199,8 @@ function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) =
           <Svg width={24} height={24} viewBox="0 0 24 24">
             <Polygon
               points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-              fill={n <= displayStars ? colors.rating : 'none'}
-              stroke={colors.rating}
+              fill={n <= displayStars ? starColor : 'none'}
+              stroke={starColor}
               strokeWidth={1.5}
               strokeLinejoin="round"
             />
@@ -1412,6 +1423,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                 <View style={styles.engagementActions}>
                   <StarRow
                     rating={localRating}
+                    color={colors.accentFill}
                     onChange={(r) => { void handlePromptRate(r); }}
                   />
                   <TouchableOpacity

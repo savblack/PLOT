@@ -4456,8 +4456,17 @@ svg { stroke-width: 1.5; }
 .panel-engagement-stars {
   display: flex;
   gap: 1px;
-  color: var(--accent);
+  /* Match the Write a review / Mark as watched fill pink, not the darker
+     --accent used for type and icon accents elsewhere. */
+  color: var(--accent-fill);
   flex-shrink: 0;
+}
+.panel-engagement-stars .half-star-empty {
+  color: var(--accent-fill);
+  opacity: 0.4;
+}
+.panel-engagement-stars .half-star-fill {
+  color: var(--accent-fill);
 }
 .panel-engagement-star {
   display: inline-flex;
