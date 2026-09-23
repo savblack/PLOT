@@ -7,7 +7,8 @@ export const ENGAGEMENT_PROMPT = {
   markAsWatched: 'Mark as watched',
   imWatching: "I'm watching",
   notYet: 'Not yet',
-  // Rate hop — same chrome, stars replace the watch CTA.
+  // Rate hop — same one-line chrome. The written-review CTA reuses
+  // MEDIA_PANEL.writeReview so the catalog does not own that string twice.
   howWasIt: 'How was it?',
   skipForNow: 'Skip for now',
 };

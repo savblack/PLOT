@@ -42,6 +42,7 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import {
   ENGAGEMENT_SNOOZE_KEY,
+  ENGAGEMENT_PENDING_KEY,
   WATCH_PROMPT_SNOOZE_MS,
   RATE_PROMPT_SNOOZE_MS,
   engagementTitleKey,
@@ -51,8 +52,10 @@ import {
   snoozeEngagement,
   canShowWatchPrompt,
   canShowRatePrompt,
+  parseEngagementPending,
+  pendingWatchMatches,
 } from '@plot/core/engagementPrompt.js';
-import { readStorage, writeStorage } from '../lib/storage';
+import { readStorage, writeStorage, removeStorage } from '../lib/storage';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
@@ -174,24 +177,42 @@ function IconShare() {
 // this file. This picker is whole-star-only (no half-star touch target), so
 // it converts at its own boundary: ratingToStars for what to display,
 // starsToRating for what a tap writes back.
-function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) => void }) {
+function StarRow({
+  rating,
+  onChange,
+  // Engagement prompt stars match the pink fill button; the take editor keeps
+  // the amber --rating colour used everywhere else in the panel.
+  color,
+  // Wider tap targets for the sticky prompt (44px min). The take editor keeps
+  // the tighter default so the review section stays compact.
+  largeHit = false,
+}: {
+  rating: number;
+  onChange: (r: number) => void;
+  color?: string;
+  largeHit?: boolean;
+}) {
   const { colors } = useTheme();
+  const starColor = color ?? colors.rating;
   const displayStars = ratingToStars(rating);
   return (
-    <View style={{ flexDirection: 'row', gap: 4 }}>
+    <View style={{ flexDirection: 'row', gap: largeHit ? 2 : 4 }}>
       {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
         <TouchableOpacity
           key={n}
           onPress={() => onChange(starsToRating(displayStars === n ? 0 : n))}
-          hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+          hitSlop={largeHit
+            ? { top: 10, bottom: 10, left: 8, right: 8 }
+            : { top: 6, bottom: 6, left: 4, right: 4 }}
+          style={largeHit ? { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' } : undefined}
           accessibilityLabel={displayStars === n ? 'Clear rating' : `Rate ${n} star${n > 1 ? 's' : ''}`}
           accessibilityRole="button"
         >
           <Svg width={24} height={24} viewBox="0 0 24 24">
             <Polygon
               points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-              fill={n <= displayStars ? colors.rating : 'none'}
-              stroke={colors.rating}
+              fill={n <= displayStars ? starColor : 'none'}
+              stroke={starColor}
               strokeWidth={1.5}
               strokeLinejoin="round"
             />
@@ -678,8 +699,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   // PLO-473 / PLO-474: compact post-save watch → post–mark-watched rate prompts.
   const [engagementPrompt, setEngagementPrompt] = useState<'watch' | 'rate' | null>(null);
   const [engagementBusy, setEngagementBusy] = useState(false);
+  const [focusReviewAfterPrompt, setFocusReviewAfterPrompt] = useState(false);
 
   const slideY = useRef(new Animated.Value(PANEL_H)).current;
+  const scrollRef = useRef<ScrollView>(null);
+  const reviewSectionY = useRef(0);
+  const reviewInputRef = useRef<TextInput>(null);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -754,6 +779,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       'watch',
     );
     if (!canShowWatchPrompt({ watched, snoozed })) return;
+    await removeStorage(ENGAGEMENT_PENDING_KEY);
     setEngagementPrompt('watch');
   };
 
@@ -766,6 +792,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       WATCH_PROMPT_SNOOZE_MS,
     );
     await writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(next));
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'watch',
+      action: 'not_yet',
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
     setEngagementPrompt(null);
   };
 
@@ -778,6 +810,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       RATE_PROMPT_SNOOZE_MS,
     );
     await writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(next));
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'rate',
+      action: 'skip',
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
     setEngagementPrompt(null);
   };
 
@@ -827,6 +865,14 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     }
   };
 
+  const scrollToReviewAndFocus = () => {
+    setFocusReviewAfterPrompt(true);
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, reviewSectionY.current - 24), animated: true });
+      setTimeout(() => reviewInputRef.current?.focus(), 280);
+    });
+  };
+
   const handlePromptRate = async (rating: number) => {
     if (!rating) return;
     setEngagementBusy(true);
@@ -839,10 +885,23 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       if (ok) {
         setLocalRating(rating);
         setEngagementPrompt(null);
+        scrollToReviewAndFocus();
       }
     } finally {
       setEngagementBusy(false);
     }
+  };
+
+  // Leave the rate prompt without snoozing and land on the written-review fields.
+  const handlePromptWriteReview = () => {
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'rate',
+      action: 'write_review',
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
+    setEngagementPrompt(null);
+    scrollToReviewAndFocus();
   };
 
   const handleShare = () => shareLink({
@@ -867,7 +926,40 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   useEffect(() => {
     setEngagementPrompt(null);
     setEngagementBusy(false);
+    setFocusReviewAfterPrompt(false);
   }, [itemId, itemType]);
+
+  // Out-of-panel save left a pending watch prompt for this title.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (watched) return;
+      const raw = await readStorage(ENGAGEMENT_PENDING_KEY, null);
+      if (cancelled) return;
+      const pending = parseEngagementPending(raw);
+      if (!pendingWatchMatches(pending, itemId, itemType)) return;
+      await removeStorage(ENGAGEMENT_PENDING_KEY);
+      const snoozeRaw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+      if (cancelled) return;
+      const snoozed = isEngagementSnoozed(
+        parseEngagementSnooze(snoozeRaw),
+        engagementTitleKey(itemId, itemType),
+        'watch',
+      );
+      if (!canShowWatchPrompt({ watched: false, snoozed })) return;
+      setEngagementPrompt('watch');
+    })();
+    return () => { cancelled = true; };
+  }, [itemId, itemType, watched]);
+
+  useEffect(() => {
+    if (!engagementPrompt) return;
+    track(EVENTS.ENGAGEMENT_PROMPT_SHOWN, {
+      kind: engagementPrompt,
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
+  }, [engagementPrompt, itemId, itemType]);
 
   // Slide in on mount
   useEffect(() => {
@@ -997,7 +1089,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           <View style={styles.handle} />
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView
+          ref={scrollRef}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Backdrop image */}
           <View style={styles.backdropWrap}>
             {details?.backdrop_path
@@ -1185,7 +1282,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                 <PrivateNote id={itemId} type={itemType} title={title} />
 
                 {watched && (
-                  <View style={{ marginBottom: spacing.lg }}>
+                  <View
+                    style={{ marginBottom: spacing.lg }}
+                    onLayout={(e) => { reviewSectionY.current = e.nativeEvent.layout.y; }}
+                  >
                     {/* Date watched — mirrors web's "Watched on" row. Capped at
                         today: a future watch date would sort into a month group
                         that hasn't happened. */}
@@ -1242,9 +1342,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       </TouchableOpacity>
                     </View>
                     <TextInput
-                      style={styles.reviewInput}
+                      ref={reviewInputRef}
+                      style={[styles.reviewInput, focusReviewAfterPrompt && styles.reviewInputFocused]}
                       value={localReview}
                       onChangeText={t => { if (t.length <= 280) setLocalReview(t); }}
+                      onBlur={() => setFocusReviewAfterPrompt(false)}
                       placeholder="Write a quick review…"
                       placeholderTextColor={colors.textMuted}
                       multiline
@@ -1379,7 +1481,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         {engagementPrompt && !loading && !error && details && (
           <View style={styles.engagementBar} accessibilityRole="summary">
             {engagementPrompt === 'watch' ? (
-              <>
+              <View style={styles.engagementRow}>
                 <Text style={styles.engagementTitle}>{ENGAGEMENT_PROMPT.watchedIt}</Text>
                 <View style={styles.engagementActions}>
                   <TouchableOpacity
@@ -1406,22 +1508,33 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.notYet}</Text>
                   </TouchableOpacity>
                 </View>
-              </>
+              </View>
             ) : (
-              <>
+              <View style={styles.engagementRow}>
                 <Text style={styles.engagementTitle}>{ENGAGEMENT_PROMPT.howWasIt}</Text>
-                <StarRow
-                  rating={localRating}
-                  onChange={(r) => { void handlePromptRate(r); }}
-                />
-                <TouchableOpacity
-                  style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
-                  disabled={engagementBusy}
-                  onPress={skipRatePrompt}
-                >
-                  <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.skipForNow}</Text>
-                </TouchableOpacity>
-              </>
+                <View style={styles.engagementActions}>
+                  <StarRow
+                    rating={localRating}
+                    color={colors.accentFill}
+                    largeHit
+                    onChange={(r) => { void handlePromptRate(r); }}
+                  />
+                  <TouchableOpacity
+                    style={[styles.engagementPrimary, engagementBusy && styles.engagementDisabled]}
+                    disabled={engagementBusy}
+                    onPress={handlePromptWriteReview}
+                  >
+                    <Text style={styles.engagementPrimaryText}>{MEDIA_PANEL.writeReview}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
+                    disabled={engagementBusy}
+                    onPress={skipRatePrompt}
+                  >
+                    <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.skipForNow}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             )}
           </View>
         )}
@@ -1475,6 +1588,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
+  },
+  engagementRow: {
+    // Label on its own line, CTAs below. Phone width cannot fit "How was it?"
+    // + five stars + two buttons on one row without an ugly mid-CTA wrap.
+    flexDirection: 'column',
+    alignItems: 'stretch',
     gap: spacing.sm,
   },
   engagementTitle: {
@@ -1487,11 +1606,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
     alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   engagementPrimary: {
     backgroundColor: colors.accentFill,
     borderRadius: radii.md,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: spacing.md,
   },
   engagementPrimaryText: {
@@ -1501,8 +1621,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   engagementGhost: {
     borderRadius: radii.md,
-    paddingVertical: 10,
-    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    paddingHorizontal: spacing.sm,
   },
   engagementGhostText: {
     fontFamily: fontFamily.sansMedium,
@@ -1597,6 +1717,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, borderRadius: radii.md,
     padding: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary,
     minHeight: 72, textAlignVertical: 'top', backgroundColor: colors.surface,
+  },
+  reviewInputFocused: {
+    borderColor: colors.accentFill,
   },
 
   providerChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border },

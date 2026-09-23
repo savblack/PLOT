@@ -45,6 +45,7 @@ import KebabMenu from './KebabMenu.jsx';
 import PanelCloseRail from './PanelCloseRail.jsx';
 import {
   ENGAGEMENT_SNOOZE_KEY,
+  ENGAGEMENT_PENDING_KEY,
   WATCH_PROMPT_SNOOZE_MS,
   RATE_PROMPT_SNOOZE_MS,
   engagementTitleKey,
@@ -54,8 +55,10 @@ import {
   snoozeEngagement,
   canShowWatchPrompt,
   canShowRatePrompt,
+  parseEngagementPending,
+  pendingWatchMatches,
 } from '@plot/core/engagementPrompt.js';
-import { readStorage, writeStorage } from '../utils/storage.js';
+import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import EngagementPromptBar from './EngagementPromptBar.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
@@ -712,9 +715,9 @@ function pillButtonStyle(variant) {
    A separate component for the same reason TitleReview is one: reading
    `watchedEntry`-derived values in the panel's own render body makes the React
    Compiler bail out of the manual memoization on its watch-status callbacks. ── */
-function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note, dnf, watchedAt, onSave, onClear, user }) {
+function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note, dnf, watchedAt, onSave, onClear, user, defaultOpen = false }) {
   const { privateNotes } = useApp();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const actionSheet = useRef(null);
   const hasPrivateNote = !!privateNotes?.rows?.[privateNoteKey(itemId, itemType)]?.note;
   const hasTake = !!(rating || note.trim() || dnf);
@@ -1204,6 +1207,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   // 'watch' | 'rate' | null. Cleared when the open title changes.
   const [engagementPrompt, setEngagementPrompt] = useState(null);
   const [engagementBusy, setEngagementBusy] = useState(false);
+  // When "Write a review" is chosen from the rate prompt, TakeBar mounts open.
+  const [takeBarDefaultOpen, setTakeBarDefaultOpen] = useState(false);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -1284,7 +1289,29 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const dragStateRef = useRef({ active: false, startY: 0, startTime: 0, snap: 'collapsed' });
 
   useEffect(() => { setSheetSnap('collapsed'); }, [itemId]); // eslint-disable-line react-hooks/set-state-in-effect -- each newly opened title starts at the preview snap
-  useEffect(() => { setEngagementPrompt(null); setEngagementBusy(false); }, [itemId, itemType]); // eslint-disable-line react-hooks/set-state-in-effect -- drop the prior title's prompt when the open title changes
+  /* eslint-disable react-hooks/set-state-in-effect -- reset / consume engagement when the open title changes */
+  useEffect(() => {
+    setEngagementPrompt(null);
+    setEngagementBusy(false);
+    setTakeBarDefaultOpen(false);
+  }, [itemId, itemType]);
+
+  // Out-of-panel save left a pending watch prompt for this title: offer it once
+  // the panel opens, then clear the queue so it does not reappear on reopen.
+  useEffect(() => {
+    if (watched) return;
+    const pending = parseEngagementPending(readStorage(ENGAGEMENT_PENDING_KEY, null));
+    if (!pendingWatchMatches(pending, itemId, itemType)) return;
+    removeStorage(ENGAGEMENT_PENDING_KEY);
+    const snoozed = isEngagementSnoozed(
+      parseEngagementSnooze(readStorage(ENGAGEMENT_SNOOZE_KEY, '{}')),
+      engagementTitleKey(itemId, itemType),
+      'watch',
+    );
+    if (!canShowWatchPrompt({ watched: false, snoozed })) return;
+    setEngagementPrompt('watch');
+  }, [itemId, itemType, watched]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const isBottomSheet = () =>
     typeof window !== 'undefined' && window.matchMedia('(hover: none), (pointer: coarse)').matches;
@@ -1544,18 +1571,41 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const offerWatchPrompt = useCallback(() => {
     const snoozed = isEngagementSnoozed(readSnoozeMap(), titleSnoozeKey, 'watch');
     if (!canShowWatchPrompt({ watched, snoozed })) return;
+    removeStorage(ENGAGEMENT_PENDING_KEY);
     setEngagementPrompt('watch');
   }, [readSnoozeMap, titleSnoozeKey, watched]);
 
+  // Fire shown once per prompt mount (watch or rate), not on every re-render.
+  useEffect(() => {
+    if (!engagementPrompt) return;
+    track(EVENTS.ENGAGEMENT_PROMPT_SHOWN, {
+      kind: engagementPrompt,
+      tmdb_id: Number(itemId),
+      media_type: itemType,
+    });
+  }, [engagementPrompt, itemId, itemType]);
+
   const dismissWatchPrompt = useCallback(() => {
     writeSnoozeMap(snoozeEngagement(readSnoozeMap(), titleSnoozeKey, 'watch', WATCH_PROMPT_SNOOZE_MS));
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'watch',
+      action: 'not_yet',
+      tmdb_id: Number(itemId),
+      media_type: itemType,
+    });
     setEngagementPrompt(null);
-  }, [readSnoozeMap, titleSnoozeKey, writeSnoozeMap]);
+  }, [itemId, itemType, readSnoozeMap, titleSnoozeKey, writeSnoozeMap]);
 
   const skipRatePrompt = useCallback(() => {
     writeSnoozeMap(snoozeEngagement(readSnoozeMap(), titleSnoozeKey, 'rate', RATE_PROMPT_SNOOZE_MS));
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'rate',
+      action: 'skip',
+      tmdb_id: Number(itemId),
+      media_type: itemType,
+    });
     setEngagementPrompt(null);
-  }, [readSnoozeMap, titleSnoozeKey, writeSnoozeMap]);
+  }, [itemId, itemType, readSnoozeMap, titleSnoozeKey, writeSnoozeMap]);
 
   const handleSaveFromPanel = useCallback(async () => {
     if (!details) return;
@@ -1605,8 +1655,26 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
       dnf: savedDnf,
       watchedAt: savedWatchedAt,
     });
-    if (ok) setEngagementPrompt(null);
+    if (ok) {
+      // Star tap saves the score, then hand off into TakeBar so a written
+      // review is one more step, not a dead end.
+      setTakeBarDefaultOpen(true);
+      setEngagementPrompt(null);
+    }
   }, [saveReview, savedDnf, savedReview, savedWatchedAt]);
+
+  // Leave the rate prompt without snoozing: the user is going into the take
+  // editor, which is the written-review path the prompt is advertising.
+  const handlePromptWriteReview = useCallback(() => {
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'rate',
+      action: 'write_review',
+      tmdb_id: Number(itemId),
+      media_type: itemType,
+    });
+    setTakeBarDefaultOpen(true);
+    setEngagementPrompt(null);
+  }, [itemId, itemType]);
 
   return (
     <>
@@ -2064,11 +2132,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
               onStartWatching={handlePromptStartWatching}
               onDismissWatch={dismissWatchPrompt}
               onRate={handlePromptRate}
+              onWriteReview={handlePromptWriteReview}
               onSkipRate={skipRatePrompt}
             />
           ) : (
             <TakeBar
-              key={`${itemType}:${itemId}`}
+              key={`${itemType}:${itemId}:${takeBarDefaultOpen ? 'open' : 'closed'}`}
               itemId={itemId}
               itemType={itemType}
               title={title}
@@ -2081,6 +2150,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
               onSave={saveReview}
               onClear={clearReview}
               user={user}
+              defaultOpen={takeBarDefaultOpen}
             />
           )
         )}
