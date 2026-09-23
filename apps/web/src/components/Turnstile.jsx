@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { AUTH_PAGE } from '../copy/authPage.js';
 
 // Cloudflare Turnstile — invisible/managed CAPTCHA for Supabase Auth.
 // Renders nothing when no site key is configured (local dev / CI), so the
@@ -33,11 +34,10 @@ function loadScript() {
   return scriptPromise;
 }
 
-// Retrying past this many failures hasn't recovered a real network blip by
-// now — it's almost always a persistent block (ad blocker / privacy
-// extension), which a retry can't fix. Switch to naming that instead of
-// repeating the same generic message forever.
-const PERSISTENT_FAILURE_THRESHOLD = 2;
+// One failure is enough to arm signup-bypass. Waiting for a second failure
+// never happened in practice (signup_captcha_blocked fired, signup_bypass_offered
+// did not), so the email path stayed disabled. A later success still clears it.
+const PERSISTENT_FAILURE_THRESHOLD = 1;
 
 /**
  * @param {object}   props
@@ -122,20 +122,18 @@ export default function Turnstile({ siteKey, onToken, resetSignal = 0, onBlocked
         className="auth-turnstile"
         style={{ display: 'flex', justifyContent: 'center' }}
       />
-      {failCount >= PERSISTENT_FAILURE_THRESHOLD ? (
+      {failCount > PERSISTENT_FAILURE_THRESHOLD ? (
         <p className="auth-turnstile-error">
-          Still no luck. This usually means an ad blocker or privacy extension is blocking
-          Cloudflare's script. Try disabling it or use a different browser.{' '}
+          {AUTH_PAGE.verificationBlocked}{' '}
           <button type="button" onClick={() => setRetryNonce((n) => n + 1)}>
-            Retry
+            {AUTH_PAGE.verificationRetry}
           </button>
         </p>
       ) : failCount > 0 ? (
         <p className="auth-turnstile-error">
-          Verification failed to load. This can happen with ad blockers or strict privacy
-          settings.{' '}
+          {AUTH_PAGE.verificationFailed}{' '}
           <button type="button" onClick={() => setRetryNonce((n) => n + 1)}>
-            Retry
+            {AUTH_PAGE.verificationRetry}
           </button>
         </p>
       ) : null}

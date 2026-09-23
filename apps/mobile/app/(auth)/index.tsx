@@ -148,7 +148,10 @@ export default function AuthScreen() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh token (single-use)
 
-  // If no site key is configured the widget is a no-op, so don't block submit on it.
+  // Website signup no longer dead-ends on a missing Turnstile token
+  // (packages/core/captchaGate.js routes that case through signup-bypass).
+  // Native still waits for a token: this screen has no bypass client, and
+  // the signup drop being fixed is app.theplot.tv, which is the web app.
   const captchaReady = !TURNSTILE_SITE_KEY || !!captchaToken;
   const refreshCaptcha = () => setCaptchaNonce((n) => n + 1);
 
