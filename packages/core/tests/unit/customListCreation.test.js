@@ -29,7 +29,7 @@ test('a concurrent insert rejected by the cap produces the shared coming-soon me
   await assert.rejects(createCustomListRecord(db, 'owner', 'Sixth'), error => {
     assert.equal(error.code, CUSTOM_LIST_LIMIT_CODE);
     assert.equal(customListCreationError(error, 'fallback'), CUSTOM_LISTS.limitMessage);
-    assert.match(error.message, /5 custom lists.*Premium feature, coming soon/);
+    assert.match(error.message, /5 custom lists.*planned for plot Premium/);
     return true;
   });
   assert.equal(db.calls.length, 2);

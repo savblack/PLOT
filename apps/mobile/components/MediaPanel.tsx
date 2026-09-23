@@ -56,6 +56,8 @@ import { readStorage, writeStorage } from '../lib/storage';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
+import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { useRouter } from 'expo-router';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { TrailerPlayer } from './TrailerPlayer';
 import CollectionCard from './CollectionCard';
@@ -464,6 +466,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
   const insets = useSafeAreaInsets();
   const { lists, isInList, addItem, removeItem, createList } = customLists;
   const { profile } = useAppData();
+  const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [name, setName]         = useState('');
   const [error, setError]       = useState('');
@@ -481,6 +484,10 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
     if (findDuplicateCustomList(lists, trimmed)) { setError('A list with that name already exists.'); return; }
     if (!canCreateCustomList(lists.length, profile)) {
       setError(CUSTOM_LISTS.limitMessage);
+      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage, [
+        { text: COMMON.cancel, style: 'cancel' },
+        { text: PLANS_PAGE.previewAction, onPress: () => { onClose(); router.push('/(app)/settings?premium=1' as any); } },
+      ]);
       return;
     }
     setBusy(true);

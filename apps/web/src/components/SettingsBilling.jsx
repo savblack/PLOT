@@ -1,43 +1,59 @@
 // Web-only Stripe portal navigation is injected by SettingsView. Checkout is
 // deliberately informational: this component never invokes a billing endpoint.
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SETTINGS_VIEW as T } from '../copy/settingsView.js';
-import { COMMON } from '../copy/common.js';
-import ConfirmModal from './ConfirmModal.jsx';
+import { PLANS_PAGE } from '../copy/plansPage.js';
 import { SettingsTextAction } from './SettingsPage.jsx';
+import { premiumPlansPath } from '../utils/premiumExplore.js';
 
 export default function SettingsBilling({ isPremium, busy, error, onManage, notice }) {
-  const [cycle, setCycle] = useState('monthly');
-  const [comingSoon, setComingSoon] = useState(false);
+  const navigate = useNavigate();
+  const explore = () => navigate(premiumPlansPath('/settings?section=billing'));
+
   return (
     <>
       <div className="settings-premium-card">
-        <div className="settings-premium-heading"><h3>{T.premium.groupTitle}</h3><span className="settings-status">{isPremium ? T.billing.active : T.billing.freePlan}</span></div>
+        <div className="settings-premium-heading">
+          <h3>{T.premium.groupTitle}</h3>
+          <span className="settings-status">{isPremium ? T.billing.active : T.billing.freePlan}</span>
+        </div>
         <p>{isPremium ? T.premium.thankYou : T.billing.intro}</p>
-        <ul className="settings-premium-features">{T.billing.features.map(feature => <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>)}</ul>
+        {!isPremium && (
+          <p className="settings-selection">
+            {PLANS_PAGE.premium.priceSummary}
+            <span aria-hidden="true"> · </span>
+            {PLANS_PAGE.comingSoon}
+          </p>
+        )}
+        <ul className="settings-premium-features">
+          {(isPremium ? T.billing.features : PLANS_PAGE.planSummary).map(feature => (
+            <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>
+          ))}
+        </ul>
         {isPremium ? (
           <div className="settings-billing-actions">
             <p>{T.billing.portalHint}</p>
-            <SettingsTextAction disabled={busy} onClick={onManage}>{busy ? T.premium.opening : T.premium.manageSubscription}</SettingsTextAction>
+            <SettingsTextAction disabled={busy} onClick={onManage}>
+              {busy ? T.premium.opening : T.premium.manageSubscription}
+            </SettingsTextAction>
           </div>
         ) : (
-          <>
-            <fieldset className="settings-billing-cycle">
-              <legend>{T.billing.cycle}</legend>
-              {['monthly', 'yearly'].map(value => <button key={value} type="button" aria-pressed={cycle === value} onClick={() => setCycle(value)}>{T.billing[value]}</button>)}
-            </fieldset>
-            <div className="settings-billing-actions"><p>{T.billing.comingSoon}</p><SettingsTextAction onClick={() => setComingSoon(true)}>{T.billing.checkout}</SettingsTextAction></div>
-          </>
+          <div className="settings-billing-actions">
+            <p>{T.billing.exploreHint}</p>
+            <SettingsTextAction onClick={explore}>{T.premium.upgradeButton}</SettingsTextAction>
+          </div>
         )}
         {notice && <p role="status">{notice}</p>}
         {error && <p role="alert" className="settings-error">{error}</p>}
       </div>
       <div className="settings-support">
-        <h3>{T.billing.supportTitle}</h3><p>{T.billing.supportHint}</p>
-        <a className="settings-text-action" href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener noreferrer">{T.billing.supportAction}<span aria-hidden="true">→</span></a>
+        <h3>{T.billing.supportTitle}</h3>
+        <p>{T.billing.supportHint}</p>
+        <a className="settings-text-action" href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener noreferrer">
+          {T.billing.supportAction}<span aria-hidden="true">→</span>
+        </a>
         <p className="settings-selection">{T.billing.supportNote}</p>
       </div>
-      {comingSoon && <ConfirmModal informational title={T.billing.comingSoon} message={T.billing.comingSoonMessage} confirmLabel={COMMON.done} onClose={() => setComingSoon(false)} />}
     </>
   );
 }
