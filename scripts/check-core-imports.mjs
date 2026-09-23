@@ -8,12 +8,12 @@
 // it stayed that way until someone tried to run the app.
 //
 // CI's `tsc --noEmit` did catch it. What it cannot be trusted to catch is the
-// same mistake made from a git worktree, and worktrees are where most of this
-// repo's work happens. They live at <repo>/.claude/worktrees/<name>, i.e.
-// INSIDE the main checkout, so when TypeScript fails to find a module it walks
-// up the ancestor node_modules chain and reaches <repo>/node_modules/@plot/core
-// -> <repo>/packages/core — the PARENT checkout's copy, not the one you are
-// editing. Two failures follow, and both are silent:
+// same mistake made from a nested git worktree (inside the main checkout, e.g.
+// <repo>/.claude/worktrees/<name>). PLOT's convention is sibling worktrees at
+// ../PLOT-worktrees/<name> (AGENTS.md + .agents/skills/plot-worktree). Nested
+// trees are unsafe: TypeScript walks up the ancestor node_modules chain and
+// reaches <repo>/node_modules/@plot/core -> <repo>/packages/core — the PARENT
+// checkout's copy, not the one you are editing. Two failures follow, both silent:
 //
 //   * a core module you deleted still resolves (the parent still has it)
 //   * a core export you just added does not exist (it reads the parent's file)

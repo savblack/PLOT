@@ -13,6 +13,9 @@ test('authErrorReason recognises each known Supabase message, as a substring mat
   assert.equal(authErrorReason('User already registered'), 'already_registered');
   assert.equal(authErrorReason('Error: User already registered.'), 'already_registered');
   assert.equal(authErrorReason('Password should be at least 6 characters'), 'weak_password');
+  // Empty-password signup (often autofill that never updated React state).
+  assert.equal(authErrorReason('Signup requires a valid password'), 'weak_password');
+  assert.equal(authErrorReason('422: Anonymous sign-ins are disabled'), 'weak_password');
   assert.equal(authErrorReason('Unable to validate email address: invalid format'), 'invalid_email');
   assert.equal(authErrorReason('Email rate limit exceeded'), 'rate_limited');
   assert.equal(authErrorReason('too many requests, slow down'), 'rate_limited');

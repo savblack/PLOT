@@ -1,11 +1,12 @@
 /**
  * signup-bypass — exceptional-path account creation for browsers where
- * Cloudflare Turnstile has persistently failed (ad blocker / privacy
- * extension). The normal signup path (apps/web AuthPage.jsx calling
- * `supabase.auth.signUp()` directly, gated by Supabase's dashboard-level
- * Bot & Abuse Protection) is untouched and stays the primary route for
- * everyone else — this function is only invoked once Turnstile has crossed
- * PERSISTENT_FAILURE_THRESHOLD (see apps/web/src/components/Turnstile.jsx).
+ * Cloudflare Turnstile has failed to produce a token (ad blocker, privacy
+ * extension, or the widget never called back). The normal signup path
+ * (apps/web AuthPage.jsx calling `supabase.auth.signUp()` directly, gated
+ * by Supabase's dashboard-level Bot & Abuse Protection) stays the primary
+ * route whenever a token arrives in time. This function runs when that
+ * token is missing: the page waits a few seconds, and a widget error arms
+ * it immediately (see packages/core/captchaGate.js).
  *
  * Does its own bot mitigation instead of relying on Turnstile:
  *   1. Honeypot ('website' field, invisible to humans — see .fn-website in

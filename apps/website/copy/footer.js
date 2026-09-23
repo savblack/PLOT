@@ -13,10 +13,13 @@ export const FOOTER_PARTIAL = {
   nav: {
     home: 'Home',
     whatsOn: "What's On",
+    newsletter: 'Newsletter',
     login: 'Log in',
     signup: 'Sign up',
+    changelog: 'Changelog',
     privacy: 'Privacy',
     terms: 'Terms',
+    community: 'Community',
   },
   copyright: (year) => `© ${year} plot`,
   socialAria: {

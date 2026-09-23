@@ -4,11 +4,14 @@ import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 // inside the collapsible card on a movie and as the body of the collection
 // panel opened from search. Mirrors apps/web/src/components/CollectionFilms.jsx.
 import { useMemo, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { collectionPartYear, collectionProgress } from '@plot/core/collections.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
+import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { COMMON } from '@plot/core/copy/common.js';
+import { useRouter } from 'expo-router';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -41,6 +44,7 @@ export default function CollectionFilms({ stub, parts, items }: { stub: { id: nu
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, profile, customLists } = useAppData();
+  const router = useRouter();
   const { open: openTitle } = useMediaPanel();
   const [saveState, setSaveState] = useState<SaveState>({ status: 'idle', message: '' });
   const existingList = findDuplicateCustomList(customLists?.lists || [], stub.name);
@@ -54,6 +58,10 @@ export default function CollectionFilms({ stub, parts, items }: { stub: { id: nu
         status: 'error',
         message: CUSTOM_LISTS.limitMessage,
       });
+      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage, [
+        { text: COMMON.cancel, style: 'cancel' },
+        { text: PLANS_PAGE.previewAction, onPress: () => router.push('/(app)/settings?premium=1' as any) },
+      ]);
       return;
     }
     setSaveState({ status: 'saving', message: '' });

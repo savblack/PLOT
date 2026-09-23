@@ -4414,6 +4414,103 @@ svg { stroke-width: 1.5; }
 .panel-consensus { flex: 1; min-width: 0; margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); }
 
 /* ═══════════════════════════════════════
+   ENGAGEMENT PROMPT (PLO-473 / PLO-474)
+   Compact sticky bar on the title panel: post-save “Watched it?” then
+   post–mark-watched rating. Same chrome slot as TakeBar; never a full-screen
+   interrupt.
+═══════════════════════════════════════ */
+
+.panel-engagement {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem 0.75rem;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  padding: 0.75rem 1.25rem;
+}
+.panel-engagement-label {
+  flex: 0 1 auto;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.panel-engagement-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+.panel-engagement-actions .btn-primary {
+  flex: 0 0 auto;
+}
+.panel-engagement-stars {
+  display: flex;
+  gap: 1px;
+  /* Match the Write a review / Mark as watched fill pink, not the darker
+     --accent used for type and icon accents elsewhere. */
+  color: var(--accent-fill);
+  flex-shrink: 0;
+}
+.panel-engagement-stars .half-star-empty {
+  color: var(--accent-fill);
+  opacity: 0.4;
+}
+.panel-engagement-stars .half-star-fill {
+  color: var(--accent-fill);
+}
+.panel-engagement-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Compact glyph, 44px tap target so half-star picks stay usable in the
+     coarse-pointer bottom sheet (and on narrow panels generally). */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.panel-engagement-star:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.panel-engagement-star svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 560px) {
+  /* Narrow panels: keep the question on its own line so the CTAs wrap as a
+     clean action row rather than fighting for space with "I'm watching". */
+  .panel-engagement {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+  .panel-engagement-actions {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+  .panel-engagement .btn-sm {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.74rem;
+  }
+}
+
+/* ═══════════════════════════════════════
    YOUR TAKE
    Pinned to the foot of the panel, expanding upward. Sticky inside the panel's
    own scroll, so it holds whatever the rest of the panel is doing.
@@ -7176,11 +7273,10 @@ a.provider-chip--link:hover {
     height: 15px;
   }
 
-  /* Hover-only reveal doesn't exist on touch — these three surfaces show
-     their favourite/save/bookmark buttons the way desktop shows them on
-     hover, permanently. Pairs with hiding the elements they'd otherwise
-     sit on top of (the status chip below). */
-  .discover-hero-corner-btns,
+  /* Hover-only reveal doesn't exist on touch — show favourite/save permanently.
+     Only the real buttons get pointer-events:auto. `.discover-hero-corner-btns`
+     stays pointer-events:none (its base rule): it is inset:0 over the card, and
+     enabling it here swallowed every tap before the hero/binge hit button. */
   .discover-hero-corner-btn,
   .discover-chart-card .discover-chart-actions {
     opacity: 1;
@@ -7298,7 +7394,8 @@ a.provider-chip--link:hover {
     height: 15px;
   }
 
-  .discover-hero-corner-btns,
+  /* Same as the (hover:none) block above: never enable pointer-events on the
+     full-card `.discover-hero-corner-btns` tray. */
   .discover-hero-corner-btn,
   .discover-chart-card .discover-chart-actions {
     opacity: 1;

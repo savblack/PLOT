@@ -94,6 +94,11 @@ Encoded here once so nobody rediscovers them.
   reported the same event. Undo now fires `episode_unwatched` /
   `season_unwatched`.
 - **`activated` is retired.** See above.
+- **`engagement_prompt_shown` / `engagement_prompt_dismissed` are not Tier 2.**
+  They measure the in-panel watch/rate prompts (PLO-473 / PLO-474): exposure
+  and how people leave (`action`: `not_yet`, `skip`, `write_review`). Accepting
+  Mark as watched or setting a star still fires `marked_watched` / `rating_set`
+  from the canonical seams; do not treat prompt events as committed actions.
 - **Onboarding seed picks fire *before* `onboarding_completed`.** The seed step
   calls `addToList()` in a loop and only then tracks completion
   (`OnboardingFlow.jsx`), so those `watchlist_saved` events precede the

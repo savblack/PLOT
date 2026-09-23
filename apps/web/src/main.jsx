@@ -1,11 +1,18 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { configure } from '@plot/core/config.js';
+import {
+  ENGAGEMENT_PENDING_KEY,
+  buildPendingWatch,
+  serialiseEngagementPending,
+  notifyPendingWatchQueued,
+} from '@plot/core/engagementPrompt.js';
 import { captureAttribution, currentArticleAttribution } from './utils/attribution.js';
 import { analyticsAllowed } from './utils/analyticsHost.js';
 import { isChunkError, markChunkReload, recentlyReloaded } from './utils/chunkError.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { isOpaqueBrowserException } from './utils/opaqueException.js';
+import { writeStorage } from './utils/storage.js';
 import { track, EVENTS, _setPostHogClient } from './lib/analytics.js';
 
 // Inject web env into the shared core before anything renders or fetches.
@@ -42,8 +49,18 @@ configure({
   // Analytics seam: core fires this once per genuinely new watchlist add (any
   // surface). Previously only the /save deep link emitted watchlist_saved; now
   // every in-app save does too, and a first save counts as activation.
-  onWatchlistSave: ({ tmdb_id, media_type, source }) =>
-    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false }),
+  onWatchlistSave: ({ tmdb_id, media_type, source }) => {
+    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false });
+    // Queue a same-session watch prompt for any non-onboarding save so a
+    // Discover/card bookmark still offers Mark as watched when the title panel
+    // opens (and the app shell can open that panel immediately).
+    if (source === 'onboarding') return;
+    writeStorage(
+      ENGAGEMENT_PENDING_KEY,
+      serialiseEngagementPending(buildPendingWatch(tmdb_id, media_type)),
+    );
+    notifyPendingWatchQueued({ tmdb_id, media_type, source });
+  },
   // Engagement seams — core fires these from the single canonical spot for each
   // action (any surface), so we never double-count or miss a surface. See
   // packages/core/config.js for the payload contracts.

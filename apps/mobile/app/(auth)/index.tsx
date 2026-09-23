@@ -130,6 +130,9 @@ function friendlyAuthError(msg?: string) {
   if (msg.includes('Email not confirmed'))         return 'Almost in! Your activation email is waiting in your inbox.';
   if (msg.includes('User already registered'))     return AUTH_PAGE.accountAlreadyExists;
   if (msg.includes('Password should be at least')) return AUTH_PAGE.weakPassword;
+  // Empty password reaching GoTrue — same user-facing fix as a short password.
+  if (msg.includes('Signup requires a valid password')) return AUTH_PAGE.weakPassword;
+  if (msg.includes('Anonymous sign-ins are disabled'))  return AUTH_PAGE.weakPassword;
   if (msg.includes('Unable to validate email'))    return AUTH_PAGE.invalidEmail;
   if (msg.includes('rate limit') || msg.includes('too many')) return AUTH_PAGE.rateLimited;
   return msg;
@@ -145,7 +148,10 @@ export default function AuthScreen() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh token (single-use)
 
-  // If no site key is configured the widget is a no-op, so don't block submit on it.
+  // Website signup no longer dead-ends on a missing Turnstile token
+  // (packages/core/captchaGate.js routes that case through signup-bypass).
+  // Native still waits for a token: this screen has no bypass client, and
+  // the signup drop being fixed is app.theplot.tv, which is the web app.
   const captchaReady = !TURNSTILE_SITE_KEY || !!captchaToken;
   const refreshCaptcha = () => setCaptchaNonce((n) => n + 1);
 

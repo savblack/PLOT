@@ -18,10 +18,13 @@ export const NAV = {
 export const FOOTER = {
   home: 'Home',
   whatsOn: "What's On",
+  newsletter: 'Newsletter',
   login: 'Log in',
   signup: 'Sign up',
+  changelog: 'Changelog',
   privacy: 'Privacy',
   terms: 'Terms',
+  community: 'Community',
   copyright: (year) => `© ${year} plot`,
   socialAria: {
     instagram: 'plot on Instagram',

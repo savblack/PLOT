@@ -31,6 +31,8 @@ test('spot-checks a few specific event name mappings', () => {
   assert.equal(EVENTS.TRAKT_SYNCED, 'trakt_synced');
   assert.equal(EVENTS.SIGNUP_SUBMIT_FAILED, 'signup_submit_failed');
   assert.equal(EVENTS.LOGIN_SUBMIT_FAILED, 'login_submit_failed');
+  assert.equal(EVENTS.ENGAGEMENT_PROMPT_SHOWN, 'engagement_prompt_shown');
+  assert.equal(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, 'engagement_prompt_dismissed');
 });
 
 test('personPropsFromProfile handles a missing profile as all-inactive', () => {

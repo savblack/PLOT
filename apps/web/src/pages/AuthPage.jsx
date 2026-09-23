@@ -11,6 +11,7 @@ import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../util
 import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
+import { captchaSubmitPlan, CAPTCHA_TOKEN_WAIT_MS } from '@plot/core/captchaGate.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 
@@ -22,9 +23,59 @@ function friendlyError(msg) {
   if (msg.includes('Email not confirmed'))          return AUTH_PAGE.activationEmailWaiting;
   if (msg.includes('User already registered'))      return AUTH_PAGE.accountAlreadyExists;
   if (msg.includes('Password should be at least'))  return AUTH_PAGE.weakPassword;
+  // Empty password reaching GoTrue — same user-facing fix as a short password.
+  if (msg.includes('Signup requires a valid password')) return AUTH_PAGE.weakPassword;
+  if (msg.includes('Anonymous sign-ins are disabled'))  return AUTH_PAGE.weakPassword;
   if (msg.includes('Unable to validate email'))     return AUTH_PAGE.invalidEmail;
   if (msg.includes('rate limit') || msg.includes('too many')) return AUTH_PAGE.rateLimited;
   return msg;
+}
+
+/**
+ * Read email/password from the live DOM, not React state.
+ *
+ * Password managers (and some mobile browsers) fill inputs without firing
+ * `onChange`, so controlled state can still be '' while the field looks filled.
+ * The form also uses `noValidate`, so HTML5 `required`/`minLength` never catch
+ * that. Reading `.value` at submit time is what actually gets sent to Supabase.
+ *
+ * @param {HTMLFormElement | null} form
+ * @returns {{ email: string, password: string }}
+ */
+function readAuthFormFields(form) {
+  const emailEl = form?.querySelector('#auth-email');
+  const passwordEl = form?.querySelector('#auth-password');
+  return {
+    email: (emailEl instanceof HTMLInputElement ? emailEl.value : '').trim(),
+    password: passwordEl instanceof HTMLInputElement ? passwordEl.value : '',
+  };
+}
+
+// Poll until `read` returns a value or `ms` elapses. Used so a click during
+// Turnstile load still takes the normal signUp path if the token arrives.
+function waitForValue(read, ms) {
+  const current = read();
+  if (current) return Promise.resolve(current);
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const id = setInterval(() => {
+      const next = read();
+      if (next || Date.now() - started >= ms) {
+        clearInterval(id);
+        resolve(next);
+      }
+    }, 50);
+  });
+}
+
+// signup-bypass rejects posts younger than its server minimum, measured from
+// form-token issuance. Waiting here keeps a fast click from landing on a
+// success screen for an account the server never created.
+function waitOutMinimum(startedAt, minMs) {
+  if (!startedAt) return Promise.resolve();
+  const since = Date.now() - startedAt;
+  if (since >= minMs) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, minMs - since));
 }
 
 // Short, stable slugs for signup_submit_failed — group failures in PostHog
@@ -71,15 +122,22 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [success, setSuccess]         = useState(false);
   const [magicSent, setMagicSent]     = useState(false);
   const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
-  const [captchaToken, setCaptchaToken] = useState(null);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh Turnstile token
-  const [captchaPersistentlyBlocked, setCaptchaPersistentlyBlocked] = useState(false);
+  // Kept in a ref so a submit handler can see a token that arrived during
+  // the short wait, without waiting for another render.
+  const captchaTokenRef = useRef(null);
+  const captchaBlockedRef = useRef(false);
   const [formStarted, setFormStarted] = useState(false);
   const [website, setWebsite] = useState(''); // honeypot — real users never see or fill this
   // Signed {iat} token from signup-bypass's GET endpoint — a server-observed
   // clock the bypass path checks submission timing against, since a raw
   // client-supplied timestamp could just be claimed, not proven.
   const formTokenRef = useRef(null);
+  // When the current form token was issued. signup-bypass rejects (as a fake
+  // success) anything posted sooner than its server-side minimum, measured
+  // from that issuance. A fast click has to wait out the window or the
+  // success screen would describe an account that was never created.
+  const formTokenAtRef = useRef(0);
   // Latched for the lifetime of this page, never reset on success: once an OAuth
   // handoff is under way the browser is leaving, and a second /authorize would do
   // real damage (see beginOAuth).
@@ -100,9 +158,55 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Only offered when Turnstile has genuinely, repeatedly failed in this
   // browser (see Turnstile.jsx's onPersistentlyBlocked) — the normal signup
   // path is untouched for everyone else.
+  const handleCaptchaToken = (token) => {
+    captchaTokenRef.current = token;
+  };
+
   const handleCaptchaPersistentlyBlocked = (blocked) => {
-    setCaptchaPersistentlyBlocked(blocked);
-    if (blocked) track(EVENTS.SIGNUP_BYPASS_OFFERED);
+    captchaBlockedRef.current = blocked;
+  };
+
+  const waitForCaptchaToken = (ms) => waitForValue(() => captchaTokenRef.current, ms);
+
+  // signup-bypass's MIN_SUBMIT_MS is 1200. Stay above it so a real person
+  // who clicks immediately is not shown a success screen for an account
+  // the server declined to create.
+  const BYPASS_MIN_PAGE_MS = 1500;
+
+  const rememberFormToken = (token) => {
+    if (!token) return;
+    formTokenRef.current = token;
+    formTokenAtRef.current = Date.now();
+  };
+
+  const ensureFormToken = async () => {
+    if (formTokenRef.current) return formTokenRef.current;
+    try {
+      const supabase = await loadSupabase();
+      const { data } = await supabase.functions.invoke('signup-bypass', { method: 'GET' });
+      rememberFormToken(data?.formToken);
+    } catch { /* bypass simply won't be available if this fails */ }
+    return formTokenRef.current;
+  };
+
+  const resolveCaptchaPlan = async (authMode) => {
+    let plan = captchaSubmitPlan({
+      siteKey: TURNSTILE_SITE_KEY,
+      token: captchaTokenRef.current,
+      mode: authMode,
+      blocked: captchaBlockedRef.current,
+    });
+    if (plan === 'wait') {
+      const token = await waitForCaptchaToken(CAPTCHA_TOKEN_WAIT_MS);
+      plan = captchaSubmitPlan({
+        siteKey: TURNSTILE_SITE_KEY,
+        token,
+        mode: authMode,
+        blocked: captchaBlockedRef.current,
+        waited: true,
+      });
+    }
+    return plan;
   };
 
   // A pricing visitor must not lose their selected billing period while they
@@ -112,12 +216,10 @@ export default function AuthPage({ initialMode = 'signup' }) {
   }, [location.search]);
 
   // Turnstile tokens are single-use; clear and re-issue after every auth attempt.
-  const resetCaptcha = () => { setCaptchaToken(null); setCaptchaNonce((n) => n + 1); };
-
-  // When no site key is configured the widget never renders, so don't gate on
-  // it. Also unblocked in signup mode once Turnstile has persistently failed
-  // — that path submits through the bypass function instead of signUp().
-  const captchaReady = !TURNSTILE_SITE_KEY || !!captchaToken || (mode === 'signup' && captchaPersistentlyBlocked);
+  const resetCaptcha = () => {
+    captchaTokenRef.current = null;
+    setCaptchaNonce((n) => n + 1);
+  };
 
   // Auto-redirect if already logged in
   const [hasSession, setHasSession] = useState(null); // null = still checking
@@ -144,21 +246,51 @@ export default function AuthPage({ initialMode = 'signup' }) {
       // age reflects real time-on-page even if bypass turns out to be needed
       // later. No side effects server-side — safe to call every visit.
       loadSupabase().then((supabase) => supabase.functions.invoke('signup-bypass', { method: 'GET' }))
-        .then(({ data }) => { if (data?.formToken) formTokenRef.current = data.formToken; })
+        .then(({ data }) => { rememberFormToken(data?.formToken); })
         .catch(() => { /* bypass simply won't be available if this fails */ });
     }
   }, [mode, hasSession]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    // Prefer the live input values over React state. Password managers often
+    // fill the DOM without firing onChange; with `noValidate` on the form,
+    // that used to ship an empty password to GoTrue and show up in PostHog as
+    // signup_submit_failed reason=unknown ("Signup requires a valid password"
+    // / "Anonymous sign-ins are disabled").
+    const fields = readAuthFormFields(e.currentTarget);
+    const submittedEmail = fields.email;
+    const submittedPassword = fields.password;
+    setEmail(submittedEmail);
+    setPassword(submittedPassword);
+
+    if (!submittedEmail) {
+      setError(AUTH_PAGE.invalidEmail);
+      return;
+    }
+    if (mode !== 'forgot') {
+      if (!submittedPassword || (mode === 'signup' && submittedPassword.length < 6)) {
+        setError(AUTH_PAGE.weakPassword);
+        return;
+      }
+    }
+
+    setLoading(true);
+    const plan = await resolveCaptchaPlan(mode);
+    if (plan === 'unavailable') {
+      setError(AUTH_PAGE.verificationUnavailable);
+      setLoading(false);
+      return;
+    }
     const supabase = await loadSupabase();
+    const tokenForRequest = captchaTokenRef.current;
 
     if (mode === 'forgot') {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(submittedEmail, {
         redirectTo: getAuthCallbackUrl(),
-        captchaToken,
+        captchaToken: tokenForRequest,
       });
       if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
       else {
@@ -170,9 +302,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
     if (mode === 'login') {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-        options: { captchaToken },
+        email: submittedEmail,
+        password: submittedPassword,
+        options: { captchaToken: tokenForRequest },
       });
       if (error) {
         // Sign-in failures are their own funnel — deliberately not folded into
@@ -188,17 +320,30 @@ export default function AuthPage({ initialMode = 'signup' }) {
     } else {
       track(EVENTS.SIGNUP_SUBMIT_CLICKED);
 
-      // Turnstile has persistently failed in this browser — route through
-      // the bypass function's own bot mitigation instead of hard-blocking.
-      if (captchaPersistentlyBlocked && !captchaToken) {
-        await submitViaBypass();
+      // No Turnstile token. signup-bypass creates the account without one.
+      // A healthy widget still takes the signUp() call below: a token
+      // resolves the plan to 'ready' before we get here.
+      if (plan === 'bypass') {
+        if (!captchaBlockedRef.current) {
+          track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt: 0, reason: 'timeout' });
+        }
+        track(EVENTS.SIGNUP_BYPASS_OFFERED);
+        const formToken = await ensureFormToken();
+        if (!formToken) {
+          setError(COMMON.genericError);
+          setLoading(false);
+          track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: 'bypass_no_form_token' });
+          return;
+        }
+        await waitOutMinimum(formTokenAtRef.current, BYPASS_MIN_PAGE_MS);
+        await submitViaBypass(submittedEmail, submittedPassword);
         return;
       }
 
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
+        email: submittedEmail,
+        password: submittedPassword,
+        options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: tokenForRequest },
       });
       if (error) {
         setError(friendlyError(error.message));
@@ -209,12 +354,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
       else {
         // Identify on signup (not just login) so the anonymous pre-signup
         // session — carrying first-touch attribution — stitches to this user.
-        identifyUser(data.user?.id, { email: data.user?.email || email });
+        identifyUser(data.user?.id, { email: data.user?.email || submittedEmail });
         track(EVENTS.USER_SIGNED_UP, { method: 'email' });
         // Supabase returns an obfuscated user with no identities when the email
         // already exists. Only a genuinely new account may authorize the
         // referral follow mutation after signup.
-        if (data.user?.identities?.length) markSignupReferralPending(data.user.email || email);
+        if (data.user?.identities?.length) markSignupReferralPending(data.user.email || submittedEmail);
         // Confirm email is off, so signUp returns a live session immediately —
         // let them straight into the app instead of gating on the inbox click.
         // Users still get the confirmation email and can verify any time from
@@ -235,11 +380,16 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // timing, per-IP rate limit) and creates the account via the Admin API,
   // bypassing the need for a Turnstile token. On success it hands back a
   // confirmation link delivered only to the supplied mailbox.
-  const submitViaBypass = async () => {
+  const submitViaBypass = async (submittedEmail, submittedPassword) => {
     const supabase = await loadSupabase();
     const { data, error } = await supabase.functions.invoke('signup-bypass', {
       method: 'POST',
-      body: { email, password, website, formToken: formTokenRef.current },
+      body: {
+        email: submittedEmail,
+        password: submittedPassword,
+        website,
+        formToken: formTokenRef.current,
+      },
     });
     if (error) {
       setError(COMMON.genericError);
@@ -261,7 +411,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       setSuccess(true);
       return;
     }
-    markSignupReferralPending(email);
+    markSignupReferralPending(submittedEmail);
     setLoading(false);
     setSuccess(true);
   };
@@ -316,14 +466,26 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Passwordless: email a one-time sign-in link. Works for new and returning
   // users alike; the callback completes auth and reports the method.
   const sendMagicLink = async () => {
-    if (!email) { setError('Enter your email address first, then request a link.'); return; }
+    // Same autofill caveat as handleSubmit — read the live email field.
+    const emailEl = document.getElementById('auth-email');
+    const submittedEmail = (
+      emailEl instanceof HTMLInputElement ? emailEl.value : email
+    ).trim();
+    setEmail(submittedEmail);
+    if (!submittedEmail) { setError('Enter your email address first, then request a link.'); return; }
     setLoading(true);
     setError(null);
+    const plan = await resolveCaptchaPlan('magic');
+    if (plan === 'unavailable') {
+      setError(AUTH_PAGE.verificationUnavailable);
+      setLoading(false);
+      return;
+    }
     try { sessionStorage.setItem('plot_auth_method', 'magic_link'); } catch { /* ignore */ }
     const supabase = await loadSupabase();
     const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
+      email: submittedEmail,
+      options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: captchaTokenRef.current },
     });
     setLoading(false);
     if (error) { setError(friendlyError(error.message)); resetCaptcha(); }
@@ -338,6 +500,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setResendStatus(null);
     setFormStarted(false);
     formTokenRef.current = null;
+    formTokenAtRef.current = 0;
   };
 
   const handleResend = async () => {
@@ -347,7 +510,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
-      options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
+      options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: captchaTokenRef.current },
     });
     setResendStatus(error ? 'error' : 'sent');
   };
@@ -455,6 +618,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
               )}
 
               <form onSubmit={handleSubmit} className="auth-form" noValidate>
+                {/* noValidate: we show branded errors instead of native tooltips.
+                    Client-side checks in handleSubmit replace required/minLength,
+                    and read the live DOM so password-manager autofill is not lost. */}
                 {error && (
                   <div className={error.startsWith('__warning__') ? 'auth-warning' : 'auth-error'}>
                     {error.replace('__warning__', '')}
@@ -523,7 +689,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
                 <Turnstile
                   siteKey={TURNSTILE_SITE_KEY}
-                  onToken={setCaptchaToken}
+                  onToken={handleCaptchaToken}
                   resetSignal={captchaNonce}
                   onBlocked={mode === 'signup'
                     ? (attempt) => track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt })
@@ -534,7 +700,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                 <button
                   type="submit"
                   className="auth-cta"
-                  disabled={loading || !captchaReady}
+                  disabled={loading}
                   aria-busy={loading}
                   aria-label={loading ? `${ctaLabels[mode]} in progress` : ctaLabels[mode]}
                 >
@@ -547,7 +713,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   type="button"
                   className="auth-magiclink"
                   onClick={sendMagicLink}
-                  disabled={loading || !captchaReady}
+                  disabled={loading}
                 >
                   {AUTH_PAGE.magicLinkInstead}
                 </button>

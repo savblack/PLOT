@@ -28,15 +28,17 @@ This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the
    pnpm install --frozen-lockfile
    ```
 
-2. Create a local env file:
+2. Create a `.env` at the repo root. Vite reads the repo-root `.env` (see `envDir` in `apps/web/vite.config.js`), so it lives at the root, not under `apps/web`. Add the browser-safe `VITE_*` values:
 
    ```sh
-   cp .env.example .env
+   VITE_SUPABASE_URL=<PLOT Staging project URL>
+   VITE_SUPABASE_ANON_KEY=<PLOT Staging publishable/anon key>
+   VITE_TMDB_PROXY_URL=<staging tmdb-proxy Worker URL>
    ```
 
-3. Fill in the browser-safe `VITE_*` values in `.env`. Keep service-role and TMDB API keys server-side or local-script-only.
+3. These values are browser-safe (they ship in the app bundle). `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` belong to PLOT Staging, PLOT's preview Supabase project (local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data). Pull them from the Supabase dashboard, project `PLOT Staging`. Don't repoint these at Production for routine dev. Keep service-role and TMDB API keys server-side or local-script-only.
 
-   `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` ship in `.env.example` already pointed at PLOT Staging, PLOT's preview Supabase project — local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data. Don't repoint these at Production for routine dev.
+   `VITE_TMDB_PROXY_URL` must point at the staging tmdb-proxy Cloudflare Worker (`https://tmdb-proxy-staging.<subdomain>.workers.dev`), not the Supabase edge function directly: the Worker adds a shared-secret header the browser cannot set. See `apps/web/workers/tmdb-proxy/wrangler.toml`.
 
    `VITE_AUTH_REDIRECT_BASE_URL` is optional for local web development. Set it when auth and provider callbacks must use a stable production URL or a native deep-link base.
 

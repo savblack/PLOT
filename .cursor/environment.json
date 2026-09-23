@@ -1,0 +1,24 @@
+{
+  "name": "PLOT",
+  "user": "ubuntu",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "install": "if [ -x ./scripts/cloud-agent-install.sh ]; then ./scripts/cloud-agent-install.sh; else corepack enable; corepack prepare pnpm@10.6.3 --activate; pnpm install --frozen-lockfile; fi",
+  "start": "if [ -x ./scripts/cloud-agent-write-env.sh ]; then ./scripts/cloud-agent-write-env.sh; fi",
+  "terminals": [
+    {
+      "name": "web",
+      "command": "PORT=5177 pnpm run dev",
+      "description": "Vite web app on port 5177. Reads the repo-root .env, which start refreshes from injected secrets."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 5177
+    }
+  ],
+  "egressMode": "allow_all"
+}

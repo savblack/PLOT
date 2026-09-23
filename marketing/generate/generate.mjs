@@ -9,10 +9,6 @@
 // is reviewed on. That is a scheduled sweep rather than anything this script
 // calls, so the Linear credential lives only in Supabase and a Linear outage
 // cannot fail a render run.
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
 import { renderCard, closeBrowser } from '../lib/render.mjs';
 import { uploadMedia } from '../lib/storage.mjs';
@@ -20,9 +16,6 @@ import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
 import { feedHeroUrl, guideHeroUrl } from '../lib/images.mjs';
 import { postSlug } from '../lib/feed.mjs';
-
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const REVIEW_BUCKET = 'marketing-review';
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
 
@@ -50,7 +43,7 @@ const generateConversation = async (supabase, post) => {
 };
 
 // Web-only long-form guide: no social cards, no publication rows. Attach the
-// slug and send it to the review desk; it appears on /whats-on once approved and
+// slug and mark it needs_review; it appears on /whats-on once approved and
 // is never dispatched to social (publish.mjs only acts on posts with pubs).
 const generateGuide = async (supabase, post) => {
   if (!post.copy) throw new Error('Guide has no copy — the copy worker has not run for it yet');
@@ -130,42 +123,27 @@ const applyAnnounceState = async (supabase, post) => {
   await supabase.from('marketing_tracked_titles').update(update).eq('id', announce.tracked_id);
 };
 
-const REVIEW_URL = 'https://admin.theplot.tv';
+// Team PLO, project Content Automation. Resolved from Linear, not guessed.
+// The mirror writes each post's linear_issue_url a few minutes after this
+// email, so the message links the project rather than a card that does not
+// exist yet. There is no per-organization Buffer queue URL in the database.
+const LINEAR_PROJECT_URL = 'https://linear.app/savblack/project/content-automation-2ce2d56ced11';
+const BUFFER_URL = 'https://publish.buffer.com';
 
-// Build the readable week sheet (week.mjs) and store it in a PRIVATE bucket. The
-// admin-review function serves it as real HTML at REVIEW_URL/?view=sheet (Supabase
-// storage itself serves stored HTML as text/plain, so it must be proxied). Private
-// so unpublished copy isn't world-readable; refreshed every batch.
-const hostReviewSheet = async (supabase) => {
-  try {
-    execFileSync('node', ['marketing/preview/week.mjs'], {
-      cwd: ROOT, env: process.env, stdio: ['ignore', 'ignore', 'inherit'], maxBuffer: 64 * 1024 * 1024,
-    });
-    const html = readFileSync(join(ROOT, 'marketing/preview/out/week.html'), 'utf8');
-    await supabase.storage.createBucket(REVIEW_BUCKET, { public: false }).catch(() => {});
-    const up = await supabase.storage.from(REVIEW_BUCKET)
-      .upload('week.html', html, { upsert: true, contentType: 'text/html; charset=utf-8' });
-    if (up.error) throw up.error;
-    return `${REVIEW_URL}/?view=sheet`;
-  } catch (err) {
-    console.error('Review sheet hosting failed:', err.message);
-    return null;
-  }
-};
-
-// Ping the admin that the week's posts are ready to review — replaces the old
-// per-post veto email. Review / edit / approve now happens on the admin desk.
-const notifyReview = async (count, sheetUrl) => {
+// Ping the admin that the week's posts are ready to review. Articles are
+// judged in Linear. Captions are judged in Buffer. The admin desk is not a
+// review link in this email.
+const notifyReview = async (count) => {
   if (!count) return;
   const html = `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
     <h1 style="font-size:1.25rem;">${count} post${count > 1 ? 's' : ''} ready to review</h1>
-    <p style="font-size:.95rem;line-height:1.6;">This week's marketing posts (and the newsletter) are generated and waiting.</p>
-    ${sheetUrl ? `<p style="margin:20px 0 6px;"><a href="${sheetUrl}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 24px;border-radius:9999px;font-weight:600;">📄 Read the full week</a></p>
-    <p style="font-size:.83rem;line-height:1.5;color:#666;margin:0 0 18px;">Every post's copy + cards and the newsletter on one page (sign in with your admin password if asked).</p>` : ''}
-    <p style="font-size:.95rem;line-height:1.6;margin:0;">To edit or approve:</p>
-    <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• In Linear: the <strong>Content Automation</strong> project, within five minutes. Comment <code>/approve</code>, or <code>/copy</code> with the lines you want changed.</p>
-    <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• In Claude: run <code>/marketing-week</code> — preview and edit by chatting.</p>
-    <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• On the web: <a href="${REVIEW_URL}">the review desk</a>.</p>
+    <p style="font-size:.95rem;line-height:1.6;">This week's articles and social posts are generated.</p>
+    <p style="margin:20px 0 8px;">
+      <a href="${LINEAR_PROJECT_URL}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9999px;font-weight:600;display:inline-block;">Open in Linear</a>
+      <a href="${BUFFER_URL}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9999px;font-weight:600;display:inline-block;margin-left:8px;">Open in Buffer</a>
+    </p>
+    <p style="font-size:.95rem;line-height:1.6;">Articles show up in Linear within about five minutes, one card each, in <strong>Content Automation</strong>. Comment <code>/approve</code>, or <code>/copy</code> with the lines you want changed. Leaving a card untouched keeps that article off theplot.tv.</p>
+    <p style="font-size:.95rem;line-height:1.6;">Social posts are already in Buffer, as many as the queue will hold. Edit, move, or delete them there. Buffer sends them. Approving an article does not change the caption.</p>
   </div>`;
   try {
     await sendEmail({ to: ADMIN_EMAIL, subject: `PLOT marketing: ${count} post(s) ready to review`, html });
@@ -202,7 +180,7 @@ const main = async () => {
 
   try {
     // Render every post whose copy is ready (the copy worker has run), across the
-    // whole upcoming week, onto the review desk (status needs_review).
+    // whole upcoming week (status needs_review). Review is Linear and Buffer.
     const horizon = new Date(Date.now() + 8 * 86400000).toISOString();
     const { data: pending, error } = await supabase
       .from('marketing_posts')
@@ -233,9 +211,8 @@ const main = async () => {
     }
 
     await closeBrowser();
-    const sheetUrl = count ? await hostReviewSheet(supabase) : null;
-    await notifyReview(count, sheetUrl);
-    console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.${sheetUrl ? ' Sheet hosted.' : ''}`);
+    await notifyReview(count);
+    console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.`);
     await finishBatchRun(supabase, runId, {
       status: 'succeeded',
       counts: { pending: (pending || []).length, rendered: count, failed: (pending || []).length - count },
