@@ -1,3 +1,4 @@
+import TrackingSettings from '../../components/TrackingSettings';
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
@@ -997,6 +998,8 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
         )}
+
+        <TrackingSettings userId={userId} connect={trakt.connect} connectPlex={plex.startPlexAuth} plexPolling={plex.polling} connectionError={trakt.error || plex.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : plex.disconnect()} />
 
         {/* Support */}
         <SettingsGroup title="Support">

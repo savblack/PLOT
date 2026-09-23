@@ -33,7 +33,7 @@ export const PLANS_PAGE = {
       'Track movies & TV in one place',
       'Watchlist, history & release calendar',
       'Discover feed + Top 10 charts',
-      'Up to 3 custom lists',
+      'Up to 5 custom lists',
       'Follow friends & share your profile',
     ],
     cta: 'Get started free',

@@ -4,9 +4,13 @@ PLOT Premium is A$5 monthly or A$40 yearly. The web app uses Stripe Checkout
 for purchase and the Stripe Customer Portal for cancellation, payment-method
 updates, and switching between those two plans.
 
+See [Premium readiness](premium-readiness.md) for the competitor review and unresolved
+engineering gates. This checklist alone does not establish launch readiness.
+
 ## Before going live
 
-1. In Stripe **live mode**, create a PLOT Premium product with two recurring
+1. Confirm written TMDB commercial clearance and complete the test-mode lifecycle
+   and engineering gates in the readiness document. In Stripe **live mode**, create a PLOT Premium product with two recurring
    AUD prices: A$5/month and A$40/year. Record the two live price IDs.
 2. Set the Stripe account's public business URL and support email. The Customer
    Portal should also show the PLOT terms and privacy URLs.
@@ -21,7 +25,11 @@ updates, and switching between those two plans.
 5. Set these Supabase Edge Function secrets from the live Stripe dashboard:
    `STRIPE_SECRET_KEY`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`, and
    `STRIPE_WEBHOOK_SECRET`.
-6. Deploy `stripe-billing` and `stripe-webhook`, then make one real low-value
+6. Keep `STRIPE_CHECKOUT_ENABLED=false` until launch approval. Checkout validates
+   that the selected price is an active AUD recurring price for exactly A$5/month and
+   A$40/year; fixed regional prices are not configured by this implementation.
+7. Deploy `stripe-billing` and `stripe-webhook`, enable `STRIPE_CHECKOUT_ENABLED=true` together with the public pricing flags,
+   then, with explicit approval, make one real low-value
    purchase and confirm checkout, portal cancellation, webhook processing, and
    loss of Premium access after the paid period ends.
 

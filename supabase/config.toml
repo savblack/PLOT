@@ -122,3 +122,9 @@ verify_jwt = true
 
 [functions.stripe-billing]
 verify_jwt = true
+
+# Private worker also verifies the exact service credential in its handler.
+# Private worker authenticates the exact service secret in its handler.
+# Rotated sb_secret keys are not user JWTs.
+[functions.tracking-worker]
+verify_jwt = false

@@ -1,3 +1,6 @@
+import { encryptToken, decryptToken } from '../_shared/plexAuth.ts'
+import { plexResources, publicPlexResources, plexProfiles, selectedPlexServer, type PlexSelection } from '../_shared/plexTracking.ts'
+import { trackingRequest, trackingUserAllowed } from '../_shared/trackingApi.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import type { Database, Json } from '../_shared/database.types.ts'
@@ -5,10 +8,7 @@ import type { Database, Json } from '../_shared/database.types.ts'
 type Db = SupabaseClient<Database>
 // What the sync helpers actually need off a media_integrations row.
 type IntegrationRef = { id: string; user_id: string }
-import { isSafePlexConnectionUrl } from '../_shared/plexConnectionPolicy.js'
 import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyConflict.ts'
-import { selectTmdbMatch, tmdbIdFromGuids, yearFrom } from '../_shared/tmdbMatch.js'
-import { parsePlexItems, parsePlexResources } from '../_shared/plexXml.js'
 import { serviceKey } from '../_shared/serviceKey.ts'
 
 const corsHeaders = {
@@ -17,9 +17,8 @@ const corsHeaders = {
 }
 
 const encoder = new TextEncoder()
-const decoder = new TextDecoder()
 
-const PLEX_PRODUCT = 'Plot'
+const PLEX_PRODUCT = 'PLOT'
 const PLEX_VERSION = '1.0.0'
 const PLEX_PLATFORM = 'Web'
 
@@ -42,51 +41,14 @@ function plexHeaders(userId?: string) {
     'X-Plex-Product': PLEX_PRODUCT,
     'X-Plex-Version': PLEX_VERSION,
     'X-Plex-Platform': PLEX_PLATFORM,
-    'X-Plex-Device': 'Plot Web',
-    'X-Plex-Device-Name': 'Plot',
+    'X-Plex-Device': 'PLOT Web',
+    'X-Plex-Device-Name': 'PLOT',
   }
 }
 
 async function sha256Hex(value: string) {
   const hash = await crypto.subtle.digest('SHA-256', encoder.encode(value))
   return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
-async function tokenKey() {
-  // Use a dedicated secret only — never the service-role key. Reusing it coupled
-  // two high-value secrets and would make stored tokens undecryptable the moment
-  // the service-role key is rotated.
-  const secret = Deno.env.get('PLEX_TOKEN_SECRET')
-  if (!secret) throw new Error('PLEX_TOKEN_SECRET is not configured')
-  const keyBytes = await crypto.subtle.digest('SHA-256', encoder.encode(secret))
-  return crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['encrypt', 'decrypt'])
-}
-
-function bytesToBase64(bytes: Uint8Array) {
-  return btoa(String.fromCharCode(...bytes))
-}
-
-function base64ToBytes(value: string) {
-  return Uint8Array.from(atob(value), char => char.charCodeAt(0))
-}
-
-async function encryptToken(token: string) {
-  const iv = crypto.getRandomValues(new Uint8Array(12))
-  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await tokenKey(), encoder.encode(token))
-  return {
-    ciphertext: bytesToBase64(new Uint8Array(encrypted)),
-    iv: bytesToBase64(iv),
-  }
-}
-
-async function decryptToken(ciphertext?: string | null, iv?: string | null) {
-  if (!ciphertext || !iv) throw new Error('Plex is not connected')
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: base64ToBytes(iv) },
-    await tokenKey(),
-    base64ToBytes(ciphertext),
-  )
-  return decoder.decode(decrypted)
 }
 
 async function authUser(req: Request) {
@@ -156,78 +118,6 @@ function cleanMediaType(value: unknown) {
   if (value === 'show' || value === 'series') return 'tv'
   if (value === 'movie' || value === 'tv') return value
   return null
-}
-
-function mediaTypeFromPlex(type?: string) {
-  if (type === 'movie') return 'movie'
-  if (type === 'show' || type === 'episode' || type === 'season') return 'tv'
-  return null
-}
-
-async function searchTmdb(entry: Record<string, unknown>) {
-  const key = Deno.env.get('TMDB_API_KEY')
-  if (!key || !entry.title) return null
-  const query = entry.year ? `${entry.title} ${entry.year}` : String(entry.title)
-  const url = new URL('https://api.themoviedb.org/3/search/multi')
-  url.searchParams.set('api_key', key)
-  url.searchParams.set('language', 'en-US')
-  url.searchParams.set('query', query)
-  const res = await fetch(url)
-  if (!res.ok) return null
-  const data = await res.json()
-  return selectTmdbMatch(data.results || [], entry)
-}
-
-// Straight lookup for an entry whose TMDB id Plex already told us. Costs the
-// same single request as the search it replaces, and cannot resolve to the
-// wrong title.
-async function fetchTmdbById(tmdbId: number, mediaType: string) {
-  const key = Deno.env.get('TMDB_API_KEY')
-  if (!key) return null
-  const url = new URL(`https://api.themoviedb.org/3/${mediaType}/${tmdbId}`)
-  url.searchParams.set('api_key', key)
-  url.searchParams.set('language', 'en-US')
-  const res = await fetch(url)
-  if (!res.ok) return null
-  const data = await res.json()
-  return { ...data, media_type: mediaType }
-}
-
-async function normalizePlexItem(source: string, raw: Record<string, string> & { guids?: string[] }) {
-  const mediaType = mediaTypeFromPlex(raw.type)
-  const title = raw.type === 'episode' ? raw.grandparentTitle : raw.title
-  const year = yearFrom(raw.year || raw.originallyAvailableAt)
-
-  // Prefer the id Plex carries over anything inferred from the name. Falls back
-  // to a strict search match, which returns nothing rather than guessing when
-  // the title is ambiguous — those come back 'needs_review' and are not written
-  // to the watchlist or history.
-  const guidTmdbId = tmdbIdFromGuids(raw.guids)
-  const tmdbMatch = guidTmdbId && mediaType
-    ? await fetchTmdbById(guidTmdbId, mediaType)
-    : await searchTmdb({ title, media_type: mediaType, year })
-
-  return {
-    source,
-    external_id: raw.ratingKey || raw.key || raw.guid || `${source}:${title}:${year || 'unknown'}`,
-    external_guid: raw.guid || raw.key || null,
-    tmdb_id: tmdbMatch?.id ?? null,
-    media_type: tmdbMatch?.media_type || mediaType,
-    title: tmdbMatch?.title || tmdbMatch?.name || title || null,
-    poster_path: tmdbMatch?.poster_path || null,
-    release_date: tmdbMatch?.release_date || tmdbMatch?.first_air_date || null,
-    match_state: tmdbMatch ? 'matched' : 'needs_review',
-    raw,
-  }
-}
-
-// jsonb columns take Json, and an unknown that merely passes a typeof check is
-// not that. Narrows to the object/array cases those columns actually hold and
-// falls back to {} for anything else.
-// An outbox payload column is Json, which includes strings and arrays. Only an
-// object is a payload; anything else is treated as absent rather than spread.
-function jsonObject(value: Json | null | undefined): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 }
 
 function asJson(value: unknown): Json {
@@ -347,7 +237,7 @@ async function upsertSnapshot(
       media_type: mediaType,
       title,
       poster_path: item.poster_path ? String(item.poster_path) : null,
-      watched_at: cleanDate(item.watched_at) || new Date().toISOString().slice(0, 10),
+      watched_at: cleanDate(item.watched_at),
     }]
   })
 
@@ -355,149 +245,16 @@ async function upsertSnapshot(
   // and date several times over; collapse those before the upsert sees them.
   const uniqueHistoryRows = dedupeHistoryRows(historyRows)
 
+  let watchedCount = 0
   if (uniqueHistoryRows.length > 0) {
-    const { error } = await supabaseAdmin
+    const { count: insertedCount, error } = await supabaseAdmin
       .from('history')
-      .upsert(uniqueHistoryRows, { onConflict: HISTORY_CONFLICT_TARGET })
+      .upsert(uniqueHistoryRows, { onConflict: HISTORY_CONFLICT_TARGET, ignoreDuplicates: true, count: 'exact' })
     if (error) throw error
+    watchedCount = insertedCount ?? 0
   }
 
-  return { watchlistCount: rows.length, watchedCount: uniqueHistoryRows.length }
-}
-
-async function fetchPlexWatchlist(token: string) {
-  const url = new URL('https://metadata.provider.plex.tv/library/sections/watchlist/all')
-  url.searchParams.set('X-Plex-Token', token)
-  url.searchParams.set('includeCollections', '1')
-  url.searchParams.set('includeExternalMedia', '1')
-  const res = await fetch(url, { headers: { Accept: 'application/xml' } })
-  if (!res.ok) throw new Error(`Plex watchlist sync failed (${res.status})`)
-  const items = parsePlexItems(await res.text())
-  return Promise.all(items.map(item => normalizePlexItem('plex_watchlist', item)))
-}
-
-async function fetchPlexResources(token: string) {
-  const url = new URL('https://plex.tv/api/resources')
-  url.searchParams.set('includeHttps', '1')
-  url.searchParams.set('includeRelay', '1')
-  url.searchParams.set('X-Plex-Token', token)
-  const res = await fetch(url, { headers: { Accept: 'application/xml' } })
-  if (!res.ok) return []
-  return parsePlexResources(await res.text())
-}
-
-async function fetchWithTimeout(url: URL, timeoutMs = 8000) {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    return await fetch(url, {
-      headers: { Accept: 'application/xml' },
-      signal: controller.signal,
-      redirect: 'error',
-    })
-  } finally {
-    clearTimeout(timeout)
-  }
-}
-
-async function fetchPlexWatched(token: string, resources: Array<Record<string, unknown>>) {
-  const servers = resources.filter(resource => resource.provides === 'server')
-  for (const server of servers) {
-    const connections = Array.isArray(server.connections) ? server.connections as Array<Record<string, string>> : []
-    for (const connection of connections) {
-      if (!connection.uri) continue
-      let url: URL
-      try {
-        url = new URL(`${connection.uri.replace(/\/+$/, '')}/status/sessions/history/all`)
-      } catch {
-        continue
-      }
-      // SSRF guard: a malicious Plex server can advertise an internal address.
-      if (!isSafePlexConnectionUrl(url)) continue
-      url.searchParams.set('X-Plex-Token', token)
-      url.searchParams.set('X-Plex-Container-Start', '0')
-      url.searchParams.set('X-Plex-Container-Size', '100')
-      url.searchParams.set('sort', 'viewedAt:desc')
-      try {
-        const res = await fetchWithTimeout(url)
-        if (!res.ok) continue
-        const rawItems = parsePlexItems(await res.text()).filter(item => item.viewedAt || item.lastViewedAt)
-        const normalized = await Promise.all(rawItems.map(item => normalizePlexItem('plex_history', item)))
-        return {
-          server,
-          items: normalized.filter(item => item.tmdb_id).map((item, index) => ({
-            ...item,
-            watched_at: rawItems[index].viewedAt
-              ? new Date(Number(rawItems[index].viewedAt) * 1000).toISOString()
-              : new Date().toISOString(),
-          })),
-        }
-      } catch {
-        // Try the next connection.
-      }
-    }
-  }
-  return { server: null, items: [] }
-}
-
-async function resolvePlexWatchlistRatingKey(token: string, payload: Record<string, unknown>) {
-  if (!payload.title) return null
-  const url = new URL('https://discover.provider.plex.tv/library/search')
-  url.searchParams.set('query', String(payload.title))
-  url.searchParams.set('X-Plex-Token', token)
-  const res = await fetch(url, { headers: { Accept: 'application/xml' } })
-  if (!res.ok) return null
-  const wantedYear = yearFrom(payload.release_date)
-  const wantedType = payload.media_type === 'tv' ? 'show' : payload.media_type
-  const items = parsePlexItems(await res.text())
-  const match = items.find(item => {
-    if (wantedType && item.type !== wantedType) return false
-    if (wantedYear && yearFrom(item.year || item.originallyAvailableAt) !== wantedYear) return false
-    return true
-  }) || items[0]
-  return match?.ratingKey || null
-}
-
-async function addPlexWatchlistItem(token: string, payload: Record<string, unknown>) {
-  const ratingKey = await resolvePlexWatchlistRatingKey(token, payload)
-  if (!ratingKey) throw new Error(`Could not resolve Plex watchlist item for ${payload.title || 'item'}`)
-  const url = new URL('https://metadata.provider.plex.tv/actions/addToWatchlist')
-  url.searchParams.set('ratingKey', ratingKey)
-  url.searchParams.set('X-Plex-Token', token)
-  const res = await fetch(url, { method: 'PUT' })
-  if (!res.ok) throw new Error(`Plex watchlist add failed (${res.status})`)
-}
-
-async function processOutbox(supabaseAdmin: Db, integration: IntegrationRef, token: string) {
-  const { data: actions, error } = await supabaseAdmin
-    .from('integration_outbox')
-    .select('*')
-    .eq('user_id', integration.user_id)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: true })
-    .limit(25)
-
-  if (error) throw error
-  let processed = 0
-  for (const action of actions || []) {
-    try {
-      if (action.action !== 'plex_watchlist_add') throw new Error(`Unsupported action: ${action.action}`)
-      await addPlexWatchlistItem(token, jsonObject(action.payload))
-      await supabaseAdmin.from('integration_outbox').update({
-        status: 'done',
-        attempts: Number(action.attempts || 0) + 1,
-        last_error: null,
-      }).eq('id', action.id).eq('user_id', integration.user_id)
-      processed += 1
-    } catch (err) {
-      await supabaseAdmin.from('integration_outbox').update({
-        status: 'error',
-        attempts: Number(action.attempts || 0) + 1,
-        last_error: (err as Error).message,
-      }).eq('id', action.id).eq('user_id', integration.user_id)
-    }
-  }
-  return processed
+  return { watchlistCount: rows.length, watchedCount }
 }
 
 async function findPlexIntegration(supabaseAdmin: Db, userId: string) {
@@ -580,7 +337,7 @@ async function handlePollAuth(supabaseAdmin: Db, userId: string) {
   }
 
   const encrypted = await encryptToken(pin.authToken)
-  const resources = await fetchPlexResources(pin.authToken)
+  const resources = await plexResources(pin.authToken)
   const { data, error } = await supabaseAdmin
     .from('media_integrations')
     .update({
@@ -588,13 +345,16 @@ async function handlePollAuth(supabaseAdmin: Db, userId: string) {
       plex_token_ciphertext: encrypted.ciphertext,
       plex_token_iv: encrypted.iv,
       plex_account: {},
-      plex_servers: resources,
+      selected_server: null,
+      plex_servers: publicPlexResources(resources),
       auth_pin_id: null,
       auth_pin_code: null,
       auth_expires_at: null,
       last_error: null,
     })
     .eq('id', integration.id)
+    .eq('status', 'pending')
+    .eq('auth_pin_id', integration.auth_pin_id)
     .select('id, provider, display_name, status, last_sync_at, last_error, created_at, plex_account, plex_servers, selected_server')
     .single()
   if (error) throw error
@@ -602,55 +362,56 @@ async function handlePollAuth(supabaseAdmin: Db, userId: string) {
   return json({ status: 'authorized', integration: data })
 }
 
-async function handleSync(supabaseAdmin: Db, userId: string) {
+async function handleSources(supabaseAdmin: Db, userId: string, body: Record<string, unknown>) {
   const integration = await findPlexIntegration(supabaseAdmin, userId)
-  if (!integration) return json({ error: 'Plex is not connected' }, 404)
+  if (!integration || integration.status !== 'active') return json({ error: 'Connect Plex first.' }, 409)
   const token = await decryptToken(integration.plex_token_ciphertext, integration.plex_token_iv)
+  const resources = await plexResources(token)
+  if (!body.serverId) return json({ servers: publicPlexResources(resources) })
+  const server = selectedPlexServer(resources, { clientIdentifier: String(body.serverId), accountID: '0', name: '', profileName: '' })
+  const profiles = await plexProfiles(server, token)
+  if (body.action !== 'select-source') return json({ profiles })
+  const profile = profiles.find(row => row.accountID === String(body.accountID))
+  if (!profile) return json({ error: 'Select an accessible Plex profile.' }, 400)
+  const selection: PlexSelection = { clientIdentifier: String(body.serverId), accountID: profile.accountID, name: server.name || 'Plex server', profileName: profile.name }
+  await trackingRequest('rpc/select_plex_tracking_source', 'POST', { p_integration: integration.id, p_selection: selection, p_servers: publicPlexResources(resources) })
+  return json({ selection })
+}
 
-  await supabaseAdmin.from('media_integrations').update({ last_error: null }).eq('id', integration.id)
-  try {
-    const resources = await fetchPlexResources(token)
-    const [watchlistItems, watched] = await Promise.all([
-      fetchPlexWatchlist(token),
-      fetchPlexWatched(token, resources),
-    ])
-    const counts = await upsertSnapshot(supabaseAdmin, integration, watchlistItems, watched.items)
-    const outboxProcessed = await processOutbox(supabaseAdmin, integration, token)
-    const historyStatus = watched.server ? 'imported' : 'unavailable'
-    const selectedServer = watched.server || null
-
-    const { data, error } = await supabaseAdmin
-      .from('media_integrations')
-      .update({
-        status: 'active',
-        last_sync_at: new Date().toISOString(),
-        last_error: historyStatus === 'unavailable' ? 'Plex Watchlist synced. Watched history is unavailable because no Plex server was reachable.' : null,
-        plex_servers: resources,
-        selected_server: selectedServer ? asJson(selectedServer) : null,
-      })
-      .eq('id', integration.id)
-      .select('id, provider, display_name, status, last_sync_at, last_error, created_at, plex_account, plex_servers, selected_server')
-      .single()
-    if (error) throw error
-
-    return json({ ok: true, integration: data, ...counts, outboxProcessed, historyStatus })
-  } catch (err) {
-    await supabaseAdmin.from('media_integrations').update({ status: 'error', last_error: (err as Error).message }).eq('id', integration.id)
-    throw err
-  }
+async function handleSync(supabaseAdmin: Db, userId: string, authorization: string) {
+  const integration = await findPlexIntegration(supabaseAdmin, userId)
+  if (!integration || integration.status !== 'active') return json({ error: 'Plex is not connected' }, 404)
+  if (Deno.env.get('TRACKING_JOBS_ENABLED') !== 'true' || Deno.env.get('PLEX_TRACKING_ENABLED') !== 'true') return json({ error: 'Plex history tracking is not available yet.' }, 503)
+  const selection = integration.selected_server as PlexSelection | null
+  if (!selection?.clientIdentifier || !selection.accountID) return json({ error: 'Select a Plex server and profile before syncing.' }, 409)
+  const job = await trackingRequest('rpc/control_tracking', 'POST', { p_integration: integration.id, p_action: 'sync' }, authorization)
+  return json({ queued: true, job }, 202)
 }
 
 async function handleDisconnect(supabaseAdmin: Db, userId: string) {
-  const integration = await findPlexIntegration(supabaseAdmin, userId)
+  const { data: integration, error: readError } = await supabaseAdmin.from('media_integrations').select('*')
+    .eq('user_id',userId).eq('provider','plex').order('created_at',{ ascending: false }).limit(1).maybeSingle()
+  if (readError) throw readError
   if (!integration) return json({ ok: true })
-  await supabaseAdmin.from('media_integrations').update({
-    status: 'disabled',
-    plex_token_ciphertext: null,
-    plex_token_iv: null,
-    auth_pin_id: null,
-    auth_pin_code: null,
-    auth_expires_at: null,
-  }).eq('id', integration.id)
+  const { error: stopError } = await supabaseAdmin.from('media_integrations').update({ status: 'disabled' }).eq('id',integration.id)
+  if (stopError) throw stopError
+  if (integration.plex_token_ciphertext) {
+    try {
+      const token = await decryptToken(integration.plex_token_ciphertext,integration.plex_token_iv)
+      const response = await fetch('https://plex.tv/api/v2/users/signout', { method: 'DELETE',
+        headers: { ...plexHeaders(userId), 'X-Plex-Token': token }, signal: AbortSignal.timeout(15000), redirect: 'error' })
+      if (!response.ok && response.status !== 401) throw new Error('Plex revocation failed')
+    } catch {
+      const message = 'Sync is stopped, but Plex access could not be revoked. Retry disconnect.'
+      await supabaseAdmin.from('media_integrations').update({ last_error: message }).eq('id',integration.id).eq('status','disabled')
+      return json({ error: message },502)
+    }
+  }
+  const { error } = await supabaseAdmin.from('media_integrations').update({
+    plex_token_ciphertext: null, plex_token_iv: null, auth_pin_id: null, auth_pin_code: null,
+    auth_expires_at: null, plex_servers: [], selected_server: null, last_error: null,
+  }).eq('id', integration.id).eq('status','disabled')
+  if (error) throw error
   return json({ ok: true })
 }
 
@@ -688,6 +449,7 @@ serve(async (req) => {
     if (error) return error
     const body: Record<string, unknown> = req.method === 'POST' ? await req.clone().json().catch(() => ({})) : {}
     const action = String(body.action || queryAction || '')
+    if (action !== 'disconnect' && Deno.env.get('TRACKING_JOBS_ENABLED') === 'true' && !trackingUserAllowed(user.id)) return json({ error: 'Tracking is not enabled for this account yet.' }, 503)
 
     // Plex sync is a PLOT Premium feature. Disconnect stays open so a
     // lapsed subscriber can always sever the integration.
@@ -698,7 +460,8 @@ serve(async (req) => {
 
     if (req.method === 'POST' && action === 'start-auth') return await handleStartAuth(body, supabaseAdmin, user.id)
     if (req.method === 'POST' && action === 'poll-auth') return await handlePollAuth(supabaseAdmin, user.id)
-    if (req.method === 'POST' && action === 'sync') return await handleSync(supabaseAdmin, user.id)
+    if (req.method === 'POST' && action === 'sync') return await handleSync(supabaseAdmin, user.id, req.headers.get('Authorization') || '')
+    if (req.method === 'POST' && ['sources', 'select-source'].includes(action)) return await handleSources(supabaseAdmin, user.id, { ...body, authorization: req.headers.get('Authorization') || '' })
     if (req.method === 'POST' && action === 'disconnect') return await handleDisconnect(supabaseAdmin, user.id)
 
     return json({ error: 'Unknown action' }, 404)

@@ -5,6 +5,7 @@
 /* Emitted whenever a history row is written or removed. It lives here, with
    the bus, rather than in useHistory: the modules that *write* history have to
    emit it, and they shouldn't have to import a hook to do so. */
+export const LISTS_CHANGED_EVENT = 'plot:lists-changed';
 export const HISTORY_CHANGED_EVENT = 'plot:history-changed';
 
 const listeners = new Map(); // event name -> Set<fn>

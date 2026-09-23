@@ -13,6 +13,8 @@ import { track, EVENTS, _setPostHogClient } from './lib/analytics.js';
 // Inject web env into the shared core before anything renders or fetches.
 // Core modules read these via getConfig() — never import.meta.env directly.
 configure({
+  trackingJobsEnabled: import.meta.env.VITE_TRACKING_JOBS_ENABLED === 'true',
+  importEventsEnabled: import.meta.env.VITE_IMPORT_EVENTS_ENABLED === 'true',
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
   tmdbProxyUrl: import.meta.env.VITE_TMDB_PROXY_URL,

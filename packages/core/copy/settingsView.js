@@ -153,6 +153,7 @@ export const SETTINGS_VIEW = {
     opening: 'Opening…',
     manageSubscription: 'Manage subscription',
     thanksForTip: 'Thanks for supporting PLOT ♥',
+    activationPending: 'Your checkout is complete. We are waiting for payment confirmation. If Premium does not appear, refresh this page or contact support.',
     activeThankYou: 'PLOT Premium is active. Thank you ♥',
     upsellLabel: 'Go Premium',
     upsellBlurb: 'Unlimited custom lists and a live calendar feed.',

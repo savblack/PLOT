@@ -1,0 +1,26 @@
+{
+  "source": "TMDB tv/95396/season/1",
+  "retrieved": "2026-09-16",
+  "episodes": [
+    {
+      "id": 1982925,
+      "episode_number": 1,
+      "name": "Good News About Hell"
+    },
+    {
+      "id": 3396429,
+      "episode_number": 2,
+      "name": "Half Loop"
+    },
+    {
+      "id": 3396430,
+      "episode_number": 3,
+      "name": "In Perpetuity"
+    },
+    {
+      "id": 3396431,
+      "episode_number": 4,
+      "name": "The You You Are"
+    }
+  ]
+}

@@ -17,6 +17,7 @@
 import Stripe from 'npm:stripe@22.3.2';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { checkoutPlan, matchesPremiumPrice } from '../_shared/billingPolicy.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
 // arbitrary email clients and marketing embeds), this is only ever called
@@ -84,20 +85,22 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_URL')!,
     serviceKey(),
   );
-  const { data: billing } = await admin
+  const { data: billing, error: billingError } = await admin
     .from('billing_customers')
     .select('stripe_customer_id')
     .eq('user_id', user.id)
     .maybeSingle();
 
+  if (billingError) return json({ error: 'Could not load billing account' }, 503);
+
   const action = new URL(req.url).searchParams.get('action');
 
   if (action === 'checkout') {
-    let plan = 'monthly';
-    try {
-      const body = await req.json();
-      if (body?.plan === 'yearly') plan = 'yearly';
-    } catch { /* default to monthly */ }
+    if (Deno.env.get('STRIPE_CHECKOUT_ENABLED') !== 'true') {
+      return json({ error: 'PLOT Premium subscriptions are not available yet' }, 503);
+    }
+    const plan = checkoutPlan(await req.json().catch(() => null));
+    if (!plan) return json({ error: 'Choose a monthly or yearly plan' }, 400);
 
     const price = plan === 'yearly'
       ? Deno.env.get('STRIPE_PRICE_YEARLY')
@@ -116,6 +119,11 @@ Deno.serve(async (req) => {
         if (subscriptions.data.some((sub) => ['active', 'trialing', 'past_due'].includes(sub.status))) {
           return json({ url: await createPortalUrl(billing.stripe_customer_id) });
         }
+      }
+
+      const configuredPrice = await stripe.prices.retrieve(price);
+      if (!matchesPremiumPrice(configuredPrice, plan)) {
+        return json({ error: 'Billing price configuration needs attention' }, 503);
       }
 
       const session = await stripe.checkout.sessions.create({

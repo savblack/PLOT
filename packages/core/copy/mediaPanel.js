@@ -6,6 +6,9 @@
 export const MEDIA_PANEL = {
   talentFallback: 'Talent',
   episodesLoadError: 'Could not load episodes. Try again later.',
+  episodeProgressLoadError: 'Could not load your episode progress. Retry before making changes.',
+  retryEpisodeProgress: 'Retry episode progress',
+  sparseEpisodeProgress: 'Episodes are tracked individually. Mark the series watched when you have finished it.',
   noEpisodesAvailable: 'No episodes available yet.',
   // Per-episode tick tooltips in the episode guide.
   unmarkAsWatched: 'Unmark as watched',

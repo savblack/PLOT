@@ -267,15 +267,8 @@ test('watchedAtFor keeps the given date in timezones 13+ hours ahead of UTC', ()
   });
 });
 
-test('watchedAtFor with no source date falls back to the local date, not the UTC date', () => {
-  withTZ('UTC', () => {
-    const d = new Date();
-    const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    assert.equal(watchedAtFor({}), expected);
-  });
-  withTZ('Pacific/Kiritimati', () => {
-    const d = new Date();
-    const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    assert.equal(watchedAtFor({}), expected);
-  });
+test('watchedAtFor preserves an unknown source date in every timezone', () => {
+  for (const timezone of ['UTC', 'Pacific/Kiritimati', 'Australia/Sydney']) {
+    withTZ(timezone, () => assert.equal(watchedAtFor({}), null));
+  }
 });

@@ -1,12 +1,14 @@
+import { readImportSelection } from '@plot/core/importArchive.js';
+import { getConfig } from '@plot/core/config.js';
+import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { tmdb } from '@plot/core/tmdb.js';
-import { parsePlatform } from '@plot/core/importParsing.js';
-import { dedupeEntries } from '@plot/core/importDedup.js';
+import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
 import { planHistoryImport } from '@plot/core/importPlan.js';
 import {
-  resolveImportEntries, readExistingHistory, buildImportRows, writeImportRows,
+  resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, chooseImportMatch, reviewImportDuplicates,
 } from '@plot/core/importPipeline.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -42,6 +44,9 @@ function PlatformIcon({ id, logoPath, size = 32 }) {
 /* ─────────────────────────── Platform config ─────────────────────────── */
 
 const PLATFORMS = [
+  { id: 'tvtime', name: IMPORT_VIEW.tvTimeName, color: '#666', format: 'JSON', shortInstructions: IMPORT_VIEW.tvTimeHint, instructions: [IMPORT_VIEW.tvTimeHint] },
+  { id: 'trakt', name: IMPORT_VIEW.traktName, color: '#666', format: 'JSON', get shortInstructions() { return IMPORT_VIEW.traktHint(getConfig().importAnnotationsEnabled); }, get instructions() { return [this.shortInstructions]; } },
+  { id: 'imdb', name: IMPORT_VIEW.imdbName, color: '#666', format: 'CSV', shortInstructions: IMPORT_VIEW.imdbHint, instructions: [IMPORT_VIEW.imdbHint] },
   {
     id: 'netflix',
     name: 'Netflix',
@@ -118,14 +123,8 @@ const PLATFORMS = [
     name: 'Letterboxd',
     color: '#00E054',
     format: 'CSV',
-    shortInstructions: 'Settings → Data → Export your data → unzip → upload diary.csv',
-    instructions: [
-      'Go to letterboxd.com and sign in',
-      'Open Settings → Data (letterboxd.com/settings/data)',
-      'Click "Export your data" to download the ZIP',
-      'Unzip it and find diary.csv (or watched.csv)',
-      'Upload that CSV file here. Your ratings and reviews come across too',
-    ],
+    get shortInstructions() { return IMPORT_VIEW.letterboxdHint(getConfig().importAnnotationsEnabled); },
+    get instructions() { return [this.shortInstructions]; },
   },
 ];
 
@@ -170,16 +169,27 @@ function PosterThumb({ path }) {
 
 export default function ImportView() {
   const { user } = useApp();
+  // A file and its confirmed matches belong only to the account that chose it.
+  return <AccountImportView key={user?.id || 'signed-out'} />;
+}
+
+function AccountImportView() {
+  const { user } = useApp();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1); // 1=platform 2=file 3=resolving 4=preview 5=done
   const [platform, setPlatform] = useState(null);
+  const [previewPage, setPreviewPage] = useState(0);
   const [parseError, setParseError] = useState('');
+  const [listResult, setListResult] = useState('');
+  const [documentReport, setDocumentReport] = useState([]);
   const [resolveProgress, setResolveProgress] = useState({ done: 0, total: 0 });
-  const [results, setResults] = useState([]);
+  const [rawResults, setResults] = useState([]);
+  const results = useMemo(() => reviewPendingWatchSummaries(rawResults), [rawResults]);
   const [existingRows, setExistingRows] = useState([]);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState('');
+  const [importResult, setImportResult] = useState({ duplicates: 0, failed: 0 });
   const [importedCount, setImportedCount] = useState(0);
   const [providerLogos, setProviderLogos] = useState({});
   const fileRef = useRef(null);
@@ -197,22 +207,27 @@ export default function ImportView() {
   }, []);
 
   /* Step 2 → 3 → 4 */
-  const handleFile = useCallback(async (file) => {
+  const handleFile = useCallback(async (files) => {
     setParseError('');
-    const text = await file.text();
+    setPreviewPage(0);
+    setDocumentReport([]);
     let parsed;
     try {
-      parsed = parsePlatform(platform.id, text);
+      const document = await readImportSelection(platform.id, Array.from(files));
+      parsed = document.entries;
+      setDocumentReport(importReportMessages(document));
+      if (!parsed.length && (document.warnings.length || document.notImported.length)) { setResults([]); setStep(4); return; }
     } catch (e) {
       setParseError(`Couldn't parse this file. Make sure you selected the right platform and the file is unmodified. (${e.message})`);
       return;
     }
+    if (parsed.some(row => row.destination) && !getConfig().importEventsEnabled) { setParseError(IMPORT_VIEW.listNotImported('not_available')); return; }
     if (!parsed.length) {
       setParseError("No watch history found in this file. Check you exported from the right platform.");
       return;
     }
 
-    const deduped = dedupeEntries(parsed);
+    const deduped = parsed;
     track(EVENTS.IMPORT_STARTED, { source: platform.id, count: deduped.length });
 
     setStep(3);
@@ -220,12 +235,14 @@ export default function ImportView() {
 
     const resolved = await resolveImportEntries(deduped, {
       search: (title) => tmdb.search(title),
+      findByImdbId: id => tmdb.findByImdbId(id),
+      findByTvdbId: id => tmdb.findByTvdbId(id),
       onProgress: (done, total) => setResolveProgress({ done, total }),
     });
 
     const { rows: existing, error: existingError } = await readExistingHistory({
       userId: user.id,
-      tmdbIds: resolved.filter(r => r.status === 'matched').map(r => r.tmdbId),
+      tmdbIds: resolved.flatMap(r => (r.candidates || []).map(c => c.id)),
     });
 
     // A partial read would make the planner treat rows already in history as
@@ -236,8 +253,10 @@ export default function ImportView() {
       return;
     }
 
-    setExistingRows(existing);
-    setResults(resolved);
+    const review = await reviewImportDuplicates({ userId: user.id, resolved });
+    if (review.error) { setImportError(IMPORT_VIEW.couldNotReadHistory); setStep(2); return; }
+    setExistingRows(resolved[0]?.destination ? [] : existing);
+    setResults(review.resolved);
     setStep(4);
   }, [platform, user]);
 
@@ -260,23 +279,28 @@ export default function ImportView() {
 
   /* Step 4 → 5 */
   const handleImport = useCallback(async () => {
+    if (results.some(needsDuplicateReview)) return;
     setImporting(true);
     setImportError('');
 
     // writeImportRows batches, counts failures rather than swallowing them, and
     // signals the history change on the core bus.
-    const { inserted, failed } = await writeImportRows(plan.rows);
+    const outcome = await writeImportDocument({ userId: user.id, resolved: results, summaryRows: plan.rows });
+    const { inserted, failed, duplicates } = outcome;
+    setListResult(importListResultMessage(outcome));
     track(EVENTS.IMPORT_COMPLETED, { source: platform?.id, count: inserted });
     setImportedCount(inserted);
+    setImportResult({ duplicates, failed });
     if (failed) setImportError(IMPORT_VIEW.partialFailure(failed));
     setImporting(false);
     setStep(5);
-  }, [plan, platform?.id]);
+  }, [plan, platform?.id, user, results]);
 
-  const newCount       = plan.rows.length;
-  const alreadyCount   = plan.alreadyInHistory;
+  const newCount       = getConfig().importEventsEnabled ? results.filter(r => r.status === 'matched' && r.listSelected !== false && !alreadyImportedEvent(r)).length : plan.rows.length;
+  const alreadyCount   = results[0]?.destination ? 0 : getConfig().importEventsEnabled ? results.filter(alreadyImportedEvent).length : plan.alreadyInHistory;
   const unmatchedCount = results.filter(r => r.status === 'unmatched').length;
-  const matchedCount   = results.length - unmatchedCount;
+  const matchedCount   = results.filter(r => r.status === 'matched' && r.listSelected !== false).length;
+  const canConfirm = getConfig().importEventsEnabled ? matchedCount > 0 : newCount > 0;
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '1rem 1rem 6rem' }}>
@@ -307,6 +331,7 @@ export default function ImportView() {
         </div>
       )}
 
+      {(step === 4 || step === 5) && documentReport.length > 0 && <section aria-label={IMPORT_VIEW.reportHeading}><h2>{IMPORT_VIEW.reportHeading}</h2><ul>{documentReport.map((message, index) => <li key={index}>{message}</li>)}</ul></section>}
       {/* ── Step 1: Pick platform ── */}
       {step === 1 && (
         <>
@@ -314,7 +339,7 @@ export default function ImportView() {
             Choose the streaming service you want to import from.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {PLATFORMS.map(p => (
+            {PLATFORMS.filter(p => p.id === 'tvtime' ? getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled : !['imdb', 'trakt'].includes(p.id) || getConfig().importEventsEnabled).map(p => (
               <button
                 key={p.id}
                 onClick={() => { setPlatform(p); setStep(2); }}
@@ -359,9 +384,10 @@ export default function ImportView() {
           <input
             ref={fileRef}
             type="file"
-            accept=".csv,.json"
+            accept={['tvtime', 'trakt', 'letterboxd'].includes(platform.id) ? '.csv,.json,.zip' : '.csv,.json'}
+            multiple={['tvtime', 'trakt', 'letterboxd'].includes(platform.id)}
             style={{ display: 'none' }}
-            onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+            onChange={e => e.target.files?.[0] && handleFile(e.target.files)}
           />
           <div
             onClick={() => fileRef.current?.click()}
@@ -370,8 +396,8 @@ export default function ImportView() {
             onDrop={e => {
               e.preventDefault();
               e.currentTarget.removeAttribute('data-drag');
-              const file = e.dataTransfer.files?.[0];
-              if (file) handleFile(file);
+              const files = e.dataTransfer.files;
+              if (files?.length) handleFile(files);
             }}
             style={{
               border: '1.5px dashed var(--border)',
@@ -449,13 +475,14 @@ export default function ImportView() {
       {/* ── Step 4: Preview ── */}
       {step === 4 && (
         <>
+          {importListSelections(results).map(list => <div key={list.destination.key}><p>{IMPORT_VIEW.listPreview(list.destination)}</p><label><input type="checkbox" checked={list.listSelected !== false} onChange={e => setResults(rows => rows.map(row => row.destination?.key === list.destination.key ? { ...row, listSelected: e.target.checked } : row))} />{IMPORT_VIEW.selectList}</label></div>)}
           {/* Editorial headline */}
           <div style={{ marginBottom: '1.25rem' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.25, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
               Found <span style={{ color: 'var(--accent)' }}>{results.length} title{results.length !== 1 ? 's' : ''}</span> from {platform?.name}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              {alreadyCount > 0 && unmatchedCount > 0
+              {results.some(row => row.annotation) ? IMPORT_VIEW.annotationCounts(alreadyCount, unmatchedCount) : alreadyCount > 0 && unmatchedCount > 0
                 ? `${alreadyCount} already in history · ${unmatchedCount} unmatched`
                 : alreadyCount > 0
                   ? `${alreadyCount} already in your history`
@@ -465,20 +492,28 @@ export default function ImportView() {
             </div>
           </div>
 
+          {getConfig().importEventsEnabled && results.some(row => !row.destination && !row.annotation) && <p>{IMPORT_VIEW.eventPreview}</p>}
+          {results.some(row => row.annotation) && <p>{IMPORT_VIEW.annotationPreview}</p>}
           {/* Divider */}
           <div style={{ height: 1, background: 'var(--border)', marginBottom: '0.75rem' }} />
 
+          {results.length > 100 && <nav aria-label={IMPORT_VIEW.chooseMatch} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <button disabled={previewPage === 0} onClick={() => setPreviewPage(page => page - 1)}>{IMPORT_VIEW.previousEntries}</button>
+            <span>{IMPORT_VIEW.previewRange(previewPage * 100 + 1, Math.min((previewPage + 1) * 100, results.length), results.length)}</span>
+            <button disabled={(previewPage + 1) * 100 >= results.length} onClick={() => setPreviewPage(page => page + 1)}>{IMPORT_VIEW.nextEntries}</button>
+          </nav>}
           {/* Results list */}
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1.5rem', maxHeight: '52vh', overflowY: 'auto' }}>
-            {results.map((r, i) => {
+            {results.slice(previewPage * 100, (previewPage + 1) * 100).map((r, offset) => {
+              const i = previewPage * 100 + offset;
               const unmatched = r.status === 'unmatched';
-              const isNew = !unmatched && plannedRows.has(rowByIndex.get(i));
+              const isNew = !unmatched && (getConfig().importEventsEnabled ? !alreadyImportedEvent(r) : plannedRows.has(rowByIndex.get(i)));
               // Matched but not planned: either the user already has this
               // title, or it merged into another entry for the same title — a
               // Netflix export lists one row per episode, so a night of one
               // series arrives as several rows describing one title.
               const alreadyHave = !unmatched && !isNew;
-              const merged = alreadyHave && !existingRows.some(
+              const merged = !getConfig().importEventsEnabled && alreadyHave && !existingRows.some(
                 e => e.tmdb_id === r.tmdbId && e.media_type === r.mediaType);
               return (
                 <div key={i} style={{
@@ -494,9 +529,28 @@ export default function ImportView() {
                       {r.status === 'matched' ? r.tmdbTitle : r.title}
                     </div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                      {unmatched ? IMPORT_VIEW.notMatched : merged ? IMPORT_VIEW.mergedIntoOneEntry : alreadyHave ? IMPORT_VIEW.alreadyInHistory : r.mediaType === 'tv' ? MEDIA.tvSeries : MEDIA.movie}
-                      {r.date ? ` · ${r.date}` : ''}
+                      {unmatched ? IMPORT_VIEW.notMatched : merged ? IMPORT_VIEW.mergedIntoOneEntry : alreadyHave ? (r.annotation ? IMPORT_VIEW.annotationAlreadySaved : IMPORT_VIEW.alreadyInHistory) : r.mediaType === 'tv' ? MEDIA.tvSeries : MEDIA.movie}
+                      {!r.annotation && r.episodeNumber != null && ` · ${IMPORT_VIEW.episodeLabel(r.seasonNumber, r.episodeNumber)}`}
+                      {r.annotation ? ` · ${IMPORT_VIEW.annotationLabel(r)}` : r.date ? ` · ${r.date}` : ` · ${IMPORT_VIEW.unknownDate}`}
                     </div>
+                    {r.reason === 'episode_identity_required' && <p>{IMPORT_VIEW.episodeIdentityRequired}</p>}
+                    {needsDuplicateReview(r) && <div>
+                      <p>{r.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</p>
+                      <button onClick={() => setResults(current => current.map((entry, index) => index === i ? { ...entry, duplicateDecision: 'keep' } : entry))}>{IMPORT_VIEW.keepSeparateWatch}</button>
+                    </div>}
+                    {r.duplicateDecision === 'keep' && <p>{IMPORT_VIEW.duplicateConfirmed}</p>}
+                    {!!r.candidates?.length && (
+                      <select aria-label={`${IMPORT_VIEW.chooseMatch}: ${r.title}`}
+                        value={r.status === 'matched' ? `${r.mediaType}:${r.tmdbId}` : ''}
+                        onChange={event => setResults(current => current.map((entry, index) => index === i ? chooseImportMatch(entry, event.target.value) : entry))}
+                        style={{ maxWidth: '100%', marginTop: '0.4rem', color: 'var(--text-primary)', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                        <option value="">{IMPORT_VIEW.skipMatch}</option>
+                        {r.candidates.map(candidate => <option key={`${candidate.media_type}:${candidate.id}`} value={`${candidate.media_type}:${candidate.id}`}>
+                          {IMPORT_VIEW.matchOption(candidate.title || candidate.name, (candidate.release_date || candidate.first_air_date || '').slice(0, 4), candidate.media_type)}
+                        </option>)}
+                      </select>
+                    )}
+                    {r.reason === 'search_failed' && <div role="alert">{IMPORT_VIEW.searchFailed}</div>}
                   </div>
                   {isNew && (
                     <div style={{
@@ -528,17 +582,17 @@ export default function ImportView() {
             </div>
             <button
               onClick={handleImport}
-              disabled={importing || newCount === 0}
+              disabled={importing || !canConfirm || results.some(needsDuplicateReview)}
               style={{
                 padding: '0.7rem 1.5rem', borderRadius: 99,
-                background: newCount === 0 ? 'var(--surface-raised)' : '#fff',
-                color: newCount === 0 ? 'var(--text-muted)' : '#000',
+                background: !canConfirm ? 'var(--surface-raised)' : '#fff',
+                color: !canConfirm ? 'var(--text-muted)' : '#000',
                 fontWeight: 700, fontSize: '0.85rem', border: 'none',
-                cursor: newCount === 0 ? 'default' : 'pointer',
+                cursor: !canConfirm ? 'default' : 'pointer',
                 flexShrink: 0,
               }}
             >
-              {importing ? IMPORT_VIEW.importing : newCount === 0 ? IMPORT_VIEW.nothingNew : IMPORT_VIEW.importArrow}
+              {importing ? IMPORT_VIEW.importing : !canConfirm ? IMPORT_VIEW.nothingNew : IMPORT_VIEW.importArrow}
             </button>
           </div>
         </>
@@ -551,11 +605,12 @@ export default function ImportView() {
             <CheckIcon />
           </div>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-            {importedCount} title{importedCount !== 1 ? 's' : ''} added
+            {IMPORT_VIEW.resultSummary(importedCount, importResult.duplicates, importResult.failed, unmatchedCount)}
           </div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: importError ? '1rem' : '2rem' }}>
-            Your watch history has been imported to PLOT.
+            {importResult.failed ? IMPORT_VIEW.incomplete : IMPORT_VIEW.finished}
           </div>
+          {listResult && <p role="status">{listResult}</p>}
           {importError && (
             <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem', fontSize: '0.8rem', color: '#ef4444', marginBottom: '2rem', textAlign: 'left' }}>
               {importError}

@@ -1,3 +1,5 @@
+import { readListItems } from './listReads.js';
+import { on, LISTS_CHANGED_EVENT } from './events.js';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { genreIdsFromItem, mediaIdentityRow, tmdbIdFromItem } from './media.js';
@@ -24,17 +26,24 @@ export function useCustomLists(userId) {
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
-    const { data } = await supabase
-      .from('user_custom_lists')
-      .select('*, items:user_custom_list_items(*)')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
-    setLists(data || []);
+    try {
+      const data = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data: page, error } = await supabase.from('user_custom_lists').select('*')
+          .eq('user_id',userId).order('id').range(offset,offset + 999);
+        if (error) throw error;
+        for (const list of page || []) data.push({ ...list, items: await readListItems({ userId, listId: list.id, custom: true }) });
+        if (!page || page.length < 1000) break;
+      }
+      data.sort((a,b) => String(a.created_at || '').localeCompare(String(b.created_at || '')));
+      setLists(data);
+    } catch { /* Retain the last complete collection on a failed page. */ }
     setLoading(false);
   }, [userId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
   useEffect(() => { load(); }, [load]);
+  useEffect(() => on(LISTS_CHANGED_EVENT, load), [load]);
 
   const createList = useCallback(async (name) => {
     if (!userId || !name?.trim()) return null;

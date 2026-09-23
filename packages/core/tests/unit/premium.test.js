@@ -3,16 +3,18 @@ import test from 'node:test';
 
 import { FREE_CUSTOM_LIST_CAP, PREMIUM_PLANS, isPremiumProfile, canCreateCustomList, friendlyPremiumError } from '../../premium.js';
 
-test('FREE_CUSTOM_LIST_CAP is 3', () => {
-  assert.equal(FREE_CUSTOM_LIST_CAP, 3);
+test('FREE_CUSTOM_LIST_CAP is 5', () => {
+  assert.equal(FREE_CUSTOM_LIST_CAP, 5);
 });
 
 test('PREMIUM_PLANS exposes the monthly and yearly plan labels and is frozen', () => {
   assert.deepEqual(PREMIUM_PLANS, {
-    monthly: { id: 'monthly', label: '$3/mo' },
-    yearly: { id: 'yearly', label: '$25/yr' },
+    monthly: { id: 'monthly', label: 'A$5/mo', amount: 5, currency: 'AUD' },
+    yearly: { id: 'yearly', label: 'A$40/yr', amount: 40, currency: 'AUD' },
   });
   assert.ok(Object.isFrozen(PREMIUM_PLANS));
+  assert.ok(Object.isFrozen(PREMIUM_PLANS.monthly));
+  assert.ok(Object.isFrozen(PREMIUM_PLANS.yearly));
   assert.throws(() => { PREMIUM_PLANS.monthly = 'x'; }, TypeError);
 });
 
@@ -35,8 +37,9 @@ test('canCreateCustomList allows premium profiles regardless of how many lists t
 test('canCreateCustomList enforces the free cap by list count for non-premium profiles', () => {
   assert.equal(canCreateCustomList(0, null), true);
   assert.equal(canCreateCustomList(2, null), true);
-  assert.equal(canCreateCustomList(3, null), false);
-  assert.equal(canCreateCustomList(4, null), false);
+  assert.equal(canCreateCustomList(3, null), true);
+  assert.equal(canCreateCustomList(4, null), true);
+  assert.equal(canCreateCustomList(5, null), false);
 });
 
 test('friendlyPremiumError translates the premium_required code and passes other messages through', () => {

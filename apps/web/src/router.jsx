@@ -82,7 +82,7 @@ const router = createBrowserRouter([
   { path: '/signup',         element: <AuthPage initialMode="signup" /> },
   { path: '/logout',         element: <LogoutPage /> },
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
-  { path: '/auth/trakt',     element: SHOW_MEDIA_SYNC_INTEGRATIONS ? wrap(<TraktCallbackPage />) : <Navigate to="/settings" replace /> },
+  { path: '/auth/trakt',     element: (SHOW_MEDIA_SYNC_INTEGRATIONS || import.meta.env.VITE_TRACKING_JOBS_ENABLED === 'true') ? wrap(<TraktCallbackPage />) : <Navigate to="/settings" replace /> },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
   // Onboarding (protected, skip onboarding check)

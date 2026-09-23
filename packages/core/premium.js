@@ -8,11 +8,11 @@
  * authority, the client only pre-checks for friendlier UX.
  */
 
-export const FREE_CUSTOM_LIST_CAP = 3;
+export const FREE_CUSTOM_LIST_CAP = 5;
 
 export const PREMIUM_PLANS = Object.freeze({
-  monthly: { id: 'monthly', label: '$3/mo' },
-  yearly:  { id: 'yearly',  label: '$25/yr' },
+  monthly: Object.freeze({ id: 'monthly', label: 'A$5/mo', amount: 5, currency: 'AUD' }),
+  yearly: Object.freeze({ id: 'yearly', label: 'A$40/yr', amount: 40, currency: 'AUD' }),
 });
 
 export function isPremiumProfile(profile) {

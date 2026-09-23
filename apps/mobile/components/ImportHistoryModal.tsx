@@ -1,6 +1,9 @@
+import { readImportSelection } from '@plot/core/importArchive.js';
+import { getConfig } from '@plot/core/config.js';
+import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
 import { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Image,
+  View, Text, ScrollView, TouchableOpacity,
   Modal, Alert, ActivityIndicator, StyleSheet, FlatList,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
@@ -8,22 +11,25 @@ import * as FileSystem from 'expo-file-system';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Line } from 'react-native-svg';
 import { tmdb } from '../lib/tmdb';
-import { parsePlatform, type ParsedImportEntry } from '@plot/core/importParsing.js';
-import { dedupeEntries } from '@plot/core/importDedup.js';
+import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
 import { planHistoryImport } from '@plot/core/importPlan.js';
 import {
-  resolveImportEntries, readExistingHistory, buildImportRows, writeImportRows,
+  resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, chooseImportMatch, reviewImportDuplicates,
 } from '@plot/core/importPipeline.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
-// Narrower than core's ImportPlatform: mobile offers no Letterboxd upload.
-type Platform = 'netflix' | 'prime' | 'disney' | 'max' | 'apple';
+type Platform = 'netflix' | 'prime' | 'disney' | 'max' | 'apple' | 'letterboxd' | 'imdb' | 'trakt' | 'tvtime';
 
 // ── Platform config ───────────────────────────────────────────────────
 
 const PLATFORMS: { id: Platform; name: string; color: string; hint: string; accept: string[] }[] = [
+  { id: 'tvtime', name: IMPORT_VIEW.tvTimeName, color: '#666', hint: IMPORT_VIEW.tvTimeHint, accept: ['application/json', 'text/plain', 'application/zip', 'application/x-zip-compressed'] },
+  { id: 'trakt', name: IMPORT_VIEW.traktName, color: '#666', get hint() { return IMPORT_VIEW.traktHint(getConfig().importAnnotationsEnabled); }, accept: ['application/json', 'text/plain', 'application/zip', 'application/x-zip-compressed'] },
+  { id: 'imdb', name: IMPORT_VIEW.imdbName, color: '#666', hint: IMPORT_VIEW.imdbHint, accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text'] },
+  { id: 'letterboxd', name: 'Letterboxd', color: '#00E054', get hint() { return IMPORT_VIEW.letterboxdHint(getConfig().importAnnotationsEnabled); },
+    accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text', 'application/zip', 'application/x-zip-compressed'] },
   {
     id: 'netflix',
     name: 'Netflix',
@@ -73,6 +79,18 @@ const PLATFORMS: { id: Platform; name: string; color: string; hint: string; acce
 /** One entry after TMDB resolution — core's shape, matched or not. */
 interface ResolvedEntry {
   status: 'matched' | 'unmatched';
+  reason?: string;
+  destination?: { key: string; name: string; kind: string };
+  listSelected?: boolean;
+  duplicateCandidates?: unknown[];
+  pendingDuplicates?: unknown[];
+  duplicateDecision?: string | null;
+  annotation?: { kind: string; rating?: number; text?: string; spoiler?: boolean; ratedAt?: string | null; createdAt?: string | null };
+  annotationScope?: string;
+  date?: string | null;
+  seasonNumber?: number;
+  episodeNumber?: number;
+  candidates?: { id: number; media_type: string; title?: string; name?: string; release_date?: string; first_air_date?: string }[];
   title: string;
   tmdbId?: number;
   mediaType?: 'movie' | 'tv';
@@ -88,7 +106,7 @@ interface HistoryRow {
   title: string;
   poster_path: string | null;
   genre_ids: number[];
-  watched_at: string;
+  watched_at: string | null;
   rating?: number;
   note?: string;
 }
@@ -108,20 +126,30 @@ interface Props {
   onClose: () => void;
 }
 
-export default function ImportHistoryModal({ userId, onClose }: Props) {
+export default function ImportHistoryModal(props: Props) {
+  // Remount the full review workflow when the account changes.
+  return <AccountImportHistoryModal key={props.userId} {...props} />;
+}
+
+function AccountImportHistoryModal({ userId, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
+  const [reviewIndex, setReviewIndex] = useState<number | null>(null);
   const [step,         setStep]         = useState<Step>('pick-platform');
   const [platform,     setPlatform]     = useState<Platform | null>(null);
-  const [resolved,     setResolved]     = useState<ResolvedEntry[]>([]);
+  const [rawResolved, setResolved] = useState<ResolvedEntry[]>([]);
+  const resolved: ResolvedEntry[] = useMemo(() => reviewPendingWatchSummaries(rawResolved), [rawResolved]);
   const [existingRows, setExistingRows] = useState<{ tmdb_id: number; media_type: string }[]>([]);
   const [resolveTotal, setResolveTotal] = useState(0);
   const [resolveDone,  setResolveDone]  = useState(0);
   const [importDone,   setImportDone]   = useState(0);
   const [importTotal,  setImportTotal]  = useState(0);
+  const [importResult, setImportResult] = useState({ duplicates: 0, failed: 0 });
   const [importedCount, setImportedCount] = useState(0);
+  const [listResult, setListResult] = useState('');
+  const [documentReport, setDocumentReport] = useState([] as string[]);
 
   const handleSelectPlatform = (p: Platform) => {
     setPlatform(p);
@@ -135,24 +163,32 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       const result = await DocumentPicker.getDocumentAsync({
         type: cfg.accept,
         copyToCacheDirectory: true,
+        multiple: ['tvtime', 'trakt', 'letterboxd'].includes(platform),
       });
       if (result.canceled || !result.assets?.[0]) return;
 
-      const uri = result.assets[0].uri;
-      const text = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.UTF8 });
-
-      const raw = parsePlatform(platform, text);
+      const files = result.assets.map(asset => {
+        const file = new FileSystem.File(asset.uri);
+        return { name: asset.name, size: asset.size, text: () => file.text(), arrayBuffer: () => file.arrayBuffer() };
+      });
+      const document = await readImportSelection(platform, files);
+      const raw = document.entries;
+      setDocumentReport(importReportMessages(document));
+      if (!raw.length && (document.warnings.length || document.notImported.length)) { setResolved([]); setStep('preview'); return; }
+      if (raw.some(row => row.destination) && !getConfig().importEventsEnabled) { Alert.alert(IMPORT_VIEW.incomplete, IMPORT_VIEW.listNotImported('not_available')); return; }
       if (raw.length === 0) {
         Alert.alert('No entries found', 'The file could not be parsed or contains no viewing history. Make sure you selected the right platform and file.');
         return;
       }
-      const deduped = dedupeEntries(raw);
+      const deduped = raw;
       setResolveTotal(deduped.length);
       setResolveDone(0);
       setStep('resolving');
 
       const results = await resolveImportEntries(deduped, {
         search: (title: string) => tmdb.search(title),
+        findByImdbId: (id: string) => tmdb.findByImdbId(id),
+        findByTvdbId: (id: number | string) => tmdb.findByTvdbId(id),
         onProgress: (done: number) => setResolveDone(done),
       });
 
@@ -163,8 +199,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       const { rows: existing, error } = await readExistingHistory({
         userId,
         tmdbIds: (results as ResolvedEntry[])
-          .filter(r => r.status === 'matched')
-          .map(r => r.tmdbId as number),
+          .flatMap(r => (r.candidates || []).map(c => c.id)),
       });
 
       // Planning against a partial history is the data-loss path. Stop.
@@ -174,11 +209,13 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
         return;
       }
 
-      setExistingRows(existing);
-      setResolved(results);
+      const review = await reviewImportDuplicates({ userId, resolved: results });
+      if (review.error) { Alert.alert('Import stopped', IMPORT_VIEW.couldNotReadHistory); setStep('pick-file'); return; }
+      setExistingRows(results[0]?.destination ? [] : existing);
+      setResolved(review.resolved);
       setStep('preview');
-    } catch {
-      Alert.alert('Error', 'Could not read the file. Please try again.');
+    } catch (error) {
+      Alert.alert(IMPORT_VIEW.incomplete, error instanceof Error ? error.message : IMPORT_VIEW.fileReadFailed);
       setStep('pick-file');
     }
   }, [platform, userId]);
@@ -212,34 +249,38 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
   }, [rowByIndex, plannedRows]);
 
   const matched = useMemo(
-    () => resolved.filter((r: ResolvedEntry) => r.status === 'matched'),
+    () => resolved.filter((r: ResolvedEntry) => r.status === 'matched' && r.listSelected !== false),
     [resolved],
   );
 
   const handleImport = useCallback(async () => {
+    if (resolved.some(needsDuplicateReview)) return;
     const rows = plan.rows;
-    if (rows.length === 0) {
+    if (rows.length === 0 && !getConfig().importEventsEnabled) {
       setImportedCount(0);
       setStep('done');
       return;
     }
 
-    setImportTotal(rows.length);
+    setImportTotal(getConfig().importEventsEnabled ? resolved.filter(r => r.status === 'matched').length : rows.length);
     setImportDone(0);
     setStep('importing');
 
     // Batches, counts failures rather than swallowing them, and signals the
     // history change so a mounted useHistory reloads — mobile never did.
-    const { inserted, failed } = await writeImportRows(rows, {
+    const outcome = await writeImportDocument({ userId, resolved, summaryRows: rows }, {
       onProgress: (done: number) => setImportDone(done),
     });
 
+    const { inserted, failed, duplicates } = outcome;
+    setListResult(importListResultMessage(outcome));
     setImportedCount(inserted);
+    setImportResult({ duplicates, failed });
     if (failed) {
-      Alert.alert('Some titles could not be saved', IMPORT_VIEW.partialFailure(failed));
+      Alert.alert(IMPORT_VIEW.partialFailureHeading, IMPORT_VIEW.partialFailure(failed));
     }
     setStep('done');
-  }, [plan]);
+  }, [plan, resolved, userId]);
 
   const reset = () => {
     setStep('pick-platform');
@@ -248,9 +289,9 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
     setExistingRows([]);
   };
 
-  const newToImport = plan.rows.length;
+  const newToImport = getConfig().importEventsEnabled ? matched.filter(r => !alreadyImportedEvent(r)).length : plan.rows.length;
   const alreadyHave = matched.length - newToImport;
-  const unmatched   = resolved.length - matched.length;
+  const unmatched   = resolved.filter(row => row.status === 'unmatched').length;
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -280,7 +321,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
           <ScrollView contentContainerStyle={styles.body}>
             <Text style={styles.stepTitle}>Choose your platform</Text>
             <Text style={styles.stepSub}>We'll import your watch history and match it to TMDB.</Text>
-            {PLATFORMS.map(p => (
+            {PLATFORMS.filter(p => p.id === 'tvtime' ? getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled : !['imdb', 'trakt'].includes(p.id) || getConfig().importEventsEnabled).map(p => (
               <TouchableOpacity
                 key={p.id}
                 style={styles.platformCard}
@@ -316,7 +357,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
                 <Line x1={9} y1={15} x2={15} y2={15} />
               </Svg>
               <Text style={styles.filePickerText}>Choose file</Text>
-              <Text style={styles.filePickerSub}>CSV or JSON from {PLATFORMS.find(p => p.id === platform)!.name}</Text>
+              <Text style={styles.filePickerSub}>{IMPORT_VIEW.filePickerHint(PLATFORMS.find(p => p.id === platform)!.name, ['tvtime', 'trakt', 'letterboxd'].includes(platform))}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -342,51 +383,67 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
               <StatChip label="Already have" value={alreadyHave} color={colors.textMuted} />
               <StatChip label="Not matched" value={unmatched} color={colors.chipCinema} />
             </View>
-            {newToImport === 0 ? (
-              <View style={[styles.body, styles.center]}>
-                <Text style={styles.resolvingTitle}>Nothing new to import</Text>
-                <Text style={styles.resolvingSub}>All matched titles are already in your watch history.</Text>
-              </View>
-            ) : (
-              <FlatList
-                /* The rows themselves, so the preview shows exactly what the
-                   write will send — same list the planner ran against. */
-                data={candidates}
-                keyExtractor={(c: ImportCandidate) => String(c.index)}
-                contentContainerStyle={{ paddingBottom: 120 }}
-                renderItem={({ item }: { item: ImportCandidate }) => (
-                  <View style={[styles.previewRow, !isNew(item.index) && styles.previewRowDim]}>
-                    {item.row.poster_path ? (
-                      <Image
-                        source={{ uri: `https://image.tmdb.org/t/p/w92${item.row.poster_path}` }}
-                        style={styles.previewPoster}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={[styles.previewPoster, styles.previewPosterFallback]} />
+            <FlatList
+              ListHeaderComponent={<View>
+            {importListSelections(resolved).map(list => <View key={list.destination.key}>
+              <Text style={styles.previewMeta}>{IMPORT_VIEW.listPreview(list.destination)}</Text>
+              <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: list.listSelected !== false }} onPress={() => setResolved(rows => rows.map(row => row.destination?.key === list.destination.key ? { ...row, listSelected: list.listSelected === false } : row))}><Text style={styles.previewTitle}>{list.listSelected !== false ? '☑ ' : '☐ '}{IMPORT_VIEW.selectList}</Text></TouchableOpacity>
+            </View>)}
+            {resolved.some(row => row.annotation) && <Text style={styles.previewMeta}>{IMPORT_VIEW.annotationPreview}</Text>}
+            {getConfig().importEventsEnabled && resolved.some(row => !row.destination && !row.annotation) && <Text style={styles.previewMeta}>{IMPORT_VIEW.eventPreview}</Text>}
+                {documentReport.length > 0 && <View><Text style={styles.previewTitle}>{IMPORT_VIEW.reportHeading}</Text>{documentReport.map((message, index) => <Text key={index} style={styles.previewMeta}>{message}</Text>)}</View>}
+              </View>}
+              data={resolved}
+              keyExtractor={(_item, index) => String(index)}
+              contentContainerStyle={{ paddingBottom: 120 }}
+              renderItem={({ item, index }) => (
+                <View style={styles.previewRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.previewTitle}>{item.tmdbTitle || item.title}</Text>
+                    <Text style={styles.previewMeta}>{item.annotation ? IMPORT_VIEW.annotationLabel(item) : item.date || IMPORT_VIEW.unknownDate}</Text>
+                    {!item.annotation && item.episodeNumber != null && <Text style={styles.previewMeta}>{IMPORT_VIEW.episodeLabel(item.seasonNumber, item.episodeNumber)}</Text>}
+                    <Text style={styles.previewMeta}>{item.status !== 'matched' ? IMPORT_VIEW.notMatched : (getConfig().importEventsEnabled ? alreadyImportedEvent(item) : !isNew(index)) ? (item.annotation ? IMPORT_VIEW.annotationAlreadySaved : IMPORT_VIEW.alreadyInHistory) : IMPORT_VIEW.newBadge}</Text>
+                    {item.reason === 'episode_identity_required' && <Text style={styles.previewMeta}>{IMPORT_VIEW.episodeIdentityRequired}</Text>}
+                    {needsDuplicateReview(item) && <View>
+                      <Text style={styles.previewMeta}>{item.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</Text>
+                      <TouchableOpacity accessibilityRole="button" onPress={() => setResolved(current => current.map((entry, i) => i === index ? { ...entry, duplicateDecision: 'keep' } : entry))}>
+                        <Text style={[styles.previewMeta, { color: colors.accent, paddingVertical: spacing.sm }]}>{IMPORT_VIEW.keepSeparateWatch}</Text>
+                      </TouchableOpacity>
+                    </View>}
+                    {item.duplicateDecision === 'keep' && <Text style={styles.previewMeta}>{IMPORT_VIEW.duplicateConfirmed}</Text>}
+                    {!!item.candidates?.length && (
+                      <TouchableOpacity accessibilityRole="button" onPress={() => setReviewIndex(reviewIndex === index ? null : index)}>
+                        <Text style={[styles.previewMeta, { color: colors.accent, paddingVertical: spacing.sm }]}>{IMPORT_VIEW.reviewMatch}</Text>
+                      </TouchableOpacity>
                     )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.previewTitle} numberOfLines={1}>{item.row.title}</Text>
-                      <Text style={styles.previewMeta}>{item.row.media_type === 'tv' ? 'TV Series' : 'Movie'} · {item.row.watched_at}</Text>
-                    </View>
-                    {!isNew(item.index) && (
-                      <View style={styles.alreadyBadge}>
-                        <Text style={styles.alreadyBadgeText}>In history</Text>
-                      </View>
-                    )}
+                    {reviewIndex === index && <>
+                      <TouchableOpacity accessibilityRole="button" onPress={() => {
+                        setResolved(current => current.map((entry, i) => i === index ? chooseImportMatch(entry, '') : entry));
+                        setReviewIndex(null);
+                      }}><Text style={[styles.previewMeta, { paddingVertical: spacing.sm }]}>{IMPORT_VIEW.skipMatch}</Text></TouchableOpacity>
+                      {item.candidates?.map(candidate => (
+                        <TouchableOpacity key={`${candidate.media_type}:${candidate.id}`} accessibilityRole="button" onPress={() => {
+                          setResolved(current => current.map((entry, i) => i === index ? chooseImportMatch(entry, `${candidate.media_type}:${candidate.id}`) : entry));
+                          setReviewIndex(null);
+                        }}>
+                          <Text style={[styles.previewMeta, { paddingVertical: spacing.sm }]}>{IMPORT_VIEW.matchOption(candidate.title || candidate.name, (candidate.release_date || candidate.first_air_date || '').slice(0, 4), candidate.media_type)}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </>}
+                    {item.reason === 'search_failed' && <Text style={styles.previewMeta}>{IMPORT_VIEW.searchFailed}</Text>}
                   </View>
-                )}
-              />
-            )}
+                </View>
+              )}
+            />
             <View style={[styles.previewFooter, { paddingBottom: insets.bottom + spacing.md }]}>
               <TouchableOpacity
-                style={[styles.importBtn, newToImport === 0 && styles.importBtnDisabled]}
+                style={[styles.importBtn, (getConfig().importEventsEnabled ? matched.length === 0 : newToImport === 0) && styles.importBtnDisabled]}
                 onPress={handleImport}
-                disabled={newToImport === 0}
+                disabled={(getConfig().importEventsEnabled ? matched.length === 0 : newToImport === 0) || resolved.some(needsDuplicateReview)}
                 activeOpacity={0.85}
               >
                 <Text style={styles.importBtnText}>
-                  {newToImport > 0 ? `Import ${newToImport} title${newToImport !== 1 ? 's' : ''}` : 'Nothing to import'}
+                  {getConfig().importEventsEnabled ? IMPORT_VIEW.confirmEntries(matched.length) : newToImport > 0 ? `Import ${newToImport} title${newToImport !== 1 ? 's' : ''}` : 'Nothing to import'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -413,9 +470,11 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
                 <Polyline points="20,6 9,17 4,12" />
               </Svg>
             </View>
-            <Text style={styles.resolvingTitle}>Import complete</Text>
+            <Text style={styles.resolvingTitle}>{importResult.failed ? IMPORT_VIEW.incomplete : IMPORT_VIEW.finished}</Text>
+            {documentReport.length > 0 && <ScrollView style={{ maxHeight: 180 }}><Text style={styles.previewTitle}>{IMPORT_VIEW.reportHeading}</Text>{documentReport.map((message, index) => <Text key={index} style={styles.previewMeta}>{message}</Text>)}</ScrollView>}
+            {listResult && <Text style={styles.resolvingSub}>{listResult}</Text>}
             <Text style={styles.resolvingSub}>
-              {importedCount} title{importedCount !== 1 ? 's' : ''} added to your watch history.
+              {IMPORT_VIEW.resultSummary(importedCount, importResult.duplicates, importResult.failed, unmatched)}
             </Text>
             <TouchableOpacity style={[styles.importBtn, { marginTop: spacing.lg }]} onPress={onClose} activeOpacity={0.85}>
               <Text style={styles.importBtnText}>Done</Text>

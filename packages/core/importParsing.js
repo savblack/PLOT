@@ -1,21 +1,21 @@
+import { parseTraktHistory, parseTraktWatchlist } from './traktImport.js';
 // Shared, pure helpers for parsing watch-history exports.
 // Kept framework-free so they can be unit-tested directly (ImportView is .jsx).
-
-import { localDateStr } from './date.js';
 
 /**
  * A single parsed row from a platform export, before TMDB resolution.
  *
  * @typedef {object} ParsedImportEntry
+ * @property {{ kind: string, key: string, name: string, description?: string|null }} [destination] List membership destination, never a watch.
  * @property {string} title Raw title text as it appeared in the export.
  * @property {'movie' | 'tv' | 'unknown'} hint Best-guess media type. TMDB
  *   search is the source of truth; this only biases the lookup.
  * @property {string | null} [date] "YYYY-MM-DD", or null when the export had
  *   no usable date column. Use `watchedAtFor` rather than reading this
- *   directly when you need a definite watch date.
+ *   directly when building a history row; unknown dates stay null.
  */
 
-/** @typedef {'netflix' | 'prime' | 'disney' | 'max' | 'apple' | 'letterboxd'} ImportPlatform */
+/** @typedef {'netflix' | 'prime' | 'disney' | 'max' | 'apple' | 'letterboxd' | 'imdb' | 'trakt'} ImportPlatform */
 
 export function parseCSV(text) {
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -112,7 +112,7 @@ export function parseLetterboxd(text) {
   const headers = rows[0];
   const titleIdx  = findCol(headers, 'name', 'title', 'film');
   const yearIdx   = findCol(headers, 'year');
-  const dateIdx   = findCol(headers, 'watcheddate', 'date'); // prefer actual watch date over logged date
+  const dateIdx   = headers.findIndex(h => fuzzyCol(h) === 'watcheddate'); // logged date is not a watch date
   const ratingIdx = findCol(headers, 'rating');
   const reviewIdx = findCol(headers, 'review');
   if (titleIdx === -1) return [];
@@ -257,35 +257,101 @@ export function parseApple(text) {
  * @param {string} text
  * @returns {ParsedImportEntry[]}
  */
-export function parsePlatform(platformId, text) {
+export function parsePlatform(platformId, text, { fileName = '' } = {}) {
+  if (platformId === 'trakt' && fileName === 'lists-watchlist.json') return parseTraktWatchlist(text);
+  if (platformId === 'imdb' && /^(imdb[_-])?watchlist\.csv$/i.test(fileName)) return parseImdbWatchlist(text);
+  if (platformId === 'letterboxd') {
+    const list = parseLetterboxdList(text, fileName);
+    if (list) return list;
+  }
   switch (platformId) {
+    case 'trakt': return parseTraktHistory(text);
     case 'netflix':    return parseNetflix(text);
     case 'prime':      return parsePrime(text);
     case 'disney':     return parseDisney(text);
     case 'max':        return parseMax(text);
     case 'apple':      return parseApple(text);
     case 'letterboxd': return parseLetterboxd(text);
+    case 'imdb': return parseImdbRatings(text);
     default:           return [];
   }
 }
 
-/**
- * Normalise a parsed entry's date into the history's watched_at format —
- * shared by the import write and every "already have this exact watch"
- * check so they agree on what counts as a duplicate. Entries with no date
- * in the source export fall back to today.
- *
- * `entry.date` is already a clean "YYYY-MM-DD" string by the time it gets
- * here (every parser above produces it via `normaliseDate`), so it's used
- * as-is rather than round-tripped through `Date` — that round trip previously
- * anchored at *local* noon and converted to UTC, which rolled the date back
- * a day for anyone 13+ hours ahead of UTC. The no-date fallback uses
- * `localDateStr()` (see date.js) instead of `new Date().toISOString()` so it
- * reflects the user's local "today" rather than UTC's.
- *
+/** Preserve unknown dates. Import time is never evidence of watch time.
  * @param {ParsedImportEntry} entry
- * @returns {string} "YYYY-MM-DD"
+ * @returns {string | null}
  */
 export function watchedAtFor(entry) {
-  return entry.date || localDateStr();
+  return entry.date || null;
+}
+
+/** IMDb movie ratings CSV, verified against the captured public export fixture.
+ * Date Rated is not a watch date. Reject other exports/types instead of guessing.
+ */
+export function parseImdbRatings(text) {
+  const [rawHeaders, ...rows] = parseCSV(text.replace(/^\uFEFF/, ''));
+  const headers = rawHeaders || [];
+  if (headers.includes('Position')) throw new Error('Unsupported IMDb list export. For a movie watchlist, keep the original watchlist.csv filename. Custom-list formats are not supported yet.');
+  const required = ['Const', 'Your Rating', 'Date Rated', 'Title', 'Title Type', 'Year'];
+  if (required.some(header => !headers.includes(header)) || new Set(headers).size !== headers.length) {
+    throw new Error('Unsupported IMDb export. Choose an IMDb movie ratings CSV. Watchlists and other export formats are not supported yet.');
+  }
+  const column = name => headers.indexOf(name);
+  return rows.filter(row => row.some(value => value.trim())).map(row => {
+    const title = row[column('Title')]?.trim();
+    const imdb = row[column('Const')]?.trim();
+    const type = row[column('Title Type')]?.trim().toLowerCase();
+    const rating = Number(row[column('Your Rating')]);
+    const year = row[column('Year')]?.trim();
+    if (type !== 'movie') throw new Error('This IMDb file contains non-movie ratings. Only movie ratings are supported in this version.');
+    if (!title || !/^tt\d+$/.test(imdb || '') || !Number.isInteger(rating) || rating < 1 || rating > 10 || !/^\d{4}$/.test(year || '')) {
+      throw new Error('An IMDb rating record is incomplete or invalid. No records have been imported.');
+    }
+    return { title, hint: 'movie', year, rating, date: null, externalIds: { imdb } };
+  });
+}
+
+/** Saved Letterboxd list formats verified against pinned export samples. */
+export function parseLetterboxdList(text, fileName = '') {
+  const rows = parseCSV(text.replace(/^\uFEFF/, ''));
+  const first = rows.findIndex(row => row.some(value => value.trim()));
+  const header = rows[first] || [];
+  let destination;
+  let items;
+  if (header.join(',') === 'Date,Name,Tags,URL,Description') {
+    const metadata = rows[first + 1];
+    const start = rows.findIndex(row => row.join(',') === 'Position,Name,Year,URL,Description');
+    if (!metadata?.[1]?.trim() || !/^https:\/\/(boxd\.it|letterboxd\.com)\//.test(metadata[3] || '') || start < first + 2) throw new Error('Unsupported Letterboxd custom-list export.');
+    destination = { kind: 'custom', key: `letterboxd:list:${metadata[3]}`, name: metadata[1].trim(), description: metadata[4] || null };
+    items = rows.slice(start + 1);
+  } else if (/^(letterboxd[_-])?watchlist\.csv$/i.test(fileName)) {
+    if (header.join(',') !== 'Date,Name,Year,Letterboxd URI') throw new Error('Unsupported Letterboxd watchlist export.');
+    destination = { kind: 'watchlist', key: 'letterboxd:watchlist', name: 'Watchlist' };
+    items = rows.slice(first + 1);
+  } else {
+    if (fileName && header.join(',') === 'Date,Name,Year,Letterboxd URI' && !/^(letterboxd[_-])?watched\.csv$/i.test(fileName)) throw new Error('This file could be a watchlist or watched export. Keep the original watched.csv or watchlist.csv filename so PLOT can distinguish them.');
+    return null;
+  }
+  return items.filter(row => row.some(value => value.trim())).map(row => {
+    if (!row[1]?.trim() || !/^\d{4}$/.test(row[2] || '') || !/^https:\/\/(boxd\.it|letterboxd\.com)\//.test(row[3] || '')) throw new Error('Incomplete Letterboxd list record. Nothing was imported.');
+    return { title: row[1].trim(), year: row[2], hint: 'movie', date: null,
+      destination, listNote: destination.kind === 'custom' ? row[4] || null : null,
+      eventId: `${destination.key}:${row[3]}` };
+  });
+}
+
+/** Movie watchlist export, verified independently of IMDb's ratings export. */
+export function parseImdbWatchlist(text) {
+  const [headers = [], ...rows] = parseCSV(text.replace(/^\uFEFF/,''));
+  const required = ['Position','Const','Created','Modified','Description','Title','URL','Title Type','Year','Your Rating','Date Rated'];
+  if (required.some(name => !headers.includes(name)) || new Set(headers).size !== headers.length) throw new Error('Unsupported IMDb watchlist format.');
+  const value = (row,name) => row[headers.indexOf(name)]?.trim() || '';
+  return rows.filter(row => row.some(cell => cell.trim())).map(row => {
+    const title=value(row,'Title'), imdb=value(row,'Const'), year=value(row,'Year'), rating=value(row,'Your Rating');
+    if (value(row,'Title Type').toLowerCase() !== 'movie') throw new Error('This IMDb watchlist contains non-movie entries. This version supports movie watchlists only.');
+    if (!title || !/^tt\d+$/.test(imdb) || !/^\d{4}$/.test(year) || (rating && (!Number.isInteger(Number(rating)) || Number(rating)<1 || Number(rating)>10))) throw new Error('An IMDb watchlist record is incomplete or invalid. Nothing was imported.');
+    return {title,year,hint:'movie',date:null,externalIds:{imdb},eventId:`watchlist:${imdb}`,
+      rating: rating ? Number(rating) : null, ratedAt: value(row,'Date Rated') || null, listNote:value(row,'Description') || null,
+      destination:{kind:'watchlist',key:'imdb:watchlist',name:'Watchlist'}};
+  });
 }

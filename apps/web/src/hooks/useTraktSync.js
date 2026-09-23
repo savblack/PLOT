@@ -49,7 +49,7 @@ export function useTraktSync(userId) {
     try {
       const result = await callTraktSync('sync');
       await loadIntegration();
-      track(EVENTS.TRAKT_SYNCED, {});
+      if (!result?.queued) track(EVENTS.TRAKT_SYNCED, {});
       return result;
     } catch (e) {
       setError(friendlyPremiumError(e.message));

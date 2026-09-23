@@ -3,15 +3,15 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useTheme } from '../hooks/useTheme.js';
-import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { FREE_CUSTOM_LIST_CAP, PREMIUM_PLANS } from '@plot/core/premium.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
 import './PlansPage.css';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 
 // Pricing (AUD). Annual is billed once a year; we surface the effective
 // monthly price so the saving is obvious.
-const MONTHLY_PRICE = 3;
-const ANNUAL_PRICE = 25;
+const MONTHLY_PRICE = PREMIUM_PLANS.monthly.amount;
+const ANNUAL_PRICE = PREMIUM_PLANS.yearly.amount;
 const ANNUAL_MONTHLY = (ANNUAL_PRICE / 12).toFixed(2); // effective $/mo when billed yearly
 const ANNUAL_SAVING_PCT = Math.round((1 - ANNUAL_PRICE / (MONTHLY_PRICE * 12)) * 100);
 
@@ -31,7 +31,7 @@ const PREMIUM_HIGHLIGHTS = [
         PLANS_PAGE.premium.highlights.traktSync,
       ]
     : []),
-  PLANS_PAGE.premium.highlights.alwaysUpToDate,
+  PLANS_PAGE.premium.highlights.calendarFeed,
 ];
 
 // Full feature matrix for the comparison table. `premium` true = the row is a
@@ -45,6 +45,9 @@ const COMPARISON = [
   { label: PLANS_PAGE.comparison.rows.social, free: true, premium: true },
   { label: PLANS_PAGE.comparison.rows.reminders, free: true, premium: true },
   { label: PLANS_PAGE.comparison.rows.customLists, free: PLANS_PAGE.comparison.customListCapShort(FREE_CUSTOM_LIST_CAP), premium: PLANS_PAGE.comparison.unlimited },
+  { label: PLANS_PAGE.comparison.rows.statistics, free: true, premium: true },
+  { label: PLANS_PAGE.comparison.rows.exportData, free: true, premium: true },
+  { label: PLANS_PAGE.comparison.rows.calendarFeed, free: false, premium: true },
   ...(SHOW_MEDIA_SYNC_INTEGRATIONS
     ? [
         { label: PLANS_PAGE.comparison.rows.plexSync, free: false, premium: true },
@@ -114,7 +117,10 @@ export default function PlansPage() {
   const annual = billing === 'annual';
 
   const goPremium = () => {
-    if (authState === 'anon') { navigate('/signup'); return; }
+    if (authState === 'anon') {
+      navigate(`/signup?intent=premium&plan=${annual ? 'yearly' : 'monthly'}`);
+      return;
+    }
     premium.startCheckout(annual ? 'yearly' : 'monthly', 'plans_page');
   };
 

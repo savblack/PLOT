@@ -1,3 +1,4 @@
+import TrackingSettings from './TrackingSettings.jsx';
 import { USERNAME_RE } from '@plot/core/profileFields.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -2157,7 +2158,7 @@ export default function SettingsView() {
       {/* PLOT Premium — the free-user upsell branch is hidden while pricing
           isn't public (SHOW_PRICING_PAGE); existing subscribers still see
           their management row regardless. */}
-      {(premium.isPremium || SHOW_PRICING_PAGE) && (
+      {(premium.isPremium || SHOW_PRICING_PAGE || billingReturn) && (
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.premium.groupTitle}</div>
         {premium.isPremium ? (
@@ -2177,7 +2178,7 @@ export default function SettingsView() {
               {premium.busy ? SETTINGS_VIEW.premium.opening : SETTINGS_VIEW.premium.manageSubscription}
             </SettingsTextAction>
           </div>
-        ) : (
+        ) : SHOW_PRICING_PAGE && (
           <div className="settings-row" style={{ cursor: 'default' }}>
             <div className="settings-row-left">
               <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
@@ -2197,7 +2198,9 @@ export default function SettingsView() {
         )}
         {billingReturn && (
           <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : SETTINGS_VIEW.premium.activeThankYou}
+            {billingReturn === 'tip'
+              ? SETTINGS_VIEW.premium.thanksForTip
+              : premium.isPremium ? SETTINGS_VIEW.premium.activeThankYou : SETTINGS_VIEW.premium.activationPending}
           </div>
         )}
         {premium.error && (
@@ -2207,6 +2210,8 @@ export default function SettingsView() {
         )}
       </div>
       )}
+
+      <TrackingSettings userId={user?.id} connect={trakt.connect} connectPlex={sync.startPlexAuth} plexPolling={sync.polling} connectionError={trakt.error || sync.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : sync.disconnect()} />
 
       {/* Plex */}
       <div className="settings-group">

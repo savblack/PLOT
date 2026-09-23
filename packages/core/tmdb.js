@@ -311,6 +311,14 @@ const dedupeResults = (results) => {
 };
 
 export const tmdb = {
+  findByTvdbId: (id) => {
+    if (!/^[1-9]\d*$/.test(String(id))) throw new Error('Invalid TVDB identifier');
+    return fetchFromTMDB(`/find/${id}`, { external_source: 'tvdb_id' });
+  },
+  findByImdbId: (id) => {
+    if (!/^tt\d+$/.test(id)) throw new Error('Invalid IMDb identifier');
+    return fetchFromTMDB(`/find/${id}`, { external_source: 'imdb_id' });
+  },
   /* ── Search ── */
   search: (query) => fetchFromTMDB('/search/multi', { query }),
   searchPeople: (query) => fetchFromTMDB('/search/person', { query }),

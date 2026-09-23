@@ -1,3 +1,4 @@
+import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip, formatDate } from '../utils/countdown.js';
@@ -162,13 +163,15 @@ function CheckCircleIcon({ filled }) {
 }
 
 /* ── Season selector + episode list ── */
-function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
-  const { watching } = useApp();
-  const seasons     = (details?.seasons || []).filter(s => s.season_number > 0);
+export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
+  const { watching, user } = useApp();
+  const sparse = useEpisodeWatches(user?.id, tvId);
+  const seasons     = (details?.seasons || []).filter(s => s.season_number > 0 || (s.season_number === 0 && Object.keys(sparse.states).some(key => key.startsWith('0:'))));
   const [selSeason, setSelSeason] = useState(currentProgress?.current_season || 1);
   const [episodes,  setEpisodes]  = useState([]);
   const [epLoading, setEpLoading] = useState(false);
   const [epError,   setEpError]   = useState(false);
+  const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || epLoading || epError;
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
   const [episodeActionError, setEpisodeActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
@@ -192,7 +195,9 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
     setEpLoading(true);
     setEpError(false);
     setEpisodeActionError('');
+    let cancelled = false;
     tmdb.getSeason(tvId, selSeason).then(data => {
+      if (cancelled) return;
       if (data?.episodes?.length) {
         setEpisodes(data.episodes);
       } else {
@@ -200,7 +205,13 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
         setEpError(!data);
       }
       setEpLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setEpisodes([]);
+      setEpError(true);
+      setEpLoading(false);
     });
+    return () => { cancelled = true; };
   }, [tvId, selSeason]);
 
   // Fetch episode air times from TVMaze (has airstamp even for streaming shows)
@@ -264,10 +275,18 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
 
   /* ── Toggle an episode's watched state ── */
   const handleCheckEp = useCallback(async (ep, watched) => {
-    if (!currentProgress || checkingEpRef.current) return;
+    if ((!currentProgress && !sparse.hasEpisodes) || progressBlocked || seasonPending || checkingEpRef.current) return;
     checkingEpRef.current = true;
     setCheckingEp(ep.episode_number);
     setEpisodeActionError('');
+
+    if (sparse.hasEpisodes) {
+      const ok = await sparse.setWatched(selSeason, [ep.episode_number], !watched);
+      if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateWatchStatus);
+      checkingEpRef.current = false;
+      setCheckingEp(null);
+      return;
+    }
 
     if (!watched) {
       // Mark watched: advance progress past this episode
@@ -296,18 +315,30 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
 
     checkingEpRef.current = false;
     setCheckingEp(null);
-  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length, finishSeriesIfComplete]);
+  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length, finishSeriesIfComplete, sparse, progressBlocked, seasonPending]);
 
   /* ── Mark / unmark the whole selected season ── */
   const seasonState = getSeasonWatchState({
     currentEpisode: currentEp,
     currentSeason,
     episodeCount: episodes.length,
+    episodeNumbers: episodes.map(ep => ep.episode_number),
+    episodeStates: sparse.states,
     selectedSeason: selSeason,
   });
 
   const handleToggleSeason = useCallback(async () => {
-    if (!currentProgress || seasonPending || checkingEpRef.current) return;
+    if ((!currentProgress && !sparse.hasEpisodes) || progressBlocked || seasonPending || checkingEpRef.current) return;
+    if (sparse.hasEpisodes) {
+      checkingEpRef.current = true;
+      setSeasonPending(true);
+      setEpisodeActionError('');
+      const ok = await sparse.setWatched(selSeason, episodes.map(ep => ep.episode_number), !seasonState.isComplete);
+      if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
+      checkingEpRef.current = false;
+      setSeasonPending(false);
+      return;
+    }
     const target = getSeasonToggleProgress({
       isComplete: seasonState.isComplete,
       selectedSeason: selSeason,
@@ -331,9 +362,9 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
       await finishSeriesIfComplete(target.nextSeason);
     }
     setSeasonPending(false);
-  }, [currentProgress, seasonPending, seasonState.isComplete, selSeason, watching, tvId, finishSeriesIfComplete]);
+  }, [currentProgress, seasonPending, seasonState.isComplete, selSeason, watching, tvId, finishSeriesIfComplete, sparse, progressBlocked, episodes]);
 
-  const isTracking = !!currentProgress;
+  const isTracking = !!currentProgress || sparse.hasEpisodes;
 
   return (
     <div>
@@ -365,7 +396,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
           <button
             className="season-bulk-btn"
             onClick={handleToggleSeason}
-            disabled={seasonPending}
+            disabled={seasonPending || progressBlocked || checkingEp !== null}
           >
             {seasonPending
               ? MEDIA_PANEL.updating
@@ -376,6 +407,13 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
         </div>
       )}
 
+      {sparse.hasEpisodes && <p className="season-bulk-count">{MEDIA_PANEL.sparseEpisodeProgress}</p>}
+      {sparse.error && (
+        <div role="alert">
+          <p>{MEDIA_PANEL.episodeProgressLoadError}</p>
+          <button className="season-bulk-btn" onClick={sparse.reload}>{MEDIA_PANEL.retryEpisodeProgress}</button>
+        </div>
+      )}
       {episodeActionError && (
         <div style={{
           marginBottom: '0.85rem',
@@ -391,7 +429,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
         </div>
       )}
 
-      {epLoading ? (
+      {epLoading || sparse.loading ? (
         <LoadingSpinner />
       ) : episodes.length === 0 ? (
         <div style={{ padding: '1rem 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -405,6 +443,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
               currentSeason,
               episodeNumber: ep.episode_number,
               selectedSeason: selSeason,
+              episodeStates: sparse.states,
             });
             const chip       = ep.air_date ? countdownChip(ep.air_date) : null;
             const isUpcoming = chip && chip.cls !== 'chip-muted';
@@ -416,7 +455,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
               <div
                 key={ep.episode_number}
                 className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}`}
-                onClick={isTracking && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
+                onClick={isTracking && !progressBlocked && !seasonPending && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
                 <div className="ep-info">
@@ -444,6 +483,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
                     </span>
                   ) : (
                     <button
+                      disabled={progressBlocked || seasonPending || checkingEp !== null}
                       className={`ep-check-btn${isActive ? ' checked' : ''}`}
                       onClick={(e) => { e.stopPropagation(); handleCheckEp(ep, watched); }}
                       aria-label={watched ? MEDIA.markUnwatched : MEDIA.markWatched}
