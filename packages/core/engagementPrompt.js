@@ -197,7 +197,7 @@ export function pendingWatchMatches(pending, tmdbId, mediaType, now = Date.now()
   return pending.tmdbId === Number(tmdbId) && pending.mediaType === mediaType;
 }
 
-/** @type {Set<(payload: { tmdb_id: number, mediaType: string, source?: string }) => void>} */
+/** @type {Set<(payload: { tmdb_id: number, media_type: string, source?: string }) => void>} */
 const watchQueuedListeners = new Set();
 
 /**
