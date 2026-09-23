@@ -838,6 +838,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     }
   };
 
+  // Leave the rate prompt without snoozing so the written-review fields in
+  // the panel body stay the next thing to use.
+  const handlePromptWriteReview = () => {
+    setEngagementPrompt(null);
+  };
+
   const handleShare = () => shareLink({
     url: buildTitleShareUrl({ tmdbId: itemId, mediaType: itemType, source: 'panel' }),
     title: details?.title || details?.name,
@@ -1372,7 +1378,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         {engagementPrompt && !loading && !error && details && (
           <View style={styles.engagementBar} accessibilityRole="summary">
             {engagementPrompt === 'watch' ? (
-              <>
+              <View style={styles.engagementRow}>
                 <Text style={styles.engagementTitle}>{ENGAGEMENT_PROMPT.watchedIt}</Text>
                 <View style={styles.engagementActions}>
                   <TouchableOpacity
@@ -1399,22 +1405,31 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.notYet}</Text>
                   </TouchableOpacity>
                 </View>
-              </>
+              </View>
             ) : (
-              <>
+              <View style={styles.engagementRow}>
                 <Text style={styles.engagementTitle}>{ENGAGEMENT_PROMPT.howWasIt}</Text>
-                <StarRow
-                  rating={localRating}
-                  onChange={(r) => { void handlePromptRate(r); }}
-                />
-                <TouchableOpacity
-                  style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
-                  disabled={engagementBusy}
-                  onPress={skipRatePrompt}
-                >
-                  <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.skipForNow}</Text>
-                </TouchableOpacity>
-              </>
+                <View style={styles.engagementActions}>
+                  <StarRow
+                    rating={localRating}
+                    onChange={(r) => { void handlePromptRate(r); }}
+                  />
+                  <TouchableOpacity
+                    style={[styles.engagementPrimary, engagementBusy && styles.engagementDisabled]}
+                    disabled={engagementBusy}
+                    onPress={handlePromptWriteReview}
+                  >
+                    <Text style={styles.engagementPrimaryText}>{MEDIA_PANEL.writeReview}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
+                    disabled={engagementBusy}
+                    onPress={skipRatePrompt}
+                  >
+                    <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.skipForNow}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             )}
           </View>
         )}
@@ -1468,23 +1483,32 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
+  },
+  engagementRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.sm,
   },
   engagementTitle: {
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.sm,
     color: colors.textPrimary,
+    flexShrink: 0,
   },
   engagementActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    flexGrow: 1,
   },
   engagementPrimary: {
     backgroundColor: colors.accentFill,
     borderRadius: radii.md,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: spacing.md,
   },
   engagementPrimaryText: {
@@ -1494,8 +1518,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   engagementGhost: {
     borderRadius: radii.md,
-    paddingVertical: 10,
-    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    paddingHorizontal: spacing.sm,
   },
   engagementGhostText: {
     fontFamily: fontFamily.sansMedium,

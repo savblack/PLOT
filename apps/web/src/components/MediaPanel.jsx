@@ -712,9 +712,9 @@ function pillButtonStyle(variant) {
    A separate component for the same reason TitleReview is one: reading
    `watchedEntry`-derived values in the panel's own render body makes the React
    Compiler bail out of the manual memoization on its watch-status callbacks. ── */
-function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note, dnf, watchedAt, onSave, onClear, user }) {
+function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note, dnf, watchedAt, onSave, onClear, user, defaultOpen = false }) {
   const { privateNotes } = useApp();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const actionSheet = useRef(null);
   const hasPrivateNote = !!privateNotes?.rows?.[privateNoteKey(itemId, itemType)]?.note;
   const hasTake = !!(rating || note.trim() || dnf);
@@ -1204,6 +1204,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   // 'watch' | 'rate' | null. Cleared when the open title changes.
   const [engagementPrompt, setEngagementPrompt] = useState(null);
   const [engagementBusy, setEngagementBusy] = useState(false);
+  // When "Write a review" is chosen from the rate prompt, TakeBar mounts open.
+  const [takeBarDefaultOpen, setTakeBarDefaultOpen] = useState(false);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -1284,7 +1286,11 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const dragStateRef = useRef({ active: false, startY: 0, startTime: 0, snap: 'collapsed' });
 
   useEffect(() => { setSheetSnap('collapsed'); }, [itemId]); // eslint-disable-line react-hooks/set-state-in-effect -- each newly opened title starts at the preview snap
-  useEffect(() => { setEngagementPrompt(null); setEngagementBusy(false); }, [itemId, itemType]); // eslint-disable-line react-hooks/set-state-in-effect -- drop the prior title's prompt when the open title changes
+  useEffect(() => {
+    setEngagementPrompt(null);
+    setEngagementBusy(false);
+    setTakeBarDefaultOpen(false);
+  }, [itemId, itemType]); // eslint-disable-line react-hooks/set-state-in-effect -- drop the prior title's prompt when the open title changes
 
   const isBottomSheet = () =>
     typeof window !== 'undefined' && window.matchMedia('(hover: none), (pointer: coarse)').matches;
@@ -1607,6 +1613,13 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     });
     if (ok) setEngagementPrompt(null);
   }, [saveReview, savedDnf, savedReview, savedWatchedAt]);
+
+  // Leave the rate prompt without snoozing: the user is going into the take
+  // editor, which is the written-review path the prompt is advertising.
+  const handlePromptWriteReview = useCallback(() => {
+    setTakeBarDefaultOpen(true);
+    setEngagementPrompt(null);
+  }, []);
 
   return (
     <>
@@ -2064,11 +2077,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
               onStartWatching={handlePromptStartWatching}
               onDismissWatch={dismissWatchPrompt}
               onRate={handlePromptRate}
+              onWriteReview={handlePromptWriteReview}
               onSkipRate={skipRatePrompt}
             />
           ) : (
             <TakeBar
-              key={`${itemType}:${itemId}`}
+              key={`${itemType}:${itemId}:${takeBarDefaultOpen ? 'open' : 'closed'}`}
               itemId={itemId}
               itemType={itemType}
               title={title}
@@ -2081,6 +2095,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
               onSave={saveReview}
               onClear={clearReview}
               user={user}
+              defaultOpen={takeBarDefaultOpen}
             />
           )
         )}

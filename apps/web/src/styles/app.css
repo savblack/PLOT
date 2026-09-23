@@ -4425,35 +4425,43 @@ svg { stroke-width: 1.5; }
   bottom: 0;
   z-index: 3;
   display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem 0.75rem;
   background: var(--surface-sunken);
   border-top: 1px solid var(--border);
-  padding: 0.85rem 1.25rem;
+  padding: 0.75rem 1.25rem;
 }
-.panel-engagement-copy b {
-  display: block;
+.panel-engagement-label {
+  flex: 0 1 auto;
+  margin: 0;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 .panel-engagement-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.4rem;
   align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 .panel-engagement-actions .btn-primary {
   flex: 0 0 auto;
 }
 .panel-engagement-stars {
   display: flex;
-  gap: 2px;
+  gap: 1px;
   color: var(--accent);
+  flex-shrink: 0;
 }
 .panel-engagement-star {
   display: inline-flex;
-  padding: 0.15rem;
+  padding: 0.1rem;
   border: 0;
   background: transparent;
   color: inherit;
@@ -4465,8 +4473,8 @@ svg { stroke-width: 1.5; }
   cursor: default;
 }
 .panel-engagement-star svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 /* ═══════════════════════════════════════
