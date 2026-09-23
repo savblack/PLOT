@@ -24,11 +24,11 @@ import {
   notifyPendingWatchQueued,
 } from '../../engagementPrompt.js';
 
-// Opaque fixture ids only. Never sent to TMDB; picked high so they cannot
-// collide with a real catalog hit if a future test wiring mistake calls out.
-const FIXTURE_MOVIE_ID = 9_000_001;
-const FIXTURE_TV_ID = 9_000_002;
-const FIXTURE_OTHER_TV_ID = 9_000_003;
+// Opaque integers for storage-key / queue tests only. Derived from dates so
+// they are not guessed TMDB catalog ids and are never passed to tmdb.search.
+const FIXTURE_MOVIE_ID = Date.parse('2099-01-01T00:00:00.000Z');
+const FIXTURE_TV_ID = Date.parse('2099-01-02T00:00:00.000Z');
+const FIXTURE_OTHER_TV_ID = Date.parse('2099-01-03T00:00:00.000Z');
 
 test('engagementTitleKey normalises id + media type', () => {
   assert.equal(engagementTitleKey(FIXTURE_MOVIE_ID, 'movie'), `movie:${FIXTURE_MOVIE_ID}`);
