@@ -207,24 +207,13 @@ tier is far more generous, but the lesson stands.
 
 **PLOT launches free. Premium does not ship.**
 
-TMDB confirmed that monetising requires a paid commercial licence — self-serve and
-month to month below an annual-revenue threshold, with an enterprise tier above it.
-Attribution is required but "does not have to be obtrusive", which the Credits
-surface already satisfies.
+**Licence:** TMDB clearance is confirmed by Savannah. PLOT has TMDB's approval to
+use its API without a contract. This is not a launch blocker. Historical quotes
+are not current cost assumptions.
 
-At PLOT's current size no price covers that licence: even full conversion of the
-existing user base would not meet the monthly cost. That cost is fixed rather than
-scaling — Supabase's free tier runs to 50,000 monthly active users and PLOT's
-database is a rounding error against it, and Cloudflare, Resend, Brevo, OMDb and
-PostHog all sit comfortably inside free tiers. The TMDB licence is nearly the
-entire bill.
-
-**Prices are reset now, so the paywall is designed around a number that works:
-A$5/month or A$40/year**, up from the original A$3 and A$25. That roughly halves
-the number of subscribers needed to break even. For context, Letterboxd Pro is
-US$19/year, Patron US$49, Trakt VIP US$60. At A$25/year PLOT was priced below
-Letterboxd Pro while carrying a fixed cost Letterboxd amortises across millions
-of users.
+The planned prices remain A$5/month or A$40/year, up from the original A$3 and
+A$25. Recheck current operating costs before Premium launches instead of carrying
+forward an old TMDB quote.
 
 `SHOW_PRICING_PAGE` stays off. When Premium does ship:
 
@@ -233,12 +222,7 @@ of users.
 - **Manually re-add `/plans.html`** to `apps/website/llms.txt` and
   `apps/website/sitemap.xml`. Those entries were deleted outright, not gated, and
   will not return with the flag.
-- Take the TMDB contract first.
 - iOS shows Premium as a web upgrade. No in-app purchase surface.
-
-**Still open:** whether the existing Ko-fi tipping, live since 2026-08-02, already
-counts as revenue under "this includes all revenue". If it does, the contract is
-owed regardless of Premium. Awaiting TMDB's answer (#519).
 
 ## Sprint 5 — App Store (3 to 5 days, then review)
 

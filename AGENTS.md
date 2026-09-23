@@ -8,6 +8,13 @@ Solo project. There is no team to consult — when a decision is reversible, mak
 note it; when it's not, ask the author (see Decisions). This file is the standing brief:
 follow it without being re-told. Tickets say only *what* to build.
 
+## Settled external approvals
+
+- **TMDB licence:** TMDB clearance is confirmed by Savannah. PLOT has TMDB's approval
+  to use its API without a contract. This is not a launch blocker. Historical quotes
+  are not current cost assumptions. Do not ask Savannah to reconfirm this unless new
+  evidence from TMDB directly contradicts it.
+
 ## Never do these
 
 - **Never guess or hardcode TMDB IDs.** They're opaque integers — a guessed ID returns the
