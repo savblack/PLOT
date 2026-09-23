@@ -131,10 +131,14 @@ type FeedPost = {
   status: string;
   tmdb_refs?: TmdbRef[] | null;
   payload?: {
+    // Countdown / now_streaming planner fields. `kind` is cinema | streaming |
+    // rental | tv; `title.where` is the editorial platform name when TMDB's
+    // JustWatch feed has not listed it yet (common on premiere day).
     home_kind?: string | null;
+    kind?: string | null;
     trailer_url?: string | null;
     when_label?: string | null;
-    title?: { title?: string | null } | null;
+    title?: { title?: string | null; where?: string | null } | null;
   } | null;
 };
 
@@ -229,8 +233,21 @@ const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?
   const avail = ((d as any)['watch/providers']?.results || {})[region] || {};
   const streaming = uniqueProviders([...(avail.flatrate || []), ...(avail.free || []), ...(avail.ads || [])]).slice(0, 4);
   const rentBuy = uniqueProviders([...(avail.rent || []), ...(avail.buy || [])]).slice(0, 4);
+
+  // A streaming / rental / TV premiere must never fall through to the "In
+  // cinemas" heuristic. That heuristic only means "released movie, JustWatch
+  // still empty" — which is the normal state for a day-one Amazon exclusive.
+  const kind = post.payload?.kind || null;
+  const homeKind = post.payload?.home_kind || null;
+  const editorialWhere = typeof post.payload?.title?.where === 'string'
+    ? post.payload.title.where.trim()
+    : '';
+  const isHomeRelease = kind === 'streaming' || kind === 'rental' || kind === 'tv'
+    || homeKind === 'streaming' || homeKind === 'rental'
+    || post.post_type === 'now_streaming';
+
   let inCinemas = false;
-  if (isMovie && d.status === 'Released' && date) {
+  if (isMovie && d.status === 'Released' && date && !isHomeRelease) {
     const days = (Date.now() - new Date(date).getTime()) / 86400000;
     inCinemas = days >= 0 && days <= 90 && !streaming.length && !rentBuy.length;
   }
@@ -243,10 +260,21 @@ const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?
         : `<span class="sm-plain">${esc(pr.provider_name)}</span>`;
     }).join('')}</span>`;
 
+  const homeLabel = (kind === 'rental' || homeKind === 'rental') ? 'Rent or buy' : 'Stream';
+  const today = new Date().toISOString().slice(0, 10);
+  const notYetOut = Boolean(date && date > today);
+  const when = post.payload?.when_label;
+
   let status: string;
   if (streaming.length) status = chips('Stream', streaming);
   else if (rentBuy.length) status = chips('Rent or buy', rentBuy);
-  else if (inCinemas) status = `<span class="sm-row"><span class="sm-chip">In cinemas</span><span class="sm-note">Not yet on any streaming service.</span></span>`;
+  else if (editorialWhere) {
+    status = `<span class="sm-row"><span class="sm-label">${esc(homeLabel)}</span><span class="sm-plain">${esc(editorialWhere)}</span></span>`;
+  } else if (isHomeRelease && notYetOut && when) {
+    status = `<span class="sm-row"><span class="sm-chip">Streaming</span><span class="sm-note">Arrives ${esc(when)}.</span></span>`;
+  } else if (isHomeRelease) {
+    status = `<span class="sm-row"><span class="sm-chip">Streaming</span><span class="sm-note">Available to stream.</span></span>`;
+  } else if (inCinemas) status = `<span class="sm-row"><span class="sm-chip">In cinemas</span><span class="sm-note">Not yet on any streaming service.</span></span>`;
   else status = `<span class="sm-note">Not streaming in ${esc(regionName(region))} right now.</span>`;
 
   return `<aside class="storymod">
@@ -1482,7 +1510,7 @@ Deno.serve(async (req) => {
     </nav>
     <article class="post r2">
       <header class="post-head">
-        <div class="a-meta">${k}${k ? '<span class="sep"></span>' : ''}<span class="d sc">${esc(fmtDate(typed.scheduled_for))}</span><span class="sep"></span><span class="d sc">${readMins} min read</span></div>
+        <div class="a-meta"><span class="d sc">${esc(fmtDate(typed.scheduled_for))}</span><span class="sep"></span><span class="d sc">${readMins} min read</span></div>
         <h1>${esc(title)}</h1>
       </header>
       ${hero ? `<figure class="hero"><img src="${esc(hero)}" alt=""></figure>` : ''}
