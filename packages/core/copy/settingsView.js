@@ -40,22 +40,27 @@ export const SETTINGS_VIEW = {
   billing: {
     freePlan: 'Your plan: Free',
     active: 'Active',
-    intro: 'More ways to keep your watching life together.',
-    features: ['Plex watchlist & history sync', 'Trakt watch history sync', 'Unlimited custom lists', 'A live calendar feed'],
+    intro: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch.',
+    // Keep this list aligned with PLANS_PAGE.planSummary — SettingsBilling also
+    // reads the plans catalog for price copy so the two surfaces cannot drift.
+    features: ['Pick a movie by runtime and service', 'Automatic Plex and Trakt syncing', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
     cycle: 'Choose your billing cycle',
     monthly: 'Monthly',
     yearly: 'Yearly',
-    checkout: 'Continue to checkout',
+    checkout: 'Explore Premium',
     comingSoon: 'plot Premium is coming soon',
-    comingSoonMessage: 'Upgrades are not available yet. You can keep using plot for free in the meantime.',
+    comingSoonMessage: 'plot Premium is coming soon. Checkout is not open yet. There is nothing to pay today.',
+    exploreHint: 'Preview what’s planned. Checkout is not open yet.',
     portalHint: 'Update payment details, view invoices or cancel your subscription.',
     supportTitle: 'A little support goes a long way.',
     supportHint: 'If you’d like to support PLOT without a subscription, you can leave a tip on Ko-fi. Thank you for helping keep it running.',
     supportAction: 'Support on Ko-fi',
     supportNote: 'Optional support. A Ko-fi tip does not activate Premium.',
-    viewPremium: 'View Premium',
-    syncComingSoon: 'Sync is coming soon',
-    syncComingSoonMessage: 'Plex and Trakt sync will be included with plot Premium. Connections are not available yet.',
+    viewPremium: 'Explore Premium',
+    syncComingSoon: 'Automatic syncing is coming soon',
+    syncComingSoonMessage: 'Automatic Plex and Trakt syncing is planned for plot Premium. Manual imports stay free. Connections are not available yet.',
+    calendarComingSoon: 'Live calendar subscription is coming soon',
+    calendarComingSoonMessage: 'A live calendar feed is planned for plot Premium. You can still download a one-time calendar snapshot for free.',
     confirming: 'Confirming your subscription. This may take a moment.',
   },
   region: {
@@ -188,8 +193,8 @@ export const SETTINGS_VIEW = {
 
   kidsContent: {
     label: 'Kids content',
-    onHint: 'Show movies and shows made for kids in Discover and recommendations.',
-    offHint: 'Kids and family content is hidden from Discover and recommendations.',
+    onHint: 'Show movies and shows made for kids in Discover and More like this.',
+    offHint: 'Kids and family content is hidden from Discover and More like this.',
   },
 
   // Deliberately makes no promise about frequency — the digest is sent by hand,

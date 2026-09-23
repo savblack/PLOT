@@ -6,14 +6,12 @@
  * not here. These values mirror the server-side enforcement
  * (is_premium() / can_create_custom_list() in Postgres) — the DB is the
  * authority, the client only pre-checks for friendlier UX.
+ *
+ * Public pricing copy lives in packages/core/copy/plansPage.js (A$5 / A$40,
+ * tentative). Do not reintroduce hardcoded plan price labels here.
  */
 
 export const FREE_CUSTOM_LIST_CAP = 5;
-
-export const PREMIUM_PLANS = Object.freeze({
-  monthly: { id: 'monthly', label: '$3/mo' },
-  yearly:  { id: 'yearly',  label: '$25/yr' },
-});
 
 export function isPremiumProfile(profile) {
   return !!profile?.is_premium;

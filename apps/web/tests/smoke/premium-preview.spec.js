@@ -13,11 +13,17 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('heading', { name: 'Less deciding. More watching.' })).toBeVisible();
     await page.getByText('Compare every feature', { exact: true }).click();
     await expect(page.getByRole('row', { name: /Private watchlist notes/ })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Leaving-my-service-soon alerts.*Pending validation/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Movie and episode release notifications.*Free, coming soon/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Customise your plot.*Coming soon/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Your viewing statistics.*Limited/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Automatic Plex and Trakt syncing.*Coming soon/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Deeper viewing stats.*Coming soon/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /More like this/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /More like this/ })).toContainText('does not offer personally tailored recommendations');
     await expect(page.getByText('A$5', { exact: true })).toBeVisible();
     await expect(page.getByText('or A$40/year', { exact: true })).toBeVisible();
     await expect(page.getByRole('row', { name: /Up to five custom lists/ })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Configurable iOS widgets/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Customise your plot/ })).toBeVisible();
     await page.getByRole('button', { name: 'Upgrade to Premium' }).click();
     await expect(page.getByRole('status')).toContainText('Checkout is not open yet');
     expect(billingRequests).toEqual([]);
@@ -32,5 +38,11 @@ for (const width of [390, 1440]) {
     await page.getByRole('button', { name: 'Upgrade to Premium' }).click();
     await expect(page.getByRole('status')).toContainText('There is nothing to pay today');
     expect(billingRequests).toEqual([]);
+
+    await page.goto('/plans?from=%2Fsettings%3Fsection%3Dbilling');
+    await expect(page.getByRole('link', { name: 'Back to plot' })).toHaveAttribute('href', '/settings?section=billing');
+    await page.goto('/plans?from=%2Fterms');
+    await page.getByRole('link', { name: 'Back to plot' }).click();
+    await expect(page).toHaveURL(/\/terms/);
   });
 }

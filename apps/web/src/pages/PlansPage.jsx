@@ -1,19 +1,25 @@
 // Web layout uses HTML disclosure and anchor navigation; plan content is shared with mobile.
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useTheme } from '../hooks/useTheme.js';
 import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import './PlansPage.css';
 import { PLANS_PAGE } from '../copy/plansPage.js';
+import { safeAppReturnPath } from '../utils/premiumExplore.js';
 
 const COMPARISON = [
   ...PLANS_PAGE.freeFeatures.map(feature => ({
     label: feature.label,
     description: feature.description,
-    free: feature.planned ? PLANS_PAGE.plannedFree : true,
-    premium: feature.planned ? PLANS_PAGE.plannedFree : true,
+    free: feature.planned
+      ? PLANS_PAGE.plannedFree
+      : (feature.freeValue ?? true),
+    // Limited Free rows still show Premium as coming soon (full/extra entitlement).
+    premium: feature.planned
+      ? PLANS_PAGE.plannedFree
+      : (feature.freeValue ? PLANS_PAGE.comingSoon : true),
   })),
   ...PLANS_PAGE.premiumFeatures.map(feature => ({
     label: feature.label,
@@ -39,6 +45,9 @@ function Cell({ value }) {
 
 export default function PlansPage() {
   useTheme(); // apply the saved/system theme on this standalone route
+  const [searchParams] = useSearchParams();
+  const backTo = safeAppReturnPath(searchParams.get('from'), '/');
+  const backLabel = backTo === '/' ? PLANS_PAGE.back : PLANS_PAGE.backToApp;
   const [profile, setProfile] = useState(null);
   const [authState, setAuthState] = useState('loading'); // loading | anon | signed-in
   const premium = usePremium(profile);
@@ -73,7 +82,7 @@ export default function PlansPage() {
     <div className="plans-page">
       <div className="plans-shell">
         <header className="plans-head">
-          <Link to="/" className="plans-back">{PLANS_PAGE.back}</Link>
+          <Link to={backTo} className="plans-back">{backLabel}</Link>
           <span className="plans-wordmark">plot</span>
         </header>
 

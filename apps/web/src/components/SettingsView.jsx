@@ -38,6 +38,7 @@ import { useBlocks } from '@plot/core/useBlocks.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
+import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
@@ -2003,8 +2004,13 @@ export default function SettingsView() {
                   <div><div className="settings-row-label">{row.name}<PremiumBadge /></div><p className="settings-selection">{row.connected && !premium.isPremium ? SETTINGS_VIEW.integrations.pausedNeedsPremium : row.blurb}</p></div>
                 </div>
                 <div className="settings-inline-actions">
-                  <SettingsTextAction onClick={() => premium.isPremium ? showConfirm({ informational: true, title: SETTINGS_VIEW.billing.syncComingSoon, message: SETTINGS_VIEW.billing.syncComingSoonMessage, confirmLabel: COMMON.done }) : changeSection('billing')}>
-                    {premium.isPremium ? SETTINGS_VIEW.billing.syncComingSoon : SETTINGS_VIEW.billing.viewPremium}
+                  <SettingsTextAction onClick={() => showConfirm({
+                    title: SETTINGS_VIEW.billing.syncComingSoon,
+                    message: SETTINGS_VIEW.billing.syncComingSoonMessage,
+                    confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
+                    onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
+                  })}>
+                    {SETTINGS_VIEW.premium.upgradeButton}
                   </SettingsTextAction>
                   {row.connected && <SettingsTextAction onClick={row.disconnect} tone="danger">{SETTINGS_VIEW.integrations.disconnect}</SettingsTextAction>}
                 </div>
@@ -2067,7 +2073,14 @@ export default function SettingsView() {
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             {!premium.isPremium ? (
               <>
-                <SettingsTextAction onClick={() => changeSection('billing')}>{SETTINGS_VIEW.billing.viewPremium}</SettingsTextAction>
+                <SettingsTextAction onClick={() => showConfirm({
+                  title: SETTINGS_VIEW.billing.calendarComingSoon,
+                  message: SETTINGS_VIEW.billing.calendarComingSoonMessage,
+                  confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
+                  onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
+                })}>
+                  {SETTINGS_VIEW.premium.upgradeButton}
+                </SettingsTextAction>
                 {calendarToken && (
                   <SettingsTextAction onClick={handleRevokeCalToken} tone="danger">
                     {SETTINGS_VIEW.confirm.revoke}
