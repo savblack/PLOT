@@ -533,8 +533,8 @@
   .tonight-question-sub { font-size: 0.95rem; }
   .tonight-progress { margin: 1.25rem 0 1.75rem; }
   .tonight-tiles--genres { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .tonight-tiles--type { max-width: 560px; }
-  .tonight-type { min-height: 220px; }
+  .tonight-tiles--type { gap: 14px; }
+  .tonight-type { min-height: 150px; }
   .tonight-tile { min-height: 72px; }
   .tonight-stepnav { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
 
