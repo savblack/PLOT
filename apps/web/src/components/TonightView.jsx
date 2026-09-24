@@ -241,8 +241,11 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
             {picker.phase === 'results' ? (
               <>
                 <h2 className="rail-title tonight-results-title">
-                  {picker.mode === 'random' ? TONIGHT_PICKER.randomTitle : TONIGHT_PICKER.resultsTitle}
+                  {picker.mode === 'random' ? TONIGHT_PICKER.randomTitle : TONIGHT_PICKER.resultsTitle(picker.results.length)}
                 </h2>
+                {picker.mode === 'three' && picker.results.length < 3 && (
+                  <p className="tonight-results-note">{TONIGHT_PICKER.fewerThanThree(picker.results.length)}</p>
+                )}
                 <div className={`tonight-results tonight-results--${picker.results.length}`}>
                   {picker.results.map((item, i) => <ResultCard key={item.id} item={item} index={i} onOpen={onOpen} />)}
                 </div>
@@ -254,7 +257,7 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
               </div>
             )}
             <div className="tonight-actions tonight-actions--center">
-              {picker.phase === 'results' && (
+              {picker.phase === 'results' && picker.canSpinAgain && (
                 <button type="button" className="btn btn-primary" onClick={picker.spinAgain}>{TONIGHT_PICKER.spinAgain}</button>
               )}
               <button type="button" className="btn btn-secondary" onClick={picker.backToOptions}>{TONIGHT_PICKER.changeOptions}</button>

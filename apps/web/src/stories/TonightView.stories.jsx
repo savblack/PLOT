@@ -50,7 +50,7 @@ function useFakePicker({ phase: initialPhase = 'setup', mode: initialMode = 'thr
     toggleGenre: (id) => setOptions(o => ({ ...o, genreIds: o.genreIds.includes(id) ? o.genreIds.filter(g => g !== id) : [...o.genreIds, id] })),
     genres: GENRES,
     hasServices, hasWatchlist,
-    phase, mode, results,
+    phase, mode, results, canSpinAgain: pool.length > results.length,
     go, spinAgain: () => go(mode), backToOptions: () => setPhase('setup'),
   };
 }
@@ -71,6 +71,7 @@ export const Spinning = { render: () => <Story phase="spinning" /> };
 export const ThreeOptions = { render: () => <Story phase="results" /> };
 export const RandomPick = { render: () => <Story phase="results" mode="random" /> };
 export const TvResults = { render: () => <Story phase="results" pool={TV_POOL} /> };
+export const OnlyOneFits = { render: () => <Story phase="results" pool={TV_POOL.slice(0, 1)} /> };
 export const NothingFits = { render: () => <Story pool={[]} /> };
 export const NoServicesOrWatchlist = { render: () => <Story hasServices={false} hasWatchlist={false} /> };
 export const FreeGate = {

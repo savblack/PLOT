@@ -177,6 +177,12 @@
 /* ── Results ── */
 .tonight-results-wrap { padding: 1.25rem var(--gut) 0; }
 .tonight-results-title { text-align: center; margin-bottom: 0.9rem; }
+.tonight-results-note {
+  margin: -0.5rem auto 0.9rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
 .tonight-results {
   display: grid;
   gap: 0.75rem;

@@ -63,7 +63,10 @@ export const TONIGHT_PICKER = {
     'Dimming the lights',
   ],
 
-  resultsTitle: 'Three for tonight',
+  resultsTitle: (n) => (n >= 3 ? 'Three for tonight' : n === 2 ? 'Two for tonight' : 'One for tonight'),
+  fewerThanThree: (n) => (n === 1
+    ? 'Only one fits those options. Loosen a filter for more.'
+    : 'Only two fit those options. Loosen a filter for more.'),
   randomTitle: 'Your random pick',
   spinAgain: 'Spin again',
   changeOptions: 'Change options',

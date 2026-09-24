@@ -83,6 +83,9 @@ const WATCHLIST_DETAIL_LIMIT = 40;
 const POOL_TARGET = 12;
 // Most discover results checked for season count per page.
 const SEASON_CHECK_LIMIT = 12;
+// How many extra pages one Go may fetch to fill all three slots before it
+// settles for fewer. Tight filter combinations thin each page out.
+const MAX_FETCHES_PER_DRAW = 5;
 const CONCURRENCY = 3;
 const GAP_MS = 120;
 
@@ -447,6 +450,7 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
   const [phase, setPhase] = useState(/** @type {'setup'|'spinning'|'results'|'empty'|'error'} */ ('setup'));
   const [mode, setMode] = useState(/** @type {'three'|'random'} */ ('three'));
   const [results, setResults] = useState(/** @type {PickerCandidate[]} */ ([]));
+  const [canSpinAgain, setCanSpinAgain] = useState(false);
   const [catalog, setCatalog] = useState(/** @type {{ movie: any[], tv: any[] }} */ ({ movie: [], tv: [] }));
 
   const hasWatchlist = (watchlistItems || []).some(i => (i.media_type || 'movie') === options.mediaType);
@@ -504,9 +508,10 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
     const excludeIds = watched.current[opts.mediaType];
     const unseen = () => cur.pool.filter(c => !cur.seen.has(c.id)).length;
 
-    // Grow the pool only when there is not enough new to show. Season-count
-    // formats can come back thin from one page, so allow a couple of pages.
-    for (let tries = 0; unseen() < count && tries < 3; tries++) {
+    // Grow the pool only when there is not enough new to show. Tight filters
+    // can come back thin from one page, so keep fetching (up to a cap) to
+    // fill every slot before settling for fewer.
+    for (let tries = 0; unseen() < count && tries < MAX_FETCHES_PER_DRAW; tries++) {
       if (opts.onlyWatchlist) {
         if (cur.exhausted) break;
         cur.target += POOL_TARGET;
@@ -532,7 +537,9 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
 
     const picked = drawFromPool(cur.pool, count, { seen: cur.seen });
     picked.forEach(c => cur.seen.add(c.id));
-    return picked;
+    // Spin again is only worth offering if it can show something different.
+    const moreToLoad = opts.onlyWatchlist ? !cur.exhausted : cur.page < cur.totalPages;
+    return { picked, canSpinAgain: cur.pool.length > picked.length || moreToLoad };
   }, [options, hasServices, hasWatchlist, region, userId, watchlistItems, providerIds]);
 
   const go = useCallback(async (nextMode = 'three') => {
@@ -541,15 +548,17 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
     setPhase('spinning');
     const started = Date.now();
     let picked = [];
+    let more = false;
     let failed = false;
     try {
-      picked = await draw(nextMode);
+      ({ picked, canSpinAgain: more } = await draw(nextMode));
     } catch {
       failed = true;
     }
     const wait = PICKER_MIN_SPIN_MS - (Date.now() - started);
     if (wait > 0) await sleep(wait);
     setResults(picked);
+    setCanSpinAgain(more);
     setPhase(failed ? 'error' : picked.length ? 'results' : 'empty');
   }, [enabled, draw]);
 
@@ -559,7 +568,7 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
   return {
     options, setOption, toggleGenre, genres,
     hasServices, hasWatchlist,
-    phase, mode, results,
+    phase, mode, results, canSpinAgain,
     go, spinAgain, backToOptions,
   };
 }

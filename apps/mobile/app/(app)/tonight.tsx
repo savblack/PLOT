@@ -291,8 +291,13 @@ export default function TonightScreen() {
         {picker.phase === 'results' ? (
           <>
             <Text style={[styles.fieldLabel, { textAlign: 'center' }]}>
-              {picker.mode === 'random' ? TONIGHT_PICKER.randomTitle : TONIGHT_PICKER.resultsTitle}
+              {picker.mode === 'random' ? TONIGHT_PICKER.randomTitle : TONIGHT_PICKER.resultsTitle(picker.results.length)}
             </Text>
+            {picker.mode === 'three' && picker.results.length < 3 && (
+              <Text style={[styles.intro, { textAlign: 'center', marginBottom: spacing.md, marginTop: 0 }]}>
+                {TONIGHT_PICKER.fewerThanThree(picker.results.length)}
+              </Text>
+            )}
             <View style={styles.results}>
               {picker.results.map((item, i) => (
                 <ResultCard key={item.id} item={item} index={i} single={picker.results.length === 1} onOpen={open} styles={styles} reduceMotion={reduceMotion} />
@@ -306,7 +311,7 @@ export default function TonightScreen() {
           </View>
         )}
         <View style={[styles.actions, { justifyContent: 'center' }]}>
-          {picker.phase === 'results' && button(TONIGHT_PICKER.spinAgain, picker.spinAgain)}
+          {picker.phase === 'results' && picker.canSpinAgain && button(TONIGHT_PICKER.spinAgain, picker.spinAgain)}
           {button(TONIGHT_PICKER.changeOptions, picker.backToOptions, false)}
         </View>
       </View>
