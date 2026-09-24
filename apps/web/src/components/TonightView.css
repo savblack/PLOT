@@ -1,0 +1,230 @@
+/* Tonight's movie picker. Flat monochrome; the accent marks selected
+   options (selected filters), the checkbox ticks, and the reel's motion. */
+.tonight-view { padding-bottom: 2rem; }
+
+.tonight-intro {
+  margin: 0.4rem 0 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  max-width: 34rem;
+  line-height: 1.5;
+}
+
+/* ── Options panel ── */
+.tonight-panel {
+  margin: 1rem var(--gut) 0;
+  padding: 1.1rem 1rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  max-width: 44rem;
+}
+.tonight-field-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.45rem;
+}
+.tonight-field-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: -0.25rem 0 0.45rem;
+}
+.tonight-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.tonight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 32px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tonight-chip:hover { border-color: var(--border-strong); }
+.tonight-chip.active {
+  /* Border + tint carry the selection; the label stays primary text because
+     accent-on-accent-dim fails AA contrast (3.2:1). */
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.tonight-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Tick boxes ── */
+.tonight-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.tonight-check input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.tonight-check-box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.tonight-check-box svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--on-accent-fill);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+.tonight-check input:checked + .tonight-check-box {
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+}
+.tonight-check input:checked + .tonight-check-box svg { opacity: 1; }
+.tonight-check input:focus-visible + .tonight-check-box { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tonight-check-label { display: block; }
+.tonight-check-hint { display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
+.tonight-check.disabled { cursor: default; color: var(--text-muted); }
+.tonight-check.disabled .tonight-check-box { opacity: 0.5; }
+
+.tonight-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 0.2rem;
+}
+.tonight-actions--center { justify-content: center; margin-top: 1.25rem; }
+.tonight-go { min-width: 5.5rem; }
+
+/* ── Spin: slot-machine reels ── */
+.tonight-spin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem var(--gut) 1rem;
+}
+.tonight-reels {
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 34rem;
+  grid-template-columns: repeat(3, 1fr);
+}
+.tonight-reels--1 { grid-template-columns: minmax(0, 11rem); justify-content: center; }
+.tonight-reel {
+  aspect-ratio: 2 / 3;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  position: relative;
+}
+.tonight-reel-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  animation: tonight-reel-roll 0.42s linear infinite;
+  animation-delay: var(--reel-delay, 0ms);
+}
+.tonight-reel-frame {
+  flex-shrink: 0;
+  height: 44%;
+  min-height: 60px;
+  border-radius: 6px;
+  background: var(--border);
+}
+.tonight-reel-frame:nth-child(3n) { background: var(--accent-dim); }
+@keyframes tonight-reel-roll {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+.tonight-spin-line {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* ── Results ── */
+.tonight-results-wrap { padding: 1.25rem var(--gut) 0; }
+.tonight-results-title { text-align: center; margin-bottom: 0.9rem; }
+.tonight-results {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 34rem;
+  margin: 0 auto;
+  grid-template-columns: repeat(3, 1fr);
+}
+.tonight-results--1 { grid-template-columns: minmax(0, 13rem); justify-content: center; }
+.tonight-results--2 { grid-template-columns: repeat(2, minmax(0, 11rem)); justify-content: center; }
+.tonight-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  animation: tonight-reveal 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+@keyframes tonight-reveal {
+  from { opacity: 0; transform: translateY(18px) rotateX(35deg) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+.tonight-result-img {
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  margin-bottom: 0.35rem;
+}
+.tonight-result-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tonight-result-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tonight-result-meta { font-size: 0.72rem; color: var(--text-muted); }
+.tonight-result-tag { font-size: 0.7rem; color: var(--text-secondary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tonight-reel-strip, .tonight-result { animation: none; }
+}

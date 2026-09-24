@@ -4,7 +4,7 @@ import { APP_NAV_ITEMS, isActiveView } from '../navigation.js';
 import PlotLogo from './PlotLogo.jsx';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { APP_SHELL } from '../copy/appShell.js';
-import { IconHome, IconGuide, IconCalendar, IconLists, IconHistory, IconSearch, IconBell, IconSettings } from './navIcons.jsx';
+import { IconHome, IconGuide, IconCalendar, IconLists, IconHistory, IconSearch, IconBell, IconSettings, IconTonight } from './navIcons.jsx';
 
 /* The desktop nav rail. Replaces the bottom tab bar and the nav drawer above
    1024px — the two of them listed the same destinations bar Settings.
@@ -22,6 +22,7 @@ const SIDEBAR_ICONS = {
   calendar: IconCalendar,
   'my-lists': IconLists,
   history: IconHistory,
+  tonight: IconTonight,
   search: IconSearch,
   settings: IconSettings,
 };

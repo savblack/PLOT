@@ -825,6 +825,11 @@ export const tmdb = {
     return fetchFromTMDB(`/discover/${type}`, params);
   },
 
+  /* ── Raw movie discover ──
+     For callers that build their own filter set (the Tonight picker). Params
+     are TMDB /discover/movie query keys, passed through as-is. */
+  discoverMovies: (params = {}) => fetchFromTMDB('/discover/movie', params),
+
   /* ── Newest released titles in a genre ── */
   discoverNewestByGenre: async (type, genreId) => {
     if (!genreId) return Promise.resolve(null);
