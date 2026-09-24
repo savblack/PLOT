@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { tmdb, excludeKidsContent, KIDS_GENRE_IDS } from './tmdb.js';
 import { supabase } from './supabase.js';
 
-// Tonight's picker (Premium). The viewer picks movie or TV first, then the
+// Pick a Plot, the tonight picker (Premium). The viewer picks movie or TV first, then the
 // options for that type (movie length, or TV format and episode length),
 // genres, era, score, language, and whether to stay within their services,
 // their watchlist, and away from kids and family titles. Go gives three

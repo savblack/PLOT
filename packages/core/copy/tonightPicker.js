@@ -1,8 +1,9 @@
-// Tonight's picker (Premium): movies and TV. Wording follows plansPage.js's
+// Pick a Plot (Premium): the tonight picker, movies and TV. Wording follows plansPage.js's
 // `picker` story: your time + your services → a few options, or a random
 // pick. No claims about playback or tailored recommendations.
 export const TONIGHT_PICKER = {
-  title: 'Tonight’s picker',
+  // Set in Gabarito, so the brand word stays lowercase (AGENTS.md brand casing).
+  title: 'Pick a plot for tonight',
   intro: 'Movie or show? Set the mood, press Go, and plot narrows it down to three.',
 
   mediaTypeLabel: 'What are you after',
@@ -81,6 +82,6 @@ export const TONIGHT_PICKER = {
   emptyBody: 'Try more time, fewer filters, or untick one of the boxes.',
   loadError: 'Could not reach TMDB. Try again in a moment.',
 
-  gateTitle: 'Tonight’s picker is part of plot Premium',
+  gateTitle: 'Picking a plot for tonight is part of plot Premium',
   gateBody: 'Choose a movie or a show, how much time you have and the services you use. Get three options for tonight, or let a random pick make the decision.',
 };

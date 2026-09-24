@@ -1,5 +1,5 @@
 /**
- * Tonight's movie picker — /(app)/tonight (mirrors web TonightView).
+ * Pick a Plot — /(app)/tonight (mirrors web TonightView).
  * Premium. Options, pool building and the draw come from
  * @plot/core/tonightPicker.js; this file only renders. Free viewers see the
  * in-app Premium preview (Settings), never an external purchase link.
