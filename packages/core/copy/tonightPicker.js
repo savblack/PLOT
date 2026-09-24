@@ -1,17 +1,40 @@
-// Pick a Plot (Premium): the tonight picker, movies and TV. Wording follows plansPage.js's
-// `picker` story: your time + your services → a few options, or a random
-// pick. No claims about playback or tailored recommendations.
+// Pick a Plot (Premium): the tonight picker, movies and TV. Four questions,
+// a filters panel, and a sentence that fills in as the viewer answers. No
+// claims about playback or tailored recommendations: results are "the plot
+// lines you asked for", i.e. the viewer's own answers.
 export const TONIGHT_PICKER = {
-  // Set in Gabarito, so the brand word stays lowercase (AGENTS.md brand casing).
-  title: 'Pick a plot for tonight',
-  intro: 'Movie or show? Set the mood, press Go, and plot narrows it down to three.',
+  // Title comes from the nav label (Pick a Plot); this is the page subline.
+  subtitle: 'Four quick questions, then your picks for tonight.',
+  progress: (step, total) => `Question ${step} of ${total}`,
 
-  mediaTypeLabel: 'What are you after',
-  mediaTypes: { movie: 'A movie', tv: 'A TV show' },
+  steps: {
+    type: {
+      title: 'What are you watching tonight?',
+      shortTitle: 'Movie or show',
+    },
+    length: {
+      movieTitle: 'How long have you got?',
+      tvTitle: 'How much of a commitment?',
+      shortTitle: 'How long',
+    },
+    kind: {
+      title: 'What kind of story?',
+      subline: 'Pick as many as you like, or skip this one.',
+      shortTitle: 'What kind',
+    },
+    quality: {
+      title: 'How new, how good?',
+      subline: 'Both are optional. Leave them on Any for the widest pick.',
+      shortTitle: 'How new, how good',
+    },
+  },
 
-  timeLabel: 'Time to spare',
-  runtime: (minutes) => (minutes ? `Up to ${minutes} min` : 'Any length'),
-  tvFormatLabel: 'How much of a commitment',
+  mediaTypes: {
+    movie: { label: 'A movie', hint: 'One sitting, done tonight' },
+    tv: { label: 'A show', hint: 'Something to start tonight' },
+  },
+  runtimes: (minutes) => ({ 90: 'Under 90 min', 120: 'Under 2 hours', 150: 'Under 2½ hours' }[minutes] ?? 'Any length'),
+  tvFormatLabel: 'Format',
   tvFormats: {
     any: 'Anything',
     miniseries: 'Mini-series',
@@ -19,8 +42,9 @@ export const TONIGHT_PICKER = {
     multiSeason: 'A few seasons',
   },
   episodeLabel: 'Episode length',
-  genresLabel: 'In the mood for',
-  genresHint: 'Pick any. Leave empty for everything.',
+  episodeRuntime: (minutes) => (minutes ? `Up to ${minutes} min` : 'Any length'),
+  showAllGenres: (n) => `Show all ${n} genres`,
+  showFewerGenres: 'Show fewer genres',
   eraLabel: 'Released',
   eras: {
     any: 'Any time',
@@ -32,6 +56,21 @@ export const TONIGHT_PICKER = {
   },
   scoreLabel: 'TMDB score',
   score: (min) => (min ? `${min}+` : 'Any'),
+  scoreHint: 'Out of 10. Higher scores mean fewer, better-known picks.',
+
+  back: 'Back',
+  next: 'Next',
+  anyAnswer: 'Any',
+
+  filtersTitle: 'Filters',
+  filtersNone: 'None',
+  onlyServices: 'Only on my services',
+  onlyServicesMissing: 'Add your services in Settings to use this',
+  onlyWatchlist: 'Only from my watchlist',
+  onlyWatchlistMissing: (type) => (type === 'tv'
+    ? 'Save a show to your watchlist to use this'
+    : 'Save a movie to your watchlist to use this'),
+  hideKids: 'Hide kids and family',
   languageLabel: 'Original language',
   languages: {
     any: 'Any',
@@ -44,18 +83,44 @@ export const TONIGHT_PICKER = {
     it: 'Italian',
     de: 'German',
   },
+  summary: {
+    services: 'My services',
+    watchlist: 'My watchlist',
+    noKids: 'No kids or family',
+  },
 
-  limitLabel: 'Narrow it down',
-  onlyServices: 'Only on my streaming services',
-  onlyServicesMissing: 'Add your services in Settings to use this',
-  onlyWatchlist: 'Only from my watchlist',
-  onlyWatchlistMissing: (type) => (type === 'tv'
-    ? 'Save a show to your watchlist to use this'
-    : 'Save a movie to your watchlist to use this'),
-  hideKids: 'Hide kids and family titles',
+  // The sentence. Filled parts come from answers; placeholders are shown
+  // greyed out until answered.
+  sentence: {
+    start: 'Find me',
+    type: { movie: 'a movie', tv: 'a show' },
+    tvFormat: {
+      miniseries: 'a mini-series',
+      oneSeason: 'a one-season show',
+      multiSeason: 'a show with a few seasons',
+    },
+    runtime: (minutes) => ({ 90: 'under 90 min', 120: 'under 2 hours', 150: 'under 2½ hours' }[minutes]),
+    anyLength: 'any length',
+    episodes: (minutes) => `with episodes under ${minutes} min`,
+    anyKind: 'any kind',
+    or: 'or',
+    era: {
+      recent: 'from the last few years',
+      '2010s': 'from the 2010s',
+      '2000s': 'from the 2000s',
+      '1990s': 'from the 1990s',
+      classic: 'from before 1990',
+    },
+    rated: (min) => `rated ${min}+`,
+    inLanguage: (name) => `in ${name}`,
+    onServices: 'on my services',
+    fromWatchlist: 'from my watchlist',
+  },
 
+  yourRequest: 'Your request',
+  questionsTitle: 'Questions',
+  surpriseMe: 'Surprise me',
   go: 'Go',
-  randomSelect: 'Random select',
 
   spinning: [
     'Shuffling the reels',
@@ -64,24 +129,52 @@ export const TONIGHT_PICKER = {
     'Dimming the lights',
   ],
 
-  resultsTitle: (n) => (n >= 3 ? 'Three for tonight' : n === 2 ? 'Two for tonight' : 'One for tonight'),
-  fewerThanThree: (n) => (n === 1
-    ? 'Only one fits those options. Loosen a filter for more.'
-    : 'Only two fit those options. Loosen a filter for more.'),
-  randomTitle: 'Your random pick',
+  // Time of day in the viewer's local time: 3:30pm to midnight is night.
+  heading: { night: 'Tonight, sorted', day: 'Your shortlist' },
+  resultsSubline: 'The plot lines you asked for. Tap to learn more.',
+  topPick: 'Top pick',
+  onService: (name) => `On ${name}`,
+  onYourWatchlist: 'On your watchlist',
   spinAgain: 'Spin again',
   changeOptions: 'Change options',
-  onYourWatchlist: 'On your watchlist',
-  minutes: (n) => `${n} min`,
+  minutes: (n) => (n >= 60 ? `${Math.floor(n / 60)}h ${String(n % 60).padStart(2, '0')}m` : `${n} min`),
   episodeMinutes: (n) => `${n} min episodes`,
   seasons: (n) => (n === 1 ? '1 season' : `${n} seasons`),
   miniseries: 'Mini-series',
   score10: (n) => `${n.toFixed(1)} on TMDB`,
 
-  emptyTitle: 'Nothing fits those options',
-  emptyBody: 'Try more time, fewer filters, or untick one of the boxes.',
+  emptyTitle: 'Nothing fits those answers',
+  emptyBody: 'Try more time, fewer genres, or turn off a filter.',
   loadError: 'Could not reach TMDB. Try again in a moment.',
 
-  gateTitle: 'Picking a plot for tonight is part of plot Premium',
-  gateBody: 'Choose a movie or a show, how much time you have and the services you use. Get three options for tonight, or let a random pick make the decision.',
+  gateTitle: 'Pick a Plot is part of plot Premium',
+  gateBody: 'Choose a movie or a show, how much time you have and the services you use. Get your picks for tonight, or let a surprise pick make the decision.',
+};
+
+// A feeling word per TMDB genre id, shown under the genre on question 3 and
+// used in the sentence ("funny or tense"). Ids are TMDB's fixed genre ids
+// (the catalog getGenreCatalog returns), not title ids.
+export const GENRE_MOODS = {
+  28: 'Explosive',
+  12: 'Adventurous',
+  16: 'Animated',
+  35: 'Funny',
+  80: 'Gripping',
+  99: 'True story',
+  18: 'Moving',
+  14: 'Magical',
+  36: 'Historical',
+  27: 'Scary',
+  10402: 'Musical',
+  9648: 'Puzzling',
+  10749: 'Romantic',
+  878: 'Mind-bending',
+  10770: 'Made for TV',
+  53: 'Tense',
+  10752: 'Hard-hitting',
+  37: 'Frontier',
+  10759: 'Action-packed',
+  10765: 'Otherworldly',
+  10768: 'Hard-hitting',
+  10764: 'Unscripted',
 };

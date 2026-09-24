@@ -10,6 +10,10 @@ import {
   loadWatchlistPool,
   loadDiscoverPage,
   pickerGenres,
+  pickerTimeOfDay,
+  pickerSentence,
+  pickerFiltersSummary,
+  pickerAnswers,
   _resetPickerCache,
 } from '../../tonightPicker.js';
 
@@ -103,7 +107,7 @@ test('loadWatchlistPool filters live and stops once the target is met', async ()
     { tmdb_id: 104, media_type: 'tv', title: 'A show' },
     ...Array.from({ length: 30 }, (_, i) => ({ tmdb_id: 500 + i, media_type: 'movie', title: `t${i}` })),
   ];
-  const { pool } = await loadWatchlistPool({ watchlistItems, options: opts(), providerIds: [NETFLIX], region: 'AU', client, gapMs: 0, target: 4 });
+  const { pool } = await loadWatchlistPool({ watchlistItems, options: opts({ maxRuntime: 120 }), providerIds: [NETFLIX], region: 'AU', client, gapMs: 0, target: 4 });
   assert.ok(pool.length >= 4);
   assert.ok(!pool.some(c => c.id === 102 || c.id === 103));
   assert.ok(pool.every(c => c.onWatchlist));
@@ -163,7 +167,8 @@ test('discoverParams builds TV filters: type, first air date, episode length', (
 test('pickerGenres uses the type catalog and drops kids genres when hidden', () => {
   const catalog = { movie: [{ id: DRAMA, name: 'Drama' }, { id: FAMILY, name: 'Family' }], tv: [{ id: KIDS_TV, name: 'Kids' }, { id: NEWS, name: 'News' }, { id: DRAMA, name: 'Drama' }] };
   assert.deepEqual(pickerGenres(catalog, opts({ hideKids: true })).map(g => g.id), [DRAMA]);
-  assert.deepEqual(pickerGenres(catalog, opts({ hideKids: false })).map(g => g.id), [DRAMA, FAMILY]);
+  assert.equal(pickerGenres(catalog, opts({ hideKids: true }))[0].mood, 'Moving');
+  assert.deepEqual(pickerGenres(catalog, opts({ hideKids: false })).map(g => g.id).sort(), [DRAMA, FAMILY].sort());
   assert.deepEqual(pickerGenres(catalog, opts({ mediaType: 'tv', hideKids: true })).map(g => g.id), [DRAMA]);
 });
 
@@ -202,4 +207,34 @@ test('loadDiscoverPage checks season count for season formats only', async () =>
   const any = await loadDiscoverPage({ options: opts({ mediaType: 'tv', tvFormat: 'any' }), providerIds: [NETFLIX], region: 'AU', client, gapMs: 0 });
   assert.equal(any.pool.length, 2);
   assert.equal(detailCalls, 0, 'no details calls when TMDB can filter it');
+});
+
+test('pickerTimeOfDay: 3:30pm to midnight is night', () => {
+  const at = (h, m) => new Date(2026, 8, 24, h, m);
+  assert.equal(pickerTimeOfDay(at(15, 29)), 'day');
+  assert.equal(pickerTimeOfDay(at(15, 30)), 'night');
+  assert.equal(pickerTimeOfDay(at(23, 59)), 'night');
+  assert.equal(pickerTimeOfDay(at(0, 0)), 'day');
+  assert.equal(pickerTimeOfDay(at(9, 0)), 'day');
+});
+
+test('pickerSentence fills in answers and greys out the rest', () => {
+  const genres = [{ id: COMEDY, name: 'Comedy', mood: 'Funny' }, { id: 53, name: 'Thriller', mood: 'Tense' }];
+  const blank = pickerSentence(opts(), { genres, hasServices: true });
+  assert.equal(blank.map(p => p.text).join(' '), 'Find me a movie any length, any kind, on my services.');
+  assert.deepEqual(blank.filter(p => p.kind === 'placeholder').map(p => p.text), ['any length,', 'any kind,']);
+
+  const full = pickerSentence(opts({ maxRuntime: 120, genreIds: [COMEDY, 53], era: '2010s', minScore: 7 }), { genres, hasServices: true });
+  assert.equal(full.map(p => p.text).join(' '), 'Find me a movie under 2 hours, funny or tense, from the 2010s, rated 7+, on my services.');
+  assert.ok(full.every(p => p.kind !== 'placeholder'));
+
+  const tv = pickerSentence(opts({ mediaType: 'tv', tvFormat: 'miniseries', maxEpisodeRuntime: 45, onlyServices: false }), { genres, hasServices: true });
+  assert.equal(tv.map(p => p.text).join(' '), 'Find me a mini-series with episodes under 45 min, any kind.');
+});
+
+test('pickerFiltersSummary and pickerAnswers summarise the options', () => {
+  assert.equal(pickerFiltersSummary(opts(), { hasServices: true }), 'My services · No kids or family');
+  assert.equal(pickerFiltersSummary(opts({ onlyServices: false, hideKids: false }), { hasServices: true }), 'None');
+  const a = pickerAnswers(opts({ maxRuntime: 90, genreIds: [COMEDY], minScore: 8 }), { genres: [{ id: COMEDY, name: 'Comedy' }] });
+  assert.deepEqual(a, { type: 'A movie', length: 'Under 90 min', kind: 'Comedy', quality: '8+' });
 });

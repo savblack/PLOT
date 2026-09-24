@@ -1,136 +1,248 @@
-/* Pick a Plot (the tonight picker). Flat monochrome; the accent marks selected
-   options (selected filters), the checkbox ticks, and the reel's motion. */
-.tonight-view { padding-bottom: 2rem; }
+/* Pick a Plot. Warm and flat: deeper-cream tiles and panels, charcoal for
+   what matters, hairlines for structure. Pink is spent on the Go fill, the
+   progress bar, the answered words in the sentence and the Top pick chip.
+   Phone is one column with a sticky sentence bar; >=1024px swaps in the
+   264px side column History and Settings use. */
 
-.tonight-intro {
-  margin: 0.4rem 0 0;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  max-width: 34rem;
+.tonight-view { padding-bottom: 1rem; }
+
+.tonight-layout { padding: 0 var(--gut); }
+.tonight-side { display: none; }
+.tonight-main { min-width: 0; }
+
+/* ── Question ── */
+.tonight-question { padding-top: 1.25rem; }
+.tonight-question-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 2rem;
+  line-height: 1.05;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+.tonight-question-sub {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
   line-height: 1.5;
-}
-
-/* ── Options panel ── */
-.tonight-panel {
-  margin: 1rem var(--gut) 0;
-  padding: 1.1rem 1rem 1.2rem;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-raised);
-  display: flex;
-  flex-direction: column;
-  gap: 1.15rem;
-  max-width: 44rem;
-}
-.tonight-field-label {
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--text-secondary);
-  margin-bottom: 0.45rem;
 }
-.tonight-field-hint {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin: -0.25rem 0 0.45rem;
+.tonight-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 1rem 0 1.25rem;
 }
-.tonight-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+.tonight-progress span {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
 }
-.tonight-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 32px;
-  padding: 0 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg);
+.tonight-progress span.on { background: var(--accent); }
+
+.tonight-group-label {
+  margin: 1.25rem 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.tonight-progress + .tonight-group-label { margin-top: 0; }
+
+.tonight-tiles { display: grid; gap: 10px; }
+.tonight-tiles--two,
+.tonight-tiles--genres { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tonight-tiles--three { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tonight-tiles--four { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tonight-tiles--type { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+.tonight-tile,
+.tonight-type {
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background: var(--surface-sunken);
   color: var(--text-primary);
   font: inherit;
-  font-size: 0.8rem;
   cursor: pointer;
+  text-align: left;
   transition: border-color 0.15s ease, background 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.tonight-chip:hover { border-color: var(--border-strong); }
-.tonight-chip.active {
-  /* Border + tint carry the selection; the label stays primary text because
-     accent-on-accent-dim fails AA contrast (3.2:1). */
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-.tonight-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-/* ── Tick boxes ── */
-.tonight-check {
+.tonight-tile {
+  min-height: 60px;
+  padding: 10px 14px;
   display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.35rem 0;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-}
-.tonight-check input {
-  position: absolute;
-  opacity: 0;
-  width: 1px;
-  height: 1px;
-}
-.tonight-check-box {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  margin-top: 1px;
-  border: 1.5px solid var(--border-strong);
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-  background: var(--bg);
-  transition: background 0.15s ease, border-color 0.15s ease;
+  gap: 2px;
 }
-.tonight-check-box svg {
-  width: 14px;
-  height: 14px;
+.tonight-tiles--three .tonight-tile,
+.tonight-tiles--four .tonight-tile { align-items: center; text-align: center; padding: 8px; min-height: 56px; }
+.tonight-tile:hover,
+.tonight-type:hover { border-color: var(--border-strong); }
+.tonight-tile.selected,
+.tonight-type.selected { border-color: var(--text-primary); }
+.tonight-tile:focus-visible,
+.tonight-type:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tonight-tile-label { font-size: 0.95rem; font-weight: 600; }
+.tonight-tile-hint { font-size: 0.75rem; color: var(--text-secondary); }
+
+.tonight-type {
+  min-height: 200px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.tonight-type svg {
+  width: 34px;
+  height: 34px;
   fill: none;
-  stroke: var(--on-accent-fill);
-  stroke-width: 3;
+  stroke: currentColor;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0;
 }
-.tonight-check input:checked + .tonight-check-box {
-  background: var(--accent-fill);
-  border-color: var(--accent-fill);
+.tonight-type-text { display: flex; flex-direction: column; gap: 4px; }
+.tonight-type-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 1.4rem;
 }
-.tonight-check input:checked + .tonight-check-box svg { opacity: 1; }
-.tonight-check input:focus-visible + .tonight-check-box { outline: 2px solid var(--accent); outline-offset: 2px; }
-.tonight-check-label { display: block; }
-.tonight-check-hint { display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
-.tonight-check.disabled { cursor: default; color: var(--text-muted); }
-.tonight-check.disabled .tonight-check-box { opacity: 0.5; }
 
-.tonight-actions {
+.tonight-link {
+  margin-top: 0.75rem;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.tonight-hint { margin: 0.6rem 0 0; font-size: 0.75rem; color: var(--text-muted); }
+
+/* ── Phone filters panel ── */
+.tonight-filters {
+  margin-top: 1.5rem;
+  background: var(--surface-sunken);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.tonight-filters-head {
+  width: 100%;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding-top: 0.2rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
 }
-.tonight-actions--center { justify-content: center; margin-top: 1.25rem; }
-.tonight-go { min-width: 5.5rem; }
+.tonight-filters-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  min-width: 0;
+}
+.tonight-chev svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; display: block; transition: transform 0.15s ease; }
+.tonight-chev.open svg { transform: rotate(180deg); }
+.tonight-filters-body { padding: 0 16px 4px; }
+.tonight-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+  min-height: 52px;
+}
+.tonight-filter-row.disabled .tonight-filter-label { color: var(--text-muted); }
+.tonight-filter-label { display: block; font-size: 0.95rem; font-weight: 500; color: var(--text-primary); }
+.tonight-filter-hint { display: block; font-size: 0.75rem; color: var(--text-muted); }
+.tonight-select {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: right;
+  cursor: pointer;
+  padding: 6px 0;
+}
+.tonight-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
-/* ── Spin: slot-machine reels ── */
+.tonight-stepnav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.25rem;
+}
+.tonight-stepbtn { min-height: 40px; padding-inline: 16px; font-size: 0.875rem; }
+.tonight-stepbtn svg,
+.tonight-surprise svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tonight-surprise svg { stroke-width: 1.8; }
+
+/* ── Sentence ── */
+.tonight-sentence {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 1.35rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+.tonight-sentence-filled {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+}
+.tonight-sentence-placeholder {
+  color: var(--text-muted);
+  border-bottom: 2px dotted var(--text-muted);
+}
+
+/* ── Phone sticky bar ── */
+.tonight-bar {
+  position: sticky;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  margin-top: 1.5rem;
+  padding: 24px var(--gut) 16px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.tonight-bar-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.tonight-bar .btn { min-height: 44px; padding-inline: 18px; font-size: 0.9rem; }
+.tonight-bar .tonight-go { padding-inline: 32px; font-size: 1rem; }
+
+/* ── Spin ── */
 .tonight-spin {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 2rem var(--gut) 1rem;
+  padding: 2rem 0 1rem;
 }
 .tonight-reels {
   display: grid;
@@ -142,11 +254,9 @@
 .tonight-reels--1 { grid-template-columns: minmax(0, 11rem); justify-content: center; }
 .tonight-reel {
   aspect-ratio: 2 / 3;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
-  background: var(--surface-raised);
-  position: relative;
+  background: var(--surface-sunken);
 }
 .tonight-reel-strip {
   display: flex;
@@ -160,77 +270,186 @@
   flex-shrink: 0;
   height: 44%;
   min-height: 60px;
-  border-radius: 6px;
-  background: var(--border);
+  border-radius: 8px;
+  background: var(--border-strong);
 }
 .tonight-reel-frame:nth-child(3n) { background: var(--accent-dim); }
 @keyframes tonight-reel-roll {
   from { transform: translateY(0); }
   to { transform: translateY(-50%); }
 }
-.tonight-spin-line {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
+.tonight-spin-line { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }
 
 /* ── Results ── */
-.tonight-results-wrap { padding: 1.25rem var(--gut) 0; }
-.tonight-results-title { text-align: center; margin-bottom: 0.9rem; }
-.tonight-results-note {
-  margin: -0.5rem auto 0.9rem;
-  text-align: center;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-.tonight-results {
-  display: grid;
-  gap: 0.75rem;
-  max-width: 34rem;
-  margin: 0 auto;
-  grid-template-columns: repeat(3, 1fr);
-}
-.tonight-results--1 { grid-template-columns: minmax(0, 13rem); justify-content: center; }
-.tonight-results--2 { grid-template-columns: repeat(2, minmax(0, 11rem)); justify-content: center; }
-.tonight-result {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 0;
+.tonight-results { padding-top: 1.25rem; }
+.tonight-results-list { margin-top: 1.25rem; display: flex; flex-direction: column; gap: 12px; }
+.tonight-hero {
+  position: relative;
+  height: 210px;
   border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--text-primary);
+  padding: 16px;
+  display: flex;
+  align-items: flex-end;
   text-align: left;
+  font: inherit;
   cursor: pointer;
-  min-width: 0;
+  animation: tonight-reveal 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.tonight-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* Legibility scrim behind the title, per the design system's text-over-image rule. */
+.tonight-hero-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 65%;
+  background: rgba(20, 18, 16, 0.6);
+}
+.tonight-hero-body { position: relative; display: flex; flex-direction: column; gap: 6px; }
+.tonight-hero-chip {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.tonight-hero-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 1.5rem;
+  color: #f8f2ea;
+}
+.tonight-hero-meta { font-size: 0.8rem; color: #f1e9dc; }
+.tonight-hero:focus-visible,
+.tonight-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.tonight-cards { display: grid; gap: 12px; }
+.tonight-card {
+  border: 0;
+  border-radius: 20px;
+  background: var(--surface-sunken);
+  padding: 12px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  text-align: left;
+  font: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
   animation: tonight-reveal 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
   animation-delay: var(--reveal-delay, 0ms);
 }
+.tonight-card-poster {
+  width: 84px;
+  height: 126px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--border-strong);
+}
+.tonight-card-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tonight-card-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tonight-card-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 1.2rem;
+}
+.tonight-card-meta { font-size: 0.8rem; color: var(--text-secondary); }
+.tonight-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tonight-chip {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.tonight-chip--service { background: var(--accent-secondary-fill); color: var(--on-accent-fill); }
 @keyframes tonight-reveal {
-  from { opacity: 0; transform: translateY(18px) rotateX(35deg) scale(0.94); }
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
   to { opacity: 1; transform: none; }
 }
-.tonight-result-img {
-  aspect-ratio: 2 / 3;
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  margin-bottom: 0.35rem;
+.tonight-empty { padding-top: 3rem; }
+
+/* ── Desktop side column ── */
+.tonight-qrow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.tonight-result-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.tonight-result-title {
-  font-size: 0.85rem;
+.tonight-qrow:last-child { border-bottom: 0; }
+.tonight-qrow:hover .tonight-qtitle { color: var(--accent-text); }
+.tonight-qrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.tonight-qnum {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  font-size: 0.75rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.tonight-result-meta { font-size: 0.72rem; color: var(--text-muted); }
-.tonight-result-tag { font-size: 0.7rem; color: var(--text-secondary); }
+.tonight-qnum.current { background: var(--text-primary); color: var(--bg); }
+.tonight-qtext { display: flex; flex-direction: column; min-width: 0; }
+.tonight-qtitle { font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+.tonight-qrow[aria-current="step"] .tonight-qtitle { font-weight: 600; }
+.tonight-qanswer { font-size: 0.75rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tonight-sentence--side { padding: 0 4px; font-size: 1.2rem; }
+.tonight-sentence--side .tonight-sentence-filled { text-underline-offset: 4px; }
+.tonight-side-actions { display: flex; gap: 8px; padding: 4px 4px 0; flex-wrap: wrap; }
+.tonight-side-actions .btn { min-height: 38px; font-size: 0.85rem; }
+.tonight-lang-row { cursor: default; }
+
+@media (min-width: 1024px) {
+  .tonight-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 72px;
+    margin-top: 1rem;
+  }
+  .tonight-side { display: flex; flex-direction: column; gap: 24px; width: 264px; flex-shrink: 0; }
+  .tonight-main { flex: 1; }
+  .tonight-bar,
+  .tonight-filters { display: none; }
+
+  .tonight-question,
+  .tonight-results { padding-top: 0; }
+  .tonight-question-title { font-size: 2.5rem; }
+  .tonight-question-sub { font-size: 0.95rem; }
+  .tonight-progress { margin: 1.25rem 0 1.75rem; }
+  .tonight-tiles--genres { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .tonight-tiles--type { max-width: 560px; }
+  .tonight-type { min-height: 220px; }
+  .tonight-tile { min-height: 72px; }
+  .tonight-stepnav { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+
+  .tonight-hero { height: 320px; border-radius: 24px; padding: 24px; }
+  .tonight-hero-title { font-size: 2rem; }
+  .tonight-hero-meta { font-size: 0.875rem; }
+  .tonight-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .tonight-reel-strip, .tonight-result { animation: none; }
+  .tonight-reel-strip,
+  .tonight-hero,
+  .tonight-card { animation: none; }
 }

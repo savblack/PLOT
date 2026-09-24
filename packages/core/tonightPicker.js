@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { tmdb, excludeKidsContent, KIDS_GENRE_IDS } from './tmdb.js';
 import { supabase } from './supabase.js';
+import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 
 // Pick a Plot, the tonight picker (Premium). The viewer picks movie or TV first, then the
 // options for that type (movie length, or TV format and episode length),
@@ -55,8 +56,18 @@ export const PICKER_MIN_SCORES = [null, 6, 7, 8];
 /** Original language (ISO 639-1, TMDB's with_original_language). `null` means any. */
 export const PICKER_LANGUAGES = [null, 'en', 'fr', 'es', 'ko', 'ja', 'hi', 'it', 'de'];
 
-/** How many titles each result mode shows. */
-export const PICKER_MODES = { three: 3, random: 1 };
+/** How many titles each result mode shows: Go aims for five, Surprise me shows one. */
+export const PICKER_MODES = { five: 5, surprise: 1 };
+
+/** Questions, in order. Go and Surprise me work from any of them. */
+export const PICKER_STEPS = ['type', 'length', 'kind', 'quality'];
+
+/** Genres shown before "Show all": the ones people reach for first. */
+const FEATURED_GENRES = {
+  movie: [35, 53, 18, 28, 27, 10749, 80, 878, 99, 16],
+  tv: [35, 18, 80, 10759, 10765, 9648, 99, 16, 10768, 37],
+};
+export const FEATURED_GENRE_COUNT = 10;
 
 /** The spin always lasts at least this long, so it reads as a reveal, not a flicker. */
 export const PICKER_MIN_SPIN_MS = 1400;
@@ -79,8 +90,8 @@ const TV_EXCLUDED_GENRES = [10763, 10767, 10766];
 // Caps the watchlist walk so a huge watchlist does not spend the proxy budget
 // (100 requests / 10s / IP). Newest saves first.
 const WATCHLIST_DETAIL_LIMIT = 40;
-// Enough matches to draw a few different sets of three from.
-const POOL_TARGET = 12;
+// Enough matches to draw a few different sets of five from.
+const POOL_TARGET = 15;
 // Most discover results checked for season count per page.
 const SEASON_CHECK_LIMIT = 12;
 // How many extra pages one Go may fetch to fill all three slots before it
@@ -125,7 +136,7 @@ const GAP_MS = 120;
 export function defaultPickerOptions({ hasServices = false } = {}) {
   return {
     mediaType: 'movie',
-    maxRuntime: 120,
+    maxRuntime: null,
     tvFormat: 'any',
     maxEpisodeRuntime: null,
     genreIds: [],
@@ -146,8 +157,97 @@ export function defaultPickerOptions({ hasServices = false } = {}) {
  */
 export function pickerGenres(catalog, options) {
   const list = catalog?.[options.mediaType] ?? [];
-  return list.filter(g => !(options.mediaType === 'tv' && TV_EXCLUDED_GENRES.includes(g.id))
-    && !(options.hideKids && KIDS_GENRE_IDS.has(g.id)));
+  const featured = FEATURED_GENRES[options.mediaType] ?? [];
+  const rank = (id) => { const i = featured.indexOf(id); return i === -1 ? featured.length : i; };
+  return list
+    .filter(g => !(options.mediaType === 'tv' && TV_EXCLUDED_GENRES.includes(g.id))
+      && !(options.hideKids && KIDS_GENRE_IDS.has(g.id)))
+    .map(g => ({ ...g, mood: GENRE_MOODS[g.id] ?? null }))
+    .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
+}
+
+/**
+ * Which results heading applies: 3:30pm to midnight local is night.
+ * @param {Date} [now]
+ * @returns {'night'|'day'}
+ */
+export function pickerTimeOfDay(now = new Date()) {
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  return minutes >= 15 * 60 + 30 ? 'night' : 'day';
+}
+
+/**
+ * The sentence under the questions, as parts. `filled` parts are answers;
+ * `placeholder` parts are unanswered questions shown greyed out.
+ * @param {PickerOptions} options
+ * @param {{ genres?: Array<{id: number, name: string, mood?: string|null}>, hasServices?: boolean }} [ctx]
+ * @returns {Array<{ text: string, kind: 'plain'|'filled'|'placeholder' }>}
+ */
+export function pickerSentence(options, { genres = [], hasServices = false } = {}) {
+  const S = TONIGHT_PICKER.sentence;
+  const parts = [{ text: S.start, kind: 'plain' }];
+  const tv = options.mediaType === 'tv';
+  parts.push({ text: tv ? (S.tvFormat[options.tvFormat] ?? S.type.tv) : S.type.movie, kind: 'filled' });
+  if (tv) {
+    parts.push(options.maxEpisodeRuntime
+      ? { text: `${S.episodes(options.maxEpisodeRuntime)},`, kind: 'filled' }
+      : { text: `${S.anyLength},`, kind: 'placeholder' });
+  } else {
+    parts.push(options.maxRuntime
+      ? { text: `${S.runtime(options.maxRuntime)},`, kind: 'filled' }
+      : { text: `${S.anyLength},`, kind: 'placeholder' });
+  }
+  const moods = options.genreIds
+    .map(id => genres.find(g => g.id === id))
+    .filter(Boolean)
+    .map(g => (g.mood || g.name).toLowerCase());
+  const kind = moods.length > 2 ? `${moods.slice(0, -1).join(', ')} ${S.or} ${moods.at(-1)}` : moods.join(` ${S.or} `);
+  parts.push(kind ? { text: `${kind},`, kind: 'filled' } : { text: `${S.anyKind},`, kind: 'placeholder' });
+  if (options.era !== 'any' && S.era[options.era]) parts.push({ text: `${S.era[options.era]},`, kind: 'filled' });
+  if (options.minScore) parts.push({ text: `${S.rated(options.minScore)},`, kind: 'filled' });
+  if (options.language) parts.push({ text: `${S.inLanguage(TONIGHT_PICKER.languages[options.language])},`, kind: 'filled' });
+  if (options.onlyWatchlist) parts.push({ text: `${S.fromWatchlist},`, kind: 'filled' });
+  if (options.onlyServices && hasServices) parts.push({ text: S.onServices, kind: 'filled' });
+  // Close the sentence: drop a trailing comma, end with a full stop.
+  const last = parts[parts.length - 1];
+  last.text = `${last.text.replace(/,$/, '')}.`;
+  return parts;
+}
+
+/**
+ * Short filters summary for the collapsed Filters row.
+ * @param {PickerOptions} options
+ * @param {{ hasServices?: boolean }} [ctx]
+ */
+export function pickerFiltersSummary(options, { hasServices = false } = {}) {
+  const T = TONIGHT_PICKER;
+  const parts = [];
+  if (options.onlyServices && hasServices) parts.push(T.summary.services);
+  if (options.onlyWatchlist) parts.push(T.summary.watchlist);
+  if (options.hideKids) parts.push(T.summary.noKids);
+  if (options.language) parts.push(T.languages[options.language]);
+  return parts.length ? parts.join(' · ') : T.filtersNone;
+}
+
+/**
+ * One-line answer per question, for the desktop Questions card.
+ * @param {PickerOptions} options
+ * @param {{ genres?: Array<{id: number, name: string}> }} [ctx]
+ */
+export function pickerAnswers(options, { genres = [] } = {}) {
+  const T = TONIGHT_PICKER;
+  const tv = options.mediaType === 'tv';
+  const length = tv
+    ? [options.tvFormat !== 'any' ? T.tvFormats[options.tvFormat] : null, options.maxEpisodeRuntime ? T.episodeRuntime(options.maxEpisodeRuntime) : null].filter(Boolean).join(', ')
+    : (options.maxRuntime ? T.runtimes(options.maxRuntime) : '');
+  const kind = options.genreIds.map(id => genres.find(g => g.id === id)?.name).filter(Boolean).join(', ');
+  const quality = [options.era !== 'any' ? T.eras[options.era] : null, options.minScore ? T.score(options.minScore) : null].filter(Boolean).join(', ');
+  return {
+    type: T.mediaTypes[options.mediaType].label,
+    length: length || T.anyAnswer,
+    kind: kind || T.anyAnswer,
+    quality: quality || T.anyAnswer,
+  };
 }
 
 /**
@@ -448,7 +548,8 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
 
   const [options, setOptions] = useState(() => defaultPickerOptions({ hasServices }));
   const [phase, setPhase] = useState(/** @type {'setup'|'spinning'|'results'|'empty'|'error'} */ ('setup'));
-  const [mode, setMode] = useState(/** @type {'three'|'random'} */ ('three'));
+  const [mode, setMode] = useState(/** @type {'five'|'surprise'} */ ('five'));
+  const [step, setStep] = useState(0);
   const [results, setResults] = useState(/** @type {PickerCandidate[]} */ ([]));
   const [canSpinAgain, setCanSpinAgain] = useState(false);
   const [catalog, setCatalog] = useState(/** @type {{ movie: any[], tv: any[] }} */ ({ movie: [], tv: [] }));
@@ -542,7 +643,7 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
     return { picked, canSpinAgain: cur.pool.length > picked.length || moreToLoad };
   }, [options, hasServices, hasWatchlist, region, userId, watchlistItems, providerIds]);
 
-  const go = useCallback(async (nextMode = 'three') => {
+  const go = useCallback(async (nextMode = 'five') => {
     if (!enabled) return;
     setMode(nextMode);
     setPhase('spinning');
@@ -564,11 +665,23 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
 
   const spinAgain = useCallback(() => go(mode), [go, mode]);
   const backToOptions = useCallback(() => setPhase('setup'), []);
+  const goToStep = useCallback((i) => {
+    setStep(Math.max(0, Math.min(PICKER_STEPS.length - 1, i)));
+    setPhase('setup');
+  }, []);
+  const nextStep = useCallback(() => setStep(i => Math.min(PICKER_STEPS.length - 1, i + 1)), []);
+  const prevStep = useCallback(() => setStep(i => Math.max(0, i - 1)), []);
+
+  const sentence = useMemo(() => pickerSentence(options, { genres, hasServices }), [options, genres, hasServices]);
+  const filtersSummary = useMemo(() => pickerFiltersSummary(options, { hasServices }), [options, hasServices]);
+  const answers = useMemo(() => pickerAnswers(options, { genres }), [options, genres]);
 
   return {
     options, setOption, toggleGenre, genres,
     hasServices, hasWatchlist,
     phase, mode, results, canSpinAgain,
+    step, goToStep, nextStep, prevStep,
+    sentence, filtersSummary, answers,
     go, spinAgain, backToOptions,
   };
 }

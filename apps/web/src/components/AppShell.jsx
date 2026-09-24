@@ -7,6 +7,7 @@ import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { HISTORY_VIEW } from '@plot/core/copy/historyView.js';
 import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { TONIGHT_PICKER } from '@plot/core/copy/tonightPicker.js';
 import AppSidebar from './AppSidebar.jsx';
 import {
   IconMenu, IconClose, IconSearch, IconArrowUp,
@@ -109,7 +110,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
 
   const pageSubtitle = currentView === 'settings' ? SETTINGS_VIEW.page.subtitle
     : currentView === 'history' ? HISTORY_VIEW.subtitle
-    : currentView === 'guide' ? BROADCAST_GUIDE.subtitle : null;
+    : currentView === 'guide' ? BROADCAST_GUIDE.subtitle
+    : currentView === 'tonight' ? TONIGHT_PICKER.subtitle : null;
 
   return (
     <div className={`app-shell${panelOpen ? ' panel-docked' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
