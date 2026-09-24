@@ -1,7 +1,7 @@
 import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useGenres } from '../hooks/useGenres.js';
@@ -60,6 +60,28 @@ function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQ
   );
 }
 
+/* The frame the list sections render into.
+
+   `Frame` is declared once, here at module scope, so its identity never
+   changes. It used to be built inside the page by a `useMemo` whose deps
+   included `query` — which meant every keystroke produced a new function, and
+   a new function is a new component *type*: React unmounts the old subtree and
+   mounts a fresh one rather than re-rendering it. The search input lives inside
+   that subtree, so it was destroyed and rebuilt on each character and focus
+   dropped to the body. You could type one letter at a time, clicking back into
+   the field between each.
+
+   The page's own state reaches the frame through context instead. Context
+   re-renders consumers; it never remounts them. */
+const ListPageContext = createContext(null);
+
+function Frame(props) {
+  const page = useContext(ListPageContext);
+  // The section's own props (title, subtitle, count, headerRight, children)
+  // are spread last so they win over the page-level defaults.
+  return <ListPageFrame {...page} {...props} />;
+}
+
 export default function ListPage() {
   const { key } = useParams();
   const navigate = useNavigate();
@@ -104,47 +126,39 @@ export default function ListPage() {
 
   const showFilter = key === 'want' || key === 'favorites';
 
-  // One frame component per page, memoised so the list inside it keeps its
-  // state (selection, open sheets) across re-renders.
-  const Frame = useMemo(() => {
-    return function PageFrame(props) {
-      return (
-        <ListPageFrame
-          count={props.count}
-          filter={showFilter && (
-            <SideFilters
-              typeFilters={typeFilters}
-              setTypeFilters={setTypeFilters}
-              genreFilters={genreFilters}
-              setGenreFilters={setGenreFilters}
-              genres={genres}
-            />
-          )}
-          query={query}
-          onQuery={setQuery}
-          view={resolvedView}
-          onView={setView}
-          onSort={setSort}
-          {...props}
-        />
-      );
-    };
-  }, [showFilter, typeFilters, genreFilters, genres, query, resolvedView]);
+  // What the frame needs from the page. A fresh object per render is fine —
+  // it re-renders the frame, which is the point; only a changing component
+  // identity would remount it.
+  const framePage = useMemo(() => ({
+    filter: showFilter ? (
+      <SideFilters
+        typeFilters={typeFilters}
+        setTypeFilters={setTypeFilters}
+        genreFilters={genreFilters}
+        setGenreFilters={setGenreFilters}
+        genres={genres}
+      />
+    ) : null,
+    query,
+    onQuery: setQuery,
+    view: resolvedView,
+    onView: setView,
+    onSort: setSort,
+  }), [showFilter, typeFilters, genreFilters, genres, query, resolvedView]);
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
     return <LoadingSpinner />;
   }
 
+  let body;
   if (key === 'want') {
     const items = sortItems(matchQuery(filterByTypeAndGenre(want, typeFilters, genreFilters)));
-    return <WantToWatchSection items={items} count={want.length} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
-  }
-  if (key === 'favorites') {
-    return <FavoritesSection favorites={favorites} visibleItems={sortItems(matchQuery(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters)))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
-  }
-  if (list) {
-    return (
+    body = <WantToWatchSection items={items} count={want.length} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
+  } else if (key === 'favorites') {
+    body = <FavoritesSection favorites={favorites} visibleItems={sortItems(matchQuery(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters)))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
+  } else if (list) {
+    body = (
       <CustomListSection
         key={customListKey(list.id)}
         list={list}
@@ -162,13 +176,15 @@ export default function ListPage() {
         historyEntries={history.entries}
       />
     );
+  } else {
+    body = (
+      <div className="empty-state" style={{ marginTop: '1rem' }}>
+        <div className="empty-title">List not found</div>
+        <div className="empty-body">{fw.plural}, Want to Watch, your Top 5s and your own lists live on My Lists.</div>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/my-lists')}>Back to My Lists</button>
+      </div>
+    );
   }
 
-  return (
-    <div className="empty-state" style={{ marginTop: '1rem' }}>
-      <div className="empty-title">List not found</div>
-      <div className="empty-body">{fw.plural}, Want to Watch, your Top 5s and your own lists live on My Lists.</div>
-      <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/my-lists')}>Back to My Lists</button>
-    </div>
-  );
+  return <ListPageContext.Provider value={framePage}>{body}</ListPageContext.Provider>;
 }
