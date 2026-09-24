@@ -3,7 +3,7 @@ import { tmdb, excludeKidsContent, KIDS_GENRE_IDS } from './tmdb.js';
 import { supabase } from './supabase.js';
 import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 
-// Pick a Plot, the tonight picker (Premium). The viewer picks movie or TV first, then the
+// Pick for Me, the tonight picker (Premium). The viewer picks movie or TV first, then the
 // options for that type (movie length, or TV format and episode length),
 // genres, era, score, language, and whether to stay within their services,
 // their watchlist, and away from kids and family titles. Go gives three
@@ -147,6 +147,59 @@ export function defaultPickerOptions({ hasServices = false } = {}) {
     onlyWatchlist: false,
     hideKids: true,
   };
+}
+
+// A Free viewer's answers, kept while they upgrade so they land back on
+// their request (and, once Premium, straight on their picks). The storage
+// mechanism is the platform's (web localStorage, mobile AsyncStorage); the key
+// and the encoding live here so both platforms read the same thing.
+export const SAVED_REQUEST_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** @param {string|null|undefined} userId */
+export function savedRequestKey(userId) {
+  return `plot.pickForMe.request.${userId || 'anon'}`;
+}
+
+/**
+ * @param {{ options: PickerOptions, step: number, mode: 'five'|'surprise' }} request
+ * @param {number} [now]
+ * @returns {string}
+ */
+export function serialiseSavedRequest({ options, step, mode }, now = Date.now()) {
+  return JSON.stringify({ v: 1, savedAt: now, options, step, mode });
+}
+
+/**
+ * Decode a stored request. Anything unrecognised, stale or malformed comes
+ * back null; known option keys are kept only when their type matches the
+ * defaults, so an old or hand-edited value can never break the picker.
+ * @param {string|null|undefined} value
+ * @param {number} [now]
+ * @returns {{ options: PickerOptions, step: number, mode: 'five'|'surprise' }|null}
+ */
+export function parseSavedRequest(value, now = Date.now()) {
+  if (typeof value !== 'string') return null;
+  let raw;
+  try { raw = JSON.parse(value); } catch { return null; }
+  if (!raw || raw.v !== 1 || typeof raw.savedAt !== 'number') return null;
+  if (now - raw.savedAt > SAVED_REQUEST_TTL_MS || raw.savedAt > now + 60_000) return null;
+  const defaults = defaultPickerOptions();
+  const saved = raw.options && typeof raw.options === 'object' ? raw.options : {};
+  const options = { ...defaults };
+  for (const key of Object.keys(defaults)) {
+    const v = saved[key];
+    if (key === 'genreIds') {
+      if (Array.isArray(v)) options.genreIds = v.filter(n => Number.isInteger(n));
+    } else if (key === 'maxRuntime' || key === 'maxEpisodeRuntime' || key === 'minScore' || key === 'language') {
+      if (v === null || typeof v === typeof (key === 'language' ? '' : 0)) options[key] = v;
+    } else if (typeof v === typeof defaults[key]) {
+      options[key] = v;
+    }
+  }
+  if (options.mediaType !== 'movie' && options.mediaType !== 'tv') options.mediaType = 'movie';
+  const step = Number.isInteger(raw.step) ? Math.max(0, Math.min(PICKER_STEPS.length - 1, raw.step)) : PICKER_STEPS.length - 1;
+  const mode = raw.mode === 'surprise' ? 'surprise' : 'five';
+  return { options, step, mode };
 }
 
 /**
@@ -533,21 +586,34 @@ async function loadWatchedIds(userId) {
 }
 
 /**
- * State for the picker panel. Nothing is fetched until go().
+ * @typedef {{
+ *   getItem: (key: string) => string|null|Promise<string|null>,
+ *   setItem: (key: string, value: string) => unknown,
+ *   removeItem: (key: string) => unknown,
+ * }} PickerStorage
+ */
+
+/**
+ * State for the picker panel. Nothing is fetched from TMDB until go(), bar
+ * the genre catalog the questions need. Without Premium (enabled false) the
+ * viewer can answer every question; go() then opens the 'locked' phase (the
+ * upgrade pop-up) and keeps their answers in storage. Back with Premium,
+ * those answers are restored and drawn straight away.
  * @param {{
  *   enabled: boolean,
+ *   storage?: PickerStorage|null,
  *   userId?: string|null,
  *   watchlistItems: any[],
  *   streamingProviders: any[]|null|undefined,
  *   region: string,
  * }} opts
  */
-export function useTonightPicker({ enabled, userId, watchlistItems, streamingProviders, region }) {
+export function useTonightPicker({ enabled, storage = null, userId, watchlistItems, streamingProviders, region }) {
   const providerIds = useMemo(() => pickerProviderIds(streamingProviders), [streamingProviders]);
   const hasServices = providerIds.length > 0;
 
   const [options, setOptions] = useState(() => defaultPickerOptions({ hasServices }));
-  const [phase, setPhase] = useState(/** @type {'setup'|'spinning'|'results'|'empty'|'error'} */ ('setup'));
+  const [phase, setPhase] = useState(/** @type {'setup'|'locked'|'spinning'|'results'|'empty'|'error'} */ ('setup'));
   const [mode, setMode] = useState(/** @type {'five'|'surprise'} */ ('five'));
   const [step, setStep] = useState(0);
   const [results, setResults] = useState(/** @type {PickerCandidate[]} */ ([]));
@@ -569,14 +635,42 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
     }
   }, [hasServices]);
 
+  // Free viewers answer the questions too, so the genre list loads for everyone.
   useEffect(() => {
-    if (!enabled) return;
     let alive = true;
     tmdb.getGenreCatalog()
       .then(c => { if (alive && c) setCatalog({ movie: c.movie ?? [], tv: c.tv ?? [] }); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [enabled]);
+  }, []);
+
+  // Answers kept from the upgrade pop-up. Restored once per viewer; with
+  // Premium, `resume` then draws them (see the effect after go()).
+  const storageKey = savedRequestKey(userId);
+  const [resume, setResume] = useState(/** @type {'five'|'surprise'|null} */ (null));
+  const restoredFor = useRef(/** @type {string|null} */ (null));
+  useEffect(() => {
+    if (!storage || restoredFor.current === storageKey) return;
+    restoredFor.current = storageKey;
+    let alive = true;
+    Promise.resolve()
+      .then(() => storage.getItem(storageKey))
+      .then(value => {
+        const saved = parseSavedRequest(value);
+        if (!alive) return;
+        if (!saved) {
+          if (value != null) Promise.resolve(storage.removeItem(storageKey)).catch(() => {});
+          return;
+        }
+        servicesDefaulted.current = true;
+        setOptions(saved.options);
+        setStep(saved.step);
+        setMode(saved.mode);
+        setResume(saved.mode);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [storage, storageKey]);
 
   const genres = useMemo(() => pickerGenres(catalog, options), [catalog, options]);
 
@@ -644,8 +738,17 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
   }, [options, hasServices, hasWatchlist, region, userId, watchlistItems, providerIds]);
 
   const go = useCallback(async (nextMode = 'five') => {
-    if (!enabled) return;
     setMode(nextMode);
+    if (!enabled) {
+      setPhase('locked');
+      if (storage) {
+        Promise.resolve(storage.setItem(storageKey, serialiseSavedRequest({ options, step, mode: nextMode })))
+          .catch(() => {});
+      }
+      return;
+    }
+    setResume(null);
+    if (storage) Promise.resolve(storage.removeItem(storageKey)).catch(() => {});
     setPhase('spinning');
     const started = Date.now();
     let picked = [];
@@ -661,10 +764,19 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
     setResults(picked);
     setCanSpinAgain(more);
     setPhase(failed ? 'error' : picked.length ? 'results' : 'empty');
-  }, [enabled, draw]);
+  }, [enabled, draw, storage, storageKey, options, step]);
+
+  // Back from upgrading with a kept request: draw it without another tap.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a one-off draw once storage and the Premium check agree
+    if (enabled && resume) go(resume);
+  }, [enabled, resume, go]);
 
   const spinAgain = useCallback(() => go(mode), [go, mode]);
   const backToOptions = useCallback(() => setPhase('setup'), []);
+  // Closing the pop-up keeps the kept answers: upgrading from the plans page
+  // later still lands the viewer on their picks.
+  const closeLock = useCallback(() => setPhase('setup'), []);
   const goToStep = useCallback((i) => {
     setStep(Math.max(0, Math.min(PICKER_STEPS.length - 1, i)));
     setPhase('setup');
@@ -682,6 +794,6 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
     phase, mode, results, canSpinAgain,
     step, goToStep, nextStep, prevStep,
     sentence, filtersSummary, answers,
-    go, spinAgain, backToOptions,
+    go, spinAgain, backToOptions, closeLock,
   };
 }

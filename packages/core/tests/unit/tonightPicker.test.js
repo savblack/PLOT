@@ -15,6 +15,10 @@ import {
   pickerFiltersSummary,
   pickerAnswers,
   _resetPickerCache,
+  savedRequestKey,
+  serialiseSavedRequest,
+  parseSavedRequest,
+  SAVED_REQUEST_TTL_MS,
 } from '../../tonightPicker.js';
 
 // Ids here are opaque fixture values fed to a fake client, never real TMDB lookups.
@@ -237,4 +241,34 @@ test('pickerFiltersSummary and pickerAnswers summarise the options', () => {
   assert.equal(pickerFiltersSummary(opts({ onlyServices: false, hideKids: false }), { hasServices: true }), 'None');
   const a = pickerAnswers(opts({ maxRuntime: 90, genreIds: [COMEDY], minScore: 8 }), { genres: [{ id: COMEDY, name: 'Comedy' }] });
   assert.deepEqual(a, { type: 'A movie', length: 'Under 90 min', kind: 'Comedy', quality: '8+' });
+});
+
+test('a saved request round-trips and keys by viewer', () => {
+  const options = { ...defaultPickerOptions({ hasServices: true }), mediaType: 'tv', genreIds: [1, 2], minScore: 7, language: 'ko' };
+  const now = 1_000_000;
+  const back = parseSavedRequest(serialiseSavedRequest({ options, step: 3, mode: 'surprise' }, now), now + 1000);
+  assert.deepEqual(back, { options, step: 3, mode: 'surprise' });
+  assert.notEqual(savedRequestKey('a'), savedRequestKey('b'));
+  assert.equal(savedRequestKey(null), savedRequestKey(undefined));
+});
+
+test('a saved request that is stale, malformed or odd is dropped or cleaned', () => {
+  const now = 5_000_000;
+  const good = serialiseSavedRequest({ options: defaultPickerOptions(), step: 1, mode: 'five' }, now);
+  assert.equal(parseSavedRequest(good, now + SAVED_REQUEST_TTL_MS + 1), null);
+  assert.equal(parseSavedRequest('not json', now), null);
+  assert.equal(parseSavedRequest(null, now), null);
+  assert.equal(parseSavedRequest(JSON.stringify({ v: 2, savedAt: now }), now), null);
+  const odd = JSON.stringify({
+    v: 1, savedAt: now, step: 99, mode: 'lots',
+    options: { mediaType: 'radio', genreIds: [1, 'x', 2.5], maxRuntime: '120', hideKids: 'yes', extra: true },
+  });
+  const cleaned = parseSavedRequest(odd, now);
+  assert.equal(cleaned.options.mediaType, 'movie');
+  assert.deepEqual(cleaned.options.genreIds, [1]);
+  assert.equal(cleaned.options.maxRuntime, null);
+  assert.equal(cleaned.options.hideKids, true);
+  assert.equal('extra' in cleaned.options, false);
+  assert.equal(cleaned.step, 3);
+  assert.equal(cleaned.mode, 'five');
 });

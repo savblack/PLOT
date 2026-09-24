@@ -1,10 +1,10 @@
-// Pick a Plot (Premium): the tonight picker, movies and TV. Four questions,
+// Pick for Me (Premium): the tonight picker, movies and TV. Four questions,
 // a filters panel, and a sentence that fills in as the viewer answers. No
 // claims about playback or tailored recommendations: results are "the plot
 // lines you asked for", i.e. the viewer's own answers.
 export const TONIGHT_PICKER = {
-  // Title comes from the nav label (Pick a Plot); this is the page subline.
-  subtitle: 'Four quick questions, then your picks for tonight.',
+  // Title comes from the nav label (Pick for Me); this is the page subline.
+  subtitle: 'Less deciding. More watching.',
   progress: (step, total) => `Question ${step} of ${total}`,
 
   steps: {
@@ -147,8 +147,23 @@ export const TONIGHT_PICKER = {
   emptyBody: 'Try more time, fewer genres, or turn off a filter.',
   loadError: 'Could not reach TMDB. Try again in a moment.',
 
-  gateTitle: 'Pick a Plot is part of plot Premium',
-  gateBody: 'Choose a movie or a show, how much time you have and the services you use. Get your picks for tonight, or let a surprise pick make the decision.',
+  // The upgrade pop-up. Free viewers answer every question; Go and Surprise
+  // me open this over blurred placeholder picks. No result counts: tight
+  // answers can return fewer than five.
+  gate: {
+    label: 'plot Premium',
+    brand: 'plot',
+    premium: 'Premium',
+    title: 'Your request is ready. Unlock your picks.',
+    body: 'Movie or show, how long you’ve got, what kind of story. Pick for Me does the scrolling for you.',
+    benefits: [
+      { title: 'A shortlist, every time you ask', body: 'Answer a few quick questions and get a shortlist that fits your night.' },
+      { title: 'Only what you can watch', body: 'Limit picks to your streaming services, your watchlist, or both.' },
+      { title: 'Can’t decide? Surprise me', body: 'One tap, one pick. Spin again if it isn’t the one.' },
+    ],
+    close: 'Close',
+    locked: 'Premium feature',
+  },
 };
 
 // A feeling word per TMDB genre id, shown under the genre on question 3 and

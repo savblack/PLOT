@@ -115,7 +115,7 @@ export const FeedbackEntry = { args: signedIn, render: (args) => <FeedbackFlow {
 export const Dark = { args: signedIn, decorators: [(Story) => <div data-theme="dark"><Story /></div>] };
 
 // Premium destinations carry a pill for Free viewers only.
-export const FreeViewerOnPickAPlot = { args: { ...signedIn, currentView: 'tonight' } };
-export const PremiumViewerOnPickAPlot = {
+export const FreeViewerOnPickForMe = { args: { ...signedIn, currentView: 'tonight' } };
+export const PremiumViewerOnPickForMe = {
   args: { ...signedIn, currentView: 'tonight', profile: { ...profile, is_premium: true } },
 };

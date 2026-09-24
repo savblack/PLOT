@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
@@ -11,12 +11,13 @@ import {
 import { TONIGHT_PICKER as T } from '../copy/tonightPicker.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
+import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { SettingsSwitch } from './SettingsPage.jsx';
 import './TonightView.css';
 
-/* Pick a Plot. Phone: one column, a Filters panel that folds away, and a
+/* Pick for Me. Phone: one column, a Filters panel that folds away, and a
    sticky bar with the sentence and Go. Desktop (>=1024px): the same 264px
    side column of cards as History and Settings (your request, the four
    questions, filters) beside the current question. Both layouts render; CSS
@@ -34,16 +35,62 @@ const IconMovie = () => (
 );
 const IconTv = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="13" rx="2" /><path d="M8 21h8M12 18v3" /></svg>;
 
-function PremiumGate({ navigate }) {
-  useEffect(() => { track(EVENTS.PREMIUM_GATE_HIT, { feature: 'tonight_picker' }); }, []);
+const IconLock = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>;
+const IconClose = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>;
+
+/* What sits behind the upgrade pop-up: the results layout with no titles or
+   images, blurred. Nothing here is fetched. */
+function LockedPreview() {
   return (
-    <div className="empty-state tonight-gate">
-      <div className="empty-title">{T.gateTitle}</div>
-      <div className="empty-body">{T.gateBody}</div>
-      <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate(premiumPlansPath('/tonight'))}>
-        {PLANS_PAGE.previewAction}
-      </button>
+    <div className="tonight-locked-preview" aria-hidden="true">
+      <div className="tonight-question-title">{T.heading[pickerTimeOfDay()]}</div>
+      <div className="tonight-results-list">
+        <div className="tonight-hero tonight-hero--placeholder"><span className="tonight-hero-body"><span className="tonight-hero-chip">{T.topPick}</span></span></div>
+        <div className="tonight-cards">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="tonight-card tonight-card--placeholder">
+              <span className="tonight-card-poster" />
+              <span className="tonight-card-body"><span className="tonight-placeholder-line" /><span className="tonight-placeholder-line tonight-placeholder-line--short" /></span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
+  );
+}
+
+/* Free viewers answer every question; Go and Surprise me open this. Their
+   answers are kept (see useTonightPicker), so upgrading lands them back on
+   their request with the picks drawn. */
+function UnlockDialog({ picker, navigate }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    track(EVENTS.PREMIUM_GATE_HIT, { feature: 'tonight_picker' });
+    ref.current?.focus();
+  }, []);
+  return (
+    <section ref={ref} className="tonight-unlock" role="dialog" aria-modal="false" aria-labelledby="tonight-unlock-title" tabIndex={-1}
+      onKeyDown={(e) => { if (e.key === 'Escape') picker.closeLock(); }}>
+      <button type="button" className="tonight-unlock-close" aria-label={T.gate.close} onClick={picker.closeLock}><IconClose /></button>
+      <span className="tonight-unlock-badge" aria-label={T.gate.label}>
+        <span className="tonight-unlock-brand" aria-hidden="true">{T.gate.brand}</span>
+        <span aria-hidden="true">{T.gate.premium}</span>
+      </span>
+      <h2 id="tonight-unlock-title" className="tonight-unlock-title">{T.gate.title}</h2>
+      <p className="tonight-unlock-body">{T.gate.body}</p>
+      <ul className="tonight-unlock-benefits">
+        {T.gate.benefits.map(b => (
+          <li key={b.title}>
+            <IconTick />
+            <span><span className="tonight-unlock-benefit-title">{b.title}</span><span className="tonight-unlock-benefit-body">{b.body}</span></span>
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="btn btn-primary tonight-unlock-cta" onClick={() => navigate(premiumPlansPath('/tonight'))}>
+        {PLANS_PAGE.upgradeAction}
+      </button>
+      <p className="tonight-unlock-price">{PLANS_PAGE.premium.priceSummary}</p>
+    </section>
   );
 }
 
@@ -243,7 +290,7 @@ function FiltersPanel({ picker }) {
 }
 
 /* Desktop side column: the same card and filter-row styles History uses. */
-function SideColumn({ picker, results }) {
+function SideColumn({ picker, results, premium }) {
   const { options, setOption } = picker;
   const tickRow = (label, on, onToggle, disabled) => (
     <button type="button" role="checkbox" aria-checked={on} disabled={disabled}
@@ -266,7 +313,7 @@ function SideColumn({ picker, results }) {
           ) : (
             <>
               <button type="button" className="btn btn-secondary btn-sm tonight-surprise" onClick={() => picker.go('surprise')}><IconSparkle />{T.surpriseMe}</button>
-              <button type="button" className="btn btn-primary btn-sm tonight-go" onClick={() => picker.go('five')}>{T.go}</button>
+              <button type="button" className="btn btn-primary btn-sm tonight-go" onClick={() => picker.go('five')} aria-label={premium ? undefined : `${T.go}, ${T.gate.locked}`}>{!premium && <IconLock />}{T.go}</button>
             </>
           )}
         </div>
@@ -411,16 +458,21 @@ function Results({ picker, onOpen }) {
 /* Presentational: every piece of state arrives as a prop so Storybook can
    render each state without an auth session or network. */
 export function TonightPage({ premium, picker, onOpen, navigate }) {
-  if (!premium) return <div className="tonight-view"><PremiumGate navigate={navigate} /></div>;
+  const locked = picker.phase === 'locked';
   const inResults = picker.phase === 'results' || picker.phase === 'empty' || picker.phase === 'error';
   const spinning = picker.phase === 'spinning';
 
   return (
     <div className="tonight-view">
       <div className="tonight-layout">
-        <SideColumn picker={picker} results={inResults} />
+        <SideColumn picker={picker} results={inResults} premium={premium} />
         <div className="tonight-main">
-          {spinning ? <Spinner mode={picker.mode} />
+          {locked ? (
+            <div className="tonight-locked">
+              <LockedPreview />
+              <UnlockDialog picker={picker} navigate={navigate} />
+            </div>
+          ) : spinning ? <Spinner mode={picker.mode} />
             : inResults ? <Results picker={picker} onOpen={onOpen} />
             : (
               <>
@@ -433,7 +485,7 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
       </div>
 
       {/* Phone only: the sentence and actions stay in reach above the tab bar. */}
-      {!spinning && (
+      {!spinning && !locked && (
         <div className="tonight-bar">
           {inResults ? (
             <div className="tonight-bar-actions">
@@ -445,7 +497,7 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
               <Sentence parts={picker.sentence} />
               <div className="tonight-bar-actions">
                 <button type="button" className="btn btn-secondary tonight-surprise" onClick={() => picker.go('surprise')}><IconSparkle />{T.surpriseMe}</button>
-                <button type="button" className="btn btn-primary tonight-go" onClick={() => picker.go('five')}>{T.go}</button>
+                <button type="button" className="btn btn-primary tonight-go" onClick={() => picker.go('five')} aria-label={premium ? undefined : `${T.go}, ${T.gate.locked}`}>{!premium && <IconLock />}{T.go}</button>
               </div>
             </>
           )}
@@ -455,6 +507,8 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
   );
 }
 
+const PICKER_STORAGE = { getItem: (k) => readStorage(k), setItem: writeStorage, removeItem: removeStorage };
+
 export default function TonightView() {
   const { user, profile, watchlist, openPanel } = useApp();
   const navigate = useNavigate();
@@ -462,6 +516,7 @@ export default function TonightView() {
 
   const picker = useTonightPicker({
     enabled: premium,
+    storage: PICKER_STORAGE,
     userId: user?.id,
     watchlistItems: watchlist.items,
     streamingProviders: profile?.streaming_providers,

@@ -160,6 +160,8 @@ svg { stroke-width: 1.5; }
    the sidebar breakpoint, where the app header still carries the title. */
 .app-page-heading.app-page-heading--with-subtitle { margin-bottom: .5rem; }
 .app-page-heading.app-page-heading--guide { margin-bottom: 0; }
+/* Pick for Me drops its subline on phone, where the questions need the room. */
+.app-page-subtitle--desktop-only { display: none; }
 .app-page-subtitle {
   margin: 0;
   padding: 0 var(--gut);
@@ -471,6 +473,7 @@ svg { stroke-width: 1.5; }
   .app-page-heading {
     display: block;
   }
+  .app-page-subtitle--desktop-only { display: block; }
 
   .app-page-breadcrumb {
     display: inline-flex;

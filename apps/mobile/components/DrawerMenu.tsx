@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { id: 'search',   label: 'Search',   path: '/(app)/search'   },
   { id: 'calendar', label: 'Calendar', path: '/(app)/calendar' },
   { id: 'my-lists', label: 'My Lists', path: '/(app)/my-lists' },
-  { id: 'tonight',  label: 'Pick a Plot', path: '/(app)/tonight', premium: true },
+  { id: 'tonight',  label: 'Pick for Me', path: '/(app)/tonight', premium: true },
   // Guide, Top 5 and History used to sit here as destinations of their own.
   // None is one on web: Guide is a sub-tab of Home, Top 5 a section of My
   // Lists, History a tab of it. This list now matches APP_NAV_ITEMS.

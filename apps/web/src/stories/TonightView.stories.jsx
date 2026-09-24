@@ -27,7 +27,7 @@ const POOL = [
 
 const noop = () => {};
 
-function useFakePicker({ phase: initialPhase = 'setup', step: initialStep = 0, pool = POOL, hasServices = true, hasWatchlist = true, preset = {} }) {
+function useFakePicker({ phase: initialPhase = 'setup', step: initialStep = 0, pool = POOL, hasServices = true, hasWatchlist = true, preset = {}, premium = true }) {
   const [options, setOptions] = useState(() => ({ ...defaultPickerOptions({ hasServices }), ...preset }));
   const [phase, setPhase] = useState(initialPhase);
   const [mode, setMode] = useState('five');
@@ -35,6 +35,7 @@ function useFakePicker({ phase: initialPhase = 'setup', step: initialStep = 0, p
   const [results, setResults] = useState(() => (initialPhase === 'results' ? pool.slice(0, 5) : []));
   const go = (next = 'five') => {
     setMode(next);
+    if (!premium) { setPhase('locked'); return; }
     setPhase('spinning');
     setTimeout(() => {
       const picked = drawFromPool(pool, PICKER_MODES[next]);
@@ -57,13 +58,13 @@ function useFakePicker({ phase: initialPhase = 'setup', step: initialStep = 0, p
     sentence,
     filtersSummary: pickerFiltersSummary(options, { hasServices }),
     answers: pickerAnswers(options, { genres: GENRES }),
-    go, spinAgain: () => go(mode), backToOptions: () => setPhase('setup'),
+    go, spinAgain: () => go(mode), backToOptions: () => setPhase('setup'), closeLock: () => setPhase('setup'),
   };
 }
 
-function Story(props) {
-  const picker = useFakePicker(props);
-  return <TonightPage premium picker={picker} onOpen={noop} navigate={noop} />;
+function Story({ premium = true, ...props }) {
+  const picker = useFakePicker({ ...props, premium });
+  return <TonightPage premium={premium} picker={picker} onOpen={noop} navigate={noop} />;
 }
 
 export default {
@@ -81,6 +82,6 @@ export const Spinning = { render: () => <Story phase="spinning" /> };
 export const Results = { render: () => <Story phase="results" preset={{ maxRuntime: 120, genreIds: [35, 53], era: '2010s', minScore: 7 }} /> };
 export const NothingFits = { render: () => <Story phase="empty" pool={[]} /> };
 export const NoServicesOrWatchlist = { render: () => <Story hasServices={false} hasWatchlist={false} /> };
-export const FreeGate = {
-  render: () => <TonightPage premium={false} picker={{}} onOpen={noop} navigate={noop} />,
-};
+// Free: every question works; Go and Surprise me open the upgrade pop-up.
+export const FreeAnswering = { render: () => <Story premium={false} step={3} preset={{ maxRuntime: 120, genreIds: [35, 53], era: '2010s', minScore: 7 }} /> };
+export const FreeUnlockPopUp = { render: () => <Story premium={false} phase="locked" step={3} preset={{ maxRuntime: 120, genreIds: [35, 53], era: '2010s', minScore: 7 }} /> };

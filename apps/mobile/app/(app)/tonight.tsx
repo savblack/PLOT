@@ -1,16 +1,19 @@
 /**
- * Pick a Plot — /(app)/tonight (mirrors web TonightView's phone layout).
+ * Pick for Me — /(app)/tonight (mirrors web TonightView's phone layout).
  * Premium. Four questions, a Filters panel, and a bar above the tab bar with
  * the sentence and Surprise me / Go. Options, the sentence, the draw and the
  * time-of-day heading all come from @plot/core/tonightPicker.js; this file
- * only renders. Free viewers see the in-app Premium preview (Settings), never
- * an external purchase link.
+ * only renders. Free viewers answer every question; Go opens the upgrade
+ * pop-up over blurred placeholder picks, and Upgrade goes to the in-app
+ * Premium preview (Settings), never an external purchase link.
  */
 import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Animated, Easing, AccessibilityInfo, Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { BlurView } from 'expo-blur';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -30,6 +33,13 @@ import { Palette, fontFamily, fontSize, spacing, posterUrl, backdropUrl } from '
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 
 type Styles = ReturnType<typeof makeStyles>;
+
+// Keeps a Free viewer's answers through upgrading (key and format: core).
+const PICKER_STORAGE = {
+  getItem: (key: string) => AsyncStorage.getItem(key),
+  setItem: (key: string, value: string) => AsyncStorage.setItem(key, value),
+  removeItem: (key: string) => AsyncStorage.removeItem(key),
+};
 type Picker = ReturnType<typeof useTonightPicker>;
 type StepKey = 'type' | 'length' | 'kind' | 'quality';
 
@@ -346,8 +356,67 @@ function Results({ picker, onOpen, styles, reduceMotion }: { picker: Picker; onO
   );
 }
 
+function Lock({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={4} y={11} width={16} height={10} rx={2} /><Path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </Svg>
+  );
+}
+
+/* The upgrade pop-up over the results layout with no titles or images,
+   blurred. Nothing behind it is fetched. */
+function Locked({ picker, onUpgrade, styles, colors, dark }: {
+  picker: Picker; onUpgrade: () => void; styles: Styles; colors: Palette; dark: boolean;
+}) {
+  return (
+    <View style={styles.locked}>
+      <View style={{ gap: 12 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Text style={styles.qTitle}>{T.heading[pickerTimeOfDay()]}</Text>
+        <View style={[styles.hero, { backgroundColor: colors.textSecondary }]} />
+        {[0, 1, 2, 3].map(i => (
+          <View key={i} style={styles.card}>
+            <View style={styles.cardPoster} />
+            <View style={{ flex: 1, gap: 8 }}>
+              <View style={styles.placeholderLine} />
+              <View style={[styles.placeholderLine, { width: '50%', height: 10 }]} />
+            </View>
+          </View>
+        ))}
+      </View>
+      <BlurView intensity={28} tint={dark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+      <View style={styles.unlock} accessibilityViewIsModal>
+        <TouchableOpacity onPress={picker.closeLock} style={styles.unlockClose} accessibilityRole="button" accessibilityLabel={T.gate.close} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round"><Path d="M18 6 6 18M6 6l12 12" /></Svg>
+        </TouchableOpacity>
+        <View style={styles.unlockBadge} accessible accessibilityLabel={T.gate.label}>
+          <Text style={styles.unlockBrand}>{T.gate.brand}</Text>
+          <Text style={styles.unlockPremium}>{T.gate.premium}</Text>
+        </View>
+        <Text style={styles.unlockTitle} accessibilityRole="header">{T.gate.title}</Text>
+        <Text style={styles.unlockBody}>{T.gate.body}</Text>
+        <View style={{ gap: 12 }}>
+          {T.gate.benefits.map(b => (
+            <View key={b.title} style={{ flexDirection: 'row', gap: 10 }}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 2 }}><Path d="M20 6 9 17l-5-5" /></Svg>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={styles.unlockBenefitTitle}>{b.title}</Text>
+                <Text style={styles.unlockBenefitBody}>{b.body}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+        <TouchableOpacity onPress={onUpgrade} style={[styles.btn, styles.btnPrimary, styles.unlockCta]} accessibilityRole="button">
+          <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{PLANS_PAGE.upgradeAction}</Text>
+        </TouchableOpacity>
+        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.priceSummary}</Text>
+      </View>
+    </View>
+  );
+}
+
 export default function TonightScreen() {
-  const { colors } = useTheme();
+  const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -358,6 +427,7 @@ export default function TonightScreen() {
 
   const picker = useTonightPicker({
     enabled: premium,
+    storage: PICKER_STORAGE,
     userId,
     watchlistItems: watchlist.items,
     streamingProviders: profile?.streaming_providers,
@@ -366,6 +436,7 @@ export default function TonightScreen() {
   const open = (item: PickerCandidate) => openPanel(item.id, item.media_type);
   const inResults = picker.phase === 'results' || picker.phase === 'empty' || picker.phase === 'error';
   const spinning = picker.phase === 'spinning';
+  const locked = picker.phase === 'locked';
   const first = picker.step === 0;
   const last = picker.step === PICKER_STEPS.length - 1;
 
@@ -385,15 +456,16 @@ export default function TonightScreen() {
       </View>
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}>
-        <Text style={styles.pageTitle}>Pick a Plot</Text>
-        <Text style={styles.pageSub}>{T.subtitle}</Text>
+        <Text style={styles.pageTitle}>Pick for Me</Text>
 
-        {!premium ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{T.gateTitle}</Text>
-            <Text style={styles.emptyBody}>{T.gateBody}</Text>
-            {btn(PLANS_PAGE.previewAction, () => router.push({ pathname: '/(app)/settings', params: { premium: '1' } }), true)}
-          </View>
+        {locked ? (
+          <Locked
+            picker={picker}
+            onUpgrade={() => router.push({ pathname: '/(app)/settings', params: { premium: '1' } })}
+            styles={styles}
+            colors={colors}
+            dark={resolved === 'dark'}
+          />
         ) : spinning ? (
           <Spinner slots={Math.min(3, PICKER_MODES[picker.mode])} styles={styles} reduceMotion={reduceMotion} />
         ) : inResults ? (
@@ -415,7 +487,7 @@ export default function TonightScreen() {
         )}
       </ScrollView>
 
-      {premium && !spinning && (
+      {!spinning && !locked && (
         <View style={[styles.bar, { marginBottom: tabBarBottom(insets.bottom) + TAB_BAR_HEIGHT }]}>
           {inResults ? (
             <View style={styles.barActions}>
@@ -427,7 +499,9 @@ export default function TonightScreen() {
               <Sentence parts={picker.sentence} styles={styles} />
               <View style={styles.barActions}>
                 {btn(T.surpriseMe, () => picker.go('surprise'), false, <Sparkle color={colors.textPrimary} />)}
-                <TouchableOpacity onPress={() => picker.go('five')} style={[styles.btn, styles.btnPrimary, { paddingHorizontal: 32 }]} accessibilityRole="button">
+                <TouchableOpacity onPress={() => picker.go('five')} style={[styles.btn, styles.btnPrimary, { paddingHorizontal: 32 }]} accessibilityRole="button"
+                  accessibilityLabel={premium ? undefined : `${T.go}, ${T.gate.locked}`}>
+                  {!premium && <Lock color={colors.onAccentFill} />}
                   <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{T.go}</Text>
                 </TouchableOpacity>
               </View>
@@ -443,8 +517,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   backBtn: { padding: 4 },
-  pageTitle: { fontFamily: fontFamily.display, fontSize: fontSize.hero, color: colors.textPrimary },
-  pageSub: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 21, marginTop: spacing.xs, marginBottom: spacing.lg },
+  pageTitle: { fontFamily: fontFamily.display, fontSize: fontSize.hero, color: colors.textPrimary, marginBottom: spacing.lg },
 
   qTitle: { fontFamily: fontFamily.display, fontSize: 30, lineHeight: 33, color: colors.textPrimary },
   qSub: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginTop: 6 },
@@ -526,6 +599,27 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     overflow: 'hidden', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3,
     backgroundColor: colors.accentSecondaryFill, color: colors.onAccentFill, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
   },
+
+  locked: { position: 'relative', minHeight: 640 },
+  placeholderLine: { height: 14, width: '80%', borderRadius: 999, backgroundColor: colors.borderStrong },
+  unlock: {
+    position: 'absolute', top: 48, left: 0, right: 0, gap: 16, padding: 22,
+    backgroundColor: colors.surface, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
+  },
+  unlockClose: { position: 'absolute', top: 10, right: 10, width: 40, height: 40, borderRadius: 999, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
+  // "plot Premium": the wordmark in Gabarito, both words on one baseline.
+  unlockBadge: {
+    alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'baseline', gap: 3,
+    paddingHorizontal: 12, paddingTop: 4, paddingBottom: 5, borderRadius: 999, backgroundColor: colors.accentFill,
+  },
+  unlockBrand: { fontFamily: fontFamily.display, fontSize: 16, letterSpacing: -0.48, color: colors.onAccentFill },
+  unlockPremium: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.onAccentFill },
+  unlockTitle: { fontFamily: fontFamily.display, fontSize: 26, lineHeight: 28, color: colors.textPrimary, paddingRight: 32 },
+  unlockBody: { fontFamily: fontFamily.sans, fontSize: 15, lineHeight: 23, color: colors.textSecondary },
+  unlockBenefitTitle: { fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.textPrimary },
+  unlockBenefitBody: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 21, color: colors.textSecondary },
+  unlockCta: { justifyContent: 'center', minHeight: 48, marginTop: 4 },
+  unlockPrice: { fontFamily: fontFamily.sans, fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: -6 },
 
   empty: { alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, textAlign: 'center' },

@@ -1,5 +1,5 @@
 // Shared plan preview for web and mobile. Planned features are never shown as live entitlements.
-// Pricing (A$5/month or A$40/year) is tentative but likely; checkout stays closed.
+// Pricing is US$3/month or US$25/year, shown in local currency at checkout (Stripe Adaptive Pricing).
 export const PLANS_PAGE = {
   back: '← Back',
   backToApp: '← Back to plot',
@@ -24,10 +24,10 @@ export const PLANS_PAGE = {
   premium: {
     name: 'Premium',
     tagline: 'For the evenings you want to spend watching.',
-    price: 'A$5',
+    price: '$3',
     period: '/month',
-    annual: 'or A$40/year',
-    priceSummary: 'A$5/month or A$40/year',
+    annual: 'or $25/year',
+    priceSummary: '$3/month or $25/year',
     availability: 'Premium is in the works. These features are a preview of what’s coming. Pricing is tentative.',
     manageSubscription: 'Manage subscription',
     opening: 'Opening…',
@@ -65,8 +65,8 @@ export const PLANS_PAGE = {
   premiumFeatures: [
     { id: 'watchTogether', label: 'Find something you both want to watch', highlight: true,
       description: 'Find the overlap in your watchlists, then choose together. Invite friends to a shared list so everyone can add their ideas. They can join for free.' },
-    { id: 'filmPicker', label: 'Pick a Plot', highlight: true,
-      description: 'Choose a movie or a show, how much time you have and the services you use. Get three options for tonight, or let a random pick make the decision.' },
+    { id: 'filmPicker', label: 'Pick for Me', highlight: true,
+      description: 'Choose a movie or a show, how much time you have and the services you use. Get a shortlist for tonight, or let a random pick make the decision.' },
     { id: 'autoSync', label: 'Automatic Plex and Trakt syncing', highlight: true,
       description: 'Keep watch history in sync automatically. Manual imports stay free. Planned as Premium; not claimed as instant or verified two-way syncing yet.' },
     { id: 'fullStats', label: 'Deeper viewing stats', highlight: true,
@@ -97,7 +97,7 @@ export const PLANS_PAGE = {
   stories: [
     { id: 'picker', kicker: 'FOR TONIGHT', title: 'Something you can actually watch tonight.',
       description: 'An hour and a half to spare? Narrow the choices by runtime and the services you use. Pick from a shortlist, or let plot choose at random.',
-      detail: 'Pick a Plot', example: ['90 minutes to spare', 'Your streaming services', 'A shorter shortlist'],
+      detail: 'Pick for Me', example: ['90 minutes to spare', 'Your streaming services', 'A shorter shortlist'],
       caption: 'Your time + your services → tonight’s options' },
     { id: 'sync', kicker: 'FOR YOUR HISTORY', title: 'Keep Plex and Trakt in step with plot.',
       description: 'Automatic syncing is planned for Premium so watch history stays current without another manual import. Manual imports stay free.',
@@ -118,7 +118,7 @@ export const PLANS_PAGE = {
   ],
   faqTitle: 'Before you ask',
   faqs: [
-    { q: 'Can I upgrade now?', a: 'Not yet. Premium is planned at A$5/month or A$40/year (tentative). The upgrade button shows a coming-soon message; it does not start a payment or a trial.' },
+    { q: 'Can I upgrade now?', a: 'Not yet. Premium is planned at $3/month or $25/year. The upgrade button shows a coming-soon message; it does not start a payment or a trial.' },
     { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Movie and episode release notifications are planned for Free. Free does not include personally tailored recommendations.' },
     { q: 'Will plot recommend titles just for me?', a: 'Not yet. Free includes More like this on a title page. Personally tailored recommendations need more usage and aren’t planned until Premium can help pay for them.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. Joining a Premium host’s collaborative lists and shared watch sessions is planned for Free. Premium is only needed to create or host them.' },
