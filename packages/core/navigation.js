@@ -12,7 +12,7 @@ export const APP_NAV_ITEMS = [
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   // Pick a Plot, the tonight picker (Premium). Free viewers land on the Premium gate,
   // never on fake results. Mobile lists it in its drawer (DrawerMenu.tsx).
-  { id: 'tonight', label: 'Pick a Plot', path: '/tonight', primary: false },
+  { id: 'tonight', label: 'Pick a Plot', path: '/tonight', primary: false, premium: true },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
 ];

@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { id: 'search',   label: 'Search',   path: '/(app)/search'   },
   { id: 'calendar', label: 'Calendar', path: '/(app)/calendar' },
   { id: 'my-lists', label: 'My Lists', path: '/(app)/my-lists' },
-  { id: 'tonight',  label: 'Pick a Plot', path: '/(app)/tonight' },
+  { id: 'tonight',  label: 'Pick a Plot', path: '/(app)/tonight', premium: true },
   // Guide, Top 5 and History used to sit here as destinations of their own.
   // None is one on web: Guide is a sub-tab of Home, Top 5 a section of My
   // Lists, History a tab of it. This list now matches APP_NAV_ITEMS.
@@ -121,6 +121,9 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                   <Text style={[styles.navLabel, active && styles.navLabelActive]}>
                     {item.label}
                   </Text>
+                  {'premium' in item && item.premium && !profile?.is_premium && (
+                    <Text style={styles.premiumPill}>{APP_SHELL.premium}</Text>
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -249,6 +252,23 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 13,
     borderRadius: radii.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  // Premium marker for Free viewers: the Beta pill's shape in the pink fill.
+  premiumPill: {
+    overflow: 'hidden',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    backgroundColor: colors.accentFill,
+    color: colors.onAccentFill,
+    fontFamily: fontFamily.sansBold,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   navItemActive: {
     backgroundColor: colors.accentDim,

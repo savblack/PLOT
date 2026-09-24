@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { APP_NAV_ITEMS, isActiveView } from '../navigation.js';
 import PlotLogo from './PlotLogo.jsx';
+import { isPremiumProfile } from '@plot/core/premium.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { IconHome, IconGuide, IconCalendar, IconLists, IconHistory, IconSearch, IconBell, IconSettings, IconTonight } from './navIcons.jsx';
@@ -63,6 +64,8 @@ export default function AppSidebar({
 }) {
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
   const [helpOpen, setHelpOpen] = useState(defaultHelpOpen);
+  // Free viewers see which destinations are Premium before they tap in.
+  const showPremiumPill = !isPremiumProfile(profile);
 
   return (
     <aside className="app-sidebar">
@@ -91,7 +94,7 @@ export default function AppSidebar({
 
       <div className="app-sidebar-scroll">
         <nav className="app-sidebar-nav">
-          {SIDEBAR_NAV_ITEMS.map(({ id, label }) => {
+          {SIDEBAR_NAV_ITEMS.map(({ id, label, premium }) => {
             const Icon = SIDEBAR_ICONS[id];
             return (
               <button
@@ -103,6 +106,7 @@ export default function AppSidebar({
               >
                 {Icon && <Icon />}
                 <span className="app-sidebar-label">{label}</span>
+                {premium && showPremiumPill && !collapsed && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
               </button>
             );
           })}
