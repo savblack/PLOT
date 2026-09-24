@@ -324,7 +324,6 @@ function Results({ picker, onOpen, styles, reduceMotion }: { picker: Picker; onO
         )}
         {rest.map((item, i) => {
           const uri = posterUrl(item.poster_path, 'w185');
-          const service = item.providers?.[0]?.name;
           return (
             <Reveal key={item.id} index={i + 1} reduceMotion={reduceMotion}>
               <TouchableOpacity style={styles.card} onPress={() => onOpen(item)} accessibilityRole="button" accessibilityLabel={item.title}>
@@ -332,10 +331,9 @@ function Results({ picker, onOpen, styles, reduceMotion }: { picker: Picker; onO
                 <View style={{ flex: 1, gap: 6 }}>
                   <Text style={styles.cardTitle}>{item.title}</Text>
                   <Text style={styles.cardMeta}>{resultMeta(item)}</Text>
-                  {(service || item.onWatchlist) && (
+                  {item.onWatchlist && (
                     <View style={styles.chips}>
-                      {service ? <Text style={[styles.chip, styles.chipService]}>{T.onService(service)}</Text> : null}
-                      {item.onWatchlist ? <Text style={styles.chip}>{T.onYourWatchlist}</Text> : null}
+                      <Text style={styles.chip}>{T.onYourWatchlist}</Text>
                     </View>
                   )}
                 </View>
@@ -526,9 +524,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
     overflow: 'hidden', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3,
-    backgroundColor: colors.bg, color: colors.textPrimary, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
+    backgroundColor: colors.accentSecondaryFill, color: colors.onAccentFill, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
   },
-  chipService: { backgroundColor: colors.accentSecondaryFill, color: colors.onAccentFill },
 
   empty: { alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, textAlign: 'center' },

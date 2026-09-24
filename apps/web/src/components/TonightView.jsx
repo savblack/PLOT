@@ -345,12 +345,10 @@ function resultMeta(item) {
 }
 
 function Chips({ item }) {
-  const service = item.providers?.[0]?.name;
-  if (!service && !item.onWatchlist) return null;
+  if (!item.onWatchlist) return null;
   return (
     <span className="tonight-chips">
-      {service && <span className="tonight-chip tonight-chip--service">{T.onService(service)}</span>}
-      {item.onWatchlist && <span className="tonight-chip">{T.onYourWatchlist}</span>}
+      <span className="tonight-chip">{T.onYourWatchlist}</span>
     </span>
   );
 }

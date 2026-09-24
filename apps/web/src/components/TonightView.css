@@ -366,12 +366,11 @@
 .tonight-chip {
   padding: 3px 10px;
   border-radius: var(--radius-pill);
-  background: var(--bg);
+  background: var(--accent-secondary-fill);
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--on-accent-fill);
 }
-.tonight-chip--service { background: var(--accent-secondary-fill); color: var(--on-accent-fill); }
 @keyframes tonight-reveal {
   from { opacity: 0; transform: translateY(14px) scale(0.97); }
   to { opacity: 1; transform: none; }

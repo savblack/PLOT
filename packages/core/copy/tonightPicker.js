@@ -133,7 +133,6 @@ export const TONIGHT_PICKER = {
   heading: { night: 'Tonight, sorted', day: 'Your shortlist' },
   resultsSubline: 'The plot lines you asked for. Tap to learn more.',
   topPick: 'Top pick',
-  onService: (name) => `On ${name}`,
   onYourWatchlist: 'On your watchlist',
   spinAgain: 'Spin again',
   changeOptions: 'Change options',
@@ -141,7 +140,8 @@ export const TONIGHT_PICKER = {
   episodeMinutes: (n) => `${n} min episodes`,
   seasons: (n) => (n === 1 ? '1 season' : `${n} seasons`),
   miniseries: 'Mini-series',
-  score10: (n) => `${n.toFixed(1)} on TMDB`,
+  // TMDB score with a star, e.g. "★ 7.8".
+  score10: (n) => `★ ${n.toFixed(1)}`,
 
   emptyTitle: 'Nothing fits those answers',
   emptyBody: 'Try more time, fewer genres, or turn off a filter.',
