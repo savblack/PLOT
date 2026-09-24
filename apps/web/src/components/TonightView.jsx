@@ -6,7 +6,8 @@ import { useApp } from '../hooks/useApp.js';
 import {
   useTonightPicker, pickerTimeOfDay,
   PICKER_STEPS, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
-  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES, FEATURED_GENRE_COUNT,
+  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES, FEATURED_GENRE_COUNT, FEATURED_GENRE_COUNT_WIDE,
+  pickerGenreTiles,
 } from '../hooks/useTonightPicker.js';
 import { TONIGHT_PICKER as T } from '../copy/tonightPicker.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
@@ -94,6 +95,20 @@ function UnlockDialog({ picker, navigate }) {
   );
 }
 
+// The desktop breakpoint TonightView.css switches layouts at.
+const WIDE_QUERY = '(min-width: 1024px)';
+function useWide() {
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia?.(WIDE_QUERY).matches);
+  useEffect(() => {
+    const mq = window.matchMedia?.(WIDE_QUERY);
+    if (!mq) return undefined;
+    const on = () => setWide(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return wide;
+}
+
 function Sentence({ parts, className = '' }) {
   return (
     <p className={`tonight-sentence ${className}`} aria-live="polite">
@@ -132,13 +147,15 @@ function Progress({ step }) {
 
 /* ── The four questions ── */
 function Question({ picker }) {
-  const { options, setOption, toggleGenre, genres, step, nextStep } = picker;
+  const { options, setOption, toggleGenre, genres, step } = picker;
   const [allGenres, setAllGenres] = useState(false);
   const tv = options.mediaType === 'tv';
   const key = PICKER_STEPS[step];
   const title = key === 'length' ? (tv ? T.steps.length.tvTitle : T.steps.length.movieTitle) : T.steps[key].title;
   const subline = T.steps[key].subline;
-  const shownGenres = allGenres ? genres : genres.slice(0, FEATURED_GENRE_COUNT);
+  const wide = useWide();
+  const featuredCount = wide ? FEATURED_GENRE_COUNT_WIDE : FEATURED_GENRE_COUNT;
+  const shownGenres = pickerGenreTiles(genres, { count: featuredCount, all: allGenres });
 
   return (
     <section className="tonight-question" aria-labelledby="tonight-question-title">
@@ -155,7 +172,7 @@ function Question({ picker }) {
               role="radio"
               aria-checked={options.mediaType === t}
               className={`tonight-type${options.mediaType === t ? ' selected' : ''}`}
-              onClick={() => { setOption('mediaType', t); nextStep(); }}
+              onClick={() => setOption('mediaType', t)}
             >
               {t === 'movie' ? <IconMovie /> : <IconTv />}
               <span className="tonight-type-text">
@@ -171,7 +188,7 @@ function Question({ picker }) {
         <div className="tonight-tiles tonight-tiles--two" role="radiogroup" aria-label={title}>
           {PICKER_RUNTIMES.map(m => (
             <Tile key={m ?? 'any'} label={T.runtimes(m)} selected={options.maxRuntime === m}
-              onClick={() => { setOption('maxRuntime', m); nextStep(); }} />
+              onClick={() => setOption('maxRuntime', m)} />
           ))}
         </div>
       )}
@@ -199,7 +216,7 @@ function Question({ picker }) {
               <Tile key={g.id} role="checkbox" label={g.name} hint={g.mood} selected={options.genreIds.includes(g.id)} onClick={() => toggleGenre(g.id)} />
             ))}
           </div>
-          {genres.length > FEATURED_GENRE_COUNT && (
+          {genres.length > featuredCount && (
             <button type="button" className="tonight-link" onClick={() => setAllGenres(v => !v)}>
               {allGenres ? T.showFewerGenres : T.showAllGenres(genres.length)}
             </button>
@@ -228,13 +245,26 @@ function Question({ picker }) {
   );
 }
 
-function StepNav({ picker }) {
+function PickButton({ picker, premium, className = '' }) {
+  return (
+    <button type="button" className={`btn btn-primary tonight-go ${className}`} onClick={() => picker.go('five')}
+      aria-label={premium ? undefined : `${T.go}, ${T.gate.locked}`}>
+      {!premium && <IconLock />}{T.go}
+    </button>
+  );
+}
+
+/* On the last question Pick takes Next's place (desktop; on phone it lives in
+   the sticky bar). */
+function StepNav({ picker, premium }) {
   const first = picker.step === 0;
   const last = picker.step === PICKER_STEPS.length - 1;
   return (
     <div className="tonight-stepnav">
       {first ? <span /> : <button type="button" className="btn btn-secondary btn-sm tonight-stepbtn" onClick={picker.prevStep}><IconBack />{T.back}</button>}
-      {last ? <span /> : <button type="button" className="btn btn-secondary btn-sm tonight-stepbtn" onClick={picker.nextStep}>{T.next}<IconNext /></button>}
+      {last
+        ? <PickButton picker={picker} premium={premium} className="btn-sm tonight-stepbtn tonight-stepnav-pick" />
+        : <button type="button" className="btn btn-secondary btn-sm tonight-stepbtn" onClick={picker.nextStep}>{T.next}<IconNext /></button>}
     </div>
   );
 }
@@ -290,7 +320,7 @@ function FiltersPanel({ picker }) {
 }
 
 /* Desktop side column: the same card and filter-row styles History uses. */
-function SideColumn({ picker, results, premium }) {
+function SideColumn({ picker, results }) {
   const { options, setOption } = picker;
   const tickRow = (label, on, onToggle, disabled) => (
     <button type="button" role="checkbox" aria-checked={on} disabled={disabled}
@@ -311,10 +341,10 @@ function SideColumn({ picker, results, premium }) {
               {picker.canSpinAgain && <button type="button" className="btn btn-primary btn-sm" onClick={picker.spinAgain}>{T.spinAgain}</button>}
             </>
           ) : (
-            <>
+            <div className="tonight-side-or">
+              <span>{T.orSurprise}</span>
               <button type="button" className="btn btn-secondary btn-sm tonight-surprise" onClick={() => picker.go('surprise')}><IconSparkle />{T.surpriseMe}</button>
-              <button type="button" className="btn btn-primary btn-sm tonight-go" onClick={() => picker.go('five')} aria-label={premium ? undefined : `${T.go}, ${T.gate.locked}`}>{!premium && <IconLock />}{T.go}</button>
-            </>
+            </div>
           )}
         </div>
       </section>
@@ -465,7 +495,7 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
   return (
     <div className="tonight-view">
       <div className="tonight-layout">
-        <SideColumn picker={picker} results={inResults} premium={premium} />
+        <SideColumn picker={picker} results={inResults} />
         <div className="tonight-main">
           {locked ? (
             <div className="tonight-locked">
@@ -478,7 +508,7 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
               <>
                 <Question picker={picker} />
                 <FiltersPanel picker={picker} />
-                <StepNav picker={picker} />
+                <StepNav picker={picker} premium={premium} />
               </>
             )}
         </div>
@@ -497,7 +527,7 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
               <Sentence parts={picker.sentence} />
               <div className="tonight-bar-actions">
                 <button type="button" className="btn btn-secondary tonight-surprise" onClick={() => picker.go('surprise')}><IconSparkle />{T.surpriseMe}</button>
-                <button type="button" className="btn btn-primary tonight-go" onClick={() => picker.go('five')} aria-label={premium ? undefined : `${T.go}, ${T.gate.locked}`}>{!premium && <IconLock />}{T.go}</button>
+                <PickButton picker={picker} premium={premium} />
               </div>
             </>
           )}

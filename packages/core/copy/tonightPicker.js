@@ -120,7 +120,9 @@ export const TONIGHT_PICKER = {
   yourRequest: 'Your request',
   questionsTitle: 'Questions',
   surpriseMe: 'Surprise me',
-  go: 'Go',
+  // Desktop side card: Pick sits under the last question, so the card offers "Or [Surprise me]".
+  orSurprise: 'Or',
+  go: 'Pick',
 
   spinning: [
     'Shuffling the reels',
@@ -147,7 +149,7 @@ export const TONIGHT_PICKER = {
   emptyBody: 'Try more time, fewer genres, or turn off a filter.',
   loadError: 'Could not reach TMDB. Try again in a moment.',
 
-  // The upgrade pop-up. Free viewers answer every question; Go and Surprise
+  // The upgrade pop-up. Free viewers answer every question; Pick and Surprise
   // me open this over blurred placeholder picks. No result counts: tight
   // answers can return fewer than five.
   gate: {
@@ -155,9 +157,9 @@ export const TONIGHT_PICKER = {
     brand: 'plot',
     premium: 'Premium',
     title: 'Your request is ready. Unlock your picks.',
-    body: 'Movie or show, how long you’ve got, what kind of story. Pick for Me does the scrolling for you.',
+    body: 'Less deciding, more watching. Pick for Me does the scrolling for you.',
     benefits: [
-      { title: 'A shortlist, every time you ask', body: 'Answer a few quick questions and get a shortlist that fits your night.' },
+      { title: 'A shortlist, every time you ask', body: 'Answer a few quick questions and get a shortlist that fits your mood.' },
       { title: 'Only what you can watch', body: 'Limit picks to your streaming services, your watchlist, or both.' },
       { title: 'Can’t decide? Surprise me', body: 'One tap, one pick. Spin again if it isn’t the one.' },
     ],

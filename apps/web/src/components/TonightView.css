@@ -5,6 +5,9 @@
    264px side column History and Settings use. */
 
 .tonight-view { padding-bottom: 1rem; }
+/* Tapping Back, Next or a tile twice in a row reads as a double-click; don't
+   let that select the label. */
+.tonight-view button { -webkit-user-select: none; user-select: none; }
 
 .tonight-layout { padding: 0 var(--gut); }
 .tonight-side { display: none; }
@@ -187,6 +190,7 @@
   margin-top: 1.25rem;
 }
 .tonight-stepbtn { min-height: 40px; padding-inline: 16px; font-size: 0.875rem; }
+.tonight-stepnav-pick { display: none; }
 .tonight-stepbtn svg,
 .tonight-surprise svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tonight-surprise svg { stroke-width: 1.8; }
@@ -414,9 +418,13 @@
 .tonight-qanswer { font-size: 0.75rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tonight-sentence--side { padding: 0 4px; font-size: 1.2rem; }
 .tonight-sentence--side .tonight-sentence-filled { text-underline-offset: 4px; }
-.tonight-side-actions { display: flex; gap: 8px; padding: 4px 4px 0; flex-wrap: wrap; }
-.tonight-side-actions .btn { min-height: 38px; font-size: 0.85rem; }
+/* Two equal buttons; tight side padding so the longer labels still fit. */
+.tonight-side-actions { display: flex; gap: 8px; padding: 4px 0 0; }
+.tonight-side-actions .btn { flex: 1 1 0; min-width: 0; justify-content: center; min-height: 38px; padding-inline: 8px; font-size: 0.85rem; white-space: nowrap; }
 .tonight-lang-row { cursor: default; }
+/* "Or [Surprise me]": Pick lives under the last question on desktop. */
+.tonight-side-or { display: flex; align-items: center; gap: 10px; font-size: 0.875rem; color: var(--text-secondary); }
+.tonight-side-or .btn { flex: 0 0 auto; padding-inline: 14px; }
 
 /* ── Locked (Free): the upgrade pop-up over blurred placeholder picks ── */
 .tonight-go svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; margin-right: 6px; }
@@ -537,6 +545,7 @@
   .tonight-type { min-height: 150px; }
   .tonight-tile { min-height: 72px; }
   .tonight-stepnav { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+  .tonight-stepnav-pick { display: inline-flex; padding-inline: 28px; }
 
   .tonight-hero { height: 320px; border-radius: 24px; padding: 24px; }
   .tonight-hero-title { font-size: 2rem; }

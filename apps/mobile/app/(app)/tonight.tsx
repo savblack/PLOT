@@ -22,7 +22,7 @@ import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import {
   useTonightPicker, pickerTimeOfDay,
   PICKER_STEPS, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
-  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES, FEATURED_GENRE_COUNT,
+  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES, FEATURED_GENRE_COUNT, pickerGenreTiles,
   type PickerCandidate,
 } from '@plot/core/tonightPicker.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -115,13 +115,13 @@ function Sentence({ parts, styles }: { parts: Picker['sentence']; styles: Styles
 }
 
 function Question({ picker, styles, colors }: { picker: Picker; styles: Styles; colors: Palette }) {
-  const { options, setOption, toggleGenre, genres, step, nextStep } = picker;
+  const { options, setOption, toggleGenre, genres, step } = picker;
   const [allGenres, setAllGenres] = useState(false);
   const tv = options.mediaType === 'tv';
   const key = PICKER_STEPS[step] as StepKey;
   const title = key === 'length' ? (tv ? T.steps.length.tvTitle : T.steps.length.movieTitle) : T.steps[key].title;
   const subline = key === 'kind' || key === 'quality' ? T.steps[key].subline : null;
-  const shown = allGenres ? genres : genres.slice(0, FEATURED_GENRE_COUNT);
+  const shown = pickerGenreTiles(genres, { count: FEATURED_GENRE_COUNT, all: allGenres });
 
   return (
     <View>
@@ -137,7 +137,7 @@ function Question({ picker, styles, colors }: { picker: Picker; styles: Styles; 
             <TouchableOpacity
               key={t}
               style={[styles.typeTile, options.mediaType === t && styles.tileSelected]}
-              onPress={() => { setOption('mediaType', t); nextStep(); }}
+              onPress={() => setOption('mediaType', t)}
               accessibilityRole="radio"
               accessibilityState={{ selected: options.mediaType === t }}
             >
@@ -158,7 +158,7 @@ function Question({ picker, styles, colors }: { picker: Picker; styles: Styles; 
       {key === 'length' && !tv && (
         <Grid cols={2} styles={styles}>
           {PICKER_RUNTIMES.map(m => (
-            <Tile key={String(m)} label={T.runtimes(m)} selected={options.maxRuntime === m} onPress={() => { setOption('maxRuntime', m); nextStep(); }} styles={styles} />
+            <Tile key={String(m)} label={T.runtimes(m)} selected={options.maxRuntime === m} onPress={() => setOption('maxRuntime', m)} styles={styles} />
           ))}
         </Grid>
       )}

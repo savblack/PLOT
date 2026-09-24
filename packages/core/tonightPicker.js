@@ -68,6 +68,8 @@ const FEATURED_GENRES = {
   tv: [35, 18, 80, 10759, 10765, 9648, 99, 16, 10768, 37],
 };
 export const FEATURED_GENRE_COUNT = 10;
+// Desktop lays genres out three across, so nine fills the grid.
+export const FEATURED_GENRE_COUNT_WIDE = 9;
 
 /** The spin always lasts at least this long, so it reads as a reveal, not a flicker. */
 export const PICKER_MIN_SPIN_MS = 1400;
@@ -217,6 +219,17 @@ export function pickerGenres(catalog, options) {
       && !(options.hideKids && KIDS_GENRE_IDS.has(g.id)))
     .map(g => ({ ...g, mood: GENRE_MOODS[g.id] ?? null }))
     .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
+}
+
+/**
+ * The genre tiles to show: the `count` most useful (pickerGenres' order),
+ * or every genre when expanded, either way in alphabetical order.
+ * @param {Array<{id:number,name:string}>} genres pickerGenres' output
+ * @param {{ count: number, all?: boolean }} opts
+ */
+export function pickerGenreTiles(genres, { count, all = false }) {
+  const shown = all ? genres : genres.slice(0, count);
+  return [...shown].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
