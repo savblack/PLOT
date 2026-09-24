@@ -18,11 +18,6 @@ export const TONIGHT_PICKER = {
     multiSeason: 'A few seasons',
   },
   episodeLabel: 'Episode length',
-  episodeLengths: {
-    short: 'Up to 30 min',
-    standard: '30 to 60 min',
-    any: 'Any length',
-  },
   genresLabel: 'In the mood for',
   genresHint: 'Pick any. Leave empty for everything.',
   eraLabel: 'Released',

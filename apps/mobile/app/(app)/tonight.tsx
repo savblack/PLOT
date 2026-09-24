@@ -15,7 +15,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import {
-  useTonightPicker, PICKER_MEDIA_TYPES, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_LENGTHS,
+  useTonightPicker, PICKER_MEDIA_TYPES, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
   PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES,
   type PickerCandidate,
 } from '@plot/core/tonightPicker.js';
@@ -220,14 +220,7 @@ export default function TonightScreen() {
                 onChange={v => setOption('tvFormat', v)}
                 styles={styles}
               />
-              <ChipRow
-                label={TONIGHT_PICKER.episodeLabel}
-                values={PICKER_EPISODE_LENGTHS.map(e => e.id)}
-                value={options.episodeLength}
-                labelFor={(id: string) => TONIGHT_PICKER.episodeLengths[id as keyof typeof TONIGHT_PICKER.episodeLengths]}
-                onChange={v => setOption('episodeLength', v)}
-                styles={styles}
-              />
+              <ChipRow label={TONIGHT_PICKER.episodeLabel} values={PICKER_EPISODE_RUNTIMES} value={options.maxEpisodeRuntime} labelFor={TONIGHT_PICKER.runtime} onChange={v => setOption('maxEpisodeRuntime', v)} styles={styles} />
             </>
           )}
           <View>
