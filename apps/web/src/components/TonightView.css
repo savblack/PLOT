@@ -423,7 +423,7 @@
 .tonight-side-actions .btn { flex: 1 1 0; min-width: 0; justify-content: center; min-height: 38px; padding-inline: 8px; font-size: 0.85rem; white-space: nowrap; }
 .tonight-lang-row { cursor: default; }
 /* "Or [Surprise me]": Pick lives under the last question on desktop. */
-.tonight-side-or { display: flex; align-items: center; gap: 10px; font-size: 0.875rem; color: var(--text-secondary); }
+.tonight-side-or { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-left: auto; font-size: 0.875rem; color: var(--text-secondary); }
 .tonight-side-or .btn { flex: 0 0 auto; padding-inline: 14px; }
 
 /* ── Locked (Free): the upgrade pop-up over blurred placeholder picks ── */

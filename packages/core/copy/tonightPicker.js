@@ -103,6 +103,8 @@ export const TONIGHT_PICKER = {
     anyLength: 'any length',
     episodes: (minutes) => `with episodes under ${minutes} min`,
     anyKind: 'any kind',
+    // Joins the length to the chosen genres: "under 2 hours, that’s funny or tense".
+    thats: 'that’s',
     or: 'or',
     era: {
       recent: 'from the last few years',

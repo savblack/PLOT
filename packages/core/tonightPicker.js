@@ -268,7 +268,8 @@ export function pickerSentence(options, { genres = [], hasServices = false } = {
     .filter(Boolean)
     .map(g => (g.mood || g.name).toLowerCase());
   const kind = moods.length > 2 ? `${moods.slice(0, -1).join(', ')} ${S.or} ${moods.at(-1)}` : moods.join(` ${S.or} `);
-  parts.push(kind ? { text: `${kind},`, kind: 'filled' } : { text: `${S.anyKind},`, kind: 'placeholder' });
+  if (kind) parts.push({ text: S.thats, kind: 'plain' }, { text: `${kind},`, kind: 'filled' });
+  else parts.push({ text: `${S.anyKind},`, kind: 'placeholder' });
   if (options.era !== 'any' && S.era[options.era]) parts.push({ text: `${S.era[options.era]},`, kind: 'filled' });
   if (options.minScore) parts.push({ text: `${S.rated(options.minScore)},`, kind: 'filled' });
   if (options.language) parts.push({ text: `${S.inLanguage(TONIGHT_PICKER.languages[options.language])},`, kind: 'filled' });

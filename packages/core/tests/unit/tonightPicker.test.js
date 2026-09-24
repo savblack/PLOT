@@ -230,7 +230,7 @@ test('pickerSentence fills in answers and greys out the rest', () => {
   assert.deepEqual(blank.filter(p => p.kind === 'placeholder').map(p => p.text), ['any length,', 'any kind,']);
 
   const full = pickerSentence(opts({ maxRuntime: 120, genreIds: [COMEDY, 53], era: '2010s', minScore: 7 }), { genres, hasServices: true });
-  assert.equal(full.map(p => p.text).join(' '), 'Find me a movie under 2 hours, funny or tense, from the 2010s, rated 7+, on my services.');
+  assert.equal(full.map(p => p.text).join(' '), 'Find me a movie under 2 hours, that’s funny or tense, from the 2010s, rated 7+, on my services.');
   assert.ok(full.every(p => p.kind !== 'placeholder'));
 
   const tv = pickerSentence(opts({ mediaType: 'tv', tvFormat: 'miniseries', maxEpisodeRuntime: 45, onlyServices: false }), { genres, hasServices: true });
