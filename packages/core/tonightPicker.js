@@ -31,8 +31,19 @@ export const PICKER_RUNTIMES = [90, 120, 150, null];
 /** TV formats. Mini-series maps to TMDB's show type; season counts need details. */
 export const PICKER_TV_FORMATS = ['any', 'miniseries', 'oneSeason', 'multiSeason'];
 
-/** Average episode length budgets for TV, in minutes. `null` means any. */
-export const PICKER_EPISODE_RUNTIMES = [30, 45, 60, null];
+/**
+ * Average episode length ranges for TV, in minutes (TMDB's with_runtime on
+ * /discover/tv is episode length). Sitcom-length, drama-length, or any.
+ * @type {Array<{ id: string, gte?: number, lte?: number }>}
+ */
+export const PICKER_EPISODE_LENGTHS = [
+  { id: 'short', lte: 30 },
+  { id: 'standard', gte: 30, lte: 60 },
+  { id: 'any' },
+];
+
+/** @param {string} id */
+const episodeRange = (id) => PICKER_EPISODE_LENGTHS.find(e => e.id === id) ?? { id: 'any' };
 
 const thisYear = () => new Date().getFullYear();
 
@@ -91,7 +102,7 @@ const GAP_MS = 120;
  * @property {'movie'|'tv'} mediaType
  * @property {number|null} maxRuntime Movie length.
  * @property {'any'|'miniseries'|'oneSeason'|'multiSeason'} tvFormat
- * @property {number|null} maxEpisodeRuntime TV average episode length.
+ * @property {string} episodeLength One of PICKER_EPISODE_LENGTHS ids.
  * @property {number[]} genreIds Any of these (TMDB genre ids from the genre catalog).
  * @property {string} era One of PICKER_ERAS ids.
  * @property {number|null} minScore
@@ -124,7 +135,7 @@ export function defaultPickerOptions({ hasServices = false } = {}) {
     mediaType: 'movie',
     maxRuntime: 120,
     tvFormat: 'any',
-    maxEpisodeRuntime: null,
+    episodeLength: 'any',
     genreIds: [],
     era: 'any',
     minScore: null,
@@ -197,8 +208,9 @@ export function discoverParams(options, { providerIds, region, page = 1 }) {
     page,
   };
   if (tv) {
-    params['with_runtime.gte'] = MIN_EPISODE_RUNTIME;
-    if (options.maxEpisodeRuntime) params['with_runtime.lte'] = options.maxEpisodeRuntime;
+    const ep = episodeRange(options.episodeLength);
+    params['with_runtime.gte'] = Math.max(MIN_EPISODE_RUNTIME, ep.gte ?? 0);
+    if (ep.lte) params['with_runtime.lte'] = ep.lte;
     params.with_type = options.tvFormat === 'miniseries' ? TV_TYPE_MINISERIES : TV_TYPES_ANY;
   } else {
     params['with_runtime.gte'] = MIN_FEATURE_RUNTIME;
@@ -229,7 +241,10 @@ export function discoverParams(options, { providerIds, region, page = 1 }) {
 export function matchesOptions(c, options, providerIds, { checkServices = true } = {}) {
   if (options.mediaType === 'tv') {
     if (c.runtime != null && c.runtime < MIN_EPISODE_RUNTIME) return false;
-    if (options.maxEpisodeRuntime && (c.runtime == null || c.runtime > options.maxEpisodeRuntime)) return false;
+    const ep = episodeRange(options.episodeLength);
+    if ((ep.gte || ep.lte) && c.runtime == null) return false;
+    if (ep.gte && c.runtime < ep.gte) return false;
+    if (ep.lte && c.runtime > ep.lte) return false;
     if (options.tvFormat === 'miniseries' && !c.miniseries) return false;
     if (options.tvFormat === 'oneSeason' && c.seasons !== 1) return false;
     if (options.tvFormat === 'multiSeason' && !(c.seasons >= 2)) return false;

@@ -4,7 +4,7 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { useApp } from '../hooks/useApp.js';
 import {
-  useTonightPicker, PICKER_MEDIA_TYPES, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
+  useTonightPicker, PICKER_MEDIA_TYPES, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_LENGTHS,
   PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES,
 } from '../hooks/useTonightPicker.js';
 import { TONIGHT_PICKER } from '../copy/tonightPicker.js';
@@ -95,10 +95,10 @@ function OptionsPanel({ picker }) {
           />
           <ChipRow
             label={TONIGHT_PICKER.episodeLabel}
-            values={PICKER_EPISODE_RUNTIMES}
-            value={options.maxEpisodeRuntime}
-            labelFor={TONIGHT_PICKER.runtime}
-            onChange={v => setOption('maxEpisodeRuntime', v)}
+            values={PICKER_EPISODE_LENGTHS.map(e => e.id)}
+            value={options.episodeLength}
+            labelFor={id => TONIGHT_PICKER.episodeLengths[id]}
+            onChange={v => setOption('episodeLength', v)}
           />
         </>
       )}

@@ -149,9 +149,10 @@ test('discoverParams leaves out kids and family genres when hidden', () => {
 });
 
 test('discoverParams builds TV filters: type, first air date, episode length', () => {
-  const p = discoverParams(opts({ mediaType: 'tv', tvFormat: 'miniseries', maxEpisodeRuntime: 45, era: '2010s' }), { providerIds: [NETFLIX], region: 'AU' });
+  const p = discoverParams(opts({ mediaType: 'tv', tvFormat: 'miniseries', episodeLength: 'standard', era: '2010s' }), { providerIds: [NETFLIX], region: 'AU' });
   assert.equal(p.with_type, '2');
-  assert.equal(p['with_runtime.lte'], 45);
+  assert.equal(p['with_runtime.gte'], 30);
+  assert.equal(p['with_runtime.lte'], 60);
   assert.equal(p['first_air_date.gte'], '2010-01-01');
   assert.equal(p['primary_release_date.gte'], undefined);
   const without = String(p.without_genres).split(',');
@@ -174,7 +175,10 @@ test('matchesOptions filters TV by format and episode length', () => {
   assert.equal(matchesOptions(show, tv({ tvFormat: 'multiSeason' }), [NETFLIX]), false);
   assert.equal(matchesOptions(show, tv({ tvFormat: 'miniseries' }), [NETFLIX]), false);
   assert.equal(matchesOptions({ ...show, miniseries: true }, tv({ tvFormat: 'miniseries' }), [NETFLIX]), true);
-  assert.equal(matchesOptions(show, tv({ maxEpisodeRuntime: 30 }), [NETFLIX]), false);
+  assert.equal(matchesOptions(show, tv({ episodeLength: 'short' }), [NETFLIX]), false);
+  assert.equal(matchesOptions(show, tv({ episodeLength: 'standard' }), [NETFLIX]), true);
+  assert.equal(matchesOptions({ ...show, runtime: 22 }, tv({ episodeLength: 'standard' }), [NETFLIX]), false, '30 to 60 skips sitcom length');
+  assert.equal(matchesOptions({ ...show, runtime: 22 }, tv({ episodeLength: 'short' }), [NETFLIX]), true);
   assert.equal(matchesOptions({ ...show, genre_ids: [KIDS_TV] }, tv({}), [NETFLIX]), false, 'kids hidden by default');
 });
 
