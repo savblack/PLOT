@@ -9,6 +9,7 @@ import {
   drawFromPool,
   loadWatchlistPool,
   loadDiscoverPage,
+  pickerGenres,
   _resetPickerCache,
 } from '../../tonightPicker.js';
 
@@ -134,4 +135,71 @@ test('loadDiscoverPage drops watched and posterless titles and tags saved ones',
   assert.equal(pool[1].onWatchlist, true);
   assert.equal(totalPages, 7);
   assert.equal(seen[0].page, 2);
+});
+
+const FAMILY = 10751;
+const KIDS_TV = 10762;
+const NEWS = 10763;
+
+test('discoverParams leaves out kids and family genres when hidden', () => {
+  const p = discoverParams(opts({ hideKids: true }), { providerIds: [NETFLIX], region: 'AU' });
+  assert.ok(String(p.without_genres).split(',').includes(String(FAMILY)));
+  const q = discoverParams(opts({ hideKids: false }), { providerIds: [NETFLIX], region: 'AU' });
+  assert.equal(q.without_genres, undefined);
+});
+
+test('discoverParams builds TV filters: type, first air date, episode length', () => {
+  const p = discoverParams(opts({ mediaType: 'tv', tvFormat: 'miniseries', maxEpisodeRuntime: 45, era: '2010s' }), { providerIds: [NETFLIX], region: 'AU' });
+  assert.equal(p.with_type, '2');
+  assert.equal(p['with_runtime.lte'], 45);
+  assert.equal(p['first_air_date.gte'], '2010-01-01');
+  assert.equal(p['primary_release_date.gte'], undefined);
+  const without = String(p.without_genres).split(',');
+  assert.ok(without.includes(String(NEWS)), 'news is never tonight');
+  assert.ok(without.includes(String(KIDS_TV)));
+  assert.equal(discoverParams(opts({ mediaType: 'tv' }), { providerIds: [], region: 'AU' }).with_type, '0|2|4');
+});
+
+test('pickerGenres uses the type catalog and drops kids genres when hidden', () => {
+  const catalog = { movie: [{ id: DRAMA, name: 'Drama' }, { id: FAMILY, name: 'Family' }], tv: [{ id: KIDS_TV, name: 'Kids' }, { id: NEWS, name: 'News' }, { id: DRAMA, name: 'Drama' }] };
+  assert.deepEqual(pickerGenres(catalog, opts({ hideKids: true })).map(g => g.id), [DRAMA]);
+  assert.deepEqual(pickerGenres(catalog, opts({ hideKids: false })).map(g => g.id), [DRAMA, FAMILY]);
+  assert.deepEqual(pickerGenres(catalog, opts({ mediaType: 'tv', hideKids: true })).map(g => g.id), [DRAMA]);
+});
+
+test('matchesOptions filters TV by format and episode length', () => {
+  const show = { runtime: 50, seasons: 1, miniseries: false, genre_ids: [DRAMA], release_date: '2018-01-01', vote_average: 8, providers: [{ id: NETFLIX }] };
+  const tv = (over) => opts({ mediaType: 'tv', ...over });
+  assert.equal(matchesOptions(show, tv({ tvFormat: 'oneSeason' }), [NETFLIX]), true);
+  assert.equal(matchesOptions(show, tv({ tvFormat: 'multiSeason' }), [NETFLIX]), false);
+  assert.equal(matchesOptions(show, tv({ tvFormat: 'miniseries' }), [NETFLIX]), false);
+  assert.equal(matchesOptions({ ...show, miniseries: true }, tv({ tvFormat: 'miniseries' }), [NETFLIX]), true);
+  assert.equal(matchesOptions(show, tv({ maxEpisodeRuntime: 30 }), [NETFLIX]), false);
+  assert.equal(matchesOptions({ ...show, genre_ids: [KIDS_TV] }, tv({}), [NETFLIX]), false, 'kids hidden by default');
+});
+
+test('loadDiscoverPage checks season count for season formats only', async () => {
+  _resetPickerCache();
+  let detailCalls = 0;
+  const client = {
+    async discoverTV() {
+      return { total_pages: 1, results: [
+        { id: 301, name: 'One', poster_path: '/a.jpg' },
+        { id: 302, name: 'Many', poster_path: '/b.jpg' },
+      ] };
+    },
+    async getTVDetails(id) {
+      detailCalls += 1;
+      return { number_of_seasons: id === 301 ? 1 : 4, episode_run_time: [42], genres: [{ id: DRAMA }], first_air_date: '2019-01-01', type: 'Scripted' };
+    },
+  };
+  const one = await loadDiscoverPage({ options: opts({ mediaType: 'tv', tvFormat: 'oneSeason' }), providerIds: [NETFLIX], region: 'AU', client, gapMs: 0 });
+  assert.deepEqual(one.pool.map(c => c.id), [301]);
+  assert.equal(one.pool[0].seasons, 1);
+  assert.equal(one.pool[0].runtime, 42);
+
+  detailCalls = 0;
+  const any = await loadDiscoverPage({ options: opts({ mediaType: 'tv', tvFormat: 'any' }), providerIds: [NETFLIX], region: 'AU', client, gapMs: 0 });
+  assert.equal(any.pool.length, 2);
+  assert.equal(detailCalls, 0, 'no details calls when TMDB can filter it');
 });

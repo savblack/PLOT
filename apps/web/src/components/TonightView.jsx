@@ -4,7 +4,8 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { useApp } from '../hooks/useApp.js';
 import {
-  useTonightPicker, PICKER_RUNTIMES, PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES,
+  useTonightPicker, PICKER_MEDIA_TYPES, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
+  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES,
 } from '../hooks/useTonightPicker.js';
 import { TONIGHT_PICKER } from '../copy/tonightPicker.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
@@ -69,12 +70,38 @@ function OptionsPanel({ picker }) {
   return (
     <section className="tonight-panel" aria-label={TONIGHT_PICKER.title}>
       <ChipRow
-        label={TONIGHT_PICKER.timeLabel}
-        values={PICKER_RUNTIMES}
-        value={options.maxRuntime}
-        labelFor={TONIGHT_PICKER.runtime}
-        onChange={v => setOption('maxRuntime', v)}
+        label={TONIGHT_PICKER.mediaTypeLabel}
+        values={PICKER_MEDIA_TYPES}
+        value={options.mediaType}
+        labelFor={t => TONIGHT_PICKER.mediaTypes[t]}
+        onChange={v => setOption('mediaType', v)}
       />
+      {options.mediaType === 'movie' ? (
+        <ChipRow
+          label={TONIGHT_PICKER.timeLabel}
+          values={PICKER_RUNTIMES}
+          value={options.maxRuntime}
+          labelFor={TONIGHT_PICKER.runtime}
+          onChange={v => setOption('maxRuntime', v)}
+        />
+      ) : (
+        <>
+          <ChipRow
+            label={TONIGHT_PICKER.tvFormatLabel}
+            values={PICKER_TV_FORMATS}
+            value={options.tvFormat}
+            labelFor={f => TONIGHT_PICKER.tvFormats[f]}
+            onChange={v => setOption('tvFormat', v)}
+          />
+          <ChipRow
+            label={TONIGHT_PICKER.episodeLabel}
+            values={PICKER_EPISODE_RUNTIMES}
+            value={options.maxEpisodeRuntime}
+            labelFor={TONIGHT_PICKER.runtime}
+            onChange={v => setOption('maxEpisodeRuntime', v)}
+          />
+        </>
+      )}
 
       <div className="tonight-field" role="group" aria-label={TONIGHT_PICKER.genresLabel}>
         <div className="tonight-field-label">{TONIGHT_PICKER.genresLabel}</div>
@@ -126,8 +153,15 @@ function OptionsPanel({ picker }) {
           checked={options.onlyWatchlist && picker.hasWatchlist}
           disabled={!picker.hasWatchlist}
           label={TONIGHT_PICKER.onlyWatchlist}
-          hint={picker.hasWatchlist ? null : TONIGHT_PICKER.onlyWatchlistMissing}
+          hint={picker.hasWatchlist ? null : TONIGHT_PICKER.onlyWatchlistMissing(options.mediaType)}
           onChange={v => setOption('onlyWatchlist', v)}
+        />
+        <Check
+          checked={options.hideKids}
+          disabled={false}
+          label={TONIGHT_PICKER.hideKids}
+          hint={null}
+          onChange={v => setOption('hideKids', v)}
         />
       </div>
 
@@ -163,13 +197,20 @@ function Spinner({ slots }) {
   );
 }
 
-function ResultCard({ item, index, onOpen }) {
-  const img = posterUrl(item.poster_path, 'w342');
-  const meta = [
+function resultMeta(item) {
+  const tv = item.media_type === 'tv';
+  return [
     (item.release_date || '').slice(0, 4),
-    item.runtime ? TONIGHT_PICKER.minutes(item.runtime) : null,
+    tv && item.miniseries ? TONIGHT_PICKER.miniseries : null,
+    tv && !item.miniseries && item.seasons ? TONIGHT_PICKER.seasons(item.seasons) : null,
+    item.runtime ? (tv ? TONIGHT_PICKER.episodeMinutes(item.runtime) : TONIGHT_PICKER.minutes(item.runtime)) : null,
     item.vote_average ? TONIGHT_PICKER.score10(item.vote_average) : null,
   ].filter(Boolean).join(' · ');
+}
+
+function ResultCard({ item, index, onOpen }) {
+  const img = posterUrl(item.poster_path, 'w342');
+  const meta = resultMeta(item);
   return (
     <button type="button" className="tonight-result interactive-surface" style={{ '--reveal-delay': `${index * 120}ms` }} onClick={() => onOpen(item)}>
       <div className="tonight-result-img">
@@ -235,14 +276,13 @@ export default function TonightView() {
     watchlistItems: watchlist.items,
     streamingProviders: profile?.streaming_providers,
     region: profile?.region || DEFAULT_REGION,
-    hideKids: !(profile?.include_kids_content ?? true),
   });
 
   return (
     <TonightPage
       premium={premium}
       picker={picker}
-      onOpen={(item) => openPanel(item.id, 'movie')}
+      onOpen={(item) => openPanel(item.id, item.media_type)}
       navigate={navigate}
     />
   );

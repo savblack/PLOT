@@ -1,12 +1,23 @@
-// Tonight's movie picker (Premium). Wording follows plansPage.js's `picker`
-// story: your time + your services → a few options, or a random pick. No
-// claims about playback or tailored recommendations.
+// Tonight's picker (Premium): movies and TV. Wording follows plansPage.js's
+// `picker` story: your time + your services → a few options, or a random
+// pick. No claims about playback or tailored recommendations.
 export const TONIGHT_PICKER = {
-  title: 'Tonight’s movie picker',
-  intro: 'Set the mood, press Go, and plot narrows it down to three.',
+  title: 'Tonight’s picker',
+  intro: 'Movie or show? Set the mood, press Go, and plot narrows it down to three.',
+
+  mediaTypeLabel: 'What are you after',
+  mediaTypes: { movie: 'A movie', tv: 'A TV show' },
 
   timeLabel: 'Time to spare',
   runtime: (minutes) => (minutes ? `Up to ${minutes} min` : 'Any length'),
+  tvFormatLabel: 'How much of a commitment',
+  tvFormats: {
+    any: 'Anything',
+    miniseries: 'Mini-series',
+    oneSeason: 'One season',
+    multiSeason: 'A few seasons',
+  },
+  episodeLabel: 'Episode length',
   genresLabel: 'In the mood for',
   genresHint: 'Pick any. Leave empty for everything.',
   eraLabel: 'Released',
@@ -33,11 +44,14 @@ export const TONIGHT_PICKER = {
     de: 'German',
   },
 
-  limitLabel: 'Only show',
-  onlyServices: 'Movies on my streaming services',
+  limitLabel: 'Narrow it down',
+  onlyServices: 'Only on my streaming services',
   onlyServicesMissing: 'Add your services in Settings to use this',
-  onlyWatchlist: 'Movies on my watchlist',
-  onlyWatchlistMissing: 'Save a movie to your watchlist to use this',
+  onlyWatchlist: 'Only from my watchlist',
+  onlyWatchlistMissing: (type) => (type === 'tv'
+    ? 'Save a show to your watchlist to use this'
+    : 'Save a movie to your watchlist to use this'),
+  hideKids: 'Hide kids and family titles',
 
   go: 'Go',
   randomSelect: 'Random select',
@@ -55,12 +69,15 @@ export const TONIGHT_PICKER = {
   changeOptions: 'Change options',
   onYourWatchlist: 'On your watchlist',
   minutes: (n) => `${n} min`,
+  episodeMinutes: (n) => `${n} min episodes`,
+  seasons: (n) => (n === 1 ? '1 season' : `${n} seasons`),
+  miniseries: 'Mini-series',
   score10: (n) => `${n.toFixed(1)} on TMDB`,
 
   emptyTitle: 'Nothing fits those options',
   emptyBody: 'Try more time, fewer filters, or untick one of the boxes.',
   loadError: 'Could not reach TMDB. Try again in a moment.',
 
-  gateTitle: 'Tonight’s movie picker is part of plot Premium',
-  gateBody: 'Choose how much time you have and the services you use. Get three options for tonight, or let a random pick make the decision.',
+  gateTitle: 'Tonight’s picker is part of plot Premium',
+  gateBody: 'Choose a movie or a show, how much time you have and the services you use. Get three options for tonight, or let a random pick make the decision.',
 };

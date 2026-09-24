@@ -19,6 +19,15 @@ const POOL = [
   release_date: `20${12 + i}-05-01`, genre_ids: [], runtime, vote_average, providers: [], onWatchlist,
 }));
 
+const TV_POOL = [
+  ['A limited series', 52, 8.2, true, 1, true],
+  ['One-season wonder', 28, 7.6, false, 1, false],
+  ['Long-running drama', 58, 8.4, false, 6, false],
+].map(([title, runtime, vote_average, onWatchlist, seasons, miniseries], i) => ({
+  id: -(200 + i), media_type: 'tv', title, poster_path: null, backdrop_path: null,
+  release_date: `20${16 + i}-02-01`, genre_ids: [], runtime, vote_average, providers: [], onWatchlist, seasons, miniseries,
+}));
+
 const noop = () => {};
 
 function useFakePicker({ phase: initialPhase = 'setup', mode: initialMode = 'three', pool = POOL, hasServices = true, hasWatchlist = true }) {
@@ -30,7 +39,7 @@ function useFakePicker({ phase: initialPhase = 'setup', mode: initialMode = 'thr
     setMode(next);
     setPhase('spinning');
     setTimeout(() => {
-      const picked = drawFromPool(pool, PICKER_MODES[next]);
+      const picked = drawFromPool(options.mediaType === 'tv' && pool.length ? TV_POOL : pool, PICKER_MODES[next]);
       setResults(picked);
       setPhase(picked.length ? 'results' : 'empty');
     }, PICKER_MIN_SPIN_MS);
@@ -61,6 +70,7 @@ export const Options = { render: () => <Story /> };
 export const Spinning = { render: () => <Story phase="spinning" /> };
 export const ThreeOptions = { render: () => <Story phase="results" /> };
 export const RandomPick = { render: () => <Story phase="results" mode="random" /> };
+export const TvResults = { render: () => <Story phase="results" pool={TV_POOL} /> };
 export const NothingFits = { render: () => <Story pool={[]} /> };
 export const NoServicesOrWatchlist = { render: () => <Story hasServices={false} hasWatchlist={false} /> };
 export const FreeGate = {

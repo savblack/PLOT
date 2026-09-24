@@ -1,32 +1,43 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { tmdb, excludeKidsContent } from './tmdb.js';
+import { tmdb, excludeKidsContent, KIDS_GENRE_IDS } from './tmdb.js';
 import { supabase } from './supabase.js';
 
-// Tonight's movie picker (Premium). The viewer sets their options (time,
-// genres, era, score, language, and whether to stay within their services
-// and/or their watchlist), presses Go, and gets three options or one random
-// pick. Nothing is fetched until Go, so browsing the options costs no TMDB
-// calls.
+// Tonight's picker (Premium). The viewer picks movie or TV first, then the
+// options for that type (movie length, or TV format and episode length),
+// genres, era, score, language, and whether to stay within their services,
+// their watchlist, and away from kids and family titles. Go gives three
+// options; Random select gives one. Nothing is fetched until Go, so browsing
+// the options costs no TMDB calls.
 //
 // Two sources, chosen by the "only my watchlist" box:
-//   - watchlist: each saved movie costs one details call (runtime is not
-//     stored on list_items), cached for the session; the walk stops as soon
-//     as the pool is big enough to draw from.
-//   - discover: one /discover/movie page with every filter applied on TMDB's
-//     side. Further pages are only fetched when "spin again" runs out.
+//   - watchlist: each saved title costs one details call (runtime and season
+//     count are not stored on list_items), cached for the session; the walk
+//     stops as soon as the pool is big enough to draw from.
+//   - discover: one /discover/{movie,tv} page with every filter TMDB supports
+//     applied on its side. TV season count is not a discover filter, so the
+//     "1 season" / "multiple seasons" formats check details for a capped
+//     number of results. Further pages load only when "spin again" runs out.
 // Availability is re-read live rather than trusted from list_items.provider_ids,
 // which is a snapshot from save time and often empty.
 //
 // Entitlement is not checked here: the surface gates on Premium and never
 // calls go() for Free viewers.
 
-/** Runtime budgets, in minutes. `null` means any length. */
+export const PICKER_MEDIA_TYPES = ['movie', 'tv'];
+
+/** Movie length budgets, in minutes. `null` means any length. */
 export const PICKER_RUNTIMES = [90, 120, 150, null];
+
+/** TV formats. Mini-series maps to TMDB's show type; season counts need details. */
+export const PICKER_TV_FORMATS = ['any', 'miniseries', 'oneSeason', 'multiSeason'];
+
+/** Average episode length budgets for TV, in minutes. `null` means any. */
+export const PICKER_EPISODE_RUNTIMES = [30, 45, 60, null];
 
 const thisYear = () => new Date().getFullYear();
 
 /**
- * Release eras. Dates map to TMDB's primary_release_date.gte / .lte.
+ * Release eras. Movies use primary_release_date, TV uses first_air_date.
  * @type {Array<{ id: string, gte?: () => string, lte?: () => string }>}
  */
 export const PICKER_ERAS = [
@@ -53,39 +64,55 @@ export const PICKER_MIN_SPIN_MS = 1400;
 // Discover returns shorts and concert clips at the low end; anything under
 // this is not "a movie for tonight".
 const MIN_FEATURE_RUNTIME = 60;
+// Five-minute webisodes and clip shows are not an episode to settle in with.
+const MIN_EPISODE_RUNTIME = 15;
 // A high score on a handful of votes is noise; ask for more votes when a
-// minimum score is set.
-const MIN_VOTES = 20;
-const MIN_VOTES_WITH_SCORE = 150;
+// minimum score is set. TV needs a higher floor (long-running daily shows).
+const MIN_VOTES = { movie: 20, tv: 50 };
+const MIN_VOTES_WITH_SCORE = { movie: 150, tv: 100 };
+// TMDB show types: 0 Documentary, 2 Miniseries, 4 Scripted. Leaves out news,
+// reality, talk and video, which are not what "something to watch tonight" means.
+const TV_TYPES_ANY = '0|2|4';
+const TV_TYPE_MINISERIES = '2';
+// News, talk and soap genres, same exclusions discoverByProviders uses for TV.
+const TV_EXCLUDED_GENRES = [10763, 10767, 10766];
 // Caps the watchlist walk so a huge watchlist does not spend the proxy budget
 // (100 requests / 10s / IP). Newest saves first.
 const WATCHLIST_DETAIL_LIMIT = 40;
 // Enough matches to draw a few different sets of three from.
-const WATCHLIST_POOL_TARGET = 12;
+const POOL_TARGET = 12;
+// Most discover results checked for season count per page.
+const SEASON_CHECK_LIMIT = 12;
 const CONCURRENCY = 3;
 const GAP_MS = 120;
 
 /**
  * @typedef {Object} PickerOptions
- * @property {number|null} maxRuntime
+ * @property {'movie'|'tv'} mediaType
+ * @property {number|null} maxRuntime Movie length.
+ * @property {'any'|'miniseries'|'oneSeason'|'multiSeason'} tvFormat
+ * @property {number|null} maxEpisodeRuntime TV average episode length.
  * @property {number[]} genreIds Any of these (TMDB genre ids from the genre catalog).
  * @property {string} era One of PICKER_ERAS ids.
  * @property {number|null} minScore
  * @property {string|null} language
  * @property {boolean} onlyServices Limit to the viewer's streaming services.
  * @property {boolean} onlyWatchlist Limit to the viewer's watchlist.
+ * @property {boolean} hideKids Leave out kids and family titles.
  */
 
 /**
  * @typedef {Object} PickerCandidate
- * @property {number} id TMDB movie id (from a TMDB response, never guessed)
- * @property {'movie'} media_type
+ * @property {number} id TMDB id (from a TMDB response, never guessed)
+ * @property {'movie'|'tv'} media_type
  * @property {string} title
  * @property {string|null} poster_path
  * @property {string|null} backdrop_path
- * @property {string|null} release_date
+ * @property {string|null} release_date First release (movie) or first air date (TV).
  * @property {number[]} genre_ids
- * @property {number|null} runtime Minutes. Null for discover results (TMDB filtered it server-side).
+ * @property {number|null} runtime Movie runtime or average episode length, when known.
+ * @property {number|null} seasons TV season count, when known.
+ * @property {boolean} miniseries TV only.
  * @property {number|null} vote_average
  * @property {Array<{id: number, name: string, logo_path: string|null}>} providers Matching services, when known.
  * @property {boolean} onWatchlist
@@ -94,14 +121,30 @@ const GAP_MS = 120;
 /** @returns {PickerOptions} */
 export function defaultPickerOptions({ hasServices = false } = {}) {
   return {
+    mediaType: 'movie',
     maxRuntime: 120,
+    tvFormat: 'any',
+    maxEpisodeRuntime: null,
     genreIds: [],
     era: 'any',
     minScore: null,
     language: null,
     onlyServices: hasServices,
     onlyWatchlist: false,
+    hideKids: true,
   };
+}
+
+/**
+ * Genres to offer for a type: that type's catalog, minus kids/family when
+ * those are being left out (picking a genre the filter then drops is a trap).
+ * @param {{ movie?: Array<{id:number,name:string}>, tv?: Array<{id:number,name:string}> }} catalog
+ * @param {PickerOptions} options
+ */
+export function pickerGenres(catalog, options) {
+  const list = catalog?.[options.mediaType] ?? [];
+  return list.filter(g => !(options.mediaType === 'tv' && TV_EXCLUDED_GENRES.includes(g.id))
+    && !(options.hideKids && KIDS_GENRE_IDS.has(g.id)));
 }
 
 /**
@@ -133,25 +176,39 @@ function eraRange(eraId) {
   return { gte: era.gte?.() ?? null, lte: era.lte?.() ?? null };
 }
 
+/** Whether the TV format can only be checked against details (season count). */
+export const formatNeedsDetails = (options) =>
+  options.mediaType === 'tv' && (options.tvFormat === 'oneSeason' || options.tvFormat === 'multiSeason');
+
 /**
- * TMDB /discover/movie params for a set of options.
+ * TMDB /discover/{movie,tv} params for a set of options.
  * @param {PickerOptions} options
  * @param {{ providerIds: number[], region: string, page?: number }} ctx
  */
 export function discoverParams(options, { providerIds, region, page = 1 }) {
+  const tv = options.mediaType === 'tv';
   const { gte, lte } = eraRange(options.era);
+  const dateKey = tv ? 'first_air_date' : 'primary_release_date';
+  const without = [...(tv ? TV_EXCLUDED_GENRES : []), ...(options.hideKids ? KIDS_GENRE_IDS : [])];
   /** @type {Record<string, string|number>} */
   const params = {
     sort_by: 'popularity.desc',
-    'with_runtime.gte': MIN_FEATURE_RUNTIME,
-    'vote_count.gte': options.minScore ? MIN_VOTES_WITH_SCORE : MIN_VOTES,
+    'vote_count.gte': options.minScore ? MIN_VOTES_WITH_SCORE[options.mediaType] : MIN_VOTES[options.mediaType],
     page,
   };
-  if (options.maxRuntime) params['with_runtime.lte'] = options.maxRuntime;
-  // Pipe is OR in TMDB: any of the chosen genres.
+  if (tv) {
+    params['with_runtime.gte'] = MIN_EPISODE_RUNTIME;
+    if (options.maxEpisodeRuntime) params['with_runtime.lte'] = options.maxEpisodeRuntime;
+    params.with_type = options.tvFormat === 'miniseries' ? TV_TYPE_MINISERIES : TV_TYPES_ANY;
+  } else {
+    params['with_runtime.gte'] = MIN_FEATURE_RUNTIME;
+    if (options.maxRuntime) params['with_runtime.lte'] = options.maxRuntime;
+  }
+  // Pipe is OR in TMDB: any of the chosen genres. without_genres is comma (none of).
   if (options.genreIds.length) params.with_genres = options.genreIds.join('|');
-  if (gte) params['primary_release_date.gte'] = gte;
-  if (lte) params['primary_release_date.lte'] = lte;
+  if (without.length) params.without_genres = [...new Set(without)].join(',');
+  if (gte) params[`${dateKey}.gte`] = gte;
+  if (lte) params[`${dateKey}.lte`] = lte;
   if (options.minScore) params['vote_average.gte'] = options.minScore;
   if (options.language) params.with_original_language = options.language;
   if (options.onlyServices) {
@@ -163,21 +220,31 @@ export function discoverParams(options, { providerIds, region, page = 1 }) {
 }
 
 /**
- * Whether a watchlist movie matches every option. Runtime must be known.
- * @param {{ runtime: number|null, genre_ids: number[], release_date: string|null, vote_average: number|null, original_language?: string|null, providers: Array<{id: number}> }} c
+ * Whether a title with known details matches every option.
+ * @param {PickerCandidate & { original_language?: string|null }} c
  * @param {PickerOptions} options
  * @param {number[]} providerIds
+ * @param {{ checkServices?: boolean }} [opts] Discover results already matched services on TMDB's side.
  */
-export function matchesOptions(c, options, providerIds) {
-  if (!c?.runtime || c.runtime < MIN_FEATURE_RUNTIME) return false;
-  if (options.maxRuntime && c.runtime > options.maxRuntime) return false;
+export function matchesOptions(c, options, providerIds, { checkServices = true } = {}) {
+  if (options.mediaType === 'tv') {
+    if (c.runtime != null && c.runtime < MIN_EPISODE_RUNTIME) return false;
+    if (options.maxEpisodeRuntime && (c.runtime == null || c.runtime > options.maxEpisodeRuntime)) return false;
+    if (options.tvFormat === 'miniseries' && !c.miniseries) return false;
+    if (options.tvFormat === 'oneSeason' && c.seasons !== 1) return false;
+    if (options.tvFormat === 'multiSeason' && !(c.seasons >= 2)) return false;
+  } else {
+    if (!c?.runtime || c.runtime < MIN_FEATURE_RUNTIME) return false;
+    if (options.maxRuntime && c.runtime > options.maxRuntime) return false;
+  }
+  if (options.hideKids && c.genre_ids.some(id => KIDS_GENRE_IDS.has(id))) return false;
   if (options.genreIds.length && !options.genreIds.some(id => c.genre_ids.includes(id))) return false;
   const { gte, lte } = eraRange(options.era);
   if (gte && (!c.release_date || c.release_date < gte)) return false;
   if (lte && (!c.release_date || c.release_date > lte)) return false;
   if (options.minScore && (c.vote_average ?? 0) < options.minScore) return false;
-  if (options.language && c.original_language !== options.language) return false;
-  if (options.onlyServices) {
+  if (options.language && c.original_language && c.original_language !== options.language) return false;
+  if (checkServices && options.onlyServices) {
     const wanted = new Set(providerIds);
     if (!(c.providers || []).some(p => wanted.has(p.id))) return false;
   }
@@ -208,117 +275,158 @@ export function drawFromPool(pool, count, { seen = new Set(), rng = Math.random 
   return [...fresh, ...used].slice(0, count);
 }
 
-/** @type {Map<number, any>} */
+/** @type {Map<string, any>} keyed `${type}:${id}` */
 const detailsCache = new Map();
 /** Test seam. */
 export const _resetPickerCache = () => detailsCache.clear();
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-async function slimDetails(client, id) {
-  if (detailsCache.has(id)) return detailsCache.get(id);
+/** TV episode length: TMDB's episode_run_time is often empty now, so fall back to recent episodes. */
+const tvEpisodeRuntime = (d) =>
+  d.episode_run_time?.[0] ?? d.last_episode_to_air?.runtime ?? d.next_episode_to_air?.runtime ?? null;
+
+async function slimDetails(client, type, id) {
+  const key = `${type}:${id}`;
+  if (detailsCache.has(key)) return detailsCache.get(key);
   try {
-    const d = await client.getMovieDetails(id);
+    const d = type === 'tv' ? await client.getTVDetails(id) : await client.getMovieDetails(id);
     if (!d) return null;
     const slim = {
-      runtime: d.runtime ?? null,
+      runtime: type === 'tv' ? tvEpisodeRuntime(d) : (d.runtime ?? null),
+      seasons: type === 'tv' ? (d.number_of_seasons ?? null) : null,
+      miniseries: type === 'tv' && d.type === 'Miniseries',
       genre_ids: (d.genres || []).map(g => g.id),
       backdrop_path: d.backdrop_path ?? null,
-      release_date: d.release_date ?? null,
+      release_date: (type === 'tv' ? d.first_air_date : d.release_date) ?? null,
       vote_average: d.vote_average ?? null,
       original_language: d.original_language ?? null,
       watchProviders: d['watch/providers'] ?? null,
     };
-    detailsCache.set(id, slim);
+    detailsCache.set(key, slim);
     return slim;
   } catch {
     return null;
   }
 }
 
+/** Fetch details for `items` a few at a time, pacing only real network calls. */
+async function walkDetails(client, type, items, { gapMs, until }) {
+  const out = [];
+  for (let i = 0; i < items.length && !until(out); i += CONCURRENCY) {
+    const batch = items.slice(i, i + CONCURRENCY);
+    const uncached = batch.filter(m => !detailsCache.has(`${type}:${m.id}`)).length;
+    const slims = await Promise.all(batch.map(m => slimDetails(client, type, m.id)));
+    batch.forEach((m, j) => out.push({ item: m, slim: slims[j] }));
+    if (gapMs && uncached && i + CONCURRENCY < items.length && !until(out)) await sleep(gapMs);
+  }
+  return out;
+}
+
 /**
- * Watchlist movies that match the options, walking newest saves first and
- * stopping once `target` match.
+ * Watchlist titles of the chosen type that match the options, newest saves
+ * first, stopping once `target` match.
  * @returns {Promise<{ pool: PickerCandidate[], exhausted: boolean }>}
  */
 export async function loadWatchlistPool({
   watchlistItems, options, providerIds, region, excludeIds = new Set(),
-  hideKids = false, client = tmdb, gapMs = GAP_MS, target = WATCHLIST_POOL_TARGET,
+  client = tmdb, gapMs = GAP_MS, target = POOL_TARGET,
 }) {
-  const movies = (watchlistItems || [])
-    .filter(i => (i.media_type || 'movie') === 'movie' && i.tmdb_id && !excludeIds.has(Number(i.tmdb_id)))
+  const type = options.mediaType;
+  const saved = (watchlistItems || [])
+    .filter(i => (i.media_type || 'movie') === type && i.tmdb_id && !excludeIds.has(Number(i.tmdb_id)))
     .slice()
     .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
-    .slice(0, WATCHLIST_DETAIL_LIMIT);
+    .slice(0, WATCHLIST_DETAIL_LIMIT)
+    .map(i => ({ ...i, id: Number(i.tmdb_id) }));
 
   const pool = [];
-  let walked = 0;
-  for (let i = 0; i < movies.length && pool.length < target; i += CONCURRENCY) {
-    const batch = movies.slice(i, i + CONCURRENCY);
-    const uncached = batch.filter(m => !detailsCache.has(Number(m.tmdb_id))).length;
-    const slims = await Promise.all(batch.map(m => slimDetails(client, Number(m.tmdb_id))));
-    walked = i + batch.length;
-    batch.forEach((m, j) => {
-      const s = slims[j];
-      if (!s) return;
-      const c = {
-        id: Number(m.tmdb_id),
-        media_type: /** @type {'movie'} */ ('movie'),
-        title: m.title,
-        poster_path: m.poster_path ?? null,
-        backdrop_path: s.backdrop_path,
-        release_date: s.release_date ?? m.release_date ?? null,
-        genre_ids: s.genre_ids.length ? s.genre_ids : (m.genre_ids || []),
-        runtime: s.runtime,
-        vote_average: s.vote_average,
-        original_language: s.original_language,
-        providers: regionFlatrate({ 'watch/providers': s.watchProviders }, region)
-          .filter(p => providerIds.includes(p.id)),
-        onWatchlist: true,
-      };
-      if (matchesOptions(c, options, providerIds)) pool.push(c);
-    });
-    // Only pace real network calls; a cached batch costs nothing.
-    if (gapMs && uncached && walked < movies.length && pool.length < target) await sleep(gapMs);
-  }
-  return { pool: excludeKidsContent(pool, hideKids), exhausted: walked >= movies.length };
+  const walked = await walkDetails(client, type, saved, {
+    gapMs,
+    until: (done) => {
+      // Re-derive the match count as the walk grows; cheap for 40 rows.
+      pool.length = 0;
+      for (const { item, slim } of done) {
+        if (!slim) continue;
+        const c = {
+          id: item.id,
+          media_type: type,
+          title: item.title,
+          poster_path: item.poster_path ?? null,
+          backdrop_path: slim.backdrop_path,
+          release_date: slim.release_date ?? item.release_date ?? null,
+          genre_ids: slim.genre_ids.length ? slim.genre_ids : (item.genre_ids || []),
+          runtime: slim.runtime,
+          seasons: slim.seasons,
+          miniseries: slim.miniseries,
+          vote_average: slim.vote_average,
+          original_language: slim.original_language,
+          providers: regionFlatrate({ 'watch/providers': slim.watchProviders }, region)
+            .filter(p => providerIds.includes(p.id)),
+          onWatchlist: true,
+        };
+        if (matchesOptions(c, options, providerIds)) pool.push(c);
+      }
+      return pool.length >= target;
+    },
+  });
+  return { pool: pool.slice(), exhausted: walked.length >= saved.length };
 }
 
 /**
- * One discover page for the options, minus watched titles.
+ * One discover page for the options, minus watched titles. For season-count
+ * formats, checks details for up to SEASON_CHECK_LIMIT results.
  * @returns {Promise<{ pool: PickerCandidate[], totalPages: number }>}
  */
 export async function loadDiscoverPage({
   options, providerIds, region, page = 1, excludeIds = new Set(), savedIds = new Set(),
-  hideKids = false, client = tmdb,
+  client = tmdb, gapMs = GAP_MS,
 }) {
-  const res = await client.discoverMovies(discoverParams(options, { providerIds, region, page })).catch(() => null);
-  const pool = excludeKidsContent(res?.results ?? [], hideKids)
+  const type = options.mediaType;
+  const fetchPage = type === 'tv' ? client.discoverTV : client.discoverMovies;
+  const res = await fetchPage(discoverParams(options, { providerIds, region, page })).catch(() => null);
+  let pool = excludeKidsContent(res?.results ?? [], options.hideKids)
     .filter(r => r?.id && r.poster_path && !excludeIds.has(r.id))
     .map(r => ({
       id: r.id,
-      media_type: /** @type {'movie'} */ ('movie'),
-      title: r.title,
+      media_type: type,
+      title: r.title ?? r.name,
       poster_path: r.poster_path,
       backdrop_path: r.backdrop_path ?? null,
-      release_date: r.release_date ?? null,
+      release_date: (type === 'tv' ? r.first_air_date : r.release_date) ?? null,
       genre_ids: r.genre_ids || [],
       runtime: null,
+      seasons: null,
+      miniseries: type === 'tv' && options.tvFormat === 'miniseries',
       vote_average: r.vote_average ?? null,
       providers: [],
       onWatchlist: savedIds.has(r.id),
     }));
+
+  if (formatNeedsDetails(options)) {
+    const checked = await walkDetails(client, type, pool.slice(0, SEASON_CHECK_LIMIT), {
+      gapMs,
+      until: (done) => done.filter(d => d.slim && matchesOptions(
+        { ...d.item, seasons: d.slim.seasons, runtime: d.slim.runtime ?? d.item.runtime }, options, providerIds, { checkServices: false },
+      )).length >= POOL_TARGET,
+    });
+    pool = checked
+      .filter(d => d.slim)
+      .map(d => ({ ...d.item, seasons: d.slim.seasons, runtime: d.slim.runtime, miniseries: d.slim.miniseries }))
+      .filter(c => matchesOptions(c, options, providerIds, { checkServices: false }));
+  }
   return { pool, totalPages: Math.min(res?.total_pages ?? 1, 500) };
 }
 
-/** Movie ids the viewer has already watched, so the picker does not suggest them. */
-async function loadWatchedMovieIds(userId) {
+/** Title ids the viewer has already watched, per type, so the picker does not suggest them. */
+async function loadWatchedIds(userId) {
   const { data } = await supabase
     .from('history')
-    .select('tmdb_id')
-    .eq('user_id', userId)
-    .eq('media_type', 'movie');
-  return new Set((data || []).map(r => Number(r.tmdb_id)));
+    .select('tmdb_id, media_type')
+    .eq('user_id', userId);
+  const out = { movie: new Set(), tv: new Set() };
+  for (const r of data || []) (r.media_type === 'tv' ? out.tv : out.movie).add(Number(r.tmdb_id));
+  return out;
 }
 
 /**
@@ -329,45 +437,52 @@ async function loadWatchedMovieIds(userId) {
  *   watchlistItems: any[],
  *   streamingProviders: any[]|null|undefined,
  *   region: string,
- *   hideKids?: boolean,
  * }} opts
  */
-export function useTonightPicker({ enabled, userId, watchlistItems, streamingProviders, region, hideKids = false }) {
+export function useTonightPicker({ enabled, userId, watchlistItems, streamingProviders, region }) {
   const providerIds = useMemo(() => pickerProviderIds(streamingProviders), [streamingProviders]);
   const hasServices = providerIds.length > 0;
-  const hasWatchlist = (watchlistItems || []).some(i => (i.media_type || 'movie') === 'movie');
 
   const [options, setOptions] = useState(() => defaultPickerOptions({ hasServices }));
   const [phase, setPhase] = useState(/** @type {'setup'|'spinning'|'results'|'empty'|'error'} */ ('setup'));
   const [mode, setMode] = useState(/** @type {'three'|'random'} */ ('three'));
   const [results, setResults] = useState(/** @type {PickerCandidate[]} */ ([]));
-  const [genres, setGenres] = useState(/** @type {Array<{id: number, name: string}>} */ ([]));
+  const [catalog, setCatalog] = useState(/** @type {{ movie: any[], tv: any[] }} */ ({ movie: [], tv: [] }));
+
+  const hasWatchlist = (watchlistItems || []).some(i => (i.media_type || 'movie') === options.mediaType);
 
   // The pool for the current options, plus what has been shown from it.
-  const run = useRef({ key: '', pool: [], seen: new Set(), page: 1, totalPages: 1, target: WATCHLIST_POOL_TARGET, exhausted: false });
-  const watched = useRef(/** @type {Set<number>|null} */ (null));
+  const run = useRef({ key: '', pool: [], seen: new Set(), page: 0, totalPages: 1, target: 0, exhausted: false });
+  const watched = useRef(/** @type {{ movie: Set<number>, tv: Set<number> }|null} */ (null));
 
   // Services can load after the first render; default the box on once they do.
   const servicesDefaulted = useRef(hasServices);
   useEffect(() => {
     if (hasServices && !servicesDefaulted.current) {
       servicesDefaulted.current = true;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time default once the profile's services arrive
       setOptions(o => ({ ...o, onlyServices: true }));
     }
   }, [hasServices]);
 
-  // Movie genres only (the combined list includes TV-only genres).
   useEffect(() => {
     if (!enabled) return;
     let alive = true;
     tmdb.getGenreCatalog()
-      .then(c => { if (alive) setGenres(c?.movie ?? []); })
+      .then(c => { if (alive && c) setCatalog({ movie: c.movie ?? [], tv: c.tv ?? [] }); })
       .catch(() => {});
     return () => { alive = false; };
   }, [enabled]);
 
-  const setOption = useCallback((key, value) => setOptions(o => ({ ...o, [key]: value })), []);
+  const genres = useMemo(() => pickerGenres(catalog, options), [catalog, options]);
+
+  const setOption = useCallback((key, value) => setOptions(o => {
+    const next = { ...o, [key]: value };
+    // Genre ids differ between the movie and TV catalogs.
+    if (key === 'mediaType' && value !== o.mediaType) next.genreIds = [];
+    // Drop any kids/family genre the viewer had picked before hiding them.
+    if (key === 'hideKids' && value) next.genreIds = o.genreIds.filter(id => !KIDS_GENRE_IDS.has(id));
+    return next;
+  }), []);
   const toggleGenre = useCallback((id) => setOptions(o => ({
     ...o,
     genreIds: o.genreIds.includes(id) ? o.genreIds.filter(g => g !== id) : [...o.genreIds, id],
@@ -375,33 +490,39 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
 
   const draw = useCallback(async (nextMode) => {
     const count = PICKER_MODES[nextMode];
-    const opts = { ...options, onlyServices: options.onlyServices && hasServices };
-    const key = JSON.stringify([opts, region, hideKids]);
-    const r = run.current;
-    if (r.key !== key) {
+    const opts = {
+      ...options,
+      onlyServices: options.onlyServices && hasServices,
+      onlyWatchlist: options.onlyWatchlist && hasWatchlist,
+    };
+    const key = JSON.stringify([opts, region]);
+    if (run.current.key !== key) {
       run.current = { key, pool: [], seen: new Set(), page: 0, totalPages: 1, target: 0, exhausted: false };
     }
     const cur = run.current;
-    if (!watched.current) watched.current = userId ? await loadWatchedMovieIds(userId) : new Set();
-    const excludeIds = watched.current;
+    if (!watched.current) watched.current = userId ? await loadWatchedIds(userId) : { movie: new Set(), tv: new Set() };
+    const excludeIds = watched.current[opts.mediaType];
     const unseen = () => cur.pool.filter(c => !cur.seen.has(c.id)).length;
 
-    // Grow the pool only when there is not enough new to show.
-    if (unseen() < count) {
+    // Grow the pool only when there is not enough new to show. Season-count
+    // formats can come back thin from one page, so allow a couple of pages.
+    for (let tries = 0; unseen() < count && tries < 3; tries++) {
       if (opts.onlyWatchlist) {
-        if (!cur.exhausted) {
-          cur.target += WATCHLIST_POOL_TARGET;
-          const { pool, exhausted } = await loadWatchlistPool({
-            watchlistItems, options: opts, providerIds, region, excludeIds, hideKids, target: cur.target,
-          });
-          cur.pool = pool;
-          cur.exhausted = exhausted;
-        }
-      } else if (cur.page < cur.totalPages) {
+        if (cur.exhausted) break;
+        cur.target += POOL_TARGET;
+        const { pool, exhausted } = await loadWatchlistPool({
+          watchlistItems, options: opts, providerIds, region, excludeIds, target: cur.target,
+        });
+        cur.pool = pool;
+        cur.exhausted = exhausted;
+      } else {
+        if (cur.page >= cur.totalPages) break;
         cur.page += 1;
-        const savedIds = new Set((watchlistItems || []).map(i => Number(i.tmdb_id)));
+        const savedIds = new Set((watchlistItems || [])
+          .filter(i => (i.media_type || 'movie') === opts.mediaType)
+          .map(i => Number(i.tmdb_id)));
         const { pool, totalPages } = await loadDiscoverPage({
-          options: opts, providerIds, region, page: cur.page, excludeIds, savedIds, hideKids,
+          options: opts, providerIds, region, page: cur.page, excludeIds, savedIds,
         });
         const have = new Set(cur.pool.map(c => c.id));
         cur.pool = [...cur.pool, ...pool.filter(c => !have.has(c.id))];
@@ -412,7 +533,7 @@ export function useTonightPicker({ enabled, userId, watchlistItems, streamingPro
     const picked = drawFromPool(cur.pool, count, { seen: cur.seen });
     picked.forEach(c => cur.seen.add(c.id));
     return picked;
-  }, [options, hasServices, region, hideKids, userId, watchlistItems, providerIds]);
+  }, [options, hasServices, hasWatchlist, region, userId, watchlistItems, providerIds]);
 
   const go = useCallback(async (nextMode = 'three') => {
     if (!enabled) return;

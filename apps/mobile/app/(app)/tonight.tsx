@@ -15,7 +15,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import {
-  useTonightPicker, PICKER_RUNTIMES, PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES,
+  useTonightPicker, PICKER_MEDIA_TYPES, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
+  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES,
   type PickerCandidate,
 } from '@plot/core/tonightPicker.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -27,11 +28,16 @@ import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 
 type Styles = ReturnType<typeof makeStyles>;
 
-const metaLine = (item: PickerCandidate) => [
-  (item.release_date || '').slice(0, 4),
-  item.runtime ? TONIGHT_PICKER.minutes(item.runtime) : null,
-  item.vote_average ? TONIGHT_PICKER.score10(item.vote_average) : null,
-].filter(Boolean).join(' · ');
+const metaLine = (item: PickerCandidate) => {
+  const tv = item.media_type === 'tv';
+  return [
+    (item.release_date || '').slice(0, 4),
+    tv && item.miniseries ? TONIGHT_PICKER.miniseries : null,
+    tv && !item.miniseries && item.seasons ? TONIGHT_PICKER.seasons(item.seasons) : null,
+    item.runtime ? (tv ? TONIGHT_PICKER.episodeMinutes(item.runtime) : TONIGHT_PICKER.minutes(item.runtime)) : null,
+    item.vote_average ? TONIGHT_PICKER.score10(item.vote_average) : null,
+  ].filter(Boolean).join(' · ');
+};
 
 function useReduceMotion() {
   const [reduce, setReduce] = useState(false);
@@ -168,10 +174,9 @@ export default function TonightScreen() {
     watchlistItems: watchlist.items,
     streamingProviders: profile?.streaming_providers,
     region: profile?.region || DEFAULT_REGION,
-    hideKids: !(profile?.include_kids_content ?? true),
   });
   const { options, setOption } = picker;
-  const open = (item: PickerCandidate) => openPanel(item.id, 'movie');
+  const open = (item: PickerCandidate) => openPanel(item.id, item.media_type);
 
   const button = (label: string, onPress: () => void, primary = true) => (
     <TouchableOpacity onPress={onPress} style={[styles.btn, primary ? styles.btnPrimary : styles.btnSecondary]} accessibilityRole="button">
@@ -195,7 +200,29 @@ export default function TonightScreen() {
     if (picker.phase === 'setup') {
       return (
         <View style={styles.panel}>
-          <ChipRow label={TONIGHT_PICKER.timeLabel} values={PICKER_RUNTIMES} value={options.maxRuntime} labelFor={TONIGHT_PICKER.runtime} onChange={v => setOption('maxRuntime', v)} styles={styles} />
+          <ChipRow
+            label={TONIGHT_PICKER.mediaTypeLabel}
+            values={PICKER_MEDIA_TYPES}
+            value={options.mediaType}
+            labelFor={(t: string) => TONIGHT_PICKER.mediaTypes[t as keyof typeof TONIGHT_PICKER.mediaTypes]}
+            onChange={v => setOption('mediaType', v)}
+            styles={styles}
+          />
+          {options.mediaType === 'movie' ? (
+            <ChipRow label={TONIGHT_PICKER.timeLabel} values={PICKER_RUNTIMES} value={options.maxRuntime} labelFor={TONIGHT_PICKER.runtime} onChange={v => setOption('maxRuntime', v)} styles={styles} />
+          ) : (
+            <>
+              <ChipRow
+                label={TONIGHT_PICKER.tvFormatLabel}
+                values={PICKER_TV_FORMATS}
+                value={options.tvFormat}
+                labelFor={(f: string) => TONIGHT_PICKER.tvFormats[f as keyof typeof TONIGHT_PICKER.tvFormats]}
+                onChange={v => setOption('tvFormat', v)}
+                styles={styles}
+              />
+              <ChipRow label={TONIGHT_PICKER.episodeLabel} values={PICKER_EPISODE_RUNTIMES} value={options.maxEpisodeRuntime} labelFor={TONIGHT_PICKER.runtime} onChange={v => setOption('maxEpisodeRuntime', v)} styles={styles} />
+            </>
+          )}
           <View>
             <Text style={styles.fieldLabel}>{TONIGHT_PICKER.genresLabel}</Text>
             <Text style={[styles.meta, { marginBottom: spacing.sm }]}>{TONIGHT_PICKER.genresHint}</Text>
@@ -237,8 +264,17 @@ export default function TonightScreen() {
               checked={options.onlyWatchlist && picker.hasWatchlist}
               disabled={!picker.hasWatchlist}
               label={TONIGHT_PICKER.onlyWatchlist}
-              hint={picker.hasWatchlist ? null : TONIGHT_PICKER.onlyWatchlistMissing}
+              hint={picker.hasWatchlist ? null : TONIGHT_PICKER.onlyWatchlistMissing(options.mediaType)}
               onChange={v => setOption('onlyWatchlist', v)}
+              styles={styles}
+              colors={colors}
+            />
+            <Check
+              checked={options.hideKids}
+              disabled={false}
+              label={TONIGHT_PICKER.hideKids}
+              hint={null}
+              onChange={v => setOption('hideKids', v)}
               styles={styles}
               colors={colors}
             />

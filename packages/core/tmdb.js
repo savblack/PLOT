@@ -8,7 +8,7 @@ export const getTmdbRegion = () => userRegion;
 
 const ENGLISH_SPEAKING_REGIONS = new Set(['AU', 'CA', 'GB', 'IE', 'NZ', 'US']);
 
-const KIDS_GENRE_IDS = new Set([10751, 10762]); // Family (movie+tv), Kids (tv)
+export const KIDS_GENRE_IDS = new Set([10751, 10762]); // Family (movie+tv), Kids (tv)
 
 /**
  * @param {Array<{genre_ids?: number[]}>} items
@@ -825,10 +825,11 @@ export const tmdb = {
     return fetchFromTMDB(`/discover/${type}`, params);
   },
 
-  /* ── Raw movie discover ──
+  /* ── Raw movie / TV discover ──
      For callers that build their own filter set (the Tonight picker). Params
-     are TMDB /discover/movie query keys, passed through as-is. */
+     are TMDB /discover/{movie,tv} query keys, passed through as-is. */
   discoverMovies: (params = {}) => fetchFromTMDB('/discover/movie', params),
+  discoverTV: (params = {}) => fetchFromTMDB('/discover/tv', params),
 
   /* ── Newest released titles in a genre ── */
   discoverNewestByGenre: async (type, genreId) => {
