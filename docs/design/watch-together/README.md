@@ -24,6 +24,9 @@ are fictional placeholders; posters are colour blocks, not TMDB artwork.
 | C | Yes-or-no swipe session for two people |
 | D | Group matches for three or more people |
 | K, L, M | Make a shared list, Sam's notification, the shared list |
+| N | Session invite notifications (live, and ended) |
+| O | "Saved by Sam too" on a title page |
+| Nav icons | Six icon options; the sofa was chosen |
 
 ## Paths
 
@@ -34,6 +37,42 @@ are fictional placeholders; posters are colour blocks, not TMDB artwork.
 - Hub Requests → G. Notifications → E → F.
 - A → Make a shared list → K → M. Sam gets L → M. After a list exists, A
   shows "Open your shared list" instead.
+- Session invite (N): "Jess started deciding what to watch" → Join → C, or
+  "Jess is deciding with you and Priya" → Join → D. Ended sessions show
+  "Ended" with no Join button.
+- Title page (O): "Saved by Sam too" → A. With two or more partners, "Saved
+  by Sam and Priya too" → the picker. Only shown for people you already
+  watch together with.
+
+## Ways in
+
+- Nav item Watch together (`/together`) next to Pick for Me, with a Premium
+  badge. For Free users it should open the plans page, like Pick for Me's
+  try-first pop-up.
+- A friend's profile (invite tile).
+- Notifications: requests, shared lists and live sessions.
+- Settings › Privacy › Watch together.
+- Suggested, invite links and "Not on plot yet?" share links.
+- My Lists, for shared lists.
+- A title page's "Saved by Sam too" row.
+- Proposed, not yet designed: a "Who's watching? Just me / With someone"
+  first step in Pick for Me, and a link from the Premium plans page.
+
+## Nav icon
+
+The sofa, drawn to match `apps/web/src/components/navIcons.jsx` (24px grid,
+2px stroke, round caps and joins, `currentColor`):
+
+```html
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3" />
+  <path d="M3 13a2 2 0 0 1 4 0v1h10v-1a2 2 0 0 1 4 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+  <path d="M6 19v2" />
+  <path d="M18 19v2" />
+</svg>
+```
+
+Mobile needs the same icon in `apps/mobile/app/(app)/_layout.tsx`.
 
 ## Rules agreed with Savannah
 
