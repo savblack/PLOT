@@ -120,3 +120,13 @@ export function IconHistory() {
     </svg>
   );
 }
+
+// A starred list: Pick for Me's shortlist of picks.
+export function IconTonight() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h10M3 12h7M3 18h7" />
+      <path d="m18 11 1.4 2.9 3.1.4-2.3 2.2.6 3.1-2.8-1.5-2.8 1.5.6-3.1-2.3-2.2 3.1-.4Z" />
+    </svg>
+  );
+}

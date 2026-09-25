@@ -149,6 +149,7 @@ function TabsLayout() {
       <Tabs.Screen name="search"   options={{ href: null }} />
       <Tabs.Screen name="requests" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="tonight" options={{ href: null }} />
     </Tabs>
   );
 }

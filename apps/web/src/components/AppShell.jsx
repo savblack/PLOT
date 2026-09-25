@@ -7,6 +7,8 @@ import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { HISTORY_VIEW } from '@plot/core/copy/historyView.js';
 import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { TONIGHT_PICKER } from '@plot/core/copy/tonightPicker.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
 import AppSidebar from './AppSidebar.jsx';
 import {
   IconMenu, IconClose, IconSearch, IconArrowUp,
@@ -109,7 +111,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
 
   const pageSubtitle = currentView === 'settings' ? SETTINGS_VIEW.page.subtitle
     : currentView === 'history' ? HISTORY_VIEW.subtitle
-    : currentView === 'guide' ? BROADCAST_GUIDE.subtitle : null;
+    : currentView === 'guide' ? BROADCAST_GUIDE.subtitle
+    : currentView === 'tonight' ? TONIGHT_PICKER.subtitle : null;
 
   return (
     <div className={`app-shell${panelOpen ? ' panel-docked' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
@@ -174,7 +177,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               title and this is display: none. */}
           {isListDetail && <Link className="app-page-breadcrumb" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>}
           {!isListDetail && <h1 className={`app-page-heading${pageSubtitle ? ' app-page-heading--with-subtitle' : ''}${currentView === 'guide' ? ' app-page-heading--guide' : ''}`}>{desktopTitle}</h1>}
-          {pageSubtitle && <p className="app-page-subtitle">{pageSubtitle}</p>}
+          {pageSubtitle && <p className={`app-page-subtitle${currentView === 'tonight' ? ' app-page-subtitle--desktop-only' : ''}`}>{pageSubtitle}</p>}
           {children}
         </div>
       </main>
@@ -208,7 +211,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         </div>
 
         <nav className="nav-drawer-nav">
-          {DRAWER_NAV_ITEMS.map(({ id, label }) => (
+          {DRAWER_NAV_ITEMS.map(({ id, label, premium }) => (
             <button
               key={id}
               type="button"
@@ -217,6 +220,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               aria-current={isActiveView(currentView, id) ? 'page' : undefined}
             >
               <span className="nav-drawer-label">{label}</span>
+              {premium && !isPremiumProfile(profile) && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
             </button>
           ))}
           {profile?.username && (

@@ -25,6 +25,9 @@ export const colors = {
     // inactive controls WCAG exempts, so it has to clear the bar like any
     // other text.
     textMuted: '#6B655D',
+    imageScrim: 'rgba(20,18,16,0.6)',
+    imageTextPrimary: '#F8F2EA',
+    imageTextSecondary: '#F1E9DC',
     border: 'rgba(41,41,36,0.08)',
     borderStrong: 'rgba(41,41,36,0.16)',
     accent: '#E05578',

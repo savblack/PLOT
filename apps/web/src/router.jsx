@@ -31,6 +31,7 @@ const MyListsView   = lazy(() => import('./components/MyListsView.jsx'));
 const HistoryView   = lazy(() => import('./components/HistoryView.jsx'));
 const ListPage      = lazy(() => import('./components/ListPage.jsx'));
 const SearchView  = lazy(() => import('./components/SearchView.jsx'));
+const TonightView = lazy(() => import('./components/TonightView.jsx'));
 const SettingsView= lazy(() => import('./components/SettingsView.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
@@ -117,6 +118,7 @@ const router = createBrowserRouter([
       { path: 'u/:username/lists', element: wrap(<ProfileSectionPage section="lists" />) },
       { path: 'home',     element: wrap(<DiscoverView />) },
       { path: 'new-releases', element: wrap(<NewReleasesView />) },
+      { path: 'tonight',  element: wrap(<TonightView />) },
       { path: 'guide',    element: wrap(<GuideView />) },
       { path: 'calendar', element: wrap(<CalendarView />) },
       { path: 'watching', element: <Navigate to="/my-lists" replace /> },
