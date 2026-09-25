@@ -79,8 +79,7 @@ export function NotificationsPage({ list, requests, loading, onApprove, onDeclin
         {rollup && <section className="notif-section">
           <div className="cal-stream-month"><h2 className="cal-stream-month-name">{T.newFollowers}</h2><span className="cal-stream-month-count">{T.thisWeek}</span></div>
           {(() => { const { names, tail } = rollupNames(rollup.items, T.others); return (
-            <button type="button" className="hist-card notif-rollup interactive-surface" onClick={() => onOpen?.(rollup.items[0].actor_username)}>
-              <span className={`notif-dot${rollup.unread && rollup.items.some(wasUnread) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
+            <button type="button" className={`hist-card notif-rollup interactive-surface${rollup.unread && rollup.items.some(wasUnread) ? ' notif-unread' : ''}`} onClick={() => onOpen?.(rollup.items[0].actor_username)}>
               <span className="notif-stack">{rollup.items.slice(0, 3).map(n => <Avatar key={n.id} url={n.actor_avatar_url} name={actorName(n)} small />)}</span>
               <span className="notif-rollup-text">{names.map((name, i) => <span key={name}>{i > 0 && ', '}<strong>{name}</strong></span>)}{names.length > 0 && ' and '}<strong>{tail}</strong> {T.startedFollowing}</span>
               <span className="hist-card-note notif-time">{T.peopleCount(rollup.items.length)}</span>
@@ -94,8 +93,7 @@ export function NotificationsPage({ list, requests, loading, onApprove, onDeclin
             <div className="notif-group-label">{labels[group.key]}</div>
             <div className="notif-rows">
               {group.items.map(n => isTitleNotification(n)
-                ? <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpenTitle?.(n.tmdb_id, n.media_type)}>
-                  <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
+                ? <button type="button" className={`notif-row interactive-surface${wasUnread(n) ? ' notif-unread' : ''}`} key={n.id} onClick={() => onOpenTitle?.(n.tmdb_id, n.media_type)}>
                   <Poster path={n.media_poster_path} />
                   <span className="notif-row-text">
                     <span className="notif-badge">{(n.episode_count ?? 1) > 1 ? EP.badgePlural : EP.badge}</span>
@@ -103,8 +101,7 @@ export function NotificationsPage({ list, requests, loading, onApprove, onDeclin
                   </span>
                   <span className="hist-card-note notif-time">{relativeTime(n.created_at, now)}</span>
                 </button>
-                : <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpen?.(n.actor_username)}>
-                <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
+                : <button type="button" className={`notif-row interactive-surface${wasUnread(n) ? ' notif-unread' : ''}`} key={n.id} onClick={() => onOpen?.(n.actor_username)}>
                 <Avatar url={n.actor_avatar_url} name={actorName(n)} kind={notificationKind(n.type)} />
                 <span className="notif-row-text"><strong>{actorName(n)}</strong> {notificationPhrase(n.type)}{n.post_title && <span className="hist-card-note"> · {n.post_title}</span>}</span>
                 <span className="hist-card-note notif-time">{relativeTime(n.created_at, now)}</span>
