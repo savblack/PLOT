@@ -679,6 +679,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
 
   // The pool for the current options, plus what has been shown from it.
   const run = useRef({ key: '', pool: [], seen: new Set(), page: 0, totalPages: 1, target: 0, exhausted: false });
+  const drawVersion = useRef(0);
   const watched = useRef(/** @type {{ userId: string|null|undefined, ids: { movie: Set<number>, tv: Set<number> } }|null} */ (null));
   const watchlistKey = useMemo(() => (watchlistItems || [])
     .map(item => `${item.media_type || 'movie'}:${item.tmdb_id || ''}:${item.created_at || ''}`)
@@ -802,6 +803,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   }, [options, hasServices, region, userId, watchlistItems, watchlistKey, providerIds]);
 
   const go = useCallback(async (nextMode = 'five') => {
+    const version = ++drawVersion.current;
     setMode(nextMode);
     if (!enabled) {
       setPhase('locked');
@@ -826,6 +828,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     }
     const wait = PICKER_MIN_SPIN_MS - (Date.now() - started);
     if (wait > 0) await sleep(wait);
+    if (version !== drawVersion.current) return;
     setResults(picked);
     setCanSpinAgain(more);
     setPhase(failed ? 'error' : picked.length ? 'results' : 'empty');

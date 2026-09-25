@@ -181,7 +181,7 @@ test('saved watchlist requests wait for the watchlist before resuming', () => {
 });
 
 test('result-bearing state is hidden as soon as Premium access ends', () => {
-  const result = { id: 1 };
+  const result = { title: 'Private pick' };
   const hidden = visiblePickerState({
     enabled: false, phase: 'results', resultsOwner: 'viewer-a', userId: 'viewer-a', results: [result], canSpinAgain: true,
   });
