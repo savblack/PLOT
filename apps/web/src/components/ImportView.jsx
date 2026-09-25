@@ -37,7 +37,7 @@ function PlatformIcon({ id, logoPath, size = 32 }) {
     );
   }
   // Fallback: colored square while loading
-  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054', plex: '#E5A00D', trakt: '#ED1C24' };
+  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054', plex: 'var(--rating)', trakt: 'var(--danger)' };
   return <div style={{ width: size, height: size, borderRadius: 8, background: colors[id] || '#333', flexShrink: 0 }} />;
 }
 
@@ -47,14 +47,12 @@ const PLATFORMS = [
   {
     id: 'plex',
     name: 'Plex',
-    color: '#E5A00D',
     format: 'Connected account',
     kind: 'connection',
   },
   {
     id: 'trakt',
     name: 'Trakt',
-    color: '#ED1C24',
     format: 'Connected account',
     kind: 'connection',
   },
@@ -409,7 +407,7 @@ export default function ImportView() {
                 </p>
               )}
               {(connection?.error || importError) && (
-                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem', fontSize: '0.82rem', color: '#ef4444' }}>
+                <div style={{ background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, padding: '0.75rem', fontSize: '0.82rem', color: 'var(--danger)' }}>
                   {connection?.error || importError}
                 </div>
               )}

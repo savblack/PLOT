@@ -29,21 +29,21 @@ const PLATFORMS: PlatformConfig[] = [
   {
     id: 'plex',
     name: 'Plex',
-    color: '#E5A00D',
+    color: 'rating',
     hint: IMPORT_VIEW.connectionImportHint,
     kind: 'connection',
   },
   {
     id: 'trakt',
     name: 'Trakt',
-    color: '#ED1C24',
+    color: 'danger',
     hint: IMPORT_VIEW.connectionImportHint,
     kind: 'connection',
   },
   {
     id: 'letterboxd',
     name: 'Letterboxd',
-    color: '#00E054',
+    color: 'success',
     hint: 'Settings → Data → Export your data → unzip → choose diary.csv or watched.csv',
     accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text'],
   },
@@ -328,7 +328,11 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
                 onPress={() => handleSelectPlatform(p.id)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.platformDot, { backgroundColor: p.color }]} />
+                <View style={[styles.platformDot, {
+                  backgroundColor: p.color.startsWith('#')
+                    ? p.color
+                    : colors[p.color as keyof Palette],
+                }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.platformName}>{p.name}</Text>
                   <Text style={styles.platformHint} numberOfLines={2}>{p.hint}</Text>
