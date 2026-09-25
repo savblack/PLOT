@@ -56,6 +56,9 @@ const BLOCK_FILTERED = [
   'list_following',        // following list
   'list_follow_requests',  // the requests screen
   'list_notifications',    // "x started following you", with their avatar
+  'list_watch_together',   // Watch together partners and requests
+  'suggest_watch_together', // Suggested people to watch together with
+  'send_watch_together_request', // reads the recipient's request setting
 ];
 
 // Must NOT carry it, each for a reason that has to survive review.

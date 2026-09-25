@@ -26,3 +26,9 @@ test('kinds, names and day distance', () => {
   assert.equal(daysAgo(at(1), now), 0);
   assert.equal(daysAgo(at(26), now), 1);
 });
+
+test('watch together requests leave the stream; accepted ones stay', () => {
+  const { groups } = groupNotifications([row(1, 'watch_together_request', 1), row(2, 'watch_together_accepted', 2)], now);
+  assert.deepEqual(groups.map(g => g.items.map(n => n.id)), [[2]]);
+  assert.equal(notificationKind('watch_together_request'), 'request');
+});

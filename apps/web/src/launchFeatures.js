@@ -17,3 +17,7 @@ export const SHOW_APPLE_LOGIN = import.meta.env.VITE_SHOW_APPLE_LOGIN !== 'false
 
 // The plan preview is public; checkout remains closed in usePremium and stripe-billing.
 export const SHOW_PRICING_PAGE = true;
+
+// Watch together (Premium). Hidden until supabase/migrations/20260925120000_watch_together.sql
+// is live in production. Set VITE_SHOW_WATCH_TOGETHER=true to try it locally.
+export const SHOW_WATCH_TOGETHER = import.meta.env.VITE_SHOW_WATCH_TOGETHER === 'true';

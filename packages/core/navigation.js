@@ -1,3 +1,5 @@
+import { WATCH_TOGETHER } from './copy/watchTogether.js';
+
 export const APP_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: '/home', primary: true },
   { id: 'calendar', label: 'Calendar', path: '/calendar', primary: true },
@@ -13,6 +15,10 @@ export const APP_NAV_ITEMS = [
   // Pick for Me, the tonight picker (Premium). Free viewers land on the Premium gate,
   // never on fake results. Mobile lists it in its drawer (DrawerMenu.tsx).
   { id: 'tonight', label: 'Pick for Me', path: '/tonight', primary: false, premium: true },
+  // Premium. Web only for now; `feature` lets the web shim hide it behind
+  // SHOW_WATCH_TOGETHER until its migration is live. Mobile parity is tracked
+  // in the Watch together PR.
+  { id: 'together', label: WATCH_TOGETHER.navLabel, path: '/together', primary: false, premium: true, feature: 'watchTogether' },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
 ];

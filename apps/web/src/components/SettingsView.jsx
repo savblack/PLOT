@@ -40,7 +40,7 @@ import { MODERATION } from '../copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
@@ -49,6 +49,8 @@ import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
+import { WatchTogetherSettings } from './WatchTogetherParts.jsx';
+import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -2197,6 +2199,14 @@ export default function SettingsView() {
 
       </div>
 
+          {SHOW_WATCH_TOGETHER && (
+            <div className="settings-group">
+              <div className="settings-group-title">{WATCH_TOGETHER.settings.title}</div>
+              <div className="settings-row" style={{ cursor: 'default', display: 'block' }}>
+                <WatchTogetherSettings user={user} profile={profile} />
+              </div>
+            </div>
+          )}
           <BlockedAccounts viewerId={user?.id} />
           <div className="settings-group">
         {/* Export all data */}

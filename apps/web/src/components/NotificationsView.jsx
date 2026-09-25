@@ -7,6 +7,9 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { useFollowRequests } from '../hooks/useFollowRequests.js';
+import { useWatchTogether } from '@plot/core/useWatchTogether.js';
+import { AcceptDialog } from './WatchTogetherParts.jsx';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { COMMON } from '../copy/common.js';
 import { notificationPhrase, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T } from '@plot/core/copy/notifications.js';
 import { groupNotifications, notificationKind, actorName, rollupNames } from '@plot/core/notificationGroups.js';
@@ -28,10 +31,11 @@ function Avatar({ url, name, small = false, kind }) {
 }
 
 /** Pure layout; data comes from the hooks in NotificationsView (and from a story). */
-export function NotificationsPage({ list, requests, loading, onApprove, onDecline, onOpen, onMarkAllRead, now, wasUnread = () => false }) {
+export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onMarkAllRead, now, wasUnread = () => false }) {
   const { rollup, groups } = useMemo(() => groupNotifications(list, now), [list, now]);
   const unread = list.filter(wasUnread).length;
-  const empty = !loading && list.length === 0 && requests.length === 0;
+  const requestTotal = requests.length + watchRequests.length;
+  const empty = !loading && list.length === 0 && requestTotal === 0;
   const labels = { today: T.today, yesterday: T.yesterday, earlier: T.earlier };
   return <div className="hist-page notif-page">
     {unread > 0
@@ -51,9 +55,20 @@ export function NotificationsPage({ list, requests, loading, onApprove, onDeclin
     {loading ? <p className="hist-card-note notif-status" role="status">{COMMON.loading}</p>
       : empty ? <div className="empty-state"><div className="empty-title">{NOTIFICATIONS_EMPTY.title}</div><div className="empty-body">{NOTIFICATIONS_EMPTY.body}</div></div>
       : <div className="notif-body">
-        {requests.length > 0 && <section className="notif-section">
-          <div className="cal-stream-month"><h2 className="cal-stream-month-name">{T.requests}</h2><span className="cal-stream-month-count">{T.requestCount(requests.length)}</span></div>
+        {requestTotal > 0 && <section className="notif-section">
+          <div className="cal-stream-month"><h2 className="cal-stream-month-name">{T.requests}</h2><span className="cal-stream-month-count">{T.requestCount(requestTotal)}</span></div>
           <div className="notif-request-grid">
+            {watchRequests.map(r => <div className="hist-card notif-request" key={`wt-${r.other_id}`}>
+              <Avatar url={r.avatar_url} name={r.display_name || r.username} />
+              <span className="notif-request-text">
+                <button type="button" className="notif-request-name" onClick={() => onOpen?.(r.username)}>{r.display_name || r.username}</button>
+                <span className="hist-card-note">@{r.username} · {T.wantsToWatchTogether}</span>
+              </span>
+              <span className="notif-request-actions">
+                <button type="button" className="btn btn-primary btn-xs" onClick={() => onReviewWatch?.(r)}>{T.review}</button>
+                <button type="button" className="btn btn-secondary btn-xs" onClick={() => onDeclineWatch?.(r)}>{T.decline}</button>
+              </span>
+            </div>)}
             {requests.map(r => <div className="hist-card notif-request" key={r.follower_id}>
               <Avatar url={r.avatar_url} name={r.display_name || r.username} />
               <span className="notif-request-text">
@@ -94,16 +109,18 @@ export function NotificationsPage({ list, requests, loading, onApprove, onDeclin
             </div>
           </div>)}
         </section>}
-        {!groups.length && !rollup && requests.length > 0 && <p className="hist-card-note notif-status">{T.nothingElse}</p>}
+        {!groups.length && !rollup && requestTotal > 0 && <p className="hist-card-note notif-status">{T.nothingElse}</p>}
       </div>}
   </div>;
 }
 
 export default function NotificationsView() {
-  const { user } = useApp();
+  const { user, profile } = useApp();
   const navigate = useNavigate();
   const { list, loading, refreshList, markAllRead } = useNotifications(user?.id);
   const { requests, loading: requestsLoading, approve, decline } = useFollowRequests(user?.id);
+  const watch = useWatchTogether(SHOW_WATCH_TOGETHER ? user?.id : null);
+  const [reviewing, setReviewing] = useState(null);
   // Snapshot the rows that were unread when the page opened. They keep their
   // dots until the person explicitly uses the Option C "Mark all read" action.
   const [unreadIds, setUnreadIds] = useState(null);
@@ -117,8 +134,15 @@ export default function NotificationsView() {
     await markAllRead();
     setUnreadIds(new Set());
   };
-  return <NotificationsPage list={list} requests={requests} loading={loading || requestsLoading} now={now}
-    onApprove={approve} onDecline={decline} onOpen={username => { if (username) navigate(`/u/${username}`); }}
-    onMarkAllRead={handleMarkAllRead}
-    wasUnread={n => unreadIds?.has(n.id) ?? false} />;
+  return <>
+    <NotificationsPage list={list} requests={requests} watchRequests={watch.incoming} loading={loading || requestsLoading} now={now}
+      onApprove={approve} onDecline={decline} onOpen={username => { if (username) navigate(`/u/${username}`); }}
+      onReviewWatch={setReviewing} onDeclineWatch={r => watch.respond(r.other_id, false)}
+      onMarkAllRead={handleMarkAllRead}
+      wasUnread={n => unreadIds?.has(n.id) ?? false} />
+    {reviewing && <AcceptDialog person={reviewing} viewerIsPublic={!!profile?.is_public}
+      onClose={() => setReviewing(null)}
+      onDecline={() => { watch.respond(reviewing.other_id, false); setReviewing(null); }}
+      onAccept={shareFull => { watch.respond(reviewing.other_id, true, shareFull); setReviewing(null); }} />}
+  </>;
 }

@@ -1,0 +1,136 @@
+// Watch together (Premium). Shared by web and mobile. Design and agreed rules:
+// docs/design/watch-together/README.md. Avoid "movie night": it may be a show,
+// and it may not be night.
+
+export const WATCH_TOGETHER = Object.freeze({
+  navLabel: 'Watch together',
+
+  hub: {
+    title: 'Watch together',
+    decideTitle: 'Decide what to watch',
+    decideBody: 'Choose who you’re watching with. Plot finds what you’ve all saved.',
+    whosWatching: 'Who’s watching?',
+    requests: 'Requests',
+    requestsSummary: (incoming, outgoing) => {
+      const parts = [];
+      if (incoming) parts.push(`${incoming} waiting for you`);
+      if (outgoing) parts.push(`${outgoing} sent`);
+      return parts.join(' · ');
+    },
+    partners: 'People you watch together with',
+    invite: 'Invite',
+    bothSaved: (n) => `${n} on both watchlists`,
+    noPartnersTitle: 'Nobody here yet.',
+    noPartnersBody: 'Invite someone to see what you’ve both saved.',
+    suggested: 'Suggested',
+    suggestedBody: 'People you might watch together with',
+    freeTitle: 'Get Premium to watch together',
+  },
+
+  requests: {
+    title: 'Requests',
+    incoming: 'Waiting for you',
+    outgoing: 'Sent',
+    wantsTo: 'wants to watch together',
+    sent: 'Request sent',
+    review: 'Review',
+    decline: 'Decline',
+    cancel: 'Cancel request',
+    none: 'No requests right now.',
+  },
+
+  accept: {
+    title: (name) => `Watch together with ${name}?`,
+    willSee: (name) => `${name} will see`,
+    wontSee: (name) => `${name} won’t see`,
+    seesOverlap: 'Titles that are on both your watchlists',
+    seesPicks: 'Your picks when you decide together',
+    hidesRest: 'The rest of your watchlist, unless you turn it on below',
+    hidesPrivateLists: 'Any lists you’ve set to private',
+    hidesNotes: 'Your private notes',
+    shareFull: 'Also share my full watchlist',
+    shareFullBody: (name) => `Lets ${name} see what else you’d like to watch. Your profile is private, so your watchlist stays hidden unless you turn this on.`,
+    accept: 'Accept',
+    notNow: 'Not now',
+    foot: (name) => `You can stop any time in Settings. ${name} isn’t told if you decline.`,
+  },
+
+  tile: {
+    kicker: 'Watch together',
+    requestSent: 'Request sent',
+    watchingTogether: 'Watching together',
+    onBoth: 'titles on both your watchlists',
+    privateTitle: (name) => `${name}’s watchlist is private`,
+    waitingTitle: (name) => `Waiting for ${name}`,
+    freeBody: 'See what you’ve both saved, narrow it down and choose together.',
+    freeAction: (name) => `Get Premium to invite ${name}`,
+    freeFoot: (price, name) => `${price}. ${name} doesn’t need Premium.`,
+    publicBody: (name) => `${name} gets a request to accept. Once they do, you can choose from what you’ve both saved.`,
+    privateBody: (name) => `Send a request. If ${name} accepts, you’ll see the titles you’ve both saved.`,
+    inviteAction: (name) => `Invite ${name} to watch together`,
+    joinFree: (name) => `${name} can join for free.`,
+    pendingBody: (name) => `Watch together request sent. ${name} needs to accept before you can choose together.`,
+    pendingFoot: 'Requests expire after 30 days.',
+    incomingBody: (name) => `${name} wants to watch together.`,
+    incomingAction: 'Review request',
+    pairedBody: (name) => `You and ${name} are watching together. Choose from what you’ve both saved.`,
+    pairedAction: 'See what you both saved',
+    pairedFoot: 'Manage in Settings › Privacy',
+  },
+
+  overlap: {
+    heading: (n) => `${n} ${n === 1 ? 'title' : 'titles'} you’ve both saved.`,
+    pair: (name) => `You and ${name}`,
+    movies: 'Movies',
+    shows: 'Shows',
+    show: 'Show',
+    filter: 'Filter titles',
+    you: 'You',
+    everyone: 'everyone',
+    group: (names) => `You, ${names.slice(0, -1).join(', ')}${names.length > 1 ? ' and ' : ''}${names[names.length - 1]}`,
+    groupHeading: 'What you’ve all saved.',
+    groupAction: 'See group matches',
+    savedByAll: 'Saved by everyone',
+    savedBySome: 'Saved by some of you',
+    savedBy: (names) => names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0] || '',
+    all: 'All',
+    topMatch: 'Top match',
+    choose: 'Choose this',
+    shuffle: 'Shuffle',
+    alsoOnBoth: 'Also on both your watchlists',
+    emptyTitle: 'Nothing in common yet.',
+    emptyBody: (name) => `When you and ${name} save the same title, it shows up here.`,
+    notPartners: 'You’re not watching together with this person.',
+  },
+
+  invite: {
+    title: 'Invite to watch together',
+    body: 'They get a request to accept. They can join for free.',
+    search: 'Search by name or @username',
+    suggested: 'Suggested',
+    invite: 'Invite',
+    sent: 'Request sent',
+    noSuggestions: 'No suggestions right now. Search for someone you follow.',
+  },
+
+  settings: {
+    title: 'Watch together',
+    description: 'Who can ask to watch together with you, and who you watch with.',
+    whoCanRequest: 'Who can send you requests',
+    fromProfile: 'Anyone who can see my profile',
+    fromFollowing: 'Only people I follow',
+    fromNone: 'No one',
+    partners: 'Watching together with',
+    shareFull: 'Share my full watchlist',
+    stop: 'Stop',
+    since: (date, n) => `Since ${date} · ${n} in common`,
+    stopNote: 'Stopping takes effect straight away. The other person stops seeing your overlap and isn’t notified. Blocking someone also stops watching together.',
+    none: 'You’re not watching together with anyone yet.',
+  },
+
+  errors: {
+    premium_required: 'Watch together needs Premium. The person you invite doesn’t.',
+    not_allowed: 'This person isn’t taking watch together requests from you.',
+    generic: 'That didn’t work. Try again.',
+  },
+});

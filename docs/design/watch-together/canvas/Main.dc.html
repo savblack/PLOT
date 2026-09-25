@@ -35,7 +35,7 @@ a{color:#B83558}a:hover{color:#8F2743}
   </div>
 
   <div style="display: flex; gap: 8px; padding: 16px 20px 0; overflow: hidden">
-    <sc-for list="{{chips}}" as="chip" hint-placeholder-count="4">
+    <sc-for list="{{chips}}" as="chip" hint-placeholder-count="2">
       <button type="button" onClick="{{chip.pick}}" style="{{chip.style}}">{{chip.label}}</button>
     </sc-for>
   </div>
@@ -101,8 +101,6 @@ class Component extends DCLogic {
     const chips = [
       { id: 'movies', label: 'Movies' },
       { id: 'shows', label: 'Shows' },
-      { id: 'short', label: 'Under 2 hours' },
-      { id: 'mine', label: 'On my services' },
     ].map((c) => ({ ...c, style: this.state.chip === c.id ? on : off, pick: () => this.setState({ chip: c.id }) }));
     const poster = (bg) => 'width: 44px; height: 66px; flex-shrink: 0; border-radius: 8px; background: ' + bg;
     const rows = [

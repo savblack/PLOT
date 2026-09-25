@@ -9,6 +9,8 @@ export const NOTIFICATIONS = Object.freeze({
   post_like:       'liked your post',
   post_comment:    'commented on your post',
   comment_like:    'liked your comment',
+  watch_together_request:  'wants to watch together',
+  watch_together_accepted: 'accepted your watch together request',
 });
 
 /** Shown when a notification type isn't one we have wording for yet. */
@@ -19,6 +21,8 @@ export const NOTIFICATIONS_PAGE = Object.freeze({
   requests: 'Requests',
   requestCount: (n) => `${n} ${n === 1 ? 'request' : 'requests'}`,
   wantsToFollow: 'wants to follow you',
+  wantsToWatchTogether: 'wants to watch together',
+  review: 'Review',
   approve: 'Approve',
   decline: 'Decline',
   newFollowers: 'New followers',

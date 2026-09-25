@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
-import { SHOW_PRICING_PAGE } from './launchFeatures.js';
+import { SHOW_PRICING_PAGE, SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 import { isPreviewDeployment } from './utils/previewDeployment.js';
 
 // The auth entry/exit points must never fail, so they're bundled eagerly (not
@@ -35,6 +35,7 @@ const TonightView = lazy(() => import('./components/TonightView.jsx'));
 const SettingsView= lazy(() => import('./components/SettingsView.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
+const WatchTogetherView = lazy(() => import('./components/WatchTogetherView.jsx'));
 
 // Standalone pages
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
@@ -133,6 +134,12 @@ const router = createBrowserRouter([
       { path: 'requests', element: <Navigate to="/notifications" replace /> },
       { path: 'notifications', element: wrap(<NotificationsView />) },
       { path: 'import',   element: wrap(<ImportView />) },
+      ...(SHOW_WATCH_TOGETHER ? [
+        { path: 'together', element: wrap(<WatchTogetherView />) },
+        { path: 'together/pick', element: wrap(<WatchTogetherView page="pick" />) },
+        { path: 'together/invite', element: wrap(<WatchTogetherView page="invite" />) },
+        { path: 'together/with/:usernames', element: wrap(<WatchTogetherView page="with" />) },
+      ] : []),
     ],
   },
 

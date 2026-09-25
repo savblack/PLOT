@@ -130,3 +130,16 @@ export function IconTonight() {
     </svg>
   );
 }
+
+// Watch together: a sofa. Chosen from the options on the design canvas
+// (docs/design/watch-together/README.md, "Nav icon").
+export function IconWatchTogether() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3" />
+      <path d="M3 13a2 2 0 0 1 4 0v1h10v-1a2 2 0 0 1 4 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M6 19v2" />
+      <path d="M18 19v2" />
+    </svg>
+  );
+}
