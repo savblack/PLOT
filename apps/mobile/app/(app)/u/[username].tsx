@@ -87,7 +87,7 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
   };
 
   // Same selection as web: honours the owner's section toggles and the Top 5 cap.
-  // Watching, Want to Watch and lists aren't rendered here yet (web parity: #931).
+  // Watching, Want to Watch and lists aren't rendered here yet (web parity: issue 931).
   const layout = publicProfileLayout({ locked, sections: profile?.profile_sections, recent, topMovies, topTv, favourites });
   const noPublicContent = !locked && watchCount === 0 && layout.recent.length === 0
     && layout.topMovies.length === 0 && layout.topTv.length === 0 && layout.favourites.length === 0;
