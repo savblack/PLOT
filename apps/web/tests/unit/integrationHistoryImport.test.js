@@ -40,3 +40,14 @@ test('both import surfaces offer Plex and Trakt without enabling sync UI', () =>
     assert.match(source, /status === 'authorized'/);
   }
 });
+
+test('both import surfaces offer Letterboxd and IMDb and resolve IMDb title ids', () => {
+  const webImport = read('../../src/components/ImportView.jsx');
+  const mobileImport = read('../../../mobile/components/ImportHistoryModal.tsx');
+
+  for (const source of [webImport, mobileImport]) {
+    assert.match(source, /id: 'letterboxd'/);
+    assert.match(source, /id: 'imdb'/);
+    assert.match(source, /findExternal/);
+  }
+});

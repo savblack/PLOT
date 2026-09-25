@@ -37,7 +37,7 @@ function PlatformIcon({ id, logoPath, size = 32 }) {
     );
   }
   // Fallback: colored square while loading
-  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054', plex: 'var(--rating)', trakt: 'var(--danger)' };
+  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054', imdb: 'var(--rating)', plex: 'var(--rating)', trakt: 'var(--danger)' };
   return <div style={{ width: size, height: size, borderRadius: 8, background: colors[id] || '#333', flexShrink: 0 }} />;
 }
 
@@ -141,9 +141,16 @@ const PLATFORMS = [
       'Upload that CSV file here. Your ratings and reviews come across too',
     ],
   },
+  {
+    id: 'imdb',
+    name: IMPORT_VIEW.imdbName,
+    format: 'CSV',
+    shortInstructions: IMPORT_VIEW.imdbExportHint,
+    instructions: IMPORT_VIEW.imdbInstructions,
+  },
 ];
 
-/* Platform parsers (parseNetflix/Prime/Disney/Max/Apple/Letterboxd + parsePlatform)
+/* Platform parsers (parseNetflix/Prime/Disney/Max/Apple/Letterboxd/IMDb + parsePlatform)
    now live in the shared core: @plot/core/importParsing.js. */
 
 /* TMDB resolution, the existing-history read, row building and the batched
@@ -265,6 +272,7 @@ export default function ImportView() {
 
     const resolved = await resolveImportEntries(deduped, {
       search: (title) => tmdb.search(title),
+      findExternal: (id) => tmdb.findByExternalId(id),
       onProgress: (done, total) => setResolveProgress({ done, total }),
     });
 
@@ -483,7 +491,7 @@ export default function ImportView() {
               Drop your {platform.format} here
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.9rem' }}>
-              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : platform.id === 'letterboxd' ? 'diary.csv' : `Your ${platform.name} export file`}
+              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : platform.id === 'letterboxd' ? 'diary.csv' : platform.id === 'imdb' ? IMPORT_VIEW.imdbFileName : `Your ${platform.name} export file`}
             </div>
             <span style={{
               fontSize: '0.78rem', fontWeight: 600,
