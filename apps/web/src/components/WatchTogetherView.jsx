@@ -4,12 +4,12 @@
 // watchTogether.js and useWatchTogether.js. The two-person yes-or-no session
 // and shared lists come in later changes. Mobile parity: not built yet;
 // tracked in the Watch together PR.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
-import { personName, filterByKind, splitGroupMatches, shufflePick } from '@plot/core/watchTogether.js';
-import { useWatchTogether, useWatchTogetherTitles, useWatchTogetherSuggestions } from '@plot/core/useWatchTogether.js';
+import { personName, filterByKind, splitGroupMatches, shufflePick, sessionProgress, swipeDecision, SWIPE_THRESHOLD } from '@plot/core/watchTogether.js';
+import { useWatchTogether, useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherSession, startWatchTogetherSession, liveWatchTogetherSession } from '@plot/core/useWatchTogether.js';
 import { supabase } from '@plot/core/supabase.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
@@ -140,7 +140,16 @@ function Picker({ wt }) {
   const [picked, setPicked] = useState(() => new Set());
   const chosen = wt.partners.filter(p => picked.has(p.other_id));
   const toggle = (id) => setPicked(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
-  const go = () => navigate(`/together/with/${chosen.map(p => encodeURIComponent(p.username)).join(',')}`);
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState(null);
+  const browse = () => navigate(`/together/with/${chosen.map(p => encodeURIComponent(p.username)).join(',')}`);
+  const decide = async () => {
+    setStarting(true); setError(null);
+    const result = await startWatchTogetherSession(chosen[0].other_id);
+    setStarting(false);
+    if (result.ok) navigate(`/together/session/${result.data}`);
+    else setError(T.errors[result.code]);
+  };
 
   return (
     <div className="wt-page">
@@ -156,8 +165,12 @@ function Picker({ wt }) {
           </label>
         ))}
       </fieldset>
+      {error && <p className="wt-error" role="alert">{error}</p>}
       <div className="wt-actions">
-        <button type="button" className="btn btn-primary" disabled={!chosen.length} onClick={go}>{chosen.length > 1 ? T.overlap.groupAction : T.tile.pairedAction}</button>
+        {chosen.length === 1 && <button type="button" className="btn btn-secondary" onClick={browse}>{T.tile.pairedAction}</button>}
+        {chosen.length > 1
+          ? <button type="button" className="btn btn-primary" onClick={browse}>{T.overlap.groupAction}</button>
+          : <button type="button" className="btn btn-primary" disabled={!chosen.length || starting} onClick={decide}>{T.session.start}</button>}
       </div>
     </div>
   );
@@ -219,6 +232,7 @@ function Invite({ wt }) {
 
 function Together({ wt, usernames }) {
   const { user, openPanel } = useApp();
+  const navigate = useNavigate();
   const people = usernames.map(u => wt.partners.find(p => p.username === u)).filter(Boolean);
   // The hook keys on the sorted ids, so a fresh array each render is fine.
   const { titles, loading, error } = useWatchTogetherTitles(people.map(p => p.other_id));
@@ -235,12 +249,17 @@ function Together({ wt, usernames }) {
     return <div className="wt-page"><Link to="/together" className="wt-back">{COMMON.back}</Link><p className="wt-note">{T.overlap.notPartners}</p></div>;
   }
   const { all, some } = splitGroupMatches(shown, people.length + 1);
+  const decide = async () => {
+    const result = await startWatchTogetherSession(people[0].other_id);
+    if (result.ok) navigate(`/together/session/${result.data}`);
+  };
 
   return (
     <div className="wt-page">
       <Link to="/together" className="wt-back">{COMMON.back}</Link>
       <div className="wt-who"><AvatarStack people={people} /><span className="wt-note">{group ? T.overlap.group(people.map(personName)) : T.overlap.pair(personName(people[0] || {}))}</span></div>
       <h1 className="wt-title">{group ? T.overlap.groupHeading : T.overlap.heading(titles.length)}</h1>
+      {!group && titles.length > 0 && <div><button type="button" className="btn btn-primary btn-sm" onClick={decide}>{T.session.start}</button></div>}
 
       <div className="wt-chips" role="group" aria-label={T.overlap.filter}>
         {[['all', T.overlap.all], ['movie', T.overlap.movies], ['tv', T.overlap.shows]].map(([k, label]) => (
@@ -294,6 +313,161 @@ function TitleSection({ label, titles, openPanel, who }) {
   );
 }
 
+
+/* ── Two-person yes-or-no session ────────────────────────────────────── */
+
+function SessionCardView({ card, counter, onDecide }) {
+  const [dx, setDx] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const start = useRef(0);
+  const url = posterUrl(card.poster_path, 'w500');
+  const finish = () => {
+    if (!dragging) return;
+    setDragging(false);
+    const decision = swipeDecision(dx);
+    setDx(0);
+    if (decision) onDecide(decision === 'yes');
+  };
+  const show = (v) => Math.min(Math.max(v / SWIPE_THRESHOLD, 0), 1);
+  return (
+    <div className="wt-swipe"
+      style={{ transform: `translateX(${dx}px) rotate(${dx / 20}deg)`, transition: dragging ? 'none' : 'transform 0.2s ease-out' }}
+      onPointerDown={e => { start.current = e.clientX; e.currentTarget.setPointerCapture?.(e.pointerId); setDragging(true); }}
+      onPointerMove={e => { if (dragging) setDx(e.clientX - start.current); }}
+      onPointerUp={finish} onPointerCancel={finish}>
+      {url ? <img className="wt-swipe-img" src={url} alt="" draggable="false" /> : <span className="wt-swipe-img wt-poster--empty" aria-hidden="true" />}
+      <span className="wt-swipe-scrim" aria-hidden="true" />
+      <span className="wt-swipe-counter">{counter}</span>
+      <span className="wt-stamp wt-stamp--yes" style={{ opacity: show(dx) }} aria-hidden="true">{T.session.yes}</span>
+      <span className="wt-stamp wt-stamp--no" style={{ opacity: show(-dx) }} aria-hidden="true">{T.session.no}</span>
+      <span className="wt-swipe-text">
+        <span className="wt-swipe-title">{card.title}</span>
+        <span className="wt-swipe-meta">{titleMeta(card)}</span>
+      </span>
+    </div>
+  );
+}
+
+function SessionView({ wt, sessionId }) {
+  const navigate = useNavigate();
+  const { openPanel } = useApp();
+  const { session, error, loading, vote } = useWatchTogetherSession(sessionId);
+  const [showMatches, setShowMatches] = useState(false);
+  const [justMatched, setJustMatched] = useState(null);
+  const other = wt.partners.find(p => p.other_id === session?.other_id);
+  const name = personName(other || {});
+  const progress = sessionProgress(session);
+
+  const decide = async (yes) => {
+    const card = progress.card;
+    if (!card) return;
+    setJustMatched(null);
+    const result = await vote(card, yes);
+    if (result.matched) setJustMatched(card);
+  };
+  const restart = async () => {
+    const result = await startWatchTogetherSession(session.other_id);
+    if (result.ok) navigate(`/together/session/${result.data}`, { replace: true });
+  };
+
+  if (loading && !session) return <div className="wt-page"><p className="wt-note" role="status">{COMMON.loading}</p></div>;
+  if (error || !session) return <div className="wt-page"><Link to="/together" className="wt-back">{COMMON.back}</Link><p className="wt-note">{T.errors[error || 'generic']}</p></div>;
+
+  const matchList = (
+    <section className="wt-section">
+      <h2 className="wt-section-label">{T.session.matchesTitle}</h2>
+      {progress.matches.length === 0 && <p className="wt-note">{T.session.noMatches}</p>}
+      {progress.matches.map(t => (
+        <button key={`${t.media_type}:${t.tmdb_id}`} type="button" className="wt-row wt-row--link interactive-surface" onClick={() => openPanel(t.tmdb_id, t.media_type)}>
+          <Poster title={t} />
+          <span className="wt-person-text"><span className="wt-person-name">{t.title}</span><span className="wt-note">{titleMeta(t)}</span></span>
+          <span className="wt-link">{T.session.choose}</span>
+        </button>
+      ))}
+    </section>
+  );
+
+  return (
+    <div className="wt-page wt-session">
+      <header className="wt-session-head">
+        <Link to="/together" className="wt-back">{T.session.leave}</Link>
+        <div className="wt-session-title">
+          <h1 className="wt-card-title">{T.session.heading(name)}</h1>
+          <span className="wt-note">{T.session.fromBoth}</span>
+        </div>
+        <span className="wt-note wt-session-them">{personName(other || {})}: {T.session.theyAnswered(Math.min(session.other_answered + 1, progress.total))}</span>
+      </header>
+
+      {!session.live ? (
+        <div className="wt-card">
+          <p className="wt-card-body">{T.session.ended}</p>
+          <div><button type="button" className="btn btn-primary btn-sm" onClick={restart}>{T.session.startAgain}</button></div>
+          {matchList}
+        </div>
+      ) : progress.total === 0 ? (
+        <div className="empty-state"><div className="empty-body">{T.session.empty(name)}</div></div>
+      ) : showMatches ? (
+        <>
+          {matchList}
+          <div><button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowMatches(false)}>{T.session.hideMatches}</button></div>
+        </>
+      ) : progress.done ? (
+        <>
+          <div className="wt-card"><h2 className="wt-card-title">{T.session.doneTitle}</h2><p className="wt-card-body">{T.session.doneBody(name)}</p></div>
+          {matchList}
+        </>
+      ) : (
+        <>
+          {justMatched && (
+            <div className="wt-card wt-match" role="status">
+              <span className="wt-chip wt-chip--accent">{T.session.bothIn}</span>
+              <span className="wt-person-name">{justMatched.title}</span>
+              <div><button type="button" className="btn btn-primary btn-sm" onClick={() => openPanel(justMatched.tmdb_id, justMatched.media_type)}>{T.session.choose}</button></div>
+            </div>
+          )}
+          <SessionCardView key={`${progress.card.media_type}:${progress.card.tmdb_id}`} card={progress.card}
+            counter={T.session.counter(progress.index + 1, progress.total)} onDecide={decide} />
+          <p className="wt-note wt-center">{T.session.swipeHint}</p>
+          <div className="wt-session-buttons">
+            <button type="button" className="btn btn-secondary" onClick={() => decide(false)}>{T.session.no}</button>
+            <button type="button" className="btn btn-primary" onClick={() => decide(true)}>{T.session.yes}</button>
+          </div>
+          <div className="wt-session-foot">
+            <span className="wt-note">{T.session.matchesSoFar(progress.matches.length)}</span>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowMatches(true)}>{T.session.seeMatches}</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* Join from a notification: find the live session with this partner. */
+function JoinSession({ wt, username }) {
+  const navigate = useNavigate();
+  const partner = wt.partners.find(p => p.username === username);
+  const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    if (!partner) return undefined;
+    let live = true;
+    liveWatchTogetherSession(partner.other_id).then(result => {
+      if (!live) return;
+      if (result.ok && result.data) navigate(`/together/session/${result.data}`, { replace: true });
+      else setMissing(true);
+    });
+    return () => { live = false; };
+  }, [partner, navigate]);
+  if (!wt.loading && !partner) return <div className="wt-page"><Link to="/together" className="wt-back">{COMMON.back}</Link><p className="wt-note">{T.overlap.notPartners}</p></div>;
+  if (!missing) return <div className="wt-page"><p className="wt-note" role="status">{COMMON.loading}</p></div>;
+  return (
+    <div className="wt-page">
+      <Link to="/together" className="wt-back">{COMMON.back}</Link>
+      <p className="wt-card-body">{T.session.ended}</p>
+      <div><Link to={`/together/with/${encodeURIComponent(username)}`} className="btn btn-primary btn-sm">{T.tile.pairedAction}</Link></div>
+    </div>
+  );
+}
+
 /* ── Route ───────────────────────────────────────────────────────────── */
 
 export default function WatchTogetherView({ page = 'hub' }) {
@@ -304,6 +478,8 @@ export default function WatchTogetherView({ page = 'hub' }) {
 
   if (page === 'pick') return <Picker wt={wt} />;
   if (page === 'invite') return premium ? <Invite wt={wt} /> : <Hub wt={wt} premium={premium} profile={profile} />;
+  if (page === 'session') return <SessionView wt={wt} sessionId={params.sessionId} />;
+  if (page === 'join') return <JoinSession wt={wt} username={decodeURIComponent(params.username || '')} />;
   if (page === 'with') {
     const usernames = (params.usernames || '').split(',').map(decodeURIComponent).filter(Boolean);
     return <Together wt={wt} usernames={usernames} />;

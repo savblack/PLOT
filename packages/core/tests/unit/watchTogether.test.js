@@ -54,3 +54,18 @@ test('copy avoids em dashes', () => {
   const walk = (v) => typeof v === 'string' ? [v] : typeof v === 'function' ? [render(v)] : Object.values(v).flatMap(walk);
   for (const s of walk(WATCH_TOGETHER)) assert.ok(!s.includes('—'), s);
 });
+
+test('session progress walks the deck and lists matches', async () => {
+  const { sessionProgress, swipeDecision, sessionChannel } = await import('../../watchTogether.js');
+  const card = (id) => ({ tmdb_id: id, media_type: 'movie', title: `T${id}`, poster_path: null, release_date: null });
+  const session = { id: 's', other_id: 'o', live: true, deck: [card(1), card(2), card(3)], my_votes: [{ tmdb_id: 1, media_type: 'movie', yes: true }], other_answered: 2, matches: [{ tmdb_id: 1, media_type: 'movie' }] };
+  const p = sessionProgress(session);
+  assert.equal(p.card.tmdb_id, 2);
+  assert.deepEqual([p.index, p.total, p.answered, p.done], [1, 3, 1, false]);
+  assert.deepEqual(p.matches.map(c => c.tmdb_id), [1]);
+  const done = sessionProgress({ ...session, my_votes: [1, 2, 3].map(id => ({ tmdb_id: id, media_type: 'movie', yes: false })) });
+  assert.deepEqual([done.card, done.index, done.done], [null, 3, true]);
+  assert.equal(sessionProgress(null).total, 0);
+  assert.deepEqual([swipeDecision(150), swipeDecision(-150), swipeDecision(40)], ['yes', 'no', null]);
+  assert.equal(sessionChannel('abc'), 'wt-session:abc');
+});

@@ -100,7 +100,7 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
           {groups.map(group => <div className="notif-group" key={group.key}>
             <div className="notif-group-label">{labels[group.key]}</div>
             <div className="notif-rows">
-              {group.items.map(n => <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpen?.(n.actor_username)}>
+              {group.items.map(n => <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpen?.(n.actor_username, n.type)}>
                 <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
                 <Avatar url={n.actor_avatar_url} name={actorName(n)} kind={notificationKind(n.type)} />
                 <span className="notif-row-text"><strong>{actorName(n)}</strong> {notificationPhrase(n.type)}{n.post_title && <span className="hist-card-note"> · {n.post_title}</span>}</span>
@@ -112,6 +112,14 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
         {!groups.length && !rollup && requestTotal > 0 && <p className="hist-card-note notif-status">{T.nothingElse}</p>}
       </div>}
   </div>;
+}
+
+// Watch together notifications open the feature, not the sender's profile.
+function notificationPath(username, type) {
+  const u = encodeURIComponent(username);
+  if (SHOW_WATCH_TOGETHER && type === 'watch_together_session') return `/together/join/${u}`;
+  if (SHOW_WATCH_TOGETHER && type === 'watch_together_accepted') return `/together/with/${u}`;
+  return `/u/${username}`;
 }
 
 export default function NotificationsView() {
@@ -136,7 +144,7 @@ export default function NotificationsView() {
   };
   return <>
     <NotificationsPage list={list} requests={requests} watchRequests={watch.incoming} loading={loading || requestsLoading} now={now}
-      onApprove={approve} onDecline={decline} onOpen={username => { if (username) navigate(`/u/${username}`); }}
+      onApprove={approve} onDecline={decline} onOpen={(username, type) => { if (username) navigate(notificationPath(username, type)); }}
       onReviewWatch={setReviewing} onDeclineWatch={r => watch.respond(r.other_id, false)}
       onMarkAllRead={handleMarkAllRead}
       wasUnread={n => unreadIds?.has(n.id) ?? false} />

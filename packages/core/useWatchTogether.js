@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
-import { splitWatchTogether, watchTogetherErrorCode } from './watchTogether.js';
+import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey } from './watchTogether.js';
 
 /**
  * Watch together data hooks, shared by web and mobile. Every write goes
@@ -151,4 +151,77 @@ export function useWatchTogetherSuggestions(userId) {
   useEffect(() => { refresh(); }, [refresh]);
 
   return { people, refresh };
+}
+
+/**
+ * A live two-person session. Reads and votes go through RPCs; after each vote
+ * the client pings the session's Realtime broadcast channel and both sides
+ * re-read. The ping carries no data, so the channel needs no access rules. A
+ * slow poll covers dropped connections.
+ *
+ * @param {string | null | undefined} sessionId
+ * @param {{ pollMs?: number }} [options]
+ */
+export function useWatchTogetherSession(sessionId, { pollMs = 5000 } = {}) {
+  const [session, setSession] = useState(/** @type {import('./watchTogether.js').SessionState | null} */ (null));
+  const [error, setError] = useState(/** @type {ReturnType<typeof watchTogetherErrorCode> | null} */ (null));
+  const [loading, setLoading] = useState(!!sessionId);
+  const channelRef = useRef(/** @type {any} */ (null));
+
+  const refresh = useCallback(async () => {
+    if (!sessionId) return;
+    const result = await call('get_watch_together_session', { p_session: sessionId });
+    if (result.ok) { setSession(result.data); setError(null); } else setError(result.code);
+    setLoading(false);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) return undefined;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- first read of the session
+    refresh();
+    const channel = supabase.channel(sessionChannel(sessionId), { config: { broadcast: { self: false } } })
+      .on('broadcast', { event: 'update' }, () => { refresh(); })
+      .subscribe();
+    channelRef.current = channel;
+    const timer = setInterval(refresh, pollMs);
+    return () => {
+      clearInterval(timer);
+      channelRef.current = null;
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId, refresh, pollMs]);
+
+  const ping = useCallback(() => {
+    channelRef.current?.send({ type: 'broadcast', event: 'update', payload: {} });
+  }, []);
+
+  /** @param {{ tmdb_id: number, media_type: string }} card @param {boolean} yes */
+  const vote = useCallback(async (card, yes) => {
+    if (!sessionId) return { ok: false, matched: false };
+    // Optimistic: record the answer so the next card shows straight away.
+    setSession(s => s && { ...s, my_votes: [...s.my_votes.filter(v => titleKey(v) !== titleKey(card)), { tmdb_id: card.tmdb_id, media_type: card.media_type, yes }] });
+    const result = await call('vote_watch_together', { p_session: sessionId, p_tmdb_id: card.tmdb_id, p_media_type: card.media_type, p_yes: yes });
+    ping();
+    await refresh();
+    return result.ok ? { ok: true, matched: !!result.data } : { ok: false, matched: false };
+  }, [sessionId, ping, refresh]);
+
+  const end = useCallback(async () => {
+    if (!sessionId) return;
+    await call('end_watch_together_session', { p_session: sessionId });
+    ping();
+    await refresh();
+  }, [sessionId, ping, refresh]);
+
+  return { session, error, loading, refresh, vote, end };
+}
+
+/** Start a session with a partner; resolves to the new session id or an error code. @param {string} otherId */
+export async function startWatchTogetherSession(otherId) {
+  return call('start_watch_together_session', { p_other: otherId });
+}
+
+/** The live session with a partner, if any. @param {string} otherId */
+export async function liveWatchTogetherSession(otherId) {
+  return call('live_watch_together_session', { p_other: otherId });
 }

@@ -11,6 +11,7 @@ export const NOTIFICATIONS = Object.freeze({
   comment_like:    'liked your comment',
   watch_together_request:  'wants to watch together',
   watch_together_accepted: 'accepted your watch together request',
+  watch_together_session:  'started deciding what to watch with you',
 });
 
 /** Shown when a notification type isn't one we have wording for yet. */

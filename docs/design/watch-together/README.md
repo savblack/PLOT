@@ -137,3 +137,19 @@ Shared lists (from A)
 - Taste overlap moved to Deeper stats, in its own canvas and session.
 - Public/private profile and list visibility is being cleaned up in a separate
   session. Revisit the privacy copy above once that model is agreed.
+
+## Implementation status
+
+Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
+
+- Phase 1 (`20260925120000_watch_together.sql`): requests, pairings, share
+  full watchlist, shared titles for two people or a group, Suggested, hub,
+  picker, invite, profile tile, accept dialog, notifications, settings.
+- Phase 2 (`20260925130000_watch_together_sessions.sql`): the two-person
+  yes-or-no session and its "started deciding" notification. The deck is a
+  shuffled snapshot of titles you've both saved. Neither person sees the
+  other's individual votes, only progress and matches. Live updates are a
+  Realtime broadcast ping (no data) on `wt-session:<id>`, with a 5 second
+  poll as a fallback. Sessions end after 12 hours, when either person ends
+  them, when a new one starts, or when the pairing ends.
+- Not built yet: shared lists, "Saved by Sam too" on title pages, mobile.

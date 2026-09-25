@@ -130,3 +130,68 @@ export function watchTogetherErrorCode(error) {
   if (message.includes('not_allowed')) return 'not_allowed';
   return 'generic';
 }
+
+/* ── Two-person yes-or-no session ─────────────────────────────────────── */
+
+/**
+ * @typedef {object} SessionCard
+ * @property {number} tmdb_id
+ * @property {string} media_type
+ * @property {string | null} title
+ * @property {string | null} poster_path
+ * @property {string | null} release_date
+ */
+
+/**
+ * @typedef {object} SessionState  get_watch_together_session() from the viewer's side.
+ * @property {string} id
+ * @property {string} other_id
+ * @property {boolean} live
+ * @property {SessionCard[]} deck
+ * @property {{ tmdb_id: number, media_type: string, yes: boolean }[]} my_votes
+ * @property {number} other_answered
+ * @property {{ tmdb_id: number, media_type: string }[]} matches
+ */
+
+/** @param {{ tmdb_id: number, media_type: string }} t */
+export const titleKey = (t) => `${t.media_type}:${t.tmdb_id}`;
+
+/**
+ * Where the viewer is in the deck: the next unanswered card, how many they've
+ * answered, and the matched cards with their details.
+ *
+ * @param {SessionState | null} session
+ */
+export function sessionProgress(session) {
+  if (!session) return { card: null, index: 0, total: 0, answered: 0, done: false, matches: [] };
+  const answered = new Set(session.my_votes.map(titleKey));
+  const index = session.deck.findIndex(c => !answered.has(titleKey(c)));
+  const matchKeys = new Set(session.matches.map(titleKey));
+  return {
+    card: index === -1 ? null : session.deck[index],
+    index: index === -1 ? session.deck.length : index,
+    total: session.deck.length,
+    answered: answered.size,
+    done: index === -1,
+    matches: session.deck.filter(c => matchKeys.has(titleKey(c))),
+  };
+}
+
+/** How far a swipe has to travel, in px, to count as an answer. */
+export const SWIPE_THRESHOLD = 110;
+
+/**
+ * A finished swipe: 'yes' (right), 'no' (left) or null (spring back).
+ *
+ * @param {number} dx
+ * @param {number} [threshold]
+ * @returns {'yes' | 'no' | null}
+ */
+export function swipeDecision(dx, threshold = SWIPE_THRESHOLD) {
+  if (dx > threshold) return 'yes';
+  if (dx < -threshold) return 'no';
+  return null;
+}
+
+/** The Realtime broadcast channel for a session; carries pings only, no data. */
+export const sessionChannel = (sessionId) => `wt-session:${sessionId}`;

@@ -223,3 +223,47 @@
 .wt-settings-partner .wt-person-text { flex: 1; }
 .wt-stop { margin-left: auto; }
 .wt-settings-share { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-size: 0.875rem; color: var(--text-primary); }
+
+/* Two-person session */
+.wt-session { max-width: 440px; }
+.wt-session-head { display: flex; flex-direction: column; gap: 0.4rem; }
+.wt-session-title { display: flex; flex-direction: column; gap: 2px; }
+.wt-session-them { color: var(--text-muted); }
+.wt-swipe {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  max-height: 60vh;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-sunken);
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.wt-swipe:active { cursor: grabbing; }
+.wt-swipe-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.wt-swipe-scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0) 55%); pointer-events: none; }
+.wt-swipe-text { position: absolute; left: 1.2rem; right: 1.2rem; bottom: 1.2rem; display: flex; flex-direction: column; gap: 0.3rem; pointer-events: none; }
+.wt-swipe-title { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; line-height: 1; color: #fff; }
+.wt-swipe-meta { font-size: 0.875rem; color: rgba(255, 255, 255, 0.86); }
+.wt-swipe-counter {
+  position: absolute; top: 0.9rem; right: 0.9rem;
+  padding: 4px 10px; border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.45); color: #fff;
+  font-size: 0.75rem; font-weight: 700; pointer-events: none;
+}
+.wt-stamp {
+  position: absolute; top: 1.2rem;
+  padding: 5px 12px; border-radius: var(--radius-pill);
+  font-size: 0.875rem; font-weight: 800; pointer-events: none;
+  transition: opacity 0.1s;
+}
+.wt-stamp--yes { left: 1rem; background: var(--accent-fill); color: var(--on-accent-fill); }
+.wt-stamp--no { right: 1rem; top: 3.2rem; background: var(--surface); color: var(--text-primary); }
+.wt-session-buttons { display: flex; justify-content: center; gap: 0.75rem; }
+.wt-session-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.75rem 0.9rem; border-radius: var(--radius-md);
+  background: var(--surface); border: 1px solid var(--border);
+}
+.wt-match { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 0.6rem; }
