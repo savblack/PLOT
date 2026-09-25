@@ -17,13 +17,12 @@ export const SHOW_MEDIA_SYNC_INTEGRATIONS = false;
 // configured, so users never hit one that errors.
 //   Google — set EXPO_PUBLIC_SHOW_GOOGLE_LOGIN=true once the Google Cloud OAuth
 //     client is created and the Google provider is enabled in Supabase.
-//   Apple  — the Apple Developer Program membership exists (Individual); what
-//     is missing is the Sign in with Apple service ID + key and the Supabase
-//     provider. Flip to true once they are set up. Note App Store review
+//   Apple  — set EXPO_PUBLIC_SHOW_APPLE_LOGIN=true once the Sign in with Apple
+//     service ID + key exist and the Supabase provider is enabled. App Store review
 //     requires Sign in with Apple if any other social sign-in ships on iOS.
 // Magic-link sign-in needs no flag — it runs off the existing Supabase SMTP.
 export const SHOW_GOOGLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_GOOGLE_LOGIN === 'true';
-export const SHOW_APPLE_LOGIN = false;
+export const SHOW_APPLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_APPLE_LOGIN === 'true';
 
 // Pricing/upgrade UI. Hidden while pricing isn't ready to be public. Mobile
 // has no upgrade nudge built yet — declared so the two flag sets stay
