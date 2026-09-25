@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Watch together invite tile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&amp;family=Gabarito:wght@400..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 350px; height: 328px; box-sizing: border-box; padding: 18px; border-radius: 24px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); display: flex; flex-direction: column; gap: 12px; font-family: 'DM Sans', system-ui, sans-serif; color: #292924">
+  <div style="display: flex; align-items: center; justify-content: space-between; min-height: 24px">
+    <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: #B83558">WATCH TOGETHER</span>
+    <sc-if value="{{isFree}}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 12px; font-weight: 600; color: #1A8CD8; background: rgba(26,140,216,0.1); padding: 4px 8px; border-radius: 10px">Premium</span>
+    </sc-if>
+    <sc-if value="{{isPending}}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 12px; font-weight: 700; color: #292924; background: #F1E9DC; padding: 4px 10px; border-radius: 9999px">Request sent</span>
+    </sc-if>
+    <sc-if value="{{isPaired}}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 12px; font-weight: 700; color: #5F7030; background: rgba(95,112,48,0.12); padding: 4px 10px; border-radius: 9999px">Watching together</span>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{showCount}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; align-items: flex-end; gap: 16px">
+      <div style="position: relative; width: 150px; height: 104px; flex-shrink: 0" aria-hidden="true">
+        <span style="position: absolute; left: 0; bottom: 0; width: 62px; height: 92px; border-radius: 10px; background: #2F3B52; border: 2px solid #FFFCF7"></span>
+        <span style="position: absolute; left: 38px; bottom: 0; width: 66px; height: 98px; border-radius: 10px; background: #A8683E; z-index: 2; border: 2px solid #FFFCF7"></span>
+        <span style="position: absolute; left: 88px; bottom: 0; width: 58px; height: 86px; border-radius: 10px; background: #3E6A70; z-index: 1; border: 2px solid #FFFCF7"></span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <span style="font-family: 'Gabarito', sans-serif; font-weight: 700; font-size: 34px; line-height: 1">14</span>
+        <span style="font-size: 14px; color: #5F5A52; line-height: 1.3">titles on both your watchlists</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{showLock}}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; align-items: center; gap: 14px; height: 96px">
+      <span style="width: 64px; height: 64px; flex-shrink: 0; border-radius: 9999px; background: #F1E9DC; display: flex; align-items: center; justify-content: center">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+      </span>
+      <span style="font-family: 'Gabarito', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.1">{{lockTitle}}</span>
+    </div>
+  </sc-if>
+
+  <p style="margin: 6px 0; font-size: 14px; line-height: 1.45">{{body}}</p>
+
+  <sc-if value="{{isPaired}}" hint-placeholder-val="{{ false }}">
+    <a href="Main.dc.html" style="height: 48px; border-radius: 9999px; background: #FF88C8; color: #292924; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none">See what you both saved</a>
+  </sc-if>
+  <sc-if value="{{showButton}}" hint-placeholder-val="{{ true }}">
+    <button type="button" onClick="{{act}}" style="{{buttonStyle}}">{{buttonLabel}}</button>
+  </sc-if>
+  <span style="margin-top: -4px; font-size: 12px; color: #6B655D; text-align: center">{{foot}}</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["free","public","private","pending","paired"],"default":"public"},"friend":{"editor":"text","default":"Sam"},"$preview":{"width":350,"height":328}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { mode: props.mode ?? 'public', was: props.mode ?? 'public' }; }
+  componentDidUpdate(prev) {
+    if (prev.mode !== this.props.mode) this.setState({ mode: this.props.mode ?? 'public', was: this.props.mode ?? 'public' });
+  }
+  renderVals() {
+    const f = this.props.friend ?? 'Sam';
+    const m = this.state.mode;
+    const primary = 'font-family: inherit; cursor: pointer; height: 48px; border: 0; border-radius: 9999px; background: #FF88C8; color: #292924; font-weight: 700; font-size: 15px';
+    const secondary = 'font-family: inherit; cursor: pointer; height: 48px; border-radius: 9999px; border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; color: #292924; font-weight: 600; font-size: 15px';
+    const invite = () => this.setState({ mode: 'pending' });
+    const copy = {
+      free: { body: 'See what you’ve both saved, narrow it to tonight, and choose together.', label: 'Get Premium to invite ' + f, foot: '$3/month or $25/year. ' + f + ' doesn’t need Premium.', act: () => {} },
+      public: { body: f + ' gets a request to accept. Once they do, you can choose from what you’ve both saved.', label: 'Invite ' + f + ' to watch together', foot: f + ' can join for free.', act: invite },
+      private: { body: 'Send a request. If ' + f + ' accepts, you’ll see the titles you’ve both saved.', label: 'Invite ' + f + ' to watch together', foot: f + ' can join for free.', act: invite },
+      pending: { body: 'Watch together request sent. ' + f + ' needs to accept before you can choose together.', label: 'Cancel request', foot: 'Requests expire after 30 days.', act: () => this.setState((s) => ({ mode: s.was === 'pending' ? 'public' : s.was })) },
+      paired: { body: 'You and ' + f + ' are watching together. Choose from what you’ve both saved, or start a session.', label: '', foot: 'Manage in Settings › Privacy', act: () => {} },
+    }[m] || {};
+    return {
+      isFree: m === 'free', isPending: m === 'pending', isPaired: m === 'paired',
+      showCount: m === 'free' || m === 'public' || m === 'paired',
+      showLock: m === 'private' || m === 'pending',
+      lockTitle: m === 'pending' ? 'Waiting for ' + f : f + '’s watchlist is private',
+      showButton: m !== 'paired',
+      body: copy.body, buttonLabel: copy.label, foot: copy.foot, act: copy.act,
+      buttonStyle: m === 'pending' ? secondary : primary,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Watch together hub</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&amp;family=Gabarito:wght@400..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:#F8F2EA;color:#292924}
+button{font-family:inherit;cursor:pointer}
+a{color:#B83558}
+</style>
+</helmet>
+<div style="width: 390px; height: 980px; box-sizing: border-box; background: #F8F2EA; display: flex; flex-direction: column; gap: 16px; overflow: hidden; font-family: 'DM Sans', system-ui, sans-serif; color: #292924">
+
+  <div style="padding: 24px 20px 0; display: flex; align-items: center; justify-content: space-between">
+    <h1 style="margin: 0; font-family: 'Gabarito', sans-serif; font-weight: 700; font-size: 32px; line-height: 1.05">Watch together</h1>
+    <span style="font-size: 12px; font-weight: 600; color: #1A8CD8; background: rgba(26,140,216,0.1); padding: 6px 10px; border-radius: 10px">Premium</span>
+  </div>
+
+  <div style="margin: 0 20px; padding: 18px; border-radius: 24px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span style="font-family: 'Gabarito', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.1">Decide what to watch</span>
+      <span style="font-size: 14px; line-height: 1.45; color: #5F5A52">Choose who you’re watching with. plot finds what you’ve all saved.</span>
+    </div>
+    <a href="Picker.dc.html" style="height: 48px; border-radius: 9999px; background: #FF88C8; color: #292924; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none">Who’s watching?</a>
+  </div>
+
+  <a href="Manage.dc.html" style="margin: 0 20px; padding: 12px 14px; border-radius: 16px; background: #F1E9DC; display: flex; align-items: center; gap: 12px; color: #292924; text-decoration: none">
+    <span style="min-width: 24px; height: 24px; padding: 0 6px; box-sizing: border-box; border-radius: 9999px; background: #E05578; color: #FFFCF7; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">1</span>
+    <span style="display: flex; flex-direction: column; flex-grow: 1">
+      <span style="font-size: 14px; font-weight: 600">Requests</span>
+      <span style="font-size: 12px; color: #5F5A52">Alex wants to watch together · 1 sent to Jo</span>
+    </span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+  </a>
+
+  <div style="margin: 0 20px; display: flex; flex-direction: column">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 6px">
+      <span style="font-size: 13px; font-weight: 600; color: #5F5A52">People you watch together with</span>
+      <a href="Invite.dc.html" style="font-size: 13px; font-weight: 600">Invite</a>
+    </div>
+    <sc-for list="{{people}}" as="p" hint-placeholder-count="3">
+      <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid rgba(41,41,36,0.08); color: #292924; text-decoration: none">
+        <span style="{{p.avatar}}">{{p.initial}}</span>
+        <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+          <span style="font-weight: 600; font-size: 15px">{{p.name}}</span>
+          <span style="font-size: 12px; color: #6B655D">{{p.detail}}</span>
+        </span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B655D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+      </a>
+    </sc-for>
+  </div>
+
+  <a href="Invite.dc.html" style="margin: 0 20px; padding: 18px 16px 18px 20px; border-radius: 24px; background: #F1E9DC; display: flex; align-items: center; gap: 12px; color: #292924; text-decoration: none">
+    <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+      <span style="font-family: 'Gabarito', sans-serif; font-weight: 700; font-size: 20px">Suggested</span>
+      <span style="font-size: 12px; color: #5F5A52">People you might watch together with</span>
+    </span>
+    <span style="display: flex" aria-hidden="true">
+      <span style="width: 40px; height: 40px; border-radius: 9999px; background: #D6E4E8; border: 2px solid #F1E9DC; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">M</span>
+      <span style="width: 40px; height: 40px; border-radius: 9999px; background: #FFD3E6; border: 2px solid #F1E9DC; margin-left: -12px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">R</span>
+      <span style="width: 40px; height: 40px; border-radius: 9999px; background: #E4DCCF; border: 2px solid #F1E9DC; margin-left: -12px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">T</span>
+    </span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+  </a>
+
+
+  <div style="margin: 0 20px; display: flex; flex-direction: column">
+    <span style="font-size: 13px; font-weight: 600; color: #5F5A52; padding-bottom: 6px">Recent nights</span>
+    <sc-for list="{{nights}}" as="n" hint-placeholder-count="2">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid rgba(41,41,36,0.08)">
+        <span style="{{n.poster}}"></span>
+        <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+          <span style="font-weight: 600; font-size: 15px">{{n.title}}</span>
+          <span style="font-size: 12px; color: #6B655D">{{n.detail}}</span>
+        </span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const av = (bg) => 'width: 44px; height: 44px; flex-shrink: 0; border-radius: 9999px; background: ' + bg + '; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #292924';
+    const people = [
+      { name: 'Sam', initial: 'S', detail: '14 on both watchlists', bg: '#DBE1B0' },
+      { name: 'Priya', initial: 'P', detail: '9 on both watchlists', bg: '#F1E9DC' },
+      { name: 'Jess', initial: 'J', detail: '6 on both watchlists · New', bg: '#FF88C8' },
+    ].map((p) => ({ ...p, avatar: av(p.bg) }));
+    const nights = [
+      { title: 'The Holdovers', detail: 'Friday · You, Sam and Priya · Group matches', bg: '#7A4B3A' },
+      { title: 'Past Lives', detail: 'Last Tuesday · You and Sam', bg: '#2F3B52' },
+    ].map((n) => ({ ...n, poster: 'width: 40px; height: 60px; flex-shrink: 0; border-radius: 8px; background: ' + n.bg }));
+    return { people, nights };
+  }
+}
+</script>
+</body>
+</html>

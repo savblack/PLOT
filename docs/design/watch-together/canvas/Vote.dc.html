@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Watch together: group matches</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&amp;family=Gabarito:wght@400..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:#F8F2EA;color:#292924}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F8F2EA; display: flex; flex-direction: column; overflow: hidden; position: relative; font-family: 'DM Sans', system-ui, sans-serif; color: #292924">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 0">
+    <a href="Picker.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 9999px; border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; display: flex; align-items: center; justify-content: center; box-sizing: border-box">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+    </a>
+    <button type="button" style="height: 36px; padding: 0 14px; border-radius: 9999px; border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; font-size: 13px; font-weight: 600; color: #292924">Invite</button>
+  </div>
+
+  <div style="padding: 16px 20px 0; display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: #B83558">DECIDING TOGETHER</span>
+    <h1 style="margin: 0; font-family: 'Gabarito', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.05; text-wrap: balance">What you’ve all saved.</h1>
+    <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px">
+      <div style="display: flex">
+        <span style="width: 30px; height: 30px; border-radius: 9999px; background: #FF88C8; border: 2px solid #F8F2EA; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">You</span>
+        <span style="width: 30px; height: 30px; border-radius: 9999px; background: #DBE1B0; border: 2px solid #F8F2EA; margin-left: -8px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">S</span>
+        <span style="width: 30px; height: 30px; border-radius: 9999px; background: #F1E9DC; border: 2px solid #F8F2EA; margin-left: -8px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">P</span>
+      </div>
+      <span style="font-size: 13px; color: #5F5A52">You, Sam and Priya · 11 matches</span>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 8px; padding: 14px 20px 0">
+    <sc-for list="{{chips}}" as="chip" hint-placeholder-count="2">
+      <button type="button" onClick="{{chip.pick}}" style="{{chip.style}}">{{chip.label}}</button>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; flex-direction: column; padding: 14px 20px 0">
+    <span style="font-size: 13px; font-weight: 600; color: #5F5A52; padding-bottom: 6px">Saved by all three</span>
+    <sc-for list="{{all}}" as="it" hint-placeholder-count="2">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid rgba(41,41,36,0.08)">
+        <span style="{{it.poster}}"></span>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+          <span style="font-weight: 600; font-size: 15px">{{it.title}}</span>
+          <span style="font-size: 12px; color: #6B655D">{{it.meta}}</span>
+        </div>
+        <span style="font-size: 12px; font-weight: 700; background: #FF88C8; color: #292924; padding: 4px 9px; border-radius: 9999px">3 of 3</span>
+      </div>
+    </sc-for>
+
+    <span style="font-size: 13px; font-weight: 600; color: #5F5A52; padding: 14px 0 6px">Saved by two of you</span>
+    <sc-for list="{{some}}" as="it" hint-placeholder-count="3">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid rgba(41,41,36,0.08)">
+        <span style="{{it.poster}}"></span>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+          <span style="font-weight: 600; font-size: 15px">{{it.title}}</span>
+          <span style="font-size: 12px; color: #6B655D">{{it.meta}}</span>
+        </div>
+        <span style="font-size: 12px; color: #5F5A52; white-space: nowrap">{{it.who}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 24px; background: #F8F2EA; border-top: 1px solid rgba(41,41,36,0.08); display: flex; flex-direction: column; gap: 8px">
+    <button type="button" style="height: 50px; border: 0; border-radius: 9999px; background: #FF88C8; color: #292924; font-weight: 700; font-size: 15px">Pick one for us</button>
+    <span style="font-size: 12px; color: #6B655D; text-align: center">Only you need Premium to host. Friends join on Free.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { chip: 'movies' }; }
+  renderVals() {
+    const base = 'height: 36px; padding: 0 14px; border-radius: 9999px; font-size: 13px; font-weight: 600; white-space: nowrap; ';
+    const chips = [
+      { id: 'movies', label: 'Movies' },
+      { id: 'shows', label: 'Shows' },
+    ].map((c) => ({ ...c, style: base + (this.state.chip === c.id ? 'border: 1px solid #292924; background: #292924; color: #FFFCF7' : 'border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; color: #292924'), pick: () => this.setState({ chip: c.id }) }));
+    const poster = (bg) => 'width: 40px; height: 60px; flex-shrink: 0; border-radius: 8px; background: ' + bg;
+    const all = [
+      { title: 'The Holdovers', meta: '2023 · 2h 13m', bg: '#7A4B3A' },
+      { title: 'Paddington 2', meta: '2017 · 1h 43m', bg: '#A8683E' },
+    ].map((i) => ({ ...i, poster: poster(i.bg) }));
+    const some = [
+      { title: 'Knives Out', meta: '2019 · 2h 10m', who: 'You and Sam', bg: '#5B3E57' },
+      { title: 'Past Lives', meta: '2023 · 1h 46m', who: 'Sam and Priya', bg: '#2F3B52' },
+      { title: 'Aftersun', meta: '2022 · 1h 42m', who: 'You and Priya', bg: '#3E6A70' },
+    ].map((i) => ({ ...i, poster: poster(i.bg) }));
+    return { chips, all, some };
+  }
+}
+</script>
+</body>
+</html>

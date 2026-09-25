@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Watch together: invite people</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&amp;family=Gabarito:wght@400..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:#F8F2EA;color:#292924}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+a{color:#B83558}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F8F2EA; display: flex; flex-direction: column; overflow: hidden; font-family: 'DM Sans', system-ui, sans-serif; color: #292924">
+
+  <div style="display: flex; align-items: center; padding: 16px 16px 0">
+    <a href="Hub.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 9999px; border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; display: flex; align-items: center; justify-content: center; box-sizing: border-box">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+    </a>
+  </div>
+
+  <div style="padding: 12px 20px 0; display: flex; flex-direction: column; gap: 6px">
+    <h1 style="margin: 0; font-family: 'Gabarito', sans-serif; font-weight: 700; font-size: 32px; line-height: 1.05">Invite to watch together</h1>
+    <p style="margin: 0; font-size: 14px; line-height: 1.45; color: #5F5A52">They get a request to accept. They can join for free.</p>
+  </div>
+
+  <div style="padding: 16px 20px 0">
+    <label for="invite-search" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search people</label>
+    <div style="display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; border-radius: 9999px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.16)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B655D" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <input id="invite-search" type="search" placeholder="Search by name or @username" style="border: 0; outline: 0; background: transparent; font-size: 15px; color: #292924; flex-grow: 1">
+    </div>
+  </div>
+
+  <div style="padding: 20px 20px 6px; font-size: 13px; font-weight: 600; color: #5F5A52">Suggested</div>
+  <div style="display: flex; flex-direction: column; padding: 0 20px">
+    <sc-for list="{{people}}" as="p" hint-placeholder-count="5">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid rgba(41,41,36,0.08)">
+        <span style="{{p.avatar}}">{{p.initial}}</span>
+        <span style="font-weight: 600; font-size: 15px; flex-grow: 1; min-width: 0">{{p.name}}</span>
+        <button type="button" onClick="{{p.toggle}}" style="{{p.btnStyle}}">{{p.btnLabel}}</button>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin: auto 20px 24px; padding: 16px; border-radius: 24px; background: #F1E9DC; display: flex; align-items: center; gap: 12px">
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+      <span style="font-size: 14px; font-weight: 600">Not on plot yet?</span>
+      <span style="font-size: 12px; color: #5F5A52">Send a link. They can sign up for free.</span>
+    </div>
+    <button type="button" style="height: 40px; padding: 0 16px; border-radius: 9999px; border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; font-size: 13px; font-weight: 700; color: #292924">Share link</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sent: {} }; }
+  renderVals() {
+    const av = (bg) => 'width: 44px; height: 44px; flex-shrink: 0; border-radius: 9999px; background: ' + bg + '; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #292924';
+    const base = [
+      { id: 'maya', name: 'Maya', initial: 'M', bg: '#D6E4E8' },
+      { id: 'ravi', name: 'Ravi', initial: 'R', bg: '#FFD3E6' },
+      { id: 'tom', name: 'Tom', initial: 'T', bg: '#E4DCCF' },
+      { id: 'lena', name: 'Lena', initial: 'L', bg: '#DBE1B0' },
+      { id: 'kit', name: 'Kit', initial: 'K', bg: '#F1E9DC' },
+    ];
+    const people = base.map((p) => {
+      const sent = !!this.state.sent[p.id];
+      return {
+        ...p, avatar: av(p.bg),
+        btnLabel: sent ? 'Request sent' : 'Invite',
+        btnStyle: 'height: 36px; min-width: 76px; padding: 0 12px; border-radius: 9999px; font-size: 13px; font-weight: 700; white-space: nowrap; ' + (sent ? 'border: 1px solid rgba(41,41,36,0.16); background: transparent; color: #5F5A52' : 'border: 0; background: #292924; color: #FFFCF7'),
+        toggle: () => this.setState((s) => ({ sent: { ...s.sent, [p.id]: !s.sent[p.id] } })),
+      };
+    });
+    return { people };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Accept.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "F · What Sam agrees to",
+      "w": 390,
+      "x": 470,
+      "y": 2240
+    },
+    "Entry.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "0 · Entry on a friend’s profile",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "InviteTile.dc.html": {
+      "h": 328,
+      "is_interactive": true,
+      "title": "InviteTile (shared component)",
+      "w": 350,
+      "x": 2006,
+      "y": 1300
+    },
+    "Main.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "A · Overlap list + top match",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "Manage.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "G · Settings › Privacy › Watch together",
+      "w": 390,
+      "x": 940,
+      "y": 2240
+    },
+    "Request.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "E · Sam gets the request",
+      "w": 390,
+      "x": 0,
+      "y": 2240
+    },
+    "Session.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "C · Yes-or-no session",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "TileStates.dc.html": {
+      "h": 520,
+      "is_interactive": true,
+      "title": "Invite tile: every state",
+      "w": 1926,
+      "x": 0,
+      "y": 1300
+    },
+    "Vote.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "D · Group matches (3+ people)",
+      "w": 390,
+      "x": 1410,
+      "y": 0
+    },
+    "Hub.dc.html": {
+      "x": 0,
+      "y": 3540,
+      "w": 390,
+      "h": 980,
+      "title": "H · Watch together hub (/together)",
+      "is_interactive": true
+    },
+    "Picker.dc.html": {
+      "x": 470,
+      "y": 3540,
+      "w": 390,
+      "h": 844,
+      "title": "I · Who’s watching? (people picker)",
+      "is_interactive": true
+    },
+    "Invite.dc.html": {
+      "x": 940,
+      "y": 3540,
+      "w": 390,
+      "h": 844,
+      "title": "J · Invite to watch together (Suggested)",
+      "is_interactive": true
+    },
+    "PickerPaths.dc.html": {
+      "x": 0,
+      "y": 4920,
+      "w": 2270,
+      "h": 1060,
+      "title": "Picker paths: every choice and where it goes",
+      "is_interactive": true
+    },
+    "ProgressOptions.dc.html": {
+      "x": 0,
+      "y": 6400,
+      "w": 1820,
+      "h": 980,
+      "title": "C · Progress options",
+      "is_interactive": true
+    },
+    "ShareSheet.dc.html": {
+      "x": 0,
+      "y": 7780,
+      "w": 390,
+      "h": 844,
+      "title": "K · Make a shared list (from A)",
+      "is_interactive": true
+    },
+    "SharedNotif.dc.html": {
+      "x": 470,
+      "y": 7780,
+      "w": 390,
+      "h": 844,
+      "title": "L · Sam is added to the list",
+      "is_interactive": true
+    },
+    "SharedList.dc.html": {
+      "x": 940,
+      "y": 7780,
+      "w": 390,
+      "h": 844,
+      "title": "M · The shared list",
+      "is_interactive": true
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-24T12:41:19Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "acceptHeading": {
+      "kind": "title1",
+      "maxW": 1330,
+      "text": "Accept: Sam’s side",
+      "w": 240,
+      "x": 0,
+      "y": 1940
+    },
+    "heading": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "Watch together",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "requestHeading": {
+      "kind": "title1",
+      "maxW": 2356,
+      "text": "Request: your side",
+      "w": 240,
+      "x": 0,
+      "y": 1000
+    },
+    "hubHeading": {
+      "kind": "title1",
+      "text": "Getting there: hub and picker",
+      "x": 0,
+      "y": 3240,
+      "maxW": 1330
+    },
+    "pathsHeading": {
+      "kind": "title1",
+      "text": "Picker paths",
+      "x": 0,
+      "y": 4620,
+      "maxW": 2270
+    },
+    "progressHeading": {
+      "kind": "title1",
+      "text": "Session progress options",
+      "x": 0,
+      "y": 6100,
+      "maxW": 1820
+    },
+    "sharedHeading": {
+      "kind": "title1",
+      "text": "Shared list from A",
+      "x": 0,
+      "y": 7480,
+      "maxW": 1330
+    }
+  },
+  "order": [
+    "Entry.dc.html",
+    "Main.dc.html",
+    "Session.dc.html",
+    "Vote.dc.html",
+    "TileStates.dc.html",
+    "InviteTile.dc.html",
+    "Request.dc.html",
+    "Accept.dc.html",
+    "Manage.dc.html",
+    "Hub.dc.html",
+    "Picker.dc.html",
+    "Invite.dc.html",
+    "PickerPaths.dc.html",
+    "ProgressOptions.dc.html",
+    "ShareSheet.dc.html",
+    "SharedNotif.dc.html",
+    "SharedList.dc.html"
+  ],
+  "pages": [],
+  "title": "PLOT Watch Together"
+}

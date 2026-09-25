@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Watch together: yes or no session</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&amp;family=Gabarito:wght@400..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:#F8F2EA;color:#292924}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F8F2EA; display: flex; flex-direction: column; overflow: hidden; font-family: 'DM Sans', system-ui, sans-serif; color: #292924">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 0">
+    <button type="button" aria-label="Leave session" style="width: 44px; height: 44px; border-radius: 9999px; border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; display: flex; align-items: center; justify-content: center; padding: 0">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <span style="font-size: 15px; font-weight: 700">{{heading}}</span>
+      <span style="font-size: 12px; color: #5F5A52">From both your watchlists</span>
+    </div>
+    <span style="width: 44px"></span>
+  </div>
+
+  <div style="display: flex; justify-content: center; gap: 16px; padding: 12px 0 0">
+    <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5F5A52">
+      <span style="width: 24px; height: 24px; border-radius: 9999px; background: #FF88C8; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #292924">You</span>
+      Choosing
+    </span>
+    <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5F5A52">
+      <span style="width: 24px; height: 24px; border-radius: 9999px; background: #DBE1B0; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #292924">S</span>
+      On card 9
+    </span>
+  </div>
+
+  <div style="position: relative; height: 452px; margin: 16px 28px 0">
+    <div style="position: absolute; inset: 14px 14px -10px 14px; border-radius: 24px; background: #F1E9DC; border: 1px solid rgba(41,41,36,0.08)"></div>
+    <div onPointerDown="{{down}}" onPointerMove="{{move}}" onPointerUp="{{up}}" onPointerCancel="{{up}}" style="{{cardStyle}}">
+      <sc-if value="{{pCardEdge}}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; top: 14px; left: 20px; right: 20px; height: 4px; border-radius: 9999px; background: rgba(255,252,247,0.25); overflow: hidden; pointer-events: none"><div style="{{barLight}}"></div></div>
+      </sc-if>
+      <sc-if value="{{pPill}}" hint-placeholder-val="{{ false }}">
+        <span style="position: absolute; top: 16px; right: 16px; font-size: 12px; font-weight: 700; color: #FFFCF7; background: rgba(41,41,36,0.35); padding: 5px 10px; border-radius: 9999px; pointer-events: none">{{counter}} of 14</span>
+      </sc-if>
+      <span style="{{noStamp}}">Not feeling it</span>
+      <span style="{{yesStamp}}">I’m in</span>
+      <sc-if value="{{matched}}" hint-placeholder-val="{{ false }}">
+        <span style="position: absolute; top: 16px; left: 16px; font-size: 13px; font-weight: 700; background: #FF88C8; color: #292924; padding: 6px 12px; border-radius: 9999px">You’re both in</span>
+      </sc-if>
+      <div style="display: flex; flex-direction: column; gap: 6px; pointer-events: none">
+        <span style="font-family: 'Gabarito', sans-serif; font-weight: 700; font-size: 34px; line-height: 1; color: #FFFCF7">{{card.title}}</span>
+        <span style="font-size: 14px; color: rgba(255,252,247,0.86)">{{card.meta}}</span>
+        <span style="align-self: flex-start; margin-top: 4px; font-size: 12px; font-weight: 600; color: #FFFCF7; border: 1px solid rgba(255,252,247,0.4); padding: 4px 10px; border-radius: 9999px">{{card.where}}</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: center; gap: 28px; padding: 26px 0 0">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+      <button type="button" aria-label="Not feeling it" onClick="{{no}}" style="width: 64px; height: 64px; border-radius: 9999px; border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; display: flex; align-items: center; justify-content: center; padding: 0">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
+      </button>
+      <span style="font-size: 12px; color: #5F5A52">Not feeling it</span>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+      <button type="button" aria-label="I’m in" onClick="{{yes}}" style="width: 64px; height: 64px; border-radius: 9999px; border: 0; background: #FF88C8; display: flex; align-items: center; justify-content: center; padding: 0">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+      </button>
+      <span style="font-size: 12px; color: #5F5A52">I’m in</span>
+    </div>
+  </div>
+
+  <sc-if value="{{pDots}}" hint-placeholder-val="{{ false }}">
+    <div role="progressbar" aria-label="Titles seen" aria-valuemin="1" aria-valuemax="14" aria-valuenow="{{counter}}" style="display: flex; justify-content: center; gap: 6px; padding: 18px 0 0">
+      <sc-for list="{{dots}}" as="d" hint-placeholder-count="14"><span style="{{d.style}}"></span></sc-for>
+    </div>
+  </sc-if>
+
+  <div style="margin: auto 20px 24px; padding: 14px; border-radius: 16px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <span style="font-size: 13px; color: #5F5A52"><strong style="color: #292924">{{matchCount}} matches</strong>{{panelCount}}</span>
+      <button type="button" style="height: 36px; padding: 0 14px; border-radius: 9999px; border: 1px solid rgba(41,41,36,0.16); background: transparent; font-size: 13px; font-weight: 600; color: #292924">See matches</button>
+    </div>
+    <sc-if value="{{pPanel}}" hint-placeholder-val="{{ true }}">
+    <div role="progressbar" aria-label="Titles seen" aria-valuemin="1" aria-valuemax="14" aria-valuenow="{{counter}}" style="height: 4px; border-radius: 9999px; background: rgba(41,41,36,0.12); overflow: hidden">
+      <div style="{{barStyle}}"></div>
+    </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"progress":{"editor":"enum","options":["panel","cardEdge","pill","dots"],"default":"pill"},"heading":{"editor":"enum","options":["Deciding with Sam","You and Sam","Picking with Sam","What to watch with Sam"],"default":"Deciding with Sam"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { i: 6, matches: 2, dx: 0, dragging: false }; this.startX = 0; }
+  renderVals() {
+    const deck = [
+      { title: 'Past Lives', meta: '2023 · 1h 46m · Drama', where: 'On your services', bg: '#2F3B52', samYes: true },
+      { title: 'Paddington 2', meta: '2017 · 1h 43m · Family', where: 'On your services', bg: '#A8683E', samYes: true },
+      { title: 'The Holdovers', meta: '2023 · 2h 13m · Comedy drama', where: 'Rent', bg: '#7A4B3A', samYes: false },
+      { title: 'Aftersun', meta: '2022 · 1h 42m · Drama', where: 'On your services', bg: '#3E6A70', samYes: true },
+    ];
+    const card = deck[this.state.i % deck.length];
+    const matched = !!this.state.matched;
+    // A yes on a title Sam also said yes to holds the card to show the match; the next tap or swipe moves on.
+    const decide = (yes) => this.setState((s) => {
+      if (yes && card.samYes && !s.matched) return { matched: true, matches: s.matches + 1, dx: 0, dragging: false };
+      return { i: Math.min(s.i + 1, 13), matched: false, dx: 0, dragging: false };
+    });
+    const dx = this.state.dx;
+    const limit = 110;
+    const stamp = (side, show) => 'position: absolute; top: 24px; ' + side + ': 20px; font-size: 14px; font-weight: 800; letter-spacing: 0.04em; padding: 6px 12px; border-radius: 9999px; pointer-events: none; transition: opacity 0.1s; opacity: ' + show + '; ' + (side === 'left' ? 'background: #FF88C8; color: #292924' : 'background: #FFFCF7; color: #292924');
+    const pr = this.props.progress ?? 'pill';
+    const seen = this.state.i + 1;
+    return {
+      heading: this.props.heading ?? 'Deciding with Sam',
+      pPanel: pr === 'panel', pCardEdge: pr === 'cardEdge', pPill: pr === 'pill', pDots: pr === 'dots',
+      panelCount: pr === 'panel' ? ' · ' + seen + ' of 14' : ' so far',
+      barLight: 'height: 100%; border-radius: 9999px; background: #FFFCF7; width: ' + Math.round((seen / 14) * 100) + '%',
+      dots: Array.from({ length: 14 }, (_, n) => ({ style: 'width: 6px; height: 6px; border-radius: 9999px; background: ' + (n < seen ? '#E05578' : 'rgba(41,41,36,0.16)') })),
+      card, matched,
+      counter: this.state.i + 1,
+      matchCount: this.state.matches,
+      barStyle: 'height: 100%; border-radius: 9999px; background: #E05578; width: ' + Math.round(((this.state.i + 1) / 14) * 100) + '%',
+      cardStyle: 'position: absolute; inset: 0; border-radius: 24px; background: ' + card.bg + '; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; touch-action: none; user-select: none; cursor: grab; transform: translateX(' + dx + 'px) rotate(' + (dx / 20) + 'deg); transition: ' + (this.state.dragging ? 'none' : 'transform 0.2s ease-out'),
+      yesStamp: stamp('left', Math.min(Math.max(dx / limit, 0), 1)),
+      noStamp: stamp('right', Math.min(Math.max(-dx / limit, 0), 1)),
+      down: (e) => { this.startX = e.clientX; e.currentTarget.setPointerCapture?.(e.pointerId); this.setState({ dragging: true }); },
+      move: (e) => { if (this.state.dragging) this.setState({ dx: e.clientX - this.startX }); },
+      up: () => {
+        if (!this.state.dragging) return;
+        if (this.state.dx > limit) decide(true);
+        else if (this.state.dx < -limit) decide(false);
+        else this.setState({ dx: 0, dragging: false });
+      },
+      yes: () => decide(true), no: () => decide(false),
+    };
+  }
+}
+</script>
+</body>
+</html>
