@@ -54,7 +54,7 @@
   </script>
   <!-- End Google Tag Manager -->
   <title>Plans &amp; Pricing — plot</title>
-  <meta name="description" content="plot is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more: A$5/mo or A$40/yr." />
+  <meta name="description" content="plot is free to use, forever. Premium is coming soon, with unlimited lists, a live release calendar and Pick for Me: US$3/mo or US$24/yr, taxes included." />
   <link rel="canonical" href="https://theplot.tv/plans" />
   <meta name="theme-color" content="#ffffff" />
 
@@ -62,7 +62,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="plot" />
   <meta property="og:title" content="Plans &amp; Pricing — plot" />
-  <meta property="og:description" content="Free to use, forever. Go Premium for unlimited lists and automatic sync across every service you watch." />
+  <meta property="og:description" content="Free to use, forever. Premium is coming soon, with unlimited lists, a live release calendar and Pick for Me." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
@@ -307,7 +307,7 @@
     thead .cmp-feat { color: var(--text-secondary); }
     .cmp-yes { display: inline-flex; }
     .cmp-yes .tick { margin-top: 0; }
-    .cmp-no { color: #bbb; }
+    .cmp-no { color: var(--text-secondary); }
     .cmp-text { font-size: 0.82rem; font-weight: 500; color: var(--text); }
 
     /* ── Testimonials ───────────────────────────────────────── */
@@ -333,6 +333,7 @@
     .faq-item dt { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 0.4rem; }
     .faq-item dd { margin: 0; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.65; max-width: 64ch; }
 
+    .cmp-note { margin: -0.5rem 0 1rem; font-size: 0.85rem; color: var(--text-secondary); }
     .fineprint {
       max-width: 760px;
       margin: 3rem auto 0;
@@ -382,12 +383,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <section class="hero">
       <p class="page-label">Plans</p>
       <h1>Do more with everything you watch</h1>
-      <p class="hero-lede">Start free and keep every movie and show in one place. Go Premium for unlimited lists and a live release calendar in your calendar app.</p>
+      <p class="hero-lede">Start free and keep every movie and show in one place. Premium is coming soon, with unlimited lists, a live release calendar in your calendar app and Pick for Me.</p>
 
       <div class="billing-toggle" role="group" aria-label="Billing period">
         <button type="button" class="billing-opt" id="billMonthly" aria-pressed="false">Monthly</button>
         <button type="button" class="billing-opt is-active" id="billAnnual" aria-pressed="true">
-          Annual <span class="billing-save">Save 33%</span>
+          Annual <span class="billing-save">4 months free</span>
         </button>
       </div>
     </section>
@@ -414,19 +415,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       <!-- Premium -->
       <section class="plan-card plan-card--premium">
-        <span class="plan-flag">Recommended</span>
+        <span class="plan-flag">Coming soon</span>
         <div class="plan-head">
           <h2 class="plan-name">Premium</h2>
           <div class="plan-price"><span class="plan-amount" id="premiumAmount">US$2</span><span class="plan-per">/mo</span></div>
-          <p class="plan-billed" id="premiumBilled">Billed US$24 yearly · save 33%</p>
+          <p class="plan-billed" id="premiumBilled">US$24 billed yearly · taxes included</p>
           <p class="plan-tagline">Everything in Free, plus:</p>
         </div>
         <ul class="plan-features">
           <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Unlimited custom lists</li>
           <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Live release calendar in your calendar app</li>
+          <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Pick for Me: a shortlist for tonight</li>
         </ul>
         <div class="plan-cta">
-          <a href="https://app.theplot.tv/signup?intent=premium&plan=yearly" class="btn btn-primary" id="premiumCta" data-cta="plans-premium">Go Premium</a>
+          <a href="https://app.theplot.tv/signup?intent=premium&plan=yearly" class="btn btn-primary" id="premiumCta" data-cta="plans-premium">Explore Premium</a>
         </div>
       </section>
     </div>
@@ -434,6 +436,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- Comparison -->
     <div class="section">
       <h2 class="section-title">Compare plans</h2>
+      <p class="cmp-note">Premium features are coming soon.</p>
       <div class="cmp-scroll">
         <table class="cmp-table">
           <thead>
@@ -446,9 +449,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <tr><th scope="row" class="cmp-feat">Discover feed + Top 10 charts</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
             <tr><th scope="row" class="cmp-feat">Search every movie &amp; show</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
             <tr><th scope="row" class="cmp-feat">Follow friends &amp; share profile</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
-            <tr><th scope="row" class="cmp-feat">Reminders &amp; where-to-watch</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
-            <tr><th scope="row" class="cmp-feat">Custom lists</th><td><span class="cmp-text">Up to 3</span></td><td><span class="cmp-text">Unlimited</span></td></tr>
-            <tr><th scope="row" class="cmp-feat">Live calendar subscription</th><td><span class="cmp-no">—</span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Where to watch</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Custom lists</th><td><span class="cmp-text">Up to 5</span></td><td><span class="cmp-text">Unlimited</span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Live calendar subscription</th><td><span class="cmp-no">–</span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Pick for Me</th><td><span class="cmp-no">–</span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
           </tbody>
         </table>
       </div>
@@ -458,14 +462,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="section">
       <h2 class="section-title">Questions</h2>
       <dl class="faq-list">
-        <div class="faq-item"><dt>Is the Free plan really free?</dt><dd>Yes — no credit card, no trial clock. Track as much as you want on Free for as long as you like.</dd></div>
-        <div class="faq-item"><dt>Can I cancel anytime?</dt><dd>Anytime, from Manage subscription in Settings. You keep Premium until the end of the period you already paid for.</dd></div>
-        <div class="faq-item"><dt>What happens to my lists if I downgrade?</dt><dd>Nothing is deleted. Your lists stay exactly as they are — you just can’t create new ones past the free limit until you upgrade again.</dd></div>
-        <div class="faq-item"><dt>How does sync work?</dt><dd>Connect Plex or Trakt once and plot keeps your watchlist and history current automatically — including what you watch on Netflix, Prime, Disney+ and more.</dd></div>
+        <div class="faq-item"><dt>Is the Free plan really free?</dt><dd>Yes. No credit card and no trial clock. Track as much as you like on Free, for as long as you like.</dd></div>
+        <div class="faq-item"><dt>Can I get Premium now?</dt><dd>Not yet. Premium is coming soon at US$3/month or US$24/year, taxes included. Upgrading in the app shows a coming-soon message and doesn’t take a payment.</dd></div>
+        <div class="faq-item"><dt>Can I cancel anytime?</dt><dd>Yes. Once Premium opens, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.</dd></div>
+        <div class="faq-item"><dt>What happens to my lists if I downgrade?</dt><dd>Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.</dd></div>
       </dl>
     </div>
 
-    <p class="fineprint">Prices are in US dollars. Your total and billing currency are shown at checkout. Cancel anytime. Payments are processed securely by Stripe. Need a hand? <a href="mailto:contact@theplot.tv">contact@theplot.tv</a></p>
+    <p class="fineprint">Prices are in US dollars and include tax. Your total and billing currency are shown at checkout. Cancel anytime. Payments are processed securely by Stripe. Need a hand? <a href="mailto:contact@theplot.tv">contact@theplot.tv</a></p>
   </main>
 
   <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
@@ -506,8 +510,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     // Billing toggle — swaps the Premium price display and the checkout intent.
     (function () {
       var MONTHLY = 3, ANNUAL = 24;
-      var annualMonthly = (ANNUAL / 12).toFixed(2);
-      var savePct = Math.round((1 - ANNUAL / (MONTHLY * 12)) * 100);
+      // US dollars, taxes included; Stripe shows local currency at checkout.
+      var perMonth = ANNUAL / 12;
+      var annualMonthly = Number.isInteger(perMonth) ? String(perMonth) : perMonth.toFixed(2);
       var mo = document.getElementById('billMonthly');
       var yr = document.getElementById('billAnnual');
       var amount = document.getElementById('premiumAmount');
@@ -520,7 +525,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         mo.setAttribute('aria-pressed', String(!annual));
         yr.setAttribute('aria-pressed', String(annual));
         amount.textContent = annual ? 'US$' + annualMonthly : 'US$' + MONTHLY;
-        billed.textContent = annual ? 'Billed US$' + ANNUAL + ' yearly · save ' + savePct + '%' : 'Billed monthly';
+        billed.textContent = annual ? 'US$' + ANNUAL + ' billed yearly · taxes included' : 'US$' + MONTHLY + ' billed monthly · taxes included';
         cta.href = 'https://app.theplot.tv/signup?intent=premium&plan=' + (annual ? 'yearly' : 'monthly');
       }
       mo.addEventListener('click', function () { setBilling(false); });
