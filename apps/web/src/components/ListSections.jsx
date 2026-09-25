@@ -719,7 +719,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   const fw = favoriteWords(profile?.region);
   const { renameList, setListVisibility, addItem, removeItem, deleteList } = customLists;
   const visibility = listVisibility(list);
-  const shareable = isListShareable(visibility);
+  const shareable = isListShareable(visibility, profile?.is_public);
   const selection = useSelection();
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(list.name);

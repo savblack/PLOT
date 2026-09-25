@@ -65,6 +65,10 @@ insert into public.user_custom_lists (user_id, name, visibility) values
   (:A, 'vis-test link',      'link');
 insert into public.user_custom_list_items (list_id, user_id, tmdb_id, media_type, title)
   select id, :A, :t1, :'m1', :'n1' from public.user_custom_lists where user_id = :A and name like 'vis-test %';
+select id as link_id from public.user_custom_lists where user_id = :A and name = 'vis-test link'
+\gset
+select id as public_id from public.user_custom_lists where user_id = :A and name = 'vis-test public'
+\gset
 
 \echo ''
 \echo '=== migration: backfill and the is_public mirror ==='
@@ -103,11 +107,13 @@ select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  follower sees Wa
   from public.watching_progress where user_id = :A and tmdb_id = :t2;
 select case when count(*) >= 1 then 'PASS' else 'FAIL' end || '  follower sees feed posts'
   from public.feed_posts where author_id = :A;
-select case when string_agg(visibility, ',' order by visibility) = 'followers,link,public' then 'PASS' else 'FAIL' end
-       || '  follower sees followers, public and link lists, not private'
+select case when string_agg(visibility, ',' order by visibility) = 'followers,public' then 'PASS' else 'FAIL' end
+       || '  follower lists followers and public lists (never link or private)'
   from public.user_custom_lists where user_id = :A and name like 'vis-test %';
-select case when count(*) = 3 then 'PASS' else 'FAIL' end || '  follower sees the items of exactly those three'
-  from public.user_custom_list_items where user_id = :A;
+select case when count(*) = 2 then 'PASS' else 'FAIL' end || '  follower sees the items of the followers and public lists only'
+  from public.user_custom_list_items i
+  join public.user_custom_lists l on l.id = i.list_id
+ where i.user_id = :A and l.name like 'vis-test %';
 -- Dynamic, because Staging can lag production and not have this table yet.
 do $$
 declare n int;
@@ -130,9 +136,15 @@ select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  stranger cannot 
   from public.watching_progress where user_id = :A;
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  stranger cannot see feed posts'
   from public.feed_posts where author_id = :A;
-select case when string_agg(visibility, ',') = 'link' then 'PASS' else 'FAIL' end
-       || '  stranger sees only the link list (public is capped by the private profile)'
+select case when count(*) = 0 then 'PASS' else 'FAIL' end
+       || '  stranger lists none of A''s lists (public is capped by the private profile)'
   from public.user_custom_lists where user_id = :A and name like 'vis-test %';
+select case when count(*) = 1 and sum(jsonb_array_length(items)) = 1 then 'PASS' else 'FAIL' end
+       || '  stranger opens the link list by id, with its items'
+  from public.get_shared_list(:'link_id');
+select case when count(*) = 0 then 'PASS' else 'FAIL' end
+       || '  stranger cannot open the public list of a private profile by id'
+  from public.get_shared_list(:'public_id');
 
 \echo ''
 \echo '=== As anon, private A ==='
@@ -140,8 +152,12 @@ set local role anon;
 set local request.jwt.claims = '{"role":"anon"}';
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  anon cannot see Want to Watch'
   from public.list_items where user_id = :A;
-select case when string_agg(visibility, ',') = 'link' then 'PASS' else 'FAIL' end || '  anon sees only the link list'
+select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  anon cannot enumerate any of A''s lists'
   from public.user_custom_lists where user_id = :A and name like 'vis-test %';
+select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  anon cannot enumerate ANY link list'
+  from public.user_custom_lists where visibility = 'link';
+select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  anon opens the link list by id'
+  from public.get_shared_list(:'link_id');
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  anon cannot find private A in public_profiles'
   from public.public_profiles where id = :A;
 
@@ -155,14 +171,14 @@ set local role anon;
 set local request.jwt.claims = '{"role":"anon"}';
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  anon sees Want to Watch'
   from public.list_items where user_id = :A and tmdb_id = :t1;
-select case when string_agg(visibility, ',' order by visibility) = 'link,public' then 'PASS' else 'FAIL' end
-       || '  anon sees public and link lists, never followers'
+select case when string_agg(visibility, ',') = 'public' then 'PASS' else 'FAIL' end
+       || '  anon lists only the public list'
   from public.user_custom_lists where user_id = :A and name like 'vis-test %';
 
 set local role authenticated;
 set local request.jwt.claims = :C_CLAIMS;
-select case when string_agg(visibility, ',' order by visibility) = 'link,public' then 'PASS' else 'FAIL' end
-       || '  signed-in non-follower sees public and link, not followers'
+select case when string_agg(visibility, ',') = 'public' then 'PASS' else 'FAIL' end
+       || '  signed-in non-follower lists only the public list'
   from public.user_custom_lists where user_id = :A and name like 'vis-test %';
 
 \echo ''
@@ -177,8 +193,10 @@ select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  blocked: no Want
   from public.list_items where user_id = :A;
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  blocked: no feed posts (was readable before)'
   from public.feed_posts where author_id = :A;
-select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  blocked: no lists, not even link'
+select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  blocked: no lists'
   from public.user_custom_lists where user_id = :A and name like 'vis-test %';
+select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  blocked: cannot open the link list by id'
+  from public.get_shared_list(:'link_id');
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  blocked: public_profiles hides A (was visible before)'
   from public.public_profiles where id = :A;
 

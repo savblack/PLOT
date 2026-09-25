@@ -56,7 +56,11 @@ test('listVisibility reads the column and falls back to is_public for rows witho
   assert.equal(listVisibility(null), 'private');
 });
 
-test('only public and link lists are shareable; only public and followers lists sit on the profile', () => {
-  assert.deepEqual(LIST_VISIBILITIES.filter(isListShareable), ['public', 'link']);
+test('share links are offered only where a logged-out visitor can open them', () => {
+  assert.deepEqual(LIST_VISIBILITIES.filter(v => isListShareable(v, true)), ['public', 'link']);
+  assert.deepEqual(LIST_VISIBILITIES.filter(v => isListShareable(v, false)), ['link']);
+});
+
+test('only public and followers lists sit on the profile', () => {
   assert.deepEqual(LIST_VISIBILITIES.filter(showsOnProfile), ['followers', 'public']);
 });

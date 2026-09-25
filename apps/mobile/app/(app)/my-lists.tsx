@@ -451,7 +451,7 @@ export default function MyListsScreen() {
   const favList      = byType(favorites.favorites);
 
   const handleShareList = (list: { id: string; name: string; is_public: boolean; visibility?: string }) => shareLink({
-    url: isListShareable(listVisibility(list)) ? buildListShareUrl({ listId: list.id }) : null,
+    url: isListShareable(listVisibility(list), profile?.is_public) ? buildListShareUrl({ listId: list.id }) : null,
     title: `${list.name} · PLOT`,
     text: SHARING.listText(list.name),
     event: EVENTS.LIST_SHARED,
@@ -844,6 +844,7 @@ function CustomListCard({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { open: openPanel } = useMediaPanel();
+  const { profile } = useAppData();
   const [open,     setOpen]     = useState(true);
   const [renaming, setRenaming] = useState(false);
   const [name,     setName]     = useState(list.name);
@@ -851,7 +852,7 @@ function CustomListCard({
 
   const items = (filterByType(list.items || [], typeFilters) ?? []) as any[];
   const visibility = listVisibility(list);
-  const shareable = isListShareable(visibility);
+  const shareable = isListShareable(visibility, profile?.is_public);
 
   // Same item order as web's list kebab: Select, Rename, visibility, Share,
   // Delete. Deleting the list itself still goes through onDelete's confirm.

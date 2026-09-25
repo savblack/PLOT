@@ -40,10 +40,15 @@ export function listVisibility(list) {
   return list?.is_public ? 'public' : 'private';
 }
 
-/** A share link opens for people outside the owner's followers.
- * @param {ListVisibility} visibility */
-export function isListShareable(visibility) {
-  return visibility === 'public' || visibility === 'link';
+/**
+ * A share link opens for people outside the owner's followers. The share page
+ * reads as a logged-out visitor, so a 'public' list only opens there when the
+ * owner's profile is public too; on a private profile only 'link' does.
+ * @param {ListVisibility} visibility
+ * @param {boolean} profileIsPublic The OWNER's profile.is_public.
+ */
+export function isListShareable(visibility, profileIsPublic) {
+  return visibility === 'link' || (visibility === 'public' && !!profileIsPublic);
 }
 
 /** Appears as a rail on the owner's profile (for those allowed to read it).

@@ -38,6 +38,13 @@ test('every profile-content read policy goes through can_view_profile', () => {
   }
 });
 
+test('link lists are not readable through the table, only by id', () => {
+  const sql = readFileSync(join(MIGRATIONS, '20260925120000_unified_profile_visibility.sql'), 'utf8');
+  const fn = sql.match(/function public\.can_view_custom_list[\s\S]*?\$\$;/)[0];
+  assert.doesNotMatch(fn, /when 'link'/);
+  assert.match(sql, /function public\.get_shared_list\(p_list_id uuid\)/);
+});
+
 test('custom list read policies go through can_view_custom_list, not is_public', () => {
   for (const name of ['Public custom lists are readable', 'Items of public custom lists are readable']) {
     const body = latestPolicy(name);
@@ -58,13 +65,15 @@ const withFetch = async (handler, fn) => {
   try { return await fn(calls); } finally { globalThis.fetch = original; }
 };
 
-test('the list page asks only for lists anyone may read, and keeps link-only lists out of search', async () => {
+test('the list page reads one list by id through get_shared_list, and keeps link-only lists out of search', async () => {
   const request = new Request('https://app.theplot.tv/list/test-list');
   for (const [visibility, indexed] of [['public', true], ['link', false]]) {
-    await withFetch((url) => Response.json(url.includes('user_custom_lists?')
-      ? [{ id: 'test-list', name: 'Weekend', user_id: 'test-owner', visibility }] : []), async (calls) => {
+    await withFetch((url) => Response.json(url.includes('/rpc/get_shared_list')
+      ? [{ id: 'test-list', name: 'Weekend', user_id: 'test-owner', visibility, items: [] }] : []), async (calls) => {
       const html = await (await listPage({ request, params: { id: 'test-list' }, env: {} })).text();
-      assert.match(calls[0].url, /visibility=in\.\(public,link\)/);
+      assert.match(calls[0].url, /\/rpc\/get_shared_list$/);
+      assert.equal(JSON.parse(calls[0].init.body).p_list_id, 'test-list');
+      assert.ok(!calls.some(c => c.url.includes('user_custom_lists?')), 'the table would let anyone list link lists');
       assert.equal(/name="robots" content="noindex"/.test(html), !indexed, visibility);
     });
   }
@@ -79,7 +88,8 @@ test('the list sitemap lists only public lists', async () => {
 });
 
 const card = { id: 'test-owner', username: 'sam', display_name: 'Sam', is_public: true, profile_sections: ['recent'] };
-const top = [{ list_type: 'movies', rank: 1, tmdb_id: 1, media_type: 'movie', title: 'Top Film Title', poster_path: null }];
+// ID resolved from a TMDB search response for Severance (same as publicListSharing.test.js).
+const top = [{ list_type: 'tv', rank: 1, tmdb_id: 95396, media_type: 'tv', title: 'Severance', poster_path: null }];
 
 test('the profile snapshot counts followers through the RPC and respects section toggles', async () => {
   await withFetch((url) => {
@@ -92,7 +102,7 @@ test('the profile snapshot counts followers through the RPC and respects section
     const html = await (await profilePage({ request: new Request('https://app.theplot.tv/u/sam'), params: { username: 'sam' } })).text();
     assert.ok(!calls.some(c => c.url.includes('/follows?')), 'follows rows are unreadable to anon');
     assert.match(html, /"interactionType":"https:\/\/schema.org\/FollowAction","userInteractionCount":7/);
-    assert.doesNotMatch(html, /Top Film Title/, 'topMovies is switched off');
+    assert.doesNotMatch(html, /Severance/, 'topTv is switched off');
   });
 });
 

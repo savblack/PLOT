@@ -106,12 +106,12 @@ export default function ListPage() {
   const resolvedView = view === 'auto' ? (narrow ? 'rows' : 'grid') : view;
 
   const shareList = useCallback((list) => share({
-    url: isListShareable(listVisibility(list)) ? buildListShareUrl({ listId: list.id }) : null,
+    url: isListShareable(listVisibility(list), profile?.is_public) ? buildListShareUrl({ listId: list.id }) : null,
     title: `${list.name} · PLOT`,
     text: SHARING.listText(list.name),
     event: EVENTS.LIST_SHARED,
     eventProps: { list_id: list.id },
-  }), [share]);
+  }), [share, profile?.is_public]);
 
   const want = useMemo(() => wantToWatchItems(watchlist.items, watching.items, localDateStr()), [watchlist.items, watching.items]);
 

@@ -18,8 +18,9 @@
 --       private    owner only
 --       followers  owner + accepted followers
 --       public     whoever can view the profile (so capped by profile privacy)
---       link       anyone with the link who isn't blocked; kept off the
---                  profile and out of the sitemap by the clients
+--       link       anyone with the link who isn't blocked. Never readable
+--                  through the table (that would let anyone enumerate them);
+--                  only through get_shared_list(id), which needs the id.
 --
 -- What changes for existing users:
 --   * WIDENS: accepted followers of a private profile can now read its
@@ -158,7 +159,7 @@ as $$
     when 'followers' then (coalesce(p_owner = auth.uid(), false)
                            or public.is_accepted_follower(p_owner))
                           and public.not_blocked(p_owner)
-    when 'link'      then public.not_blocked(p_owner)
+    -- 'link' is deliberately false here: see get_shared_list below.
     else false
   end;
 $$;
@@ -181,6 +182,36 @@ create policy "Items of public custom lists are readable" on public.user_custom_
          and public.can_view_custom_list(l.user_id, l.visibility)
     )
   );
+
+-- One list by id: the share page and its preview image. The id is a random
+-- uuid, so knowing it is what "anyone with the link" means. Security definer
+-- so a 'link' list can be read here without being readable (and listable)
+-- through the table. Everything else goes through the same rule as the table.
+create or replace function public.get_shared_list(p_list_id uuid)
+returns table (id uuid, name text, user_id uuid, visibility text, items jsonb)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select l.id, l.name, l.user_id, l.visibility,
+         coalesce((
+           select jsonb_agg(jsonb_build_object(
+                    'tmdb_id', i.tmdb_id, 'media_type', i.media_type,
+                    'title', i.title, 'poster_path', i.poster_path)
+                  order by i.added_at)
+             from public.user_custom_list_items i
+            where i.list_id = l.id
+         ), '[]'::jsonb)
+    from public.user_custom_lists l
+   where l.id = p_list_id
+     and (   (l.visibility = 'link' and public.not_blocked(l.user_id))
+          or public.can_view_custom_list(l.user_id, l.visibility)
+          or l.user_id = auth.uid());
+$$;
+
+revoke execute on function public.get_shared_list(uuid) from public;
+grant execute on function public.get_shared_list(uuid) to anon, authenticated;
 
 -- The sitemap enumerates visibility = 'public'. The old is_public index stays;
 -- dropping it buys nothing and older readers still filter on is_public.

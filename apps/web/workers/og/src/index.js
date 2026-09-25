@@ -119,14 +119,15 @@ async function loadProfile(handle) {
 
 async function loadList(id) {
   const h2 = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
-  const lRes = await fetch(`${SUPABASE_URL}/rest/v1/user_custom_lists?id=eq.${encodeURIComponent(id)}&visibility=in.(public,link)&select=name,user_id&limit=1`, { headers: h2 });
-  const list = (await lRes.json())?.[0];
+  // One list by id; 'link' lists are only readable this way (20260925120000).
+  const lRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_shared_list`, {
+    method: 'POST', headers: { ...h2, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_list_id: id }),
+  });
+  const rows = await lRes.json().catch(() => []);
+  const list = Array.isArray(rows) ? rows[0] : null;
   if (!list) return null;
-  const [iRes, oRes] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/user_custom_list_items?list_id=eq.${encodeURIComponent(id)}&select=poster_path&order=added_at.asc&limit=5`, { headers: h2 }),
-    fetch(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username&limit=1`, { headers: h2 }),
-  ]);
-  const items = await iRes.json().catch(() => []);
+  const items = Array.isArray(list.items) ? list.items.slice(0, 5) : [];
+  const oRes = await fetch(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username&limit=1`, { headers: h2 });
   const owner = (await oRes.json().catch(() => []))?.[0] || null;
   return {
     name: list.name,

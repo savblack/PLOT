@@ -113,18 +113,18 @@ export async function onRequest({ request, params }) {
   const reqHeaders = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
   let list, items, owner;
   try {
-    // As anon, RLS returns a 'public' list only when its owner's profile is
-    // public, and a 'link' list to anyone (20260925120000). Followers-only and
-    // private lists never come back here.
-    const lRes = await fetch(`${SUPABASE_URL}/rest/v1/user_custom_lists?id=eq.${encodeURIComponent(id)}&visibility=in.(public,link)&select=id,name,user_id,visibility&limit=1`, { headers: reqHeaders });
-    list = (await lRes.json())?.[0] || null;
+    // get_shared_list returns a 'link' list to anyone holding its id, and a
+    // 'public' list only when the owner's profile is public (20260925120000).
+    // Link lists aren't readable through the table, so they can't be listed.
+    const lRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_shared_list`, {
+      method: 'POST', headers: { ...reqHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_list_id: id }),
+    });
+    const rows = await lRes.json().catch(() => []);
+    list = (Array.isArray(rows) ? rows[0] : null) || null;
     if (!list) return htmlResponse(notFound(), 404, false);
-    const [iRes, oRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/user_custom_list_items?list_id=eq.${encodeURIComponent(id)}&select=tmdb_id,media_type,title,poster_path&order=added_at.asc&limit=100`, { headers: reqHeaders }),
-      fetch(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username,display_name&limit=1`, { headers: reqHeaders }),
-    ]);
-    items = await iRes.json().catch(() => []);
-    if (!Array.isArray(items)) items = [];
+    items = Array.isArray(list.items) ? list.items.slice(0, 100) : [];
+    const oRes = await fetch(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username,display_name&limit=1`, { headers: reqHeaders });
     owner = (await oRes.json().catch(() => []))?.[0] || null;
   } catch {
     return htmlResponse(notFound(), 404, false);
