@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PRICING_PAGE } from './launchFeatures.js';
+import { SHOW_PRICING_PAGE } from './launchFeatures.js';
 import { isPreviewDeployment } from './utils/previewDeployment.js';
 
 // The auth entry/exit points must never fail, so they're bundled eagerly (not
@@ -89,7 +89,7 @@ const router = createBrowserRouter([
   { path: '/signup',         element: <AuthPage initialMode="signup" /> },
   { path: '/logout',         element: <LogoutPage /> },
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
-  { path: '/auth/trakt',     element: SHOW_MEDIA_SYNC_INTEGRATIONS ? wrap(<TraktCallbackPage />) : <Navigate to="/settings" replace /> },
+  { path: '/auth/trakt',     element: wrap(<TraktCallbackPage />) },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
   // Onboarding (protected, skip onboarding check)
