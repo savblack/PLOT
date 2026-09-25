@@ -7,8 +7,8 @@
  * (is_premium() / can_create_custom_list() in Postgres) — the DB is the
  * authority, the client only pre-checks for friendlier UX.
  *
- * Public pricing copy lives in packages/core/copy/plansPage.js (A$5 / A$40,
- * tentative). Do not reintroduce hardcoded plan price labels here.
+ * Public pricing copy lives in packages/core/copy/plansPage.js (US$3 / US$24,
+ * taxes included). Do not reintroduce hardcoded plan price labels here.
  */
 
 export const FREE_CUSTOM_LIST_CAP = 5;
