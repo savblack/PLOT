@@ -56,6 +56,7 @@ const BLOCK_FILTERED = [
   'list_following',        // following list
   'list_follow_requests',  // the requests screen
   'list_notifications',    // "x started following you", with their avatar
+  'taste_overlap',         // Premium taste comparison: the target's identity and history
 ];
 
 // Must NOT carry it, each for a reason that has to survive review.
