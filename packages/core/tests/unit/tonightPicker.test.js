@@ -9,6 +9,7 @@ import {
   drawFromPool,
   loadWatchlistPool,
   loadDiscoverPage,
+  loadWatchedIds,
   pickerGenres,
   pickerGenreTiles,
   pickerTimeOfDay,
@@ -21,6 +22,7 @@ import {
   parseSavedRequest,
   SAVED_REQUEST_TTL_MS,
 } from '../../tonightPicker.js';
+import { createInMemorySupabase } from '../support/inMemorySupabase.js';
 
 // Ids here are opaque fixture values fed to a fake client, never real TMDB lookups.
 const NETFLIX = 8;
@@ -144,6 +146,30 @@ test('loadDiscoverPage drops watched and posterless titles and tags saved ones',
   assert.equal(pool[1].onWatchlist, true);
   assert.equal(totalPages, 7);
   assert.equal(seen[0].page, 2);
+});
+
+test('loadDiscoverPage reports a failed request instead of treating it as an empty page', async () => {
+  const client = { async discoverMovies() { return null; } };
+  await assert.rejects(
+    loadDiscoverPage({ options: opts(), providerIds: [NETFLIX], region: 'AU', client }),
+    /Could not load titles/,
+  );
+});
+
+test('loadWatchedIds reads every history page beyond the database row cap', async () => {
+  const history = Array.from({ length: 1005 }, (_, i) => ({
+    user_id: 'viewer-a',
+    tmdb_id: i + 1,
+    media_type: i % 2 ? 'tv' : 'movie',
+  }));
+  history.push({ user_id: 'viewer-b', tmdb_id: 9999, media_type: 'movie' });
+  const client = createInMemorySupabase({ tables: { history } });
+
+  const ids = await loadWatchedIds('viewer-a', client);
+
+  assert.equal(ids.movie.size + ids.tv.size, 1005);
+  assert.equal(ids.movie.has(1005), true);
+  assert.equal(ids.movie.has(9999), false);
 });
 
 const FAMILY = 10751;

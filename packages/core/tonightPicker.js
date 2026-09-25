@@ -6,9 +6,9 @@ import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 // Pick for Me, the tonight picker (Premium). The viewer picks movie or TV first, then the
 // options for that type (movie length, or TV format and episode length),
 // genres, era, score, language, and whether to stay within their services,
-// their watchlist, and away from kids and family titles. Go gives three
-// options; Random select gives one. Nothing is fetched until Go, so browsing
-// the options costs no TMDB calls.
+// their watchlist, and away from kids and family titles. Go gives five
+// options; Random select gives one. The genre catalog loads for the questions;
+// title discovery and details requests wait until Go.
 //
 // Two sources, chosen by the "only my watchlist" box:
 //   - watchlist: each saved title costs one details call (runtime and season
@@ -96,7 +96,7 @@ const WATCHLIST_DETAIL_LIMIT = 40;
 const POOL_TARGET = 15;
 // Most discover results checked for season count per page.
 const SEASON_CHECK_LIMIT = 12;
-// How many extra pages one Go may fetch to fill all three slots before it
+// How many extra pages one Go may fetch to fill all five slots before it
 // settles for fewer. Tight filter combinations thin each page out.
 const MAX_FETCHES_PER_DRAW = 5;
 const CONCURRENCY = 3;
@@ -224,8 +224,10 @@ export function pickerGenres(catalog, options) {
 /**
  * The genre tiles to show: the `count` most useful (pickerGenres' order),
  * or every genre when expanded, either way in alphabetical order.
- * @param {Array<{id:number,name:string}>} genres pickerGenres' output
+ * @template {{id:number,name:string,mood?:string|null}} T
+ * @param {T[]} genres pickerGenres' output
  * @param {{ count: number, all?: boolean }} opts
+ * @returns {T[]}
  */
 export function pickerGenreTiles(genres, { count, all = false }) {
   const shown = all ? genres : genres.slice(0, count);
@@ -555,6 +557,7 @@ export async function loadDiscoverPage({
   const type = options.mediaType;
   const fetchPage = type === 'tv' ? client.discoverTV : client.discoverMovies;
   const res = await fetchPage(discoverParams(options, { providerIds, region, page })).catch(() => null);
+  if (!res) throw new Error('Could not load titles from TMDB');
   let pool = excludeKidsContent(res?.results ?? [], options.hideKids)
     .filter(r => r?.id && r.poster_path && !excludeIds.has(r.id))
     .map(r => ({
@@ -589,13 +592,19 @@ export async function loadDiscoverPage({
 }
 
 /** Title ids the viewer has already watched, per type, so the picker does not suggest them. */
-async function loadWatchedIds(userId) {
-  const { data } = await supabase
-    .from('history')
-    .select('tmdb_id, media_type')
-    .eq('user_id', userId);
+export async function loadWatchedIds(userId, client = supabase) {
   const out = { movie: new Set(), tv: new Set() };
-  for (const r of data || []) (r.media_type === 'tv' ? out.tv : out.movie).add(Number(r.tmdb_id));
+  const pageSize = 1000;
+  for (let from = 0;; from += pageSize) {
+    const { data, error } = await client
+      .from('history')
+      .select('tmdb_id, media_type')
+      .eq('user_id', userId)
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    for (const r of data || []) (r.media_type === 'tv' ? out.tv : out.movie).add(Number(r.tmdb_id));
+    if (!data || data.length < pageSize) break;
+  }
   return out;
 }
 
@@ -608,8 +617,8 @@ async function loadWatchedIds(userId) {
  */
 
 /**
- * State for the picker panel. Nothing is fetched from TMDB until go(), bar
- * the genre catalog the questions need. Without Premium (enabled false) the
+ * State for the picker panel. The genre catalog loads for the questions, but
+ * title discovery and details requests wait until go(). Without Premium (enabled false) the
  * viewer can answer every question; go() then opens the 'locked' phase (the
  * upgrade pop-up) and keeps their answers in storage. Back with Premium,
  * those answers are restored and drawn straight away.
@@ -631,6 +640,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   const [mode, setMode] = useState(/** @type {'five'|'surprise'} */ ('five'));
   const [step, setStep] = useState(0);
   const [results, setResults] = useState(/** @type {PickerCandidate[]} */ ([]));
+  const [resultsOwner, setResultsOwner] = useState(/** @type {string|null|undefined} */ (userId));
   const [canSpinAgain, setCanSpinAgain] = useState(false);
   const [catalog, setCatalog] = useState(/** @type {{ movie: any[], tv: any[] }} */ ({ movie: [], tv: [] }));
 
@@ -638,7 +648,11 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
 
   // The pool for the current options, plus what has been shown from it.
   const run = useRef({ key: '', pool: [], seen: new Set(), page: 0, totalPages: 1, target: 0, exhausted: false });
-  const watched = useRef(/** @type {{ movie: Set<number>, tv: Set<number> }|null} */ (null));
+  const watched = useRef(/** @type {{ userId: string|null|undefined, ids: { movie: Set<number>, tv: Set<number> } }|null} */ (null));
+  const watchlistKey = useMemo(() => (watchlistItems || [])
+    .map(item => `${item.media_type || 'movie'}:${item.tmdb_id || ''}:${item.created_at || ''}`)
+    .sort()
+    .join('|'), [watchlistItems]);
 
   // Services can load after the first render; default the box on once they do.
   const servicesDefaulted = useRef(hasServices);
@@ -708,13 +722,18 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
       onlyServices: options.onlyServices && hasServices,
       onlyWatchlist: options.onlyWatchlist && hasWatchlist,
     };
-    const key = JSON.stringify([opts, region]);
+    const key = JSON.stringify([userId, opts, region, watchlistKey]);
     if (run.current.key !== key) {
       run.current = { key, pool: [], seen: new Set(), page: 0, totalPages: 1, target: 0, exhausted: false };
     }
     const cur = run.current;
-    if (!watched.current) watched.current = userId ? await loadWatchedIds(userId) : { movie: new Set(), tv: new Set() };
-    const excludeIds = watched.current[opts.mediaType];
+    if (!watched.current || watched.current.userId !== userId) {
+      watched.current = {
+        userId,
+        ids: userId ? await loadWatchedIds(userId) : { movie: new Set(), tv: new Set() },
+      };
+    }
+    const excludeIds = watched.current.ids[opts.mediaType];
     const unseen = () => cur.pool.filter(c => !cur.seen.has(c.id)).length;
 
     // Grow the pool only when there is not enough new to show. Tight filters
@@ -749,7 +768,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     // Spin again is only worth offering if it can show something different.
     const moreToLoad = opts.onlyWatchlist ? !cur.exhausted : cur.page < cur.totalPages;
     return { picked, canSpinAgain: cur.pool.length > picked.length || moreToLoad };
-  }, [options, hasServices, hasWatchlist, region, userId, watchlistItems, providerIds]);
+  }, [options, hasServices, hasWatchlist, region, userId, watchlistItems, watchlistKey, providerIds]);
 
   const go = useCallback(async (nextMode = 'five') => {
     setMode(nextMode);
@@ -776,9 +795,10 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     const wait = PICKER_MIN_SPIN_MS - (Date.now() - started);
     if (wait > 0) await sleep(wait);
     setResults(picked);
+    setResultsOwner(userId);
     setCanSpinAgain(more);
     setPhase(failed ? 'error' : picked.length ? 'results' : 'empty');
-  }, [enabled, draw, storage, storageKey, options, step]);
+  }, [enabled, draw, storage, storageKey, options, step, userId]);
 
   // Back from upgrading with a kept request: draw it without another tap.
   useEffect(() => {
@@ -802,10 +822,12 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   const filtersSummary = useMemo(() => pickerFiltersSummary(options, { hasServices }), [options, hasServices]);
   const answers = useMemo(() => pickerAnswers(options, { genres }), [options, genres]);
 
+  const ownsResults = resultsOwner === userId;
   return {
     options, setOption, toggleGenre, genres,
     hasServices, hasWatchlist,
-    phase, mode, results, canSpinAgain,
+    phase: !ownsResults && phase === 'results' ? 'setup' : phase,
+    mode, results: ownsResults ? results : [], canSpinAgain: ownsResults && canSpinAgain,
     step, goToStep, nextStep, prevStep,
     sentence, filtersSummary, answers,
     go, spinAgain, backToOptions, closeLock,

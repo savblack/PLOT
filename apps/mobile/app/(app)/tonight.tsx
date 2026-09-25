@@ -27,6 +27,7 @@ import {
 } from '@plot/core/tonightPicker.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
+import { titleForView } from '@plot/core/navigation.js';
 import { TONIGHT_PICKER as T } from '@plot/core/copy/tonightPicker.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { Palette, fontFamily, fontSize, spacing, posterUrl, backdropUrl } from '../../lib/tokens';
@@ -293,8 +294,15 @@ function Spinner({ slots, styles, reduceMotion }: { slots: number; styles: Style
 function Reveal({ index, reduceMotion, children }: { index: number; reduceMotion: boolean; children: React.ReactNode }) {
   const [reveal] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
   useEffect(() => {
-    if (reduceMotion) return;
-    Animated.spring(reveal, { toValue: 1, delay: index * 90, useNativeDriver: true, damping: 12, stiffness: 160 }).start();
+    reveal.stopAnimation();
+    if (reduceMotion) {
+      reveal.setValue(1);
+      return undefined;
+    }
+    reveal.setValue(0);
+    const animation = Animated.spring(reveal, { toValue: 1, delay: index * 90, useNativeDriver: true, damping: 12, stiffness: 160 });
+    animation.start();
+    return () => animation.stop();
   }, [reveal, index, reduceMotion]);
   return (
     <Animated.View style={{ opacity: reveal, transform: [{ translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }}>
@@ -456,7 +464,7 @@ export default function TonightScreen() {
       </View>
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}>
-        <Text style={styles.pageTitle}>Pick for Me</Text>
+        <Text style={styles.pageTitle}>{titleForView('tonight')}</Text>
 
         {locked ? (
           <Locked
@@ -583,13 +591,13 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   hero: { height: 210, borderRadius: 20, overflow: 'hidden', backgroundColor: colors.textPrimary, justifyContent: 'flex-end', padding: spacing.lg },
   // Legibility scrim behind the title, per the design system's text-over-image rule.
-  heroScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '65%', backgroundColor: 'rgba(20,18,16,0.6)' },
+  heroScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '65%', backgroundColor: colors.imageScrim },
   heroChip: {
     alignSelf: 'flex-start', overflow: 'hidden', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3,
     backgroundColor: colors.accentFill, color: colors.onAccentFill, fontFamily: fontFamily.sansBold, fontSize: fontSize.xs,
   },
-  heroTitle: { fontFamily: fontFamily.display, fontSize: 24, color: '#f8f2ea' },
-  heroMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: '#f1e9dc' },
+  heroTitle: { fontFamily: fontFamily.display, fontSize: 24, color: colors.imageTextPrimary },
+  heroMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.imageTextSecondary },
   card: { flexDirection: 'row', gap: 14, alignItems: 'center', padding: 12, borderRadius: 20, backgroundColor: colors.surfaceSunken },
   cardPoster: { width: 84, height: 126, borderRadius: 12, backgroundColor: colors.borderStrong },
   cardTitle: { fontFamily: fontFamily.display, fontSize: 19, color: colors.textPrimary },

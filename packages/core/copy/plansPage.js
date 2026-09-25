@@ -66,7 +66,7 @@ export const PLANS_PAGE = {
     { id: 'watchTogether', label: 'Find something you both want to watch', highlight: true,
       description: 'Find the overlap in your watchlists, then choose together. Invite friends to a shared list so everyone can add their ideas. They can join for free.' },
     { id: 'filmPicker', label: 'Pick for Me', highlight: true,
-      description: 'Choose a movie or a show, how much time you have and the services you use. Get a shortlist for tonight, or let a random pick make the decision.' },
+      description: 'Choose a movie or a show, how much time you have and the services you use. Get five options for tonight, or let a random pick make the decision.' },
     { id: 'autoSync', label: 'Automatic Plex and Trakt syncing', highlight: true,
       description: 'Keep watch history in sync automatically. Manual imports stay free. Planned as Premium; not claimed as instant or verified two-way syncing yet.' },
     { id: 'fullStats', label: 'Deeper viewing stats', highlight: true,

@@ -310,7 +310,7 @@
   right: 0;
   bottom: 0;
   height: 65%;
-  background: rgba(20, 18, 16, 0.6);
+  background: var(--image-scrim);
 }
 .tonight-hero-body { position: relative; display: flex; flex-direction: column; gap: 6px; }
 .tonight-hero-chip {
@@ -327,9 +327,9 @@
   font-weight: 700;
   letter-spacing: var(--font-display-tracking);
   font-size: 1.5rem;
-  color: #f8f2ea;
+  color: var(--image-text-primary);
 }
-.tonight-hero-meta { font-size: 0.8rem; color: #f1e9dc; }
+.tonight-hero-meta { font-size: 0.8rem; color: var(--image-text-secondary); }
 .tonight-hero:focus-visible,
 .tonight-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { APP_SHELL } from '@plot/core/copy/appShell.js';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { titleForView } from '@plot/core/navigation.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
@@ -19,7 +20,7 @@ const NAV_ITEMS = [
   { id: 'search',   label: 'Search',   path: '/(app)/search'   },
   { id: 'calendar', label: 'Calendar', path: '/(app)/calendar' },
   { id: 'my-lists', label: 'My Lists', path: '/(app)/my-lists' },
-  { id: 'tonight',  label: 'Pick for Me', path: '/(app)/tonight', premium: true },
+  { id: 'tonight',  label: titleForView('tonight'), path: '/(app)/tonight', premium: true },
   // Guide, Top 5 and History used to sit here as destinations of their own.
   // None is one on web: Guide is a sub-tab of Home, Top 5 a section of My
   // Lists, History a tab of it. This list now matches APP_NAV_ITEMS.
