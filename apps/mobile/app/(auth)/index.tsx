@@ -14,7 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { tmdb } from '../../lib/tmdb';
 // This screen is a fixed composition (dark poster wall + light glass panel,
 // mirroring the web AuthPage) — it deliberately doesn't follow the app theme.
-import { fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
+import { colors, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import Turnstile from '../../components/Turnstile';
 import { track, EVENTS } from '../../lib/analytics';
 import { authErrorReason } from '@plot/core/authErrors.js';
@@ -627,12 +627,12 @@ const styles = StyleSheet.create({
   socialDividerLine: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(0,0,0,0.12)',
+    backgroundColor: colors.borderStrong,
   },
   socialDividerText: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
-    color: '#71717A',
+    color: colors.textMuted,
   },
   inputWrap: {
     gap: 6,
