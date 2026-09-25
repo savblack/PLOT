@@ -1,5 +1,5 @@
 // Shared plan preview for web and mobile. Planned features are never shown as live entitlements.
-// Pricing is US$3/month or US$25/year, shown in local currency at checkout (Stripe Adaptive Pricing).
+// Pricing is US$3/month or US$24/year, shown in local currency at checkout (Stripe Adaptive Pricing).
 export const PLANS_PAGE = {
   back: '← Back',
   backToApp: '← Back to plot',
@@ -26,8 +26,8 @@ export const PLANS_PAGE = {
     tagline: 'For the evenings you want to spend watching.',
     price: '$3',
     period: '/month',
-    annual: 'or $25/year',
-    priceSummary: '$3/month or $25/year',
+    annual: 'or $24/year',
+    priceSummary: '$3/month or $24/year',
     availability: 'Premium is in the works. These features are a preview of what’s coming. Pricing is tentative.',
     manageSubscription: 'Manage subscription',
     opening: 'Opening…',
@@ -118,7 +118,7 @@ export const PLANS_PAGE = {
   ],
   faqTitle: 'Before you ask',
   faqs: [
-    { q: 'Can I upgrade now?', a: 'Not yet. Premium is planned at $3/month or $25/year. The upgrade button shows a coming-soon message; it does not start a payment or a trial.' },
+    { q: 'Can I upgrade now?', a: 'Not yet. Premium is planned at $3/month or $24/year. The upgrade button shows a coming-soon message; it does not start a payment or a trial.' },
     { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Movie and episode release notifications are planned for Free. Free does not include personally tailored recommendations.' },
     { q: 'Will plot recommend titles just for me?', a: 'Not yet. Free includes More like this on a title page. Personally tailored recommendations need more usage and aren’t planned until Premium can help pay for them.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. Joining a Premium host’s collaborative lists and shared watch sessions is planned for Free. Premium is only needed to create or host them.' },
