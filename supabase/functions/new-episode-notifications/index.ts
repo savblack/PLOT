@@ -243,7 +243,9 @@ Deno.serve(async (req) => {
   try {
     byShow = await followersByShow(db);
   } catch (err) {
-    return json({ ok: false, error: String(err) }, 500);
+    // Details go to the function log, not the response (no stack traces out).
+    console.error(err);
+    return json({ ok: false, error: 'Could not read followed shows' }, 500);
   }
 
   const showIds = [...byShow.keys()].slice(0, MAX_SHOWS_PER_RUN);
@@ -261,7 +263,8 @@ Deno.serve(async (req) => {
   try {
     await markDnf(db, byShow, aired.map(a => a.tmdbId));
   } catch (err) {
-    return json({ ok: false, error: String(err) }, 500);
+    console.error(err);
+    return json({ ok: false, error: 'Could not read watch history' }, 500);
   }
 
   const skipped: Record<SkipReason, number> = { followed_after: 0, watched: 0, dnf: 0 };
@@ -291,7 +294,10 @@ Deno.serve(async (req) => {
           ignoreDuplicates: true,
         })
         .select('id');
-      if (error) return json({ ok: false, error: `notifications write failed: ${error.message}`, written }, 500);
+      if (error) {
+        console.error('notifications write failed:', error);
+        return json({ ok: false, error: 'Could not write notifications', written }, 500);
+      }
       written += data?.length ?? 0;
     }
   }
