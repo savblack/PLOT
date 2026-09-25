@@ -26,11 +26,13 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import {
-  SOCIAL_LINKS, PROFILE_SECTIONS, ALL_SECTION_KEYS,
+  SOCIAL_LINKS, PROFILE_SECTIONS, ALL_SECTION_KEYS, isSectionEnabled,
   USERNAME_RE, validateAvatarFile, isDuplicateUsernameError,
 } from '@plot/core/profileFields.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
+import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
+import { listVisibility, showsOnProfile } from '@plot/core/customLists.js';
 import { EVENTS } from '../lib/analytics.js';
 
 const posterUrl = (path, size = 'w342') =>
@@ -289,7 +291,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
   const fileRef = useRef(null);
   const nameInputRef = useRef(null);
   const unameInputRef = useRef(null);
-  const { lists: customLists, setListPublic } = useCustomLists(userId);
+  const { lists: customLists, setListVisibility } = useCustomLists(userId);
 
   useEffect(() => {
     // .app-main (not document.body) is the actual scrolling container — it's
@@ -498,8 +500,8 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
           {/* Which sections show on the profile */}
           <div>
-            <label className="pp-field-label">Sections shown</label>
-            <p className="pp-toggle-help" style={{ marginBottom: '0.5rem' }}>Choose which rails appear on your profile.</p>
+            <label className="pp-field-label">{PROFILE_PRIVACY.sectionsHeading}</label>
+            <p className="pp-toggle-help" style={{ marginBottom: '0.5rem' }}>{PROFILE_PRIVACY.sectionsHelp}</p>
             {PROFILE_SECTIONS.map((s) => (
               <label key={s.key} className="pp-section-toggle">
                 <span>{s.key === 'favourites' ? favWord : s.label}</span>
@@ -512,18 +514,24 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
               </label>
             ))}
             {customLists.length > 0 && <p className="pp-toggle-help" style={{ margin: '0.6rem 0 0.3rem' }}>{PUBLIC_PROFILE_PAGE.publicListLimit(PUBLIC_LIST_LIMIT)}</p>}
-            {customLists.map((list) => (
-              <label key={list.id} className="pp-section-toggle">
-                <span>{list.name}</span>
-                <input
-                  type="checkbox"
-                  checked={!!list.is_public}
-                  disabled={!list.is_public && customLists.filter((l) => l.is_public).length >= PUBLIC_LIST_LIMIT}
-                  onChange={(e) => setListPublic(list.id, e.target.checked)}
-                  style={{ width: 20, height: 20, accentColor: 'var(--accent)' }}
-                />
-              </label>
-            ))}
+            {/* Checked = on the profile (followers or public). This writes the
+                list's visibility, so the label says who that is. */}
+            {customLists.map((list) => {
+              const visibility = listVisibility(list);
+              const onProfile = showsOnProfile(visibility);
+              return (
+                <label key={list.id} className="pp-section-toggle">
+                  <span>{list.name}<span className="pp-toggle-help" style={{ display: 'block' }}>{PROFILE_PRIVACY.listVisibility[visibility]}</span></span>
+                  <input
+                    type="checkbox"
+                    checked={onProfile}
+                    disabled={!onProfile && customLists.filter((l) => showsOnProfile(listVisibility(l))).length >= PUBLIC_LIST_LIMIT}
+                    onChange={(e) => setListVisibility(list.id, e.target.checked ? 'public' : 'private')}
+                    style={{ width: 20, height: 20, accentColor: 'var(--accent)' }}
+                  />
+                </label>
+              );
+            })}
           </div>
 
           {!!error && <div className="pp-error">{error}</div>}
@@ -675,11 +683,11 @@ export default function PublicProfilePage() {
 
               {locked && (
                 <div className="public-profile-status-card" style={{ marginTop: '1.6rem' }}>
-                  <p className="public-profile-status-kicker">Private account</p>
+                  <p className="public-profile-status-kicker">{PROFILE_PRIVACY.lockedTitle}</p>
                   <p className="public-profile-status-copy">
                     {status === 'pending'
-                      ? 'Your follow request is pending. You’ll see their watches and lists once they approve it.'
-                      : `Follow ${name} to stay up to date on their watch activity.`}
+                      ? PROFILE_PRIVACY.lockedPending
+                      : PROFILE_PRIVACY.lockedFollow(name)}
                   </p>
                 </div>
               )}
@@ -764,7 +772,10 @@ export function ProfileSectionPage({ section }) {
   const lists = (customLists || []).filter(list => list.items?.length);
   const expanded = lists.find(list => list.id === expandedList);
   const busy = loading || (profile && !locked && fetching);
-  const empty = section === 'lists' ? lists.length === 0 : result.items.length === 0;
+  // Section toggles are layout, not access (RLS already scoped the rows), but
+  // "View all" on a rail the owner hid shouldn't bring it back either.
+  const hidden = paged && !isSectionEnabled(profile?.profile_sections, section === 'favourites' ? 'favourites' : 'recent');
+  const empty = hidden || (section === 'lists' ? lists.length === 0 : result.items.length === 0);
   return <>
     <style>{profileStyles}</style>
     <div className="pp-view pp-section-page">
@@ -772,7 +783,8 @@ export function ProfileSectionPage({ section }) {
         <div><Link to={`/u/${username}`} className="pp-back">{name || `@${username}`}</Link><h1 className="pp-section-title">{title}</h1></div>
       </div>
       {busy ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader /></div>
-        : !profile || locked ? <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>
+        : locked ? <p className="pp-sparse-line">{PROFILE_PRIVACY.lockedSubPage}</p>
+        : !profile ? <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>
         : result.error ? <div role="alert" className="pp-sparse"><p>{COMMON.genericError}</p><button className="btn btn-secondary btn-sm" onClick={() => setRetry(value => value + 1)}>{PUBLIC_PROFILE_PAGE.retry}</button></div>
         : empty ? <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>
         : section === 'lists' ? <>

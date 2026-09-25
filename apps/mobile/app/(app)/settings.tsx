@@ -37,6 +37,8 @@ import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
+import { favoriteWords } from '../../lib/spelling';
 
 // UUID token for the private calendar feed. Uses native crypto when the RN
 // runtime provides it, else an RFC4122-shaped Math.random fallback (RN has no
@@ -75,10 +77,11 @@ function Chevron() {
 
 // ── Settings row ──────────────────────────────────────────────────────
 function SettingsRow({
-  icon, label, value, onPress, danger = false, trailing,
+  icon, label, description, value, onPress, danger = false, trailing,
 }: {
   icon: React.ReactNode;
   label: string;
+  description?: string;
   value?: string;
   onPress?: () => void;
   danger?: boolean;
@@ -94,7 +97,14 @@ function SettingsRow({
       disabled={!onPress}
     >
       <View style={[styles.rowIcon, danger && styles.rowIconDanger]}>{icon}</View>
-      <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+      {description ? (
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+          <Text style={styles.rowDescription}>{description}</Text>
+        </View>
+      ) : (
+        <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+      )}
       <View style={styles.rowRight}>
         {value ? <Text style={styles.rowValue} numberOfLines={1}>{value}</Text> : null}
         {trailing ?? (onPress ? <Chevron /> : null)}
@@ -686,7 +696,8 @@ export default function SettingsScreen() {
 
   const toggleVisibility = async () => {
     if (!userId) return;
-    await updateProfile({ userId, patch: { is_public: !isPublic } });
+    const { error } = await updateProfile({ userId, patch: { is_public: !isPublic } });
+    if (error) { Alert.alert(COMMON.genericError); return; }
     track(EVENTS.PROFILE_VISIBILITY_CHANGED, { is_public: !isPublic });
     refreshProfile();
   };
@@ -967,8 +978,9 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
-            label="Public profile"
-            trailing={<Switch value={isPublic} onValueChange={toggleVisibility} trackColor={{ true: colors.accent }} />}
+            label={isPublic ? PROFILE_PRIVACY.publicLabel : PROFILE_PRIVACY.privateLabel}
+            description={`${isPublic ? PROFILE_PRIVACY.publicDescription(favoriteWords(region).pluralLower) : PROFILE_PRIVACY.privateDescription} ${PROFILE_PRIVACY.notesAlwaysPrivate}`}
+            trailing={<Switch value={isPublic} onValueChange={toggleVisibility} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.page.privacyLabel} />}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><Circle cx={9} cy={7} r={4}/><Path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></Svg>}
@@ -1242,6 +1254,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowLabel: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
   rowLabelDanger: { color: colors.danger },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  rowDescription: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
   rowValue: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, maxWidth: 160 },
 
   // Appearance segmented rail — mirrors web .settings-theme-tabs

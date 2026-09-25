@@ -33,6 +33,8 @@ import { UserList, SocialUser } from '../../../components/UserList';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../../lib/tabBar';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
+import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
+import { publicProfileLayout } from '@plot/core/publicProfileLayout.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const GRID_GAP = spacing.sm;
@@ -84,8 +86,11 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
     if (it.tmdb_id) openPanel(it.tmdb_id, it.media_type === 'tv' ? 'tv' : 'movie');
   };
 
-  const noPublicContent = !locked && watchCount === 0 && recent.length === 0
-    && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0;
+  // Same selection as web: honours the owner's section toggles and the Top 5 cap.
+  // Watching, Want to Watch and lists aren't rendered here yet (web parity: #931).
+  const layout = publicProfileLayout({ locked, sections: profile?.profile_sections, recent, topMovies, topTv, favourites });
+  const noPublicContent = !locked && watchCount === 0 && layout.recent.length === 0
+    && layout.topMovies.length === 0 && layout.topTv.length === 0 && layout.favourites.length === 0;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -219,26 +224,26 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
             {/* Private lock */}
             {locked && (
               <View style={styles.lockCard}>
-                <Text style={styles.lockKicker}>PRIVATE ACCOUNT</Text>
+                <Text style={styles.lockKicker}>{PROFILE_PRIVACY.lockedTitle.toUpperCase()}</Text>
                 <Text style={styles.lockCopy}>
                   {status === 'pending'
-                    ? 'Your follow request is pending. You’ll see their watches and lists once they approve it.'
-                    : `Follow ${name} to see their watch count, recent watches and lists.`}
+                    ? PROFILE_PRIVACY.lockedPending
+                    : PROFILE_PRIVACY.lockedFollow(name)}
                 </Text>
               </View>
             )}
 
-            {!locked && recent.length > 0 && (
-              <Section title="Recently watched" colors={colors}><PosterGrid items={recent} styles={styles} onPress={openMedia} /></Section>
+            {layout.recent.length > 0 && (
+              <Section title={PUBLIC_PROFILE_PAGE.watchHistory} colors={colors}><PosterGrid items={layout.recent} styles={styles} onPress={openMedia} /></Section>
             )}
-            {topMovies.length > 0 && (
-              <Section title={PUBLIC_PROFILE_PAGE.topFilms} colors={colors}><PosterGrid items={topMovies} ranked styles={styles} onPress={openMedia} /></Section>
+            {layout.topMovies.length > 0 && (
+              <Section title={PUBLIC_PROFILE_PAGE.topFilms} colors={colors}><PosterGrid items={layout.topMovies} ranked styles={styles} onPress={openMedia} /></Section>
             )}
-            {topTv.length > 0 && (
-              <Section title={PUBLIC_PROFILE_PAGE.topTv} colors={colors}><PosterGrid items={topTv} ranked styles={styles} onPress={openMedia} /></Section>
+            {layout.topTv.length > 0 && (
+              <Section title={PUBLIC_PROFILE_PAGE.topTv} colors={colors}><PosterGrid items={layout.topTv} ranked styles={styles} onPress={openMedia} /></Section>
             )}
-            {favourites.length > 0 && (
-              <Section title={fw.plural} colors={colors}><PosterGrid items={favourites} styles={styles} onPress={openMedia} /></Section>
+            {layout.favourites.length > 0 && (
+              <Section title={fw.plural} colors={colors}><PosterGrid items={layout.favourites} styles={styles} onPress={openMedia} /></Section>
             )}
 
             {noPublicContent && (

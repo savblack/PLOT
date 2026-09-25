@@ -7,8 +7,8 @@ import { SHARING } from '../../packages/core/copy/sharing.js';
 // Standalone server-rendered poster wall for a user's PUBLIC custom list, with OG
 // + ItemList JSON-LD and posters linking to the theplot.tv title pages, plus a
 // "Build your own PLOT" CTA. Privacy is enforced by RLS — the anon key only
-// returns is_public lists + their items; a private/unknown id yields a noindex
-// "not found" page.
+// returns lists anyone may read (see can_view_custom_list) + their items; any
+// other id yields a noindex "not found" page.
 //
 // Routing: file path functions/list/[id].js → /list/<id>.
 import { staticCard } from '../_lib/og-card.js';
@@ -113,8 +113,10 @@ export async function onRequest({ request, params }) {
   const reqHeaders = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
   let list, items, owner;
   try {
-    // RLS only returns the row if is_public = true.
-    const lRes = await fetch(`${SUPABASE_URL}/rest/v1/user_custom_lists?id=eq.${encodeURIComponent(id)}&is_public=eq.true&select=id,name,user_id&limit=1`, { headers: reqHeaders });
+    // As anon, RLS returns a 'public' list only when its owner's profile is
+    // public, and a 'link' list to anyone (20260925120000). Followers-only and
+    // private lists never come back here.
+    const lRes = await fetch(`${SUPABASE_URL}/rest/v1/user_custom_lists?id=eq.${encodeURIComponent(id)}&visibility=in.(public,link)&select=id,name,user_id,visibility&limit=1`, { headers: reqHeaders });
     list = (await lRes.json())?.[0] || null;
     if (!list) return htmlResponse(notFound(), 404, false);
     const [iRes, oRes] = await Promise.all([
@@ -156,7 +158,8 @@ export async function onRequest({ request, params }) {
     },
   });
 
-  const head = `<meta name="description" content="${esc(desc)}">
+  // A 'link' list is for the people it was sent to, so keep it out of search.
+  const head = `${list.visibility === 'link' ? '<meta name="robots" content="noindex">\n' : ''}<meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${esc(url)}">
 <meta property="og:type" content="website">
 <meta property="og:title" content="${esc(metaTitle)}">

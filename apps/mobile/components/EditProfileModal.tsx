@@ -28,6 +28,7 @@ import { favoriteWords } from '../lib/spelling';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import {
   SOCIAL_LINKS, PROFILE_SECTIONS, ALL_SECTION_KEYS, USERNAME_RE, normaliseUsername,
   isDuplicateUsernameError,
@@ -203,7 +204,8 @@ export default function EditProfileModal({
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Shown on your profile</Text>
+              <Text style={styles.label}>{PROFILE_PRIVACY.sectionsHeading}</Text>
+              <Text style={[styles.hint, { color: colors.textMuted, marginBottom: spacing.sm }]}>{PROFILE_PRIVACY.sectionsHelp}</Text>
               {PROFILE_SECTIONS.map(({ key, label }: any) => {
                 const on = enabled.includes(key);
                 return (

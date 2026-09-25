@@ -7,6 +7,8 @@ import { useSelection } from '../hooks/useSelection.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { COMMON } from '../copy/common.js';
+import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
+import { listVisibility } from '@plot/core/customLists.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
@@ -206,7 +208,7 @@ export default function MyListsView() {
         count={coverCount(c.items, c.empty)}
         posters={posters(visible)}
         dim={narrowed && visible.length === 0 && c.items.length > 0}
-        badge={c.list?.is_public && <span className="mylists-public-badge">Public</span>}
+        badge={c.list && listVisibility(c.list) !== 'private' && <span className="mylists-public-badge">{PROFILE_PRIVACY.listVisibilityBadge[listVisibility(c.list)]}</span>}
         onOpen={open(c.key)}
         editMode={selection.editMode}
         selectable={!!c.list}

@@ -10,6 +10,7 @@ export interface PublicProfile {
   is_supporter: boolean;
   is_public: boolean;
   follow_status: string | null;
+  profile_sections?: string[] | null;
   bio?: string | null;
   links?: Record<string, string> | null;
 }

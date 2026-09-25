@@ -53,8 +53,9 @@
  *   Analytics seam — fired when a custom list is created or deleted.
  * @property {(payload: { list_id: string, tmdb_id: number, media_type: string, action: 'added' | 'removed' }) => void} [onCustomListItemChange]
  *   Analytics seam — fired when a title is added to or removed from a custom list.
- * @property {(payload: { list_id: string, is_public: boolean }) => void} [onCustomListVisibility]
- *   Analytics seam — fired when a custom list is made public or private.
+ * @property {(payload: { list_id: string, visibility: 'private' | 'followers' | 'public' | 'link', is_public: boolean }) => void} [onCustomListVisibility]
+ *   Analytics seam — fired when a custom list's visibility changes. is_public is
+ *   kept for dashboards built before visibility existed (true for public/link).
  * @property {(payload: { tmdb_id: number, media_type: string, favourited: boolean }) => void} [onFavourite]
  *   Analytics seam — fired on favourite (favourited:true) / unfavourite (false).
  * @property {(payload: { target_user_id: string, approved: boolean }) => void} [onFollowRequestDecision]

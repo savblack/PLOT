@@ -12,6 +12,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests, FollowRequester } from '../../hooks/useFollowRequests';
+import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { Avatar } from '../../components/Avatar';
 import UserModerationMenu from '../../components/UserModerationMenu';
 import { useBlocks } from '@plot/core/useBlocks.js';
@@ -44,9 +45,7 @@ export default function RequestsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
       >
-        <Text style={styles.intro}>
-          People asking to follow your private profile. Approving lets them see your watch count, recent watches and lists.
-        </Text>
+        <Text style={styles.intro}>{PROFILE_PRIVACY.followRequestsIntro}</Text>
 
         {loading ? (
           <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xxl }} />

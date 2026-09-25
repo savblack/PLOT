@@ -59,7 +59,7 @@ const app = {
   navigateTo: noop,
   topLists:    { lists: { movies: topMovies, tv: [] }, loading: false, setSlot: resolved, removeSlot: resolved, moveUp: resolved, moveDown: resolved },
   favorites:   { favorites: favoritesItems, loading: false, isFavorite: () => false, toggleFavorite: resolved },
-  customLists: { lists: customLists, loading: false, createList: resolved, deleteList: resolved, renameList: resolved, setListPublic: resolved, addItem: resolved, removeItem: resolved },
+  customLists: { lists: customLists, loading: false, createList: resolved, deleteList: resolved, renameList: resolved, setListVisibility: resolved, addItem: resolved, removeItem: resolved },
   watching:    { items: watchingItems, loading: false, stopWatching: resolved, fetchSeason: async () => null },
   watchlist:   { items: watchlistItems, loading: false, removeFromList: resolved, isInList: () => false, toggle: resolved },
 };

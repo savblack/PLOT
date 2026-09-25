@@ -11,6 +11,7 @@ import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { ENGAGEMENT_PROMPT } from '../copy/engagementPrompt.js';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
+import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
 import { RESET_PASSWORD_PAGE } from '../copy/resetPasswordPage.js';
 import { SAVE_PAGE } from '../copy/savePage.js';
@@ -32,6 +33,7 @@ const MODULES = {
   importView: IMPORT_VIEW,
   mediaPanel: MEDIA_PANEL,
   onboardingFlow: ONBOARDING_FLOW,
+  profilePrivacy: PROFILE_PRIVACY,
   publicProfilePage: PUBLIC_PROFILE_PAGE,
   resetPasswordPage: RESET_PASSWORD_PAGE,
   savePage: SAVE_PAGE,

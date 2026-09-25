@@ -1,6 +1,7 @@
 import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { isListShareable, listVisibility } from '@plot/core/customLists.js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
@@ -105,7 +106,7 @@ export default function ListPage() {
   const resolvedView = view === 'auto' ? (narrow ? 'rows' : 'grid') : view;
 
   const shareList = useCallback((list) => share({
-    url: list.is_public ? buildListShareUrl({ listId: list.id }) : null,
+    url: isListShareable(listVisibility(list)) ? buildListShareUrl({ listId: list.id }) : null,
     title: `${list.name} · PLOT`,
     text: SHARING.listText(list.name),
     event: EVENTS.LIST_SHARED,
