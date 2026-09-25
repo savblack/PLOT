@@ -74,6 +74,36 @@ export const FEATURED_GENRE_COUNT_WIDE = 9;
 /** The spin always lasts at least this long, so it reads as a reveal, not a flicker. */
 export const PICKER_MIN_SPIN_MS = 1400;
 
+/**
+ * Whether an upgraded saved request has all personal data needed to draw honestly.
+ * @param {{ enabled: boolean, mode: 'five'|'surprise'|null, onlyWatchlist: boolean, watchlistReady: boolean }} state
+ */
+export function canResumePicker({ enabled, mode, onlyWatchlist, watchlistReady }) {
+  return Boolean(enabled && mode && (!onlyWatchlist || watchlistReady));
+}
+
+/**
+ * Hide result-bearing phases whenever the viewer no longer has access to them.
+ * @param {{
+ *   enabled: boolean,
+ *   phase: 'setup'|'locked'|'spinning'|'results'|'empty'|'error',
+ *   resultsOwner: string|null|undefined,
+ *   userId: string|null|undefined,
+ *   results: PickerCandidate[],
+ *   canSpinAgain: boolean,
+ * }} state
+ * @returns {{ phase: 'setup'|'locked'|'spinning'|'results'|'empty'|'error', results: PickerCandidate[], canSpinAgain: boolean }}
+ */
+export function visiblePickerState({ enabled, phase, resultsOwner, userId, results, canSpinAgain }) {
+  const ownsResults = enabled && resultsOwner === userId;
+  const resultPhase = phase === 'spinning' || phase === 'results' || phase === 'empty' || phase === 'error';
+  return {
+    phase: !ownsResults && resultPhase ? 'setup' : phase,
+    results: ownsResults ? results : [],
+    canSpinAgain: ownsResults && canSpinAgain,
+  };
+}
+
 // Discover returns shorts and concert clips at the low end; anything under
 // this is not "a movie for tonight".
 const MIN_FEATURE_RUNTIME = 60;
@@ -627,11 +657,12 @@ export async function loadWatchedIds(userId, client = supabase) {
  *   storage?: PickerStorage|null,
  *   userId?: string|null,
  *   watchlistItems: any[],
+ *   watchlistReady?: boolean,
  *   streamingProviders: any[]|null|undefined,
  *   region: string,
  * }} opts
  */
-export function useTonightPicker({ enabled, storage = null, userId, watchlistItems, streamingProviders, region }) {
+export function useTonightPicker({ enabled, storage = null, userId, watchlistItems, watchlistReady = true, streamingProviders, region }) {
   const providerIds = useMemo(() => pickerProviderIds(streamingProviders), [streamingProviders]);
   const hasServices = providerIds.length > 0;
 
@@ -720,7 +751,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     const opts = {
       ...options,
       onlyServices: options.onlyServices && hasServices,
-      onlyWatchlist: options.onlyWatchlist && hasWatchlist,
+      onlyWatchlist: options.onlyWatchlist,
     };
     const key = JSON.stringify([userId, opts, region, watchlistKey]);
     if (run.current.key !== key) {
@@ -768,7 +799,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     // Spin again is only worth offering if it can show something different.
     const moreToLoad = opts.onlyWatchlist ? !cur.exhausted : cur.page < cur.totalPages;
     return { picked, canSpinAgain: cur.pool.length > picked.length || moreToLoad };
-  }, [options, hasServices, hasWatchlist, region, userId, watchlistItems, watchlistKey, providerIds]);
+  }, [options, hasServices, region, userId, watchlistItems, watchlistKey, providerIds]);
 
   const go = useCallback(async (nextMode = 'five') => {
     setMode(nextMode);
@@ -782,6 +813,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     }
     setResume(null);
     if (storage) Promise.resolve(storage.removeItem(storageKey)).catch(() => {});
+    setResultsOwner(userId);
     setPhase('spinning');
     const started = Date.now();
     let picked = [];
@@ -795,7 +827,6 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     const wait = PICKER_MIN_SPIN_MS - (Date.now() - started);
     if (wait > 0) await sleep(wait);
     setResults(picked);
-    setResultsOwner(userId);
     setCanSpinAgain(more);
     setPhase(failed ? 'error' : picked.length ? 'results' : 'empty');
   }, [enabled, draw, storage, storageKey, options, step, userId]);
@@ -803,8 +834,8 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   // Back from upgrading with a kept request: draw it without another tap.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- a one-off draw once storage and the Premium check agree
-    if (enabled && resume) go(resume);
-  }, [enabled, resume, go]);
+    if (canResumePicker({ enabled, mode: resume, onlyWatchlist: options.onlyWatchlist, watchlistReady })) go(resume);
+  }, [enabled, resume, options.onlyWatchlist, watchlistReady, go]);
 
   const spinAgain = useCallback(() => go(mode), [go, mode]);
   const backToOptions = useCallback(() => setPhase('setup'), []);
@@ -822,12 +853,12 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   const filtersSummary = useMemo(() => pickerFiltersSummary(options, { hasServices }), [options, hasServices]);
   const answers = useMemo(() => pickerAnswers(options, { genres }), [options, genres]);
 
-  const ownsResults = resultsOwner === userId;
+  const visible = visiblePickerState({ enabled, phase, resultsOwner, userId, results, canSpinAgain });
   return {
     options, setOption, toggleGenre, genres,
     hasServices, hasWatchlist,
-    phase: !ownsResults && phase === 'results' ? 'setup' : phase,
-    mode, results: ownsResults ? results : [], canSpinAgain: ownsResults && canSpinAgain,
+    phase: visible.phase,
+    mode, results: visible.results, canSpinAgain: visible.canSpinAgain,
     step, goToStep, nextStep, prevStep,
     sentence, filtersSummary, answers,
     go, spinAgain, backToOptions, closeLock,

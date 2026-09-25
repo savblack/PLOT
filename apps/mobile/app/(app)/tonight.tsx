@@ -438,6 +438,7 @@ export default function TonightScreen() {
     storage: PICKER_STORAGE,
     userId,
     watchlistItems: watchlist.items,
+    watchlistReady: !watchlist.loading,
     streamingProviders: profile?.streaming_providers,
     region: profile?.region || DEFAULT_REGION,
   });

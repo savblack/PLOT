@@ -21,6 +21,8 @@ import {
   serialiseSavedRequest,
   parseSavedRequest,
   SAVED_REQUEST_TTL_MS,
+  canResumePicker,
+  visiblePickerState,
 } from '../../tonightPicker.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
 
@@ -170,6 +172,25 @@ test('loadWatchedIds reads every history page beyond the database row cap', asyn
   assert.equal(ids.movie.size + ids.tv.size, 1005);
   assert.equal(ids.movie.has(1005), true);
   assert.equal(ids.movie.has(9999), false);
+});
+
+test('saved watchlist requests wait for the watchlist before resuming', () => {
+  assert.equal(canResumePicker({ enabled: true, mode: 'five', onlyWatchlist: true, watchlistReady: false }), false);
+  assert.equal(canResumePicker({ enabled: true, mode: 'five', onlyWatchlist: true, watchlistReady: true }), true);
+  assert.equal(canResumePicker({ enabled: true, mode: 'five', onlyWatchlist: false, watchlistReady: false }), true);
+});
+
+test('result-bearing state is hidden as soon as Premium access ends', () => {
+  const result = { id: 1 };
+  const hidden = visiblePickerState({
+    enabled: false, phase: 'results', resultsOwner: 'viewer-a', userId: 'viewer-a', results: [result], canSpinAgain: true,
+  });
+  assert.deepEqual(hidden, { phase: 'setup', results: [], canSpinAgain: false });
+
+  const spinning = visiblePickerState({
+    enabled: false, phase: 'spinning', resultsOwner: 'viewer-a', userId: 'viewer-a', results: [], canSpinAgain: false,
+  });
+  assert.equal(spinning.phase, 'setup');
 });
 
 const FAMILY = 10751;

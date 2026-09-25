@@ -529,6 +529,7 @@ export default function TonightView() {
     storage: PICKER_STORAGE,
     userId: user?.id,
     watchlistItems: watchlist.items,
+    watchlistReady: !watchlist.loading,
     streamingProviders: profile?.streaming_providers,
     region: profile?.region || DEFAULT_REGION,
   });
