@@ -1045,29 +1045,53 @@ export type Database = {
       }
       notifications: {
         Row: {
-          actor_id: string
+          actor_id: string | null
+          air_date: string | null
           created_at: string
+          episode_count: number
+          episode_number: number | null
           id: string
+          media_poster_path: string | null
+          media_title: string | null
+          media_type: string | null
           post_id: string | null
           read_at: string | null
+          season_number: number | null
+          tmdb_id: number | null
           type: string
           user_id: string
         }
         Insert: {
-          actor_id: string
+          actor_id?: string | null
+          air_date?: string | null
           created_at?: string
+          episode_count?: number
+          episode_number?: number | null
           id?: string
+          media_poster_path?: string | null
+          media_title?: string | null
+          media_type?: string | null
           post_id?: string | null
           read_at?: string | null
+          season_number?: number | null
+          tmdb_id?: number | null
           type: string
           user_id: string
         }
         Update: {
-          actor_id?: string
+          actor_id?: string | null
+          air_date?: string | null
           created_at?: string
+          episode_count?: number
+          episode_number?: number | null
           id?: string
+          media_poster_path?: string | null
+          media_title?: string | null
+          media_type?: string | null
           post_id?: string | null
           read_at?: string | null
+          season_number?: number | null
+          tmdb_id?: number | null
           type?: string
           user_id?: string
         }
@@ -1944,6 +1968,14 @@ export type Database = {
           post_title: string
           read_at: string
           type: string
+          tmdb_id: number
+          media_type: string
+          season_number: number
+          episode_number: number
+          episode_count: number
+          media_title: string
+          media_poster_path: string
+          air_date: string
         }[]
       }
       marketing_recipient_list: {

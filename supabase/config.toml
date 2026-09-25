@@ -117,3 +117,10 @@ verify_jwt = true
 
 [functions.stripe-billing]
 verify_jwt = true
+
+# New-episode notifications — daily at 12:00 UTC, called by pg_cron via pg_net
+# with the Vault service-role bearer (run_new_episode_notifications), so
+# verify_jwt stays true. Declared because a new function without an entry here
+# can be silently skipped by the deploy integration (see marketing-linear-mirror).
+[functions.new-episode-notifications]
+verify_jwt = true

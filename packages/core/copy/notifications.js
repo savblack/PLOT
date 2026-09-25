@@ -39,7 +39,26 @@ export const NOTIFICATIONS_PAGE = Object.freeze({
 
 export const NOTIFICATIONS_EMPTY = Object.freeze({
   title: 'No notifications yet.',
-  body:  'Follows and requests will show up here.',
+  body:  'New episodes of your shows, follows and requests will show up here.',
+});
+
+/**
+ * A new_episode row has no actor, so it doesn't fit NOTIFICATIONS' "<name> …"
+ * shape: it reads "<show title> <phrase>". A drop of several episodes on the
+ * same day is one row, starting at `episode_number`, covering `episode_count`.
+ */
+export const NEW_EPISODE_NOTIFICATION = Object.freeze({
+  badge: 'New episode',
+  badgePlural: 'New episodes',
+  untitled: 'A show you follow',
+  /** @param {{ season_number: number, episode_number: number, episode_count?: number | null }} ep */
+  phrase: ({ season_number: s, episode_number: e, episode_count: c }) => {
+    const count = c && c > 1 ? c : 1;
+    if (count > 1 && e === 1) return `season ${s} is out, ${count} episodes`;
+    if (count > 1) return `S${s} E${e} to E${e + count - 1} are out`;
+    if (e === 1) return `season ${s} premiere is out`;
+    return `S${s} E${e} is out`;
+  },
 });
 
 /**
