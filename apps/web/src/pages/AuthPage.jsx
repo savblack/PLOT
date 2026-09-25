@@ -609,11 +609,11 @@ export default function AuthPage({ initialMode = 'signup' }) {
                     )}
                     {SHOW_APPLE_LOGIN && (
                       <button type="button" className="auth-social-btn" onClick={() => beginOAuth('apple')} disabled={loading} aria-busy={loading}>
-                        <AppleIcon /> Continue with Apple
+                        <AppleIcon /> {AUTH_PAGE.continueWithApple}
                       </button>
                     )}
                   </div>
-                  <div className="auth-divider"><span>or</span></div>
+                  <div className="auth-divider"><span>{AUTH_PAGE.socialDivider}</span></div>
                 </>
               )}
 
