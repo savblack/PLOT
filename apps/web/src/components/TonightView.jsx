@@ -19,10 +19,11 @@ import { SettingsSwitch } from './SettingsPage.jsx';
 import './TonightView.css';
 
 /* Pick for Me. Phone: one column, a Filters panel that folds away, and a
-   sticky bar with the sentence and Go. Desktop (>=1024px): the same 264px
+   sticky bar with the sentence and Pick. Desktop (>=1024px): the same 264px
    side column of cards as History and Settings (your request, the four
-   questions, filters) beside the current question. Both layouts render; CSS
-   shows one. The title and subline come from the app shell. */
+   questions) beside the current question, with the same Filters panel under
+   it. Both layouts render; CSS shows one. The title and subline come from
+   the app shell. */
 
 const IconSparkle = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 3.5 11.6 8.4 16.5 10 11.6 11.6 10 16.5 8.4 11.6 3.5 10 8.4 8.4Z" /><path d="M18 14.5v5M15.5 17h5" /><path d="M18.5 3.5v3M17 5h3" /></svg>
@@ -319,16 +320,9 @@ function FiltersPanel({ picker }) {
   );
 }
 
-/* Desktop side column: the same card and filter-row styles History uses. */
+/* Desktop side column: the same cards History uses. Filters sit under the
+   question on both layouts, as a panel that folds away. */
 function SideColumn({ picker, results }) {
-  const { options, setOption } = picker;
-  const tickRow = (label, on, onToggle, disabled) => (
-    <button type="button" role="checkbox" aria-checked={on} disabled={disabled}
-      className={`cal-filter-row${on ? '' : ' cal-filter-row--off'}`} onClick={onToggle}>
-      <span className="cal-filter-name">{label}</span>
-      {on && <span className="cal-filter-tick"><IconTick /></span>}
-    </button>
-  );
   return (
     <aside className="tonight-side">
       <section className="hist-card" aria-label={T.yourRequest}>
@@ -367,20 +361,6 @@ function SideColumn({ picker, results }) {
         </div>
       </section>
 
-      <section className="hist-card" aria-label={T.filtersTitle}>
-        <div className="cal-filter">
-          <div className="cal-filter-label">{T.filtersTitle}</div>
-          <div>
-            {tickRow(T.onlyServices, options.onlyServices && picker.hasServices, () => setOption('onlyServices', !options.onlyServices), !picker.hasServices)}
-            {tickRow(T.onlyWatchlist, options.onlyWatchlist && picker.hasWatchlist, () => setOption('onlyWatchlist', !options.onlyWatchlist), !picker.hasWatchlist)}
-            {tickRow(T.hideKids, options.hideKids, () => setOption('hideKids', !options.hideKids), false)}
-            <div className="cal-filter-row tonight-lang-row">
-              <label className="cal-filter-name" htmlFor="tonight-lang-d">{T.languageLabel}</label>
-              <LanguageSelect picker={picker} id="tonight-lang-d" />
-            </div>
-          </div>
-        </div>
-      </section>
     </aside>
   );
 }
