@@ -390,7 +390,7 @@ export default function ImportView() {
             <PlatformIcon id={platform.id} logoPath={providerLogos[platform.id]} size={32} />
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{platform.name}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{platform.kind === 'connection' ? 'Import from your account' : 'Drop your viewing history'}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{platform.kind === 'connection' ? IMPORT_VIEW.accountImportSubtitle : IMPORT_VIEW.fileImportSubtitle}</div>
             </div>
           </div>
 

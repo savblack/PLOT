@@ -47,8 +47,8 @@ export function useMediaSync(userId: string | null | undefined) {
   }, []);
 
   const pollPlexAuth = useCallback((integrationId: string) => {
-    setPolling(true); setError(null);
     stopPolling();
+    setPolling(true); setError(null);
     pollTimer.current = setInterval(async () => {
       try {
         const result = await callSync('poll-auth', { integrationId });
@@ -72,7 +72,7 @@ export function useMediaSync(userId: string | null | undefined) {
     try {
       const result = await callSync('start-auth');
       if (result?.authUrl) Linking.openURL(result.authUrl);
-      if (result?.integrationId) pollPlexAuth(result.integrationId);
+      if (result?.integration?.id) pollPlexAuth(result.integration.id);
       return result;
     } catch (e) {
       setError(friendlyPremiumError((e as Error).message));

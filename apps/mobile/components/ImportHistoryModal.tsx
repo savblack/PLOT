@@ -44,7 +44,7 @@ const PLATFORMS: PlatformConfig[] = [
     id: 'letterboxd',
     name: 'Letterboxd',
     color: 'success',
-    hint: 'Settings → Data → Export your data → unzip → choose diary.csv or watched.csv',
+    hint: IMPORT_VIEW.letterboxdExportHint,
     accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text'],
   },
   {

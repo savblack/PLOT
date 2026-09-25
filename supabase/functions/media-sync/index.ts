@@ -441,7 +441,11 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, mapper: (item
   return results
 }
 
-async function fetchPlexWatched(resources: Array<Record<string, unknown>>) {
+async function fetchPlexWatched(
+  resources: Array<Record<string, unknown>>,
+  maxItems = MAX_PLEX_HISTORY_ITEMS,
+  requireComplete = true,
+) {
   // The account token is valid across the Plex account and must remain limited
   // to Plex-owned endpoints. Server resources carry a resource-scoped token;
   // only owned resources may receive it.
@@ -466,20 +470,26 @@ async function fetchPlexWatched(resources: Array<Record<string, unknown>>) {
       try {
         const rawItems: ReturnType<typeof parsePlexItems> = []
         let totalSize = Number.POSITIVE_INFINITY
-        for (let start = 0; start < totalSize && start < MAX_PLEX_HISTORY_ITEMS; start += PLEX_HISTORY_PAGE_SIZE) {
+        for (let start = 0; start < totalSize && start < maxItems; start += PLEX_HISTORY_PAGE_SIZE) {
           url.searchParams.set('X-Plex-Container-Start', String(start))
           const res = await fetchPlexXmlWithTimeout(url)
           if (!res.ok) throw new Error(`Plex history request failed (${res.status})`)
           const containerTag = res.text.match(/<MediaContainer\b[^>]*>/)?.[0]
           const attrs = containerTag ? xmlAttrs(containerTag) : {}
-          totalSize = Number(attrs.totalSize || attrs.size || 0)
-          const pageItems = parsePlexItems(res.text)
+          const reportedTotal = Number(attrs.totalSize)
+          const parsedItems = parsePlexItems(res.text)
+          totalSize = Number.isFinite(reportedTotal) && reportedTotal >= 0
+            ? reportedTotal
+            : parsedItems.length < PLEX_HISTORY_PAGE_SIZE
+              ? start + parsedItems.length
+              : Number.POSITIVE_INFINITY
+          const pageItems = parsedItems
             .filter(item => item.viewedAt || item.lastViewedAt)
           rawItems.push(...pageItems)
-          if (pageItems.length < PLEX_HISTORY_PAGE_SIZE) break
+          if (parsedItems.length < PLEX_HISTORY_PAGE_SIZE) break
         }
-        if (totalSize > MAX_PLEX_HISTORY_ITEMS) {
-          throw new Error(`Plex history exceeds the ${MAX_PLEX_HISTORY_ITEMS} item import limit`)
+        if (requireComplete && totalSize > maxItems) {
+          throw new Error(`Plex history exceeds the ${maxItems} item import limit`)
         }
         const normalized = await mapWithConcurrency(
           rawItems,
@@ -703,7 +713,9 @@ async function handleSync(supabaseAdmin: Db, userId: string) {
     const resources = await fetchPlexResources(token)
     const [watchlistItems, watched] = await Promise.all([
       fetchPlexWatchlist(token),
-      fetchPlexWatched(resources),
+      // Keep the established ongoing-sync ceiling. The one-off import below
+      // deliberately walks the full history in bounded pages.
+      fetchPlexWatched(resources, PLEX_HISTORY_PAGE_SIZE, false),
     ])
     const counts = await upsertSnapshot(supabaseAdmin, integration, watchlistItems, watched.items)
     const outboxProcessed = await processOutbox(supabaseAdmin, integration, token)

@@ -14,6 +14,7 @@ export type ImportedHistoryRow = {
 }
 
 const READ_BATCH = 200
+const WRITE_BATCH = 200
 
 /**
  * Add history from a one-off external import without changing anything the
@@ -45,15 +46,22 @@ export async function insertMissingHistory(
     row => !existingKeys.has(`${row.tmdb_id}::${row.media_type}`),
   )
 
-  if (missingRows.length > 0) {
-    const { error } = await supabaseAdmin
+  let importedCount = 0
+  for (let i = 0; i < missingRows.length; i += WRITE_BATCH) {
+    const batch = missingRows.slice(i, i + WRITE_BATCH)
+    const { count, error } = await supabaseAdmin
       .from('history')
-      .upsert(missingRows, { onConflict: HISTORY_CONFLICT_TARGET })
+      .upsert(batch, {
+        onConflict: HISTORY_CONFLICT_TARGET,
+        ignoreDuplicates: true,
+        count: 'exact',
+      })
     if (error) throw error
+    importedCount += count ?? batch.length
   }
 
   return {
-    importedCount: missingRows.length,
-    alreadyCount: uniqueRows.length - missingRows.length,
+    importedCount,
+    alreadyCount: uniqueRows.length - importedCount,
   }
 }
