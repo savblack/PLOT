@@ -11,7 +11,7 @@ const profile = {
   genres: [],
 };
 
-test('Free import page offers Plex and Trakt while sync stays hidden', async ({ page }, testInfo) => {
+test('Free import page offers connected and file import sources while sync stays hidden', async ({ page }, testInfo) => {
   const pageErrors = [];
   const consoleErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
@@ -38,6 +38,8 @@ test('Free import page offers Plex and Trakt while sync stays hidden', async ({ 
   await expect(page.getByRole('heading', { name: 'Import Watch History' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Plex Connected account/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Trakt Connected account/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Letterboxd CSV export/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /IMDb CSV export/ })).toBeVisible();
   await page.getByRole('button', { name: /Plex Connected account/ }).click();
   await expect(page.getByRole('button', { name: 'Connect Plex to import' })).toBeVisible();
   await expect(page.getByText('This does not turn on automatic or two-way sync.')).toBeVisible();

@@ -72,18 +72,46 @@ export function pickTmdbMatch(entry, results = []) {
   return preferred ?? null;
 }
 
+function externalIdResults(response) {
+  return [
+    ...(response?.movie_results || []).map(result => ({ ...result, media_type: 'movie' })),
+    ...(response?.tv_results || []).map(result => ({ ...result, media_type: 'tv' })),
+  ];
+}
+
 /**
  * Resolve parsed entries to TMDB titles.
  * @param {any[]} entries
- * @param {{ search: (title: string) => Promise<any>, onProgress?: (done: number, total: number) => void }} [deps]
+ * @param {{ search: (title: string) => Promise<any>, findExternal?: (id: string) => Promise<any>, onProgress?: (done: number, total: number) => void }} [deps]
  * @returns {Promise<any[]>} one result per entry, `status: 'matched' | 'unmatched'`
  */
-export async function resolveImportEntries(entries, { search, onProgress } = /** @type {any} */ ({})) {
+export async function resolveImportEntries(entries, { search, findExternal, onProgress } = /** @type {any} */ ({})) {
   const resolved = [];
 
   for (const batch of chunk(entries, RESOLVE_BATCH)) {
     const settled = await Promise.all(batch.map(async (entry) => {
       try {
+        if (entry.externalId && findExternal) {
+          try {
+            const external = await findExternal(entry.externalId);
+            const externalMatch = pickTmdbMatch(entry, externalIdResults(external));
+            if (externalMatch) {
+              return {
+                ...entry,
+                status: 'matched',
+                tmdbId: externalMatch.id,
+                mediaType: externalMatch.media_type,
+                tmdbTitle: externalMatch.title || externalMatch.name,
+                posterPath: externalMatch.poster_path ?? null,
+                genreIds: genreIdsFromItem(externalMatch),
+              };
+            }
+          } catch {
+            // A temporary /find failure should not make a resolvable title
+            // disappear from the import. The normal title search remains the
+            // fallback, as it is for exports without an external id.
+          }
+        }
         const res = await search(entry.title);
         const match = pickTmdbMatch(entry, res?.results || []);
         if (!match) return { ...entry, status: 'unmatched' };

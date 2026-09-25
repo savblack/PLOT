@@ -344,6 +344,9 @@ const dedupeResults = (results) => {
 export const tmdb = {
   /* ── Search ── */
   search: (query) => fetchFromTMDB('/search/multi', { query }),
+  findByExternalId: (externalId) => fetchFromTMDB(`/find/${encodeURIComponent(externalId)}`, {
+    external_source: 'imdb_id',
+  }),
   searchPeople: (query) => fetchFromTMDB('/search/person', { query }),
 
   /**

@@ -20,7 +20,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useMediaSync } from '../hooks/useMediaSync';
 import { useTraktSync } from '../hooks/useTraktSync';
 
-type Platform = 'plex' | 'trakt' | 'netflix' | 'prime' | 'disney' | 'max' | 'apple' | 'letterboxd';
+type Platform = 'plex' | 'trakt' | 'netflix' | 'prime' | 'disney' | 'max' | 'apple' | 'letterboxd' | 'imdb';
 type PlatformConfig = { id: Platform; name: string; color: string; hint: string; accept?: string[]; kind?: 'connection' };
 
 // ── Platform config ───────────────────────────────────────────────────
@@ -45,6 +45,13 @@ const PLATFORMS: PlatformConfig[] = [
     name: 'Letterboxd',
     color: 'success',
     hint: IMPORT_VIEW.letterboxdExportHint,
+    accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text'],
+  },
+  {
+    id: 'imdb',
+    name: IMPORT_VIEW.imdbName,
+    color: 'rating',
+    hint: IMPORT_VIEW.imdbExportHint,
     accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text'],
   },
   {
@@ -179,6 +186,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
 
       const results = await resolveImportEntries(deduped, {
         search: (title: string) => tmdb.search(title),
+        findExternal: (id: string) => tmdb.findByExternalId(id),
         onProgress: (done: number) => setResolveDone(done),
       });
 
