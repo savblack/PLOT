@@ -38,6 +38,7 @@ import { onPendingWatchQueued } from '@plot/core/engagementPrompt.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { loadPremiumEntitlement } from '@plot/core/billing.js';
 import { AppContext, useApp } from './hooks/useApp.js';
+import { SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 
 export { useApp };
 
@@ -301,7 +302,7 @@ export default function App() {
   const reminders    = useReminders(user?.id);
   const topLists     = useTopLists(user?.id);
   const favorites    = useFavorites(user?.id, { watching, watchlist });
-  const customLists  = useCustomLists(user?.id);
+  const customLists  = useCustomLists(user?.id, { includeShared: SHOW_WATCH_TOGETHER });
 
   /* ── Pending "save to watchlist" deep link (newsletter / chart page) ── */
   const handleSaveResult = useCallback((result) => {

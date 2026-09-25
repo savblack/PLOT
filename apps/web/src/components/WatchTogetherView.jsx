@@ -16,7 +16,8 @@ import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COMMON } from '../copy/common.js';
 import { posterUrl } from '../utils/images.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
-import { AcceptDialog, PersonAvatar } from './WatchTogetherParts.jsx';
+import { AcceptDialog, PersonAvatar, ShareListDialog } from './WatchTogetherParts.jsx';
+import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import './WatchTogetherView.css';
 
 function Chevron() {
@@ -231,7 +232,8 @@ function Invite({ wt }) {
 /* ── Titles with one or more partners ────────────────────────────────── */
 
 function Together({ wt, usernames }) {
-  const { user, openPanel } = useApp();
+  const { user, openPanel, customLists } = useApp();
+  const [sharing, setSharing] = useState(false);
   const navigate = useNavigate();
   const people = usernames.map(u => wt.partners.find(p => p.username === u)).filter(Boolean);
   // The hook keys on the sorted ids, so a fresh array each render is fine.
@@ -294,6 +296,19 @@ function Together({ wt, usernames }) {
             {rest.length > 0 && <TitleSection label={T.overlap.alsoOnBoth} titles={rest} openPanel={openPanel} />}
           </>
         )}
+      {!group && people[0] && (() => {
+        const partner = people[0];
+        const existing = customLists?.lists?.find(l => l.people?.some(p => p.user_id === partner.other_id));
+        return (
+          <div className="wt-session-foot">
+            <span className="wt-note">{existing ? T.sharedList.summary(existing.name, existing.items?.length ?? 0) : T.sharedList.want(personName(partner))}</span>
+            {existing
+              ? <Link to={collectionPath(customListKey(existing.id))} className="btn btn-secondary btn-sm">{T.sharedList.open}</Link>
+              : <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSharing(true)}>{T.sharedList.make}</button>}
+          </div>
+        );
+      })()}
+      {sharing && <ShareListDialog partner={people[0]} overlapCount={titles.length} onClose={() => setSharing(false)} />}
     </div>
   );
 }

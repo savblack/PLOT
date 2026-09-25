@@ -21,6 +21,10 @@ import { CardGrid, ListCard, SelectCircle } from './ListCards.jsx';
 import { MEDIA } from '../copy/media.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { privateNoteKey } from '@plot/core/privateNotes.js';
+import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
+import { personName } from '@plot/core/watchTogether.js';
+import { SharedListPeopleDialog } from './WatchTogetherParts.jsx';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 
 /* The lists themselves: one component per list, each rendering into a
    `Frame` it is handed. On My Lists the frame is a section on the page (the
@@ -716,11 +720,16 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
 
 /* ── One custom list, as a page: grid plus rename / public / share / delete ── */
 export function CustomListSection({ list, visibleItems, count, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
-  const { openPanel, favorites, watchlist, privateNotes, profile } = useApp();
+  const { openPanel, favorites, watchlist, privateNotes, profile, user } = useApp();
   const fw = favoriteWords(profile?.region);
-  const { renameList, setListVisibility, addItem, removeItem, deleteList } = customLists;
+  const { renameList, setListVisibility, addItem, removeItem, deleteList, leaveList } = customLists;
   const visibility = listVisibility(list);
   const shareable = isListShareable(visibility, profile?.is_public);
+  const isOwner = list.role !== 'member';
+  const shared = SHOW_WATCH_TOGETHER && (!isOwner || list.people?.length > 0);
+  const others = (list.people || []).filter(p => p.user_id !== user?.id);
+  const [addingPeople, setAddingPeople] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const selection = useSelection();
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(list.name);
@@ -739,21 +748,30 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
     selection.selected.forEach(tmdbId => removeItem(list.id, tmdbId));
     selection.exit();
   };
+  // Shared lists: members can rename, add people and leave; only the owner
+  // can change visibility or delete (docs/design/watch-together/README.md).
   const menuItems = [
     { label: 'Rename', onClick: () => { setRenameValue(list.name); setRenaming(true); } },
-    ...LIST_VISIBILITIES.map(v => ({
+    ...(shared ? [{ label: WATCH_TOGETHER.sharedList.addPeople, onClick: () => setAddingPeople(true) }] : []),
+    // Only the creator sets visibility, shares or deletes; members can leave.
+    ...(isOwner ? LIST_VISIBILITIES.map(v => ({
       label: PROFILE_PRIVACY.listVisibility[v], hint: PROFILE_PRIVACY.listVisibilityHint[v],
       checked: v === visibility, onClick: () => { if (v !== visibility) setListVisibility(list.id, v); },
-    })),
-    ...(shareable && share ? [{ label: 'Share link', onClick: () => share(list) }] : []),
-    { label: 'Delete list', onClick: () => setConfirmDelete(true), danger: true },
+    })) : []),
+    ...(isOwner && shareable && share ? [{ label: 'Share link', onClick: () => share(list) }] : []),
+    isOwner
+      ? { label: 'Delete list', onClick: () => setConfirmDelete(true), danger: true }
+      : { label: WATCH_TOGETHER.sharedList.leave, onClick: () => setConfirmLeave(true), danger: true },
   ];
+  const subtitle = shared && others.length
+    ? WATCH_TOGETHER.sharedList.sharedWith(others.map(personName).join(', '))
+    : visibility === 'private' ? undefined : PROFILE_PRIVACY.listVisibility[visibility];
 
   return (
     <Frame
       title={list.name}
       count={count ?? allItems.length}
-      subtitle={visibility === 'private' ? undefined : PROFILE_PRIVACY.listVisibility[visibility]}
+      subtitle={subtitle}
       headerRight={
         <>
           {shareable && share && <button type="button" className="btn btn-ghost btn-sm" onClick={() => share(list)}>{shareCopied ? COMMON.copied : COMMON.share}</button>}
@@ -821,6 +839,17 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
 
       {showAdd && (
         <AddToFavoritesModal title="Add to List" onAdd={(item) => addItem(list.id, item)} onClose={() => setShowAdd(false)} />
+      )}
+      {addingPeople && <SharedListPeopleDialog list={list} onAdd={memberId => customLists.addMember(list.id, memberId)} onClose={() => setAddingPeople(false)} />}
+      {confirmLeave && (
+        <ConfirmModal
+          title={WATCH_TOGETHER.sharedList.leaveTitle(list.name)}
+          message={WATCH_TOGETHER.sharedList.leaveBody}
+          confirmLabel={WATCH_TOGETHER.sharedList.leave}
+          danger
+          onConfirm={async () => { await leaveList(list.id); onDeleted?.(); }}
+          onClose={() => setConfirmLeave(false)}
+        />
       )}
       {confirmDelete && (
         <ConfirmModal

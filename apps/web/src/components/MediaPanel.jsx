@@ -64,6 +64,8 @@ import EngagementPromptBar from './EngagementPromptBar.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
+import { SavedByTooRow } from './WatchTogetherParts.jsx';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -853,7 +855,7 @@ function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note,
 /* ── Add to custom list sheet ── */
 function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   const { customLists, topLists, profile } = useApp();
-  const { lists, createList, addItem, removeItem, isInList } = customLists;
+  const { lists, ownedCount, createList, addItem, removeItem, isInList } = customLists;
   const [creatingName, setCreatingName] = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
   const [createError,  setCreateError]  = useState('');
@@ -882,7 +884,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
       setCreateError(`"${duplicateList.name}" already exists.`);
       return;
     }
-    if (!canCreateCustomList(lists.length, profile)) {
+    if (!canCreateCustomList(ownedCount ?? lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
       setShowUpgrade(true);
       return;
@@ -1912,6 +1914,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 provider logos, because that answers the question at a glance.
                 Everything it used to sit under — the overview, the cast, the
                 trailer, the episode guide — now sits under it. ── */}
+            {SHOW_WATCH_TOGETHER && details && <SavedByTooRow tmdbId={itemId} mediaType={itemType} />}
             {details && (
               <section className="panel-card panel-watch">
                 <button

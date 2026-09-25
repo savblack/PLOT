@@ -12,6 +12,7 @@ export const NOTIFICATIONS = Object.freeze({
   watch_together_request:  'wants to watch together',
   watch_together_accepted: 'accepted your watch together request',
   watch_together_session:  'started deciding what to watch with you',
+  watch_together_list:     'added you to a shared list',
 });
 
 /** Shown when a notification type isn't one we have wording for yet. */

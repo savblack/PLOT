@@ -15,6 +15,8 @@ import { useWatchTogether, useWatchTogetherStatus } from '@plot/core/useWatchTog
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
+import { useApp } from '../hooks/useApp.js';
+import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import './WatchTogetherView.css';
 
 export function PersonAvatar({ person, size = 'md' }) {
@@ -205,5 +207,139 @@ export function WatchTogetherSettings({ user, profile }) {
         <p className="wt-note">{T.settings.stopNote}</p>
       </div>
     </div>
+  );
+}
+
+/**
+ * Make a shared list from the overlap list: name, a head start from the
+ * titles you've both saved (or empty), and who's on it (partners only).
+ *
+ * @param {{ partner: { other_id: string, username: string, display_name?: string | null },
+ *   overlapCount: number, onClose: () => void }} props
+ */
+export function ShareListDialog({ partner, overlapCount, onClose }) {
+  const navigate = useNavigate();
+  const { user, profile, customLists } = useApp();
+  const { partners } = useWatchTogether(user?.id);
+  const L = T.sharedList;
+  const [name, setName] = useState(() => L.defaultName(personName(profile || {}), personName(partner)));
+  const [seed, setSeed] = useState(overlapCount > 0);
+  const [extra, setExtra] = useState(() => new Set());
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const others = partners.filter(p => p.other_id !== partner.other_id);
+
+  const create = async () => {
+    setBusy(true); setError(null);
+    const members = [partner.other_id, ...extra];
+    const id = await customLists.createSharedList(name, members, seed ? partner.other_id : null);
+    setBusy(false);
+    if (id) { onClose(); navigate(collectionPath(customListKey(id))); } else setError(L.error);
+  };
+
+  return (
+    <ResponsiveDialog title={L.sheetTitle} onClose={onClose}
+      footer={<div className="wt-dialog-actions">
+        <button type="button" className="btn btn-primary" onClick={create} disabled={busy || !name.trim()}>{L.create}</button>
+      </div>}>
+      <div className="wt-accept">
+        <label className="wt-field">
+          <span className="wt-accept-label">{L.name}</span>
+          <input type="text" className="wt-search" value={name} onChange={e => setName(e.target.value)} />
+        </label>
+        <fieldset className="wt-settings-group">
+          <legend className="wt-accept-label">{L.startWith}</legend>
+          {overlapCount > 0 && (
+            <label className="wt-radio">
+              <input type="radio" name="wt-start" checked={seed} onChange={() => setSeed(true)} />
+              <span><span className="wt-person-name">{L.startBoth(overlapCount)}</span><br /><span className="wt-note">{L.startBothNote}</span></span>
+            </label>
+          )}
+          <label className="wt-radio">
+            <input type="radio" name="wt-start" checked={!seed} onChange={() => setSeed(false)} />
+            <span><span className="wt-person-name">{L.startEmpty}</span><br /><span className="wt-note">{L.startEmptyNote}</span></span>
+          </label>
+        </fieldset>
+        <div className="wt-settings-group">
+          <span className="wt-accept-label">{L.whosOn}</span>
+          <div className="wt-chips">
+            <span className="wt-filter active">{personName(partner)}</span>
+            {others.map(p => (
+              <button key={p.other_id} type="button" className={`wt-filter${extra.has(p.other_id) ? ' active' : ''}`} aria-pressed={extra.has(p.other_id)}
+                onClick={() => setExtra(prev => { const next = new Set(prev); if (next.has(p.other_id)) next.delete(p.other_id); else next.add(p.other_id); return next; })}>
+                {personName(p)}
+              </button>
+            ))}
+          </div>
+          <span className="wt-note">{L.whosOnNote}</span>
+        </div>
+        {error && <p className="wt-error" role="alert">{error}</p>}
+      </div>
+    </ResponsiveDialog>
+  );
+}
+
+/**
+ * "Add people" on a shared list: partners who aren't on it yet.
+ *
+ * @param {{ list: { id: string, people?: { user_id: string }[] }, onAdd: (id: string) => Promise<boolean>, onClose: () => void }} props
+ */
+export function SharedListPeopleDialog({ list, onAdd, onClose }) {
+  const { user } = useApp();
+  const { partners } = useWatchTogether(user?.id);
+  const onList = new Set((list.people || []).map(p => p.user_id));
+  const [added, setAdded] = useState(() => new Set());
+  const candidates = partners.filter(p => !onList.has(p.other_id));
+  const L = T.sharedList;
+  return (
+    <ResponsiveDialog title={L.addPeople} onClose={onClose}>
+      <div className="wt-accept">
+        <p className="wt-note">{L.addPeopleNote}</p>
+        {candidates.length === 0 && <p className="wt-note">{L.noOneToAdd}</p>}
+        {candidates.map(p => (
+          <div key={p.other_id} className="wt-row">
+            <PersonAvatar person={p} />
+            <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span></span>
+            {added.has(p.other_id)
+              ? <span className="wt-chip wt-chip--ok">{L.shared}</span>
+              : <button type="button" className="btn btn-primary btn-sm" onClick={async () => { if (await onAdd(p.other_id)) setAdded(prev => new Set(prev).add(p.other_id)); }}>{L.add}</button>}
+          </div>
+        ))}
+      </div>
+    </ResponsiveDialog>
+  );
+}
+
+/**
+ * "Saved by Sam too" on a title page: partners who saved this title and have
+ * it on both watchlists. One partner opens your shared titles; more opens the
+ * picker.
+ *
+ * @param {{ tmdbId: number, mediaType: string }} props
+ */
+export function SavedByTooRow({ tmdbId, mediaType }) {
+  const navigate = useNavigate();
+  const { user } = useApp();
+  const [people, setPeople] = useState([]);
+  useEffect(() => {
+    if (!user?.id || !tmdbId) return undefined;
+    let live = true;
+    supabase.rpc('watch_together_savers', { p_tmdb_id: Number(tmdbId), p_media_type: mediaType }).then(({ data }) => {
+      if (live) setPeople(data || []);
+    });
+    return () => { live = false; };
+  }, [user?.id, tmdbId, mediaType]);
+  if (!people.length) return null;
+  const names = people.map(personName);
+  const to = people.length === 1 ? `/together/with/${encodeURIComponent(people[0].username)}` : '/together/pick';
+  return (
+    <button type="button" className="wt-banner wt-saved-too interactive-surface" onClick={() => navigate(to)}>
+      <span className="wt-banner-text">
+        <span className="wt-banner-title">{T.savedToo.title(names)}</span>
+        <span className="wt-note">{people.length === 1 ? T.savedToo.one : T.savedToo.many}</span>
+      </span>
+      <span className="wt-stack" aria-hidden="true">{people.slice(0, 3).map(p => <PersonAvatar key={p.id} person={p} size="sm" />)}</span>
+      <svg className="wt-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+    </button>
   );
 }

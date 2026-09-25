@@ -119,6 +119,7 @@ function notificationPath(username, type) {
   const u = encodeURIComponent(username);
   if (SHOW_WATCH_TOGETHER && type === 'watch_together_session') return `/together/join/${u}`;
   if (SHOW_WATCH_TOGETHER && type === 'watch_together_accepted') return `/together/with/${u}`;
+  if (SHOW_WATCH_TOGETHER && type === 'watch_together_list') return '/my-lists';
   return `/u/${username}`;
 }
 

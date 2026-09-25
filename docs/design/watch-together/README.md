@@ -152,4 +152,15 @@ Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
   Realtime broadcast ping (no data) on `wt-session:<id>`, with a 5 second
   poll as a fallback. Sessions end after 12 hours, when either person ends
   them, when a new one starts, or when the pairing ends.
-- Not built yet: shared lists, "Saved by Sam too" on title pages, mobile.
+- Phase 3 (`20260925140000_watch_together_shared_lists.sql`): shared lists
+  and "Saved by Sam too". A shared list is a custom list with members, made
+  from the overlap list (name, a head start from what you've both saved or
+  empty, and partners to add). Items keep the owner's `user_id` so the
+  existing owner foreign key stays; `added_by` records who added a title.
+  Members read through new select policies and write only through security
+  definer functions. It counts only against the creator's allowance. The
+  title panel shows "Saved by Sam too" above Where to watch when a partner
+  has the title on their watchlist and so do you.
+- Not built yet: mobile. A shared list doesn't yet show who added each
+  title, and a member's data export doesn't include lists they're only a
+  member of.
