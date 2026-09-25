@@ -4,6 +4,16 @@
 // place the web app and the Storybook Content page look for copy.
 
 export const IMPORT_VIEW = {
+  chooseSource: 'Choose where you want to import from.',
+  connectionImportHint: 'Connect once to copy your watch history into Plot. This does not turn on automatic or two-way sync.',
+  connectToImport: (provider) => `Connect ${provider} to import`,
+  connectedReady: (provider) => `${provider} is connected and ready to import.`,
+  importFrom: (provider) => `Import from ${provider}`,
+  importingFrom: (provider) => `Importing from ${provider}…`,
+  connectionRequired: (provider) => `Connect ${provider} first, then return here to import your history.`,
+  plexServerRequired: 'Your Plex Media Server must be running and reachable while the import runs.',
+  importedSummary: (imported, existing) => `${imported} title${imported !== 1 ? 's' : ''} added${existing ? `, ${existing} already in your history` : ''}.`,
+  importFailed: 'We could not import this history. Nothing already in Plot was changed. Please try again.',
   noneAlreadyInHistory: 'None already in your history',
   notMatched: 'Not matched',
   alreadyInHistory: 'Already in history',

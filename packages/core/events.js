@@ -6,6 +6,7 @@
    the bus, rather than in useHistory: the modules that *write* history have to
    emit it, and they shouldn't have to import a hook to do so. */
 export const HISTORY_CHANGED_EVENT = 'plot:history-changed';
+export const MEDIA_INTEGRATION_CHANGED_EVENT = 'plot:media-integration-changed';
 
 const listeners = new Map(); // event name -> Set<fn>
 

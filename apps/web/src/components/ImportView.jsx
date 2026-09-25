@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { parsePlatform } from '@plot/core/importParsing.js';
@@ -12,6 +12,8 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA } from '../copy/media.js';
 import { IMPORT_VIEW } from '../copy/importView.js';
+import { useMediaSync } from '../hooks/useMediaSync.js';
+import { useTraktSync } from '../hooks/useTraktSync.js';
 
 /* ─────────────────────────── Platform icons ─────────────────────────── */
 
@@ -35,13 +37,27 @@ function PlatformIcon({ id, logoPath, size = 32 }) {
     );
   }
   // Fallback: colored square while loading
-  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054' };
+  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054', plex: '#E5A00D', trakt: '#ED1C24' };
   return <div style={{ width: size, height: size, borderRadius: 8, background: colors[id] || '#333', flexShrink: 0 }} />;
 }
 
 /* ─────────────────────────── Platform config ─────────────────────────── */
 
 const PLATFORMS = [
+  {
+    id: 'plex',
+    name: 'Plex',
+    color: '#E5A00D',
+    format: 'Connected account',
+    kind: 'connection',
+  },
+  {
+    id: 'trakt',
+    name: 'Trakt',
+    color: '#ED1C24',
+    format: 'Connected account',
+    kind: 'connection',
+  },
   {
     id: 'netflix',
     name: 'Netflix',
@@ -171,9 +187,15 @@ function PosterThumb({ path }) {
 export default function ImportView() {
   const { user } = useApp();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const plex = useMediaSync(user?.id);
+  const trakt = useTraktSync(user?.id);
+  const loadPlexIntegration = plex.loadIntegration;
+  const loadTraktIntegration = trakt.loadIntegration;
+  const initialConnection = PLATFORMS.find(item => item.id === searchParams.get('source') && item.kind === 'connection') || null;
 
-  const [step, setStep] = useState(1); // 1=platform 2=file 3=resolving 4=preview 5=done
-  const [platform, setPlatform] = useState(null);
+  const [step, setStep] = useState(initialConnection ? 2 : 1); // 1=platform 2=source 3=resolving 4=preview 5=done
+  const [platform, setPlatform] = useState(initialConnection);
   const [parseError, setParseError] = useState('');
   const [resolveProgress, setResolveProgress] = useState({ done: 0, total: 0 });
   const [results, setResults] = useState([]);
@@ -182,6 +204,7 @@ export default function ImportView() {
   const [importError, setImportError] = useState('');
   const [importedCount, setImportedCount] = useState(0);
   const [providerLogos, setProviderLogos] = useState({});
+  const [connectionResult, setConnectionResult] = useState(null);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -195,6 +218,30 @@ export default function ImportView() {
       setProviderLogos(logos);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    loadPlexIntegration();
+    loadTraktIntegration();
+  }, [loadPlexIntegration, loadTraktIntegration]);
+
+  const connection = platform?.id === 'plex' ? plex : platform?.id === 'trakt' ? trakt : null;
+
+  const handleConnect = useCallback(async () => {
+    if (platform?.id === 'plex') {
+      const result = await plex.startPlexAuth();
+      if (result?.integration?.id) plex.pollPlexAuth(result.integration.id);
+    } else if (platform?.id === 'trakt') {
+      trakt.connect('/import?source=trakt');
+    }
+  }, [platform?.id, plex, trakt]);
+
+  const handleConnectionImport = useCallback(async () => {
+    if (!connection || !platform) return;
+    setConnectionResult(null);
+    track(EVENTS.IMPORT_STARTED, { source: platform.id });
+    const result = await connection.importHistory();
+    if (result) setConnectionResult(result);
+  }, [connection, platform]);
 
   /* Step 2 → 3 → 4 */
   const handleFile = useCallback(async (file) => {
@@ -311,7 +358,7 @@ export default function ImportView() {
       {step === 1 && (
         <>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-            Choose the streaming service you want to import from.
+            {IMPORT_VIEW.chooseSource}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
             {PLATFORMS.map(p => (
@@ -328,7 +375,7 @@ export default function ImportView() {
                 <PlatformIcon id={p.id} logoPath={providerLogos[p.id]} size={32} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{p.name}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 1 }}>{p.format} export</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 1 }}>{p.kind === 'connection' ? p.format : `${p.format} export`}</div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
@@ -345,9 +392,49 @@ export default function ImportView() {
             <PlatformIcon id={platform.id} logoPath={providerLogos[platform.id]} size={32} />
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{platform.name}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>Drop your viewing history</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{platform.kind === 'connection' ? 'Import from your account' : 'Drop your viewing history'}</div>
             </div>
           </div>
+
+          {platform.kind === 'connection' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <p style={{ fontSize: '0.82rem', lineHeight: 1.55, color: 'var(--text-muted)', margin: 0 }}>
+                {connection?.isConnected
+                  ? IMPORT_VIEW.connectedReady(platform.name)
+                  : IMPORT_VIEW.connectionImportHint}
+              </p>
+              {platform.id === 'plex' && (
+                <p style={{ fontSize: '0.75rem', lineHeight: 1.5, color: 'var(--text-muted)', margin: 0 }}>
+                  {IMPORT_VIEW.plexServerRequired}
+                </p>
+              )}
+              {(connection?.error || importError) && (
+                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem', fontSize: '0.82rem', color: '#ef4444' }}>
+                  {connection?.error || importError}
+                </div>
+              )}
+              {connectionResult ? (
+                <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1rem', color: 'var(--text-primary)', fontSize: '0.88rem' }}>
+                  {IMPORT_VIEW.importedSummary(connectionResult.importedCount || 0, connectionResult.alreadyCount || 0)}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={connection?.isConnected ? handleConnectionImport : handleConnect}
+                  disabled={connection?.syncing || connection?.polling}
+                  style={{ alignSelf: 'flex-start', border: 0, borderRadius: 'var(--radius-md)', padding: '0.8rem 1rem', background: 'var(--accent)', color: 'white', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {connection?.polling
+                    ? 'Waiting for Plex approval…'
+                    : connection?.syncing
+                      ? IMPORT_VIEW.importingFrom(platform.name)
+                      : connection?.isConnected
+                        ? IMPORT_VIEW.importFrom(platform.name)
+                        : IMPORT_VIEW.connectToImport(platform.name)}
+                </button>
+              )}
+            </div>
+          ) : <>
 
           {parseError && (
             <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem', fontSize: '0.82rem', color: '#ef4444', marginBottom: '1rem' }}>
@@ -423,6 +510,7 @@ export default function ImportView() {
               ))}
             </div>
           </div>
+          </>}
         </>
       )}
 
