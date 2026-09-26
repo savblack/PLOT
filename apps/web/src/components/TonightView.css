@@ -4,7 +4,15 @@
    Phone is one column with a sticky sentence bar; >=1024px swaps in the
    264px side column History and Settings use. */
 
-.tonight-view { padding-bottom: 1rem; }
+.tonight-view { display: flex; flex-direction: column; padding-bottom: 1rem; }
+/* Phone: at least the visible scroll area tall, so the sticky bar below can sit on the bottom. */
+@media (max-width: 1023px) {
+  .tonight-view {
+    min-height: calc(100dvh - var(--header-h) - var(--tabbar-h) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0;
+  }
+  .tonight-view .tonight-layout { padding-bottom: 1.5rem; }
+}
 /* Tapping Back, Next or a tile twice in a row reads as a double-click; don't
    let that select the label. */
 .tonight-view button { -webkit-user-select: none; user-select: none; }
@@ -218,10 +226,13 @@
 
 /* ── Phone sticky bar ── */
 .tonight-bar {
+  /* .app-main already ends above the tab bar, so 0 is its bottom edge. With
+     the view at least a screen tall and this bar last, it sits on the bottom
+     even when the page is short. */
   position: sticky;
-  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  bottom: 0;
   z-index: 5;
-  margin-top: 1.5rem;
+  margin-top: auto;
   padding: 24px var(--gut) 16px;
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(12px);
@@ -240,49 +251,47 @@
 .tonight-bar .btn { min-height: 44px; padding-inline: 18px; font-size: 0.9rem; }
 .tonight-bar .tonight-go { padding-inline: 32px; font-size: 1rem; }
 
-/* ── Spin ── */
-.tonight-spin {
+/* ── Finding… → picks ── */
+/* The Top pick's slot. While picks load it holds the sentence; when they
+   land, the sentence dissolves out over the image dissolving in. */
+.tonight-hero-slot { position: relative; display: flex; flex-direction: column; }
+.tonight-hero-slot--finding { min-height: 210px; display: flex; align-items: center; }
+.tonight-finding {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 1.5rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  text-wrap: pretty;
+}
+.tonight-finding-hl {
+  background-image: linear-gradient(var(--accent-fill), var(--accent-fill));
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  background-size: 0% 38%;
+  animation: tonight-hl 0.35s ease-out both;
+  animation-delay: var(--hl-delay, 0ms);
+}
+@keyframes tonight-hl { to { background-size: 100% 38%; } }
+.tonight-finding--out {
+  position: absolute;
+  inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 2rem 0 1rem;
+  pointer-events: none;
+  animation: tonight-dissolve-out 0.55s ease-in both;
 }
-.tonight-reels {
-  display: grid;
-  gap: 0.75rem;
-  width: 100%;
-  max-width: 34rem;
-  grid-template-columns: repeat(3, 1fr);
+.tonight-finding--out .tonight-finding-hl { animation: none; background-size: 100% 38%; }
+.tonight-results-head--hidden { visibility: hidden; }
+@keyframes tonight-dissolve-out { to { opacity: 0; filter: blur(10px); } }
+@keyframes tonight-dissolve-in {
+  from { opacity: 0; filter: blur(10px); }
+  to { opacity: 1; filter: blur(0); }
 }
-.tonight-reels--1 { grid-template-columns: minmax(0, 11rem); justify-content: center; }
-.tonight-reel {
-  aspect-ratio: 2 / 3;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--surface-sunken);
-}
-.tonight-reel-strip {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px;
-  animation: tonight-reel-roll 0.42s linear infinite;
-  animation-delay: var(--reel-delay, 0ms);
-}
-.tonight-reel-frame {
-  flex-shrink: 0;
-  height: 44%;
-  min-height: 60px;
-  border-radius: 8px;
-  background: var(--border-strong);
-}
-.tonight-reel-frame:nth-child(3n) { background: var(--accent-dim); }
-@keyframes tonight-reel-roll {
-  from { transform: translateY(0); }
-  to { transform: translateY(-50%); }
-}
-.tonight-spin-line { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }
+.tonight-hero.tonight-hero--dissolve { animation: tonight-dissolve-in 0.6s ease-out 0.05s both; }
+.tonight-card.tonight-card--dissolve { animation: tonight-dissolve-in 0.45s ease-out both; animation-delay: var(--dissolve-delay, 0ms); }
 
 /* ── Results ── */
 .tonight-results { padding-top: 1.25rem; }
@@ -300,19 +309,24 @@
   text-align: left;
   font: inherit;
   cursor: pointer;
+  /* Image and scrim sit behind the text in this stacking context, so the
+     title button can stay unpositioned and stretch over the whole tile. */
+  isolation: isolate;
   animation: tonight-reveal 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
-.tonight-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-/* Legibility scrim behind the title, per the design system's text-over-image rule. */
+.tonight-hero img { z-index: -1; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; }
+/* Legibility scrim behind the title: the same fade as the Home hero
+   (.discover-hero-overlay), dark at the foot and clear by the top, so there
+   is no hard edge across the image. */
 .tonight-hero-scrim {
+  z-index: -1;
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 65%;
-  background: var(--image-scrim);
+  inset: 0;
+  background:
+    linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.58) 30%, rgba(0,0,0,0.14) 62%, transparent 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, transparent 30%);
 }
-.tonight-hero-body { position: relative; display: flex; flex-direction: column; gap: 6px; }
+.tonight-hero-body { display: flex; flex-direction: column; gap: 6px; }
 .tonight-hero-chip {
   align-self: flex-start;
   padding: 3px 10px;
@@ -330,11 +344,54 @@
   color: var(--image-text-primary);
 }
 .tonight-hero-meta { font-size: 0.8rem; color: var(--image-text-secondary); }
-.tonight-hero:focus-visible,
-.tonight-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* The title is the tile's button; its ::after covers the tile so the whole
+   thing opens the title, while the favourite and watchlist buttons sit above. */
+/* :where() keeps this reset below the title classes, whatever the order. */
+:where(.tonight-tile-open) {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tonight-tile-open::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.tonight-tile-open:focus-visible { outline: none; }
+.tonight-hero:has(.tonight-tile-open:focus-visible),
+.tonight-card:has(.tonight-tile-open:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tonight-hero .discover-hero-corner-btns { z-index: 1; }
+.tonight-hero:hover .discover-hero-corner-btn,
+.tonight-hero:focus-within .discover-hero-corner-btn { opacity: 1; }
+/* Card buttons on the right, as on Home's Top 20 rows: over a fade into the
+   card so a long title runs under them, shown on hover or focus. */
+.tonight-card-actions {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-left: 1.5rem;
+  background: linear-gradient(to right, transparent, var(--surface-sunken) 35%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.tonight-card:hover .tonight-card-actions,
+.tonight-card:focus-within .tonight-card-actions { opacity: 1; pointer-events: auto; }
+.tonight-card-actions .search-action-btn:first-child::after { right: 0; left: auto; }
+@media (hover: none), (pointer: coarse) {
+  .tonight-card-actions { opacity: 1; pointer-events: auto; }
+  .tonight-card-actions .search-action-btn { min-width: 44px; min-height: 44px; }
+}
 
 .tonight-cards { display: grid; gap: 12px; }
 .tonight-card {
+  position: relative;
   border: 0;
   border-radius: 20px;
   background: var(--surface-sunken);
@@ -424,6 +481,65 @@
 /* "Or [Surprise me]": Pick lives under the last question on desktop. */
 .tonight-side-or { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-left: auto; font-size: 0.875rem; color: var(--text-secondary); }
 .tonight-side-or .btn { flex: 0 0 auto; padding-inline: 14px; }
+
+/* ── Results heading + Save ── */
+.tonight-results-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* Same size as the section headings on Home ("plot's Picks") and Calendar months. */
+.tonight-results-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 1.25rem;
+  line-height: 1.15;
+  color: var(--text-primary);
+}
+.tonight-save { flex-shrink: 0; gap: 6px; }
+.tonight-save svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tonight-save svg.filled { fill: currentColor; }
+.tonight-results-head + .tonight-results-list { margin-top: 1rem; }
+
+/* ── Saved searches ── */
+.tonight-saved-list { margin: 0; padding: 0; list-style: none; }
+.tonight-saved-row { display: flex; align-items: flex-start; gap: 4px; border-top: 1px solid var(--border); }
+.tonight-saved-row:first-child { border-top: 0; }
+.tonight-saved-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 4px;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.tonight-saved-open:hover .tonight-saved-label { text-decoration: underline; }
+.tonight-saved-open:focus-visible,
+.tonight-saved-remove:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.tonight-saved-label { font-size: 0.875rem; font-weight: 500; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tonight-saved-meta { font-size: 0.8rem; color: var(--text-secondary); }
+.tonight-saved-remove {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tonight-saved-remove:hover { background: var(--surface-sunken); color: var(--text-primary); }
+.tonight-saved-remove svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.tonight-saved--phone { margin-top: 1.5rem; }
+.tonight-saved-more { align-self: flex-start; margin: 2px 4px 0; padding: 6px 0; border: 0; background: none; font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--accent-text); cursor: pointer; }
 
 /* ── Locked (Free): the upgrade pop-up over blurred placeholder picks ── */
 .tonight-go svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; margin-right: 6px; }
@@ -529,7 +645,10 @@
     gap: 72px;
     margin-top: 1rem;
   }
-  .tonight-side { display: flex; flex-direction: column; gap: 24px; width: 264px; flex-shrink: 0; }
+  .tonight-side { display: flex; flex-direction: column; gap: 16px; width: 264px; flex-shrink: 0; }
+  .tonight-qrow { padding-block: 8px; }
+  .tonight-saved-label { -webkit-line-clamp: 1; }
+  .tonight-saved-open { padding-block: 8px; }
   .tonight-main { flex: 1; }
   .tonight-bar { display: none; }
 
@@ -545,10 +664,19 @@
   .tonight-stepnav { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
   .tonight-stepnav-pick { display: inline-flex; padding-inline: 28px; }
 
-  .tonight-hero { height: 320px; border-radius: 24px; padding: 24px; }
-  .tonight-hero-title { font-size: 2rem; }
+  /* Sized so the heading, Top pick and four cards fit a 13" laptop window
+     (about 1440×780 of page) without scrolling. */
+  .tonight-hero { height: 280px; border-radius: 24px; padding: 20px 24px; }
+  .tonight-hero-title { font-size: 1.75rem; }
+  .tonight-card { padding: 10px; gap: 14px; }
+  .tonight-card-poster { width: 64px; height: 96px; border-radius: 10px; }
+  .tonight-card-title { font-size: 1.1rem; }
   .tonight-hero-meta { font-size: 0.875rem; }
   .tonight-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .tonight-results-title { font-size: 1.5rem; }
+  .tonight-hero-slot--finding { min-height: 280px; }
+  .tonight-finding { font-size: 1.875rem; }
+  .tonight-saved--phone { display: none; }
 
   .tonight-locked { padding-top: 0; }
   .tonight-unlock { top: 2.5rem; padding: 28px; }
@@ -556,7 +684,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tonight-reel-strip,
   .tonight-hero,
-  .tonight-card { animation: none; }
+  .tonight-card,
+  .tonight-finding-hl { animation: none; }
+  .tonight-finding-hl { background-size: 100% 38%; }
+  .tonight-finding--out { display: none; }
 }

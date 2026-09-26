@@ -20,6 +20,14 @@ import {
   savedRequestKey,
   serialiseSavedRequest,
   parseSavedRequest,
+  serialiseSession,
+  parseSession,
+  PICKER_SESSION_TTL_MS,
+  parseSavedSearches,
+  serialiseSavedSearches,
+  addSavedSearch,
+  savedSearchLabel,
+  SAVED_SEARCH_LIMIT,
   SAVED_REQUEST_TTL_MS,
   canResumePicker,
   visiblePickerState,
@@ -326,4 +334,48 @@ test('genre tiles keep the most useful few, then sort them alphabetically', () =
   assert.deepEqual(pickerGenreTiles(g, { count: 3 }).map(x => x.name), ['Comedy', 'Drama', 'Western']);
   assert.deepEqual(pickerGenreTiles(g, { count: 3, all: true }).map(x => x.name), ['Action', 'Comedy', 'Drama', 'Western']);
   assert.deepEqual(g.map(x => x.name), ['Drama', 'Comedy', 'Western', 'Action']);
+});
+
+// Opaque fixture picks (negative ids, never real TMDB titles).
+const pick = (n, extra = {}) => ({ id: -n, media_type: 'movie', title: `Fixture ${n}`, poster_path: null, backdrop_path: null, release_date: '2019-01-01', genre_ids: [], runtime: 100, seasons: null, miniseries: false, vote_average: 7, providers: [], onWatchlist: false, ...extra });
+
+test('the page session round-trips results and expires', () => {
+  const now = 10_000_000;
+  const options = { ...defaultPickerOptions(), maxRuntime: 120 };
+  const value = serialiseSession({ options, step: 3, phase: 'results', mode: 'five', results: [pick(1), pick(2)], canSpinAgain: true }, now);
+  const back = parseSession(value, now + 1000);
+  assert.equal(back.phase, 'results');
+  assert.deepEqual(back.results.map(r => r.id), [-1, -2]);
+  assert.equal(back.canSpinAgain, true);
+  assert.equal(back.options.maxRuntime, 120);
+  assert.equal(parseSession(value, now + PICKER_SESSION_TTL_MS + 1), null);
+});
+
+test('a session never comes back mid-spin or with the pop-up open', () => {
+  const now = 1;
+  for (const phase of ['spinning', 'locked', 'error']) {
+    const back = parseSession(serialiseSession({ options: defaultPickerOptions(), step: 2, phase, mode: 'five', results: [pick(1)], canSpinAgain: true }, now), now);
+    assert.equal(back.phase, 'setup');
+    assert.deepEqual(back.results, []);
+  }
+  const bad = JSON.stringify({ v: 1, savedAt: now, phase: 'results', results: [{ id: 'x' }, pick(3)] });
+  assert.deepEqual(parseSession(bad, now).results.map(r => r.id), [-3]);
+});
+
+test('saved searches add newest first, replace duplicates and cap', () => {
+  let list = [];
+  for (let i = 1; i <= SAVED_SEARCH_LIMIT + 2; i++) {
+    list = addSavedSearch(list, { label: `L${i}`, options: defaultPickerOptions(), mode: 'five', results: [pick(i)] }, i);
+  }
+  assert.equal(list.length, SAVED_SEARCH_LIMIT);
+  assert.equal(list[0].label, `L${SAVED_SEARCH_LIMIT + 2}`);
+  list = addSavedSearch(list, { label: 'again', options: defaultPickerOptions(), mode: 'five', results: [pick(5)] }, 99);
+  assert.equal(list.filter(i => i.results[0].id === -5).length, 1);
+  assert.equal(list[0].label, 'again');
+  assert.deepEqual(parseSavedSearches(serialiseSavedSearches(list)).map(i => i.id), list.map(i => i.id));
+  assert.deepEqual(parseSavedSearches('nope'), []);
+});
+
+test('saved search labels drop "Find me" and start with a capital', () => {
+  assert.equal(savedSearchLabel([{ text: 'Find me' }, { text: 'a movie' }, { text: 'under 2 hours.' }]), 'A movie under 2 hours.');
 });

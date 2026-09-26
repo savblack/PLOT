@@ -4,9 +4,9 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { useApp } from '../hooks/useApp.js';
 import {
-  useTonightPicker, pickerTimeOfDay,
+  useTonightPicker, pickerTimeOfDay, savedSearchDate,
   PICKER_STEPS, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
-  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES, FEATURED_GENRE_COUNT, FEATURED_GENRE_COUNT_WIDE,
+  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, FEATURED_GENRE_COUNT, FEATURED_GENRE_COUNT_WIDE,
   pickerGenreTiles,
 } from '../hooks/useTonightPicker.js';
 import { TONIGHT_PICKER as T } from '../copy/tonightPicker.js';
@@ -16,6 +16,8 @@ import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { SettingsSwitch } from './SettingsPage.jsx';
+import { MEDIA } from '../copy/media.js';
+import { favoriteWords } from '../utils/spelling.js';
 import './TonightView.css';
 
 /* Pick for Me. Phone: one column, a Filters panel that folds away, and a
@@ -39,6 +41,40 @@ const IconTv = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2" y="
 
 const IconLock = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>;
 const IconClose = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>;
+// A pin, not the bookmark: the bookmark means the watchlist everywhere else.
+const IconPin = ({ filled }) => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" className={filled ? 'filled' : undefined}><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" /></svg>
+);
+
+/* Saved searches: the desktop side card and the phone section share rows. */
+// Two rows until opened, so the desktop column fits a laptop window without scrolling.
+const SAVED_SHOWN = 2;
+function SavedSearches({ picker, className = '' }) {
+  const [all, setAll] = useState(false);
+  if (!picker.savedSearches?.length) return null;
+  const shown = all ? picker.savedSearches : picker.savedSearches.slice(0, SAVED_SHOWN);
+  return (
+    <section className={`hist-card tonight-saved ${className}`} aria-label={T.savedTitle}>
+      <div className="hist-card-head"><span className="hist-card-title">{T.savedTitle}</span></div>
+      <ul className="tonight-saved-list">
+        {shown.map(item => (
+          <li key={item.id} className="tonight-saved-row">
+            <button type="button" className="tonight-saved-open" onClick={() => picker.openSavedSearch(item.id)}>
+              <span className="tonight-saved-label" title={item.label}>{item.label}</span>
+              <span className="tonight-saved-meta">{T.savedMeta(item.results.length, savedSearchDate(item.savedAt))}</span>
+            </button>
+            <button type="button" className="tonight-saved-remove" aria-label={T.removeSaved(item.label)} onClick={() => picker.removeSavedSearch(item.id)}><IconClose /></button>
+          </li>
+        ))}
+      </ul>
+      {picker.savedSearches.length > SAVED_SHOWN && (
+        <button type="button" className="tonight-saved-more" onClick={() => setAll(v => !v)}>
+          {all ? T.savedFewer : T.savedAll(picker.savedSearches.length)}
+        </button>
+      )}
+    </section>
+  );
+}
 
 /* What sits behind the upgrade pop-up: the results layout with no titles or
    images, blurred. Nothing here is fetched. */
@@ -361,31 +397,41 @@ function SideColumn({ picker, results }) {
         </div>
       </section>
 
+      <SavedSearches picker={picker} />
     </aside>
   );
 }
 
-/* Slot-machine reels (three stand in for five). The hook holds the phase
-   for at least PICKER_MIN_SPIN_MS so it always reads as a spin. */
-function Spinner({ mode }) {
-  const [line, setLine] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setLine(n => (n + 1) % T.spinning.length), 450);
-    return () => clearInterval(t);
-  }, []);
-  const slots = Math.min(3, PICKER_MODES[mode] ?? 3);
+/* "Finding…": the viewer's own sentence, answered phrases highlighted one by
+   one while picks load. It sits where the Top pick will land, so when the
+   picks arrive the words dissolve into the image (see Results `reveal`). */
+function FindingSentence({ parts, className = '' }) {
+  let filled = 0;
   return (
-    <section className="tonight-spin" aria-live="polite" aria-busy="true">
-      <div className={`tonight-reels tonight-reels--${slots}`}>
-        {Array.from({ length: slots }, (_, i) => (
-          <div key={i} className="tonight-reel" style={{ '--reel-delay': `${i * 90}ms` }}>
-            <div className="tonight-reel-strip">
-              {Array.from({ length: 8 }, (_, j) => <span key={j} className="tonight-reel-frame" />)}
-            </div>
-          </div>
-        ))}
+    <p className={`tonight-finding ${className}`}>
+      <span>{parts.map((p, i) => {
+        const text = i === 0 ? T.sentence.finding : p.text;
+        const hl = p.kind === 'filled' ? filled++ : -1;
+        return (
+          <span key={i}>
+            {i > 0 && ' '}
+            {hl >= 0 ? <span className="tonight-finding-hl" style={{ '--hl-delay': `${hl * 300}ms` }}>{text}</span> : text}
+          </span>
+        );
+      })}</span>
+    </p>
+  );
+}
+
+function Finding({ picker }) {
+  return (
+    <section className="tonight-results" aria-live="polite" aria-busy="true">
+      <div className="tonight-results-head tonight-results-head--hidden" aria-hidden="true">
+        <span className="tonight-results-title">{T.heading[pickerTimeOfDay()]}</span>
       </div>
-      <p className="tonight-spin-line">{T.spinning[line]}…</p>
+      <div className="tonight-results-list">
+        <div className="tonight-hero-slot tonight-hero-slot--finding"><FindingSentence parts={picker.sentence} /></div>
+      </div>
     </section>
   );
 }
@@ -410,36 +456,82 @@ function Chips({ item }) {
   );
 }
 
-function TopPick({ item, onOpen }) {
+/* Favourite and watchlist, the same buttons as on Home: on the Top pick the
+   hero's corner buttons, on cards the Top 20 chart row's buttons on the
+   right. Desktop reveals them on hover; touch screens always show them.
+   `actions` is absent in stories without them. */
+function FavSave({ item, actions, variant }) {
+  if (!actions) return null;
+  const { watchlist, favorites, favWords } = actions;
+  const type = item.media_type || 'movie';
+  const fav = favorites.isFavorite(item.id);
+  const saved = watchlist.isInList(item.id);
+  const toggleFav = (e) => { e.stopPropagation(); favorites.toggleFavorite({ ...item, media_type: type }); };
+  const toggleSave = (e) => { e.stopPropagation(); watchlist.toggle({ ...item, media_type: type }); };
+  const icon = (d, on) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+  );
+  if (variant === 'hero') {
+    return (
+      <div className="discover-hero-corner-btns">
+        <button type="button" className={`discover-hero-corner-btn${fav ? ' active' : ''}`} style={{ top: 10, left: 10 }} onClick={toggleFav} aria-label={fav ? favWords.un : favWords.noun}>{icon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', fav)}</button>
+        <button type="button" className={`discover-hero-corner-btn${saved ? ' active' : ''}`} style={{ top: 10, right: 10 }} onClick={toggleSave} disabled={watchlist.loading} aria-label={saved ? MEDIA.removeFromList : MEDIA.addToList}>{icon('M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z', saved)}</button>
+      </div>
+    );
+  }
+  // Cards: Home's chart-row buttons on the right, revealed on hover.
+  return (
+    <span className="tonight-card-actions search-row-actions">
+      <button type="button" className={`search-action-btn search-action-btn--heart${fav ? ' active' : ''}`} onClick={toggleFav}
+        data-tip={fav ? `Remove ${favWords.nounLower}` : favWords.noun} aria-label={fav ? `Remove ${item.title} from ${favWords.pluralLower}` : `Add ${item.title} to ${favWords.pluralLower}`}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" fill={fav ? 'currentColor' : 'none'} /></svg>
+      </button>
+      <button type="button" className={`search-action-btn${saved ? ' active' : ''}`} onClick={toggleSave} disabled={watchlist.loading}
+        data-tip={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist} aria-label={saved ? `Remove ${item.title} from list` : `Add ${item.title} to list`}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z" fill={saved ? 'currentColor' : 'none'} /></svg>
+      </button>
+    </span>
+  );
+}
+
+/* Tiles are not buttons themselves, so the favourite and watchlist buttons can
+   sit inside them: the title is the button, stretched over the whole tile. */
+function TopPick({ item, onOpen, actions, className = '' }) {
   const bg = backdropUrl(item.backdrop_path, 'w1280') || posterUrl(item.poster_path, 'w780');
   return (
-    <button type="button" className="tonight-hero" onClick={() => onOpen(item)}>
+    <div className={`tonight-hero ${className}`}>
       {bg && <img src={bg} alt="" />}
       <span className="tonight-hero-scrim" aria-hidden="true" />
       <span className="tonight-hero-body">
         <span className="tonight-hero-chip">{T.topPick}</span>
-        <span className="tonight-hero-title">{item.title}</span>
+        <button type="button" className="tonight-hero-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
         <span className="tonight-hero-meta">{resultMeta(item)}</span>
       </span>
-    </button>
+      <FavSave item={item} actions={actions} variant="hero" />
+    </div>
   );
 }
 
-function PickCard({ item, index, onOpen }) {
+function PickCard({ item, index, onOpen, reveal, actions }) {
   const img = posterUrl(item.poster_path, 'w185');
   return (
-    <button type="button" className="tonight-card" onClick={() => onOpen(item)} style={{ '--reveal-delay': `${(index + 1) * 90}ms` }}>
+    <div className={`tonight-card${reveal ? ' tonight-card--dissolve' : ''}`}
+      style={reveal ? { '--dissolve-delay': `${600 + index * 250}ms` } : { '--reveal-delay': `${(index + 1) * 90}ms` }}>
       <span className="tonight-card-poster">{img ? <img src={img} alt="" loading="lazy" /> : null}</span>
       <span className="tonight-card-body">
-        <span className="tonight-card-title">{item.title}</span>
+        <button type="button" className="tonight-card-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
         <span className="tonight-card-meta">{resultMeta(item)}</span>
         <Chips item={item} />
       </span>
-    </button>
+      <FavSave item={item} actions={actions} />
+    </div>
   );
 }
 
-function Results({ picker, onOpen }) {
+/* `reveal`: straight after a pick, the "Finding…" sentence dissolves into the
+   Top pick in the same spot, the heading and Save are simply there, and the
+   cards dissolve in one by one. Reopened or restored picks skip this. */
+function Results({ picker, onOpen, reveal, actions }) {
   if (picker.phase !== 'results') {
     return (
       <div className="empty-state tonight-empty">
@@ -451,13 +543,23 @@ function Results({ picker, onOpen }) {
   const [top, ...rest] = picker.results;
   return (
     <section className="tonight-results" aria-live="polite">
-      <h2 className="tonight-question-title">{T.heading[pickerTimeOfDay()]}</h2>
-      <p className="tonight-question-sub">{T.resultsSubline}</p>
+      <div className="tonight-results-head">
+        <h2 className="tonight-results-title">{T.heading[pickerTimeOfDay()]}</h2>
+        <button type="button" className={`btn btn-secondary btn-sm tonight-save${picker.isSaved ? ' saved' : ''}`}
+          aria-pressed={picker.isSaved} aria-label={picker.isSaved ? T.savedLabel : T.saveLabel} onClick={picker.toggleSaveSearch}>
+          <IconPin filled={picker.isSaved} />{picker.isSaved ? T.saved : T.save}
+        </button>
+      </div>
       <div className="tonight-results-list">
-        {top && <TopPick item={top} onOpen={onOpen} />}
+        {top && (
+          <div className="tonight-hero-slot">
+            <TopPick item={top} onOpen={onOpen} actions={actions} className={reveal ? 'tonight-hero--dissolve' : ''} />
+            {reveal && <FindingSentence parts={picker.sentence} className="tonight-finding--out" />}
+          </div>
+        )}
         {rest.length > 0 && (
           <div className="tonight-cards">
-            {rest.map((item, i) => <PickCard key={item.id} item={item} index={i} onOpen={onOpen} />)}
+            {rest.map((item, i) => <PickCard key={item.id} item={item} index={i} onOpen={onOpen} reveal={reveal} actions={actions} />)}
           </div>
         )}
       </div>
@@ -467,10 +569,18 @@ function Results({ picker, onOpen }) {
 
 /* Presentational: every piece of state arrives as a prop so Storybook can
    render each state without an auth session or network. */
-export function TonightPage({ premium, picker, onOpen, navigate }) {
+export function TonightPage({ premium, picker, onOpen, navigate, actions }) {
   const locked = picker.phase === 'locked';
   const inResults = picker.phase === 'results' || picker.phase === 'empty' || picker.phase === 'error';
   const spinning = picker.phase === 'spinning';
+  // Picks that arrive straight from a spin get the reveal; anything else
+  // (a saved search, a restored page) shows as is.
+  const [lastPhase, setLastPhase] = useState(picker.phase);
+  const [reveal, setReveal] = useState(false);
+  if (picker.phase !== lastPhase) {
+    setLastPhase(picker.phase);
+    setReveal(picker.phase === 'results' ? lastPhase === 'spinning' || reveal : false);
+  }
 
   return (
     <div className="tonight-view">
@@ -482,13 +592,14 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
               <LockedPreview />
               <UnlockDialog picker={picker} navigate={navigate} />
             </div>
-          ) : spinning ? <Spinner mode={picker.mode} />
-            : inResults ? <Results picker={picker} onOpen={onOpen} />
+          ) : spinning ? <Finding picker={picker} />
+            : inResults ? <Results picker={picker} onOpen={onOpen} reveal={reveal} actions={actions} />
             : (
               <>
                 <Question picker={picker} />
                 <FiltersPanel picker={picker} />
                 <StepNav picker={picker} premium={premium} />
+                <SavedSearches picker={picker} className="tonight-saved--phone" />
               </>
             )}
         </div>
@@ -520,7 +631,7 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
 const PICKER_STORAGE = { getItem: (k) => readStorage(k), setItem: writeStorage, removeItem: removeStorage };
 
 export default function TonightView() {
-  const { user, profile, watchlist, openPanel } = useApp();
+  const { user, profile, watchlist, favorites, openPanel } = useApp();
   const navigate = useNavigate();
   const premium = isPremiumProfile(profile);
 
@@ -540,6 +651,7 @@ export default function TonightView() {
       picker={picker}
       onOpen={(item) => openPanel(item.id, item.media_type)}
       navigate={navigate}
+      actions={{ watchlist, favorites, favWords: favoriteWords(profile?.region) }}
     />
   );
 }

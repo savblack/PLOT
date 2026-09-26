@@ -17,7 +17,7 @@ import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 //   - discover: one /discover/{movie,tv} page with every filter TMDB supports
 //     applied on its side. TV season count is not a discover filter, so the
 //     "1 season" / "multiple seasons" formats check details for a capped
-//     number of results. Further pages load only when "spin again" runs out.
+//     number of results. Further pages load only when "pick again" runs out.
 // Availability is re-read live rather than trusted from list_items.provider_ids,
 // which is a snapshot from save time and often empty.
 //
@@ -215,8 +215,18 @@ export function parseSavedRequest(value, now = Date.now()) {
   try { raw = JSON.parse(value); } catch { return null; }
   if (!raw || raw.v !== 1 || typeof raw.savedAt !== 'number') return null;
   if (now - raw.savedAt > SAVED_REQUEST_TTL_MS || raw.savedAt > now + 60_000) return null;
+  return { options: sanitiseOptions(raw.options), step: sanitiseStep(raw.step), mode: sanitiseMode(raw.mode) };
+}
+
+/**
+ * Known option keys, kept only when their type matches the defaults, so an
+ * old or hand-edited stored value can never break the picker.
+ * @param {unknown} value
+ * @returns {PickerOptions}
+ */
+function sanitiseOptions(value) {
   const defaults = defaultPickerOptions();
-  const saved = raw.options && typeof raw.options === 'object' ? raw.options : {};
+  const saved = value && typeof value === 'object' ? /** @type {Record<string, unknown>} */ (value) : {};
   const options = { ...defaults };
   for (const key of Object.keys(defaults)) {
     const v = saved[key];
@@ -229,9 +239,155 @@ export function parseSavedRequest(value, now = Date.now()) {
     }
   }
   if (options.mediaType !== 'movie' && options.mediaType !== 'tv') options.mediaType = 'movie';
-  const step = Number.isInteger(raw.step) ? Math.max(0, Math.min(PICKER_STEPS.length - 1, raw.step)) : PICKER_STEPS.length - 1;
-  const mode = raw.mode === 'surprise' ? 'surprise' : 'five';
-  return { options, step, mode };
+  return options;
+}
+
+const sanitiseStep = (step) => (Number.isInteger(step) ? Math.max(0, Math.min(PICKER_STEPS.length - 1, step)) : PICKER_STEPS.length - 1);
+const sanitiseMode = (mode) => (mode === 'surprise' ? 'surprise' : 'five');
+const sanitiseStr = (v) => (typeof v === 'string' ? v : null);
+const sanitiseNum = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+/**
+ * Picks as they are stored: only the fields the results view renders, only
+ * well-formed rows, never more than a full draw.
+ * @param {unknown} value
+ * @returns {PickerCandidate[]}
+ */
+function sanitiseResults(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(r => r && typeof r === 'object' && Number.isInteger(r.id) && (r.media_type === 'movie' || r.media_type === 'tv') && typeof r.title === 'string')
+    .slice(0, PICKER_MODES.five)
+    .map(r => ({
+      id: r.id,
+      media_type: r.media_type,
+      title: r.title,
+      poster_path: sanitiseStr(r.poster_path),
+      backdrop_path: sanitiseStr(r.backdrop_path),
+      release_date: sanitiseStr(r.release_date),
+      genre_ids: Array.isArray(r.genre_ids) ? r.genre_ids.filter(n => Number.isInteger(n)) : [],
+      runtime: sanitiseNum(r.runtime),
+      seasons: sanitiseNum(r.seasons),
+      miniseries: r.miniseries === true,
+      vote_average: sanitiseNum(r.vote_average),
+      providers: [],
+      onWatchlist: r.onWatchlist === true,
+    }));
+}
+
+// Where the page was, so leaving and coming back finds the same answers and
+// picks. It lasts this long after the last change; Pick again, changing an
+// answer or opening a saved search replaces it.
+export const PICKER_SESSION_TTL_MS = 2 * 60 * 60 * 1000;
+
+/** @param {string|null|undefined} userId */
+export function pickerSessionKey(userId) {
+  return `plot.pickForMe.session.${userId || 'anon'}`;
+}
+
+/**
+ * @param {{ options: PickerOptions, step: number, phase: string, mode: 'five'|'surprise', results: PickerCandidate[], canSpinAgain: boolean }} session
+ * @param {number} [now]
+ */
+export function serialiseSession({ options, step, phase, mode, results, canSpinAgain }, now = Date.now()) {
+  // Only settled screens come back; a spin or the pop-up returns to the questions.
+  const kept = phase === 'results' || phase === 'empty' ? phase : 'setup';
+  return JSON.stringify({
+    v: 1, savedAt: now, options, step, mode, phase: kept,
+    results: kept === 'results' ? sanitiseResults(results) : [], canSpinAgain: kept === 'results' && !!canSpinAgain,
+  });
+}
+
+/**
+ * @param {string|null|undefined} value
+ * @param {number} [now]
+ * @returns {{ options: PickerOptions, step: number, mode: 'five'|'surprise', phase: 'setup'|'results'|'empty', results: PickerCandidate[], canSpinAgain: boolean }|null}
+ */
+export function parseSession(value, now = Date.now()) {
+  if (typeof value !== 'string') return null;
+  let raw;
+  try { raw = JSON.parse(value); } catch { return null; }
+  if (!raw || raw.v !== 1 || typeof raw.savedAt !== 'number') return null;
+  if (now - raw.savedAt > PICKER_SESSION_TTL_MS || raw.savedAt > now + 60_000) return null;
+  const results = sanitiseResults(raw.results);
+  let phase = raw.phase === 'results' || raw.phase === 'empty' ? raw.phase : 'setup';
+  if (phase === 'results' && !results.length) phase = 'setup';
+  return {
+    options: sanitiseOptions(raw.options), step: sanitiseStep(raw.step), mode: sanitiseMode(raw.mode),
+    phase, results: phase === 'results' ? results : [], canSpinAgain: phase === 'results' && raw.canSpinAgain === true,
+  };
+}
+
+// Saved searches: a viewer keeps a request and the picks it gave, to come
+// back to later. Kept on the device, newest first.
+export const SAVED_SEARCH_LIMIT = 10;
+
+/** @param {string|null|undefined} userId */
+export function savedSearchesKey(userId) {
+  return `plot.pickForMe.saved.${userId || 'anon'}`;
+}
+
+/**
+ * @typedef {{ id: string, savedAt: number, label: string, options: PickerOptions, mode: 'five'|'surprise', results: PickerCandidate[] }} SavedSearch
+ */
+
+/**
+ * @param {string|null|undefined} value
+ * @returns {SavedSearch[]}
+ */
+export function parseSavedSearches(value) {
+  if (typeof value !== 'string') return [];
+  let raw;
+  try { raw = JSON.parse(value); } catch { return []; }
+  if (!raw || raw.v !== 1 || !Array.isArray(raw.items)) return [];
+  return raw.items
+    .filter(i => i && typeof i.id === 'string' && typeof i.savedAt === 'number' && typeof i.label === 'string')
+    .map(i => ({ id: i.id, savedAt: i.savedAt, label: i.label, options: sanitiseOptions(i.options), mode: sanitiseMode(i.mode), results: sanitiseResults(i.results) }))
+    .filter(i => i.results.length)
+    .slice(0, SAVED_SEARCH_LIMIT);
+}
+
+/** @param {SavedSearch[]} items */
+export function serialiseSavedSearches(items) {
+  return JSON.stringify({ v: 1, items });
+}
+
+/**
+ * The saved list with this search at the top. Saving the same picks again
+ * replaces the earlier copy; the oldest drop off past the limit.
+ * @param {SavedSearch[]} items
+ * @param {{ label: string, options: PickerOptions, mode: 'five'|'surprise', results: PickerCandidate[] }} search
+ * @param {number} [now]
+ * @returns {SavedSearch[]}
+ */
+export function addSavedSearch(items, { label, options, mode, results }, now = Date.now()) {
+  const kept = sanitiseResults(results);
+  const sig = savedSearchSignature(kept);
+  const entry = { id: `s${now.toString(36)}`, savedAt: now, label, options: sanitiseOptions(options), mode: sanitiseMode(mode), results: kept };
+  return [entry, ...items.filter(i => savedSearchSignature(i.results) !== sig)].slice(0, SAVED_SEARCH_LIMIT);
+}
+
+/**
+ * When a search was saved, e.g. "26 Sep", in the viewer's locale.
+ * @param {number} savedAt
+ */
+export function savedSearchDate(savedAt) {
+  return new Date(savedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+/** Which picks a search holds, order-insensitive. @param {Array<{id:number, media_type:string}>} results */
+export function savedSearchSignature(results) {
+  return results.map(r => `${r.media_type}:${r.id}`).sort().join('|');
+}
+
+/**
+ * The saved-search label: the viewer's sentence without "Find me", e.g.
+ * "A movie under 2 hours, that's funny or tense."
+ * @param {Array<{ text: string }>} parts pickerSentence output
+ */
+export function savedSearchLabel(parts) {
+  const text = parts.map(p => p.text).join(' ').replace(new RegExp(`^${TONIGHT_PICKER.sentence.start}\\s+`), '');
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /**
@@ -454,7 +610,7 @@ export function matchesOptions(c, options, providerIds, { checkServices = true }
 }
 
 /**
- * Draw `count` titles, preferring ones not shown yet so "spin again" always
+ * Draw `count` titles, preferring ones not shown yet so "pick again" always
  * changes the answer while there is anything new to show.
  * @template {{ id: number }} T
  * @param {T[]} pool
@@ -704,33 +860,50 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     return () => { alive = false; };
   }, []);
 
-  // Answers kept from the upgrade pop-up. Restored once per viewer; with
-  // Premium, `resume` then draws them (see the effect after go()).
+  // What comes back on open, once per viewer: answers kept from the upgrade
+  // pop-up win (with Premium, `resume` then draws them; see the effect after
+  // go()); otherwise the page as it was left, if that was recent. Saved
+  // searches load alongside.
   const storageKey = savedRequestKey(userId);
+  const sessionKey = pickerSessionKey(userId);
+  const savedKey = savedSearchesKey(userId);
   const [resume, setResume] = useState(/** @type {'five'|'surprise'|null} */ (null));
-  const restoredFor = useRef(/** @type {string|null} */ (null));
+  const [restoredKey, setRestoredKey] = useState(/** @type {string|null} */ (storage ? null : storageKey));
+  const [saved, setSaved] = useState(/** @type {SavedSearch[]} */ ([]));
+  // Picks already on screen when a session or saved search opens, so the
+  // next Pick again shows something new.
+  const restoredSeen = useRef(/** @type {number[]} */ ([]));
   useEffect(() => {
-    if (!storage || restoredFor.current === storageKey) return;
-    restoredFor.current = storageKey;
+    if (!storage) return undefined;
     let alive = true;
-    Promise.resolve()
-      .then(() => storage.getItem(storageKey))
-      .then(value => {
-        const saved = parseSavedRequest(value);
-        if (!alive) return;
-        if (!saved) {
-          if (value != null) Promise.resolve(storage.removeItem(storageKey)).catch(() => {});
-          return;
-        }
+    const get = (key) => Promise.resolve().then(() => storage.getItem(key)).catch(() => null);
+    Promise.all([get(storageKey), get(sessionKey), get(savedKey)]).then(([requestValue, sessionValue, savedValue]) => {
+      if (!alive) return;
+      setSaved(parseSavedSearches(savedValue));
+      const request = parseSavedRequest(requestValue);
+      const session = request ? null : parseSession(sessionValue);
+      if (!request && requestValue != null) Promise.resolve(storage.removeItem(storageKey)).catch(() => {});
+      if (request) {
         servicesDefaulted.current = true;
-        setOptions(saved.options);
-        setStep(saved.step);
-        setMode(saved.mode);
-        setResume(saved.mode);
-      })
-      .catch(() => {});
+        setOptions(request.options);
+        setStep(request.step);
+        setMode(request.mode);
+        setResume(request.mode);
+      } else if (session) {
+        servicesDefaulted.current = true;
+        setOptions(session.options);
+        setStep(session.step);
+        setMode(session.mode);
+        setResults(session.results);
+        setCanSpinAgain(session.canSpinAgain);
+        setResultsOwner(userId);
+        setPhase(session.phase);
+        restoredSeen.current = session.results.map(r => r.id);
+      }
+      setRestoredKey(storageKey);
+    });
     return () => { alive = false; };
-  }, [storage, storageKey]);
+  }, [storage, storageKey, sessionKey, savedKey, userId]);
 
   const genres = useMemo(() => pickerGenres(catalog, options), [catalog, options]);
 
@@ -756,7 +929,8 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     };
     const key = JSON.stringify([userId, opts, region, watchlistKey]);
     if (run.current.key !== key) {
-      run.current = { key, pool: [], seen: new Set(), page: 0, totalPages: 1, target: 0, exhausted: false };
+      run.current = { key, pool: [], seen: new Set(restoredSeen.current), page: 0, totalPages: 1, target: 0, exhausted: false };
+      restoredSeen.current = [];
     }
     const cur = run.current;
     if (!watched.current || watched.current.userId !== userId) {
@@ -797,7 +971,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
 
     const picked = drawFromPool(cur.pool, count, { seen: cur.seen });
     picked.forEach(c => cur.seen.add(c.id));
-    // Spin again is only worth offering if it can show something different.
+    // Pick again is only worth offering if it can show something different.
     const moreToLoad = opts.onlyWatchlist ? !cur.exhausted : cur.page < cur.totalPages;
     return { picked, canSpinAgain: cur.pool.length > picked.length || moreToLoad };
   }, [options, hasServices, region, userId, watchlistItems, watchlistKey, providerIds]);
@@ -840,6 +1014,21 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     if (canResumePicker({ enabled, mode: resume, onlyWatchlist: options.onlyWatchlist, watchlistReady })) go(resume);
   }, [enabled, resume, options.onlyWatchlist, watchlistReady, go]);
 
+  // Keep the page as it is for PICKER_SESSION_TTL_MS, rewritten on every
+  // change, but only once the stored copy has been read back.
+  useEffect(() => {
+    if (!storage || restoredKey !== storageKey || phase === 'spinning') return;
+    // Never file another viewer's picks under this viewer's key.
+    const owns = resultsOwner === userId;
+    const session = { options, step, mode, phase: owns ? phase : 'setup', results: owns ? results : [], canSpinAgain: owns && canSpinAgain };
+    Promise.resolve(storage.setItem(sessionKey, serialiseSession(session))).catch(() => {});
+  }, [storage, restoredKey, storageKey, sessionKey, options, step, phase, mode, results, canSpinAgain, resultsOwner, userId]);
+
+  const writeSaved = useCallback((next) => {
+    setSaved(next);
+    if (storage) Promise.resolve(storage.setItem(savedKey, serialiseSavedSearches(next))).catch(() => {});
+  }, [storage, savedKey]);
+
   const spinAgain = useCallback(() => go(mode), [go, mode]);
   const backToOptions = useCallback(() => setPhase('setup'), []);
   // Closing the pop-up keeps the kept answers: upgrading from the plans page
@@ -853,6 +1042,36 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   const prevStep = useCallback(() => setStep(i => Math.max(0, i - 1)), []);
 
   const sentence = useMemo(() => pickerSentence(options, { genres, hasServices }), [options, genres, hasServices]);
+
+  const visibleResults = useMemo(() => (enabled && resultsOwner === userId ? results : []), [enabled, resultsOwner, userId, results]);
+  const savedSig = useMemo(() => new Set(saved.map(i => savedSearchSignature(i.results))), [saved]);
+  const isSaved = visibleResults.length > 0 && savedSig.has(savedSearchSignature(visibleResults));
+  const saveSearch = useCallback(() => {
+    if (!visibleResults.length) return;
+    writeSaved(addSavedSearch(saved, { label: savedSearchLabel(sentence), options, mode, results: visibleResults }));
+  }, [visibleResults, saved, sentence, options, mode, writeSaved]);
+  const removeSavedSearch = useCallback((id) => writeSaved(saved.filter(i => i.id !== id)), [saved, writeSaved]);
+  // The results' Save button: saves, or un-saves picks already saved.
+  const toggleSaveSearch = useCallback(() => {
+    if (!isSaved) { saveSearch(); return; }
+    const sig = savedSearchSignature(visibleResults);
+    writeSaved(saved.filter(i => savedSearchSignature(i.results) !== sig));
+  }, [isSaved, saveSearch, visibleResults, saved, writeSaved]);
+  const openSavedSearch = useCallback((id) => {
+    const item = saved.find(i => i.id === id);
+    if (!item || !enabled) return;
+    drawVersion.current += 1;
+    servicesDefaulted.current = true;
+    setOptions(item.options);
+    setStep(PICKER_STEPS.length - 1);
+    setMode(item.mode);
+    setResults(item.results);
+    setCanSpinAgain(true);
+    setResultsOwner(userId);
+    setPhase('results');
+    run.current = { ...run.current, key: '' };
+    restoredSeen.current = item.results.map(r => r.id);
+  }, [saved, enabled, userId]);
   const filtersSummary = useMemo(() => pickerFiltersSummary(options, { hasServices }), [options, hasServices]);
   const answers = useMemo(() => pickerAnswers(options, { genres }), [options, genres]);
 
@@ -865,5 +1084,6 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     step, goToStep, nextStep, prevStep,
     sentence, filtersSummary, answers,
     go, spinAgain, backToOptions, closeLock,
+    savedSearches: enabled ? saved : [], isSaved, toggleSaveSearch, removeSavedSearch, openSavedSearch,
   };
 }

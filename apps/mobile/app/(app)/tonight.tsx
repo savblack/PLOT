@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
@@ -20,9 +21,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import {
-  useTonightPicker, pickerTimeOfDay,
+  useTonightPicker, pickerTimeOfDay, savedSearchDate,
   PICKER_STEPS, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
-  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES, FEATURED_GENRE_COUNT, pickerGenreTiles,
+  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, FEATURED_GENRE_COUNT, pickerGenreTiles,
   type PickerCandidate,
 } from '@plot/core/tonightPicker.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -261,34 +262,56 @@ function Filters({ picker, styles, colors }: { picker: Picker; styles: Styles; c
   );
 }
 
-/* Slot-machine reels (three stand in for five). The hook holds the phase
-   for at least PICKER_MIN_SPIN_MS so it always reads as a spin. */
-function Spinner({ slots, styles, reduceMotion }: { slots: number; styles: Styles; reduceMotion: boolean }) {
-  const [roll] = useState(() => new Animated.Value(0));
-  const [line, setLine] = useState(0);
+/* "Finding…": the viewer's sentence, answered phrases highlighted one by one
+   while picks load, in the spot the Top pick will fill. */
+function FindingSentence({ parts, styles, reduceMotion, allLit = false }: {
+  parts: Picker['sentence']; styles: Styles; reduceMotion: boolean; allLit?: boolean;
+}) {
+  const total = parts.filter(p => p.kind === 'filled').length;
+  const [lit, setLit] = useState(allLit || reduceMotion ? total : 0);
   useEffect(() => {
-    const t = setInterval(() => setLine(n => (n + 1) % T.spinning.length), 450);
-    if (reduceMotion) return () => clearInterval(t);
-    const loop = Animated.loop(Animated.timing(roll, { toValue: 1, duration: 420, easing: Easing.linear, useNativeDriver: true }));
-    loop.start();
-    return () => { clearInterval(t); loop.stop(); };
-  }, [roll, reduceMotion]);
-  // One frame (60) plus its gap (8), twice, so the loop seam lands on a frame edge.
-  const translateY = roll.interpolate({ inputRange: [0, 1], outputRange: [0, -136] });
+    if (allLit || reduceMotion) return undefined;
+    const t = setInterval(() => setLit(n => (n >= total ? n : n + 1)), 300);
+    return () => clearInterval(t);
+  }, [allLit, reduceMotion, total]);
+  let filled = 0;
   return (
-    <View style={styles.spin} accessibilityLiveRegion="polite">
-      <View style={styles.reels}>
-        {Array.from({ length: slots }, (_, i) => (
-          <View key={i} style={[styles.reel, slots === 1 && styles.reelSingle]}>
-            <Animated.View style={{ transform: [{ translateY }], gap: 8, padding: 8 }}>
-              {Array.from({ length: 8 }, (_, j) => <View key={j} style={[styles.reelFrame, j % 3 === 2 && styles.reelFrameTint]} />)}
-            </Animated.View>
-          </View>
-        ))}
+    <Text style={styles.finding}>
+      {parts.map((p, i) => {
+        const text = i === 0 ? T.sentence.finding : p.text;
+        const on = p.kind === 'filled' && filled++ < lit;
+        return <Text key={i}>{i > 0 ? ' ' : ''}<Text style={on ? styles.findingHl : undefined}>{text}</Text></Text>;
+      })}
+    </Text>
+  );
+}
+
+function Finding({ picker, styles, reduceMotion }: { picker: Picker; styles: Styles; reduceMotion: boolean }) {
+  return (
+    <View accessibilityLiveRegion="polite">
+      <View style={[styles.resultsHead, { opacity: 0 }]} importantForAccessibility="no-hide-descendants">
+        <Text style={styles.resultsTitle}>{T.heading[pickerTimeOfDay()]}</Text>
       </View>
-      <Text style={styles.qSub}>{T.spinning[line]}…</Text>
+      <View style={styles.findingSlot}>
+        <FindingSentence parts={picker.sentence} styles={styles} reduceMotion={reduceMotion} />
+      </View>
     </View>
   );
+}
+
+/* Fade from 1 to 0 (out) or 0 to 1 (in) after a delay. Opacity only; RN has
+   no cheap blur, so the dissolve here is a straight fade. */
+function Dissolve({ out = false, delay = 0, duration = 500, reduceMotion, style, children }: {
+  out?: boolean; delay?: number; duration?: number; reduceMotion: boolean; style?: object; children: React.ReactNode;
+}) {
+  const [v] = useState(() => new Animated.Value(reduceMotion ? (out ? 0 : 1) : (out ? 1 : 0)));
+  useEffect(() => {
+    if (reduceMotion) return undefined;
+    const a = Animated.timing(v, { toValue: out ? 0 : 1, delay, duration, easing: Easing.out(Easing.quad), useNativeDriver: true });
+    a.start();
+    return () => a.stop();
+  }, [v, out, delay, duration, reduceMotion]);
+  return <Animated.View pointerEvents={out ? 'none' : 'auto'} style={[style, { opacity: v }]}>{children}</Animated.View>;
 }
 
 function Reveal({ index, reduceMotion, children }: { index: number; reduceMotion: boolean; children: React.ReactNode }) {
@@ -311,7 +334,47 @@ function Reveal({ index, reduceMotion, children }: { index: number; reduceMotion
   );
 }
 
-function Results({ picker, onOpen, styles, reduceMotion }: { picker: Picker; onOpen: (i: PickerCandidate) => void; styles: Styles; reduceMotion: boolean }) {
+// A pin, not the bookmark: the bookmark means the watchlist everywhere else.
+function Pin({ color, filled }: { color: string; filled: boolean }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+    </Svg>
+  );
+}
+
+/* Saved searches, listed under the questions. */
+function SavedSearches({ picker, styles, colors }: { picker: Picker; styles: Styles; colors: Palette }) {
+  if (!picker.savedSearches.length) return null;
+  return (
+    <View style={styles.saved}>
+      <Text style={styles.savedTitle} accessibilityRole="header">{T.savedTitle}</Text>
+      {picker.savedSearches.map((item, i) => (
+        <View key={item.id} style={[styles.savedRow, i > 0 && styles.savedRowRule]}>
+          <TouchableOpacity style={{ flex: 1, paddingVertical: 12, gap: 3 }} onPress={() => picker.openSavedSearch(item.id)} accessibilityRole="button">
+            <Text style={styles.savedLabel} numberOfLines={2}>{item.label}</Text>
+            <Text style={styles.savedMeta}>{T.savedMeta(item.results.length, savedSearchDate(item.savedAt))}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => picker.removeSavedSearch(item.id)} style={styles.savedRemove} accessibilityRole="button" accessibilityLabel={T.removeSaved(item.label)}>
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round"><Path d="M18 6 6 18M6 6l12 12" /></Svg>
+          </TouchableOpacity>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// Cards after a pick fade in one by one; otherwise the usual entrance.
+function CardEntrance({ reveal, index, reduceMotion, children }: { reveal: boolean; index: number; reduceMotion: boolean; children: React.ReactNode }) {
+  return reveal
+    ? <Dissolve delay={600 + index * 250} duration={450} reduceMotion={reduceMotion}>{children}</Dissolve>
+    : <Reveal index={index + 1} reduceMotion={reduceMotion}>{children}</Reveal>;
+}
+
+/* `reveal`: straight after a pick, the Finding sentence fades out over the
+   Top pick fading in, the heading and Save are simply there, and the cards
+   fade in one by one. Reopened or restored picks use the usual entrance. */
+function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { picker: Picker; onOpen: (i: PickerCandidate) => void; styles: Styles; colors: Palette; reduceMotion: boolean; reveal: boolean }) {
   if (picker.phase !== 'results') {
     return (
       <View style={styles.empty}>
@@ -324,26 +387,42 @@ function Results({ picker, onOpen, styles, reduceMotion }: { picker: Picker; onO
   const bg = top ? (backdropUrl(top.backdrop_path) || posterUrl(top.poster_path, 'w780')) : null;
   return (
     <View>
-      <Text style={styles.qTitle} accessibilityRole="header">{T.heading[pickerTimeOfDay()]}</Text>
-      <Text style={styles.qSub}>{T.resultsSubline}</Text>
+      <View style={styles.resultsHead}>
+        <Text style={styles.resultsTitle} accessibilityRole="header">{T.heading[pickerTimeOfDay()]}</Text>
+        <TouchableOpacity onPress={picker.toggleSaveSearch} style={[styles.btn, styles.btnSecondary, { minHeight: 38 }]} accessibilityRole="button"
+          accessibilityLabel={picker.isSaved ? T.savedLabel : T.saveLabel} accessibilityState={{ selected: picker.isSaved }}>
+          <Pin color={colors.textPrimary} filled={picker.isSaved} />
+          <Text style={styles.btnText}>{picker.isSaved ? T.saved : T.save}</Text>
+        </TouchableOpacity>
+      </View>
       <View style={{ gap: 12, marginTop: spacing.lg }}>
-        {top && (
-          <Reveal index={0} reduceMotion={reduceMotion}>
+        {top && (() => {
+          const hero = (
             <TouchableOpacity style={styles.hero} onPress={() => onOpen(top)} accessibilityRole="button" accessibilityLabel={top.title}>
               {bg ? <Image source={{ uri: bg }} style={StyleSheet.absoluteFill} /> : null}
-              <View style={styles.heroScrim} />
+              {/* Same fade as the Home hero: dark at the foot, clear by the top, no hard edge. */}
+              <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.14)', 'rgba(0,0,0,0.58)', 'rgba(0,0,0,0.92)']} locations={[0, 0.38, 0.7, 1]} style={StyleSheet.absoluteFill} pointerEvents="none" />
               <View style={{ gap: 6 }}>
                 <Text style={styles.heroChip}>{T.topPick}</Text>
                 <Text style={styles.heroTitle}>{top.title}</Text>
                 <Text style={styles.heroMeta}>{resultMeta(top)}</Text>
               </View>
             </TouchableOpacity>
-          </Reveal>
-        )}
+          );
+          if (!reveal) return <Reveal index={0} reduceMotion={reduceMotion}>{hero}</Reveal>;
+          return (
+            <View>
+              <Dissolve delay={50} duration={600} reduceMotion={reduceMotion}>{hero}</Dissolve>
+              <Dissolve out duration={550} reduceMotion={reduceMotion} style={styles.findingOverlay}>
+                <FindingSentence parts={picker.sentence} styles={styles} reduceMotion={reduceMotion} allLit />
+              </Dissolve>
+            </View>
+          );
+        })()}
         {rest.map((item, i) => {
           const uri = posterUrl(item.poster_path, 'w185');
           return (
-            <Reveal key={item.id} index={i + 1} reduceMotion={reduceMotion}>
+            <CardEntrance key={item.id} reveal={reveal} index={i} reduceMotion={reduceMotion}>
               <TouchableOpacity style={styles.card} onPress={() => onOpen(item)} accessibilityRole="button" accessibilityLabel={item.title}>
                 {uri ? <Image source={{ uri }} style={styles.cardPoster} /> : <View style={styles.cardPoster} />}
                 <View style={{ flex: 1, gap: 6 }}>
@@ -356,7 +435,7 @@ function Results({ picker, onOpen, styles, reduceMotion }: { picker: Picker; onO
                   )}
                 </View>
               </TouchableOpacity>
-            </Reveal>
+            </CardEntrance>
           );
         })}
       </View>
@@ -445,6 +524,13 @@ export default function TonightScreen() {
   const open = (item: PickerCandidate) => openPanel(item.id, item.media_type);
   const inResults = picker.phase === 'results' || picker.phase === 'empty' || picker.phase === 'error';
   const spinning = picker.phase === 'spinning';
+  // Picks straight from a spin get the reveal; a saved search or restored page does not.
+  const [lastPhase, setLastPhase] = useState(picker.phase);
+  const [reveal, setReveal] = useState(false);
+  if (picker.phase !== lastPhase) {
+    setLastPhase(picker.phase);
+    setReveal(picker.phase === 'results' ? lastPhase === 'spinning' || reveal : false);
+  }
   const locked = picker.phase === 'locked';
   const first = picker.step === 0;
   const last = picker.step === PICKER_STEPS.length - 1;
@@ -476,9 +562,9 @@ export default function TonightScreen() {
             dark={resolved === 'dark'}
           />
         ) : spinning ? (
-          <Spinner slots={Math.min(3, PICKER_MODES[picker.mode])} styles={styles} reduceMotion={reduceMotion} />
+          <Finding picker={picker} styles={styles} reduceMotion={reduceMotion} />
         ) : inResults ? (
-          <Results picker={picker} onOpen={open} styles={styles} reduceMotion={reduceMotion} />
+          <Results picker={picker} onOpen={open} styles={styles} colors={colors} reduceMotion={reduceMotion} reveal={reveal} />
         ) : (
           <>
             <Question picker={picker} styles={styles} colors={colors} />
@@ -492,6 +578,7 @@ export default function TonightScreen() {
                 </TouchableOpacity>
               )}
             </View>
+            <SavedSearches picker={picker} styles={styles} colors={colors} />
           </>
         )}
       </ScrollView>
@@ -583,16 +670,13 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   barActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
 
-  spin: { alignItems: 'center', paddingTop: spacing.xl, gap: spacing.md },
-  reels: { flexDirection: 'row', gap: 10, justifyContent: 'center', alignSelf: 'stretch' },
-  reel: { flex: 1, maxWidth: 140, aspectRatio: 2 / 3, overflow: 'hidden', borderRadius: 12, backgroundColor: colors.surfaceSunken },
-  reelSingle: { flex: 0, width: 160, maxWidth: 160 },
-  reelFrame: { height: 60, borderRadius: 8, backgroundColor: colors.borderStrong },
-  reelFrameTint: { backgroundColor: colors.accentDim },
 
+  findingSlot: { minHeight: 210, justifyContent: 'center', marginTop: spacing.lg },
+  finding: { fontFamily: fontFamily.display, fontSize: 24, lineHeight: 34, color: colors.textPrimary },
+  findingHl: { backgroundColor: colors.accentFill, color: colors.onAccentFill },
+  findingOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, justifyContent: 'center' },
   hero: { height: 210, borderRadius: 20, overflow: 'hidden', backgroundColor: colors.textPrimary, justifyContent: 'flex-end', padding: spacing.lg },
   // Legibility scrim behind the title, per the design system's text-over-image rule.
-  heroScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '65%', backgroundColor: colors.imageScrim },
   heroChip: {
     alignSelf: 'flex-start', overflow: 'hidden', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3,
     backgroundColor: colors.accentFill, color: colors.onAccentFill, fontFamily: fontFamily.sansBold, fontSize: fontSize.xs,
@@ -629,6 +713,17 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   unlockBenefitBody: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 21, color: colors.textSecondary },
   unlockCta: { justifyContent: 'center', minHeight: 48, marginTop: 4 },
   unlockPrice: { fontFamily: fontFamily.sans, fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: -6 },
+
+  resultsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  // Same size as the section headings on Home and Calendar.
+  resultsTitle: { flex: 1, fontFamily: fontFamily.display, fontSize: 20, lineHeight: 23, color: colors.textPrimary },
+  saved: { marginTop: spacing.xl, padding: spacing.md, paddingBottom: spacing.xs, borderRadius: 16, backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  savedTitle: { fontFamily: fontFamily.display, fontSize: 18, color: colors.textPrimary, marginBottom: spacing.xs },
+  savedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
+  savedRowRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  savedLabel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, lineHeight: 20, color: colors.textPrimary },
+  savedMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
+  savedRemove: { width: 40, height: 40, marginTop: 4, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
 
   empty: { alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, textAlign: 'center' },
