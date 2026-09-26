@@ -52,24 +52,31 @@ nav.scrolled {
 /* Flex keeps the padded anchors vertically centered (baseline alignment
    inside the list item pushes them above the nav midline otherwise) */
 .nav-links li { display: flex; }
+/* Small tracked capitals, the same on every page, the What's On feed and the
+   title pages (their edge functions carry a copy of these values). */
 .nav-links a {
   display: inline-block;
   padding: 0.75rem 0.25rem;
   text-decoration: none;
-  color: var(--text);
-  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-size: 0.69rem;
   font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   transition: color 0.2s, background 0.2s;
 }
-.nav-links a:hover { color: var(--text-secondary); }
-/* The sign-up link is a pink pill, the same shape as .btn-primary */
+.nav-links a:hover { color: var(--text); }
+/* The sign-up link is a pink pill, the same shape as .btn-primary. Colour is
+   set without !important so a page can still re-colour the pill (Support and
+   Taste Match use ink). */
 .nav-cta {
   background: var(--fill);
   padding: 0.6rem 1.1rem !important;
   border-radius: var(--r-pill);
   line-height: 1;
 }
-.nav-cta:hover { color: var(--text) !important; background: var(--fill-hover); }
+.nav-links a.nav-cta { color: var(--text); font-weight: 700; }
+.nav-cta:hover { background: var(--fill-hover); }
 
 /* Mobile nav toggle — padded to a ≥44px tap target, negative margin keeps
    the icon optically aligned with the nav's right edge */

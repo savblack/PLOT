@@ -12,10 +12,10 @@
  *   2. website/ui.css — the styles are injected between the
  *      `/* footer-css:start … *\/` / `/* footer-css:end *\/` markers, so every
  *      static page and the Storybook story get them from the one stylesheet.
- *      Each page's `<link href="/ui.css?v=…">` carries a hash of that file, so
- *      a changed stylesheet gets a new URL. The zone lets browsers keep CSS for
- *      four hours; without the stamp, returning visitors got new footer markup
- *      with the old stylesheet.
+ *      Each page's `<link href="/ui.css?v=…">` and `/nav.css?v=…` carries a
+ *      hash of that file, so a changed stylesheet gets a new URL. The zone lets
+ *      browsers keep CSS for four hours; without the stamp, returning visitors
+ *      got new footer markup with the old stylesheet.
  *   3. The /whats-on and /movie|/tv edge functions (supabase/functions/
  *      marketing-feed, title-page) — markup and styles are emitted as a
  *      generated TS module (footer.generated.ts, FOOTER_HTML + FOOTER_CSS)
@@ -123,9 +123,15 @@ if (!CSS_MARKER_RE.test(uiSrc)) {
   process.exit(1);
 }
 const uiNext = uiSrc.replace(CSS_MARKER_RE, () => cssBlock);
-const uiVersion = createHash('sha256').update(uiNext).digest('hex').slice(0, 8);
-const UI_LINK_RE = /href="\/ui\.css(?:\?v=[^"]*)?"/g;
-const stampUiLink = (src) => src.replace(UI_LINK_RE, `href="/ui.css?v=${uiVersion}"`);
+const version = (text) => createHash('sha256').update(text).digest('hex').slice(0, 8);
+const STAMPS = [
+  ['ui.css', version(uiNext)],
+  ['nav.css', version(readFileSync(join(WEB, 'nav.css'), 'utf8'))],
+];
+const stampUiLink = (src) => STAMPS.reduce(
+  (out, [file, v]) => out.replace(new RegExp(`href="/${file.replace('.', '\\.')}(?:\\?v=[^"]*)?"`, 'g'), `href="/${file}?v=${v}"`),
+  src,
+);
 
 for (const page of PAGES) {
   sync(join(WEB, page), (src) => {
