@@ -1,7 +1,7 @@
 # PLOT Premium: features to build (agent handoff)
 
 **Audience:** another agent picking up Premium product work.  
-**Status of this doc:** locked Free/Premium *positioning* as of 2026-09-23; build status updated 2026-09-26. **Pick for Me** (the tonight picker) is live on `main`; Watch together is in review; most other Premium *product* features are not built yet. Checkout is hard-closed.  
+**Status of this doc:** locked Free/Premium *positioning* as of 2026-09-23; build status updated 2026-09-26 (after #1045). **Pick for Me** (the tonight picker) is live on `main`; Watch together is in review; most other Premium *product* features are not built yet. Checkout is hard-closed.  
 **Canonical entitlement copy:** `packages/core/copy/plansPage.js` (never invent a second matrix).  
 **Prior decision thread:** [Premium upgrade journey](9766f334-4f25-4949-891a-ee18a19d4991).  
 **Research:** `docs/research/premium-positioning-2026-09-16.md`, `docs/research/premium-preview-merge-notes.md`.
@@ -33,7 +33,7 @@
 | Live calendar feed | Backend `calendar-feed` + token exist. UI Premium-gates subscribe; free users get one-time `.ics` snapshot. |
 | Plex / Trakt sync | Edge functions implement sync and return `premium_required` for non-Premium. **UI flag off:** `SHOW_MEDIA_SYNC_INTEGRATIONS = false` (web + mobile). Premium users still see “coming soon”. |
 | Marketing homepage previews | Illustrative Tonight / Together / Following storyboards only. Not live product. |
-| Pick for Me (tonight picker) | **Live on `main`** (PR #1029, merged 2026-09-25). See §5.2. |
+| Pick for Me (tonight picker) | **Live on `main`** (PR #1029, merged 2026-09-25; follow-up #1045, 2026-09-26). See §5.2. |
 | Watch together (overlap + shared lists) | **In review:** PR #1039 (`agent/watch-together`, web, phases 1 to 3). Decisions in `docs/design/watch-together/README.md` on `agent/watch-together-design`. |
 | `/plans` rebuild | **In review:** PR #1031 (`agent/premium-plans-a2`), side-by-side plans at US$3/$24. |
 | One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free; *automatic* sync is still the Premium item. |
@@ -172,14 +172,20 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 ### 5.2 Pick for Me (tonight picker) — **Premium**, live
 
-**Shipped:** PR #1029, merged 2026-09-25 (`bec75da6`). Web `/tonight`, mobile `/(app)/tonight`. Nav label "Pick for Me" with a Premium pill for Free viewers; web icon is a starred list. Internal id and route stay `tonight`.
+**Shipped:** PR #1029, merged 2026-09-25 (`bec75da6`); follow-up PR #1045, merged 2026-09-26 (`4b7ad370`). Web `/tonight`, mobile `/(app)/tonight`. Nav label "Pick for Me" with a Premium pill for Free viewers; web icon is a starred list. Internal id and route stay `tonight`.
 
 **How it works:**
 - Four questions, one at a time: movie or show → length (movie runtime, or TV format + episode length) → what kind (genres with a mood word; 9 tiles on desktop, 10 on phone, alphabetical, "Show all") → how new, how good (era, TMDB score). Choosing never auto-advances; the viewer presses Next.
 - A folding **Filters** panel under each question (both layouts): only my services, only my watchlist, hide kids and family (on by default), original language.
 - A sentence builds as they answer ("Find me a movie under 2 hours, that's funny or tense, on my services.").
 - **Pick** draws up to five (hero Top pick + cards); **Surprise me** draws one. Pool is watchlist + TMDB discover, excluding titles already watched. Copy never promises a count, since tight answers can return fewer.
-- Results heading follows local time: "Tonight, sorted" 3:30pm to midnight, "Your shortlist" otherwise. Change options / Pick again.
+- **Loading ("Finding…"):** while picks load, the sentence reads "Finding a movie…" in the Top pick's spot, each answered phrase highlighted in turn. When picks land, the sentence dissolves (blur + fade) into the Top pick in place, the heading and Save simply appear, and cards dissolve in 250ms apart. Only straight after Pick / Surprise me / Pick again; saved searches and restored pages skip it. Mobile fades without blur. Reduced motion shows the final state.
+- **Results:** heading follows local time ("Tonight, sorted" 3:30pm to midnight, "Your shortlist" otherwise), sized like Home and Calendar section headings (24px desktop, 20px phone), no subline. Change options / Pick again. Top pick 280px on desktop (210px phone), image anchored near the top, with the Home hero's bottom-up gradient scrim.
+- **Favourite and watchlist on every pick**, the same buttons as Home: the hero's corner buttons on the Top pick, the Top 20 row buttons on the right of each card. Hover reveals them on desktop; touch always shows them. Tiles are not buttons; the title is, stretched over the tile (`.tonight-tile-open`), so the action buttons can sit inside.
+- **Keeps your search:** answers, step and picks are stored for 2 hours after the last change (`PICKER_SESSION_TTL_MS`), so leaving and coming back (or reloading) finds the page as it was. Mid-spin or with the pop-up open, it comes back to the questions. Pick again after returning skips picks already shown.
+- **Saved searches:** a Save / Saved toggle (pin icon; the bookmark means watchlist) beside the results heading. Listed under Questions on desktop (two rows, then "Show all") and under the questions on phone and in the app: the sentence without "Find me", pick count and date. Tap to reopen those exact picks, × to remove. Up to 10, newest first, deduped by picks, Premium only.
+- Both are **device-only** (web localStorage, mobile AsyncStorage) through the hook's `storage` adapter; keys and formats live in `@plot/core` (`pickerSessionKey`/`serialiseSession`/`parseSession`, `savedSearchesKey`/`addSavedSearch`/`parseSavedSearches`). Syncing saved searches to the account would need a table (confirm with Savannah before any migration).
+- Desktop fits a 13" laptop window (about 1440×780) without scrolling: results end about 690px, side column about 755px with two saved searches.
 - Desktop: 264px side column (Your request with "Or [Surprise me]", Questions list) beside the question; Pick sits where Next goes on the last question. Phone: sticky bar with the sentence, Surprise me and Pick.
 - Page subline "Less deciding. More watching." (desktop only).
 - No TMDB calls for picks until Pick is pressed; the genre catalog loads up front (one cached call) because Free viewers answer the questions too.
@@ -188,10 +194,11 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 **Safety already handled (from Greptile review):** results, watched history and the pool are keyed to the viewer; stale overlapping draws are dropped; picks hide the moment Premium ends; a saved watchlist-only request waits for the watchlist to load; failed TMDB requests show an error, not "nothing fits"; watch history is paged.
 
-**Key files:** `packages/core/tonightPicker.js` (all logic, hook `useTonightPicker`), `packages/core/copy/tonightPicker.js` (copy, genre moods), `apps/web/src/components/TonightView.jsx` + `.css`, `apps/mobile/app/(app)/tonight.tsx`, `apps/web/src/stories/TonightView.stories.jsx` (incl. Free Answering / Free Unlock Pop Up). Design canvas: https://claude.ai/artifact/EGHxCibeReUW63RoNvesCZ (gate mockups there show older copy).
+**Key files:** `packages/core/tonightPicker.js` (all logic, hook `useTonightPicker`), `packages/core/copy/tonightPicker.js` (copy, genre moods), `apps/web/src/components/TonightView.jsx` + `.css`, `apps/mobile/app/(app)/tonight.tsx`, `apps/web/src/stories/TonightView.stories.jsx` (incl. Free Answering, Free Unlock Pop Up, With Saved Searches, Results Saved). Design canvas: https://claude.ai/artifact/EGHxCibeReUW63RoNvesCZ (gate mockups show older copy; the loading-animation rows include the chosen "K · Finding…").
 
 **Still to do:**
-- Test the mobile screen on a device or simulator (type-checks only so far).
+- Test the mobile screen on a device or simulator (type-checks only so far), especially the Finding fade and the saved-searches list.
+- TV genres are limited by TMDB's TV catalog (11 after hiding kids/family and News, Talk, Soap). Adding Horror / Romance / Thriller for shows via TMDB keywords was proposed, not decided.
 - Test "come back after upgrading" end to end once Checkout opens (or by granting Premium on Staging mid-flow).
 - GitHub's "Code scanning AI findings" check fails on every PR with "requested model is not supported" (GitHub-side, not code); not a required check.
 
