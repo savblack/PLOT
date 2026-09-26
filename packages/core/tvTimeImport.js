@@ -1,10 +1,75 @@
 import { IMPORT_VIEW } from './copy/importView.js';
+import { fuzzyCol, parseCSV } from './importParsing.js';
 
-// Saved TV Time Liberator files only. This adapter never connects an account.
-// Publisher schema and filenames: docs/billing/public-export-samples.md.
+// Saved TV Time Liberator and GDPR archive files only. This adapter never
+// connects an account. Schema and filename evidence: docs/billing/public-export-samples.md.
 const invalid = () => { throw new Error(IMPORT_VIEW.tvTimeUnsupported); };
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const positive = value => Number.isSafeInteger(value) && value > 0;
+
+const OFFICIAL_CSV_FILES = new Set(['tracking-prod-records-v2.csv', 'tracking-prod-records.csv']);
+
+function parseOfficialCsv(text, fileName) {
+  const rows = parseCSV(text.replace(/^\uFEFF/, ''));
+  if (rows.length < 2 || !OFFICIAL_CSV_FILES.has(fileName)) invalid();
+  const headers = rows[0].map(fuzzyCol);
+  if (new Set(headers).size !== headers.length) invalid();
+  const column = (...names) => {
+    for (const name of names) {
+      const index = headers.indexOf(fuzzyCol(name));
+      if (index !== -1) return index;
+    }
+    return -1;
+  };
+  const value = (row, index) => index === -1 ? '' : (row[index] || '').trim();
+  const seriesName = column('series_name');
+  const movieName = column('movie_name');
+  const key = column('key');
+  const type = column('type');
+  const entityType = column('entity_type');
+  const createdAt = column('created_at');
+  const updatedAt = column('updated_at');
+  const releaseDate = column('release_date');
+  const seasonNumber = column('season_number');
+  const episodeNumber = column('episode_number');
+  const showFile = fileName === 'tracking-prod-records-v2.csv';
+  if (createdAt === -1 || (showFile
+    ? seriesName === -1 || key === -1 || seasonNumber === -1 || episodeNumber === -1
+    : movieName === -1 || type === -1 || entityType === -1 || releaseDate === -1)) invalid();
+
+  const entries = [];
+  const warnings = [];
+  for (const [index, row] of rows.slice(1).entries()) {
+    if (!row.some(cell => cell.trim())) continue;
+    const watchKey = value(row, key).toLowerCase();
+    const recordType = value(row, type).toLowerCase();
+    const recordEntity = value(row, entityType).toLowerCase();
+    const episodeWatch = /^(?:watch|rewatch)-episode-/.test(watchKey) ||
+      (recordType === 'watch' && recordEntity === 'episode');
+    const movieWatch = recordType === 'watch' && recordEntity === 'movie';
+    if (!episodeWatch && !movieWatch) continue;
+    const title = value(row, episodeWatch ? seriesName : movieName);
+    if (!title) invalid();
+    const season = episodeWatch ? Number(value(row, seasonNumber)) : null;
+    const episode = episodeWatch ? Number(value(row, episodeNumber)) : null;
+    if (episodeWatch && (!Number.isInteger(season) || season < 0 || !positive(episode))) invalid();
+    const watched = watchDate(value(row, createdAt) || value(row, updatedAt));
+    if (watched.datePrecision === 'day' && (value(row, createdAt) || value(row, updatedAt)).length > 10) {
+      warnings.push({ path: `${fileName}[${index}]`, title, reason: 'timezone_unknown' });
+    }
+    const releaseYear = value(row, releaseDate).slice(0, 4);
+    entries.push({
+      title,
+      hint: episodeWatch ? 'tv' : 'movie',
+      ...watched,
+      ...(episodeWatch ? { seasonNumber: season, episodeNumber: episode } : {}),
+      year: !episodeWatch && /^\d{4}$/.test(releaseYear) ? releaseYear : null,
+      externalIds: {},
+      ...(watchKey ? { eventId: watchKey } : {}),
+    });
+  }
+  return { entries, notImported: [], warnings };
+}
 
 function identity(media) {
   if (!object(media) || typeof media.title !== 'string' || !media.title.trim() || !object(media.id)) invalid();
@@ -41,9 +106,10 @@ function watchDate(value) {
  * Counts are never expanded into invented dated watches. The report must be
  * shown before confirmation; do not discard it and import entries alone.
  * @param {string} text
- * @param {string} fileName Original shows.json, movies.json, lists.json or favorites.json.
+ * @param {string} fileName Original supported Liberator JSON or GDPR CSV filename.
  */
 export function parseTvTimeDocument(text, fileName) {
+  if (OFFICIAL_CSV_FILES.has(fileName)) return parseOfficialCsv(text, fileName);
   let data;
   try { data = JSON.parse(text.replace(/^\uFEFF/, '')); } catch { invalid(); }
   const entries = [];

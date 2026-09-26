@@ -10,7 +10,7 @@ const MAX_EXPANDED = 50 * 1024 * 1024;
 const MAX_FILES = 100;
 const SUPPORTED = {
   letterboxd: new Set(['diary.csv', 'watched.csv', 'watchlist.csv']),
-  tvtime: new Set(['shows.json', 'movies.json', 'lists.json', 'favorites.json']),
+  tvtime: new Set(['shows.json', 'movies.json', 'lists.json', 'favorites.json', 'tracking-prod-records-v2.csv', 'tracking-prod-records.csv']),
   trakt: new Set(['watched-history.json', 'lists-watchlist.json']),
 };
 

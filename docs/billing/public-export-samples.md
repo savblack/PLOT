@@ -120,10 +120,11 @@ the official GDPR CSV archive. Remove the UUID if deriving a minimal example.
 
 The earlier statement that no public samples were available was too broad.
 Public fixture sets and authentic excerpts exist and can guide development.
-They do not yet establish complete real-file compatibility. Next implementation
-work should distinguish native Trakt archives, third-party Trakt exports, TV
-Time GDPR CSVs and TV Time Liberator JSON as separate formats. Keep unverified
-adapters disabled until real-file and identifier-resolution checks pass.
+They do not establish complete real-file compatibility. The importer treats
+native Trakt archives, third-party Trakt exports, TV Time GDPR CSVs and TV Time
+Liberator JSON as separate formats. The TV Time GDPR adapter accepts the two
+published tracking filenames and preserves episode ordinals, but the rollout
+flag stays disabled until an authentic complete archive passes the same flow.
 
 ## TV Time Liberator publisher contract
 
@@ -137,7 +138,7 @@ list membership. IMDb `-1` means unavailable. `rewatch_count` is an aggregate;
 it does not provide the individual dates or event identities needed to create
 reliable repeated-watch events.
 
-`packages/core/tvTimeImport.js` implements the extracted JSON document boundary.
+`packages/core/tvTimeImport.js` implements the extracted JSON and GDPR CSV document boundary.
 It returns entries plus explicit `notImported` and `warnings` reports. Its
 caller must display both reports before confirming. Both apps now use the
 report-bearing `parseImportDocument` wrapper, while the legacy array-only
@@ -148,9 +149,10 @@ followed show with no watched episodes is reported rather than marked watched.
 Timezone-free timestamps retain their calendar day and report lost time precision.
 
 Tests use synthetic schema cases populated with the already sourced Trakt
-identities and verified TMDB responses. They are not authentic TV Time export
-samples and do not clear the real-file launch gate. No exporter implementation
-code was copied and no TV Time account was accessed.
+identities and verified TMDB responses, plus the pinned GDPR fixture headers.
+They are not authentic complete TV Time exports and do not clear the real-file
+launch gate. No exporter implementation code was copied and no TV Time account
+was accessed.
 
 
 ## GDPR CSV audit follow-up (17 September 2026)
