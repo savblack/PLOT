@@ -2,7 +2,7 @@
 
 The homepage now demonstrates three planned Premium benefits: choosing a film by time, service and mood; finding a shared watchlist match; and following actors/directors for new releases. Each panel animates once, rotates automatically, and can be selected with Tonight / Together / Following. Hover, focus, hidden tabs and offscreen sections pause rotation. Reduced-motion visitors can select panels without animations or automatic switching.
 
-The homepage links to the public app `/plans` page. `/pricing` remains an alias. Both display planned features, A$5/month or A$40/year, and a coming-soon response instead of checkout. Mobile Settings reads the same feature catalog. Existing subscriber management and tips are preserved. The billing endpoint rejects subscription checkout before customer or payment work.
+The homepage links to the public app `/plans` page. `/pricing` remains an alias. Both display planned features, US$3/month or US$24/year (taxes included), and a coming-soon response instead of checkout. Mobile Settings reads the same feature catalog. Existing subscriber management and tips are preserved. The billing endpoint rejects subscription checkout before customer or payment work.
 
 ## Free feature coverage
 

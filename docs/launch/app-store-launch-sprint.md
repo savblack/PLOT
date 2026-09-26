@@ -31,7 +31,7 @@ re-litigated later.
 | 8 | **In-app + email + push**, with push scoped to watchlist availability alerts only. |
 | 9 | **Approve then hold**: get App Store approval, sit on it, release on your date. |
 | 10 | iOS auth is **email + Sign in with Apple + Google**. |
-| 11 | **Statistics ships entirely free. Premium is cut from this cycle** (2026-08-13); prices reset to A$5/mo, A$40/yr for whenever it does ship. |
+| 11 | **Statistics ships entirely free. Premium is cut from this cycle** (2026-08-13); prices reset to A$5/mo, A$40/yr for whenever it does ship. (Superseded 2026-09-25: US$3/mo or US$24/yr, taxes included.) |
 | 12 | **Web inherits core work for free** and gets no dedicated sprint. |
 | 13 | **6 to 8 weeks**, with the cut list agreed in advance. Revised from 5 to 7 by the social rethink. |
 
@@ -211,9 +211,10 @@ tier is far more generous, but the lesson stands.
 use its API without a contract. This is not a launch blocker. Historical quotes
 are not current cost assumptions.
 
-The planned prices remain A$5/month or A$40/year, up from the original A$3 and
-A$25. Recheck current operating costs before Premium launches instead of carrying
-forward an old TMDB quote.
+The planned prices are US$3/month or US$24/year, taxes included, with Stripe
+showing local currency at checkout (set 2026-09-25; previously A$5/A$40, and
+originally A$3/A$25). Recheck current operating costs before Premium launches
+instead of carrying forward an old TMDB quote.
 
 `SHOW_PRICING_PAGE` stays off. When Premium does ship:
 

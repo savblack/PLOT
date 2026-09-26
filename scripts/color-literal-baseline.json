@@ -11,7 +11,6 @@
   "apps/web/src/components/ConfirmModal.jsx": 1,
   "apps/web/src/components/ErrorBoundary.jsx": 8,
   "apps/web/src/components/ImportView.jsx": 21,
-  "apps/web/src/components/NotificationsView.jsx": 1,
   "apps/web/src/components/ReportDialog.jsx": 2,
   "apps/web/src/pages/AuthCallbackPage.jsx": 2,
   "apps/web/src/pages/AuthPage.css": 8,
