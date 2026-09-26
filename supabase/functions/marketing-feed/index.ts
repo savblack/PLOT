@@ -1077,7 +1077,7 @@ const tailList = (posts: FeedPost[]) => sectionCard('More updates', undefined,
 // ── Newsletter signup ─────────────────────────────────────────────
 // There is no archive: the digest goes out by email and lives only there,
 // so this form is the whole of the newsletter on the site. It sits at the
-// foot of What's On under #newsletter, which the nav links straight to.
+// foot of What's On under #newsletter, where the /newsletter redirects land.
 // Posts to theplot.tv/api/newsletter (the same proxy the homepage form uses),
 // including the honeypot field that endpoint expects.
 const subscribeForm = (placement: string) => `
@@ -1126,8 +1126,8 @@ const subscribeForm = (placement: string) => `
 </script>`;
 
 const SUBSCRIBE_CSS = `
-  /* Charcoal card. scroll-margin clears the fixed topnav: the footer links
-     straight to #newsletter, and without it the heading lands under it. */
+  /* Charcoal card. scroll-margin clears the fixed topnav: the /newsletter
+     redirects land on #newsletter, and without it the heading lands under it. */
   /* .nlsub.card outranks the later .card rule in the main stylesheet, which
      otherwise paints this cream and leaves cream text unreadable on it. */
   .nlsub.card, .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }
