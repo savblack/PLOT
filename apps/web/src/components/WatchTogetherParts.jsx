@@ -78,9 +78,11 @@ export function AcceptDialog({ person, viewerIsPublic, busy = false, onAccept, o
  * The Watch together card on someone else's profile.
  *
  * @param {{ person: { id: string, username: string, display_name?: string | null, is_public?: boolean },
- *   viewer: { id: string } | null, viewerProfile: any }} props
+ *   viewer: { id: string } | null, viewerProfile: any, onChange?: () => void }} props
+ *   `onChange` runs after any send, cancel or reply, so a parent holding its
+ *   own partner list can refresh it.
  */
-export function WatchTogetherTile({ person, viewer, viewerProfile }) {
+export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
   const navigate = useNavigate();
   const { status, refresh } = useWatchTogetherStatus(person?.id, viewer?.id);
   const { send, cancel, respond } = useWatchTogether(viewer?.id);
@@ -99,6 +101,7 @@ export function WatchTogetherTile({ person, viewer, viewerProfile }) {
     if (result && !result.ok) setError(T.errors[result.code]);
     await refresh();
     setBusy(false);
+    onChange?.();
   };
 
   const body = {

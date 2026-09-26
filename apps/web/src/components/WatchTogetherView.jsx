@@ -16,7 +16,7 @@ import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COMMON } from '../copy/common.js';
 import { posterUrl } from '../utils/images.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
-import { AcceptDialog, PersonAvatar, ShareListDialog } from './WatchTogetherParts.jsx';
+import { AcceptDialog, PersonAvatar, ShareListDialog, WatchTogetherTile } from './WatchTogetherParts.jsx';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import './WatchTogetherView.css';
 
@@ -229,6 +229,37 @@ function Invite({ wt }) {
   );
 }
 
+/* ── Someone you aren't watching together with yet ────────────────────── */
+
+/**
+ * /together/with/:username for a person who isn't a partner. Shows the same
+ * tile as their profile (invite, request sent, reply to their request, or the
+ * Premium upsell), and turns into the shared list the moment you're paired.
+ * An unknown, blocked or hidden handle gets the plain note: get_profile_card
+ * returns nothing for all three, and they must look the same.
+ */
+function NotPairedYet({ wt, username }) {
+  const { user, profile } = useApp();
+  const [person, setPerson] = useState(undefined);
+
+  useEffect(() => {
+    let live = true;
+    supabase.rpc('get_profile_card', { p_username: username }).then(({ data }) => {
+      if (live) setPerson(Array.isArray(data) && data[0] ? data[0] : null);
+    }, () => { if (live) setPerson(null); });
+    return () => { live = false; };
+  }, [username]);
+
+  return (
+    <div className="wt-page">
+      <Link to="/together" className="wt-back">{COMMON.back}</Link>
+      {person === undefined ? null : person
+        ? <WatchTogetherTile person={person} viewer={user} viewerProfile={profile} onChange={wt.refresh} />
+        : <p className="wt-note">{T.overlap.notPartners}</p>}
+    </div>
+  );
+}
+
 /* ── Titles with one or more partners ────────────────────────────────── */
 
 function Together({ wt, usernames }) {
@@ -248,6 +279,9 @@ function Together({ wt, usernames }) {
   const nameOf = (id) => id === user?.id ? T.overlap.you : personName(people.find(p => p.other_id === id));
 
   if (!wt.loading && people.length !== usernames.length) {
+    // One person you aren't paired with yet (the usual way in from taste
+    // overlap or a shared link): offer the invite rather than a dead end.
+    if (usernames.length === 1) return <NotPairedYet wt={wt} username={usernames[0]} />;
     return <div className="wt-page"><Link to="/together" className="wt-back">{COMMON.back}</Link><p className="wt-note">{T.overlap.notPartners}</p></div>;
   }
   const { all, some } = splitGroupMatches(shown, people.length + 1);
