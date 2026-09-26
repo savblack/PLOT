@@ -15,6 +15,7 @@ import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
 import { initAnalytics, identifyUser, resetAnalytics, setPersonProps } from '../lib/analytics';
 import { hydrateSectionOpenState } from '../lib/sectionOpenState';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
+import { consumeSimklState, exchangeSimklCode } from '../hooks/useSimklSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider } from '../contexts/AppDataContext';
 import { OnboardingRefreshContext } from '../contexts/OnboardingContext';
@@ -168,6 +169,20 @@ function RootInner() {
       activeUserIdRef.current = null;
       subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    const handle = async (url: string | null) => {
+      if (!url || !/simkl/.test(url)) return;
+      const parsed = Linking.parse(url);
+      const code = parsed.queryParams?.code as string | undefined;
+      const state = parsed.queryParams?.state as string | undefined;
+      if (!code || !await consumeSimklState(state)) return;
+      try { await exchangeSimklCode(code); } catch (e) { console.warn('[simkl] code exchange failed', e); }
+    };
+    Linking.getInitialURL().then(handle);
+    const sub = Linking.addEventListener('url', ({ url }) => handle(url));
+    return () => sub.remove();
   }, []);
 
   // Trakt OAuth redirect (plot://auth/trakt?code=…) — routing-agnostic: catch

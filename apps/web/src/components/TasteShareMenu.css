@@ -1,0 +1,39 @@
+.tsm { position: relative; }
+.tsm-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 20;
+  width: 232px;
+  display: flex; flex-direction: column;
+  padding: 0.4rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-overlay);
+  font-family: var(--font-sans);
+}
+.tsm-label {
+  padding: 0.45rem 0.6rem 0.3rem;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.tsm-item {
+  display: flex; align-items: center; gap: 0.65rem;
+  min-height: 40px; padding: 0 0.6rem;
+  border: 0; border-radius: 10px; background: none;
+  font: inherit; font-size: 0.9rem; font-weight: 600; color: var(--text-primary);
+  text-align: left; cursor: pointer;
+}
+.tsm-item:hover:not(:disabled), .tsm-item:focus-visible { background: var(--surface-sunken); outline: none; }
+.tsm-item:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+.tsm-item:disabled { opacity: 0.5; cursor: progress; }
+.tsm-item--quiet { font-weight: 500; color: var(--text-secondary); }
+.tsm-icon {
+  width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-sunken);
+}
+.tsm-divider { height: 1px; margin: 0.35rem 0.4rem; background: var(--border); }
+.tsm-message {
+  margin: 0.3rem 0.4rem 0.2rem; padding: 0.5rem 0.6rem;
+  border-radius: 8px; background: var(--accent-secondary-fill); color: var(--on-accent-fill);
+  font-size: 0.78rem; line-height: 1.4;
+}

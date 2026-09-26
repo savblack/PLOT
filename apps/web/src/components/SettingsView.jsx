@@ -15,6 +15,7 @@ import { supabase } from '@plot/core/supabase.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
+import { useSimklSync } from '../hooks/useSimklSync.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -65,6 +66,14 @@ const TRAKT_ICON = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <path d="M8 12.5l2.5 2.5L16 9" />
+  </svg>
+);
+const SIMKL_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 7h11" />
+    <path d="M13 4l3 3-3 3" />
+    <path d="M19 17H8" />
+    <path d="M11 14l-3 3 3 3" />
   </svg>
 );
 
@@ -1131,6 +1140,7 @@ export default function SettingsView() {
   };
   const sync  = useMediaSync(user?.id);
   const trakt = useTraktSync(user?.id);
+  const simkl = useSimklSync(user?.id);
   const premium = usePremium(profile);
   const { events: calEvents, loading: calLoading } = useCalendar(
     watchlist?.items ?? [],
@@ -1248,6 +1258,8 @@ export default function SettingsView() {
   useEffect(() => { sync.loadIntegration(); }, [sync.loadIntegration]);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
   useEffect(() => { trakt.loadIntegration(); }, [trakt.loadIntegration]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
+  useEffect(() => { simkl.loadIntegration(); }, [simkl.loadIntegration]);
 
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
   const marketingEmailsEnabled = !!profile?.marketing_emails;
@@ -2023,6 +2035,45 @@ export default function SettingsView() {
               </div>
             ))}
           </>
+        )}
+
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">{SIMKL_ICON}</div>
+            <div>
+              <div className="settings-row-label">{SETTINGS_VIEW.integrations.simklName}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {simkl.isConnected
+                  ? SETTINGS_VIEW.integrations.connectedLastSynced(
+                      simkl.integration?.last_sync_at
+                        ? new Date(simkl.integration.last_sync_at).toLocaleDateString()
+                        : SETTINGS_VIEW.integrations.never
+                    )
+                  : SETTINGS_VIEW.integrations.simklBlurb}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            {simkl.isConnected ? (
+              <>
+                <SettingsTextAction onClick={simkl.sync} disabled={simkl.syncing}>
+                  {simkl.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
+                </SettingsTextAction>
+                <SettingsTextAction onClick={simkl.disconnect} tone="danger">
+                  {SETTINGS_VIEW.integrations.disconnect}
+                </SettingsTextAction>
+              </>
+            ) : (
+              <SettingsTextAction onClick={simkl.connect}>
+                {SETTINGS_VIEW.integrations.connectSimkl}
+              </SettingsTextAction>
+            )}
+          </div>
+        </div>
+        {simkl.error && (
+          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+            {simkl.error}
+          </div>
         )}
 
         {/* ── Import watch history ── */}

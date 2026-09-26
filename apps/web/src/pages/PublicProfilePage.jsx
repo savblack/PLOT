@@ -33,6 +33,7 @@ import { updateProfile } from '@plot/core/profile.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { listVisibility, showsOnProfile } from '@plot/core/customLists.js';
+import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 import { EVENTS } from '../lib/analytics.js';
 import { WatchTogetherTile } from '../components/WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
@@ -270,7 +271,7 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
       <div style={{ padding: '0 1.25rem 1.5rem' }}>
         {users === null
           ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader size="sm" /></div>
-          : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
+          : <UserList users={users} viewerId={viewerId} onNavigate={onClose} showCompare empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
       </div>
     </ResponsiveDialog>
   );
@@ -664,6 +665,11 @@ export default function PublicProfilePage() {
                       )
                     )}
                     {!isOwn && <button type="button" className="btn btn-secondary" onClick={shareProfile}>{copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.shareProfile}</button>}
+                    {/* Taste overlap (Premium). Shown wherever a comparison is
+                        possible; Free viewers land on its upsell. */}
+                    {viewer && !isOwn && !locked && (
+                      <Link to={`/u/${p.username}/compare`} className="btn btn-secondary">{TASTE_OVERLAP.compareTaste}</Link>
+                    )}
                     {/* Report / block. Guideline 1.2 wants both wherever another
                         account's content is rendered, and the profile is the
                         surface with the most of it. Renders nothing for your own

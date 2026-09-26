@@ -23,6 +23,7 @@ configure({
   tmdbProxyUrl: process.env.EXPO_PUBLIC_TMDB_PROXY_URL ?? '',
   criticScoreUrl: `${process.env.EXPO_PUBLIC_SUPABASE_URL ?? ''}/functions/v1/critic-score`,
   traktClientId: process.env.EXPO_PUBLIC_TRAKT_CLIENT_ID ?? '',
+  simklClientId: process.env.EXPO_PUBLIC_SIMKL_CLIENT_ID ?? '',
   isDev: typeof __DEV__ !== 'undefined' ? __DEV__ : false,
   // Analytics seams: core fires these from the one canonical spot for each
   // action, whatever surface triggered it, so mobile gets the same engagement

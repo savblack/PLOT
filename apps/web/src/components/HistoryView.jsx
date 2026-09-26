@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { useHistoryDetails } from '../hooks/useHistoryDetails.js';
@@ -20,6 +21,7 @@ import MobilePageControls from './MobilePageControls.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { HISTORY_VIEW as T } from '../copy/historyView.js';
 import { MEDIA } from '../copy/media.js';
+import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 
 /* History is its own page: the poster shelf, one month at a time, with a
    sticky column of small cards beside it that say something about the year
@@ -181,6 +183,19 @@ function CrowdCard({ entries, details, openPanel }) {
           })}
           <span className="hist-card-note">{T.crowdDisagreements}</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* Entry into taste overlap (Premium). Free viewers land on its upsell. */
+function CompareCard() {
+  return (
+    <div className="hist-card">
+      <span className="hist-card-label">{TASTE_OVERLAP.historyPromptTitle}</span>
+      <div className="hist-card-body">
+        <span className="hist-card-note">{TASTE_OVERLAP.historyPromptBody}</span>
+        <Link className="btn btn-sm btn-secondary" to="/compare" style={{ alignSelf: 'flex-start' }}>{TASTE_OVERLAP.compareTaste}</Link>
       </div>
     </div>
   );
@@ -417,6 +432,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
           )}
           <CrowdCard entries={yearEntries} details={details} openPanel={openPanel} />
           <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo} />
+          <CompareCard />
           <Filters
             types={types} setTypes={setTypes}
             genres={genres} setGenres={setGenres} genreOptions={genreOptions}
