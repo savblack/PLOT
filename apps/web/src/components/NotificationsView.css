@@ -37,17 +37,22 @@
 .notif-rollup-text { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.4; }
 .notif-rollup-text strong { font-weight: 600; }
 
-/* Everything else: day groups of hairline rows, a pink dot for unread. */
+/* Everything else: day groups of hairline rows. Unread rows carry a soft accent
+   tint rather than a dot, matching mobile (rowUnread in notifications.tsx). */
 .notif-group { display: flex; flex-direction: column; gap: 6px; }
 .notif-group-label { padding: 4px 4px 0; font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: var(--font-display-tracking); color: var(--text-primary); }
 .notif-rows { display: flex; flex-direction: column; }
-.notif-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 4px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.notif-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 10px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .notif-row:last-child { border-bottom: 0; }
 .notif-row:hover strong { color: var(--accent-text); }
 .notif-row-text { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.4; }
 .notif-row-text strong { font-weight: 600; }
-.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-.notif-dot--read { background: transparent; }
+/* Title rows (new_episode): a poster in the avatar's slot, a small label above the line. */
+.notif-poster { display: block; width: 44px; height: 66px; flex-shrink: 0; border-radius: var(--radius-badge); object-fit: cover; background: var(--surface-sunken); }
+.notif-badge { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.notif-row-line { display: block; }
+.notif-unread { background: var(--accent-dim); }
+.notif-row.notif-unread { border-radius: var(--radius-badge); }
 .notif-time { white-space: nowrap; flex-shrink: 0; }
 
 @media (max-width: 760px) {

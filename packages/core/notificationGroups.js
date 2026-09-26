@@ -1,13 +1,24 @@
 // Shapes the notifications feed for the page: requests first, new followers
 // rolled into one line, everything else grouped by day. Shared by web and native.
 
-/** @typedef {{ id: string, type: string, created_at: string, read_at?: string | null, actor_display_name?: string | null, actor_username?: string | null, actor_avatar_url?: string | null }} NotificationRow */
+/** @typedef {{ id: string, type: string, created_at: string, read_at?: string | null, actor_display_name?: string | null, actor_username?: string | null, actor_avatar_url?: string | null, tmdb_id?: number | null, media_type?: string | null, season_number?: number | null, episode_number?: number | null, episode_count?: number | null, media_title?: string | null, media_poster_path?: string | null, air_date?: string | null }} NotificationRow */
 
 /** Which badge a row wears. @param {string} type */
 export function notificationKind(type) {
   if (type === 'follow_request') return 'request';
   if (type === 'new_follower' || type === 'follow_accepted') return 'follow';
+  if (type === 'new_episode') return 'episode';
   return 'activity';
+}
+
+/**
+ * True for rows about a title rather than a person. These have no actor, so
+ * they render a poster instead of an avatar and open the title, not a profile.
+ * Only new_episode today; a movie availability type would join it here.
+ * @param {NotificationRow} n
+ */
+export function isTitleNotification(n) {
+  return n.type === 'new_episode' && n.tmdb_id != null;
 }
 
 /** @param {NotificationRow} n */
