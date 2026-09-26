@@ -160,6 +160,9 @@ export const EVENTS = Object.freeze({
   TRAKT_CONNECT_STARTED: 'trakt_connect_started',
   TRAKT_CONNECTED: 'trakt_connected',
   TRAKT_SYNCED: 'trakt_synced',
+  SIMKL_CONNECT_STARTED: 'simkl_connect_started',
+  SIMKL_CONNECTED: 'simkl_connected',
+  SIMKL_SYNCED: 'simkl_synced',
   // One name for both providers, distinguished by a `provider` prop: churn off
   // an integration is the same question whichever one it was.
   INTEGRATION_DISCONNECTED: 'integration_disconnected',

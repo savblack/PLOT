@@ -11,6 +11,7 @@ test('getConfig starts with the documented defaults', () => {
     watchAvailabilityUrl: '',
     criticScoreUrl: '',
     traktClientId: '',
+    simklClientId: '',
     isDev: false,
     importAnnotationsEnabled: false,
     tvTimeImportEnabled: false,
