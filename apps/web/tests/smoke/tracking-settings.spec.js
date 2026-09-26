@@ -1,0 +1,24 @@
+import { expect, test } from '@playwright/test';
+test('tracking requires Plex selection, reports queued work honestly and isolates accounts', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/tests/smoke/fixtures/tracking.html');
+  await expect(page.getByText('No successful sync yet')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sync selected Plex profile' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Choose Plex server and profile' }).click();
+  await page.getByRole('button', { name: 'My server', exact: true }).click();
+  await page.getByRole('button', { name: 'My profile', exact: true }).click();
+  await expect(page.getByText('Selected: My server, My profile')).toBeVisible();
+  await page.getByRole('button', { name: 'Sync selected Plex profile' }).click();
+  await expect(page.getByText(/^Queued: 0 imported/)).toBeVisible();
+  await expect(page.getByText('No successful sync yet')).toBeVisible();
+  await page.getByRole('button', { name: 'Fail next status read' }).click();
+  await page.getByRole('button', { name: 'Refresh tracking status' }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await page.getByRole('button', { name: 'Refresh tracking status' }).click();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Switch account' }).click();
+  await expect(page.getByText('Selected: My server, My profile')).toHaveCount(0);
+  await expect(page.getByText(/^Queued:/)).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

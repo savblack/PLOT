@@ -1,3 +1,5 @@
+import { readListItems } from './listReads.js';
+import { on, LISTS_CHANGED_EVENT } from './events.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { tmdb, getTmdbRegion } from './tmdb.js';
@@ -77,16 +79,8 @@ export function useWatchlist(userId) {
       setListId(resolvedListId);
 
       // ── 2. Load items
-      const { data: listItems, error: itemsErr } = await supabase
-        .from('list_items')
-        .select('*')
-        .eq('list_id', resolvedListId)
-        .order('created_at', { ascending: false });
-
-      if (itemsErr) {
-        console.error('[useWatchlist] SELECT list_items failed:', itemsErr);
-        setListError(itemsErr.message);
-      }
+      const listItems = await readListItems({ userId, listId: resolvedListId });
+      listItems.sort((a,b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
 
       setItems(listItems || []);
     } catch (e) {
@@ -99,6 +93,7 @@ export function useWatchlist(userId) {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- bootstrap encapsulates the staged local state updates
   useEffect(() => { bootstrap(); }, [bootstrap]);
+  useEffect(() => on(LISTS_CHANGED_EVENT, bootstrap), [bootstrap]);
 
   /* ── Check membership ── */
   const isInList = useCallback(

@@ -1,3 +1,5 @@
+import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
+import { getEpisodeGuideState } from '@plot/core/episodeProgress.js';
 import PrivateNote from './PrivateNote';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
@@ -226,27 +228,41 @@ function StarRow({
 // ── Episode guide ─────────────────────────────────────────────────────
 function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }> }) {
   const { colors } = useTheme();
+  const { userId } = useAppData();
+  const sparse = useEpisodeWatches(userId, tvId);
+  const isTracking = !!progress || sparse.hasEpisodes;
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const seasons = (details?.seasons || []).filter((s: any) => s.season_number > 0);
+  const seasons = (details?.seasons || []).filter((s: any) => s.season_number > 0 || (s.season_number === 0 && Object.keys(sparse.states).some(key => key.startsWith('0:'))));
   const [selSeason, setSelSeason] = useState(progress?.current_season || 1);
   const [episodes,  setEpisodes]  = useState<any[]>([]);
   const [loading,   setLoading]   = useState(false);
+  const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || loading;
   const [toggling,  setToggling]  = useState<number | null>(null);
   const [actionError, setActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
 
   useEffect(() => {
     setLoading(true);
+    let cancelled = false;
     tmdb.getSeason(tvId, selSeason).then((data: any) => {
+      if (cancelled) return;
       setEpisodes(data?.episodes ?? []);
       setLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setEpisodes([]);
+      setActionError(MEDIA_PANEL.episodesLoadError);
+      setLoading(false);
     });
+    return () => { cancelled = true; };
   }, [tvId, selSeason]);
 
   const curSeason = progress?.current_season || 0;
   const curEp     = progress?.current_episode || 0;
-  const isWatched = (ep: any) => selSeason < curSeason || (selSeason === curSeason && ep.episode_number < curEp);
-  const isCurrent = (ep: any) => selSeason === curSeason && ep.episode_number === curEp;
+  const episodeState = (episodeNumber: number) => getEpisodeGuideState({
+    currentSeason: curSeason, currentEpisode: curEp, selectedSeason: selSeason,
+    episodeNumber, episodeStates: sparse.states,
+  });
 
   /* ── Finish the series when progress rolls past its final season ──
      Mirrors web's MediaPanel: an ended show whose last episode you just
@@ -265,10 +281,16 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
   };
 
   const handleToggle = async (ep: any) => {
-    if (!progress || toggling !== null) return;
+    if (!isTracking || progressBlocked || seasonPending || toggling !== null) return;
     setToggling(ep.episode_number);
     setActionError('');
-    const watched = isWatched(ep);
+    const watched = episodeState(ep.episode_number).isWatched;
+    if (sparse.hasEpisodes) {
+      const ok = await sparse.setWatched(selSeason, [ep.episode_number], !watched);
+      if (!ok) setActionError(MEDIA_PANEL.couldNotUpdateWatchStatus);
+      setToggling(null);
+      return;
+    }
     if (!watched) {
       /* Ticking the episode you're actually up to goes through
          markEpisodeWatched, which logs a history row for the completed episode
@@ -302,11 +324,21 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
     currentEpisode: curEp,
     currentSeason: curSeason,
     episodeCount: episodes.length,
+    episodeNumbers: episodes.map(ep => ep.episode_number),
+    episodeStates: sparse.states,
     selectedSeason: selSeason,
   });
 
   const handleToggleSeason = async () => {
-    if (!progress || seasonPending || toggling !== null) return;
+    if (!isTracking || progressBlocked || seasonPending || toggling !== null) return;
+    if (sparse.hasEpisodes) {
+      setSeasonPending(true);
+      setActionError('');
+      const ok = await sparse.setWatched(selSeason, episodes.map(ep => ep.episode_number), !seasonState.isComplete);
+      if (!ok) setActionError(MEDIA_PANEL.couldNotUpdateSeason);
+      setSeasonPending(false);
+      return;
+    }
     const target = getSeasonToggleProgress({
       isComplete: seasonState.isComplete,
       selectedSeason: selSeason,
@@ -348,7 +380,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
         </ScrollView>
       )}
 
-      {progress && episodes.length > 0 && (
+      {isTracking && episodes.length > 0 && (
         <View style={styles.seasonBulk}>
           <View style={styles.seasonBulkInfo}>
             <Text style={styles.seasonBulkTitle}>{MEDIA_PANEL.seasonLabel(selSeason)}</Text>
@@ -359,9 +391,9 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
           <TouchableOpacity
             style={styles.seasonBulkBtn}
             onPress={handleToggleSeason}
-            disabled={seasonPending}
+            disabled={seasonPending || progressBlocked || toggling !== null}
             accessibilityRole="button"
-            accessibilityState={{ disabled: seasonPending }}
+            accessibilityState={{ disabled: seasonPending || progressBlocked || toggling !== null }}
             accessibilityLabel={
               seasonState.isComplete
                 ? `${MEDIA_PANEL.unmarkSeasonWatched} ${selSeason}`
@@ -379,14 +411,22 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
         </View>
       )}
 
+      {sparse.hasEpisodes && <Text style={styles.seasonBulkCount}>{MEDIA_PANEL.sparseEpisodeProgress}</Text>}
+      {sparse.error && (
+        <View>
+          <Text style={styles.epActionError}>{MEDIA_PANEL.episodeProgressLoadError}</Text>
+          <TouchableOpacity onPress={sparse.reload} accessibilityRole="button" style={styles.seasonBulkBtn}>
+            <Text style={styles.seasonBulkBtnText}>{MEDIA_PANEL.retryEpisodeProgress}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {actionError ? <Text style={styles.epActionError}>{actionError}</Text> : null}
 
-      {loading ? (
+      {loading || sparse.loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.lg }} />
       ) : (
         episodes.map(ep => {
-          const watched = isWatched(ep);
-          const current = isCurrent(ep);
+          const { isWatched: watched, isCurrent: current } = episodeState(ep.episode_number);
           const isToggling = toggling === ep.episode_number;
           const epCode = `S${String(selSeason).padStart(2,'0')}E${String(ep.episode_number).padStart(2,'0')}`;
           return (
@@ -403,12 +443,13 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
                 </View>
                 <Text style={[styles.epTitle, watched && styles.epTitleWatched, current && styles.epTitleCurrent]} numberOfLines={2}>{ep.name}</Text>
               </View>
-              {progress && (
+              {isTracking && (
                 isToggling ? (
                   <ActivityIndicator size="small" color={colors.chipEpisode} />
                 ) : (
                   <TouchableOpacity
                     onPress={() => handleToggle(ep)}
+                    disabled={progressBlocked || seasonPending || toggling !== null}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     accessibilityLabel={watched ? `Mark ${epCode} unwatched` : `Mark ${epCode} watched`}
                     accessibilityRole="button"

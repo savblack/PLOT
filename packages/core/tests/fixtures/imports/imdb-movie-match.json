@@ -1,0 +1,10 @@
+{
+  "source": "TMDB search/multi and movie details",
+  "retrieved": "2026-09-16",
+  "imdb": "tt0058003",
+  "movie": {
+    "id": 26638,
+    "title": "Red Desert",
+    "release_date": "1964-09-04"
+  }
+}

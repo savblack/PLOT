@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 
 import {
   parseCSV,
@@ -51,6 +52,18 @@ test('parseCSV returns an empty array for empty input', () => {
 
 test('parseCSV includes the final row even without a trailing newline', () => {
   assert.deepEqual(parseCSV('a,b'), [['a', 'b']]);
+});
+
+test('truncated quoted CSV does not silently turn partial data into an import', () => {
+  assert.throws(() => parseCSV('Title,Date\n"Incomplete title,2024-01-01'), /unfinished quoted field/);
+});
+
+test('impossible source dates stay unknown instead of rolling into another day', () => {
+  for (const value of ['2025-02-29', '2024-02-30', '2024-13-01', '31/04/2024', '02/30/2024', '00/12/2024', 123, {}]) {
+    assert.equal(normaliseDate(value), null);
+  }
+  assert.equal(normaliseDate('2024-02-29'), '2024-02-29');
+  assert.equal(normaliseDate('29/02/2024'), '2024-02-29');
 });
 
 test('fuzzyCol lowercases and strips non-alphanumeric characters', () => {
@@ -176,7 +189,7 @@ test('parseImdb ignores malformed ratings and identifiers without dropping the t
 
 test('parseNetflix splits "Show: Season X: Episode" into the series title with a tv hint', () => {
   const rows = parseNetflix('Title,Date\n"Stranger Things: Season 1: Chapter One",01/15/2024');
-  assert.deepEqual(rows, [{ title: 'Stranger Things', hint: 'tv', date: '2024-01-15' }]);
+  assert.deepEqual(rows, [{ title: 'Stranger Things', hint: 'tv', seasonNumber: 1, episodeTitle: 'Chapter One', date: '2024-01-15' }]);
 });
 
 test('parseNetflix splits "Show: Season X" into the series title with a tv hint', () => {
@@ -192,6 +205,23 @@ test('parseNetflix leaves a plain movie title alone with an unknown hint', () =>
 test('parseNetflix does not split a colon subtitle that is not a season/episode marker', () => {
   const rows = parseNetflix('Title,Date\n"Mission: Impossible",01/15/2024');
   assert.deepEqual(rows, [{ title: 'Mission: Impossible', hint: 'unknown', date: '2024-01-15' }]);
+});
+
+test('saved Netflix DD/MM/YY export establishes the file date convention', () => {
+  const csv = readFileSync(new URL('../fixtures/imports/netflix-viewing-history.csv', import.meta.url), 'utf8');
+  assert.deepEqual(parseNetflix(csv).map(row => row.date), ['2024-08-26', '2024-04-03']);
+  assert.equal(parseNetflix('Title,Date\nMovie,12/25/24')[0].date, '2024-12-25');
+  assert.equal(parseNetflix('Title,Date\nMovie,30/02/24')[0].date, null);
+  assert.equal(normaliseDate('12/25/24'), null, 'Other formats must not guess a century');
+});
+
+test('Netflix preserves multiple movie subtitles and colons within a series name', () => {
+  assert.deepEqual(parseNetflix('Title,Date\n"Movie: Subtitle: Finale",')[0], {
+    title: 'Movie: Subtitle: Finale', hint: 'unknown', date: null,
+  });
+  assert.deepEqual(parseNetflix('Title,Date\n"Series: Subtitle: Season 1: Pilot",')[0], {
+    title: 'Series: Subtitle', hint: 'tv', seasonNumber: 1, episodeTitle: 'Pilot', date: null,
+  });
 });
 
 test('parseNetflix returns an empty array without a title column or data rows', () => {
@@ -275,7 +305,7 @@ test('parseApple throws on invalid JSON rather than returning an empty array', (
 test('parsePlatform dispatches to the parser matching the platform id', () => {
   assert.deepEqual(parsePlatform('netflix', 'Title,Date\nInception,01/15/2024'), [{ title: 'Inception', hint: 'unknown', date: '2024-01-15' }]);
   assert.deepEqual(parsePlatform('letterboxd', 'Name\n'), []);
-  assert.equal(parsePlatform('imdb', 'Title\nHeat')[0].title, 'Heat');
+  assert.throws(() => parsePlatform('imdb', 'Title\nHeat'), /Unsupported IMDb export/);
 });
 
 test('parsePlatform returns an empty array for an unknown platform id', () => {
@@ -298,15 +328,34 @@ test('watchedAtFor keeps the given date in timezones 13+ hours ahead of UTC', ()
   });
 });
 
-test('watchedAtFor with no source date falls back to the local date, not the UTC date', () => {
-  withTZ('UTC', () => {
-    const d = new Date();
-    const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    assert.equal(watchedAtFor({}), expected);
-  });
-  withTZ('Pacific/Kiritimati', () => {
-    const d = new Date();
-    const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    assert.equal(watchedAtFor({}), expected);
-  });
+test('watchedAtFor preserves an unknown source date in every timezone', () => {
+  for (const timezone of ['UTC', 'Pacific/Kiritimati', 'Australia/Sydney']) {
+    withTZ(timezone, () => assert.equal(watchedAtFor({}), null));
+  }
+});
+
+test('streaming CSV metadata cannot impersonate title or watch-date columns', () => {
+  for (const parse of [parseNetflix, parsePrime, parseMax]) {
+    const rows = parse('Profile Name,Release Date,Title,Date Watched\nSomeone,1999-01-01,Example,2024-08-26');
+    assert.equal(rows[0].title, 'Example');
+    assert.equal(rows[0].date, '2024-08-26');
+    assert.equal(parse('Title,Release Date\nExample,1999-01-01')[0].date, null);
+    assert.deepEqual(parse('Profile Name,Release Date\nSomeone,1999-01-01'), []);
+  }
+});
+
+test('Prime selects the explicit watched date ahead of unrelated date metadata', () => {
+  assert.equal(parsePrime('Title,Release Date,Date Watched\nExample,1999-01-01,2024-08-26')[0].date, '2024-08-26');
+  assert.equal(parsePrime('Content Type,Title,Date Watched\nMovie,Example,2024-08-26')[0].title, 'Example');
+});
+
+test('streaming JSON rejects unknown or competing collections rather than silently dropping records', () => {
+  for (const parse of [parseDisney, parseMax, parseApple]) {
+    for (const data of [null, false, 42, 'history', {}, { exportVersion: 2, records: [{ title: 'Example' }] }, { history: {}, items: [] }, { history: [], data: [{ title: 'Example' }] }]) {
+      assert.throws(() => parse(JSON.stringify(data)), /JSON export layout is not supported/);
+    }
+    assert.deepEqual(parse('[]'), []);
+    assert.deepEqual(parse('{"history":[]}'), []);
+    assert.deepEqual(parse('{"version":1,"history":[]}'), []);
+  }
 });

@@ -5,6 +5,8 @@ const smokeBaseUrl = `http://127.0.0.1:${smokePort}`;
 
 export default defineConfig({
   testDir: './tests/smoke',
+  // CircleCI's medium executor has two CPUs; ten browsers starve Vite startup.
+  workers: process.env.CI ? 2 : undefined,
   timeout: 30_000,
   expect: {
     timeout: 10_000,

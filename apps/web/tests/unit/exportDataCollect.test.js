@@ -12,17 +12,19 @@ function createExportClient({ rowsByTable = {}, failingTable = null } = {}) {
           return {
             eq(column, value) {
               calls.push({ table, method: 'eq', column, value });
-              const result = failingTable === table ? { error: { message: `failed:${table}` } } : { data: rowsByTable[table] ?? [], error: null };
-              if (table !== 'private_title_notes') return result;
-              return {
-                order() { return this; },
-                async range(start, end) { return result.error ? result : { data: result.data.slice(start, end + 1) }; },
-              };
+              return this;
             },
-            async or(filter) {
+            or(filter) {
               calls.push({ table, method: 'or', filter });
+              return this;
+            },
+            order(column) {
+              if (table === 'broadcast_preferences') assert.equal(column, 'user_id');
+              return this;
+            },
+            async range(from, to) {
               if (failingTable === table) return { error: { message: `failed:${table}` } };
-              return { data: rowsByTable[table] ?? [], error: null };
+              return { data: (rowsByTable[table] ?? []).slice(from, to + 1), error: null };
             },
           };
         },
@@ -81,6 +83,36 @@ test('runDataExport returns the failing table and stops on the first read error'
   assert.equal(result.table, 'history');
   assert.equal(result.error?.message, 'failed:history');
   assert.equal(calls.some((call) => call.table === 'feedback'), false);
+});
+
+
+test('free export includes every watch event beyond the database row cap', async () => {
+  const watches = Array.from({ length: 2401 }, (_, i) => ({ id: String(i), source_key: `event-${i}`, watched_on: null }));
+  const { client, calls } = createExportClient({ rowsByTable: { watch_events: watches } });
+  const result = await runDataExport(client, 'user-123');
+  assert.equal(result.error, undefined);
+  assert.deepEqual(result.data.watch_events, watches);
+  assert.equal(calls.filter(call => call.table === 'watch_events').length, 3);
+  assert.ok(!EXPORT_STEPS.some(step => step.table === 'history_board'), 'removed table must not break the export');
+});
+
+test('free export strips legacy nested Plex server credentials and job leases', async () => {
+  const { client } = createExportClient({ rowsByTable: {
+    media_integrations: [{ id: 'integration', plex_servers: [{ accessToken: 'secret' }], selected_server: { name: 'Server', clientIdentifier: 'server', accountID: '1', profileName: 'Me', accessToken: 'secret', connections: [{ uri: 'https://example.test/?token=secret' }] } }],
+    tracking_jobs: [{ id: 'job', lease_token: 'secret', status: 'queued' }],
+  } });
+  const result = await runDataExport(client,'owner');
+  assert.equal(JSON.stringify(result).includes('secret'),false);
+  assert.equal(result.data.media_integrations[0].selected_server.profileName,'Me');
+});
+
+test('free export retains imported annotations and their provenance beyond the row cap', async () => {
+  const annotations = Array.from({ length: 1001 }, (_, index) => ({ id: String(index), source_key: `annotation-${index}`, annotation_scope: 'show', annotation: { kind: 'rating', rating: 8, ratedAt: null } }));
+  const { client, calls } = createExportClient({ rowsByTable: { imported_annotations: annotations } });
+  const result = await runDataExport(client, 'owner');
+  assert.deepEqual(result.data.imported_annotations, annotations);
+  assert.equal(calls.filter(call => call.table === 'imported_annotations').length, 2);
+  assert.deepEqual(EXPORT_STEPS.find(step => step.table === 'imported_annotations').match, { type: 'eq', column: 'user_id' });
 });
 
 test('private notes are included only in the authenticated owner export', async () => {

@@ -1,0 +1,34 @@
+{
+  "source": "TMDB find with tvdb_id",
+  "externalId": 434988,
+  "retrieved": "2026-09-17",
+  "response": {
+    "tv_results": [
+      {
+        "adult": false,
+        "backdrop_path": "/yVP12H81dwaay5B7GVqgO893q2c.jpg",
+        "id": 226637,
+        "name": "High Potential",
+        "original_name": "High Potential",
+        "overview": "Morgan is a single mom with an exceptional mind, whose unconventional knack for solving crimes leads to an unusual and unstoppable partnership with a by-the-book seasoned detective.",
+        "poster_path": "/xCtaUDBUP1iKqtoqpHfeH1T2pWF.jpg",
+        "media_type": "tv",
+        "original_language": "en",
+        "genre_ids": [
+          18,
+          80,
+          9648
+        ],
+        "popularity": 69.5947,
+        "first_air_date": "2024-09-17",
+        "softcore": false,
+        "vote_average": 8.246,
+        "vote_count": 676,
+        "origin_country": [
+          "US"
+        ]
+      }
+    ],
+    "movie_results": []
+  }
+}

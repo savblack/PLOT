@@ -33,7 +33,7 @@ export const PLANS_PAGE = {
       'Track movies & TV in one place',
       'Watchlist, history & release calendar',
       'Discover feed + Top 10 charts',
-      'Up to 3 custom lists',
+      'Up to 5 custom lists',
       'Follow friends & share your profile',
     ],
     cta: 'Get started free',
@@ -44,9 +44,9 @@ export const PLANS_PAGE = {
     name: 'Premium',
     // Amount/billed line are recalculated by JS when the billing toggle
     // changes; these are the initial (annual) values rendered in the HTML.
-    amount: 'A$3.33',
+    amount: 'US$2',
     per: '/mo',
-    billed: 'Billed A$40 yearly · save 33%',
+    billed: 'Billed US$24 yearly · save 33%',
     billedMonthly: 'Billed monthly',
     tagline: 'Everything in Free, plus:',
     features: [

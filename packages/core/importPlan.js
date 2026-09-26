@@ -18,7 +18,7 @@
 const titleKey = r => `${r.tmdb_id}::${r.media_type}`;
 
 /**
- * @template {{ tmdb_id: number, media_type: string, watched_at: string }} Row
+ * @template {{ tmdb_id: number, media_type: string, watched_at: string | null }} Row
  * @param {object} args
  * @param {Row[]} args.rows Candidate history rows, one per resolved source entry.
  * @param {{ tmdb_id: number, media_type: string }[]} [args.existing]
@@ -52,7 +52,7 @@ export function planHistoryImport({ rows, existing = [] }) {
     // per row, so a night of one series arrives as many. Left in, they collide
     // on the unique constraint and abort the rest of their batch. Keep the most
     // recent date: which one "wins" must not depend on export ordering.
-    if (row.watched_at > seen.watched_at) planned.set(k, row);
+    if (row.watched_at && (!seen.watched_at || row.watched_at > seen.watched_at)) planned.set(k, row);
     collapsed++;
   }
 
