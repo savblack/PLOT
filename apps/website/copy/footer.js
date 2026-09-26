@@ -13,7 +13,7 @@ export const FOOTER_PARTIAL = {
   cta: 'Start your plot',
   login: 'Log in',
   columns: {
-    explore: { heading: 'Explore', links: { whatsOn: "What's On", newsletter: 'Newsletter', plans: 'Plans' } },
+    explore: { heading: 'Explore', links: { whatsOn: "What's On", pricing: 'Pricing' } },
     company: { heading: 'Company', links: { about: 'About', community: 'Community', support: 'Support', changelog: 'Changelog' } },
     legal: { heading: 'Legal', links: { privacy: 'Privacy', terms: 'Terms' } },
   },
