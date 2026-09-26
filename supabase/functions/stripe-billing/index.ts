@@ -18,7 +18,7 @@ import Stripe from 'npm:stripe@22.6.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { CheckoutPendingError, subscriptionCheckout } from '../_shared/checkout.ts';
-import { checkoutPlan, matchesPremiumPrice, billingSettingsUrl } from '../_shared/billingPolicy.ts';
+import { checkoutPlan, matchesPremiumPrice, billingSettingsUrl, isCheckoutPilot } from '../_shared/billingPolicy.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
 // arbitrary email clients and marketing embeds), this is only ever called
@@ -80,13 +80,18 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  // Close new subscriptions before any Stripe/customer work. Portal and tips remain available.
-  if (new URL(req.url).searchParams.get('action') === 'checkout') {
-    return json({ error: 'PLOT Premium is coming soon.', code: 'premium_coming_soon' }, 503);
+  const action = new URL(req.url).searchParams.get('action');
+  const pilotIds = Deno.env.get('STRIPE_CHECKOUT_PILOT_USER_IDS');
+  // Public checkout stays closed, even if the general launch switch is enabled.
+  if (action === 'checkout' && !pilotIds?.trim()) {
+    return json({ error: 'Plot Premium is coming soon.', code: 'premium_coming_soon' }, 503);
   }
 
   const { user } = await getAuthedUser(req);
   if (!user) return json({ error: 'Unauthorized' }, 401);
+  if (action === 'checkout' && !isCheckoutPilot(user.id, pilotIds)) {
+    return json({ error: 'Plot Premium is coming soon.', code: 'premium_coming_soon' }, 503);
+  }
 
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -100,12 +105,7 @@ Deno.serve(async (req) => {
 
   if (billingError) return json({ error: 'Could not load billing account' }, 503);
 
-  const action = new URL(req.url).searchParams.get('action');
-
   if (action === 'checkout') {
-    if (Deno.env.get('STRIPE_CHECKOUT_ENABLED') !== 'true') {
-      return json({ error: 'PLOT Premium subscriptions are not available yet' }, 503);
-    }
     const plan = checkoutPlan(await req.json().catch(() => null));
     if (!plan) return json({ error: 'Choose a monthly or yearly plan' }, 400);
 

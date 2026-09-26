@@ -79,10 +79,13 @@ This decision does not enable public checkout or authorize a production change.
    US$24/year. Verify Adaptive Pricing is enabled in the intended live PLOT
    account before launch; use USD as the fallback. Confirm local-currency monthly
    and yearly checkout, renewal, plan switching and refund behavior in sandbox.
-7. Deploy `stripe-billing` and `stripe-webhook`, enable `STRIPE_CHECKOUT_ENABLED=true` together with the public pricing flags,
-   then, with explicit approval, make one real low-value
-   purchase and confirm checkout, portal cancellation, webhook processing, and
-   loss of Premium access after the paid period ends.
+7. Deploy `stripe-billing` and `stripe-webhook`. Keep public pricing flags closed
+   and `STRIPE_CHECKOUT_ENABLED=false`. Use the private pilot allowlist below
+   for an explicitly approved low-value purchase. Confirm checkout, cancellation,
+   webhook processing, refund and loss of Premium access.
+8. Public launch requires a separately approved code change to the server gate
+   and client checkout controls. Setting `STRIPE_CHECKOUT_ENABLED=true` alone
+   does not open subscriptions. Verify the deployed behavior before announcing launch.
 
 Never put Stripe secret keys or price IDs in browser variables or tracked files.
 
@@ -116,3 +119,20 @@ Deployed SQL proofs and signed sandbox cancellation/reversal delivery passed.
 The planned local-currency sandbox lifecycle tests passed on 2026-09-24.
 Old sandbox-key rotation, tax verification and the separately approved production
 configuration and rollout remain before launch sign-off.
+
+## Private live checkout pilot
+
+Public checkout remains closed in the server and client. The server-only
+`STRIPE_CHECKOUT_PILOT_USER_IDS` setting permits exact Supabase Auth user IDs
+(comma separated) to call the existing checkout endpoint. It checks the verified
+Auth identity before reading billing records or making Stripe calls. Do not put
+emails, client-supplied IDs, or this setting into frontend configuration.
+
+Keep `STRIPE_CHECKOUT_ENABLED=false`. The pilot does not use that global switch,
+and setting it to true alone does not open public checkout. Remove the pilot
+setting to close new pilot sessions; existing Stripe sessions must be expired
+separately. Portal access and existing subscriptions are unaffected.
+
+Use an authenticated pilot session to request checkout. Stop before payment
+unless the real charge has been explicitly approved. Verify another account is
+rejected and retain webhook/entitlement proof before opening public checkout.
