@@ -1,7 +1,8 @@
 # PLOT Watch together design
 
 Design spec for the Premium "Find something you both want to watch" feature
-(`watchTogether` in `packages/core/copy/plansPage.js`). Not implemented yet.
+(`watchTogether` in `packages/core/copy/plansPage.js`). Built on web behind
+`SHOW_WATCH_TOGETHER`; see Implementation status.
 
 The live design canvas is the source of truth for visuals:
 https://claude.ai/artifact/Rkjq4wowEoRBv3abn8yrmy (private; share it from the
@@ -79,7 +80,11 @@ Mobile needs the same icon in `apps/mobile/app/(app)/_layout.tsx`.
 Requests and consent
 - A watch together request is its own consent step, separate from follow
   requests. Accepting never creates a follow, and following never pairs you.
-- Only the sender needs Premium; the other person joins for free.
+- One of you needs Premium (decided 2026-09-26). Anyone can send a request or
+  an invite link, and pairing is free. Deciding together (shared titles,
+  sessions) needs Premium on at least one side, so two Free members can pair
+  and it starts working when either upgrades. Shared lists still count
+  against the creator, who needs Premium to make one.
 - Declines are silent. Requests expire after 30 days. Stopping is instant and
   unannounced; blocking also ends it.
 - Who can send you requests: anyone who can see my profile (default), only
@@ -96,7 +101,8 @@ Privacy
   pairing. Don't widen existing list or watchlist read policies.
 
 Invite tile states (friend's profile)
-- Free viewer, public friend: count shown, "Get Premium to invite Sam".
+- Free viewer: can invite; the footnote says one of you needs Premium to
+  decide together.
 - Premium, public friend: count shown, "Invite Sam to watch together".
 - Premium, private friend: no count until accepted.
 - Request sent: "Watch together request sent. Sam needs to accept before you
@@ -165,4 +171,19 @@ Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
   (`supabase/functions/export-user-data/collect.js`) includes Watch together
   pairings, sessions, votes, list memberships and the shared lists you're on
   but didn't create.
+- One of you needs Premium, and invite links
+  (`20260926160000_watch_together_free.sql`). Requests no longer need
+  Premium; `list_watch_together` returns `can_decide`; `suggest_watch_together`
+  returns `overlap_count` (public watchlists only). Invite links are reusable,
+  one per person, at `/watch-with/<username>/<key>`: the random key is what
+  makes a link work, so a username alone can't pair with anyone. Accepting a
+  link pairs you straight away (sharing it is the owner's consent). Reset in
+  Settings › Privacy › Watch together. Link previews come from
+  `functions/watch-with/[username]/[key].js`.
+- Start page (`WatchTogetherStart.jsx`): what anyone with nobody to watch with
+  yet sees at `/together`. People you follow with titles in common (private
+  profiles say "Shows once they accept"), or a pitch if you follow nobody;
+  an example and a five-card demo from your own watchlist; how it works; the
+  invite link; "Got an invite?". Free members also see Get Premium. Mobile
+  stacks; from 900px the people and invite link sit side by side.
 - Not built yet: mobile.

@@ -1,8 +1,9 @@
-// Watch together (Premium) at /together: the hub, the people picker, invites
-// and the titles you share with one or more partners. Design:
+// Watch together at /together: the hub (or the start page when you have
+// nobody to watch with yet), the people picker, invites, the titles you share
+// with one or more partners and the two-person session. Anyone can invite;
+// one of you needs Premium to decide together. Design:
 // docs/design/watch-together/README.md. Rules and data: @plot/core
-// watchTogether.js and useWatchTogether.js. The two-person yes-or-no session
-// and shared lists come in later changes. Mobile parity: not built yet;
+// watchTogether.js and useWatchTogether.js. Mobile parity: not built yet;
 // tracked in the Watch together PR.
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -17,6 +18,7 @@ import { COMMON } from '../copy/common.js';
 import { posterUrl } from '../utils/images.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { AcceptDialog, PersonAvatar, ShareListDialog, WatchTogetherTile } from './WatchTogetherParts.jsx';
+import WatchTogetherStart, { InviteLinkCard } from './WatchTogetherStart.jsx';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import './WatchTogetherView.css';
 
@@ -46,11 +48,22 @@ function titleMeta(t) {
 function Hub({ wt, premium, profile }) {
   const navigate = useNavigate();
   const { user } = useApp();
-  const { people: suggested } = useWatchTogetherSuggestions(premium ? user?.id : null);
+  const { people: suggested, loading: suggestionsLoading, refresh: refreshSuggestions } = useWatchTogetherSuggestions(user?.id);
   const [reviewing, setReviewing] = useState(null);
   const [busy, setBusy] = useState(false);
   const { partners, incoming, outgoing } = wt;
   const requestCount = incoming.length + outgoing.length;
+
+  // Nobody to watch with yet: the start page, for Free and Premium alike.
+  if (wt.loading || suggestionsLoading) return <div className="wt-page" />;
+  if (!partners.length && !requestCount) {
+    const invite = async (person) => {
+      const result = await wt.send(person.id);
+      if (result.ok) refreshSuggestions();
+      return result.ok;
+    };
+    return <div className="wt-page wt-page--wide"><WatchTogetherStart premium={premium} suggested={suggested} onInvite={invite} /></div>;
+  }
 
   const answer = async (person, accept, shareFull) => {
     setBusy(true);
@@ -61,10 +74,8 @@ function Hub({ wt, premium, profile }) {
 
   return (
     <div className="wt-page">
-      <header className="wt-head">
-        <h1 className="wt-title">{T.hub.title}</h1>
-        <span className="wt-premium">{PLANS_PAGE.premium.name}</span>
-      </header>
+      {/* The app header already shows the page title. */}
+      <h1 className="wt-sr">{T.hub.title}</h1>
 
       <section className="wt-card wt-decide">
         <h2 className="wt-card-title">{T.hub.decideTitle}</h2>
@@ -96,33 +107,32 @@ function Hub({ wt, premium, profile }) {
       <section className="wt-section" aria-labelledby="wt-partners">
         <div className="wt-section-head">
           <h2 className="wt-section-label" id="wt-partners">{T.hub.partners}</h2>
-          {premium && <Link to="/together/invite" className="wt-link">{T.hub.invite}</Link>}
+          <Link to="/together/invite" className="wt-link">{T.hub.invite}</Link>
         </div>
         {partners.length === 0
           ? <div className="empty-state"><div className="empty-title">{T.hub.noPartnersTitle}</div><div className="empty-body">{T.hub.noPartnersBody}</div></div>
           : partners.map(p => (
             <Link key={p.other_id} to={`/together/with/${encodeURIComponent(p.username)}`} className="wt-row wt-row--link interactive-surface">
               <PersonAvatar person={p} />
-              <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{T.hub.bothSaved(p.overlap_count ?? 0)}</span></span>
+              <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{p.can_decide === false ? T.hub.lockedNote : T.hub.bothSaved(p.overlap_count ?? 0)}</span></span>
               <Chevron />
             </Link>
           ))}
       </section>
 
-      {premium
-        ? suggested.length > 0 && (
-          <Link to="/together/invite" className="wt-banner interactive-surface">
-            <span className="wt-banner-text"><span className="wt-banner-title">{T.hub.suggested}</span><span className="wt-note">{T.hub.suggestedBody}</span></span>
-            <AvatarStack people={suggested} />
-            <Chevron />
-          </Link>
-        )
-        : (
-          <Link to={premiumPlansPath('/together')} className="wt-banner interactive-surface">
-            <span className="wt-banner-text"><span className="wt-banner-title">{T.hub.freeTitle}</span><span className="wt-note">{PLANS_PAGE.premium.priceSummary}</span></span>
-            <Chevron />
-          </Link>
-        )}
+      {suggested.length > 0 && (
+        <Link to="/together/invite" className="wt-banner interactive-surface">
+          <span className="wt-banner-text"><span className="wt-banner-title">{T.hub.suggested}</span><span className="wt-note">{T.hub.suggestedBody}</span></span>
+          <AvatarStack people={suggested} />
+          <Chevron />
+        </Link>
+      )}
+      {!premium && partners.some(p => p.can_decide === false) && (
+        <Link to={premiumPlansPath('/together')} className="wt-banner interactive-surface">
+          <span className="wt-banner-text"><span className="wt-banner-title">{T.locked.title}</span><span className="wt-note">{PLANS_PAGE.premium.priceSummary}</span></span>
+          <Chevron />
+        </Link>
+      )}
 
       {reviewing && (
         <AcceptDialog person={reviewing} viewerIsPublic={!!profile?.is_public} busy={busy}
@@ -225,6 +235,7 @@ function Invite({ wt }) {
             : <button type="button" className="btn btn-primary btn-sm" onClick={() => invite(p)}>{T.invite.invite}</button>}
         </div>
       ))}
+      <InviteLinkCard compact />
     </div>
   );
 }
@@ -269,6 +280,7 @@ function Together({ wt, usernames }) {
   const people = usernames.map(u => wt.partners.find(p => p.username === u)).filter(Boolean);
   // The hook keys on the sorted ids, so a fresh array each render is fine.
   const { titles, loading, error } = useWatchTogetherTitles(people.map(p => p.other_id));
+  const locked = error === 'premium_required';
   const [kind, setKind] = useState('all');
   const [topId, setTopId] = useState(null);
 
@@ -296,6 +308,16 @@ function Together({ wt, usernames }) {
       <div className="wt-who"><AvatarStack people={people} /><span className="wt-note">{group ? T.overlap.group(people.map(personName)) : T.overlap.pair(personName(people[0] || {}))}</span></div>
       <h1 className="wt-title">{group ? T.overlap.groupHeading : T.overlap.heading(titles.length)}</h1>
       {!group && titles.length > 0 && <div><button type="button" className="btn btn-primary btn-sm" onClick={decide}>{T.session.start}</button></div>}
+      {locked && (
+        <section className="wt-card" role="status">
+          <h2 className="wt-card-title">{T.locked.title}</h2>
+          <p className="wt-card-body">{T.locked.body(group ? T.overlap.everyone : personName(people[0] || {}))}</p>
+          <div className="wt-premium-prompt">
+            <Link to={premiumPlansPath(`/together/with/${usernames.map(encodeURIComponent).join(',')}`)} className="btn btn-primary btn-sm">{T.start.getPremium}</Link>
+            <span className="wt-note">{PLANS_PAGE.premium.priceSummary}</span>
+          </div>
+        </section>
+      )}
 
       <div className="wt-chips" role="group" aria-label={T.overlap.filter}>
         {[['all', T.overlap.all], ['movie', T.overlap.movies], ['tv', T.overlap.shows]].map(([k, label]) => (
@@ -303,8 +325,9 @@ function Together({ wt, usernames }) {
         ))}
       </div>
 
-      {error && <p className="wt-error" role="alert">{T.errors[error]}</p>}
+      {error && !locked && <p className="wt-error" role="alert">{T.errors[error]}</p>}
       {loading ? <p className="wt-note" role="status">{COMMON.loading}</p>
+        : locked ? null
         : !shown.length ? <div className="empty-state"><div className="empty-title">{T.overlap.emptyTitle}</div><div className="empty-body">{T.overlap.emptyBody(group ? T.overlap.everyone : personName(people[0] || {}))}</div></div>
         : group ? (
           <>
@@ -526,7 +549,7 @@ export default function WatchTogetherView({ page = 'hub' }) {
   const premium = isPremiumProfile(profile);
 
   if (page === 'pick') return <Picker wt={wt} />;
-  if (page === 'invite') return premium ? <Invite wt={wt} /> : <Hub wt={wt} premium={premium} profile={profile} />;
+  if (page === 'invite') return <Invite wt={wt} />;
   if (page === 'session') return <SessionView wt={wt} sessionId={params.sessionId} />;
   if (page === 'join') return <JoinSession wt={wt} username={decodeURIComponent(params.username || '')} />;
   if (page === 'with') {

@@ -63,6 +63,8 @@ const BLOCK_FILTERED = [
   'list_shared_list_people', // owner and members of a shared list
   'watch_together_savers', // "Saved by Sam too" on a title page
   'add_shared_list_member', // checks the person exists before adding them
+  'watch_together_link_owner', // who an invite link belongs to, signed out too
+  'watch_together_link_status', // the visitor's side of an invite link
 ];
 
 // Must NOT carry it, each for a reason that has to survive review.

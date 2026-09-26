@@ -135,22 +135,76 @@ export function useWatchTogetherTitles(otherIds) {
 
 /**
  * Up to five people to invite (see suggest_watch_together for the rules).
+ * overlap_count is only set when that person's watchlist is public.
  *
  * @param {string | null | undefined} userId
  */
 export function useWatchTogetherSuggestions(userId) {
-  const [people, setPeople] = useState(/** @type {{ id: string, username: string, display_name: string | null, avatar_url: string | null }[]} */ ([]));
+  const [people, setPeople] = useState(/** @type {import('./watchTogether.js').WatchTogetherSuggestion[]} */ ([]));
+  const [loading, setLoading] = useState(!!userId);
 
   const refresh = useCallback(async () => {
-    if (!userId) { setPeople([]); return; }
+    if (!userId) { setPeople([]); setLoading(false); return; }
     const { data } = await supabase.rpc('suggest_watch_together');
     setPeople(data || []);
+    setLoading(false);
   }, [userId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- load when the signed-in user changes
   useEffect(() => { refresh(); }, [refresh]);
 
-  return { people, refresh };
+  return { people, loading, refresh };
+}
+
+/**
+ * The signed-in person's reusable invite link key, made on first use, and a
+ * way to reset it (links shared before stop working).
+ *
+ * @param {string | null | undefined} userId
+ */
+export function useWatchTogetherLink(userId) {
+  const [key, setKey] = useState(/** @type {string | null} */ (null));
+
+  useEffect(() => {
+    if (!userId) return undefined;
+    let live = true;
+    supabase.rpc('my_watch_together_link').then(({ data }) => { if (live) setKey(data || null); });
+    return () => { live = false; };
+  }, [userId]);
+
+  const reset = useCallback(async () => {
+    const result = await call('reset_watch_together_link', {});
+    if (result.ok) setKey(result.data || null);
+    return result;
+  }, []);
+
+  return { key: userId ? key : null, reset };
+}
+
+/**
+ * Who an invite link belongs to. Works signed out.
+ * @param {string} key
+ * @returns {Promise<{ id: string, username: string, display_name: string | null, avatar_url: string | null } | null>}
+ */
+export async function watchTogetherLinkOwner(key) {
+  const { data } = await supabase.rpc('watch_together_link_owner', { p_key: key });
+  return (Array.isArray(data) ? data[0] : data) || null;
+}
+
+/**
+ * The signed-in visitor's side of an invite link. state: 'self', 'none',
+ * 'outgoing', 'incoming' or 'paired'; can_decide: either of you has Premium.
+ * @param {string} key
+ * @returns {Promise<{ id: string, username: string, display_name: string | null, avatar_url: string | null, state: string, can_decide: boolean } | null>}
+ */
+export async function watchTogetherLinkStatus(key) {
+  const { data } = await supabase.rpc('watch_together_link_status', { p_key: key });
+  return (Array.isArray(data) ? data[0] : data) || null;
+}
+
+/** Accept an invite link, pairing you with its owner. @param {string} key @param {boolean} [shareFull] */
+export async function acceptWatchTogetherLink(key, shareFull = false) {
+  return call('accept_watch_together_link', { p_key: key, p_share_full: shareFull });
 }
 
 /**

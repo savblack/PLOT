@@ -69,3 +69,29 @@ test('session progress walks the deck and lists matches', async () => {
   assert.deepEqual([swipeDecision(150), swipeDecision(-150), swipeDecision(40)], ['yes', 'no', null]);
   assert.equal(sessionChannel('abc'), 'wt-session:abc');
 });
+
+test('pickDemoDeck takes up to five saved titles and skips bad rows', async () => {
+  const { pickDemoDeck, DEMO_SIZE } = await import('../../watchTogether.js');
+  const items = Array.from({ length: 8 }, (_, i) => ({ tmdb_id: i + 1, media_type: 'movie' }));
+  const deck = pickDemoDeck([...items, null, { tmdb_id: 0, media_type: 'movie' }], () => 0.3);
+  assert.equal(deck.length, DEMO_SIZE);
+  assert.ok(deck.every(t => t && t.tmdb_id > 0));
+  assert.equal(new Set(deck.map(t => t.tmdb_id)).size, DEMO_SIZE);
+  assert.deepEqual(pickDemoDeck(null), []);
+});
+
+test('demoPartnerSaysYes always ends the demo on a match', async () => {
+  const { demoPartnerSaysYes } = await import('../../watchTogether.js');
+  assert.equal(demoPartnerSaysYes({ index: 4, total: 5, matchedSoFar: false, random: () => 0.99 }), true);
+  assert.equal(demoPartnerSaysYes({ index: 4, total: 5, matchedSoFar: true, random: () => 0.99 }), false);
+  assert.equal(demoPartnerSaysYes({ index: 1, total: 5, matchedSoFar: false, random: () => 0.1 }), true);
+});
+
+test('buildWatchTogetherLinkUrl needs a username and a real key', async () => {
+  const { buildWatchTogetherLinkUrl } = await import('../../sharing.js');
+  assert.equal(buildWatchTogetherLinkUrl({ username: '@jess', key: 'a1b2c3d4e5f6' }), 'https://app.theplot.tv/watch-with/jess/a1b2c3d4e5f6');
+  assert.equal(buildWatchTogetherLinkUrl({ username: 'jess', key: '' }), null);
+  assert.equal(buildWatchTogetherLinkUrl({ username: '', key: 'a1b2c3d4e5f6' }), null);
+  assert.equal(buildWatchTogetherLinkUrl({ username: 'jess', key: '../../x' }), null);
+  assert.equal(buildWatchTogetherLinkUrl({ username: 'jess', key: 'a1b2c3d4e5f6', origin: 'https://abc.plot-5wr.pages.dev' }), 'https://abc.plot-5wr.pages.dev/watch-with/jess/a1b2c3d4e5f6');
+});

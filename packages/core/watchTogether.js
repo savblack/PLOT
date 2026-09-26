@@ -17,6 +17,16 @@
  * @property {string | null} accepted_at
  * @property {boolean} i_share_full
  * @property {number | null} overlap_count
+ * @property {boolean} can_decide  The viewer or this partner has Premium.
+ */
+
+/**
+ * @typedef {object} WatchTogetherSuggestion  One row of suggest_watch_together().
+ * @property {string} id
+ * @property {string} username
+ * @property {string | null} display_name
+ * @property {string | null} avatar_url
+ * @property {number | null} overlap_count  Only when their watchlist is public.
  */
 
 /**
@@ -37,7 +47,8 @@ export const REQUESTS_FROM_OPTIONS = /** @type {const} */ (['profile', 'followin
 export const REQUEST_EXPIRY_DAYS = 30;
 
 /**
- * Which state the invite tile on someone's profile shows.
+ * Which state the invite tile on someone's profile shows. 'free' is a Free
+ * viewer: they can still invite (one of you needs Premium to decide).
  *
  * @param {{ viewerPremium: boolean, targetPublic: boolean, state?: PairState | null }} input
  * @returns {TileMode}
@@ -195,3 +206,38 @@ export function swipeDecision(dx, threshold = SWIPE_THRESHOLD) {
 
 /** The Realtime broadcast channel for a session; carries pings only, no data. */
 export const sessionChannel = (sessionId) => `wt-session:${sessionId}`;
+
+/* ── Free start page ─────────────────────────────────────────────────── */
+
+/** How many of your own titles the try-it demo uses. */
+export const DEMO_SIZE = 5;
+
+/**
+ * Up to DEMO_SIZE titles from the viewer's watchlist for the try-it demo,
+ * in a random order.
+ *
+ * @template {{ tmdb_id: number, media_type: string }} T
+ * @param {T[] | null | undefined} items
+ * @param {() => number} [random]
+ * @returns {T[]}
+ */
+export function pickDemoDeck(items, random = Math.random) {
+  const pool = (items || []).filter(t => t && t.tmdb_id && t.media_type);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, DEMO_SIZE);
+}
+
+/**
+ * The example partner's answer in the demo. Says yes about half the time, and
+ * always on the last card if there hasn't been a match yet, so every run of
+ * the demo ends on "You're both in".
+ *
+ * @param {{ index: number, total: number, matchedSoFar: boolean, random?: () => number }} input
+ */
+export function demoPartnerSaysYes({ index, total, matchedSoFar, random = Math.random }) {
+  if (!matchedSoFar && index >= total - 1) return true;
+  return random() < 0.5;
+}

@@ -163,10 +163,11 @@ test('runDataExport includes Watch together rows and shared lists the user is a 
   assert.deepEqual(orders.watch_together_votes, ['session_id', 'tmdb_id', 'media_type']);
   assert.deepEqual(orders.user_custom_list_members, ['list_id']);
   assert.deepEqual(orders.watch_together_sessions, ['id']);
+  assert.deepEqual(orders.watch_together_links, ['user_id']);
 });
 
 test('runDataExport skips Watch together tables that do not exist yet', async () => {
-  const missingTables = ['watch_together', 'watch_together_sessions', 'watch_together_votes', 'user_custom_list_members'];
+  const missingTables = ['watch_together', 'watch_together_sessions', 'watch_together_votes', 'watch_together_links', 'user_custom_list_members'];
   const { client } = createExportClient({ missingTables });
   const result = await runDataExport(client, 'user-123');
   assert.equal(result.error, undefined);

@@ -11,10 +11,9 @@ import { supabase } from '@plot/core/supabase.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { tileMode, tileShowsCount, personName, REQUESTS_FROM_OPTIONS } from '@plot/core/watchTogether.js';
-import { useWatchTogether, useWatchTogetherStatus } from '@plot/core/useWatchTogether.js';
+import { useWatchTogether, useWatchTogetherStatus, useWatchTogetherLink } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { useApp } from '../hooks/useApp.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import './WatchTogetherView.css';
@@ -105,11 +104,11 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
   };
 
   const body = {
-    free: T.tile.freeBody, public: T.tile.publicBody(name), private: T.tile.privateBody(name),
+    free: person.is_public ? T.tile.publicBody(name) : T.tile.privateBody(name), public: T.tile.publicBody(name), private: T.tile.privateBody(name),
     pending: T.tile.pendingBody(name), incoming: T.tile.incomingBody(name), paired: T.tile.pairedBody(name),
   }[mode];
   const foot = {
-    free: T.tile.freeFoot(PLANS_PAGE.premium.priceSummary, name), public: T.tile.joinFree(name), private: T.tile.joinFree(name),
+    free: T.tile.freeFoot, public: T.tile.joinFree(name), private: T.tile.joinFree(name),
     pending: T.tile.pendingFoot, incoming: null, paired: T.tile.pairedFoot,
   }[mode];
 
@@ -127,8 +126,7 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
       <p className="wt-tile-body">{body}</p>
       {error && <p className="wt-error" role="alert">{error}</p>}
       <div className="wt-tile-actions">
-        {mode === 'free' && <button type="button" className="btn btn-primary" onClick={() => navigate(premiumPlansPath(`/u/${person.username}`))}>{T.tile.freeAction(name)}</button>}
-        {(mode === 'public' || mode === 'private') && <button type="button" className="btn btn-primary" disabled={busy} onClick={() => run(() => send(person.id))}>{T.tile.inviteAction(name)}</button>}
+        {(mode === 'free' || mode === 'public' || mode === 'private') && <button type="button" className="btn btn-primary" disabled={busy} onClick={() => run(() => send(person.id))}>{T.tile.inviteAction(name)}</button>}
         {mode === 'pending' && <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => run(() => cancel(person.id))}>{T.requests.cancel}</button>}
         {mode === 'incoming' && <button type="button" className="btn btn-primary" onClick={() => setReviewing(true)}>{T.tile.incomingAction}</button>}
         {mode === 'paired' && <button type="button" className="btn btn-primary" onClick={() => navigate(`/together/with/${encodeURIComponent(person.username)}`)}>{T.tile.pairedAction}</button>}
@@ -154,6 +152,8 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
 export function WatchTogetherSettings({ user, profile }) {
   const userId = user?.id;
   const { partners, setShareFull, end } = useWatchTogether(userId);
+  const { key, reset } = useWatchTogetherLink(userId);
+  const [resetDone, setResetDone] = useState(false);
   const [from, setFrom] = useState(/** @type {string | null} */ (null));
 
   // Read here rather than in App's profile select so the app keeps loading
@@ -208,6 +208,14 @@ export function WatchTogetherSettings({ user, profile }) {
           </div>
         ))}
         <p className="wt-note">{T.settings.stopNote}</p>
+      </div>
+      <div className="wt-settings-group">
+        <p className="wt-accept-label">{T.link.kicker}</p>
+        <div className="wt-person">
+          <span className="wt-person-text"><span className="wt-note">{T.link.resetNote}</span></span>
+          <button type="button" className="btn btn-secondary btn-sm" disabled={!key || resetDone}
+            onClick={async () => { const r = await reset(); if (r.ok) setResetDone(true); }}>{T.link.reset}</button>
+        </div>
       </div>
     </div>
   );

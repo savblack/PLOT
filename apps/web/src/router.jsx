@@ -36,6 +36,7 @@ const SettingsView= lazy(() => import('./components/SettingsView.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
 const WatchTogetherView = lazy(() => import('./components/WatchTogetherView.jsx'));
+const WatchTogetherLinkPage = lazy(() => import('./components/WatchTogetherLinkPage.jsx'));
 
 // Standalone pages
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
@@ -111,7 +112,7 @@ const router = createBrowserRouter([
   // App shell — layout route with child views
   {
     element: wrap(
-      <ProtectedRoute publicPrefixes={['/u/']}>
+      <ProtectedRoute publicPrefixes={['/u/', '/watch-with/']}>
         <AppErrorBoundary><App /></AppErrorBoundary>
       </ProtectedRoute>
     ),
@@ -147,6 +148,7 @@ const router = createBrowserRouter([
         { path: 'together/with/:usernames', element: wrap(<WatchTogetherView page="with" />) },
         { path: 'together/session/:sessionId', element: wrap(<WatchTogetherView page="session" />) },
         { path: 'together/join/:username', element: wrap(<WatchTogetherView page="join" />) },
+        { path: 'watch-with/:username/:key', element: wrap(<WatchTogetherLinkPage />) },
       ] : []),
     ],
   },

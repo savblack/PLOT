@@ -44,3 +44,16 @@ export function buildProfileShareUrl({ username = '', origin = SHARE_ORIGIN } = 
   url.searchParams.set('ref', handle);
   return url.toString();
 }
+
+/**
+ * A Watch together invite link. The key is what makes it work (a username
+ * alone can't pair with anyone); the username is only there so the link reads
+ * well. Reusable until its owner resets it.
+ * @param {{username?: string, key?: string, origin?: string}} options
+ */
+export function buildWatchTogetherLinkUrl({ username = '', key = '', origin = SHARE_ORIGIN } = {}) {
+  const handle = username.trim().replace(/^@/, '');
+  const k = key.trim();
+  if (!handle || !/^[a-z0-9]{6,32}$/i.test(k)) return null;
+  return link(`/watch-with/${encodeURIComponent(handle)}/${encodeURIComponent(k)}`, '', origin)?.toString() || null;
+}

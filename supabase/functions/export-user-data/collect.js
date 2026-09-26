@@ -50,6 +50,7 @@ export const EXPORT_STEPS = Object.freeze([
   { table: 'watch_together', match: { type: 'or', columns: ['requester_id', 'recipient_id'] }, optional: true, order: ['requester_id', 'recipient_id'] },
   { table: 'watch_together_sessions', match: { type: 'or', columns: ['host_id', 'guest_id'] }, optional: true },
   { table: 'watch_together_votes', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['session_id', 'tmdb_id', 'media_type'] },
+  { table: 'watch_together_links', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['user_id'] },
   { table: 'user_custom_list_members', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['list_id'] },
   { table: 'feedback', match: { type: 'eq', column: 'user_id' } },
 ]);
