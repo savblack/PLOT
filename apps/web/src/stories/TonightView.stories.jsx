@@ -71,9 +71,22 @@ function useFakePicker({ phase: initialPhase = 'setup', step: initialStep = 0, p
   };
 }
 
+// Favourite and watchlist state for the hover buttons, kept in the story.
+function useFakeActions() {
+  const [favs, setFavs] = useState(() => new Set());
+  const [saved, setSaved] = useState(() => new Set(POOL.filter(p => p.onWatchlist).map(p => p.id)));
+  const flip = (set, id) => { const next = new Set(set); if (next.has(id)) next.delete(id); else next.add(id); return next; };
+  return {
+    favWords: { noun: 'Favourite', un: 'Remove from favourites' },
+    favorites: { isFavorite: (id) => favs.has(id), toggleFavorite: (item) => setFavs(s => flip(s, item.id)) },
+    watchlist: { loading: false, isInList: (id) => saved.has(id), toggle: (item) => setSaved(s => flip(s, item.id)) },
+  };
+}
+
 function Story({ premium = true, ...props }) {
   const picker = useFakePicker({ ...props, premium });
-  return <TonightPage premium={premium} picker={picker} onOpen={noop} navigate={noop} />;
+  const actions = useFakeActions();
+  return <TonightPage premium={premium} picker={picker} onOpen={noop} navigate={noop} actions={actions} />;
 }
 
 export default {

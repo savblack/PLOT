@@ -16,6 +16,8 @@ import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { SettingsSwitch } from './SettingsPage.jsx';
+import { MEDIA } from '../copy/media.js';
+import { favoriteWords } from '../utils/spelling.js';
 import './TonightView.css';
 
 /* Pick for Me. Phone: one column, a Filters panel that folds away, and a
@@ -454,40 +456,82 @@ function Chips({ item }) {
   );
 }
 
-function TopPick({ item, onOpen, className = '' }) {
+/* Favourite and watchlist, the same buttons as elsewhere: on the Top pick the
+   Home hero's corner buttons, on cards the poster-card ones (heart top-left,
+   bookmark top-right). Hover reveals the inactive one on desktop; an active
+   one always shows, and touch screens show both (app.css). `actions` is
+   absent in stories without them. */
+function FavSave({ item, actions, variant }) {
+  if (!actions) return null;
+  const { watchlist, favorites, favWords } = actions;
+  const type = item.media_type || 'movie';
+  const fav = favorites.isFavorite(item.id);
+  const saved = watchlist.isInList(item.id);
+  const toggleFav = (e) => { e.stopPropagation(); favorites.toggleFavorite({ ...item, media_type: type }); };
+  const toggleSave = (e) => { e.stopPropagation(); watchlist.toggle({ ...item, media_type: type }); };
+  const icon = (d, on) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+  );
+  if (variant === 'hero') {
+    return (
+      <div className="discover-hero-corner-btns">
+        <button type="button" className={`discover-hero-corner-btn${fav ? ' active' : ''}`} style={{ top: 10, left: 10 }} onClick={toggleFav} aria-label={fav ? favWords.un : favWords.noun}>{icon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', fav)}</button>
+        <button type="button" className={`discover-hero-corner-btn${saved ? ' active' : ''}`} style={{ top: 10, right: 10 }} onClick={toggleSave} disabled={watchlist.loading} aria-label={saved ? MEDIA.removeFromList : MEDIA.addToList}>{icon('M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z', saved)}</button>
+      </div>
+    );
+  }
+  return (
+    <>
+      <button type="button" className={`card-fav-btn${fav ? ' faved' : ''}`} onClick={toggleFav} aria-label={fav ? favWords.un : favWords.noun}>
+        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+      </button>
+      <button type="button" className={`card-save-btn${saved ? ' saved' : ''}`} onClick={toggleSave} disabled={watchlist.loading} aria-label={saved ? MEDIA.removeFromList : MEDIA.addToList}>
+        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+      </button>
+    </>
+  );
+}
+
+/* Tiles are not buttons themselves, so the favourite and watchlist buttons can
+   sit inside them: the title is the button, stretched over the whole tile. */
+function TopPick({ item, onOpen, actions, className = '' }) {
   const bg = backdropUrl(item.backdrop_path, 'w1280') || posterUrl(item.poster_path, 'w780');
   return (
-    <button type="button" className={`tonight-hero ${className}`} onClick={() => onOpen(item)}>
+    <div className={`tonight-hero ${className}`}>
       {bg && <img src={bg} alt="" />}
       <span className="tonight-hero-scrim" aria-hidden="true" />
       <span className="tonight-hero-body">
         <span className="tonight-hero-chip">{T.topPick}</span>
-        <span className="tonight-hero-title">{item.title}</span>
+        <button type="button" className="tonight-hero-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
         <span className="tonight-hero-meta">{resultMeta(item)}</span>
       </span>
-    </button>
+      <FavSave item={item} actions={actions} variant="hero" />
+    </div>
   );
 }
 
-function PickCard({ item, index, onOpen, reveal }) {
+function PickCard({ item, index, onOpen, reveal, actions }) {
   const img = posterUrl(item.poster_path, 'w185');
   return (
-    <button type="button" className={`tonight-card${reveal ? ' tonight-card--dissolve' : ''}`} onClick={() => onOpen(item)}
+    <div className={`tonight-card${reveal ? ' tonight-card--dissolve' : ''}`}
       style={reveal ? { '--dissolve-delay': `${600 + index * 250}ms` } : { '--reveal-delay': `${(index + 1) * 90}ms` }}>
-      <span className="tonight-card-poster">{img ? <img src={img} alt="" loading="lazy" /> : null}</span>
+      <span className="tonight-card-poster">
+        {img ? <img src={img} alt="" loading="lazy" /> : null}
+        <FavSave item={item} actions={actions} />
+      </span>
       <span className="tonight-card-body">
-        <span className="tonight-card-title">{item.title}</span>
+        <button type="button" className="tonight-card-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
         <span className="tonight-card-meta">{resultMeta(item)}</span>
         <Chips item={item} />
       </span>
-    </button>
+    </div>
   );
 }
 
 /* `reveal`: straight after a pick, the "Finding…" sentence dissolves into the
    Top pick in the same spot, the heading and Save are simply there, and the
    cards dissolve in one by one. Reopened or restored picks skip this. */
-function Results({ picker, onOpen, reveal }) {
+function Results({ picker, onOpen, reveal, actions }) {
   if (picker.phase !== 'results') {
     return (
       <div className="empty-state tonight-empty">
@@ -509,13 +553,13 @@ function Results({ picker, onOpen, reveal }) {
       <div className="tonight-results-list">
         {top && (
           <div className="tonight-hero-slot">
-            <TopPick item={top} onOpen={onOpen} className={reveal ? 'tonight-hero--dissolve' : ''} />
+            <TopPick item={top} onOpen={onOpen} actions={actions} className={reveal ? 'tonight-hero--dissolve' : ''} />
             {reveal && <FindingSentence parts={picker.sentence} className="tonight-finding--out" />}
           </div>
         )}
         {rest.length > 0 && (
           <div className="tonight-cards">
-            {rest.map((item, i) => <PickCard key={item.id} item={item} index={i} onOpen={onOpen} reveal={reveal} />)}
+            {rest.map((item, i) => <PickCard key={item.id} item={item} index={i} onOpen={onOpen} reveal={reveal} actions={actions} />)}
           </div>
         )}
       </div>
@@ -525,7 +569,7 @@ function Results({ picker, onOpen, reveal }) {
 
 /* Presentational: every piece of state arrives as a prop so Storybook can
    render each state without an auth session or network. */
-export function TonightPage({ premium, picker, onOpen, navigate }) {
+export function TonightPage({ premium, picker, onOpen, navigate, actions }) {
   const locked = picker.phase === 'locked';
   const inResults = picker.phase === 'results' || picker.phase === 'empty' || picker.phase === 'error';
   const spinning = picker.phase === 'spinning';
@@ -549,7 +593,7 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
               <UnlockDialog picker={picker} navigate={navigate} />
             </div>
           ) : spinning ? <Finding picker={picker} />
-            : inResults ? <Results picker={picker} onOpen={onOpen} reveal={reveal} />
+            : inResults ? <Results picker={picker} onOpen={onOpen} reveal={reveal} actions={actions} />
             : (
               <>
                 <Question picker={picker} />
@@ -587,7 +631,7 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
 const PICKER_STORAGE = { getItem: (k) => readStorage(k), setItem: writeStorage, removeItem: removeStorage };
 
 export default function TonightView() {
-  const { user, profile, watchlist, openPanel } = useApp();
+  const { user, profile, watchlist, favorites, openPanel } = useApp();
   const navigate = useNavigate();
   const premium = isPremiumProfile(profile);
 
@@ -607,6 +651,7 @@ export default function TonightView() {
       picker={picker}
       onOpen={(item) => openPanel(item.id, item.media_type)}
       navigate={navigate}
+      actions={{ watchlist, favorites, favWords: favoriteWords(profile?.region) }}
     />
   );
 }
