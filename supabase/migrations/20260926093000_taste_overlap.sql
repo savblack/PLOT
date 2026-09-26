@@ -2,20 +2,13 @@
 -- viewer and one other person (packages/core/tasteOverlap.js does the maths).
 --
 -- WHAT THIS RETURNS, AND WHY IT WIDENS NOTHING
--- Both people's watch history (one row per title), plus a count of
--- titles on both watchlists. Every row it hands back is one the caller could
--- already select through RLS:
---
---   * history     — "public profiles history is readable" allows it when the
---                   target is public OR the caller is an accepted follower,
---                   and not blocked in either direction (20260912130000).
---                   The visibility test below is that predicate, verbatim.
---   * list_items  — readable ONLY for public profiles. Accepted followers of a
---                   private profile do not get the watchlist, so the overlap
---                   count is computed only when is_profile_public(target) and
---                   is null otherwise. Do not fold this into the history test:
---                   that would hand followers of private accounts a signal
---                   derived from a table they cannot read.
+-- Both people's watch history (one row per title), plus a count of titles on
+-- both watchlists. Every row it hands back is one the caller could already
+-- select through RLS: since 20260926090000_unified_profile_visibility, history
+-- and list_items are both readable exactly when can_view_profile(owner) is
+-- true (owner, public profile, or accepted follower; never across a block).
+-- The visibility test below is that function, so this cannot drift from the
+-- policies: change who can see a profile there and this follows.
 --
 -- WHY A SECURITY DEFINER RPC AT ALL
 -- For the Premium gate. The client pre-checks profile.is_premium for friendlier
@@ -58,17 +51,15 @@ begin
     raise exception 'not_found' using errcode = 'P0002';
   end if;
 
-  if not (v_target.is_public or public.is_accepted_follower(v_target.id)) then
+  if not public.can_view_profile(v_target.id) then
     raise exception 'not_visible' using errcode = '42501';
   end if;
 
-  if v_target.is_public then
-    select count(*) into v_watchlist from (
-      select tmdb_id, media_type from public.list_items where user_id = v_me
-      intersect
-      select tmdb_id, media_type from public.list_items where user_id = v_target.id
-    ) shared;
-  end if;
+  select count(*) into v_watchlist from (
+    select tmdb_id, media_type from public.list_items where user_id = v_me
+    intersect
+    select tmdb_id, media_type from public.list_items where user_id = v_target.id
+  ) shared;
 
   return jsonb_build_object(
     'target', jsonb_build_object(
@@ -110,4 +101,4 @@ revoke all on function public.taste_overlap(text) from public, anon;
 grant execute on function public.taste_overlap(text) to authenticated;
 
 comment on function public.taste_overlap(text) is
-  'Premium taste comparison. Returns history the caller can already read via RLS (public or accepted follower, not blocked) and a watchlist overlap count only for public targets. Block-filtered; see scripts/check-block-clause.mjs.';
+  'Premium taste comparison. Returns history and a watchlist overlap count for a profile the caller can already read (can_view_profile). Block-filtered; see scripts/check-block-clause.mjs.';

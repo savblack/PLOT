@@ -17,8 +17,10 @@ const KNOWN_ERRORS = new Set(['premium_required', 'not_found', 'not_visible', 'n
  * `enabled: false` to skip the call (a Free viewer the client already knows
  * will be refused).
  *
- * `sharedWatchlist` is null unless the target's profile is public: watchlists
- * of private profiles are not readable, even by accepted followers.
+ * `sharedWatchlist` is the count of titles on both watchlists. The RPC
+ * returns it for anyone whose profile you can read (can_view_profile), which
+ * since unified profile visibility includes accepted followers of private
+ * profiles.
  *
  * @param {string | null | undefined} username
  * @param {{ enabled?: boolean }} [opts]

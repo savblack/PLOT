@@ -1,5 +1,5 @@
 -- Proof that taste_overlap() gates on Premium and visibility under a real
--- auth.uid(), and never returns a private profile's watchlist signal.
+-- auth.uid(), and returns only what can_view_profile already lets you read.
 --
 --   set -a; . .env; set +a
 --   npm run staging:taste-overlap-test
@@ -8,7 +8,8 @@
 -- not_blocked clause is present. Neither runs the RPC as a signed-in user, so
 -- neither can tell whether a Free viewer is refused, whether a private profile
 -- stays closed to someone it has not accepted, or whether an accepted follower
--- of a private profile is kept away from that profile's watchlist.
+-- gets exactly what RLS gives them (history and, since unified profile
+-- visibility, the watchlist).
 --
 -- The migration is applied INSIDE the transaction (\ir below), so this proves
 -- the branch's function without deploying it, and the rollback at the end
@@ -33,7 +34,10 @@ begin;
 -- protect_premium_flag() and pooled backends carrying ''.
 set local request.jwt.claims = '{"role":"service_role"}';
 
-\ir ../supabase/migrations/20260926090000_taste_overlap.sql
+-- can_view_profile arrives with unified profile visibility; apply it first in
+-- case Staging hasn't caught up with main. Both roll back with everything else.
+\ir ../supabase/migrations/20260926090000_unified_profile_visibility.sql
+\ir ../supabase/migrations/20260926093000_taste_overlap.sql
 
 select username as c_name from public.profiles where id = :C
 \gset
@@ -141,8 +145,8 @@ select pg_temp.overlap(:'c_name') as r
 \gset
 select case when (:'r'::jsonb) ? 'theirs' and jsonb_array_length(:'r'::jsonb->'theirs') = 2
             then 'PASS' else 'FAIL' end || '  an accepted follower can compare history';
-select case when (:'r'::jsonb) ? 'shared_watchlist' and jsonb_typeof(:'r'::jsonb->'shared_watchlist') = 'null'
-            then 'PASS' else 'FAIL' end || '  private target: no watchlist signal, even for a follower';
+select case when (:'r'::jsonb->>'shared_watchlist')::int = 1
+            then 'PASS' else 'FAIL' end || '  private target: an accepted follower gets the watchlist count (RLS lets them read it)';
 
 \echo ''
 \echo '=== Free viewer B, C public ==='
