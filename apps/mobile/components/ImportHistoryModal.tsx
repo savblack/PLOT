@@ -31,7 +31,7 @@ type PlatformConfig = { id: Platform; name: string; color: string; hint: string;
 // ── Platform config ───────────────────────────────────────────────────
 
 const PLATFORMS: PlatformConfig[] = [
-  { id: 'tvtime', name: IMPORT_VIEW.tvTimeName, color: 'textMuted', hint: IMPORT_VIEW.tvTimeHint, accept: ['application/json', 'text/plain', 'application/zip'] },
+  { id: 'tvtime', name: IMPORT_VIEW.tvTimeName, color: 'textMuted', hint: IMPORT_VIEW.tvTimeHint, accept: ['application/json', 'text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text', 'application/zip'] },
   { id: 'trakt-export', name: IMPORT_VIEW.traktName, color: 'textMuted', get hint() { return IMPORT_VIEW.traktHint(getConfig().importAnnotationsEnabled); }, accept: ['application/json', 'text/plain', 'application/zip'] },
   {
     id: 'plex',

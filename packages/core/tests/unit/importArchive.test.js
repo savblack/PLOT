@@ -17,6 +17,15 @@ test('TV Time ZIP and extracted files preserve the same watch identity', () => {
   assert.equal(document.entries[0].date, null);
 });
 
+test('TV Time ZIP accepts official tracking CSV files', () => {
+  const csv = 'type,updated_at,created_at,entity_type,release_date,movie_name\nwatch,2024-01-02 07:16:58,2024-01-02 07:16:58,movie,2015-10-28 00:00:00,The Lobster';
+  const zipped = prepareTvTimeArchive(zipSync({ 'tracking-prod-records.csv': strToU8(csv) }));
+  const extracted = prepareImportFiles('tvtime', [{ name: 'tracking-prod-records.csv', text: csv }]);
+  assert.equal(zipped.entries.length, 1);
+  assert.equal(importEventIdentity(zipped.entries[0]), importEventIdentity(extracted.entries[0]));
+  assert.equal(zipped.entries[0].title, 'The Lobster');
+});
+
 test('TV Time ZIP rejects missing supported files, malformed data and unsafe names', () => {
   assert.throws(() => prepareTvTimeArchive(strToU8('not zip')), /invalid or unsupported/);
   assert.throws(() => prepareTvTimeArchive(zipSync({ 'unknown.json': strToU8('[]') })), /No supported/);

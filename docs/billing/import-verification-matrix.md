@@ -288,7 +288,7 @@ corrected before the final 37-test pass.
 Remaining source-format limits are material: current authentic streaming export
 samples, complete native Trakt archives and complete TV Time Liberator exports
 are not established by this matrix. Streaming episode records without reliable
-season/episode identity are deliberately left out. TV Time GDPR CSV, IMDb episode ratings,
+season/episode identity are deliberately left out. IMDb episode ratings,
 episode watchlists and IMDb custom lists remain unsupported. TV Time's public adapter flag remains
 disabled. Do not advertise every provider export/version as verified.
 
@@ -301,7 +301,7 @@ disabled. Do not advertise every provider export/version as verified.
 | Letterboxd | Saved CSVs, ZIP/multi-file routing, browser overlap/reimport/list-cap tests; actual iOS CSV and ZIP flows | Broader complete-export samples and authenticated staging journey |
 | IMDb | Movie ratings, series/miniseries rating annotations and mixed movie/TV watchlists; web browser and authenticated staging persistence/replay verified above | Episode and other title-type ratings, episode watchlists and custom-list formats |
 | Netflix / Prime / Disney+ / Max / Apple | Existing parsers; synthetic shared-flow tests for unknown dates and rejection of ordinal-free TV records | Authentic current export versions, verified episode resolution, native journeys |
-| TV Time | Liberator JSON/ZIP adapter, browser and iOS file flows; GDPR fixtures inspected | GDPR CSV adapter and complete authentic saved-file coverage; no live connection |
+| TV Time | Liberator JSON/ZIP and GDPR tracking CSV adapters; browser CSV preview/import and iOS Liberator file flows; GDPR fixtures inspected | Complete authentic saved-file coverage and native GDPR CSV journey; no live connection |
 | Web isolation | Browser account switch discards the previous user's import preview | Live staging application journey |
 | Database | 32 rollback-only staging checks across events, lists, tracking and annotations; six pending migrations restored on a temporary production copy | End-to-end app-to-staging import with authorised account |
 | iOS | Native picker journeys for Trakt history/episode ratings, Letterboxd CSV/ZIP and TV Time; 60-event interrupted retry finishes with 60 unique events | IMDb/streaming file journeys, remaining failure cases and authenticated staging journey |
@@ -326,9 +326,10 @@ disabled. Do not advertise every provider export/version as verified.
 1. Complete remaining supported streaming native file journeys. Large-file,
    interrupted-write and archive-partition browser coverage is implemented;
    native interruption recovery is also verified below.
-2. Validate further authentic source samples before expanding accepted formats.
-   TV Time Liberator is implemented; its separate GDPR CSV format remains
-   unsupported. Do not infer rewatch dates from counts or guess missing fields.
+2. Validate further authentic source samples before enabling formats. TV Time
+   Liberator and the separate GDPR tracking CSVs are implemented, but the
+   public flag remains off. Do not infer rewatch dates from counts or guess
+   missing fields.
 3. Exercise deployed staging routes with an authorised account, including
    interruption/retry against actual database persistence and account isolation.
 4. Complete the separately authorised account-specific Trakt/Plex pilot after
@@ -397,9 +398,9 @@ Added a report-bearing parser for the publisher's extracted shows/movies/lists/
 favorites JSON files. Focused tests exercise verified external-ID resolution,
 episode ratings and ordinals, unknown dates, timezone-free timestamps, aggregate
 rewatch reporting, nested list/history separation and malformed-file rejection.
-The reports are required input to the forthcoming review UI; the adapter remains
-unexposed until both apps can show them. GDPR CSV adapters, archive extraction,
-real-file validation and native TV Time journeys remain incomplete.
+The reports were required input to the review UI. GDPR CSV support was added
+later; this historical preparation did not include it. Real-file validation
+and native TV Time GDPR journeys remain incomplete.
 
 ## Document review integration
 

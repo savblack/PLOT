@@ -35,7 +35,7 @@ test('TV Time multi-list preview imports only selected destinations and reports 
   const media = JSON.parse(readFileSync(new URL('../../../../packages/core/tests/fixtures/imports/trakt-history.json', import.meta.url), 'utf8'))[1].movie;
   const list = name => ({ name, description: '', shows: [], movies: [{ title: media.title, id: media.ids, rating: null }] });
   await page.goto('/tests/smoke/fixtures/list-import.html');
-  await page.getByRole('button', { name: 'TV Time saved export JSON export' }).click();
+  await page.getByRole('button', { name: 'TV Time saved export JSON or CSV export' }).click();
   await page.locator('input[type=file]').setInputFiles({ name: 'lists.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify([list('Weekend'), list('Later')])) });
   const selectors = page.getByRole('checkbox', { name: 'Include this list' });
   await expect(selectors).toHaveCount(2);

@@ -49,7 +49,7 @@ function PlatformIcon({ id, logoPath, size = 32 }) {
 /* ─────────────────────────── Platform config ─────────────────────────── */
 
 const PLATFORMS = [
-  { id: 'tvtime', name: IMPORT_VIEW.tvTimeName, color: 'var(--text-muted)', format: 'JSON', shortInstructions: IMPORT_VIEW.tvTimeHint, instructions: [IMPORT_VIEW.tvTimeHint] },
+  { id: 'tvtime', name: IMPORT_VIEW.tvTimeName, color: 'var(--text-muted)', format: 'JSON or CSV', shortInstructions: IMPORT_VIEW.tvTimeHint, instructions: [IMPORT_VIEW.tvTimeHint] },
   { id: 'trakt-export', name: IMPORT_VIEW.traktName, color: 'var(--text-muted)', format: 'JSON', get shortInstructions() { return IMPORT_VIEW.traktHint(getConfig().importAnnotationsEnabled); }, get instructions() { return [this.shortInstructions]; } },
   {
     id: 'plex',
