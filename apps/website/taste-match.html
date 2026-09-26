@@ -99,20 +99,42 @@
     </section>
   </main>
   <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
-  <footer>
+  <footer class="site-footer">
     <div class="footer-inner">
-      <a class="footer-logo" href="/">plot</a>
-      <div class="footer-nav">
-        <a href="/" data-cta="footer">Home</a>
-        <a href="/whats-on" data-cta="footer">What's On</a>
-        <a href="/whats-on#newsletter" data-cta="footer">Newsletter</a>
-        <a href="https://app.theplot.tv/login" data-cta="footer">Log in</a>
-        <a href="https://app.theplot.tv/signup" data-cta="footer">Sign up</a>
-        <a href="/support" data-cta="footer">Support</a>
-        <a href="/changelog" data-cta="footer">Changelog</a>
-        <a href="/privacy" data-cta="footer">Privacy</a>
-        <a href="/terms" data-cta="footer">Terms</a>
-        <a href="/community" data-cta="footer">Community</a>
+      <div class="footer-top">
+        <div class="footer-intro">
+          <p class="footer-lede">Everything you've watched.<br>Everything you want to watch.</p>
+          <div class="footer-actions">
+            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start your plot</a>
+            <a class="footer-login" href="https://app.theplot.tv/login" data-cta="footer">Log in</a>
+          </div>
+        </div>
+        <div class="footer-cols" role="navigation" aria-label="Footer">
+          <div class="footer-col">
+            <h2 class="footer-heading">Explore</h2>
+            <ul>
+              <li><a href="/whats-on" data-cta="footer">What's On</a></li>
+              <li><a href="/whats-on#newsletter" data-cta="footer">Newsletter</a></li>
+              <li><a href="/plans" data-cta="footer">Plans</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h2 class="footer-heading">Company</h2>
+            <ul>
+              <li><a href="/about" data-cta="footer">About</a></li>
+              <li><a href="/community" data-cta="footer">Community</a></li>
+              <li><a href="/support" data-cta="footer">Support</a></li>
+              <li><a href="/changelog" data-cta="footer">Changelog</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h2 class="footer-heading">Legal</h2>
+            <ul>
+              <li><a href="/privacy" data-cta="footer">Privacy</a></li>
+              <li><a href="/terms" data-cta="footer">Terms</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="footer-bottom">
         <div class="footer-copy">&copy; 2026 plot</div>
@@ -129,6 +151,12 @@
         </div>
       </div>
     </div>
+    <!-- The wordmark: plot in Gabarito Bold outlines (as favicon.svg), each letter
+         tracked 20 units tighter, sized to the footer's width so it bleeds off both
+         sides and sinks below the bottom edge. -->
+    <a class="footer-wordmark" href="/" aria-label="plot home" data-cta="footer">
+      <svg viewBox="52 -681 1508 871" aria-hidden="true" focusable="false"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/><path transform="translate(-20,0)" d="M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723.0 -156 736.5 -145.5Q750.0 -135 771.0 -135V0Q761.0 2 744.5 3.5Q728.0 5 715.0 5Z"/><path transform="translate(-40,0)" d="M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z"/><path transform="translate(-60,0)" d="M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg>
+    </a>
   </footer>
   <!-- footer:end -->
   <script src="/js/nav.js"></script>

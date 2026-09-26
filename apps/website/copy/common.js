@@ -16,15 +16,20 @@ export const NAV = {
 };
 
 export const FOOTER = {
-  home: 'Home',
+  tagline: ["Everything you've watched.", 'Everything you want to watch.'],
+  cta: 'Start your plot',
+  login: 'Log in',
+  headings: { explore: 'Explore', company: 'Company', legal: 'Legal' },
   whatsOn: "What's On",
   newsletter: 'Newsletter',
-  login: 'Log in',
-  signup: 'Sign up',
+  plans: 'Plans',
+  about: 'About',
+  community: 'Community',
+  support: 'Support',
   changelog: 'Changelog',
   privacy: 'Privacy',
   terms: 'Terms',
-  community: 'Community',
+  wordmarkAria: 'plot home',
   copyright: (year) => `© ${year} plot`,
   socialAria: {
     instagram: 'plot on Instagram',
