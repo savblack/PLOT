@@ -11,22 +11,23 @@
 # into pg_restore. The cluster holds real password hashes and PII and is
 # destroyed on exit.
 
-export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
+export PATH="/opt/homebrew/opt/postgresql@17/bin:/usr/lib/postgresql/17/bin:$PATH"
 # Without this, PG17 on macOS dies with "postmaster became multithreaded during
 # startup".
 export LC_ALL=C LANG=C
 
 SANDBOX_PORT="${SANDBOX_PORT:-55432}"
-# Must be SHORT — the full socket path has a 103-byte cap and anything under a
-# scratchpad directory blows past it.
-SANDBOX_SOCK="${SANDBOX_SOCK:-/tmp/pgsandbox}"
+# Must be SHORT because the full socket path has a 103-byte cap. It is also
+# unique per process so parallel runs cannot share a trust boundary.
+SANDBOX_SOCK="${SANDBOX_SOCK:-/tmp/plot-pg-${UID:-$(id -u)}-$$}"
 SANDBOX_WORK=""
 SANDBOX_PGDATA=""
 SANDBOX_URL=""
+SANDBOX_PASSWORD=""
 
 sandbox_require_pg17() {
   if ! command -v pg_dump >/dev/null 2>&1; then
-    echo "pg_dump not found. Production is PG17 and macOS ships 16, so: brew install postgresql@17" >&2
+    echo "pg_dump not found. Production is PG17. On macOS: brew install postgresql@17. On the Cloud Agent image: postgresql-17 is already on PATH." >&2
     return 1
   fi
   case "$(pg_dump --version)" in
@@ -88,10 +89,16 @@ sandbox_up() {
   SANDBOX_PGDATA="$SANDBOX_WORK/pgdata"
   trap sandbox_down EXIT
 
-  rm -rf "$SANDBOX_SOCK"; mkdir -p "$SANDBOX_SOCK"
-  initdb -D "$SANDBOX_PGDATA" -U postgres --auth=trust >/dev/null 2>&1
+  umask 077
+  rm -rf "$SANDBOX_SOCK"; mkdir -m 700 -p "$SANDBOX_SOCK"
+  SANDBOX_PASSWORD="$(openssl rand -hex 32)"
+  printf '%s\n' "$SANDBOX_PASSWORD" > "$SANDBOX_WORK/pwfile"
+  initdb -D "$SANDBOX_PGDATA" -U postgres --auth-local=scram-sha-256 \
+    --auth-host=reject --pwfile="$SANDBOX_WORK/pwfile" >/dev/null 2>&1
+  rm -f "$SANDBOX_WORK/pwfile"
+  export PGPASSWORD="$SANDBOX_PASSWORD"
   pg_ctl -D "$SANDBOX_PGDATA" -l "$SANDBOX_WORK/pg.log" \
-    -o "-p $SANDBOX_PORT -k $SANDBOX_SOCK -c listen_addresses=''" start >/dev/null 2>&1
+    -o "-p $SANDBOX_PORT -k $SANDBOX_SOCK -c listen_addresses='' -c unix_socket_permissions=0700" start >/dev/null 2>&1
   local i
   for i in $(seq 1 20); do
     pg_isready -h "$SANDBOX_SOCK" -p "$SANDBOX_PORT" -U postgres >/dev/null 2>&1 && break
@@ -175,9 +182,12 @@ SQL
 
 sandbox_restore_prod() {
   local prod_url="$1"
+  PLOT_DB_CONNINFO="$prod_url" node scripts/write-pg-service.mjs \
+    "$SANDBOX_WORK/prod_service.conf" plot_production
+  PGSERVICEFILE="$SANDBOX_WORK/prod_service.conf" PGSERVICE=plot_production \
   pg_dump -Fc --no-owner --no-privileges \
     -n public -n auth -n storage -n supabase_migrations \
-    -d "$prod_url" 2>"$SANDBOX_WORK/dump.err" \
+    2>"$SANDBOX_WORK/dump.err" \
   | pg_restore --no-owner --no-privileges -d "$SANDBOX_URL" 2>"$SANDBOX_WORK/restore.err"
   echo "restored from Production (dump stderr: $(wc -l < "$SANDBOX_WORK/dump.err") lines, restore stderr: $(wc -l < "$SANDBOX_WORK/restore.err") lines)"
 

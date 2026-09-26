@@ -94,6 +94,11 @@ Encoded here once so nobody rediscovers them.
   reported the same event. Undo now fires `episode_unwatched` /
   `season_unwatched`.
 - **`activated` is retired.** See above.
+- **`engagement_prompt_shown` / `engagement_prompt_dismissed` are not Tier 2.**
+  They measure the in-panel watch/rate prompts (PLO-473 / PLO-474): exposure
+  and how people leave (`action`: `not_yet`, `skip`, `write_review`). Accepting
+  Mark as watched or setting a star still fires `marked_watched` / `rating_set`
+  from the canonical seams; do not treat prompt events as committed actions.
 - **Onboarding seed picks fire *before* `onboarding_completed`.** The seed step
   calls `addToList()` in a loop and only then tracks completion
   (`OnboardingFlow.jsx`), so those `watchlist_saved` events precede the
@@ -191,6 +196,11 @@ overwriting the campaign the event actually happened under.
 Every surface forwards the visitor's real `utm_*`, click ids, `ref`, `src` and
 referrer host onto app links, with existing params winning so each page keeps
 its own `src` identity. Page identity belongs in `src`, never in `utm_source`.
+
+What’s On article save links also put the exact article slug in `utm_content`.
+It is retained in first-touch attribution and registered separately as the
+session property `current_article_slug`, so a signup can be analysed by both
+the person's original acquisition source and the article they acted on now.
 
 **The live gap:** almost nothing inbound carries a `utm_source` at all, so
 `$initial_utm_source` is empty for every person. The vanity links (`/ig`, `/x`,

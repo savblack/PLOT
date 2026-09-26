@@ -38,19 +38,20 @@ export const iconButtonSize = {
 } as const;
 
 export const fontFamily = {
-  serif:       'InstrumentSerif-Regular',
-  serifItalic: 'InstrumentSerif-Italic',
+  // Display: Gabarito, the headline voice. Page titles, section headings, the
+  // wordmark, rank numbers. displaySemi for card names and list titles.
+  display:     'Gabarito-Bold',
+  displaySemi: 'Gabarito-SemiBold',
   sans:        'DMSans-Regular',
   sansMedium:  'DMSans-Medium',
   sansBold:    'DMSans-SemiBold',
   // Same faces with the ten digits respaced to a common width, for numbers that
-  // stack in a column or change in place — ranks, day numbers, stat counts. Neither
-  // family ships a `tnum` feature, and React Native has no `unicode-range`, so these
+  // stack in a column or change in place — ranks, day numbers, stat counts. DM Sans
+  // ships no `tnum` feature, and React Native has no `unicode-range`, so these
   // are full cuts rather than the digits-only files the web uses: a Text takes one
   // family, and anything but full coverage would drop letters to the system font.
   // Not for running text, where proportional digits read better.
   // Built by scripts/build-tabular-digits.py.
-  serifTabular:      'InstrumentSerif-Tabular',
   sansTabular:       'DMSans-TabularRegular',
   sansTabularBold:   'DMSans-TabularSemiBold',
 } as const;

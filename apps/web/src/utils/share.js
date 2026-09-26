@@ -1,37 +1,5 @@
-import { canUseDOM } from './storage.js';
-import { normalizeMediaType } from '@plot/core/media.js';
-
-/**
- * Sharing helpers — the app-wide primitive for "send this somewhere else".
- *
- * The first consumer is sharing a movie/show title, but nothing here is
- * title-specific beyond buildTitleShareUrl(); shareUrl() works for any link
- * (lists, public profiles, …) so future surfaces can reuse it.
- */
-
-/**
- * Build the canonical shareable URL for a title.
- *
- * Reuses the existing /save deep link (see SavePage + usePendingSave): opening
- * a shared link routes the recipient into the app and offers to add the title
- * to their watchlist — whether they're logged in or out. That keeps a single
- * real code path for adding titles and makes the link auth-aware for free.
- *
- * Returns null for invalid input or when no origin can be resolved (SSR/tests
- * without an explicit `origin`).
- */
-export function buildTitleShareUrl({ tmdbId, mediaType, source = 'share', origin } = {}) {
-  const id = Number(tmdbId);
-  const type = normalizeMediaType(mediaType);
-  if (!Number.isInteger(id) || id <= 0 || !type) return null;
-
-  const base = origin || (canUseDOM() ? window.location.origin : null);
-  if (!base) return null;
-
-  const params = new URLSearchParams({ media_type: type, tmdb_id: String(id) });
-  if (source) params.set('src', source);
-  return `${base}/save?${params.toString()}`;
-}
+// Browser transport: native sheet and clipboard APIs are web-specific.
+export { buildTitleShareUrl, buildListShareUrl, buildProfileShareUrl } from '@plot/core/sharing.js';
 
 /**
  * Share a link via the native share sheet when available, otherwise copy it to

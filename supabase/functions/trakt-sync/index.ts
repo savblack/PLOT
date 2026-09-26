@@ -23,6 +23,7 @@ type IntegrationRef = {
   trakt_refresh_iv?: string | null
 }
 import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyConflict.ts'
+import { insertMissingHistory, type ImportedHistoryRow } from '../_shared/importHistory.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
 
 const corsHeaders = {
@@ -86,6 +87,27 @@ function traktGet(path: string, accessToken: string) {
     if (res.status === 401) throw new TraktAuthError('Trakt session expired')
     return res
   })
+}
+
+async function traktGetAll(path: string, accessToken: string) {
+  const items: Record<string, unknown>[] = []
+  const separator = path.includes('?') ? '&' : '?'
+
+  for (let page = 1; ; page++) {
+    const res = await fetch(
+      `${TRAKT_API}${path}${separator}page=${page}&limit=250`,
+      { headers: traktHeaders(accessToken) },
+    )
+    if (res.status === 401) throw new TraktAuthError('Trakt session expired')
+    if (!res.ok) throw new Error(`Trakt API error ${res.status} at ${path}`)
+    const pageItems = await res.json() as Record<string, unknown>[]
+    items.push(...pageItems)
+
+    const pageCount = Number(res.headers.get('x-pagination-page-count') || 0)
+    if (pageItems.length === 0 || (pageCount > 0 && page >= pageCount)) break
+  }
+
+  return items
 }
 
 async function traktPost(path: string, body: unknown, accessToken: string) {
@@ -225,8 +247,8 @@ async function fetchTraktWatchlist(accessToken: string): Promise<TraktItem[]> {
 
 async function fetchTraktHistory(accessToken: string): Promise<HistoryItem[]> {
   const [movies, shows] = await Promise.all([
-    traktGet('/users/me/history/movies?limit=100&extended=full', accessToken),
-    traktGet('/users/me/history/shows?limit=100&extended=full', accessToken),
+    traktGetAll('/users/me/history/movies?extended=full', accessToken),
+    traktGetAll('/users/me/history/shows?extended=full', accessToken),
   ])
 
   const seen = new Set<string>()
@@ -264,6 +286,24 @@ async function fetchTraktHistory(accessToken: string): Promise<HistoryItem[]> {
     .filter(Boolean) as HistoryItem[]
 
   return [...movieItems, ...showItems]
+}
+
+function historyRowsFor(
+  userId: string,
+  historyItems: HistoryItem[],
+  posterMap: Map<string, string | null>,
+): ImportedHistoryRow[] {
+  return dedupeHistoryRows(historyItems.flatMap(item =>
+    item.tmdb_id && item.media_type && item.title
+      ? [{
+        user_id: userId,
+        tmdb_id: item.tmdb_id,
+        media_type: item.media_type,
+        title: item.title,
+        poster_path: posterMap.get(`${item.media_type}:${item.tmdb_id}`) ?? null,
+        watched_at: item.watched_at || new Date().toISOString().slice(0, 10),
+      }]
+      : []))
 }
 
 // ── Upsert to DB ──────────────────────────────────────────────────────────────
@@ -352,23 +392,7 @@ async function upsertTraktData(
     if (error) throw error
   }
 
-  // Log history
-  const historyRows = historyItems.flatMap(item =>
-    item.tmdb_id && item.media_type && item.title
-      ? [{
-        user_id: userId,
-        tmdb_id: item.tmdb_id,
-        media_type: item.media_type,
-        title: item.title,
-        poster_path: poster(item.media_type, item.tmdb_id),
-        watched_at: item.watched_at,
-      }]
-      : [])
-
-  // Trakt returns one entry per play, so a rewatch on the same day (or an
-  // episode-level history) yields several rows for one title and date; collapse
-  // those before the upsert sees them.
-  const uniqueHistoryRows = dedupeHistoryRows(historyRows)
+  const uniqueHistoryRows = historyRowsFor(userId, historyItems, posterMap)
 
   let watchedCount = 0
   if (uniqueHistoryRows.length > 0) {
@@ -527,6 +551,42 @@ async function handleSync(
   const integration = await findTraktIntegration(supabaseAdmin, userId)
   if (!integration) return json({ error: 'Trakt is not connected' }, 404)
 
+  const accessToken = await accessTokenFor(integration, supabaseAdmin)
+
+  await supabaseAdmin
+    .from('media_integrations')
+    .update({ last_error: null })
+    .eq('id', integration.id)
+
+  try {
+    const [watchlistItems, historyItems] = await Promise.all([
+      fetchTraktWatchlist(accessToken),
+      fetchTraktHistory(accessToken),
+    ])
+
+    const counts = await upsertTraktData(supabaseAdmin, integration, watchlistItems, historyItems)
+    const outboxProcessed = await processOutbox(supabaseAdmin, integration, accessToken)
+
+    const { data, error } = await supabaseAdmin
+      .from('media_integrations')
+      .update({ status: 'active', last_sync_at: new Date().toISOString(), last_error: null })
+      .eq('id', integration.id)
+      .select('id, provider, display_name, status, last_sync_at, last_error')
+      .single()
+    if (error) throw error
+
+    return json({ ok: true, integration: data, ...counts, outboxProcessed })
+  } catch (err) {
+    await supabaseAdmin
+      .from('media_integrations')
+      .update({ status: 'error', last_error: (err as Error).message })
+      .eq('id', integration.id)
+    throw err
+  }
+}
+
+async function accessTokenFor(integration: IntegrationRef, supabaseAdmin: Db) {
+
   let accessToken = await decryptToken(
     integration.trakt_token_ciphertext,
     integration.trakt_token_iv,
@@ -560,36 +620,28 @@ async function handleSync(
     accessToken = newTokens.access_token
   }
 
-  await supabaseAdmin
+  return accessToken
+}
+
+async function handleImportHistory(supabaseAdmin: Db, userId: string) {
+  const integration = await findTraktIntegration(supabaseAdmin, userId)
+  if (!integration) return json({ error: 'Trakt is not connected' }, 404)
+
+  const accessToken = await accessTokenFor(integration, supabaseAdmin)
+  const historyItems = await fetchTraktHistory(accessToken)
+  // A full history can contain thousands of titles. Poster hydration would
+  // turn a one-off import into thousands of extra TMDB requests and can exceed
+  // an edge-function runtime. History renders safely without a poster.
+  const rows = historyRowsFor(userId, historyItems, new Map())
+  const counts = await insertMissingHistory(supabaseAdmin, userId, rows)
+
+  const { error } = await supabaseAdmin
     .from('media_integrations')
-    .update({ last_error: null })
+    .update({ status: 'active', last_sync_at: new Date().toISOString(), last_error: null })
     .eq('id', integration.id)
+  if (error) throw error
 
-  try {
-    const [watchlistItems, historyItems] = await Promise.all([
-      fetchTraktWatchlist(accessToken),
-      fetchTraktHistory(accessToken),
-    ])
-
-    const counts = await upsertTraktData(supabaseAdmin, integration, watchlistItems, historyItems)
-    const outboxProcessed = await processOutbox(supabaseAdmin, integration, accessToken)
-
-    const { data, error } = await supabaseAdmin
-      .from('media_integrations')
-      .update({ status: 'active', last_sync_at: new Date().toISOString(), last_error: null })
-      .eq('id', integration.id)
-      .select('id, provider, display_name, status, last_sync_at, last_error')
-      .single()
-    if (error) throw error
-
-    return json({ ok: true, integration: data, ...counts, outboxProcessed })
-  } catch (err) {
-    await supabaseAdmin
-      .from('media_integrations')
-      .update({ status: 'error', last_error: (err as Error).message })
-      .eq('id', integration.id)
-    throw err
-  }
+  return json({ ok: true, sourceCount: rows.length, ...counts })
 }
 
 async function handleDisconnect(
@@ -644,9 +696,9 @@ serve(async (req) => {
     const action = String(body.action || url.searchParams.get('action') || '')
     if (action !== 'disconnect' && Deno.env.get('TRACKING_JOBS_ENABLED') === 'true' && !trackingUserAllowed(user.id)) return json({ error: 'Tracking is not enabled for this account yet.' }, 503)
 
-    // Trakt sync is a PLOT Premium feature. Disconnect stays open so a
-    // lapsed subscriber can always sever the integration.
-    if ((action === 'exchange' && Deno.env.get('TRACKING_JOBS_ENABLED') !== 'true') || action === 'sync') {
+    // Ongoing two-way sync is Premium. OAuth exchange and one-off history
+    // imports stay Free so switching to Plot is not paywalled.
+    if (action === 'sync') {
       const { data: premium } = await supabaseAdmin.rpc('is_premium', { p_user: user.id })
       if (!premium) return json({ error: 'premium_required' }, 403)
     }
@@ -660,6 +712,7 @@ serve(async (req) => {
     }
 
     if (req.method === 'POST' && action === 'exchange')   return await handleExchange(body, supabaseAdmin, user.id)
+    if (req.method === 'POST' && action === 'import-history') return await handleImportHistory(supabaseAdmin, user.id)
     if (req.method === 'POST' && action === 'sync')       return await handleSync(supabaseAdmin, user.id)
     if (req.method === 'POST' && action === 'disconnect') return await handleDisconnect(supabaseAdmin, user.id)
 

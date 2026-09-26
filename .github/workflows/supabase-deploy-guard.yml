@@ -173,6 +173,10 @@ jobs:
             exit 0
           fi
 
+          SERVICE_FILE="$RUNNER_TEMP/plot-prod-service.conf"
+          PLOT_DB_CONNINFO="$SUPABASE_DB_URL" node scripts/write-pg-service.mjs "$SERVICE_FILE" plot_production
+          export PGSERVICEFILE="$SERVICE_FILE" PGSERVICE=plot_production
+
           # The integration applies migrations *after* the push, so a version
           # that is missing right now may simply be in flight. Give it ten
           # minutes — well past a healthy run — before calling that an alarm.
@@ -181,7 +185,7 @@ jobs:
           db_err=''
           read_ok=''
           for _ in $(seq 1 20); do
-            if remote=$(psql "$SUPABASE_DB_URL" -At -v ON_ERROR_STOP=1 \
+            if remote=$(psql -At -v ON_ERROR_STOP=1 \
               -c 'select version from supabase_migrations.schema_migrations' 2>/tmp/psql-err); then
               read_ok='yes'
               db_err=''

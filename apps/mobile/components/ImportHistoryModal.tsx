@@ -19,17 +19,45 @@ import {
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
+import { useMediaSync } from '../hooks/useMediaSync';
+import { useTraktSync } from '../hooks/useTraktSync';
 
-type Platform = 'netflix' | 'prime' | 'disney' | 'max' | 'apple' | 'letterboxd' | 'imdb' | 'trakt' | 'tvtime';
+type Platform = 'trakt-export' | 'tvtime' | 'plex' | 'trakt' | 'netflix' | 'prime' | 'disney' | 'max' | 'apple' | 'letterboxd' | 'imdb';
+type PlatformConfig = { id: Platform; name: string; color: string; hint: string; accept?: string[]; kind?: 'connection' };
 
 // ── Platform config ───────────────────────────────────────────────────
 
-const PLATFORMS: { id: Platform; name: string; color: string; hint: string; accept: string[] }[] = [
-  { id: 'tvtime', name: IMPORT_VIEW.tvTimeName, color: '#666', hint: IMPORT_VIEW.tvTimeHint, accept: ['application/json', 'text/plain', 'application/zip', 'application/x-zip-compressed'] },
-  { id: 'trakt', name: IMPORT_VIEW.traktName, color: '#666', get hint() { return IMPORT_VIEW.traktHint(getConfig().importAnnotationsEnabled); }, accept: ['application/json', 'text/plain', 'application/zip', 'application/x-zip-compressed'] },
-  { id: 'imdb', name: IMPORT_VIEW.imdbName, color: '#666', hint: IMPORT_VIEW.imdbHint, accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text'] },
-  { id: 'letterboxd', name: 'Letterboxd', color: '#00E054', get hint() { return IMPORT_VIEW.letterboxdHint(getConfig().importAnnotationsEnabled); },
-    accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text', 'application/zip', 'application/x-zip-compressed'] },
+const PLATFORMS: PlatformConfig[] = [
+  { id: 'tvtime', name: IMPORT_VIEW.tvTimeName, color: 'textMuted', hint: IMPORT_VIEW.tvTimeHint, accept: ['application/json', 'text/plain', 'application/zip'] },
+  { id: 'trakt-export', name: IMPORT_VIEW.traktName, color: 'textMuted', get hint() { return IMPORT_VIEW.traktHint(getConfig().importAnnotationsEnabled); }, accept: ['application/json', 'text/plain', 'application/zip'] },
+  {
+    id: 'plex',
+    name: 'Plex',
+    color: 'rating',
+    hint: IMPORT_VIEW.connectionImportHint,
+    kind: 'connection',
+  },
+  {
+    id: 'trakt',
+    name: 'Trakt',
+    color: 'danger',
+    hint: IMPORT_VIEW.connectionImportHint,
+    kind: 'connection',
+  },
+  {
+    id: 'letterboxd',
+    name: 'Letterboxd',
+    color: 'success',
+    get hint() { return IMPORT_VIEW.letterboxdHint(getConfig().importAnnotationsEnabled); },
+    accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text', 'application/zip'],
+  },
+  {
+    id: 'imdb',
+    name: IMPORT_VIEW.imdbName,
+    color: 'rating',
+    hint: IMPORT_VIEW.imdbHint,
+    accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text'],
+  },
   {
     id: 'netflix',
     name: 'Netflix',
@@ -117,7 +145,7 @@ interface ImportCandidate {
   row: HistoryRow;
 }
 
-type Step = 'pick-platform' | 'pick-file' | 'resolving' | 'preview' | 'importing' | 'done';
+type Step = 'pick-platform' | 'pick-file' | 'connection' | 'resolving' | 'preview' | 'importing' | 'done';
 
 // ── Main modal ────────────────────────────────────────────────────────
 
@@ -135,6 +163,8 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const plex = useMediaSync(userId);
+  const trakt = useTraktSync(userId);
 
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
   const [step,         setStep]         = useState<Step>('pick-platform');
@@ -150,10 +180,11 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
   const [importedCount, setImportedCount] = useState(0);
   const [listResult, setListResult] = useState('');
   const [documentReport, setDocumentReport] = useState([] as string[]);
+  const [alreadyCount, setAlreadyCount] = useState(0);
 
   const handleSelectPlatform = (p: Platform) => {
     setPlatform(p);
-    setStep('pick-file');
+    setStep(PLATFORMS.find(item => item.id === p)?.kind === 'connection' ? 'connection' : 'pick-file');
   };
 
   const handlePickFile = useCallback(async () => {
@@ -161,9 +192,9 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
     const cfg = PLATFORMS.find(p => p.id === platform)!;
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: cfg.accept,
+        type: cfg.accept ?? '*/*',
         copyToCacheDirectory: true,
-        multiple: ['tvtime', 'trakt', 'letterboxd'].includes(platform),
+        multiple: ['tvtime', 'trakt-export', 'letterboxd'].includes(platform),
       });
       if (result.canceled || !result.assets?.[0]) return;
 
@@ -171,7 +202,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
         const file = new FileSystem.File(asset.uri);
         return { name: asset.name, size: asset.size, text: () => file.text(), arrayBuffer: () => file.arrayBuffer() };
       });
-      const document = await readImportSelection(platform, files);
+      const document = await readImportSelection(platform === 'trakt-export' ? 'trakt' : platform, files);
       const raw = document.entries;
       setDocumentReport(importReportMessages(document));
       if (!raw.length && (document.warnings.length || document.notImported.length)) { setResolved([]); setStep('preview'); return; }
@@ -189,6 +220,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
         search: (title: string) => tmdb.search(title),
         findByImdbId: (id: string) => tmdb.findByImdbId(id),
         findByTvdbId: (id: number | string) => tmdb.findByTvdbId(id),
+        findExternal: (id: string) => tmdb.findByExternalId(id),
         onProgress: (done: number) => setResolveDone(done),
       });
 
@@ -282,6 +314,21 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
     setStep('done');
   }, [plan, resolved, userId]);
 
+  const connection = platform === 'plex' ? plex : platform === 'trakt' ? trakt : null;
+  const connectionName = platform === 'plex' ? 'Plex' : 'Trakt';
+
+  const handleConnectionImport = useCallback(async () => {
+    if (!connection) return;
+    const result = await connection.importHistory();
+    if (!result) {
+      Alert.alert('Import stopped', connection.error || IMPORT_VIEW.importFailed);
+      return;
+    }
+    setImportedCount(result.importedCount || 0);
+    setAlreadyCount(result.alreadyCount || 0);
+    setStep('done');
+  }, [connection]);
+
   const reset = () => {
     setStep('pick-platform');
     setPlatform(null);
@@ -321,14 +368,18 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
           <ScrollView contentContainerStyle={styles.body}>
             <Text style={styles.stepTitle}>Choose your platform</Text>
             <Text style={styles.stepSub}>We'll import your watch history and match it to TMDB.</Text>
-            {PLATFORMS.filter(p => p.id === 'tvtime' ? getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled : !['imdb', 'trakt'].includes(p.id) || getConfig().importEventsEnabled).map(p => (
+            {PLATFORMS.filter(p => p.id === 'tvtime' ? getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled : !['imdb', 'trakt-export'].includes(p.id) || getConfig().importEventsEnabled).map(p => (
               <TouchableOpacity
                 key={p.id}
                 style={styles.platformCard}
                 onPress={() => handleSelectPlatform(p.id)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.platformDot, { backgroundColor: p.color }]} />
+                <View style={[styles.platformDot, {
+                  backgroundColor: p.color.startsWith('#')
+                    ? p.color
+                    : colors[p.color as keyof Palette],
+                }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.platformName}>{p.name}</Text>
                   <Text style={styles.platformHint} numberOfLines={2}>{p.hint}</Text>
@@ -339,6 +390,42 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
               </TouchableOpacity>
             ))}
           </ScrollView>
+        )}
+
+        {/* ── Step: connected account ──────────────────────────────── */}
+        {step === 'connection' && platform && connection && (
+          <View style={styles.body}>
+            <Text style={styles.stepTitle}>{connectionName}</Text>
+            <Text style={styles.stepSub}>
+              {connection.isConnected
+                ? IMPORT_VIEW.connectedReady(connectionName)
+                : IMPORT_VIEW.connectionImportHint}
+            </Text>
+            {platform === 'plex' && (
+              <View style={styles.hintBox}>
+                <Text style={styles.hintText}>{IMPORT_VIEW.plexServerRequired}</Text>
+              </View>
+            )}
+            {connection.error && <Text style={styles.errorText}>{connection.error}</Text>}
+            <TouchableOpacity
+              style={[styles.importBtn, styles.connectionAction, (connection.syncing || ('polling' in connection && connection.polling)) && styles.importBtnDisabled]}
+              onPress={connection.isConnected
+                ? handleConnectionImport
+                : platform === 'plex' ? plex.startPlexAuth : trakt.connect}
+              disabled={connection.syncing || ('polling' in connection && connection.polling)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.importBtnText}>
+                {'polling' in connection && connection.polling
+                  ? 'Waiting for Plex approval…'
+                  : connection.syncing
+                    ? IMPORT_VIEW.importingFrom(connectionName)
+                    : connection.isConnected
+                      ? IMPORT_VIEW.importFrom(connectionName)
+                      : IMPORT_VIEW.connectToImport(connectionName)}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* ── Step: pick file ─────────────────────────────────────────── */}
@@ -357,7 +444,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
                 <Line x1={9} y1={15} x2={15} y2={15} />
               </Svg>
               <Text style={styles.filePickerText}>Choose file</Text>
-              <Text style={styles.filePickerSub}>{IMPORT_VIEW.filePickerHint(PLATFORMS.find(p => p.id === platform)!.name, ['tvtime', 'trakt', 'letterboxd'].includes(platform))}</Text>
+              <Text style={styles.filePickerSub}>{IMPORT_VIEW.filePickerHint(PLATFORMS.find(p => p.id === platform)!.name, ['tvtime', 'trakt-export', 'letterboxd'].includes(platform))}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -474,7 +561,9 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
             {documentReport.length > 0 && <ScrollView style={{ maxHeight: 180 }}><Text style={styles.previewTitle}>{IMPORT_VIEW.reportHeading}</Text>{documentReport.map((message, index) => <Text key={index} style={styles.previewMeta}>{message}</Text>)}</ScrollView>}
             {listResult && <Text style={styles.resolvingSub}>{listResult}</Text>}
             <Text style={styles.resolvingSub}>
-              {IMPORT_VIEW.resultSummary(importedCount, importResult.duplicates, importResult.failed, unmatched)}
+              {platform === 'plex' || platform === 'trakt'
+                ? IMPORT_VIEW.importedSummary(importedCount, alreadyCount)
+                : IMPORT_VIEW.resultSummary(importedCount, importResult.duplicates, importResult.failed, unmatched)}
             </Text>
             <TouchableOpacity style={[styles.importBtn, { marginTop: spacing.lg }]} onPress={onClose} activeOpacity={0.85}>
               <Text style={styles.importBtnText}>Done</Text>
@@ -506,7 +595,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  headerTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.lg, color: colors.textPrimary },
+  headerTitle: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   closeBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
 
@@ -514,7 +603,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md },
 
   stepTitle: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.lg,
     color: colors.textPrimary,
     marginBottom: spacing.xs,
@@ -549,6 +638,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   hintLabel: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textSecondary },
   hintText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
+  errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.danger, lineHeight: 20, marginBottom: spacing.md },
 
   filePicker: {
     borderWidth: 1.5, borderColor: colors.accent, borderStyle: 'dashed',
@@ -560,7 +650,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   filePickerText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.accent },
   filePickerSub: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
 
-  resolvingTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.md, color: colors.textPrimary },
+  resolvingTitle: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.md, color: colors.textPrimary },
   resolvingCount: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textMuted },
   resolvingSub: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 20, maxWidth: 280 },
 
@@ -609,6 +699,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.accent, borderRadius: radii.md,
     paddingVertical: spacing.md, alignItems: 'center',
   },
+  connectionAction: { alignSelf: 'flex-start', paddingHorizontal: spacing.xl },
   importBtnDisabled: { backgroundColor: colors.surfaceSunken },
   importBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: '#fff' },
 

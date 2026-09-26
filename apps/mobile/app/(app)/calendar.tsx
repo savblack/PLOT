@@ -569,7 +569,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingVertical: spacing.sm,
     gap: spacing.sm,
   },
-  agendaDayNum: { fontFamily: fontFamily.serifTabular, fontSize: 26, color: colors.textPrimary, width: 34 },
+  agendaDayNum: { fontFamily: fontFamily.display, fontSize: 26, color: colors.textPrimary, width: 34 },
   agendaDayName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textMuted, letterSpacing: 0.6, textTransform: 'uppercase' },
   todayPill: {
     backgroundColor: colors.accentDim,
@@ -580,6 +580,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   todayPillText: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.accent },
 
   empty: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl * 2 },
-  emptyTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
+  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
 });

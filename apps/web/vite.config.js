@@ -1,6 +1,7 @@
 import process from 'node:process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { guidePreviewFeed } from '../../scripts/guide/dev-plugin.mjs'
 
 import { cloudflare } from "@cloudflare/vite-plugin";
 
@@ -10,7 +11,7 @@ export default defineConfig({
   // fallback. Everything else runs through Cloudflare's local asset handler,
   // whose SPA fallback comes from `assets.not_found_handling` in
   // apps/web/wrangler.toml — see the note there.
-  plugins: [react(), ...(process.env.PLOT_SMOKE_TEST ? [] : [cloudflare()])],
+  plugins: [guidePreviewFeed(), react(), ...(process.env.PLOT_SMOKE_TEST ? [] : [cloudflare()])],
   // Local configuration is shared at the repository root. Without this Vite
   // only reads apps/web/.env, leaving the local app unable to initialise
   // Supabase when started through the documented root pnpm command.
@@ -19,8 +20,8 @@ export default defineConfig({
     // MANDATORY under pnpm. apps/mobile pins react 19.2.3 exactly (react-native
     // 0.86.3 requires that patch), so 19.2.3 takes the hoisted root slot and
     // every 19.3.0 consumer nests its own physical copy instead — apps/web,
-    // packages/core, react-router, react-router-dom, posthog-js and
-    // @posthog/react each ended up with one. Same version, different paths, so
+    // packages/core, react-router, react-router-dom and posthog-js each ended
+    // up with one. Same version, different paths, so
     // Rollup treats them as distinct modules and the bundle ships several React
     // instances. The app then dies on `useContext` of null the moment a context
     // is read across the seam, which is exactly what the smoke tests caught.

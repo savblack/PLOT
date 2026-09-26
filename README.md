@@ -28,15 +28,23 @@ This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the
    pnpm install --frozen-lockfile
    ```
 
-2. Create a local env file:
+2. Create a `.env` at the repo root. Vite reads the repo-root `.env` (see `envDir` in `apps/web/vite.config.js`), so it lives at the root, not under `apps/web`. Add the browser-safe `VITE_*` values:
 
    ```sh
-   cp .env.example .env
+   VITE_SUPABASE_URL=<PLOT Staging project URL>
+   VITE_SUPABASE_ANON_KEY=<PLOT Staging publishable/anon key>
+   VITE_TMDB_PROXY_URL=<staging tmdb-proxy Worker URL>
+   VITE_SHOW_APPLE_LOGIN=<optional; set false to temporarily hide Apple sign-in>
+   VITE_TRAKT_CLIENT_ID=<Trakt OAuth app client ID>
+   VITE_IMPORT_EVENTS_ENABLED=false
+   VITE_IMPORT_ANNOTATIONS_ENABLED=false
+   VITE_TRACKING_JOBS_ENABLED=false
+   VITE_TVTIME_IMPORT_ENABLED=false
    ```
 
-3. Fill in the browser-safe `VITE_*` values in `.env`. Keep service-role and TMDB API keys server-side or local-script-only.
+3. These values are browser-safe (they ship in the app bundle). `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` belong to PLOT Staging, PLOT's preview Supabase project (local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data). Pull them from the Supabase dashboard, project `PLOT Staging`. Don't repoint these at Production for routine dev. Keep service-role and TMDB API keys server-side or local-script-only.
 
-   `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` ship in `.env.example` already pointed at PLOT Staging, PLOT's preview Supabase project — local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data. Don't repoint these at Production for routine dev.
+   `VITE_TMDB_PROXY_URL` must point at the staging tmdb-proxy Cloudflare Worker (`https://tmdb-proxy-staging.<subdomain>.workers.dev`), not the Supabase edge function directly: the Worker adds a shared-secret header the browser cannot set. See `apps/web/workers/tmdb-proxy/wrangler.toml`.
 
    `VITE_AUTH_REDIRECT_BASE_URL` is optional for local web development. Set it when auth and provider callbacks must use a stable production URL or a native deep-link base.
 
@@ -111,6 +119,7 @@ Deploy functions with the Supabase CLI after configuring project secrets:
 ```sh
 supabase functions deploy tmdb-proxy
 supabase functions deploy media-sync
+supabase functions deploy trakt-sync
 supabase functions deploy delete-account
 supabase functions deploy critic-score
 ```
@@ -122,19 +131,23 @@ Required function secrets:
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `PLEX_TOKEN_SECRET` for encrypting Plex auth tokens at rest
+- `TRAKT_CLIENT_ID` and `TRAKT_CLIENT_SECRET` for the Trakt OAuth app
+- `TRAKT_TOKEN_SECRET` for encrypting Trakt auth tokens at rest
 - `OMDB_API_KEY` for the `critic-score` function's Rotten Tomatoes lookups (already used by the marketing scripts — same key, needs setting separately for Supabase via `supabase secrets set OMDB_API_KEY=...`)
 
-## Plex Sync
+## Plex and Trakt imports
 
-Plot syncs Plex through the `media-sync` Edge Function. Users connect from Journal → Watchlist → Connect Plex, sign in on Plex, and return to Plot. Plex tokens are encrypted server-side and are never shown in the browser.
+One-off watch-history imports from Plex and Trakt are Free. Ongoing two-way sync remains a separate Premium capability and is hidden until it is ready to launch. Plex tokens are handled by `media-sync`; Trakt OAuth tokens are handled by `trakt-sync`. Both are encrypted server-side and are never shown in the browser.
 
 ```sh
 supabase secrets set PLEX_TOKEN_SECRET=your-long-random-secret
+supabase secrets set TRAKT_CLIENT_ID=... TRAKT_CLIENT_SECRET=... TRAKT_TOKEN_SECRET=...
 supabase db push
 supabase functions deploy media-sync
+supabase functions deploy trakt-sync
 ```
 
-The sync imports Plex Universal Watchlist titles into Plot, queues Plot Watchlist additions back to Plex, and imports watched history when a reachable Plex Media Server is available.
+Plex history import requires at least one reachable Plex Media Server. Trakt history import uses the connected Trakt account. Both imports preserve existing Plot entries and add only titles that are not already in the user's history.
 
 ## Data Rules
 

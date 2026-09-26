@@ -68,13 +68,13 @@ const page = (title: string, body: string, status = 200) =>
     `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>${title}</title>
     <style>
-      body { font-family: system-ui, sans-serif; background: #F4F4F5; color: #09090B;
+      body { font-family: 'DM Sans', system-ui, sans-serif; background: #F8F2EA; color: #292924; /* colors.light bg/textPrimary */
              display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-      .box { background: #fff; border-radius: 16px; padding: 36px; max-width: 420px; text-align: center;
-             box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+      .box { background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); border-radius: 16px; padding: 36px; max-width: 420px; text-align: center;
+             }
       h1 { font-size: 1.2rem; margin: 0 0 10px; }
-      p { color: #52525B; font-size: 0.95rem; line-height: 1.5; }
-      button { background: #E05578; color: #fff; border: none; border-radius: 9999px;
+      p { color: #5F5A52; font-size: 0.95rem; line-height: 1.5; }
+      button { background: #FF88C8; color: #292924; /* accentFill / onAccentFill */ border: none; border-radius: 9999px;
                padding: 12px 28px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 14px; }
     </style></head><body><div class="box">${body}</div></body></html>`,
     { status, headers: { 'Content-Type': 'text/html; charset=utf-8', ...CORS } },
@@ -99,21 +99,21 @@ Deno.serve(async (req) => {
   // ── Unsubscribe flow ──
   if (url.searchParams.get('action') === 'unsubscribe') {
     const token = url.searchParams.get('token') ?? '';
-    if (!token) return page('PLOT', '<h1>Missing token</h1>', 400);
+    if (!token) return page('plot', '<h1>Missing token</h1>', 400);
 
     const { data: sub } = await supabase
       .from('marketing_subscribers')
       .select('id, status, email')
       .eq('unsubscribe_token', token)
       .maybeSingle();
-    if (!sub) return page('PLOT', '<h1>Link not valid</h1>', 404);
+    if (!sub) return page('plot', '<h1>Link not valid</h1>', 404);
 
     if (req.method === 'GET') {
       if (sub.status === 'unsubscribed') {
-        return page('PLOT', '<h1>Unsubscribed</h1><p>You will not receive the PLOT digest again.</p>');
+        return page('plot', '<h1>Unsubscribed</h1><p>You will not receive the plot digest again.</p>');
       }
-      return page('PLOT — unsubscribe', `
-        <h1>Unsubscribe from the PLOT digest?</h1>
+      return page('plot — unsubscribe', `
+        <h1>Unsubscribe from the plot digest?</h1>
         <button onclick="fetch(location.href,{method:'POST'}).then(()=>location.reload())">Unsubscribe</button>`);
     }
 
@@ -134,9 +134,9 @@ Deno.serve(async (req) => {
         }
       }
 
-      return page('PLOT', '<h1>Unsubscribed</h1><p>You will not receive the PLOT digest again.</p>');
+      return page('plot', '<h1>Unsubscribed</h1><p>You will not receive the plot digest again.</p>');
     }
-    return page('PLOT', '<h1>Method not allowed</h1>', 405);
+    return page('plot', '<h1>Method not allowed</h1>', 405);
   }
 
   // ── Subscribe flow ──

@@ -160,7 +160,7 @@ test('every app route resolves a page title that is not the bare brand', () => {
 });
 
 test('an unknown view still falls back to the brand rather than undefined', () => {
-  assert.equal(titleForView('nothing-like-this'), 'PLOT');
-  assert.equal(titleForView(''), 'PLOT');
-  assert.equal(titleForView(undefined), 'PLOT');
+  assert.equal(titleForView('nothing-like-this'), 'plot');
+  assert.equal(titleForView(''), 'plot');
+  assert.equal(titleForView(undefined), 'plot');
 });

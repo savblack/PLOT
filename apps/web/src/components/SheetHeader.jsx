@@ -3,7 +3,7 @@
  * consistent in alignment, type size, and padding — mirrors the mobile
  * app's <SheetHeader>.
  *
- * A centred serif title (1.4rem). With no primary action, ✕ close sits on the
+ * A centred Gabarito title (1.4rem). With no primary action, ✕ close sits on the
  * right (or a back-chevron on the left, if supplied). When a primary action
  * (e.g. Save) is present, the action moves to the right and ✕ close (or the
  * back-chevron) takes the left slot. The title is absolutely centred so it
@@ -63,7 +63,7 @@ export default function SheetHeader({ title, onClose, onBack, action, bordered =
           position: 'absolute', top: 0, bottom: 0, left: 56, right: 56,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: 0, pointerEvents: 'none', textAlign: 'center',
-          fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 500,
+          fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 500,
           color: 'var(--text-primary)',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}

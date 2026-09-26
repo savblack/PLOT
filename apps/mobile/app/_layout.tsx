@@ -1,5 +1,5 @@
 import '../lib/configureCore'; // MUST be first: injects Expo env into shared core before any data call
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -89,15 +89,16 @@ function RootInner() {
   const [session,            setSession]            = useState<Session | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const [authReady,          setAuthReady]          = useState(false);
+  const activeUserIdRef = useRef<string | null>(null);
 
   const [fontsLoaded] = useFonts({
-    'InstrumentSerif-Regular': require('../assets/fonts/InstrumentSerif-Regular.ttf'),
-    'InstrumentSerif-Italic':  require('../assets/fonts/InstrumentSerif-Italic.ttf'),
+    // Display face: Gabarito static cuts (RN cannot pick a weight axis from a variable font).
+    'Gabarito-Bold':           require('../assets/fonts/Gabarito-Bold.ttf'),
+    'Gabarito-SemiBold':       require('../assets/fonts/Gabarito-SemiBold.ttf'),
     'DMSans-Regular':          require('../assets/fonts/DMSans-Regular.ttf'),
     'DMSans-Medium':           require('../assets/fonts/DMSans-Medium.ttf'),
     'DMSans-SemiBold':         require('../assets/fonts/DMSans-SemiBold.ttf'),
     // Tabular-digit cuts — see lib/tokens.ts and apps/web/public/fonts/README.md.
-    'InstrumentSerif-Tabular': require('../assets/fonts/InstrumentSerif-Tabular.ttf'),
     'DMSans-TabularRegular':   require('../assets/fonts/DMSans-TabularRegular.ttf'),
     'DMSans-TabularSemiBold':  require('../assets/fonts/DMSans-TabularSemiBold.ttf'),
   });
@@ -109,6 +110,7 @@ function RootInner() {
       .select('region, timezone, onboarding_complete, is_premium, is_supporter, last_kofi_tip_at')
       .eq('id', userId)
       .maybeSingle();
+    if (activeUserIdRef.current !== userId) return;
     if (data?.region) setTmdbRegion(data.region);
     // Set alongside the region at boot, before any screen renders a date —
     // AppDataProvider applies it again on its own profile load.
@@ -137,6 +139,7 @@ function RootInner() {
 
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
+      activeUserIdRef.current = session?.user?.id ?? null;
       setSession(session);
       if (session?.user) {
         identifyUser(session.user.id);
@@ -150,6 +153,7 @@ function RootInner() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      activeUserIdRef.current = session?.user?.id ?? null;
       setSession(session);
       if (session?.user) {
         identifyUser(session.user.id);
@@ -160,7 +164,10 @@ function RootInner() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      activeUserIdRef.current = null;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Trakt OAuth redirect (plot://auth/trakt?code=…) — routing-agnostic: catch
@@ -179,7 +186,7 @@ function RootInner() {
     return () => sub.remove();
   }, []);
 
-  // The wordmark loader needs Instrument Serif — before the fonts are in it
+  // The wordmark loader needs Gabarito — before the fonts are in it
   // would render in the system fallback with mangled spacing. Blank until then.
   if (!fontsLoaded) return <ThemedBlank />;
   if (!authReady)   return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
@@ -187,7 +194,7 @@ function RootInner() {
   return (
     <SafeAreaProvider>
       {/* Shared user data — loads once after login; screens navigate instantly */}
-      <AppDataProvider>
+      <AppDataProvider key={session?.user.id ?? 'signed-out'}>
         <DrawerProvider>
           <MediaPanelProvider>
             <ThemedStatusBar />

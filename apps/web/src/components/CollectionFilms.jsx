@@ -1,12 +1,14 @@
+import { customListCreationError } from '@plot/core/customListCreation.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl } from '../utils/images.js';
 import { collectionPartYear } from '@plot/core/collections.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { canCreateCustomList } from '@plot/core/premium.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
-import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
+import { MEDIA } from '../copy/media.js';
 
 /**
  * The films of a collection as rows, plus the "Save as list" footer. Used
@@ -32,14 +34,18 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
       setSaveState({
         status: 'error',
-        message: SHOW_PRICING_PAGE
-          ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited. Upgrade from Settings to unlock.`
-          : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`,
+        message: CUSTOM_LISTS.limitMessage,
       });
       return;
     }
     setSaveState({ status: 'saving', message: '' });
-    const list = existingList || await customLists.createList(stub.name);
+    let list;
+    try {
+      list = existingList || await customLists.createList(stub.name);
+    } catch (error) {
+      setSaveState({ status: 'error', message: customListCreationError(error, MEDIA_PANEL.couldNotSaveCollection) });
+      return;
+    }
     if (!list) {
       setSaveState({ status: 'error', message: MEDIA_PANEL.couldNotSaveCollection });
       return;
@@ -49,7 +55,6 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
     // state update is per call.
     let failed = false;
     for (const part of [...parts].reverse()) {
-      // eslint-disable-next-line no-await-in-loop
       const added = await customLists.addItem(list.id, part);
       if (!added) failed = true;
     }
@@ -65,12 +70,16 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
     <div className="collection-card-body">
       {items.map(part => {
         const year = collectionPartYear(part);
-        const meta = part.isCurrent ? [year, MEDIA_PANEL.viewing].filter(Boolean).join(' · ') : year;
+        const rowMeta = [
+          year,
+          part.isCurrent ? MEDIA_PANEL.viewing : '',
+          part.inWatchlist ? MEDIA_PANEL.inWatchlist : '',
+        ].filter(Boolean).join(' · ');
         return (
           <button
             type="button"
             key={part.id}
-            className={`collection-card-row${part.isCurrent ? ' collection-card-row--current' : ''}`}
+            className={`collection-card-row${part.isCurrent ? ' collection-card-row--current' : ''}${part.watched ? ' collection-card-row--watched' : ''}`}
             onClick={() => { if (!part.isCurrent) onOpenTitle(part.id, 'movie', 'collection'); }}
             aria-current={part.isCurrent ? 'true' : undefined}
           >
@@ -81,10 +90,18 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
             </span>
             <span className="collection-card-row-text">
               <span className="list-row-title">{part.title}</span>
-              {meta && <span className="list-row-meta">{meta}</span>}
+              {rowMeta && <span className="list-row-meta">{rowMeta}</span>}
             </span>
-            {part.watched && <span className="chip collection-chip-watched">Watched</span>}
-            {part.inWatchlist && <span className="chip collection-chip-listed">Watchlist</span>}
+            {/* Watched reads as the tick it does on an episode, rather than a
+                chip: one vocabulary for "I have seen this" across the panel. */}
+            {part.watched && (
+              <span className="collection-card-tick" aria-label={MEDIA.watched}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" fill="currentColor" stroke="currentColor" strokeWidth="1.5" />
+                  <polyline points="9 12 11 14 15 10" stroke="var(--surface)" strokeWidth="2" fill="none" />
+                </svg>
+              </span>
+            )}
           </button>
         );
       })}

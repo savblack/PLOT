@@ -4,9 +4,6 @@
 // token (Bearer JWT).
 const TMDB = 'https://api.themoviedb.org/3';
 
-export const posterUrl = (path, size = 'w500') =>
-  path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
-
 const normalizeType = (mediaType) =>
   mediaType === 'tv' || mediaType === 'show' || mediaType === 'series' ? 'tv' : 'movie';
 
@@ -32,9 +29,7 @@ export async function loadTitle(apiKey, mediaType, tmdbId) {
     type,
     title: d.title || d.name || '',
     year: (d.release_date || d.first_air_date || '').slice(0, 4),
-    poster: posterUrl(d.poster_path, 'w500'),
     backdrop: d.backdrop_path ? `https://image.tmdb.org/t/p/w1280${d.backdrop_path}` : null,
-    rating: d.vote_average ? Number(d.vote_average).toFixed(1) : null,
     overview: d.overview || '',
   };
 }

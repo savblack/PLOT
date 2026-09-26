@@ -1,11 +1,14 @@
 import {
   View, Text, TouchableOpacity, Animated, Dimensions,
-  StyleSheet, Pressable,
+  StyleSheet, Pressable, Linking,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useRef, useEffect, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
+import { APP_SHELL } from '@plot/core/copy/appShell.js';
+import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { titleForView } from '@plot/core/navigation.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
@@ -17,10 +20,13 @@ const NAV_ITEMS = [
   { id: 'search',   label: 'Search',   path: '/(app)/search'   },
   { id: 'calendar', label: 'Calendar', path: '/(app)/calendar' },
   { id: 'my-lists', label: 'My Lists', path: '/(app)/my-lists' },
-  // Guide, Top 10 and History used to sit here as destinations of their own.
-  // None is one on web: Guide is a sub-tab of Home, Top 10 a section of My
+  { id: 'tonight',  label: titleForView('tonight'), path: '/(app)/tonight', premium: true },
+  // Guide, Top 5 and History used to sit here as destinations of their own.
+  // None is one on web: Guide is a sub-tab of Home, Top 5 a section of My
   // Lists, History a tab of it. This list now matches APP_NAV_ITEMS.
 ];
+
+const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 
 const BOTTOM_NAV_ITEMS = [
   { id: 'requests', label: 'Follow Requests', path: '/(app)/requests' },
@@ -62,6 +68,14 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
     setTimeout(() => router.push(path as any), 50);
   };
 
+  const openFeedback = () =>
+    navigate(`/(app)/settings?feedback=general&t=${Date.now()}`);
+
+  const openSupport = () => {
+    onClose();
+    void Linking.openURL(KOFI_URL).catch(() => {});
+  };
+
   const activeId = pathname === '/' || pathname === '/(app)' || pathname === '/(app)/'
     ? 'index'
     : pathname.split('/').pop() ?? '';
@@ -92,7 +106,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
         <BlurView intensity={72} tint={resolved} style={[StyleSheet.absoluteFill, styles.blurBackground]} />
 
         <View style={[styles.content, { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
-          <Text style={styles.wordmark}>PLOT</Text>
+          <Text style={styles.wordmark}>plot</Text>
 
           {/* Main nav */}
           <View style={styles.nav}>
@@ -108,6 +122,9 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                   <Text style={[styles.navLabel, active && styles.navLabelActive]}>
                     {item.label}
                   </Text>
+                  {'premium' in item && item.premium && !profile?.is_premium && (
+                    <Text style={styles.premiumPill}>{APP_SHELL.premium}</Text>
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -115,6 +132,25 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
 
           {/* Spacer */}
           <View style={{ flex: 1 }} />
+
+          <View style={[styles.nav, styles.help]}>
+            <Text style={styles.helpTitle}>{APP_SHELL.helpBuild}</Text>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={openFeedback}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.navLabel}>{APP_SHELL.giveFeedback}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={openSupport}
+              activeOpacity={0.7}
+              accessibilityRole="link"
+            >
+              <Text style={styles.navLabel}>{SETTINGS_VIEW.support.supportPlot}</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Bottom-pinned nav */}
           <View style={[styles.nav, styles.navBottom]}>
@@ -180,11 +216,10 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
   content: { flex: 1 },
 
   wordmark: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 28,
     color: colors.textPrimary,
-    letterSpacing: 0,
-    textTransform: 'uppercase',
+    letterSpacing: -1,
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.xl,
   },
@@ -192,6 +227,21 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
   nav: {
     gap: 2,
     paddingHorizontal: spacing.md,
+  },
+  help: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  helpTitle: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xs,
   },
   navBottom: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -203,6 +253,23 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 13,
     borderRadius: radii.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  // Premium marker for Free viewers: the Beta pill's shape in the pink fill.
+  premiumPill: {
+    overflow: 'hidden',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    backgroundColor: colors.accentFill,
+    color: colors.onAccentFill,
+    fontFamily: fontFamily.sansBold,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   navItemActive: {
     backgroundColor: colors.accentDim,

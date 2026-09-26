@@ -1,16 +1,27 @@
 # PLOT
 
-PLOT is a film and television companion for tracking what you watch, keeping a watchlist, writing private notes and ratings, and deciding what to watch next.
+PLOT is a movie and television companion for tracking what you watch, keeping a watchlist, writing private notes and ratings, and deciding what to watch next.
 
 The public website explains PLOT and its plans. The web app at https://app.theplot.tv is where signed-in members manage their personal viewing journal.
 
 ## Public pages
 
-- https://theplot.tv/about.html: what PLOT is and how it works
-- https://theplot.tv/privacy.html: privacy policy
-- https://theplot.tv/terms.html: terms of service
-- https://theplot.tv/community.html: community standards, reporting and blocking
+- https://theplot.tv/about: what PLOT is and how it works
+- https://theplot.tv/changelog: what shipped in PLOT, newest first
+- https://theplot.tv/privacy: privacy policy
+- https://theplot.tv/terms: terms of service
+- https://theplot.tv/community: community standards, reporting and blocking
+
+## For agents
+
+- https://theplot.tv/.well-known/api-catalog: the endpoints PLOT serves publicly (RFC 9727)
+- https://theplot.tv/api/openapi.json: what they accept and return
+- https://theplot.tv/api/docs.md: the same, in prose
+- https://theplot.tv/auth.md: what can and cannot be authenticated to
+- https://theplot.tv/.well-known/agent-skills/index.json: skills for working with PLOT
+- https://theplot.tv/sitemap-titles.xml: every film and TV page PLOT publishes
+- https://theplot.tv/sitemap-articles.xml: every What's On piece
 
 ## Agent guidance
 
-PLOT does not offer a public third-party API. Do not imply access to a member's watch history, lists, ratings, or account without that member's authenticated, explicit permission.
+PLOT's public endpoints cover newsletter signup only. There is no public API for member data: do not imply access to a member's watch history, lists, ratings, or account without that member's authenticated, explicit permission. See https://theplot.tv/auth.md.

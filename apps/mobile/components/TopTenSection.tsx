@@ -1,8 +1,8 @@
 /**
- * One Top 10 list (Movies or TV Shows) — ten fixed rank slots, dashed
+ * One Top 5 list (Movies or TV Shows): five fixed rank slots, dashed
  * placeholders for empties, reorder controls in edit mode.
  *
- * Lives in components/ rather than its own screen because web renders Top 10 as
+ * Lives in components/ rather than its own screen because web renders Top 5 as
  * a section of My Lists, not a destination. Mobile's /top10 route is gone; this
  * is rendered twice inside the `top10` CollapsibleSection.
  */
@@ -12,6 +12,7 @@ import Svg, { Path, Polyline } from 'react-native-svg';
 import SearchPickModal from './SearchPickModal';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
+import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 
 export type ListType = 'movies' | 'tv';
 
@@ -68,7 +69,7 @@ function RankRow({ rank, item, editMode, onRemove, onMoveUp, onMoveDown, canMove
                 onPress={onRemove}
                 style={styles.rankActionBtn}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                accessibilityLabel="Remove from Top 10"
+                accessibilityLabel="Remove from Top 5"
                 accessibilityRole="button"
               >
                 <Text style={{ color: colors.textMuted, fontSize: 12 }}>✕</Text>
@@ -102,7 +103,7 @@ export function TopTenSection({ listType, title, topLists, history }: {
   const [addingRank, setAddingRank] = useState<number | null>(null);
 
   const items = topLists.lists[listType] || [];
-  const slots = Array.from({ length: 10 }, (_, i) => i + 1);
+  const slots = Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1);
 
   return (
     <View>
@@ -130,7 +131,7 @@ export function TopTenSection({ listType, title, topLists, history }: {
               item={item || null}
               editMode={editMode}
               canMoveUp={rank !== 1}
-              canMoveDown={rank !== 10}
+              canMoveDown={rank !== TOP_LIST_SIZE}
               onRemove={() => item && topLists.removeSlot(listType, item.tmdb_id)}
               onMoveUp={() => topLists.moveUp(listType, rank)}
               onMoveDown={() => topLists.moveDown(listType, rank)}
@@ -168,12 +169,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   rankEmptyPrompt: {
     flex: 1,
-    fontFamily: fontFamily.serifItalic,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.sm,
     color: colors.textMuted,
   },
   rankNum: {
-    fontFamily: fontFamily.serifTabular,
+    fontFamily: fontFamily.display,
     fontSize: 22,
     width: 28,
     textAlign: 'center',

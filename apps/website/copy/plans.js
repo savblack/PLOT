@@ -7,8 +7,8 @@
 
 export const PLANS_PAGE = {
   meta: {
-    title: 'Plans & Pricing — PLOT',
-    description: 'PLOT is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more: US$3/mo or US$24/yr.',
+    title: 'Plans & Pricing — plot',
+    description: 'plot is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more: A$5/mo or A$40/yr.',
     ogDescription: 'Free to use, forever. Go Premium for unlimited lists and automatic sync across every service you watch.',
   },
 
@@ -93,7 +93,7 @@ export const PLANS_PAGE = {
       },
       {
         q: 'How does sync work?',
-        a: 'Connect Plex or Trakt once and PLOT keeps your watchlist and history current automatically — including what you watch on Netflix, Prime, Disney+ and more.',
+        a: 'Connect Plex or Trakt once and plot keeps your watchlist and history current automatically — including what you watch on Netflix, Prime, Disney+ and more.',
       },
     ],
   },

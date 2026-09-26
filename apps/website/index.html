@@ -53,10 +53,10 @@
     }
   </script>
   <!-- End Google Tag Manager -->
-  <title>PLOT – Your Film &amp; TV Companion</title>
-  <meta name="description" content="PLOT is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
+  <title>PLOT | Movie &amp; TV Tracker</title>
+  <meta name="description" content="plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <link rel="canonical" href="https://theplot.tv/" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#f8f2ea" />
 
   <!-- Favicon / app icon -->
   <!-- Every poster on this page is served from TMDB's image CDN rather than
@@ -69,20 +69,20 @@
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="PLOT" />
-  <meta property="og:title" content="PLOT – Your Film &amp; TV Companion" />
-  <meta property="og:description" content="PLOT is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
+  <meta property="og:site_name" content="plot" />
+  <meta property="og:title" content="PLOT | Movie &amp; TV Tracker" />
+  <meta property="og:description" content="plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="PLOT — your film &amp; TV companion" />
-  <meta property="og:url" content="https://theplot.tv" />
+  <meta property="og:image:alt" content="plot — your movie &amp; TV companion" />
+  <meta property="og:url" content="https://theplot.tv/" />
 
   <!-- Twitter / X card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="PLOT – Your Film &amp; TV Companion" />
-  <meta name="twitter:description" content="PLOT is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
+  <meta name="twitter:title" content="PLOT | Movie &amp; TV Tracker" />
+  <meta name="twitter:description" content="plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <meta name="twitter:image" content="https://theplot.tv/og-image.png" />
 
   <!-- Structured data -->
@@ -93,7 +93,7 @@
       {
         "@type": "Organization",
         "@id": "https://theplot.tv/#organization",
-        "name": "PLOT",
+        "name": "plot",
         "url": "https://theplot.tv/",
         "logo": "https://theplot.tv/og-image.png"
       },
@@ -101,17 +101,18 @@
         "@type": "WebSite",
         "@id": "https://theplot.tv/#website",
         "url": "https://theplot.tv/",
-        "name": "PLOT",
-        "description": "PLOT is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
+        "name": "plot",
+        "description": "plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
         "publisher": { "@id": "https://theplot.tv/#organization" }
       }
     ]
   }
   </script>
 
+  <link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css" />
+  <link rel="stylesheet" href="/ui.css" />
   <link rel="stylesheet" href="/nav.css" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
@@ -119,16 +120,20 @@
 
     /* Brand tokens now live in /theme.css (shared with the app via @plot/core/tokens.js). */
 
-    /* ── Display headlines: thin (100) ───────────────────────── */
+    /* ── Display headlines: Gabarito bold ────────────────────── */
     .hero-headline,
-    .manifesto-line,
     .timeline-headline,
-    .footer-cta-headline,
-    .footer-cta-sub {
-      font-weight: 400;
-      letter-spacing: var(--serif-tracking);
-      scale: var(--serif-condense) 1;
-      transform-origin: center;
+    .demo-headline,
+    .cal-headline,
+    .woc-headline {
+      font-family: var(--display);
+      font-weight: 700;
+      letter-spacing: var(--display-tracking);
+    }
+    .manifesto-line {
+      font-family: var(--display);
+      font-weight: 600;
+      letter-spacing: -0.025em;
     }
 
     html { scroll-behavior: smooth; }
@@ -170,7 +175,7 @@
       background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
-      font-weight: 200;
+      font-weight: 300;
       line-height: 1.45;
       -webkit-font-smoothing: antialiased;
       padding-bottom: 0;
@@ -180,8 +185,8 @@
     /* ── Scrollbar ──────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: #ddd; border-radius: var(--r-badge); }
-    ::-webkit-scrollbar-thumb:hover { background: #bbb; }
+    ::-webkit-scrollbar-thumb { background: #d9d1c4; border-radius: var(--r-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: #c4bbad; }
 
     /* ── Grain texture overlay ──────────────────────────────── */
     body::before {
@@ -212,56 +217,7 @@
 
     /* Navbar styling lives in the shared /nav.css (single source of truth). */
 
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.55rem 1.4rem;
-      border-radius: var(--r-pill);
-      font-family: var(--sans);
-      font-size: 0.68rem;
-      font-weight: 300;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.25s var(--ease);
-      border: none;
-    }
-    .btn-primary {
-      background: var(--ink);
-      color: #fff;
-    }
-    .btn-primary:hover {
-      background: var(--ink-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.18);
-    }
-    .btn-outline {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--text);
-    }
-    .btn-outline:hover {
-      background: var(--text);
-      color: #fff;
-      transform: translateY(-1px);
-    }
-    /* Kept as its own class for the sections that used to sit on black — on the
-       light site it resolves to the same ink outline as .btn-outline. */
-    .btn-outline-white {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--text);
-    }
-    .btn-outline-white:hover {
-      background: var(--text);
-      color: #fff;
-      transform: translateY(-1px);
-    }
-    .btn-large {
-      padding: 0.85rem 2.2rem;
-      font-size: 0.85rem;
-      min-height: 44px;
-    }
+    /* Buttons live in /ui.css (shared with every page). */
 
     /* ── Poster side-slides — float in from edges on scroll ── */
     #posterSide {
@@ -306,25 +262,35 @@
       z-index: 3;
       width: 100%;
       min-width: 0;
-      max-width: 900px;
+      max-width: 1040px;
     }
 
     .hero-headline {
-      font-family: var(--serif);
-      font-size: clamp(2.8rem, 6.5vw, 5rem);
-      font-weight: 400;
-      line-height: 0.88;
-      letter-spacing: var(--serif-tracking);
+      font-size: clamp(2.4rem, 4.8vw, 4.4rem);
+      line-height: 0.95;
       color: var(--text);
-      margin-bottom: 1rem;
+      margin-bottom: 1.75rem;
+      text-wrap: balance;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      color: var(--text);
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
     }
 
     .hero-sub {
-      font-size: 1rem;
+      font-size: 1.05rem;
       color: var(--text-secondary);
-      font-weight: 300;
+      font-weight: 400;
+      line-height: 1.5;
       margin-bottom: 2.25rem;
-      max-width: 480px;
+      max-width: 460px;
       margin-left: auto;
       margin-right: auto;
     }
@@ -344,34 +310,56 @@
     }
 
     /* ── Manifesto ──────────────────────────────────────────── */
+    /* Two beats instead of five single lines: each beat is a lead line with
+       its follow-ons underneath at reduced ink, so the first feature arrives
+       after two screens rather than five. */
     #manifesto {
-      padding: 10rem 2rem 22rem;
+      padding: 8rem 2rem 12rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 28rem;
+      gap: 12rem;
       text-align: center;
+    }
+    .manifesto-beat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
     }
 
     .manifesto-line {
-      font-family: var(--serif);
-      font-size: clamp(1.5rem, 3.4vw, 2.7rem);
-      font-weight: 500;
-      letter-spacing: var(--serif-tracking);
+      font-family: var(--display);
+      font-size: clamp(1.5rem, 2.8vw, 2.6rem);
+      font-weight: 600;
+      letter-spacing: -0.025em;
       line-height: 1.15;
       color: var(--text);
-      max-width: 700px;
+      max-width: 820px;
       transition: color 1.4s var(--ease);
     }
     .manifesto-line.passed {
-      color: rgba(26,26,26,0.22);
+      color: rgba(41,41,36,0.35);
     }
     .manifesto-line em {
-      font-style: italic;
+      font-style: normal; font-weight: 500;
     }
+    #plotDoes .manifesto-wordmark {
+      font-weight: 700;
+      letter-spacing: -0.045em;
+    }
+    #plotDoes em { font-style: italic; }
     .manifesto-line.no-fade.passed {
       color: var(--text);
     }
+    .manifesto-line.manifesto-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.18em;
+      line-height: 1;
+    }
+    .manifesto-stack > span { display: block; }
     /* Poster interludes — mobile only (desktop uses edge side-posters) */
     .manifesto-poster { display: none; }
     .manifesto-poster-row { display: none; }
@@ -411,32 +399,38 @@
     .tl-pinned .tl-scroll-track { will-change: transform; }
 
     .timeline-header {
-      padding: 0 3rem;
-      margin-bottom: 3rem;
+      padding: 0 3rem 2rem;
+      margin: 0 auto 0.5rem;
+      max-width: 1440px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 2rem;
     }
-
+    .timeline-header::after { content: none; }
+    .tl-head-copy { display: flex; flex-direction: column; gap: 1.25rem; align-items: flex-start; }
+    .section-eyebrow.tl-eyebrow { background: var(--sage); }
     .timeline-headline {
-      font-family: var(--serif);
-      font-size: clamp(2.8rem, 6.5vw, 5rem);
-      font-weight: 400;
-      line-height: 0.95;
-      letter-spacing: var(--serif-tracking);
+      font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+      line-height: 0.86;
       color: var(--text);
-      margin-bottom: 0.75rem;
+      margin: 0;
     }
 
     .timeline-intro {
       font-size: 1rem;
       font-weight: 300;
       color: var(--text-secondary);
-      max-width: 640px;
-      line-height: 1.45;
+      max-width: 320px;
+      line-height: 1.55;
+      text-align: right;
+      margin: 0 0 0.4rem;
     }
 
     /* horizontal scroll track */
     .tl-scroll-outer {
       overflow-x: auto;
-      padding: 2rem 3rem 3rem;
+      padding: 2.5rem 3rem 3rem;
       scrollbar-width: none;
       -ms-overflow-style: none;
       cursor: grab;
@@ -452,48 +446,43 @@
     }
 
     /* year marker */
-    .tl-year {
+    /* year markers are hidden: each card carries its own month + year */
+    .tl-year { display: none; }
+    .tl-year-legacy {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding-top: 2rem;
+      align-items: flex-start;
+      padding-top: 0;
       flex-shrink: 0;
-      width: 36px;
     }
 
     .tl-year-label {
-      font-size: 0.6rem;
-      font-weight: 300;
-      letter-spacing: 0.16em;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.4rem 0.7rem;
+      border-radius: var(--r-pill);
+      background: var(--surface);
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--accent);
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
-      transform: rotate(180deg);
+      color: var(--text);
     }
 
-    .tl-year-line {
-      width: 1px;
-      background: rgba(0,0,0,0.08);
-      margin-top: 0.75rem;
-      height: 220px;
-    }
+    .tl-year-line { display: none; }
 
     /* poster card */
     .tl-card {
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      width: 140px;
+      width: 172px;
     }
-    .tl-card:nth-child(3n+1) { padding-top: 0; }
-    .tl-card:nth-child(3n+2) { padding-top: 2.5rem; }
-    .tl-card:nth-child(3n)   { padding-top: 1.2rem; }
 
     .tl-poster {
-      width: 140px;
-      height: 210px;
-      border-radius: 8px;
+      width: 172px;
+      height: 258px;
+      border-radius: 10px;
       background-size: cover;
       background-position: center;
       background-color: #ccc;
@@ -508,7 +497,7 @@
 
     .tl-date {
       font-size: 0.62rem;
-      font-weight: 300;
+      font-weight: 500;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--accent);
@@ -516,17 +505,18 @@
     }
 
     .tl-title {
-      font-family: var(--serif);
-      font-size: 0.88rem;
+      font-family: var(--display);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-size: 1rem;
       color: var(--text);
       margin-bottom: 0.25rem;
       line-height: 1.25;
     }
 
     .tl-note {
-      font-family: var(--serif);
-      font-style: italic;
-      font-size: 0.75rem;
+      font-family: var(--display);
+      font-size: 0.85rem;
       color: var(--text-secondary);
       line-height: 1.45;
     }
@@ -551,33 +541,36 @@
       /* Keep the ticker content above the iOS home indicator */
       height: calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px));
       padding-bottom: env(safe-area-inset-bottom, 0px);
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: var(--ink);
+      color: var(--bg);
     }
 
     .ticker-badge {
       flex-shrink: 0;
       font-family: var(--sans);
       font-size: 0.72rem;
-      font-weight: 200;
-      letter-spacing: 0.18em;
+      font-weight: 600;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #fff;
-      background: var(--text);
+      color: var(--text);
+      background: var(--fill);
       padding: 0 1rem;
       height: 100%;
       display: flex;
       align-items: center;
-      border-right: 1px solid rgba(0,0,0,0.12);
       white-space: nowrap;
     }
+    .ticker-badge-live {
+      line-height: 1;
+      transform: translateY(1px);
+    }
     .ticker-badge-mark {
-      font-family: var(--serif);
-      font-weight: 400;
-      font-size: 1.05rem;
-      letter-spacing: 0.02em;
-      margin-right: 0.45em;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.04em;
+      text-transform: none;
+      margin-right: 0.5em;
     }
 
     .ticker-outer {
@@ -586,9 +579,6 @@
       height: 100%;
       display: flex;
       align-items: center;
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
     }
 
     .ticker-track {
@@ -605,10 +595,10 @@
     .ticker-cat {
       font-family: var(--sans);
       font-size: 0.58rem;
-      font-weight: 200;
+      font-weight: 700;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--accent);
+      color: var(--accent-on-dark);
       padding: 0 1.25rem 0 2rem;
       white-space: nowrap;
     }
@@ -616,15 +606,15 @@
     .ticker-item {
       font-family: var(--sans);
       font-size: 0.8rem;
-      font-weight: 200;
-      color: var(--text);
+      font-weight: 400;
+      color: var(--bg);
       white-space: nowrap;
       padding: 0 0.4rem;
     }
 
     .ticker-sep {
       font-size: 0.7rem;
-      color: var(--text-secondary);
+      color: var(--bg);
       padding: 0 0.2rem;
       opacity: 0.4;
     }
@@ -691,15 +681,12 @@
     .woc-inner { max-width: 720px; margin: 0 auto; text-align: center; position: relative; }
 
     .woc-headline {
-      font-family: var(--serif);
-      font-weight: 400;
-      letter-spacing: var(--serif-tracking);
-      font-size: clamp(2.8rem, 6vw, 4.8rem);
-      line-height: 0.95;
+      font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+      line-height: 0.86;
       margin-bottom: 1.1rem;
       color: var(--text-dark);
     }
-    .woc-headline em { font-style: italic; }
+    .woc-headline em { font-style: normal; }
 
     .woc-sub {
       font-size: 1.05rem;
@@ -752,9 +739,9 @@
     .woc-form button {
       height: 40px;
       padding: 0 18px;
-      border: 1px solid var(--text);
+      border: 1px solid var(--fill);
       border-radius: var(--r-pill);
-      background: transparent;
+      background: var(--fill);
       color: var(--text);
       font-family: var(--sans);
       font-size: 0.82rem;
@@ -763,14 +750,10 @@
       white-space: nowrap;
       transition: all 0.25s var(--ease);
     }
-    .woc-form button:hover:not(:disabled) { background: var(--text); color: #fff; }
+    .woc-form button:hover:not(:disabled) { background: var(--fill-hover); border-color: var(--fill-hover); }
     .woc-form button:disabled { opacity: 0.6; cursor: default; }
 
-    /* Subscribe is the closer's one primary action, so it takes the site's
-       existing solid CTA ink. The app-soon capture stays outlined: two solid
-       buttons on one page would leave neither of them reading as primary. */
-    #whats-on-cta .woc-form button { background: var(--ink); border-color: var(--ink); color: #fff; }
-    #whats-on-cta .woc-form button:hover:not(:disabled) { background: var(--ink-hover); border-color: var(--ink-hover); }
+    /* Notify and Subscribe are each the primary action in their own section. */
 
     /* One quiet line carries both secondary routes (browse, and the archive)
        below the form, replacing the orphaned link that used to sit above it. */
@@ -784,84 +767,25 @@
     /* Honeypot: invisible to humans, tempting to bots */
     .woc-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
 
-    /* Footer — lean nav rail. No hairline above it: the closing section now
-       fades its poster wall out to the same white ground the footer sits on, so
-       a rule there just draws a seam across an otherwise continuous surface.
-       (The old `margin-top: -1px` went with that border, pulling the footer up
-       to overlap the section edge so the two never doubled up.) */
+    /* Homepage footer overrides: the poster wall meets it without a seam, and
+       the bottom padding clears the fixed ticker. */
     footer {
-      background: var(--dark);
-      color: var(--text-dark);
+      border-top: 0;
       padding: 2.6rem 3rem calc(2.6rem + var(--ticker-height) + env(safe-area-inset-bottom, 0px));
-      position: relative;
-      z-index: 3;
-    }
-
-    .footer-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1.5rem 2rem;
-      flex-wrap: wrap;
+      margin-top: 0;
     }
 
     .footer-logo {
-      text-decoration: none;
-      font-family: var(--serif);
-      font-weight: 400;
-      letter-spacing: var(--serif-tracking);
-      font-size: 1.8rem;
-      line-height: 1;
-      color: var(--text-dark);
-      user-select: none;
+      font-weight: 700;
+      letter-spacing: -0.045em;
+      font-size: 1.7rem;
     }
-
-    .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
-
-    .footer-nav a {
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      text-decoration: none;
-      transition: color 0.2s;
-      white-space: nowrap;
-    }
-    .footer-nav a:hover { color: var(--text); }
-
-    .footer-bottom {
-      width: 100%;
-      padding-top: 1.2rem;
-      margin-top: 0.4rem;
-      border-top: 1px solid var(--glass-border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .footer-copy {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-    }
-
-    .footer-social { display: flex; gap: 1rem; align-items: center; }
-
-    .footer-social a {
-      color: var(--text-secondary);
-      display: inline-flex;
-      transition: color 0.2s;
-    }
-    .footer-social a:hover { color: var(--text); }
-    .footer-social svg { width: 19px; height: 19px; display: block; }
 
     @media (max-width: 820px) { .woc-wall { grid-template-columns: repeat(6, 1fr); } }
     @media (max-width: 600px) {
       /* The 11rem/9rem desktop breathing room just pushes the form off the
          fold on a phone. */
       #whats-on-cta { padding: 7rem 1.5rem 6rem; }
-      footer { padding-left: 1.5rem; padding-right: 1.5rem; }
     }
 
 
@@ -885,18 +809,19 @@
         right: 1.5rem;
         bottom: calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px));
         /* Peek up far enough to be visible before the first scroll (SUS-112) */
-        transform: translateY(30%);
+        /* Keep a clear pause below the CTA row before the artwork enters. */
+        transform: translateY(50%);
         pointer-events: none;
-        z-index: 5;
+        z-index: 1;
       }
       .hpk {
-        width: 30%;            /* JS overrides width/height for varied sizes */
+        width: auto;           /* JS varies this once fresh artwork is ready */
+        height: clamp(150px, 24vh, 220px);
         aspect-ratio: 2 / 3;
         flex-shrink: 0;
         border-radius: 12px;
         background-color: rgba(0,0,0,0.05);
-        background-size: cover;
-        background-position: center;
+        object-fit: cover;
         box-shadow: 0 -10px 30px rgba(0,0,0,0.12);
       }
 
@@ -964,8 +889,15 @@
       /* Nav mobile menu (hamburger + slide-down panel) is in the shared /nav.css */
 
       /* Hero — compact spacing on mobile */
-      #hero { padding-top: 5rem; padding-bottom: 2rem; }
-      .btn-large { padding: 0.6rem 1.4rem; font-size: 0.75rem; }
+      /* Copy sits in the top half of the fold rather than centred, so the
+         headline and CTA are on screen at load; the peek posters take the
+         lower half. The ticker is dropped on phones: it covered every poster
+         and the footer. */
+      #hero { align-items: flex-start; padding-top: 7rem; padding-bottom: 2rem; }
+      .hero-actions { flex-direction: column; align-items: center; }
+      .ticker-section { display: none; }
+      :root { --ticker-height: 0px; }
+      .hero-peek { transform: translateY(55%); bottom: 0; }
 
       /* Unify the mobile gutter — the interactive demo sections default to a
          2rem side padding while the editorial sections (manifesto, closing,
@@ -977,15 +909,12 @@
 
       /* Timeline — tighten padding on mobile */
       #timeline-section { padding: 5rem 0 4rem; }
-      .timeline-header { padding: 0 1.5rem; }
+      .timeline-header { padding: 0 1.5rem 1.5rem; flex-direction: column; align-items: flex-start; gap: 1rem; }
       .tl-scroll-outer { padding: 1.5rem 1.5rem 2rem; }
       .tl-poster { width: 110px; height: 165px; }
       .tl-card { width: 110px; }
       .tl-year-line { height: 165px; }
 
-
-      /* Footer — tighten side padding on narrow screens */
-      footer { padding-left: 1.5rem; padding-right: 1.5rem; }
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -1000,19 +929,23 @@
 
     /* Section eyebrow label */
     .section-eyebrow {
-      display: block;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.7rem;
+      border-radius: var(--r-pill);
+      background: var(--surface);
       font-size: 0.62rem;
       font-weight: 600;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--text-secondary);
+      color: var(--text);
       margin-bottom: 1.4rem;
     }
 
     /* Demo split layout */
     .demo-split {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 5rem;
       align-items: center;
       max-width: 1100px;
@@ -1020,15 +953,12 @@
     }
     .demo-copy { position: sticky; top: 10rem; }
     .demo-headline {
-      font-family: var(--serif);
-      font-size: clamp(2.8rem, 6.5vw, 5rem);
-      font-weight: 400;
-      letter-spacing: var(--serif-tracking);
-      line-height: 0.92;
+      font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+      line-height: 0.86;
       margin-bottom: 1.8rem;
       color: var(--text-dark);
     }
-    .demo-headline em { font-style: normal; font-weight: 400; }
+    .demo-headline em { font-style: normal; font-weight: 700; }
     .demo-body {
       font-size: 1rem;
       font-weight: 300;
@@ -1067,81 +997,79 @@
     }
     .origin-actions { display: flex; align-items: center; gap: 1.8rem; flex-wrap: wrap; margin-top: 2.2rem; }
     .origin-actions .demo-link { margin-top: 0; }
+    .origin-body + .origin-body { margin-top: 1rem; }
 
     /* "Pulls from" platform-proof row — substantiates the "every platform"
-       claim. Logos keep their own brand colours and are sized per-logo for even
-       optical weight. Every mark is a WebP cropped tight to its artwork, so the
-       heights below are true ink heights rather than boxes with padding.
-       Two marks ship recoloured rather than as supplied: AMC+ drew its "+" and
-       one frame corner in white, which left both invisible here, and its cyan
-       was too pale to read at the row's opacity — it's flattened to one darker
-       teal. Disney+ is darkened the same way for weight parity with Paramount+
-       and HBO max, which flank it. */
+       claim. Every mark is a WebP cropped tight to its artwork, so the heights
+       below are true ink heights rather than boxes with padding. */
     .demo-copy .btn { margin-top: 2.6rem; }
-    /* Let the column keep its grid share; the marquee's wide track clips inside. */
-    .demo-copy { min-width: 0; }
-
-    /* Platform logos as a slow marquee under the CTA. Edges fade out; three
-       copies of the set loop seamlessly. Muted so the copy + CTA still lead. */
+    /* Platform logos as a slow, full-viewport marquee below the complete
+       Trending panel. Three copies of the set loop seamlessly. */
     .marquee {
-      margin-top: 3rem; overflow: hidden;
+      width: 100vw;
+      margin-top: 4rem;
+      margin-left: calc(50% - 50vw);
+      overflow: hidden;
       -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
       mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
     }
     .marquee-track {
-      display: flex; width: max-content; align-items: center; gap: 3.2rem;
-      animation: marquee-scroll 48s linear infinite;   /* two copies of the set */
+      display: flex; width: max-content; align-items: center; gap: 4rem;
+      animation: marquee-scroll 48s linear infinite;   /* three copies of the set */
     }
-    @keyframes marquee-scroll { to { transform: translateX(-50%); } }
-    .marquee .pl { width: auto; display: block; opacity: 0.55; }
-    /* No filter needed: every mark now ships dark enough to read on white, and
-       flattening would cost Peacock its colour dots and Disney+ its teal. */
-    .pl-netflix     { height: 13px; }   /* all-caps, so a shorter measure than the lowercase marks */
-    .pl-prime       { height: 16px; }
-    .pl-max         { height: 21px; }
-    .pl-disney      { height: 23px; }   /* the swoosh takes the top third, so the script needs the extra measure */
-    .pl-paramount   { height: 21px; }
-    .pl-amc         { height: 20px; }
-    .pl-crunchyroll { height: 16px; }
-    .pl-hulu        { height: 18px; }   /* ascenders eat the measure, so it runs taller than the row's other lowercase marks */
-    .pl-peacock     { height: 15px; }
-    .pl-stan        { height: 17px; }
-    .pl-hayu        { height: 16px; }
-    /* Peacock opts out of the row's fade: its five colour dots are the point of
-       the mark, and mixing 45% white into them turns the amber one invisible.
-       Its wordmark is baked to the grey the fade used to produce, so it still
-       matches its neighbours. Needs the .marquee prefix to outrank the opacity
-       above; rebake the file if that opacity ever changes. */
-    .marquee .pl-peacock { opacity: 1; }
+    @keyframes marquee-scroll { to { transform: translateX(-33.333333%); } }
+    .marquee .pl {
+      width: auto;
+      display: block;
+      opacity: 1;
+      /* Flatten every supplied brand colour to PLOT's #292924 charcoal. */
+      filter: brightness(0) saturate(100%) invert(14%) sepia(8%) saturate(390%) hue-rotate(22deg) brightness(94%) contrast(92%);
+    }
+    .pl-netflix     { height: 26px; }   /* all-caps, so a shorter measure than the lowercase marks */
+    .pl-prime       { height: 32px; }
+    .pl-max         { height: 42px; }
+    .pl-disney      { height: 46px; }   /* the swoosh takes the top third, so the script needs the extra measure */
+    .pl-paramount   { height: 42px; }
+    .pl-amc         { height: 40px; }
+    .pl-crunchyroll { height: 32px; }
+    .pl-hulu        { height: 36px; }   /* ascenders eat the measure, so it runs taller than the row's other lowercase marks */
+    .pl-peacock     { height: 30px; }
+    .pl-stan        { height: 34px; }
+    .pl-hayu        { height: 32px; }
     @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
-    /* App UI shown as floating, deconstructed cards (replaces the phone frame).
-       Absolute layout at a 520×540 design size, scaled to fit via --afs. */
-    #guide-demo { --afs: 0.9; }
-    .af-scale { position: relative; width: calc(520px * var(--afs)); height: calc(540px * var(--afs)); margin: 0 auto; }
-    .app-float { position: absolute; top: 0; left: 0; width: 520px; height: 540px; transform: scale(var(--afs)); transform-origin: top left; }
-    .af-card {
-      position: absolute; border-radius: 16px; background-size: cover; background-position: center;
-      background-color: #e5e3db; box-shadow: 0 24px 48px -30px rgba(0,0,0,0.4); overflow: hidden;
+    /* Guide demo — the trending list as one calm panel: deeper cream, 20px
+       radius, hairline rows. The same framing every product panel uses. */
+    .trend-panel {
+      position: static;
+      width: 100%;
+      max-width: 560px;
+      max-height: none;
+      overflow: visible;
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 1.75rem 2rem 0.75rem;
     }
-    .af-hero { width: 260px; height: 356px; left: 130px; top: 70px; z-index: 4; }
-    .af-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.82), transparent 50%); }
-    .af-badge { position: absolute; top: 13px; left: 13px; z-index: 2; background: var(--accent, #e05578); color: #fff; font-size: 0.56rem; font-weight: 600; letter-spacing: 0.02em; padding: 4px 9px; border-radius: 999px; }
-    .af-cap { position: absolute; left: 15px; bottom: 14px; z-index: 2; font-family: var(--serif); font-size: 1.5rem; line-height: 1; color: #fff; }
-    .af-cap small { display: block; font-family: var(--sans); font-size: 0.62rem; color: rgba(240,239,232,0.65); margin-top: 5px; }
-    .af-p1 { width: 150px; height: 216px; left: -14px; top: 150px; z-index: 3; transform: rotate(-6deg); }
-    .af-p2 { width: 140px; height: 202px; right: 8px; top: 40px; z-index: 3; transform: rotate(7deg); }
-    .af-p3 { width: 128px; height: 186px; right: 30px; top: 300px; z-index: 5; transform: rotate(-4deg); }
-    .af-chip { position: absolute; z-index: 6; background: var(--surface); border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 10px 13px; box-shadow: 0 16px 32px -22px rgba(0,0,0,0.35); }
-    .af-chip .af-t { font-size: 0.72rem; font-weight: 600; color: var(--text); }
-    .af-chip .af-s { font-size: 0.5rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 3px; }
-    .af-chip1 { left: -12px; top: 92px; }
-    .af-chip2 { right: 40px; bottom: 8px; }
-    .af-chip3 { right: 4px; top: 0; }
-    @media (max-width: 900px) { #guide-demo { --afs: 0.68; } }
-    @media (max-width: 420px) { #guide-demo { --afs: 0.56; } }
+    .gp-rows { max-height: none; overflow: visible; }
+    .gp-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 1.1rem; gap: 1rem; }
+    .gp-title { font-family: var(--display); font-weight: 700; letter-spacing: var(--display-tracking); font-size: 1.6rem; line-height: 1; }
+    .gp-date { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); white-space: nowrap; }
+    .gp-row { display: flex; align-items: center; gap: 1.1rem; padding: 0.9rem 0; border-top: 1px solid var(--rule); }
+    .gp-rank { font-family: var(--display); font-weight: 700; font-size: 1.5rem; line-height: 1; width: 1.6rem; color: var(--text); flex-shrink: 0; }
+    .gp-poster { width: 44px; height: 66px; border-radius: 6px; object-fit: cover; background: rgba(41,41,36,0.08); flex-shrink: 0; display: block; }
+    .gp-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .gp-name { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.05rem; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gp-sub { font-size: 0.78rem; color: var(--text-secondary); }
+    .gp-chip { flex-shrink: 0; display: inline-flex; align-items: center; padding: 0.3rem 0.6rem; border-radius: var(--r-pill); font-size: 0.62rem; font-weight: 500; letter-spacing: 0.04em; background: #dbe1b0; color: var(--text); }
+    .gp-chip.is-top { background: var(--fill); }
+    @media (max-width: 600px) {
+      .trend-panel { padding: 1.4rem 1.25rem 0.5rem; }
+      .gp-title { font-size: 1.35rem; }
+      .gp-row { gap: 0.85rem; }
+      .gp-poster { width: 40px; height: 60px; }
+    }
 
-    .phone-wrap { display: flex; justify-content: center; }
+    .phone-wrap { display: flex; justify-content: center; min-width: 0; }
 
     /* iPhone PNG mockup wrapper
        PNG pixel data: phone outer 564–1039 × 113–1086 (475×973px)
@@ -1160,7 +1088,7 @@
          back the whole wrap in screen black. The bezel (z-index 10) covers all
          of it except the glass, and the radius keeps the fill inside the phone's
          own outline (measured ~49px) rather than squaring off its corners. */
-      background: #0c0c0c;
+      background: var(--bg);
       border-radius: 50px;
     }
 
@@ -1182,7 +1110,7 @@
       top:  40px;      /* (172−113) × 320/475 */
       width: 289px;    /* 429 × 320/475 */
       height: 601px;   /* 892 × 320/475 */
-      background: #111;
+      background: var(--bg); /* same as the screen, so the rounded clip leaves no dark hairline at the corners */
       border-radius: 38px;
       overflow: hidden;
     }
@@ -1234,7 +1162,7 @@
       background: #f4f4f0;
     }
     .demo-app-bar-title {
-      font-family: 'Instrument Serif', Georgia, serif;
+      font-family: 'Gabarito', 'DM Sans', system-ui, sans-serif;
       font-size: 1.1rem;
       font-weight: 400;
       letter-spacing: -0.05em;
@@ -1280,20 +1208,32 @@
 
     /* Origin — built by one person */
     #origin { background: var(--bg); padding: 10rem 2rem; }
-    .app-eyebrow {
-      display: inline-block; font-size: 0.62rem; font-weight: 600;
-      letter-spacing: 0.22em; text-transform: uppercase;
-      color: var(--accent, #e05578); margin-bottom: 1.4rem;
+    .app-kicker {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text-secondary);
+      font-size: 0.62rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      margin-bottom: 1.4rem;
+    }
+    .app-kicker span {
+      display: inline-flex; align-items: center;
+      padding: 0.35rem 0.7rem; border-radius: var(--r-pill);
+      background: var(--sage); color: var(--text);
     }
     .app-notify { margin-top: 1.8rem; }   /* breathing room between the copy and the email capture */
-    .app-phone { position: relative; width: 320px; }   /* badge anchors here, outside the clipped frame */
-    .app-phone-badge {
-      position: absolute; z-index: 20; top: 26px; right: -10px;
-      background: #0c0c0c; color: #f0efe8;
-      border: 1px solid rgba(240,239,232,0.18);
-      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 10px 20px; border-radius: 999px;
+    .app-phone {
+      position: relative;
+      width: min(100%, 430px);
+      display: flex;
+      justify-content: center;
+      padding: 2rem 0;
+      perspective: 1100px;
+    }
+    /* Give the mobile preview the wider, editorial three-quarter presentation
+       of a device mockup without replacing the accurate in-product screen. */
+    .app-phone .iphone-png-wrap {
+      transform: rotateY(-11deg) rotateZ(4deg) scale(1.1);
+      transform-origin: center;
     }
 
     .guide-screen {
@@ -1303,73 +1243,67 @@
       overflow: hidden;
       position: relative;
     }
-    /* Discover screen mockup — mirrors the app's mobile Discover UI */
-    .disc { background: #0c0c0c; }
+    /* Home screen mockup — the app's home on the warm brand (design canvas, option A) */
+    .disc { background: var(--bg); color: var(--text); }
     .disc-bar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 13px; height: 34px; flex-shrink: 0;
+      padding: 18px 15px 10px; flex-shrink: 0;
     }
-    .disc-ham { display: flex; flex-direction: column; gap: 3px; width: 13px; }
-    .disc-ham span { height: 1.4px; background: rgba(240,239,232,0.7); border-radius: 1px; }
-    .disc-logo { font-family: var(--serif); font-size: 0.98rem; letter-spacing: 0.04em; color: #f0efe8; }
-    .disc-search { width: 14px; height: 14px; color: rgba(240,239,232,0.7); }
-    .disc-tabs {
-      display: flex; align-items: flex-end; gap: 11px;
-      padding: 0 13px 7px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
-    }
-    .disc-tab { font-size: 0.62rem; color: rgba(240,239,232,0.4); position: relative; padding-bottom: 6px; }
-    .disc-tab-on { color: #f0efe8; }
-    .disc-tab-on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1.5px; background: var(--accent); border-radius: 2px; }
-    .disc-scroll { flex: 1; overflow: hidden; padding: 9px 13px 0; }
+    .disc-logo { font-family: var(--display); font-weight: 700; font-size: 1.2rem; letter-spacing: -0.03em; color: var(--text); }
+    .disc-search { width: 30px; height: 30px; padding: 7px; border-radius: 50%; background: var(--surface); color: var(--text); box-sizing: border-box; }
+    .disc-scroll { flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
     .disc-hero {
-      position: relative; height: 152px; border-radius: 11px; overflow: hidden;
-      background-size: cover; background-position: center 22%;
-      display: flex; flex-direction: column; justify-content: flex-end; padding: 11px;
+      position: relative; flex-shrink: 0; margin: 0 15px; height: 148px; border-radius: 15px; overflow: hidden;
+      background-color: var(--surface); background-size: cover; background-position: center 22%;
+      display: flex; flex-direction: column; justify-content: flex-end; padding: 12px;
     }
-    .disc-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 52%, transparent 100%); }
-    .disc-trend { position: absolute; top: 11px; left: 11px; font-size: 0.42rem; font-weight: 600; letter-spacing: 0.06em; color: #fff; background: rgba(224,85,120,0.92); padding: 3px 7px; border-radius: 20px; }
-    .disc-hero-title { position: relative; font-family: var(--serif); font-size: 1.2rem; line-height: 1; color: #fff; letter-spacing: -0.02em; }
-    .disc-hero-meta { position: relative; font-size: 0.5rem; color: rgba(255,255,255,0.72); margin-top: 4px; }
-    .disc-sec { padding: 13px 0 9px; }
-    .disc-sec-sub { font-size: 0.42rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(240,239,232,0.3); }
-    .disc-sec-t { font-size: 0.74rem; font-weight: 600; color: #f0efe8; margin-top: 2px; }
-    .disc-row { display: flex; gap: 9px; }
-    .disc-card { width: 79px; flex-shrink: 0; }
-    .disc-poster { position: relative; width: 79px; height: 118px; border-radius: 8px; background-size: cover; background-position: center; }
-    .disc-tag { position: absolute; top: 5px; left: 5px; font-size: 0.36rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 2px 5px; border-radius: 20px; }
-    .disc-tag-tv { background: rgba(74,144,217,0.9); }
-    .disc-bk { position: absolute; top: 5px; right: 6px; width: 9px; height: 11px; color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)); }
-    .disc-card-t { font-size: 0.55rem; color: #f0efe8; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .disc-nav {
-      display: flex; align-items: center; justify-content: space-around;
-      padding: 9px 4px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
-    }
-    .disc-nav span { font-size: 0.5rem; color: rgba(240,239,232,0.35); }
-    .disc-nav-on { color: var(--accent) !important; }
+    .disc-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(20,18,16,0.85) 0%, rgba(20,18,16,0.15) 55%, transparent 100%); }
+    .disc-hero-btn { position: absolute; top: 9px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: rgba(248,242,234,0.92); color: var(--text); }
+    .disc-hero-btn svg { width: 11px; height: 11px; }
+    .disc-fav { left: 9px; }
+    .disc-save { right: 9px; }
+    .disc-trend { position: relative; align-self: flex-start; margin-bottom: 6px; padding: 4px 7px; border-radius: var(--r-pill); background: var(--fill); color: var(--text); font-size: 0.42rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+    .disc-hero-title { position: relative; font-family: var(--display); font-weight: 600; font-size: 1.1rem; line-height: 1.1; color: var(--bg); letter-spacing: -0.02em; }
+    .disc-hero-meta { position: relative; font-size: 0.52rem; color: rgba(248,242,234,0.8); margin-top: 4px; }
+    .disc-sec { flex-shrink: 0; display: flex; flex-direction: column; gap: 9px; }
+    .disc-sec-head { padding: 0 15px; display: flex; flex-direction: column; }
+    .disc-sec-sub { font-size: 0.46rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
+    .disc-sec-t { font-family: var(--display); font-weight: 600; font-size: 0.92rem; letter-spacing: -0.02em; color: var(--text); margin-top: 1px; }
+    .disc-row { display: flex; gap: 9px; padding: 0 15px; overflow: hidden; }
+    .disc-card { width: 77px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
+    .disc-poster { position: relative; width: 77px; height: 116px; border-radius: 9px; background-color: var(--surface); background-size: cover; background-position: center; box-shadow: 0 4px 12px rgba(41,41,36,0.10); }
+    .disc-card-t { font-size: 0.56rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* My Lists screen */
     #lists-demo { background: var(--bg); padding: 14rem 2rem; }
 
     /* Calendar */
-    #calendar-demo { background: var(--dark); padding: 10rem 2rem 8rem; text-align: center; }
+    #calendar-demo { background: var(--dark); padding: 10rem 2rem 8rem; }
+    .cal-split {
+      display: grid;
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: 5rem;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .cal-copy { display: flex; flex-direction: column; gap: 1.5rem; align-items: flex-start; }
     .cal-headline {
-      font-family: var(--serif);
-      font-size: clamp(2.8rem, 6.5vw, 5rem);
-      font-weight: 400;
-      letter-spacing: var(--serif-tracking);
-      line-height: 0.88;
+      font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+      line-height: 0.86;
       color: var(--text-dark);
-      margin-bottom: 1.5rem;
+      margin: 0;
     }
     .cal-headline em { font-style: normal; }
     .cal-sub {
       font-size: 1rem;
       font-weight: 300;
       color: var(--text-secondary);
-      max-width: 440px;
-      margin: 0 auto 5rem;
-      line-height: 1.45;
+      max-width: 400px;
+      margin: 0;
+      line-height: 1.55;
     }
+    .cal-eyebrow { background: #dbe1b0; }
     .cal-hdr {
       display: flex;
       align-items: center;
@@ -1378,11 +1312,11 @@
       border-bottom: 1px solid rgba(0,0,0,0.08);
     }
     .cal-month {
-      font-family: var(--serif);
-      font-size: 1.15rem;
-      font-weight: 400;
+      font-family: var(--display);
+      font-size: 1.3rem;
+      font-weight: 700;
       color: var(--text-dark);
-      letter-spacing: var(--serif-tracking);
+      letter-spacing: var(--display-tracking);
     }
     .cal-wdays { display: grid; grid-template-columns: repeat(7, 1fr); padding: 8px 12px 4px; }
     .cal-wd {
@@ -1413,48 +1347,45 @@
     /* Coverflow slide states — 0 = centred cover, neighbours angled, far cards
        parked off-stage so the ring can loop without a visible jump. */
     .cf-card.s-farLeft  { transform: translateX(calc(-1 * var(--cf-fx))) rotateY(45deg)  scale(0.7);  opacity: 0;   z-index: 0; }
-    .cf-card.s-left     { transform: translateX(calc(-1 * var(--cf-x)))  rotateY(38deg)  scale(0.82); opacity: 0.5; z-index: 1; }
+    .cf-card.s-left     { transform: translateX(calc(-1 * var(--cf-x)))  rotateY(38deg)  scale(0.82); opacity: 0.7; z-index: 1; }
     .cf-card.s-center   { transform: translateX(0)                       rotateY(0deg)   scale(1);    opacity: 1;   z-index: 3; }
-    .cf-card.s-right    { transform: translateX(var(--cf-x))             rotateY(-38deg) scale(0.82); opacity: 0.5; z-index: 1; }
+    .cf-card.s-right    { transform: translateX(var(--cf-x))             rotateY(-38deg) scale(0.82); opacity: 0.7; z-index: 1; }
     .cf-card.s-farRight { transform: translateX(var(--cf-fx))            rotateY(-45deg) scale(0.7);  opacity: 0;   z-index: 0; }
 
     .cf-cap { text-align: center; margin-top: 1.4rem; }
-    .cf-nm { font-family: var(--serif); font-size: 1.5rem; color: var(--text); line-height: 1.05; }
+    .cf-nm { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.4rem; color: var(--text); line-height: 1.05; }
     .cf-ct { font-size: 0.64rem; color: var(--text-secondary); margin-top: 0.25rem; letter-spacing: 0.1em; text-transform: uppercase; }
     .cf-dots { display: flex; gap: 6px; justify-content: center; margin-top: 0.85rem; }
     .cf-dots i { width: 5px; height: 5px; border-radius: 50%; background: rgba(0,0,0,0.18); transition: background 0.3s var(--ease); }
     .cf-dots i.on { background: var(--text); }
 
     @media (max-width: 900px) {
-      .demo-split { grid-template-columns: 1fr; gap: 3.5rem; }
+      .demo-split { grid-template-columns: minmax(0, 1fr); gap: 3.5rem; }
       .demo-copy { position: static; order: 1 !important; }
       .phone-wrap { order: 2 !important; }
       .origin-split { grid-template-columns: 1fr; gap: 2.6rem; }
       /* Guide demo — tighten the stacked layout on mobile */
       section#guide-demo, section#app-soon, section#origin { padding-top: 5rem; padding-bottom: 5rem; }
       #guide-demo .demo-split { gap: 2.4rem; }
+      #guide-demo .marquee { margin-top: 3rem; }
       #guide-demo .marquee-track { gap: 2.2rem; }
+      .app-phone { width: min(100%, 370px); }
+      .app-phone .iphone-png-wrap { transform: rotateY(-8deg) rotateZ(3deg); }
     }
 
     @media (max-width: 420px) {
       .cf { height: 300px; --cf-x: 118px; --cf-fx: 250px; }
       .cf-card { width: 170px; }
+      .app-phone .iphone-png-wrap { transform: rotateY(-6deg) rotateZ(2deg) scale(0.9); }
     }
 
     /* ── Interactive Calendar Demo ──────────────────────────────── */
-    .cal-interactive {
-      display: grid;
-      grid-template-columns: 1fr 1.15fr;
-      gap: 1.5rem;
-      max-width: 1060px;
-      margin: 3rem auto 0;
-      align-items: stretch;
-    }
-
-    /* Guide panel */
+    /* Upcoming list — sits under the copy, compact */
     .guide-panel {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 0.5rem;
       background: var(--surface);
-      border: 1px solid rgba(0,0,0,0.1);
       border-radius: 20px;
       overflow: hidden;
       display: flex;
@@ -1541,31 +1472,41 @@
 
     /* Interactive calendar mockup */
     .cal-mockup-int {
+      width: 100%;
+      max-width: 560px;
+      justify-self: end;
       background: var(--surface);
-      border: 1px solid rgba(0,0,0,0.1);
       border-radius: 20px;
       overflow: hidden;
+      padding: 0.75rem 0.75rem 0;
     }
     .cal-grid-int {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      padding: 4px 8px 8px;
-      gap: 2px;
+      padding: 4px 8px 12px;
+      gap: 6px;
     }
     .cal-cell-int {
-      border-radius: 7px;
-      padding: 5px 2px 4px;
-      cursor: pointer;
+      border-radius: 10px;
+      padding: 6px;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: flex-start;
       gap: 3px;
-      transition: background 0.15s;
-      min-height: 46px;
+      min-height: 84px;
+      background-size: cover;
+      background-position: center;
+      overflow: hidden;
     }
-    .cal-cell-int:hover:not(.dim) { background: rgba(0,0,0,0.05); }
+    /* Release cells are poster-only. Their true poster ratio shows the full
+       artwork without a gradient, date, title or platform overlay. */
+    .cal-cell-int.has-poster {
+      aspect-ratio: 2 / 3;
+      min-height: 0;
+      padding: 0;
+      background-position: center;
+    }
     .cal-cell-int.dim  { opacity: 0.28; pointer-events: none; }
-    .cal-cell-int.selected { background: rgba(0,0,0,0.07); }
     /* Interactive day cells render as <button> — reset native chrome and give a
        clear keyboard focus ring (SUS-79). */
     button.cal-cell-int {
@@ -1577,8 +1518,8 @@
       outline-offset: -2px;
     }
     .cal-cell-int.today .cal-dn-int {
-      background: var(--text);
-      color: #fff;
+      background: var(--fill);
+      color: var(--text);
       border-radius: 50%;
       width: 22px; height: 22px;
       display: flex; align-items: center; justify-content: center;
@@ -1589,9 +1530,6 @@
       width: 22px; height: 22px;
       display: flex; align-items: center; justify-content: center;
     }
-    .cal-dots-int { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
-    .cal-dot-int  { width: 4px; height: 4px; border-radius: 50%; }
-
     /* Day events panel */
     .cal-day-panel {
       border-top: 1px solid rgba(0,0,0,0.08);
@@ -1645,12 +1583,17 @@
     .cal-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     @media (max-width: 800px) {
-      .cal-interactive { grid-template-columns: 1fr; }
+      .cal-split { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; }
+      .cal-mockup-int { justify-self: center; }
+      .guide-panel { max-width: none; }
     }
   </style>
-  <!-- No eager image preloads: the hero uses live TMDB posters, and these
-       local images appear only in below-the-fold demo sections (discover
-       mockup, My Lists) where they are lazy/overwritten. (SUS-89) -->
+  <!-- The three mobile/tablet hero posters are real first-frame fallbacks.
+       Preload them so the hero never waits for the live discovery request. -->
+  <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg">
+  <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/gRMalasZEzsZi4w2VFuYusfSfqf.jpg">
+  <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg">
+  <link rel="stylesheet" href="/premium-home.css?v=16">
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -1663,7 +1606,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <!-- ── Navbar ──────────────────────────────────────────────── -->
   <nav id="navbar">
-    <a href="/" class="nav-logo">PLOT</a>
+    <a href="/" class="nav-logo">plot</a>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
       <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
@@ -1677,42 +1620,39 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- ── Hero ────────────────────────────────────────────────── -->
   <section id="hero">
     <div class="hero-content">
-      <h1 class="hero-headline reveal">Your film &amp; TV companion</h1>
-      <p class="hero-sub reveal reveal-delay-2">Everything you've watched. Everything you want to watch.</p>
+      <span class="hero-eyebrow reveal">Your movie and TV companion</span>
+      <h1 class="hero-headline reveal reveal-delay-1">Everything you've watched.<br>Everything you want to watch.</h1>
+      <p class="hero-sub reveal reveal-delay-2">Track what you've seen, save what's coming, and keep the notes that make it yours.</p>
       <div class="hero-actions reveal reveal-delay-3">
-        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large" data-cta="hero">Start your PLOT →</a>
+        <a href="/whats-on" class="btn btn-outline btn-large" data-cta="hero-whats-on">See what's on</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="hero">Start your plot</a>
       </div>
     </div>
     <div class="hero-peek" aria-hidden="true">
-      <div class="hpk"></div>
-      <div class="hpk"></div>
-      <div class="hpk"></div>
+      <img class="hpk" src="https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
+      <img class="hpk" src="https://image.tmdb.org/t/p/w500/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
+      <img class="hpk" src="https://image.tmdb.org/t/p/w500/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
     </div>
   </section>
 
   <!-- ── Manifesto ────────────────────────────────────────────── -->
   <section id="manifesto">
-    <p class="manifesto-line reveal">You don't just watch things.</p>
+    <div class="manifesto-beat">
+      <p class="manifesto-line manifesto-stack reveal"><span>You don't just watch things.</span><span>You think about them.</span><span>You talk about them.</span><span>You carry them with you.</span></p>
+    </div>
     <div class="manifesto-poster-row reveal">
       <div class="manifesto-poster"></div>
       <div class="manifesto-poster"></div>
     </div>
-    <p class="manifesto-line reveal">You think about them.</p>
-    <div class="manifesto-poster reveal"></div>
-    <p class="manifesto-line reveal">You talk about them.</p>
-    <div class="manifesto-poster-row reveal">
-      <div class="manifesto-poster"></div>
-      <div class="manifesto-poster"></div>
+    <div class="manifesto-beat">
+      <p class="manifesto-line manifesto-stack reveal"><span>But no app has ever cared</span><span>as much as you do.</span></p>
     </div>
-    <p class="manifesto-line reveal">You carry them with you.</p>
-    <div class="manifesto-poster reveal"></div>
-    <p class="manifesto-line reveal">But no app has ever cared<br>as much as you do.</p>
     <div class="manifesto-poster-row reveal">
       <div class="manifesto-poster"></div>
       <div class="manifesto-poster"></div>
       <div class="manifesto-poster"></div>
     </div>
-    <p class="manifesto-line no-fade reveal" id="plotDoes"><span style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-0.02em;">PLOT</span> <em>does.</em></p>
+    <p class="manifesto-line no-fade reveal" id="plotDoes"><span class="manifesto-wordmark">plot</span> <em>does.</em></p>
   </section>
 
 
@@ -1722,59 +1662,66 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="demo-copy reveal">
         <h2 class="demo-headline">Everything.<br><em>In one place.</em></h2>
         <p class="demo-body">
-          Always know what's worth watching. PLOT tracks what's trending
+          Always know what's worth watching. plot tracks what's trending
           worldwide, pulls the top 10 across the major platforms and every
           release on the way into a single feed. <em>Your</em> feed.
         </p>
-        <a href="https://app.theplot.tv/signup" class="btn btn-outline-white btn-large" data-cta="demo-unify">Unify your entertainment universe &rarr;</a>
-        <div class="marquee" aria-hidden="true">
-          <div class="marquee-track">
-            <!-- set 1 -->
-            <img class="pl pl-netflix"     src="images/platforms/netflix.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.webp"  alt="" loading="lazy" decoding="async">
-            <img class="pl pl-max"         src="images/platforms/hbo-max.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-disney"      src="images/platforms/disney-plus.webp"        alt="" loading="lazy" decoding="async">
-            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.webp"      alt="" loading="lazy" decoding="async">
-            <img class="pl pl-amc"         src="images/platforms/amc-plus.webp"           alt="" loading="lazy" decoding="async">
-            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp"         alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hulu"        src="images/platforms/hulu.webp"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-peacock"     src="images/platforms/peacock.webp"             alt="" loading="lazy" decoding="async">
-            <img class="pl pl-stan"        src="images/platforms/stan.webp"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hayu"        src="images/platforms/hayu.webp"                alt="" loading="lazy" decoding="async">
-            <!-- set 2 (duplicate for a seamless loop) -->
-            <img class="pl pl-netflix"     src="images/platforms/netflix.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.webp"  alt="" loading="lazy" decoding="async">
-            <img class="pl pl-max"         src="images/platforms/hbo-max.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-disney"      src="images/platforms/disney-plus.webp"        alt="" loading="lazy" decoding="async">
-            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.webp"      alt="" loading="lazy" decoding="async">
-            <img class="pl pl-amc"         src="images/platforms/amc-plus.webp"           alt="" loading="lazy" decoding="async">
-            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp"         alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hulu"        src="images/platforms/hulu.webp"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-peacock"     src="images/platforms/peacock.webp"             alt="" loading="lazy" decoding="async">
-            <img class="pl pl-stan"        src="images/platforms/stan.webp"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hayu"        src="images/platforms/hayu.webp"                alt="" loading="lazy" decoding="async">
+        <a href="/whats-on" class="btn btn-primary btn-large" data-cta="demo-whats-on">See what's on</a>
+      </div>
+      <div class="phone-wrap reveal">
+        <!-- The trending list as a panel. Row 1 is committed markup that
+             refresh-timeline.mjs rewrites weekly; on load a script replaces
+             every row from /api/discover, so the committed rows are only the
+             pre-hydration fallback. -->
+        <div class="trend-panel" aria-hidden="true">
+          <div class="gp-head"><div class="gp-title">Trending now</div><div class="gp-date" id="gpDate">This week</div></div>
+          <div class="gp-rows" id="gpRows">
+            <!-- hero-card:start -->
+
+            <div class="gp-row"><div class="gp-rank">1</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w342/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Resident Evil</div><div class="gp-sub">2026 &middot; Film</div></div><span class="gp-chip is-top">Trending #1</span></div>
+            <!-- hero-card:end -->
+            <div class="gp-row"><div class="gp-rank">2</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Hot right now</div><div class="gp-sub">Movie</div></div><span class="gp-chip">Movie</span></div>
+            <div class="gp-row"><div class="gp-rank">3</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Top 10</div><div class="gp-sub">Movie</div></div><span class="gp-chip">Movie</span></div>
           </div>
         </div>
       </div>
-      <div class="phone-wrap reveal">
-        <!-- App UI shown as floating, deconstructed cards (no device frame) -->
-        <div class="af-scale">
-          <div class="app-float">
-            <!-- hero-card:start -->
-
-            <div class="af-card af-hero" style="background-image:url('https://image.tmdb.org/t/p/w342/uxCaBoYXsDC4A0SqTm3SISj0OwK.jpg')">
-              <span class="af-badge">TRENDING #1</span>
-              <div class="af-cap">The Runner<small>2026 &middot; Film</small></div>
-            </div>
-            <!-- hero-card:end -->
-            <div class="af-card af-p1" style="background-image:url('https://image.tmdb.org/t/p/w500/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg')"></div>
-            <div class="af-card af-p2" style="background-image:url('https://image.tmdb.org/t/p/w500/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg')"></div>
-            <div class="af-card af-p3" style="background-image:url('https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg')"></div>
-            <div class="af-chip af-chip1"><div class="af-s">Trending today</div><div class="af-t">Hot right now</div></div>
-            <div class="af-chip af-chip3"><div class="af-s">This week</div><div class="af-t">Top 10</div></div>
-            <div class="af-chip af-chip2"><div class="af-s">Popular TV</div><div class="af-t">Most binged shows</div></div>
-          </div>
-        </div>
+    </div>
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <!-- Three duplicate sets create a seamless loop. -->
+        <img class="pl pl-netflix" src="images/platforms/netflix.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-prime" src="images/platforms/amazon-prime-video.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-max" src="images/platforms/hbo-max.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-disney" src="images/platforms/disney-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-paramount" src="images/platforms/paramount-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-amc" src="images/platforms/amc-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hulu" src="images/platforms/hulu.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-peacock" src="images/platforms/peacock.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-stan" src="images/platforms/stan.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hayu" src="images/platforms/hayu.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-netflix" src="images/platforms/netflix.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-prime" src="images/platforms/amazon-prime-video.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-max" src="images/platforms/hbo-max.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-disney" src="images/platforms/disney-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-paramount" src="images/platforms/paramount-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-amc" src="images/platforms/amc-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hulu" src="images/platforms/hulu.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-peacock" src="images/platforms/peacock.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-stan" src="images/platforms/stan.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hayu" src="images/platforms/hayu.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-netflix" src="images/platforms/netflix.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-prime" src="images/platforms/amazon-prime-video.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-max" src="images/platforms/hbo-max.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-disney" src="images/platforms/disney-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-paramount" src="images/platforms/paramount-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-amc" src="images/platforms/amc-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hulu" src="images/platforms/hulu.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-peacock" src="images/platforms/peacock.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-stan" src="images/platforms/stan.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hayu" src="images/platforms/hayu.webp" alt="" loading="lazy" decoding="async">
       </div>
     </div>
   </section>
@@ -1785,10 +1732,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="tl-pin" id="tlPin">
      <div class="tl-sticky">
       <div class="timeline-header reveal">
-        <h2 class="timeline-headline">A timeline as rich <br class="tl-mbreak">as your taste</h2>
-        <p class="timeline-intro">Your watch history tells a story <br class="tl-mbreak">and every story needs a PLOT.</p>
+        <div class="tl-head-copy">
+          <span class="section-eyebrow tl-eyebrow">Your watch history</span>
+          <h2 class="timeline-headline">A timeline as rich <br class="tl-mbreak">as your taste</h2>
+        </div>
+        <p class="timeline-intro">Your watch history tells a story and every story needs a plot.</p>
       </div>
-
       <div class="tl-scroll-outer" id="tlScrollOuter">
       <div class="tl-scroll-track" id="tlTrack">
         <!-- timeline:start -->
@@ -1924,24 +1873,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </section>
   <!-- ── Calendar Demo ────────────────────────────────────────── -->
   <section id="calendar-demo">
-    <h2 class="cal-headline reveal">Never miss <em>a drop.</em></h2>
-    <p class="cal-sub reveal">
-      Save that new show, movie or cinema release. Whatever you're
-      excited for, let your calendar do the remembering.
-    </p>
-
-    <div class="cal-interactive reveal">
-      <!-- Left: Guide list -->
-      <div class="guide-panel">
-        <div class="guide-hdr">
-          <span class="guide-hdr-title" id="guideHdrTitle">Upcoming</span>
-          <span class="guide-hdr-hint" id="guideHdrHint">Tap + to save</span>
-        </div>
-        <div class="guide-list" id="guideList"></div>
-      </div>
+    <div class="cal-split">
+     <div class="cal-copy reveal">
+      <span class="section-eyebrow cal-eyebrow">Your release calendar</span>
+      <h2 class="cal-headline">Never miss <em>a drop.</em></h2>
+      <p class="cal-sub">
+        Save that new show, movie or cinema release. Whatever you're
+        excited for, let your calendar do the remembering.
+      </p>
+      <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="calendar-signup">Start your plot</a>
+     </div>
 
       <!-- Right: Interactive calendar -->
-      <div class="cal-mockup-int">
+      <div class="cal-mockup-int reveal">
         <div class="cal-hdr">
           <div class="cal-month" id="calMonthLabel"></div>
         </div>
@@ -1950,13 +1894,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="cal-wd">We</div><div class="cal-wd">Th</div><div class="cal-wd">Fr</div><div class="cal-wd">Sa</div>
         </div>
         <div class="cal-grid-int" id="calGridInt"></div>
-        <div class="cal-day-panel" id="calDayPanel">
-          <div class="cal-day-empty">Add releases from the guide to see them here</div>
-        </div>
       </div>
     </div>
-
-    <div class="cal-toast" id="calToastInt"></div>
   </section>
 
 
@@ -1969,28 +1908,95 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="cf" id="listsCf"></div>
           <div class="cf-cap">
             <div class="cf-nm" id="cfNm">Award winners</div>
-            <div class="cf-ct" id="cfCt">20 films</div>
+            <div class="cf-ct" id="cfCt">20 movies</div>
             <div class="cf-dots" id="cfDots"><i class="on"></i><i></i><i></i></div>
           </div>
         </div>
       </div>
       <div class="demo-copy reveal">
-        <h2 class="demo-headline" style="color:var(--text)">The lists only <em style="font-style:italic">you</em><br>could curate.</h2>
+        <h2 class="demo-headline" style="color:var(--text)">The lists only<br><span style="white-space:nowrap">you could curate.</span></h2>
         <p class="demo-body" style="color:var(--text-secondary)">
-          Organise by decade, director, or whatever mood you're in. Create and share film and TV collections that are unmistakably yours.
+          Organise by decade, director, or whatever mood you're in. Create and share movie and TV collections that are unmistakably yours.
         </p>
-        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large" data-cta="demo-create">Start curating &rarr;</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="demo-create">Start curating</a>
       </div>
     </div>
   </section>
 
-  <!-- ── Mobile app — coming soon ─────────────────────────────── -->
+  <!-- PLOT Premium feature preview -->
+  <section id="premium" aria-label="plot Premium benefits" aria-roledescription="carousel">
+    <div class="premium-layout">
+      <div>
+        <div class="premium-kicker">plot Premium <span>Coming soon</span></div>
+        <h2 class="premium-headline">Less deciding.<br><em>More watching.</em></h2>
+        <div class="premium-copy-stage"><div class="premium-copy-slide is-active"><h3>Find tonight’s movie</h3><p>A little time to spare and too much to choose from? Find a movie that fits your evening, on the services you use.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Choose something together</h3><p>You’ve both got a watchlist. Find the overlap, make a list together and get movie night started. Friends can join for free.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Follow the people behind your favourites</h3><p>Love an actor? Always make time for a certain director? Follow them and get a heads-up when their next movie or show is on the way.</p></div></div>
+        <p class="premium-note">Your everyday watching stays free.</p>
+        <a href="https://app.theplot.tv/plans" class="btn btn-primary btn-large">Explore Premium</a>
+        <div class="premium-switcher" role="group" aria-label="Premium benefits" hidden>
+          <button type="button" aria-pressed="true">Tonight</button><span aria-hidden="true">·</span>
+          <button type="button" aria-pressed="false">Together</button><span aria-hidden="true">·</span>
+          <button type="button" aria-pressed="false">Following</button>
+        </div>
+      </div>
+      <div class="premium-visual-stage" aria-live="off">
+        <div class="premium-visual-slide is-active" role="group" aria-label="1 of 3: Find tonight’s movie">
+          <div class="premium-shared">
+            <div class="premium-mini">Movie picker</div>
+            <h3>What fits tonight?</h3>
+            <div class="premium-story premium-picker" role="img" aria-label="Australian example verified 17 September 2026: choose 120 minutes, Disney+ and Comedy. The Grand Budapest Hotel matches at 100 minutes on Disney+.">
+              <div><span class="premium-q-label">How much time?</span><div class="premium-seg premium-time"><span class="premium-ind"></span><span class="premium-o premium-o1"><b class="premium-k">30 min</b><b class="premium-w">30 min</b></span><span class="premium-o premium-o2"><b class="premium-k">60 min</b><b class="premium-w">60 min</b></span><span class="premium-o premium-o3"><b class="premium-k">90 min</b><b class="premium-w">90 min</b></span><span class="premium-on"><b class="premium-k">120 min</b><b class="premium-w">120 min</b></span></div></div>
+              <div><span class="premium-q-label">Where do you watch?</span><div class="premium-seg premium-svc"><span class="premium-o">Netflix</span><span class="premium-on"><b class="premium-k">Disney+</b><b class="premium-w">Disney+</b></span><span class="premium-o">Prime Video</span><span class="premium-o">Apple TV+</span></div></div>
+              <div><span class="premium-q-label">In the mood for?</span><div class="premium-seg premium-mood"><span class="premium-o">Drama</span><span class="premium-on"><b class="premium-k">Comedy</b><b class="premium-w">Comedy</b></span><span class="premium-o">Thriller</span><span class="premium-o">Romance</span></div></div>
+              <div class="premium-pick"><div class="premium-shuffle"><img class="premium-c1" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c2" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c3" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c4" src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c5" src="https://image.tmdb.org/t/p/w185/s8Sr5BRjEzOnD6sxBvxUI4qrkrs.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c6" src="https://image.tmdb.org/t/p/w185/rUDuOKpkKBHxx41BScqKej72iT3.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c7" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c8" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-final" data-premium-art src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="The Grand Budapest Hotel poster" loading="lazy" decoding="async" width="185" height="278"></div>
+                <div class="premium-pick-info"><span class="premium-mini">Tonight’s pick</span><strong>The Grand Budapest Hotel</strong><span class="premium-meta">Comedy · 100 min · Disney+</span><span class="premium-pill-cta"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg>Play on Disney+</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="premium-visual-slide" aria-hidden="true" inert role="group" aria-label="2 of 3: Choose something together">
+          <div class="premium-shared">
+            <div class="premium-mini">A list for the two of you</div>
+            <h3>Friday night, sorted.</h3>
+            <div class="premium-story premium-together" role="img" aria-label="Two illustrative watchlists share one title, Widow's Bay. Its two posters travel to the centre and meet: you both want to watch this.">
+              <div class="premium-board">
+                <div class="premium-lbl premium-l1" style="top:0"><span class="premium-av premium-av-you">Y</span>Your watchlist</div>
+                <div class="premium-row premium-l1" style="top:32px"><img class="premium-m1" data-premium-art src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="Widow's Bay poster" loading="lazy" decoding="async" width="185" height="278"><img class="premium-o" data-premium-art src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-o" data-premium-art src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-o" data-premium-art src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div>
+                <div class="premium-lbl premium-l2" style="top:188px"><span class="premium-av premium-av-them">P</span>Your person’s watchlist</div>
+                <div class="premium-row premium-l2 premium-r2" style="top:220px"><img class="premium-o" data-premium-art src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-o" data-premium-art src="https://image.tmdb.org/t/p/w185/s8Sr5BRjEzOnD6sxBvxUI4qrkrs.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-o" data-premium-art src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-m2" data-premium-art src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div>
+                <span class="premium-ring"></span>
+                <div class="premium-both"><span class="premium-av premium-av-you">Y</span><span class="premium-av premium-av-them">P</span></div>
+              </div>
+              <div class="premium-outcome-bar"><div><strong>You both want to watch this.</strong><span class="premium-meta">Widow’s Bay · in both watchlists</span></div><span class="premium-pill-cta">Start movie night</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="premium-visual-slide" aria-hidden="true" inert role="group" aria-label="3 of 3: Follow the people behind your favourites">
+          <div class="premium-shared">
+            <div class="premium-mini">Follow actors &amp; directors</div>
+            <h3>Their next thing. Your next watch.</h3>
+            <div class="premium-story premium-releases" role="img" aria-label="Example alerts using verified credits: Cillian Murphy stars in Peaky Blinders: The Immortal Man. Greta Gerwig directs Narnia: The Magician’s Nephew. These illustrate planned notifications, not alerts sent today.">
+              <div class="premium-talent-list">
+                <div class="premium-talent"><span class="premium-photo"><img data-premium-art src="https://image.tmdb.org/t/p/w185/2lKs67r7FI4bPu0AXxMUJZxmUXn.jpg" alt="Cillian Murphy" loading="lazy" decoding="async" width="185" height="278"><span class="premium-photo-ring"></span></span><div><strong>Cillian Murphy</strong><small>Actor</small></div><span class="premium-follow"><span class="premium-k">Follow</span><span class="premium-w">✓ Following</span></span></div>
+                <div class="premium-talent"><span class="premium-photo"><img data-premium-art src="https://image.tmdb.org/t/p/w185/dxKAhpkz4XNwmRzMG5QOpXjPZ1N.jpg" alt="Greta Gerwig" loading="lazy" decoding="async" width="185" height="278"><span class="premium-photo-ring"></span></span><div><strong>Greta Gerwig</strong><small>Director</small></div><span class="premium-follow"><span class="premium-k">Follow</span><span class="premium-w">✓ Following</span></span></div>
+              </div>
+              <div class="premium-alerts">
+                <div class="premium-alert premium-talent-alert"><img data-premium-art src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="Peaky Blinders: The Immortal Man poster" loading="lazy" decoding="async" width="185" height="278"><div><span class="premium-wordmark">plot</span><strong>Peaky Blinders: The Immortal Man</strong><small>Starring Cillian Murphy · 2026</small></div></div>
+                <div class="premium-alert premium-director-alert"><img data-premium-art src="https://image.tmdb.org/t/p/w185/s8Sr5BRjEzOnD6sxBvxUI4qrkrs.jpg" alt="Narnia: The Magician’s Nephew poster" loading="lazy" decoding="async" width="185" height="278"><div><span class="premium-wordmark">plot</span><strong>Narnia: The Magician’s Nephew</strong><small>Directed by Greta Gerwig · 2027</small></div></div>
+              </div>
+              <div class="premium-toast"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6.5l2.5 2.5L10 3.5"/></svg>Added to your release calendar</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
   <section id="app-soon">
     <div class="demo-split">
       <div class="demo-copy reveal">
-        <span class="app-eyebrow">Coming soon</span>
-        <h2 class="demo-headline">PLOT, in<br><em>your pocket.</em></h2>
-        <p class="demo-body">Everything you love about PLOT: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.</p>
+        <div class="app-kicker">PLOT MOBILE <span>Coming soon</span></div>
+        <h2 class="demo-headline">plot, in<br><em>your pocket.</em></h2>
+        <p class="demo-body">Everything you love about plot: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.</p>
         <div class="woc-sub-wrap app-notify">
           <form class="woc-form" id="appNotifyForm">
             <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
@@ -2007,47 +2013,43 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="phone-frame">
               <div class="guide-screen disc">
                 <div class="disc-bar">
-                  <span class="disc-ham"><span></span><span></span><span></span></span>
-                  <span class="disc-logo">PLOT</span>
-                  <svg class="disc-search" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5L16 16"/></svg>
-                </div>
-                <div class="disc-tabs">
-                  <span class="disc-tab disc-tab-on">Discover</span>
-                  <span class="disc-tab">Releases</span>
-                  <span class="disc-tab">Guide</span>
+                  <span class="disc-logo">plot</span>
+                  <svg class="disc-search" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5L16 16"/></svg>
                 </div>
                 <div class="disc-scroll">
-                  <div class="disc-hero" data-bg="https://image.tmdb.org/t/p/w342/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg">
+                  <div class="disc-hero" data-bg="https://image.tmdb.org/t/p/w780/iuylzRSllrGn7YB322kwKoOVMcq.jpg">
                     <div class="disc-hero-grad"></div>
-                    <span class="disc-trend">TRENDING #1</span>
+                    <span class="disc-hero-btn disc-fav" aria-hidden="true"><svg viewBox="0 0 24 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5 3.6 12.2A5 5 0 0 1 12 5.4a5 5 0 0 1 8.4 6.8z"/></svg></span>
+                    <span class="disc-hero-btn disc-save" aria-hidden="true"><svg viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></span>
+                    <span class="disc-trend">Trending #1</span>
                     <div class="disc-hero-title">The Odyssey</div>
-                    <div class="disc-hero-meta">2026 &middot; Film</div>
+                    <div class="disc-hero-meta">2026 &middot; Movie</div>
                   </div>
-                  <div class="disc-sec"><div class="disc-sec-sub">Trending today</div><div class="disc-sec-t">Hot right now</div></div>
+                  <div class="disc-sec"><div class="disc-sec-head"><div class="disc-sec-sub">Trending today</div><div class="disc-sec-t">Hot right now</div></div>
                   <div class="disc-row">
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Sinners</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Nosferatu</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/5aj8vVGFwGVbQQs26ywhg4Zxk2L.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Longlegs</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/lqoMzCcZYEFK729d6qzt349fB4o.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">The Substance</div></div>
-                  </div>
-                  <div class="disc-sec"><div class="disc-sec-sub">Popular TV</div><div class="disc-sec-t">Most binged shows</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg"></div><div class="disc-card-t">Sinners</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg"></div><div class="disc-card-t">Nosferatu</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/5aj8vVGFwGVbQQs26ywhg4Zxk2L.jpg"></div><div class="disc-card-t">Longlegs</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/lqoMzCcZYEFK729d6qzt349fB4o.jpg"></div><div class="disc-card-t">The Substance</div></div>
+                  </div></div>
+                  <div class="disc-sec"><div class="disc-sec-head"><div class="disc-sec-sub">Popular TV</div><div class="disc-sec-t">Most binged shows</div></div>
                   <div class="disc-row">
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Severance</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">The Bear</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Adolescence</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/7MXg0BxuSRWz2yKc03M40du2mrc.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Presumed Innocent</div></div>
-                  </div>
-                </div>
-                <div class="disc-nav">
-                  <span class="disc-nav-on">Home</span>
-                  <span>Calendar</span>
-                  <span>My Lists</span>
-                  <span>History</span>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg"></div><div class="disc-card-t">Severance</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg"></div><div class="disc-card-t">The Bear</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg"></div><div class="disc-card-t">Adolescence</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/7MXg0BxuSRWz2yKc03M40du2mrc.jpg"></div><div class="disc-card-t">Presumed Innocent</div></div>
+                  </div></div>
+                  <div class="disc-sec"><div class="disc-sec-head"><div class="disc-sec-sub">Global ranking</div><div class="disc-sec-t">Top 20 this week</div></div>
+                  <div class="disc-row">
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg"></div><div class="disc-card-t">The Odyssey</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg"></div><div class="disc-card-t">Sinners</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg"></div><div class="disc-card-t">Severance</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/5aj8vVGFwGVbQQs26ywhg4Zxk2L.jpg"></div><div class="disc-card-t">Longlegs</div></div>
+                  </div></div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="app-phone-badge">Coming soon</div>
         </div>
       </div>
     </div>
@@ -2056,12 +2058,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- ── Origin — built by one person ─────────────────────────── -->
   <section id="origin">
     <div class="origin-split">
-      <h2 class="demo-headline reveal" style="color:var(--text)">Built by a<br><em style="font-style:italic">solo</em> developer.</h2>
+      <h2 class="demo-headline reveal" style="color:var(--text)">Built by a<br>solo developer.</h2>
       <div class="reveal">
-        <p class="demo-body" style="color:var(--text-secondary)">PLOT is built by one person around a full time job. No team, no investors, nothing to answer to except the people using it. So the roadmap gets written with you. Tell me what would make PLOT better for the way you watch and it shapes what I build or fix next. Support along the way is what lets me keep building a product you love.</p>
+        <p class="demo-body origin-body" style="color:var(--text-secondary)">PLOT is built by one person, around a full-time job. There’s no team, no investors and no corporate roadmap to follow. It’s shaped by feedback from the people who actually use it.</p>
+        <p class="demo-body origin-body" style="color:var(--text-secondary)">Your support helps keep PLOT independent and worth coming back to. Your movies, your shows, your PLOT.</p>
         <div class="origin-actions">
-          <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-outline btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support PLOT on Ko-fi</a>
-          <a href="/about.html" class="demo-link dark-link" data-cta="origin-about">Read the story &rarr;</a>
+          <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-primary btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support plot on Ko-fi</a>
+          <a href="/about" class="demo-link dark-link" data-cta="origin-about">Read the story</a>
         </div>
       </div>
     </div>
@@ -2069,7 +2072,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <!-- ── Live Ticker ──────────────────────────────────────────── -->
   <div class="ticker-section" aria-hidden="true">
-    <div class="ticker-badge"><span class="ticker-badge-mark">Plot</span> Live</div>
+    <div class="ticker-badge"><span class="ticker-badge-mark">plot</span> <span class="ticker-badge-live">Live</span></div>
     <div class="ticker-outer">
       <div class="ticker-track" id="tickerTrack">
         <!-- populated by JS -->
@@ -2090,7 +2093,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <button type="submit">Subscribe</button>
           </form>
-          <span class="woc-hint">Or <a href="/whats-on" data-cta="whats-on-closer">browse What's On &rarr;</a></span>
+          <span class="woc-hint">Or <a href="/whats-on" data-cta="whats-on-closer">browse What's On</a></span>
           <div class="woc-msg" id="newsletterMsg" role="status"></div>
         </div>
       </div>
@@ -2101,27 +2104,29 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
   <footer>
     <div class="footer-inner">
-      <a class="footer-logo" href="/">PLOT</a>
+      <a class="footer-logo" href="/">plot</a>
       <div class="footer-nav">
         <a href="/" data-cta="footer">Home</a>
         <a href="/whats-on" data-cta="footer">What's On</a>
         <a href="/whats-on#newsletter" data-cta="footer">Newsletter</a>
         <a href="https://app.theplot.tv/login" data-cta="footer">Log in</a>
         <a href="https://app.theplot.tv/signup" data-cta="footer">Sign up</a>
-        <a href="/privacy.html" data-cta="footer">Privacy</a>
-        <a href="/terms.html" data-cta="footer">Terms</a>
-        <a href="/community.html" data-cta="footer">Community</a>
+        <a href="/support" data-cta="footer">Support</a>
+        <a href="/changelog" data-cta="footer">Changelog</a>
+        <a href="/privacy" data-cta="footer">Privacy</a>
+        <a href="/terms" data-cta="footer">Terms</a>
+        <a href="/community" data-cta="footer">Community</a>
       </div>
       <div class="footer-bottom">
-        <div class="footer-copy">&copy; 2026 PLOT</div>
+        <div class="footer-copy">&copy; 2026 plot</div>
         <div class="footer-social">
-          <a href="https://www.instagram.com/theplottv" target="_blank" rel="noopener" aria-label="PLOT on Instagram" data-cta="footer-social">
+          <a href="https://www.instagram.com/theplottv" target="_blank" rel="noopener" aria-label="plot on Instagram" data-cta="footer-social">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>
           </a>
-          <a href="https://www.threads.net/@theplottv" target="_blank" rel="noopener" aria-label="PLOT on Threads" data-cta="footer-social">
+          <a href="https://www.threads.net/@theplottv" target="_blank" rel="noopener" aria-label="plot on Threads" data-cta="footer-social">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.05 11.18c-.09-.04-.18-.08-.27-.12-.16-2.93-1.76-4.6-4.45-4.62h-.04c-1.61 0-2.95.69-3.77 1.94l1.48 1.02c.61-.93 1.57-1.13 2.29-1.13h.03c.9.01 1.57.27 2 .78.31.37.52.88.63 1.52-.81-.14-1.69-.18-2.63-.13-2.64.15-4.34 1.69-4.22 3.83.06 1.08.6 2.02 1.51 2.64.77.52 1.77.78 2.8.72 1.37-.07 2.44-.59 3.19-1.53.57-.72.93-1.65 1.09-2.83.66.4 1.15.92 1.42 1.55.46 1.07.49 2.83-.95 4.26-1.26 1.26-2.78 1.8-5.07 1.82-2.54-.02-4.46-.83-5.71-2.41-1.17-1.48-1.78-3.62-1.8-6.36.02-2.74.63-4.88 1.8-6.36C6.94 3.83 8.86 3.02 11.4 3h.02c2.55.02 4.5.83 5.8 2.42.64.78 1.12 1.76 1.44 2.9l1.74-.46c-.38-1.4-.99-2.62-1.81-3.62C16.92 2.22 14.47 1.18 11.42 1.16h-.03C8.34 1.18 5.92 2.22 4.2 4.27 2.67 6.1 1.88 8.65 1.85 11.84v.02c.03 3.19.82 5.74 2.35 7.57 1.72 2.05 4.14 3.09 7.19 3.11h.03c2.71-.02 4.62-.73 6.19-2.3 2.06-2.05 2-4.63 1.32-6.21-.49-1.13-1.42-2.05-2.7-2.65zm-4.55 5.27c-1.14.06-2.32-.45-2.38-1.55-.04-.81.58-1.72 2.45-1.83.21-.01.42-.02.63-.02.68 0 1.31.07 1.89.19-.22 2.7-1.48 3.16-2.59 3.21z"/></svg>
           </a>
-          <a href="https://x.com/theplottv" target="_blank" rel="noopener" aria-label="PLOT on X" data-cta="footer-social">
+          <a href="https://x.com/theplottv" target="_blank" rel="noopener" aria-label="plot on X" data-cta="footer-social">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817-5.967 6.817H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z"/></svg>
           </a>
         </div>
@@ -2232,32 +2237,31 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       return trendingSetsPromise;
     }
 
-    // Guide-demo floating cards — pull the posters around the feature from TMDB
-    // so each matches its category chip (Hot right now / Top 10 / Most binged).
+    // Guide-demo trending panel — the top three trending movies from TMDB.
+    // The committed rows (row 1 is rewritten
+    // weekly by refresh-timeline.mjs) stay on screen if the proxy is unavailable.
     (function () {
-      var stage = document.querySelector('#guide-demo .app-float');
-      if (!stage) return;
-      var p1 = stage.querySelector('.af-p1');   // Hot right now  (trending movie)
-      var p2 = stage.querySelector('.af-p2');   // Top 10         (top trending movie)
-      var p3 = stage.querySelector('.af-p3');   // Most binged    (popular TV)
-      // The hero card is committed markup that refresh-timeline.mjs rewrites each
-      // week from trending/all/week, so the live trending list nearly always opens
-      // with the exact title the hero is already showing. Read the title off the
-      // card itself rather than naming it here: a hardcoded exclusion goes stale
-      // the first week the hero changes, and then the collage shows it twice.
-      var heroCap = stage.querySelector('.af-hero .af-cap');
-      var heroTitle = heroCap && heroCap.firstChild ? heroCap.firstChild.textContent : '';
+      var rows = document.getElementById('gpRows');
+      if (!rows) return;
       fetchTrendingSets().then(function (sets) {
-        var IMG = 'https://image.tmdb.org/t/p/w500';
+        var IMG = 'https://image.tmdb.org/t/p/w185';
         var seen = {};
-        if (heroTitle.trim()) seen[heroTitle.trim().toLowerCase()] = 1;
         function withPoster(list) { return (list || []).filter(function (r) { return r.poster_path; }); }
         var movies = unseen(withPoster(sets[0] && sets[0].results), seen);
-        var tv     = unseen(withPoster(sets[2] && sets[2].results), seen);
-        function set(el, item) { if (el && item) el.style.backgroundImage = "url('" + IMG + item.poster_path + "')"; }
-        set(p1, movies[0]);   // Hot right now
-        set(p2, movies[1]);   // Top 10
-        set(p3, tv[0]);       // Most binged shows
+        var picks = [movies[0], movies[1], movies[2]].filter(Boolean);
+        if (picks.length < 3) return;
+        function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+        rows.innerHTML = picks.map(function (r, i) {
+          var isTv  = !!r.first_air_date || r.media_type === 'tv';
+          var title = r.title || r.name || '';
+          var year  = ((r.release_date || r.first_air_date || '') + '').slice(0, 4);
+          var kind  = isTv ? 'Series' : 'Movie';
+          var chip  = i === 0 ? '<span class="gp-chip is-top">Trending #1</span>' : '<span class="gp-chip">' + kind + '</span>';
+          return '<div class="gp-row"><div class="gp-rank">' + (i + 1) + '</div>'
+            + '<img class="gp-poster" src="' + IMG + r.poster_path + '" alt="" loading="lazy" decoding="async">'
+            + '<div class="gp-meta"><div class="gp-name">' + esc(title) + '</div><div class="gp-sub">' + esc(year ? year + ' \u00b7 ' + kind : kind) + '</div></div>'
+            + chip + '</div>';
+        }).join('');
       }).catch(function () {});
     })();
 
@@ -2394,10 +2398,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       // First four posters (2 left, 2 right) — reach well into centre.
       // Small positive showAt keeps the hero clean on load; they slide in as
       // soon as the user starts to scroll, staggered left/right for rhythm.
-      { side: 'left',  vy: 0.51, showAt:  40, w: 260, h: 390, restX:  8, hold: 1000 },
-      { side: 'left',  vy: 0.10, showAt: 120, w: 190, h: 285, restX: 120, hold: 1000 },
-      { side: 'right', vy: 0.09, showAt:  70, w: 300, h: 450, restX:  4, hold: 1000 },
-      { side: 'right', vy: 0.52, showAt: 150, w: 175, h: 263, restX: 140, hold: 1000 },
+      // showAt is negative by one slide-in so these four are fully in place at
+      // load: the hero opens with posters in its corners rather than empty.
+      { side: 'left',  vy: 0.48, showAt: -320, w: 200, h: 300, restX:  32, hold: 1000 },
+      { side: 'left',  vy: 0.12, showAt: -320, w: 150, h: 225, restX:  72, hold: 1000 },
+      { side: 'right', vy: 0.11, showAt: -320, w: 200, h: 300, restX:  32, hold: 1000 },
+      { side: 'right', vy: 0.51, showAt: -320, w: 140, h: 210, restX:  92, hold: 1000 },
       // Scroll reveals — wide range of restX (4 = nearly touching centre, 160 = tucked to edge)
       { side: 'left',  vy: 0.24, showAt:  400, w: 320, h: 480, restX:  4 },
       { side: 'right', vy: 0.20, showAt:  440, w: 165, h: 248, restX: 155 },
@@ -2446,7 +2452,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         src: posters[i % posters.length],
       }));
 
+      // Keep every poster inside the edge zone outside a protected centre
+      // column, so none can reach the headline. The column is 960px wide at
+      // 1440 and shrinks with the viewport; where the zone gets too thin for
+      // a poster (roughly 1100–1300px), the hero-visible posters also move
+      // out of the headline's vertical band instead of shrinking to nothing.
+      const CENTRE_COL = Math.min(960, window.innerWidth * 0.66);
+      const edgeZone   = Math.max(120, (window.innerWidth - CENTRE_COL) / 2);
       const sidePosters = sideData.map(data => {
+        // First pull the poster out to the edge, then shrink it only if the zone
+        // is still too thin: a small poster tucked to the edge reads as a
+        // thumbnail, a full-size one does not.
+        let maxW = edgeZone - data.restX - 8;
+        if (data.w > maxW) {
+          data.restX = Math.max(8, Math.floor(edgeZone - data.w - 8));
+          maxW = edgeZone - data.restX - 8;
+        }
+        if (data.w > maxW) {
+          const ratio = data.h / data.w;
+          data.w = Math.max(96, Math.floor(maxW));
+          data.h = Math.round(data.w * ratio);
+        }
+        if (edgeZone < 200 && data.showAt < 200 && data.vy > 0.26 && data.vy < 0.62) {
+          data.vy = data.vy < 0.44 ? 0.08 : 0.66;
+        }
         const el = document.createElement('div');
         el.className = 'side-poster';
         el.style.width  = data.w + 'px';
@@ -2473,11 +2502,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
         const plotDoes      = document.getElementById('plotDoes');
         const plotDoesPageY = plotDoes ? plotDoes.getBoundingClientRect().top + window.scrollY : 999999;
-        const gFadeStart    = plotDoesPageY - vh * 0.9;
-        const gFadeEnd      = plotDoesPageY - vh * 0.15;
-        const globalOp      = Math.max(0, Math.min(1, 1 - (window.scrollY - gFadeStart) / (gFadeEnd - gFadeStart)));
-
-        posterSide.style.opacity = globalOp;
+        // Clear the stage for the closing statement. All edge posters begin
+        // travelling back off-screen as it approaches, and are fully gone
+        // before "plot does." reaches the viewport's focal area.
+        const exitStart     = plotDoesPageY - vh * 0.95;
+        const exitEnd       = plotDoesPageY - vh * 0.62;
+        const exitProgress  = Math.max(0, Math.min(1, (window.scrollY - exitStart) / (exitEnd - exitStart)));
+        const exitEase      = easeInCubic(exitProgress);
 
         sidePosters.forEach(({ el, data }) => {
           const { side, vy, showAt, w, restX } = data;
@@ -2507,6 +2538,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             opacity = 0;
             tx = dir * slideAmt;
           }
+
+          opacity *= 1 - exitProgress;
+          tx += dir * slideAmt * exitEase;
 
           el.style.top       = `${vy * vh}px`;
           el.style.opacity   = opacity;
@@ -2572,7 +2606,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           var ptmp = pFactors[p]; pFactors[p] = pFactors[pt]; pFactors[pt] = ptmp;
         }
         peekEls.forEach(function(el, i) {
-          el.style.backgroundImage = "url('" + IMG + paths[i % paths.length] + "')";
+          el.src = IMG + paths[i % paths.length];
           var w = Math.round(pSlot * (pFactors[i] || 1));
           el.style.width = w + 'px';
           el.style.height = Math.round(w * 1.5) + 'px'; // fixed 2:3 poster ratio
@@ -2638,11 +2672,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         var movies = unseen(nowPlaying.filter(function(r){ return r.poster_path; }), seen);
         var shows = unseen(tv.filter(function(r){ return r.poster_path; }), seen);
         if (top) {
-          hero.style.backgroundImage = "url('" + (top.backdrop_path ? BACK + top.backdrop_path : POSTER + top.poster_path) + "')";
+          var heroArt = top.backdrop_path ? BACK + top.backdrop_path : POSTER + top.poster_path;
+          hero.dataset.bg = heroArt;
+          hero.style.backgroundImage = "url('" + heroArt + "')";
           var date = top.release_date || top.first_air_date || '';
           var isTv = top.media_type === 'tv' || (!top.title && !!top.name);
           var t = hero.querySelector('.disc-hero-title'); if (t) t.textContent = top.title || top.name || t.textContent;
-          var m = hero.querySelector('.disc-hero-meta'); if (m) m.textContent = (date ? date.slice(0,4) + ' · ' : '') + (isTv ? 'TV Series' : 'Film');
+          var m = hero.querySelector('.disc-hero-meta'); if (m) m.textContent = (date ? date.slice(0,4) + ' · ' : '') + (isTv ? 'TV Series' : 'Movie');
         }
         function fill(row, list, isTv) {
           [].slice.call(row.querySelectorAll('.disc-card')).forEach(function(card, i) {
@@ -2651,7 +2687,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             // one already in the row.
             var item = list[i];
             if (!item) return;
-            card.querySelector('.disc-poster').style.backgroundImage = "url('" + POSTER + item.poster_path + "')";
+            var poster = card.querySelector('.disc-poster');
+            poster.dataset.bg = POSTER + item.poster_path;
+            poster.style.backgroundImage = "url('" + POSTER + item.poster_path + "')";
             var tag = card.querySelector('.disc-tag');
             if (tag) { tag.textContent = isTv ? 'TV' : 'Movie'; tag.className = 'disc-tag' + (isTv ? ' disc-tag-tv' : ''); }
             var title = card.querySelector('.disc-card-t'); if (title) title.textContent = item.title || item.name || title.textContent;
@@ -2718,7 +2756,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           tmdbProxy('tv/top_rated'),
         ]);
 
-        // One running record across all four groups, so a film that is both
+        // One running record across all four groups, so a movie that is both
         // trending and in cinemas is listed once, under the first label that
         // claims it. Deduping before the slice keeps every group full length.
         const seen = {};
@@ -2757,20 +2795,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       // `imgs` are the stills the section ships with: they paint immediately and
       // remain the fallback. `q` then pulls live artwork per list, because each
       // heading needs its own query — the shared trending sets would put the
-      // same three films under all three headings, and a horror release is not
+      // same three movies under all three headings, and a horror release is not
       // a date-night pick. The counts stay hardcoded: they describe an imagined
       // user's list, not anything TMDB knows.
       //
       // TMDB exposes no awards data, so "Award winners" uses acclaim (a high
       // rating earned over a large vote count) as the closest honest proxy.
       const cats = [
-        { nm: 'Award winners', ct: '20 films',
+        { nm: 'Award winners', ct: '20 movies',
           q: 'sort_by=vote_average.desc&vote_count.gte=2500',
           imgs: ['https://image.tmdb.org/t/p/w342/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', 'https://image.tmdb.org/t/p/w500/kQs6keheMwCxJxrzV83VUwFtHkB.jpg', 'https://image.tmdb.org/t/p/w500/yx3hS1sZIljZgZNTyt0ATmcs0PC.jpg'] },
-        { nm: 'Date night',    ct: '12 films',
+        { nm: 'Date night',    ct: '12 movies',
           q: 'with_genres=10749&sort_by=popularity.desc&vote_count.gte=200',   // 10749 = Romance
           imgs: ['https://image.tmdb.org/t/p/w500/wLATJOQ9yQfaVxpCHGeLYWVKS6K.jpg', 'https://image.tmdb.org/t/p/w500/yRt7MGBElkLQOYRvLTT1b3B1rcp.jpg', 'https://image.tmdb.org/t/p/w500/xzZaU0MN6L9oc1pl0RUXSB7hWwD.jpg'] },
-        { nm: 'Spooky season', ct: '13 films',
+        { nm: 'Spooky season', ct: '13 movies',
           q: 'with_genres=27&sort_by=popularity.desc&vote_count.gte=200',      // 27 = Horror
           imgs: ['https://image.tmdb.org/t/p/w500/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg', 'https://image.tmdb.org/t/p/w500/5aj8vVGFwGVbQQs26ywhg4Zxk2L.jpg', 'https://image.tmdb.org/t/p/w500/fr96XzlzsONrQrGfdLMiwtQjott.jpg'] },
       ];
@@ -2955,28 +2993,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         if (!grid) return;
         var dayMap = {};
         RELEASES.forEach(function(r) {
-          if (saved[r.id]) { if (!dayMap[r.day]) dayMap[r.day] = []; dayMap[r.day].push(r); }
+          if (!dayMap[r.day]) dayMap[r.day] = [];
+          dayMap[r.day].push(r);
         });
         var html = '';
         GRID.forEach(function(cell) {
           var events = (!cell.dim && dayMap[cell.day]) ? dayMap[cell.day] : [];
           var sel = !cell.dim && cell.day === selectedDay;
-          var cls = 'cal-cell-int' + (cell.dim ? ' dim' : '') + (sel ? ' selected' : '') + (cell.today ? ' today' : '');
-          var dots = '';
-          events.forEach(function(e) { dots += '<div class="cal-dot-int" style="background:' + TYPE[e.type].color + '"></div>'; });
+          var cls = 'cal-cell-int' + (cell.dim ? ' dim' : '') + (sel ? ' selected' : '') + (cell.today ? ' today' : '') + (events.length ? ' has-poster' : '');
+          var bg  = events.length ? ' style="background-image:url(\'' + esc(events[0].img) + '\')"' : '';
           if (cell.dim) {
             // Adjacent-month padding cells: decorative, skipped by keyboard + SR.
             html += '<div class="' + cls + '" aria-hidden="true"><div class="cal-dn-int">' + cell.day + '</div></div>';
           } else {
-            var label = MONTH_NAME + ' ' + cell.day +
-              (events.length ? ', ' + events.length + ' saved release' + (events.length > 1 ? 's' : '') : '');
-            html += '<button type="button" class="' + cls + '" data-day="' + cell.day + '" ' +
-              'aria-pressed="' + (sel ? 'true' : 'false') + '" ' +
-              'aria-label="' + esc(label) + '" ' +
-              'onclick="window._calDemo.selectDay(' + cell.day + ')">';
-            html += '<div class="cal-dn-int">' + cell.day + '</div>';
-            if (dots) html += '<div class="cal-dots-int" aria-hidden="true">' + dots + '</div>';
-            html += '</button>';
+            html += '<div class="' + cls + '"' + bg + ' data-day="' + cell.day + '">';
+            if (!events.length) html += '<div class="cal-dn-int">' + cell.day + '</div>';
+            html += '</div>';
           }
         });
         grid.innerHTML = html;
@@ -3106,7 +3138,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       }
 
       function init() {
-        if (document.getElementById('guideList')) {
+        if (document.getElementById('calGridInt')) {
           var hdrTitle = document.getElementById('guideHdrTitle');
           if (hdrTitle) hdrTitle.textContent = 'Upcoming';
           // Match the save-hint verb to the input type (SUS-83)
@@ -3208,5 +3240,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     })();
   </script>
   <script src="js/nav.js"></script>
+  <script src="/js/premium-home.js?v=3"></script>
 </body>
 </html>

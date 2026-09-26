@@ -5,23 +5,20 @@
 //   ?post=<uuid>           → feed-post card
 //   ?type=movie&id=<id>    → title card
 //
-// This is a port of apps/web/api/og.js off Vercel. On-the-fly Satori rendering
-// is the single heaviest CPU consumer in the app and it exhausted the Vercel
-// Hobby CPU/origin-transfer caps (which paused production). Cloudflare's free
-// tier is far more generous for this workload, and the tmdb-proxy Worker already
-// proves the pattern. The card-render functions are copied verbatim from og.js
-// so the output is pixel-identical; only the runtime plumbing differs:
+// NOT DEPLOYED. The deployment was deleted on 2026-09-18 because a Satori
+// render costs ~25ms of CPU against the Workers Free 10ms ceiling. Nothing in
+// production points here; callers choose TMDB backdrops or the static card in
+// functions/_lib/og-card.js. See README.md before restoring this Worker.
+//
+// This is a port of the former Vercel apps/web/api/og.js renderer. The card
+// builders are retained as the path back to branded cards; only the runtime
+// plumbing differs:
 //   - ImageResponse comes from `workers-og` (not `@vercel/og`)
 //   - secrets/config come from `env` (not process.env)
 //   - fonts are fetched from FONT_BASE (the Worker host doesn't serve /fonts)
 //
-// Deploy:
-//   cd apps/web/workers/og
-//   npm install
-//   npx wrangler secret put TMDB_API_KEY   # same value as the Vercel env
-//   npx wrangler deploy
-// Then VERIFY the workers.dev URL renders each card variant before pointing the
-// app at it (set OG_BASE_URL / VITE_OG_BASE_URL — see the README).
+// Restoring it requires Workers Paid first, then the TMDB_API_KEY secret and a
+// deploy. Verify every card variant before changing callers. See README.md.
 import { ImageResponse } from 'workers-og';
 import React from 'react';
 
@@ -39,8 +36,9 @@ const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
 // Brand dark accent — mirrors @plot/core tokens.colors.dark.accent. Inlined so
 // the Worker bundle stays self-contained (no workspace resolution at deploy).
 // Keep in sync with @plot/core if the token changes.
-const ACCENT = '#F06A88';
-const BG = '#0f0f11';
+const ACCENT = '#F06A88'; // colors.dark.accent (the primary pink)
+const BG = '#0c0c0c'; // colors.dark.bg
+const MUTED = '#a8a69c'; // colors.dark.textSecondary
 // Cache hard at the edge: these cards are share previews, not live data. Short
 // TTLs are exactly what paused Vercel. 1-day browser, 7-day edge, SWR.
 const OG_CACHE = 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800';
@@ -140,18 +138,18 @@ function listCard(list, fonts) {
   const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } };
   if (!list) {
     return new ImageResponse(
-      h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Instrument Serif' } },
-        h('div', { style: { display: 'flex', fontSize: 120, letterSpacing: -3 } }, 'PLOT'),
-        h('div', { style: { display: 'flex', fontSize: 36, color: '#9a9aa2', marginTop: 10 } }, 'A list on PLOT')),
+      h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Gabarito', fontWeight: 700 } },
+        h('div', { style: { display: 'flex', fontSize: 120, letterSpacing: -3 } }, 'plot'),
+        h('div', { style: { display: 'flex', fontSize: 36, color: MUTED, marginTop: 10 } }, 'A list on plot')),
       opts);
   }
   const n = (list.name || 'A list').length;
   const nameSize = n <= 18 ? 96 : n <= 30 ? 76 : 60;
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#e8e8ec', padding: 70, fontFamily: 'Instrument Serif' } },
-    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70, fontSize: 58, color: '#fafafa', letterSpacing: -2 } }, 'PLOT'),
-    h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 28, color: ACCENT, letterSpacing: 4, textTransform: 'uppercase' } }, 'PLOT lists'),
+  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#f0efe8', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
+    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70, fontSize: 58, color: '#fafafa', letterSpacing: -2 } }, 'plot'),
+    h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 28, color: ACCENT, letterSpacing: 4, textTransform: 'uppercase' } }, 'plot lists'),
     h('div', { style: { display: 'flex', fontSize: nameSize, lineHeight: 1, color: '#fff', letterSpacing: -1, marginTop: 18, maxWidth: 1010 } }, list.name),
-    list.owner ? h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 34, color: '#9a9aa2', marginTop: 16 } }, '@' + list.owner) : null,
+    list.owner ? h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 34, color: MUTED, marginTop: 16 } }, '@' + list.owner) : null,
     list.posters.length
       ? h('div', { style: { display: 'flex', gap: 18, marginTop: 48 } },
           ...list.posters.map((src, i) => h('img', { key: i, src, width: 150, height: 225, style: { borderRadius: 10, objectFit: 'cover', boxShadow: '0 12px 30px rgba(0,0,0,0.6)' } })))
@@ -188,31 +186,54 @@ async function loadPost(id) {
 
 async function loadFont(base, file) {
   try {
-    const r = await fetch(`${base}/fonts/${file}`);
+    // cacheEverything keeps the .ttf at the edge, so an isolate that does start
+    // cold pays a colo cache read rather than a round trip to the Pages origin.
+    const r = await fetch(`${base}/fonts/${file}`, { cf: { cacheTtl: 86400, cacheEverything: true } });
     if (r.ok) return await r.arrayBuffer();
   } catch { /* missing font → Satori falls back */ }
   return null;
 }
-async function loadFonts() {
-  const [serif, sansR, sansM] = await Promise.all([
-    loadFont(FONT_BASE, 'InstrumentSerif-Regular.ttf'),
+async function fetchFonts() {
+  const [display, sansR, sansM] = await Promise.all([
+    loadFont(FONT_BASE, 'Gabarito-Bold.ttf'),
     loadFont(FONT_BASE, 'DMSans-Regular.ttf'),
     loadFont(FONT_BASE, 'DMSans-Medium.ttf'),
   ]);
   const fonts = [];
-  if (serif) fonts.push({ name: 'Instrument Serif', data: serif, weight: 400, style: 'normal' });
+  if (display) fonts.push({ name: 'Gabarito', data: display, weight: 700, style: 'normal' });
   if (sansR) fonts.push({ name: 'DM Sans', data: sansR, weight: 400, style: 'normal' });
   if (sansM) fonts.push({ name: 'DM Sans', data: sansM, weight: 500, style: 'normal' });
   return fonts;
 }
 
+// The fonts never change, so fetch and decode them once per isolate instead of
+// pulling ~215KB and re-parsing it on every render — that cost sat in the
+// request path of a Worker whose whole problem is CPU per invocation.
+//
+// The promise (not the resolved value) is memoized so concurrent first requests
+// share one fetch. A load that yields NO usable font is not memoized: that is a
+// transient origin failure, and pinning it would serve unstyled cards for the
+// life of the isolate rather than for one request.
+let fontsPromise = null;
+function loadFonts() {
+  if (!fontsPromise) {
+    fontsPromise = fetchFonts()
+      .then((fonts) => {
+        if (!fonts.length) fontsPromise = null;
+        return fonts;
+      })
+      .catch((e) => { fontsPromise = null; throw e; });
+  }
+  return fontsPromise;
+}
+
 // ── Title card: backdrop + gradient scrim + serif title + DM Sans meta ──
 function titleCard(t, fonts) {
-  const title = t && t.title ? t.title : 'PLOT';
+  const title = t && t.title ? t.title : 'plot';
   const metaBits = t ? [t.year, t.type === 'tv' ? 'Series' : 'Movie'].filter(Boolean).join('   ·   ') : 'Your film & TV companion';
   const n = title.length;
   const titleSize = n <= 15 ? 106 : n <= 24 ? 86 : n <= 36 ? 70 : 58;
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#e8e8ec', fontFamily: 'Instrument Serif' } },
+  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#f0efe8', fontFamily: 'Gabarito', fontWeight: 700 } },
     t && t.backdrop ? h('img', { src: t.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
     h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(7,6,10,0.9) 0%, rgba(7,6,10,0.76) 50%, rgba(7,6,10,0.4) 80%, rgba(7,6,10,0.08) 100%)' } }),
     h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(0deg, rgba(7,6,10,0.45) 0%, rgba(7,6,10,0) 42%)' } }),
@@ -221,7 +242,7 @@ function titleCard(t, fonts) {
         ? h('img', { src: t.poster, width: 300, height: 450, style: { borderRadius: 14, objectFit: 'cover', boxShadow: '0 18px 50px rgba(0,0,0,0.7)' } })
         : h('div', { style: { width: 300, height: 450, borderRadius: 14, background: '#1c1c21', border: `2px solid ${ACCENT}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 150, color: ACCENT } }, '★'),
       h('div', { style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', marginLeft: 60, maxWidth: 610 } },
-        h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 30, color: ACCENT, letterSpacing: 6, textTransform: 'uppercase', marginBottom: 24, textShadow: '0 2px 14px rgba(0,0,0,0.95)' } }, 'Found on PLOT'),
+        h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 30, color: ACCENT, letterSpacing: 6, textTransform: 'uppercase', marginBottom: 24, textShadow: '0 2px 14px rgba(0,0,0,0.95)' } }, 'Found on plot'),
         h('div', { style: { display: 'flex', fontSize: titleSize, lineHeight: 0.95, color: '#ffffff', letterSpacing: -1, maxWidth: 610, textShadow: '0 3px 22px rgba(0,0,0,0.95)' } }, title),
         h('div', { style: { display: 'flex', alignItems: 'center', marginTop: 30, fontFamily: 'DM Sans', fontWeight: 400, fontSize: 40, color: '#ececf0', textShadow: '0 2px 14px rgba(0,0,0,0.95)' } },
           h('span', null, metaBits),
@@ -233,7 +254,7 @@ function titleCard(t, fonts) {
         ),
       ),
     ),
-    h('div', { style: { display: 'flex', position: 'absolute', bottom: 58, right: 74, fontSize: 60, color: '#ffffff', letterSpacing: -2, textShadow: '0 2px 16px rgba(0,0,0,0.9)' } }, 'PLOT'),
+    h('div', { style: { display: 'flex', position: 'absolute', bottom: 58, right: 74, fontSize: 60, color: '#ffffff', letterSpacing: -2, textShadow: '0 2px 16px rgba(0,0,0,0.9)' } }, 'plot'),
   );
   return new ImageResponse(el, { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } });
 }
@@ -247,12 +268,12 @@ function postCard(post, fonts) {
   const name = (author.display_name || author.username || 'Someone').replace(/\b([a-z])/g, (m) => m.toUpperCase());
   const verb = post.source_type === 'favourite' ? 'favorited'
     : post.source_type === 'top_list' ? 'added to their Top 10' : 'watched';
-  const title = post.title || 'PLOT';
+  const title = post.title || 'plot';
   const n = title.length;
   const titleSize = n <= 15 ? 92 : n <= 24 ? 76 : n <= 36 ? 62 : 52;
   const note = post.note ? (post.note.length > 150 ? post.note.slice(0, 147) + '…' : post.note) : null;
 
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#e8e8ec', fontFamily: 'Instrument Serif' } },
+  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#f0efe8', fontFamily: 'Gabarito', fontWeight: 700 } },
     post.backdrop ? h('img', { src: post.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
     h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(7,6,10,0.93) 0%, rgba(7,6,10,0.82) 55%, rgba(7,6,10,0.5) 100%)' } }),
     h('div', { style: { position: 'relative', display: 'flex', alignItems: 'center', width: '100%', height: '100%', padding: 70 } },
@@ -273,7 +294,7 @@ function postCard(post, fonts) {
         note ? h('div', { style: { display: 'flex', marginTop: 26, fontFamily: 'DM Sans', fontWeight: 400, fontSize: 32, lineHeight: 1.35, color: '#c9c9d0', maxWidth: 610 } }, `“${note}”`) : null,
       ),
     ),
-    h('div', { style: { display: 'flex', position: 'absolute', bottom: 54, right: 72, fontSize: 56, color: '#ffffff', letterSpacing: -2, textShadow: sh(0.6) } }, 'PLOT'),
+    h('div', { style: { display: 'flex', position: 'absolute', bottom: 54, right: 72, fontSize: 56, color: '#ffffff', letterSpacing: -2, textShadow: sh(0.6) } }, 'plot'),
   );
   return new ImageResponse(el, opts);
 }
@@ -284,9 +305,9 @@ function profileCard(profile, fonts) {
 
   if (!profile) {
     return new ImageResponse(
-      h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Instrument Serif' } },
-        h('div', { style: { display: 'flex', fontSize: 120, letterSpacing: -3 } }, 'PLOT'),
-        h('div', { style: { display: 'flex', fontSize: 36, color: '#9a9aa2', marginTop: 10 } }, 'Your film & TV companion'),
+      h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Gabarito', fontWeight: 700 } },
+        h('div', { style: { display: 'flex', fontSize: 120, letterSpacing: -3 } }, 'plot'),
+        h('div', { style: { display: 'flex', fontSize: 36, color: MUTED, marginTop: 10 } }, 'Your film & TV companion'),
       ),
       opts,
     );
@@ -301,10 +322,10 @@ function profileCard(profile, fonts) {
     profile.avgRating && { n: profile.avgRating, l: 'Avg rating', star: true },
   ].filter(Boolean);
 
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#e8e8ec', padding: 70, fontFamily: 'Instrument Serif' } },
+  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#f0efe8', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
     profile.backdrop ? h('img', { src: profile.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
     profile.backdrop ? h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(11,10,14,0.97) 0%, rgba(11,10,14,0.9) 55%, rgba(11,10,14,0.66) 100%)' } }) : null,
-    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70, fontSize: 58, color: '#fafafa', letterSpacing: -2, textShadow: sh(0.6) } }, 'PLOT'),
+    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70, fontSize: 58, color: '#fafafa', letterSpacing: -2, textShadow: sh(0.6) } }, 'plot'),
     h('div', { style: { position: 'relative', display: 'flex', alignItems: 'center' } },
       profile.avatar_url ? h('img', { src: profile.avatar_url, width: 180, height: 180, style: { borderRadius: '50%', objectFit: 'cover', border: `3px solid ${ACCENT}` } }) : null,
       h('div', { style: { display: 'flex', flexDirection: 'column', marginLeft: profile.avatar_url ? 44 : 0 } },
@@ -316,7 +337,7 @@ function profileCard(profile, fonts) {
                 h('path', { d: 'M9.4 12.4l1.7 1.7 3.5-3.7', fill: 'none', stroke: '#fff', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }))
             : null,
         ),
-        h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 38, color: '#9a9aa2', marginTop: 14 } }, '@' + profile.username),
+        h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 38, color: MUTED, marginTop: 14 } }, '@' + profile.username),
       ),
     ),
     profile.watchCount > 0
@@ -329,7 +350,7 @@ function profileCard(profile, fonts) {
               : h('div', { style: { display: 'flex', fontSize: 110, color: '#fafafa', lineHeight: 1 } }, s.n),
             h('div', { style: labelStyle }, s.l),
           )))
-      : h('div', { style: { position: 'relative', display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 46, color: '#cfcfd6', marginTop: 48 } }, 'Just joined PLOT!'),
+      : h('div', { style: { position: 'relative', display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 46, color: MUTED, marginTop: 48 } }, 'Just joined plot!'),
   );
   return new ImageResponse(el, opts);
 }

@@ -4,17 +4,16 @@ name: Timeline refresh — weekly PR
 # Opens a PR rather than committing: a newly appended title lands with an empty
 # note, and the notes are title-specific jokes a human writes in review.
 #
-# GitHub will not start a workflow from an event made with GITHUB_TOKEN, so the
-# PR this opens does not trigger ci.yml on its own. Rather than introduce a PAT,
-# the refresh job dispatches ci.yml against its branch — workflow_dispatch is an
-# explicit exception to the GITHUB_TOKEN rule.
+# GitHub will not start another Actions workflow from a PR opened with
+# GITHUB_TOKEN. CircleCI is an external GitHub App, so it receives the PR event
+# and validates the branch without spending GitHub Actions minutes.
 #
-# The merge is a second job, triggered by that CI run completing, and it merges
-# only on `conclusion == 'success'`. This replaces `gh pr merge --auto`, which
+# The merge is a second job, triggered by CircleCI's successful commit status.
+# This replaces `gh pr merge --auto`, which
 # needed branch protection to mean anything: protection requires GitHub Pro on a
 # private repo, and without it there are no required checks to wait on, so
 # --auto fired the merge immediately and a red refresh landed broken content.
-# Gating on the CI run directly restores "a red refresh stays open" without
+# Gating on CircleCI directly restores "a red refresh stays open" without
 # depending on protection — the same approach dependabot-automerge.yml uses,
 # and for the same reason.
 #
@@ -30,31 +29,28 @@ on:
   schedule:
     - cron: '0 9 * * 1' # 09:00 UTC Monday, after the weekend's trending settles
   workflow_dispatch:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+  status:
 
 concurrency:
-  # Keyed per branch so a merge check for one refresh never queues behind
+  # Keyed per commit so a merge check for one refresh never queues behind
   # another, and so unrelated CI completions do not serialise against the
   # weekly refresh itself.
-  group: timeline-refresh-${{ github.event.workflow_run.head_branch || github.ref }}
+  group: timeline-refresh-${{ github.event.sha || github.ref }}
   cancel-in-progress: false
 
 jobs:
   refresh:
-    # Every CI completion in the repo triggers this workflow for the merge job
+    # Every commit-status update in the repo triggers this workflow for the merge job
     # below; the refresh itself must only run on its schedule or by hand.
-    if: github.event_name != 'workflow_run'
+    if: github.event_name != 'status'
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-      actions: write # dispatch ci.yml against this job's branch (see header)
     steps:
       - uses: actions/checkout@v7
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -131,23 +127,18 @@ jobs:
             --assignee "${{ github.repository_owner }}")
           echo "Opened $URL"
 
-          # A GITHUB_TOKEN-opened PR never triggers ci.yml on its own, so ask
-          # for it explicitly against this branch. That run completing is what
-          # triggers the merge job below — no --auto, so nothing can land
-          # before CI has actually reported.
-          gh workflow run ci.yml --ref "$BRANCH"
-          echo "Dispatched CI against $BRANCH; the automerge job lands it if CI passes."
+          echo "CircleCI will validate $BRANCH; the automerge job lands it if CI passes."
           rm -f notes.md pr-body.md
 
-  # Merges the refresh PR once its dispatched CI run has actually passed.
+  # Merges the refresh PR once CircleCI has actually passed its head commit.
   # Deliberately narrow: only this workflow's own branches, only a bot-authored
   # PR, only a successful run. Anything unexpected exits 0 and leaves the PR
   # open for a human.
   automerge:
     if: >
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      startsWith(github.event.workflow_run.head_branch, 'timeline-refresh/')
+      github.event_name == 'status' &&
+      github.event.context == 'ci/circleci: check' &&
+      github.event.state == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -157,14 +148,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          STATUS_SHA: ${{ github.event.sha }}
         run: |
           set -euo pipefail
 
-          PR_NUM=$(gh pr list --head "$HEAD_BRANCH" --state open \
-            --json number --jq '.[0].number // empty')
+          PR_NUM=$(gh api "repos/$GH_REPO/commits/$STATUS_SHA/pulls" \
+            --jq '[.[] | select(.state == "open")][0].number // empty')
           if [ -z "$PR_NUM" ]; then
-            echo "No open PR for branch '$HEAD_BRANCH'. Nothing to do."
+            echo "No open PR for commit '$STATUS_SHA'. Nothing to do."
+            exit 0
+          fi
+
+          HEAD_BRANCH=$(gh pr view "$PR_NUM" --json headRefName --jq '.headRefName')
+          if [[ "$HEAD_BRANCH" != timeline-refresh/* ]]; then
+            echo "PR #$PR_NUM branch '$HEAD_BRANCH' is not a timeline refresh. Leaving it open."
             exit 0
           fi
 
@@ -177,5 +174,12 @@ jobs:
             exit 0
           fi
 
+          HEAD_REPO=$(gh pr view "$PR_NUM" --json headRepository --jq '.headRepository.nameWithOwner')
+          HEAD_SHA=$(gh pr view "$PR_NUM" --json headRefOid --jq '.headRefOid')
+          if [ "$HEAD_REPO" != "$GH_REPO" ] || [ "$HEAD_SHA" != "$STATUS_SHA" ]; then
+            echo "PR #$PR_NUM does not match the repository and commit that passed CI. Leaving it open."
+            exit 0
+          fi
+
           echo "CI passed for $HEAD_BRANCH -> merging PR #$PR_NUM"
-          gh pr merge "$PR_NUM" --squash --delete-branch
+          gh pr merge "$PR_NUM" --squash --delete-branch --match-head-commit "$HEAD_SHA"

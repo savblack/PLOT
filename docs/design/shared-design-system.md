@@ -1,20 +1,48 @@
 ---
 status: active
 owner: Savannah Black
-last_reviewed: 2026-07-21
+last_reviewed: 2026-09-16
 ---
 
 # Shared Design System
 
-PLOT uses one visual foundation across the app and the marketing site. The surfaces
+plot uses one visual foundation across the app and the marketing site. The surfaces
 do not need identical layouts, but they should share the same brand mark, typography,
 color roles, spacing rhythm, radii, motion language, and core control patterns.
 
-The system is **flat and monochrome for neutral UI by default.** Structure comes from
-surface tokens and hairline borders, not from depth or colour. Semantic guide and status
-colours remain valid when they communicate time, availability, media type, or account
-state. Accent and shadow are still exceptions you spend deliberately (see the two rules
-below), never defaults you reach for.
+The system is **warm, flat and quiet.** The ground is cream, the ink is a soft charcoal,
+and structure comes from two creams and hairline borders, not from depth or colour.
+Semantic guide and status colours remain valid when they communicate time, availability,
+media type, or account state. The brand pink is spent in two deliberate ways (below);
+shadow is a legibility rescue only.
+
+## The warm palette (Sept 2026)
+
+| Role | Light | Notes |
+| --- | --- | --- |
+| `--bg` | `#F8F2EA` | Cream ground. Marketing and app share it. |
+| `--surface` | `#FFFCF7` | Near-white warm surface for inputs and raised rows. |
+| `--surface-raised` | `#FFFFFF` | Pure white, reserved for the rare element that must lift. |
+| `--surface-sunken` | `#F1E9DC` | The deeper cream: cards, panels, secondary buttons, chips. |
+| `--text-primary` | `#292924` | Charcoal ink. Never `#000`. |
+| `--text-secondary` | `#5F5A52` | Body copy on marketing, secondary labels in the app. |
+| `--text-muted` | `#6B655D` | 4.78:1 on the deeper cream, so it still passes on cards. |
+| `--accent` | `#E05578` | The pink for small text, icons, rings, rank numbers. |
+| `--accent-text` | `#B83558` | The accent darkened for small text on any cream. |
+| `--accent-secondary` | `#5F7030` | Soft green, the second voice: availability, "now at home". 4.9:1 on cream. |
+| `--accent-secondary-fill` | `#DBE1B0` | The sage tint the green sits on as a chip. |
+| `--accent-fill` | `#FF88C8` | The brand pink as a **fill** behind charcoal text. See below. |
+| `--on-accent-fill` | `#292924` | The only text colour that goes on the fill. 6.69:1. |
+
+Dark mode keeps the warm-neutral `#0c0c0c` / `#f0efe8` scale; the accent lightens to
+`#F06A88`, the secondary green to `#C9D48A`, and the fill is the same pink in both themes.
+
+### The wordmark
+
+The mark is the plain lowercase word **plot** in Gabarito 700, tracked `−0.045em`.
+No full stop, no symbol, no mascot: all three were explored and declined in the Sept
+2026 brand pass. Render it as text through `PlotLogo` (web) or the display face
+(marketing, edge functions); never a raster.
 
 ## Canonical sources
 
@@ -38,12 +66,24 @@ rendered page is the visual contract; this file is the prose for what code can't
 
 ## The two spending rules
 
-### Accent color — spend it deliberately
+### Accent, fill and the secondary — three jobs
 
-The accent is `--accent` (`#E05578` light / `#F06A88` dark — the same role, lightened
-for contrast on the dark surface). Neutral UI is **black, white, and grey.** The accent
-is not a general-purpose palette colour; it is a signal you spend on the few things that
-earn it. Semantic guide/status tokens are the separate, permitted exception for meaning.
+The pink and the green are not interchangeable.
+
+- **`--accent` (`#E05578` light / `#F06A88` dark, the pink)** colours *type and line*: small
+  text, icons, focus and selection rings, rank numbers, the active tab underline. It is
+  a signal you spend on the few things that earn it.
+- **`--accent-fill` (`#FF88C8`, the brand pink)** colours *surfaces*: the primary button,
+  chips, the Live badge, the sign-up pill. It only ever sits behind `--on-accent-fill`
+  charcoal text. It is too light to carry text itself (1.97:1 on cream) and must never
+  colour type, an icon, or a border.
+- **`--accent-secondary` (`#5F7030` light / `#C9D48A` dark, soft green)** is the second
+  voice, spent even more sparingly: availability and "now at home" chips on its sage fill,
+  a positive state beside the pink. Never a primary action.
+
+Neutral UI is **cream, charcoal and the warm greys.** Neither the pink nor the green is a general-purpose
+palette colour. Semantic guide/status tokens are the separate, permitted exception for
+meaning.
 
 Keep the accent for these approved interaction and hierarchy cues:
 
@@ -81,29 +121,79 @@ rings may use an outline or an inset `box-shadow` to mark state (for example the
 [today in the Calendar mini month](../../apps/web/src/styles/app.css#L1944)). They do not count as
 decorative lift and must remain visible in both themes.
 
-**Never apply a shadow to text.** No `text-shadow`, anywhere. When text must stay legible
-over an image, put a scrim or solid chip behind it — the shadow goes on the surface, not
-on the glyphs.
+**Never apply a shadow to text for legibility.** No soft `text-shadow` under glyphs to lift
+them off an image. When text must stay legible over an image, put a scrim or solid chip
+behind it — the shadow goes on the surface, not on the glyphs.
+
+The one sanctioned `text-shadow` in the app is not a shadow at all: the chart rank numeral
+(`.rank-cut`) draws its outline as a ring of copies in `--bg`, painted behind the glyph, so
+the numeral reads as cut out of the poster art and merges into the page where it leaves the
+artwork. It is flat, has no blur and no offset, and exists because `-webkit-text-stroke`
+paints over the fill instead of behind it. Adding a blurred or offset shadow to any text,
+including that numeral, is still out.
 
 ### Text over imagery
 
 - **Hero or backdrop copy:** use a dark image scrim, usually a bottom-to-transparent
   gradient, to create a readable lower-third without obscuring the artwork.
-- **Ranks, badges, and compact labels:** use a small solid dark chip behind the text with
+- **Badges and compact labels:** use a small solid dark chip behind the text with
   a modest radius and padding. Keep the glyphs free of `text-shadow`.
+- **Chart ranks** are the exception, and have their own treatment: the big pink numeral cut
+  out of the poster's bottom-left corner (`.rank-cut`), sized at 39% of the poster's width,
+  hanging off the poster's left edge and clipped there by `.rank-cut-frame`. It is the same
+  on the Discover platform charts, the My Lists Top 5 and the public profile Top 5; a rank
+  does not get a chip.
 - **Both treatments:** verify readable contrast over light and dark image areas in both
   themes; never rely on colour alone to communicate the state.
 
+### The reference: the Trending panel
+
+The landing page's "Everything. In one place." section is the canonical use of every
+colour, and new work should match it rather than invent a new distribution:
+
+- **Cream panel** (`--surface-sunken`, 20px radius, no border, no shadow) on the cream ground,
+  rows separated by hairlines.
+- **Charcoal for everything that carries information**: the panel title, the rank numbers,
+  the titles, the meta line in the warm grey. Rank numbers are charcoal, not pink.
+- **One pink fill chip** (`--accent-fill`, charcoal text) on the single item that earns it —
+  the lead, "Trending #1". Never more than one pink chip per panel.
+- **Sage chips** (`--accent-secondary-fill`, charcoal text) for kind and availability —
+  "Film", "Series", "Now at home". They repeat freely; they are labels, not signals.
+- **The secondary button** is the cream pill (`--surface-sunken`, charcoal text) — "See
+  what's on". The pink primary button appears in a section only when the action is the
+  point of the section (the hero, the sign-up), not beside a panel.
+- **Pink as type** (`--accent`) is reserved for the smallest cues: an eyebrow, a date,
+  a live dot. It does not appear in this panel at all, and that is correct.
+
+Rule of thumb: charcoal says what, sage says which kind, pink says the one that matters.
+
 ## Shared foundations
 
-- Typography:
-  - `--font-serif` for brand, editorial headings, and expressive page titles.
-  - `--font-sans` for controls, forms, navigation, metadata, and dense product UI.
+- Typography — two faces, two jobs:
+  - `--font-display` (Gabarito, 700, tracked `−0.03em`) for the wordmark, page titles,
+    section headings, panel titles and rank numbers. This is the headline voice.
+  - `--font-sans` (DM Sans) for body, controls, forms, navigation, metadata, dense UI.
+  - Instrument Serif is **retired** (16 Sep 2026): every former serif use, including quotes,
+    notes, review slips and avatar initials, is now Gabarito. There is no italic face; quoted
+    speech is Gabarito 500 in quotation marks.
+  - On the marketing site the same two are `--display` / `--sans` in
+    `apps/website/theme.css`, with shared components in `apps/website/ui.css`.
 - Color roles:
   - `--bg`, `--surface`, `--surface-raised`, `--surface-sunken`
   - `--text-primary`, `--text-secondary`, `--text-muted`
   - `--border`, `--border-strong`
-  - `--accent`, `--accent-dim` (spend per the accent rule), `--danger`, `--danger-dim`, `--danger-border`
+  - `--accent`, `--accent-text`, `--accent-dim` (type and line), `--accent-fill`,
+    `--accent-fill-hover`, `--on-accent-fill` (surfaces), `--accent-secondary`,
+    `--accent-secondary-dim`, `--accent-secondary-fill` (the green), `--danger`,
+    `--danger-dim`, `--danger-border`
+- Components (marketing `ui.css`, app `app.css`):
+  - **Buttons** are pills. Primary is the pink fill with charcoal text; secondary is the
+    deeper cream; ink is charcoal with cream text for the rare emphatic case. No outline
+    buttons.
+  - **Chips** are small pills in the deeper cream; the pink fill marks the lead or a rank,
+    the sage fill with green text marks availability.
+  - **Cards and panels** are the deeper cream at 20px radius with no border and no shadow.
+    Rows inside them separate with a hairline.
 - Semantic guide/status roles (meaning-bearing colours, not neutral surfaces):
   - `--chip-now`, `--chip-today`, `--chip-tomorrow`, `--chip-soon`, `--chip-cinema`,
     `--chip-streaming`, `--chip-episode`

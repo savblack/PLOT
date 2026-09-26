@@ -162,6 +162,56 @@ export function parseLetterboxd(text) {
   }).filter(Boolean);
 }
 
+// IMDb's ratings export is a CSV headed by fields such as Const, Your Rating,
+// Date Rated, Title, Title Type and Year. Ratings already use Plot's 1–10
+// scale. Episode and game rows are omitted because Plot history represents a
+// movie or a whole series, and guessing a parent series from an episode title
+// can silently import the wrong work.
+export function parseImdb(text) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) return [];
+  const headers = rows[0].map(fuzzyCol);
+  const exact = (...names) => {
+    for (const name of names) {
+      const index = headers.indexOf(fuzzyCol(name));
+      if (index !== -1) return index;
+    }
+    return -1;
+  };
+  const idIdx = exact('const', 'imdb id');
+  const titleIdx = exact('title');
+  const typeIdx = exact('title type', 'type');
+  const yearIdx = exact('year');
+  const dateIdx = exact('date rated', 'rated date');
+  const ratingIdx = exact('your rating', 'my rating');
+  if (titleIdx === -1) return [];
+
+  return rows.slice(1).map(row => {
+    const title = row[titleIdx]?.trim();
+    if (!title) return null;
+    const type = typeIdx === -1 ? '' : (row[typeIdx] || '').trim().toLowerCase();
+    if (type.includes('episode') || type.includes('game') || type.includes('podcast')) return null;
+
+    const hint = type.includes('series') || type.includes('mini series') || type.includes('tv special')
+      ? 'tv'
+      : type.includes('movie') || type.includes('short') || type === 'video'
+        ? 'movie'
+        : 'unknown';
+    const yearRaw = yearIdx === -1 ? '' : (row[yearIdx] || '').trim();
+    const rating = ratingIdx === -1 ? NaN : Number(row[ratingIdx]);
+    const externalId = idIdx === -1 ? '' : (row[idIdx] || '').trim();
+
+    return {
+      title,
+      hint,
+      date: dateIdx === -1 ? null : normaliseDate(row[dateIdx]),
+      year: /^\d{4}$/.test(yearRaw) ? yearRaw : null,
+      rating: Number.isFinite(rating) && rating >= 1 && rating <= 10 ? Math.round(rating) : null,
+      externalId: /^tt\d+$/.test(externalId) ? externalId : null,
+    };
+  }).filter(Boolean);
+}
+
 /* ─────────────────── Streaming platform parsers ───────────────────
    Each returns an array of { title, hint, date } (Letterboxd adds year/
    rating/note). `hint` is 'tv' | 'movie' | 'unknown' — a guess the caller

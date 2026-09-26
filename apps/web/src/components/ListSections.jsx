@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import PrivateNote from './PrivateNote.jsx';
+import { customListCreationError } from '@plot/core/customListCreation.js';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip } from '../utils/countdown.js';
 import { posterUrl } from '../utils/images.js';
@@ -12,12 +13,13 @@ import KebabMenu from './KebabMenu.jsx';
 import { useSelection } from '../hooks/useSelection.js';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
-import SheetHeader from './SheetHeader.jsx';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
 import { DiscoverSectionHeader } from './DiscoverView.jsx';
 import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
-import { CardGrid, ListCard } from './ListCards.jsx';
+import { CardGrid, ListCard, SelectCircle } from './ListCards.jsx';
 import { MEDIA } from '../copy/media.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
+import { privateNoteKey } from '@plot/core/privateNotes.js';
 
 /* The lists themselves: one component per list, each rendering into a
    `Frame` it is handed. On My Lists the frame is a section on the page (the
@@ -44,15 +46,11 @@ export function TrashIcon() {
   );
 }
 
-// Matches Home's chart ranks: accent for #1, secondary for the rest of the
-// podium, muted beyond that.
-function rankClass(rank) {
-  if (rank === 1) return '';
-  if (rank <= 3)  return ' rank-top3';
-  return ' rank-rest';
+export function TickIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>;
 }
 
-/* ── Search sheet for Top 10 additions ── */
+/* ── Search sheet for Top 5 additions ── */
 export function AddToRankModal({ listType, rank, onAdd, onClose }) {
   const { user } = useApp();
   const { entries } = useHistory(user?.id);
@@ -95,22 +93,14 @@ export function AddToRankModal({ listType, rank, onAdd, onClose }) {
     onClose();
   };
 
-  return createPortal(
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: '58px', zIndex: 1000,
-      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
-      <div style={{
-        position: 'relative',
-        background: 'var(--surface)',
-        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        height: '80vh',
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
-        <SheetHeader title={`Select #${rank} ${listType === 'movies' ? 'Movie' : 'TV Show'}`} onClose={onClose} bordered={false} />
+  return (
+    <ResponsiveDialog
+      title={`Select #${rank} ${listType === 'movies' ? 'Movie' : 'TV Show'}`}
+      onClose={onClose}
+      tall
+      contentClassName="responsive-dialog-content--flush"
+    >
+      <div className="responsive-dialog-picker">
         <div style={{ padding: '0 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <button
@@ -142,7 +132,7 @@ export function AddToRankModal({ listType, rank, onAdd, onClose }) {
           />
         </div>
 
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <div className="responsive-dialog-scroll">
           {searching && (
             <div className="loading-state" style={{ minHeight: 80 }}><PlotLoader size="sm" /></div>
           )}
@@ -169,8 +159,7 @@ export function AddToRankModal({ listType, rank, onAdd, onClose }) {
           )}
         </div>
       </div>
-    </div>,
-    document.body
+    </ResponsiveDialog>
   );
 }
 
@@ -242,22 +231,9 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
     onClose();
   };
 
-  return createPortal(
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: '58px', zIndex: 1000,
-      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
-      <div style={{
-        position: 'relative',
-        background: 'var(--surface)',
-        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        height: '80vh',
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
-        <SheetHeader title={title} onClose={onClose} bordered={false} />
+  return (
+    <ResponsiveDialog title={title} onClose={onClose} tall contentClassName="responsive-dialog-content--flush">
+      <div className="responsive-dialog-picker">
         <div style={{ padding: '0 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <button className={`sub-tab-btn${tab === 'history' ? ' active' : ''}`} onClick={() => { setTab('history'); setQuery(''); }}>From history</button>
@@ -277,7 +253,7 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
             }}
           />
         </div>
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <div className="responsive-dialog-scroll">
           {searching && <div className="loading-state" style={{ minHeight: 80 }}><PlotLoader size="sm" /></div>}
           {tab === 'history' && historyFiltered.map(entry => (
             <ModalResultRow key={entry.id} item={entry} onSelect={handleSelect} />
@@ -296,8 +272,7 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
           )}
         </div>
       </div>
-    </div>,
-    document.body
+    </ResponsiveDialog>
   );
 }
 
@@ -322,25 +297,21 @@ export function CreateListModal({ lists, onConfirm, onClose }) {
       if (!created) {
         setError(MEDIA.couldNotCreateList);
       }
+    } catch (failure) {
+      setError(customListCreationError(failure, MEDIA.couldNotCreateList));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
-      <div style={{
-        position: 'relative',
-        background: 'var(--surface)',
-        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        padding: '1.25rem 1rem 2rem',
-      }}>
-        <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '1rem' }}>New list</div>
+    <ResponsiveDialog title="New list" onClose={onClose} size="compact">
+      <div style={{ padding: '1.25rem' }}>
+        <label htmlFor="new-list-name" style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', marginBottom: '0.45rem' }}>
+          List name
+        </label>
         <input
+          id="new-list-name"
           type="text"
           placeholder="List name…"
           value={name}
@@ -352,7 +323,7 @@ export function CreateListModal({ lists, onConfirm, onClose }) {
           autoFocus
           onKeyDown={e => e.key === 'Enter' && name.trim() && !isSubmitting && handleSubmit()}
           style={{
-            width: '100%', padding: '0.6rem 0.75rem', marginBottom: '0.75rem',
+            width: '100%', padding: '0.7rem 0.8rem', marginBottom: '0.75rem',
             border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
             background: 'var(--bg)', color: 'var(--text-primary)',
             fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
@@ -363,14 +334,14 @@ export function CreateListModal({ lists, onConfirm, onClose }) {
             {error}
           </div>
         )}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-primary btn-sm" style={{ flex: 1 }} disabled={!name.trim() || isSubmitting} onClick={handleSubmit}>
-            {isSubmitting ? 'Creating…' : 'Create'}
-          </button>
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
           <button className="btn btn-ghost btn-sm" disabled={isSubmitting} onClick={onClose}>{COMMON.cancel}</button>
+          <button className="btn btn-primary btn-sm" disabled={!name.trim() || isSubmitting} onClick={handleSubmit}>
+            {isSubmitting ? 'Creating…' : 'Create list'}
+          </button>
         </div>
       </div>
-    </div>
+    </ResponsiveDialog>
   );
 }
 
@@ -401,7 +372,7 @@ export function Empty({ children, onAdd, addLabel }) {
   );
 }
 
-/* Header label + count + actions for a block inside a section (one Top 10
+/* Header label + count + actions for a block inside a section (one Top 5
    list, one custom list). */
 export function SubHead({ label, count, badge, children }) {
   return (
@@ -414,10 +385,10 @@ export function SubHead({ label, count, badge, children }) {
   );
 }
 
-export function HeaderIconButton({ label, onClick, danger = false, children }) {
+export function HeaderIconButton({ label, onClick, danger = false, success = false, children }) {
   return (
     <button
-      className="date-group-action-btn date-group-action-btn--plain"
+      className={`date-group-action-btn date-group-action-btn--plain${success ? ' date-group-action-btn--success' : ''}`}
       type="button"
       aria-label={label}
       title={label}
@@ -440,8 +411,8 @@ export function SelectControls({ selection, hasItems, menuLabel, deleteLabel, on
             <TrashIcon />
           </HeaderIconButton>
         )}
-        <HeaderIconButton label="Done selecting" onClick={exit}>
-          <span className="mylists-done">{COMMON.done}</span>
+        <HeaderIconButton label="Done selecting" onClick={exit} success>
+          <TickIcon />
         </HeaderIconButton>
       </>
     );
@@ -542,9 +513,50 @@ function wantMeta(item) {
   return parts.join(' · ');
 }
 
-export function WantToWatchSection({ items, narrowed, Frame = ListSection }) {
-  const { openPanel, watchlist } = useApp();
+function cardState(item, historyEntries, privateNotes) {
+  const id = Number(item.tmdb_id);
+  const type = item.media_type || 'movie';
+  return {
+    hasPrivateNote: !!privateNotes?.rows?.[privateNoteKey(id, type)]?.note,
+    hasReview: historyEntries?.some(entry => entry.tmdb_id === id && entry.media_type === type && !!entry.note) || false,
+  };
+}
+
+function cardActions(item, favorites, watchlist, fw) {
+  const id = Number(item.tmdb_id);
+  const type = item.media_type || 'movie';
+  const normalized = { ...item, id, tmdb_id: id, media_type: type };
+  const isFavorite = favorites.isFavorite(id);
+  const isBookmarked = watchlist.isInList(id);
+  return {
+    isFavorite,
+    isBookmarked,
+    favoriteLabel: isFavorite ? `Remove ${item.title || item.name} from ${fw.pluralLower}` : `Add ${item.title || item.name} to ${fw.pluralLower}`,
+    bookmarkLabel: isBookmarked ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist,
+    onToggleFavorite: () => favorites.toggleFavorite(normalized),
+    onToggleBookmark: () => watchlist.toggle(normalized),
+  };
+}
+
+function ListPageRow({ item, title, meta, open, selection, note }) {
+  return (
+    <div className="list-page-row">
+      <button type="button" className="list-page-row-poster" onClick={open} aria-label={title}>{item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />}</button>
+      <div className="list-page-row-copy">
+        <button type="button" className="list-page-row-title" onClick={open}>{title}</button>
+        <div className="list-page-row-meta">{meta}</div>
+        {note}
+      </div>
+      {selection.editMode && <SelectCircle variant="row" selected={selection.selected.has(item.tmdb_id)} onClick={open} label={`Select ${title}`} />}
+    </div>
+  );
+}
+
+export function WantToWatchSection({ items, count = items.length, narrowed, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
+  const { openPanel, watchlist, privateNotes, favorites, profile } = useApp();
+  const fw = favoriteWords(profile?.region);
   const selection = useSelection();
+  const [showAdd, setShowAdd] = useState(false);
 
   if (narrowed && items.length === 0) return null;
 
@@ -556,50 +568,73 @@ export function WantToWatchSection({ items, narrowed, Frame = ListSection }) {
   return (
     <Frame
       title="Want to Watch"
+      count={count}
       headerRight={
-        <SelectControls
-          selection={selection}
-          hasItems={items.length > 0}
-          menuLabel="Want to Watch options"
-          deleteLabel="Remove"
-          onDelete={removeSelected}
-        />
+        <>
+          {pageLayout && (
+            <HeaderIconButton label="Add to Want to Watch" onClick={() => setShowAdd(true)}>
+              <PlusIcon />
+            </HeaderIconButton>
+          )}
+          <SelectControls
+            selection={selection}
+            hasItems={items.length > 0}
+            menuLabel="Want to Watch options"
+            deleteLabel="Remove"
+            onDelete={removeSelected}
+          />
+        </>
       }
     >
       {items.length === 0 ? (
         <Empty>Nothing saved yet. Tap the bookmark on any title to save it here.</Empty>
       ) : (
-        <CardGrid>
-          {items.map(item => {
+        <div className={pageLayout ? 'list-page-items' : ''}>
+          {pageLayout && <CardGrid>{items.map(item => {
             const title = item.title || item.name || MEDIA.unknown;
-            return (
-              <ListCard
-                key={item.id}
-                title={title}
-                img={posterUrl(item.poster_path, 'w185')}
-                meta={wantMeta(item)}
-                onOpen={() => openPanel(item.tmdb_id, item.media_type || 'movie')}
-                editMode={selection.editMode}
-                selected={selection.selected.has(item.tmdb_id)}
-                onToggleSelect={() => selection.toggle(item.tmdb_id)}
-              />
+            const type = item.media_type || 'movie';
+            return <ListCard key={`${type}:${item.tmdb_id}`} title={title} img={posterUrl(item.poster_path, 'w185')} meta={wantMeta(item)} {...cardState(item, historyEntries, privateNotes)} {...cardActions(item, favorites, watchlist, fw)} onOpen={() => openPanel(item.tmdb_id, type)} editMode={selection.editMode} selected={selection.selected.has(item.tmdb_id)} onToggleSelect={() => selection.toggle(item.tmdb_id)} />;
+          })}</CardGrid>}
+          <div className="private-watchlist">
+            {items.map(item => {
+            const title = item.title || item.name || MEDIA.unknown;
+            const type = item.media_type || 'movie';
+            const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, type);
+            return pageLayout ? (
+              <ListPageRow key={`${type}:${item.tmdb_id}`} item={item} title={title} meta={wantMeta(item)} open={open} selection={selection} note={!selection.editMode && <PrivateNote id={item.tmdb_id} type={type} title={title} />} />
+            ) : (
+              <div className="private-watchlist-row" key={`${type}:${item.tmdb_id}`}>
+                <button type="button" className="private-watchlist-poster" onClick={open} aria-label={title}>
+                  {item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />}
+                </button>
+                <div className="private-watchlist-body">
+                  <button type="button" className="private-watchlist-title" onClick={open}>{title}</button>
+                  <div className="mylists-card-meta">{wantMeta(item)}</div>
+                  {!selection.editMode && <PrivateNote id={item.tmdb_id} type={type} title={title} />}
+                </div>
+                {selection.editMode && <SelectCircle selected={selection.selected.has(item.tmdb_id)} onClick={open} label={`Select ${title}`} />}
+              </div>
             );
           })}
-        </CardGrid>
+          </div>
+        </div>
+      )}
+      {showAdd && (
+        <AddToFavoritesModal title="Add to Want to Watch" onAdd={(item) => watchlist.addToList(item)} onClose={() => setShowAdd(false)} />
       )}
     </Frame>
   );
 }
 
 /* ── Favourites ── */
-export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilters = [], narrowed, Frame = ListSection }) {
-  const { openPanel, profile } = useApp();
+export function FavoritesSection({ favorites: favsHook, visibleItems, count, typeFilters, genreFilters = [], narrowed, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
+  const { openPanel, profile, watchlist, privateNotes } = useApp();
   const fw = favoriteWords(profile?.region);
   const [showAdd, setShowAdd] = useState(false);
   const selection = useSelection();
   const { favorites, isFavorite, toggleFavorite } = favsHook;
 
-  const visible = filterByTypeAndGenre(favorites, typeFilters, genreFilters);
+  const visible = visibleItems ?? filterByTypeAndGenre(favorites, typeFilters, genreFilters);
   if (narrowed && visible.length === 0) return null;
 
   const deleteSelected = () => {
@@ -616,8 +651,12 @@ export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilter
   return (
     <Frame
       title={fw.plural}
+      count={count ?? favorites.length}
       headerRight={
         <>
+          <HeaderIconButton label={`Add ${fw.nounLower}`} onClick={() => setShowAdd(true)}>
+            <PlusIcon />
+          </HeaderIconButton>
           <SelectControls
             selection={selection}
             hasItems={visible.length > 0}
@@ -625,15 +664,13 @@ export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilter
             deleteLabel="Remove"
             onDelete={deleteSelected}
           />
-          <HeaderIconButton label={`Add ${fw.nounLower}`} onClick={() => setShowAdd(true)}>
-            <PlusIcon />
-          </HeaderIconButton>
         </>
       }
     >
       {favorites.length === 0 ? (
         <Empty>Heart anything to add it here.</Empty>
       ) : (
+        <div className={pageLayout ? 'list-page-items' : ''}>
         <CardGrid>
           {visible.map(item => {
             const title = item.title || MEDIA.unknown;
@@ -643,6 +680,8 @@ export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilter
                 title={title}
                 img={posterUrl(item.poster_path, 'w185')}
                 meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}
+                {...(pageLayout ? cardState(item, historyEntries, privateNotes) : {})}
+                {...(pageLayout ? cardActions(item, favsHook, watchlist, fw) : {})}
                 onOpen={() => openPanel(item.tmdb_id, item.media_type)}
                 editMode={selection.editMode}
                 selected={selection.selected.has(item.tmdb_id)}
@@ -651,6 +690,12 @@ export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilter
             );
           })}
         </CardGrid>
+        {pageLayout && <div className="list-page-rows">{visible.map(item => {
+          const title = item.title || MEDIA.unknown;
+          const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, item.media_type);
+          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie} open={open} selection={selection} />;
+        })}</div>}
+        </div>
       )}
 
       {showAdd && (
@@ -668,8 +713,9 @@ export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilter
 
 
 /* ── One custom list, as a page: grid plus rename / public / share / delete ── */
-export function CustomListSection({ list, customLists, typeFilters, genreFilters = [], narrowed, share, onDeleted, Frame = ListSection }) {
-  const { openPanel } = useApp();
+export function CustomListSection({ list, visibleItems, count, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
+  const { openPanel, favorites, watchlist, privateNotes, profile } = useApp();
+  const fw = favoriteWords(profile?.region);
   const { renameList, setListPublic, addItem, removeItem, deleteList } = customLists;
   const selection = useSelection();
   const [renaming, setRenaming] = useState(false);
@@ -678,7 +724,7 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const allItems = list.items || [];
-  const visible  = filterByTypeAndGenre(allItems, typeFilters, genreFilters);
+  const visible  = visibleItems ?? filterByTypeAndGenre(allItems, typeFilters, genreFilters);
 
   const submitRename = async () => {
     if (!renameValue.trim()) return;
@@ -699,9 +745,14 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
   return (
     <Frame
       title={list.name}
+      count={count ?? allItems.length}
       subtitle={list.is_public ? 'Public' : undefined}
       headerRight={
         <>
+          {list.is_public && share && <button type="button" className="btn btn-ghost btn-sm" onClick={() => share(list)}>{shareCopied ? COMMON.copied : COMMON.share}</button>}
+          <HeaderIconButton label={`Add item to ${list.name}`} onClick={() => setShowAdd(true)}>
+            <PlusIcon />
+          </HeaderIconButton>
           <SelectControls
             selection={selection}
             hasItems={visible.length > 0}
@@ -710,9 +761,6 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
             onDelete={removeSelected}
             extraItems={menuItems}
           />
-          <HeaderIconButton label={`Add item to ${list.name}`} onClick={() => setShowAdd(true)}>
-            <PlusIcon />
-          </HeaderIconButton>
         </>
       }
     >
@@ -736,6 +784,7 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
       ) : narrowed && visible.length === 0 ? (
         <Empty>No items match the current filter.</Empty>
       ) : (
+        <div className={pageLayout ? 'list-page-items' : ''}>
         <CardGrid>
           {visible.map(item => {
             const title = item.title || MEDIA.unknown;
@@ -745,6 +794,8 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
                 title={title}
                 img={posterUrl(item.poster_path, 'w185')}
                 meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}
+                {...(pageLayout ? cardState(item, historyEntries, privateNotes) : {})}
+                {...(pageLayout ? cardActions(item, favorites, watchlist, fw) : {})}
                 onOpen={() => openPanel(item.tmdb_id, item.media_type)}
                 editMode={selection.editMode}
                 selected={selection.selected.has(item.tmdb_id)}
@@ -753,6 +804,12 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
             );
           })}
         </CardGrid>
+        {pageLayout && <div className="list-page-rows">{visible.map(item => {
+          const title = item.title || MEDIA.unknown;
+          const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, item.media_type);
+          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie} open={open} selection={selection} />;
+        })}</div>}
+        </div>
       )}
 
       {showAdd && (
@@ -774,59 +831,122 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
   );
 }
 
-/* ── Top 5: a podium, one per type behind a Movies / TV switch ──
-   #1 gets the room and the accent numeral; 2-5 sit beside it. Five slots is a
-   list people finish, where ten was mostly dashed boxes. Reordering is the
-   arrow pair under each card while editing. */
+/* ── Top 5: one equal slot per rank behind a Movies / TV switch ──
+   Every rank carries a numeral cut out of its poster's corner. Five slots is
+   a list people finish, where ten was mostly dashed boxes. Edit mode supports
+   dragging between ranks, with arrow controls as a precise fallback. */
 export function TopFiveSection({ topLists, Frame = ListSection }) {
   const { openPanel } = useApp();
   const [listType,   setListType]   = useState('movies');
-  const [editMode,   setEditMode]   = useState(false);
+  const [editMode,   setEditMode]   = useState(null);
   const [addingRank, setAddingRank] = useState(null);
+  const [draggedRank, setDraggedRank] = useState(null);
+  const [dragOverRank, setDragOverRank] = useState(null);
+  const [selected, setSelected] = useState(() => new Set());
+  const dragging = useRef(false);
 
   const items   = (topLists.lists[listType] || []).filter(i => i.rank <= TOP_LIST_SIZE);
   const maxRank = items.reduce((max, i) => Math.max(max, i.rank), 0);
   const slots   = Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1);
   const typeLabel = listType === 'movies' ? 'movie' : 'TV show';
+  const reordering = editMode === 'reorder';
+  const selecting = editMode === 'select';
+
+  const toggleSelected = (tmdbId) => setSelected(current => {
+    const next = new Set(current);
+    if (next.has(tmdbId)) next.delete(tmdbId); else next.add(tmdbId);
+    return next;
+  });
+  const finishEditing = () => {
+    setEditMode(null);
+    setSelected(new Set());
+  };
+  const removeSelected = async () => {
+    await Promise.all([...selected].map(tmdbId => topLists.removeSlot(listType, tmdbId)));
+    finishEditing();
+  };
+
+  const dragTargetProps = (rank) => !reordering ? {} : {
+    onDragOver: (event) => { event.preventDefault(); setDragOverRank(rank); },
+    onDragLeave: () => setDragOverRank(current => current === rank ? null : current),
+    onDrop: async (event) => {
+      event.preventDefault();
+      if (draggedRank != null && draggedRank !== rank) await topLists.moveToRank(listType, draggedRank, rank);
+      setDraggedRank(null);
+      setDragOverRank(null);
+    },
+  };
 
   const slot = (rank) => {
     const item = items.find(i => i.rank === rank);
-    const cls  = `top5-slot top5-slot--${rank === 1 ? 'first' : 'rest'}`;
+    const cls  = 'top5-slot';
     if (!item) {
       return (
-        <button
-          key={rank}
-          type="button"
-          className={`${cls} top5-slot--empty interactive-surface`}
-          onClick={() => setAddingRank(rank)}
-          aria-label={`Add your #${rank} ${typeLabel}`}
-        >
-          <span className={`top5-rank${rankClass(rank)}`}>{rank}</span>
-          <PlusIcon />
-          <span className="top5-hint">{rank === 1 ? "What's your GOAT?" : 'Add a title'}</span>
-        </button>
+        <div key={rank} className={`${cls}${dragOverRank === rank ? ' drag-over' : ''}`} {...dragTargetProps(rank)}>
+          <span className="rank-cut-frame">
+            <button
+              type="button"
+              className="top5-slot--empty interactive-surface"
+              onClick={() => setAddingRank(rank)}
+              aria-label={`Add your #${rank} ${typeLabel}`}
+            >
+              <PlusIcon />
+              <span className="top5-hint">{rank === 1 ? "What's your GOAT?" : 'Add a title'}</span>
+            </button>
+            <span className="rank-cut">{rank}</span>
+          </span>
+        </div>
       );
     }
-    const img = posterUrl(item.poster_path, rank === 1 ? 'w342' : 'w185');
+    const img = posterUrl(item.poster_path, 'w185');
     return (
-      <div key={rank} className={cls}>
+      <div
+        key={rank}
+        className={`${cls}${reordering ? ' draggable' : ''}${draggedRank === rank ? ' dragging' : ''}${dragOverRank === rank ? ' drag-over' : ''}`}
+        draggable={reordering}
+        onDragStart={(event) => {
+          dragging.current = true;
+          setDraggedRank(rank);
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', String(rank));
+        }}
+        onDragEnd={() => {
+          setDraggedRank(null);
+          setDragOverRank(null);
+          window.setTimeout(() => { dragging.current = false; }, 0);
+        }}
+        {...dragTargetProps(rank)}
+      >
         <button
           type="button"
           className="top5-hit interactive-surface"
-          onClick={() => openPanel(item.tmdb_id, item.media_type)}
-          aria-label={`View details for ${item.title}`}
+          onClick={() => {
+            if (dragging.current) return;
+            if (selecting) toggleSelected(item.tmdb_id);
+            else if (!reordering) openPanel(item.tmdb_id, item.media_type);
+          }}
+          aria-label={selecting ? `${selected.has(item.tmdb_id) ? 'Deselect' : 'Select'} ${item.title}` : reordering ? `Reorder ${item.title}` : `View details for ${item.title}`}
+          aria-pressed={selecting ? selected.has(item.tmdb_id) : undefined}
         >
-          <span className="top5-poster">
-            {img ? <img src={img} alt="" loading="lazy" /> : <span className="mylists-card-placeholder">{item.title}</span>}
-            <span className={`discover-rank-badge${rankClass(rank)}`}>{rank}</span>
+          <span className="rank-cut-frame">
+            <span className="top5-poster">
+              {img ? <img src={img} alt="" loading="lazy" /> : <span className="mylists-card-placeholder">{item.title}</span>}
+            </span>
+            <span className="rank-cut">{rank}</span>
           </span>
           <span className="top5-title">{item.title}</span>
         </button>
-        {editMode && (
+        {selecting && (
+          <SelectCircle
+            selected={selected.has(item.tmdb_id)}
+            onClick={(event) => { event.stopPropagation(); toggleSelected(item.tmdb_id); }}
+            label={`${selected.has(item.tmdb_id) ? 'Deselect' : 'Select'} ${item.title}`}
+          />
+        )}
+        {reordering && (
           <div className="mylists-top10-controls">
-            <button className="btn btn-ghost btn-xs" type="button" disabled={rank === 1} onClick={() => topLists.moveUp(listType, rank)} aria-label={`Move ${item.title} up one place`}>‹</button>
-            <button className="btn btn-ghost btn-xs" type="button" disabled={rank >= maxRank} onClick={() => topLists.moveDown(listType, rank)} aria-label={`Move ${item.title} down one place`}>›</button>
-            <button className="btn btn-ghost btn-xs" type="button" onClick={() => topLists.removeSlot(listType, item.tmdb_id)} aria-label={`Remove ${item.title}`}>✕</button>
+            <button className="top5-reorder-btn" type="button" disabled={rank === 1} onClick={() => topLists.moveUp(listType, rank)} aria-label={`Move ${item.title} up one place`}>‹</button>
+            <button className="top5-reorder-btn" type="button" disabled={rank >= maxRank} onClick={() => topLists.moveDown(listType, rank)} aria-label={`Move ${item.title} down one place`}>›</button>
           </div>
         )}
       </div>
@@ -842,25 +962,35 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
           role="tab"
           aria-selected={t.id === listType}
           className={`discover-plat-switch-btn${t.id === listType ? ' active' : ''}`}
-          onClick={() => { setListType(t.id); setEditMode(false); }}
+          onClick={() => { setListType(t.id); finishEditing(); }}
         >
           {t.label}
         </button>
       ))}
     </div>
   );
-  const actions = items.length > 1 && (
+  const actions = items.length > 0 && (
     editMode
       ? (
-        <HeaderIconButton label="Done editing" onClick={() => setEditMode(false)}>
-          <span className="mylists-done">{COMMON.done}</span>
-        </HeaderIconButton>
+        <>
+          {selecting && selected.size > 0 && (
+            <HeaderIconButton label={`Remove ${selected.size} selected`} onClick={removeSelected} danger>
+              <TrashIcon />
+            </HeaderIconButton>
+          )}
+          <HeaderIconButton label="Done editing" onClick={finishEditing} success>
+            <TickIcon />
+          </HeaderIconButton>
+        </>
       )
-      : <KebabMenu ariaLabel="Top 5 options" items={[{ label: 'Reorder', onClick: () => setEditMode(true) }]} />
+      : <KebabMenu ariaLabel="Top 5 options" items={[
+        { label: 'Reorder', onClick: () => setEditMode('reorder') },
+        { label: COMMON.select, onClick: () => setEditMode('select') },
+      ]} />
   );
 
   return (
-    <Frame title="Top 5" subtitle={typeSwitch} headerRight={actions}>
+    <Frame title="Top 5" headerRight={<>{typeSwitch}{actions}</>}>
       <div className="top5">
         {slot(1)}
         <div className="top5-rest">{slots.slice(1).map(slot)}</div>

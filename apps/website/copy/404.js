@@ -3,12 +3,12 @@
 
 export const NOT_FOUND_PAGE = {
   meta: {
-    title: 'Page not found — PLOT',
+    title: 'Page not found — plot',
     description: "The page you were looking for isn't here.",
   },
   code: '404',
   headline: "Looks like we've hit a plot hole.",
   sub: "Let's get you back to something worth watching.",
-  backHome: '← Back to PLOT',
+  backHome: '← Back to plot',
   seeWhatsOn: "See what's on",
 };

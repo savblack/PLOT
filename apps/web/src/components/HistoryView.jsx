@@ -7,7 +7,7 @@ import { groupEntriesByMonth, monthLabel } from '../utils/history.js';
 import {
   calendarParts, entriesInYear, yearsWithEntries, filterEntries, genreCounts,
   titlePerDay, streaks, favouriteWeekday, movieMinutes, formatDuration,
-  averageStars, crowdComparison, crowdSentence, recurringPeople, monthInsight,
+  crowdComparison, crowdSentence, recurringPeople, monthInsight,
   yearSentence, topGenreId,
 } from '@plot/core/historyStats.js';
 import { ratingToStars } from '@plot/core/ratings.js';
@@ -16,14 +16,16 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { IconChevronLeft, IconChevronRight, IconSearch } from './navIcons.jsx';
 import SideFilters, { FilterRow } from './SideFilters.jsx';
+import MobilePageControls from './MobilePageControls.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { HISTORY_VIEW as T } from '../copy/historyView.js';
+import { MEDIA } from '../copy/media.js';
 
 /* History is its own page: the poster shelf, one month at a time, with a
    sticky column of small cards beside it that say something about the year
    (how much, how kind, how it compares with TMDB's audience, who keeps
    turning up). The frame matches the Calendar's: 264px side column, 72px
-   gap, 24px serif month names on the stream.
+   gap, 24px Gabarito month names on the stream.
 
    Every number here comes from history rows plus the TMDB details PLOT
    already fetches for the media panel. Nothing is compared with other PLOT
@@ -70,7 +72,6 @@ function Stat({ value, label }) {
 }
 
 function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName }) {
-  const avg = averageStars(entries);
   const wd = favouriteWeekday(entries);
   const mins = movieMinutes(entries, details);
   const sentence = yearSentence({
@@ -80,7 +81,7 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
     dnf: entries.filter(e => e.dnf).length,
   });
   return (
-    <div className="hist-card">
+    <div className="hist-card hist-year-card">
       <div className="hist-card-head">
         <span className="hist-card-title">{isCurrentYear ? T.yearSoFar(year) : T.yearCardTitle(year)}</span>
         {detailsLoading && <span className="hist-card-note" aria-live="polite">{T.loadingInsights}</span>}
@@ -88,7 +89,6 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
       <div className="hist-stats">
         <Stat value={entries.length} label={T.titles} />
         <Stat value={mins.counted ? formatDuration(mins.minutes) : '–'} label={T.watchingMovies} />
-        <Stat value={avg ? avg.stars : '–'} label={T.yourAverage} />
         <Stat value={wd && wd.total >= 3 ? wd.name : '–'} label={T.yourNight} />
       </div>
       {sentence && <p className="hist-sentence">{sentence}</p>}
@@ -152,65 +152,60 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((w, i) => <span key={`wd-${i}`} className="hist-mini-wd" aria-hidden="true">{w}</span>)}
         {cells}
       </div>
-      <div className="hist-card-foot">
-        <span>{T.daysWithAWatch(perDay.size)}</span>
-        {s.best > 1 && <span>{T.bestStreak} <b>{s.best}</b>{s.bestMonth ? ` in ${s.bestMonth.slice(0, 3)}` : ''}</span>}
+      {s.best > 1 && (
+        <div className="hist-card-foot">
+          <span>{T.bestStreak} <b>{s.best}</b>{s.bestMonth ? ` in ${s.bestMonth.slice(0, 3)}` : ''}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CrowdCard({ entries, details, openPanel }) {
+  const cmp = crowdComparison(entries, details);
+  if (!cmp || cmp.compared < 3) return null;
+  const sentence = crowdSentence(cmp);
+  return (
+    <div className="hist-card">
+      <span className="hist-card-label">{T.crowdHeading}</span>
+      <div className="hist-card-body">
+        <span className="hist-card-lead">{sentence}</span>
+        <div className="hist-crowd-row">
+          {cmp.disagreements.map(({ entry }) => {
+            const img = posterUrl(entry.poster_path, 'w92');
+            return (
+              <button key={entry.id} type="button" className="hist-crowd-poster" onClick={() => openPanel(entry.tmdb_id, entry.media_type || 'movie')} aria-label={T.openTitle(entry.title)} title={entry.title}>
+                {img && <img src={img} alt="" />}
+              </button>
+            );
+          })}
+          <span className="hist-card-note">{T.crowdDisagreements}</span>
+        </div>
       </div>
     </div>
   );
 }
 
-function CrowdCard({ entries, details, detailsLoading, openPanel }) {
-  const cmp = crowdComparison(entries, details);
-  const sentence = crowdSentence(cmp);
-  return (
-    <div className="hist-card">
-      <span className="hist-card-label">{T.crowdHeading}</span>
-      {cmp && cmp.compared >= 3 ? (
-        <div className="hist-card-body">
-          <span className="hist-card-lead">{sentence}</span>
-          <div className="hist-crowd-row">
-            {cmp.disagreements.map(({ entry }) => {
-              const img = posterUrl(entry.poster_path, 'w92');
-              return (
-                <button key={entry.id} type="button" className="hist-crowd-poster" onClick={() => openPanel(entry.tmdb_id, entry.media_type || 'movie')} aria-label={T.openTitle(entry.title)} title={entry.title}>
-                  {img && <img src={img} alt="" />}
-                </button>
-              );
-            })}
-            <span className="hist-card-note">{T.crowdDisagreements}</span>
-          </div>
-        </div>
-      ) : (
-        <span className="hist-card-note">{detailsLoading ? T.loadingCard : T.crowdNeedsRatings}</span>
-      )}
-    </div>
-  );
-}
-
-function PeopleCard({ entries, details, detailsLoading, navigateTo }) {
+function PeopleCard({ entries, details, navigateTo }) {
   const people = recurringPeople(entries, details);
+  if (!people.length) return null;
   return (
     <div className="hist-card">
       <span className="hist-card-label">{T.peopleHeading}</span>
-      {people.length ? (
-        <div className="hist-card-body">
-          {people.map(p => {
-            const img = profileUrl(p.profile_path, 'w185');
-            return (
-              <button key={p.id} type="button" className="hist-person" onClick={() => navigateTo(`person/${p.id}`)}>
-                <span className="hist-person-avatar">{img && <img src={img} alt="" />}</span>
-                <span className="hist-person-text">
-                  <span className="hist-person-name">{p.name}</span>
-                  <span className="hist-card-note">{p.line}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <span className="hist-card-note">{detailsLoading ? T.loadingCard : T.peopleNeedsMore}</span>
-      )}
+      <div className="hist-card-body">
+        {people.map(p => {
+          const img = profileUrl(p.profile_path, 'w185');
+          return (
+            <button key={p.id} type="button" className="hist-person" onClick={() => navigateTo(`person/${p.id}`)}>
+              <span className="hist-person-avatar">{img && <img src={img} alt="" />}</span>
+              <span className="hist-person-text">
+                <span className="hist-person-name">{p.name}</span>
+                <span className="hist-card-note">{p.line}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -335,8 +330,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
 
   return (
     <div className="hist-page">
-      <div className="hist-toolbar">
-        <span className="hist-toolbar-sub">{T.subtitle}</span>
+      <div className="hist-toolbar hist-toolbar--heading">
         <div className="hist-toolbar-controls">
           {years.length > 1 && (
             years.length <= 4 ? (
@@ -357,6 +351,48 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
           </label>
         </div>
       </div>
+
+      <MobilePageControls
+        groups={[
+          {
+            heading: 'Year',
+            mode: 'single',
+            value: activeYear,
+            defaultValue: years[0],
+            onChange: onYear,
+            options: [...years].reverse().map(year => ({ id: year, label: String(year) })),
+          },
+          {
+            heading: MEDIA.typeHeading,
+            value: types,
+            defaultValue: ALL_HISTORY_TYPES,
+            onChange: setTypes,
+            options: HISTORY_TYPE_ROWS,
+          },
+          {
+            heading: MEDIA.genreHeading,
+            allLabel: MEDIA.allGenres,
+            columns: 2,
+            value: genres,
+            defaultValue: [],
+            onChange: setGenres,
+            options: genreOptions.map(genre => ({ id: genre.id, label: genre.name })),
+          },
+          {
+            heading: T.filterStatus,
+            value: [reviewed ? 'reviewed' : null, dnf ? 'dnf' : null].filter(Boolean),
+            defaultValue: [],
+            onChange: values => {
+              setReviewed(values.includes('reviewed'));
+              setDnf(values.includes('dnf'));
+            },
+            options: [
+              { id: 'reviewed', label: T.filterReviewed },
+              { id: 'dnf', label: T.filterDidntFinish },
+            ],
+          },
+        ]}
+      />
 
       <div className="hist-body">
         <aside className="hist-side">
@@ -379,8 +415,8 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
               openPanel={openPanel}
             />
           )}
-          <CrowdCard entries={yearEntries} details={details} detailsLoading={detailsLoading} openPanel={openPanel} />
-          <PeopleCard entries={yearEntries} details={details} detailsLoading={detailsLoading} navigateTo={navigateTo} />
+          <CrowdCard entries={yearEntries} details={details} openPanel={openPanel} />
+          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo} />
           <Filters
             types={types} setTypes={setTypes}
             genres={genres} setGenres={setGenres} genreOptions={genreOptions}

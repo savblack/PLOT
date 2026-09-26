@@ -1,15 +1,18 @@
 export const APP_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: '/home', primary: true },
-  // Web only in practice: mobile keeps Guide as a Home sub-tab (DISCOVER_TABS)
-  // and its drawer hardcodes its own list. Not primary, so it stays out of the
-  // web bottom tab bar; the sidebar and drawer render it.
-  { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   { id: 'calendar', label: 'Calendar', path: '/calendar', primary: true },
   { id: 'my-lists', label: 'My Lists', path: '/my-lists', primary: true },
   // Web only for now: on web History is its own page (poster shelf plus an
   // insights panel); mobile still shows history as a My Lists tab, which is
   // why MY_LISTS_TABS below keeps its 'history' entry.
   { id: 'history', label: 'History', path: '/history', primary: true },
+  // Web only in practice: mobile keeps Guide as a Home sub-tab (DISCOVER_TABS)
+  // and its drawer hardcodes its own list. Not primary, so it stays out of the
+  // web bottom tab bar; the sidebar and drawer render it.
+  { id: 'guide', label: 'Guide', path: '/guide', primary: false },
+  // Pick for Me, the tonight picker (Premium). Free viewers land on the Premium gate,
+  // never on fake results. Mobile lists it in its drawer (DrawerMenu.tsx).
+  { id: 'tonight', label: 'Pick for Me', path: '/tonight', primary: false, premium: true },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
 ];
@@ -17,7 +20,7 @@ export const APP_NAV_ITEMS = [
 export const PRIMARY_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.primary);
 
 export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
-  (titles, item) => ({ ...titles, [item.id]: item.id === 'home' ? 'PLOT' : item.label }),
+  (titles, item) => ({ ...titles, [item.id]: item.id === 'home' ? 'plot' : item.label }),
   {
     'new-releases': 'New Releases',
     'design-system': 'Design System',
@@ -89,7 +92,7 @@ export const MY_LISTS_TABS = [
   { id: 'all',       label: 'All'           },
   { id: 'watching',  label: 'Watching'      },
   { id: 'want',      label: 'Want to Watch' },
-  { id: 'top10',     label: 'Top 10'        },
+  { id: 'top10',     label: 'Top 5'         },
   { id: 'favorites', label: null            }, // region-spelled at the call site
   { id: 'lists',     label: 'Lists'         },
   { id: 'history',   label: 'History'       },

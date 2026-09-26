@@ -20,11 +20,11 @@
         function showFallback() {
           try {
             var root = document.getElementById('root');
-            if (!root || root.firstChild) return;
+            if (!root || (root.firstChild && !root.querySelector('[data-initial-app-loader]'))) return;
             root.innerHTML =
               '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;' +
               'padding:1.5rem;font-family:Georgia,serif;color:#1a1a1a;background:#faf9f7;text-align:center">' +
-              '<div><p style="font-size:1.5rem;margin:0 0 .5rem">PLOT</p>' +
+              '<div><p style="font-size:1.5rem;margin:0 0 .5rem">plot</p>' +
               '<p style="font-family:system-ui,sans-serif;font-size:.9rem;line-height:1.5;color:#6b6b6b;margin:0 0 1.25rem">' +
               'Couldn\u2019t finish loading. This usually means an update landed mid-visit.</p>' +
               '<button onclick="location.reload()" style="font:inherit;font-family:system-ui,sans-serif;font-size:.85rem;' +
@@ -32,6 +32,7 @@
               'Reload</button></div></div>';
           } catch (e) {}
         }
+        window.__plotShowStartupFallback = showFallback;
 
         try {
           window.addEventListener('error', function (event) {
@@ -69,16 +70,16 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>PLOT – Your Film & TV Companion</title>
+    <title>PLOT | Movie & TV Tracker</title>
+    <link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin />
-    <meta name="description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
-    <meta property="og:title" content="PLOT – Your Film &amp; TV Companion" />
-    <meta property="og:description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
+    <meta name="description" content="The beautiful way to track what you watch. Log, rate, and share your movie and TV taste." />
+    <meta property="og:title" content="PLOT | Movie &amp; TV Tracker" />
+    <meta property="og:description" content="The beautiful way to track what you watch. Log, rate, and share your movie and TV taste." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://app.theplot.tv" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="PLOT – Your Film &amp; TV Companion" />
+    <meta name="twitter:title" content="PLOT | Movie &amp; TV Tracker" />
     <meta name="twitter:description" content="The beautiful way to track what you watch." />
     <meta property="og:image" content="https://app.theplot.tv/og-image.png" />
     <meta property="og:image:width" content="1200" />
@@ -97,9 +98,49 @@
         } catch (e) {}
       })();
     </script>
+    <!-- React cannot paint until its entry graph has downloaded and executed.
+         Keep the existing PLOT loader in the initial document so slow devices
+         get useful pixels immediately; React replaces it on its first commit. -->
+    <style data-critical="app-boot-loader">
+      html, body, #root { height: 100%; margin: 0; }
+      body { background: #f8f2ea; }
+      [data-theme="dark"] body { background: #0c0c0c; }
+      .app-boot-loader {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+      .initial-wordmark {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.28em;
+        width: fit-content;
+        color: #292924;
+        font: 700 30px/1 system-ui, sans-serif;
+        letter-spacing: -0.045em;
+      }
+      [data-theme="dark"] .initial-wordmark { color: #f8f2ea; }
+      .initial-wordmark::after {
+        content: '';
+        display: block;
+        width: 100%;
+        height: 0.14em;
+        border-radius: 999px;
+        background: #ff88c8;
+      }
+      @media (max-width: 720px) {
+        .initial-wordmark { font-size: 26px; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <div id="root">
+      <div class="app-boot-loader" data-initial-app-loader>
+        <span class="initial-wordmark" role="img" aria-label="Loading PLOT">plot</span>
+      </div>
+    </div>
+    <script type="module" async src="/src/main.jsx"></script>
   </body>
 </html>

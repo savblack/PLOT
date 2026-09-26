@@ -1,5 +1,5 @@
 import { encryptToken, decryptToken } from '../_shared/plexAuth.ts'
-import { plexResources, publicPlexResources, plexProfiles, selectedPlexServer, type PlexSelection } from '../_shared/plexTracking.ts'
+import { plexResources, publicPlexResources, plexProfiles, selectedPlexServer, validatePlexHistory, type PlexSelection } from '../_shared/plexTracking.ts'
 import { trackingRequest, trackingUserAllowed } from '../_shared/trackingApi.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -8,7 +8,11 @@ import type { Database, Json } from '../_shared/database.types.ts'
 type Db = SupabaseClient<Database>
 // What the sync helpers actually need off a media_integrations row.
 type IntegrationRef = { id: string; user_id: string }
+import { eligiblePlexServers, isSafePlexConnectionUrl } from '../_shared/plexConnectionPolicy.js'
 import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyConflict.ts'
+import { insertMissingHistory, type ImportedHistoryRow } from '../_shared/importHistory.ts'
+import { selectTmdbMatch, tmdbIdFromGuids, yearFrom } from '../_shared/tmdbMatch.js'
+import { parsePlexItems, parsePlexResources, xmlAttrs } from '../_shared/plexXml.js'
 import { serviceKey } from '../_shared/serviceKey.ts'
 
 const corsHeaders = {
@@ -118,6 +122,69 @@ function cleanMediaType(value: unknown) {
   if (value === 'show' || value === 'series') return 'tv'
   if (value === 'movie' || value === 'tv') return value
   return null
+}
+
+function mediaTypeFromPlex(type?: string) {
+  if (type === 'movie') return 'movie'
+  if (type === 'show' || type === 'episode' || type === 'season') return 'tv'
+  return null
+}
+
+async function searchTmdb(entry: Record<string, unknown>) {
+  const key = Deno.env.get('TMDB_API_KEY')
+  if (!key || !entry.title) return null
+  const query = entry.year ? `${entry.title} ${entry.year}` : String(entry.title)
+  const url = new URL('https://api.themoviedb.org/3/search/multi')
+  url.searchParams.set('api_key', key)
+  url.searchParams.set('language', 'en-US')
+  url.searchParams.set('query', query)
+  const res = await fetch(url)
+  if (!res.ok) return null
+  const data = await res.json()
+  return selectTmdbMatch(data.results || [], entry)
+}
+
+// Straight lookup for an entry whose TMDB id Plex already told us. Costs the
+// same single request as the search it replaces, and cannot resolve to the
+// wrong title.
+async function fetchTmdbById(tmdbId: number, mediaType: string) {
+  const key = Deno.env.get('TMDB_API_KEY')
+  if (!key) return null
+  const url = new URL(`https://api.themoviedb.org/3/${mediaType}/${tmdbId}`)
+  url.searchParams.set('api_key', key)
+  url.searchParams.set('language', 'en-US')
+  const res = await fetch(url)
+  if (!res.ok) return null
+  const data = await res.json()
+  return { ...data, media_type: mediaType }
+}
+
+async function normalizePlexItem(source: string, raw: Record<string, string> & { guids?: string[] }) {
+  const mediaType = mediaTypeFromPlex(raw.type)
+  const title = raw.type === 'episode' ? raw.grandparentTitle : raw.title
+  const year = yearFrom(raw.year || raw.originallyAvailableAt)
+
+  // Prefer the id Plex carries over anything inferred from the name. Falls back
+  // to a strict search match, which returns nothing rather than guessing when
+  // the title is ambiguous — those come back 'needs_review' and are not written
+  // to the watchlist or history.
+  const guidTmdbId = tmdbIdFromGuids(raw.guids)
+  const tmdbMatch = guidTmdbId && mediaType
+    ? await fetchTmdbById(guidTmdbId, mediaType)
+    : await searchTmdb({ title, media_type: mediaType, year })
+
+  return {
+    source,
+    external_id: raw.ratingKey || raw.key || raw.guid || `${source}:${title}:${year || 'unknown'}`,
+    external_guid: raw.guid || raw.key || null,
+    tmdb_id: tmdbMatch?.id ?? null,
+    media_type: tmdbMatch?.media_type || mediaType,
+    title: tmdbMatch?.title || tmdbMatch?.name || title || null,
+    poster_path: tmdbMatch?.poster_path || null,
+    release_date: tmdbMatch?.release_date || tmdbMatch?.first_air_date || null,
+    match_state: tmdbMatch ? 'matched' : 'needs_review',
+    raw,
+  }
 }
 
 function asJson(value: unknown): Json {
@@ -257,6 +324,162 @@ async function upsertSnapshot(
   return { watchlistCount: rows.length, watchedCount }
 }
 
+async function fetchPlexResources(token: string) {
+  const url = new URL('https://plex.tv/api/resources')
+  url.searchParams.set('includeHttps', '1')
+  url.searchParams.set('includeRelay', '1')
+  url.searchParams.set('X-Plex-Token', token)
+  const res = await fetch(url, { headers: { Accept: 'application/xml' } })
+  if (!res.ok) return []
+  return parsePlexResources(await res.text())
+}
+
+const MAX_PLEX_HISTORY_BYTES = 2 * 1024 * 1024
+const PLEX_HISTORY_PAGE_SIZE = 100
+const MAX_PLEX_HISTORY_ITEMS = 10_000
+const PLEX_METADATA_CONCURRENCY = 5
+
+async function fetchPlexXmlWithTimeout(url: URL, timeoutMs = 8000, maxBytes = MAX_PLEX_HISTORY_BYTES) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'application/xml' },
+      signal: controller.signal,
+      redirect: 'error',
+    })
+    const contentLength = Number(response.headers.get('content-length') || 0)
+    if (contentLength > maxBytes) throw new Error('Plex response exceeded size limit')
+    if (!response.body) return { ok: response.ok, status: response.status, text: '' }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let text = ''
+    let total = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        controller.abort()
+        await reader.cancel().catch(() => {})
+        throw new Error('Plex response exceeded size limit')
+      }
+      text += decoder.decode(value, { stream: true })
+    }
+    text += decoder.decode()
+    return { ok: response.ok, status: response.status, text }
+  } finally {
+    clearTimeout(timeout)
+    controller.abort()
+  }
+}
+
+async function mapWithConcurrency<T, R>(items: T[], limit: number, mapper: (item: T) => Promise<R>) {
+  const results = new Array<R>(items.length)
+  let next = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++
+      results[index] = await mapper(items[index])
+    }
+  })
+  await Promise.all(workers)
+  return results
+}
+
+async function fetchPlexWatched(
+  resources: Array<Record<string, unknown>>,
+  selection: PlexSelection,
+  maxItems = MAX_PLEX_HISTORY_ITEMS,
+  requireComplete = true,
+) {
+  // The account token is valid across the Plex account and must remain limited
+  // to Plex-owned endpoints. Server resources carry a resource-scoped token;
+  // only owned resources may receive it.
+  const servers = eligiblePlexServers(resources).filter((server: Record<string, unknown>) => server.clientIdentifier === selection.clientIdentifier)
+  let lastError: string | null = null
+  for (const server of servers) {
+    const serverToken = String(server.accessToken)
+    const connections = Array.isArray(server.connections) ? server.connections as Array<Record<string, string>> : []
+    for (const connection of connections) {
+      if (!connection.uri) continue
+      let url: URL
+      try {
+        url = new URL(`${connection.uri.replace(/\/+$/, '')}/status/sessions/history/all`)
+      } catch {
+        continue
+      }
+      // SSRF guard: a malicious Plex server can advertise an internal address.
+      if (!isSafePlexConnectionUrl(url)) continue
+      url.searchParams.set('X-Plex-Token', serverToken)
+      url.searchParams.set('X-Plex-Container-Size', String(PLEX_HISTORY_PAGE_SIZE))
+      url.searchParams.set('sort', 'viewedAt:desc')
+      url.searchParams.set('accountID', selection.accountID)
+      try {
+        const rawItems: ReturnType<typeof parsePlexItems> = []
+        let totalSize = Number.POSITIVE_INFINITY
+        for (let start = 0; start < totalSize && start < maxItems; start += PLEX_HISTORY_PAGE_SIZE) {
+          url.searchParams.set('X-Plex-Container-Start', String(start))
+          const res = await fetchPlexXmlWithTimeout(url)
+          if (!res.ok) throw new Error(`Plex history request failed (${res.status})`)
+          const containerTag = res.text.match(/<MediaContainer\b[^>]*>/)?.[0]
+          const attrs = containerTag ? xmlAttrs(containerTag) : {}
+          const reportedTotal = Number(attrs.totalSize)
+          const parsedItems = validatePlexHistory(res.text, selection.accountID).items
+          totalSize = Number.isFinite(reportedTotal) && reportedTotal >= 0
+            ? reportedTotal
+            : parsedItems.length < PLEX_HISTORY_PAGE_SIZE
+              ? start + parsedItems.length
+              : Number.POSITIVE_INFINITY
+          const pageItems = parsedItems
+            .filter(item => item.viewedAt || item.lastViewedAt)
+          rawItems.push(...pageItems)
+          if (parsedItems.length < PLEX_HISTORY_PAGE_SIZE) break
+        }
+        if (requireComplete && totalSize > maxItems) {
+          throw new Error(`Plex history exceeds the ${maxItems} item import limit`)
+        }
+        const normalized = await mapWithConcurrency(
+          rawItems,
+          PLEX_METADATA_CONCURRENCY,
+          (item) => normalizePlexItem('plex_history', item),
+        )
+        return {
+          server,
+          items: normalized.map((item, index) => ({
+            ...item,
+            watched_at: rawItems[index].viewedAt || rawItems[index].lastViewedAt
+              ? new Date(Number(rawItems[index].viewedAt || rawItems[index].lastViewedAt) * 1000).toISOString()
+              : new Date().toISOString(),
+          })).filter(item => item.tmdb_id),
+        }
+      } catch (err) {
+        lastError = (err as Error).message
+        // Try the next connection.
+      }
+    }
+  }
+  return { server: null, items: [], error: lastError }
+}
+
+function plexHistoryRows(userId: string, watchedItems: Array<Record<string, unknown>>): ImportedHistoryRow[] {
+  return dedupeHistoryRows(watchedItems.flatMap(item => {
+    const tmdbId = Number.isInteger(item.tmdb_id) ? item.tmdb_id as number : null
+    const mediaType = cleanMediaType(item.media_type)
+    const title = item.title ? String(item.title) : null
+    if (tmdbId === null || mediaType === null || title === null) return []
+    return [{
+      user_id: userId,
+      tmdb_id: tmdbId,
+      media_type: mediaType,
+      title,
+      poster_path: item.poster_path ? String(item.poster_path) : null,
+      watched_at: cleanDate(item.watched_at) || new Date().toISOString().slice(0, 10),
+    }]
+  }))
+}
+
 async function findPlexIntegration(supabaseAdmin: Db, userId: string) {
   const { data, error } = await supabaseAdmin
     .from('media_integrations')
@@ -388,6 +611,37 @@ async function handleSync(supabaseAdmin: Db, userId: string, authorization: stri
   return json({ queued: true, job }, 202)
 }
 
+async function handleImportHistory(supabaseAdmin: Db, userId: string) {
+  const integration = await findPlexIntegration(supabaseAdmin, userId)
+  if (!integration) return json({ error: 'Plex is not connected' }, 404)
+
+  const token = await decryptToken(integration.plex_token_ciphertext, integration.plex_token_iv)
+  const resources = await fetchPlexResources(token)
+  const selection = integration.selected_server as PlexSelection | null
+  if (!selection?.clientIdentifier || !selection.accountID) return json({ error: 'Select a Plex server and profile in Settings before importing.' }, 409)
+  const watched = await fetchPlexWatched(resources, selection)
+  if (!watched.server) {
+    return json({ error: watched.error || 'No reachable Plex Media Server could provide watch history' }, 422)
+  }
+
+  const rows = plexHistoryRows(userId, watched.items)
+  const counts = await insertMissingHistory(supabaseAdmin, userId, rows)
+  const importedAt = new Date().toISOString()
+  const { error } = await supabaseAdmin
+    .from('media_integrations')
+    .update({
+      status: 'active',
+      last_sync_at: importedAt,
+      last_error: null,
+      plex_servers: publicPlexResources(resources),
+      selected_server: asJson(selection),
+    })
+    .eq('id', integration.id)
+  if (error) throw error
+
+  return json({ ok: true, sourceCount: rows.length, ...counts })
+}
+
 async function handleDisconnect(supabaseAdmin: Db, userId: string) {
   const { data: integration, error: readError } = await supabaseAdmin.from('media_integrations').select('*')
     .eq('user_id',userId).eq('provider','plex').order('created_at',{ ascending: false }).limit(1).maybeSingle()
@@ -451,9 +705,9 @@ serve(async (req) => {
     const action = String(body.action || queryAction || '')
     if (action !== 'disconnect' && Deno.env.get('TRACKING_JOBS_ENABLED') === 'true' && !trackingUserAllowed(user.id)) return json({ error: 'Tracking is not enabled for this account yet.' }, 503)
 
-    // Plex sync is a PLOT Premium feature. Disconnect stays open so a
-    // lapsed subscriber can always sever the integration.
-    if (action === 'start-auth' || action === 'poll-auth' || action === 'sync') {
+    // Ongoing two-way sync is Premium. Sign-in and one-off history imports stay
+    // Free so users can bring their library to Plot before subscribing.
+    if (action === 'sync') {
       const { data: premium } = await supabaseAdmin.rpc('is_premium', { p_user: user.id })
       if (!premium) return json({ error: 'premium_required' }, 403)
     }
@@ -462,6 +716,7 @@ serve(async (req) => {
     if (req.method === 'POST' && action === 'poll-auth') return await handlePollAuth(supabaseAdmin, user.id)
     if (req.method === 'POST' && action === 'sync') return await handleSync(supabaseAdmin, user.id, req.headers.get('Authorization') || '')
     if (req.method === 'POST' && ['sources', 'select-source'].includes(action)) return await handleSources(supabaseAdmin, user.id, { ...body, authorization: req.headers.get('Authorization') || '' })
+    if (req.method === 'POST' && action === 'import-history') return await handleImportHistory(supabaseAdmin, user.id)
     if (req.method === 'POST' && action === 'disconnect') return await handleDisconnect(supabaseAdmin, user.id)
 
     return json({ error: 'Unknown action' }, 404)

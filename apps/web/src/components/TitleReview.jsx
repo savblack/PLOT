@@ -140,7 +140,7 @@ export default function TitleReview({ entry, rating, note, dnf, watchedAt, onSav
 
         <div className="review-edit-field">
           <textarea
-            className="review-textarea review-textarea--active"
+            className="review-textarea"
             value={draftNote}
             onChange={e => { if (e.target.value.length <= REVIEW_MAX) setDraftNote(e.target.value); }}
             placeholder="Write a quick review…"
@@ -155,12 +155,12 @@ export default function TitleReview({ entry, rating, note, dnf, watchedAt, onSav
         {errorBox}
 
         <div className="review-edit-actions">
-          <button type="button" className="review-edit-btn" onClick={() => setEditing(false)} disabled={saving}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(false)} disabled={saving}>
             {COMMON.cancel}
           </button>
           <button
             type="button"
-            className="review-edit-btn review-edit-btn--primary"
+            className="btn btn-primary btn-sm"
             onClick={submit}
             disabled={saving}
             aria-busy={saving}

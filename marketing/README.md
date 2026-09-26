@@ -1,5 +1,9 @@
 # PLOT marketing automation
 
+The inventory of every automation (what starts it, which secrets it uses, where
+the content lands) is [`docs/ops/gtm-automations.md`](../docs/ops/gtm-automations.md).
+This file is the operator manual for the weekly flow.
+
 Every post has two halves, and they are reviewed in different places.
 
 1. GitHub prepares the week.
@@ -19,13 +23,17 @@ calendar, so it is where a caption should be judged; it has no idea the article
 exists. Linear can render 600 words of prose, so it is where the writing should
 be judged; it cannot show you how a tweet will look.
 
-The admin desk at `admin.theplot.tv` still exists and still works. It reads the
-same rows, so a decision made in either place shows up in both. Linear is a
-second surface onto one database, not a second database.
+Articles are reviewed in Linear. Social posts are reviewed in Buffer. The
+hosted desk at `admin.theplot.tv` is retired: see `docs/ops/retire-admin-review.md`.
+The database is what Linear and Buffer both write.
 
 The voice and spec rules in `VOICE.md` and `copy/AGENT.md` are maintained by
-hand. They were previously rewritten each Sunday by an automated learning loop;
-that loop is gone, so a rule only changes when someone changes it.
+hand. An automated Sunday learning loop used to rewrite them from the previous
+week's shipped copy. That loop is gone: no workflow, no admin control, no
+`learn:*` command. What still governs tone is `VOICE.md`,
+`copy/WHATSON_GUIDELINES.md`, and `supabase/functions/_shared/articleRules.js`.
+A replacement eval loop is planned and not built. A rule changes only when
+someone edits those files.
 
 The production worker is **Claude Code CLI** (`marketing-weekly-batch.yml` runs
 `--copy-runner=claude`). Codex remains the default for local/manual runs and is
@@ -68,11 +76,13 @@ can never fail a render or a publish run.
 
 ## Operator surfaces
 
-- **Primary operator UI:** Linear — team PLO, project **Content Automation**
-- **Secondary operator UI (same data):** `https://admin.theplot.tv`
+- **Articles:** Linear, team PLO, project **Content Automation**
+  (`https://linear.app/savblack/project/content-automation-2ce2d56ced11`)
+- **Social posts:** Buffer (`https://publish.buffer.com`)
 - **Primary automation layer:** GitHub Actions
 - **Primary copy worker:** Claude Code CLI in CI; Codex is the local/manual default
 - **Fallback/debug only:** local commands from `marketing/`
+- The old `admin.theplot.tv` desk is retired: `docs/ops/retire-admin-review.md`
 
 ## Local commands
 
@@ -238,8 +248,7 @@ empty it. Changing or dropping a post that is already scheduled is done in
 Buffer, on the post.
 
 `/retry` is gone. It re-queued failed publication rows, which is a question about
-sending — use the `retry_failed` input on `marketing-publish.yml`, or the admin
-desk, both of which can actually see the queue.
+sending. Use the `retry_failed` input on `marketing-publish.yml`.
 
 `/pause`, `/resume`, `/generate` and `/help` act on the whole pipeline rather
 than on one post, so you can comment them on any card in the project — including
@@ -570,7 +579,9 @@ and `marketing-linear-sync` on copy edited from a Linear comment.
    needed by **both** `marketing-weekly-batch.yml` (which ends by pushing the
    week into Buffer) and `marketing-publish.yml` (which reads it back) — the
    batch job never needed it before.
-3. Set `ADMIN_PASSWORD` on `admin-review` for `admin.theplot.tv`.
+3. The admin desk is gone. Do not set `ADMIN_PASSWORD` / `ADMIN_TOKEN` for a
+   review UI. See `docs/ops/retire-admin-review.md` if an old secret is still
+   hanging around to unset.
 4. Ensure Codex CLI is installed on the Mac if you want to run the local
    fallback commands (CI uses the Claude Code CLI).
 5. Brevo contact sync (optional): set `BREVO_API_KEY`, run

@@ -1,0 +1,6 @@
+# People type these on the marketing domain; the app owns them.
+/signup  https://app.theplot.tv/signup  302
+/login   https://app.theplot.tv/login   302
+
+# Browsers and crawlers still request /favicon.ico by default; we ship SVG.
+/favicon.ico  /favicon.svg  301

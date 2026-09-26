@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { useHistory } from '../hooks/useHistory.js';
-import { backdropUrl } from '../utils/images.js';
+import { backdropUrl, posterUrl } from '../utils/images.js';
 import { tmdb } from '@plot/core/tmdb.js';
-import { orderedCollectionParts } from '@plot/core/collections.js';
+import { collectionPartYear, orderedCollectionParts } from '@plot/core/collections.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import CollectionFilms from './CollectionFilms.jsx';
+import CollectionRun from './CollectionRun.jsx';
+import PanelCloseRail from './PanelCloseRail.jsx';
 import { useCollectionProgress } from '../hooks/useCollectionProgress.js';
 import './CollectionCard.css';
 
@@ -54,12 +56,17 @@ export default function CollectionPanel({ collectionId, closing, onClose }) {
   }, [closing, onClose]);
 
   const parts = orderedCollectionParts(collection);
-  const { items, watched, total, fraction } = useCollectionProgress(parts, { history });
+  const { items, watched, total } = useCollectionProgress(parts, { history });
   const stub = collection ? { id: collection.id, name: collection.name } : null;
+  const partYears = parts.map(collectionPartYear).filter(Boolean).sort();
+  const years = partYears.length
+    ? MEDIA_PANEL.collectionYears(partYears[0], partYears[partYears.length - 1])
+    : '';
 
   return (
     <>
       <div className={`panel-overlay${closing ? ' closing' : ''}`} onClick={onClose} />
+      <PanelCloseRail closing={closing} onClose={onClose} />
       <div className={`panel${closing ? ' closing' : ''}`}>
         <div className={`panel-header-wrap${collection?.backdrop_path ? '' : ' panel-header-wrap--no-backdrop'}`}>
           {collection?.backdrop_path
@@ -81,20 +88,29 @@ export default function CollectionPanel({ collectionId, closing, onClose }) {
           </div>
         ) : (
           <div className="panel-body">
-            <h2 className="panel-title">{collection.name}</h2>
-            <div className="panel-meta-row">
-              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                {MEDIA_PANEL.collectionResultMeta}
-              </span>
-              <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                {MEDIA_PANEL.collectionProgress(watched, total)}
-              </span>
-            </div>
-            {collection.overview && <p className="panel-overview">{collection.overview}</p>}
-            <div className="collection-card">
-              <div className="collection-card-bar" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={watched}>
-                <div className="collection-card-bar-fill" style={{ width: `${Math.round(fraction * 100)}%` }} />
+            {/* The same head as a title: poster over the band, then what this
+                set is. The franchise used to start with a bare heading flush
+                against the artwork. */}
+            <div className="panel-head">
+              {collection.poster_path
+                ? <img className="panel-poster" src={posterUrl(collection.poster_path, 'w342')} alt="" />
+                : <div className="panel-poster panel-poster--empty" aria-hidden="true" />
+              }
+              <div className="panel-head-text">
+                <div className="panel-kicker">{MEDIA_PANEL.collectionResultMeta}</div>
+                <h2 className="panel-title">{collection.name}</h2>
+                <p className="panel-facts">
+                  {MEDIA_PANEL.collectionFilmCount(total)}
+                  {years && <>{' · '}{years}</>}
+                </p>
               </div>
+            </div>
+
+            {collection.overview && <p className="panel-overview">{collection.overview}</p>}
+
+            <CollectionRun items={items} watched={watched} total={total} />
+
+            <div className="collection-card">
               <CollectionFilms
                 stub={stub}
                 parts={parts}

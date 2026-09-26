@@ -1,10 +1,10 @@
 /**
  * "Pick a title" sheet — history filter or TMDB search, used wherever a slot
- * needs filling: Favourites, a custom list, or a Top 10 rank.
+ * needs filling: Favourites, a custom list, or a Top 5 rank.
  *
- * Shared because My Lists and the Top 10 screen each carried a near-identical
+ * Shared because My Lists and the former ranked-list screen each carried a near-identical
  * copy (103 vs 106 lines, differing only in whitespace and a stray safe-area
- * pad). Folding Top 10 into My Lists made keeping both indefensible.
+ * pad). Folding the ranked list into My Lists made keeping both indefensible.
  */
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -123,7 +123,7 @@ export default function SearchPickModal({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   modalContainer: { flex: 1, backgroundColor: colors.bg, paddingTop: spacing.xl },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  modalTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
+  modalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   modalTabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   modalSearch: { paddingHorizontal: spacing.xl, paddingBottom: spacing.sm },
   modalSearchInput: { backgroundColor: colors.surface, borderRadius: radii.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },

@@ -2,7 +2,7 @@ import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
 import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
@@ -14,6 +14,8 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA } from '../copy/media.js';
 import { IMPORT_VIEW } from '../copy/importView.js';
+import { useMediaSync } from '../hooks/useMediaSync.js';
+import { useTraktSync } from '../hooks/useTraktSync.js';
 
 /* ─────────────────────────── Platform icons ─────────────────────────── */
 
@@ -37,7 +39,7 @@ function PlatformIcon({ id, logoPath, size = 32 }) {
     );
   }
   // Fallback: colored square while loading
-  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054' };
+  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054', imdb: 'var(--rating)', plex: 'var(--rating)', trakt: 'var(--danger)' };
   return <div style={{ width: size, height: size, borderRadius: 8, background: colors[id] || '#333', flexShrink: 0 }} />;
 }
 
@@ -45,8 +47,19 @@ function PlatformIcon({ id, logoPath, size = 32 }) {
 
 const PLATFORMS = [
   { id: 'tvtime', name: IMPORT_VIEW.tvTimeName, color: '#666', format: 'JSON', shortInstructions: IMPORT_VIEW.tvTimeHint, instructions: [IMPORT_VIEW.tvTimeHint] },
-  { id: 'trakt', name: IMPORT_VIEW.traktName, color: '#666', format: 'JSON', get shortInstructions() { return IMPORT_VIEW.traktHint(getConfig().importAnnotationsEnabled); }, get instructions() { return [this.shortInstructions]; } },
-  { id: 'imdb', name: IMPORT_VIEW.imdbName, color: '#666', format: 'CSV', shortInstructions: IMPORT_VIEW.imdbHint, instructions: [IMPORT_VIEW.imdbHint] },
+  { id: 'trakt-export', name: IMPORT_VIEW.traktName, color: '#666', format: 'JSON', get shortInstructions() { return IMPORT_VIEW.traktHint(getConfig().importAnnotationsEnabled); }, get instructions() { return [this.shortInstructions]; } },
+  {
+    id: 'plex',
+    name: 'Plex',
+    format: 'Connected account',
+    kind: 'connection',
+  },
+  {
+    id: 'trakt',
+    name: 'Trakt',
+    format: 'Connected account',
+    kind: 'connection',
+  },
   {
     id: 'netflix',
     name: 'Netflix',
@@ -126,9 +139,16 @@ const PLATFORMS = [
     get shortInstructions() { return IMPORT_VIEW.letterboxdHint(getConfig().importAnnotationsEnabled); },
     get instructions() { return [this.shortInstructions]; },
   },
+  {
+    id: 'imdb',
+    name: IMPORT_VIEW.imdbName,
+    format: 'CSV',
+    shortInstructions: IMPORT_VIEW.imdbExportHint,
+    instructions: IMPORT_VIEW.imdbInstructions,
+  },
 ];
 
-/* Platform parsers (parseNetflix/Prime/Disney/Max/Apple/Letterboxd + parsePlatform)
+/* Platform parsers (parseNetflix/Prime/Disney/Max/Apple/Letterboxd/IMDb + parsePlatform)
    now live in the shared core: @plot/core/importParsing.js. */
 
 /* TMDB resolution, the existing-history read, row building and the batched
@@ -176,9 +196,15 @@ export default function ImportView() {
 function AccountImportView() {
   const { user } = useApp();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const plex = useMediaSync(user?.id);
+  const trakt = useTraktSync(user?.id);
+  const loadPlexIntegration = plex.loadIntegration;
+  const loadTraktIntegration = trakt.loadIntegration;
+  const initialConnection = PLATFORMS.find(item => item.id === searchParams.get('source') && item.kind === 'connection') || null;
 
-  const [step, setStep] = useState(1); // 1=platform 2=file 3=resolving 4=preview 5=done
-  const [platform, setPlatform] = useState(null);
+  const [step, setStep] = useState(initialConnection ? 2 : 1); // 1=platform 2=source 3=resolving 4=preview 5=done
+  const [platform, setPlatform] = useState(initialConnection);
   const [previewPage, setPreviewPage] = useState(0);
   const [parseError, setParseError] = useState('');
   const [listResult, setListResult] = useState('');
@@ -193,6 +219,7 @@ function AccountImportView() {
   const [importResult, setImportResult] = useState({ duplicates: 0, failed: 0 });
   const [importedCount, setImportedCount] = useState(0);
   const [providerLogos, setProviderLogos] = useState({});
+  const [connectionResult, setConnectionResult] = useState(null);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -207,6 +234,30 @@ function AccountImportView() {
     }).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    loadPlexIntegration();
+    loadTraktIntegration();
+  }, [loadPlexIntegration, loadTraktIntegration]);
+
+  const connection = platform?.id === 'plex' ? plex : platform?.id === 'trakt' ? trakt : null;
+
+  const handleConnect = useCallback(async () => {
+    if (platform?.id === 'plex') {
+      const result = await plex.startPlexAuth();
+      if (result?.integration?.id) plex.pollPlexAuth(result.integration.id);
+    } else if (platform?.id === 'trakt') {
+      trakt.connect('/import?source=trakt');
+    }
+  }, [platform?.id, plex, trakt]);
+
+  const handleConnectionImport = useCallback(async () => {
+    if (!connection || !platform) return;
+    setConnectionResult(null);
+    track(EVENTS.IMPORT_STARTED, { source: platform.id });
+    const result = await connection.importHistory();
+    if (result) setConnectionResult(result);
+  }, [connection, platform]);
+
   /* Step 2 → 3 → 4 */
   const handleFile = useCallback(async (files) => {
     setParseError('');
@@ -214,7 +265,7 @@ function AccountImportView() {
     setDocumentReport([]);
     let parsed;
     try {
-      const document = await readImportSelection(platform.id, Array.from(files));
+      const document = await readImportSelection(platform.id === 'trakt-export' ? 'trakt' : platform.id, Array.from(files));
       parsed = document.entries;
       setDocumentReport(importReportMessages(document));
       if (!parsed.length && (document.warnings.length || document.notImported.length)) { setResults([]); setStep(4); return; }
@@ -239,6 +290,7 @@ function AccountImportView() {
       findByImdbId: id => tmdb.findByImdbId(id),
       findByTvdbId: id => tmdb.findByTvdbId(id),
       getSeason: (id, season) => tmdb.getSeason(id, season),
+      findExternal: (id) => tmdb.findByExternalId(id),
       onProgress: (done, total) => setResolveProgress({ done, total }),
     });
 
@@ -328,7 +380,7 @@ function AccountImportView() {
         >
           <BackIcon />
         </button>
-        <h1 style={{ fontSize: '1.55rem', fontWeight: 400, fontFamily: 'var(--font-serif)', letterSpacing: '-0.05em', color: 'var(--text-primary)', margin: 0 }}>
+        <h1 style={{ fontSize: '1.55rem', fontWeight: 400, fontFamily: 'var(--font-display)', letterSpacing: '-0.05em', color: 'var(--text-primary)', margin: 0 }}>
           Import Watch History
         </h1>
       </div>
@@ -351,10 +403,10 @@ function AccountImportView() {
       {step === 1 && (
         <>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-            Choose the streaming service you want to import from.
+            {IMPORT_VIEW.chooseSource}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {PLATFORMS.filter(p => p.id === 'tvtime' ? getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled : !['imdb', 'trakt'].includes(p.id) || getConfig().importEventsEnabled).map(p => (
+            {PLATFORMS.filter(p => p.id === 'tvtime' ? getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled : !['imdb', 'trakt-export'].includes(p.id) || getConfig().importEventsEnabled).map(p => (
               <button
                 key={p.id}
                 onClick={() => { setPlatform(p); setStep(2); }}
@@ -368,7 +420,7 @@ function AccountImportView() {
                 <PlatformIcon id={p.id} logoPath={providerLogos[p.id]} size={32} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{p.name}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 1 }}>{p.format} export</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 1 }}>{p.kind === 'connection' ? p.format : `${p.format} export`}</div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
@@ -385,9 +437,49 @@ function AccountImportView() {
             <PlatformIcon id={platform.id} logoPath={providerLogos[platform.id]} size={32} />
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{platform.name}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>Drop your viewing history</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{platform.kind === 'connection' ? IMPORT_VIEW.accountImportSubtitle : IMPORT_VIEW.fileImportSubtitle}</div>
             </div>
           </div>
+
+          {platform.kind === 'connection' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <p style={{ fontSize: '0.82rem', lineHeight: 1.55, color: 'var(--text-muted)', margin: 0 }}>
+                {connection?.isConnected
+                  ? IMPORT_VIEW.connectedReady(platform.name)
+                  : IMPORT_VIEW.connectionImportHint}
+              </p>
+              {platform.id === 'plex' && (
+                <p style={{ fontSize: '0.75rem', lineHeight: 1.5, color: 'var(--text-muted)', margin: 0 }}>
+                  {IMPORT_VIEW.plexServerRequired}
+                </p>
+              )}
+              {(connection?.error || importError) && (
+                <div style={{ background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, padding: '0.75rem', fontSize: '0.82rem', color: 'var(--danger)' }}>
+                  {connection?.error || importError}
+                </div>
+              )}
+              {connectionResult ? (
+                <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1rem', color: 'var(--text-primary)', fontSize: '0.88rem' }}>
+                  {IMPORT_VIEW.importedSummary(connectionResult.importedCount || 0, connectionResult.alreadyCount || 0)}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={connection?.isConnected ? handleConnectionImport : handleConnect}
+                  disabled={connection?.syncing || connection?.polling}
+                  style={{ alignSelf: 'flex-start', border: 0, borderRadius: 'var(--radius-md)', padding: '0.8rem 1rem', background: 'var(--accent)', color: 'white', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {connection?.polling
+                    ? 'Waiting for Plex approval…'
+                    : connection?.syncing
+                      ? IMPORT_VIEW.importingFrom(platform.name)
+                      : connection?.isConnected
+                        ? IMPORT_VIEW.importFrom(platform.name)
+                        : IMPORT_VIEW.connectToImport(platform.name)}
+                </button>
+              )}
+            </div>
+          ) : <>
 
           {parseError && (
             <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem', fontSize: '0.82rem', color: '#ef4444', marginBottom: '1rem' }}>
@@ -399,8 +491,8 @@ function AccountImportView() {
           <input
             ref={fileRef}
             type="file"
-            accept={['tvtime', 'trakt', 'letterboxd'].includes(platform.id) ? '.csv,.json,.zip' : '.csv,.json'}
-            multiple={['tvtime', 'trakt', 'letterboxd'].includes(platform.id)}
+            accept={['tvtime', 'trakt-export', 'letterboxd'].includes(platform.id) ? '.csv,.json,.zip' : '.csv,.json'}
+            multiple={['tvtime', 'trakt-export', 'letterboxd'].includes(platform.id)}
             style={{ display: 'none' }}
             onChange={e => e.target.files?.[0] && handleFile(e.target.files)}
           />
@@ -439,7 +531,7 @@ function AccountImportView() {
               Drop your {platform.format} here
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.9rem' }}>
-              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : platform.id === 'letterboxd' ? 'diary.csv' : `Your ${platform.name} export file`}
+              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : platform.id === 'letterboxd' ? 'diary.csv' : platform.id === 'imdb' ? IMPORT_VIEW.imdbFileName : `Your ${platform.name} export file`}
             </div>
             <span style={{
               fontSize: '0.78rem', fontWeight: 600,
@@ -464,6 +556,7 @@ function AccountImportView() {
               ))}
             </div>
           </div>
+          </>}
         </>
       )}
 
@@ -493,7 +586,7 @@ function AccountImportView() {
           {importListSelections(results).map(list => <div key={list.destination.key}><p>{IMPORT_VIEW.listPreview(list.destination)}</p><label><input type="checkbox" checked={list.listSelected !== false} onChange={e => setResults(rows => rows.map(row => row.destination?.key === list.destination.key ? { ...row, listSelected: e.target.checked } : row))} />{IMPORT_VIEW.selectList}</label></div>)}
           {/* Editorial headline */}
           <div style={{ marginBottom: '1.25rem' }}>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.25, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.25, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
               Found <span style={{ color: 'var(--accent)' }}>{results.length} title{results.length !== 1 ? 's' : ''}</span> from {platform?.name}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>

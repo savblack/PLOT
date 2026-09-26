@@ -1,0 +1,132 @@
+/* The Guide on the Calendar/History shell (.hist-page, .hist-toolbar, .cal-body,
+   .cal-side, .cal-stream, .hist-card, .cal-filter-row, .cal-scope). Only what
+   is guide-specific is defined here. */
+.guide-region { display: inline-flex; align-items: baseline; gap: 5px; color: var(--text-primary); }
+.guide-region a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.guide-region a:hover { color: var(--accent-text); }
+.guide-region--action { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.guide-region--action a { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-text); text-decoration: none; font-size: 13px; font-weight: 500; }
+.guide-region--action a:hover { color: var(--accent); }
+.guide-region--action a span { font-size: 14px; line-height: 1; }
+.guide-mobile-region { display: none; }
+.guide-search { width: 240px; }
+.guide-card-head { min-height: 0; padding: 0 4px; }
+.guide-card-head .cal-filter-label { padding: 0; }
+.guide-side .hist-card { padding: 14px 12px 12px; }
+.guide-side .guide-controls-card { gap: 0; padding: 16px 12px 14px; }
+.guide-control-section { display: flex; flex-direction: column; gap: 14px; }
+.guide-control-section + .guide-control-section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
+.guide-jump-control { gap: 10px; }
+.guide-jump-control select { width: 100%; height: 38px; padding: 0 32px 0 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 13px; cursor: pointer; }
+.guide-jump-control select:hover { border-color: var(--border-strong); }
+.guide-jump-control select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.guide-jump-control select:disabled { cursor: default; opacity: 0.55; }
+.guide-region-control { gap: 10px; }
+.guide-region-control .guide-region { padding: 0 4px; font-size: 14px; }
+.guide-note { padding: 0 12px; line-height: 1.7; }
+.guide-notice { padding: 6px 4px 0; }
+.guide-missing-notice { padding-top: 24px; }
+
+/* Calendar pulls its whole toolbar into the desktop heading band. Do the same
+   here so both the side panel and the stream begin at Calendar's height. */
+@media (min-width: 1024px) {
+  .guide-page .hist-toolbar { min-height: 3.5rem; margin-top: calc(-1 * (2rem + 1.5rem)); margin-bottom: 1.5rem; padding: 0; }
+  .guide-page .hist-toolbar-controls { margin-left: auto; }
+}
+
+/* Week picker: the seven days of coverage in one row. */
+.guide-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; }
+.guide-day { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 7px; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.guide-day span { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.guide-day strong { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: -0.02em; line-height: 1; transition: background 0.12s ease; }
+.guide-day:hover strong { background: var(--surface-raised); }
+.guide-day--on strong,
+.guide-day--on:hover strong {
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.guide-day--today strong,
+.guide-day--today:hover strong {
+  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
+  color: var(--chip-cinema);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
+}
+.guide-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Channel rows reuse .cal-filter-row; the picker adds bulk actions. */
+.guide-edit-row .cal-filter-name { color: var(--accent-text); }
+.guide-picker { border: 0; margin: 0; padding: 0; min-width: 0; }
+.guide-picker legend { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+.guide-picker-actions { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 4px 8px; }
+.guide-picker-list { max-height: 50vh; overflow-y: auto; }
+
+/* Channel mark: the network logo on a charcoal tile (most network marks are
+   white or bright, so cream loses them), or a monogram on cream. */
+.guide-mark { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; background: var(--surface-sunken); font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: -0.02em; color: var(--text-primary); flex-shrink: 0; overflow: hidden; }
+.guide-mark--sm { width: 28px; height: 28px; border-radius: 7px; font-size: 10px; }
+.guide-mark--logo { padding: 6px; background: var(--text-primary); }
+.guide-mark--sm.guide-mark--logo { padding: 4px; }
+.guide-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+/* On now: a card grid, three across beside the column. */
+.guide-now-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.guide-now-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); text-align: left; cursor: pointer; font: inherit; color: inherit; min-width: 0; -webkit-tap-highlight-color: transparent; }
+.guide-now-card:hover .guide-now-title { color: var(--accent-text); }
+.guide-now-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.guide-now-channel { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); min-width: 0; }
+.guide-now-channel > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.guide-now-head > .hist-card-note { white-space: nowrap; flex-shrink: 0; }
+.guide-now-channel { flex: 1; }
+/* Desktop shows the end time beside the channel; phone moves it under the bar so the name keeps its room. */
+.guide-now-ends--below { display: none; }
+.guide-now-title { font-size: 14px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.guide-bar { display: block; height: 3px; border-radius: 2px; background: var(--surface-sunken); overflow: hidden; }
+.guide-bar i { display: block; height: 100%; background: var(--accent); }
+.guide-upcoming-head { padding-top: 20px; }
+
+/* Coming up: the Calendar's day stream, with the hour in the gutter. */
+.guide-hour { font-size: 22px; letter-spacing: -0.03em; white-space: nowrap; }
+.guide-hour-group { scroll-margin-top: 24px; }
+.guide-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px 4px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.guide-row:last-child { border-bottom: 0; }
+.guide-row:hover strong { color: var(--accent-text); }
+.guide-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.guide-row-text strong { font-size: 15px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.guide-row-text span { font-size: 12px; color: var(--text-muted); }
+
+/* Phone controls now live in the shared bottom filter sheet. */
+.guide-mobile-bar { display: none; }
+@media (max-width: 1023px) {
+  .guide-mobile-region { display: inline-flex; }
+  .guide-search { display: none; }
+  .guide-now-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .guide-now-head > .guide-now-ends { display: none; }
+  .guide-now-ends--below { display: block; }
+  .guide-hour { font-size: 18px; }
+  .cal-stream .cal-stream-gutter { width: 44px; }
+}
+
+/* Programme details dialog. */
+.broadcast-dialog { max-width: 520px; width: calc(100% - 48px); background: var(--surface); color: var(--text-primary); padding: 28px; border: 0; border-radius: var(--radius-lg); font-family: var(--font-sans); }
+.broadcast-dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
+.broadcast-dialog > button { float: right; }
+.broadcast-dialog h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: var(--font-display-tracking); margin: 8px 0; }
+.broadcast-dialog p { line-height: 1.7; font-size: 14px; }
+.broadcast-dialog .hist-card-note { display: flex; align-items: center; gap: 8px; }
+
+/* Dev preview heading and the region settings preview keep their old styling. */
+.broadcast-heading { margin-bottom: 12px; padding: 24px 0 0; }
+.broadcast-heading p { color: var(--text-secondary); margin: 8px 0; }
+.broadcast-heading h1 { font-family: var(--font-display); font-weight: 700; letter-spacing: var(--font-display-tracking); font-size: 40px; margin: 0; }
+.broadcast-guide { max-width: 1280px; margin: auto; padding: 48px 36px; color: var(--text-primary); font-family: var(--font-sans); }
+.broadcast-guide a { color: inherit; text-underline-offset: 3px; }
+.broadcast-guide button, .broadcast-guide select { font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; padding: 9px 12px; cursor: pointer; }
+.broadcast-guide .broadcast-primary { color: var(--accent-text); border-color: var(--accent); }
+.broadcast-region-settings { max-width: 480px; border-top: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); padding: 24px 0; }
+.broadcast-region-settings > label { display: block; }
+.broadcast-region-settings > button { margin-left: 10px; }
+.broadcast-region-settings [role=status], .broadcast-region-settings [role=alert] { font-size: 12px; }
+.broadcast-region-settings > label:not(:first-child) { margin-top: 24px; }
+.broadcast-region-settings select { margin-top: 10px; max-width: 100%; }
+.broadcast-region-settings > .broadcast-primary { margin-left: 0; }
+.broadcast-note { font-size: 11px; color: var(--text-muted); line-height: 1.7; }

@@ -1,0 +1,74 @@
+/* Only the first-run banner spans the desktop canvas. The agenda keeps its
+   existing content column, and both share the page heading's gutters. */
+.app-main-inner:has(.guide-setup-shell) { max-width: none; }
+.guide-setup-shell { padding: 32px var(--gut) 40px; container-type: inline-size; }
+.guide-setup {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 80px);
+  padding: clamp(24px, 3vw, 48px);
+  border-radius: 20px;
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+.guide-setup-intro h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(28px, 2.7vw, 40px);
+  letter-spacing: var(--font-display-tracking);
+  line-height: 1.12;
+  text-wrap: balance;
+}
+.guide-setup-intro p { margin: 18px 0 0; max-width: 620px; font-size: 15px; line-height: 1.6; color: var(--text-secondary); }
+.guide-setup-form, .guide-setup-form fieldset { min-width: 0; }
+.guide-setup-form fieldset { padding: 0; margin: 0; border: 0; }
+.guide-setup-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  min-height: 58px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.guide-setup-row select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 28px 10px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: right;
+  text-align-last: right;
+  appearance: none;
+  cursor: pointer;
+}
+.guide-setup-row option { background: var(--surface); color: var(--text-primary); }
+.guide-setup-row select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.guide-setup-row select:disabled { opacity: .55; cursor: default; }
+.guide-setup svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.guide-setup-chevron { position: absolute; right: 0; pointer-events: none; color: var(--text-primary); }
+.guide-setup-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
+.guide-setup-actions > span { font-size: 12px; color: var(--text-muted); }
+.guide-setup-actions .btn { margin-left: auto; min-height: 40px; gap: 14px; padding-inline: 22px; }
+.guide-setup-actions .btn:disabled { opacity: .5; cursor: not-allowed; }
+.guide-setup-notice, .guide-setup-error { margin: 14px 0 0; font-size: 13px; line-height: 1.5; }
+.guide-setup-notice { color: var(--text-secondary); }
+.guide-setup-error { color: var(--danger); }
+@container (max-width: 760px) {
+  .guide-setup { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 24px; }
+  .guide-setup-intro h2 { font-size: 28px; }
+}
+@media (max-width: 480px) {
+  .guide-setup-shell { padding-top: 20px; }
+  .guide-setup { padding: 20px; }
+  .guide-setup-intro h2 { font-size: 26px; }
+  .guide-setup-row { gap: 12px; font-size: 13px; }
+}

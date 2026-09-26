@@ -1,11 +1,17 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { APP_NAV_ITEMS, PRIMARY_NAV_ITEMS, isActiveView, titleForView } from '../navigation.js';
+import { Link, useNavigate } from 'react-router-dom';
+import { APP_NAV_ITEMS, isActiveView, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
+import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { HISTORY_VIEW } from '@plot/core/copy/historyView.js';
+import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { TONIGHT_PICKER } from '@plot/core/copy/tonightPicker.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
 import AppSidebar from './AppSidebar.jsx';
 import {
-  IconMenu, IconClose, IconSearch, IconHome, IconCalendar, IconLists, IconHistory, IconBell, IconArrowUp,
+  IconMenu, IconClose, IconSearch, IconArrowUp,
 } from './navIcons.jsx';
 
 /* ── SVG Icons ───────────────────────── */
@@ -13,16 +19,17 @@ import {
 
 const FeedbackPanel = lazy(() => import('./SettingsView.jsx').then(module => ({ default: module.FeedbackPanel })));
 
-const TAB_ICONS = { home: IconHome, calendar: IconCalendar, 'my-lists': IconLists, history: IconHistory };
-
-// The drawer has room the bottom bar does not: every destination bar Search
-// (the header has its own icon) and Settings (the drawer's own footer).
+// Every page remains reachable through the mobile menu.
 const DRAWER_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.id !== 'search' && item.id !== 'settings');
 
 export default function AppShell({ currentView, navigateTo, children, profile, user, panelOpen, onOpenSearch }) {
   const navigate = useNavigate();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return window.localStorage.getItem('plot-sidebar-collapsed') === 'true'; }
+    catch { return false; }
+  });
   const [showScrollTop, setShowScrollTop] = useState(false);
   const mainRef = useRef(null);
 
@@ -30,6 +37,11 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
 
   // Keep the bell badge fresh as the user navigates (e.g. after viewing the feed).
   useEffect(() => { refreshCount(); }, [currentView, refreshCount]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem('plot-sidebar-collapsed', String(sidebarCollapsed)); }
+    catch { /* Storage can be unavailable in private browsing. */ }
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     if (!drawerOpen) return undefined;
@@ -83,8 +95,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   };
 
   const pageTitle = titleForView(currentView);
-  const showHomeLogo = currentView === 'home' || (currentView || '').startsWith('u/');
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
+  const isListDetail = currentView?.startsWith('my-lists/');
 
   // At sidebar widths there is no header at all — the brand, search and
   // notifications live in the sidebar, and the title moves into the content
@@ -97,8 +109,13 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
     ? (isOwnProfile ? APP_SHELL.profile : `@${currentView.slice(2)}`)
     : (APP_NAV_ITEMS.find(item => item.id === currentView)?.label ?? pageTitle);
 
+  const pageSubtitle = currentView === 'settings' ? SETTINGS_VIEW.page.subtitle
+    : currentView === 'history' ? HISTORY_VIEW.subtitle
+    : currentView === 'guide' ? BROADCAST_GUIDE.subtitle
+    : currentView === 'tonight' ? TONIGHT_PICKER.subtitle : null;
+
   return (
-    <div className={`app-shell${panelOpen ? ' panel-docked' : ''}`}>
+    <div className={`app-shell${panelOpen ? ' panel-docked' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       {/* ── Desktop sidebar ── */}
       {/* Rendered at every width and revealed by CSS at >=1024px, so there is
           no breakpoint state in JS to get out of step with the stylesheet. */}
@@ -107,6 +124,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         profile={profile}
         user={user}
         unread={unread}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed(collapsed => !collapsed)}
         onFeedback={() => user ? setFeedbackOpen(true) : navigate('/login')}
         onNavigate={go}
         onNavigateProfile={(username) => navigate(`/u/${username}`)}
@@ -130,46 +149,12 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             aria-controls="app-nav-drawer"
           >
             <IconMenu />
+            {unread > 0 && <span className="mobile-menu-unread" aria-label={`${unread} unread notifications`} />}
           </button>
         </div>
 
-        {showHomeLogo ? (
-          <button
-            type="button"
-            className="app-header-logo"
-            onClick={() => navigateTo('home')}
-            aria-label={APP_SHELL.goToHome}
-          >
-            <span className="app-header-logo-text">PLOT</span>
-          </button>
-        ) : (
-          <span className="app-page-title">{pageTitle}</span>
-        )}
-
-
+        {!isListDetail && <span className="app-page-title">{desktopTitle}</span>}
         <div className="header-end">
-          {user && (
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={() => navigateTo('notifications')}
-            aria-label={`Notifications${unread ? ` (${unread} unread)` : ''}`}
-            title={APP_SHELL.notifications}
-            aria-current={currentView === 'notifications' ? 'page' : undefined}
-            style={{ position: 'relative' }}
-          >
-            <span className="header-bell-icon">
-              <IconBell />
-            </span>
-            {unread > 0 && (
-              <span aria-hidden="true" style={{
-                position: 'absolute', top: 1, right: 1, minWidth: 16, height: 16, padding: '0 4px',
-                borderRadius: 8, background: 'var(--accent)', color: '#fff', fontSize: 10,
-                fontWeight: 700, lineHeight: '16px', textAlign: 'center',
-              }}>{unread > 9 ? '9+' : unread}</span>
-            )}
-          </button>
-          )}
           <button
             type="button"
             className="icon-btn"
@@ -190,7 +175,9 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         <div className="app-main-inner">
           {/* Sidebar widths only — below them the header above carries the
               title and this is display: none. */}
-          <h1 className="app-page-heading">{desktopTitle}</h1>
+          {isListDetail && <Link className="app-page-breadcrumb" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>}
+          {!isListDetail && <h1 className={`app-page-heading${pageSubtitle ? ' app-page-heading--with-subtitle' : ''}${currentView === 'guide' ? ' app-page-heading--guide' : ''}`}>{desktopTitle}</h1>}
+          {pageSubtitle && <p className={`app-page-subtitle${currentView === 'tonight' ? ' app-page-subtitle--desktop-only' : ''}`}>{pageSubtitle}</p>}
           {children}
         </div>
       </main>
@@ -207,38 +194,6 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         <IconArrowUp />
       </button>
 
-      {/* ── Bottom tab bar ── */}
-      <nav className="tab-bar">
-        {PRIMARY_NAV_ITEMS.map(({ id, label }) => {
-          const Icon = TAB_ICONS[id];
-          return (
-            <button
-              key={id}
-              type="button"
-              className={`tab-btn${isActiveView(currentView, id) ? ' active' : ''}`}
-              onClick={() => navigateTo(id)}
-              aria-label={label}
-              aria-current={isActiveView(currentView, id) ? 'page' : undefined}
-            >
-              {Icon && <Icon />}
-            </button>
-          );
-        })}
-        {profile?.username && (
-          <button
-            type="button"
-            className={`tab-btn${isOwnProfile ? ' active' : ''}`}
-            onClick={() => navigate(`/u/${profile.username}`)}
-            aria-label={APP_SHELL.profile}
-            aria-current={isOwnProfile ? 'page' : undefined}
-          >
-            {profile.avatar_url
-              ? <img className="tab-btn-avatar" src={profile.avatar_url} alt="" />
-              : <span className="tab-btn-avatar tab-btn-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
-          </button>
-        )}
-      </nav>
-
       {/* ── Nav Drawer ── */}
       {drawerOpen && (
         <div className="nav-drawer-overlay" onClick={closeDrawer} aria-hidden="true" />
@@ -249,14 +204,14 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         aria-hidden={!drawerOpen}
       >
         <div className="nav-drawer-header">
-          <span className="nav-drawer-logo-text">PLOT</span>
+          <span className="nav-drawer-logo-text">plot</span>
           <button type="button" className="icon-btn" onClick={closeDrawer} aria-label={APP_SHELL.closeMenu}>
             <IconClose />
           </button>
         </div>
 
         <nav className="nav-drawer-nav">
-          {DRAWER_NAV_ITEMS.map(({ id, label }) => (
+          {DRAWER_NAV_ITEMS.map(({ id, label, premium }) => (
             <button
               key={id}
               type="button"
@@ -265,6 +220,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               aria-current={isActiveView(currentView, id) ? 'page' : undefined}
             >
               <span className="nav-drawer-label">{label}</span>
+              {premium && !isPremiumProfile(profile) && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
             </button>
           ))}
           {profile?.username && (
@@ -274,6 +230,12 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               onClick={() => { closeDrawer(); navigate(`/u/${profile.username}`); }}
             >
               <span className="nav-drawer-label">Profile</span>
+            </button>
+          )}
+          {user && !DRAWER_NAV_ITEMS.some(item => item.id === 'notifications') && (
+            <button type="button" className={`nav-drawer-item${currentView === 'notifications' ? ' active' : ''}`} onClick={() => handleNav('notifications')}>
+              <span className="nav-drawer-label">{APP_SHELL.notifications}</span>
+              {unread > 0 && <span className="mobile-notification-count">{unread}</span>}
             </button>
           )}
         </nav>

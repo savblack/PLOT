@@ -1,46 +1,103 @@
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
-import { useHistory } from '../hooks/useHistory.js';
+import { useGenres } from '../hooks/useGenres.js';
 import { useSelection } from '../hooks/useSelection.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { COMMON } from '../copy/common.js';
-import { HISTORY_VIEW } from '../copy/historyView.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
 import ListCover from './ListCover.jsx';
+import SideFilters from './SideFilters.jsx';
+import { TYPE_ROWS } from './sideFilterRows.js';
 import { EVENTS, track } from '../lib/analytics.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
-import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
-import { collectionPath, customListKey, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
+import { canCreateCustomList } from '@plot/core/premium.js';
+import { PLANS_PAGE } from '../copy/plansPage.js';
+import { premiumPlansPath } from '../utils/premiumExplore.js';
+import { collectionPath, customListKey, titleCount, wantToWatchItems, searchCollectionTitles, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
-import { TypeGenreFilter } from './ListCards.jsx';
+import { IconSearch } from './navIcons.jsx';
+import { posterUrl } from '../utils/images.js';
+import { CardGrid, ListCard, TypeGenreFilter } from './ListCards.jsx';
 import {
-  CreateListModal, HeaderIconButton, ListSection, TopFiveSection, TrashIcon, WatchingSection,
+  CreateListModal, HeaderIconButton, ListSection, TickIcon, TopFiveSection, TrashIcon, WatchingSection,
 } from './ListSections.jsx';
 
-/* My Lists: the Watching shelf on top, since it is the list you glance at
-   most, the Top 5 podium under it, then every other list as a cover in one grid. It used to be seven
-   sub-tabs under a sticky toolbar, every title a full-width row. Each cover
-   opens its own page (ListPage); History has had one since it left the tabs.
-   The ··· on the Lists heading is where a list is created and where lists
-   are selected in bulk; only custom lists can be deleted. */
+/* My Lists on the Calendar/History shell: a narrow left column beside one wide
+   stream. The column is the index — every list with its count, capped by a
+   "View more" row — with the Show and Genre filters beneath it, the same
+   `SideFilters` rows History uses rather than the toolbar pill it used to be.
+   The stream keeps what shipped in PR 918: the Watching shelf, the Top 5 podium,
+   then every list as a cover that opens its own page.
+
+   Below the sidebar breakpoint `.cal-side` hides itself, as it does on the
+   Guide, and the toolbar's filter pill comes back for the phone.
+
+   History is not here: it has had its own page since it left the sub-tabs, and
+   a cover that navigated off /my-lists was the only one that did. */
 
 const posters = (items) => items.map(i => i.poster_path);
 
+// How many rows the column shows before it offers the rest. Eight clears a
+// free account at its cap (Want to Watch + Favourites + five custom lists), so
+// only an unlimited collection is ever folded.
+const JUMP_CAP = 8;
+
+const ChevronDown = () => <svg viewBox="0 0 24 24"><polyline points="6,9 12,15 18,9" /></svg>;
+const ChevronUp   = () => <svg viewBox="0 0 24 24"><polyline points="18,15 12,9 6,15" /></svg>;
+
+/* The index. One row per collection, name and count, in the same row style as
+   the filters under it. */
+function JumpToCard({ collections, counts, onOpen }) {
+  const [expanded, setExpanded] = useState(false);
+  // Folding one row away would cost a row to save a row.
+  const folds = collections.length > JUMP_CAP + 1;
+  const shown = folds && !expanded ? collections.slice(0, JUMP_CAP) : collections;
+  return (
+    <div className="hist-card mylists-jump">
+      <div className="hist-card-head">
+        <span className="hist-card-title">{CUSTOM_LISTS.jumpTo}</span>
+      </div>
+      <div>
+        {shown.map(c => (
+          <button key={c.key} type="button" className="cal-filter-row" onClick={onOpen(c.key)}>
+            <span className="cal-filter-name">{c.name}</span>
+            <span className="mylists-jump-count">{counts(c.items)}</span>
+          </button>
+        ))}
+        {folds && (
+          <button
+            type="button"
+            className="cal-filter-row mylists-jump-more"
+            aria-expanded={expanded}
+            onClick={() => setExpanded(v => !v)}
+          >
+            <span className="cal-filter-name">
+              {expanded ? CUSTOM_LISTS.viewLess : CUSTOM_LISTS.viewMore(collections.length - JUMP_CAP)}
+            </span>
+            <span className="cal-filter-chev">{expanded ? <ChevronUp /> : <ChevronDown />}</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function MyListsView() {
-  const { user, profile, topLists, favorites, customLists, watching, watchlist } = useApp();
+  const { user, profile, topLists, favorites, customLists, watching, watchlist, openPanel } = useApp();
   const fw = favoriteWords(profile?.region);
   const navigate = useNavigate();
-  const { entries: history, loading: historyLoading } = useHistory(user?.id);
+  const { genres } = useGenres();
   const selection = useSelection();
   const [creatingList,  setCreatingList]  = useState(false);
   const [showCapNotice, setShowCapNotice] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
+  const [query, setQuery] = useState('');
 
   const want = useMemo(() => wantToWatchItems(watchlist.items, watching.items, localDateStr()), [watchlist.items, watching.items]);
 
@@ -51,17 +108,38 @@ export default function MyListsView() {
 
   const { lists, createList, deleteList } = customLists;
 
-  // The pill narrows the whole page. A cover keeps its place but shows how
+  // One index behind both the column and the covers, so the two can't drift.
+  const collections = [
+    { key: 'want',      name: 'Want to Watch', items: want,                empty: 'Nothing saved yet'  },
+    { key: 'favorites', name: fw.plural,       items: favorites.favorites, empty: 'Nothing hearted yet' },
+    ...lists.map(list => ({
+      key: customListKey(list.id),
+      name: list.name,
+      // Newest first, the way a cover fans them.
+      items: [...(list.items || [])].reverse(),
+      empty: 'Empty',
+      list,
+    })),
+  ];
+
+  // The filters narrow the whole page. A cover keeps its place but shows how
   // much of it matches, and only the matching posters; a list with nothing
   // matching dims. Only Want to Watch stores genres today, so a genre pick
   // leaves the other lists' counts unchanged.
   const narrowed = isTypeNarrowed(typeFilters) || genreFilters.length > 0;
   const apply = (items) => filterByTypeAndGenre(items, typeFilters, genreFilters);
+  const searching = query.trim().length > 0;
+  const searchResults = searching ? searchCollectionTitles([
+    watching.items.map(item => ({ ...item, media_type: 'tv' })),
+    ...Object.entries(topLists.lists).map(([type, items]) => items.filter(item => item.rank <= TOP_LIST_SIZE).map(item => ({ ...item, media_type: type === 'tv' ? 'tv' : 'movie' }))),
+    ...collections.map(c => c.items),
+  ].map(items => apply(items || [])), query) : [];
   const coverCount = (items, emptyLabel) => {
     if (!narrowed) return titleCount(items.length, emptyLabel);
     const n = apply(items).length;
     return `${n} of ${items.length} match`;
   };
+  const jumpCount = (items) => (narrowed ? apply(items).length : items.length);
 
   // Free accounts get FREE_CUSTOM_LIST_CAP lists; Premium unlimited. The
   // DB (RLS insert policy) is the authority; this is just friendlier UX.
@@ -86,6 +164,13 @@ export default function MyListsView() {
   };
 
   const open = (key) => () => { if (!selection.editMode) navigate(collectionPath(key)); };
+  const jumpTo = (key) => () => {
+    const target = document.getElementById(`collection-${key}`);
+    if (!target) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
+    target.querySelector('button')?.focus({ preventScroll: true });
+  };
 
   const selectedLists = lists.filter(l => selection.selected.has(l.id));
   const selectedTitles = selectedLists.reduce((n, l) => n + (l.items || []).length, 0);
@@ -97,8 +182,8 @@ export default function MyListsView() {
           <TrashIcon />
         </HeaderIconButton>
       )}
-      <HeaderIconButton label="Done selecting" onClick={selection.exit}>
-        <span className="mylists-done">{COMMON.done}</span>
+      <HeaderIconButton label="Done selecting" onClick={selection.exit} success>
+        <TickIcon />
       </HeaderIconButton>
     </>
   ) : (
@@ -111,91 +196,110 @@ export default function MyListsView() {
     />
   );
 
-  const cover = (key, name, items, emptyLabel) => {
-    const visible = narrowed ? apply(items) : items;
+  const cover = (c) => {
+    const visible = narrowed ? apply(c.items) : c.items;
     return (
       <ListCover
-        key={key}
-        name={name}
-        count={coverCount(items, emptyLabel)}
+        key={c.key}
+        anchorId={`collection-${c.key}`}
+        name={c.name}
+        count={coverCount(c.items, c.empty)}
         posters={posters(visible)}
-        dim={narrowed && visible.length === 0 && items.length > 0}
-        onOpen={open(key)}
+        dim={narrowed && visible.length === 0 && c.items.length > 0}
+        badge={c.list?.is_public && <span className="mylists-public-badge">Public</span>}
+        onOpen={open(c.key)}
         editMode={selection.editMode}
-        selectable={false}
+        selectable={!!c.list}
+        selected={c.list ? selection.selected.has(c.list.id) : false}
+        onToggleSelect={c.list ? () => selection.toggle(c.list.id) : undefined}
       />
     );
   };
 
+  const titles = collections.reduce((n, c) => n + c.items.length, 0);
+
   return (
-    <div>
-      <div className="discover-toolbar">
-        <span />
-        <TypeGenreFilter
-          ariaLabel="Filter lists"
-          typeFilters={typeFilters}
-          setTypeFilters={setTypeFilters}
-          genreFilters={genreFilters}
-          setGenreFilters={setGenreFilters}
-        />
+    <div className="hist-page mylists-page">
+      <div className="hist-toolbar">
+        <span className="hist-toolbar-sub">{CUSTOM_LISTS.summary(collections.length, titles)}</span>
+        <div className="hist-toolbar-controls">
+          {/* At sidebar widths the column carries the filters; below it, the
+              pill and its sheet are how a phone reaches them. */}
+          <span className="mylists-toolbar-filter">
+            <TypeGenreFilter
+              mobileControls
+              ariaLabel="Filter lists"
+              typeFilters={typeFilters}
+              setTypeFilters={setTypeFilters}
+              genreFilters={genreFilters}
+              setGenreFilters={setGenreFilters}
+            />
+          </span>
+          <label className="hist-search">
+            <IconSearch />
+            <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchPlaceholder} aria-label={CUSTOM_LISTS.searchPlaceholder} />
+          </label>
+        </div>
       </div>
 
-      <div className="discover-sections">
-        <WatchingSection watching={watching} hidden={isTypeNarrowed(typeFilters) && !typeFilters.includes('tv')} />
+      <div className="cal-body">
+        <aside className="cal-side mylists-side">
+          <JumpToCard collections={collections} counts={jumpCount} onOpen={jumpTo} />
+          <SideFilters
+            typeRows={TYPE_ROWS}
+            typeFilters={typeFilters}
+            setTypeFilters={setTypeFilters}
+            genreFilters={genreFilters}
+            setGenreFilters={setGenreFilters}
+            genres={genres}
+          />
+        </aside>
 
-        <TopFiveSection topLists={topLists} />
+        <div className="cal-stream mylists-stream">
+          {searching ? (
+            <div className="discover-sections">
+              <ListSection title={CUSTOM_LISTS.searchResults}>
+                <p role="status">{searchResults.length ? CUSTOM_LISTS.searchCount(searchResults.length) : CUSTOM_LISTS.noSearchResults}</p>
+                <CardGrid>
+                  {searchResults.map(item => (
+                    <ListCard key={`${item.media_type || 'movie'}:${item.tmdb_id ?? item.id}`} title={item.title || item.name} img={posterUrl(item.poster_path, 'w185')} onOpen={() => openPanel(item.tmdb_id ?? item.id, item.media_type || 'movie')} />
+                  ))}
+                </CardGrid>
+              </ListSection>
+            </div>
+          ) : (
+            <div className="discover-sections">
+              <WatchingSection watching={watching} hidden={isTypeNarrowed(typeFilters) && !typeFilters.includes('tv')} />
 
-        <ListSection title="Lists" headerRight={listActions}>
-          {showCapNotice && (
-            <div className="mylists-cap-notice">
-              {SHOW_PRICING_PAGE ? (
-                <>
-                  You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.{' '}
-                  <button
-                    type="button"
-                    onClick={() => navigate('/settings')}
-                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-text)', fontWeight: 600, cursor: 'pointer', fontSize: 'inherit' }}
-                  >
-                    Get Premium
-                  </button>
-                </>
-              ) : (
-                <>You&rsquo;ve reached the {FREE_CUSTOM_LIST_CAP}-list limit.</>
-              )}
+              <TopFiveSection topLists={topLists} />
+
+              <ListSection title="Lists" headerRight={listActions}>
+                <div className="list-covers">
+                  {collections.map(cover)}
+                  {!selection.editMode && (
+                    <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestCreate} aria-label="Create new list">
+                      <span className="list-cover-art list-cover-art--dashed">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                      </span>
+                      <span className="list-cover-label"><span className="list-cover-name list-cover-name--muted">New list</span></span>
+                    </button>
+                  )}
+                </div>
+              </ListSection>
             </div>
           )}
-
-          <div className="list-covers">
-            {cover('want', 'Want to Watch', want, 'Nothing saved yet')}
-            {cover('favorites', fw.plural, favorites.favorites, 'Nothing hearted yet')}
-            {lists.map(list => (
-              <ListCover
-                key={list.id}
-                name={list.name}
-                count={coverCount(list.items || [], 'Empty')}
-                posters={posters(narrowed ? apply([...(list.items || [])].reverse()) : [...(list.items || [])].reverse())}
-                dim={narrowed && (list.items || []).length > 0 && apply(list.items).length === 0}
-                badge={list.is_public && <span className="mylists-public-badge">Public</span>}
-                onOpen={open(customListKey(list.id))}
-                editMode={selection.editMode}
-                selectable
-                selected={selection.selected.has(list.id)}
-                onToggleSelect={() => selection.toggle(list.id)}
-              />
-            ))}
-            {cover('history', 'History', history, historyLoading ? '' : HISTORY_VIEW.emptyTitle)}
-            {!selection.editMode && (
-              <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestCreate} aria-label="Create new list">
-                <span className="list-cover-art list-cover-art--dashed">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                </span>
-                <span className="list-cover-label"><span className="list-cover-name list-cover-name--muted">New list</span></span>
-              </button>
-            )}
-          </div>
-        </ListSection>
+        </div>
       </div>
 
+      {showCapNotice && (
+        <ConfirmModal
+          title={CUSTOM_LISTS.limitTitle}
+          message={CUSTOM_LISTS.limitMessage}
+          confirmLabel={PLANS_PAGE.previewAction}
+          onConfirm={() => navigate(premiumPlansPath('/my-lists'))}
+          onClose={() => setShowCapNotice(false)}
+        />
+      )}
       {creatingList && (
         <CreateListModal lists={lists} onConfirm={handleCreate} onClose={() => setCreatingList(false)} />
       )}

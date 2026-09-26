@@ -1,6 +1,9 @@
-import { existsSync, readFileSync } from 'node:fs';
+import {
+  copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
+} from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { isCliAvailable, runCli } from '../lib/cli-runner.mjs';
 
@@ -9,6 +12,7 @@ const MARKETING_ROOT = join(HERE, '..');
 const REPO_ROOT = join(MARKETING_ROOT, '..');
 const DEFAULT_ENV_FILE = join(REPO_ROOT, '.env');
 const MANUAL_OUTPUT_ROOT = join(MARKETING_ROOT, 'plot-posts');
+const COPY_JOBS_ROOT = join(MARKETING_ROOT, 'copy', 'jobs');
 
 const parseArgs = (argv) => {
   const values = new Map();
@@ -91,22 +95,57 @@ const manifestJobs = () => {
 };
 
 const codexPrompt = [
-  'Read marketing/copy/AGENT.md for the copy contract and validation rules.',
-  'Use the existing marketing/copy/jobs/manifest.json and the briefs in marketing/copy/jobs/.',
-  'Write each missing marketing/copy/jobs/<post_id>.copy.json exactly per its brief.',
+  'Your working directory is an isolated copy of marketing/copy/jobs/.',
+  'Read ../AGENT.md for the copy contract and validation rules.',
+  'Use the existing manifest.json and briefs in this directory.',
+  'Write each missing <post_id>.copy.json exactly per its brief.',
   'Do not edit any other files.',
   'Do not run pull, do not run save, and do not dispatch anything.',
 ].join(' ');
 
-const runCodexCopyWriter = (dangerous) =>
-  runCli('Write copy with Codex', 'codex', codexPrompt, { dangerous }, { cwd: REPO_ROOT, env: BASE_ENV });
+const isolatedCopyWorkspace = (callback) => {
+  const root = mkdtempSync(join(tmpdir(), 'plot-copy-worker-'));
+  const jobsRoot = join(root, 'jobs');
+  mkdirSync(jobsRoot);
+  copyFileSync(join(COPY_JOBS_ROOT, 'manifest.json'), join(jobsRoot, 'manifest.json'));
+  for (const job of manifestJobs()) {
+    copyFileSync(
+      join(COPY_JOBS_ROOT, `${job.post_id}.brief.md`),
+      join(jobsRoot, `${job.post_id}.brief.md`),
+    );
+  }
+  copyFileSync(join(MARKETING_ROOT, 'copy', 'AGENT.md'), join(root, 'AGENT.md'));
+  const blockedPaths = [REPO_ROOT];
+  try {
+    const envTarget = realpathSync(DEFAULT_ENV_FILE);
+    blockedPaths.push(dirname(envTarget));
+  } catch { /* a checkout without .env still blocks its own repository */ }
 
-const runClaudeCopyWriter = () =>
-  runCli('Write copy with Claude Code', 'claude', codexPrompt, {}, { cwd: REPO_ROOT, env: BASE_ENV });
+  try {
+    callback({ jobsRoot, blockedPaths: [...new Set(blockedPaths)] });
+    for (const job of manifestJobs()) {
+      const output = `${job.post_id}.copy.json`;
+      const source = join(jobsRoot, output);
+      if (existsSync(source)) copyFileSync(source, join(COPY_JOBS_ROOT, output));
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+};
+
+const runCodexCopyWriter = (dangerous) => isolatedCopyWorkspace(({ jobsRoot, blockedPaths }) =>
+  runCli('Write copy with Codex', 'codex', codexPrompt, { dangerous }, {
+    cwd: jobsRoot, env: BASE_ENV, blockedPaths,
+  }));
+
+const runClaudeCopyWriter = () => isolatedCopyWorkspace(({ jobsRoot, blockedPaths }) =>
+  runCli('Write copy with Claude Code', 'claude', codexPrompt, {}, {
+    cwd: jobsRoot, env: BASE_ENV, blockedPaths,
+  }));
 
 const runCustomCopyWriter = (command) => {
   if (!command) throw new Error('No copy command provided.');
-  run('Write copy with custom command', command, [], { shell: true });
+  throw new Error('--copy-command is no longer supported because it bypasses the copy-worker sandbox.');
 };
 
 const runWeekly = (args) => {
@@ -119,7 +158,9 @@ const runWeekly = (args) => {
   const days = Math.max(1, Math.min(14, Number(args.get('--days', '7')) || 7));
   const copyCommand = args.get('--copy-command');
   const copyRunner = args.get('--copy-runner', hasCommand('codex') ? 'codex' : 'none');
-  const dangerousCodex = args.has('--dangerous-codex');
+  if (args.has('--dangerous-codex')) {
+    throw new Error('--dangerous-codex is no longer supported for research-backed copy generation.');
+  }
 
   run('Plan the week', process.execPath, ['marketing/planner/plan.mjs'], {
     env: { ...BASE_ENV, MARKETING_PLAN_DAYS: String(days) },
@@ -134,7 +175,7 @@ const runWeekly = (args) => {
 
   if (jobs.length) {
     if (copyCommand) runCustomCopyWriter(copyCommand);
-    else if (copyRunner === 'codex') runCodexCopyWriter(dangerousCodex);
+    else if (copyRunner === 'codex') runCodexCopyWriter(false);
     else if (copyRunner === 'claude') runClaudeCopyWriter();
     else {
       throw new Error(
@@ -148,7 +189,7 @@ const runWeekly = (args) => {
     console.log('\nNo posts need copy.');
   }
 
-  run('Render posts onto the review desk', process.execPath, ['marketing/generate/generate.mjs']);
+  run('Render posts for review', process.execPath, ['marketing/generate/generate.mjs']);
 
   // Straight into Buffer, dated. Not gated on the Linear review: that review is
   // about the website article now, and holding the social queue behind it would

@@ -21,6 +21,7 @@ import { useWatchlist } from '../hooks/useWatchlist.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
+import { readPendingSave } from '../utils/pendingSave.js';
 
 const STEP_NAMES = { 1: 'name', 2: 'seed' };
 
@@ -70,6 +71,9 @@ export default function OnboardingFlow() {
   const [step,      setStep]      = useState(1);
   const [saving,    setSaving]    = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [pendingSave] = useState(readPendingSave);
+  const [pendingTitle, setPendingTitle] = useState(null);
+  const [pendingTitleLoading, setPendingTitleLoading] = useState(!!pendingSave);
   const premium = usePremium(null);
   const watchlist = useWatchlist(user?.id);
 
@@ -88,7 +92,11 @@ export default function OnboardingFlow() {
   const [seedSearching, setSeedSearching] = useState(false);
   const [trending,     setTrending]     = useState([]);
 
-  const TOTAL = 2;
+  // Someone who has already chosen a title does not need the generic
+  // "pick some things" step. Their intent stays in localStorage until the
+  // authenticated app shell opens that exact title and lets them choose a list.
+  const isSaveOnboarding = !!pendingSave;
+  const TOTAL = isSaveOnboarding ? 1 : 2;
 
   /* ── Auth check ── */
   useEffect(() => {
@@ -110,6 +118,18 @@ export default function OnboardingFlow() {
       subscription.unsubscribe();
     };
   }, []);
+
+  /* Resolve the external CTA's title for a contextual one-screen onboarding.
+     The id is the only source of truth; never search or guess from copy. */
+  useEffect(() => {
+    if (!pendingSave) return;
+    let alive = true;
+    tmdb.getDetails(pendingSave.media_type, pendingSave.tmdb_id)
+      .then(({ ok, data }) => { if (alive && ok) setPendingTitle(data); })
+      .catch(() => {})
+      .finally(() => { if (alive) setPendingTitleLoading(false); });
+    return () => { alive = false; };
+  }, [pendingSave]);
 
   /* ── Activation funnel: fire once the authed user reaches onboarding ── */
   const startedRef = useRef(false);
@@ -247,8 +267,13 @@ export default function OnboardingFlow() {
 
   const seedGridItems = seedQuery.trim() ? seedResults : trending;
 
-  const ctaText  = step === TOTAL ? ONBOARDING_FLOW.startWatchingArrow : ONBOARDING_FLOW.continueArrow;
-  const ctaLabel = step === TOTAL ? ONBOARDING_FLOW.startWatching : COMMON.continue;
+  const ctaText = isSaveOnboarding
+    ? ONBOARDING_FLOW.savedTitle.cta
+    : step === TOTAL ? ONBOARDING_FLOW.startWatchingArrow : ONBOARDING_FLOW.continueArrow;
+  const ctaLabel = isSaveOnboarding
+    ? ONBOARDING_FLOW.savedTitle.ctaLabel
+    : step === TOTAL ? ONBOARDING_FLOW.startWatching : COMMON.continue;
+  const pendingTitleName = pendingTitle?.title || pendingTitle?.name || null;
 
   if (authLoading) {
     return (
@@ -272,8 +297,8 @@ export default function OnboardingFlow() {
             </button>
           ) : <div style={{ width: 28, flexShrink: 0 }} />}
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.375rem', fontWeight: 400, letterSpacing: '-0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>
-              PLOT
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 400, letterSpacing: '-0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>
+              plot
             </div>
             <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginBottom: '0.5rem' }}>
               {Array.from({ length: TOTAL }, (_, i) => (
@@ -290,7 +315,29 @@ export default function OnboardingFlow() {
         {/* ── Step 1: First name ── */}
         {step === 1 && (
           <div style={card}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem', textAlign: 'center' }}>
+            {isSaveOnboarding && (
+              <div style={{ textAlign: 'center', marginBottom: '1.35rem' }}>
+                {pendingTitle?.poster_path ? (
+                  <img
+                    src={posterUrl(pendingTitle.poster_path, 'w185')}
+                    alt=""
+                    style={{ width: 104, aspectRatio: '2/3', objectFit: 'cover', display: 'block', margin: '0 auto 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}
+                  />
+                ) : pendingTitleLoading ? (
+                  <div className="loading-state" style={{ minHeight: 156 }}><PlotLoader size="sm" /></div>
+                ) : null}
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.45rem' }}>
+                  {ONBOARDING_FLOW.savedTitle.eyebrow}
+                </div>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
+                  {ONBOARDING_FLOW.savedTitle.title}
+                </h1>
+                <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                  {ONBOARDING_FLOW.savedTitle.subtitle(pendingTitleName)}
+                </p>
+              </div>
+            )}
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem', textAlign: 'center' }}>
               {ONBOARDING_FLOW.step1.title}
             </h1>
             <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5, textAlign: 'center' }}>
@@ -310,7 +357,7 @@ export default function OnboardingFlow() {
         {/* ── Step 2: Seed shows ── */}
         {step === 2 && (
           <div style={card}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem', textAlign: 'center' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem', textAlign: 'center' }}>
               {ONBOARDING_FLOW.step2.title}
             </h1>
             <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
@@ -387,7 +434,7 @@ export default function OnboardingFlow() {
           >
             {saving ? <Spinner size="button" ariaHidden /> : ctaText}
           </button>
-          {step === TOTAL && !saving && (
+          {!isSaveOnboarding && step === TOTAL && !saving && (
             <button type="button" className="onboarding-skip" onClick={skipStep}>{ONBOARDING_FLOW.skipThisStep}</button>
           )}
         </div>

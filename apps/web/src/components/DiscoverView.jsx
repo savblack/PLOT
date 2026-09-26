@@ -1,5 +1,5 @@
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
@@ -16,8 +16,34 @@ import { OFFICIAL_PLATFORMS } from '@plot/core/usePlatformCharts.js';
 import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
+import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
+import { COMMON } from '@plot/core/copy/common.js';
+import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
+import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import SideFilters from './SideFilters.jsx';
+import { TYPE_ROWS } from './sideFilterRows.js';
+import { IconCalendar, IconChevronRight, IconSearch } from './navIcons.jsx';
+import { useCalendar } from '../hooks/useCalendar.js';
+import { localDateStr } from '../utils/date.js';
+
+// Web-only: navigator connectivity events have no React Native equivalent.
+// State precedence and copy remain shared in core; mobile should render the
+// same states from its platform connectivity source.
+function useOnlineStatus() {
+  const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, []);
+  return online;
+}
 
 /* Home is one scroll. It used to be four sub-tabs (Discover, New Releases,
    Upcoming, Guide) under a sticky toolbar, with every section collapsible and
@@ -33,7 +59,7 @@ function Rail({ rail, children }) {
   return (
     <ScrollRail
       rail={rail}
-      style={{ paddingLeft: 'var(--gut)', paddingRight: 'var(--gut)', paddingTop: '0.25rem', paddingBottom: '1rem' }}
+      style={{ paddingLeft: 'var(--discover-rail-gut, var(--gut))', paddingRight: 'var(--discover-rail-gut, var(--gut))', paddingTop: '0.25rem', paddingBottom: '1rem' }}
     >
       {children}
     </ScrollRail>
@@ -44,7 +70,7 @@ function BingeRail({ rail, children }) {
   return <ScrollRail rail={rail} className="discover-binge-rail">{children}</ScrollRail>;
 }
 
-/* The section banner: a serif title, an optional subtitle, and a slot on the
+/* The section banner: a Gabarito title, an optional subtitle, and a slot on the
    right for the rail's scroll arrows or a "See all" link.
 
    `subtitle` is deliberately optional rather than an always-present kicker: a
@@ -66,12 +92,12 @@ export function DiscoverSectionHeader({ subtitle, title, headerRight }) {
 
 /* A section whose body is a rail. Owns the scroll state so the header can
    carry the arrows while the rail itself holds the cards. */
-export function RailSection({ title, subtitle, sectionClassName = 'discover-section', binge = false, headerRight, children }) {
+export function RailSection({ id, title, subtitle, sectionClassName = 'discover-section', binge = false, headerRight, children }) {
   const rail = useRailScroll();
   const RailBody = binge ? BingeRail : Rail;
 
   return (
-    <section className={sectionClassName}>
+    <section id={id} className={sectionClassName}>
       <DiscoverSectionHeader
         title={title}
         subtitle={subtitle}
@@ -82,53 +108,168 @@ export function RailSection({ title, subtitle, sectionClassName = 'discover-sect
   );
 }
 
-const TYPE_OPTIONS = [
-  { id: 'tv',     label: MEDIA.tv     },
-  { id: 'cinema', label: MEDIA.cinema },
-  { id: 'movie',  label: MEDIA.movies },
-];
+const HOME_SECTION = {
+  picks: { id: 'home-picks', label: "plot's Picks", navLabel: "Plot's Picks" },
+  hot: { id: 'home-hot', label: 'Hot Right Now', navLabel: 'Hot Right Now' },
+  weekly: { id: 'home-weekly', label: 'Top 20 This Week', navLabel: 'Top 20 This Week' },
+  releases: { id: 'home-releases', label: 'New Releases', navLabel: 'New Releases' },
+  binged: { id: 'home-binged', label: 'Most Binged Shows', navLabel: 'Most Binged Shows' },
+  cinema: { id: 'home-cinema', label: 'Now Showing', navLabel: 'Now Showing' },
+  anticipated: { id: 'home-anticipated', label: DISCOVER_VIEW.mostAnticipatedTitle, navLabel: DISCOVER_VIEW.mostAnticipatedTitle },
+  platforms: { id: 'home-platforms', label: 'Top 10 by Platform', navLabel: 'Top 10 By Platform' },
+};
 
-/* What the filter pill says: "All types · All genres" until something is
-   narrowed, then the chosen names (or a count once that gets long). */
-function filterSummary(typeFilters, genreFilters, genres) {
-  const allTypes = ALL_TYPES.every(t => typeFilters.includes(t));
-  const types = allTypes
-    ? MEDIA.allTypes
-    : TYPE_OPTIONS.filter(o => typeFilters.includes(o.id)).map(o => o.label).join(', ');
-  const picked = genres.filter(g => genreFilters.includes(g.id)).map(g => g.name);
-  const genreText = picked.length === 0 ? MEDIA.allGenres : picked.length <= 2 ? picked.join(', ') : `${picked.length} genres`;
-  return `${types} · ${genreText}`;
+function HomePageNav({ sections }) {
+  const [activeId, setActiveId] = useState(sections[0]?.id);
+  const currentId = sections.some(section => section.id === activeId) ? activeId : sections[0]?.id;
+
+  useEffect(() => {
+    const nodes = sections.map(section => document.getElementById(section.id)).filter(Boolean);
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visible[0]) setActiveId(visible[0].target.id);
+    }, { rootMargin: '-15% 0px -65% 0px' });
+    nodes.forEach(node => observer.observe(node));
+    return () => observer.disconnect();
+  }, [sections]);
+
+  if (!sections.length) return null;
+  const goTo = (id) => {
+    setActiveId(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  return (
+    <nav className="hist-card home-page-nav" aria-label="Jump to">
+      <h2 className="home-page-nav-title">Jump to</h2>
+      <div className="home-page-nav-list">
+        {sections.map(section => (
+          <button key={section.id} type="button" className={`home-page-nav-row${currentId === section.id ? ' active' : ''}`} onClick={() => goTo(section.id)}>
+            <span>{section.navLabel}</span>
+            <span className="home-page-nav-chev" aria-hidden="true"><IconChevronRight /></span>
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
 }
 
-/* The date and the type + genre filter, in one row. At sidebar widths the row
-   is pulled up onto the page heading: the date sits under "Home" and the
-   filter pill on the right, so Home does not spend a row on one control.
-   Below them it is a plain row under the header. */
-export function DiscoverToolbar({ ariaLabel, typeFilters, setTypeFilters, genreFilters, setGenreFilters }) {
-  const { genres } = useGenres();
+/* The date and title search share the Home header row. The grouped filter is
+   retained only as the mobile bottom sheet; the desktop trigger is hidden. */
+export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres = [], onOpenSearch }) {
   return (
     <div className="page-toolbar">
       <span className="page-toolbar-date">{todayLongLabel()}</span>
-      <GroupedFilterMenu
-        ariaLabel={ariaLabel}
-        label={filterSummary(typeFilters, genreFilters, genres)}
-        groups={[
-          {
-            heading: MEDIA.typeHeading,
-            options: TYPE_OPTIONS,
-            value: typeFilters,
-            onChange: setTypeFilters,
-            defaultValue: ALL_TYPES,
-          },
-          {
-            heading: MEDIA.genreHeading,
-            options: genres.map(g => ({ id: g.id, label: g.name })),
-            value: genreFilters,
-            onChange: setGenreFilters,
-          },
-        ]}
-      />
+      <div className="home-toolbar-actions">
+        <button type="button" className="home-search-trigger" onClick={onOpenSearch}>
+          <IconSearch /><span>{COMMON.searchTitles}</span>
+        </button>
+        <GroupedFilterMenu
+          mobileControls
+          ariaLabel="Filter discover"
+          groups={[
+            {
+              heading: MEDIA.typeHeading,
+              allLabel: MEDIA.allTypes,
+              options: TYPE_ROWS,
+              value: typeFilters,
+              onChange: setTypeFilters,
+              defaultValue: ALL_TYPES,
+            },
+            {
+              heading: MEDIA.genreHeading,
+              allLabel: MEDIA.allGenres,
+              columns: 2,
+              options: genres.map(genre => ({ id: genre.id, label: genre.name })),
+              value: genreFilters,
+              onChange: setGenreFilters,
+            },
+          ]}
+        />
+      </div>
     </div>
+  );
+}
+
+function HomeUpcomingRow({ event, todayStr, openPanel }) {
+  const image = posterUrl(event.item?.poster_path, 'w92');
+  const date = getCalendarRelativeLabel(event.date, todayStr);
+  const meta = [event.label, date, event.item?.network_name].filter(Boolean).join(' · ');
+  return (
+    <button type="button" className="home-up-next-row" onClick={() => openPanel(event.item?.tmdb_id, 'tv')}>
+      <span className="home-up-next-poster">{image && <img src={image} alt="" />}</span>
+      <span className="home-up-next-copy"><strong>{event.item?.title}</strong><span>{meta}</span></span>
+      <span className="home-up-next-chev" aria-hidden="true"><IconChevronRight /></span>
+    </button>
+  );
+}
+
+function HomeOfflineIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M18.5 18H8a5 5 0 0 1-1.7-9.7M8.6 4.2A7 7 0 0 1 18 10.7 4 4 0 0 1 21 15" /></svg>;
+}
+
+function HomeAlertIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 3.7 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z" /></svg>;
+}
+
+function HomeRefreshIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8M21 3v5h-5" /></svg>;
+}
+
+function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPanel, openSearch }) {
+  if (state === 'loading') {
+    return (
+      <section className="hist-card home-personal-card home-personal-card--loading" aria-label="Loading upcoming episodes">
+        <span className="home-personal-skeleton home-personal-skeleton--icon" aria-hidden="true" />
+        <span className="home-personal-skeleton home-personal-skeleton--title" aria-hidden="true" />
+        <span className="home-personal-skeleton home-personal-skeleton--body" aria-hidden="true" />
+        <span className="home-personal-skeleton home-personal-skeleton--action" aria-hidden="true" />
+      </section>
+    );
+  }
+  if (state === 'offline' || state === 'error') {
+    const offline = state === 'offline';
+    return (
+      <section className="hist-card home-personal-card home-personal-card--compact">
+        <span className="home-personal-icon" aria-hidden="true">{offline ? <HomeOfflineIcon /> : <HomeAlertIcon />}</span>
+        <div className="hist-card-body">
+          <h2 className="hist-card-title">{offline ? DISCOVER_VIEW.offline : DISCOVER_VIEW.loadError}</h2>
+          <p className="hist-card-note">{offline ? DISCOVER_VIEW.offlineBody : DISCOVER_VIEW.loadErrorBody}</p>
+        </div>
+        <button type="button" className="home-personal-action" onClick={retry}><span>{DISCOVER_VIEW.retry}</span><HomeRefreshIcon /></button>
+      </section>
+    );
+  }
+  if (state === 'up-next') {
+    return (
+      <section className="hist-card home-personal-card">
+        <div className="hist-card-head"><h2 className="hist-card-title">{DISCOVER_VIEW.upNext}</h2>{refreshing && <span className="home-personal-status">{DISCOVER_VIEW.refreshing}</span>}</div>
+        <div className="home-up-next-list">{upNext.map(event => <HomeUpcomingRow key={`${event.item?.tmdb_id}:${event.date}:${event.label}`} event={event} todayStr={todayStr} openPanel={openPanel} />)}</div>
+      </section>
+    );
+  }
+  const start = state === 'start';
+  return (
+    <section className="hist-card home-personal-card">
+      <span className="home-personal-icon" aria-hidden="true">{start ? '+' : <IconCalendar />}</span>
+      <div className="hist-card-body"><h2 className="hist-card-title">{start ? DISCOVER_VIEW.startHere : DISCOVER_VIEW.nothingUpcoming}</h2><p className="hist-card-note">{start ? DISCOVER_VIEW.startHereBody : DISCOVER_VIEW.nothingUpcomingBody}</p></div>
+      <button type="button" className="home-personal-action" onClick={openSearch}><span>{DISCOVER_VIEW.findAiringShow}</span><IconChevronRight /></button>
+    </section>
+  );
+}
+
+function OnThisDayCard({ item, openPanel }) {
+  if (!item) return null;
+  const image = posterUrl(item.poster_path, 'w185');
+  return (
+    <section className="hist-card home-on-this-day">
+      <span className="hist-card-label">{DISCOVER_VIEW.onThisDay}</span>
+      <button type="button" className="home-on-this-day-hit" onClick={() => openPanel(item.id, item.media_type || 'movie')}>
+        <span className="home-on-this-day-poster">{image && <img src={image} alt="" />}</span>
+        <span className="home-on-this-day-copy"><strong>{item.title || item.name}</strong>{item.archive_year && <span>{DISCOVER_VIEW.releasedThisDay(item.archive_year)}</span>}</span>
+        <span className="home-up-next-chev" aria-hidden="true"><IconChevronRight /></span>
+      </button>
+    </section>
   );
 }
 
@@ -174,33 +315,45 @@ function cardMeta(item) {
   return [year, type].filter(Boolean).join(' · ');
 }
 
-// Matches the rank coloring used for the profile's Top 10 lists: gold for #1,
-// secondary for the rest of the podium, muted beyond that.
+// The Top 20 rows tier their ranks: accent for #1, secondary for the rest of
+// the podium, muted beyond that.
 function rankBadgeClass(rank) {
   if (rank === 1) return '';
   if (rank <= 3)  return ' rank-top3';
   return ' rank-rest';
 }
 
-/* ── Poster card with optional rank badge ──
+/* ── Poster card with optional rank numeral ──
    Fav/Save stay real, always-visible buttons anchored to .media-card
    (position:relative) rather than nested inside the "view details" button,
-   so no control ends up nested inside another one. */
+   so no control ends up nested inside another one. A ranked card wraps its
+   poster in the frame that cuts the numeral (.rank-cut in app.css); the
+   numeral comes after the poster so it is drawn on the artwork. */
 export function RankedCard({ item, rank, showRank = true, showMeta = true, openPanel, watchlist }) {
   const title = item.title || item.name;
   const img   = posterUrl(item.poster_path, 'w185');
   const type  = item.media_type || 'movie';
   const openDetails = () => openPanel(item.id, type);
+  const poster = (
+    <div className="media-card-img">
+      {img
+        ? <img src={img} alt={title} loading="lazy" />
+        : <div className="media-card-img-placeholder" />
+      }
+    </div>
+  );
   return (
-    <div className="media-card">
+    <div className={`media-card${showRank ? ' media-card--ranked' : ''}`}>
       <button type="button" className="media-card-hit interactive-surface" onClick={openDetails} aria-label={`View details for ${title}`}>
-        <div className="media-card-img">
-          {img
-            ? <img src={img} alt={title} loading="lazy" />
-            : <div className="media-card-img-placeholder" />
-          }
-          {showRank && <span className={`discover-rank-badge${rankBadgeClass(rank)}`}>{rank}</span>}
-        </div>
+        {showRank
+          ? (
+            <div className="rank-cut-frame">
+              {poster}
+              <span className="rank-cut">{rank}</span>
+            </div>
+          )
+          : poster
+        }
         <div className="media-card-title">{title}</div>
         {showMeta && <div className="media-card-meta">{cardMeta(item)}</div>}
       </button>
@@ -400,15 +553,6 @@ function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
       <div className="discover-chart-actions search-row-actions">
         <button
           type="button"
-          className={`search-action-btn${inList ? ' active' : ''}`}
-          onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id, media_type: type }); }}
-          data-tip={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
-          aria-label={inList ? `Remove ${title} from list` : `Add ${title} to list`}
-        >
-          <BookmarkIcon filled={inList} />
-        </button>
-        <button
-          type="button"
           className={`search-action-btn search-action-btn--heart${isFav ? ' active' : ''}`}
           onClick={async e => { e.stopPropagation(); await favorites.toggleFavorite({ ...item, id, tmdb_id: id, media_type: type }); }}
           data-tip={isFav ? `Remove ${fw.nounLower}` : fw.noun}
@@ -416,17 +560,26 @@ function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
         >
           <HeartIcon filled={isFav} />
         </button>
+        <button
+          type="button"
+          className={`search-action-btn${inList ? ' active' : ''}`}
+          onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id, media_type: type }); }}
+          data-tip={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
+          aria-label={inList ? `Remove ${title} from list` : `Add ${title} to list`}
+        >
+          <BookmarkIcon filled={inList} />
+        </button>
       </div>
     </div>
   );
 }
 
 /* ── Top 20 ── a two-row rail. */
-function WeeklyChart({ items, openPanel, watchlist }) {
+function WeeklyChart({ id, items, openPanel, watchlist }) {
   const { favorites, profile } = useApp();
   const rail = useRailScroll();
   return (
-    <section className="discover-section">
+    <section id={id} className="discover-section">
       <DiscoverSectionHeader
         title="Top 20 This Week"
         subtitle="Global ranking"
@@ -514,44 +667,40 @@ function PlatformRow({ def, chart, logoPath, openPanel, watchlist, typeFilters, 
 
       {active && (
         <div className="discover-plat-rail-wrap">
+          <div className="discover-plat-arrows"><RailArrows rail={rail} /></div>
           <ScrollRail rail={rail} className="discover-plat-rail">
             {active.items.slice(0, 10).map((item, i) => (
               <RankedCard key={`${item.id}-${i}`} item={item} rank={item._rank ?? i + 1} showMeta={false} openPanel={openPanel} watchlist={watchlist} />
             ))}
           </ScrollRail>
-          <div className="discover-plat-arrows"><RailArrows rail={rail} /></div>
         </div>
       )}
     </div>
   );
 }
 
-function PlatformCharts({ platformList, openPanel, watchlist, typeFilters, genreFilters }) {
+function PlatformCharts({ id, platformList, openPanel, watchlist, typeFilters, genreFilters }) {
   const byKey = Object.fromEntries(platformList.map(p => [p.key, p]));
   const logos = usePlatformLogos();
   return (
-    <section className="discover-section">
+    <section id={id} className="discover-section">
       <DiscoverSectionHeader title="Top 10 by Platform" subtitle="Official charts" />
       <div className="discover-plat-list">
         {OFFICIAL_PLATFORMS.map(def => (
           <PlatformRow key={def.key} def={def} chart={byKey[def.key]} logoPath={logos[def.key]} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />
         ))}
       </div>
-      <p className="discover-plat-attribution">
-        Official Top 10 · Netflix and the{' '}
-        <a href="https://www.movieofthenight.com/about/api" target="_blank" rel="noopener noreferrer">
-          Streaming Availability API
-        </a>.
-      </p>
     </section>
   );
 }
 
 /* ── Home ── */
-function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
+function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr }) {
   const navigate = useNavigate();
   const { data, loading } = useDiscover();
-  const { data: releases } = useNewReleases();
+  // Home only renders the recent rail. Loading every per-genre New Releases
+  // rail here bursts past the TMDB proxy limit before most users visit that page.
+  const { data: releases } = useNewReleases({ includeGenreRails: false });
   // Hard-coded official-chart platforms — the same set for everyone, unrelated
   // to the user's own streaming selections. The hook returns only platforms
   // with synced rows; PlatformCharts fills in the rest as unavailable.
@@ -561,15 +710,25 @@ function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
   }
 
   const applyFilters = (items) => filterByGenre(filterByType(items, typeFilters), genreFilters);
-  const { hero } = data;
+  const hero              = selectHomeHero(data.heroByType, typeFilters);
   const onThisDay        = data.onThisDay;
-  const hotRail           = applyFilters(data.hotRail);
+  const hotRail           = applyFilters(data.hotRail).filter(item => item.id !== hero?.id || item.media_type !== hero?.media_type);
   const weekly            = applyFilters(data.weekly);
   const bingedShows       = applyFilters(data.bingedShows);
   const cinemaMovies      = applyFilters(data.cinemaMovies);
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
   const recent            = applyFilters(releases.recent);
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
+  const pageSections = [
+    hero && genreFilters.length === 0 ? HOME_SECTION.picks : null,
+    hotRail.length > 0 ? HOME_SECTION.hot : null,
+    weekly.length > 0 ? HOME_SECTION.weekly : null,
+    recent.length > 0 ? HOME_SECTION.releases : null,
+    bingedShows.length > 0 ? HOME_SECTION.binged : null,
+    cinemaMovies.length > 0 ? HOME_SECTION.cinema : null,
+    anticipatedMovies.length > 0 ? HOME_SECTION.anticipated : null,
+    platformList.length > 0 ? HOME_SECTION.platforms : null,
+  ].filter(Boolean);
 
   if (!hasContent) {
     return (
@@ -581,37 +740,37 @@ function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
   }
 
   return (
-    <div className="discover-sections">
+    <div className="home-layout cal-body">
+      <aside className="cal-side home-side">
+        <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} />
+        <OnThisDayCard item={onThisDay} openPanel={openPanel} />
+        <HomePageNav sections={pageSections} />
+        <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
+      </aside>
+      <div className="discover-sections home-stream">
       {hero && genreFilters.length === 0 && (
-        <section className="discover-section discover-featured-section">
-          <DiscoverSectionHeader title="PLOT's Picks" />
-          <div className={`discover-hero-row${onThisDay ? ' has-two' : ''}`}>
+        <section id={HOME_SECTION.picks.id} className="discover-section discover-featured-section">
+          <DiscoverSectionHeader title={HOME_SECTION.picks.label} />
+          <div className="discover-hero-row">
             <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
-            {onThisDay && (
-              <HeroCard
-                item={onThisDay}
-                openPanel={openPanel}
-                watchlist={watchlist}
-                badge={onThisDay.archive_year ? MEDIA.fromTheArchiveBadge : MEDIA.onThisDay}
-              />
-            )}
           </div>
         </section>
       )}
 
       {hotRail.length > 0 && (
-        <RailSection title="Hot Right Now" subtitle="Trending today" sectionClassName="discover-section discover-binge-section" binge>
+        <RailSection id={HOME_SECTION.hot.id} title={HOME_SECTION.hot.label} subtitle="Trending today" sectionClassName="discover-section discover-binge-section" binge>
           {hotRail.map(item => (
             <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
           ))}
         </RailSection>
       )}
 
-      {weekly.length > 0 && <WeeklyChart items={weekly} openPanel={openPanel} watchlist={watchlist} />}
+      {weekly.length > 0 && <WeeklyChart id={HOME_SECTION.weekly.id} items={weekly} openPanel={openPanel} watchlist={watchlist} />}
 
       {recent.length > 0 && (
         <RailSection
-          title="New Releases"
+          id={HOME_SECTION.releases.id}
+          title={HOME_SECTION.releases.label}
           subtitle="Last 30 days"
           headerRight={
             <button type="button" className="discover-see-all" onClick={() => navigate('/new-releases')}>
@@ -626,7 +785,7 @@ function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
       )}
 
       {bingedShows.length > 0 && (
-        <RailSection title="Most Binged Shows" subtitle="Popular TV">
+        <RailSection id={HOME_SECTION.binged.id} title={HOME_SECTION.binged.label} subtitle="Popular TV">
           {bingedShows.map(item => (
             <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
           ))}
@@ -634,7 +793,7 @@ function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
       )}
 
       {cinemaMovies.length > 0 && (
-        <RailSection title="Now Showing" subtitle={MEDIA.inCinemas} sectionClassName="discover-section discover-binge-section" binge>
+        <RailSection id={HOME_SECTION.cinema.id} title={HOME_SECTION.cinema.label} subtitle={MEDIA.inCinemas} sectionClassName="discover-section discover-binge-section" binge>
           {cinemaMovies.map(item => (
             <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
           ))}
@@ -642,14 +801,15 @@ function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
       )}
 
       {anticipatedMovies.length > 0 && (
-        <RailSection title="Coming Soon" sectionClassName="discover-section discover-binge-section" binge>
+        <RailSection id={HOME_SECTION.anticipated.id} title={HOME_SECTION.anticipated.label} subtitle={DISCOVER_VIEW.mostAnticipatedSubtitle} sectionClassName="discover-section discover-binge-section" binge>
           {anticipatedMovies.map(item => (
             <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
           ))}
         </RailSection>
       )}
 
-      {platformList.length > 0 && <PlatformCharts platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />}
+      {platformList.length > 0 && <PlatformCharts id={HOME_SECTION.platforms.id} platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />}
+      </div>
     </div>
   );
 }
@@ -659,27 +819,45 @@ function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
 ═══════════════════════════════════════ */
 export default function DiscoverView() {
   const app = useApp();
+  const { genres } = useGenres();
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
-  if (!app) return null;
-
-  const { openPanel, watchlist } = app;
+  const { openPanel, openSearch, watchlist, watching, reminders } = app;
+  const online = useOnlineStatus();
+  const todayStr = localDateStr();
+  const listsReady = !watchlist.loading && !watching.loading && !reminders.loading;
+  const { events, loading: calendarLoading, refreshing: calendarRefreshing, error: calendarError, retry: retryCalendar } = useCalendar(watchlist.items, watching.items, watching.fetchSeason, reminders.reminders, { ready: listsReady });
+  useEffect(() => {
+    if (online && listsReady) retryCalendar();
+  }, [listsReady, online, retryCalendar]);
+  const upNext = useMemo(() => selectHomeUpNext(events, todayStr), [events, todayStr]);
+  const personalState = homePersonalState({ offline: !online, loading: calendarLoading || !listsReady, error: calendarError, upNext, savedCount: watchlist.items.length, watchingCount: watching.items.length });
 
   return (
-    <div>
+    <div className="home-page">
       <DiscoverToolbar
-        ariaLabel="Filter discover"
         typeFilters={typeFilters}
         setTypeFilters={setTypeFilters}
         genreFilters={genreFilters}
         setGenreFilters={setGenreFilters}
+        genres={genres}
+        onOpenSearch={openSearch}
       />
       <DiscoverContent
         openPanel={openPanel}
+        openSearch={openSearch}
         watchlist={watchlist}
         typeFilters={typeFilters}
+        setTypeFilters={setTypeFilters}
         genreFilters={genreFilters}
+        setGenreFilters={setGenreFilters}
+        genres={genres}
+        personalState={personalState}
+        personalRefreshing={calendarRefreshing}
+        retryPersonal={retryCalendar}
+        upNext={upNext}
+        todayStr={todayStr}
       />
     </div>
   );

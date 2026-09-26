@@ -11,7 +11,7 @@ test('returns markdown without changing browser defaults', async () => {
   const response = homepageMarkdownResponse(new Request('https://theplot.tv/', { headers: { Accept: 'text/markdown' } }));
   assert.equal(response.headers.get('content-type'), 'text/markdown; charset=utf-8');
   assert.equal(response.headers.get('vary'), 'Accept');
-  assert.match(await response.text(), /^# PLOT/m);
+  assert.match(await response.text(), /^# plot/m);
 });
 
 test('omits the Plans link while pricing is hidden (no env, or flag off)', async () => {
@@ -23,5 +23,5 @@ test('omits the Plans link while pricing is hidden (no env, or flag off)', async
 test('includes the Plans link once SHOW_PRICING_PAGE is enabled', async () => {
   const req = new Request('https://theplot.tv/', { headers: { Accept: 'text/markdown' } });
   const text = await homepageMarkdownResponse(req, { SHOW_PRICING_PAGE: 'true' }).text();
-  assert.match(text, /\[Plans\]\(https:\/\/theplot\.tv\/plans\.html\)/);
+  assert.match(text, /\[Plans\]\(https:\/\/theplot\.tv\/plans\)/);
 });

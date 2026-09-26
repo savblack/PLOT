@@ -4,6 +4,7 @@ import {
   colKey, extractConflictTargets, extractTableRefs, resolveConflictTargets,
   extractStringConstants, extractAppConflictTargets,
   extractMigrationKeyChanges, projectPendingSchema, describeDbUrlShape,
+  parseDbConnectionOptions, serializePgService,
 } from '../../../../scripts/lib/dbWritePathChecks.mjs';
 
 // These are the real definitions either side of the two-week production outage
@@ -69,6 +70,42 @@ test('colKey is order-independent and case/quote insensitive', () => {
   assert.equal(colKey('"Author_Id", tmdb_id'), 'author_id,tmdb_id');
   assert.equal(colKey(''), '');
   assert.equal(colKey(undefined), '');
+});
+
+test('database URI parsing preserves TLS and channel-binding options', () => {
+  assert.deepEqual(
+    parseDbConnectionOptions('postgresql://user:p%40ss@db.example:6543/app?sslmode=verify-full&sslrootcert=%2Ftmp%2Froot.pem&channel_binding=require'),
+    {
+      sslmode: 'verify-full',
+      sslrootcert: '/tmp/root.pem',
+      channel_binding: 'require',
+      host: 'db.example',
+      port: '6543',
+      user: 'user',
+      password: 'p@ss',
+      dbname: 'app',
+    },
+  );
+});
+
+test('keyword conninfo parsing preserves quoted values and every option', () => {
+  assert.deepEqual(
+    parseDbConnectionOptions("host=db.example dbname=app user=postgres password='has \\'quote' sslmode=verify-full target_session_attrs=read-write"),
+    {
+      host: 'db.example',
+      dbname: 'app',
+      user: 'postgres',
+      password: "has 'quote",
+      sslmode: 'verify-full',
+      target_session_attrs: 'read-write',
+    },
+  );
+});
+
+test('service serialization preserves credentials without allowing new options', () => {
+  const service = serializePgService('plot_test', { host: 'db.example', password: "a'b\\c" });
+  assert.equal(service, "[plot_test]\nhost=db.example\npassword=a'b\\c\n");
+  assert.throws(() => serializePgService('plot_test', { password: 'a\nsslmode=disable' }));
 });
 
 test('the outage definition is flagged: its conflict target resolves to nothing', () => {

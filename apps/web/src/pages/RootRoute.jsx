@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { supabase } from '@plot/core/supabase.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
+import { loadSupabase } from '../utils/loadSupabase.js';
 
 // The marketing site is the only landing page — the app never serves one.
 const MARKETING_URL = 'https://theplot.tv';
@@ -13,7 +13,7 @@ export default function RootRoute() {
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    loadSupabase().then((supabase) => supabase.auth.getSession()).then(({ data: { session } }) => {
       setAuthenticated(!!session);
       setLoading(false);
     });

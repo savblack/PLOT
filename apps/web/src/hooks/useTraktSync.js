@@ -5,6 +5,7 @@ import { friendlyPremiumError } from '@plot/core/premium.js';
 import { buildTraktAuthorizeUrl, createTraktState, redirectToExternal } from '../utils/redirects.js';
 import { getConfig } from '@plot/core/config.js';
 import { track, EVENTS } from '../lib/analytics.js';
+import { emit, HISTORY_CHANGED_EVENT } from '@plot/core/events.js';
 
 async function callTraktSync(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -30,7 +31,7 @@ export function useTraktSync(userId) {
   }, [userId]);
 
   /* ── Connect: redirect to Trakt OAuth ── */
-  const connect = useCallback(() => {
+  const connect = useCallback((returnTo = '/settings') => {
     const clientId = getConfig().traktClientId;
     if (!clientId) {
       setError('Trakt client ID is not configured');
@@ -39,7 +40,7 @@ export function useTraktSync(userId) {
     // Only the intent — trakt_connected fires from TraktCallbackPage once the
     // token exchange has actually landed.
     track(EVENTS.TRAKT_CONNECT_STARTED, {});
-    redirectToExternal(buildTraktAuthorizeUrl(clientId, createTraktState()));
+    redirectToExternal(buildTraktAuthorizeUrl(clientId, createTraktState(returnTo)));
   }, []);
 
   /* ── Sync ── */
@@ -53,6 +54,23 @@ export function useTraktSync(userId) {
       return result;
     } catch (e) {
       setError(friendlyPremiumError(e.message));
+      return null;
+    } finally {
+      setSyncing(false);
+    }
+  }, [loadIntegration]);
+
+  const importHistory = useCallback(async () => {
+    setSyncing(true);
+    setError(null);
+    try {
+      const result = await callTraktSync('import-history');
+      if (result?.importedCount) emit(HISTORY_CHANGED_EVENT);
+      track(EVENTS.IMPORT_COMPLETED, { source: 'trakt', count: result?.importedCount || 0 });
+      await loadIntegration();
+      return result;
+    } catch (e) {
+      setError(e.message);
       return null;
     } finally {
       setSyncing(false);
@@ -82,6 +100,7 @@ export function useTraktSync(userId) {
     loadIntegration,
     connect,
     sync,
+    importHistory,
     disconnect,
   };
 }

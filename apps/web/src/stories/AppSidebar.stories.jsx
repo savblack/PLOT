@@ -80,6 +80,9 @@ export const WithAvatar = {
   args: { ...signedIn, profile: { ...profile, avatar_url: AVATAR } },
 };
 
+export const HelpClosed = { args: signedIn };
+export const HelpOpen = { args: { ...signedIn, defaultHelpOpen: true } };
+
 // Active rows have an accent label and a neutral selected surface.
 export const ActiveCalendar = { args: { ...signedIn, currentView: 'calendar' } };
 export const ActiveSettings = { args: { ...signedIn, currentView: 'settings' } };
@@ -110,3 +113,9 @@ function FeedbackFlow(args) {
 export const FeedbackEntry = { args: signedIn, render: (args) => <FeedbackFlow {...args} /> };
 
 export const Dark = { args: signedIn, decorators: [(Story) => <div data-theme="dark"><Story /></div>] };
+
+// Premium destinations carry a pill for Free viewers only.
+export const FreeViewerOnPickForMe = { args: { ...signedIn, currentView: 'tonight' } };
+export const PremiumViewerOnPickForMe = {
+  args: { ...signedIn, currentView: 'tonight', profile: { ...profile, is_premium: true } },
+};

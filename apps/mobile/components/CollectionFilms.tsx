@@ -1,19 +1,23 @@
+import { customListCreationError } from '@plot/core/customListCreation.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 // The films of a collection as rows, plus the "Save as list" footer. Used
 // inside the collapsible card on a movie and as the body of the collection
 // panel opened from search. Mirrors apps/web/src/components/CollectionFilms.jsx.
 import { useMemo, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { collectionPartYear, collectionProgress } from '@plot/core/collections.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { canCreateCustomList } from '@plot/core/premium.js';
+import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { COMMON } from '@plot/core/copy/common.js';
+import { useRouter } from 'expo-router';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { track, EVENTS } from '../lib/analytics';
-import { SHOW_PRICING_PAGE } from '../lib/launchFeatures';
 
 type SaveState = { status: 'idle' | 'saving' | 'saved' | 'error'; message: string };
 
@@ -40,6 +44,7 @@ export default function CollectionFilms({ stub, parts, items }: { stub: { id: nu
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, profile, customLists } = useAppData();
+  const router = useRouter();
   const { open: openTitle } = useMediaPanel();
   const [saveState, setSaveState] = useState<SaveState>({ status: 'idle', message: '' });
   const existingList = findDuplicateCustomList(customLists?.lists || [], stub.name);
@@ -51,14 +56,22 @@ export default function CollectionFilms({ stub, parts, items }: { stub: { id: nu
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
       setSaveState({
         status: 'error',
-        message: SHOW_PRICING_PAGE
-          ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`
-          : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`,
+        message: CUSTOM_LISTS.limitMessage,
       });
+      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage, [
+        { text: COMMON.cancel, style: 'cancel' },
+        { text: PLANS_PAGE.previewAction, onPress: () => router.push('/(app)/settings?premium=1' as any) },
+      ]);
       return;
     }
     setSaveState({ status: 'saving', message: '' });
-    const list = existingList || await customLists.createList(stub.name);
+    let list;
+    try {
+      list = existingList || await customLists.createList(stub.name);
+    } catch (error) {
+      setSaveState({ status: 'error', message: customListCreationError(error, MEDIA_PANEL.couldNotSaveCollection) });
+      return;
+    }
     if (!list) { setSaveState({ status: 'error', message: MEDIA_PANEL.couldNotSaveCollection }); return; }
     let failed = false;
     for (const part of [...parts].reverse()) {
@@ -120,7 +133,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   rowCurrent: { backgroundColor: colors.accentDim },
   rowPoster: { width: 42, aspectRatio: 2 / 3, borderRadius: 7, overflow: 'hidden', backgroundColor: colors.surfaceRaised, alignItems: 'center', justifyContent: 'center' },
-  rowPosterFallback: { fontFamily: fontFamily.serif, fontSize: fontSize.md, color: colors.textMuted },
+  rowPosterFallback: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textMuted },
   rowText: { flex: 1, minWidth: 0 },
   rowTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   rowMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },

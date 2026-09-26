@@ -1,4 +1,7 @@
 import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
+import PrivateNote from './PrivateNote.jsx';
+import { customListCreationError } from '@plot/core/customListCreation.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip, formatDate } from '../utils/countdown.js';
@@ -11,14 +14,19 @@ import { localDateStr } from '../utils/date.js';
 import { getEpisodeGuideState } from '../utils/episodeProgress.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatus.js';
 import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
+import { nextSheetSnap } from '../utils/mobileSheets.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
+import { privateNoteKey } from '@plot/core/privateNotes.js';
+import { formatWatchedOn } from '@plot/core/date.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS, captureException } from '../lib/analytics.js';
 import CreditsGrid from './TalentCredits.jsx';
 import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { canCreateCustomList } from '@plot/core/premium.js';
+import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
   getLastSeasonNumber,
@@ -29,15 +37,33 @@ import {
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import SheetHeader from './SheetHeader.jsx';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 import TitleReview from './TitleReview.jsx';
+import StarIcon from './StarIcon.jsx';
 import KebabMenu from './KebabMenu.jsx';
+import PanelCloseRail from './PanelCloseRail.jsx';
+import {
+  ENGAGEMENT_SNOOZE_KEY,
+  ENGAGEMENT_PENDING_KEY,
+  WATCH_PROMPT_SNOOZE_MS,
+  RATE_PROMPT_SNOOZE_MS,
+  engagementTitleKey,
+  parseEngagementSnooze,
+  serialiseEngagementSnooze,
+  isEngagementSnoozed,
+  snoozeEngagement,
+  canShowWatchPrompt,
+  canShowRatePrompt,
+  parseEngagementPending,
+  pendingWatchMatches,
+} from '@plot/core/engagementPrompt.js';
+import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
+import EngagementPromptBar from './EngagementPromptBar.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
-import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -122,6 +148,20 @@ function CheckIcon({ size = 15 }) {
     </svg>
   );
 }
+function ChevronIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  );
+}
+function LockIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+  );
+}
 function StatusIcon({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -162,6 +202,96 @@ function CheckCircleIcon({ filled }) {
   );
 }
 
+/* ── Up next: the mid-watch summary for a series ──
+   A series you are part-way through is asking one question — what do I watch
+   now — and the panel used to answer it only if you scrolled to the episode
+   guide and counted. This says it at the top: the episode the pointer is on,
+   where it plays, and the two things you might do about it.
+
+   It reads the same pointer the guide does and advances it through the same
+   `markEpisodeWatched`, so the card and the list can't disagree. ── */
+function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }) {
+  const { watching } = useApp();
+  const [episodes, setEpisodes] = useState([]);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const season = progress?.current_season || 0;
+  const episodeNumber = progress?.current_episode || 0;
+
+  useEffect(() => {
+    if (!season) return;
+    let cancelled = false;
+    tmdb.getSeason(tvId, season).then(data => {
+      if (!cancelled) setEpisodes(data?.episodes || []);
+    });
+    return () => { cancelled = true; };
+  }, [tvId, season]);
+
+  const episode = episodes.find(e => e.episode_number === episodeNumber);
+  if (!season || !episodeNumber) return null;
+
+  const watchedInSeason = Math.max(0, episodeNumber - 1);
+  const seasonTotal = episodes.length;
+  const offer = whereToWatch.streaming[0] || whereToWatch.rentBuy[0] || null;
+  const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
+  const runtime = episode?.runtime ? MEDIA_PANEL.episodeRuntime(episode.runtime) : '';
+  const where = [offer?.providerName, runtime].filter(Boolean).join(' · ');
+
+  const markWatched = async () => {
+    if (pending) return;
+    setPending(true);
+    setError('');
+    const result = await watching.markEpisodeWatched(tvId);
+    if (!result?.ok) {
+      setError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    } else if (isSeriesComplete({
+      lastSeason: getLastSeasonNumber(details),
+      nextSeason: result.data?.current_season,
+      status: details?.status,
+    })) {
+      track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: getLastSeasonNumber(details) });
+      const finished = await onSeriesFinished?.();
+      if (finished && !finished.ok) setError(finished.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    }
+    setPending(false);
+  };
+
+  return (
+    <section className="panel-card panel-upnext">
+      <h3 className="panel-card-title panel-upnext-title">{MEDIA_PANEL.upNext}</h3>
+      <div className="panel-upnext-row">
+        <div className="panel-upnext-still">
+          {still && <img src={still} alt="" />}
+        </div>
+        <div className="panel-upnext-copy">
+          <div className="panel-upnext-kicker">{MEDIA_PANEL.seasonEpisode(season, episodeNumber)}</div>
+          <div className="panel-upnext-name">{episode?.name || MEDIA_PANEL.seasonEpisode(season, episodeNumber)}</div>
+          {where && <div className="panel-upnext-where">{where}</div>}
+        </div>
+        <div className="panel-upnext-actions">
+          <button className="panel-pill panel-pill--primary" onClick={markWatched} disabled={pending}>
+            <CheckIcon />
+            {pending ? MEDIA_PANEL.updating : MEDIA.markWatched}
+          </button>
+        </div>
+      </div>
+      {seasonTotal > 0 && (
+        <div
+          className="panel-upnext-progress"
+          role="progressbar"
+          aria-valuenow={watchedInSeason}
+          aria-valuemin={0}
+          aria-valuemax={seasonTotal}
+          aria-label={MEDIA_PANEL.seasonWatchedCount(watchedInSeason, seasonTotal)}
+        >
+          <span style={{ width: `${Math.round((watchedInSeason / seasonTotal) * 100)}%` }} />
+        </div>
+      )}
+      {error && <p className="panel-upnext-error" role="alert">{error}</p>}
+    </section>
+  );
+}
+
 /* ── Season selector + episode list ── */
 export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
   const { watching, user } = useApp();
@@ -175,6 +305,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
   const [episodeActionError, setEpisodeActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
+  const [seasonMenuOpen, setSeasonMenuOpen] = useState(false);
   const checkingEpRef = useRef(false); // sync guard to prevent double-tap race
 
   // Track whether user manually changed season (to suppress auto-follow)
@@ -368,33 +499,49 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
 
   return (
     <div>
-      {seasons.length > 1 && (
-        <div className="season-select">
-          {seasons.map(s => (
+      {/* Season picker and the season-level action share one line: the season
+          as a pill you open, the bulk action as plain text on the right. The
+          chip-per-season strip it replaces grew a row for every season. */}
+      <div className="season-row">
+        {seasons.length > 1 ? (
+          <div className="season-picker" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setSeasonMenuOpen(false); }}>
             <button
-              key={s.season_number}
-              className={`season-chip${selSeason === s.season_number ? ' active' : ''}`}
-              onClick={() => {
-                userChangedSeason.current = true;
-                setSelSeason(s.season_number);
-              }}
+              type="button"
+              className="panel-pill season-pill"
+              onClick={() => setSeasonMenuOpen(v => !v)}
+              aria-haspopup="menu"
+              aria-expanded={seasonMenuOpen}
             >
-              S{s.season_number}
+              {MEDIA_PANEL.seasonLabel(selSeason)}
+              <ChevronIcon size={13} />
             </button>
-          ))}
-        </div>
-      )}
-
-      {isTracking && episodes.length > 0 && (
-        <div className="season-bulk">
-          <div className="season-bulk-info">
-            <span className="season-bulk-title">{MEDIA_PANEL.seasonLabel(selSeason)}</span>
-            <span className="season-bulk-count">
-              {MEDIA_PANEL.seasonWatchedCount(seasonState.watchedCount, seasonState.episodeCount)}
-            </span>
+            {seasonMenuOpen && (
+              <div className="panel-status-menu season-menu" role="menu" aria-label={MEDIA_PANEL.chooseSeason}>
+                {seasons.map(s => (
+                  <button
+                    key={s.season_number}
+                    role="menuitem"
+                    className={`panel-status-option${s.season_number === selSeason ? ' panel-status-option--current' : ''}`}
+                    onClick={() => {
+                      userChangedSeason.current = true;
+                      setSelSeason(s.season_number);
+                      setSeasonMenuOpen(false);
+                    }}
+                  >
+                    {MEDIA_PANEL.seasonLabel(s.season_number)}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+        ) : (
+          <span className="panel-pill season-pill season-pill--static">{MEDIA_PANEL.seasonLabel(selSeason)}</span>
+        )}
+
+        {isTracking && episodes.length > 0 && (
           <button
-            className="season-bulk-btn"
+            type="button"
+            className="season-bulk-link"
             onClick={handleToggleSeason}
             disabled={seasonPending || progressBlocked || checkingEp !== null}
           >
@@ -404,8 +551,8 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
                 ? MEDIA_PANEL.unmarkSeasonWatched
                 : MEDIA_PANEL.markSeasonWatched}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {sparse.hasEpisodes && <p className="season-bulk-count">{MEDIA_PANEL.sparseEpisodeProgress}</p>}
       {sparse.error && (
@@ -541,7 +688,7 @@ function StopSmallIcon() {
 
 /* ── Where-to-watch provider chip ── */
 // Clickable only for a verified provider offer or the region-specific title page.
-function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink }) {
+function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink, onWatchLinkClick }) {
   const link = buildWatchLink({
     providerUrl: provider.providerUrl,
     justwatchLink,
@@ -564,15 +711,18 @@ function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink }) {
       href={link.url}
       target="_blank"
       rel={link.kind === 'provider' ? 'noopener nofollow sponsored' : 'noopener'}
-      onClick={() => track(EVENTS.WATCH_LINK_CLICKED, {
-        provider_id: provider.providerId,
-        provider_name: provider.providerName,
-        tmdb_id: tmdbId,
-        media_type: mediaType,
-        monetization: provider.offerType.toLowerCase().replaceAll(' ', '_'),
-        link_kind: link.kind,
-        region,
-      })}
+      onClick={() => {
+        track(EVENTS.WATCH_LINK_CLICKED, {
+          provider_id: provider.providerId,
+          provider_name: provider.providerName,
+          tmdb_id: tmdbId,
+          media_type: mediaType,
+          monetization: provider.offerType.toLowerCase().replaceAll(' ', '_'),
+          link_kind: link.kind,
+          region,
+        });
+        onWatchLinkClick?.();
+      }}
     >
       {inner}
     </a>
@@ -594,6 +744,110 @@ function pillButtonStyle(variant) {
     background: variant === 'solid' ? 'var(--accent)' : 'var(--surface-raised)',
     color: variant === 'solid' ? '#fff' : 'var(--text-primary)',
   };
+}
+
+/* ── Your take: the bar pinned to the foot of the panel ──
+   Present whether or not anything has been written, so your rating, your review
+   and your private note are one tap from any scroll position rather than a
+   section to scroll for. Collapsed it summarises; open it holds the same review
+   slip and note editor as before.
+
+   A separate component for the same reason TitleReview is one: reading
+   `watchedEntry`-derived values in the panel's own render body makes the React
+   Compiler bail out of the manual memoization on its watch-status callbacks. ── */
+function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note, dnf, watchedAt, onSave, onClear, user, defaultOpen = false }) {
+  const { privateNotes } = useApp();
+  const [open, setOpen] = useState(defaultOpen);
+  const actionSheet = useRef(null);
+  const hasPrivateNote = !!privateNotes?.rows?.[privateNoteKey(itemId, itemType)]?.note;
+  const hasTake = !!(rating || note.trim() || dnf);
+  const preview = hasTake
+    ? (note.trim() || MEDIA_PANEL.watchedOnDate(formatWatchedOn(watchedAt)))
+    : MEDIA_PANEL.takeHint;
+
+  useEffect(() => {
+    if (!open || !window.matchMedia('(hover: none), (pointer: coarse)').matches) return undefined;
+    const sheet = actionSheet.current;
+    const opener = document.activeElement;
+    const focusable = () => [...sheet.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')];
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const elements = focusable();
+      if (!elements.length) return;
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    sheet.addEventListener('keydown', onKeyDown);
+    focusable()[0]?.focus();
+    return () => {
+      sheet.removeEventListener('keydown', onKeyDown);
+      opener?.focus?.();
+    };
+  }, [open]);
+
+  return (
+    <div className={`panel-take${open ? ' panel-take--open' : ''}`}>
+      <button
+        type="button"
+        className="panel-disclosure panel-take-head"
+        aria-expanded={open}
+        onClick={() => setOpen(v => !v)}
+      >
+        <span className="panel-take-stars" aria-hidden="true">
+          {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
+            <StarIcon key={n} fillPercent={starFillPercent(rating, n)} />
+          ))}
+        </span>
+        <span className="panel-take-summary">
+          <b>{hasTake ? MEDIA_PANEL.yourTake : MEDIA_PANEL.leaveNoteOrReview}</b>
+          <span>{preview}</span>
+        </span>
+        {hasPrivateNote && <LockIcon />}
+        <ChevronIcon />
+      </button>
+
+      {open && (
+        <div className="panel-action-layer">
+          <button type="button" className="panel-action-scrim" aria-label={COMMON.close} onClick={() => setOpen(false)} />
+          <section ref={actionSheet} className="panel-action-sheet" role="dialog" aria-modal="true" aria-label={MEDIA_PANEL.leaveNoteOrReview}>
+            <div className="panel-action-handle" aria-hidden="true" />
+            <div className="panel-action-heading">
+              <h3>{MEDIA_PANEL.leaveNoteOrReview}</h3>
+              <button type="button" className="panel-action-close" onClick={() => setOpen(false)} aria-label={COMMON.close}><CloseIcon /></button>
+            </div>
+            <div className="panel-take-body">
+              {watched ? (
+                <TitleReview
+                  entry={watchedEntry}
+                  rating={rating}
+                  note={note}
+                  dnf={dnf}
+                  watchedAt={watchedAt}
+                  onSave={onSave}
+                  onClear={onClear}
+                />
+              ) : (
+                <p className="panel-take-note">{MEDIA_PANEL.takeNeedsWatch}</p>
+              )}
+              {user && <PrivateNote id={itemId} type={itemType} title={title} />}
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ── Add to custom list sheet ── */
@@ -629,9 +883,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     }
     if (!canCreateCustomList(lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
-      setCreateError(SHOW_PRICING_PAGE
-        ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited. Upgrade from Settings to unlock.`
-        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
+      setCreateError(CUSTOM_LISTS.limitMessage);
       return;
     }
 
@@ -652,61 +904,109 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
 
       setCreatingName('');
       setShowCreate(false);
+    } catch (error) {
+      setCreateError(customListCreationError(error, MEDIA.couldNotCreateList));
     } finally {
       setIsCreating(false);
     }
   };
 
+  const leaveCreate = () => {
+    if (isCreating) return;
+    setShowCreate(false);
+    setCreateError('');
+  };
+
+  const footer = !showCreate ? (
+    <>
+      <button
+        type="button"
+        className="add-list-new"
+        onClick={() => {
+          setShowCreate(true);
+          setCreateError('');
+        }}
+      >
+        <span aria-hidden="true">+</span>
+        Create new list
+      </button>
+      <button type="button" className="btn btn-primary btn-sm" onClick={onClose}>{COMMON.done}</button>
+    </>
+  ) : null;
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1100,
-      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
-      <div style={{
-        position: 'relative',
-        background: 'var(--surface)',
-        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        maxHeight: '70vh',
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
-        <SheetHeader title="Add to list" onClose={onClose} bordered={false} />
+    <ResponsiveDialog
+      title={showCreate ? 'New list' : 'Add to list'}
+      onClose={onClose}
+      onBack={showCreate ? leaveCreate : undefined}
+      contentClassName="responsive-dialog-content--flush"
+      surfaceClassName="panel-list-sheet"
+      footer={footer}
+      zIndex={1100}
+    >
+      {showCreate ? (
+        <form
+          className="add-list-create"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleCreate();
+          }}
+        >
+          <label htmlFor="media-list-name">List name</label>
+          <input
+            id="media-list-name"
+            type="text"
+            placeholder="e.g. Rainy Sunday films"
+            value={creatingName}
+            disabled={isCreating}
+            onChange={event => {
+              setCreatingName(event.target.value);
+              if (createError) setCreateError('');
+            }}
+            autoFocus
+          />
+          <p>You can customise the cover and list details after creating it.</p>
+          {createError && <div className="add-list-error">{createError}</div>}
+          <div className="add-list-create-actions">
+            <button type="button" className="btn btn-ghost btn-sm" disabled={isCreating} onClick={leaveCreate}>{COMMON.cancel}</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={!creatingName.trim() || isCreating}>
+              {isCreating ? MEDIA_PANEL.creating : 'Create list'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="responsive-dialog-picker">
+          <div className="add-list-context">
+            <span className="add-list-context-poster">
+              {details?.poster_path && <img src={posterUrl(details.poster_path, 'w92')} alt="" />}
+            </span>
+            <span>
+              <small>Adding</small>
+              <strong>{item.title || MEDIA.unknown}</strong>
+            </span>
+          </div>
         {!!topLists && (
-          <div style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className={`add-list-top-five${topOpen ? ' open' : ''}`}>
             <button
+              type="button"
               onClick={() => setTopOpen(o => !o)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                width: '100%', padding: '0.75rem 1rem',
-                border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
-              }}
+              aria-expanded={topOpen}
+              className="add-list-top-row"
             >
-              <div>
-                <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                  Top 10 {topListType === 'tv' ? MEDIA_PANEL.top10TvShows : MEDIA_PANEL.top10Movies}
-                </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              <span className="add-list-rank-mark">5</span>
+              <span className="add-list-copy">
+                <strong>
+                  {topListType === 'tv' ? MEDIA_PANEL.topFiveTvShows : MEDIA_PANEL.topFiveMovies}
+                </strong>
+                <small>
                   {currentRank ? MEDIA_PANEL.currentlyRanked(currentRank) : MEDIA_PANEL.notRanked}
-                </div>
-              </div>
-              <div style={{
-                width: 20, height: 20, borderRadius: 4,
-                border: `2px solid ${currentRank ? 'var(--accent)' : 'var(--border-strong)'}`,
-                background: currentRank ? 'var(--accent)' : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, fontSize: '0.7rem', color: '#fff', fontWeight: 600,
-              }}>
-                {currentRank || ''}
-              </div>
+                </small>
+              </span>
+              <span className="add-list-chevron" aria-hidden="true">⌄</span>
             </button>
             {topOpen && (
-              <div style={{
-                display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem',
-                padding: '0 1rem 0.75rem',
-              }}>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map(rank => {
+              <div className="add-list-rank-grid">
+                {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1).map(rank => {
                   const occupant = topItems.find(t => t.rank === rank);
                   const isThis = occupant?.tmdb_id === itemId;
                   return (
@@ -719,7 +1019,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                       }}
                       style={{
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                        padding: '0.4rem 0.2rem', minHeight: 44,
+                        padding: '0.4rem 0.2rem', minHeight: 48,
                         border: `1px solid ${isThis ? 'var(--accent)' : 'var(--border)'}`,
                         borderRadius: 8,
                         background: isThis ? 'var(--accent)' : 'transparent',
@@ -766,7 +1066,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
               {!pickingMoveTo ? (
                 <>
                   <p style={{
-                    fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 400,
+                    fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 400,
                     color: 'var(--text-primary)', lineHeight: 1.3, margin: '0 0 0.25rem',
                   }}>
                     Replace "{rankConflict.occupant.title}" at #{rankConflict.rank} with "{item.title}"?
@@ -790,13 +1090,13 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
               ) : (
                 <>
                   <p style={{
-                    fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 400,
+                    fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 400,
                     color: 'var(--text-primary)', lineHeight: 1.3, margin: '0 0 0.25rem',
                   }}>
                     Move "{rankConflict.occupant.title}" to which open spot?
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem' }}>
-                    {Array.from({ length: 10 }, (_, i) => i + 1)
+                    {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1)
                       .filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r))
                       .map(r => (
                         <button
@@ -818,7 +1118,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                         </button>
                       ))}
                   </div>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r)).length === 0 && (
+                  {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1).filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r)).length === 0 && (
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No open spots. Every other rank is taken.</div>
                   )}
                   <button onClick={() => setPickingMoveTo(false)} style={pillButtonStyle('muted')}>
@@ -829,8 +1129,9 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
             </div>
           </div>
         )}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          {lists.length === 0 && !showCreate && (
+        <div className="responsive-dialog-scroll add-list-rows">
+          <div className="add-list-section-label">Your lists</div>
+          {lists.length === 0 && (
             <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               No lists yet
             </div>
@@ -841,96 +1142,27 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
               <button
                 key={list.id}
                 onClick={() => checked ? removeItem(list.id, itemId) : addItem(list.id, item)}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  width: '100%', padding: '0.75rem 1rem',
-                  border: 'none', borderBottom: '1px solid var(--border)',
-                  background: 'none', cursor: 'pointer', textAlign: 'left',
-                }}
+                className={`add-list-row${checked ? ' selected' : ''}`}
               >
-                <div>
-                  <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{list.name}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{(list.items || []).length} items</div>
-                </div>
-                <div style={{
-                  width: 20, height: 20, borderRadius: 4,
-                  border: `2px solid ${checked ? 'var(--accent)' : 'var(--border-strong)'}`,
-                  background: checked ? 'var(--accent)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
+                <span className="add-list-cover" aria-hidden="true"><i /><i /><i /></span>
+                <span className="add-list-copy">
+                  <strong>{list.name}</strong>
+                  <small>{(list.items || []).length} items</small>
+                </span>
+                <span className="add-list-check">
                   {checked && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 12, height: 12 }}><polyline points="20 6 9 17 4 12"/></svg>}
-                </div>
+                </span>
               </button>
             );
           })}
-          {showCreate ? (
-            <>
-              <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="text"
-                  placeholder="List name…"
-                  value={creatingName}
-                  disabled={isCreating}
-                  onChange={e => {
-                    setCreatingName(e.target.value);
-                    if (createError) setCreateError('');
-                  }}
-                  onKeyDown={e => e.key === 'Enter' && !isCreating && handleCreate()}
-                  autoFocus
-                  style={{
-                    flex: 1, padding: '0.4rem 0.6rem',
-                    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                    background: 'var(--bg)', color: 'var(--text-primary)',
-                    fontSize: '0.875rem', outline: 'none',
-                  }}
-                />
-                <button className="btn btn-primary btn-xs" disabled={!creatingName.trim() || isCreating} onClick={handleCreate}>
-                  {isCreating ? MEDIA_PANEL.creating : MEDIA_PANEL.create}
-                </button>
-                <button
-                  className="icon-btn"
-                  style={{ width: 32, height: 32 }}
-                  disabled={isCreating}
-                  aria-label="Cancel"
-                  onClick={() => {
-                    setShowCreate(false);
-                    setCreateError('');
-                  }}
-                >
-                  <CloseIcon />
-                </button>
-              </div>
-              {createError && (
-                <div style={{ padding: '0 1rem 0.75rem', color: 'var(--danger)', fontSize: '0.75rem' }}>
-                  {createError}
-                </div>
-              )}
-            </>
-          ) : (
-            <button
-              onClick={() => {
-                setShowCreate(true);
-                setCreateError('');
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                width: '100%', padding: '0.75rem 1rem',
-                border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
-                color: 'var(--text-secondary)', fontSize: '0.875rem',
-              }}
-            >
-              <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>+</span>
-              Create new list
-            </button>
-          )}
         </div>
-      </div>
-    </div>
+        </div>
+      )}
+    </ResponsiveDialog>
   );
 }
 
-export default function MediaPanel({ itemId, itemType, closing, onClose }) {
+export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose }) {
   const { watchlist, watching, user, profile, favorites, customLists, openPanel } = useApp();
   const [talentId, setTalentId] = useState(null);
   const [talentPerson, setTalentPerson] = useState(null);
@@ -1004,10 +1236,19 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const [criticScore,    setCriticScore]    = useState(null);
   const [audienceQuote,  setAudienceQuote]  = useState(null);
 
-  const [showListSheet,     setShowListSheet]     = useState(false);
+  const [showListSheet,     setShowListSheet]     = useState(initialListOpen);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  // Where to watch opens closed — its logos say enough at a glance. The foot
+  // bar owns its own open state, inside TakeBar.
+  const [watchOpen, setWatchOpen] = useState(false);
   const [statusActionPending, setStatusActionPending] = useState('');
   const [statusActionError, setStatusActionError] = useState('');
+  // PLO-473 / PLO-474: compact post-save watch prompt → post–mark-watched rate.
+  // 'watch' | 'rate' | null. Cleared when the open title changes.
+  const [engagementPrompt, setEngagementPrompt] = useState(null);
+  const [engagementBusy, setEngagementBusy] = useState(false);
+  // When "Write a review" is chosen from the rate prompt, TakeBar mounts open.
+  const [takeBarDefaultOpen, setTakeBarDefaultOpen] = useState(false);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -1080,34 +1321,74 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [closing, onClose, showListSheet, navStack]); // eslint-disable-line react-hooks/exhaustive-deps -- goBack is a stable closure over local state, re-declaring it every render would thrash this listener
 
-  // Swipe-down-to-close (mobile/tablet bottom sheet only)
-  const [dragY, setDragY] = useState(0);
-  const dragStateRef = useRef({ active: false, startY: 0, startTime: 0 });
+  // Mobile title details open at two-thirds height, can expand to full height,
+  // then collapse or dismiss in order. Pointer motion writes straight to the
+  // panel transform so a finger drag never waits on a React render.
+  const [sheetSnap, setSheetSnap] = useState('collapsed');
+  const panelRef = useRef(null);
+  const dragStateRef = useRef({ active: false, startY: 0, startTime: 0, snap: 'collapsed' });
+
+  useEffect(() => { setSheetSnap('collapsed'); }, [itemId]); // eslint-disable-line react-hooks/set-state-in-effect -- each newly opened title starts at the preview snap
+  /* eslint-disable react-hooks/set-state-in-effect -- reset / consume engagement when the open title changes */
+  useEffect(() => {
+    setEngagementPrompt(null);
+    setEngagementBusy(false);
+    setTakeBarDefaultOpen(false);
+  }, [itemId, itemType]);
+
+  // Out-of-panel save left a pending watch prompt for this title: offer it once
+  // the panel opens, then clear the queue so it does not reappear on reopen.
+  useEffect(() => {
+    if (watched) return;
+    const pending = parseEngagementPending(readStorage(ENGAGEMENT_PENDING_KEY, null));
+    if (!pendingWatchMatches(pending, itemId, itemType)) return;
+    removeStorage(ENGAGEMENT_PENDING_KEY);
+    const snoozed = isEngagementSnoozed(
+      parseEngagementSnooze(readStorage(ENGAGEMENT_SNOOZE_KEY, '{}')),
+      engagementTitleKey(itemId, itemType),
+      'watch',
+    );
+    if (!canShowWatchPrompt({ watched: false, snoozed })) return;
+    setEngagementPrompt('watch');
+  }, [itemId, itemType, watched]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const isBottomSheet = () =>
     typeof window !== 'undefined' && window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
   const handleDragStart = useCallback((e) => {
     if (e.pointerType === 'mouse' || !isBottomSheet()) return;
-    dragStateRef.current = { active: true, startY: e.clientY, startTime: Date.now() };
+    dragStateRef.current = { active: true, startY: e.clientY, startTime: performance.now(), snap: sheetSnap };
     e.currentTarget.setPointerCapture?.(e.pointerId);
-  }, []);
+    panelRef.current?.classList.add('is-dragging');
+  }, [sheetSnap]);
 
   const handleDragMove = useCallback((e) => {
-    if (!dragStateRef.current.active) return;
+    if (!dragStateRef.current.active || !panelRef.current) return;
     const delta = e.clientY - dragStateRef.current.startY;
-    setDragY(delta > 0 ? delta : 0);
+    const baseHeight = window.innerHeight * (dragStateRef.current.snap === 'expanded' ? 1 : 0.67);
+    if (dragStateRef.current.snap === 'collapsed' && delta > 0) {
+      panelRef.current.style.transform = `translate3d(0, ${delta}px, 0)`;
+      return;
+    }
+    panelRef.current.style.height = `${Math.min(window.innerHeight, Math.max(window.innerHeight * 0.5, baseHeight - delta))}px`;
   }, []);
 
-  const endDrag = useCallback(() => {
+  const endDrag = useCallback((e) => {
     if (!dragStateRef.current.active) return;
-    const delta = dragY;
-    const elapsed = Date.now() - dragStateRef.current.startTime;
+    const delta = e.clientY - dragStateRef.current.startY;
+    const elapsed = performance.now() - dragStateRef.current.startTime;
     const velocity = delta / Math.max(elapsed, 1);
+    const next = nextSheetSnap({ snap: dragStateRef.current.snap, delta, velocity });
     dragStateRef.current.active = false;
-    setDragY(0);
-    if (delta > 120 || velocity > 0.5) onClose();
-  }, [dragY, onClose]);
+    panelRef.current?.classList.remove('is-dragging');
+    if (panelRef.current) {
+      panelRef.current.style.transform = '';
+      panelRef.current.style.height = '';
+    }
+    if (next === 'dismissed') onClose();
+    else setSheetSnap(next);
+  }, [onClose]);
 
   const loadDetails = useCallback(async () => {
     if (!itemId) return;
@@ -1170,8 +1451,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   useEffect(() => { loadDetails(); }, [loadDetails]);
 
   const title   = details?.title || details?.name || '';
-  const rating  = details?.vote_average ? `${details.vote_average.toFixed(1)} ★` : '';
-  const genres  = (details?.genres || []).slice(0, 3).map(g => g.name).join(' · ');
   const date    = details?.release_date || details?.first_air_date;
   const chip    = date ? countdownChip(date) : null;
   const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
@@ -1183,6 +1462,36 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     : null;
   const hasWatchOffers = whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas;
   const watchNetworks = isMovie ? [] : networksFromDetails(details);
+
+  // ── What this is, in one line under the title ──
+  // Year and length for a film, year and season count for a series; the person
+  // behind it goes on the line below rather than being squeezed in beside them.
+  const year = date ? new Date(date).getFullYear() : '';
+  const runtimeText = isMovie
+    ? (details?.runtime
+        ? (details.runtime >= 60
+            ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m`
+            : `${details.runtime}m`)
+        : '')
+    : (details?.number_of_seasons
+        ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
+        : '');
+  const factLine = [year, runtimeText].filter(Boolean).join(' · ');
+  const author = isMovie
+    ? (details?.credits?.crew || []).find(c => c.job === 'Director')?.name
+    : (details?.created_by || [])[0]?.name;
+  const genreChips = (details?.genres || []).slice(0, 2);
+
+  // ── The logos the collapsed Where to watch card shows in place of its rows ──
+  // With no offers anywhere it falls back to the networks, so the card still
+  // answers "who has this" at a glance instead of collapsing to a bare heading.
+  const stackProviders = (hasWatchOffers
+    ? [...whereToWatch.streaming, ...whereToWatch.rentBuy]
+    : watchNetworks
+  ).filter((p, i, all) => all.findIndex(o => o.providerId === p.providerId) === i);
+  const stackShown = stackProviders.slice(0, 3);
+  const stackExtra = stackProviders.length - stackShown.length;
+
 
   const runStatusAction = useCallback(async (actionLabel, action) => {
     if (statusActionPending) return;
@@ -1218,6 +1527,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     const isSameWatchedState = watched && (!!watchedEntry?.dnf === dnf);
     if (isSameWatchedState) {
       const removed = await history.removeEntry(itemId, itemType);
+      if (removed) setEngagementPrompt(null);
       return removed
         ? { ok: true }
         : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
@@ -1244,8 +1554,22 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     if (realError) {
       captureException(new Error(realError), { surface: 'media_panel', action: 'watched_status' });
     }
+    // PLO-474: same chrome as the watch prompt, offered after any successful
+    // mark-watched (status menu, episode finish, or the watch prompt itself).
+    if (result.ok) {
+      const snoozed = isEngagementSnoozed(
+        parseEngagementSnooze(readStorage(ENGAGEMENT_SNOOZE_KEY, '{}')),
+        engagementTitleKey(itemId, itemType),
+        'rate',
+      );
+      if (canShowRatePrompt({ watched: true, hasRating: !!watchedEntry?.rating, snoozed })) {
+        setEngagementPrompt('rate');
+      } else {
+        setEngagementPrompt(null);
+      }
+    }
     return result;
-  }, [defaultWatchedAt, details, history, inList, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
+  }, [defaultWatchedAt, details, history, inList, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchedEntry?.rating, watchlist, watching]);
 
   /* Watching the final episode of a finished series completes it. Reuses the
      same transition as the Watched status action, so a show finished by
@@ -1273,6 +1597,125 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     return { ok: true };
   }, [history, isWatching, itemId, itemType, watched, watching]);
 
+  const titleSnoozeKey = engagementTitleKey(itemId, itemType);
+
+  const readSnoozeMap = useCallback(
+    () => parseEngagementSnooze(readStorage(ENGAGEMENT_SNOOZE_KEY, '{}')),
+    [],
+  );
+
+  const writeSnoozeMap = useCallback((map) => {
+    writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(map));
+  }, []);
+
+  const offerWatchPrompt = useCallback(() => {
+    const snoozed = isEngagementSnoozed(readSnoozeMap(), titleSnoozeKey, 'watch');
+    if (!canShowWatchPrompt({ watched, snoozed })) return;
+    removeStorage(ENGAGEMENT_PENDING_KEY);
+    setEngagementPrompt('watch');
+  }, [readSnoozeMap, titleSnoozeKey, watched]);
+
+  // Fire shown once per prompt mount (watch or rate), not on every re-render.
+  useEffect(() => {
+    if (!engagementPrompt) return;
+    track(EVENTS.ENGAGEMENT_PROMPT_SHOWN, {
+      kind: engagementPrompt,
+      tmdb_id: Number(itemId),
+      media_type: itemType,
+    });
+  }, [engagementPrompt, itemId, itemType]);
+
+  const dismissWatchPrompt = useCallback(() => {
+    writeSnoozeMap(snoozeEngagement(readSnoozeMap(), titleSnoozeKey, 'watch', WATCH_PROMPT_SNOOZE_MS));
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'watch',
+      action: 'not_yet',
+      tmdb_id: Number(itemId),
+      media_type: itemType,
+    });
+    setEngagementPrompt(null);
+  }, [itemId, itemType, readSnoozeMap, titleSnoozeKey, writeSnoozeMap]);
+
+  const skipRatePrompt = useCallback(() => {
+    writeSnoozeMap(snoozeEngagement(readSnoozeMap(), titleSnoozeKey, 'rate', RATE_PROMPT_SNOOZE_MS));
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'rate',
+      action: 'skip',
+      tmdb_id: Number(itemId),
+      media_type: itemType,
+    });
+    setEngagementPrompt(null);
+  }, [itemId, itemType, readSnoozeMap, titleSnoozeKey, writeSnoozeMap]);
+
+  const handleSaveFromPanel = useCallback(async () => {
+    if (!details) return;
+    if (inList) {
+      await watchlist.removeFromList(itemId);
+      return;
+    }
+    const saved = await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
+    if (saved) offerWatchPrompt();
+  }, [details, inList, itemId, itemType, offerWatchPrompt, watchlist]);
+
+  const handleWatchLinkPrompt = useCallback(() => {
+    // Second trigger: outbound watch link when the title is already on the list
+    // and not yet marked watched.
+    if (!inList || watched) return;
+    offerWatchPrompt();
+  }, [inList, offerWatchPrompt, watched]);
+
+  const handlePromptMarkWatched = useCallback(async () => {
+    if (engagementBusy) return;
+    setEngagementBusy(true);
+    try {
+      const result = await handleWatchedStatus(false);
+      if (!result?.ok && result?.error) setStatusActionError(result.error);
+    } finally {
+      setEngagementBusy(false);
+    }
+  }, [engagementBusy, handleWatchedStatus]);
+
+  const handlePromptStartWatching = useCallback(async () => {
+    if (engagementBusy || isMovie) return;
+    setEngagementBusy(true);
+    try {
+      const result = await handleWatchingStatus();
+      if (result?.ok) setEngagementPrompt(null);
+      else if (result?.error) setStatusActionError(result.error);
+    } finally {
+      setEngagementBusy(false);
+    }
+  }, [engagementBusy, handleWatchingStatus, isMovie]);
+
+  const handlePromptRate = useCallback(async (rating) => {
+    if (!rating) return;
+    const ok = await saveReview({
+      rating,
+      note: savedReview || null,
+      dnf: savedDnf,
+      watchedAt: savedWatchedAt,
+    });
+    if (ok) {
+      // Star tap saves the score, then hand off into TakeBar so a written
+      // review is one more step, not a dead end.
+      setTakeBarDefaultOpen(true);
+      setEngagementPrompt(null);
+    }
+  }, [saveReview, savedDnf, savedReview, savedWatchedAt]);
+
+  // Leave the rate prompt without snoozing: the user is going into the take
+  // editor, which is the written-review path the prompt is advertising.
+  const handlePromptWriteReview = useCallback(() => {
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'rate',
+      action: 'write_review',
+      tmdb_id: Number(itemId),
+      media_type: itemType,
+    });
+    setTakeBarDefaultOpen(true);
+    setEngagementPrompt(null);
+  }, [itemId, itemType]);
+
   return (
     <>
       {showListSheet && details && (
@@ -1284,9 +1727,13 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         />
       )}
       <div className={`panel-overlay${closing ? ' closing' : ''}`} onClick={onClose} />
+      <PanelCloseRail closing={closing} onClose={onClose} />
       <div
-        className={`panel${closing ? ' closing' : ''}`}
-        style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
+        ref={panelRef}
+        className={`panel panel--mobile-${sheetSnap}${closing ? ' closing' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={details?.title || details?.name || MEDIA_PANEL.titleDetails}
       >
         {navStack.length > 0 ? (
           /* Every step deeper than the title you first opened — cast → title →
@@ -1339,244 +1786,276 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
           </div>
         ) : (
           <div className="panel-body">
-            {/* Title */}
-            <h2 className="panel-title">{title}</h2>
-
-            {/* Meta row */}
-            <div className="panel-meta-row">
-              {isMovie ? (
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Movie</span>
-              ) : (
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Series{details?.number_of_seasons ? ` · ${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}` : ''}
-                </span>
-              )}
-              {rating && <span style={{ fontSize: '0.8rem', color: 'var(--rating)', fontWeight: 600 }}>{rating}</span>}
-              {date && (
-                <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  {new Date(date).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-              )}
-              {chip && chip.cls !== 'chip-muted' && (
-                <span className={`chip ${chip.cls}`}>{chip.label}</span>
-              )}
+            {/* ── Head ──
+                The cover is a band rather than a full 16:9 hero, and the poster
+                overlaps it, so what this is — kind, title, year, length, who
+                made it, genre — is all above the fold instead of below a
+                half-panel of artwork. ── */}
+            <div className="panel-head">
+              {details?.poster_path
+                ? <img className="panel-poster" src={posterUrl(details.poster_path, 'w342')} alt="" />
+                : <div className="panel-poster panel-poster--empty" aria-hidden="true" />
+              }
+              <div className="panel-head-text">
+                <div className="panel-kicker">{isMovie ? MEDIA.movie : MEDIA.series}</div>
+                <h2 className="panel-title">{title}</h2>
+                <p className="panel-facts">
+                  {factLine}
+                  {author && <><br />{author}</>}
+                </p>
+                {(genreChips.length > 0 || (chip && chip.cls !== 'chip-muted')) && (
+                  <div className="panel-genres">
+                    {chip && chip.cls !== 'chip-muted' && <span className={`chip ${chip.cls}`}>{chip.label}</span>}
+                    {genreChips.map(g => <span className="panel-genre" key={g.id}>{g.name}</span>)}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {genres && (
-              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{genres}</div>
-            )}
-
-            {/* ── Action cluster: hero Save + secondary tray (Status · Favourite · List · Share) ──
-                Sits between the metadata and your review: the actions are what
-                you came to the panel to do, so they lead, and the review reads
-                as the record underneath them rather than being buried below the
-                overview, cast and trailer. ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-              {(() => {
-                // The two status-row buttons are peers, so they share one style:
-                // icon to the left of the label at the same type size. Matches
-                // mobile, where both halves have always been btnPrimary.
-                // minHeight rather than padding alone pins the height, so the
-                // tray below can reuse it at a smaller type size and still come
-                // out level.
-                const statusRowBtn = {
-                  minWidth: 0, width: '100%', minHeight: '2.2rem',
-                  padding: '0.35rem 0.5rem', borderRadius: '0.75rem', cursor: 'pointer',
-                  fontSize: '0.84rem', lineHeight: 1.2, transition: 'all 0.18s', boxSizing: 'border-box',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                };
-                // Secondary tray: the same geometry as the status row, so all
-                // five buttons are one height, with a smaller label to keep it
-                // subordinate. The icon-over-label stack this replaces made the
-                // tray half again as tall as the row above it. Mobile has always
-                // been a row here (btnSecondary sized to match btnPrimary); web
-                // was the outlier.
-                const trayBtn = {
-                  ...statusRowBtn, flex: 1, width: 'auto',
-                  fontSize: '0.76rem', fontWeight: 500,
-                };
-
-                const statusLabel = statusActionPending ? statusActionPending
-                  : isWatching ? MEDIA_PANEL.watching
-                  : watched && watchedEntry?.dnf ? MEDIA_PANEL.didntFinish
-                  : watched ? MEDIA.watched
-                  : MEDIA_PANEL.status;
-                const statusActive = isWatching || watched;
-                const statusColors = isWatching
-                  ? { background: 'var(--status-watching-dim)', border: '1.5px solid color-mix(in srgb, var(--status-watching) 45%, transparent)', color: 'var(--status-watching)' }
-                  : watched
-                  ? { background: 'var(--status-watched-dim)', border: '1.5px solid color-mix(in srgb, var(--status-watched) 30%, transparent)', color: 'var(--status-watched)' }
-                  : { background: 'transparent', border: '1.5px solid var(--border)', color: 'var(--text-secondary)' };
-
-                return (<>
-
-              {/* Status row: watchlist and watch state are the two answers to
-                  "where is this for me", so they share a line rather than being
-                  separated by the secondary actions. Matches mobile. */}
-              {/* Grid rather than flex: a <button> flex item won't shrink to an
-                  even share the way a <div> does, so the two halves come out
-                  lopsided. 1fr 1fr splits them exactly. */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            {/* ── Actions ──
+                The two that carry state keep their labels; favourite, list and
+                share are icons. Every one is sized to itself rather than
+                stretched to a share of the panel, so the row reads as controls
+                rather than as a wall. ── */}
+            <div className="panel-actions-row">
               <button
-                onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
-                style={{
-                  ...statusRowBtn, fontWeight: 600,
-                  border: inList ? '1.5px solid color-mix(in srgb, var(--status-watched) 30%, transparent)' : '1.5px solid transparent',
-                  background: inList ? 'var(--status-watched-dim)' : 'var(--accent)',
-                  color: inList ? 'var(--status-watched)' : '#fff',
-                }}
+                className={`panel-pill${inList ? ' panel-pill--saved' : ' panel-pill--primary'}`}
+                onClick={handleSaveFromPanel}
               >
                 {inList ? <CheckIcon /> : <BookmarkIcon />}
                 {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
               </button>
 
-                {/* Watch status (with dropdown) */}
-                <div style={{ minWidth: 0, position: 'relative' }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
-                  <button
-                    onClick={() => setShowStatusDropdown(v => !v)}
-                    disabled={!!statusActionPending}
-                    style={{ ...statusRowBtn, ...statusColors, fontWeight: statusActive ? 600 : 500, opacity: statusActionPending ? 0.7 : 1 }}
-                  >
-                    <StatusIcon size={15} />
-                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{statusLabel}</span>
-                  </button>
-                  {showStatusDropdown && (
-                    <div style={{
-                      position: 'absolute', top: 'calc(100% + 6px)', left: 0, minWidth: '160px', zIndex: 100,
-                      background: 'var(--surface-raised)', border: '1px solid var(--border)',
-                      borderRadius: '0.75rem', overflow: 'hidden',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                    }}>
-                      {[
-                        { label: MEDIA_PANEL.watching, action: () => runStatusAction(MEDIA_PANEL.updating, handleWatchingStatus), hidden: isMovie },
-                        { label: MEDIA.watched, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(false)) },
-                        { label: MEDIA_PANEL.didntFinish, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(true)) },
-                        { label: MEDIA_PANEL.clearStatus, action: () => runStatusAction(MEDIA_PANEL.clearing, handleClearStatus), hidden: !statusActive, muted: true },
-                      ].filter(o => !o.hidden).map((opt, i, arr) => (
-                        <button
-                          key={opt.label}
-                          onClick={opt.action}
-                          disabled={!!statusActionPending}
-                          style={{
-                            width: '100%', padding: '0.6rem 0.85rem',
-                            background: 'transparent', whiteSpace: 'nowrap',
-                            border: 'none', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
-                            color: opt.muted ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', textAlign: 'left',
-                            transition: 'background 0.12s',
-                            opacity: statusActionPending ? 0.6 : 1,
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-sunken)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
+              <div className="panel-status" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
+                <button
+                  className={`panel-pill panel-pill--status${isWatching ? ' panel-pill--watching' : watched ? ' panel-pill--watched' : ''}`}
+                  onClick={() => setShowStatusDropdown(v => !v)}
+                  disabled={!!statusActionPending}
+                  aria-haspopup="menu"
+                  aria-expanded={showStatusDropdown}
+                >
+                  <StatusIcon size={15} />
+                  <span className="panel-pill-label">
+                    {statusActionPending ? statusActionPending
+                      : isWatching ? MEDIA_PANEL.watching
+                      : watched && watchedEntry?.dnf ? MEDIA_PANEL.didntFinish
+                      : watched ? MEDIA.watched
+                      : MEDIA_PANEL.status}
+                  </span>
+                </button>
+                {showStatusDropdown && (
+                  <div className="panel-status-menu">
+                    {[
+                      { label: MEDIA_PANEL.watching, action: () => runStatusAction(MEDIA_PANEL.updating, handleWatchingStatus), hidden: isMovie },
+                      { label: MEDIA.watched, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(false)) },
+                      { label: MEDIA_PANEL.didntFinish, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(true)) },
+                      { label: MEDIA_PANEL.clearStatus, action: () => runStatusAction(MEDIA_PANEL.clearing, handleClearStatus), hidden: !(isWatching || watched), muted: true },
+                    ].filter(o => !o.hidden).map(opt => (
+                      <button
+                        key={opt.label}
+                        className={`panel-status-option${opt.muted ? ' panel-status-option--muted' : ''}`}
+                        onClick={opt.action}
+                        disabled={!!statusActionPending}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Secondary tray */}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {/* Favourite */}
-                <button
-                  onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
-                  style={{
-                    ...trayBtn,
-                    border: isFav ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
-                    background: isFav ? 'var(--accent-dim)' : 'transparent',
-                    color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
-                  }}
-                >
-                  <HeartIcon filled={isFav} size={15} />
-                  {isFav ? fw.pastTitle : fw.noun}
-                </button>
-
-                {/* Add to list */}
-                <button
-                  onClick={() => setShowListSheet(true)}
-                  style={{
-                    ...trayBtn,
-                    border: isInAnyList ? '1.5px solid color-mix(in srgb, var(--status-watching) 40%, transparent)' : '1.5px solid var(--border)',
-                    background: isInAnyList ? 'var(--status-watching-dim)' : 'transparent',
-                    color: isInAnyList ? 'var(--status-watching)' : 'var(--text-secondary)',
-                  }}
-                >
-                  <ListIcon size={15} />
-                  {isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
-                </button>
-
-                {/* Share */}
-                <button
-                  onClick={() => shareTitle({ tmdbId: itemId, mediaType: itemType, title })}
-                  style={{
-                    ...trayBtn,
-                    border: shareCopied ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
-                    background: shareCopied ? 'var(--accent-dim)' : 'transparent',
-                    color: shareCopied ? 'var(--accent)' : 'var(--text-secondary)',
-                  }}
-                >
-                  <ShareIcon size={15} />
-                  {shareCopied ? COMMON.copied : COMMON.share}
-                </button>
+              <div className="panel-icon-group">
+              <button
+                className={`panel-icon-btn${isFav ? ' panel-icon-btn--fav' : ''}`}
+                onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
+                aria-label={isFav ? fw.pastTitle : fw.noun}
+                aria-pressed={isFav}
+              >
+                <HeartIcon filled={isFav} size={17} />
+              </button>
+              <button
+                className={`panel-icon-btn${isInAnyList ? ' panel-icon-btn--on' : ''}`}
+                onClick={() => setShowListSheet(true)}
+                aria-label={isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
+              >
+                <ListIcon size={17} />
+              </button>
+              <button
+                className={`panel-icon-btn${shareCopied ? ' panel-icon-btn--fav' : ''}`}
+                onClick={() => shareTitle({ tmdbId: itemId, mediaType: itemType, title })}
+                aria-label={shareCopied ? COMMON.copied : COMMON.share}
+              >
+                <ShareIcon size={17} />
+              </button>
               </div>
-
-            </>); })()}
             </div>
 
             {statusActionError && (
-              <div style={{
-                marginTop: '-0.25rem',
-                marginBottom: '1rem',
-                padding: '0.7rem 0.85rem',
-                borderRadius: '0.85rem',
-                border: '1px solid var(--danger-border)',
-                background: 'var(--danger-dim)',
-                color: 'var(--danger)',
-                fontSize: '0.8rem',
-                lineHeight: 1.45,
-              }}>
-                {statusActionError}
-              </div>
+              <div className="panel-status-error" role="alert">{statusActionError}</div>
             )}
 
-            {/* ── Your review ──
-                Sits directly under the title rather than below the action tray,
-                where it used to be the last thing on the panel. Your verdict now
-                reads ahead of the overview and the critic scores: what this is,
-                what you thought, then what everyone else thought. The three
-                states (saved / editing / nothing written yet) live in
-                TitleReview. */}
-            {watched && (
-              <TitleReview
-                entry={watchedEntry}
-                rating={savedRating}
-                note={savedReview}
-                dnf={savedDnf}
-                watchedAt={savedWatchedAt}
-                onSave={saveReview}
-                onClear={clearReview}
+            {!isMovie && isWatching && details && (
+              <UpNextCard
+                tvId={itemId}
+                details={details}
+                progress={progress}
+                whereToWatch={whereToWatch}
+                onSeriesFinished={handleSeriesFinished}
               />
             )}
 
-            {/* Critic / audience scores */}
-            {(criticScore || Number.isFinite(audienceScore)) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.25rem', fontSize: '0.9rem', fontWeight: 700 }}>
-                {criticScore && (
-                  <span style={{ color: 'var(--text-primary)' }}>{criticScore.criticScore}% Critics</span>
+            {/* ── Where to watch ──
+                First, because it is what the panel is for, and collapsed to its
+                provider logos, because that answers the question at a glance.
+                Everything it used to sit under — the overview, the cast, the
+                trailer, the episode guide — now sits under it. ── */}
+            {details && (
+              <section className="panel-card panel-watch">
+                <button
+                  type="button"
+                  className="panel-disclosure"
+                  aria-expanded={watchOpen}
+                  onClick={() => setWatchOpen(v => !v)}
+                >
+                  <h3 className="panel-card-title">{MEDIA_PANEL.whereToWatch}</h3>
+                  {!watchOpen && stackShown.length > 0 && (
+                    <span className="panel-logo-stack" aria-hidden="true">
+                      {stackShown.map(p => (
+                        <img
+                          key={p.providerId}
+                          src={p.logoPath?.startsWith('http') ? p.logoPath : logoUrl(p.logoPath, 'w45')}
+                          alt=""
+                        />
+                      ))}
+                      {stackExtra > 0 && <span className="panel-logo-more">{MEDIA_PANEL.moreProviders(stackExtra)}</span>}
+                    </span>
+                  )}
+                  <ChevronIcon />
+                </button>
+
+                {watchOpen && (
+                  <div className="panel-watch-body">
+                    {hasWatchOffers && (
+                      <div className="panel-watch-region">
+                        <span>
+                          {whereToWatch.region && regionDisplayName(whereToWatch.region)
+                            ? MEDIA_PANEL.offersIn(regionDisplayName(whereToWatch.region))
+                            : ''}
+                        </span>
+                      </div>
+                    )}
+                    {whereToWatch.inCinemas && (
+                      <div className="providers-grid">
+                        <div className="provider-chip provider-chip--cinema">In Cinemas</div>
+                      </div>
+                    )}
+                    {whereToWatch.streaming.length > 0 && (
+                      <div className="providers-grid">
+                        {whereToWatch.streaming.map(p => (
+                          <ProviderChip
+                            key={`${p.providerId}-${p.offerType}`}
+                            provider={p}
+                            mediaType={itemType}
+                            tmdbId={itemId}
+                            region={whereToWatch.region}
+                            justwatchLink={whereToWatch.justwatchLink}
+                            onWatchLinkClick={handleWatchLinkPrompt}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {whereToWatch.rentBuy.length > 0 && (
+                      <>
+                        {whereToWatch.streaming.length > 0 && (
+                          <div className="providers-sublabel">Rent or Buy</div>
+                        )}
+                        <div className="providers-grid">
+                          {whereToWatch.rentBuy.map(p => (
+                            <ProviderChip
+                              key={`${p.providerId}-${p.offerType}`}
+                              provider={p}
+                              mediaType={itemType}
+                              tmdbId={itemId}
+                              region={whereToWatch.region}
+                              justwatchLink={whereToWatch.justwatchLink}
+                              onWatchLinkClick={handleWatchLinkPrompt}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {!hasWatchOffers && (
+                      <>
+                        {/* Nothing to buy or stream yet, so the network is a
+                            mark rather than an offer: the logo alone, in the
+                            same circle the collapsed card stacks. */}
+                        {watchNetworks.length > 0 && (
+                          <div className="panel-network-row">
+                            {watchNetworks.map(network => (
+                              <img
+                                key={network.providerId}
+                                className="panel-network-logo"
+                                src={network.logoPath?.startsWith('http') ? network.logoPath : logoUrl(network.logoPath, 'w45')}
+                                alt={network.providerName}
+                                title={network.providerName}
+                              />
+                            ))}
+                          </div>
+                        )}
+                        <p className="providers-empty">
+                          {whereToWatch.region && regionDisplayName(whereToWatch.region)
+                            ? `Not streaming in ${regionDisplayName(whereToWatch.region)} yet.`
+                            : 'Not streaming anywhere yet.'}
+                          {whereToWatch.justwatchLink && (
+                            <> <a href={whereToWatch.justwatchLink} target="_blank" rel="noopener">Check JustWatch</a></>
+                          )}
+                        </p>
+                      </>
+                    )}
+                    {hasWatchOffers && (
+                      <p className="providers-attribution">
+                        Streaming availability by JustWatch.
+                        {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some(p =>
+                          buildWatchLink({
+                            providerUrl: p.providerUrl,
+                            justwatchLink: whereToWatch.justwatchLink,
+                          })?.kind === 'provider'
+                        ) && ' Links open the verified title offer.'}
+                      </p>
+                    )}
+                  </div>
                 )}
-                {criticScore && Number.isFinite(audienceScore) && (
-                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>·</span>
-                )}
-                {Number.isFinite(audienceScore) && (
-                  <span style={{ color: 'var(--accent)' }}>{audienceScore}% Audience</span>
-                )}
-              </div>
+              </section>
             )}
-            {consensusLine && (
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{consensusLine}</div>
+
+            {/* ── What everyone else thought ──
+                The two numbers read as a pair, with a real audience review in
+                the space beside them rather than a consensus sentence on its
+                own line. ── */}
+            {(criticScore || Number.isFinite(audienceScore)) && (
+              <div className="panel-scores">
+                {criticScore && (
+                  <div className="panel-score">
+                    <b>{criticScore.criticScore}%</b>
+                    <span>{MEDIA_PANEL.critics}</span>
+                  </div>
+                )}
+                {criticScore && Number.isFinite(audienceScore) && <span className="panel-score-rule" />}
+                {Number.isFinite(audienceScore) && (
+                  <div className="panel-score">
+                    <b>{audienceScore}%</b>
+                    <span>{MEDIA_PANEL.audience}</span>
+                  </div>
+                )}
+                {audienceQuote ? (
+                  <blockquote className="panel-quote">
+                    <p>&ldquo;{audienceQuote.text}&rdquo;</p>
+                    <cite>{audienceQuote.author || 'A TMDB audience review'}</cite>
+                  </blockquote>
+                ) : consensusLine ? (
+                  <p className="panel-consensus">{consensusLine}</p>
+                ) : null}
+              </div>
             )}
 
             {/* Overview */}
@@ -1584,16 +2063,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <p className="panel-overview">{details.overview}</p>
             )}
 
-            {audienceQuote && (
-              <blockquote style={{ borderLeft: '2px solid var(--accent)', margin: '0 0 0.75rem', padding: '0.4rem 0 0.4rem 0.75rem' }}>
-                <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '1rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                  &ldquo;{audienceQuote.text}&rdquo;
-                </p>
-                <cite style={{ display: 'block', fontStyle: 'normal', fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: '0.25rem', letterSpacing: '0.02em' }}>
-                  {audienceQuote.author || 'A TMDB audience review'}
-                </cite>
-              </blockquote>
-            )}
 
             {cast.length > 0 && (
               <section className="panel-cast-section" aria-labelledby="panel-cast-title">
@@ -1644,8 +2113,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               );
             })()}
 
-            {/* Episode guide for TV — ahead of Where to Watch so that section
-                lands at the bottom for both movies and TV. */}
+            {/* Episode guide for TV. Where to watch now leads the panel, so this
+                sits with the rest of the title's detail. */}
             {!isMovie && details && (
               <>
                 <div className="panel-section-title">Episodes</div>
@@ -1656,92 +2125,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   timezone={timezone}
                   onSeriesFinished={handleSeriesFinished}
                 />
-              </>
-            )}
-
-            {/* Where to watch — always present once details load. Knowing where
-                a title can be watched is the point of the panel, so an unknown
-                answer is stated rather than the section quietly vanishing. */}
-            {details && (
-              <>
-                <div className="panel-section-title">Where to Watch</div>
-                {whereToWatch.inCinemas && (
-                  <div className="providers-grid">
-                    <div className="provider-chip provider-chip--cinema">
-                      In Cinemas
-                    </div>
-                  </div>
-                )}
-                {whereToWatch.streaming.length > 0 && (
-                  <div className="providers-grid">
-                    {whereToWatch.streaming.map(p => (
-                      <ProviderChip
-                          key={`${p.providerId}-${p.offerType}`}
-                          provider={p}
-                        mediaType={itemType}
-                        tmdbId={itemId}
-                        region={whereToWatch.region}
-                        justwatchLink={whereToWatch.justwatchLink}
-                      />
-                    ))}
-                  </div>
-                )}
-                {whereToWatch.rentBuy.length > 0 && (
-                  <>
-                    {whereToWatch.streaming.length > 0 && (
-                      <div className="providers-sublabel">Rent or Buy</div>
-                    )}
-                    <div className="providers-grid">
-                      {whereToWatch.rentBuy.map(p => (
-                        <ProviderChip
-                        key={`${p.providerId}-${p.offerType}`}
-                        provider={p}
-                          mediaType={itemType}
-                          tmdbId={itemId}
-                          region={whereToWatch.region}
-                          justwatchLink={whereToWatch.justwatchLink}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-                {!hasWatchOffers && (
-                  <>
-                    {watchNetworks.length > 0 && (
-                      <div className="providers-grid">
-                        {watchNetworks.map(network => (
-                          <ProviderChip
-                            key={network.providerId}
-                            provider={network}
-                            mediaType={itemType}
-                            tmdbId={itemId}
-                            region={whereToWatch.region}
-                            justwatchLink={null}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    <p className="providers-empty">
-                      {whereToWatch.region && regionDisplayName(whereToWatch.region)
-                        ? `Not streaming in ${regionDisplayName(whereToWatch.region)} yet.`
-                        : 'Not streaming anywhere yet.'}
-                      {whereToWatch.justwatchLink && (
-                        <> <a href={whereToWatch.justwatchLink} target="_blank" rel="noopener">Check JustWatch</a></>
-                      )}
-                    </p>
-                  </>
-                )}
-                {hasWatchOffers && (
-                  <p className="providers-attribution">
-                    Streaming availability by JustWatch.
-                    {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some(p =>
-                      buildWatchLink({
-                        providerUrl: p.providerUrl,
-                        justwatchLink: whereToWatch.justwatchLink,
-                      })?.kind === 'provider'
-                    ) && ' Links open the verified title offer.'}
-                  </p>
-                )}
               </>
             )}
 
@@ -1776,6 +2159,40 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <CollectionCard details={details} itemId={itemId} history={history} onOpenTitle={goToTitle} />
             )}
           </div>
+        )}
+
+        {!talentId && !loading && !detailsError && details && (
+          engagementPrompt ? (
+            <EngagementPromptBar
+              mode={engagementPrompt}
+              isTv={!isMovie}
+              showWatchingCta={!isMovie && !isWatching}
+              busy={engagementBusy || !!statusActionPending}
+              onMarkWatched={handlePromptMarkWatched}
+              onStartWatching={handlePromptStartWatching}
+              onDismissWatch={dismissWatchPrompt}
+              onRate={handlePromptRate}
+              onWriteReview={handlePromptWriteReview}
+              onSkipRate={skipRatePrompt}
+            />
+          ) : (
+            <TakeBar
+              key={`${itemType}:${itemId}:${takeBarDefaultOpen ? 'open' : 'closed'}`}
+              itemId={itemId}
+              itemType={itemType}
+              title={title}
+              watched={watched}
+              watchedEntry={watchedEntry}
+              rating={savedRating}
+              note={savedReview}
+              dnf={savedDnf}
+              watchedAt={savedWatchedAt}
+              onSave={saveReview}
+              onClear={clearReview}
+              user={user}
+              defaultOpen={takeBarDefaultOpen}
+            />
+          )
         )}
       </div>
     </>

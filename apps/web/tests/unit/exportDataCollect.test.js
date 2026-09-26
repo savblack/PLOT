@@ -43,6 +43,7 @@ test('runDataExport reads every export step in order, scoped to the user', async
     EXPORT_STEPS.map((step) => step.table),
   );
   assert.deepEqual(calls.at(0), { table: 'profiles', method: 'eq', column: 'id', value: 'user-123' });
+  assert.deepEqual(calls.find((call) => call.table === 'broadcast_preferences'), { table: 'broadcast_preferences', method: 'eq', column: 'user_id', value: 'user-123' });
   assert.deepEqual(calls.at(-1), { table: 'feedback', method: 'eq', column: 'user_id', value: 'user-123' });
   const followsCall = calls.find((call) => call.table === 'follows');
   assert.deepEqual(followsCall, { table: 'follows', method: 'or', filter: 'follower_id.eq.user-123,following_id.eq.user-123' });
@@ -109,4 +110,19 @@ test('free export retains imported annotations and their provenance beyond the r
   assert.deepEqual(result.data.imported_annotations, annotations);
   assert.equal(calls.filter(call => call.table === 'imported_annotations').length, 2);
   assert.deepEqual(EXPORT_STEPS.find(step => step.table === 'imported_annotations').match, { type: 'eq', column: 'user_id' });
+});
+
+test('private notes are included only in the authenticated owner export', async () => {
+  const { client, calls } = createExportClient({ rowsByTable: { private_title_notes: [{ user_id: 'owner', note: 'fictional personal note' }] } });
+  const result = await runDataExport(client, 'owner');
+  assert.equal(result.data.private_title_notes[0].note, 'fictional personal note');
+  assert.deepEqual(calls.find(call => call.table === 'private_title_notes'), { table: 'private_title_notes', method: 'eq', column: 'user_id', value: 'owner' });
+});
+
+
+test('private note exports read past the response page limit', async () => {
+  const rows = Array.from({ length: 1001 }, (_, revision) => ({ note: `fictional note ${revision}` }));
+  const { client } = createExportClient({ rowsByTable: { private_title_notes: rows } });
+  const result = await runDataExport(client, 'owner');
+  assert.deepEqual(result.data.private_title_notes, rows);
 });

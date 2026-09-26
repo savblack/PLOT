@@ -138,11 +138,11 @@
   ],
   "trending": {
     "hero": {
-      "slug": "the-runner",
-      "tmdb_id": 1386315,
+      "slug": "resident-evil",
+      "tmdb_id": 1423191,
       "media_type": "movie",
-      "poster_path": "/uxCaBoYXsDC4A0SqTm3SISj0OwK.jpg",
-      "title": "The Runner",
+      "poster_path": "/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg",
+      "title": "Resident Evil",
       "year": "2026"
     }
   }

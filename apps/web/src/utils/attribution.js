@@ -1,4 +1,4 @@
-import { canUseDOM, readStorage, writeStorage } from './storage.js';
+import { canUseDOM, readStorage, removeStorage, writeStorage } from './storage.js';
 
 /**
  * First-touch acquisition attribution.
@@ -11,6 +11,8 @@ import { canUseDOM, readStorage, writeStorage } from './storage.js';
  * super/person properties and ride along on signup / activation events.
  */
 const KEY = 'plot_attribution';
+const SIGNUP_REFERRAL_KEY = 'plot_pending_signup_referral';
+const SIGNUP_REFERRAL_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 const ATTR_KEYS = [
   'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
@@ -75,4 +77,48 @@ export function captureAttribution() {
   const attribution = { ...merged };
   delete attribution.ts;
   return attribution;
+}
+
+/**
+ * Current What’s On article for this app entry.
+ *
+ * Unlike first-touch attribution, this intentionally reflects the link being
+ * acted on now. It becomes a session property, so signup events can answer both
+ * “where did this person first find PLOT?” and “which article converted them?”.
+ */
+export function currentArticleAttribution() {
+  if (!canUseDOM()) return {};
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (clean(params.get('src')) !== 'whats_on_article') return {};
+    const slug = clean(params.get('utm_content'));
+    return slug ? { current_article_slug: slug } : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Bind referral mutation authority to a successful new-account creation. */
+export function markSignupReferralPending(email) {
+  if (!getAttribution().ref || !email) return;
+  writeStorage(SIGNUP_REFERRAL_KEY, JSON.stringify({
+    email: String(email).trim().toLowerCase(),
+    createdAt: Date.now(),
+  }));
+}
+
+/** Consume the signup marker only for the same mailbox and a short time window. */
+export function consumeSignupReferralPending(email, now = Date.now()) {
+  const raw = readStorage(SIGNUP_REFERRAL_KEY);
+  if (!raw) return false;
+  removeStorage(SIGNUP_REFERRAL_KEY);
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed?.email === String(email || '').trim().toLowerCase()
+      && Number.isFinite(parsed?.createdAt)
+      && now - parsed.createdAt >= 0
+      && now - parsed.createdAt <= SIGNUP_REFERRAL_MAX_AGE_MS;
+  } catch {
+    return false;
+  }
 }

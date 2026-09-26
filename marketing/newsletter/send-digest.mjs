@@ -46,15 +46,17 @@ const providersOf = (details) => {
 // ── brand tokens ──
 // Brand pink + paper derive from the canonical source (@plot/core/tokens.js);
 // INK/MUT/FAINT/HAIR are newsletter-only email inks.
-const INK = '#0c0c0c', MUT = '#6b6b70', FAINT = '#a1a1a6', PINK = colors.light.accent;
-const HAIR = '#e7e6e3', PAPER = colors.light.bg;
-const SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
+const INK = colors.light.textPrimary, MUT = colors.light.textSecondary, FAINT = colors.light.textMuted, PINK = colors.light.accentText;
+const FILL = colors.light.accentFill, ON_FILL = colors.light.onAccentFill;
+const HAIR = '#e6dfd3', PAPER = colors.light.bg;
+const DISPLAY = "'Gabarito', 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+const SERIF = "'Gabarito', 'DM Sans', Helvetica, Arial, sans-serif";
 const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
-// One-click "Save to watchlist" deep link. Returns '' for anything that isn't a
-// valid movie/tv title, so callers can drop it in unconditionally. Logged-out
-// readers are routed through login and the save completes on return (handled by
-// the app's /save route). `src=newsletter` tags the PostHog event.
+// "Save to PLOT" deep link. Returns '' for anything that isn't a valid movie/tv
+// title, so callers can drop it in unconditionally. The app opens that title so
+// the reader can choose their watchlist or a custom list. `src=newsletter` tags
+// the PostHog event.
 const saveUrl = ({ tmdb_id, media_type } = {}) => {
   const id = Number(tmdb_id);
   if (!Number.isInteger(id) || id <= 0) return '';
@@ -88,7 +90,7 @@ const saveTextLink = (item, px = 13) => {
 // Filled pill button for the featured title.
 const saveButton = (item) => {
   const u = saveUrl(item);
-  return u ? `<a href="${u}" style="display:inline-block;background:${INK};color:#ffffff;text-decoration:none;font-family:${SANS};font-size:14px;font-weight:500;padding:12px 28px;border-radius:9999px;">+ Save to your watchlist</a>` : '';
+  return u ? `<a href="${u}" style="display:inline-block;background:${FILL};color:${ON_FILL};text-decoration:none;font-family:${SANS};font-size:14px;font-weight:500;padding:12px 28px;border-radius:9999px;">Save to your PLOT</a>` : '';
 };
 
 const moveChip = (m) => {
@@ -112,12 +114,12 @@ const chartTwoColumn = (items) => {
     const mv = moveChip(i.movement);
     return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;"><tr>
-      <td width="20" valign="top" style="font-family:${SERIF};font-size:19px;line-height:1;color:${PINK};text-align:center;padding-top:2px;">${i.rank}</td>
+      <td width="20" valign="top" style="font-family:${DISPLAY};font-size:19px;font-weight:700;line-height:1;color:${PINK};text-align:center;padding-top:2px;">${i.rank}</td>
       <td width="40" valign="top" style="padding-left:9px;">
         ${i.poster_path ? titleLink(i, `<img src="${esc(tmdbImg(i.poster_path, 'w92'))}" width="40" height="60" alt="" style="display:block;width:40px;height:60px;object-fit:cover;border-radius:5px;border:1px solid ${HAIR};background:#ececec;">`) : `<div style="width:40px;height:60px;border-radius:5px;background:${INK};"></div>`}
       </td>
       <td valign="middle" style="padding-left:11px;">
-        <div style="font-family:${SERIF};font-size:16px;line-height:1.12;color:${INK};">${titleLink(i, esc(i.title))}</div>
+        <div style="font-family:${DISPLAY};font-size:16px;font-weight:600;line-height:1.15;letter-spacing:-0.02em;color:${INK};">${titleLink(i, esc(i.title))}</div>
         <div style="font-family:${SANS};font-size:12px;line-height:1.3;color:${MUT};margin-top:3px;">${i.media_type === 'tv' ? 'TV' : 'Film'}${mv ? ` &middot; ${mv}` : ''}</div>
         ${saveTextLink(i, 12) ? `<div style="margin-top:5px;">${saveTextLink(i, 12)}</div>` : ''}
       </td>
@@ -150,7 +152,7 @@ const featuredBlock = (f, kicker) => {
     <tr><td style="padding:28px 32px 0;">
       ${heroImg ? titleLink(f, `<img src="${esc(heroImg)}" width="536" alt="" style="display:block;width:100%;height:auto;border-radius:12px;border:1px solid ${HAIR};">`, 'display:block;') : ''}
       <div style="font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${PINK};margin-top:18px;">${esc(kicker)}</div>
-      <div style="font-family:${SERIF};font-size:33px;line-height:1.04;letter-spacing:-0.01em;color:${INK};margin-top:6px;">${titleLink(f, esc(f.title))}</div>
+      <div style="font-family:${DISPLAY};font-size:30px;font-weight:700;line-height:1.05;letter-spacing:-0.03em;color:${INK};margin-top:6px;">${titleLink(f, esc(f.title))}</div>
       ${ratings ? `<div style="font-family:${SANS};font-size:13px;color:${MUT};margin-top:12px;">${ratings}</div>` : ''}
       ${f.overview ? `<div style="font-family:${SANS};font-size:15px;line-height:1.6;color:#27272a;margin-top:14px;">${esc(trim(f.overview, 280))}</div>` : ''}
       ${credits ? `<div style="font-family:${SANS};font-size:13px;line-height:1.5;color:${MUT};margin-top:12px;">${credits}</div>` : ''}
@@ -169,7 +171,7 @@ const weekendBlock = (picks) => {
         </td>
         <td valign="top" style="padding-left:17px;">
           <div style="font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:${PINK};">${esc(p.label)}</div>
-          <div style="font-family:${SERIF};font-size:21px;line-height:1.12;color:${INK};margin-top:5px;">${titleLink(p, esc(p.title))}</div>
+          <div style="font-family:${DISPLAY};font-size:20px;font-weight:600;line-height:1.15;letter-spacing:-0.02em;color:${INK};margin-top:5px;">${titleLink(p, esc(p.title))}</div>
           <div style="font-family:${SANS};font-size:13px;line-height:1.45;color:${MUT};margin-top:7px;">${p.meta}</div>
           ${saveTextLink(p) ? `<div style="margin-top:9px;">${saveTextLink(p)}</div>` : ''}
         </td>
@@ -184,7 +186,7 @@ const streamingGallery = (items) => {
   const cell = (t) => t ? `
     <td width="33.33%" valign="top" style="padding:16px 6px 0;">
       ${titleLink(t, `<img src="${esc(tmdbImg(t.poster_path, 'w342'))}" width="166" height="249" alt="" style="display:block;width:100%;height:249px;object-fit:cover;border-radius:8px;border:1px solid ${HAIR};background:#ececec;">`, 'display:block;')}
-      <div style="font-family:${SERIF};font-size:17px;line-height:1.12;color:${INK};margin-top:9px;">${titleLink(t, esc(t.title))}</div>
+      <div style="font-family:${DISPLAY};font-size:17px;font-weight:600;line-height:1.15;letter-spacing:-0.02em;color:${INK};margin-top:9px;">${titleLink(t, esc(t.title))}</div>
       <div style="font-family:${SANS};font-size:12px;line-height:1.4;color:${MUT};margin-top:4px;">${t.vote ? `&#9733; ${t.vote.toFixed(1)} &middot; ` : ''}${esc(t.providers[0])}</div>
       ${saveTextLink(t, 12) ? `<div style="margin-top:6px;">${saveTextLink(t, 12)}</div>` : ''}
     </td>` : '<td width="33.33%" style="font-size:0;line-height:0;">&nbsp;</td>';
@@ -208,7 +210,7 @@ const buildHtml = ({ dateLabel, featured, kicker, chart, weekend, streaming }, u
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light only">
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@600;700&display=swap" rel="stylesheet">
 <title>This week in film &amp; TV</title>
 </head>
 <body style="margin:0;padding:0;background:${PAPER};">
@@ -216,7 +218,7 @@ const buildHtml = ({ dateLabel, featured, kicker, chart, weekend, streaming }, u
   <tr><td align="center" style="padding:30px 12px;">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#ffffff;border:1px solid ${HAIR};border-radius:16px;">
       <tr><td style="padding:44px 32px 0;text-align:center;">
-        <div style="font-family:${SERIF};font-size:58px;line-height:0.9;letter-spacing:-0.03em;color:${INK};">PLOT</div>
+        <div style="font-family:${DISPLAY};font-size:48px;font-weight:700;line-height:0.9;letter-spacing:-0.045em;color:${INK};">plot</div>
         <div style="font-family:${SANS};font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;color:${FAINT};margin-top:14px;">This week in film &amp; TV &middot; ${esc(dateLabel)}</div>
       </td></tr>
       ${featured ? featuredBlock(featured, kicker) : ''}
@@ -340,7 +342,7 @@ const main = async () => {
   const dateLabel = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   const data = { dateLabel, featured, kicker: "This week's No.1", chart, weekend, streaming };
   const issueHtml = buildHtml(data, `${SITE}/?unsubscribe_preview`);
-  const subject = 'This week in film & TV — PLOT';
+  const subject = 'This week in film & TV — plot';
   const localIssueDate = datePartsInTz(now);
   const weekStart = addDays(localIssueDate.date, -ISSUE_WEEK_OFFSET[localIssueDate.weekday]);
 

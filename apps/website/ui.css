@@ -1,0 +1,175 @@
+/* ─────────────────────────────────────────────────────────────
+   theplot.tv shared components — buttons, chips, cards, panels.
+
+   One copy for every static page (index, about, plans, privacy, terms,
+   community, 404). Load after /theme.css. Values come from theme.css tokens,
+   which are checked against @plot/core/tokens.js by `npm run tokens:marketing`.
+   The Storybook stories import this file directly, so there is no mirror to
+   keep in sync.
+
+   Rules of the system, in short:
+   · Pink (--pink) is a FILL behind charcoal text. It never colours type.
+   · Structure comes from the two creams and hairlines, not shadows.
+   · Headlines are Gabarito bold; body is DM Sans; the serif is for quotes.
+   ───────────────────────────────────────────────────────────── */
+
+/* Buttons — pill, 44px minimum hit area at .btn-large */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.4rem;
+  border-radius: var(--r-pill);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.25s var(--ease), transform 0.25s var(--ease);
+  border: none;
+  color: var(--text);
+}
+.btn-primary { background: var(--fill); }
+.btn-primary:hover { background: var(--fill-hover); transform: translateY(-1px); }
+.btn-outline,
+.btn-outline-white { background: var(--surface); }
+.btn-outline:hover,
+.btn-outline-white:hover { background: var(--surface-hover); transform: translateY(-1px); }
+.btn-ink { background: var(--ink); color: var(--bg); }
+.btn-ink:hover { background: var(--ink-hover); transform: translateY(-1px); }
+.btn-large { padding: 0.85rem 2.2rem; font-size: 0.85rem; min-height: 44px; }
+.btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+@media (max-width: 600px) {
+  .btn-large { padding: 0.75rem 1.5rem; font-size: 0.85rem; }
+}
+
+/* Website-only CTA motion: CSS arrows follow hover and keyboard focus.
+   A CSS-drawn icon keeps decorative arrows out of accessible names. */
+:is(.btn, .nav-cta, .demo-link, a[data-cta], button[type="submit"])::after {
+  content: "";
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.4em;
+  vertical-align: -0.1em;
+  background: currentColor;
+  clip-path: polygon(0 43%, 73% 43%, 43% 13%, 53% 3%, 100% 50%, 53% 97%, 43% 87%, 73% 57%, 0 57%);
+  transform: rotate(0deg);
+  transition: transform 180ms var(--ease, ease);
+}
+:is(.btn, .nav-cta, .demo-link, a[data-cta], button[type="submit"]):focus-visible::after {
+  transform: rotate(-45deg);
+}
+@media (hover: hover) {
+  :is(.btn, .nav-cta, .demo-link, a[data-cta], button[type="submit"]):not(:disabled):hover::after {
+    transform: rotate(-45deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.btn, .nav-cta, .demo-link, a[data-cta], button[type="submit"])::after {
+    transition: none;
+  }
+}
+
+/* Footer — one shared source for every page and Storybook. */
+footer {
+  background: var(--dark);
+  color: var(--text-dark);
+  border-top: 1px solid var(--glass-border);
+  padding: 2.6rem 3rem;
+  margin-top: -1px;
+  position: relative;
+  z-index: 3;
+}
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem 2rem;
+  flex-wrap: wrap;
+}
+.footer-logo {
+  text-decoration: none;
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--text-dark);
+  user-select: none;
+}
+.footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
+.footer-nav a {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+.footer-nav a:hover { color: var(--text); }
+.footer-bottom {
+  width: 100%;
+  padding-top: 1.2rem;
+  margin-top: 0.4rem;
+  border-top: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.footer-copy { font-size: 0.75rem; color: var(--text-secondary); }
+.footer-social { display: flex; gap: 1rem; align-items: center; }
+.footer-social a { color: var(--text-secondary); display: inline-flex; transition: color 0.2s; }
+.footer-social a:hover { color: var(--text); }
+.footer-social svg { width: 19px; height: 19px; display: block; }
+.nav-links a[data-cta="nav"]::after,
+.footer-inner a::after { content: none; }
+@media (max-width: 600px) {
+  footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+
+/* Chips — small labels. Cream by default; pink and sage carry meaning. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.chip-pink { background: var(--fill); }
+.chip-sage { background: var(--sage); }
+.chip-plain { text-transform: none; letter-spacing: 0.02em; font-weight: 500; font-size: 0.66rem; }
+
+/* Section eyebrow — a chip that sits above a headline */
+.section-eyebrow { display: inline-flex; margin-bottom: 1.4rem; }
+
+/* Cards and panels — the deeper cream, 20px radius, no border, no shadow */
+.card {
+  background: var(--surface);
+  border-radius: 20px;
+}
+.card-pad { padding: 1.75rem 2rem; }
+.card-ink { background: var(--ink); color: var(--bg); }
+
+/* Hairline rule and the rows that use it */
+.rule { height: 1px; background: var(--rule); }
+.row-list > * + * { border-top: 1px solid var(--rule); }
+
+/* Display type helpers */
+.display { font-family: var(--display); font-weight: 700; letter-spacing: var(--display-tracking); line-height: 0.95; }
+.caps { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); }
+.quote { font-family: var(--display); font-weight: 500; }

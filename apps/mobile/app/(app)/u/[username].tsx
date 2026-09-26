@@ -1,7 +1,11 @@
+import { buildProfileShareUrl } from '@plot/core/sharing.js';
+import { SHARING } from '@plot/core/copy/sharing.js';
+import { shareLink } from '../../../lib/share';
+import { EVENTS } from '../../../lib/analytics';
 /**
  * Public profile — /u/:username (mirrors web PublicProfilePage).
  * Header + follow button + stats, a locked state for private profiles the
- * viewer doesn't follow, and Recently-watched / Top-10 / Favourites poster
+ * viewer doesn't follow, and recently watched / Top 5 / favourites poster
  * grids. Followers/Following open a bottom-sheet user list.
  */
 import { useState, useMemo, useEffect } from 'react';
@@ -152,6 +156,19 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
               </View>
             )}
 
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.btnSecondary} accessibilityRole="button" onPress={() => { void shareLink({
+                url: buildProfileShareUrl({ username: profile?.username }),
+                title: `${name} on PLOT`,
+                text: SHARING.profileText(name),
+                event: EVENTS.PROFILE_SHARED,
+                eventProps: { profile_id: profile?.id },
+              }); }}>
+                <Text style={styles.btnSecondaryText}>{PUBLIC_PROFILE_PAGE.shareProfile}</Text>
+              </TouchableOpacity>
+
+            </View>
+
             {/* Report / block. Its own row rather than inside the follow block:
                 the follow actions are gated on canFollow, and Guideline 1.2
                 wants these available to any signed-in viewer regardless. */}
@@ -215,10 +232,10 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
               <Section title="Recently watched" colors={colors}><PosterGrid items={recent} styles={styles} onPress={openMedia} /></Section>
             )}
             {topMovies.length > 0 && (
-              <Section title="Top 10 films" colors={colors}><PosterGrid items={topMovies} ranked styles={styles} onPress={openMedia} /></Section>
+              <Section title={PUBLIC_PROFILE_PAGE.topFilms} colors={colors}><PosterGrid items={topMovies} ranked styles={styles} onPress={openMedia} /></Section>
             )}
             {topTv.length > 0 && (
-              <Section title="Top 10 TV" colors={colors}><PosterGrid items={topTv} ranked styles={styles} onPress={openMedia} /></Section>
+              <Section title={PUBLIC_PROFILE_PAGE.topTv} colors={colors}><PosterGrid items={topTv} ranked styles={styles} onPress={openMedia} /></Section>
             )}
             {favourites.length > 0 && (
               <Section title={fw.plural} colors={colors}><PosterGrid items={favourites} styles={styles} onPress={openMedia} /></Section>
@@ -266,7 +283,7 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
 function Stat({ num, label, colors }: { num: string; label: string; colors: Palette }) {
   return (
     <View style={{ alignItems: 'center' }}>
-      <Text style={{ fontFamily: fontFamily.serifTabular, fontSize: fontSize.xxl, color: colors.textPrimary, lineHeight: fontSize.xxl + 2 }}>{num}</Text>
+      <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, lineHeight: fontSize.xxl + 2 }}>{num}</Text>
       <Text style={{ fontFamily: fontFamily.sans, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginTop: 3 }}>{label}</Text>
     </View>
   );
@@ -356,12 +373,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   backBtn: { padding: 4 },
   body: { paddingHorizontal: spacing.xl },
   emptyWrap: { alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing.xxl * 2, gap: spacing.md },
-  emptyTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xxl, color: colors.textPrimary, textAlign: 'center' },
+  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, textAlign: 'center' },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingTop: spacing.lg },
   headerText: { flex: 1, minWidth: 0 },
   nameLine: { flexDirection: 'row', alignItems: 'center' },
-  name: { fontFamily: fontFamily.serif, fontSize: fontSize.xxl, color: colors.textPrimary, flexShrink: 1 },
+  name: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, flexShrink: 1 },
   handle: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
   actions: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg },
   btnPrimary: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl, borderRadius: radii.pill, backgroundColor: colors.textPrimary },
@@ -392,10 +409,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 4 },
   posterFallbackText: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
   rankBadge: { position: 'absolute', top: 0, left: 0, minWidth: 22, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: 'rgba(0,0,0,0.6)', borderBottomRightRadius: 8 },
-  rankText: { fontFamily: fontFamily.serifTabular, fontSize: fontSize.sm, color: '#fff', textAlign: 'center' },
+  rankText: { fontFamily: fontFamily.display, fontSize: fontSize.sm, color: '#fff', textAlign: 'center' },
   sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   sheet: { backgroundColor: colors.surface, borderTopLeftRadius: radii.md, borderTopRightRadius: radii.md, maxHeight: '75%', paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
   sheetHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  sheetTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
+  sheetTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   sheetClose: { fontFamily: fontFamily.sans, fontSize: 28, color: colors.textMuted, lineHeight: 30 },
 });

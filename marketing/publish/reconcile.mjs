@@ -118,6 +118,9 @@ export const rollUp = (publications) => {
   return null;                                         // nothing sent yet
 };
 
+export const canApplySocialRollUp = (articleStatus) =>
+  articleStatus === 'approved' || articleStatus === 'partially_published';
+
 /** Rows still waiting on Buffer. */
 const stillPending = (publications) =>
   publications.filter((p) => ['queued', 'publishing', 'scheduled'].includes(p.status));
@@ -220,16 +223,14 @@ const main = async () => {
       if (!changed || DRY_RUN) continue;
 
       const status = rollUp(pubs);
-      // 'vetoed' is absent from the guard on purpose: a rejected post whose
-      // Buffer posts went out anyway must NOT be promoted to 'published', which
-      // would put the article you rejected onto the site as a side effect of a
-      // tweet sending. The publication rows still record what happened; the
-      // post's own verdict stays yours.
-      if (status && status !== post.status) {
+      // Social delivery cannot supply the article's editorial approval. Both
+      // vetoed and needs_review keep their verdict while child publication rows
+      // independently record what happened in Buffer.
+      if (status && status !== post.status && canApplySocialRollUp(post.status)) {
         const { data: moved } = await supabase.from('marketing_posts')
           .update({ status, updated_at: new Date().toISOString() })
           .eq('id', post.id)
-          .in('status', ['needs_review', 'approved', 'partially_published'])
+          .in('status', ['approved', 'partially_published'])
           .select('id');
         if (moved?.length) console.log(`${post.topic_key}: ${status}`);
       }

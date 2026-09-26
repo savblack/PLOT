@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -34,12 +34,17 @@ jobs:
       - name: Sync users to Brevo
         env:
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          LIMIT: ${{ inputs.limit }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
         run: |
-          if [ "${{ inputs.limit }}" != "0" ] && [ -n "${{ inputs.limit }}" ]; then
-            node marketing/setup/brevo-sync.mjs --limit=${{ inputs.limit }}
+          if ! [[ "$LIMIT" =~ ^[0-9]+$ ]] || [ "$LIMIT" -gt 100000 ]; then
+            echo "limit must be an integer from 0 to 100000" >&2
+            exit 1
+          fi
+          if [ "$LIMIT" != "0" ]; then
+            node marketing/setup/brevo-sync.mjs "--limit=$LIMIT"
           else
             node marketing/setup/brevo-sync.mjs
           fi

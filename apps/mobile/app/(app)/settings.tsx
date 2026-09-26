@@ -1,13 +1,20 @@
 import TrackingSettings from '../../components/TrackingSettings';
+import BroadcastSettings from '../../components/BroadcastSettings';
+import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
+import { buildProfileShareUrl } from '@plot/core/sharing.js';
+import { SHARING } from '@plot/core/copy/sharing.js';
+import { shareLink } from '../../lib/share';
+import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
-  Modal, Alert, ActivityIndicator, StyleSheet, Switch, Platform, Share, Linking,
+  Modal, Alert, ActivityIndicator, StyleSheet, Switch, Platform, Linking,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line, Polygon } from 'react-native-svg';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
@@ -106,6 +113,36 @@ function SettingsGroup({ title, children }: { title: string; children: React.Rea
       <Text style={styles.groupTitle}>{title}</Text>
       <View style={styles.groupCard}>{children}</View>
     </View>
+  );
+}
+
+// Reuse the existing Settings surface; this preview never opens a purchase link.
+function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean }) {
+  const { colors } = useTheme();
+  const [expanded, setExpanded] = useState(initialExpanded);
+  return (
+    <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
+      <SettingsRow icon={null} label={PLANS_PAGE.previewAction} value={PLANS_PAGE.comingSoon}
+        onPress={() => setExpanded(!expanded)} />
+      {expanded && <View style={{ padding: spacing.md, gap: spacing.md }}>
+        <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.lede}</Text>
+        <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansMedium }}>{PLANS_PAGE.free.name}</Text>
+        {PLANS_PAGE.freeFeatures.map(feature => <Text key={feature.id} style={{ color: colors.textSecondary }}>
+          {feature.label}{feature.planned ? ` (${PLANS_PAGE.plannedFree})` : ''}
+        </Text>)}
+        <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.customLists(FREE_CUSTOM_LIST_CAP)}</Text>
+        <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansMedium }}>{PLANS_PAGE.premium.name}</Text>
+        <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.premium.priceSummary}</Text>
+        {PLANS_PAGE.premiumFeatures.map(feature => <View key={feature.id} style={{ gap: spacing.xs }}>
+          <Text style={{ color: colors.textPrimary }}>{feature.label}</Text>
+          <Text style={{ color: colors.textSecondary }}>{feature.description}</Text>
+          <Text style={{ color: colors.textMuted }}>{('pendingValidation' in feature && feature.pendingValidation) ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
+        </View>)}
+        <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
+        <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
+          onPress={() => Alert.alert(PLANS_PAGE.comingSoon, PLANS_PAGE.checkoutMessage)} />
+      </View>}
+    </SettingsGroup>
   );
 }
 
@@ -545,7 +582,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
               </Svg>
             </View>
             <Text style={styles.feedbackDoneTitle}>Thanks for your feedback!</Text>
-            <Text style={styles.feedbackDoneBody}>We read every submission and use it to improve PLOT.</Text>
+            <Text style={styles.feedbackDoneBody}>We read every submission and use it to improve plot.</Text>
             <TouchableOpacity style={[styles.saveBtn, { marginTop: spacing.lg }]} onPress={onClose} activeOpacity={0.8}>
               <Text style={styles.saveBtnText}>Done</Text>
             </TouchableOpacity>
@@ -573,7 +610,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
               numberOfLines={6}
               placeholder={
                 type === 'bug' ? 'Describe what happened…' :
-                type === 'feature' ? 'What would you like to see in PLOT?' :
+                type === 'feature' ? 'What would you like to see in plot?' :
                 'Share your thoughts…'
               }
               placeholderTextColor={colors.textMuted}
@@ -610,19 +647,33 @@ export default function SettingsScreen() {
   const { userId, user, profile, refreshProfile } = useAppData();
 
   const [showProviders,  setShowProviders]  = useState(false);
-  const [showChannels,   setShowChannels]   = useState(false);
   const [showGenres,     setShowGenres]     = useState(false);
   const [showName,       setShowName]       = useState(false);
   const [showRegion,     setShowRegion]     = useState(false);
   const [showTimezone,   setShowTimezone]   = useState(false);
+  const { feedback: feedbackParam, premium: premiumParam } = useLocalSearchParams<{ feedback?: string; premium?: string }>();
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
+  const [premiumExpanded, setPremiumExpanded] = useState(premiumParam === '1');
   const [showImport,     setShowImport]     = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [clearingHist,   setClearingHist]   = useState(false);
   const [clearingList,   setClearingList]   = useState(false);
 
+  useEffect(() => {
+    if (!feedbackParam || !FEEDBACK_TYPES.some(t => t.id === feedbackParam)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFeedbackType(feedbackParam);
+    router.setParams({ feedback: undefined });
+  }, [feedbackParam, router]);
+
+  useEffect(() => {
+    if (premiumParam !== '1') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPremiumExpanded(true);
+    router.setParams({ premium: undefined });
+  }, [premiumParam, router]);
+
   const providers     = profile?.streaming_providers || [];
-  const guideChannels = profile?.guide_channels || [];
   const genres        = profile?.genres || [];
   const region        = profile?.region || DEFAULT_REGION;
   const timezone      = profile?.timezone || '';
@@ -664,13 +715,12 @@ export default function SettingsScreen() {
     setGeneratingCalToken(false);
   };
 
-  const handleShareCalUrl = async () => {
-    if (!calFeedUrl) return;
-    try {
-      await Share.share({ message: `Subscribe to my PLOT calendar:\n${calFeedUrl}`, url: calFeedUrl });
-      track(EVENTS.LIST_SHARED, { kind: 'calendar_feed' });
-    } catch { /* user dismissed the share sheet */ }
-  };
+  const handleShareCalUrl = () => shareLink({
+    url: calFeedUrl,
+    text: 'Subscribe to my plot calendar:',
+    event: EVENTS.LIST_SHARED,
+    eventProps: { kind: 'calendar_feed' },
+  });
 
   const handleAddToCalendar = () => {
     if (calWebcalUrl) {
@@ -731,10 +781,6 @@ export default function SettingsScreen() {
     refreshProfile();
   };
 
-  const saveChannels = async (newChannels: any[]) => {
-    await updateProfile({ userId: userId!, patch: { guide_channels: newChannels } });
-    refreshProfile();
-  };
 
   const saveGenres = async (newGenres: string[]) => {
     await updateProfile({ userId: userId!, patch: { genres: newGenres } });
@@ -764,7 +810,7 @@ export default function SettingsScreen() {
   };
 
   const handleSignOut = () => {
-    Alert.alert('Sign out?', 'Sign out of your PLOT account?', [
+    Alert.alert('Sign out?', 'Sign out of your plot account?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: async () => {
         // Capture before the reset, or the event lands on the fresh anonymous
@@ -903,6 +949,17 @@ export default function SettingsScreen() {
 
         {/* Social */}
         <SettingsGroup title="Public profile">
+          {username && <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2}><Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M19 8v6M16 11h6"/><Circle cx={9} cy={7} r={4}/></Svg>}
+            label={PUBLIC_PROFILE_PAGE.shareProfile}
+            onPress={() => { void shareLink({
+              url: buildProfileShareUrl({ username }),
+              title: SETTINGS_VIEW.shareTitleWithUsername(username),
+              text: SHARING.profileText(displayName || username),
+              event: EVENTS.PROFILE_SHARED,
+            }); }}
+          />}
+
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx={12} cy={7} r={4}/></Svg>}
             label="My profile"
@@ -935,12 +992,7 @@ export default function SettingsScreen() {
             value={providers.length > 0 ? `${providers.length} selected` : 'None'}
             onPress={() => setShowProviders(true)}
           />
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Polygon points="23,7 16,12 23,17 23,7"/><Rect x={1} y={5} width={15} height={14} rx={2}/></Svg>}
-            label={SETTINGS_VIEW.integrations.myChannelsLabel}
-            value={guideChannels.length > 0 ? `${guideChannels.length} selected` : 'None'}
-            onPress={() => setShowChannels(true)}
-          />
+          <BroadcastSettings />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><Path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Svg>}
             label="Genres"
@@ -975,6 +1027,8 @@ export default function SettingsScreen() {
             />
           </SettingsGroup>
         )}
+
+        {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
 
         {/* Integrations — held for post-launch, same as web. Import Watch
             History (under Support) stays available; it needs no credentials. */}
@@ -1102,16 +1156,7 @@ export default function SettingsScreen() {
           onClose={() => setShowProviders(false)}
         />
       )}
-      {showChannels && userId && (
-        <ProviderModal
-          title="My Channels"
-          region={region}
-          selected={guideChannels}
-          channelsOnly
-          onSave={saveChannels}
-          onClose={() => setShowChannels(false)}
-        />
-      )}
+
       {showGenres && (
         <GenreModal selected={genres} onSave={saveGenres} onClose={() => setShowGenres(false)} />
       )}
@@ -1226,7 +1271,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.xl, paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  modalTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
+  modalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   modalCancel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
   modalSearchWrap: { padding: spacing.md, paddingHorizontal: spacing.xl },
   modalSearchInner: {
@@ -1294,7 +1339,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   feedbackDone: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
   feedbackDoneIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.accentDim, alignItems: 'center', justifyContent: 'center' },
-  feedbackDoneTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
+  feedbackDoneTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   feedbackDoneBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
 
   feedbackChip: {

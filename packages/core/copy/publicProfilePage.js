@@ -1,9 +1,34 @@
+import { MEDIA_PANEL } from './mediaPanel.js';
+import { titleCount } from '../listCollections.js';
 // Shared copy: used by the web app and mobile's app/(app)/u/[username].tsx.
 // Lives in @plot/core/copy so the two platforms can't drift word by word;
 // apps/web/src/copy/publicProfilePage.js re-exports it so src/copy stays the single place
 // the web app and the Storybook Content page look for copy.
 
 export const PUBLIC_PROFILE_PAGE = {
+  profile: 'Profile',
+  profileNavigation: 'Profile sections',
+  topPicks: 'Top picks',
+  topFive: 'Top 5',
+  tapPosterForDetails: 'Tap a poster for details.',
+  /** @param {string} type The switch label the shelf is on ('Movies' / 'TV'). */
+  noPicksOfType: (type) => `No ${type} picks yet.`,
+  topFilms: 'Top movies',
+  topTv: 'Top TV',
+  lists: 'Lists',
+  /** @param {number} n */
+  publicListLimit: (n) => `Up to ${n} lists show on your profile.`,
+  watchHistory: 'Watch history',
+  viewAll: 'View all',
+  viewAllLists: 'View all lists',
+  viewList: 'View list',
+  showLess: 'Show less',
+  retry: 'Try again',
+  titleCount,
+  watching: MEDIA_PANEL.watching,
+  wantToWatch: 'Want to watch',
+  noPublicTitles: 'No public titles yet.',
+  addFirstPick: 'Add a top pick',
   followersTitle: 'Followers',
   followingTitle: 'Following',
   noFollowersYet: 'No followers yet.',

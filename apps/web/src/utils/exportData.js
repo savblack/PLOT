@@ -84,6 +84,7 @@ export function downloadDataExport(payload, filename = exportFilename()) {
 // Anything without those columns (raw settings, follows, integration rows) stays
 // in the JSON export only — a single flat CSV can't represent it faithfully.
 const CSV_SECTIONS = [
+  { table: 'private_title_notes', section: 'Private note', date: (r) => r.updated_at },
   { table: 'list_items',             section: 'Watchlist',   date: (r) => r.created_at || r.added_at },
   { table: 'history',                section: 'History',     date: (r) => r.watched_at },
   { table: 'watching_progress',      section: 'Watching',    date: (r) => r.updated_at || r.started_at },
@@ -96,7 +97,14 @@ const CSV_HEADERS = ['Section', 'Title', 'Type', 'TMDB ID', 'Rating', 'Watched o
 
 function csvCell(value) {
   if (value === null || value === undefined) return '';
-  const s = String(value);
+  let s = String(value);
+  // Spreadsheet apps can evaluate cells after leading whitespace/control
+  // characters. Prefix every formula-shaped string so imported reviews and
+  // saved public titles remain plain text when the CSV is opened.
+  let firstContent = 0;
+  while (firstContent < s.length
+    && (s.charCodeAt(firstContent) <= 0x20 || s[firstContent] === '\u00a0')) firstContent += 1;
+  if ('=+-@'.includes(s[firstContent])) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

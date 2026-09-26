@@ -63,3 +63,11 @@ test('the CSP nonce header is still set on html regardless of host', async () =>
   assert.match(csp, /nonce-/);
   assert.equal(res.headers.get('Cache-Control'), 'no-store');
 });
+
+test('the CSP permits the curated Australian Guide logo hosts', async () => {
+  const res = await call('https://app.theplot.tv/guide', HTML);
+  const csp = res.headers.get('Content-Security-Policy');
+  for (const host of ['10.com.au', '10play.com.au', 'cdn.iview.abc.net.au', 'i.mjh.nz', 'image.pr.sbsod.com', 'imageresizer.static9.net.au']) {
+    assert.match(csp, new RegExp(`https://${host.replaceAll('.', '\\.')}(?:[ ;]|$)`), host);
+  }
+});

@@ -357,7 +357,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     right: spacing.md,
   },
   wideTitle: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 18,
     color: '#fff',
     marginBottom: 3,

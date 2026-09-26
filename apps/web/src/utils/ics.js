@@ -32,8 +32,8 @@ export function generateICS(events) {
     'PRODID:-//PLOT//PLOT Calendar//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:PLOT Calendar',
-    'X-WR-CALDESC:Your movies and TV calendar from PLOT',
+    'X-WR-CALNAME:plot Calendar',
+    'X-WR-CALDESC:Your movies and TV calendar from plot',
   ];
 
   for (const ev of events) {

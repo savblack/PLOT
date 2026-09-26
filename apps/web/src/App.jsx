@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useBroadcastPreferences } from '@plot/core/useBroadcastPreferences.js';
+import { usePrivateNotes } from '@plot/core/usePrivateNotes.js';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 // The bulk of the app's CSS (~4800 lines: every authenticated view — Discover,
 // Settings, Calendar, etc.) lives here instead of the global stylesheet, so
@@ -15,6 +17,7 @@ import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
 import CollectionPanel from './components/CollectionPanel.jsx';
 import SearchPalette from './components/SearchPalette.jsx';
+import SaveRecommendationPrompt from './components/SaveRecommendationPrompt.jsx';
 import { useTheme } from './hooks/useTheme.js';
 import { useWatchlist }    from './hooks/useWatchlist.js';
 import { usePendingSave }  from './hooks/usePendingSave.js';
@@ -28,8 +31,10 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
 import { readCachedSession, writeCachedSession, clearCachedSession } from './utils/sessionCache.js';
+import { markKnownAccountBrowser } from './utils/accountRecognition.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
+import { onPendingWatchQueued } from '@plot/core/engagementPrompt.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { loadPremiumEntitlement } from '@plot/core/billing.js';
 import { AppContext, useApp } from './hooks/useApp.js';
@@ -131,6 +136,7 @@ export default function App() {
   // Media panel state
   const [panelItem,    setPanelItem]    = useState(null);
   const [panelClosing, setPanelClosing] = useState(false);
+  const [savePrompt, setSavePrompt] = useState(null);
 
   // Search palette. One box for titles, people and friends, opened from the
   // Search nav item, the header icon, or Cmd/Ctrl+K anywhere in the app.
@@ -149,6 +155,7 @@ export default function App() {
   }, []);
 
   const [tzCheckTime, setTzCheckTime] = useState(() => Date.now());
+  const activeUserIdRef = useRef(null);
 
   // Confirmation toast for "save to watchlist" deep links
   const [saveToast, setSaveToast] = useState(null);
@@ -161,6 +168,7 @@ export default function App() {
       .eq('id', userId)
       .maybeSingle();
     if (data) data.is_premium = await loadPremiumEntitlement();
+    if (activeUserIdRef.current !== userId) return;
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
     setUserTimezone(data?.timezone || null);
@@ -175,17 +183,28 @@ export default function App() {
   /* ── Auth ── */
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      activeUserIdRef.current = session?.user?.id ?? null;
       setUser(session?.user ?? null);
-      if (session?.user) loadProfile(session.user.id);
+      if (session?.user) {
+        markKnownAccountBrowser();
+        loadProfile(session.user.id);
+      }
       else { setLoading(false); clearCachedSession(); }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      activeUserIdRef.current = session?.user?.id ?? null;
       setUser(session?.user ?? null);
-      if (session?.user) loadProfile(session.user.id);
+      if (session?.user) {
+        markKnownAccountBrowser();
+        loadProfile(session.user.id);
+      }
       else { setProfile(null); setLoading(false); clearCachedSession(); }
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      activeUserIdRef.current = null;
+      subscription.unsubscribe();
+    };
   }, [loadProfile]);
 
   // DOM focus/visibility belongs to web; the entitlement read lives in core.
@@ -257,13 +276,27 @@ export default function App() {
     setTimeout(() => { setPanelItem(null); setPanelClosing(false); }, 280);
   }, []);
 
+  // Out-of-panel save (Discover card, search row, …): open the title so the
+  // watch prompt can show in the same session. Skip if that title is already open.
+  const panelItemRef = useRef(panelItem);
+  useEffect(() => {
+    panelItemRef.current = panelItem;
+  }, [panelItem]);
+  useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type }) => {
+    const open = panelItemRef.current;
+    if (open && Number(open.id) === Number(tmdb_id) && open.type === media_type) return;
+    openPanel(tmdb_id, media_type, 'engagement_prompt');
+  }), [openPanel]);
+
   /* ── Navigation ── */
   const navigateTo = useCallback((view) => navigate(pathForView(view)), [navigate]);
 
   const currentView = viewFromPath(location.pathname);
 
   /* ── Global data hooks ── */
+  const broadcastPreferences = useBroadcastPreferences(user?.id);
   const watchlist    = useWatchlist(user?.id);
+  const privateNotes = usePrivateNotes(user?.id);
   const watching     = useWatching(user?.id);
   const reminders    = useReminders(user?.id);
   const topLists     = useTopLists(user?.id);
@@ -274,7 +307,10 @@ export default function App() {
   const handleSaveResult = useCallback((result) => {
     setSaveToast(result);
   }, []);
-  usePendingSave({ user, watchlist, openPanel, onResult: handleSaveResult });
+  const openSavePrompt = useCallback((itemId, itemType, source) => {
+    setSavePrompt({ itemId, itemType, source });
+  }, []);
+  usePendingSave({ user, watchlist, openPanel, openSavePrompt, onResult: handleSaveResult });
   usePendingReferral({ user });
 
   // Auto-dismiss the save confirmation toast
@@ -297,6 +333,7 @@ export default function App() {
   }
 
   const ctx = {
+    broadcastPreferences,
     user,
     profile,
     theme,
@@ -306,6 +343,7 @@ export default function App() {
     openSearch,
     navigateTo,
     watchlist,
+    privateNotes,
     watching,
     reminders,
     topLists,
@@ -331,6 +369,22 @@ export default function App() {
 
       {searchOpen && <SearchPalette onClose={closeSearch} />}
 
+      {savePrompt && (
+        <SaveRecommendationPrompt
+          {...savePrompt}
+          watchlist={watchlist}
+          onClose={() => setSavePrompt(null)}
+          onSaved={handleSaveResult}
+          onChooseList={() => {
+            const { itemId, itemType } = savePrompt;
+            setSavePrompt(null);
+            setPanelItem({ id: itemId, type: itemType, initialListOpen: true });
+            setPanelClosing(false);
+            track(EVENTS.TITLE_VIEWED, { tmdb_id: itemId, media_type: itemType, source: 'editorial_save' });
+          }}
+        />
+      )}
+
       {panelItem && panelItem.type === 'collection' && (
         <CollectionPanel
           collectionId={panelItem.id}
@@ -343,6 +397,7 @@ export default function App() {
         <MediaPanel
           itemId={panelItem.id}
           itemType={panelItem.type}
+          initialListOpen={panelItem.initialListOpen}
           closing={panelClosing}
           onClose={closePanel}
         />

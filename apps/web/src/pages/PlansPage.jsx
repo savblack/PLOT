@@ -1,67 +1,32 @@
+// Web layout uses HTML disclosure and anchor navigation; plan content is shared with mobile.
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useTheme } from '../hooks/useTheme.js';
-import { FREE_CUSTOM_LIST_CAP, PREMIUM_PLANS } from '@plot/core/premium.js';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
+import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import './PlansPage.css';
 import { PLANS_PAGE } from '../copy/plansPage.js';
+import { safeAppReturnPath } from '../utils/premiumExplore.js';
 
-// Pricing (USD). Annual is billed once a year; we surface the effective
-// monthly price so the saving is obvious.
-const MONTHLY_PRICE = PREMIUM_PLANS.monthly.amount;
-const ANNUAL_PRICE = PREMIUM_PLANS.yearly.amount;
-const ANNUAL_MONTHLY = (ANNUAL_PRICE / 12).toFixed(2); // effective $/mo when billed yearly
-const ANNUAL_SAVING_PCT = Math.round((1 - ANNUAL_PRICE / (MONTHLY_PRICE * 12)) * 100);
-
-const FREE_HIGHLIGHTS = [
-  PLANS_PAGE.free.highlights[0],
-  PLANS_PAGE.free.highlights[1],
-  PLANS_PAGE.free.highlights[2],
-  PLANS_PAGE.free.customListCap(FREE_CUSTOM_LIST_CAP),
-  PLANS_PAGE.free.highlights[3],
-];
-
-const PREMIUM_HIGHLIGHTS = [
-  PLANS_PAGE.premium.highlights.unlimitedLists,
-  ...(SHOW_MEDIA_SYNC_INTEGRATIONS
-    ? [
-        PLANS_PAGE.premium.highlights.plexSync,
-        PLANS_PAGE.premium.highlights.traktSync,
-      ]
-    : []),
-  PLANS_PAGE.premium.highlights.calendarFeed,
-];
-
-// Full feature matrix for the comparison table. `premium` true = the row is a
-// Premium-only unlock; a string on either side renders as a label instead of a tick.
 const COMPARISON = [
-  { label: PLANS_PAGE.comparison.rows.track, free: true, premium: true },
-  { label: PLANS_PAGE.comparison.rows.watchlist, free: true, premium: true },
-  { label: PLANS_PAGE.comparison.rows.calendar, free: true, premium: true },
-  { label: PLANS_PAGE.comparison.rows.discover, free: true, premium: true },
-  { label: PLANS_PAGE.comparison.rows.search, free: true, premium: true },
-  { label: PLANS_PAGE.comparison.rows.social, free: true, premium: true },
-  { label: PLANS_PAGE.comparison.rows.reminders, free: true, premium: true },
-  { label: PLANS_PAGE.comparison.rows.customLists, free: PLANS_PAGE.comparison.customListCapShort(FREE_CUSTOM_LIST_CAP), premium: PLANS_PAGE.comparison.unlimited },
-  { label: PLANS_PAGE.comparison.rows.statistics, free: true, premium: true },
-  { label: PLANS_PAGE.comparison.rows.exportData, free: true, premium: true },
-  { label: PLANS_PAGE.comparison.rows.calendarFeed, free: false, premium: true },
-  ...(SHOW_MEDIA_SYNC_INTEGRATIONS
-    ? [
-        { label: PLANS_PAGE.comparison.rows.plexSync, free: false, premium: true },
-        { label: PLANS_PAGE.comparison.rows.traktSync, free: false, premium: true },
-        { label: PLANS_PAGE.comparison.rows.autoSync, free: false, premium: true },
-      ]
-    : []),
-];
-
-const FAQS = [
-  PLANS_PAGE.faqs.isFreeReallyFree,
-  PLANS_PAGE.faqs.cancelAnytime,
-  PLANS_PAGE.faqs.downgradeLists,
-  ...(SHOW_MEDIA_SYNC_INTEGRATIONS ? [PLANS_PAGE.faqs.howSyncWorks] : []),
+  ...PLANS_PAGE.freeFeatures.map(feature => ({
+    label: feature.label,
+    description: feature.description,
+    free: feature.planned
+      ? PLANS_PAGE.plannedFree
+      : (feature.freeValue ?? true),
+    // Limited Free rows still show Premium as coming soon (full/extra entitlement).
+    premium: feature.planned
+      ? PLANS_PAGE.plannedFree
+      : (feature.freeValue ? PLANS_PAGE.comingSoon : true),
+  })),
+  ...PLANS_PAGE.premiumFeatures.map(feature => ({
+    label: feature.label,
+    description: feature.description,
+    free: false,
+    premium: feature.pendingValidation ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon,
+  })),
 ];
 
 function Tick() {
@@ -74,19 +39,17 @@ function Tick() {
 
 function Cell({ value }) {
   if (value === true) return <span className="cmp-yes" aria-label={PLANS_PAGE.comparison.included}><Tick /></span>;
-  if (value === false) return <span className="cmp-no" aria-label={PLANS_PAGE.comparison.notIncluded}>—</span>;
+  if (value === false) return <span className="cmp-no" aria-label={PLANS_PAGE.comparison.notIncluded}>–</span>;
   return <span className="cmp-text">{value}</span>;
 }
 
 export default function PlansPage() {
   useTheme(); // apply the saved/system theme on this standalone route
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const backTo = safeAppReturnPath(searchParams.get('from'), '/');
+  const backLabel = backTo === '/' ? PLANS_PAGE.back : PLANS_PAGE.backToApp;
   const [profile, setProfile] = useState(null);
   const [authState, setAuthState] = useState('loading'); // loading | anon | signed-in
-  const [billing, setBilling] = useState(() =>
-    new URLSearchParams(location.search).get('billing') === 'monthly' ? 'monthly' : 'annual',
-  ); // 'annual' | 'monthly' — default to the best value
   const premium = usePremium(profile);
 
   useEffect(() => {
@@ -114,122 +77,88 @@ export default function PlansPage() {
   }, []);
 
   const isPremium = authState === 'signed-in' && premium.isPremium;
-  const annual = billing === 'annual';
-
-  const goPremium = () => {
-    if (authState === 'anon') {
-      navigate(`/signup?intent=premium&plan=${annual ? 'yearly' : 'monthly'}`);
-      return;
-    }
-    premium.startCheckout(annual ? 'yearly' : 'monthly', 'plans_page');
-  };
 
   return (
     <div className="plans-page">
       <div className="plans-shell">
         <header className="plans-head">
-          <Link to="/" className="plans-back">{PLANS_PAGE.back}</Link>
-          <span className="plans-wordmark">PLOT</span>
+          <Link to={backTo} className="plans-back">{backLabel}</Link>
+          <span className="plans-wordmark">plot</span>
         </header>
 
-        <div className="plans-hero">
-          <p className="plans-eyebrow">{PLANS_PAGE.eyebrow}</p>
-          <h1 className="plans-title">{PLANS_PAGE.title}</h1>
-          <p className="plans-lede">
-            {PLANS_PAGE.lede}
-          </p>
-
-          <div className="billing-toggle" role="group" aria-label={PLANS_PAGE.billingGroupLabel}>
-            <button
-              type="button"
-              className={`billing-opt ${!annual ? 'is-active' : ''}`}
-              aria-pressed={!annual}
-              onClick={() => setBilling('monthly')}
-            >
-              {PLANS_PAGE.monthly}
-            </button>
-            <button
-              type="button"
-              className={`billing-opt ${annual ? 'is-active' : ''}`}
-              aria-pressed={annual}
-              onClick={() => setBilling('annual')}
-            >
-              {PLANS_PAGE.annual}
-              <span className="billing-save">{PLANS_PAGE.savePct(ANNUAL_SAVING_PCT)}</span>
-            </button>
+        <div className="plans-opening">
+          <div className="plans-hero">
+            <p className="plans-eyebrow">{PLANS_PAGE.eyebrow}</p>
+            <h1 className="plans-title">{PLANS_PAGE.title}</h1>
+            <p className="plans-lede">{PLANS_PAGE.lede}</p>
+            <a className="plans-text-link" href="#premium-features">{PLANS_PAGE.compareAction} <span aria-hidden="true">↓</span></a>
           </div>
+          <aside className="plans-offer" aria-label={PLANS_PAGE.premium.name}>
+            <span className="plan-status">{PLANS_PAGE.comingSoon}</span>
+            <h2>{PLANS_PAGE.premium.tagline}</h2>
+            <div className="plan-price">
+              <span className="plan-amount">{PLANS_PAGE.premium.price}</span>
+              <span className="plan-per">{PLANS_PAGE.premium.period}</span>
+            </div>
+            <p className="plan-billed">{PLANS_PAGE.premium.annual}</p>
+            <ul className="plan-features">
+              {PLANS_PAGE.planSummary.map(label => <li key={label}><Tick />{label}</li>)}
+            </ul>
+            {isPremium ? (
+              <button className="btn btn-secondary" onClick={premium.openPortal} disabled={premium.busy}>
+                {premium.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.premium.manageSubscription}
+              </button>
+            ) : (
+              <button className="btn btn-primary" onClick={() => premium.startCheckout()} disabled={authState === 'loading'}>
+                {PLANS_PAGE.upgradeAction}
+              </button>
+            )}
+            <p className="plan-availability">{PLANS_PAGE.premium.availability}</p>
+            {premium.comingSoon && <p className="plans-note" role="status">{PLANS_PAGE.checkoutMessage}</p>}
+            {premium.error && <p className="plans-note plans-note--err" role="alert">{premium.error}</p>}
+          </aside>
         </div>
 
-        <div className="plans-grid">
-          {/* Free */}
-          <section className="plan-card">
-            <div className="plan-card-head">
-              <h2 className="plan-name">{PLANS_PAGE.free.name}</h2>
-              <div className="plan-price">
-                <span className="plan-amount">$0</span>
-                <span className="plan-per">{PLANS_PAGE.free.perpetual}</span>
+        <section className="plans-stories" id="premium-features" aria-labelledby="stories-title">
+          <div className="plans-section-head">
+            <h2 id="stories-title">{PLANS_PAGE.storyIntro}</h2>
+            <span className="plan-status">{PLANS_PAGE.previewLabel}</span>
+          </div>
+          {PLANS_PAGE.stories.map((story, index) => (
+            <article className="plans-story" key={story.id}>
+              <div className="plans-story-copy">
+                <p className="plans-kicker"><span aria-hidden="true">0{index + 1}</span> {story.kicker}</p>
+                <h3>{story.title}</h3>
+                <p>{story.description}</p>
+                <p className="plans-story-detail">{story.detail}</p>
               </div>
-              <p className="plan-tagline">{PLANS_PAGE.free.tagline}</p>
-            </div>
-            <ul className="plan-features">
-              {FREE_HIGHLIGHTS.map(f => <li key={f}><Tick />{f}</li>)}
-            </ul>
-            <div className="plan-cta">
-              {authState === 'signed-in' ? (
-                <button className="btn btn-secondary" disabled>
-                  {isPremium ? PLANS_PAGE.free.includedWithPremium : PLANS_PAGE.free.yourCurrentPlan}
-                </button>
-              ) : (
-                <Link to="/signup" className="btn btn-secondary">{PLANS_PAGE.free.getStartedFree}</Link>
-              )}
-            </div>
-          </section>
+              <figure className="plans-example">
+                <ol>{story.example.map((line, i) => <li key={line}><span aria-hidden="true">0{i + 1}</span>{line}</li>)}</ol>
+                <figcaption>{story.caption}</figcaption>
+              </figure>
+            </article>
+          ))}
+        </section>
 
-          {/* Premium */}
-          <section className="plan-card plan-card--premium">
-            <span className="plan-flag">{PLANS_PAGE.premium.recommended}</span>
-            <div className="plan-card-head">
-              <h2 className="plan-name">{PLANS_PAGE.premium.name}</h2>
-              <div className="plan-price">
-                <span className="plan-amount">US${annual ? ANNUAL_MONTHLY : MONTHLY_PRICE}</span>
-                <span className="plan-per">{PLANS_PAGE.premium.perMonth}</span>
-              </div>
-              <p className="plan-billed">
-                {annual
-                  ? PLANS_PAGE.premium.billedYearly(ANNUAL_PRICE, ANNUAL_SAVING_PCT)
-                  : PLANS_PAGE.premium.billedMonthly}
-              </p>
-              <p className="plan-tagline">{PLANS_PAGE.premium.everythingInFreePlus}</p>
-            </div>
-            <ul className="plan-features">
-              {PREMIUM_HIGHLIGHTS.map(f => <li key={f}><Tick />{f}</li>)}
-            </ul>
-            <div className="plan-cta">
-              {authState === 'loading' ? (
-                <button className="btn btn-primary" disabled>…</button>
-              ) : isPremium ? (
-                <button className="btn btn-secondary" onClick={premium.openPortal} disabled={premium.busy}>
-                  {premium.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.premium.manageSubscription}
-                </button>
-              ) : (
-                <button className="btn btn-primary" onClick={goPremium} disabled={premium.busy}>
-                  {premium.busy ? '…' : PLANS_PAGE.premium.goPremium}
-                </button>
-              )}
-            </div>
-          </section>
-        </div>
-
-        {isPremium && (
-          <p className="plans-note plans-note--ok">{PLANS_PAGE.onPremiumNote}</p>
-        )}
-        {premium.error && (
-          <p className="plans-note plans-note--err">{premium.error}</p>
-        )}
+        <section className="plans-free" aria-labelledby="free-title">
+          <div>
+            <p className="plans-eyebrow">{PLANS_PAGE.free.name} · $0</p>
+            <h2 id="free-title">{PLANS_PAGE.freeTitle}</h2>
+            <p>{PLANS_PAGE.freeDescription}</p>
+            <ul>{PLANS_PAGE.freeGroups.map(label => <li key={label}><Tick />{label}</li>)}</ul>
+          </div>
+          <div className="plans-free-next">
+            <p>{PLANS_PAGE.freePlanned}</p>
+            <p className="plans-free-limit">{PLANS_PAGE.customLists(FREE_CUSTOM_LIST_CAP)}</p>
+            {authState === 'signed-in' ? (
+              <span className="plan-status">{isPremium ? PLANS_PAGE.free.includedWithPremium : PLANS_PAGE.free.yourCurrentPlan}</span>
+            ) : <Link to="/signup" className="btn btn-secondary">{PLANS_PAGE.free.getStartedFree}</Link>}
+          </div>
+        </section>
 
         {/* Full comparison */}
-        <div className="cmp-wrap">
-          <h2 className="cmp-title">{PLANS_PAGE.comparison.title}</h2>
+        <details className="cmp-wrap">
+          <summary>{PLANS_PAGE.comparison.title}</summary>
           <div className="cmp-scroll">
             <table className="cmp-table">
               <thead>
@@ -242,7 +171,10 @@ export default function PlansPage() {
               <tbody>
                 {COMPARISON.map(row => (
                   <tr key={row.label}>
-                    <th scope="row" className="cmp-feat">{row.label}</th>
+                    <th scope="row" className="cmp-feat">
+                      {row.label}
+                      {row.description && <p className="plan-feature-description">{row.description}</p>}
+                    </th>
                     <td><Cell value={row.free} /></td>
                     <td className="cmp-prem"><Cell value={row.premium} /></td>
                   </tr>
@@ -250,13 +182,13 @@ export default function PlansPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </details>
 
         {/* FAQ */}
         <div className="faq-wrap">
           <h2 className="faq-title">{PLANS_PAGE.faqTitle}</h2>
           <dl className="faq-list">
-            {FAQS.map(item => (
+            {PLANS_PAGE.faqs.map(item => (
               <div className="faq-item" key={item.q}>
                 <dt>{item.q}</dt>
                 <dd>{item.a}</dd>
@@ -264,12 +196,6 @@ export default function PlansPage() {
             ))}
           </dl>
         </div>
-
-        <p className="plans-fineprint">
-          {PLANS_PAGE.finePrint}
-          {' '}{PLANS_PAGE.finePrintCancel}
-          {' '}{PLANS_PAGE.finePrintContact} <a href="mailto:contact@theplot.tv">contact@theplot.tv</a>
-        </p>
 
         <footer className="plans-foot">
           <Link to="/terms">{PLANS_PAGE.terms}</Link>

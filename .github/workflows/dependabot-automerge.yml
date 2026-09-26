@@ -2,13 +2,14 @@ name: Dependabot auto-merge
 
 # Self-merges green Dependabot PRs for minor/patch updates, holds majors for review.
 #
-# Why workflow_run and not `on: pull_request`?
+# Why `status` and not `on: pull_request`?
 #   - GitHub gives Dependabot-triggered `pull_request` runs a read-only token,
-#     so they can't merge. A `workflow_run` runs in the base-repo context with a
-#     writable token and only AFTER CI has a real conclusion.
+#     so they can't merge. CircleCI reports a commit status after running the
+#     full suite; this workflow runs in the base-repo context with a writable
+#     token and acts only on that successful status.
 #   - This repo is private on GitHub Free -> no branch protection -> native
 #     `gh pr merge --auto` won't engage. So we do the merge ourselves, gated on
-#     CI having already passed (that's exactly what workflow_run gives us).
+#     CircleCI having already passed.
 #
 # Safety:
 #   - Acts only on PRs authored by dependabot[bot].
@@ -17,42 +18,39 @@ name: Dependabot auto-merge
 #   - DRY RUN by default. Set repo variable DEPENDABOT_AUTOMERGE=true to arm it.
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+  status:
 
 permissions:
   contents: write
   pull-requests: write
 
 concurrency:
-  group: dependabot-automerge-${{ github.event.workflow_run.head_branch }}
+  group: dependabot-automerge-${{ github.event.sha }}
   cancel-in-progress: false
 
 jobs:
   automerge:
     runs-on: ubuntu-latest
-    # Only PR-triggered CI runs that passed, raised by Dependabot.
+    # Pending and failed CircleCI updates create no runner. Authorship is
+    # checked from the PR itself below rather than trusting the status sender.
     if: >
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.actor.login == 'dependabot[bot]'
+      github.event.context == 'ci/circleci: check' &&
+      github.event.state == 'success'
     steps:
       - name: Resolve PR, classify bump, and merge or hold
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.sha }}
           ARMED: ${{ vars.DEPENDABOT_AUTOMERGE }}
         run: |
           set -euo pipefail
 
-          # --- Find the open PR for this branch ---
-          PR_NUM=$(gh pr list --head "$HEAD_BRANCH" --state open \
-            --json number,title,author,url \
-            --jq '.[0].number // empty')
+          # --- Find the open PR whose head commit CircleCI just passed ---
+          PR_NUM=$(gh api "repos/$GH_REPO/commits/$HEAD_SHA/pulls" \
+            --jq '[.[] | select(.state == "open")][0].number // empty')
           if [ -z "$PR_NUM" ]; then
-            echo "No open PR for branch '$HEAD_BRANCH'. Nothing to do."
+            echo "No open PR for commit '$HEAD_SHA'. Nothing to do."
             exit 0
           fi
 

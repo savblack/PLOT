@@ -74,8 +74,7 @@ interface MediaItem {
   first_air_date?: string | null;
   original_language?: string;
   origin_country?: string[];
-  /** Needed by the genre filter; keyword-sourced TV rails are tagged with the
-   *  equivalent movie genre id so they survive it (see GENRE_RAILS). */
+  /** Needed by the shared genre filter. */
   genre_ids?: number[];
   /** Client-side flag for "in cinemas, no digital offer yet" — the type
    *  filter's `cinema` option keys off this, not off a TMDB media_type. */
@@ -469,8 +468,7 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
     ...data.genreRails
       .map((rail: { key: string; label: string; items: MediaItem[] }) => ({ ...rail, items: applyFilters(rail.items) }))
       .filter((rail: { items: MediaItem[] }) => rail.items.length > 0)
-      // GENRE_RAILS labels are already "New in Horror" — the kicker carries
-      // the section name, so the title drops the prefix web repeats.
+      // Rail labels already include the genre; the kicker carries the section context.
       .map((rail: { key: string; label: string; items: MediaItem[] }) => ({
         key: rail.key, kicker: 'New releases', title: rail.label, items: rail.items,
       })),
@@ -993,7 +991,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
 
   dateLabel: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.xl,
     color: colors.textSecondary,
   },
@@ -1034,7 +1032,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     letterSpacing: 0.8,
   },
   heroTitle: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.xxl,
     color: '#fff',
     paddingRight: 48, // reserve room for the bottom-right save bookmark so long titles wrap before it
@@ -1127,7 +1125,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     right: spacing.md,
   },
   bingeTitle: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 18,
     color: '#fff',
     marginBottom: 3,
@@ -1148,7 +1146,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomColor: colors.border,
   },
   chartRank: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 22,
     width: 36,
     textAlign: 'center',
@@ -1196,7 +1194,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     position: 'absolute',
     bottom: 4,
     left: 10,
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 28,
     color: '#fff',
     textShadowColor: 'rgba(0,0,0,0.8)',
@@ -1281,7 +1279,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     alignItems: 'center',
   },
   emptyTitle: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.xl,
     color: colors.textPrimary,
     marginBottom: spacing.sm,

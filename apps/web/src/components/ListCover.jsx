@@ -11,6 +11,7 @@ import { SelectCircle } from './ListCards.jsx';
 /**
  * @param {object}   props
  * @param {string}   props.name
+ * @param {string}   [props.anchorId]      optional in-page target for a collection index
  * @param {string}   [props.count]
  * @param {string[]} props.posters        poster_paths, front first (up to 3 used)
  * @param {Function} [props.onOpen]
@@ -24,7 +25,7 @@ import { SelectCircle } from './ListCards.jsx';
  * @param {number}   [props.size]         fan width in px when not filling its grid cell
  */
 export default function ListCover({
-  name, count, posters = [], onOpen, labelled = true,
+  name, anchorId, count, posters = [], onOpen, labelled = true,
   editMode = false, selectable = true, selected = false, onToggleSelect, dim = false, badge, size,
 }) {
   const paths = posters.filter(Boolean).slice(0, 3);
@@ -39,7 +40,7 @@ export default function ListCover({
   if (dim) classes.push('list-cover--dim');
 
   return (
-    <div className={classes.join(' ')} style={size ? { width: size } : undefined}>
+    <div id={anchorId} className={classes.join(' ')} style={size ? { width: size } : undefined}>
       <button
         type="button"
         className="list-cover-hit interactive-surface"

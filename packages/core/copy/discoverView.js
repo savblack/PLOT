@@ -1,0 +1,18 @@
+export const DISCOVER_VIEW = {
+  mostAnticipatedTitle: 'Most Anticipated',
+  mostAnticipatedSubtitle: 'Coming soon',
+  upNext: 'Up next',
+  startHere: 'Start here',
+  startHereBody: 'Choose a show that’s airing now. We’ll show you when the next episode drops here.',
+  findAiringShow: 'Find a show airing now',
+  nothingUpcoming: 'Nothing coming up yet',
+  nothingUpcomingBody: 'Your saved shows are between seasons or have no new episodes. Choose one that’s airing now to see what’s next.',
+  refreshing: 'Updating…',
+  offline: 'You’re offline',
+  offlineBody: 'Reconnect to refresh upcoming episodes. Your saved shows are still safe.',
+  loadError: 'We couldn’t load what’s next',
+  loadErrorBody: 'There was a temporary problem. Nothing in your saved shows has changed.',
+  retry: 'Try again',
+  onThisDay: 'On this day',
+  releasedThisDay: (year) => `Released this day in ${year}.`,
+};

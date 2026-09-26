@@ -11,7 +11,7 @@ import { billingAccess } from '@plot/core/billing.js';
  * Billing status comes from the authenticated get_my_billing_status() RPC.
  * The persisted badge alone is neither an entitlement nor a billing relationship.
  * Server-side gates (RLS + edge functions) are the authority; this hook just
- * starts checkout / opens the Stripe customer portal.
+ * previews upcoming subscriptions / opens the Stripe customer portal.
  */
 async function callBilling(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -32,23 +32,15 @@ async function callBilling(action, body = {}) {
 
 export function usePremium(profile) {
   const billing = useBillingStatus(profile?.id);
+  const [comingSoon, setComingSoon] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  const startCheckout = useCallback(async (plan = 'monthly', source = 'settings') => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    track(EVENTS.PREMIUM_CHECKOUT_STARTED, { plan, source });
-    try {
-      window.location.assign(await callBilling('checkout', { plan }));
-      return true;
-    } catch (e) {
-      setError(e.message);
-      setBusy(false);
-      return false;
-    }
-  }, [busy]);
+  // Preview only: all callers, including legacy signup intents, stop before billing.
+  const startCheckout = useCallback(async () => {
+    setComingSoon(true);
+    return false;
+  }, []);
 
   const openPortal = useCallback(async () => {
     if (busy) return;
@@ -79,6 +71,7 @@ export function usePremium(profile) {
     ...billingAccess(billing),
     billing,
     startCheckout,
+    comingSoon,
     startTipCheckout,
     openPortal,
     busy,

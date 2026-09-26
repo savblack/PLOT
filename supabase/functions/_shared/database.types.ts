@@ -977,6 +977,7 @@ export type Database = {
           provider: string
           selected_server: Json | null
           status: string
+          sync_started_at: string | null
           trakt_redirect_uri: string | null
           trakt_refresh_ciphertext: string | null
           trakt_refresh_iv: string | null
@@ -1003,6 +1004,7 @@ export type Database = {
           provider: string
           selected_server?: Json | null
           status?: string
+          sync_started_at?: string | null
           trakt_redirect_uri?: string | null
           trakt_refresh_ciphertext?: string | null
           trakt_refresh_iv?: string | null
@@ -1029,6 +1031,7 @@ export type Database = {
           provider?: string
           selected_server?: Json | null
           status?: string
+          sync_started_at?: string | null
           trakt_redirect_uri?: string | null
           trakt_refresh_ciphertext?: string | null
           trakt_refresh_iv?: string | null
@@ -1854,11 +1857,19 @@ export type Database = {
       }
     }
     Functions: {
+      admit_critic_score_request: {
+        Args: { p_caller_bucket: string }
+        Returns: boolean
+      }
       auth_note_fail: {
         Args: { p_ip: string; p_scope: string; p_window_ms: number }
         Returns: number
       }
       can_create_custom_list: { Args: never; Returns: boolean }
+      claim_marketing_linear_mirror: {
+        Args: { p_owner: string }
+        Returns: boolean
+      }
       generate_username: { Args: { p_seed: string }; Returns: string }
       get_profile_card: {
         Args: { p_username: string }
@@ -1888,6 +1899,10 @@ export type Database = {
           requested_at: string
           username: string
         }[]
+      }
+      release_marketing_linear_mirror: {
+        Args: { p_owner: string }
+        Returns: undefined
       }
       list_followers: {
         Args: { p_target: string }

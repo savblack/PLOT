@@ -1,6 +1,21 @@
 # PLOT Premium launch checklist
 
-PLOT Premium is US$3 monthly or US$25 yearly. The web app uses Stripe Checkout
+Current release decision (26 September 2026): US$3/month or US$24/year,
+tax-inclusive Managed Payments with Adaptive Pricing and AUD settlement.
+Bangladesh is accepted with owner-managed registration, filing and remittance;
+configuration is deferred by the owner until the first sale, not verified or
+completed. No Radar purchase or Bangladesh exclusion. Historical audit entries
+below must not override this decision. Public checkout remains closed pending
+explicit launch approval. See selective-tax-routing.md for the latest tests.
+
+Server-only configuration: STRIPE_CHECKOUT_ENABLED=false, STRIPE_SECRET_KEY,
+STRIPE_PRICE_MONTHLY, STRIPE_PRICE_YEARLY, STRIPE_WEBHOOK_SECRET,
+STRIPE_PORTAL_CONFIGURATION and STRIPE_SETTINGS_URL. Store secret values only
+in the environment secret store. The Managed Payments implementation requires
+explicit inclusive price behavior; the old inferred default alone is insufficient.
+
+
+PLOT Premium is US$3 monthly or US$24 yearly. The web app uses Stripe Checkout
 for purchase and the Stripe Customer Portal for cancellation, payment-method
 updates, and switching between those two plans.
 
@@ -13,7 +28,7 @@ customer); do not promise a fixed AUD/GBP/EUR amount.
 
 Hosted Checkout inherits the Dashboard Adaptive Pricing setting; the handler
 does not override it. Keep validating the underlying USD Price objects at 300
-and 2500 cents. Do not add manual `currency_options` for converted currencies.
+and 2400 cents. Do not add manual `currency_options` for converted currencies.
 Tax registration and collection remain a separate launch prerequisite.
 
 USD settlement is enabled in the PLOT sandbox, alongside default AUD. Direct AUD
@@ -39,11 +54,11 @@ The exclusion is no longer a launch requirement. Actual tax configuration and
 checkout/renewal verification remain distinct from accepting that responsibility.
 This decision does not enable public checkout or authorize a production change.
 
-## Before going live
+## Before going live (reconcile historical setup against the current decision above)
 
 1. TMDB clearance is confirmed by Savannah. Complete the test-mode lifecycle
    and engineering gates in the readiness document. After launch approval, in Stripe **live mode**, create a PLOT Premium product with two recurring
-   USD prices: US$3/month and US$25/year. Record the two live price IDs.
+   USD prices: US$3/month and US$24/year. Record the two live price IDs.
 2. Set the Stripe account's public business URL and support email. The Customer
    Portal should also show the PLOT terms and privacy URLs.
 3. In the live-mode Customer Portal, enable cancellation, payment-method
@@ -61,7 +76,7 @@ This decision does not enable public checkout or authorize a production change.
    `STRIPE_WEBHOOK_SECRET`.
 6. Keep `STRIPE_CHECKOUT_ENABLED=false` until launch approval. Checkout validates
    that the selected price is an active USD recurring price for exactly US$3/month and
-   US$25/year. Verify Adaptive Pricing is enabled in the intended live PLOT
+   US$24/year. Verify Adaptive Pricing is enabled in the intended live PLOT
    account before launch; use USD as the fallback. Confirm local-currency monthly
    and yearly checkout, renewal, plan switching and refund behavior in sandbox.
 7. Deploy `stripe-billing` and `stripe-webhook`, enable `STRIPE_CHECKOUT_ENABLED=true` together with the public pricing flags,

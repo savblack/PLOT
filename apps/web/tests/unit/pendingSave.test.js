@@ -84,13 +84,14 @@ const EVENTS = { WATCHLIST_SAVED: 'watchlist_saved' };
 
 // Build an injected-deps bag with recording spies and a scripted getDetails.
 function makeDeps({ getDetails, isInList = () => false, addToList = async () => true } = {}) {
-  const calls = { track: [], activated: [], opened: [], results: [], added: [], addedOpts: [] };
+  const calls = { track: [], activated: [], opened: [], prompted: [], results: [], added: [], addedOpts: [] };
   return {
     deps: {
       getDetails,
       isInList,
       addToList: async (item, opts) => { calls.added.push(item); calls.addedOpts.push(opts); return addToList(item); },
       openPanel: (id, mediaType) => calls.opened.push([id, mediaType]),
+      openSavePrompt: (id, mediaType, source) => calls.prompted.push([id, mediaType, source]),
       track: (event, props) => calls.track.push([event, props]),
       markActivated: (name, props) => calls.activated.push([name, props]),
       EVENTS,
@@ -101,6 +102,20 @@ function makeDeps({ getDetails, isInList = () => false, addToList = async () => 
 }
 
 const okDetails = (data) => async () => ({ ok: true, data, retryable: false });
+
+test('drainPendingSave: editorial CTA opens the title without silently choosing the watchlist', async () => {
+  let fetched = false;
+  const { deps, calls } = makeDeps({
+    getDetails: async () => { fetched = true; return { ok: true, data: {}, retryable: false }; },
+  });
+  const out = await drainPendingSave({ intent: { tmdb_id: 270476, media_type: 'tv', source: 'whats_on_article' } }, deps);
+  assert.deepEqual(out, { terminal: true, status: 'opened' });
+  assert.equal(fetched, false, 'the title panel owns its own detail fetch');
+  assert.equal(calls.added.length, 0, 'the default watchlist must remain untouched');
+  assert.deepEqual(calls.prompted[0], [270476, 'tv', 'whats_on_article']);
+  assert.equal(calls.opened.length, 0, 'the full title panel is deferred until the viewer chooses another list');
+  assert.equal(calls.results.length, 0, 'opening a choice is not a save confirmation');
+});
 
 test('drainPendingSave: transient 429 → not terminal, intent preserved, no error toast', async () => {
   const { deps, calls } = makeDeps({
@@ -208,6 +223,7 @@ function withFakeFetch(responses, fn) {
     return {
       ok: r.status >= 200 && r.status < 300,
       status: r.status,
+      headers: new Headers(r.headers),
       json: async () => r.body ?? {},
     };
   };
@@ -233,6 +249,21 @@ test('fetchFromTMDBResolved: 429 then 200 → retried, resolves ok', async () =>
     assert.equal(res.ok, true);
     assert.deepEqual(res.data, { id: 5 });
     assert.equal(count(), 2, 'one retry after the 429');
+  });
+});
+
+test('fetchFromTMDBResolved: honours the proxy Retry-After window', async () => {
+  await withFakeFetch([
+    { status: 429, headers: { 'Retry-After': '10' } },
+    { status: 200, body: { id: 6 } },
+  ], async () => {
+    const waits = [];
+    const res = await fetchFromTMDBResolved('/movie/6', {}, {
+      retryDelays: [1],
+      sleepFn: async ms => { waits.push(ms); },
+    });
+    assert.equal(res.ok, true);
+    assert.deepEqual(waits, [10000]);
   });
 });
 
@@ -313,4 +344,34 @@ test('different params are different cache entries', async () => {
     await fetchFromTMDBResolved('/trending/all/day', { page: 2 });
     assert.equal(count(), 2, 'page 2 is not served page 1');
   });
+});
+
+test('different TMDB reads share an eight-request concurrency ceiling', async () => {
+  const realFetch = globalThis.fetch;
+  const releases = [];
+  let active = 0;
+  let maximum = 0;
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  _resetTmdbCache();
+  globalThis.fetch = async () => {
+    active += 1;
+    maximum = Math.max(maximum, active);
+    await new Promise(resolve => { releases.push(resolve); });
+    active -= 1;
+    return { ok: true, status: 200, headers: new Headers(), json: async () => ({}) };
+  };
+
+  try {
+    const pending = Array.from({ length: 12 }, (_, i) => fetchFromTMDBResolved(`/movie/${100 + i}`));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(releases.length, 8, 'only eight network reads start together');
+    releases.slice(0, 8).forEach(resolve => resolve());
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(releases.length, 12, 'queued reads start as slots become available');
+    releases.slice(8).forEach(resolve => resolve());
+    await Promise.all(pending);
+    assert.equal(maximum, 8);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });

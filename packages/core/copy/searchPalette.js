@@ -27,7 +27,7 @@ export const SEARCH_PALETTE = {
   // Right-hand kind labels, one word each so the column stays narrow.
   kind: {
     collection: 'Franchise',
-    movie: 'Film',
+    movie: 'Movie',
     tv: 'Series',
     person: 'Person',
     friend: 'Friend',

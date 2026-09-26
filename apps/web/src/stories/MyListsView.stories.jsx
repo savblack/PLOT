@@ -1,4 +1,6 @@
+import { expect, fireEvent, within } from 'storybook/test';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { AppContext } from '../hooks/useApp.js';
 import MyListsView from '../components/MyListsView.jsx';
 import ListPage from '../components/ListPage.jsx';
@@ -28,7 +30,7 @@ const watchlistItems = [
   title(14, 'The Bear', 'tv', { streaming_date: '2026-09-25' }),
   title(15, 'Dune: Part Three', 'movie', { release_date: '2026-12-18' }),
   title(16, 'Andor', 'tv'),
-  title(17, 'A very long film title that wraps onto two lines and then clips'),
+  title(17, 'A very long movie title that wraps onto two lines and then clips'),
   title(18, 'Heretic'),
 ];
 
@@ -92,6 +94,48 @@ export const Populated = {};
 
 export const AllEmpty = { parameters: { app: emptyApp } };
 
+// Empty custom lists exercise the allowance without fabricated media identities.
+const allowanceApp = (count) => ({
+  ...emptyApp,
+  customLists: {
+    ...emptyApp.customLists,
+    lists: Array.from({ length: count }, (_, i) => ({ id: `allowance-${i}`, name: `My list ${i + 1}`, items: [] })),
+  },
+});
+
+export const FourCustomLists = { parameters: { app: allowanceApp(4) } };
+export const FiveCustomLists = { parameters: { app: allowanceApp(5) } };
+
+/* A Premium-sized collection: past the column's cap, so the index folds to a
+   "View more" row instead of running the column off the page. Twelve custom
+   lists plus the two built-ins is fourteen rows; the column shows eight. */
+export const ManyLists = {
+  parameters: {
+    app: {
+      ...app,
+      customLists: {
+        ...app.customLists,
+        lists: Array.from({ length: 12 }, (_, i) => ({
+          id: `many-${i}`,
+          name: `List number ${i + 1}`,
+          items: [title(500 + i, `Title ${i + 1}`)],
+        })),
+      },
+    },
+  },
+};
+export const StaleListCount = {
+  parameters: {
+    app: {
+      ...allowanceApp(4),
+      customLists: {
+        ...allowanceApp(4).customLists,
+        createList: async () => { throw Object.assign(new Error('List cap'), { code: 'custom_list_limit_reached' }); },
+      },
+    },
+  },
+};
+
 /* A cover, opened: the list page at its route. The shared decorator reads
    `parameters.route` for the router's starting entry. */
 const listPage = (route) => ({
@@ -101,3 +145,34 @@ const listPage = (route) => ({
 
 export const CustomListPage  = listPage('/my-lists/list-l1');
 export const WantToWatchPage = listPage('/my-lists/want');
+export const FavoritesPage   = listPage('/my-lists/favorites');
+
+/* The search box lives inside the frame the list sections render into, so the
+   frame must keep the same component identity while you type. It did not: the
+   frame was rebuilt on every keystroke, React swapped the subtree rather than
+   re-rendering it, and the input was destroyed mid-word. The caret went with
+   it, so the field took one character and then dropped focus to the body.
+
+   Two deliberate choices in how this is tested. It asserts node identity
+   rather than `toHaveFocus`, and it drives the field with input events rather
+   than `userEvent.type`: both focusing and typing need a document that has
+   focus, and a background or headless window has none, so either would fail
+   whether or not the bug is present. Node identity is the cause rather than
+   the symptom, and it holds in any window — with the bug the second character
+   goes to a node React has already detached, whose events no longer reach the
+   root, so the live field is left holding "c". */
+export const ListPageSearchKeepsFocus = {
+  ...listPage('/my-lists/list-l1'),
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const search = canvas.getByLabelText(CUSTOM_LISTS.searchThisList);
+
+    await fireEvent.input(search, { target: { value: 'c' } });
+    await fireEvent.input(search, { target: { value: 'co' } });
+
+    await expect(canvas.getByLabelText(CUSTOM_LISTS.searchThisList)).toBe(search);
+    await expect(search.isConnected).toBe(true);
+    await expect(search).toHaveValue('co');
+  },
+};

@@ -835,6 +835,14 @@ Deno.serve(async (req) => {
   } catch { /* no body is the normal case: pg_cron posts {} */ }
 
   const supabase = createClient<Database>(SUPABASE_URL, serviceKey());
+  const leaseOwner = crypto.randomUUID();
+  if (!dryRun) {
+    const { data: claimed, error: claimError } = await supabase.rpc('claim_marketing_linear_mirror', {
+      p_owner: leaseOwner,
+    });
+    if (claimError) return json({ error: `Could not claim mirror lease: ${claimError.message}` }, 500);
+    if (!claimed) return json({ ok: true, skipped: 'another mirror sweep is active' });
+  }
   const runId = dryRun ? null : await startRun(supabase);
 
   try {
@@ -878,5 +886,10 @@ Deno.serve(async (req) => {
     console.error('Linear mirror failed:', err);
     await finishRun(supabase, runId, { status: 'failed', error: String((err as Error).message).slice(0, 500) });
     return json({ error: String((err as Error).message) }, 500);
+  } finally {
+    if (!dryRun) {
+      const { error } = await supabase.rpc('release_marketing_linear_mirror', { p_owner: leaseOwner });
+      if (error) console.error('Could not release Linear mirror lease:', error);
+    }
   }
 });

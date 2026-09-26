@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@plot/core/supabase.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { track, resetAnalytics, EVENTS } from '../lib/analytics.js';
+import { clearCachedSession } from '../utils/sessionCache.js';
 import './AuthPage.css';
+import { loadSupabase } from '../utils/loadSupabase.js';
 
 // The marketing site doubles as the logged-out home.
 const MARKETING_URL = 'https://theplot.tv';
@@ -20,9 +21,14 @@ export default function LogoutPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // This route replaces the app shell, so its auth listener may already be
+      // unmounted. Clear the cached profile, including calendar_token, before
+      // any network operation or redirect can fail.
+      clearCachedSession();
       // Capture before the reset, or the event lands on the fresh anonymous
       // profile instead of the person who actually signed out.
       track(EVENTS.USER_SIGNED_OUT, {});
+      const supabase = await loadSupabase();
       const { error } = await supabase.auth.signOut();
       // A global revoke can fail offline — clear the local session at least so
       // the device is signed out regardless.
@@ -38,7 +44,7 @@ export default function LogoutPage() {
   const scrollPosters = [...HERO_POSTERS, ...HERO_POSTERS];
 
   return (
-    <div className="auth-page">
+    <div className="auth-page auth-page--logout">
 
       {/* ── Left: living poster wall ── */}
       <div className="auth-visual" aria-hidden="true">
@@ -49,15 +55,15 @@ export default function LogoutPage() {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <span className="auth-visual-logo">PLOT</span>
-          <span className="auth-visual-tagline">Your film &amp; TV companion</span>
+          <span className="auth-visual-logo">plot</span>
+          <span className="auth-visual-tagline">Your movie &amp; TV companion</span>
         </div>
       </div>
 
       {/* ── Right: confirmation panel ── */}
       <div className="auth-panel">
-        <Link to="/login" className="auth-panel-logo" aria-label="PLOT">
-          PLOT
+        <Link to="/login" className="auth-panel-logo" aria-label="plot">
+          plot
         </Link>
 
         <div className="auth-panel-body">
@@ -68,16 +74,11 @@ export default function LogoutPage() {
             </div>
           ) : (
             <div className="auth-success" aria-live="polite">
-              <div className="auth-success-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M20 6 9 17l-5-5"/>
-                </svg>
-              </div>
               <h1>You're signed out</h1>
               <p>Come back any time. Your watchlist and history will be right where you left them.</p>
               <div className="logout-actions">
-                <Link to="/login" className="auth-cta">Log back in</Link>
-                <a href={MARKETING_URL} className="auth-cta auth-cta--outline">Return to homepage</a>
+                <Link to="/login" className="auth-cta auth-cta--primary">Log back in</Link>
+                <a href={MARKETING_URL} className="auth-cta auth-cta--secondary">Return to homepage</a>
               </div>
             </div>
           )}

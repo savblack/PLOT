@@ -1,0 +1,386 @@
+# PLOT's compute runs here so making the repository private does not turn normal
+# validation and scheduled maintenance into GitHub Actions minutes. GitHub-native
+# automation (automerge and deployment monitoring) stays in .github/workflows.
+version: 2.1
+
+parameters:
+  task:
+    type: enum
+    default: ci
+    enum:
+      - ci
+      - marketing-reconcile
+      - streaming-top10
+      - netflix-top10
+      - broadcast-guide
+      - db-backup
+      - storage-backup
+      - db-write-paths
+
+executors:
+  node:
+    docker:
+      - image: cimg/node:22.17.1
+    resource_class: medium
+
+commands:
+  setup_pnpm:
+    steps:
+      - run:
+          name: Set up pnpm 10.6.3
+          command: |
+            sudo corepack enable
+            corepack prepare pnpm@10.6.3 --activate
+            pnpm config set store-dir ~/.pnpm-store
+      - restore_cache:
+          keys:
+            - pnpm-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile
+      - save_cache:
+          key: pnpm-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+
+  alert_on_failure:
+    parameters:
+      workflow_name:
+        type: string
+      subject:
+        type: string
+        default: ""
+      note:
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: Alert on failure
+          when: on_fail
+          command: |
+            export ADMIN_EMAIL="$MARKETING_ADMIN_EMAIL"
+            export RUN_URL="$CIRCLE_BUILD_URL"
+            export WORKFLOW_NAME="<< parameters.workflow_name >>"
+            export ALERT_SUBJECT="<< parameters.subject >>"
+            export FAILURE_NOTE="<< parameters.note >>"
+            bash .github/scripts/marketing-alert.sh
+
+jobs:
+  check:
+    docker:
+      # The browsers variant supplies Playwright's system dependencies. Pin the
+      # Node version used by production CI while accepting image fixes.
+      - image: cimg/node:22.17.1-browsers
+    resource_class: medium
+    retention:
+      caches: 7d
+    environment:
+      # CI only proves that the app builds and renders locally. These values are
+      # deliberately inert, so browser-safe production config need not be copied
+      # into a second CI provider.
+      VITE_SUPABASE_URL: https://placeholder.supabase.co
+      VITE_SUPABASE_ANON_KEY: placeholder-not-a-key
+      VITE_TMDB_PROXY_URL: https://placeholder.invalid
+      VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: placeholder
+      VITE_PUBLIC_POSTHOG_HOST: https://placeholder.invalid
+    steps:
+      # The secret scan needs the PR merge-base (or previous main commit), so a
+      # shallow/blobless checkout is not sufficient.
+      - checkout:
+          method: full
+
+      - run:
+          name: Scan changed lines for secret-shaped strings
+          command: |
+            git fetch --no-tags --quiet origin main
+            if [ "$CIRCLE_BRANCH" = "main" ]; then
+              base_sha="$(git rev-parse HEAD^)"
+            else
+              base_sha="$(git merge-base origin/main HEAD)"
+            fi
+            ./scripts/scan-secrets.sh "$base_sha" HEAD
+
+      - run:
+          name: Set up pnpm 10.6.3
+          command: |
+            sudo corepack enable
+            corepack prepare pnpm@10.6.3 --activate
+            pnpm config set store-dir ~/.pnpm-store
+            pnpm --version
+
+      - run:
+          name: Set up Deno 2
+          command: |
+            curl -fsSL https://deno.land/install.sh | sh -s v2.9.5
+            echo 'export DENO_INSTALL="$HOME/.deno"' >> "$BASH_ENV"
+            echo 'export PATH="$DENO_INSTALL/bin:$PATH"' >> "$BASH_ENV"
+            "$HOME/.deno/bin/deno" --version
+
+      - run:
+          name: Typecheck edge functions
+          command: pnpm run edge:check
+
+      - restore_cache:
+          keys:
+            - pnpm-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile
+
+      - save_cache:
+          key: pnpm-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+
+      - run:
+          name: Lint
+          command: pnpm run lint
+
+      - run:
+          name: Check generated and shared sources
+          command: |
+            pnpm run footer:check
+            pnpm run changelog:check
+            pnpm run skills:check
+            pnpm run tokens:check
+            pnpm run colors:check
+            pnpm run tokens:marketing
+            pnpm run emails:check
+
+      - run:
+          name: Check migrations and cross-platform contracts
+          command: |
+            pnpm run migrations:check
+            pnpm run db:block-clause
+            pnpm run copy:check
+            pnpm run core:check
+            pnpm run mobile:tabs
+
+      - run:
+          name: Broadcast importer tests
+          command: python3 -m unittest discover -s scripts/guide -p 'test_*.py'
+
+      - run:
+          name: JavaScript unit tests
+          command: |
+            pnpm run test:unit
+            pnpm run test:website
+            pnpm run test:workers
+            pnpm run test:marketing
+
+      - run:
+          name: Build
+          command: pnpm run build
+
+      - run:
+          name: Build Storybooks
+          command: |
+            pnpm --filter @plot/web run build-storybook
+            pnpm --filter @plot/website-storybook run build-storybook
+            pnpm --filter @plot/mobile run build-storybook
+
+      - run:
+          name: Check mobile
+          command: |
+            pnpm run mobile:deps
+            pnpm --filter @plot/mobile run typecheck
+
+      - restore_cache:
+          keys:
+            - playwright-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+
+      - run:
+          name: Install Playwright Chromium
+          command: pnpm --filter @plot/web exec playwright install chromium
+
+      - save_cache:
+          key: playwright-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.cache/ms-playwright
+
+      - run:
+          name: Storybook interaction and accessibility tests
+          command: pnpm run test-storybook:web
+
+      - run:
+          name: Smoke tests
+          command: pnpm --filter @plot/web exec playwright test
+
+  marketing-reconcile:
+    executor: node
+    steps:
+      - checkout
+      - setup_pnpm
+      - run:
+          name: Reconcile and top up the Buffer queue
+          command: |
+            node marketing/publish/reconcile.mjs
+            node marketing/publish/schedule.mjs
+      - run:
+          name: Check the queue ahead
+          command: |
+            output="$(node marketing/publish/queue-check.mjs --days=3)"
+            printf '%s\n' "$output"
+            if printf '%s\n' "$output" | grep -q '^Nothing is queued'; then
+              ALERT_SUBJECT='PLOT marketing: nothing is queued' \
+              ALERT_BODY='No marketing posts are scheduled for the next 3 days. Rerun the weekly batch.' \
+              ADMIN_EMAIL="$MARKETING_ADMIN_EMAIL" RUN_URL="$CIRCLE_BUILD_URL" \
+              WORKFLOW_NAME=reconcile bash .github/scripts/marketing-alert.sh
+            fi
+      - alert_on_failure:
+          workflow_name: reconcile
+
+  streaming-top10:
+    executor: node
+    steps:
+      - checkout
+      - setup_pnpm
+      - run: node scripts/sync-streaming-top10.mjs
+
+  netflix-top10:
+    executor: node
+    steps:
+      - checkout
+      - setup_pnpm
+      - run: node scripts/sync-netflix-top10.mjs
+
+  broadcast-guide:
+    docker:
+      - image: cimg/python:3.12
+    resource_class: medium
+    steps:
+      - checkout
+      - run: python3 -m unittest discover -s scripts/guide -p 'test_*.py'
+      - run: python3 scripts/guide/refresh.py --publish
+      - store_artifacts:
+          path: .guide-cache/refresh/health.json
+          destination: broadcast-guide-health.json
+
+  db-backup:
+    executor: node
+    environment:
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - checkout
+      - run:
+          name: Install PostgreSQL 17 client and AWS CLI
+          command: |
+            sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+            curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client-17 awscli
+      - run:
+          name: Dump, encrypt, upload and prune
+          command: |
+            export PATH="/usr/lib/postgresql/17/bin:$PATH"
+            stamp="$(date -u +%Y-%m-%dT%H%M%SZ)"
+            artifact="plot-${stamp}.dump.gpg"
+            service_file="/tmp/plot-prod-service.conf"
+            PLOT_DB_CONNINFO="$SUPABASE_DB_URL" node scripts/write-pg-service.mjs "$service_file" plot_production
+            export PGSERVICEFILE="$service_file" PGSERVICE=plot_production
+            pg_dump -Fc --no-owner --no-privileges -n public -n auth -n storage -n supabase_migrations -f "${artifact%.gpg}"
+            gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$BACKUP_GPG_PASSPHRASE" -o "$artifact" "${artifact%.gpg}"
+            rm -f "${artifact%.gpg}"
+            aws configure set default.s3.addressing_style path
+            aws s3 cp "$artifact" "s3://${R2_BUCKET}/db-backups/${artifact}" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+            cutoff="$(date -u -d '30 days ago' +%Y-%m-%d)"
+            aws s3 ls "s3://${R2_BUCKET}/db-backups/" --endpoint-url "$R2_ENDPOINT" | awk '{print $4}' | grep -E '^plot-.*\.dump\.gpg$' | while read -r key; do
+              file_date="$(echo "$key" | sed -E 's/^plot-([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')"
+              if [[ "$file_date" < "$cutoff" ]]; then
+                aws s3 rm "s3://${R2_BUCKET}/db-backups/${key}" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+              fi
+            done
+      - alert_on_failure:
+          workflow_name: db-backup
+          subject: "PLOT: nightly DATABASE BACKUP failed"
+          note: No new dump reached R2 tonight. The Supabase project has no managed backup behind this.
+
+  storage-backup:
+    executor: node
+    environment:
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - checkout
+      - run: sudo apt-get update && sudo apt-get install -y awscli
+      - run:
+          name: Mirror Supabase Storage to R2
+          command: |
+            node scripts/backup-storage-buckets.mjs ./storage-mirror
+            aws configure set default.s3.addressing_style path
+            aws s3 sync ./storage-mirror "s3://${R2_BUCKET}/storage-mirror/" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+            date -u +%Y-%m-%dT%H:%M:%SZ > synced-at.txt
+            aws s3 cp synced-at.txt "s3://${R2_BUCKET}/storage-mirror/_synced-at.txt" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+      - alert_on_failure:
+          workflow_name: storage-backup
+          subject: "PLOT: nightly STORAGE BACKUP failed"
+          note: Avatar and marketing files were not mirrored to R2.
+
+  db-write-paths:
+    executor: node
+    steps:
+      - checkout
+      - setup_pnpm
+      - run:
+          name: Install PostgreSQL 17 client
+          command: |
+            sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+            curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client-17
+      - run:
+          name: Check production write paths
+          command: PATH="/usr/lib/postgresql/17/bin:$PATH" pnpm run db:write-paths
+
+workflows:
+  build-and-test:
+    when:
+      equal: [ci, << pipeline.parameters.task >>]
+    jobs:
+      - check
+  marketing-reconcile:
+    when:
+      equal: [marketing-reconcile, << pipeline.parameters.task >>]
+    jobs:
+      - marketing-reconcile:
+          context: plot-production-schedules
+  streaming-top10:
+    when:
+      equal: [streaming-top10, << pipeline.parameters.task >>]
+    jobs:
+      - streaming-top10:
+          context: plot-production-schedules
+  netflix-top10:
+    when:
+      equal: [netflix-top10, << pipeline.parameters.task >>]
+    jobs:
+      - netflix-top10:
+          context: plot-production-schedules
+  broadcast-guide:
+    when:
+      equal: [broadcast-guide, << pipeline.parameters.task >>]
+    jobs:
+      - broadcast-guide:
+          context: plot-production-schedules
+  db-backup:
+    when:
+      equal: [db-backup, << pipeline.parameters.task >>]
+    jobs:
+      - db-backup:
+          context: plot-production-schedules
+  storage-backup:
+    when:
+      equal: [storage-backup, << pipeline.parameters.task >>]
+    jobs:
+      - storage-backup:
+          context: plot-production-schedules
+  db-write-paths:
+    when:
+      equal: [db-write-paths, << pipeline.parameters.task >>]
+    jobs:
+      - db-write-paths:
+          context: plot-production-schedules

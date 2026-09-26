@@ -1,7 +1,7 @@
 # Cloudflare Pages headers for the theplot.tv marketing site — the security
 # headers previously set in apps/website/vercel.json.
 /*
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://image.tmdb.org https://theplot.tv https://a.theplot.tv; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline' https://a.theplot.tv https://www.googletagmanager.com; connect-src 'self' https://a.theplot.tv https://www.googletagmanager.com; frame-src https://www.googletagmanager.com; worker-src 'self' blob:; form-action 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://image.tmdb.org https://theplot.tv https://a.theplot.tv https://www.google.com https://www.google.com.au https://*.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline' https://a.theplot.tv https://www.googletagmanager.com https://static.cloudflareinsights.com; connect-src 'self' https://a.theplot.tv https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://cloudflareinsights.com; frame-src https://www.googletagmanager.com; worker-src 'self' blob:; form-action 'self'; upgrade-insecure-requests
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
@@ -9,7 +9,33 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), browsing-topics=()
 
 /
-  Link: </llms.txt>; rel="describedby"; type="text/plain"
+  Link: </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"
+
+# The API catalog (RFC 9727) and the two documents it points at. Content type
+# is the whole point of these three rules: the catalog URI has no extension, so
+# Pages serves it as application/octet-stream without one, and RFC 9727 requires
+# application/linkset+json. The other two would be served as application/json
+# and text/plain, neither of which says what the file is. No Cache-Control here
+# on purpose: the zone's Browser Cache TTL (14400) would override it anyway, and
+# four hours is the right order of magnitude for all three. See the note on
+# /js/* below.
+/.well-known/api-catalog
+  Content-Type: application/linkset+json
+
+/api/openapi.json
+  Content-Type: application/openapi+json
+
+/api/docs.md
+  Content-Type: text/markdown; charset=utf-8
+
+# Agent-facing documents. Pages serves .md as text/plain, which reads as a file
+# to download rather than a document to parse. index.json needs no rule: the
+# extension already gets it application/json.
+/auth.md
+  Content-Type: text/markdown; charset=utf-8
+
+/.well-known/agent-skills/:skill/SKILL.md
+  Content-Type: text/markdown; charset=utf-8
 
 # js/config.js is the only script here with a stable filename — the app's
 # bundles are content-hashed, so a new build is a new URL and caching busts

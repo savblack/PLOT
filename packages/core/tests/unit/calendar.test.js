@@ -340,3 +340,12 @@ test('filterCalendarEvents keeps genre matches and events with no genre data', (
   assert.deepEqual(filterCalendarEvents(events, undefined, [18]).map(e => e.type), ['episode', 'reminder']);
   assert.deepEqual(filterCalendarEvents(events, ['movie', 'cinema'], [878]).map(e => e.type), ['cinema']);
 });
+
+test('filterCalendarEvents searches event titles case-insensitively', () => {
+  const events = [
+    { date: '2026-09-01', type: 'episode', item: { media_type: 'tv', name: 'Lanterns' } },
+    { date: '2026-09-02', type: 'streaming', item: { media_type: 'movie', title: 'Dune' } },
+  ];
+  assert.deepEqual(filterCalendarEvents(events, undefined, [], ' LANT ').map(e => e.item.name), ['Lanterns']);
+  assert.equal(filterCalendarEvents(events, undefined, [], 'missing').length, 0);
+});

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { fetchUserDataExport, parseExportError, exportFilename } from '../../src/utils/exportData.js';
+import { buildExportCsv, fetchUserDataExport, parseExportError, exportFilename } from '../../src/utils/exportData.js';
 
 function createSupabase({ session = { access_token: 'token-123' } } = {}) {
   return {
@@ -105,4 +105,12 @@ test('fetchUserDataExport returns the parsed payload on success', async () => {
 test('exportFilename embeds the date stamp', () => {
   const name = exportFilename(new Date('2026-06-18T09:30:00Z'));
   assert.equal(name, 'plot-data-export-2026-06-18.json');
+});
+
+test('CSV export neutralizes formula-shaped titles and notes', () => {
+  const csv = buildExportCsv({ data: {
+    history: [{ title: '=HYPERLINK("https://example.test")', note: '\t+SUM(1,2)' }],
+  } });
+  assert.ok(csv.includes('"\'=HYPERLINK(""https://example.test"")"'));
+  assert.match(csv, /"'\t\+SUM\(1,2\)"/);
 });

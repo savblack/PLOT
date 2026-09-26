@@ -1,0 +1,208 @@
+.responsive-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: responsiveDialogOverlayIn 0.16s ease;
+}
+
+.responsive-dialog {
+  position: relative;
+  width: min(570px, 100%);
+  max-height: min(680px, calc(100dvh - 6rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  color: var(--text-primary);
+  animation: responsiveDialogIn 0.2s var(--ease);
+}
+
+.responsive-dialog--compact { width: min(440px, 100%); }
+.responsive-dialog--wide { width: min(680px, 100%); }
+.responsive-dialog--tall { max-height: min(760px, calc(100dvh - 4rem)); }
+
+.responsive-dialog-handle { display: none; }
+.responsive-dialog-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.responsive-dialog-content--flush { overflow: hidden; display: flex; flex-direction: column; }
+.responsive-dialog-picker { min-height: 0; display: flex; flex: 1; flex-direction: column; overflow: hidden; }
+.responsive-dialog-scroll { min-height: 0; flex: 1; overflow-y: auto; }
+
+.responsive-dialog-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.8rem 1.1rem 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* Add-to-list is the reference workflow for the responsive surface. It keeps
+   title context, Top 5, custom lists, and create-list navigation in one card. */
+.add-list-context {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 1.1rem 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.add-list-context-poster {
+  width: 32px;
+  height: 44px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--border-strong);
+}
+.add-list-context-poster img { width: 100%; height: 100%; object-fit: cover; }
+.add-list-context small,
+.add-list-copy small { display: block; color: var(--text-muted); font-size: 0.68rem; line-height: 1.35; }
+.add-list-context > span:last-child { min-width: 0; }
+.add-list-context strong,
+.add-list-copy strong { display: block; overflow: hidden; color: var(--text-primary); font-size: 0.84rem; font-weight: 600; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+
+.add-list-top-five {
+  margin: 0.5rem 1.1rem 0.9rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.add-list-top-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+.add-list-rank-mark {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-sunken);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.add-list-copy { min-width: 0; flex: 1; text-align: left; }
+.add-list-chevron { color: var(--text-muted); font-size: 1.1rem; transition: transform 0.16s var(--ease); }
+.add-list-top-five.open .add-list-chevron { transform: rotate(180deg); }
+.add-list-rank-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.35rem; padding: 0 0.65rem 0.65rem; }
+
+.add-list-section-label {
+  padding: 0.1rem 1.25rem 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.add-list-row {
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 1.25rem;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  text-align: left;
+}
+.add-list-row:hover { background: var(--surface-sunken); }
+.add-list-cover { position: relative; width: 36px; height: 40px; flex: 0 0 auto; }
+.add-list-cover i { position: absolute; width: 27px; height: 36px; border: 1px solid color-mix(in srgb, var(--surface) 70%, transparent); border-radius: 5px; background: var(--text-muted); }
+.add-list-cover i:nth-child(2) { transform: translateX(5px); background: var(--accent-secondary); }
+.add-list-cover i:nth-child(3) { transform: translateX(9px); background: var(--accent); }
+.add-list-check {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 6px;
+}
+.add-list-row.selected .add-list-check { border-color: var(--accent); background: var(--accent); }
+.add-list-new { flex: 1; display: flex; align-items: center; gap: 0.55rem; padding: 0.55rem; border: 0; border-radius: 10px; background: transparent; font-size: 0.8rem; font-weight: 600; text-align: left; }
+.add-list-new:hover { background: var(--surface-sunken); }
+.add-list-new > span { width: 25px; height: 25px; display: grid; place-items: center; border: 1px solid var(--border-strong); border-radius: 8px; font-size: 1rem; font-weight: 400; }
+
+.add-list-create { padding: 1.25rem; }
+.add-list-create label { display: block; margin-bottom: 0.45rem; font-size: 0.8rem; font-weight: 600; }
+.add-list-create input { width: 100%; padding: 0.7rem 0.8rem; border: 1px solid var(--border-strong); border-radius: var(--radius-md); outline: 0; background: var(--surface-raised); color: var(--text-primary); }
+.add-list-create input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.add-list-create > p { margin: 0.55rem 0 1.25rem; color: var(--text-muted); font-size: 0.72rem; line-height: 1.5; }
+.add-list-error { margin: -0.65rem 0 1rem; color: var(--danger); font-size: 0.75rem; }
+.add-list-create-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+@keyframes responsiveDialogOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes responsiveDialogIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 767px) {
+  .responsive-dialog-overlay {
+    align-items: flex-end;
+    justify-content: stretch;
+    padding: 0.5rem;
+  }
+
+  .responsive-dialog {
+    width: 100%;
+    max-height: calc(84dvh - env(safe-area-inset-bottom, 0px));
+    border-radius: var(--radius-lg);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation: responsiveSheetIn 0.24s var(--ease);
+  }
+
+  .responsive-dialog--compact { width: 100%; }
+  .responsive-dialog--wide { width: 100%; }
+  .responsive-dialog--tall { max-height: calc(92dvh - env(safe-area-inset-bottom, 0px)); }
+
+  .responsive-dialog-handle {
+    display: block;
+    width: 36px;
+    height: 4px;
+    flex: 0 0 auto;
+    margin: 0.55rem auto 0;
+    border-radius: 999px;
+    background: var(--border-strong);
+  }
+
+  .responsive-dialog-footer { padding-bottom: 0.9rem; }
+
+  @keyframes responsiveSheetIn {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .responsive-dialog-overlay,
+  .responsive-dialog { animation: none; }
+}

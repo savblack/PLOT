@@ -6,6 +6,7 @@
 .auth-page {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -52,6 +53,19 @@
   pointer-events: none;
 }
 
+/* Logout confirmation uses the current PLOT charcoal between posters and at
+   the poster wall's top/bottom fade, instead of the legacy near-black. */
+.auth-page--logout .auth-visual,
+.auth-page--logout .poster-cell,
+.auth-page--login .auth-visual,
+.auth-page--login .poster-cell {
+  background-color: var(--text-primary);
+}
+.auth-page--logout .auth-visual-gradient,
+.auth-page--login .auth-visual-gradient {
+  background: linear-gradient(to bottom, var(--text-primary) 0%, transparent 20%, transparent 75%, var(--text-primary) 100%);
+}
+
 /* PLOT brand mark on the poster wall */
 .auth-visual-brand {
   position: absolute;
@@ -67,10 +81,10 @@
 
 .auth-visual-logo {
   display: block;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.045em;
   font-size: 2.5rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   line-height: 1;
   color: #fff;
   user-select: none;
@@ -90,6 +104,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--surface);
 }
@@ -101,10 +116,10 @@
   padding: clamp(1.25rem, 2.5vh, 2rem) 2.5rem;
   text-decoration: none;
   flex-shrink: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.045em;
   font-size: 1.7rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   line-height: 1;
   color: var(--text-primary);
   user-select: none;
@@ -117,10 +132,16 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  /* safe center keeps a short form in the middle. A tall form, Google plus
+     fields on a phone, starts at the top and scrolls. Plain center clips
+     the top of an overflowing column. */
   justify-content: center;
+  justify-content: safe center;
   align-items: center;
   padding: 0 2.5rem;
   min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .auth-header,
@@ -139,10 +160,10 @@
 }
 
 .auth-header h1 {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: clamp(1.7rem, 2.5vw, 2.2rem);
-  font-weight: 500;
-  letter-spacing: -0.03em;
   color: var(--text-primary);
   line-height: 1.15;
   margin-bottom: 0.5rem;
@@ -212,6 +233,13 @@
   border-width: 1px;
   background: var(--surface);
   box-shadow: none;
+}
+
+/* Login uses the warm sunken cream for editable fields. Google remains white
+   so the third-party action is visually distinct from first-party controls. */
+.auth-page--login .auth-field input,
+.auth-page--login .auth-field input:focus {
+  background: var(--surface-sunken);
 }
 
 /* Password wrapper */
@@ -310,6 +338,19 @@
 /* CTA rendered as a link (e.g. sign-out page) shouldn't be underlined */
 a.auth-cta { text-decoration: none; }
 
+.auth-page--login .auth-form .auth-cta {
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
+}
+.auth-page--login .auth-form .auth-cta:hover:not(:disabled) {
+  background: var(--accent-fill-hover);
+  opacity: 1;
+}
+.auth-page--login .auth-form .auth-cta:disabled {
+  background: var(--accent-fill);
+  opacity: 0.55;
+}
+
 /* Toggle mode */
 .auth-toggle {
   text-align: center;
@@ -369,10 +410,10 @@ a.auth-cta { text-decoration: none; }
 }
 
 .auth-success h1 {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.8rem;
-  font-weight: 500;
-  letter-spacing: -0.03em;
   color: var(--text-primary);
 }
 
@@ -414,6 +455,22 @@ a.auth-cta { text-decoration: none; }
   margin: 0;
   box-sizing: border-box;
   white-space: nowrap;
+}
+.logout-actions .auth-cta--primary {
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
+}
+.logout-actions .auth-cta--primary:hover:not(:disabled) {
+  background: var(--accent-fill-hover);
+  opacity: 1;
+}
+.logout-actions .auth-cta--secondary {
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+.logout-actions .auth-cta--secondary:hover:not(:disabled) {
+  background: var(--border-strong);
+  opacity: 1;
 }
 /* Neutralise the outline variant's auto-width + wide side padding so both
    buttons share the row equally and match height. */

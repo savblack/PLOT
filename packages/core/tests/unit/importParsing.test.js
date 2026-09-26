@@ -9,6 +9,7 @@ import {
   normaliseDate,
   detectDayFirst,
   parseLetterboxd,
+  parseImdb,
   parseNetflix,
   parsePrime,
   parseDisney,
@@ -157,6 +158,35 @@ test('parseLetterboxd returns an empty array without a header+data row or a titl
   assert.deepEqual(parseLetterboxd('Foo,Bar\n1,2'), []);
 });
 
+test('parseImdb preserves title identity, rating, rated date, year, and media hint', () => {
+  const csv = [
+    'Const,Your Rating,Date Rated,Title,URL,Title Type,IMDb Rating,Runtime (mins),Year',
+    'tt1375666,9,2024-04-20,Inception,https://www.imdb.com/title/tt1375666/,Movie,8.8,148,2010',
+    'tt0903747,10,2024-04-21,Breaking Bad,https://www.imdb.com/title/tt0903747/,TV Series,9.5,45,2008',
+  ].join('\n');
+
+  assert.deepEqual(parseImdb(csv), [
+    { title: 'Inception', hint: 'movie', date: '2024-04-20', year: '2010', rating: 9, externalId: 'tt1375666' },
+    { title: 'Breaking Bad', hint: 'tv', date: '2024-04-21', year: '2008', rating: 10, externalId: 'tt0903747' },
+  ]);
+});
+
+test('parseImdb skips title types Plot cannot represent safely', () => {
+  const csv = [
+    'Const,Your Rating,Date Rated,Title,Title Type,Year',
+    'tt123,8,2024-01-01,An Episode,TV Episode,2024',
+    'tt456,7,2024-01-02,A Game,Video Game,2024',
+  ].join('\n');
+  assert.deepEqual(parseImdb(csv), []);
+});
+
+test('parseImdb ignores malformed ratings and identifiers without dropping the title', () => {
+  const [entry] = parseImdb('Const,Your Rating,Title,Title Type\nnot-an-id,99,A Film,Movie');
+  assert.deepEqual(entry, {
+    title: 'A Film', hint: 'movie', date: null, year: null, rating: null, externalId: null,
+  });
+});
+
 test('parseNetflix splits "Show: Season X: Episode" into the series title with a tv hint', () => {
   const rows = parseNetflix('Title,Date\n"Stranger Things: Season 1: Chapter One",01/15/2024');
   assert.deepEqual(rows, [{ title: 'Stranger Things', hint: 'tv', seasonNumber: 1, episodeTitle: 'Chapter One', date: '2024-01-15' }]);
@@ -275,6 +305,7 @@ test('parseApple throws on invalid JSON rather than returning an empty array', (
 test('parsePlatform dispatches to the parser matching the platform id', () => {
   assert.deepEqual(parsePlatform('netflix', 'Title,Date\nInception,01/15/2024'), [{ title: 'Inception', hint: 'unknown', date: '2024-01-15' }]);
   assert.deepEqual(parsePlatform('letterboxd', 'Name\n'), []);
+  assert.throws(() => parsePlatform('imdb', 'Title\nHeat'), /Unsupported IMDb export/);
 });
 
 test('parsePlatform returns an empty array for an unknown platform id', () => {

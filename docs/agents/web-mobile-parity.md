@@ -27,6 +27,7 @@ Lists) and copy.
 | Official platform Top 10 charts on mobile | done |
 | Type + Genre filters on Discover / New Releases / Upcoming | done |
 | Notifications screen + header bell | done |
+| "Help build PLOT" drawer section (feedback + Ko-fi), flat mobile variant | done |
 
 The upcoming feed had **three** independent implementations (web's
 `UpcomingContent`, mobile's Upcoming tab, mobile's `HomeReleases`). All three
@@ -34,7 +35,7 @@ now run through `pickOutNow` / `groupFuture` in `packages/core/useUpcoming.js`.
 
 ## Left
 
-Both are interactive/visual mobile work. Neither should ship without running
+These are interactive/visual mobile work. None should ship without running
 the app — see the blocker below.
 
 1. **4d — drag-to-reorder Top 10.** Web uses raw pointer events in
@@ -43,13 +44,24 @@ the app — see the blocker below.
    ↑/↓ buttons. Port web's semantics: edit-mode only,
    `steps = Math.round(dragOffset / rowHeight)`, clamp to `[1, maxRank]`, then
    walk `topLists.moveUp` / `moveDown` one step at a time.
-2. **6f — Discover section headers.** Apply web's `DiscoverSectionHeader`
+2. **The drawer's rows carry no icons.** Web's rail puts an icon on every row,
+   including the two "Help build PLOT" links; the drawer is text-only
+   throughout, so its flat section follows its neighbours. If the drawer gains
+   icons, port the whole set via `react-native-svg`, not only these two rows.
+3. **6f — Discover section headers.** Apply web's `DiscoverSectionHeader`
    treatment (uppercase accent kicker over uppercase title) plus the
    expand/collapse-all control, using the Phase 4a primitives.
 
 Also open, from the original plan's out-of-scope list: mobile Settings lacks
 avatar upload, username availability checking, invite-friends share and data
 export.
+
+### Ko-fi on iOS is an unresolved App Review question
+
+The drawer's **Support PLOT** row is the first outbound donation link in the
+iOS app. Before an App Store submission, decide whether to remove it or gate it
+in `lib/launchFeatures.ts`; Apple guideline 3.1.1's donation carve-outs are not
+an obvious fit for a Ko-fi tip to an individual developer.
 
 ## The app has now been run (2026-09-11)
 

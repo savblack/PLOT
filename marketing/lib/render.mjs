@@ -36,8 +36,13 @@ export const renderCard = async (templateName, data, { size = 'portrait' } = {})
     readFile(path.join(TEMPLATES_DIR, '_helpers.js'), 'utf8'),
   ]);
 
+  // The display face rides in as a data URI: setContent() never navigates to a
+  // real URL, so a file path in base.css could not resolve.
+  const gabarito = await readFile(path.join(TEMPLATES_DIR, '..', '..', 'apps', 'web', 'public', 'fonts', 'Gabarito-Bold.ttf'));
+  const fontFace = `@font-face { font-family: 'Gabarito'; src: url(data:font/ttf;base64,${gabarito.toString('base64')}) format('truetype'); font-weight: 700; font-style: normal; }\n`;
+
   const html = template
-    .replace('/*INLINE_BASE_CSS*/', baseCss)
+    .replace('/*INLINE_BASE_CSS*/', fontFace + baseCss)
     .replace('/*HELPERS_JS*/', helpersJs)
     .replace('"/*DATA_JSON*/"', JSON.stringify(data).replace(/</g, '\\u003c'));
 

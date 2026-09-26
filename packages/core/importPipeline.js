@@ -107,13 +107,20 @@ export async function resolveImportMatch(entry, candidateKey, { getSeason }) {
   }
 }
 
+function externalIdResults(response) {
+  return [
+    ...(response?.movie_results || []).map(result => ({ ...result, media_type: 'movie' })),
+    ...(response?.tv_results || []).map(result => ({ ...result, media_type: 'tv' })),
+  ];
+}
+
 /**
  * Resolve parsed entries to TMDB titles.
  * @param {any[]} entries
- * @param {{ search: (title: string) => Promise<any>, findByImdbId?: (id: string) => Promise<any>, findByTvdbId?: (id: number|string) => Promise<any>, getSeason?: (id: number, season: number) => Promise<any>, onProgress?: (done: number, total: number) => void }} [deps]
+ * @param {{ search: (title: string) => Promise<any>, findByImdbId?: (id: string) => Promise<any>, findByTvdbId?: (id: number|string) => Promise<any>, findExternal?: (id: string) => Promise<any>, getSeason?: (id: number, season: number) => Promise<any>, onProgress?: (done: number, total: number) => void }} [deps]
  * @returns {Promise<any[]>} one result per entry, `status: 'matched' | 'unmatched'`
  */
-export async function resolveImportEntries(entries, { search, findByImdbId, findByTvdbId, getSeason, onProgress } = /** @type {any} */ ({})) {
+export async function resolveImportEntries(entries, { search, findByImdbId, findByTvdbId, getSeason, findExternal, onProgress } = /** @type {any} */ ({})) {
   const resolved = [];
   const searches = new Map();
 
@@ -121,6 +128,12 @@ export async function resolveImportEntries(entries, { search, findByImdbId, find
     let requested = false;
     const settled = await Promise.all(batch.map(async (entry) => {
       try {
+        if (entry.externalId && findExternal && !entry.externalIds?.imdb) {
+          try {
+            const match = pickTmdbMatch(entry, externalIdResults(await findExternal(entry.externalId)));
+            if (match) return chooseImportMatch({ ...entry, candidates: [match], reason: 'external_id' }, `${match.media_type}:${match.id}`);
+          } catch { /* Legacy title-level imports can fall back to title review. */ }
+        }
         // TMDB supports TVDB find for television, not movie identities.
         // A TV Time movie with no IMDb ID must go through title review.
         const externalSource = entry.externalIds?.imdb ? 'imdb' : entry.externalIds?.tvdb && entry.hint !== 'movie' ? 'tvdb' : null;

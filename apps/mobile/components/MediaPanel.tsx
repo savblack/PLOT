@@ -1,5 +1,11 @@
 import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import { getEpisodeGuideState } from '@plot/core/episodeProgress.js';
+import PrivateNote from './PrivateNote';
+import { buildTitleShareUrl } from '@plot/core/sharing.js';
+import { SHARING } from '@plot/core/copy/sharing.js';
+import { shareLink } from '../lib/share';
+import { customListCreationError } from '@plot/core/customListCreation.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 /**
  * MediaPanel — slide-up detail sheet, mobile port of web MediaPanel.jsx.
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
@@ -12,7 +18,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
-  StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Share, Linking, Alert,
+  StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Linking, Alert,
   Platform,
 } from 'react-native';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
@@ -33,21 +39,35 @@ import {
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { ENGAGEMENT_PROMPT } from '@plot/core/copy/engagementPrompt.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
+import {
+  ENGAGEMENT_SNOOZE_KEY,
+  ENGAGEMENT_PENDING_KEY,
+  WATCH_PROMPT_SNOOZE_MS,
+  RATE_PROMPT_SNOOZE_MS,
+  engagementTitleKey,
+  parseEngagementSnooze,
+  serialiseEngagementSnooze,
+  isEngagementSnoozed,
+  snoozeEngagement,
+  canShowWatchPrompt,
+  canShowRatePrompt,
+  parseEngagementPending,
+  pendingWatchMatches,
+} from '@plot/core/engagementPrompt.js';
+import { readStorage, writeStorage, removeStorage } from '../lib/storage';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
-import { SHOW_PRICING_PAGE } from '../lib/launchFeatures';
+import { canCreateCustomList } from '@plot/core/premium.js';
+import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { useRouter } from 'expo-router';
+import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { TrailerPlayer } from './TrailerPlayer';
 import CollectionCard from './CollectionCard';
 import { MEDIA } from '@plot/core/copy/media.js';
 
-// Shared link points at the web /save route (works for anyone, app or not) —
-// mirrors web buildTitleShareUrl.
-const SHARE_BASE = 'https://app.theplot.tv';
-const buildShareUrl = (tmdbId: number, mediaType: string) =>
-  `${SHARE_BASE}/save?media_type=${mediaType}&tmdb_id=${tmdbId}&src=share`;
 
 const SCREEN_H = Dimensions.get('window').height;
 const SCREEN_W = Dimensions.get('window').width;
@@ -159,24 +179,42 @@ function IconShare() {
 // this file. This picker is whole-star-only (no half-star touch target), so
 // it converts at its own boundary: ratingToStars for what to display,
 // starsToRating for what a tap writes back.
-function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) => void }) {
+function StarRow({
+  rating,
+  onChange,
+  // Engagement prompt stars match the pink fill button; the take editor keeps
+  // the amber --rating colour used everywhere else in the panel.
+  color,
+  // Wider tap targets for the sticky prompt (44px min). The take editor keeps
+  // the tighter default so the review section stays compact.
+  largeHit = false,
+}: {
+  rating: number;
+  onChange: (r: number) => void;
+  color?: string;
+  largeHit?: boolean;
+}) {
   const { colors } = useTheme();
+  const starColor = color ?? colors.rating;
   const displayStars = ratingToStars(rating);
   return (
-    <View style={{ flexDirection: 'row', gap: 4 }}>
+    <View style={{ flexDirection: 'row', gap: largeHit ? 2 : 4 }}>
       {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
         <TouchableOpacity
           key={n}
           onPress={() => onChange(starsToRating(displayStars === n ? 0 : n))}
-          hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+          hitSlop={largeHit
+            ? { top: 10, bottom: 10, left: 8, right: 8 }
+            : { top: 6, bottom: 6, left: 4, right: 4 }}
+          style={largeHit ? { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' } : undefined}
           accessibilityLabel={displayStars === n ? 'Clear rating' : `Rate ${n} star${n > 1 ? 's' : ''}`}
           accessibilityRole="button"
         >
           <Svg width={24} height={24} viewBox="0 0 24 24">
             <Polygon
               points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-              fill={n <= displayStars ? colors.rating : 'none'}
-              stroke={colors.rating}
+              fill={n <= displayStars ? starColor : 'none'}
+              stroke={starColor}
               strokeWidth={1.5}
               strokeLinejoin="round"
             />
@@ -479,6 +517,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
   const insets = useSafeAreaInsets();
   const { lists, isInList, addItem, removeItem, createList } = customLists;
   const { profile } = useAppData();
+  const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [name, setName]         = useState('');
   const [error, setError]       = useState('');
@@ -495,16 +534,24 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
     if (!trimmed) return;
     if (findDuplicateCustomList(lists, trimmed)) { setError('A list with that name already exists.'); return; }
     if (!canCreateCustomList(lists.length, profile)) {
-      setError(SHOW_PRICING_PAGE
-        ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`
-        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
+      setError(CUSTOM_LISTS.limitMessage);
+      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage, [
+        { text: COMMON.cancel, style: 'cancel' },
+        { text: PLANS_PAGE.previewAction, onPress: () => { onClose(); router.push('/(app)/settings?premium=1' as any); } },
+      ]);
       return;
     }
     setBusy(true);
-    const newList = await createList(trimmed);
-    if (!newList) { setBusy(false); setError(MEDIA.couldNotCreateList); return; }
-    await addItem(newList.id, item);   // create + immediately add this title, like web
-    setBusy(false); setCreating(false); setName(''); setError('');
+    try {
+      const newList = await createList(trimmed);
+      if (!newList) { setError(MEDIA.couldNotCreateList); return; }
+      await addItem(newList.id, item);
+      setCreating(false); setName(''); setError('');
+    } catch (error) {
+      setError(customListCreationError(error, MEDIA.couldNotCreateList));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -518,7 +565,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
           <View style={styles.lsTopSection}>
             <TouchableOpacity style={styles.lsRow} onPress={() => setTopOpen(o => !o)} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.lsName}>Top 10 {topListType === 'tv' ? 'TV Shows' : 'Movies'}</Text>
+                <Text style={styles.lsName}>{topListType === 'tv' ? MEDIA_PANEL.topFiveTvShows : MEDIA_PANEL.topFiveMovies}</Text>
                 <Text style={styles.lsCount}>{currentRank ? MEDIA_PANEL.currentlyRanked(currentRank) : MEDIA_PANEL.notRanked}</Text>
               </View>
               <View style={[styles.lsCheck, currentRank && styles.lsCheckOn]}>
@@ -527,7 +574,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
             </TouchableOpacity>
             {topOpen && (
               <View style={styles.lsTopGrid}>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map(rank => {
+                {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1).map(rank => {
                   const occupant = topItems.find((t: any) => t.rank === rank);
                   const isThis = occupant?.tmdb_id === item.id;
                   return (
@@ -621,7 +668,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
             <View style={styles.lsHandle} />
             <Text style={styles.lsTitle}>Move "{moveToPicker.occupant.title}" to...</Text>
             <View style={styles.lsTopGrid}>
-              {Array.from({ length: 10 }, (_, i) => i + 1)
+              {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1)
                 .filter(r => r !== moveToPicker.rank && !topItems.find((t: any) => t.rank === r))
                 .map(r => (
                   <TouchableOpacity
@@ -638,7 +685,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
                   </TouchableOpacity>
                 ))}
             </View>
-            {Array.from({ length: 10 }, (_, i) => i + 1).filter(r => r !== moveToPicker.rank && !topItems.find((t: any) => t.rank === r)).length === 0 && (
+            {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1).filter(r => r !== moveToPicker.rank && !topItems.find((t: any) => t.rank === r)).length === 0 && (
               <Text style={styles.lsEmpty}>No open spots — every other rank is taken.</Text>
             )}
           </View>
@@ -690,8 +737,15 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const [pickingDate, setPickingDate] = useState(false);
   const [localDnf,    setLocalDnf]    = useState(false);
   const [savingReview, setSavingReview] = useState(false);
+  // PLO-473 / PLO-474: compact post-save watch → post–mark-watched rate prompts.
+  const [engagementPrompt, setEngagementPrompt] = useState<'watch' | 'rate' | null>(null);
+  const [engagementBusy, setEngagementBusy] = useState(false);
+  const [focusReviewAfterPrompt, setFocusReviewAfterPrompt] = useState(false);
 
   const slideY = useRef(new Animated.Value(PANEL_H)).current;
+  const scrollRef = useRef<ScrollView>(null);
+  const reviewSectionY = useRef(0);
+  const reviewInputRef = useRef<TextInput>(null);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -715,18 +769,34 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   // state can't be left behind. Shared by the Watched button and by the
   // episode guide, which calls it when the final episode of an ended series
   // is ticked.
-  const markWatchedNow = async () => markMediaAsWatched({
-    logWatched: () => history.logWatched(
-      { ...details, id: itemId, media_type: itemType },
-      { watchedAt: defaultWatchedAt },
-    ),
-    clearWatching:   () => watching.stopWatching(itemId),
-    removeFromSaved: () => watchlist.removeFromList(itemId),
-    rollbackHistory: () => history.removeEntry(itemId, itemType),
-    mediaType: itemType,
-    isWatching,
-    inList,
-  });
+  const markWatchedNow = async () => {
+    const result = await markMediaAsWatched({
+      logWatched: () => history.logWatched(
+        { ...details, id: itemId, media_type: itemType },
+        { watchedAt: defaultWatchedAt },
+      ),
+      clearWatching:   () => watching.stopWatching(itemId),
+      removeFromSaved: () => watchlist.removeFromList(itemId),
+      rollbackHistory: () => history.removeEntry(itemId, itemType),
+      mediaType: itemType,
+      isWatching,
+      inList,
+    });
+    if (result.ok) {
+      const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+      const snoozed = isEngagementSnoozed(
+        parseEngagementSnooze(raw),
+        engagementTitleKey(itemId, itemType),
+        'rate',
+      );
+      if (canShowRatePrompt({ watched: true, hasRating: !!(watchedEntry?.rating), snoozed })) {
+        setEngagementPrompt('rate');
+      } else {
+        setEngagementPrompt(null);
+      }
+    }
+    return result;
+  };
 
   // Already-watched shows are a no-op rather than a toggle-off: this fires
   // from episode ticks, not from a button the user aimed at it.
@@ -741,14 +811,147 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     return result;
   };
 
-  const handleShare = async () => {
-    try {
-      const t = details?.title || details?.name || '';
-      const url = buildShareUrl(itemId, itemType);
-      await Share.share({ message: t ? `${t}. ${url}` : url, url });
-      track(EVENTS.TITLE_SHARED, { tmdb_id: itemId, media_type: itemType });
-    } catch { /* user dismissed the share sheet */ }
+  const offerWatchPrompt = async () => {
+    if (watched) return;
+    const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+    const snoozed = isEngagementSnoozed(
+      parseEngagementSnooze(raw),
+      engagementTitleKey(itemId, itemType),
+      'watch',
+    );
+    if (!canShowWatchPrompt({ watched, snoozed })) return;
+    await removeStorage(ENGAGEMENT_PENDING_KEY);
+    setEngagementPrompt('watch');
   };
+
+  const dismissWatchPrompt = async () => {
+    const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+    const next = snoozeEngagement(
+      parseEngagementSnooze(raw),
+      engagementTitleKey(itemId, itemType),
+      'watch',
+      WATCH_PROMPT_SNOOZE_MS,
+    );
+    await writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(next));
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'watch',
+      action: 'not_yet',
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
+    setEngagementPrompt(null);
+  };
+
+  const skipRatePrompt = async () => {
+    const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+    const next = snoozeEngagement(
+      parseEngagementSnooze(raw),
+      engagementTitleKey(itemId, itemType),
+      'rate',
+      RATE_PROMPT_SNOOZE_MS,
+    );
+    await writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(next));
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'rate',
+      action: 'skip',
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
+    setEngagementPrompt(null);
+  };
+
+  const handleSaveFromPanel = async () => {
+    if (!details) return;
+    if (inList) {
+      await watchlist.removeFromList(itemId);
+      return;
+    }
+    const saved = await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
+    if (saved) await offerWatchPrompt();
+  };
+
+  const handlePromptMarkWatched = async () => {
+    if (engagementBusy) return;
+    setEngagementBusy(true);
+    try {
+      const result = await markWatchedNow();
+      if (!result.ok) {
+        const detail = history.getLastError();
+        if (detail) captureException(new Error(detail), { surface: 'media_panel', action: 'watched_status' });
+        Alert.alert('Could not update', result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+      }
+    } finally {
+      setEngagementBusy(false);
+    }
+  };
+
+  const handlePromptStartWatching = async () => {
+    if (engagementBusy || isMovie) return;
+    setEngagementBusy(true);
+    try {
+      if (isWatching) {
+        await watching.stopWatching(itemId);
+        setEngagementPrompt(null);
+        return;
+      }
+      const result = await moveSavedShowToWatching({
+        startWatching: () => watching.startWatching({ ...details, id: itemId, media_type: 'tv' }),
+        removeFromSaved: () => inList ? watchlist.removeFromList(itemId) : Promise.resolve(true),
+        rollbackWatching: () => watching.stopWatching(itemId),
+      });
+      if (result.ok) setEngagementPrompt(null);
+      else Alert.alert('Could not update', result.error);
+    } finally {
+      setEngagementBusy(false);
+    }
+  };
+
+  const scrollToReviewAndFocus = () => {
+    setFocusReviewAfterPrompt(true);
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, reviewSectionY.current - 24), animated: true });
+      setTimeout(() => reviewInputRef.current?.focus(), 280);
+    });
+  };
+
+  const handlePromptRate = async (rating: number) => {
+    if (!rating) return;
+    setEngagementBusy(true);
+    try {
+      const ok = await history.updateEntry(
+        itemId,
+        { rating, note: localReview.trim() || null, dnf: localDnf, watched_at: localWatchedAt || defaultWatchedAt },
+        itemType,
+      );
+      if (ok) {
+        setLocalRating(rating);
+        setEngagementPrompt(null);
+        scrollToReviewAndFocus();
+      }
+    } finally {
+      setEngagementBusy(false);
+    }
+  };
+
+  // Leave the rate prompt without snoozing and land on the written-review fields.
+  const handlePromptWriteReview = () => {
+    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
+      kind: 'rate',
+      action: 'write_review',
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
+    setEngagementPrompt(null);
+    scrollToReviewAndFocus();
+  };
+
+  const handleShare = () => shareLink({
+    url: buildTitleShareUrl({ tmdbId: itemId, mediaType: itemType, source: 'panel' }),
+    title: details?.title || details?.name,
+    text: SHARING.titleText(details?.title || details?.name || ''),
+    event: EVENTS.TITLE_SHARED,
+    eventProps: { tmdb_id: itemId, media_type: itemType, source: 'panel' },
+  });
 
   // Sync review state
   useEffect(() => {
@@ -759,6 +962,45 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       setLocalWatchedAt(String(watchedEntry.watched_at || defaultWatchedAt).slice(0, 10));
     }
   }, [watchedEntry?.id]);
+
+  // Clear the engagement prompt when the open title changes.
+  useEffect(() => {
+    setEngagementPrompt(null);
+    setEngagementBusy(false);
+    setFocusReviewAfterPrompt(false);
+  }, [itemId, itemType]);
+
+  // Out-of-panel save left a pending watch prompt for this title.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (watched) return;
+      const raw = await readStorage(ENGAGEMENT_PENDING_KEY, null);
+      if (cancelled) return;
+      const pending = parseEngagementPending(raw);
+      if (!pendingWatchMatches(pending, itemId, itemType)) return;
+      await removeStorage(ENGAGEMENT_PENDING_KEY);
+      const snoozeRaw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
+      if (cancelled) return;
+      const snoozed = isEngagementSnoozed(
+        parseEngagementSnooze(snoozeRaw),
+        engagementTitleKey(itemId, itemType),
+        'watch',
+      );
+      if (!canShowWatchPrompt({ watched: false, snoozed })) return;
+      setEngagementPrompt('watch');
+    })();
+    return () => { cancelled = true; };
+  }, [itemId, itemType, watched]);
+
+  useEffect(() => {
+    if (!engagementPrompt) return;
+    track(EVENTS.ENGAGEMENT_PROMPT_SHOWN, {
+      kind: engagementPrompt,
+      tmdb_id: itemId,
+      media_type: itemType,
+    });
+  }, [engagementPrompt, itemId, itemType]);
 
   // Slide in on mount
   useEffect(() => {
@@ -840,6 +1082,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         tmdb_id: itemId, media_type: itemType,
         provider: p.provider_name ?? null, link_kind: link.kind ?? null,
       });
+      if (inList && !watched) {
+        void offerWatchPrompt();
+      }
       Linking.openURL(link.url).catch((e) => {
         console.warn('[MediaPanel] failed to open watch link', e);
         Alert.alert("Couldn't open link", 'Please try again in a moment.');
@@ -885,7 +1130,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           <View style={styles.handle} />
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView
+          ref={scrollRef}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Backdrop image */}
           <View style={styles.backdropWrap}>
             {details?.backdrop_path
@@ -981,7 +1231,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     {!isWatching && (
                       <TouchableOpacity
                         style={[styles.btnPrimary, styles.btnHalf, inList && styles.btnSaved]}
-                        onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
+                        onPress={handleSaveFromPanel}
                       >
                         {inList && <IconCheck color={colors.statusWatched} />}
                         <Text style={[styles.btnPrimaryText, inList && { color: colors.statusWatched }]}>
@@ -1037,7 +1287,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.btnSecondary} onPress={handleShare}>
                       <IconShare />
-                      <Text style={styles.btnSecondaryText}>Share</Text>
+                      <Text style={styles.btnSecondaryText}>{COMMON.share}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1070,8 +1320,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </TouchableOpacity>
                 )}
 
+                <PrivateNote id={itemId} type={itemType} title={title} />
+
                 {watched && (
-                  <View style={{ marginBottom: spacing.lg }}>
+                  <View
+                    style={{ marginBottom: spacing.lg }}
+                    onLayout={(e) => { reviewSectionY.current = e.nativeEvent.layout.y; }}
+                  >
                     {/* Date watched — mirrors web's "Watched on" row. Capped at
                         today: a future watch date would sort into a month group
                         that hasn't happened. */}
@@ -1128,9 +1383,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       </TouchableOpacity>
                     </View>
                     <TextInput
-                      style={styles.reviewInput}
+                      ref={reviewInputRef}
+                      style={[styles.reviewInput, focusReviewAfterPrompt && styles.reviewInputFocused]}
                       value={localReview}
                       onChangeText={t => { if (t.length <= 280) setLocalReview(t); }}
+                      onBlur={() => setFocusReviewAfterPrompt(false)}
                       placeholder="Write a quick review…"
                       placeholderTextColor={colors.textMuted}
                       multiline
@@ -1261,6 +1518,67 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
             )}
           </View>
         </ScrollView>
+
+        {engagementPrompt && !loading && !error && details && (
+          <View style={styles.engagementBar} accessibilityRole="summary">
+            {engagementPrompt === 'watch' ? (
+              <View style={styles.engagementRow}>
+                <Text style={styles.engagementTitle}>{ENGAGEMENT_PROMPT.watchedIt}</Text>
+                <View style={styles.engagementActions}>
+                  <TouchableOpacity
+                    style={[styles.engagementPrimary, engagementBusy && styles.engagementDisabled]}
+                    disabled={engagementBusy}
+                    onPress={handlePromptMarkWatched}
+                  >
+                    <Text style={styles.engagementPrimaryText}>{ENGAGEMENT_PROMPT.markAsWatched}</Text>
+                  </TouchableOpacity>
+                  {!isMovie && !isWatching && (
+                    <TouchableOpacity
+                      style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
+                      disabled={engagementBusy}
+                      onPress={handlePromptStartWatching}
+                    >
+                      <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.imWatching}</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
+                    disabled={engagementBusy}
+                    onPress={dismissWatchPrompt}
+                  >
+                    <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.notYet}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.engagementRow}>
+                <Text style={styles.engagementTitle}>{ENGAGEMENT_PROMPT.howWasIt}</Text>
+                <View style={styles.engagementActions}>
+                  <StarRow
+                    rating={localRating}
+                    color={colors.accentFill}
+                    largeHit
+                    onChange={(r) => { void handlePromptRate(r); }}
+                  />
+                  <TouchableOpacity
+                    style={[styles.engagementPrimary, engagementBusy && styles.engagementDisabled]}
+                    disabled={engagementBusy}
+                    onPress={handlePromptWriteReview}
+                  >
+                    <Text style={styles.engagementPrimaryText}>{MEDIA_PANEL.writeReview}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
+                    disabled={engagementBusy}
+                    onPress={skipRatePrompt}
+                  >
+                    <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.skipForNow}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
       </Animated.View>
     </Modal>
 
@@ -1304,7 +1622,57 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   body: { padding: spacing.xl },
 
-  title:    { fontFamily: fontFamily.serif, fontSize: fontSize.xxl, color: colors.textPrimary, marginBottom: spacing.sm },
+  engagementBar: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surfaceSunken,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  engagementRow: {
+    // Label on its own line, CTAs below. Phone width cannot fit "How was it?"
+    // + five stars + two buttons on one row without an ugly mid-CTA wrap.
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: spacing.sm,
+  },
+  engagementTitle: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.sm,
+    color: colors.textPrimary,
+  },
+  engagementActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  engagementPrimary: {
+    backgroundColor: colors.accentFill,
+    borderRadius: radii.md,
+    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+  },
+  engagementPrimaryText: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: fontSize.sm,
+    color: colors.onAccentFill,
+  },
+  engagementGhost: {
+    borderRadius: radii.md,
+    paddingVertical: 8,
+    paddingHorizontal: spacing.sm,
+  },
+  engagementGhostText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  engagementDisabled: { opacity: 0.55 },
+
+  title:    { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, marginBottom: spacing.sm },
   metaRow:  { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm, flexWrap: 'wrap' },
   metaYear: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
   metaType: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -1317,7 +1685,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   consensusLine: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 17 },
   overview: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginBottom: spacing.lg },
   audienceQuote: { borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: spacing.md, marginBottom: spacing.md },
-  audienceQuoteText: { fontFamily: fontFamily.serif, fontStyle: 'italic', fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 21 },
+  audienceQuoteText: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 21 },
   audienceQuoteAttr: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.textMuted, marginTop: 4, letterSpacing: 0.3 },
 
   // Single-source spacing.sm rhythm for the action block: the col gap handles
@@ -1390,6 +1758,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, borderRadius: radii.md,
     padding: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary,
     minHeight: 72, textAlignVertical: 'top', backgroundColor: colors.surface,
+  },
+  reviewInputFocused: {
+    borderColor: colors.accentFill,
   },
 
   providerChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border },
@@ -1466,7 +1837,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.xl, paddingTop: spacing.sm,
   },
   lsHandle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong, marginBottom: spacing.md },
-  lsTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.md },
+  lsTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.md },
   lsEmpty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, paddingVertical: spacing.md },
   lsRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,

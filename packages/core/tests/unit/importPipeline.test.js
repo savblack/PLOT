@@ -94,6 +94,44 @@ test('resolveImportEntries keeps genre ids so imported rows can carry them', asy
   assert.deepEqual(resolved.genreIds, [28, 80]);
 });
 
+test('resolveImportEntries prefers an IMDb external-id match over title search', async () => {
+  let searches = 0;
+  const [resolved] = await resolveImportEntries(
+    [{ title: 'Heat', hint: 'movie', externalId: 'tt0113277' }],
+    {
+      findExternal: async id => ({ movie_results: [{ id: 949, title: 'Heat', genre_ids: [28, 80], imdb: id }] }),
+      search: async () => { searches += 1; return { results: [] }; },
+    },
+  );
+
+  assert.equal(resolved.tmdbId, 949);
+  assert.equal(resolved.mediaType, 'movie');
+  assert.deepEqual(resolved.genreIds, [28, 80]);
+  assert.equal(searches, 0);
+});
+
+test('resolveImportEntries falls back to title search when an IMDb id has no TMDB match', async () => {
+  const [resolved] = await resolveImportEntries(
+    [{ title: 'Heat', hint: 'movie', externalId: 'tt0000000' }],
+    {
+      findExternal: async () => ({ movie_results: [], tv_results: [] }),
+      search: async () => ({ results: [{ id: 949, media_type: 'movie', title: 'Heat' }] }),
+    },
+  );
+  assert.equal(resolved.tmdbId, 949);
+});
+
+test('resolveImportEntries falls back to title search when external-id lookup fails', async () => {
+  const [resolved] = await resolveImportEntries(
+    [{ title: 'Heat', hint: 'movie', externalId: 'tt0113277' }],
+    {
+      findExternal: async () => { throw new Error('temporary failure'); },
+      search: async () => ({ results: [{ id: 949, media_type: 'movie', title: 'Heat' }] }),
+    },
+  );
+  assert.equal(resolved.tmdbId, 949);
+});
+
 test('resolveImportEntries reports progress across every batch', async () => {
   const seen = [];
   await resolveImportEntries(

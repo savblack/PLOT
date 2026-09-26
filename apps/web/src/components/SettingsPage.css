@@ -1,0 +1,147 @@
+/* Web settings layout. Native uses the same core section/copy definitions.
+   The page rides on the shared shell: .hist-page / .hist-toolbar / .cal-body /
+   .cal-side / .cal-stream / .hist-card / .cal-filter-row, the same classes the
+   Calendar, Guide and History use. Only what is settings-specific lives here. */
+
+/* The page title and subtitle come from .app-page-heading in AppShell, so the
+   toolbar carries the search alone. */
+.settings-toolbar { justify-content: flex-end; }
+.settings-page p { color: var(--text-secondary); line-height: 1.6; }
+
+/* ── Left column ── */
+/* Who you are. The only card on the page that states a fact rather than
+   offering a control. */
+.settings-account-card { gap: 12px; padding: 16px 14px 12px; }
+.settings-account-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.settings-account-avatar {
+  width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent-dim); color: var(--accent-text);
+  font-family: var(--font-display); font-weight: 700; font-size: 1.15rem;
+}
+.settings-account-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.settings-account-names { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.settings-account-name {
+  font-family: var(--font-display); font-weight: 700; font-size: 18px;
+  letter-spacing: var(--font-display-tracking); line-height: 1.15; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.settings-account-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding-top: 10px; border-top: 1px solid var(--border);
+}
+.settings-account-plan {
+  padding: 4px 9px; border-radius: var(--radius-badge);
+  background: var(--accent-dim); color: var(--accent-text);
+  font-size: .69rem; font-weight: 600; white-space: nowrap;
+}
+.settings-account-card .settings-text-action { min-height: 0; }
+
+/* Sections. No card heading — the column's position says what it is — and the
+   selected row is the accent plus the heavier weight, not a tick. */
+.settings-nav-card { padding: 6px 12px; gap: 0; }
+.settings-nav-row[aria-current="page"] .cal-filter-name { color: var(--accent-text); font-weight: 600; }
+
+.settings-sign-out {
+  align-self: flex-start;
+  min-height: 44px; padding: 0 4px;
+  border: 0; background: transparent;
+  font: inherit; font-size: .8rem; color: var(--text-secondary);
+  cursor: pointer;
+}
+.settings-sign-out:hover { color: var(--accent-text); }
+
+/* ── Stream ── */
+.settings-detail { gap: 0; }
+.settings-section-head { padding: 0 4px 1.25rem; }
+.settings-section-head .cal-stream-month-count { line-height: 1.5; }
+
+/* Sections below the sidebar breakpoint: the column is hidden, so its rows
+   become a chip row over the stream (the Guide does the same with its days). */
+.settings-mobile-head { display: flex; flex-direction: column; gap: 1rem; padding-bottom: 1.5rem; }
+.settings-mobile-nav { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.settings-mobile-nav::-webkit-scrollbar { display: none; }
+.settings-chip {
+  flex-shrink: 0; min-height: 36px; padding: .5rem .9rem;
+  border: 0; border-radius: var(--radius-pill);
+  background: var(--surface-sunken); color: var(--text-secondary);
+  font: inherit; font-size: .8rem; font-weight: 500; white-space: nowrap; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.settings-chip[aria-current="page"] { background: var(--accent-dim); color: var(--accent-text); font-weight: 600; }
+.settings-mobile-foot { padding-top: 1.5rem; }
+@media (min-width: 1024px) {
+  .settings-mobile-head,
+  .settings-mobile-foot { display: none; }
+}
+/* No room for the description beside the heading until the column appears. */
+@media (max-width: 1023px) {
+  .settings-section-head { display: block; }
+  .settings-section-head .cal-stream-month-count { display: block; margin-top: .4rem; }
+}
+
+/* ── Rows ── */
+.settings-page .settings-group { margin: 0 0 2rem; }
+.settings-page .settings-group-title { padding: 0 .25rem .5rem; }
+.settings-page .settings-row { cursor: default; min-height: 80px; padding: .85rem .25rem; border-bottom: 1px solid var(--border); border-radius: 0; gap: 1rem; }
+.settings-page .settings-row-icon { display: none; }
+.settings-page .settings-row-left { min-width: 0; flex: 1; }
+.settings-page .settings-text-action { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; gap: .4rem; padding: .5rem 0; border: 0; border-radius: 0; background: transparent; white-space: nowrap; text-decoration: none; font: inherit; font-size: .8rem; }
+.settings-page .settings-text-action:hover:not(:disabled) { color: var(--accent-text); }
+.settings-page .settings-text-action:disabled { opacity: .55; cursor: wait; }
+.settings-preference-copy { min-width: 0; }
+.settings-selection { display: block; color: var(--text-secondary); font-size: .8rem; margin-top: .4rem; line-height: 1.6; overflow-wrap: anywhere; }
+.settings-switch { border: 0; background: none; padding: 10px 0; min-width: 44px; min-height: 44px; flex-shrink: 0; cursor: pointer; }
+.settings-switch > span { display: block; width: 44px; height: 24px; background: var(--text-muted); border-radius: var(--radius-pill); padding: 3px; }
+.settings-switch > span::after { content: ''; display: block; width: 18px; height: 18px; background: var(--surface); border-radius: 50%; }
+.settings-switch[aria-checked="true"] > span { background: var(--accent); }
+.settings-switch[aria-checked="true"] > span::after { transform: translateX(20px); }
+.settings-switch:disabled { opacity: .5; cursor: wait; }
+
+/* ── Billing ── */
+.settings-premium-card { border: 1px solid var(--border-strong); background: var(--surface); border-radius: var(--radius-md); padding: 1.5rem; }
+.settings-premium-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.settings-premium-heading h3, .settings-support h3 { font: 400 1.9rem/1.2 var(--font-display); margin: 0; }
+.settings-status { padding: .3rem .5rem; border-radius: var(--radius-badge); color: var(--accent-text); background: var(--accent-dim); font-size: .7rem; white-space: nowrap; }
+.settings-premium-card > p, .settings-support p { font-size: .85rem; margin: .7rem 0; }
+.settings-premium-features { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; list-style: none; margin: 1.5rem 0; padding: 1.25rem 0; border-block: 1px solid var(--border); }
+.settings-premium-features li { display: flex; gap: .6rem; font-size: .8rem; }
+.settings-premium-features li span { color: var(--accent-text); }
+.settings-billing-cycle { border: 0; padding: 0; margin: 0; }
+.settings-billing-cycle legend { font-size: .85rem; margin-bottom: .75rem; }
+.settings-billing-cycle button { min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary); border-radius: var(--radius-pill); margin-right: .5rem; cursor: pointer; }
+.settings-billing-cycle button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface); }
+.settings-billing-actions { display: flex; gap: 1.5rem; justify-content: space-between; align-items: center; margin-top: 1.5rem; }
+.settings-billing-actions p { font-size: .8rem; flex: 1; }
+.settings-billing-actions .settings-text-action { flex-shrink: 0; width: auto; }
+.settings-support { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+.settings-support .settings-text-action { margin: .5rem 0; width: auto; }
+
+/* ── The rest ── */
+.settings-error { color: var(--danger) !important; border: 1px solid var(--danger-border); background: var(--danger-dim); padding: .75rem; border-radius: var(--radius-md); margin-bottom: 1rem; }
+.settings-danger-details { margin-top: 2rem; }
+.settings-danger-details summary { min-height: 44px; cursor: pointer; color: var(--danger); }
+.settings-legal-links { display: flex; flex-wrap: wrap; gap: 1rem; }
+.settings-legal-links a { min-height: 44px; display: inline-flex; align-items: center; color: var(--text-secondary); }
+.settings-search-results { display: grid; gap: 1rem; }
+.settings-search-results button { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; background: var(--surface); color: var(--text-primary); text-align: left; cursor: pointer; }
+.settings-search-results strong { font: 400 1.6rem var(--font-display); display: block; }
+.settings-search-results span { display: block; font-size: .85rem; color: var(--text-secondary); margin-top: .5rem; }
+.settings-page :is(button, input, a, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.settings-page .settings-row.interactive-surface { cursor: pointer; }
+.settings-page .settings-row:not(.interactive-surface):hover { background: transparent; }
+
+.settings-page .settings-text-action--danger:hover:not(:disabled) { color: var(--danger); }
+
+/* The shared search shell supplies the same focus border as History. */
+.settings-page .settings-search input:focus-visible { outline: none; }
+
+@media (max-width: 760px) {
+  .settings-search { width: 100%; }
+  .settings-page .settings-row { flex-wrap: wrap; }
+  .settings-page .settings-preference-row { flex-wrap: nowrap; }
+  .settings-premium-features { grid-template-columns: 1fr; }
+  .settings-billing-actions { align-items: flex-start; flex-direction: column; gap: .75rem; }
+  .settings-premium-card { padding: 1.25rem; }
+}

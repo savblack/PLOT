@@ -1,0 +1,138 @@
+/* Public profile, on the shared brand: Gabarito headings, DM Sans body, pink-fill
+   primary, deeper-cream secondary. Data selection lives in core/publicProfileLayout.js.
+   Chosen from the 17 Sep 2026 canvas (option A "Shelf"): the Top 5 is one row of five
+   at every width and the Movies/TV switch is always present. */
+.pp-view { box-sizing: border-box; width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 40px 4rem; background: var(--bg); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+.pp-pad { padding: 0; }
+
+/* ── Header: identity left, actions right ── */
+.pp-intro { display: flex; flex-direction: column; gap: 22px; padding-top: 48px; }
+.pp-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.pp-header-top { display: flex; align-items: center; gap: 20px; }
+.pp-header-info { min-width: 0; }
+.pp-name { margin: 0; font-family: var(--font-display); font-size: clamp(2rem, 4vw, 44px); font-weight: 700; letter-spacing: var(--font-display-tracking); line-height: 1.05; overflow-wrap: anywhere; }
+.pp-handle { margin: 6px 0 0; font-size: 14px; color: var(--text-muted); }
+.pp-verified { width: 1.3rem; height: 1.3rem; margin-left: 0.4rem; vertical-align: -0.12rem; }
+.pp-bio { margin: 0; max-width: 560px; font-size: 16px; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
+.pp-intro-meta { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.pp-stats { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin: 0; }
+.pp-stats:empty { display: none; }
+.pp-stat { display: inline-flex; align-items: baseline; gap: 4px; background: none; border: 0; padding: 0; font: inherit; cursor: default; }
+.pp-stat-num { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; color: var(--text-primary); }
+.pp-stat-label { font-size: 14px; color: var(--text-muted); }
+.pp-stat-btn { cursor: pointer; } .pp-stat-btn:hover .pp-stat-num { color: var(--accent-text); }
+.pp-social-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.pp-social-btn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--surface-sunken); color: var(--text-secondary); transition: var(--transition-fast); }
+.pp-social-btn svg { width: 16px; height: 16px; }
+.pp-social-btn:hover { color: var(--text-primary); background: var(--border-strong); }
+.pp-btn-row { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.pp-view .btn { min-height: 44px; padding: 0 20px; font-size: 14px; }
+.pp-view .btn-sm { min-height: 36px; padding: 0 14px; font-size: 13px; }
+
+/* ── Sections ── */
+.pp-section { margin-top: 44px; }
+.pp-section-title { margin: 0 0 18px; font-family: var(--font-display); font-size: 26px; font-weight: 700; letter-spacing: var(--font-display-tracking); line-height: 1.1; color: var(--text-primary); }
+.pp-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.pp-section-heading .pp-section-title { margin: 0; }
+.pp-section-heading h3 { margin: 0; font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: var(--font-display-tracking); overflow-wrap: anywhere; min-width: 0; }
+.pp-section-heading .btn { flex-shrink: 0; }
+.pp-featured { margin-top: 48px; }
+
+/* Top 5: five equal columns, never wraps. A pick is its own query container so
+   its rank numeral is a share of the column, from a 60px phone poster to a
+   190px one on the desktop (see .rank-cut in app.css). */
+.pp-top5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+.pp-top5-pick { margin: 0; min-width: 0; container-type: inline-size; --rank-cut-size: 36cqw; }
+.pp-top5-pick figcaption { margin-top: 10px; font-size: 14px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pp-top5 .rank-cut-frame { padding-left: 0; }
+.pp-top5-hint { display: none; }
+
+/* Posters (Top 5 and rails). The Top 5's rank is the pink numeral cut out of
+   the poster's corner (.rank-cut in app.css). */
+.pp-poster { position: relative; aspect-ratio: 2 / 3; border-radius: 12px; overflow: hidden; background: var(--surface-sunken); cursor: pointer; transition: transform 0.2s var(--ease); }
+.pp-poster:hover { transform: scale(0.98); }
+.pp-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pp-poster-fallback { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0.6rem; font-size: 0.8rem; line-height: 1.3; text-align: center; color: var(--text-muted); }
+.pp-poster:hover .card-fav-btn, .pp-poster:focus-within .card-fav-btn,
+.pp-poster:hover .card-save-btn, .pp-poster:focus-within .card-save-btn { opacity: 1; }
+.pp-poster .card-save-btn.saved { opacity: 1; }
+.pp-rail { display: flex; gap: 14px; overflow-x: auto; scrollbar-width: none; cursor: grab; }
+.pp-rail::-webkit-scrollbar { display: none; }
+.pp-rail:active { cursor: grabbing; }
+.pp-rail .pp-poster { flex: 0 0 auto; width: 120px; }
+
+/* Lists + favourites sit side by side. A lone list section gets the wider
+   content column; lone favourites retain the approved 136px poster scale. */
+.pp-profile-columns { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 64px; align-items: stretch; margin-top: 52px; }
+.pp-profile-columns:has(> #pp-profile-lists:only-child) { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
+.pp-profile-columns:has(> #pp-profile-favourites:only-child) { grid-template-columns: minmax(0, 440px); max-width: 440px; }
+.pp-profile-columns .pp-section { margin-top: 0; }
+#pp-profile-lists .pp-section-heading { margin-bottom: 30px; }
+.pp-list-covers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 24px; }
+/* Favourites beside the lists: three across, two rows; anything past the sixth is hidden. */
+/* The section stretches to the lists' height and the two rows spread to fill it, so the columns end level. */
+#pp-profile-favourites { display: flex; flex-direction: column; }
+.pp-fav-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; flex: 1; align-content: space-between; }
+.pp-fav-grid > :nth-child(n + 7) { display: none; }
+.pp-history-rows--columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 40px; }
+#pp-profile-history { margin-top: 52px; }
+.pp-section-page-head { align-items: flex-end; padding-top: 40px; }
+.pp-list-covers--page { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 24px; }
+.pp-poster-page-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+.pp-back { display: inline-block; margin-bottom: 6px; font-size: 14px; color: var(--text-muted); }
+.pp-back:hover { color: var(--accent-text); }
+.pp-section-page .pp-history-pagination { justify-content: flex-start; gap: 8px; padding-top: 24px; }
+.pp-list-covers .list-cover-name { font-size: 15px; font-family: var(--font-sans); letter-spacing: normal; font-weight: 600; }
+.pp-list-expanded { margin-top: 28px; }
+.pp-history-row { display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; padding: 10px 0; border: 0; border-bottom: 1px solid var(--border); background: none; color: var(--text-primary); cursor: pointer; }
+.pp-history-row img, .pp-history-placeholder { width: 44px; height: 66px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--surface-sunken); }
+.pp-history-row strong { display: block; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.pp-history-row small { display: block; margin-top: 4px; font-size: 12px; color: var(--text-muted); }
+.pp-sparse { padding: 2.5rem 0; color: var(--text-muted); font-size: 0.9rem; }
+.pp-sparse .btn { margin-top: 0.5rem; }
+.pp-sparse-line { margin: 0; padding: 18px 0; color: var(--text-muted); font-size: 14px; }
+.pp-sparse-line a { color: var(--accent-text); font-weight: 600; }
+
+.pp-history-pagination { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; }
+.pp-view button:focus-visible, .pp-view a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+@media (max-width: 760px) {
+  .pp-view { padding: 0 16px 3rem; }
+  /* Phone: compact actions top-right, then identity, bio, stats and links. */
+  .pp-intro { gap: 16px; padding-top: 20px; }
+  .pp-header { flex-direction: column-reverse; align-items: stretch; gap: 16px; }
+  .pp-header-top { gap: 14px; }
+  .pp-view .pp-avatar { width: 60px; height: 60px; font-size: 1.6rem; }
+  .pp-name { font-size: 30px; }
+  .pp-bio { font-size: 15px; }
+  .pp-intro-meta { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .pp-stats { gap: 18px; }
+  .pp-btn-row .btn { min-height: 36px; padding: 0 14px; font-size: 13px; }
+  .pp-section { margin-top: 32px; }
+  .pp-profile-columns { margin-top: 32px; }
+  .pp-profile-columns .pp-section { margin-top: 0; }
+  #pp-profile-history { margin-top: 32px; }
+  .pp-featured { margin-top: 40px; }
+  .pp-section-title { font-size: 22px; }
+  .pp-section-heading { margin-bottom: 14px; }
+  #pp-profile-lists .pp-section-heading { margin-bottom: 26px; }
+  /* Five picks across a phone: the gap tightens to preserve the shelf. */
+  .pp-top5 { gap: 6px; }
+  .pp-top5-pick figcaption { display: none; }
+  .pp-top5-hint { display: block; margin: 12px 0 0; font-size: 12px; color: var(--text-muted); }
+  .pp-top5 .pp-poster { border-radius: 8px; }
+  .pp-top5 .card-fav-btn, .pp-top5 .card-save-btn { display: none; }
+  .pp-profile-columns { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .pp-list-covers { gap: 16px 12px; }
+  .pp-fav-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; align-content: start; }
+  .pp-fav-grid > :nth-child(n + 7) { display: block; }
+  .pp-fav-grid .pp-poster { border-radius: 8px; }
+  .pp-fav-grid .card-fav-btn, .pp-fav-grid .card-save-btn { display: none; }
+  .pp-history-rows--columns { grid-template-columns: minmax(0, 1fr); }
+  .pp-history-rows--columns > :nth-child(n + 5) { display: none; }
+  .pp-section-page .pp-history-rows--columns > :nth-child(n + 5) { display: flex; }
+  .pp-list-covers--page { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 12px; }
+  .pp-poster-page-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .pp-list-covers .list-cover-name { font-size: 13px; }
+  .pp-rail { gap: 8px; } .pp-rail .pp-poster { width: 64px; border-radius: 8px; }
+}

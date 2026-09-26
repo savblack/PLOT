@@ -6,18 +6,18 @@
 // is long and sections don't share much vocabulary.
 
 export const META = {
-  title: 'PLOT – Your Film & TV Companion',
-  description: "PLOT is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
-  ogImageAlt: 'PLOT — your film & TV companion',
+  title: 'plot | Movie & TV Tracker',
+  description: "plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
+  ogImageAlt: 'plot — your movie & TV companion',
 };
 
 export const HERO = {
-  headline: 'Your film & TV companion',
+  headline: 'Your movie and TV companion',
   sub: "Everything you've watched. Everything you want to watch.",
-  cta: 'Start your PLOT →',
+  cta: 'Start your plot →',
 };
 
-// A scroll-driven series of short lines building to the "PLOT does." payoff.
+// A scroll-driven series of short lines building to the "plot does." payoff.
 export const MANIFESTO = {
   lines: [
     "You don't just watch things.",
@@ -26,13 +26,13 @@ export const MANIFESTO = {
     'You carry them with you.',
     'But no app has ever cared\nas much as you do.',
   ],
-  payoff: 'does.', // rendered after the PLOT wordmark, e.g. "PLOT does."
+  payoff: 'does.', // rendered after the plot wordmark, e.g. "plot does."
 };
 
 export const GUIDE_DEMO = {
   headline: 'Everything.',
   headlineEm: 'In one place.',
-  body: "Always know what's worth watching. PLOT tracks what's trending worldwide, pulls the top 10 across the major platforms and every release on the way into a single feed. Your feed.",
+  body: "Always know what's worth watching. plot tracks what's trending worldwide, pulls the top 10 across the major platforms and every release on the way into a single feed. Your feed.",
   cta: 'Unify your entertainment universe →',
   // Floating UI chips shown around the phone mockup
   chips: {
@@ -45,7 +45,7 @@ export const GUIDE_DEMO = {
 
 export const TIMELINE = {
   headline: 'A timeline as rich as your taste',
-  intro: 'Your watch history tells a story and every story needs a PLOT.',
+  intro: 'Your watch history tells a story and every story needs a plot.',
   // Illustrative watch-history entries shown scrolling across the timeline.
   // Titles are real; the notes are invented flavor-text reactions.
   entries: [
@@ -98,23 +98,22 @@ export const LISTS_DEMO = {
   headline: 'The lists only ',
   headlineEm: 'you',
   headlineEnd: ' could curate.',
-  body: "Organise by decade, director, or whatever mood you're in. Create and share film and TV collections that are unmistakably yours.",
+  body: "Organise by decade, director, or whatever mood you're in. Create and share movie and TV collections that are unmistakably yours.",
   cta: 'Start curating →',
   // Sample list categories cycled through in the coverflow demo
   sampleLists: [
-    { name: 'Award winners', count: '20 films' },
-    { name: 'Date night', count: '12 films' },
-    { name: 'Spooky season', count: '13 films' },
+    { name: 'Award winners', count: '20 movies' },
+    { name: 'Date night', count: '12 movies' },
+    { name: 'Spooky season', count: '13 movies' },
   ],
 };
 
 export const APP_SOON = {
   eyebrow: 'Coming soon',
-  headline: 'PLOT, in',
+  headline: 'plot, in',
   headlineEm: 'your pocket.',
-  body: 'Everything you love about PLOT: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.',
+  body: 'Everything you love about plot: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.',
   notifyCta: 'Notify me',
-  badge: 'Coming soon',
   // Static labels inside the phone mockup screenshot
   mockup: {
     tabs: ['Discover', 'Releases', 'Guide'],

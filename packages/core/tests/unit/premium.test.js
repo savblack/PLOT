@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { FREE_CUSTOM_LIST_CAP, PREMIUM_PLANS, isPremiumProfile, canCreateCustomList, friendlyPremiumError } from '../../premium.js';
+import { PREMIUM_PLANS, FREE_CUSTOM_LIST_CAP, isPremiumProfile, canCreateCustomList, friendlyPremiumError } from '../../premium.js';
 
 test('FREE_CUSTOM_LIST_CAP is 5', () => {
   assert.equal(FREE_CUSTOM_LIST_CAP, 5);
@@ -40,6 +40,7 @@ test('canCreateCustomList enforces the free cap by list count for non-premium pr
   assert.equal(canCreateCustomList(3, null), true);
   assert.equal(canCreateCustomList(4, null), true);
   assert.equal(canCreateCustomList(5, null), false);
+  assert.equal(canCreateCustomList(6, null), false);
 });
 
 test('friendlyPremiumError translates the premium_required code and passes other messages through', () => {

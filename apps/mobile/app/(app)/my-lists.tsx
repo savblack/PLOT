@@ -1,7 +1,15 @@
+import PrivateNote from '../../components/PrivateNote';
+import { buildListShareUrl } from '@plot/core/sharing.js';
+import { SHARING } from '@plot/core/copy/sharing.js';
+import { shareLink } from '../../lib/share';
+import { customListCreationError } from '@plot/core/customListCreation.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { useState, useMemo } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
-  Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, Share, LayoutAnimation,
+  Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, LayoutAnimation,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +19,7 @@ import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { canCreateCustomList } from '@plot/core/premium.js';
 import { favoriteWords } from '../../lib/spelling';
 import CollapsibleSection from '../../components/CollapsibleSection';
 import SectionToggleIcon from '../../components/SectionToggleIcon';
@@ -23,7 +31,7 @@ import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
-import { track, EVENTS } from '../../lib/analytics';
+import { EVENTS } from '../../lib/analytics';
 import HistorySection from '../../components/HistorySection';
 import { groupEntriesByMonth, monthLabel } from '@plot/core/history.js';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
@@ -31,15 +39,11 @@ import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { COMMON } from '@plot/core/copy/common.js';
-import { SHOW_PRICING_PAGE } from '../../lib/launchFeatures';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
 const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collapses in a flex-wrap row on Fabric)
 
-// Public custom-list share URL — mirrors web buildListShareUrl (/list/:id).
-const SHARE_BASE = 'https://app.theplot.tv';
-const buildListShareUrl = (listId: string) => `${SHARE_BASE}/list/${listId}`;
 
 // Filter list items by media type. Items are treated as movies when untyped.
 // Mirrors web's ALL_LIST_SECTION_IDS (MyListsView.jsx). Tab ids match section
@@ -311,10 +315,26 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
 
 
 // ── Create list modal ─────────────────────────────────────────────────
-function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => void; onClose: () => void }) {
+function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => Promise<unknown>; onClose: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const submit = async () => {
+    if (!name.trim() || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const created = await onConfirm(name.trim());
+      if (created) onClose();
+      else setError(MEDIA.couldNotCreateList);
+    } catch (failure) {
+      setError(customListCreationError(failure, MEDIA.couldNotCreateList));
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <Modal visible animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
       <View style={styles.createModal}>
@@ -327,12 +347,15 @@ function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => 
           onChangeText={setName}
           autoFocus
           returnKeyType="done"
-          onSubmitEditing={() => name.trim() && onConfirm(name.trim())}
+          editable={!busy}
+          onSubmitEditing={submit}
         />
+        {!!error && <Text accessibilityRole="alert" style={{ color: colors.textSecondary, marginBottom: spacing.sm }}>{error}</Text>}
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           <TouchableOpacity
+            disabled={busy || !name.trim()}
             style={[styles.createModalBtn, { flex: 1, backgroundColor: name.trim() ? colors.accent : colors.surfaceSunken }]}
-            onPress={() => name.trim() && onConfirm(name.trim())}
+            onPress={submit}
           >
             <Text style={{ color: name.trim() ? '#fff' : colors.textMuted, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Create</Text>
           </TouchableOpacity>
@@ -386,6 +409,7 @@ export default function MyListsScreen() {
   // Watching into select mode leaves Favourites alone.
   const watchingSel = useSelection();
   const wantSel     = useSelection();
+  const router = useRouter();
   const favSel      = useSelection();
 
   const [showAddFav,     setShowAddFav]     = useState(false);
@@ -395,9 +419,10 @@ export default function MyListsScreen() {
   // (RLS insert policy) is the authority — this is just friendlier UX.
   const requestCreateList = () => {
     if (!canCreateCustomList(customLists.lists.length, profile)) {
-      Alert.alert('List limit', SHOW_PRICING_PAGE
-        ? `You've got ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`
-        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
+      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage, [
+        { text: COMMON.cancel, style: 'cancel' },
+        { text: PLANS_PAGE.previewAction, onPress: () => router.push('/(app)/settings?premium=1' as any) },
+      ]);
       return;
     }
     setShowCreateList(true);
@@ -423,13 +448,13 @@ export default function MyListsScreen() {
   const watchingList = byType(watching.items.map((i: any) => ({ ...i, media_type: 'tv' })));
   const favList      = byType(favorites.favorites);
 
-  const handleShareList = async (list: any) => {
-    try {
-      const url = buildListShareUrl(list.id);
-      await Share.share({ message: `My list "${list.name}" on PLOT. ${url}`, url });
-      track(EVENTS.LIST_SHARED, { list_id: list.id });
-    } catch { /* user dismissed the share sheet */ }
-  };
+  const handleShareList = (list: { id: string; name: string; is_public: boolean }) => shareLink({
+    url: list.is_public ? buildListShareUrl({ listId: list.id }) : null,
+    title: `${list.name} · PLOT`,
+    text: SHARING.listText(list.name),
+    event: EVENTS.LIST_SHARED,
+    eventProps: { list_id: list.id },
+  });
 
   const isAll       = tab === 'all';
   const showWatching  = isAll || tab === 'watching';
@@ -550,8 +575,8 @@ export default function MyListsScreen() {
                   const rel  = countdownChip(item.release_date, colors);
                   const strm = countdownChip(item.streaming_date, colors);
                   return (
+                    <View key={item.id}>
                     <ListRow
-                      key={item.id}
                       item={item}
                       sel={wantSel}
                       onPress={() => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
@@ -570,6 +595,8 @@ export default function MyListsScreen() {
                         </View>
                       ) : undefined}
                     />
+                    {!wantSel.editMode && <View style={{ marginLeft: 64 }}><PrivateNote id={item.tmdb_id} type={item.media_type === 'tv' ? 'tv' : 'movie'} title={item.title || item.name || ''} /></View>}
+                    </View>
                   );
                 })
               )
@@ -577,11 +604,11 @@ export default function MyListsScreen() {
           </CollapsibleSection>
         )}
 
-        {/* ── Top 10 ── */}
+        {/* ── Top 5 ── */}
         {showTop10 && (
           <CollapsibleSection
             id="top10"
-            label="Top 10"
+            label="Top 5"
             open={sectionsOpen.top10}
             onOpenChange={(next) => setSectionOpenFor('top10', next)}
           >
@@ -788,7 +815,7 @@ export default function MyListsScreen() {
       )}
       {showCreateList && (
         <CreateListModal
-          onConfirm={(name) => { customLists.createList(name); setShowCreateList(false); }}
+          onConfirm={(name) => customLists.createList(name)}
           onClose={() => setShowCreateList(false)}
         />
       )}
@@ -895,6 +922,9 @@ function CustomListCard({
           </>
         ) : (
           <>
+            {list.is_public && <TouchableOpacity onPress={(event) => { event.stopPropagation(); onShare(); }} accessibilityRole="button" accessibilityLabel={COMMON.share} style={{ marginRight: spacing.sm }}>
+              <Text style={styles.sectionActionText}>{COMMON.share}</Text>
+            </TouchableOpacity>}
             <TouchableOpacity onPress={onAddItem} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Add item to list" accessibilityRole="button">
               <Text style={{ color: colors.textMuted, fontSize: 16, marginLeft: spacing.sm }}>+</Text>
             </TouchableOpacity>
@@ -1033,7 +1063,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterTitle: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
 
   empty: { padding: spacing.xl, alignItems: 'center' },
-  emptyTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
+  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
   emptyAddBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
 
@@ -1049,7 +1079,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // Modal styles
   modalContainer: { flex: 1, backgroundColor: colors.bg, paddingTop: spacing.xl },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  modalTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
+  modalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   modalTabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   modalSearch: { paddingHorizontal: spacing.xl, paddingBottom: spacing.sm },
   modalSearchInput: { backgroundColor: colors.surface, borderRadius: radii.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
@@ -1060,7 +1090,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   modalEmpty: { padding: spacing.xl, textAlign: 'center', color: colors.textMuted, fontFamily: fontFamily.sans, fontSize: fontSize.sm },
 
   createModal: { flex: 1, backgroundColor: colors.bg, padding: spacing.xl, gap: spacing.lg },
-  createModalTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
+  createModalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   createModalInput: { backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
   createModalBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: radii.md, alignItems: 'center' },
 });

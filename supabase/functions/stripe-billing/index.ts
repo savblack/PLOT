@@ -80,6 +80,11 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
+  // Close new subscriptions before any Stripe/customer work. Portal and tips remain available.
+  if (new URL(req.url).searchParams.get('action') === 'checkout') {
+    return json({ error: 'PLOT Premium is coming soon.', code: 'premium_coming_soon' }, 503);
+  }
+
   const { user } = await getAuthedUser(req);
   if (!user) return json({ error: 'Unauthorized' }, 401);
 

@@ -8,7 +8,7 @@ export const getTmdbRegion = () => userRegion;
 
 const ENGLISH_SPEAKING_REGIONS = new Set(['AU', 'CA', 'GB', 'IE', 'NZ', 'US']);
 
-const KIDS_GENRE_IDS = new Set([10751, 10762]); // Family (movie+tv), Kids (tv)
+export const KIDS_GENRE_IDS = new Set([10751, 10762]); // Family (movie+tv), Kids (tv)
 
 /**
  * @param {Array<{genre_ids?: number[]}>} items
@@ -92,8 +92,38 @@ const withRegionalMovieReleaseDate = (movie) => {
 
 const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
 const RETRY_DELAYS   = [400, 1200]; // ms — 2 retries with backoff
+const TMDB_MAX_CONCURRENT_REQUESTS = 8;
 
 const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
+let activeTmdbRequests = 0;
+const tmdbRequestQueue = [];
+
+const runWithTmdbSlot = (task) => new Promise((resolve, reject) => {
+  const run = () => {
+    activeTmdbRequests += 1;
+    Promise.resolve()
+      .then(task)
+      .then(resolve, reject)
+      .finally(() => {
+        activeTmdbRequests -= 1;
+        tmdbRequestQueue.shift()?.();
+      });
+  };
+  if (activeTmdbRequests < TMDB_MAX_CONCURRENT_REQUESTS) run();
+  else tmdbRequestQueue.push(run);
+});
+
+/** Respect a proxy-supplied rate-limit window instead of retrying inside it. */
+export function retryDelayFor(response, fallbackMs) {
+  if (response?.status !== 429) return fallbackMs;
+  const value = response.headers?.get?.('Retry-After');
+  if (!value) return fallbackMs;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.max(fallbackMs, seconds * 1000);
+  const at = Date.parse(value);
+  return Number.isFinite(at) ? Math.max(fallbackMs, at - Date.now()) : fallbackMs;
+}
 
 /**
  * Low-level proxy fetch that surfaces *why* it failed instead of collapsing
@@ -104,7 +134,8 @@ const sleep = (ms) => new Promise(res => setTimeout(res, ms));
  * @param {string} endpoint
  * @param {object} [params]
  * @param {object} [opts]
- * @param {number[]} [opts.retryDelays]  Backoff schedule in ms (length = retry count).
+ * @param {number[]} [opts.retryDelays] Backoff schedule in ms (length = retry count).
+ * @param {(ms:number)=>Promise<void>} [opts.sleepFn] Test seam for the retry wait.
  * @returns {Promise<{ ok: boolean, data: any, status: number|null, retryable: boolean }>}
  *   ok=true → data is the parsed JSON.
  *   ok=false + retryable=true  → transient (429 / 5xx / network) after exhausting retries.
@@ -133,7 +164,7 @@ function projectRefFromAnonKey(key) {
   }
 }
 
-const fetchFromTMDBNetwork = async (endpoint, params = {}, { retryDelays = RETRY_DELAYS } = {}) => {
+const fetchFromTMDBNetwork = async (endpoint, params = {}, { retryDelays = RETRY_DELAYS, sleepFn = sleep } = {}) => {
   const { tmdbProxyUrl: PROXY_URL, supabaseAnonKey: SUPABASE_ANON_KEY } = getConfig();
   const queryParams = new URLSearchParams({
     path: endpoint.replace(/^\//, ''),
@@ -170,11 +201,11 @@ const fetchFromTMDBNetwork = async (endpoint, params = {}, { retryDelays = RETRY
 
   for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
     try {
-      const response = await fetch(url, { headers });
+      const response = await runWithTmdbSlot(() => fetch(url, { headers }));
       if (!response.ok) {
         const retryable = RETRY_STATUSES.has(response.status);
         if (retryable && attempt < retryDelays.length) {
-          await sleep(retryDelays[attempt]);
+          await sleepFn(retryDelayFor(response, retryDelays[attempt]));
           continue;
         }
         // A 401 here is always configuration, never data, and Supabase's own
@@ -202,7 +233,7 @@ const fetchFromTMDBNetwork = async (endpoint, params = {}, { retryDelays = RETRY
     } catch (error) {
       // Network/abort errors are transient — retry, then report as retryable.
       if (attempt < retryDelays.length) {
-        await sleep(retryDelays[attempt]);
+        await sleepFn(retryDelays[attempt]);
         continue;
       }
       console.error('TMDB Fetch Error:', error);
@@ -321,6 +352,9 @@ export const tmdb = {
   },
   /* ── Search ── */
   search: (query) => fetchFromTMDB('/search/multi', { query }),
+  findByExternalId: (externalId) => fetchFromTMDB(`/find/${encodeURIComponent(externalId)}`, {
+    external_source: 'imdb_id',
+  }),
   searchPeople: (query) => fetchFromTMDB('/search/person', { query }),
 
   /**
@@ -802,6 +836,12 @@ export const tmdb = {
     return fetchFromTMDB(`/discover/${type}`, params);
   },
 
+  /* ── Raw movie / TV discover ──
+     For callers that build their own filter set (the Tonight picker). Params
+     are TMDB /discover/{movie,tv} query keys, passed through as-is. */
+  discoverMovies: (params = {}) => fetchFromTMDB('/discover/movie', params),
+  discoverTV: (params = {}) => fetchFromTMDB('/discover/tv', params),
+
   /* ── Newest released titles in a genre ── */
   discoverNewestByGenre: async (type, genreId) => {
     if (!genreId) return Promise.resolve(null);
@@ -838,14 +878,20 @@ export const tmdb = {
 
   getTopRated: (type) => fetchFromTMDB(`/${type}/top_rated`),
 
-  /* ── Combined genre list (movie + TV, deduplicated) ── */
-  getGenres: async () => {
+  /* ── Movie + TV genre catalogs ── */
+  getGenreCatalog: async () => {
     const [movieRes, tvRes] = await Promise.all([
       fetchFromTMDB('/genre/movie/list'),
       fetchFromTMDB('/genre/tv/list'),
     ]);
+    return { movie: movieRes?.genres || [], tv: tvRes?.genres || [] };
+  },
+
+  /* ── Combined genre list (movie + TV, deduplicated) ── */
+  getGenres: async () => {
+    const { movie, tv } = await tmdb.getGenreCatalog();
     const all = new Map();
-    [...(movieRes?.genres || []), ...(tvRes?.genres || [])].forEach(g => all.set(g.id, g));
+    [...movie, ...tv].forEach(g => all.set(g.id, g));
     return [...all.values()].sort((a, b) => a.name.localeCompare(b.name));
   },
 };

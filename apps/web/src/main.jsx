@@ -1,13 +1,18 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { RouterProvider } from 'react-router-dom';
 import { configure } from '@plot/core/config.js';
-import router from './router.jsx';
-import './index.css';
-import { captureAttribution } from './utils/attribution.js';
+import {
+  ENGAGEMENT_PENDING_KEY,
+  buildPendingWatch,
+  serialiseEngagementPending,
+  notifyPendingWatchQueued,
+} from '@plot/core/engagementPrompt.js';
+import { captureAttribution, currentArticleAttribution } from './utils/attribution.js';
 import { analyticsAllowed } from './utils/analyticsHost.js';
+import { isChunkError, markChunkReload, recentlyReloaded } from './utils/chunkError.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { isOpaqueBrowserException } from './utils/opaqueException.js';
+import { writeStorage } from './utils/storage.js';
 import { track, EVENTS, _setPostHogClient } from './lib/analytics.js';
 
 // Inject web env into the shared core before anything renders or fetches.
@@ -47,8 +52,18 @@ configure({
   // Analytics seam: core fires this once per genuinely new watchlist add (any
   // surface). Previously only the /save deep link emitted watchlist_saved; now
   // every in-app save does too, and a first save counts as activation.
-  onWatchlistSave: ({ tmdb_id, media_type, source }) =>
-    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false }),
+  onWatchlistSave: ({ tmdb_id, media_type, source }) => {
+    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false });
+    // Queue a same-session watch prompt for any non-onboarding save so a
+    // Discover/card bookmark still offers Mark as watched when the title panel
+    // opens (and the app shell can open that panel immediately).
+    if (source === 'onboarding') return;
+    writeStorage(
+      ENGAGEMENT_PENDING_KEY,
+      serialiseEngagementPending(buildPendingWatch(tmdb_id, media_type)),
+    );
+    notifyPendingWatchQueued({ tmdb_id, media_type, source });
+  },
   // Engagement seams — core fires these from the single canonical spot for each
   // action (any surface), so we never double-count or miss a surface. See
   // packages/core/config.js for the payload contracts.
@@ -114,8 +129,9 @@ const posthogToken = !isDnt && analyticsAllowed() && import.meta.env.VITE_PUBLIC
 // (utm_*, click ids, referrer, src) and attach it to every event + the person,
 // so signup / activation stay traceable to their source. First-touch wins.
 const attribution = captureAttribution();
+const currentArticle = currentArticleAttribution();
 
-// posthog-js (+ @posthog/react) is the single largest chunk in the app —
+// posthog-js is the single largest chunk in the app —
 // bigger than React itself — so it's dynamically imported after the app has
 // already started rendering instead of sitting on the initial critical path.
 // Nothing breaks in the gap: every analytics call in lib/analytics.js queues
@@ -199,6 +215,8 @@ if (posthogToken) {
         // unless network capture is enabled — kept so that turning it on later
         // can't start recording the Supabase auth calls with their tokens.
         maskCapturedNetworkRequestFn: (request) => {
+          // Private note bodies must never enter replay network recordings.
+          if (/\/(private_title_notes|rpc\/save_private_title_note|export-user-data)(?:[?/#]|$)/.test(request?.name || '')) return null;
           if (request?.name) request.name = redactSensitiveUrl(request.name);
           return request;
         },
@@ -219,12 +237,40 @@ if (posthogToken) {
       // acquisition cohorts break down on.
       posthog.setPersonProperties(undefined, attribution);
     }
+    // First touch remains immutable above. This session-scoped property names
+    // the What’s On article being acted on now, even for a returning visitor
+    // whose original acquisition source came from somewhere else.
+    if (Object.keys(currentArticle).length > 0) {
+      posthog.register_for_session(currentArticle);
+    }
     _setPostHogClient(posthog);
   });
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>,
-);
+// Keep every external stylesheet and the route graph off the browser's
+// render-blocking path. index.html has the tiny styles needed for its wordmark;
+// Vite resolves these imports only after the app CSS is ready, preventing an
+// unstyled app flash when React replaces that initial document content.
+Promise.all([
+  import('./index.css'),
+  import('react-router-dom'),
+  import('./router.jsx'),
+])
+  .then(([, { RouterProvider }, { default: router }]) => {
+    const mount = () => createRoot(document.getElementById('root')).render(
+      <StrictMode>
+        <RouterProvider router={router} />
+      </StrictMode>,
+    );
+    if (document.getElementById('root')) mount();
+    else document.addEventListener('DOMContentLoaded', mount, { once: true });
+  })
+  .catch((error) => {
+    if (isChunkError(error) && !recentlyReloaded()) {
+      markChunkReload();
+      window.location.reload();
+      return;
+    }
+    console.error('PLOT startup error:', error);
+    window.__plotShowStartupFallback?.();
+  });

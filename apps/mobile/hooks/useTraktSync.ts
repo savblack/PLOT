@@ -19,6 +19,7 @@ import { getConfig } from '@plot/core/config.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
 import { readStorage, removeStorage, writeStorage } from '../lib/storage';
 import { track, EVENTS } from '../lib/analytics';
+import { emit, HISTORY_CHANGED_EVENT, MEDIA_INTEGRATION_CHANGED_EVENT, on } from '@plot/core/events.js';
 
 // Custom-scheme redirect the Trakt OAuth app must allowlist. The app's scheme
 // is `plot` (app.json); the root layout's deep-link listener handles the code.
@@ -57,6 +58,7 @@ export async function exchangeTraktCode(code: string): Promise<void> {
   await callTraktSync('exchange', { code, redirect_uri: TRAKT_REDIRECT_URI });
   // Only reached when the exchange resolved — mirrors web's TraktCallbackPage.
   track(EVENTS.TRAKT_CONNECTED, {});
+  emit(MEDIA_INTEGRATION_CHANGED_EVENT, { provider: 'trakt' });
 }
 
 export function useTraktSync(userId: string | null | undefined) {
@@ -105,6 +107,22 @@ export function useTraktSync(userId: string | null | undefined) {
     }
   }, [loadIntegration]);
 
+  const importHistory = useCallback(async () => {
+    setSyncing(true); setError(null);
+    try {
+      const result = await callTraktSync('import-history');
+      if (result?.importedCount) emit(HISTORY_CHANGED_EVENT);
+      track(EVENTS.IMPORT_COMPLETED, { source: 'trakt', count: result?.importedCount || 0 });
+      await loadIntegration();
+      return result;
+    } catch (e) {
+      setError((e as Error).message);
+      return null;
+    } finally {
+      setSyncing(false);
+    }
+  }, [loadIntegration]);
+
   const disconnect = useCallback(async () => {
     if (!userId) return;
     setError(null);
@@ -118,8 +136,11 @@ export function useTraktSync(userId: string | null | undefined) {
   }, [userId]);
 
   useEffect(() => { loadIntegration(); }, [loadIntegration]);
+  useEffect(() => on(MEDIA_INTEGRATION_CHANGED_EVENT, (payload?: { provider?: string }) => {
+    if (payload?.provider === 'trakt') loadIntegration();
+  }), [loadIntegration]);
 
   const isConnected = integration?.status === 'active';
 
-  return { integration, syncing, error, isConnected, loadIntegration, connect, sync, disconnect };
+  return { integration, syncing, error, isConnected, loadIntegration, connect, sync, importHistory, disconnect };
 }

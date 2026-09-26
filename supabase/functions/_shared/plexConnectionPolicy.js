@@ -48,7 +48,9 @@ function isPlexDirectHostWithPublicIpv4(hostname) {
 }
 
 export function isSafePlexConnectionUrl(url) {
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+  // Plex credentials are reusable bearer tokens. Never attach them to a
+  // cleartext connection, even when the destination itself is otherwise safe.
+  if (url.protocol !== 'https:') return false;
   if (hostIsBlocked(url.hostname)) return false;
 
   // Literal public addresses do not need DNS. Plex Direct hostnames are served
@@ -56,4 +58,13 @@ export function isSafePlexConnectionUrl(url) {
   // label, so an account holder cannot rebind one through their own DNS zone.
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(url.hostname) || url.hostname.includes(':')) return true;
   return isPlexDirectHostWithPublicIpv4(url.hostname);
+}
+
+export function eligiblePlexServers(resources) {
+  return resources.filter(resource =>
+    resource?.provides === 'server'
+    && resource.owned === '1'
+    && typeof resource.accessToken === 'string'
+    && resource.accessToken.length > 0
+  );
 }

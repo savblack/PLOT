@@ -22,7 +22,14 @@
 export function authErrorReason(msg) {
   if (!msg) return 'unknown';
   if (msg.includes('User already registered'))      return 'already_registered';
-  if (msg.includes('Password should be at least'))  return 'weak_password';
+  // GoTrue has three wordings for "password missing or too short". The first
+  // is the classic min-length check; the next two fire when signup is called
+  // with an empty password (often React state lagging behind a password-manager
+  // autofill that filled the DOM without firing onChange). Both of those used
+  // to collapse into `unknown` and hide the real failure mode in PostHog.
+  if (msg.includes('Password should be at least'))      return 'weak_password';
+  if (msg.includes('Signup requires a valid password')) return 'weak_password';
+  if (msg.includes('Anonymous sign-ins are disabled'))  return 'weak_password';
   if (msg.includes('Unable to validate email'))     return 'invalid_email';
   if (msg.includes('rate limit') || msg.includes('too many')) return 'rate_limited';
 

@@ -17,6 +17,7 @@
 #
 # Requires: brew install postgresql@17
 set -uo pipefail
+export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 
 STAGING_REF=uzrhfivnhdcfieuaxzip
 FILE="${1:?usage: staging-sql.sh <file.sql>}"
@@ -38,7 +39,7 @@ export PGDATABASE=postgres
 export PGPORT=5432
 export PGCONNECT_TIMEOUT=10
 
-out="$(psql -tA -f "$FILE" 2>&1)"
+out="$(psql -X -tA -f "$FILE" 2>&1)"
 status=$?
 
 printf '%s\n' "$out" | grep -E 'PASS|FAIL|REPRO|^===|^---|rolled back|ERROR' | sed 's/^psql:[^ ]* //' || true

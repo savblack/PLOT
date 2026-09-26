@@ -1,10 +1,5 @@
 <svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
-  <!-- PLOT Instagram profile picture — "P" monogram variant, 1080×1080.
-       Same Instrument Serif "P" glyph from public/favicon.svg, recoloured
-       #F0EFE8 (the shared warm off-white) on brand dark #0C0C0E. A single
-       letter reads far better than the full wordmark at tiny avatar sizes. -->
-  <rect width="1080" height="1080" fill="#0C0C0E"/>
-  <g transform="translate(540,540) scale(0.7778) translate(-230.5,360)" fill="#F0EFE8">
-    <path d="M34 0 Q19 0 19 -11 Q19 -20 32 -23 L55 -27 Q76 -31 82.5 -38 Q89 -45 89 -66 L89 -654 Q89 -675 82.5 -682 Q76 -689 55 -693 L32 -697 Q19 -700 19 -709 Q19 -720 34 -720 L243 -720 Q302 -720 347 -694.5 Q392 -669 417 -624 Q442 -579 442 -520 Q442 -463 417 -419 Q392 -375 348 -350.5 Q304 -326 246 -326 L174 -326 Q160 -326 160 -312 L160 -70 Q160 -49 168 -41.5 Q176 -34 204 -29 L241 -23 Q252 -21 252 -12 Q252 0 237 0 L34 0Z M160 -406 Q160 -351 227 -351 Q292 -351 329.5 -397 Q367 -443 367 -523 Q367 -605 329 -650 Q291 -695 221 -695 Q160 -695 160 -655 L160 -406Z"/>
-  </g>
+  <!-- plot Instagram profile — Gabarito Bold outlined; sized inside the circular safe zone. -->
+  <rect width="1080" height="1080" fill="#292924"/>
+  <g transform="translate(169.99999999999994,799.6774193548388) scale(1.1290322580645162)"><path fill="#f8f2ea" d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/></g>
 </svg>

@@ -27,11 +27,12 @@ type Db = SupabaseClient<Database>;
 // Run `npm run footer` to regenerate after editing the partial.
 import { FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
 const FEED_TITLE = "What's On";
-const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – PLOT";
+const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – plot";
 const FEED_PATH = '/whats-on';
 const PAGE_SIZE = 30;
 
@@ -43,6 +44,38 @@ const esc = (s: unknown) =>
 const slugify = (s: string) =>
   String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'title';
+// Refs are written {id, title, media_type} by the planner but were read as
+// `tmdb_id` here, so most of them resolved to undefined and silently dropped the
+// title link and the save CTA. Read both shapes; don't migrate the rows.
+const refId = (r: TmdbRef | null | undefined) => r?.tmdb_id ?? r?.id ?? null;
+
+// Ranks a post's refs against its own copy. `mention` is the first paragraph that
+// names the title, -1 when it is never named (planner order then stands). The
+// planner's ref order is its guess at importance; the prose is the article's own
+// answer, and the two disagree: on the Emmy guide refs[0] is The Pitt while the
+// copy says "take Widow's Bay". Measured over every published guide, 19 of 19
+// refs are named somewhere in the body, and this picks a different lead on
+// exactly that one post.
+const rankRefs = (body: string[], refs: TmdbRef[]) =>
+  refs.map((ref, order) => ({
+    ref,
+    order,
+    mention: body.findIndex((para) => {
+      const t = String(ref.title || '').toLowerCase().trim();
+      return t ? String(para || '').toLowerCase().includes(t) : false;
+    }),
+  }));
+
+// Reads as prose in a sentence ("not streaming in the UK"). Mirrors the same
+// map in supabase/functions/title-page, so the two surfaces word it alike.
+const REGION_NAMES: Record<string, string> = {
+  US: 'the US', GB: 'the UK', AU: 'Australia', CA: 'Canada', NZ: 'New Zealand',
+  IE: 'Ireland', IN: 'India', DE: 'Germany', FR: 'France', ES: 'Spain', IT: 'Italy',
+  NL: 'the Netherlands', SE: 'Sweden', BR: 'Brazil', MX: 'Mexico', JP: 'Japan',
+  KR: 'South Korea', SG: 'Singapore',
+};
+const regionName = (code: string) => REGION_NAMES[code] || code;
+
 const titleHref = (mediaType: string, tmdbId: number | string, title: string) =>
   `${SITE}/${mediaType === 'tv' ? 'tv' : 'movie'}/${slugify(title)}-${tmdbId}`;
 
@@ -74,6 +107,7 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
   watch_tonight: { label: 'What to watch tonight', tone: '#0F6E56' },
   hidden_gem: { label: 'Hidden gem', tone: '#534AB7' },
   question: { label: 'Let’s talk', tone: '#8A5410' },
+  guide: { label: 'Guide', tone: '#185FA5' },
 };
 
 // Content-type filters for the feed. The chart is its own page, linked from the
@@ -86,7 +120,7 @@ const FILTERS: { key: string | null; label: string }[] = [
   { key: 'trailer', label: 'First look' },
 ];
 
-type TmdbRef = { media_type: string; tmdb_id: number; title: string; poster_path?: string | null };
+type TmdbRef = { media_type: string; tmdb_id?: number; id?: number; title: string; poster_path?: string | null };
 type WatchProvider = { provider_id: number; provider_name: string; logo_path?: string | null };
 type FeedPost = {
   slug: string;
@@ -96,7 +130,16 @@ type FeedPost = {
   scheduled_for: string;
   status: string;
   tmdb_refs?: TmdbRef[] | null;
-  payload?: { home_kind?: string | null } | null;
+  payload?: {
+    // Countdown / now_streaming planner fields. `kind` is cinema | streaming |
+    // rental | tv; `title.where` is the editorial platform name when TMDB's
+    // JustWatch feed has not listed it yet (common on premiere day).
+    home_kind?: string | null;
+    kind?: string | null;
+    trailer_url?: string | null;
+    when_label?: string | null;
+    title?: { title?: string | null; where?: string | null } | null;
+  } | null;
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
@@ -111,13 +154,18 @@ const postImage = (p: FeedPost) => {
 // Static branded 1200×630 fallback (PLOT wordmark + tagline) for pages with no
 // per-post image, so every shared PLOT link previews on-brand.
 const OG_FALLBACK = `${SITE}/og-image.png`;
-// Link-preview image: prefer the branded per-post social render, then a branded
-// /api/og title card for a single-title post, then the plain hero still, then
-// the static brand image. (The on-page hero keeps using postImage's plain still.)
+// Link-preview image: prefer the branded per-post social render, then the plain
+// hero still, then the static brand image. (The on-page hero keeps using
+// postImage's plain still.)
+//
+// A single-title post used to fall back to a branded app.theplot.tv/api/og
+// card. That path died with the move off Vercel — it returns the SPA shell as
+// text/html — and its Cloudflare replacement cannot render on the free plan,
+// so there is nothing left to point at: such a post now takes its hero still,
+// or the static card. tmdb_refs carries only poster_path, and a 2:3 poster
+// crops badly into a 1.91:1 slot.
 const postShareImage = (p: FeedPost) => {
   if (p.media?.[0]?.landscape_path) return mediaUrl(p.media[0].landscape_path);
-  const ref = p.tmdb_refs?.[0];
-  if (ref?.tmdb_id && ref.media_type) return `${APP}/api/og?type=${ref.media_type === 'tv' ? 'tv' : 'movie'}&id=${ref.tmdb_id}`;
   const hero = p.copy?.hero_image;
   return typeof hero === 'string' && /^https?:\/\//.test(hero) ? hero : OG_FALLBACK;
 };
@@ -135,45 +183,159 @@ const uniqueProviders = (providers: WatchProvider[]) => {
 // Article CTAs use a fresh, regional TMDB watch-provider lookup. This keeps the
 // destination logos honest when a title moves between services, rather than
 // freezing a provider name into the marketing-post record.
-const titleCta = async (post: FeedPost, region: string) => {
-  const ref = post.tmdb_refs?.[0];
-  if (!ref?.tmdb_id || !ref.media_type) return '';
+// "In this story" — the module that gives an article somewhere to go. An
+// article about one film that never links that film, and offers no way to keep
+// it, is a dead end; this sits under the lede rather than at the foot, because
+// that is where a reader is still deciding whether they care.
+//
+// Three states, the same three the title page card has: providers, in cinemas,
+// and nothing. The last is the common one across the back catalogue, so it says
+// so plainly and lets the watchlist be the way out.
+const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?.[0]) => {
+  const id = refId(ref);
+  if (!id || !ref?.media_type) return '';
 
-  const title = ref.title || postTitle(post);
   const mediaType = ref.media_type === 'tv' ? 'tv' : 'movie';
-  const saveUrl = `${APP}/save?media_type=${mediaType}&tmdb_id=${ref.tmdb_id}&src=whats_on_article`;
-  let providers: WatchProvider[] = [];
+  // `src` identifies the surface; `utm_content` names the exact article. The
+  // app keeps both the first-touch value and the current article through signup.
+  const saveUrl = `${APP}/save?media_type=${mediaType}&tmdb_id=${id}&src=whats_on_article&utm_content=${encodeURIComponent(post.slug)}`;
+  const pageUrl = titleHref(ref.media_type, id, ref.title || postTitle(post));
 
+  let detail: Record<string, unknown> | null = null;
   try {
     const key = Deno.env.get('TMDB_API_KEY');
     if (key) {
-      const response = await fetch(
-        `https://api.themoviedb.org/3/${mediaType}/${ref.tmdb_id}/watch/providers?api_key=${key}`,
+      const r = await fetch(
+        `https://api.themoviedb.org/3/${mediaType}/${id}?api_key=${key}&language=en-US&append_to_response=watch/providers,credits`,
       );
-      if (response.ok) {
-        const data = await response.json();
-        const availability = data?.results?.[region] || {};
-        providers = uniqueProviders([
-          ...(availability.flatrate || []),
-          ...(availability.free || []),
-          ...(availability.ads || []),
-        ]).slice(0, 5);
-      }
+      if (r.ok) detail = await r.json();
     }
   } catch {
-    // A provider lookup should never stop an editorial article from rendering.
+    // A TMDB hiccup should never stop an editorial article from rendering.
   }
 
-  const whereToWatch = providers.length
-    ? `<div class="article-watch"><span class="article-watch-label">Where to watch in ${esc(region)}</span><div class="article-providers">${providers.map((provider) => {
-      const logo = providerLogo(provider.logo_path);
-      return `<span class="article-provider">${logo ? `<img src="${esc(logo)}" alt="${esc(provider.provider_name)}" loading="lazy">` : ''}<span>${esc(provider.provider_name)}</span></span>`;
-    }).join('')}</div></div>`
-    : `<div class="article-watch"><span class="article-watch-label">Where to watch</span><span class="article-watch-empty">Availability is not currently confirmed in ${esc(region)}.</span></div>`;
+  const d = detail || {};
+  const isMovie = mediaType === 'movie';
+  const title = (isMovie ? d.title : d.name) as string || ref.title || postTitle(post);
+  const date = (isMovie ? d.release_date : d.first_air_date) as string | undefined;
+  const yr = date ? String(date).slice(0, 4) : '';
+  const runtime = isMovie
+    ? (d.runtime ? `${Math.floor((d.runtime as number) / 60)}h ${(d.runtime as number) % 60}m` : '')
+    : ((d as any).number_of_seasons ? `${(d as any).number_of_seasons} season${(d as any).number_of_seasons === 1 ? '' : 's'}` : '');
+  const byline = isMovie
+    ? (((d as any).credits?.crew || []).find((c: any) => c.job === 'Director')?.name || '')
+    : (((d as any).networks || [])[0]?.name || '');
+  const facts = [yr, runtime, byline].filter(Boolean).join(' · ');
 
-  return `<aside class="article-cta">
-    <div class="article-cta-copy"><span class="article-cta-title">${esc(title)}</span>${whereToWatch}</div>
-    <a class="article-save" data-cta="article_save" href="${esc(saveUrl)}">Save to my PLOT <span aria-hidden="true">&rarr;</span></a>
+  const posterPath = (d.poster_path as string) || ref.poster_path || null;
+  const poster = posterPath ? `https://image.tmdb.org/t/p/w185${posterPath}` : null;
+
+  const avail = ((d as any)['watch/providers']?.results || {})[region] || {};
+  const streaming = uniqueProviders([...(avail.flatrate || []), ...(avail.free || []), ...(avail.ads || [])]).slice(0, 4);
+  const rentBuy = uniqueProviders([...(avail.rent || []), ...(avail.buy || [])]).slice(0, 4);
+
+  // A streaming / rental / TV premiere must never fall through to the "In
+  // cinemas" heuristic. That heuristic only means "released movie, JustWatch
+  // still empty" — which is the normal state for a day-one Amazon exclusive.
+  const kind = post.payload?.kind || null;
+  const homeKind = post.payload?.home_kind || null;
+  const editorialWhere = typeof post.payload?.title?.where === 'string'
+    ? post.payload.title.where.trim()
+    : '';
+  const isHomeRelease = kind === 'streaming' || kind === 'rental' || kind === 'tv'
+    || homeKind === 'streaming' || homeKind === 'rental'
+    || post.post_type === 'now_streaming';
+
+  let inCinemas = false;
+  if (isMovie && d.status === 'Released' && date && !isHomeRelease) {
+    const days = (Date.now() - new Date(date).getTime()) / 86400000;
+    inCinemas = days >= 0 && days <= 90 && !streaming.length && !rentBuy.length;
+  }
+
+  const chips = (label: string, list: WatchProvider[]) =>
+    `<span class="sm-row"><span class="sm-label">${esc(label)}</span>${list.map((pr) => {
+      const logo = providerLogo(pr.logo_path);
+      return logo
+        ? `<img class="sm-logo" src="${esc(logo)}" alt="${esc(pr.provider_name)}" loading="lazy">`
+        : `<span class="sm-plain">${esc(pr.provider_name)}</span>`;
+    }).join('')}</span>`;
+
+  const homeLabel = (kind === 'rental' || homeKind === 'rental') ? 'Rent or buy' : 'Stream';
+  const today = new Date().toISOString().slice(0, 10);
+  const notYetOut = Boolean(date && date > today);
+  const when = post.payload?.when_label;
+
+  let status: string;
+  if (streaming.length) status = chips('Stream', streaming);
+  else if (rentBuy.length) status = chips('Rent or buy', rentBuy);
+  else if (editorialWhere) {
+    status = `<span class="sm-row"><span class="sm-label">${esc(homeLabel)}</span><span class="sm-plain">${esc(editorialWhere)}</span></span>`;
+  } else if (isHomeRelease && notYetOut && when) {
+    status = `<span class="sm-row"><span class="sm-chip">Streaming</span><span class="sm-note">Arrives ${esc(when)}.</span></span>`;
+  } else if (isHomeRelease) {
+    status = `<span class="sm-row"><span class="sm-chip">Streaming</span><span class="sm-note">Available to stream.</span></span>`;
+  } else if (inCinemas) status = `<span class="sm-row"><span class="sm-chip">In cinemas</span><span class="sm-note">Not yet on any streaming service.</span></span>`;
+  else status = `<span class="sm-note">Not streaming in ${esc(regionName(region))} right now.</span>`;
+
+  return `<aside class="storymod">
+    ${poster ? `<a href="${esc(pageUrl)}" class="sm-art"><img src="${esc(poster)}" alt="${esc(title)} poster" loading="lazy"></a>` : ''}
+    <div class="sm-copy">
+      <span class="sm-eyebrow">In this story</span>
+      <a class="sm-title" href="${esc(pageUrl)}">${esc(title)}</a>
+      ${facts ? `<span class="sm-facts">${esc(facts)}</span>` : ''}
+      ${status}
+    </div>
+    <a class="sm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your PLOT</a>
+  </aside>`;
+};
+
+// First Look articles carry the exact official YouTube trailer selected by the
+// planner. Keep playback inside the article, but retain an ordinary YouTube
+// link for browsers or privacy tools that block embeds. Only recognized
+// YouTube URLs become embeds; anything else falls back to storyModule below.
+const trailerModule = async (post: FeedPost, ref = post.tmdb_refs?.[0]) => {
+  if (post.post_type !== 'trailer') return '';
+  const id = refId(ref);
+  if (!id || !ref?.media_type) return '';
+
+  const mediaType = ref.media_type === 'tv' ? 'tv' : 'movie';
+  let key = youtubeKey(post.payload?.trailer_url);
+  // Published First Look rows from before trailer_url was added still deserve
+  // the player. Resolve their current official trailer from TMDB using the
+  // verified ref stored on the article; never invent or hardcode a video key.
+  if (!key) {
+    try {
+      const apiKey = Deno.env.get('TMDB_API_KEY');
+      if (apiKey) {
+        const response = await fetch(`https://api.themoviedb.org/3/${mediaType}/${id}/videos?api_key=${apiKey}&language=en-US`);
+        if (response.ok) key = youtubeTrailerKey((await response.json())?.results);
+      }
+    } catch {
+      // The normal story card below remains the safe fallback.
+    }
+  }
+  if (!key) return '';
+
+  const title = post.payload?.title?.title || ref.title || postTitle(post);
+  const saveUrl = `${APP}/save?media_type=${mediaType}&tmdb_id=${id}&src=whats_on_article&utm_content=${encodeURIComponent(post.slug)}`;
+  const youtubeUrl = `https://www.youtube.com/watch?v=${key}`;
+  const release = post.payload?.when_label ? `In cinemas ${post.payload.when_label}` : '';
+
+  return `<aside class="trailermod" aria-label="${esc(title)} trailer">
+    <div class="tm-video">
+      <iframe src="https://www.youtube-nocookie.com/embed/${key}?rel=0" title="Watch the ${esc(title)} trailer" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    </div>
+    <div class="tm-foot">
+      <div class="tm-copy">
+        <span class="tm-eyebrow">First look</span>
+        <span class="tm-title">Watch the trailer</span>
+        <span class="tm-sub">${esc(title)}${release ? ` · ${esc(release)}` : ''}</span>
+      </div>
+      <div class="tm-actions">
+        <a class="tm-youtube" href="${youtubeUrl}" target="_blank" rel="noopener noreferrer">Open on YouTube</a>
+        <a class="tm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your PLOT</a>
+      </div>
+    </div>
   </aside>`;
 };
 
@@ -183,11 +345,14 @@ const titleCta = async (post: FeedPost, region: string) => {
 // for streaming. Older posts without the field keep the type label.
 const HOME_KIND_LABEL: Record<string, string> = { streaming: 'Now streaming', rental: 'Now at home' };
 
-const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>) => {
+// Kicker chips: cream by default, pink on the lead story. The per-type tone
+// colours in TYPE_META still drive the chart page; here every chip is one
+// neutral fill so the feed reads as one system.
+const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, lead = false) => {
   const m = TYPE_META[p.post_type];
   if (!m) return '';
   const label = (p.post_type === 'now_streaming' && HOME_KIND_LABEL[p.payload?.home_kind ?? '']) || m.label;
-  return `<span class="kick" style="color:${m.tone};">${esc(label)}</span>`;
+  return `<span class="kick${lead ? ' pink' : ''}"${lead ? ' style="background:var(--fill)"' : ''}>${esc(label)}</span>`;
 };
 
 // PostHog snippet for the server-rendered /whats-on pages. Same project token
@@ -244,44 +409,46 @@ const page = (title: string, head: string, body: string, status = 200, nav = 'wh
 ${POSTHOG}
 ${GA_GTM}
 ${head}
+<link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${SITE}/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <style>
   /* Self-hosted from apps/website/fonts — this function is proxied under
      theplot.tv, so an absolute path resolves against that origin regardless
      of where the HTML itself is generated. */
+  @font-face { font-family: 'Gabarito'; src: url('${SITE}/fonts/Gabarito-Variable.woff2') format('woff2'); font-weight: 400 900; font-style: normal; font-display: swap; }
   @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
-  /* Digits respaced to a common width (scripts/build-tabular-digits.py). Instrument Serif
-     has no tnum feature and draws digits proportionally, so a rank column would otherwise
-     sit ragged; unicode-range keeps this face to the digits alone. */
-  @font-face { font-family: 'Instrument Serif Tabular'; src: url('${SITE}/fonts/InstrumentSerif-TabularDigits.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+0030-0039; }
   :root {
-    --ink: #0c0c0c; --paper: #F4F4F5; --pink: #E05578;
-    --mut: #6b6b70; --faint: #a1a1a6; --hair: rgba(12,12,12,0.14);
-    --serif: 'Instrument Serif', Georgia, serif;
-    --serif-tabular: 'Instrument Serif Tabular', var(--serif);
+    /* Marketing palette — mirrors apps/website/theme.css. Cream ground, soft
+       charcoal ink, the pink is a FILL behind charcoal text only. */
+    --ink: #292924; --paper: #f1e9dc; --bg: #f8f2ea; --fill: #ff88c8; --fill-hover: #ff9fd3;
+    --accent: #E05578; --sage: #dbe1b0;
+    --mut: #5f5a52; --faint: #8a847a; --hair: rgba(41,41,36,0.12);
+    --display: 'Gabarito', 'DM Sans', system-ui, sans-serif;
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: #ffffff; color: var(--ink);
-    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg); color: var(--ink);
+    font-family: 'DM Sans', system-ui, sans-serif; font-weight: 400;
     line-height: 1.6; position: relative;
   }
   body::before {
-    content: ''; position: fixed; inset: 0; pointer-events: none; opacity: 0.035; z-index: 10;
+    content: ''; position: fixed; inset: 0; pointer-events: none; opacity: 0.025; z-index: 10;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     background-size: 200px 200px;
   }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 36px 28px 110px; }
-  .sc { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 36px 40px 110px; }
+  .sc { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+  .hl { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+  .card { background: var(--paper); border-radius: 20px; }
+  .chip { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 9999px; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.02em; background: var(--bg); color: var(--ink); }
+  .chip.pink { background: var(--fill); } .chip.sage { background: var(--sage); }
   @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
   .r1, .r2, .r3, .r4 { animation: rise 0.7s var(--ease) both; }
   .r2 { animation-delay: 0.08s; } .r3 { animation-delay: 0.16s; } .r4 { animation-delay: 0.24s; }
   @media (prefers-reduced-motion: reduce) { .r1, .r2, .r3, .r4 { animation: none; } }
 
+  /* ── nav: identical to the home page (apps/website/nav.css) ── */
   nav.topnav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     padding: 0 2rem; height: 64px;
@@ -289,14 +456,15 @@ ${head}
     background: transparent;
     transition: background 0.3s var(--ease), backdrop-filter 0.3s var(--ease);
   }
-  nav.topnav.scrolled { background: rgba(255,255,255,0.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-  .nav-logo { text-decoration: none; display: flex; align-items: center; font-family: var(--serif); font-size: 1.7rem; font-weight: 400; letter-spacing: -0.05em; color: var(--ink); line-height: 1; user-select: none; }
+  nav.topnav.scrolled { background: rgba(248,242,234,0.86); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  .nav-logo { text-decoration: none; display: flex; align-items: center; font-family: var(--display); font-size: 1.65rem; font-weight: 700; letter-spacing: -0.045em; color: var(--ink); line-height: 1; user-select: none; }
   .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
   .nav-links li { display: flex; }
-  .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--mut); font-size: 0.7rem; font-weight: 200; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s; }
-  .nav-links a:hover { color: var(--ink); }
-  .nav-links a.current { color: var(--ink); font-weight: 500; }
-  .nav-cta { color: var(--ink) !important; font-weight: 300 !important; }
+  .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--ink); font-size: 0.9rem; font-weight: 500; transition: color 0.2s, background 0.2s; }
+  .nav-links a:hover { color: var(--mut); }
+  .nav-links a.current { color: var(--ink); }
+  .nav-cta { background: var(--fill); padding: 0.6rem 1.1rem !important; border-radius: 9999px; line-height: 1; }
+  .nav-cta:hover { color: var(--ink) !important; background: var(--fill-hover); }
   .nav-hamburger { display: none; background: none; border: none; cursor: pointer; padding: 14px 12px; margin-right: -12px; flex-direction: column; gap: 5px; }
   .nav-hamburger span { display: block; width: 22px; height: 2px; background: var(--ink); border-radius: 2px; transition: all 0.3s var(--ease); }
   .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
@@ -304,176 +472,235 @@ ${head}
   .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
   @media (max-width: 600px) {
     .nav-links { display: none; }
-    .nav-links.open { display: flex; flex-direction: column; position: fixed; top: 64px; left: 0; right: 0; background: rgba(255,255,255,0.92); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); padding: 1.25rem 2rem; gap: 0.35rem; align-items: stretch; }
+    .nav-links.open { display: flex; flex-direction: column; position: fixed; top: 64px; left: 0; right: 0; background: rgba(248,242,234,0.94); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); padding: 1.25rem 2rem; gap: 0.35rem; align-items: stretch; }
     .nav-links.open li { display: block; }
     .nav-links.open a { display: block; padding: 0.85rem 0; text-align: center; }
+    .nav-links.open .nav-cta { margin-top: 0.5rem; padding: 0.85rem 0 !important; }
     .nav-hamburger { display: flex; }
-    nav.topnav.nav-open { background: rgba(255,255,255,0.92); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); }
+    nav.topnav.nav-open { background: rgba(248,242,234,0.94); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); }
   }
 
+  /* ── masthead ── */
   .head { padding: 104px 0 0; }
-  .head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
-  .dateline { color: var(--faint); font-size: 0.84rem; white-space: nowrap; padding-top: 0.5em; }
-  h1.feed-title { font-family: var(--serif); font-size: clamp(2.8rem, 7vw, 4.4rem); font-weight: 400; line-height: 0.92; letter-spacing: -0.03em; }
-  h1.feed-title em { font-style: italic; color: inherit; }
+  .head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .dateline { color: var(--mut); white-space: nowrap; padding-bottom: 0.6em; }
+  h1.feed-title { font-family: var(--display); font-size: clamp(2.8rem, 6vw, 4rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
+  h1.feed-title em { font-style: normal; font-weight: 500; color: var(--mut); }
 
-  nav.dex { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-bottom: 1px solid var(--hair); margin: 40px 0 0; }
-  .dex-links { display: flex; gap: 26px; flex-wrap: wrap; }
-  .dex a { color: var(--mut); text-decoration: none; padding-bottom: 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  nav.dex { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-bottom: 1px solid var(--hair); margin: 28px 0 0; }
+  .dex-links { display: flex; gap: 28px; flex-wrap: wrap; }
+  .dex a { color: var(--mut); text-decoration: none; padding-bottom: 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
   .dex a:hover { color: var(--ink); }
-  .dex a.active { color: var(--ink); border-bottom-color: var(--pink); }
+  .dex a.active { color: var(--ink); border-bottom-color: var(--accent); }
 
-  /* Stacked (image full-width on top, text below) rather than side-by-side —
-     that way .feature's image always gets its column's FULL width, whether
-     that's the whole page (standalone) or the ~60% left of a secondary story
-     (paired in .hero-row). A side-by-side split only ever worked at the wider
-     of those two, and silently broke at the narrower one. */
-  .feature { display: flex; flex-direction: column; gap: 20px; padding: 48px 0; text-decoration: none; color: inherit; }
-  .feature + .group { border-top: none; }
-  .f-media img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; border: 1px solid var(--hair); border-radius: 14px; }
-  .f-media .ph { width: 100%; aspect-ratio: 16/10; background: var(--paper); border: 1px solid var(--hair); display: flex; align-items: flex-end; padding: 26px; border-radius: 14px; }
-  .f-media .ph span { font-family: var(--serif); font-size: 1.8rem; color: var(--ink); line-height: 1.05; }
-  .feature h2 { font-family: var(--serif); font-size: clamp(1.9rem, 3.6vw, 2.6rem); font-weight: 400; line-height: 1.04; letter-spacing: -0.015em; margin: 12px 0 14px; }
-  .feature:hover h2 { color: var(--pink); }
-  /* Clamped regardless of width — a hero dek is a teaser, not the full lede. */
-  .feature .dek { color: var(--mut); font-weight: 300; font-size: 1rem; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-  .feature .f-date { display: block; color: var(--faint); margin-top: 18px; }
-  .feature .f-read { display: inline-block; color: var(--ink); margin-top: 22px; border-bottom: 1px solid var(--ink); padding-bottom: 3px; transition: color 0.25s var(--ease), border-color 0.25s var(--ease); }
-  .feature:hover .f-read { color: var(--pink); border-color: var(--pink); }
+  /* ── front page: feed column + sidebar ── */
+  .feed-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 40px; align-items: start; margin-top: 28px; }
+  .feed-main, .feed-side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 
-  .group { display: grid; grid-template-columns: 170px 1fr; gap: 36px; padding-top: 34px; }
+  /* lead story: still left, copy right, in one card */
+  .feature { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 28px; align-items: center; padding: 24px; text-decoration: none; color: inherit; }
+  .f-media img { width: 320px; height: 240px; object-fit: cover; display: block; border-radius: 14px; }
+  .f-media .ph { width: 320px; height: 240px; background: var(--bg); display: flex; align-items: flex-end; padding: 22px; border-radius: 14px; }
+  .f-media .ph span { font-family: var(--display); font-weight: 600; font-size: 1.4rem; color: var(--ink); line-height: 1.1; }
+  .f-text { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+  .feature h2 { font-family: var(--display); font-size: clamp(1.6rem, 2.4vw, 1.9rem); font-weight: 700; line-height: 1.05; letter-spacing: -0.025em; }
+  .feature:hover h2 { color: var(--mut); }
+  .feature .dek { color: var(--mut); font-size: 0.95rem; line-height: 1.55; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .f-foot { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+  .feature .f-date { color: var(--mut); }
+  .feature .f-read { display: inline-flex; align-items: center; padding: 10px 18px; border-radius: 9999px; background: var(--ink); color: var(--bg); font-size: 0.82rem; font-weight: 500; text-transform: none; letter-spacing: 0; transition: transform 0.2s var(--ease); }
+  .feature:hover .f-read { transform: translateY(-1px); }
+
+  /* story cards (the old rail) */
+  .rail { display: contents; }
+  .rail-row { display: flex; align-items: center; gap: 20px; padding: 20px 24px; text-decoration: none; color: inherit; background: var(--paper); border-radius: 20px; }
+  .rail-thumb { width: 64px; height: 88px; object-fit: cover; border-radius: 10px; flex-shrink: 0; background: var(--bg); display: block; }
+  .rail-body { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+  .rail-t { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.2rem; line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; transition: color 0.25s var(--ease); }
+  .rail-row:hover .rail-t { color: var(--mut); }
+  .rail-date { color: var(--mut); white-space: nowrap; }
+
+  /* named sections live inside cards */
+  .sec-card { padding: 24px 28px 28px; display: flex; flex-direction: column; gap: 18px; }
+  .sec-card.tight { padding-bottom: 12px; }
+  .sec-head { display: flex; align-items: center; gap: 10px; }
+  .sec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fill); flex-shrink: 0; }
+  .sec-label { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.4rem; line-height: 1; white-space: nowrap; }
+  .sec-rule { flex: 1; }
+  .view-all { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); text-decoration: none; white-space: nowrap; }
+  .view-all:hover { color: var(--mut); }
+  .kick { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 9999px; background: var(--bg); font-size: 0.62rem; font-weight: 500; letter-spacing: 0.04em; text-transform: none; color: var(--ink); align-self: flex-start; }
+
+  /* New at home: poster shelf */
+  .shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 18px; }
+  .shelf-item { text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 10px; }
+  .shelf-item img, .shelf-item .ph { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 14px; display: block; background: var(--bg); }
+  .shelf-item .kick { margin: 0; }
+  .shelf-t { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 0.95rem; line-height: 1.2; transition: color 0.25s var(--ease); }
+  .shelf-item:hover .shelf-t { color: var(--mut); }
+
+  /* Trending: ranked list, sidebar */
+  .trend-list { list-style: none; display: flex; flex-direction: column; }
+  .trend-row { display: grid; grid-template-columns: 24px 36px 1fr auto; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; }
+  .trend-rank { font-family: var(--display); font-weight: 700; font-size: 1.35rem; line-height: 1; color: var(--ink); }
+  .trend-rank.top { color: var(--accent); }
+  .trend-poster { width: 36px; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; display: block; background: var(--bg); }
+  .trend-t { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1rem; line-height: 1.2; transition: color 0.25s var(--ease); min-width: 0; }
+  .trend-row:hover .trend-t { color: var(--mut); }
+  .ch-move { font-size: 0.64rem; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap; }
+  .mv-new { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 9999px; background: var(--fill); color: var(--ink); }
+  .mv-up { color: #0F6E56; } .mv-down { color: #B03A5E; } .mv-same { color: var(--faint); }
+
+  /* Coming soon: date block + thumb + title, sidebar */
+  .datecards { display: flex; flex-direction: column; }
+  .datecard { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; }
+  .date-badge { width: 40px; text-align: center; flex-shrink: 0; font-size: 0.6rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mut); line-height: 1.2; }
+  .date-badge .dd { display: block; font-family: var(--display); font-weight: 700; font-size: 1.35rem; line-height: 1; color: var(--ink); letter-spacing: -0.02em; }
+  .dc-media img, .dc-media .ph { width: 36px; height: 54px; object-fit: cover; border-radius: 6px; display: block; background: var(--bg); }
+  .dc-t { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 0.95rem; line-height: 1.2; transition: color 0.25s var(--ease); }
+  .datecard:hover .dc-t { color: var(--mut); }
+
+  /* First look: two wide trailer cards */
+  .wide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+  .wide-card { text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 10px; }
+  .wc-media { position: relative; }
+  .wc-media img, .wc-media .ph { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 14px; display: block; background: var(--bg); }
+  .play-pill { position: absolute; bottom: 12px; left: 12px; background: var(--bg); color: var(--ink); padding: 5px 10px; border-radius: 9999px; font-size: 0.66rem; font-weight: 500; }
+  .wc-t { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1rem; line-height: 1.2; transition: color 0.25s var(--ease); }
+  .wide-card:hover .wc-t { color: var(--mut); }
+
+  /* More updates: dated list in a card */
+  .tail-list { display: flex; flex-direction: column; }
+  .tail-list a { display: flex; justify-content: space-between; gap: 20px; padding: 13px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; font-family: var(--display); font-weight: 500; letter-spacing: -0.01em; font-size: 1rem; line-height: 1.25; }
+  .tail-list a:hover { color: var(--mut); }
+  .tail-list .meta { color: var(--mut); font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; padding-top: 3px; }
+
+  /* filtered / paged list (unchanged structure, new type) */
+  .group { display: grid; grid-template-columns: 170px 1fr; gap: 36px; padding-top: 34px; border-top: 1px solid var(--hair); }
   .g-date { padding-top: 22px; }
-  .g-day { display: block; color: var(--ink); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.18em; }
-  .g-day.today { color: var(--pink); }
-  .g-num { display: block; color: var(--faint); font-size: 0.82rem; font-weight: 300; margin-top: 4px; }
+  .g-day { display: block; color: var(--ink); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.14em; }
+  .g-day.today { color: var(--accent); }
+  .g-num { display: block; color: var(--mut); font-size: 0.82rem; margin-top: 4px; }
   .row { display: flex; gap: 28px; align-items: flex-start; justify-content: space-between; padding: 22px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; }
   .group .g-list .row:first-child { border-top: none; padding-top: 22px; }
-  .group { border-top: 1px solid var(--hair); }
-  .row-t { display: block; font-family: var(--serif); font-size: 1.45rem; line-height: 1.12; letter-spacing: -0.01em; margin-top: 6px; transition: color 0.25s var(--ease); }
-  .row:hover .row-t { color: var(--pink); }
-  .row-dek { display: block; color: var(--mut); font-weight: 300; font-size: 0.92rem; line-height: 1.35; margin-top: 8px; }
-  .row img { width: 240px; aspect-ratio: 3/2; object-fit: cover; flex-shrink: 0; border: 1px solid var(--hair); border-radius: 12px; filter: grayscale(1) contrast(1.04); transition: filter 0.45s var(--ease); }
-  .row:hover img { filter: grayscale(0) contrast(1); }
-  .row .ph { width: 240px; aspect-ratio: 3/2; flex-shrink: 0; background: var(--paper); border: 1px solid var(--hair); border-radius: 12px; }
-  .kick { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
-  .row .kick { display: block; }
-
-  .older-row { border-top: 1px solid var(--hair); margin-top: 0; padding: 26px 0 0; text-align: center; }
+  .row-t { display: block; font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.35rem; line-height: 1.15; margin-top: 8px; transition: color 0.25s var(--ease); }
+  .row:hover .row-t { color: var(--mut); }
+  .row-dek { display: block; color: var(--mut); font-size: 0.92rem; line-height: 1.45; margin-top: 8px; }
+  .row img { width: 240px; aspect-ratio: 3/2; object-fit: cover; flex-shrink: 0; border-radius: 14px; }
+  .row .ph { width: 240px; aspect-ratio: 3/2; flex-shrink: 0; background: var(--paper); border-radius: 14px; }
+  .older-row { border-top: 1px solid var(--hair); padding: 26px 0 0; text-align: center; }
   .older { color: var(--mut); text-decoration: none; }
-  .older:hover { color: var(--pink); }
-
-  /* front-page hero row: one big lead image+story on the left, a compact
-     scan-list of mini entries on the right — not a second story competing
-     for attention, just thumbnail + headline, repeated. */
-  .hero-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 44px; align-items: start; padding: 40px 0 4px; }
-  .hero-row .feature { padding: 0; }
-  .rail { display: flex; flex-direction: column; }
-  .rail-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; }
-  .rail-row:first-child { border-top: none; padding-top: 0; }
-  .rail-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: var(--paper); }
-  .rail-t { font-family: var(--serif); font-size: 0.98rem; line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; transition: color 0.25s var(--ease); }
-  .rail-row:hover .rail-t { color: var(--pink); }
-
-  /* named section header: dot + label + rule + optional "view all" */
-  .sec-head { display: flex; align-items: center; gap: 12px; margin: 46px 0 20px; }
-  .sec-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink); flex-shrink: 0; }
-  .sec-label { font-size: 0.76rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
-  .sec-rule { height: 1px; background: var(--hair); flex: 1; }
-  .view-all { font-size: 0.74rem; color: var(--mut); text-decoration: none; white-space: nowrap; }
-  .view-all:hover { color: var(--pink); }
-
-  /* Now Streaming: a poster shelf, not a headline list. The section never
-     holds more than 4 posts (capped server-side), so this fills the row from
-     however many exist rather than scrolling to ones that were never there. */
-  .shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 18px; }
-  .shelf-item { text-decoration: none; color: inherit; }
-  .shelf-item img, .shelf-item .ph { width: 100%; aspect-ratio: 2/3; object-fit: cover; border: 1px solid var(--hair); border-radius: 10px; display: block; }
-  .shelf-item .kick { display: block; margin: 10px 0 3px; }
-  .shelf-t { font-family: var(--serif); font-size: 1.02rem; line-height: 1.16; transition: color 0.25s var(--ease); }
-  .shelf-item:hover .shelf-t { color: var(--pink); }
-
-  /* Trending: compact ranked chart, mirrors /whats-on/chart's own rank+poster+movement */
-  .trend-list { list-style: none; }
-  .trend-row { display: grid; grid-template-columns: 36px 48px 1fr auto; gap: 16px; align-items: center; padding: 13px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; }
-  .trend-list li:first-child .trend-row { border-top: none; }
-  .trend-rank { font-family: var(--serif-tabular); font-size: 1.5rem; color: var(--faint); text-align: center; }
-  .trend-rank.top { color: var(--pink); }
-  .trend-poster { width: 48px; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; display: block; background: var(--paper); }
-  .trend-t { font-family: var(--serif); font-size: 1.1rem; line-height: 1.15; transition: color 0.25s var(--ease); }
-  .trend-row:hover .trend-t { color: var(--pink); }
-  .ch-move { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
-  .mv-up { color: #0F6E56; } .mv-down { color: #B03A5E; } .mv-new { color: var(--pink); } .mv-same { color: var(--faint); }
-
-  /* Coming Soon: the release date is the point, so it's a badge on the card, not a dek */
-  .datecards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 22px; }
-  .datecard { text-decoration: none; color: inherit; }
-  .dc-media { position: relative; }
-  .dc-media img, .dc-media .ph { width: 100%; aspect-ratio: 3/2; object-fit: cover; border: 1px solid var(--hair); border-radius: 12px; display: block; }
-  .date-badge { position: absolute; top: 10px; left: 10px; background: var(--ink); color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.25; text-align: center; }
-  .date-badge .dd { display: block; font-family: var(--serif); font-size: 1.1rem; font-weight: 400; letter-spacing: 0; }
-  .dc-t { display: block; font-family: var(--serif); font-size: 1.1rem; margin-top: 12px; line-height: 1.18; transition: color 0.25s var(--ease); }
-  .datecard:hover .dc-t { color: var(--pink); }
-
-  /* First Look: bigger, wider cards for trailer drops — the most visual content type */
-  .wide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; }
-  .wide-card { text-decoration: none; color: inherit; }
-  .wc-media { position: relative; }
-  .wc-media img, .wc-media .ph { width: 100%; aspect-ratio: 21/9; object-fit: cover; border: 1px solid var(--hair); border-radius: 12px; display: block; }
-  .play-pill { position: absolute; bottom: 10px; left: 10px; background: rgba(255,255,255,0.92); color: var(--ink); padding: 5px 11px; border-radius: 999px; font-size: 0.64rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; }
-  .wc-t { display: block; font-family: var(--serif); font-size: 1.28rem; margin-top: 12px; line-height: 1.16; transition: color 0.25s var(--ease); }
-  .wide-card:hover .wc-t { color: var(--pink); }
-
-  /* catch-all tail: dense text-only, no images */
-  .tail { margin-top: 44px; padding-top: 24px; border-top: 2px solid var(--ink); }
-  .tail-head { display: block; color: var(--mut); margin-bottom: 12px; }
-  .tail-list a { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; font-size: 0.95rem; }
-  .tail-list a:first-child { border-top: none; }
-  .tail-list a:hover { color: var(--pink); }
-  .tail-list .meta { color: var(--faint); font-size: 0.76rem; white-space: nowrap; }
+  .older:hover { color: var(--ink); }
 
   /* entry page */
-  .post { max-width: 660px; margin: 0 auto; padding-top: 64px; }
+  .crumbs { max-width: 680px; margin: 0 auto; padding-top: 40px; display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--mut); }
+  .crumbs a { color: var(--mut); text-decoration: none; }
+  .crumbs a:hover { color: var(--ink); }
+  .crumbs .sep2 { color: var(--faint); }
+  .post { max-width: 680px; margin: 0 auto; padding-top: 24px; }
   .post-head .a-meta { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
-  .post-head .a-meta .d { color: var(--faint); }
+  .post-head .a-meta .d { color: var(--mut); }
   .post-head .a-meta .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); opacity: 0.6; }
-  .post-head h1 { font-family: var(--serif); font-size: clamp(2.4rem, 5.6vw, 3.5rem); font-weight: 400; line-height: 1.0; letter-spacing: -0.02em; }
-  figure.hero { margin: 44px 0 46px; }
-  figure.hero img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; border: 1px solid var(--hair); border-radius: 14px; }
-  .post-body p { font-size: 1.06rem; font-weight: 300; color: #27272A; margin-bottom: 24px; }
+  .post-head h1 { font-family: var(--display); font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 700; line-height: 1.02; letter-spacing: -0.03em; }
+  figure.hero { margin: 40px 0 44px; }
+  figure.hero img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; border-radius: 20px; }
+  .post-body p { font-size: 1.06rem; color: #3a3630; margin-bottom: 24px; }
   .post-body p.lede { font-weight: 600; color: var(--ink); margin-bottom: 30px; }
-  .endcta { display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-top: 52px; padding-top: 36px; border-top: 1px solid var(--hair); }
-  .endcta .ec-title { display: block; font-family: var(--serif); font-size: 2rem; line-height: 1.04; letter-spacing: -0.015em; }
-  .endcta .ec-sub { display: block; color: var(--mut); font-weight: 300; font-size: 0.85rem; margin-top: 8px; }
-  .article-cta { display:flex; align-items:center; justify-content:space-between; gap:28px; margin-top:52px; padding:24px; border:1px solid var(--hair); border-radius:14px; background:var(--paper); }
+  .endcta { display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-top: 52px; padding: 28px 32px; background: var(--paper); border-radius: 20px; }
+  .endcta .ec-title { display: block; font-family: var(--display); font-weight: 700; font-size: 1.6rem; line-height: 1.05; letter-spacing: -0.03em; }
+  .endcta .ec-sub { display: block; color: var(--mut); font-size: 0.9rem; margin-top: 8px; }
+  /* The tail of a guide: what the modules did not feature. Two columns on a
+     desktop, one on a phone; the row is the same shape at two titles or twenty. */
+  .gt { max-width: 680px; margin: 40px auto 0; padding-top: 26px; border-top: 1px solid var(--hair); }
+  .gt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .gt-head h2 { font-family: var(--display); font-weight: 700; font-size: 1.32rem; letter-spacing: -0.03em; }
+  .gt-count { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mut); }
+  .gt-card { background: var(--paper); border-radius: 16px; padding: 6px 20px; margin-top: 14px; display: flex; gap: 26px; }
+  .gt-col { flex: 1; min-width: 0; }
+  .gt-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(41,41,36,0.1); }
+  .gt-col .gt-row:last-child { border-bottom: none; }
+  .gt-art { flex-shrink: 0; display: block; width: 40px; }
+  .gt-art img, .gt-ph { width: 40px; height: 60px; object-fit: cover; border-radius: 6px; display: block; background: var(--bg); }
+  .gt-name { flex-grow: 1; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 0.94rem; letter-spacing: -0.015em; line-height: 1.2; text-decoration: none; color: var(--ink); }
+  .gt-name:hover { color: var(--accent); }
+  .gt-add { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--fill); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
+  .gt-add:hover { background: var(--fill-hover); }
+  .gt-add svg { width: 13px; height: 13px; display: block; }
+  @media (max-width: 640px) {
+    .gt-card { flex-direction: column; gap: 0; padding: 6px 16px; }
+    .gt-col:first-child .gt-row:last-child { border-bottom: 1px solid rgba(41,41,36,0.1); }
+    .gt-col:last-child .gt-row:last-child { border-bottom: none; }
+  }
+  /* The story module. Sits inside .post-body, so the margins are its own. */
+  .storymod { display: flex; align-items: center; gap: 18px; margin: 0 0 30px; padding: 20px 22px; border-radius: 16px; background: var(--paper); }
+  .storymod .sm-art { flex-shrink: 0; display: block; }
+  .storymod .sm-art img { width: 76px; height: 114px; object-fit: cover; border-radius: 8px; display: block; }
+  .storymod .sm-copy { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+  .storymod .sm-eyebrow { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mut); }
+  .storymod .sm-title { font-family: var(--display); font-weight: 700; font-size: 1.35rem; letter-spacing: -0.02em; line-height: 1.1; margin-top: 5px; text-decoration: none; color: var(--ink); }
+  .storymod .sm-title:hover { color: var(--accent); }
+  .storymod .sm-facts { font-size: 0.84rem; color: var(--mut); margin-top: 3px; }
+  .storymod .sm-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 10px; }
+  .storymod .sm-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mut); }
+  .storymod .sm-logo { width: 24px; height: 24px; object-fit: contain; border-radius: 5px; display: block; }
+  .storymod .sm-plain { font-size: 0.8rem; }
+  .storymod .sm-chip { background: var(--sage); color: var(--ink); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; }
+  .storymod .sm-note { font-size: 0.84rem; color: var(--ink); margin-top: 9px; }
+  .storymod .sm-row .sm-note { margin-top: 0; }
+  .storymod .sm-save { flex-shrink: 0; display: inline-flex; align-items: center; min-height: 44px; padding: 0.7rem 1.05rem; border-radius: 999px; background: var(--fill); color: var(--ink); text-decoration: none; font-size: 0.82rem; font-weight: 600; white-space: nowrap; transition: background 0.2s var(--ease); }
+  .storymod .sm-save:hover { background: var(--fill-hover); }
+  @media (max-width: 640px) {
+    .storymod { flex-wrap: wrap; gap: 14px; padding: 16px; }
+    .storymod .sm-save { margin-left: auto; }
+  }
+  /* First Look article player. The video remains the visual lead, while the
+     footer carries the same editorial hierarchy and save action as storymod. */
+  .trailermod { margin: 0 0 30px; overflow: hidden; border-radius: 16px; background: var(--paper); }
+  .tm-video { position: relative; width: 100%; aspect-ratio: 16/9; background: var(--ink); }
+  .tm-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  .tm-foot { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 20px 20px; }
+  .tm-copy { min-width: 0; display: flex; flex-direction: column; }
+  .tm-eyebrow { color: var(--mut); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .tm-title { margin-top: 4px; font-family: var(--display); font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .tm-sub { margin-top: 4px; color: var(--mut); font-size: 0.82rem; }
+  .tm-actions { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+  .tm-youtube, .tm-save { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0.65rem 0.95rem; border-radius: 999px; text-decoration: none; font-size: 0.8rem; font-weight: 600; white-space: nowrap; transition: background 0.2s var(--ease), color 0.2s var(--ease); }
+  .tm-youtube { border: 1px solid var(--hair); color: var(--ink); background: transparent; }
+  .tm-youtube:hover { background: var(--bg); }
+  .tm-save { color: var(--ink); background: var(--fill); }
+  .tm-save:hover { background: var(--fill-hover); }
+  @media (max-width: 640px) {
+    .tm-foot { align-items: flex-start; flex-direction: column; padding: 16px; }
+    .tm-actions { flex-wrap: wrap; }
+  }
+  .article-cta { display:flex; align-items:center; justify-content:space-between; gap:28px; margin-top:52px; padding:28px 32px; border-radius:20px; background:var(--paper); }
   .article-cta-copy { min-width:0; }
-  .article-cta-title { display:block; font-family:var(--serif); font-size:1.65rem; line-height:1.05; letter-spacing:-0.015em; }
+  .article-cta-title { display:block; font-family:var(--display); font-weight:700; font-size:1.5rem; line-height:1.05; letter-spacing:-0.03em; }
   .article-watch { margin-top:13px; }
-  .article-watch-label { display:block; color:var(--mut); font-size:0.65rem; font-weight:600; letter-spacing:0.13em; text-transform:uppercase; margin-bottom:8px; }
+  .article-watch-label { display:block; color:var(--mut); font-size:0.65rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px; }
   .article-providers { display:flex; flex-wrap:wrap; gap:8px; }
-  .article-provider { display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:4px 8px 4px 5px; border:1px solid var(--hair); border-radius:999px; background:#fff; font-size:0.75rem; white-space:nowrap; }
+  .article-provider { display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:4px 8px 4px 5px; border-radius:999px; background:var(--bg); font-size:0.75rem; white-space:nowrap; }
   .article-provider img { width:21px; height:21px; object-fit:contain; border-radius:5px; display:block; }
-  .article-watch-empty { color:var(--mut); font-size:0.82rem; font-weight:300; }
-  .article-save { display:inline-flex; align-items:center; gap:0.5rem; min-height:44px; padding:0.8rem 1.1rem; border-radius:999px; background:var(--ink); color:#fff; text-decoration:none; font-size:0.78rem; font-weight:500; white-space:nowrap; transition:transform 0.2s var(--ease), background 0.2s var(--ease); }
-  .article-save:hover { background:var(--pink); transform:translateY(-1px); }
-  /* CTA button — mirrors the home page hero's "btn btn-outline btn-large" */
-  .cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.85rem 2.2rem; min-height: 44px; border: 1px solid var(--ink); border-radius: 9999px; background: transparent; color: var(--ink); text-decoration: none; font-weight: 300; font-size: 0.85rem; white-space: nowrap; transition: all 0.25s var(--ease); }
-  .cta:hover { background: var(--ink); color: #fff; transform: translateY(-1px); }
+  .article-watch-empty { color:var(--mut); font-size:0.82rem; }
+  .article-save { display:inline-flex; align-items:center; gap:0.5rem; min-height:44px; padding:0.8rem 1.2rem; border-radius:999px; background:var(--fill); color:var(--ink); text-decoration:none; font-size:0.85rem; font-weight:500; white-space:nowrap; transition:transform 0.2s var(--ease), background 0.2s var(--ease); }
+  .article-save:hover { background:var(--fill-hover); transform:translateY(-1px); }
+  .cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.85rem 1.6rem; min-height: 44px; border-radius: 9999px; background: var(--fill); color: var(--ink); text-decoration: none; font-weight: 500; font-size: 0.9rem; white-space: nowrap; transition: all 0.25s var(--ease); }
+  .cta:hover { background: var(--fill-hover); transform: translateY(-1px); }
   .back { display: inline-block; margin-top: 40px; color: var(--mut); text-decoration: none; }
-  .back:hover { color: var(--pink); }
-  .post-foot { max-width: 660px; margin: 0 auto; }
-  .more { max-width: 660px; margin: 80px auto 0; border-top: 2px solid var(--ink); padding-top: 20px; }
+  .back:hover { color: var(--ink); }
+  .post-foot { max-width: 680px; margin: 0 auto; }
+  .more { max-width: 680px; margin: 80px auto 0; border-top: 1px solid var(--hair); padding-top: 24px; }
   .more .more-head { display: block; color: var(--ink); margin-bottom: 26px; }
   .more-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
   .mcard { display: block; text-decoration: none; color: inherit; }
-  .mcard img { width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; border: 1px solid var(--hair); border-radius: 12px; filter: grayscale(1) contrast(1.04); transition: filter 0.45s var(--ease); }
-  .mcard:hover img { filter: none; }
-  .mcard .ph { display: block; width: 100%; aspect-ratio: 3/2; background: var(--paper); border: 1px solid var(--hair); border-radius: 12px; }
-  .mcard .kick { display: block; margin: 13px 0 5px; }
-  .mcard .mc-t { display: block; font-family: var(--serif); font-size: 1.18rem; line-height: 1.14; letter-spacing: -0.01em; transition: color 0.25s var(--ease); }
-  .mcard:hover .mc-t { color: var(--pink); }
+  .mcard img { width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; border-radius: 14px; }
+  .mcard .ph { display: block; width: 100%; aspect-ratio: 3/2; background: var(--paper); border-radius: 14px; }
+  .mcard .kick { margin: 13px 0 6px; }
+  .mcard .mc-t { display: block; font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.1rem; line-height: 1.2; transition: color 0.25s var(--ease); }
+  .mcard:hover .mc-t { color: var(--mut); }
 
   footer {
-    background: #fff; color: var(--ink); border-top: 1px solid var(--hair);
+    background: var(--bg); color: var(--ink); border-top: 1px solid var(--hair);
     position: relative; z-index: 3; margin-top: 90px; padding: 2.6rem 3rem;
   }
   .footer-inner {
@@ -481,18 +708,14 @@ ${head}
     justify-content: space-between; gap: 1.5rem 2rem; flex-wrap: wrap;
   }
   .footer-logo {
-    text-decoration: none; font-family: var(--serif); font-weight: 400; letter-spacing: -0.05em;
-    font-size: 1.8rem; line-height: 1; color: var(--ink); user-select: none;
+    text-decoration: none; font-family: var(--display); font-weight: 700; letter-spacing: -0.045em;
+    font-size: 1.7rem; line-height: 1; color: var(--ink); user-select: none;
   }
   .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
-  .footer-nav a {
-    font-size: 0.82rem; color: var(--mut); text-decoration: none;
-    transition: color 0.2s; white-space: nowrap;
-  }
+  .footer-nav a { font-size: 0.82rem; color: var(--mut); text-decoration: none; transition: color 0.2s; white-space: nowrap; }
   .footer-nav a:hover { color: var(--ink); }
   .footer-bottom {
-    width: 100%; padding-top: 1.2rem; margin-top: 0.4rem;
-    border-top: 1px solid var(--hair);
+    width: 100%; padding-top: 1.2rem; margin-top: 0.4rem; border-top: 1px solid var(--hair);
     display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   }
   .footer-copy { font-size: 0.75rem; color: var(--mut); }
@@ -501,25 +724,32 @@ ${head}
   .footer-social a:hover { color: var(--ink); }
   .footer-social svg { width: 19px; height: 19px; display: block; }
 
+  @media (max-width: 900px) {
+    .feed-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .feature { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 18px; }
+    .f-media img, .f-media .ph { width: 100%; height: auto; aspect-ratio: 16/10; }
+  }
   @media (max-width: 760px) {
-    .wrap { padding: 28px 20px 80px; }
+    .wrap { padding: 28px 16px 80px; }
     .post { padding-top: 40px; }
     .more-grid { grid-template-columns: 1fr; gap: 22px; }
     .mcard { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: center; }
     .mcard .kick { margin: 0 0 5px; }
-    .mcard .mc-t { font-size: 1.15rem; }
-    .endcta { flex-direction: column; align-items: flex-start; gap: 22px; }
-    .article-cta { align-items:flex-start; flex-direction:column; gap:20px; }
-    .feature { padding: 34px 0; }
-    .hero-row { grid-template-columns: 1fr; padding: 28px 0 4px; }
-    .datecards, .wide-grid { grid-template-columns: 1fr; }
-    .trend-row { grid-template-columns: 28px 40px 1fr auto; gap: 12px; }
+    .mcard .mc-t { font-size: 1.05rem; }
+    .endcta, .article-cta { flex-direction: column; align-items: flex-start; gap: 20px; padding: 22px; }
+    .rail-row { padding: 14px 16px; gap: 14px; }
+    .rail-thumb { width: 52px; height: 72px; }
+    .rail-t { font-size: 1.05rem; }
+    .rail-date { display: none; }
+    .sec-card { padding: 18px 20px 20px; }
+    .shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .wide-grid { grid-template-columns: 1fr; }
     .group { grid-template-columns: 1fr; gap: 0; }
     .g-date { padding-top: 26px; display: flex; gap: 10px; align-items: baseline; }
     .g-num { margin-top: 0; }
     .row { gap: 18px; }
     .row img, .row .ph { width: 150px; }
-    .row-t { font-size: 1.25rem; }
+    .row-t { font-size: 1.15rem; }
     .row-dek { display: none; }
     .dex { overflow-x: auto; scrollbar-width: none; }
     .dex::-webkit-scrollbar { display: none; }
@@ -531,10 +761,9 @@ ${head}
 <body>
 ${GTM_NOSCRIPT}
 <nav class="topnav" id="topnav">
-  <a href="${SITE}" class="nav-logo" aria-label="PLOT">PLOT</a>
+  <a href="${SITE}" class="nav-logo" aria-label="plot">plot</a>
   <ul class="nav-links" id="navLinks">
     <li><a href="${FEED_PATH}"${nav === 'whats-on' ? ' class="current"' : ''}>What's On</a></li>
-    <li><a href="${FEED_PATH}#newsletter">Newsletter</a></li>
     <li><a href="${APP}/login?src=whats_on_nav" data-cta="nav">Log in</a></li>
     <li><a href="${APP}/signup?src=whats_on_nav" data-cta="nav" class="nav-cta">Sign up</a></li>
   </ul>
@@ -602,16 +831,15 @@ const moreCard = (p: FeedPost) => {
 const featuredHero = (p: FeedPost) => {
   const img = postImage(p);
   const dek = postBody(p)[0];
-  return `<a class="feature r3" href="${FEED_PATH}/${esc(p.slug)}">
+  return `<a class="feature card r3" href="${FEED_PATH}/${esc(p.slug)}">
     <div class="f-media">${img
       ? `<img src="${esc(img)}" alt="">`
       : `<div class="ph"><span>${esc(postTitle(p))}</span></div>`}</div>
     <div class="f-text">
-      ${kicker(p)}
+      ${kicker(p, true)}
       <h2>${esc(postTitle(p))}</h2>
       ${dek ? `<p class="dek">${esc(dek)}</p>` : ''}
-      <span class="f-date sc">${esc(fmtDate(p.scheduled_for))}</span>
-      <span class="f-read sc">Read the story</span>
+      <div class="f-foot"><span class="f-read">Read the story &rarr;</span><span class="f-date sc">${esc(fmtDate(p.scheduled_for))}</span></div>
     </div>
   </a>`;
 };
@@ -672,19 +900,19 @@ const CHART_CSS = `
   ol.chart { list-style: none; margin: 38px 0 0; }
   .ch-row { display: grid; grid-template-columns: 52px 60px 1fr auto; gap: 22px; align-items: center; padding: 18px 0; border-top: 1px solid var(--hair); }
   ol.chart li:first-child .ch-row { border-top: none; }
-  .ch-rank { font-family: var(--serif-tabular); font-size: 2.1rem; line-height: 1; color: var(--faint); text-align: center; }
-  .ch-rank.top { color: var(--pink); }
+  .ch-rank { font-family: var(--display); font-weight: 700; font-size: 2rem; line-height: 1; color: var(--ink); text-align: center; letter-spacing: -0.03em; }
+  .ch-rank.top { color: var(--accent); }
   .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: var(--paper); display: block; }
-  .ch-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.01em; }
+  .ch-title { font-family: var(--display); font-weight: 600; font-size: 1.4rem; line-height: 1.1; letter-spacing: -0.025em; }
   .ch-kind { display: block; color: var(--faint); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
   .ch-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
   .ch-save {
     display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.5rem 1.05rem; min-height: 38px;
-    border: 1px solid var(--ink); border-radius: 9999px; background: transparent; color: var(--ink);
-    text-decoration: none; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em; white-space: nowrap;
-    transition: background 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease);
+    border: 0; border-radius: 9999px; background: var(--paper); color: var(--ink);
+    text-decoration: none; font-size: 0.78rem; font-weight: 500; white-space: nowrap;
+    transition: background 0.2s var(--ease), transform 0.2s var(--ease);
   }
-  .ch-save:hover { background: var(--ink); color: #fff; transform: translateY(-1px); }
+  .ch-save:hover { background: var(--fill); transform: translateY(-1px); }
   @media (max-width: 600px) {
     .ch-row { grid-template-columns: 34px 48px 1fr; gap: 14px 14px; }
     .ch-rank { font-size: 1.6rem; }
@@ -712,9 +940,9 @@ const renderChart = async (supabase: Db) => {
   const pageUrl = `${SITE}${FEED_PATH}/chart`;
 
   const head = `<style>${CHART_CSS}</style>
-<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by PLOT.">
+<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by plot.">
 <link rel="canonical" href="${pageUrl}">
-<meta property="og:title" content="The chart · PLOT">
+<meta property="og:title" content="The chart · plot">
 <meta property="og:description" content="The twenty titles the world is watching this week, ranked.">
 <meta property="og:url" content="${pageUrl}">
 <meta property="og:image" content="${OG_FALLBACK}">
@@ -732,7 +960,7 @@ const renderChart = async (supabase: Db) => {
     </aside>`;
 
   if (!latest) {
-    return page('The chart · PLOT', head, `
+    return page('The chart · plot', head, `
       <div class="head r2"><div class="head-row">
         <h1 class="feed-title">The <em>chart</em></h1>
       </div></div>
@@ -761,7 +989,7 @@ const renderChart = async (supabase: Db) => {
     </div></li>`;
   }).join('');
 
-  return page('The chart · PLOT', head, `
+  return page('The chart · plot', head, `
     <div class="head r2">
       <div class="head-row">
         <h1 class="feed-title">The <em>chart</em></h1>
@@ -795,29 +1023,30 @@ const fmtBadge = (iso: string) => ({
   day: new Date(iso).getUTCDate(),
 });
 
-const sectionHead = (label: string, viewAllHref?: string) => `<div class="sec-head r3">
+const sectionHead = (label: string, viewAllHref?: string) => `<div class="sec-head">
     <span class="sec-dot"></span><span class="sec-label">${esc(label)}</span><span class="sec-rule"></span>
     ${viewAllHref ? `<a class="view-all" href="${esc(viewAllHref)}">View all &rarr;</a>` : ''}
   </div>`;
+// A named section is one cream card: head + body. 'tight' trims the bottom
+// padding for list bodies whose rows carry their own spacing.
+const sectionCard = (label: string, viewAllHref: string | undefined, body: string, tight = false) =>
+  `<section class="card sec-card${tight ? ' tight' : ''} r3">${sectionHead(label, viewAllHref)}${body}</section>`;
 
 // One compact entry in the rail beside the lead image — mini thumbnail + a
 // short headline, nothing else. Deliberately minimal: this is a scan list,
 // not a set of secondary stories competing with the lead for attention.
+// One story card in the feed column: thumb, kicker chip, headline, date.
 const railRow = (p: FeedPost) => {
   const img = postImage(p);
-  return `<a class="rail-row" href="${FEED_PATH}/${esc(p.slug)}">
+  const d = new Date(p.scheduled_for).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return `<a class="rail-row r3" href="${FEED_PATH}/${esc(p.slug)}">
     ${img ? `<img class="rail-thumb" src="${esc(img)}" alt="" loading="lazy">` : '<span class="rail-thumb ph"></span>'}
-    <span class="rail-t">${esc(postTitle(p))}</span>
+    <span class="rail-body">${kicker(p)}<span class="rail-t">${esc(postTitle(p))}</span></span>
+    <span class="rail-date sc">${esc(d)}</span>
   </a>`;
 };
 
-const heroRow = (lead: FeedPost, rail: FeedPost[]) => {
-  const hero = featuredHero(lead);
-  if (!rail.length) return hero;
-  return `<div class="hero-row">${hero}<div class="rail">${rail.map(railRow).join('')}</div></div>`;
-};
-
-const streamingShelf = (posts: FeedPost[]) => `<div class="shelf r3">${posts.map((p) => {
+const streamingShelf = (posts: FeedPost[]) => `<div class="shelf">${posts.map((p) => {
   const img = postImage(p);
   return `<a class="shelf-item" href="${FEED_PATH}/${esc(p.slug)}">
     ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
@@ -828,7 +1057,7 @@ const streamingShelf = (posts: FeedPost[]) => `<div class="shelf r3">${posts.map
 
 // A compact teaser of the same chart shown in full on /whats-on/chart —
 // reuses its rank/poster/movement pieces (chartMovement, moveChip, tmdbImg).
-const trendingTeaser = (items: ChartItem[], prior: ChartItem[] | null) => `<ol class="trend-list r3">${items.map((it) => {
+const trendingTeaser = (items: ChartItem[], prior: ChartItem[] | null) => `<ol class="trend-list">${items.map((it) => {
   const m = chartMovement(it, it.rank, prior);
   const tUrl = titleHref(it.media_type, it.tmdb_id, it.title);
   const img = it.poster_path
@@ -846,16 +1075,17 @@ const trendingTeaser = (items: ChartItem[], prior: ChartItem[] | null) => `<ol c
 // card rather than buried in a dek. Uses scheduled_for (when PLOT posted the
 // update) — the only date FeedPost actually carries; not a claim about the
 // title's own release date, which this function has no source for.
-const comingSoonCards = (posts: FeedPost[]) => `<div class="datecards r3">${posts.map((p) => {
+const comingSoonCards = (posts: FeedPost[]) => `<div class="datecards">${posts.map((p) => {
   const img = postImage(p);
   const { mon, day } = fmtBadge(p.scheduled_for);
   return `<a class="datecard" href="${FEED_PATH}/${esc(p.slug)}">
-    <div class="dc-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}<span class="date-badge">${esc(mon)}<span class="dd">${day}</span></span></div>
+    <span class="date-badge">${esc(mon)}<span class="dd">${day}</span></span>
+    <div class="dc-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}</div>
     <span class="dc-t">${esc(postTitle(p))}</span>
   </a>`;
 }).join('')}</div>`;
 
-const firstLookCards = (posts: FeedPost[]) => `<div class="wide-grid r3">${posts.map((p) => {
+const firstLookCards = (posts: FeedPost[]) => `<div class="wide-grid">${posts.map((p) => {
   const img = postImage(p);
   return `<a class="wide-card" href="${FEED_PATH}/${esc(p.slug)}">
     <div class="wc-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}<span class="play-pill">&#9654; Trailer</span></div>
@@ -863,10 +1093,8 @@ const firstLookCards = (posts: FeedPost[]) => `<div class="wide-grid r3">${posts
   </a>`;
 }).join('')}</div>`;
 
-const tailList = (posts: FeedPost[]) => `<div class="tail r4">
-    <span class="tail-head sc">More updates</span>
-    <div class="tail-list">${posts.map((p) => `<a href="${FEED_PATH}/${esc(p.slug)}"><span>${esc(postTitle(p))}</span><span class="meta">${esc(fmtDate(p.scheduled_for))}</span></a>`).join('')}</div>
-  </div>`;
+const tailList = (posts: FeedPost[]) => sectionCard('More updates', undefined,
+  `<div class="tail-list">${posts.map((p) => `<a href="${FEED_PATH}/${esc(p.slug)}"><span>${esc(postTitle(p))}</span><span class="meta">${esc(fmtDate(p.scheduled_for))}</span></a>`).join('')}</div>`, true);
 
 // ── Newsletter signup ─────────────────────────────────────────────
 // There is no archive: the digest goes out by email and lives only there,
@@ -875,10 +1103,10 @@ const tailList = (posts: FeedPost[]) => `<div class="tail r4">
 // Posts to theplot.tv/api/newsletter (the same proxy the homepage form uses),
 // including the honeypot field that endpoint expects.
 const subscribeForm = (placement: string) => `
-<aside class="nlsub r4" id="newsletter">
+<aside class="nlsub card r4" id="newsletter">
   <div class="nlsub-copy">
-    <span class="nlsub-title">Get the next one</span>
-    <span class="nlsub-sub">Straight to your inbox. Unsubscribe any time.</span>
+    <span class="nlsub-title">What to watch, sorted</span>
+    <span class="nlsub-sub">The week's good stuff handpicked and delivered directly to your inbox.</span>
   </div>
   <form class="nlsub-form" id="nlForm" data-placement="${esc(placement)}">
     <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
@@ -920,27 +1148,27 @@ const subscribeForm = (placement: string) => `
 </script>`;
 
 const SUBSCRIBE_CSS = `
-  /* scroll-margin clears the fixed topnav: the nav and footer both link
+  /* Charcoal card. scroll-margin clears the fixed topnav: the footer links
      straight to #newsletter, and without it the heading lands under it. */
-  .nlsub { border-top: 1px solid var(--hair); margin-top: 44px; padding: 30px 0 0; scroll-margin-top: 88px; }
-  .nlsub-copy { display: flex; flex-direction: column; gap: 4px; }
-  .nlsub-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; }
-  .nlsub-sub { color: var(--mut); font-weight: 300; font-size: 0.92rem; }
-  .nlsub-form { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-  .nlsub-form input[type=email] {
-    flex: 1 1 240px; min-width: 0; padding: 12px 16px; border: 1px solid var(--hair);
-    border-radius: 9999px; font: inherit; font-size: 0.92rem; color: var(--ink); background: #fff;
-  }
-  .nlsub-form input[type=email]:focus { outline: none; border-color: var(--ink); }
-  .nlsub-form button {
-    padding: 12px 28px; border: 1px solid var(--ink); border-radius: 9999px; background: transparent;
-    color: var(--ink); font: inherit; font-size: 0.92rem; cursor: pointer; transition: color 0.2s, background 0.2s;
-  }
-  .nlsub-form button:hover { background: var(--ink); color: #fff; }
+  /* .nlsub.card outranks the later .card rule in the main stylesheet, which
+     otherwise paints this cream and leaves cream text unreadable on it. */
+  .nlsub.card, .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }
+  .nlsub .nlsub-title, .nlsub .nlsub-copy { color: var(--bg); }
+  .nlsub-copy { display: flex; flex-direction: column; gap: 6px; }
+  .nlsub-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.4rem; line-height: 1; }
+  .nlsub-sub { color: rgba(248,242,234,0.7); font-size: 0.92rem; }
+  .nlsub-form { display: flex; gap: 6px; margin-top: 16px; align-items: center; background: var(--bg); border-radius: 9999px; padding: 5px 5px 5px 16px; }
+  .nlsub-form input[type=email] { flex: 1 1 120px; min-width: 0; padding: 8px 0; border: 0; font: inherit; font-size: 0.9rem; color: var(--ink); background: transparent; }
+  .nlsub-form input[type=email]:focus { outline: none; }
+  .nlsub-form button { padding: 9px 16px; border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
+  .nlsub-form button:hover { background: var(--fill-hover); }
   .nlsub-form button:disabled { opacity: 0.5; cursor: default; }
   .nlsub-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-  .nlsub-msg { margin-top: 10px; color: var(--mut); font-size: 0.86rem; min-height: 1.2em; }
+  .nlsub-msg { margin-top: 10px; color: rgba(248,242,234,0.7); font-size: 0.86rem; min-height: 1.2em; }
+  /* on list and article pages the card stands alone below the content */
+  .wrap > .nlsub, .post-foot > .nlsub { margin-top: 44px; }
 `;
+const SUBSCRIBE_HEAD = `<style>${SUBSCRIBE_CSS}</style>`;
 
 Deno.serve(async (req) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -1007,11 +1235,11 @@ Deno.serve(async (req) => {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
     });
 
-    const head = `<style>${SUBSCRIBE_CSS}</style>
-<meta name="description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
+    const head = `${SUBSCRIBE_HEAD}
+<meta name="description" content="What’s On is plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <link rel="canonical" href="${SITE}${FEED_PATH}">
 <meta property="og:title" content="${FEED_SEO_TITLE}">
-<meta property="og:description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
+<meta property="og:description" content="What’s On is plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <meta property="og:url" content="${SITE}${FEED_PATH}">
 <meta property="og:image" content="${OG_FALLBACK}">
 <meta property="og:image:width" content="1200">
@@ -1072,17 +1300,33 @@ Deno.serve(async (req) => {
       const trailer = ((trailerData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, TRAILER_SIZE);
       const used = new Set([...heroSlugs, ...streaming.map((p) => p.slug), ...countdown.map((p) => p.slug), ...trailer.map((p) => p.slug)]);
       const tail = rest.filter((p) => !used.has(p.slug)).slice(0, 6);
-      const chartItems = ((chartLatest?.items as ChartItem[] | undefined) || []).slice(0, 3);
+      const chartItems = ((chartLatest?.items as ChartItem[] | undefined) || []).slice(0, 5);
+
+      // Feed column: lead, two stories, New at home, two more stories, First
+      // look, the rest of the rail, More updates. Sidebar: Trending, Coming
+      // soon, the newsletter. Everything is a cream card on the cream ground.
+      const stories = rail.map(railRow);
+      const main = [
+        featuredHero(lead),
+        ...stories.slice(0, 2),
+        streaming.length ? sectionCard('New at home', `${FEED_PATH}?type=now_streaming`, streamingShelf(streaming)) : '',
+        ...stories.slice(2, 4),
+        trailer.length ? sectionCard('First look', `${FEED_PATH}?type=trailer`, firstLookCards(trailer)) : '',
+        ...stories.slice(4),
+        tail.length ? tailList(tail) : '',
+      ].join('');
+      const side = [
+        chartItems.length ? sectionCard('Trending', `${FEED_PATH}/chart`, trendingTeaser(chartItems, chartPrior), true) : '',
+        countdown.length ? sectionCard('Coming soon', `${FEED_PATH}?type=countdown`, comingSoonCards(countdown), true) : '',
+        subscribeForm('whats_on'),
+      ].join('');
 
       return page(FEED_SEO_TITLE, head, `
         ${titleRow}
-        ${heroRow(lead, rail)}
-        ${streaming.length ? `${sectionHead('New at home', `${FEED_PATH}?type=now_streaming`)}${streamingShelf(streaming)}` : ''}
-        ${chartItems.length ? `${sectionHead('Trending', `${FEED_PATH}/chart`)}${trendingTeaser(chartItems, chartPrior)}` : ''}
-        ${countdown.length ? `${sectionHead('Coming soon', `${FEED_PATH}?type=countdown`)}${comingSoonCards(countdown)}` : ''}
-        ${trailer.length ? `${sectionHead('First look', `${FEED_PATH}?type=trailer`)}${firstLookCards(trailer)}` : ''}
-        ${tail.length ? tailList(tail) : ''}
-        ${subscribeForm('whats_on')}
+        <div class="feed-grid">
+          <div class="feed-main">${main}</div>
+          <aside class="feed-side">${side}</aside>
+        </div>
       `);
     }
 
@@ -1129,7 +1373,7 @@ Deno.serve(async (req) => {
       .eq('post_type', 'trending')
       .maybeSingle();
     if (legacyChart) return await renderChart(supabase);
-    return page('Not found · PLOT', '', `
+    return page('Not found · plot', '', `
       <article class="post r2">
         <header class="post-head"><h1>Nothing here yet</h1></header>
         <div class="post-body"><p>This update does not exist or has not been published.</p></div>
@@ -1142,7 +1386,7 @@ Deno.serve(async (req) => {
   const shareImg = postShareImage(typed);
   const title = postTitle(typed);
   const body = postBody(typed);
-  const description = body[0] ? String(body[0]).slice(0, 160) : `Film & TV updates from PLOT.`;
+  const description = body[0] ? String(body[0]).slice(0, 160) : `Film & TV updates from plot.`;
   const pageUrl = entryUrl(typed);
 
   const { data: others } = await baseQuery()
@@ -1164,10 +1408,11 @@ Deno.serve(async (req) => {
     datePublished: typed.scheduled_for,
     ...(hero ? { image: [hero] } : {}),
     url: pageUrl,
-    publisher: { '@type': 'Organization', name: 'PLOT', url: SITE },
+    publisher: { '@type': 'Organization', name: 'plot', url: SITE },
   }).replace(/</g, '\\u003c');
 
-  const head = `<meta name="description" content="${esc(description)}">
+  const head = `${SUBSCRIBE_HEAD}
+<meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${esc(pageUrl)}">
 <meta property="og:type" content="article">
 <meta property="og:title" content="${esc(title)}">
@@ -1191,43 +1436,96 @@ Deno.serve(async (req) => {
   const titleParagraph = (text: string, r: TmdbRef) => {
     const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
     return `<div style="display:flex;gap:16px;align-items:flex-start;margin:20px 0">
-        <a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="flex-shrink:0;width:84px">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:8px;background:var(--paper);border:1px solid var(--hair)"></span>'}</a>
+        <a href="${esc(titleHref(r.media_type, refId(r) ?? 0, r.title))}" style="flex-shrink:0;width:84px">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:8px;background:var(--paper);border:1px solid var(--hair)"></span>'}</a>
         <p style="margin:0;flex:1">${esc(text)}</p>
       </div>`;
   };
-  const postBodyHtml = inlineTitles
-    ? [`<p class="lede">${esc(body[0])}</p>`, ...refs.map((r, i) => titleParagraph(body[i + 1], r)), `<p>${esc(body[refs.length + 1])}</p>`].join('')
-    : body.map((p, i) => `<p${i === 0 ? ' class="lede"' : ''}>${esc(p)}</p>`).join('');
+  const bodyLede = body.length ? `<p class="lede">${esc(body[0])}</p>` : '';
+  const paragraphs = (from: number, to?: number) =>
+    body.slice(from, to).map((p) => `<p>${esc(p)}</p>`).join('');
 
-  // Redundant once titles render inline next to their own paragraph above.
-  const titlesSection = typed.post_type === 'guide' && refs.length && !inlineTitles
-    ? `<section style="margin:48px 0 0">
-        <h2 style="font-family:var(--serif);font-size:1.7rem;font-weight:400;margin:0 0 18px">Titles in this guide</h2>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px">${refs.map((r) => {
-          const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
-          return `<a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="text-decoration:none;color:inherit">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:10px;background:var(--paper);border:1px solid var(--hair)"></span>'}<span style="display:block;font-size:0.82rem;margin-top:8px;line-height:1.3">${esc(r.title)}</span></a>`;
-        }).join('')}</div>
-      </section>`
-    : '';
+  // What the modules did not feature. Poster, name, and the same action — the
+  // grid this replaces offered neither, so an eleven-title guide carried less
+  // than a one-title article. No service is named here: where to watch is the
+  // app's job, and naming one would cost a lookup per row.
+  const shown = new Set<TmdbRef>();
+  const restRows = (list: TmdbRef[]) => list.map((r) => {
+    const rid = refId(r);
+    const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
+    return `<div class="gt-row">
+      <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-art">${poster ? `<img src="${poster}" alt="" loading="lazy">` : '<span class="gt-ph"></span>'}</a>
+      <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-name">${esc(r.title)}</a>
+      ${rid ? `<a class="gt-add" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&tmdb_id=${rid}&src=whats_on_guide" data-cta="guide_save" aria-label="Save ${esc(r.title)} to your PLOT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>` : ''}
+    </div>`;
+  }).join('');
 
   const k = kicker(typed);
   const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';
-  const articleCta = typed.post_type !== 'guide' && refs.length === 1
-    ? await titleCta(typed, region)
+  // A guide earns up to two modules: the title its copy opens with, and the
+  // planner's top remaining pick placed where the copy first names it. The rest
+  // become compact rows at the foot. Two TMDB lookups at most, whatever the
+  // title count — the poster grid it replaces made none, but offered no action
+  // and no link a reader could act on.
+  const ranked = rankRefs(body, refs);
+  const lead = ranked.length
+    ? [...ranked].sort((a, b) =>
+        Number(a.mention < 0) - Number(b.mention < 0) || a.mention - b.mention || a.order - b.order)[0]
+    : null;
+  const runnerUp = typed.post_type === 'guide' && lead
+    ? ranked.filter((r) => r !== lead).sort((a, b) => a.order - b.order)[0]
+    : undefined;
+  // Only when the copy names it late enough to sit clear of the lede and still
+  // inside the body, so the second module never doubles up or dangles.
+  const runnerUpAt = runnerUp && runnerUp.mention >= 2 && runnerUp.mention <= body.length - 1
+    ? runnerUp.mention
+    : -1;
+
+  const wantsModule = (typed.post_type === 'guide' && refs.length > 0) || refs.length === 1;
+  const trailerHtml = lead ? await trailerModule(typed, lead.ref) : '';
+  const storyHtml = trailerHtml || (wantsModule && lead && !inlineTitles ? await storyModule(typed, region, lead.ref) : '');
+  const runnerUpHtml = storyHtml && runnerUpAt > 0 ? await storyModule(typed, region, runnerUp!.ref) : '';
+  // ~220 wpm, rounded up — enough to set an expectation, not a precise claim.
+  const words = body.join(' ').split(/\s+/).filter(Boolean).length;
+  const readMins = Math.max(1, Math.round(words / 220));
+  if (storyHtml && lead) shown.add(lead.ref);
+  if (runnerUpHtml && runnerUp) shown.add(runnerUp.ref);
+  const rest = refs.filter((r) => !shown.has(r));
+  const titlesSection = typed.post_type === 'guide' && rest.length && !inlineTitles
+    ? `<section class="gt">
+        <div class="gt-head">
+          <h2>Also in this guide</h2>
+          <span class="gt-count">${rest.length} more</span>
+        </div>
+        <div class="gt-card">
+          <div class="gt-col">${restRows(rest.slice(0, Math.ceil(rest.length / 2)))}</div>
+          <div class="gt-col">${restRows(rest.slice(Math.ceil(rest.length / 2)))}</div>
+        </div>
+      </section>`
     : '';
-  return page(`${title} · PLOT`, head, `
+
+
+  return page(`${title} · plot`, head, `
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="${SITE}">Home</a><span class="sep2">/</span><a href="${FEED_PATH}">What's On</a>${k ? `<span class="sep2">/</span><span>${esc(TYPE_META[typed.post_type]?.label ?? 'Update')}</span>` : ''}
+    </nav>
     <article class="post r2">
       <header class="post-head">
-        <div class="a-meta">${k}${k ? '<span class="sep"></span>' : ''}<span class="d sc">${esc(fmtDate(typed.scheduled_for))}</span></div>
+        <div class="a-meta"><span class="d sc">${esc(fmtDate(typed.scheduled_for))}</span><span class="sep"></span><span class="d sc">${readMins} min read</span></div>
         <h1>${esc(title)}</h1>
       </header>
       ${hero ? `<figure class="hero"><img src="${esc(hero)}" alt=""></figure>` : ''}
       <div class="post-body">
-        ${postBodyHtml}
+        ${bodyLede}
+        ${storyHtml}
+        ${inlineTitles
+          ? [...refs.map((r, i) => titleParagraph(body[i + 1], r)), `<p>${esc(body[refs.length + 1])}</p>`].join('')
+          : runnerUpHtml
+            ? `${paragraphs(1, runnerUpAt + 1)}${runnerUpHtml}${paragraphs(runnerUpAt + 1)}`
+            : paragraphs(1)}
       </div>
       ${titlesSection}
-      ${articleCta}
     </article>
+    ${subscribeForm('whats_on_article')}
     ${more}
     <div class="post-foot"><a class="back sc" href="${FEED_PATH}">&larr; All updates</a></div>
   `);

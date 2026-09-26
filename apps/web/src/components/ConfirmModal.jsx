@@ -13,7 +13,7 @@ import { CONFIRM_MODAL } from '../copy/confirmModal.js';
  *   // trigger: setConfirm({ message: '…', onConfirm: () => doThing() })
  *   {confirm && <ConfirmModal {...confirm} onClose={() => setConfirm(null)} />}
  */
-export default function ConfirmModal({ title, message, confirmLabel = COMMON.confirm, danger = false, onConfirm, onClose, confirmPhrase = null }) {
+export default function ConfirmModal({ title, message, confirmLabel = COMMON.confirm, danger = false, onConfirm, onClose, confirmPhrase = null, informational = false }) {
   const cancelRef = useRef(null);
   const confirmRef = useRef(null);
   const restoreFocusRef = useRef(null);
@@ -28,7 +28,7 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
     restoreFocusRef.current = document.activeElement;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    cancelRef.current?.focus();
+    (informational ? confirmRef : cancelRef).current?.focus();
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
@@ -58,7 +58,7 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
       document.body.style.overflow = previousOverflow;
       restoreFocusRef.current?.focus?.();
     };
-  }, [onClose, submitting]);
+  }, [onClose, submitting, informational]);
 
   const handleConfirm = async () => {
     if (submitting || !phraseMatches) return;
@@ -77,7 +77,6 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
       {/* Overlay */}
       <div
         onClick={() => { if (!submitting) onClose(); }}
-        aria-hidden="true"
         style={{
           position: 'fixed', inset: 0, zIndex: 2000,
           background: 'rgba(0,0,0,0.5)',
@@ -108,7 +107,7 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
         >
           {title && (
             <p id={titleId} style={{
-              fontFamily: 'var(--font-serif)',
+              fontFamily: 'var(--font-display)',
               fontSize: '1.15rem',
               fontWeight: 400,
               color: 'var(--text-primary)',
@@ -153,7 +152,7 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
             </div>
           )}
           <div style={{ display: 'flex', gap: '0.625rem', justifyContent: 'flex-end' }}>
-            <button
+            {!informational && <button
               ref={cancelRef}
               onClick={onClose}
               disabled={submitting}
@@ -171,20 +170,20 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
               }}
             >
               {COMMON.cancel}
-            </button>
+            </button>}
             <button
               ref={confirmRef}
               onClick={handleConfirm}
               disabled={submitting || !phraseMatches}
               style={{
-                background: danger ? '#dc2626' : 'var(--accent)',
+                background: danger ? '#dc2626' : 'var(--accent-fill)',
                 border: 'none',
                 borderRadius: '9999px',
                 padding: '0.55rem 1.1rem',
                 fontSize: '0.8rem',
                 fontWeight: 600,
                 fontFamily: 'var(--font-sans)',
-                color: '#fff',
+                color: danger ? '#fff' : 'var(--on-accent-fill)',
                 cursor: phraseMatches ? 'pointer' : 'not-allowed',
                 opacity: phraseMatches ? 1 : 0.5,
                 transition: 'opacity 0.15s',

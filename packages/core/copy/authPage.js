@@ -38,6 +38,9 @@ export const AUTH_PAGE = {
   show: 'Show',
   hide: 'Hide',
   forgotPassword: 'Forgot password?',
+  continueWithApple: 'Continue with Apple',
+  socialDivider: 'or',
+  appleSignInFailed: "We couldn't sign you in with Apple. Please try again.",
 
   // Split around the emailed {email}, which the page renders inside <strong>.
   almostThereTitle: 'Almost there!',
@@ -68,4 +71,14 @@ export const AUTH_PAGE = {
   terms: 'Terms',
   and: 'and',
   privacyPolicy: 'Privacy Policy',
+
+  // Shown under the form when Turnstile fails. Signup still submits: the
+  // page routes that attempt through signup-bypass instead of leaving the
+  // button disabled.
+  verificationFailed: 'Verification failed to load. You can still create your account.',
+  verificationBlocked: 'Still blocked. An ad blocker or privacy setting is the usual cause. You can still create your account.',
+  verificationRetry: 'Retry',
+  // Login, reset, and magic link have no bypass. Said when the widget
+  // never returns a token.
+  verificationUnavailable: 'The security check did not finish. Wait a moment and try again.',
 };

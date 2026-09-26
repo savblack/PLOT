@@ -8,6 +8,13 @@ Solo project. There is no team to consult — when a decision is reversible, mak
 note it; when it's not, ask the author (see Decisions). This file is the standing brief:
 follow it without being re-told. Tickets say only *what* to build.
 
+## Settled external approvals
+
+- **TMDB licence:** TMDB clearance is confirmed by Savannah. PLOT has TMDB's approval
+  to use its API without a contract. This is not a launch blocker. Historical quotes
+  are not current cost assumptions. Do not ask Savannah to reconfirm this unless new
+  evidence from TMDB directly contradicts it.
+
 ## Never do these
 
 - **Never guess or hardcode TMDB IDs.** They're opaque integers — a guessed ID returns the
@@ -23,7 +30,9 @@ follow it without being re-told. Tickets say only *what* to build.
   Bypassing this is the #1 cause of web↔mobile drift.
 - **Never commit secrets.** Browser-safe values are `VITE_*` only. Service-role keys,
   `TMDB_API_KEY`, `RESEND_API_KEY`, etc. stay server/script-side and
-  out of tracked files. Add new required vars to `.env.example`.
+  out of tracked files. Document new required vars (web `VITE_*` in the README's
+  local-setup list; mobile in `apps/mobile/.env.example`). There is no root
+  `.env.example`.
 - **Never touch real user data in Supabase** without asking — PLOT has live end users.
   No auth-admin writes, password changes, or destructive migrations unprompted.
 - **Never import bare `@plot/core`** — the barrel is intentionally empty. Import subpaths
@@ -88,9 +97,10 @@ CI on Node 22.
 
 ## Code style
 
-- **The brand is always written `PLOT`** (all caps) in any prose, copy, or comments —
-  never "Plot" or "plot". The only exceptions are code identifiers, tags, and URLs
-  (e.g. the `@plot/core` package, the `plot` deploy project, `theplot.tv`).
+- **Brand casing follows its typography.** Write `plot` in the logo and anywhere the
+  brand is set in Gabarito; write `Plot` in all other prose, copy, and comments. Code
+  identifiers, tags, and URLs remain lowercase where required (e.g. the `@plot/core`
+  package, the `plot` deploy project, `theplot.tv`).
 - **Never use em dashes in user-facing copy.** Use a period, colon, comma, or parentheses
   instead. This applies to copy shown to users (UI strings, marketing, emails, legal
   pages) — code comments are unaffected.
@@ -180,7 +190,8 @@ These checks fail the build if two sources drift. Fix by regenerating both, not 
 
 - `tokens:check` — `apps/web/src/styles/tokens.css` must match `@plot/core/tokens.js`
   (canonical colors/radii; also feeds mobile).
-- `footer:check` · `tokens:marketing` · `emails:check` — shared footer / website+email
+- `footer:check` · `changelog:check` · `tokens:marketing` · `emails:check` — shared
+  footer / public changelog (`apps/website/data/changelog.json`) / website+email
   tokens / auth email templates.
 - `migrations:check` — no migration may recreate a function with a different
   `ON CONFLICT` target without acknowledging it. See below.
@@ -188,16 +199,39 @@ These checks fail the build if two sources drift. Fix by regenerating both, not 
 - `core:check` — every `@plot/core/…` import must resolve to a file in this checkout.
 
 **Why `core:check` exists when `tsc` already does this:** `tsc` is only reliable
-from the repo root. Git worktrees live at `<repo>/.claude/worktrees/<name>`, i.e.
-*inside* the main checkout, so a failed module lookup walks up the ancestor
-`node_modules` chain and lands on the **parent** checkout's `@plot/core`. You
-then typecheck against a tree you are not editing: a core module you deleted
-still resolves, and a core export you just added does not — both pass silently.
-A `tsconfig` `paths` mapping does **not** fix it (a mapping is a first attempt;
-when it misses, resolution falls back to the same walk). If you need to trust a
-local typecheck of `@plot/*`, run it from the main checkout or put the worktree
-outside the repo. This blind spot is how #446 deleted `core/onboarding.js` with
-a live importer still on `main`.
+from the repo root of the tree you are editing. Worktrees nested *inside* the
+main checkout (e.g. `<repo>/.claude/worktrees/<name>`) are unsafe: a failed
+module lookup walks up the ancestor `node_modules` chain and lands on the
+**parent** checkout's `@plot/core`. You then typecheck against a tree you are
+not editing: a core module you deleted still resolves, and a core export you
+just added does not — both pass silently. A `tsconfig` `paths` mapping does
+**not** fix it (a mapping is a first attempt; when it misses, resolution falls
+back to the same walk). This blind spot is how #446 deleted `core/onboarding.js`
+with a live importer still on `main`.
+
+**PLOT convention (source of truth):** agent worktrees are a **sibling** of this
+repo, never nested inside it:
+
+```
+Sites/Cursor/PLOT/                 ← this checkout
+Sites/Cursor/PLOT-worktrees/<task> ← worktrees live here
+```
+
+From the main checkout root:
+
+```bash
+mkdir -p ../PLOT-worktrees
+git worktree add ../PLOT-worktrees/<task-name> \
+  -b agent/<task-name> origin/main
+```
+
+Never use `.claude/worktrees/` or `.worktrees/` under this checkout. If a harness
+opens a nested worktree anyway, that is a **fallback only**: stop, tell the user,
+and recreate under `../PLOT-worktrees/` before writing code. Do not keep working
+nested and "just run `core:check`" unless the user explicitly insists, and never
+for changes under `packages/core`. Procedure: `.agents/skills/plot-worktree/SKILL.md`
+(PLOT-owned; not overwritten by `npx skills update`). This section wins if
+anything else disagrees.
 
 ## Copy lives in `packages/core/copy` — never retype a shared string
 
@@ -335,17 +369,81 @@ behind it (`--shadow-overlay`), never on text. Full rules and canonical sources:
 `docs/design/shared-design-system.md`. If you can't meet the bar, stop and say why rather
 than shipping a guess.
 
+## Cloud Agent environment
+
+Repo-managed: `.cursor/environment.json` wins over any personal or team dashboard
+environment for this repository. The Dockerfile pins Node **22.17.1** (same as
+CircleCI), Deno 2.9.5, pnpm 10.6.3, and PostgreSQL 17. `install` runs
+`scripts/cloud-agent-install.sh` (frozen lockfile + Playwright Chromium).
+`start` rewrites the repo-root `.env` from injected secrets so both Vite and
+`node --env-file=.env` scripts see the same values. The web dev server is the
+`web` terminal on port 5177.
+
+Inject these as Cloud Agent **secrets** (never commit them). Browser-safe
+`VITE_*` values belong to **PLOT Staging**, not Production:
+
+| Secret | Why |
+| --- | --- |
+| `VITE_SUPABASE_URL` | Staging project URL (`https://uzrhfivnhdcfieuaxzip.supabase.co`) |
+| `VITE_SUPABASE_ANON_KEY` | Staging publishable key (`sb_publishable_…`) |
+| `VITE_TMDB_PROXY_URL` | `https://tmdb-proxy-staging.sav-black.workers.dev` |
+| `VITE_TURNSTILE_SITE_KEY` | Needed for captcha-enforced signup/login. Same value as `EXPO_PUBLIC_TURNSTILE_SITE_KEY`. |
+
+Optional, only if the agent must run marketing or migration-test scripts:
+
+| Secret | Why |
+| --- | --- |
+| `SUPABASE_SERVICE_ROLE_KEY` | Staging service role. Never the Production service role. |
+| `SUPABASE_DB_URL` / `PLOT_PRODUCTION_DB_PASSWORD` | `pnpm run db:migration-test` restores a **copy of Production**. Confirm before injecting; the sandbox is destroyed on exit and holds real PII while it runs. |
+
+`pnpm run test:smoke` and `pnpm run test-storybook:web` need the Playwright
+Chromium the install script places in `~/.cache/ms-playwright`. `pnpm run
+edge:check` needs Deno (on PATH in the image). `pnpm run db:migration-test`
+needs the PG17 binaries (also in the image) plus the optional DB secret above.
+
 ## Marketing
 
 - Reviewing/approving/publishing the week's posts & newsletter → follow `marketing/REVIEW.md`.
 - Writing post copy → follow `marketing/copy/AGENT.md`.
-- Tempted to build a richer admin UI than `admin-review`? Read
-  `docs/ops/operator-desk-shelved.md` first — that's already been tried once.
+- Tempted to rebuild a hosted marketing review UI? Read
+  `docs/ops/retire-admin-review.md` and `docs/ops/operator-desk-shelved.md`
+  first. Articles are reviewed in Linear; social posts in Buffer.
 
 Model-agnostic runbooks: run from repo root on `main` with `.env` present, never a paid API
 for copy, and **confirm before anything posts publicly.**
 
 ## Agent skills
+
+Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills`
+(via `skills-lock.json`), minus `code-structure` and minus upstream
+`new-feature` (PLOT replaces isolate with a local skill). Typical flow:
+
+1. **Isolate** — `/plot-worktree`: sibling worktree at
+   `../PLOT-worktrees/<task>` (never nest under this checkout; nested harness
+   trees are fallback-only, see CI sync-guards). Local skill; `npx skills update`
+   does not touch it. Commands are also inlined under CI sync-guards above.
+2. **Build** — follow this file (shared logic in `@plot/core`, not a generic
+   actions/services split).
+3. **Prove** — `/evidence-driven-testing` when the change needs runtime proof;
+   always run the checks listed under Commands / Completion format.
+4. **Ship** — open the PR, then work this checklist (skip items that do not
+   apply; do not invent extra process):
+   - [ ] Title and body through `/unslop`; body covers what changed, how
+         verified, risks / follow-ups
+   - [ ] `/before-and-after` only when there is a visible UI surface
+   - [ ] `/greploop` (or `/greploop-apps` for huge diffs) **only when the user
+         asks, or for larger / risky PRs** — not every tiny PR. Treat it as a
+         checklist item you invoke, not a merge gate.
+         - Cap the loop (`--max-iterations` low, default mindset: a few passes).
+         - Fix real bugs and AGENTS.md / design-system violations.
+         - Stop if Greptile is repeating style nits, disagreeing with this file,
+           or thrashing with no new substance. Report what is left; do not chase
+           5/5 for its own sake.
+         - Upstream greploop text says "until 5/5"; **this section wins**.
+5. **Write for humans** — `/unslop` on commit messages, PR title/body, and
+   other prose you wrote (also: no em dashes in user-facing copy).
+
+Do not merge the PR unless explicitly asked.
 
 ### Issue tracker
 
