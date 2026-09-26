@@ -251,49 +251,47 @@
 .tonight-bar .btn { min-height: 44px; padding-inline: 18px; font-size: 0.9rem; }
 .tonight-bar .tonight-go { padding-inline: 32px; font-size: 1rem; }
 
-/* ── Spin ── */
-.tonight-spin {
+/* ── Finding… → picks ── */
+/* The Top pick's slot. While picks load it holds the sentence; when they
+   land, the sentence dissolves out over the image dissolving in. */
+.tonight-hero-slot { position: relative; display: flex; flex-direction: column; }
+.tonight-hero-slot--finding { min-height: 210px; display: flex; align-items: center; }
+.tonight-finding {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 1.5rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  text-wrap: pretty;
+}
+.tonight-finding-hl {
+  background-image: linear-gradient(var(--accent-fill), var(--accent-fill));
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  background-size: 0% 38%;
+  animation: tonight-hl 0.35s ease-out both;
+  animation-delay: var(--hl-delay, 0ms);
+}
+@keyframes tonight-hl { to { background-size: 100% 38%; } }
+.tonight-finding--out {
+  position: absolute;
+  inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 2rem 0 1rem;
+  pointer-events: none;
+  animation: tonight-dissolve-out 0.55s ease-in both;
 }
-.tonight-reels {
-  display: grid;
-  gap: 0.75rem;
-  width: 100%;
-  max-width: 34rem;
-  grid-template-columns: repeat(3, 1fr);
+.tonight-finding--out .tonight-finding-hl { animation: none; background-size: 100% 38%; }
+.tonight-results-head--hidden { visibility: hidden; }
+@keyframes tonight-dissolve-out { to { opacity: 0; filter: blur(10px); } }
+@keyframes tonight-dissolve-in {
+  from { opacity: 0; filter: blur(10px); }
+  to { opacity: 1; filter: blur(0); }
 }
-.tonight-reels--1 { grid-template-columns: minmax(0, 11rem); justify-content: center; }
-.tonight-reel {
-  aspect-ratio: 2 / 3;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--surface-sunken);
-}
-.tonight-reel-strip {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px;
-  animation: tonight-reel-roll 0.42s linear infinite;
-  animation-delay: var(--reel-delay, 0ms);
-}
-.tonight-reel-frame {
-  flex-shrink: 0;
-  height: 44%;
-  min-height: 60px;
-  border-radius: 8px;
-  background: var(--border-strong);
-}
-.tonight-reel-frame:nth-child(3n) { background: var(--accent-dim); }
-@keyframes tonight-reel-roll {
-  from { transform: translateY(0); }
-  to { transform: translateY(-50%); }
-}
-.tonight-spin-line { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }
+.tonight-hero.tonight-hero--dissolve { animation: tonight-dissolve-in 0.6s ease-out 0.05s both; }
+.tonight-card.tonight-card--dissolve { animation: tonight-dissolve-in 0.45s ease-out both; animation-delay: var(--dissolve-delay, 0ms); }
 
 /* ── Results ── */
 .tonight-results { padding-top: 1.25rem; }
@@ -628,6 +626,8 @@
   .tonight-hero-meta { font-size: 0.875rem; }
   .tonight-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .tonight-results-title { font-size: 1.5rem; }
+  .tonight-hero-slot--finding { min-height: 224px; }
+  .tonight-finding { font-size: 1.875rem; }
   .tonight-saved--phone { display: none; }
 
   .tonight-locked { padding-top: 0; }
@@ -636,7 +636,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tonight-reel-strip,
   .tonight-hero,
-  .tonight-card { animation: none; }
+  .tonight-card,
+  .tonight-finding-hl { animation: none; }
+  .tonight-finding-hl { background-size: 100% 38%; }
+  .tonight-finding--out { display: none; }
 }

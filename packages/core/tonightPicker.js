@@ -17,7 +17,7 @@ import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 //   - discover: one /discover/{movie,tv} page with every filter TMDB supports
 //     applied on its side. TV season count is not a discover filter, so the
 //     "1 season" / "multiple seasons" formats check details for a capped
-//     number of results. Further pages load only when "spin again" runs out.
+//     number of results. Further pages load only when "pick again" runs out.
 // Availability is re-read live rather than trusted from list_items.provider_ids,
 // which is a snapshot from save time and often empty.
 //
@@ -276,7 +276,7 @@ function sanitiseResults(value) {
 }
 
 // Where the page was, so leaving and coming back finds the same answers and
-// picks. It lasts this long after the last change; Spin again, changing an
+// picks. It lasts this long after the last change; Pick again, changing an
 // answer or opening a saved search replaces it.
 export const PICKER_SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 
@@ -610,7 +610,7 @@ export function matchesOptions(c, options, providerIds, { checkServices = true }
 }
 
 /**
- * Draw `count` titles, preferring ones not shown yet so "spin again" always
+ * Draw `count` titles, preferring ones not shown yet so "pick again" always
  * changes the answer while there is anything new to show.
  * @template {{ id: number }} T
  * @param {T[]} pool
@@ -871,7 +871,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   const [restoredKey, setRestoredKey] = useState(/** @type {string|null} */ (storage ? null : storageKey));
   const [saved, setSaved] = useState(/** @type {SavedSearch[]} */ ([]));
   // Picks already on screen when a session or saved search opens, so the
-  // next Spin again shows something new.
+  // next Pick again shows something new.
   const restoredSeen = useRef(/** @type {number[]} */ ([]));
   useEffect(() => {
     if (!storage) return undefined;
@@ -971,7 +971,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
 
     const picked = drawFromPool(cur.pool, count, { seen: cur.seen });
     picked.forEach(c => cur.seen.add(c.id));
-    // Spin again is only worth offering if it can show something different.
+    // Pick again is only worth offering if it can show something different.
     const moreToLoad = opts.onlyWatchlist ? !cur.exhausted : cur.page < cur.totalPages;
     return { picked, canSpinAgain: cur.pool.length > picked.length || moreToLoad };
   }, [options, hasServices, region, userId, watchlistItems, watchlistKey, providerIds]);

@@ -6,7 +6,7 @@ import { useApp } from '../hooks/useApp.js';
 import {
   useTonightPicker, pickerTimeOfDay, savedSearchDate,
   PICKER_STEPS, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
-  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES, FEATURED_GENRE_COUNT, FEATURED_GENRE_COUNT_WIDE,
+  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, FEATURED_GENRE_COUNT, FEATURED_GENRE_COUNT_WIDE,
   pickerGenreTiles,
 } from '../hooks/useTonightPicker.js';
 import { TONIGHT_PICKER as T } from '../copy/tonightPicker.js';
@@ -400,27 +400,36 @@ function SideColumn({ picker, results }) {
   );
 }
 
-/* Slot-machine reels (three stand in for five). The hook holds the phase
-   for at least PICKER_MIN_SPIN_MS so it always reads as a spin. */
-function Spinner({ mode }) {
-  const [line, setLine] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setLine(n => (n + 1) % T.spinning.length), 450);
-    return () => clearInterval(t);
-  }, []);
-  const slots = Math.min(3, PICKER_MODES[mode] ?? 3);
+/* "Finding…": the viewer's own sentence, answered phrases highlighted one by
+   one while picks load. It sits where the Top pick will land, so when the
+   picks arrive the words dissolve into the image (see Results `reveal`). */
+function FindingSentence({ parts, className = '' }) {
+  let filled = 0;
   return (
-    <section className="tonight-spin" aria-live="polite" aria-busy="true">
-      <div className={`tonight-reels tonight-reels--${slots}`}>
-        {Array.from({ length: slots }, (_, i) => (
-          <div key={i} className="tonight-reel" style={{ '--reel-delay': `${i * 90}ms` }}>
-            <div className="tonight-reel-strip">
-              {Array.from({ length: 8 }, (_, j) => <span key={j} className="tonight-reel-frame" />)}
-            </div>
-          </div>
-        ))}
+    <p className={`tonight-finding ${className}`}>
+      <span>{parts.map((p, i) => {
+        const text = i === 0 ? T.sentence.finding : p.text;
+        const hl = p.kind === 'filled' ? filled++ : -1;
+        return (
+          <span key={i}>
+            {i > 0 && ' '}
+            {hl >= 0 ? <span className="tonight-finding-hl" style={{ '--hl-delay': `${hl * 300}ms` }}>{text}</span> : text}
+          </span>
+        );
+      })}</span>
+    </p>
+  );
+}
+
+function Finding({ picker }) {
+  return (
+    <section className="tonight-results" aria-live="polite" aria-busy="true">
+      <div className="tonight-results-head tonight-results-head--hidden" aria-hidden="true">
+        <span className="tonight-results-title">{T.heading[pickerTimeOfDay()]}</span>
       </div>
-      <p className="tonight-spin-line">{T.spinning[line]}…</p>
+      <div className="tonight-results-list">
+        <div className="tonight-hero-slot tonight-hero-slot--finding"><FindingSentence parts={picker.sentence} /></div>
+      </div>
     </section>
   );
 }
@@ -445,10 +454,10 @@ function Chips({ item }) {
   );
 }
 
-function TopPick({ item, onOpen }) {
+function TopPick({ item, onOpen, className = '' }) {
   const bg = backdropUrl(item.backdrop_path, 'w1280') || posterUrl(item.poster_path, 'w780');
   return (
-    <button type="button" className="tonight-hero" onClick={() => onOpen(item)}>
+    <button type="button" className={`tonight-hero ${className}`} onClick={() => onOpen(item)}>
       {bg && <img src={bg} alt="" />}
       <span className="tonight-hero-scrim" aria-hidden="true" />
       <span className="tonight-hero-body">
@@ -460,10 +469,11 @@ function TopPick({ item, onOpen }) {
   );
 }
 
-function PickCard({ item, index, onOpen }) {
+function PickCard({ item, index, onOpen, reveal }) {
   const img = posterUrl(item.poster_path, 'w185');
   return (
-    <button type="button" className="tonight-card" onClick={() => onOpen(item)} style={{ '--reveal-delay': `${(index + 1) * 90}ms` }}>
+    <button type="button" className={`tonight-card${reveal ? ' tonight-card--dissolve' : ''}`} onClick={() => onOpen(item)}
+      style={reveal ? { '--dissolve-delay': `${600 + index * 250}ms` } : { '--reveal-delay': `${(index + 1) * 90}ms` }}>
       <span className="tonight-card-poster">{img ? <img src={img} alt="" loading="lazy" /> : null}</span>
       <span className="tonight-card-body">
         <span className="tonight-card-title">{item.title}</span>
@@ -474,7 +484,10 @@ function PickCard({ item, index, onOpen }) {
   );
 }
 
-function Results({ picker, onOpen }) {
+/* `reveal`: straight after a pick, the "Finding…" sentence dissolves into the
+   Top pick in the same spot, the heading and Save are simply there, and the
+   cards dissolve in one by one. Reopened or restored picks skip this. */
+function Results({ picker, onOpen, reveal }) {
   if (picker.phase !== 'results') {
     return (
       <div className="empty-state tonight-empty">
@@ -494,10 +507,15 @@ function Results({ picker, onOpen }) {
         </button>
       </div>
       <div className="tonight-results-list">
-        {top && <TopPick item={top} onOpen={onOpen} />}
+        {top && (
+          <div className="tonight-hero-slot">
+            <TopPick item={top} onOpen={onOpen} className={reveal ? 'tonight-hero--dissolve' : ''} />
+            {reveal && <FindingSentence parts={picker.sentence} className="tonight-finding--out" />}
+          </div>
+        )}
         {rest.length > 0 && (
           <div className="tonight-cards">
-            {rest.map((item, i) => <PickCard key={item.id} item={item} index={i} onOpen={onOpen} />)}
+            {rest.map((item, i) => <PickCard key={item.id} item={item} index={i} onOpen={onOpen} reveal={reveal} />)}
           </div>
         )}
       </div>
@@ -511,6 +529,14 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
   const locked = picker.phase === 'locked';
   const inResults = picker.phase === 'results' || picker.phase === 'empty' || picker.phase === 'error';
   const spinning = picker.phase === 'spinning';
+  // Picks that arrive straight from a spin get the reveal; anything else
+  // (a saved search, a restored page) shows as is.
+  const [lastPhase, setLastPhase] = useState(picker.phase);
+  const [reveal, setReveal] = useState(false);
+  if (picker.phase !== lastPhase) {
+    setLastPhase(picker.phase);
+    setReveal(picker.phase === 'results' ? lastPhase === 'spinning' || reveal : false);
+  }
 
   return (
     <div className="tonight-view">
@@ -522,8 +548,8 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
               <LockedPreview />
               <UnlockDialog picker={picker} navigate={navigate} />
             </div>
-          ) : spinning ? <Spinner mode={picker.mode} />
-            : inResults ? <Results picker={picker} onOpen={onOpen} />
+          ) : spinning ? <Finding picker={picker} />
+            : inResults ? <Results picker={picker} onOpen={onOpen} reveal={reveal} />
             : (
               <>
                 <Question picker={picker} />

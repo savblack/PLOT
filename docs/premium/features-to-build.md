@@ -179,7 +179,7 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 - A folding **Filters** panel under each question (both layouts): only my services, only my watchlist, hide kids and family (on by default), original language.
 - A sentence builds as they answer ("Find me a movie under 2 hours, that's funny or tense, on my services.").
 - **Pick** draws up to five (hero Top pick + cards); **Surprise me** draws one. Pool is watchlist + TMDB discover, excluding titles already watched. Copy never promises a count, since tight answers can return fewer.
-- Results heading follows local time: "Tonight, sorted" 3:30pm to midnight, "Your shortlist" otherwise. Change options / Spin again.
+- Results heading follows local time: "Tonight, sorted" 3:30pm to midnight, "Your shortlist" otherwise. Change options / Pick again.
 - Desktop: 264px side column (Your request with "Or [Surprise me]", Questions list) beside the question; Pick sits where Next goes on the last question. Phone: sticky bar with the sentence, Surprise me and Pick.
 - Page subline "Less deciding. More watching." (desktop only).
 - No TMDB calls for picks until Pick is pressed; the genre catalog loads up front (one cached call) because Free viewers answer the questions too.

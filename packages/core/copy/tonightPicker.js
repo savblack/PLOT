@@ -93,6 +93,8 @@ export const TONIGHT_PICKER = {
   // greyed out until answered.
   sentence: {
     start: 'Find me',
+    // While picks load, the same sentence reads "Finding a movie…".
+    finding: 'Finding',
     type: { movie: 'a movie', tv: 'a show' },
     tvFormat: {
       miniseries: 'a mini-series',
@@ -126,13 +128,6 @@ export const TONIGHT_PICKER = {
   orSurprise: 'Or',
   go: 'Pick',
 
-  spinning: [
-    'Shuffling the reels',
-    'Checking the couch cushions',
-    'Asking the popcorn',
-    'Dimming the lights',
-  ],
-
   // Time of day in the viewer's local time: 3:30pm to midnight is night.
   heading: { night: 'Tonight, sorted', day: 'Your shortlist' },
   // Save the picks for a request, listed under the questions.
@@ -147,7 +142,7 @@ export const TONIGHT_PICKER = {
   removeSaved: (label) => `Remove saved search: ${label}`,
   topPick: 'Top pick',
   onYourWatchlist: 'On your watchlist',
-  spinAgain: 'Spin again',
+  spinAgain: 'Pick again',
   changeOptions: 'Change options',
   minutes: (n) => (n >= 60 ? `${Math.floor(n / 60)}h ${String(n % 60).padStart(2, '0')}m` : `${n} min`),
   episodeMinutes: (n) => `${n} min episodes`,
@@ -172,7 +167,7 @@ export const TONIGHT_PICKER = {
     benefits: [
       { title: 'A shortlist, every time you ask', body: 'Answer a few quick questions and get a shortlist that fits your mood.' },
       { title: 'Only what you can watch', body: 'Limit picks to your streaming services, your watchlist, or both.' },
-      { title: 'Can’t decide? Surprise me', body: 'One tap, one pick. Spin again if it isn’t the one.' },
+      { title: 'Can’t decide? Surprise me', body: 'One tap, one pick. Pick again if it isn’t the one.' },
     ],
     close: 'Close',
     locked: 'Premium feature',
