@@ -3,6 +3,7 @@ import { supabase } from '@plot/core/supabase.js';
 import { callAuthenticatedFunction } from '@plot/core/functions.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
 import { track, EVENTS } from '../lib/analytics.js';
+import { emit, HISTORY_CHANGED_EVENT } from '@plot/core/events.js';
 
 async function callSync(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -48,7 +49,7 @@ export function useMediaSync(userId) {
     const interval = setInterval(async () => {
       try {
         const result = await callSync('poll-auth', { integrationId });
-        if (result?.status === 'active') {
+        if (result?.status === 'active' || result?.status === 'authorized') {
           clearInterval(interval);
           setPolling(false);
           // The poll turning active is the moment the link actually exists —
@@ -80,6 +81,23 @@ export function useMediaSync(userId) {
     }
   }, [loadIntegration]);
 
+  const importHistory = useCallback(async () => {
+    setSyncing(true);
+    setError(null);
+    try {
+      const result = await callSync('import-history');
+      if (result?.importedCount) emit(HISTORY_CHANGED_EVENT);
+      track(EVENTS.IMPORT_COMPLETED, { source: 'plex', count: result?.importedCount || 0 });
+      await loadIntegration();
+      return result;
+    } catch (e) {
+      setError(e.message);
+      return null;
+    } finally {
+      setSyncing(false);
+    }
+  }, [loadIntegration]);
+
   /* ── Disconnect ── */
   const disconnect = useCallback(async () => {
     if (!userId) return;
@@ -104,6 +122,7 @@ export function useMediaSync(userId) {
     startPlexAuth,
     pollPlexAuth,
     sync,
+    importHistory,
     disconnect,
   };
 }

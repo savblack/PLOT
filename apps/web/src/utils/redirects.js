@@ -34,9 +34,10 @@ export function getTraktCallbackUrl() {
   return getAppUrl('/auth/trakt');
 }
 
-export function createTraktState() {
+export function createTraktState(returnTo = '/settings') {
   const state = crypto.randomUUID();
   sessionStorage.setItem('plot_trakt_oauth_state', state);
+  sessionStorage.setItem('plot_trakt_oauth_return_to', returnTo);
   return state;
 }
 
@@ -44,6 +45,12 @@ export function consumeTraktState(state) {
   const expected = sessionStorage.getItem('plot_trakt_oauth_state');
   sessionStorage.removeItem('plot_trakt_oauth_state');
   return Boolean(expected && state && expected === state);
+}
+
+export function consumeTraktReturnTo() {
+  const returnTo = sessionStorage.getItem('plot_trakt_oauth_return_to');
+  sessionStorage.removeItem('plot_trakt_oauth_return_to');
+  return returnTo?.startsWith('/') ? returnTo : '/settings';
 }
 
 export function buildTraktAuthorizeUrl(clientId, state) {

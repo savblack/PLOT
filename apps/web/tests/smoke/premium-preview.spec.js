@@ -20,8 +20,8 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('row', { name: /Deeper viewing stats.*Coming soon/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /More like this/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /More like this/ })).toContainText('does not offer personally tailored recommendations');
-    await expect(page.getByText('A$5', { exact: true })).toBeVisible();
-    await expect(page.getByText('or A$40/year', { exact: true })).toBeVisible();
+    await expect(page.getByText('$3', { exact: true })).toBeVisible();
+    await expect(page.getByText('or $24/year', { exact: true })).toBeVisible();
     await expect(page.getByRole('row', { name: /Up to five custom lists/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Customise your plot/ })).toBeVisible();
     await page.getByRole('button', { name: 'Upgrade to Premium' }).click();

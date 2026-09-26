@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "tv.theplot.app",
+      "usesAppleSignIn": true,
       "supportsTablet": true,
       "associatedDomains": [
         "applinks:app.theplot.tv"
@@ -63,6 +64,7 @@
       "expo-font",
       "expo-status-bar",
       "expo-secure-store",
+      "expo-apple-authentication",
       "@react-native-community/datetimepicker"
     ],
     "extra": {

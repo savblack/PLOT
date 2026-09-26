@@ -15,6 +15,7 @@ import { callAuthenticatedFunction } from '@plot/core/functions.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
 import { track, EVENTS } from '../lib/analytics';
 import type { MediaIntegration } from './useTraktSync';
+import { emit, HISTORY_CHANGED_EVENT } from '@plot/core/events.js';
 
 async function callSync(action: string, body: Record<string, unknown> = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -46,12 +47,12 @@ export function useMediaSync(userId: string | null | undefined) {
   }, []);
 
   const pollPlexAuth = useCallback((integrationId: string) => {
-    setPolling(true); setError(null);
     stopPolling();
+    setPolling(true); setError(null);
     pollTimer.current = setInterval(async () => {
       try {
         const result = await callSync('poll-auth', { integrationId });
-        if (result?.status === 'active') {
+        if (result?.status === 'active' || result?.status === 'authorized') {
           stopPolling();
           // The poll turning active is the moment the link actually exists —
           // opening the Plex auth page proves nothing on its own.
@@ -71,7 +72,7 @@ export function useMediaSync(userId: string | null | undefined) {
     try {
       const result = await callSync('start-auth');
       if (result?.authUrl) Linking.openURL(result.authUrl);
-      if (result?.integrationId) pollPlexAuth(result.integrationId);
+      if (result?.integration?.id) pollPlexAuth(result.integration.id);
       return result;
     } catch (e) {
       setError(friendlyPremiumError((e as Error).message));
@@ -87,6 +88,22 @@ export function useMediaSync(userId: string | null | undefined) {
       await loadIntegration();
     } catch (e) {
       setError(friendlyPremiumError((e as Error).message));
+    } finally {
+      setSyncing(false);
+    }
+  }, [loadIntegration]);
+
+  const importHistory = useCallback(async () => {
+    setSyncing(true); setError(null);
+    try {
+      const result = await callSync('import-history');
+      if (result?.importedCount) emit(HISTORY_CHANGED_EVENT);
+      track(EVENTS.IMPORT_COMPLETED, { source: 'plex', count: result?.importedCount || 0 });
+      await loadIntegration();
+      return result;
+    } catch (e) {
+      setError((e as Error).message);
+      return null;
     } finally {
       setSyncing(false);
     }
@@ -108,5 +125,5 @@ export function useMediaSync(userId: string | null | undefined) {
 
   const isConnected = integration?.status === 'active';
 
-  return { integration, syncing, polling, error, isConnected, loadIntegration, startPlexAuth, pollPlexAuth, sync, disconnect };
+  return { integration, syncing, polling, error, isConnected, loadIntegration, startPlexAuth, pollPlexAuth, sync, importHistory, disconnect };
 }

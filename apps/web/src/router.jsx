@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PRICING_PAGE } from './launchFeatures.js';
+import { SHOW_PRICING_PAGE } from './launchFeatures.js';
 import { isPreviewDeployment } from './utils/previewDeployment.js';
 
 // The auth entry/exit points must never fail, so they're bundled eagerly (not
@@ -31,6 +31,7 @@ const MyListsView   = lazy(() => import('./components/MyListsView.jsx'));
 const HistoryView   = lazy(() => import('./components/HistoryView.jsx'));
 const ListPage      = lazy(() => import('./components/ListPage.jsx'));
 const SearchView  = lazy(() => import('./components/SearchView.jsx'));
+const TonightView = lazy(() => import('./components/TonightView.jsx'));
 const SettingsView= lazy(() => import('./components/SettingsView.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
@@ -89,7 +90,7 @@ const router = createBrowserRouter([
   { path: '/signup',         element: <AuthPage initialMode="signup" /> },
   { path: '/logout',         element: <LogoutPage /> },
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
-  { path: '/auth/trakt',     element: SHOW_MEDIA_SYNC_INTEGRATIONS ? wrap(<TraktCallbackPage />) : <Navigate to="/settings" replace /> },
+  { path: '/auth/trakt',     element: wrap(<TraktCallbackPage />) },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
   // Onboarding (protected, skip onboarding check)
@@ -117,6 +118,7 @@ const router = createBrowserRouter([
       { path: 'u/:username/lists', element: wrap(<ProfileSectionPage section="lists" />) },
       { path: 'home',     element: wrap(<DiscoverView />) },
       { path: 'new-releases', element: wrap(<NewReleasesView />) },
+      { path: 'tonight',  element: wrap(<TonightView />) },
       { path: 'guide',    element: wrap(<GuideView />) },
       { path: 'calendar', element: wrap(<CalendarView />) },
       { path: 'watching', element: <Navigate to="/my-lists" replace /> },

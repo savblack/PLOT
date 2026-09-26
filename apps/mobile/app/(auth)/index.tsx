@@ -6,18 +6,21 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { supabase } from '../../lib/supabase';
 import { tmdb } from '../../lib/tmdb';
 // This screen is a fixed composition (dark poster wall + light glass panel,
 // mirroring the web AuthPage) — it deliberately doesn't follow the app theme.
-import { fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
+import { colors, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import Turnstile from '../../components/Turnstile';
 import { track, EVENTS } from '../../lib/analytics';
 import { authErrorReason } from '@plot/core/authErrors.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { AUTH_PAGE } from '@plot/core/copy/authPage.js';
+import { SHOW_APPLE_LOGIN } from '../../lib/launchFeatures';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -144,6 +147,8 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
   const [posterPaths, setPosterPaths] = useState<string[]>(FALLBACK_PATHS);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh token (single-use)
@@ -179,6 +184,15 @@ export default function AuthScreen() {
         .map((item: any) => item.poster_path as string) ?? [];
       if (paths.length >= 9) setPosterPaths(paths);
     });
+  }, []);
+
+  useEffect(() => {
+    if (!SHOW_APPLE_LOGIN || Platform.OS !== 'ios') return;
+    let mounted = true;
+    AppleAuthentication.isAvailableAsync().then((available) => {
+      if (mounted) setAppleAvailable(available);
+    });
+    return () => { mounted = false; };
   }, []);
 
   const columns = buildColumns(posterPaths, 3);
@@ -282,6 +296,66 @@ export default function AuthScreen() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    if (appleLoading) return;
+    setAppleLoading(true);
+
+    try {
+      // Supabase hashes the raw nonce before comparing it with Apple's token.
+      // Apple therefore receives the SHA-256 value while Supabase receives raw.
+      const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce,
+      );
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+
+      if (!credential.identityToken) throw new Error('Apple returned no identity token');
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+        nonce: rawNonce,
+      });
+      if (error) throw error;
+
+      // Apple only returns the name on the first authorization. Preserve it in
+      // auth metadata immediately; later sign-ins return null for these fields.
+      if (credential.fullName) {
+        const fullName = AppleAuthentication.formatFullName(credential.fullName);
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: {
+            full_name: fullName || undefined,
+            given_name: credential.fullName.givenName || undefined,
+            family_name: credential.fullName.familyName || undefined,
+          },
+        });
+        if (metadataError) console.warn('[apple auth] name metadata save failed', metadataError);
+      }
+
+      const createdMs = data.user?.created_at ? Date.parse(data.user.created_at) : 0;
+      const isNew = createdMs > 0 && Date.now() - createdMs < 60_000;
+      track(isNew ? EVENTS.USER_SIGNED_UP : EVENTS.USER_LOGGED_IN, { method: 'apple' });
+    } catch (error: unknown) {
+      const code = error && typeof error === 'object' && 'code' in error
+        ? String(error.code)
+        : '';
+      if (code !== 'ERR_REQUEST_CANCELED') {
+        const message = error instanceof Error ? error.message : '';
+        track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'apple', reason: authErrorReason(message) });
+        Alert.alert(AUTH_PAGE.appleSignInFailed);
+      }
+    } finally {
+      setAppleLoading(false);
+    }
+  };
+
   const handleSubmit = () => {
     if (mode === 'forgot') handleForgot();
     else if (mode === 'signin') handleSignIn();
@@ -344,6 +418,25 @@ export default function AuthScreen() {
                   : mode === 'signup' ? AUTH_PAGE.subheading.signup
                   : AUTH_PAGE.subheading.forgot}
               </Text>
+
+              {appleAvailable && mode !== 'forgot' ? (
+                <>
+                  <View style={styles.appleButtonWrap} pointerEvents={appleLoading ? 'none' : 'auto'}>
+                    <AppleAuthentication.AppleAuthenticationButton
+                      buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                      cornerRadius={radii.pill}
+                      style={[styles.appleButton, appleLoading && styles.appleButtonLoading]}
+                      onPress={handleAppleSignIn}
+                    />
+                  </View>
+                  <View style={styles.socialDivider}>
+                    <View style={styles.socialDividerLine} />
+                    <Text style={styles.socialDividerText}>{AUTH_PAGE.socialDivider}</Text>
+                    <View style={styles.socialDividerLine} />
+                  </View>
+                </>
+              ) : null}
 
               {/* Fields */}
               <View style={styles.fields}>
@@ -513,6 +606,33 @@ const styles = StyleSheet.create({
   fields: {
     gap: spacing.md,
     marginBottom: spacing.lg,
+  },
+  appleButtonWrap: {
+    position: 'relative',
+    marginBottom: spacing.md,
+  },
+  appleButton: {
+    width: '100%',
+    height: 48,
+  },
+  appleButtonLoading: {
+    opacity: 0.7,
+  },
+  socialDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  socialDividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.borderStrong,
+  },
+  socialDividerText: {
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
   },
   inputWrap: {
     gap: 6,

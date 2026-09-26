@@ -160,6 +160,8 @@ svg { stroke-width: 1.5; }
    the sidebar breakpoint, where the app header still carries the title. */
 .app-page-heading.app-page-heading--with-subtitle { margin-bottom: .5rem; }
 .app-page-heading.app-page-heading--guide { margin-bottom: 0; }
+/* Pick for Me drops its subline on phone, where the questions need the room. */
+.app-page-subtitle--desktop-only { display: none; }
 .app-page-subtitle {
   margin: 0;
   padding: 0 var(--gut);
@@ -471,6 +473,7 @@ svg { stroke-width: 1.5; }
   .app-page-heading {
     display: block;
   }
+  .app-page-subtitle--desktop-only { display: block; }
 
   .app-page-breadcrumb {
     display: inline-flex;
@@ -641,6 +644,21 @@ svg { stroke-width: 1.5; }
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+/* Premium marker on a nav destination, shown to Free viewers only. Same
+   pill as Beta, in the pink fill (charcoal text, 6.7:1). */
+.app-nav-premium {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  flex-shrink: 0;
 }
 .app-sidebar-scroll { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
 .app-sidebar-nav { padding: 8px 12px 24px; overflow: visible; flex-shrink: 0; align-items: stretch; }

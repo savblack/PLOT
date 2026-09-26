@@ -38,6 +38,9 @@ export const AUTH_PAGE = {
   show: 'Show',
   hide: 'Hide',
   forgotPassword: 'Forgot password?',
+  continueWithApple: 'Continue with Apple',
+  socialDivider: 'or',
+  appleSignInFailed: "We couldn't sign you in with Apple. Please try again.",
 
   // Split around the emailed {email}, which the page renders inside <strong>.
   almostThereTitle: 'Almost there!',
