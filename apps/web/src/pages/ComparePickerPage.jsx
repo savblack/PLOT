@@ -1,6 +1,7 @@
 import './TasteOverlapPage.css';
 import { useId, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import LoginRedirect from '../components/LoginRedirect.jsx';
 import { useApp } from '../hooks/useApp.js';
 import { useCompareCandidates } from '@plot/core/useTasteOverlap.js';
 import { canCompare } from '@plot/core/tasteOverlap.js';
@@ -42,7 +43,7 @@ export default function ComparePickerPage() {
   const searchId = useId();
   const { following, results, loadingFollowing, searching, isSearching } = useCompareCandidates(user?.id, query);
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <LoginRedirect />;
 
   const list = isSearching ? results : following;
   const busy = isSearching ? searching : loadingFollowing;

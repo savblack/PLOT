@@ -269,7 +269,7 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
       <div style={{ padding: '0 1.25rem 1.5rem' }}>
         {users === null
           ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader size="sm" /></div>
-          : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
+          : <UserList users={users} viewerId={viewerId} onNavigate={onClose} showCompare empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
       </div>
     </ResponsiveDialog>
   );

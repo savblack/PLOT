@@ -11,8 +11,12 @@ import { genreCounts, averageStars, detailsKey } from './historyStats.js';
 import { normalizeRating, MAX_RATING } from './ratings.js';
 import { colors } from './tokens.js';
 
-/** Where share posts point: the public site, since readers aren't signed in. */
-export const SHARE_LINK = 'https://theplot.tv';
+/**
+ * Where share posts point: a public page explaining taste match, since the
+ * people reading a post aren't signed in. Never the comparison itself: it
+ * belongs to two people, and only one of them chose to post it.
+ */
+export const SHARE_LINK = 'https://theplot.tv/taste-match';
 
 /** Below this many titles you have both rated, a match % is noise. */
 export const MIN_SHARED_RATINGS = 5;

@@ -1,6 +1,6 @@
 import './TasteOverlapPage.css';
 import { useMemo, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
 import { MIN_SHARED_RATINGS } from '@plot/core/tasteOverlap.js';
@@ -15,6 +15,7 @@ import { TASTE_OVERLAP as T } from '../copy/tasteOverlap.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 import TasteShareDialog from '../components/TasteShareDialog.jsx';
 import TasteShareMenu from '../components/TasteShareMenu.jsx';
+import LoginRedirect from '../components/LoginRedirect.jsx';
 
 const initialOf = (s) => (s || '?').charAt(0).toUpperCase();
 const stars = (n) => (n == null ? '' : `${Number.isInteger(n) ? n.toFixed(0) : n.toFixed(1)}`);
@@ -252,7 +253,7 @@ export default function TasteOverlapPage() {
   const { genres } = useGenres();
   const genreName = useMemo(() => new Map(genres.map(g => [g.id, g.name])), [genres]);
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <LoginRedirect />;
 
   return (
     <TasteOverlapView
