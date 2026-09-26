@@ -3,7 +3,7 @@
 // u/[username], requests and my-lists screens.
 //
 // Every sentence here is a claim about access, so it has to match the rules in
-// supabase/migrations/20260925120000_unified_profile_visibility.sql:
+// supabase/migrations/20260926090000_unified_profile_visibility.sql:
 //   public profile   anyone who isn't blocked
 //   private profile  you and accepted followers (signed-in people still see
 //                    your name, photo and bio so they can ask to follow)

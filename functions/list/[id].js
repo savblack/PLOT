@@ -114,7 +114,7 @@ export async function onRequest({ request, params }) {
   let list, items, owner;
   try {
     // get_shared_list returns a 'link' list to anyone holding its id, and a
-    // 'public' list only when the owner's profile is public (20260925120000).
+    // 'public' list only when the owner's profile is public (20260926090000).
     // Link lists aren't readable through the table, so they can't be listed.
     const lRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_shared_list`, {
       method: 'POST', headers: { ...reqHeaders, 'Content-Type': 'application/json' },

@@ -16,7 +16,7 @@ export function findDuplicateCustomList(lists, name, excludeId = null) {
 
 /**
  * Who can read a custom list. Mirrors `public.can_view_custom_list` in
- * supabase/migrations/20260925120000_unified_profile_visibility.sql, which is
+ * supabase/migrations/20260926090000_unified_profile_visibility.sql, which is
  * the enforcement; these only decide what the UI offers and says.
  *   private    owner only
  *   followers  owner and accepted followers

@@ -119,7 +119,7 @@ async function loadProfile(handle) {
 
 async function loadList(id) {
   const h2 = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
-  // One list by id; 'link' lists are only readable this way (20260925120000).
+  // One list by id; 'link' lists are only readable this way (20260926090000).
   const lRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_shared_list`, {
     method: 'POST', headers: { ...h2, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_list_id: id }),
   });

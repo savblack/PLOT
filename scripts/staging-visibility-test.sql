@@ -4,7 +4,7 @@
 --   set -a; . .env; set +a
 --   npm run staging:visibility-test
 --
--- WHY: db:migration-test proves 20260925120000 applies to a copy of production,
+-- WHY: db:migration-test proves 20260926090000 applies to a copy of production,
 -- but it never runs a policy under a real auth.uid(). This does, from five
 -- viewpoints: the owner, an accepted follower, a signed-in stranger, an
 -- anonymous reader, and a blocked user. The stranger and the anonymous reader
@@ -48,7 +48,7 @@ update public.follows set status = 'accepted' where follower_id = :B and followi
 insert into public.user_custom_lists (user_id, name, is_public)
   values (:A, 'vis-test legacy', true);
 
-\i supabase/migrations/20260925120000_unified_profile_visibility.sql
+\i supabase/migrations/20260926090000_unified_profile_visibility.sql
 
 set local request.jwt.claims = '{"role":"service_role"}';
 

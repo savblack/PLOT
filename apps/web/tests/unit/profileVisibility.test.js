@@ -22,7 +22,7 @@ function latestPolicy(name) {
 }
 
 // A later migration recreating one of these from a stale body would quietly
-// bring back a second visibility rule, which is what 20260925120000 removed.
+// bring back a second visibility rule, which is what 20260926090000 removed.
 test('every profile-content read policy goes through can_view_profile', () => {
   for (const name of [
     'public profiles history is readable',
@@ -39,7 +39,7 @@ test('every profile-content read policy goes through can_view_profile', () => {
 });
 
 test('link lists are not readable through the table, only by id', () => {
-  const sql = readFileSync(join(MIGRATIONS, '20260925120000_unified_profile_visibility.sql'), 'utf8');
+  const sql = readFileSync(join(MIGRATIONS, '20260926090000_unified_profile_visibility.sql'), 'utf8');
   const fn = sql.match(/function public\.can_view_custom_list[\s\S]*?\$\$;/)[0];
   assert.doesNotMatch(fn, /when 'link'/);
   assert.match(sql, /function public\.get_shared_list\(p_list_id uuid\)/);
