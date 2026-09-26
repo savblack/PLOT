@@ -1,4 +1,4 @@
-import { expect, fireEvent, within } from 'storybook/test';
+import { expect, fireEvent, waitFor, within } from 'storybook/test';
 import { MemoryRouter } from 'react-router-dom';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { AppContext } from '../hooks/useApp.js';
@@ -26,6 +26,18 @@ export default {
 };
 
 export const Lists = {};
+
+// Focus opens on the sheet itself; Shift+Tab from there must wrap inside it.
+export const ReverseTabStaysInside = {
+  tags: ['interaction-test'],
+  play: async () => {
+    const body = within(document.body);
+    const dialog = body.getByRole('dialog');
+    await waitFor(() => expect(dialog).toHaveFocus());
+    fireEvent.keyDown(document.activeElement, { key: 'Tab', shiftKey: true });
+    await expect(body.getByRole('button', { name: PLANS_PAGE.upgradeSheet.notNow })).toHaveFocus();
+  },
+};
 
 export const UpgradeShowsComingSoon = {
   tags: ['interaction-test'],

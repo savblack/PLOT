@@ -1,5 +1,5 @@
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useGenres } from '../hooks/useGenres.js';
@@ -89,6 +89,8 @@ export default function MyListsView() {
   const { user, profile, topLists, favorites, customLists, watching, watchlist, openPanel } = useApp();
   const fw = favoriteWords(profile?.region);
   const navigate = useNavigate();
+  // The sheet can replace the create-list dialog; focus comes back here after.
+  const newListRef = useRef(null);
   const { genres } = useGenres();
   const selection = useSelection();
   const [creatingList,  setCreatingList]  = useState(false);
@@ -276,7 +278,7 @@ export default function MyListsView() {
                 <div className="list-covers">
                   {collections.map(cover)}
                   {!selection.editMode && (
-                    <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestCreate} aria-label="Create new list">
+                    <button ref={newListRef} type="button" className="list-cover list-cover--new interactive-surface" onClick={requestCreate} aria-label="Create new list">
                       <span className="list-cover-art list-cover-art--dashed">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                       </span>
@@ -290,7 +292,7 @@ export default function MyListsView() {
         </div>
       </div>
 
-      {showCapNotice && <UpgradeSheet reason="lists" onClose={() => setShowCapNotice(false)} />}
+      {showCapNotice && <UpgradeSheet reason="lists" onClose={() => setShowCapNotice(false)} returnFocusRef={newListRef} />}
       {creatingList && (
         <CreateListModal lists={lists} onConfirm={handleCreate} onClose={() => setCreatingList(false)}
           onLimit={() => { setCreatingList(false); setShowCapNotice(true); }} />

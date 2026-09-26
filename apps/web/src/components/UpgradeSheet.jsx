@@ -15,8 +15,15 @@ import './UpgradeSheet.css';
 
 const S = PLANS_PAGE.upgradeSheet;
 
-/** @param {{ reason: import('@plot/core/upgradeSheet.js').UpgradeReason, onClose: () => void }} props */
-export default function UpgradeSheet({ reason, onClose }) {
+/**
+ * @param {{
+ *   reason: import('@plot/core/upgradeSheet.js').UpgradeReason,
+ *   onClose: () => void,
+ *   returnFocusRef?: { current: HTMLElement | null },
+ * }} props  returnFocusRef: where focus goes on close when the element that had
+ *   it is gone (e.g. the create-list dialog the sheet replaced).
+ */
+export default function UpgradeSheet({ reason, onClose, returnFocusRef }) {
   const { profile } = useApp();
   const premium = usePremium(profile);
   const navigate = useNavigate();
@@ -24,6 +31,11 @@ export default function UpgradeSheet({ reason, onClose }) {
   const sheetRef = useRef(null);
   const titleId = useId();
   const content = upgradeSheetContent(reason);
+  // Callers pass inline handlers; reading them through refs keeps the setup
+  // below to one run per open, so focus and scroll lock aren't reset on render.
+  const onCloseRef = useRef(onClose);
+  const returnRef = useRef(returnFocusRef);
+  useEffect(() => { onCloseRef.current = onClose; returnRef.current = returnFocusRef; });
 
   useEffect(() => {
     const restore = document.activeElement;
@@ -38,21 +50,26 @@ export default function UpgradeSheet({ reason, onClose }) {
     const onKeyDown = (event) => {
       if (event.key !== 'Escape' && event.key !== 'Tab') return;
       event.stopPropagation();
-      if (event.key === 'Escape') { event.preventDefault(); onClose(); return; }
+      if (event.key === 'Escape') { event.preventDefault(); onCloseRef.current(); return; }
       const focusables = [...(sheetRef.current?.querySelectorAll('button:not(:disabled)') ?? [])];
       if (!focusables.length) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      // Focus starts on the sheet itself, which isn't in the list: wrap from there too.
+      const onButton = focusables.includes(document.activeElement);
+      if (event.shiftKey && (!onButton || document.activeElement === first)) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (!onButton || document.activeElement === last)) { event.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', onKeyDown, true);
     return () => {
       document.removeEventListener('keydown', onKeyDown, true);
       document.body.style.overflow = previousOverflow;
-      restore?.focus?.();
+      // The body means nothing held focus (the dialog the sheet replaced took it with it).
+      const usable = restore && restore !== document.body && restore.isConnected;
+      const target = usable ? restore : returnRef.current?.current;
+      target?.focus?.();
     };
-  }, [onClose]);
+  }, []);
 
   if (!content) return null;
 
