@@ -5,6 +5,7 @@ import { supabase } from './supabase.js';
 import { genreIdsFromItem, mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { getConfig } from './config.js';
 import { createCustomListRecord, CUSTOM_LIST_LIMIT_CODE } from './customListCreation.js';
+import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
 
 /**
  * User-created custom lists.
@@ -15,7 +16,7 @@ import { createCustomListRecord, CUSTOM_LIST_LIMIT_CODE } from './customListCrea
  *   createList: (name: string) => Promise<any>;
  *   deleteList: (listId: string) => Promise<any>;
  *   renameList: (listId: string, name: string) => Promise<any>;
- *   setListPublic: (listId: string, isPublic: boolean) => Promise<any>;
+ *   setListVisibility: (listId: string, visibility: import('./customLists.js').ListVisibility) => Promise<any>;
  *   addItem: (listId: string, item: any) => Promise<any>;
  *   removeItem: (listId: string, tmdbId: number) => Promise<any>;
  *   isInList: (listId: string, tmdbId: number) => boolean;
@@ -95,11 +96,12 @@ export function useCustomLists(userId) {
     return data;
   }, [userId]);
 
-  const setListPublic = useCallback(async (listId, isPublic) => {
-    if (!userId) return null;
+  /** @param {string} listId @param {import('./customLists.js').ListVisibility} visibility */
+  const setListVisibility = useCallback(async (listId, visibility) => {
+    if (!userId || !LIST_VISIBILITIES.includes(visibility)) return null;
     const { data, error } = await supabase
       .from('user_custom_lists')
-      .update({ is_public: !!isPublic })
+      .update({ visibility })
       .eq('id', listId)
       .eq('user_id', userId)
       .select()
@@ -109,8 +111,9 @@ export function useCustomLists(userId) {
       return null;
     }
     if (data) {
-      setLists(prev => prev.map(l => l.id === listId ? { ...l, is_public: data.is_public } : l));
-      getConfig().onCustomListVisibility?.({ list_id: listId, is_public: !!data.is_public });
+      // The DB trigger keeps is_public in step; take both back from the row.
+      setLists(prev => prev.map(l => l.id === listId ? { ...l, visibility: data.visibility, is_public: data.is_public } : l));
+      getConfig().onCustomListVisibility?.({ list_id: listId, visibility: listVisibility(data), is_public: !!data.is_public });
     }
     return data;
   }, [userId]);
@@ -177,5 +180,5 @@ export function useCustomLists(userId) {
     return list?.items?.some(i => i.tmdb_id === Number(tmdbId)) ?? false;
   }, [lists]);
 
-  return { lists, loading, createList, deleteList, renameList, setListPublic, addItem, removeItem, isInList };
+  return { lists, loading, createList, deleteList, renameList, setListVisibility, addItem, removeItem, isInList };
 }

@@ -80,8 +80,8 @@ configure({
   onCustomListItemChange: ({ list_id, tmdb_id, media_type, action }) =>
     track(action === 'added' ? EVENTS.LIST_ITEM_ADDED : EVENTS.LIST_ITEM_REMOVED,
       { list_id, tmdb_id, media_type }),
-  onCustomListVisibility: ({ list_id, is_public }) =>
-    track(EVENTS.LIST_VISIBILITY_CHANGED, { list_id, is_public }),
+  onCustomListVisibility: ({ list_id, visibility, is_public }) =>
+    track(EVENTS.LIST_VISIBILITY_CHANGED, { list_id, visibility, is_public }),
   onFavourite: ({ tmdb_id, media_type, favourited }) =>
     track(favourited ? EVENTS.FAVOURITE_ADDED : EVENTS.FAVOURITE_REMOVED, { tmdb_id, media_type }),
   onFollowRequestDecision: ({ target_user_id, approved }) =>

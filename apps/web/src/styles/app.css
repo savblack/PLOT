@@ -5595,6 +5595,7 @@ a.provider-chip--link:hover {
 }
 .kebab-menu-item:hover { background: color-mix(in srgb, var(--surface-raised) 85%, var(--text-primary) 15%); }
 .kebab-menu-item--danger { color: #ef4444; }
+.kebab-menu-check { color: var(--accent); }
 
 /* ═══════════════════════════════════════
    LOADING

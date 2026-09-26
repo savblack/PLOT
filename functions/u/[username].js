@@ -12,6 +12,7 @@
 // Routing: file path functions/u/[username].js → /u/<username>.
 import { staticCard } from '../_lib/og-card.js';
 import { colors } from '../../packages/core/tokens.js';
+import { isSectionEnabled } from '../../packages/core/profileFields.js';
 
 // Warm dark neutrals + the green accent from the canonical token source.
 const D = { ...colors.light, ...colors.dark };
@@ -36,34 +37,41 @@ const titleHref = (mediaType, id, title) =>
 const headers = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
 const countOf = (r) => parseInt((r.headers.get('content-range') || '0-0/0').split('/')[1], 10) || 0;
 
+const rpc = (name, args) => fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+  method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(args),
+});
+
 async function loadProfile(handle) {
-  const pRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/public_profiles?username=ilike.${encodeURIComponent(handle)}` +
-    `&select=id,username,display_name,avatar_url,is_premium&limit=1`,
-    { headers },
-  );
+  // get_profile_card, not public_profiles: it carries profile_sections, and as
+  // anon it only ever returns public profiles.
+  const pRes = await rpc('get_profile_card', { p_username: handle });
   const rows = await pRes.json().catch(() => []);
   const p = Array.isArray(rows) ? rows[0] : null;
-  if (!p) return null;
+  if (!p || !p.is_public) return null;
 
   const base = `${SUPABASE_URL}/rest/v1`;
   const [cRes, fRes, revRes, ratedRes, topRes] = await Promise.all([
     fetch(`${base}/history?user_id=eq.${p.id}&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
-    fetch(`${base}/follows?following_id=eq.${p.id}&status=eq.accepted&select=follower_id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
+    // follows rows are readable only by the two people in them, so anon has
+    // to go through the counting RPC (a direct count always came back 0).
+    rpc('get_follow_counts', { p_target: p.id }),
     fetch(`${base}/history?user_id=eq.${p.id}&note=not.is.null&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
     fetch(`${base}/history?user_id=eq.${p.id}&select=rating&rating=not.is.null`, { headers }),
     fetch(`${base}/user_top_lists?user_id=eq.${p.id}&select=list_type,rank,tmdb_id,media_type,title,poster_path&order=rank.asc`, { headers }),
   ]);
   const rated = await ratedRes.json().catch(() => []);
   const top = await topRes.json().catch(() => []);
+  const counts = await fRes.json().catch(() => []);
+  // Section toggles are layout; the snapshot follows the same layout as the app.
+  const shown = (key) => isSectionEnabled(p.profile_sections, key);
   return {
     ...p,
     watchCount: countOf(cRes),
-    followers: countOf(fRes),
+    followers: Number((Array.isArray(counts) ? counts[0] : null)?.followers) || 0,
     reviews: countOf(revRes),
     avgRating: Array.isArray(rated) && rated.length ? (rated.reduce((s, r) => s + r.rating, 0) / rated.length).toFixed(1) : null,
-    topMovies: (Array.isArray(top) ? top : []).filter((t) => t.list_type === 'movies').slice(0, 10),
-    topTv: (Array.isArray(top) ? top : []).filter((t) => t.list_type === 'tv').slice(0, 10),
+    topMovies: shown('topMovies') ? (Array.isArray(top) ? top : []).filter((t) => t.list_type === 'movies').slice(0, 10) : [],
+    topTv: shown('topTv') ? (Array.isArray(top) ? top : []).filter((t) => t.list_type === 'tv').slice(0, 10) : [],
   };
 }
 

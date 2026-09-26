@@ -34,6 +34,8 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
+import { favoriteWords } from '../utils/spelling.js';
 import { MODERATION } from '../copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
@@ -2149,11 +2151,12 @@ export default function SettingsView() {
               </svg>
             </div>
             <div>
-              <div className="settings-row-label">{isPublic ? 'Profile is public' : 'Profile is private'}</div>
+              <div className="settings-row-label">{isPublic ? PROFILE_PRIVACY.publicLabel : PROFILE_PRIVACY.privateLabel}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {isPublic
-                  ? 'Anyone with your link can see your watch count, recent watches and public lists.'
-                  : 'Only you can see your activity. Make it public to share a profile link.'}
+                  ? PROFILE_PRIVACY.publicDescription(favoriteWords(region).pluralLower)
+                  : PROFILE_PRIVACY.privateDescription}
+                {' '}{PROFILE_PRIVACY.notesAlwaysPrivate}
               </div>
             </div>
           </div>

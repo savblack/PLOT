@@ -5,7 +5,8 @@ import { useApp } from '../hooks/useApp.js';
 import { countdownChip } from '../utils/countdown.js';
 import { posterUrl } from '../utils/images.js';
 import { tmdb } from '@plot/core/tmdb.js';
-import { findDuplicateCustomList } from '@plot/core/customLists.js';
+import { findDuplicateCustomList, LIST_VISIBILITIES, listVisibility, isListShareable } from '@plot/core/customLists.js';
+import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { COMMON } from '../copy/common.js';
@@ -716,7 +717,9 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
 export function CustomListSection({ list, visibleItems, count, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
   const { openPanel, favorites, watchlist, privateNotes, profile } = useApp();
   const fw = favoriteWords(profile?.region);
-  const { renameList, setListPublic, addItem, removeItem, deleteList } = customLists;
+  const { renameList, setListVisibility, addItem, removeItem, deleteList } = customLists;
+  const visibility = listVisibility(list);
+  const shareable = isListShareable(visibility, profile?.is_public);
   const selection = useSelection();
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(list.name);
@@ -737,8 +740,11 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   };
   const menuItems = [
     { label: 'Rename', onClick: () => { setRenameValue(list.name); setRenaming(true); } },
-    { label: list.is_public ? COMMON.makePrivate : 'Make public', onClick: () => setListPublic(list.id, !list.is_public) },
-    ...(list.is_public && share ? [{ label: 'Share link', onClick: () => share(list) }] : []),
+    ...LIST_VISIBILITIES.map(v => ({
+      label: PROFILE_PRIVACY.listVisibility[v], hint: PROFILE_PRIVACY.listVisibilityHint[v],
+      checked: v === visibility, onClick: () => { if (v !== visibility) setListVisibility(list.id, v); },
+    })),
+    ...(shareable && share ? [{ label: 'Share link', onClick: () => share(list) }] : []),
     { label: 'Delete list', onClick: () => setConfirmDelete(true), danger: true },
   ];
 
@@ -746,10 +752,10 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
     <Frame
       title={list.name}
       count={count ?? allItems.length}
-      subtitle={list.is_public ? 'Public' : undefined}
+      subtitle={visibility === 'private' ? undefined : PROFILE_PRIVACY.listVisibility[visibility]}
       headerRight={
         <>
-          {list.is_public && share && <button type="button" className="btn btn-ghost btn-sm" onClick={() => share(list)}>{shareCopied ? COMMON.copied : COMMON.share}</button>}
+          {shareable && share && <button type="button" className="btn btn-ghost btn-sm" onClick={() => share(list)}>{shareCopied ? COMMON.copied : COMMON.share}</button>}
           <HeaderIconButton label={`Add item to ${list.name}`} onClick={() => setShowAdd(true)}>
             <PlusIcon />
           </HeaderIconButton>

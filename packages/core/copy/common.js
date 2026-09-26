@@ -44,8 +44,6 @@ export const COMMON = {
   syncing: 'Syncing…',
   clearSearch: 'Clear search',
   searchTitles: 'Search titles',
-  makePublic: 'Make public',
-  makePrivate: 'Make private',
   privacyPolicy: 'Privacy Policy',
   communityStandards: 'Community Standards',
   termsOfService: 'Terms of Service',

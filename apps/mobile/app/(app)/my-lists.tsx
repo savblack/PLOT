@@ -39,6 +39,8 @@ import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { COMMON } from '@plot/core/copy/common.js';
+import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
+import { LIST_VISIBILITIES, listVisibility, isListShareable, type ListVisibility } from '@plot/core/customLists.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -448,8 +450,8 @@ export default function MyListsScreen() {
   const watchingList = byType(watching.items.map((i: any) => ({ ...i, media_type: 'tv' })));
   const favList      = byType(favorites.favorites);
 
-  const handleShareList = (list: { id: string; name: string; is_public: boolean }) => shareLink({
-    url: list.is_public ? buildListShareUrl({ listId: list.id }) : null,
+  const handleShareList = (list: { id: string; name: string; is_public: boolean; visibility?: string }) => shareLink({
+    url: isListShareable(listVisibility(list), profile?.is_public) ? buildListShareUrl({ listId: list.id }) : null,
     title: `${list.name} · PLOT`,
     text: SHARING.listText(list.name),
     event: EVENTS.LIST_SHARED,
@@ -714,7 +716,7 @@ export default function MyListsScreen() {
                     ])}
                     onAddItem={() => setShowAddToList(list.id)}
                     onRemoveItem={(tmdbId) => customLists.removeItem(list.id, tmdbId)}
-                    onSetPublic={(isPublic) => customLists.setListPublic(list.id, isPublic)}
+                    onSetVisibility={(visibility) => customLists.setListVisibility(list.id, visibility)}
                     onShare={() => handleShareList(list)}
                     onRename={(name) => customLists.renameList(list.id, name)}
                   />
@@ -834,28 +836,34 @@ export default function MyListsScreen() {
 
 // ── Custom list card ──────────────────────────────────────────────────
 function CustomListCard({
-  list, onDelete, onAddItem, onRemoveItem, onSetPublic, onShare, onRename, typeFilters,
+  list, onDelete, onAddItem, onRemoveItem, onSetVisibility, onShare, onRename, typeFilters,
 }: {
   list: any; onDelete: () => void; onAddItem: () => void; onRemoveItem: (tmdbId: number) => void;
-  onSetPublic: (isPublic: boolean) => void; onShare: () => void; onRename: (name: string) => void; typeFilters: string[];
+  onSetVisibility: (visibility: ListVisibility) => void; onShare: () => void; onRename: (name: string) => void; typeFilters: string[];
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { open: openPanel } = useMediaPanel();
+  const { profile } = useAppData();
   const [open,     setOpen]     = useState(true);
   const [renaming, setRenaming] = useState(false);
   const [name,     setName]     = useState(list.name);
   const sel = useSelection();
 
   const items = (filterByType(list.items || [], typeFilters) ?? []) as any[];
+  const visibility = listVisibility(list);
+  const shareable = isListShareable(visibility, profile?.is_public);
 
   // Same item order as web's list kebab: Select, Rename, visibility, Share,
   // Delete. Deleting the list itself still goes through onDelete's confirm.
   const menuItems: KebabMenuItem[] = [
     ...((list.items || []).length > 0 ? [{ label: COMMON.select, onPress: sel.enter }] : []),
     { label: 'Rename', onPress: () => setRenaming(true) },
-    { label: list.is_public ? COMMON.makePrivate : COMMON.makePublic, onPress: () => onSetPublic(!list.is_public) },
-    ...(list.is_public ? [{ label: 'Share link', onPress: onShare }] : []),
+    ...LIST_VISIBILITIES.map((v) => ({
+      label: PROFILE_PRIVACY.listVisibility[v], checked: v === visibility,
+      onPress: () => { if (v !== visibility) onSetVisibility(v); },
+    })),
+    ...(shareable ? [{ label: 'Share link', onPress: onShare }] : []),
     { label: COMMON.delete, onPress: onDelete, danger: true },
   ];
 
@@ -890,8 +898,8 @@ function CustomListCard({
         ) : (
           <Text style={styles.customListName} numberOfLines={1}>{list.name}</Text>
         )}
-        {list.is_public && (
-          <View style={styles.publicBadge}><Text style={styles.publicBadgeText}>Public</Text></View>
+        {visibility !== 'private' && (
+          <View style={styles.publicBadge}><Text style={styles.publicBadgeText}>{PROFILE_PRIVACY.listVisibilityBadge[visibility]}</Text></View>
         )}
         <Text style={styles.customListCount}>{list.items?.length || 0}</Text>
         {sel.editMode ? (
@@ -922,7 +930,7 @@ function CustomListCard({
           </>
         ) : (
           <>
-            {list.is_public && <TouchableOpacity onPress={(event) => { event.stopPropagation(); onShare(); }} accessibilityRole="button" accessibilityLabel={COMMON.share} style={{ marginRight: spacing.sm }}>
+            {shareable && <TouchableOpacity onPress={(event) => { event.stopPropagation(); onShare(); }} accessibilityRole="button" accessibilityLabel={COMMON.share} style={{ marginRight: spacing.sm }}>
               <Text style={styles.sectionActionText}>{COMMON.share}</Text>
             </TouchableOpacity>}
             <TouchableOpacity onPress={onAddItem} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Add item to list" accessibilityRole="button">

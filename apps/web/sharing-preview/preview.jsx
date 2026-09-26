@@ -34,7 +34,7 @@ const app = {
  user:{id:person.id},profile:person,openPanel:(item,type)=>window.open(`/save?media_type=${type || item.media_type || 'tv'}&tmdb_id=${typeof item === 'number' ? item : item.tmdb_id||item.id}&src=share`,'_blank'),
  topLists:{loading:false},favorites:{loading:false,favorites:[],isFavorite:()=>false,toggleFavorite:noop},watching:{loading:false,items:[]},
  watchlist:{loading:false,items:[],isInList:()=>false,toggle:noop},
- customLists:{loading:false,lists:[list],renameList:noop,setListPublic:noop,addItem:noop,removeItem:noop,deleteList:noop},
+ customLists:{loading:false,lists:[list],renameList:noop,setListVisibility:noop,addItem:noop,removeItem:noop,deleteList:noop},
 };
 const sections=[
  ['title','01','Share a title','A recommendation worth keeping.'],
