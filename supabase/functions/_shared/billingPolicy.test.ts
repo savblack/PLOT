@@ -1,4 +1,4 @@
-import { billingSettingsUrl, cancelsAtPeriodEnd, checkoutPlan, matchesPremiumPrice } from './billingPolicy.ts';
+import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutPlan, matchesPremiumPrice } from './billingPolicy.ts';
 
 function equal(actual: unknown, expected: unknown) {
   if (actual !== expected) throw new Error(`Expected ${expected}, got ${actual}`);
@@ -44,4 +44,15 @@ Deno.test('billing return URL keeps environments separate and rejects unsafe sch
     try { billingSettingsUrl(value); } catch { rejected = true; }
     equal(rejected, true);
   }
+});
+
+Deno.test('private checkout requires an exact authenticated user ID in the server allowlist', () => {
+  equal(isCheckoutPilot('pilot-user', 'pilot-user'), true);
+  equal(isCheckoutPilot('pilot-user', ' other-user, pilot-user '), true);
+  for (const ids of [undefined, '', ' ', ',', 'pilot-user-suffix', 'other-user']) {
+    equal(isCheckoutPilot('pilot-user', ids), false);
+  }
+  equal(isCheckoutPilot(undefined, 'pilot-user'), false);
+  equal(isCheckoutPilot('', ','), false);
+  equal(isCheckoutPilot('other-user', 'pilot-user'), false);
 });

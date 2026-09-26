@@ -116,3 +116,20 @@ Deployed SQL proofs and signed sandbox cancellation/reversal delivery passed.
 The planned local-currency sandbox lifecycle tests passed on 2026-09-24.
 Old sandbox-key rotation, tax verification and the separately approved production
 configuration and rollout remain before launch sign-off.
+
+## Private live checkout pilot
+
+Public checkout remains closed in the server and client. The server-only
+`STRIPE_CHECKOUT_PILOT_USER_IDS` setting permits exact Supabase Auth user IDs
+(comma separated) to call the existing checkout endpoint. It checks the verified
+Auth identity before reading billing records or making Stripe calls. Do not put
+emails, client-supplied IDs, or this setting into frontend configuration.
+
+Keep `STRIPE_CHECKOUT_ENABLED=false`. The pilot does not use that global switch,
+and setting it to true alone does not open public checkout. Remove the pilot
+setting to close new pilot sessions; existing Stripe sessions must be expired
+separately. Portal access and existing subscriptions are unaffected.
+
+Use an authenticated pilot session to request checkout. Stop before payment
+unless the real charge has been explicitly approved. Verify another account is
+rejected and retain webhook/entitlement proof before opening public checkout.
