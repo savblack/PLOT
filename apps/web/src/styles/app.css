@@ -645,14 +645,14 @@ svg { stroke-width: 1.5; }
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-/* Premium marker on a nav destination, shown to Free viewers only. Same
-   pill as Beta, in the pink fill (charcoal text, 6.7:1). */
+/* Premium marker on a nav destination, shown to Free viewers only. A quiet
+   pink tint with pink text, so it labels the item without competing with it. */
 .app-nav-premium {
   margin-left: auto;
   padding: 2px 7px;
   border-radius: var(--radius-pill);
-  background: var(--accent-fill);
-  color: var(--on-accent-fill);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent-text);
   font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.08em;
