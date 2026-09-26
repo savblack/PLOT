@@ -1,5 +1,5 @@
 import PrivateNote from './PrivateNote.jsx';
-import { customListCreationError } from '@plot/core/customListCreation.js';
+import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip } from '../utils/countdown.js';
@@ -278,7 +278,7 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
 }
 
 /* ── Create list sheet ── */
-export function CreateListModal({ lists, onConfirm, onClose }) {
+export function CreateListModal({ lists, onConfirm, onClose, onLimit }) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -299,6 +299,7 @@ export function CreateListModal({ lists, onConfirm, onClose }) {
         setError(MEDIA.couldNotCreateList);
       }
     } catch (failure) {
+      if (onLimit && isCustomListLimitError(failure)) { onLimit(); return; }
       setError(customListCreationError(failure, MEDIA.couldNotCreateList));
     } finally {
       setIsSubmitting(false);

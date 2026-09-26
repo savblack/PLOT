@@ -4,8 +4,7 @@ import PrivateNote from './PrivateNote';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../lib/share';
-import { customListCreationError } from '@plot/core/customListCreation.js';
-import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 /**
  * MediaPanel — slide-up detail sheet, mobile port of web MediaPanel.jsx.
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
@@ -42,6 +41,9 @@ import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { ENGAGEMENT_PROMPT } from '@plot/core/copy/engagementPrompt.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
+import UpgradeSheet from './UpgradeSheet';
+import { useRouter } from 'expo-router';
+import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import {
   ENGAGEMENT_SNOOZE_KEY,
   ENGAGEMENT_PENDING_KEY,
@@ -61,8 +63,6 @@ import { readStorage, writeStorage, removeStorage } from '../lib/storage';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
-import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
-import { useRouter } from 'expo-router';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { TrailerPlayer } from './TrailerPlayer';
 import CollectionCard from './CollectionCard';
@@ -517,6 +517,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
   const insets = useSafeAreaInsets();
   const { lists, isInList, addItem, removeItem, createList } = customLists;
   const { profile } = useAppData();
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [name, setName]         = useState('');
@@ -534,11 +535,8 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
     if (!trimmed) return;
     if (findDuplicateCustomList(lists, trimmed)) { setError('A list with that name already exists.'); return; }
     if (!canCreateCustomList(lists.length, profile)) {
-      setError(CUSTOM_LISTS.limitMessage);
-      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage, [
-        { text: COMMON.cancel, style: 'cancel' },
-        { text: PLANS_PAGE.previewAction, onPress: () => { onClose(); router.push('/(app)/settings?premium=1' as any); } },
-      ]);
+      track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
+      setShowUpgrade(true);
       return;
     }
     setBusy(true);
@@ -548,7 +546,8 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
       await addItem(newList.id, item);
       setCreating(false); setName(''); setError('');
     } catch (error) {
-      setError(customListCreationError(error, MEDIA.couldNotCreateList));
+      if (isCustomListLimitError(error)) setShowUpgrade(true);
+      else setError(customListCreationError(error, MEDIA.couldNotCreateList));
     } finally {
       setBusy(false);
     }
@@ -556,6 +555,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <UpgradeSheet visible={showUpgrade} reason="lists" onClose={() => setShowUpgrade(false)} onCompare={() => { onClose(); router.push(PREMIUM_SETTINGS_PATH as any); }} />
       <TouchableOpacity style={styles.lsOverlay} onPress={onClose} activeOpacity={1} />
       <View style={[styles.lsSheet, { paddingBottom: insets.bottom + spacing.lg }]}>
         <View style={styles.lsHandle} />

@@ -134,7 +134,7 @@ Suggested priority for “Less deciding. More watching.” (matches plans storie
 
 1. ~~Tonight’s movie picker~~ **Done: Pick for Me** (§5.2).
 2. **Watchlist overlap + host collaborative lists** — social Premium; join stays Free. **In review as Watch together (PR #1039).**
-3. **Unlimited lists** — mostly already gated; ensure UX/mobile parity and messaging when checkout opens.
+3. **Unlimited lists** — gated on both platforms. Hitting the 5-list cap (or a server-side cap rejection from a stale tab) opens the shared upgrade sheet on web and mobile (`UpgradeSheet`, content from `@plot/core/upgradeSheet.js`). When checkout opens, wire the sheet's Upgrade button to real checkout.
 4. **Live calendar subscription** — largely wired; polish Premium path and free “Request access” / snapshot.
 5. **Deeper stats** — define what “additional” means beyond today’s Free overview.
 6. **Smart lists** — filter rules that auto-update, including discoveries beyond saved titles.

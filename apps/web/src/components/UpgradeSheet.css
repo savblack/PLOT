@@ -1,0 +1,65 @@
+/* Upgrade sheet: bottom sheet on phones, centred card from 640px. Flat surfaces
+   and hairlines; the scrim is the only thing separating it from the page. */
+.upgrade-sheet-layer, .upgrade-sheet-layer * { box-sizing: border-box; }
+.upgrade-sheet-layer { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: end center; }
+.upgrade-sheet-scrim { position: absolute; inset: 0; background: var(--image-scrim); animation: upgrade-sheet-fade 0.2s ease both; }
+.upgrade-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.75rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  font-family: var(--font-sans);
+  animation: upgrade-sheet-rise 0.28s var(--ease) both;
+}
+.upgrade-sheet-grab { align-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--border-strong); }
+.upgrade-sheet-context { display: flex; align-items: center; gap: 0.6rem; margin: 0.25rem 0 0; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
+.upgrade-sheet-meter { display: flex; gap: 3px; }
+.upgrade-sheet-meter i { width: 14px; height: 6px; border-radius: 3px; background: var(--accent-fill); }
+.upgrade-sheet-title { margin: 0; font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; line-height: 1.1; letter-spacing: var(--font-display-tracking); text-wrap: balance; }
+.upgrade-sheet-body { margin: 0; font-size: 0.88rem; line-height: 1.6; color: var(--text-secondary); }
+
+.upgrade-sheet-offer { width: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 1rem; padding: 0.9rem 1rem; border-radius: var(--radius-md); background: var(--surface-sunken); }
+.upgrade-sheet-offer-name { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+.upgrade-sheet-pill { padding: 0.15rem 0.55rem; border-radius: var(--radius-pill); background: var(--accent-dim); color: var(--accent-text); font-family: var(--font-sans); font-size: 0.68rem; font-weight: 600; letter-spacing: 0; }
+.upgrade-sheet-price { display: flex; align-items: baseline; gap: 0.25rem; font-size: 0.82rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.upgrade-sheet-amount { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; line-height: 1; letter-spacing: -0.04em; color: var(--text-primary); }
+.upgrade-sheet-alt { flex-basis: 100%; margin: 0; font-size: 0.75rem; color: var(--text-muted); }
+
+.upgrade-sheet .btn { min-height: 44px; }
+.upgrade-sheet-note { width: 100%; margin: 0; padding: 0.7rem 0.8rem; border-radius: var(--radius-badge); background: var(--surface-sunken); font-size: 0.8rem; line-height: 1.55; }
+
+.upgrade-sheet-also { width: 100%; margin: 0.25rem 0 0; padding-top: 0.85rem; border-top: 1px solid var(--border); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.upgrade-sheet-rows { width: 100%; margin: 0; padding: 0; list-style: none; display: grid; gap: 0.75rem; }
+.upgrade-sheet-rows li { display: grid; grid-template-columns: 28px 1fr; gap: 0.65rem; align-items: start; font-size: 0.85rem; line-height: 1.4; }
+.upgrade-sheet-row-label { display: block; font-weight: 600; }
+.upgrade-sheet-row-note { display: block; margin-top: 0.1rem; font-size: 0.75rem; color: var(--text-secondary); }
+.upgrade-sheet-icon { width: 28px; height: 28px; padding: 6px; border-radius: 8px; background: var(--surface-sunken); fill: none; stroke: var(--text-secondary); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; box-sizing: border-box; }
+
+.upgrade-sheet-foot { width: 100%; display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.25rem; }
+.upgrade-sheet-link { min-height: 44px; padding: 0; border: 0; background: none; font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--text-primary); cursor: pointer; }
+.upgrade-sheet-link--quiet { color: var(--text-secondary); }
+.upgrade-sheet-link:hover { color: var(--accent); }
+.upgrade-sheet:focus { outline: none; }
+.upgrade-sheet :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+@media (min-width: 640px) {
+  .upgrade-sheet-layer { place-items: center; padding: 1rem; }
+  .upgrade-sheet { border-radius: var(--radius-lg); padding: 1.75rem; animation-name: upgrade-sheet-settle; }
+  .upgrade-sheet-grab { display: none; }
+}
+/* Motion only, never opacity: the sheet is readable from its first frame. */
+@keyframes upgrade-sheet-rise { from { transform: translateY(24px); } to { transform: none; } }
+@keyframes upgrade-sheet-settle { from { transform: translateY(8px) scale(0.98); } to { transform: none; } }
+@keyframes upgrade-sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .upgrade-sheet, .upgrade-sheet-scrim { animation: none; }
+}

@@ -1,6 +1,7 @@
-import { expect, fireEvent, within } from 'storybook/test';
+import { expect, fireEvent, waitFor, within } from 'storybook/test';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { AppContext } from '../hooks/useApp.js';
 import MyListsView from '../components/MyListsView.jsx';
 import ListPage from '../components/ListPage.jsx';
@@ -133,6 +134,23 @@ export const StaleListCount = {
         createList: async () => { throw Object.assign(new Error('List cap'), { code: 'custom_list_limit_reached' }); },
       },
     },
+  },
+  tags: ['interaction-test'],
+  // The tab thinks it has room, the server says no: the create dialog gives
+  // way to the upgrade sheet instead of an inline error.
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+    fireEvent.click(canvas.getByRole('button', { name: 'Create new list' }));
+    fireEvent.change(await body.findByLabelText('List name'), { target: { value: 'Sixth' } });
+    fireEvent.keyDown(body.getByLabelText('List name'), { key: 'Enter' });
+    const sheet = await body.findByRole('dialog', { name: PLANS_PAGE.upgradeSheet.reasons.lists.title });
+    await expect(sheet).toBeVisible();
+    // The create dialog is gone, so closing the sheet returns focus to "Create new list".
+    // Wait for the sheet to take focus: that is when its key handling is live.
+    await waitFor(() => expect(sheet).toHaveFocus());
+    fireEvent.keyDown(sheet, { key: 'Escape' });
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Create new list' })).toHaveFocus());
   },
 };
 
