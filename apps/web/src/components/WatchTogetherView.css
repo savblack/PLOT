@@ -368,3 +368,9 @@
 /* Invite link landing */
 .wt-landing { align-items: flex-start; }
 .wt-landing .wt-top-actions { margin-top: 0; }
+/* Placeholder poster tones for the example and link preview. */
+.wt-ph-1 { background: color-mix(in srgb, var(--text-primary) 78%, var(--surface-sunken)); }
+.wt-ph-2 { background: color-mix(in srgb, var(--text-primary) 58%, var(--surface-sunken)); }
+.wt-ph-3 { background: color-mix(in srgb, var(--text-primary) 68%, var(--surface-sunken)); }
+.wt-ph-4 { background: color-mix(in srgb, var(--text-primary) 40%, var(--surface-sunken)); }
+.wt-ph-5 { background: color-mix(in srgb, var(--text-primary) 50%, var(--surface-sunken)); }

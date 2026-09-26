@@ -21,8 +21,9 @@ import { PersonAvatar } from './WatchTogetherParts.jsx';
 
 const S = T.start;
 
-// Colour blocks stand in for posters in the example; it is not real data.
-const EXAMPLE_POSTERS = ['#2F3B52', '#7A4B3A', '#4E6B5C', '#B8865B', '#5B4A7A'];
+// Tone blocks stand in for posters in the example; it is not real data.
+// Shades come from tokens in WatchTogetherView.css (.wt-ph-1 to .wt-ph-5).
+const EXAMPLE_POSTERS = [1, 2, 3, 4, 5];
 
 export function Wordmark() {
   return <span className="wt-wordmark">plot</span>;
@@ -75,7 +76,7 @@ export function InviteLinkCard({ compact = false }) {
       <p className="wt-card-body">{T.link.body}</p>
       <div className="wt-linkpreview" aria-hidden="true">
         <div className="wt-linkpreview-art">
-          {EXAMPLE_POSTERS.slice(0, 3).map((c, i) => <span key={c} className={`wt-linkpreview-poster${i === 1 ? ' wt-linkpreview-poster--mid' : ''}`} style={{ background: c }} />)}
+          {EXAMPLE_POSTERS.slice(0, 3).map((n, i) => <span key={n} className={`wt-linkpreview-poster wt-ph-${n}${i === 1 ? ' wt-linkpreview-poster--mid' : ''}`} />)}
           <span className="wt-linkpreview-mark"><Wordmark /></span>
         </div>
         <div className="wt-linkpreview-meta">
@@ -146,7 +147,7 @@ function Example() {
         <span className="wt-person-text"><span className="wt-person-name">{S.examplePair}</span><span className="wt-note">{S.exampleCount}</span></span>
       </div>
       <div className="wt-example-posters" aria-hidden="true">
-        {EXAMPLE_POSTERS.map(c => <span key={c} className="wt-example-poster" style={{ background: c }} />)}
+        {EXAMPLE_POSTERS.map(n => <span key={n} className={`wt-example-poster wt-ph-${n}`} />)}
       </div>
       <div className="wt-person wt-example-match">
         <svg className="wt-heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z" /></svg>
