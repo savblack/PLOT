@@ -125,8 +125,6 @@
   align-items: center;
   gap: 1rem;
   margin-top: 3rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(41, 41, 36, 0.12);
 }
 .footer-copy { font-size: 0.8rem; color: var(--text-secondary, #5f5a52); }
 .footer-social { display: flex; align-items: center; margin-right: -12px; }
@@ -196,7 +194,7 @@
 @media (max-width: 600px) {
   .footer-inner { padding: 3.5rem 1.25rem 0; }
   .footer-lede { font-size: 1.55rem; line-height: 1.12; }
-  .footer-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 1rem; }
+  .footer-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem 0.75rem; }
   .footer-bottom { margin-top: 2.25rem; }
   .footer-wordmark { margin-top: 2rem; }
 }
