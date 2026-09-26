@@ -5,7 +5,7 @@
 
 /** Which badge a row wears. @param {string} type */
 export function notificationKind(type) {
-  if (type === 'follow_request') return 'request';
+  if (type === 'follow_request' || type === 'watch_together_request') return 'request';
   if (type === 'new_follower' || type === 'follow_accepted') return 'follow';
   return 'activity';
 }
@@ -26,8 +26,8 @@ export function daysAgo(iso, now) {
 }
 
 /**
- * Follow requests stay live on the page, so their notification rows are
- * dropped; new followers from the last week (two or more) collapse into one
+ * Follow and watch together requests stay live on the page, so their
+ * notification rows are dropped; new followers from the last week (two or more) collapse into one
  * row; the rest are bucketed today / yesterday / earlier.
  *
  * @param {NotificationRow[]} list newest first
@@ -35,7 +35,7 @@ export function daysAgo(iso, now) {
  * @param {{ rollupDays?: number, rollupMin?: number }} [options]
  */
 export function groupNotifications(list, now = Date.now(), { rollupDays = 7, rollupMin = 2 } = {}) {
-  const rest = list.filter(n => n.type !== 'follow_request');
+  const rest = list.filter(n => n.type !== 'follow_request' && n.type !== 'watch_together_request');
   const recentFollows = rest.filter(n => n.type === 'new_follower' && now - Date.parse(n.created_at) < rollupDays * DAY);
   const rollup = recentFollows.length >= rollupMin ? { items: recentFollows, unread: recentFollows.some(n => !n.read_at) } : null;
   const rolled = new Set((rollup?.items ?? []).map(n => n.id));

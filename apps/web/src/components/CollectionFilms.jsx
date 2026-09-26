@@ -31,7 +31,8 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
   const saveAsList = async () => {
     if (!user || saveState.status === 'saving') return;
     const lists = customLists?.lists || [];
-    if (!existingList && !canCreateCustomList(lists.length, profile)) {
+    const ownedCount = customLists?.ownedCount;
+    if (!existingList && !canCreateCustomList(ownedCount ?? lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
       setShowUpgrade(true);
       return;

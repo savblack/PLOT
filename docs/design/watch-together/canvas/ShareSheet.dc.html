@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Watch together: make a shared list</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&amp;family=Gabarito:wght@400..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:#F8F2EA;color:#292924}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: rgba(41,41,36,0.35); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; font-family: 'DM Sans', system-ui, sans-serif; color: #292924">
+  <div role="dialog" aria-modal="true" aria-labelledby="share-title" style="background: #F8F2EA; border-radius: 24px 24px 0 0; padding: 12px 20px 28px; display: flex; flex-direction: column; gap: 18px">
+    <span style="align-self: center; width: 40px; height: 4px; border-radius: 9999px; background: rgba(41,41,36,0.16)"></span>
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <h1 id="share-title" style="margin: 0; font-family: 'Gabarito', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.1">Make a shared list</h1>
+      <a href="Main.dc.html" aria-label="Close" style="width: 40px; height: 40px; border-radius: 9999px; border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; display: flex; align-items: center; justify-content: center; box-sizing: border-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
+      </a>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <label for="list-name" style="font-size: 13px; font-weight: 600; color: #5F5A52">Name</label>
+      <input id="list-name" type="text" value="Jess and Sam" style="height: 48px; padding: 0 16px; border-radius: 16px; border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; font-size: 15px; color: #292924; outline: 0">
+    </div>
+
+    <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+      <legend style="font-size: 13px; font-weight: 600; color: #5F5A52; padding: 0; margin-bottom: 6px">Start with</legend>
+      <sc-for list="{{starts}}" as="o" hint-placeholder-count="2">
+        <label style="{{o.rowStyle}}">
+          <input type="radio" name="start" checked="{{o.on}}" onChange="{{o.pick}}" style="width: 20px; height: 20px; margin: 0; accent-color: #E05578">
+          <span style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 600">{{o.label}}</span>
+            <span style="font-size: 12px; color: #5F5A52">{{o.sub}}</span>
+          </span>
+        </label>
+      </sc-for>
+    </fieldset>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 13px; font-weight: 600; color: #5F5A52">Who’s on it</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <span style="height: 36px; padding: 0 12px 0 4px; border-radius: 9999px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.16); display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600">
+          <span style="width: 28px; height: 28px; border-radius: 9999px; background: #DBE1B0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">S</span>
+          Sam
+        </span>
+        <sc-for list="{{extras}}" as="x" hint-placeholder-count="2">
+          <button type="button" onClick="{{x.toggle}}" aria-pressed="{{x.on}}" style="{{x.style}}">{{x.label}}</button>
+        </sc-for>
+      </div>
+      <span style="font-size: 12px; color: #6B655D">Only people you watch together with. They can add and remove titles for free.</span>
+    </div>
+
+    <a href="SharedList.dc.html" style="height: 50px; border-radius: 9999px; background: #FF88C8; color: #292924; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none">Create list</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { start: 'both', extra: {} }; }
+  renderVals() {
+    const starts = [
+      { id: 'both', label: 'The 14 titles you’ve both saved', sub: 'A head start from your watchlists' },
+      { id: 'empty', label: 'An empty list', sub: 'Add titles together from scratch' },
+    ].map((o) => ({
+      ...o, on: this.state.start === o.id, pick: () => this.setState({ start: o.id }),
+      rowStyle: 'display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: #FFFCF7; cursor: pointer; border: 1px solid ' + (this.state.start === o.id ? '#E05578' : 'rgba(41,41,36,0.08)'),
+    }));
+    const extras = [{ id: 'priya', name: 'Priya' }, { id: 'jess', name: 'Jess' }].map((x) => {
+      const on = !!this.state.extra[x.id];
+      return {
+        ...x, on, label: on ? x.name + ' ✓' : '+ ' + x.name,
+        style: 'height: 36px; padding: 0 14px; border-radius: 9999px; font-size: 13px; font-weight: 600; ' + (on ? 'border: 1px solid #292924; background: #292924; color: #FFFCF7' : 'border: 1px dashed rgba(41,41,36,0.3); background: transparent; color: #292924'),
+        toggle: () => this.setState((s) => ({ extra: { ...s.extra, [x.id]: !s.extra[x.id] } })),
+      };
+    });
+    return { starts, extras };
+  }
+}
+</script>
+</body>
+</html>

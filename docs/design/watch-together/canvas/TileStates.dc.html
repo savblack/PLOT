@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Watch together invite tile states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&amp;family=Gabarito:wght@400..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:#F8F2EA;color:#292924}
+</style>
+</helmet>
+<div style="width: 1926px; height: 520px; box-sizing: border-box; padding: 40px; background: #F8F2EA; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; font-family: 'DM Sans', system-ui, sans-serif; color: #292924">
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 15px">1 · You’re on Free</span><span style="font-size: 13px; color: #5F5A52">Sam’s profile is public</span></div>
+    <dc-import name="InviteTile" mode="free" hint-size="350px,328px"></dc-import>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 15px">2 · Premium, Sam is public</span><span style="font-size: 13px; color: #5F5A52">Count comes from public data</span></div>
+    <dc-import name="InviteTile" mode="public" hint-size="350px,328px"></dc-import>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 15px">3 · Premium, Sam is private</span><span style="font-size: 13px; color: #5F5A52">No count until Sam accepts</span></div>
+    <dc-import name="InviteTile" mode="private" hint-size="350px,328px"></dc-import>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 15px">4 · Request sent</span><span style="font-size: 13px; color: #5F5A52">Declines stay silent</span></div>
+    <dc-import name="InviteTile" mode="pending" hint-size="350px,328px"></dc-import>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 15px">5 · Sam accepted</span><span style="font-size: 13px; color: #5F5A52">Same tile on both profiles</span></div>
+    <dc-import name="InviteTile" mode="paired" hint-size="350px,328px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1926,"height":520}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

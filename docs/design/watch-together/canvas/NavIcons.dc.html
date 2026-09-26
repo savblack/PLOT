@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Watch together nav icon options</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&amp;family=Gabarito:wght@400..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:#F8F2EA;color:#292924}
+</style>
+</helmet>
+<div style="width: 1300px; height: 600px; box-sizing: border-box; padding: 40px; background: #F8F2EA; display: flex; flex-direction: column; gap: 24px; font-family: 'DM Sans', system-ui, sans-serif; color: #292924">
+  <div style="display: flex; flex-direction: column; gap: 4px">
+    <span style="font-family: 'Gabarito', sans-serif; font-weight: 700; font-size: 28px">Nav icon options</span>
+    <span style="font-size: 14px; color: #5F5A52">24px grid, 2px stroke, round caps, to match navIcons.jsx.</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+
+    <div style="padding: 18px; border-radius: 24px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="6"></circle><circle cx="15" cy="12" r="6"></circle></svg>
+        <div style="display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 15px">1 · Overlap</span><span style="font-size: 12px; color: #5F5A52">Two circles. What you have in common</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 12px; background: #F1E9DC; font-size: 14px; font-weight: 600">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="6"></circle><circle cx="15" cy="12" r="6"></circle></svg>
+        <span style="flex-grow: 1">Watch together</span><span style="font-size: 11px; font-weight: 600; color: #1A8CD8; background: rgba(26,140,216,0.1); padding: 3px 7px; border-radius: 10px">Premium</span>
+      </div>
+    </div>
+
+    <div style="padding: 18px; border-radius: 24px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><circle cx="17" cy="9" r="3"></circle><path d="M16.5 14.2A5.5 5.5 0 0 1 21.5 20"></path></svg>
+        <div style="display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 15px">2 · Two people</span><span style="font-size: 12px; color: #5F5A52">Clearest meaning, but reads as “friends”</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 12px; background: #F1E9DC; font-size: 14px; font-weight: 600">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><circle cx="17" cy="9" r="3"></circle><path d="M16.5 14.2A5.5 5.5 0 0 1 21.5 20"></path></svg>
+        <span style="flex-grow: 1">Watch together</span><span style="font-size: 11px; font-weight: 600; color: #1A8CD8; background: rgba(26,140,216,0.1); padding: 3px 7px; border-radius: 10px">Premium</span>
+      </div>
+    </div>
+
+    <div style="padding: 18px; border-radius: 24px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"></path><path d="M3 13a2 2 0 0 1 4 0v1h10v-1a2 2 0 0 1 4 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M6 19v2"></path><path d="M18 19v2"></path></svg>
+        <div style="display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 15px">3 · Sofa ✓ Chosen</span><span style="font-size: 12px; color: #5F5A52">Warm, homely, fits the journal feel</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 12px; background: #F1E9DC; font-size: 14px; font-weight: 600">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"></path><path d="M3 13a2 2 0 0 1 4 0v1h10v-1a2 2 0 0 1 4 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M6 19v2"></path><path d="M18 19v2"></path></svg>
+        <span style="flex-grow: 1">Watch together</span><span style="font-size: 11px; font-weight: 600; color: #1A8CD8; background: rgba(26,140,216,0.1); padding: 3px 7px; border-radius: 10px">Premium</span>
+      </div>
+    </div>
+
+    <div style="padding: 18px; border-radius: 24px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5a1.5 1.5 0 0 1 1.5-1.5h11a1.5 1.5 0 0 1 1.5 1.5V10a2 2 0 0 0 0 4v1.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 15.5V14a2 2 0 0 0 0-4z"></path><path d="M7 4h12.5A1.5 1.5 0 0 1 21 5.5V7a2 2 0 0 0 0 4v1.5"></path></svg>
+        <div style="display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 15px">4 · Two tickets</span><span style="font-size: 12px; color: #5F5A52">Playful, but leans movies and cinemas</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 12px; background: #F1E9DC; font-size: 14px; font-weight: 600">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5a1.5 1.5 0 0 1 1.5-1.5h11a1.5 1.5 0 0 1 1.5 1.5V10a2 2 0 0 0 0 4v1.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 15.5V14a2 2 0 0 0 0-4z"></path><path d="M7 4h12.5A1.5 1.5 0 0 1 21 5.5V7a2 2 0 0 0 0 4v1.5"></path></svg>
+        <span style="flex-grow: 1">Watch together</span><span style="font-size: 11px; font-weight: 600; color: #1A8CD8; background: rgba(26,140,216,0.1); padding: 3px 7px; border-radius: 10px">Premium</span>
+      </div>
+    </div>
+
+    <div style="padding: 18px; border-radius: 24px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="12" rx="2"></rect><path d="M8 20h8"></path><path d="M12 13.2l-2.6-2.5a1.6 1.6 0 0 1 2.6-1.9 1.6 1.6 0 0 1 2.6 1.9z"></path></svg>
+        <div style="display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 15px">5 · Screen with a heart</span><span style="font-size: 12px; color: #5F5A52">Something you both love to watch</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 12px; background: #F1E9DC; font-size: 14px; font-weight: 600">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="12" rx="2"></rect><path d="M8 20h8"></path><path d="M12 13.2l-2.6-2.5a1.6 1.6 0 0 1 2.6-1.9 1.6 1.6 0 0 1 2.6 1.9z"></path></svg>
+        <span style="flex-grow: 1">Watch together</span><span style="font-size: 11px; font-weight: 600; color: #1A8CD8; background: rgba(26,140,216,0.1); padding: 3px 7px; border-radius: 10px">Premium</span>
+      </div>
+    </div>
+
+    <div style="padding: 18px; border-radius: 24px; background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10h12l-1.5 10.5a1 1 0 0 1-1 .5h-7a1 1 0 0 1-1-.5z"></path><path d="M10 10l.5 11"></path><path d="M14 10l-.5 11"></path><path d="M6.5 10a2.5 2.5 0 0 1 2-4 3 3 0 0 1 5.5-1 2.5 2.5 0 0 1 3.5 5"></path></svg>
+        <div style="display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 15px">6 · Popcorn</span><span style="font-size: 12px; color: #5F5A52">Fun, but says “movies” more than “together”</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 12px; background: #F1E9DC; font-size: 14px; font-weight: 600">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#292924" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10h12l-1.5 10.5a1 1 0 0 1-1 .5h-7a1 1 0 0 1-1-.5z"></path><path d="M10 10l.5 11"></path><path d="M14 10l-.5 11"></path><path d="M6.5 10a2.5 2.5 0 0 1 2-4 3 3 0 0 1 5.5-1 2.5 2.5 0 0 1 3.5 5"></path></svg>
+        <span style="flex-grow: 1">Watch together</span><span style="font-size: 11px; font-weight: 600; color: #1A8CD8; background: rgba(26,140,216,0.1); padding: 3px 7px; border-radius: 10px">Premium</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Yes-or-no session: progress options</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&amp;family=Gabarito:wght@400..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:#F8F2EA;color:#292924}
+</style>
+</helmet>
+<div style="width: 1820px; height: 980px; box-sizing: border-box; padding: 40px; background: #F8F2EA; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 60px; font-family: 'DM Sans', system-ui, sans-serif; color: #292924">
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 17px">1 · In the bottom panel</span><span style="font-size: 13px; color: #5F5A52">All progress in one place</span></div>
+    <dc-import name="Session" progress="panel" hint-size="390px,844px"></dc-import>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 17px">2 · Along the top of the card</span><span style="font-size: 13px; color: #5F5A52">Progress stays with the title</span></div>
+    <dc-import name="Session" progress="cardEdge" hint-size="390px,844px"></dc-import>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 17px">3 · Counter on the card ✓ Chosen</span><span style="font-size: 13px; color: #5F5A52">No bar, just “7 of 14”</span></div>
+    <dc-import name="Session" progress="pill" hint-size="390px,844px"></dc-import>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 17px">4 · Dots under the buttons</span><span style="font-size: 13px; color: #5F5A52">Light, like a carousel</span></div>
+    <dc-import name="Session" progress="dots" hint-size="390px,844px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1820,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
