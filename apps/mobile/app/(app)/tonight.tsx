@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
@@ -399,7 +400,8 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
           const hero = (
             <TouchableOpacity style={styles.hero} onPress={() => onOpen(top)} accessibilityRole="button" accessibilityLabel={top.title}>
               {bg ? <Image source={{ uri: bg }} style={StyleSheet.absoluteFill} /> : null}
-              <View style={styles.heroScrim} />
+              {/* Same fade as the Home hero: dark at the foot, clear by the top, no hard edge. */}
+              <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.14)', 'rgba(0,0,0,0.58)', 'rgba(0,0,0,0.92)']} locations={[0, 0.38, 0.7, 1]} style={StyleSheet.absoluteFill} pointerEvents="none" />
               <View style={{ gap: 6 }}>
                 <Text style={styles.heroChip}>{T.topPick}</Text>
                 <Text style={styles.heroTitle}>{top.title}</Text>
@@ -675,7 +677,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   findingOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, justifyContent: 'center' },
   hero: { height: 210, borderRadius: 20, overflow: 'hidden', backgroundColor: colors.textPrimary, justifyContent: 'flex-end', padding: spacing.lg },
   // Legibility scrim behind the title, per the design system's text-over-image rule.
-  heroScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '65%', backgroundColor: colors.imageScrim },
   heroChip: {
     alignSelf: 'flex-start', overflow: 'hidden', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3,
     backgroundColor: colors.accentFill, color: colors.onAccentFill, fontFamily: fontFamily.sansBold, fontSize: fontSize.xs,
