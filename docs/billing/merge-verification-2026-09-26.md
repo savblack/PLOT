@@ -39,3 +39,17 @@ Bangladesh remains accepted per the owner's decision. Registration, filing,
 remittance and the deferred tax configuration are still owner follow-ups.
 Plex server/account verification and public automatic tracking are separate
 rollouts. TV Time remains saved-export-only and gated pending verified samples.
+
+## Review follow-ups before enabling event imports and scheduled tracking
+
+Two gated behaviors need further pilot work: reconcile sparse episode corrections
+with an existing sequential watching pointer (including series completion), and
+avoid replaying a whole completed provider window solely because it contains an
+unresolved duplicate review. The current cursor deliberately stays behind on
+partial success to avoid silently losing skipped records. Do not enable these
+features publicly on the strength of the billing checks alone.
+
+Free Plex imports now expose server/profile selection independently of the
+scheduled-tracking flag. Export pagination uses broadcast preferences' user key,
+and mobile supplies the same Netflix episode lookup as web. These changes do
+not replace testing with an authorised running Plex server.

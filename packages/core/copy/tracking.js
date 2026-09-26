@@ -1,4 +1,5 @@
 export const TRACKING = {
+  sourceSelected: 'Server and profile selected. Ready to import.',
   title: 'Watch tracking',
   description: 'One-time Trakt history and watchlist imports are free. Automatic updates require Premium. Trakt imports what Trakt already knows; it does not connect your streaming accounts.',
   connect: 'Connect Trakt for migration',

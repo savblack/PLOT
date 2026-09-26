@@ -18,7 +18,10 @@ function createExportClient({ rowsByTable = {}, failingTable = null } = {}) {
               calls.push({ table, method: 'or', filter });
               return this;
             },
-            order() { return this; },
+            order(column) {
+              if (table === 'broadcast_preferences') assert.equal(column, 'user_id');
+              return this;
+            },
             async range(from, to) {
               if (failingTable === table) return { error: { message: `failed:${table}` } };
               return { data: (rowsByTable[table] ?? []).slice(from, to + 1), error: null };

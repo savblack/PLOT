@@ -64,8 +64,8 @@ export async function runDataExport(supabaseClient, userId) {
       query = step.match.type === 'or'
         ? query.or(step.match.columns.map((column) => `${column}.eq.${userId}`).join(','))
         : query.eq(step.match.column, userId);
-      // follows has a composite key; every other exported table has an id.
-      const order = step.table === 'private_title_notes' ? ['tmdb_id', 'media_type'] : step.table === 'follows' ? ['follower_id', 'following_id'] : step.table === 'tracking_connections' ? ['integration_id'] : ['id'];
+      // Use each table’s stable key for deterministic pagination.
+      const order = step.table === 'broadcast_preferences' ? ['user_id'] : step.table === 'private_title_notes' ? ['tmdb_id', 'media_type'] : step.table === 'follows' ? ['follower_id', 'following_id'] : step.table === 'tracking_connections' ? ['integration_id'] : ['id'];
       for (const column of order) query = query.order(column, { ascending: true });
       const result = await query.range(from, from + 999);
       if (result?.error) return { table: step.table, error: result.error };

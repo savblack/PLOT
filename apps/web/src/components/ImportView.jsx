@@ -1,3 +1,4 @@
+import { usePlexSource } from '@plot/core/usePlexSource.js';
 import { TRACKING } from '@plot/core/copy/tracking.js';
 import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
@@ -199,6 +200,7 @@ function AccountImportView() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const plex = useMediaSync(user?.id);
+  const plexSource = usePlexSource(user?.id);
   const trakt = useTraktSync(user?.id);
   const loadPlexIntegration = plex.loadIntegration;
   const loadTraktIntegration = trakt.loadIntegration;
@@ -454,6 +456,13 @@ function AccountImportView() {
                   {IMPORT_VIEW.plexServerRequired}
                 </p>
               )}
+              {platform.id === 'plex' && connection?.isConnected && <div>
+                <button type="button" className="settings-text-action" disabled={plexSource.busy} onClick={() => plexSource.choose()}>{TRACKING.chooseSource}</button>
+                {(plexSource.servers || []).map(server => <button type="button" key={server.clientIdentifier} disabled={plexSource.busy} onClick={() => plexSource.choose(server.clientIdentifier)}>{server.name}</button>)}
+                {(plexSource.profiles || []).map(profile => <button type="button" key={profile.accountID} disabled={plexSource.busy} onClick={() => plexSource.choose(plexSource.serverId, profile.accountID)}>{profile.name}</button>)}
+                {plexSource.selected && <p role="status">{TRACKING.sourceSelected}</p>}
+                {plexSource.error && <p role="alert">{plexSource.error}</p>}
+              </div>}
               {(connection?.error || importError) && (
                 <div style={{ background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, padding: '0.75rem', fontSize: '0.82rem', color: 'var(--danger)' }}>
                   {connection?.error || importError}
@@ -467,7 +476,7 @@ function AccountImportView() {
                 <button
                   type="button"
                   onClick={connection?.isConnected ? handleConnectionImport : handleConnect}
-                  disabled={connection?.syncing || connection?.polling}
+                  disabled={connection?.syncing || connection?.polling || (platform.id === 'plex' && connection?.isConnected && !plexSource.selected)}
                   style={{ alignSelf: 'flex-start', border: 0, borderRadius: 'var(--radius-md)', padding: '0.8rem 1rem', background: 'var(--accent)', color: 'white', fontWeight: 600, cursor: 'pointer' }}
                 >
                   {connection?.polling

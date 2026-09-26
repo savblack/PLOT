@@ -11,7 +11,7 @@ const profile = {
   genres: [],
 };
 
-test('Free import page offers connected and file import sources while sync stays hidden', async ({ page }, testInfo) => {
+for (const connected of [false, true]) test(`Free imports offer Plex source selection with tracking off (connected: ${connected})`, async ({ page }, testInfo) => {
   const pageErrors = [];
   const consoleErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
@@ -29,7 +29,16 @@ test('Free import page offers connected and file import sources while sync stays
     const url = route.request().url();
     if (url.includes('/auth/v1/user')) return route.fulfill({ json: { id: userId, role: 'authenticated' } });
     if (url.includes('/rest/v1/profiles')) return route.fulfill({ json: profile });
-    if (url.includes('/rest/v1/media_integrations')) return route.fulfill({ json: null });
+    if (url.includes('/rest/v1/media_integrations')) return route.fulfill({ json: connected ? { id: 'plex-test', provider: 'plex', status: 'active' } : null });
+    if (url.includes('/functions/v1/media-sync')) {
+      const body = route.request().postDataJSON();
+      if (body.action === 'select-source') {
+        expect(body.serverId).toBe('server-test');
+        expect(body.accountID).toBe('7');
+        return route.fulfill({ json: { selection: { clientIdentifier: body.serverId, accountID: body.accountID } } });
+      }
+      return route.fulfill({ json: body.serverId ? { profiles: [{ accountID: '7', name: 'My profile' }] } : { servers: [{ clientIdentifier: 'server-test', name: 'My server' }] } });
+    }
     if (url.includes('/rest/v1/lists')) return route.fulfill({ json: { id: 'test-list', user_id: userId, name: '__watchlist__' } });
     return route.fulfill({ json: [] });
   });
@@ -43,8 +52,18 @@ test('Free import page offers connected and file import sources while sync stays
   await expect(page.getByRole('button', { name: /IMDb CSV export/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Trakt JSON export/ })).toHaveCount(0);
   await page.getByRole('button', { name: /Plex Connected account/ }).click();
-  await expect(page.getByRole('button', { name: 'Connect Plex to import' })).toBeVisible();
-  await expect(page.getByText('This does not turn on automatic or two-way sync.')).toBeVisible();
+  if (connected) {
+    const importButton = page.getByRole('button', { name: 'Import from Plex', exact: true });
+    await expect(importButton).toBeDisabled();
+    await page.getByRole('button', { name: /Choose.*server|Choose.*profile/i }).click();
+    await page.getByRole('button', { name: 'My server', exact: true }).click();
+    await page.getByRole('button', { name: 'My profile', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('Server and profile selected');
+    await expect(importButton).toBeEnabled();
+  } else {
+    await expect(page.getByRole('button', { name: 'Connect Plex to import' })).toBeVisible();
+  }
+  if (!connected) await expect(page.getByText('This does not turn on automatic or two-way sync.')).toBeVisible();
   await expect(page.getByText(/Plex Media Server must be running/)).toBeVisible();
   expect(pageErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);

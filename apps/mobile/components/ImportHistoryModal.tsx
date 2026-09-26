@@ -1,3 +1,4 @@
+import { usePlexSource } from '@plot/core/usePlexSource.js';
 import { TRACKING } from '@plot/core/copy/tracking.js';
 import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
@@ -165,6 +166,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const plex = useMediaSync(userId);
+  const plexSource = usePlexSource(userId);
   const trakt = useTraktSync(userId);
 
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
@@ -222,6 +224,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
         findByImdbId: (id: string) => tmdb.findByImdbId(id),
         findByTvdbId: (id: number | string) => tmdb.findByTvdbId(id),
         findExternal: (id: string) => tmdb.findByExternalId(id),
+        getSeason: (id: number, season: number) => tmdb.getSeason(id, season),
         onProgress: (done: number) => setResolveDone(done),
       });
 
@@ -368,7 +371,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
         {step === 'pick-platform' && (
           <ScrollView contentContainerStyle={styles.body}>
             <Text style={styles.stepTitle}>Choose your platform</Text>
-            <Text style={styles.stepSub}>We'll import your watch history and match it to TMDB.</Text>
+            <Text style={styles.stepSub}>{IMPORT_VIEW.chooseSource}</Text>
             {PLATFORMS.filter(p => p.id === 'tvtime' ? getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled : !['imdb', 'trakt-export'].includes(p.id) || getConfig().importEventsEnabled).map(p => (
               <TouchableOpacity
                 key={p.id}
@@ -408,12 +411,19 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
               </View>
             )}
             {connection.error && <Text style={styles.errorText}>{connection.error}</Text>}
+            {platform === 'plex' && connection.isConnected && <View>
+              <TouchableOpacity disabled={plexSource.busy} onPress={() => plexSource.choose()}><Text>{TRACKING.chooseSource}</Text></TouchableOpacity>
+              {(plexSource.servers || []).map(server => <TouchableOpacity key={server.clientIdentifier} disabled={plexSource.busy} onPress={() => plexSource.choose(server.clientIdentifier)}><Text>{server.name}</Text></TouchableOpacity>)}
+              {(plexSource.profiles || []).map(profile => <TouchableOpacity key={profile.accountID} disabled={plexSource.busy} onPress={() => plexSource.choose(plexSource.serverId, profile.accountID)}><Text>{profile.name}</Text></TouchableOpacity>)}
+              {plexSource.selected && <Text>{TRACKING.sourceSelected}</Text>}
+              {plexSource.error && <Text>{plexSource.error}</Text>}
+            </View>}
             <TouchableOpacity
               style={[styles.importBtn, styles.connectionAction, (connection.syncing || ('polling' in connection && connection.polling)) && styles.importBtnDisabled]}
               onPress={connection.isConnected
                 ? handleConnectionImport
                 : platform === 'plex' ? plex.startPlexAuth : trakt.connect}
-              disabled={connection.syncing || ('polling' in connection && connection.polling)}
+              disabled={connection.syncing || ('polling' in connection && connection.polling) || (platform === 'plex' && connection.isConnected && !plexSource.selected)}
               activeOpacity={0.85}
             >
               <Text style={styles.importBtnText}>
