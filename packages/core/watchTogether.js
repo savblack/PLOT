@@ -241,3 +241,15 @@ export function demoPartnerSaysYes({ index, total, matchedSoFar, random = Math.r
   if (!matchedSoFar && index >= total - 1) return true;
   return random() < 0.5;
 }
+
+/**
+ * Partners who were waiting on Premium before the viewer upgraded: the ones
+ * remembered as locked (can_decide false) that can decide now.
+ *
+ * @param {WatchTogetherRow[]} partners
+ * @param {string[] | null | undefined} rememberedLocked  other_ids seen locked while on Free
+ */
+export function unlockedPartners(partners, rememberedLocked) {
+  const was = new Set(rememberedLocked || []);
+  return partners.filter(p => was.has(p.other_id) && p.can_decide !== false);
+}

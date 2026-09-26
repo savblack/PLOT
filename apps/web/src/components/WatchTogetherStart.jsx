@@ -17,6 +17,7 @@ import { posterUrl } from '../utils/images.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import { shareUrl } from '../utils/share.js';
+import { readStorage, writeStorage } from '../utils/storage.js';
 import { PersonAvatar } from './WatchTogetherParts.jsx';
 
 const S = T.start;
@@ -108,7 +109,7 @@ function Overlaps({ people, premium, sent, onInvite }) {
   return (
     <section className="wt-card" aria-labelledby="wt-start-title">
       <h2 className="wt-card-title" id="wt-start-title">{S.overlapsTitle}</h2>
-      <p className="wt-card-body">{S.overlapsBody}</p>
+      <p className="wt-card-body">{premium ? S.premiumOverlapsBody : S.overlapsBody}</p>
       <div className="wt-section">
         {people.map(p => (
           <div key={p.id} className="wt-row">
@@ -229,12 +230,13 @@ function DemoPoster({ title, counter }) {
   );
 }
 
-function HowItWorks() {
+function HowItWorks({ premium }) {
+  const steps = premium ? [{ ...S.steps[0], body: S.premiumFirstStep }, ...S.steps.slice(1)] : S.steps;
   return (
     <section className="wt-how" aria-labelledby="wt-how-title">
       <h2 className="wt-card-title" id="wt-how-title">{S.howTitle}</h2>
       <ol className="wt-steps">
-        {S.steps.map((step, i) => (
+        {steps.map((step, i) => (
           <li key={step.title} className="wt-step">
             <span className="wt-step-n" aria-hidden="true">{i + 1}</span>
             <span className="wt-person-text"><span className="wt-person-name">{step.title}</span><span className="wt-note">{step.body}</span></span>
@@ -249,6 +251,24 @@ function HowItWorks() {
  * @param {{ premium: boolean, suggested: import('@plot/core/watchTogether.js').WatchTogetherSuggestion[],
  *   onInvite: (person: { id: string }) => Promise<boolean> }} props
  */
+const WELCOME_KEY = 'plot_wt_premium_welcome_dismissed';
+
+/** "You're on Premium" on the Premium start page, until it's dismissed. */
+function PremiumWelcome() {
+  const [show, setShow] = useState(() => readStorage(WELCOME_KEY) !== '1');
+  if (!show) return null;
+  const dismiss = () => { writeStorage(WELCOME_KEY, '1'); setShow(false); };
+  return (
+    <div className="wt-welcome" role="status">
+      <svg className="wt-welcome-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3" /><path d="M3 13a2 2 0 0 1 4 0v1h10v-1a2 2 0 0 1 4 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M6 19v2" /><path d="M18 19v2" /></svg>
+      <span className="wt-banner-text"><span className="wt-banner-title">{S.premiumTitle}</span><span className="wt-welcome-body">{S.premiumBody}</span></span>
+      <button type="button" className="wt-welcome-close" aria-label={T.hub.dismiss} onClick={dismiss}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+    </div>
+  );
+}
+
 export default function WatchTogetherStart({ premium, suggested, onInvite }) {
   const { watchlist } = useApp();
   const items = watchlist?.items || [];
@@ -256,6 +276,34 @@ export default function WatchTogetherStart({ premium, suggested, onInvite }) {
   const invite = async (person) => {
     if (await onInvite(person)) setSent(prev => new Set(prev).add(person.id));
   };
+
+  if (premium) {
+    // Inviting is the job now: people, then the link, then how it works, and
+    // the demo last as something to try while waiting.
+    return (
+      <div className="wt-start wt-start--premium">
+        <h1 className="wt-sr">{T.hub.title}</h1>
+        <div className="wt-start-welcome"><PremiumWelcome /></div>
+        <div className="wt-start-top">
+          {suggested.length
+            ? <Overlaps people={suggested} premium sent={sent} onInvite={invite} />
+            : <Pitch premium />}
+        </div>
+        <div className="wt-start-link"><InviteLinkCard /></div>
+        <div className="wt-start-how"><HowItWorks premium /></div>
+        <div className="wt-start-seeit">
+          <div className="wt-person-text">
+            <h2 className="wt-card-title">{S.seeItTitle}</h2>
+            <span className="wt-note">{S.premiumSeeItBody}</span>
+          </div>
+          <div className="wt-start-pair wt-start-pair--single">
+            <Demo key={items.length ? 'ready' : 'empty'} premium items={items} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="wt-start">
       <h1 className="wt-sr">{T.hub.title}</h1>

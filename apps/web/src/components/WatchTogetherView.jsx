@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
-import { personName, filterByKind, splitGroupMatches, shufflePick, sessionProgress, swipeDecision, SWIPE_THRESHOLD } from '@plot/core/watchTogether.js';
+import { personName, filterByKind, splitGroupMatches, shufflePick, sessionProgress, swipeDecision, SWIPE_THRESHOLD, unlockedPartners } from '@plot/core/watchTogether.js';
 import { useWatchTogether, useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherSession, startWatchTogetherSession, liveWatchTogetherSession } from '@plot/core/useWatchTogether.js';
 import { supabase } from '@plot/core/supabase.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
@@ -17,6 +17,7 @@ import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COMMON } from '../copy/common.js';
 import { posterUrl } from '../utils/images.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
+import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { AcceptDialog, PersonAvatar, ShareListDialog, WatchTogetherTile } from './WatchTogetherParts.jsx';
 import WatchTogetherStart, { InviteLinkCard } from './WatchTogetherStart.jsx';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
@@ -45,6 +46,28 @@ function titleMeta(t) {
 
 /* ── Hub ─────────────────────────────────────────────────────────────── */
 
+// Partners seen waiting on Premium while the viewer was on Free, so the hub can
+// say who upgrading unlocked. Per device; cleared when the news is dismissed.
+const LOCKED_KEY = 'plot_wt_locked_partners';
+
+/**
+ * "You're on Premium. You can decide together with Sam and Priya now." Shown
+ * after upgrading when partners were waiting, until it's dismissed.
+ */
+function useUpgradeNews(wt, premium) {
+  const [remembered, setRemembered] = useState(() => {
+    try { return JSON.parse(readStorage(LOCKED_KEY) || '[]'); } catch { return []; }
+  });
+  const unlocked = premium && !wt.loading ? unlockedPartners(wt.partners, remembered) : [];
+  useEffect(() => {
+    if (wt.loading || premium) return;
+    const locked = wt.partners.filter(p => p.can_decide === false).map(p => p.other_id);
+    if (locked.length) writeStorage(LOCKED_KEY, JSON.stringify(locked)); else removeStorage(LOCKED_KEY);
+  }, [premium, wt.loading, wt.partners]);
+  const dismiss = () => { removeStorage(LOCKED_KEY); setRemembered([]); };
+  return { unlocked, dismiss };
+}
+
 function Hub({ wt, premium, profile }) {
   const navigate = useNavigate();
   const { user } = useApp();
@@ -53,6 +76,12 @@ function Hub({ wt, premium, profile }) {
   const [busy, setBusy] = useState(false);
   const { partners, incoming, outgoing } = wt;
   const requestCount = incoming.length + outgoing.length;
+  const news = useUpgradeNews(wt, premium);
+  const unlockedIds = new Set(news.unlocked.map(p => p.other_id));
+  const decideWith = async (person) => {
+    const result = await startWatchTogetherSession(person.other_id);
+    if (result.ok) navigate(`/together/session/${result.data}`);
+  };
 
   // Nobody to watch with yet: the start page, for Free and Premium alike.
   if (wt.loading || suggestionsLoading) return <div className="wt-page" />;
@@ -76,6 +105,18 @@ function Hub({ wt, premium, profile }) {
     <div className="wt-page">
       {/* The app header already shows the page title. */}
       <h1 className="wt-sr">{T.hub.title}</h1>
+      {news.unlocked.length > 0 && (
+        <section className="wt-welcome wt-welcome--stack" role="status">
+          <span className="wt-banner-text">
+            <span className="wt-banner-title">{T.hub.upgradedTitle}</span>
+            <span className="wt-welcome-body">{T.hub.upgradedBody(news.unlocked.map(personName))}</span>
+          </span>
+          <div className="wt-top-actions">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => decideWith(news.unlocked[0])}>{T.hub.decideWith(personName(news.unlocked[0]))}</button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={news.dismiss}>{T.hub.dismiss}</button>
+          </div>
+        </section>
+      )}
 
       <section className="wt-card wt-decide">
         <h2 className="wt-card-title">{T.hub.decideTitle}</h2>
@@ -115,6 +156,7 @@ function Hub({ wt, premium, profile }) {
             <Link key={p.other_id} to={`/together/with/${encodeURIComponent(p.username)}`} className="wt-row wt-row--link interactive-surface">
               <PersonAvatar person={p} />
               <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{p.can_decide === false ? T.hub.lockedNote : T.hub.bothSaved(p.overlap_count ?? 0)}</span></span>
+              {unlockedIds.has(p.other_id) && <span className="wt-chip wt-chip--ok">{T.hub.unlocked}</span>}
               <Chevron />
             </Link>
           ))}

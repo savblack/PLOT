@@ -26,6 +26,12 @@ export const WATCH_TOGETHER = Object.freeze({
     suggestedBody: 'People you might watch together with',
     freeTitle: 'Get Premium to watch together',
     lockedNote: 'One of you needs Premium to decide together',
+    // Shown once, the first time the hub loads after upgrading.
+    upgradedTitle: 'You’re on Premium',
+    upgradedBody: (names) => `You can decide together with ${names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0]} now. They don’t need Premium.`,
+    decideWith: (name) => `Decide with ${name}`,
+    dismiss: 'Dismiss',
+    unlocked: 'Unlocked',
   },
 
   // What someone with nobody to watch with yet sees at /together, Free or not.
@@ -59,6 +65,12 @@ export const WATCH_TOGETHER = Object.freeze({
     ],
     gotInviteTitle: 'Got an invite?',
     gotInviteBody: 'Accepting is free. You can decide together as long as one of you has Premium.',
+    // Premium, still nobody to watch with. The welcome shows once.
+    premiumTitle: 'You’re on Premium',
+    premiumBody: 'Anyone you watch together with can decide with you, even on Free.',
+    premiumOverlapsBody: 'People you follow, and how many titles you’ve both saved. They can decide with you for free.',
+    premiumSeeItBody: 'A quick try with your own watchlist while you wait for someone to accept.',
+    premiumFirstStep: 'They get a request and join for free.',
   },
 
   // Reusable invite links (/watch-with/:username/:key).

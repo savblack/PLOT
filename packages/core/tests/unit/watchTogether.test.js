@@ -95,3 +95,14 @@ test('buildWatchTogetherLinkUrl needs a username and a real key', async () => {
   assert.equal(buildWatchTogetherLinkUrl({ username: 'jess', key: '../../x' }), null);
   assert.equal(buildWatchTogetherLinkUrl({ username: 'jess', key: 'a1b2c3d4e5f6', origin: 'https://abc.plot-5wr.pages.dev' }), 'https://abc.plot-5wr.pages.dev/watch-with/jess/a1b2c3d4e5f6');
 });
+
+test('unlockedPartners returns only partners that were locked and can decide now', async () => {
+  const { unlockedPartners } = await import('../../watchTogether.js');
+  const partners = [
+    { other_id: 'sam', can_decide: true },
+    { other_id: 'priya', can_decide: true },
+    { other_id: 'jess', can_decide: false },
+  ];
+  assert.deepEqual(unlockedPartners(partners, ['sam', 'jess', 'gone']).map(p => p.other_id), ['sam']);
+  assert.deepEqual(unlockedPartners(partners, null), []);
+});
