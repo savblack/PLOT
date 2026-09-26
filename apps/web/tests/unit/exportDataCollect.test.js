@@ -129,3 +129,64 @@ test('private note exports read past the response page limit', async () => {
   const result = await runDataExport(client, 'owner');
   assert.deepEqual(result.data.private_title_notes, rows);
 });
+
+test('runDataExport includes Watch together rows and shared lists the user is a member of', async () => {
+  const calls = [];
+  const rows = {
+    user_custom_list_members: [{ list_id: 'list-9', user_id: 'user-123' }],
+    watch_together: [{ requester_id: 'user-123', recipient_id: 'u2', status: 'accepted' }],
+  };
+  const inRows = {
+    user_custom_lists: [{ id: 'list-9', user_id: 'owner', name: 'Jess and Sam' }],
+    user_custom_list_items: [{ list_id: 'list-9', tmdb_id: 1, user_id: 'owner', added_by: 'user-123' }],
+  };
+  const client = {
+    from(table) {
+      return {
+        select() {
+          return {
+            eq(column, value) {
+              calls.push({ table, method: 'eq', column, value });
+              const result = { data: rows[table] ?? [], error: null };
+              if (table !== 'private_title_notes') return result;
+              return { order() { return this; }, async range() { return { data: [] }; } };
+            },
+            async or(filter) { calls.push({ table, method: 'or', filter }); return { data: rows[table] ?? [], error: null }; },
+            async in(column, values) { calls.push({ table, method: 'in', column, values }); return { data: inRows[table] ?? [], error: null }; },
+          };
+        },
+      };
+    },
+  };
+
+  const result = await runDataExport(client, 'user-123');
+
+  assert.equal(result.error, undefined);
+  assert.deepEqual(result.data.watch_together, rows.watch_together);
+  assert.deepEqual(result.data.shared_custom_lists, inRows.user_custom_lists);
+  assert.deepEqual(result.data.shared_custom_list_items, inRows.user_custom_list_items);
+  assert.deepEqual(calls.filter((c) => c.method === 'in').map((c) => [c.table, c.column, c.values]),
+    [['user_custom_lists', 'id', ['list-9']], ['user_custom_list_items', 'list_id', ['list-9']]]);
+  assert.deepEqual(calls.find((c) => c.table === 'watch_together_sessions'), { table: 'watch_together_sessions', method: 'or', filter: 'host_id.eq.user-123,guest_id.eq.user-123' });
+});
+
+test('runDataExport skips Watch together tables that do not exist yet', async () => {
+  const client = {
+    from(table) {
+      const missing = table.startsWith('watch_together') || table === 'user_custom_list_members';
+      const result = missing ? { error: { code: 'PGRST205', message: 'missing' } } : { data: [], error: null };
+      return {
+        select() {
+          return {
+            eq() { return table === 'private_title_notes' ? { order() { return this; }, async range() { return { data: [] }; } } : result; },
+            async or() { return result; },
+          };
+        },
+      };
+    },
+  };
+  const result = await runDataExport(client, 'user-123');
+  assert.equal(result.error, undefined);
+  assert.deepEqual(result.data.watch_together, []);
+  assert.deepEqual(result.data.shared_custom_lists, []);
+});

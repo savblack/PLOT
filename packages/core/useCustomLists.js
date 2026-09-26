@@ -158,7 +158,8 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
         p_poster_path: row.poster_path ?? null, p_genre_ids: genreIdsFromItem(item),
       });
       if (error) { console.error('Failed to add shared list item', error); return null; }
-      const added = { ...row, list_id: listId, genre_ids: genreIdsFromItem(item), added_by: userId, added_at: new Date().toISOString() };
+      // The RPC doesn't return the row; a stable local id keeps list keys unique until the next load.
+      const added = { ...row, id: `added-${listId}-${tmdbId}`, list_id: listId, genre_ids: genreIdsFromItem(item), added_by: userId, added_at: new Date().toISOString() };
       setLists(prev => prev.map(l => l.id === listId ? { ...l, items: [added, ...(l.items || []).filter(i => i.tmdb_id !== tmdbId)] } : l));
       getConfig().onCustomListItemChange?.({ list_id: listId, tmdb_id: tmdbId, media_type: row.media_type, action: 'added' });
       return added;

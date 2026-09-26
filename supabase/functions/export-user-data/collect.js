@@ -44,8 +44,36 @@ export const EXPORT_STEPS = Object.freeze([
   { table: 'integration_items', match: { type: 'eq', column: 'user_id' } },
   { table: 'integration_outbox', match: { type: 'eq', column: 'user_id' } },
   { table: 'follows', match: { type: 'or', columns: ['follower_id', 'following_id'] } },
+  // Watch together (20260925120000 to 20260925140000). Optional so the export
+  // keeps working if this function is deployed before those migrations run.
+  // Composite keys (no id column), so each names its own stable sort order.
+  { table: 'watch_together', match: { type: 'or', columns: ['requester_id', 'recipient_id'] }, optional: true, order: ['requester_id', 'recipient_id'] },
+  { table: 'watch_together_sessions', match: { type: 'or', columns: ['host_id', 'guest_id'] }, optional: true },
+  { table: 'watch_together_votes', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['session_id', 'tmdb_id', 'media_type'] },
+  { table: 'user_custom_list_members', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['list_id'] },
   { table: 'feedback', match: { type: 'eq', column: 'user_id' } },
 ]);
+
+// PostgREST reports a table that doesn't exist yet as PGRST205 (schema cache)
+// or Postgres 42P01.
+function isMissingTable(error) {
+  return error?.code === 'PGRST205' || error?.code === '42P01';
+}
+
+/**
+ * Shared lists the user is on but didn't create: user_custom_lists and
+ * user_custom_list_items are exported by owner above, so a member's copy has
+ * to be looked up through their memberships.
+ */
+async function sharedListsFor(supabaseClient, memberships) {
+  const ids = memberships.map((m) => m.list_id);
+  if (!ids.length) return { lists: [], items: [] };
+  const lists = await supabaseClient.from('user_custom_lists').select('*').in('id', ids);
+  if (lists.error) return { error: { table: 'shared_custom_lists', error: lists.error } };
+  const items = await supabaseClient.from('user_custom_list_items').select('*').in('list_id', ids);
+  if (items.error) return { error: { table: 'shared_custom_list_items', error: items.error } };
+  return { lists: lists.data ?? [], items: items.data ?? [] };
+}
 
 function stripColumns(row, omit) {
   if (!omit || omit.length === 0) return row;
@@ -65,10 +93,14 @@ export async function runDataExport(supabaseClient, userId) {
         ? query.or(step.match.columns.map((column) => `${column}.eq.${userId}`).join(','))
         : query.eq(step.match.column, userId);
       // Use each table’s stable key for deterministic pagination.
-      const order = step.table === 'broadcast_preferences' ? ['user_id'] : step.table === 'private_title_notes' ? ['tmdb_id', 'media_type'] : step.table === 'follows' ? ['follower_id', 'following_id'] : step.table === 'tracking_connections' ? ['integration_id'] : ['id'];
+      const order = step.order ?? (step.table === 'broadcast_preferences' ? ['user_id'] : step.table === 'private_title_notes' ? ['tmdb_id', 'media_type'] : step.table === 'follows' ? ['follower_id', 'following_id'] : step.table === 'tracking_connections' ? ['integration_id'] : ['id']);
       for (const column of order) query = query.order(column, { ascending: true });
       const result = await query.range(from, from + 999);
-      if (result?.error) return { table: step.table, error: result.error };
+      if (result?.error) {
+        // Tables from a migration that isn't live yet export as empty.
+        if (step.optional && isMissingTable(result.error)) break;
+        return { table: step.table, error: result.error };
+      }
       rows.push(...(result?.data ?? []).map(row => {
         const clean = stripColumns(row, step.omit);
         if (step.table === 'media_integrations' && clean.selected_server) {
@@ -81,6 +113,11 @@ export async function runDataExport(supabaseClient, userId) {
     }
     data[step.table] = rows;
   }
+
+  const shared = await sharedListsFor(supabaseClient, data.user_custom_list_members ?? []);
+  if (shared.error) return shared.error;
+  data.shared_custom_lists = shared.lists;
+  data.shared_custom_list_items = shared.items;
 
   return { data };
 }

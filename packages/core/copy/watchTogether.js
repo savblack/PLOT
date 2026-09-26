@@ -151,6 +151,8 @@ export const WATCH_TOGETHER = Object.freeze({
     noOneToAdd: 'Everyone you watch together with is already on this list.',
     add: 'Add',
     leave: 'Leave list',
+    addedBy: (name) => `Added by ${name}`,
+    addedByYou: 'Added by you',
     leaveTitle: (name) => `Leave "${name}"?`,
     leaveBody: 'You can be added back by anyone on the list.',
     error: 'That didn’t work. Try again.',

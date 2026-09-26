@@ -161,6 +161,8 @@ Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
   definer functions. It counts only against the creator's allowance. The
   title panel shows "Saved by Sam too" above Where to watch when a partner
   has the title on their watchlist and so do you.
-- Not built yet: mobile. A shared list doesn't yet show who added each
-  title, and a member's data export doesn't include lists they're only a
-  member of.
+- Shared list titles show "Added by you" or "Added by Sam". The data export
+  (`supabase/functions/export-user-data/collect.js`) includes Watch together
+  pairings, sessions, votes, list memberships and the shared lists you're on
+  but didn't create.
+- Not built yet: mobile.

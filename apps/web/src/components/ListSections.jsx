@@ -763,6 +763,20 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
       ? { label: 'Delete list', onClick: () => setConfirmDelete(true), danger: true }
       : { label: WATCH_TOGETHER.sharedList.leave, onClick: () => setConfirmLeave(true), danger: true },
   ];
+  // On a shared list each title says who added it. added_by is null for titles
+  // the owner added before the list was shared, so those fall back to the owner.
+  const addedByLabel = (item) => {
+    if (!shared) return null;
+    const by = item.added_by || list.user_id;
+    if (by === user?.id) return WATCH_TOGETHER.sharedList.addedByYou;
+    const person = (list.people || []).find(p => p.user_id === by);
+    return person ? WATCH_TOGETHER.sharedList.addedBy(personName(person)) : null;
+  };
+  const cardMeta = (item) => {
+    const kind = item.media_type === 'tv' ? MEDIA.series : MEDIA.movie;
+    const by = addedByLabel(item);
+    return by ? `${kind} · ${by}` : kind;
+  };
   const subtitle = shared && others.length
     ? WATCH_TOGETHER.sharedList.sharedWith(others.map(personName).join(', '))
     : visibility === 'private' ? undefined : PROFILE_PRIVACY.listVisibility[visibility];
@@ -818,7 +832,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
                 key={item.id}
                 title={title}
                 img={posterUrl(item.poster_path, 'w185')}
-                meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}
+                meta={cardMeta(item)}
                 {...(pageLayout ? cardState(item, historyEntries, privateNotes) : {})}
                 {...(pageLayout ? cardActions(item, favorites, watchlist, fw) : {})}
                 onOpen={() => openPanel(item.tmdb_id, item.media_type)}
@@ -832,7 +846,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
         {pageLayout && <div className="list-page-rows">{visible.map(item => {
           const title = item.title || MEDIA.unknown;
           const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, item.media_type);
-          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie} open={open} selection={selection} />;
+          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={cardMeta(item)} open={open} selection={selection} />;
         })}</div>}
         </div>
       )}
