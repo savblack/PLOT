@@ -71,8 +71,9 @@ export default function PlansPage() {
   const backLabel = backTo === '/' ? PLANS_PAGE.back : PLANS_PAGE.backToApp;
   const [profile, setProfile] = useState(null);
   const [authState, setAuthState] = useState('loading'); // loading | anon | signed-in
-  // Annual by default; a monthly checkout intent from the website opens on monthly.
-  const [annual, setAnnual] = useState(searchParams.get('plan') !== 'monthly');
+  // Annual by default. A monthly intent opens on monthly: sign-up and onboarding
+  // send ?billing=, older website links send ?plan=.
+  const [annual, setAnnual] = useState((searchParams.get('billing') ?? searchParams.get('plan')) !== 'monthly');
   const [premiumOnly, setPremiumOnly] = useState(false);
   const premium = usePremium(profile);
 
@@ -101,6 +102,8 @@ export default function PlansPage() {
   }, []);
 
   const isPremium = authState === 'signed-in' && premium.isPremium;
+  // Manage subscription follows the billing relationship, as Settings does, not the entitlement.
+  const canManage = authState === 'signed-in' && premium.canManage;
   const groups = CMP.groups
     .map(group => ({ ...group, rows: group.rows.filter(row => !premiumOnly || row.free !== row.premium) }))
     .filter(group => group.rows.length);
@@ -162,10 +165,12 @@ export default function PlansPage() {
               </div>
               <p className="plan-billed">{annual ? PLANS_PAGE.premium.annualBilled : PLANS_PAGE.premium.monthlyBilled}</p>
             </div>
-            {isPremium ? (
+            {canManage ? (
               <button className="btn btn-secondary" onClick={premium.openPortal} disabled={premium.busy}>
                 {premium.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.premium.manageSubscription}
               </button>
+            ) : isPremium ? (
+              <span className="plan-current">{PLANS_PAGE.free.yourCurrentPlan}</span>
             ) : (
               <button className="btn btn-primary" onClick={() => premium.startCheckout()} disabled={authState === 'loading'}>
                 {PLANS_PAGE.upgradeAction}

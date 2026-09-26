@@ -40,6 +40,9 @@ for (const width of [390, 1440]) {
     await page.screenshot({ path: `/tmp/plot-premium-${width}.png` });
     await page.getByRole('link', { name: 'Privacy', exact: true }).scrollIntoViewIfNeeded();
     await expect(page.getByRole('link', { name: 'Privacy', exact: true })).toBeInViewport();
+    // Sign-up forwards the chosen billing period as ?billing=.
+    await page.goto('/pricing?billing=monthly');
+    await expect(page.getByText('US$3 billed monthly · taxes included', { exact: true })).toBeVisible();
     await page.goto('/pricing?intent=premium&plan=yearly');
     await page.getByRole('button', { name: 'Upgrade to Premium' }).click();
     await expect(page.getByRole('status')).toContainText('There is nothing to pay today');
