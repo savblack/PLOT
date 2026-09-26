@@ -60,7 +60,7 @@ function Poster({ item, className }) {
 }
 
 /**
- * Watch together (#1039) with this person: its two-person overlap page. Only
+ * Watch together (PR 1039) with this person: its two-person overlap page. Only
  * linked while SHOW_WATCH_TOGETHER is on, so the row never points at a route
  * production doesn't serve.
  */
