@@ -23,9 +23,9 @@ import type { Database } from '../_shared/database.types.ts'
 // `never` and the real client was not even assignable to it. Bind it to
 // the schema instead.
 type Db = SupabaseClient<Database>;
-// Shared site footer markup — generated from website/_partials/footer.html.
-// Run `npm run footer` to regenerate after editing the partial.
-import { FOOTER_HTML } from './footer.generated.ts';
+// Shared site footer markup and styles — generated from website/_partials/footer.html
+// and footer.css. Run `npm run footer` to regenerate after editing either partial.
+import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
 
@@ -699,30 +699,9 @@ ${head}
   .mcard .mc-t { display: block; font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.1rem; line-height: 1.2; transition: color 0.25s var(--ease); }
   .mcard:hover .mc-t { color: var(--mut); }
 
-  footer {
-    background: var(--bg); color: var(--ink); border-top: 1px solid var(--hair);
-    position: relative; z-index: 3; margin-top: 90px; padding: 2.6rem 3rem;
-  }
-  .footer-inner {
-    max-width: 1100px; margin: 0 auto; display: flex; align-items: center;
-    justify-content: space-between; gap: 1.5rem 2rem; flex-wrap: wrap;
-  }
-  .footer-logo {
-    text-decoration: none; font-family: var(--display); font-weight: 700; letter-spacing: -0.045em;
-    font-size: 1.7rem; line-height: 1; color: var(--ink); user-select: none;
-  }
-  .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
-  .footer-nav a { font-size: 0.82rem; color: var(--mut); text-decoration: none; transition: color 0.2s; white-space: nowrap; }
-  .footer-nav a:hover { color: var(--ink); }
-  .footer-bottom {
-    width: 100%; padding-top: 1.2rem; margin-top: 0.4rem; border-top: 1px solid var(--hair);
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-  }
-  .footer-copy { font-size: 0.75rem; color: var(--mut); }
-  .footer-social { display: flex; gap: 1rem; align-items: center; }
-  .footer-social a { color: var(--mut); display: inline-flex; transition: color 0.2s; }
-  .footer-social a:hover { color: var(--ink); }
-  .footer-social svg { width: 19px; height: 19px; display: block; }
+  /* Shared site footer — generated from website/_partials/footer.css. */
+${FOOTER_CSS}
+  .site-footer { margin-top: 90px; }
 
   @media (max-width: 900px) {
     .feed-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
@@ -754,7 +733,6 @@ ${head}
     .dex { overflow-x: auto; scrollbar-width: none; }
     .dex::-webkit-scrollbar { display: none; }
     .dex-links { flex-wrap: nowrap; }
-    footer { padding-left: 1.5rem; padding-right: 1.5rem; }
   }
 </style>
 </head>

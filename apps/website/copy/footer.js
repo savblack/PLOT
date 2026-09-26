@@ -9,18 +9,15 @@
 // mirror the change here.
 
 export const FOOTER_PARTIAL = {
-  logo: 'plot',
-  nav: {
-    home: 'Home',
-    whatsOn: "What's On",
-    newsletter: 'Newsletter',
-    login: 'Log in',
-    signup: 'Sign up',
-    changelog: 'Changelog',
-    privacy: 'Privacy',
-    terms: 'Terms',
-    community: 'Community',
+  tagline: ["Everything you've watched.", 'Everything you want to watch.'],
+  cta: 'Start your plot',
+  login: 'Log in',
+  columns: {
+    explore: { heading: 'Explore', links: { whatsOn: "What's On", pricing: 'Pricing' } },
+    company: { heading: 'Company', links: { about: 'About', community: 'Community', support: 'Support', changelog: 'Changelog' } },
+    legal: { heading: 'Legal', links: { privacy: 'Privacy', terms: 'Terms' } },
   },
+  wordmarkAria: 'plot home',
   copyright: (year) => `© ${year} plot`,
   socialAria: {
     instagram: 'plot on Instagram',

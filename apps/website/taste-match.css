@@ -55,7 +55,7 @@ h2 { font-size: 2rem; line-height: 1.15; }
 
 .skip-link { position: absolute; left: 1rem; top: -100px; z-index: 2000; background: var(--bg); padding: .7rem 1rem; }
 .skip-link:focus { top: 1rem; }
-footer { margin-top: 5rem; }
+.site-footer { margin-top: 5rem; }
 
 @media (max-width: 900px) {
   .tm-grid { grid-template-columns: 1fr 1fr; }
@@ -66,7 +66,7 @@ footer { margin-top: 5rem; }
   h1 { font-size: clamp(2.8rem, 12vw, 4.5rem); }
   .tm-grid { grid-template-columns: 1fr; }
   .tm-privacy { padding: 1.5rem; }
-  footer { padding: 2rem 1.5rem; margin-top: 3rem; }
+  .site-footer { margin-top: 3rem; }
 }
 /* Same as Support: keep the nav action neutral; the accent is for interaction. */
 #navbar .nav-cta { background: var(--ink); color: var(--bg); }
