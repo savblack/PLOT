@@ -52,6 +52,8 @@ const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
 const TalentPage        = lazy(() => import('./pages/TalentPage.jsx'));
 const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
+const TasteOverlapPage  = lazy(() => import('./pages/TasteOverlapPage.jsx'));
+const ComparePickerPage = lazy(() => import('./pages/ComparePickerPage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 const isPreview = isPreviewDeployment();
@@ -116,6 +118,8 @@ const router = createBrowserRouter([
       { path: 'u/:username/history', element: wrap(<ProfileSectionPage section="history" />) },
       { path: 'u/:username/favourites', element: wrap(<ProfileSectionPage section="favourites" />) },
       { path: 'u/:username/lists', element: wrap(<ProfileSectionPage section="lists" />) },
+      { path: 'u/:username/compare', element: wrap(<TasteOverlapPage />) },
+      { path: 'compare',  element: wrap(<ComparePickerPage />) },
       { path: 'home',     element: wrap(<DiscoverView />) },
       { path: 'new-releases', element: wrap(<NewReleasesView />) },
       { path: 'tonight',  element: wrap(<TonightView />) },

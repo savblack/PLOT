@@ -12,6 +12,7 @@ export const PLANS_PAGE = {
   plannedFree: 'Free, coming soon',
   limited: 'Limited',
   previewAction: 'Explore Premium',
+  tryTasteOverlap: 'Try taste overlap',
   upgradeAction: 'Upgrade to Premium',
   checkoutMessage: 'plot Premium is coming soon. Checkout is not open yet. There is nothing to pay today.',
   free: {
@@ -110,7 +111,7 @@ export const PLANS_PAGE = {
       { title: 'Keeping track', rows: [
         { label: 'Movies, shows and episode progress', free: true, premium: true },
         { label: 'Watchlist, ratings, reviews and private notes', free: true, premium: true },
-        { label: 'Viewing stats', free: 'Overview', premium: 'Deeper' },
+        { id: 'fullStats', label: 'Viewing stats', free: 'Overview', premium: 'Deeper' },
         { label: 'Import history from your other apps', free: true, premium: true },
         { label: 'Plex and Trakt', free: 'Manual', premium: 'Automatic' },
       ] },
@@ -159,7 +160,7 @@ export const PLANS_PAGE = {
     { id: 'autoSync', label: 'Automatic Plex and Trakt syncing', highlight: true,
       description: 'Keep watch history in sync automatically. Manual imports stay free. Planned as Premium; not claimed as instant or verified two-way syncing yet.' },
     { id: 'fullStats', label: 'Deeper viewing stats', highlight: true,
-      description: 'Additional stats beyond the Free overview you already have.' },
+      description: 'Additional stats beyond the Free overview you already have, starting with taste overlap: see how your ratings line up with anyone you follow.' },
     { id: 'collaborativeLists', label: 'Create collaborative lists', highlight: true,
       description: 'Build your next movie night together. Invite friends to add titles, even when they use Free.' },
     { id: 'unlimitedLists', label: 'Unlimited custom lists', highlight: true,

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './AuthPage.css';
 import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
+import { takeReturnPath } from '../utils/authReturn.js';
 import { SHOW_GOOGLE_LOGIN, SHOW_APPLE_LOGIN } from '../launchFeatures.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -227,7 +228,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     loadSupabase().then((supabase) => supabase.auth.getSession()).then(({ data: { session } }) => {
       if (session) {
         const plan = getPremiumCheckoutIntent();
-        navigate(plan ? `/pricing?billing=${plan}` : '/app', { replace: true });
+        navigate(plan ? `/pricing?billing=${plan}` : takeReturnPath('/app'), { replace: true });
       } else {
         setHasSession(false);
       }
@@ -315,7 +316,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         identifyUser(data.user.id, { email: data.user.email });
         track(EVENTS.USER_LOGGED_IN);
         const plan = getPremiumCheckoutIntent();
-        navigate(plan ? `/pricing?billing=${plan}` : '/app');
+        navigate(plan ? `/pricing?billing=${plan}` : takeReturnPath('/app'));
       }
     } else {
       track(EVENTS.SIGNUP_SUBMIT_CLICKED);

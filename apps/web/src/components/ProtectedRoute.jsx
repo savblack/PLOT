@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
+import LoginRedirect from './LoginRedirect.jsx';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import { readCachedSession, clearCachedSession } from '../utils/sessionCache.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
@@ -77,7 +78,7 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
   // reachable without auth so they're shareable.
   const isPublic = publicPrefixes.some((p) => location.pathname.startsWith(p));
 
-  if (!authenticated && !isPublic) return <Navigate to="/login" replace />;
+  if (!authenticated && !isPublic) return <LoginRedirect />;
   if (needsOnboarding && !isPublic) return <Navigate to="/onboarding" replace />;
   return children;
 }
