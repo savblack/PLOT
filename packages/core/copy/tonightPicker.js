@@ -135,7 +135,14 @@ export const TONIGHT_PICKER = {
 
   // Time of day in the viewer's local time: 3:30pm to midnight is night.
   heading: { night: 'Tonight, sorted', day: 'Your shortlist' },
-  resultsSubline: 'The plot lines you asked for. Tap to learn more.',
+  // Save the picks for a request, listed under the questions.
+  save: 'Save',
+  saved: 'Saved',
+  saveLabel: 'Save these picks',
+  savedLabel: 'Saved. Tap to remove from saved searches',
+  savedTitle: 'Saved searches',
+  savedMeta: (count, date) => `${count} ${count === 1 ? 'pick' : 'picks'} · ${date}`,
+  removeSaved: (label) => `Remove saved search: ${label}`,
   topPick: 'Top pick',
   onYourWatchlist: 'On your watchlist',
   spinAgain: 'Spin again',

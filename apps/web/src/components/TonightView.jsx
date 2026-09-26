@@ -4,7 +4,7 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { useApp } from '../hooks/useApp.js';
 import {
-  useTonightPicker, pickerTimeOfDay,
+  useTonightPicker, pickerTimeOfDay, savedSearchDate,
   PICKER_STEPS, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
   PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES, FEATURED_GENRE_COUNT, FEATURED_GENRE_COUNT_WIDE,
   pickerGenreTiles,
@@ -39,6 +39,30 @@ const IconTv = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2" y="
 
 const IconLock = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>;
 const IconClose = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>;
+const IconBookmark = ({ filled }) => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" className={filled ? 'filled' : undefined}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+);
+
+/* Saved searches: the desktop side card and the phone section share rows. */
+function SavedSearches({ picker, className = '' }) {
+  if (!picker.savedSearches?.length) return null;
+  return (
+    <section className={`hist-card tonight-saved ${className}`} aria-label={T.savedTitle}>
+      <div className="hist-card-head"><span className="hist-card-title">{T.savedTitle}</span></div>
+      <ul className="tonight-saved-list">
+        {picker.savedSearches.map(item => (
+          <li key={item.id} className="tonight-saved-row">
+            <button type="button" className="tonight-saved-open" onClick={() => picker.openSavedSearch(item.id)}>
+              <span className="tonight-saved-label">{item.label}</span>
+              <span className="tonight-saved-meta">{T.savedMeta(item.results.length, savedSearchDate(item.savedAt))}</span>
+            </button>
+            <button type="button" className="tonight-saved-remove" aria-label={T.removeSaved(item.label)} onClick={() => picker.removeSavedSearch(item.id)}><IconClose /></button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 /* What sits behind the upgrade pop-up: the results layout with no titles or
    images, blurred. Nothing here is fetched. */
@@ -361,6 +385,7 @@ function SideColumn({ picker, results }) {
         </div>
       </section>
 
+      <SavedSearches picker={picker} />
     </aside>
   );
 }
@@ -451,8 +476,13 @@ function Results({ picker, onOpen }) {
   const [top, ...rest] = picker.results;
   return (
     <section className="tonight-results" aria-live="polite">
-      <h2 className="tonight-question-title">{T.heading[pickerTimeOfDay()]}</h2>
-      <p className="tonight-question-sub">{T.resultsSubline}</p>
+      <div className="tonight-results-head">
+        <h2 className="tonight-results-title">{T.heading[pickerTimeOfDay()]}</h2>
+        <button type="button" className={`btn btn-secondary btn-sm tonight-save${picker.isSaved ? ' saved' : ''}`}
+          aria-pressed={picker.isSaved} aria-label={picker.isSaved ? T.savedLabel : T.saveLabel} onClick={picker.toggleSaveSearch}>
+          <IconBookmark filled={picker.isSaved} />{picker.isSaved ? T.saved : T.save}
+        </button>
+      </div>
       <div className="tonight-results-list">
         {top && <TopPick item={top} onOpen={onOpen} />}
         {rest.length > 0 && (
@@ -489,6 +519,7 @@ export function TonightPage({ premium, picker, onOpen, navigate }) {
                 <Question picker={picker} />
                 <FiltersPanel picker={picker} />
                 <StepNav picker={picker} premium={premium} />
+                <SavedSearches picker={picker} className="tonight-saved--phone" />
               </>
             )}
         </div>

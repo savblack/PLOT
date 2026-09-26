@@ -20,7 +20,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import {
-  useTonightPicker, pickerTimeOfDay,
+  useTonightPicker, pickerTimeOfDay, savedSearchDate,
   PICKER_STEPS, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
   PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, PICKER_MODES, FEATURED_GENRE_COUNT, pickerGenreTiles,
   type PickerCandidate,
@@ -311,7 +311,36 @@ function Reveal({ index, reduceMotion, children }: { index: number; reduceMotion
   );
 }
 
-function Results({ picker, onOpen, styles, reduceMotion }: { picker: Picker; onOpen: (i: PickerCandidate) => void; styles: Styles; reduceMotion: boolean }) {
+function Bookmark({ color, filled }: { color: string; filled: boolean }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </Svg>
+  );
+}
+
+/* Saved searches, listed under the questions. */
+function SavedSearches({ picker, styles, colors }: { picker: Picker; styles: Styles; colors: Palette }) {
+  if (!picker.savedSearches.length) return null;
+  return (
+    <View style={styles.saved}>
+      <Text style={styles.savedTitle} accessibilityRole="header">{T.savedTitle}</Text>
+      {picker.savedSearches.map((item, i) => (
+        <View key={item.id} style={[styles.savedRow, i > 0 && styles.savedRowRule]}>
+          <TouchableOpacity style={{ flex: 1, paddingVertical: 12, gap: 3 }} onPress={() => picker.openSavedSearch(item.id)} accessibilityRole="button">
+            <Text style={styles.savedLabel} numberOfLines={2}>{item.label}</Text>
+            <Text style={styles.savedMeta}>{T.savedMeta(item.results.length, savedSearchDate(item.savedAt))}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => picker.removeSavedSearch(item.id)} style={styles.savedRemove} accessibilityRole="button" accessibilityLabel={T.removeSaved(item.label)}>
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round"><Path d="M18 6 6 18M6 6l12 12" /></Svg>
+          </TouchableOpacity>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Results({ picker, onOpen, styles, colors, reduceMotion }: { picker: Picker; onOpen: (i: PickerCandidate) => void; styles: Styles; colors: Palette; reduceMotion: boolean }) {
   if (picker.phase !== 'results') {
     return (
       <View style={styles.empty}>
@@ -324,8 +353,14 @@ function Results({ picker, onOpen, styles, reduceMotion }: { picker: Picker; onO
   const bg = top ? (backdropUrl(top.backdrop_path) || posterUrl(top.poster_path, 'w780')) : null;
   return (
     <View>
-      <Text style={styles.qTitle} accessibilityRole="header">{T.heading[pickerTimeOfDay()]}</Text>
-      <Text style={styles.qSub}>{T.resultsSubline}</Text>
+      <View style={styles.resultsHead}>
+        <Text style={styles.resultsTitle} accessibilityRole="header">{T.heading[pickerTimeOfDay()]}</Text>
+        <TouchableOpacity onPress={picker.toggleSaveSearch} style={[styles.btn, styles.btnSecondary, { minHeight: 38 }]} accessibilityRole="button"
+          accessibilityLabel={picker.isSaved ? T.savedLabel : T.saveLabel} accessibilityState={{ selected: picker.isSaved }}>
+          <Bookmark color={colors.textPrimary} filled={picker.isSaved} />
+          <Text style={styles.btnText}>{picker.isSaved ? T.saved : T.save}</Text>
+        </TouchableOpacity>
+      </View>
       <View style={{ gap: 12, marginTop: spacing.lg }}>
         {top && (
           <Reveal index={0} reduceMotion={reduceMotion}>
@@ -478,7 +513,7 @@ export default function TonightScreen() {
         ) : spinning ? (
           <Spinner slots={Math.min(3, PICKER_MODES[picker.mode])} styles={styles} reduceMotion={reduceMotion} />
         ) : inResults ? (
-          <Results picker={picker} onOpen={open} styles={styles} reduceMotion={reduceMotion} />
+          <Results picker={picker} onOpen={open} styles={styles} colors={colors} reduceMotion={reduceMotion} />
         ) : (
           <>
             <Question picker={picker} styles={styles} colors={colors} />
@@ -492,6 +527,7 @@ export default function TonightScreen() {
                 </TouchableOpacity>
               )}
             </View>
+            <SavedSearches picker={picker} styles={styles} colors={colors} />
           </>
         )}
       </ScrollView>
@@ -629,6 +665,17 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   unlockBenefitBody: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 21, color: colors.textSecondary },
   unlockCta: { justifyContent: 'center', minHeight: 48, marginTop: 4 },
   unlockPrice: { fontFamily: fontFamily.sans, fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: -6 },
+
+  resultsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  // Same size as the section headings on Home and Calendar.
+  resultsTitle: { flex: 1, fontFamily: fontFamily.display, fontSize: 20, lineHeight: 23, color: colors.textPrimary },
+  saved: { marginTop: spacing.xl, padding: spacing.md, paddingBottom: spacing.xs, borderRadius: 16, backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  savedTitle: { fontFamily: fontFamily.display, fontSize: 18, color: colors.textPrimary, marginBottom: spacing.xs },
+  savedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
+  savedRowRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  savedLabel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, lineHeight: 20, color: colors.textPrimary },
+  savedMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
+  savedRemove: { width: 40, height: 40, marginTop: 4, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
 
   empty: { alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, textAlign: 'center' },
