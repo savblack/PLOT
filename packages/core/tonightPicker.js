@@ -285,7 +285,7 @@ function sanitiseResults(value) {
 }
 
 // Where the page was, so leaving and coming back finds the same answers and
-// picks. It lasts this long after the last change; Pick again, changing an
+// picks. It lasts this long after the last change; Regenerate, changing an
 // answer or opening a saved search replaces it.
 export const PICKER_SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 
@@ -933,7 +933,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   const [restoredKey, setRestoredKey] = useState(/** @type {string|null} */ (storage ? null : storageKey));
   const [saved, setSaved] = useState(/** @type {SavedSearch[]} */ ([]));
   // Picks already on screen when a session or saved search opens, so the
-  // next Pick again shows something new.
+  // next Regenerate shows something new.
   const restoredSeen = useRef(/** @type {number[]} */ ([]));
   useEffect(() => {
     if (!storage) return undefined;
@@ -1034,7 +1034,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
 
     const picked = drawFromPool(cur.pool, count, { seen: cur.seen });
     picked.forEach(c => cur.seen.add(c.id));
-    // Pick again is only worth offering if it can show something different.
+    // Regenerate is only worth offering if it can show something different.
     const moreToLoad = opts.onlyWatchlist ? !cur.exhausted : cur.page < cur.totalPages;
     return { picked, canSpinAgain: cur.pool.length > picked.length || moreToLoad };
   }, [options, hasServices, region, userId, watchlistItems, watchlistKey, providerIds]);
