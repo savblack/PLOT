@@ -37,6 +37,7 @@ const PAGES = [
   'plans.html',
   'community.html',
   'support.html',
+  'taste-match.html',
   'changelog.html',
 ];
 const EDGE_TS = join(ROOT, 'supabase', 'functions', 'marketing-feed', 'footer.generated.ts');

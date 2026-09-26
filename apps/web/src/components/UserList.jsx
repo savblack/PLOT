@@ -4,6 +4,8 @@ import { supabase } from '@plot/core/supabase.js';
 import ProfileBadges from './ProfileBadges.jsx';
 import UserModerationMenu from './UserModerationMenu.jsx';
 import { useBlocks } from '@plot/core/useBlocks.js';
+import { canCompare } from '@plot/core/tasteOverlap.js';
+import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 
 const rowStyle = {
   display: 'flex', alignItems: 'center', gap: '0.85rem',
@@ -64,7 +66,8 @@ export function FollowButton({ targetId, isPublic, status: initial = null, viewe
   );
 }
 
-export function UserRow({ user, viewerId, onNavigate, surface = 'search_result', blocks }) {
+export function UserRow({ user, viewerId, onNavigate, surface = 'search_result', blocks, showCompare = false }) {
+  const comparable = showCompare && viewerId && user.id !== viewerId && canCompare(user);
   return (
     <div style={rowStyle}>
       <Link
@@ -83,6 +86,22 @@ export function UserRow({ user, viewerId, onNavigate, surface = 'search_result',
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>@{user.username}</div>
         </div>
       </Link>
+      {comparable && (
+        // Taste overlap (Premium). Free viewers land on its upsell.
+        <Link
+          to={`/u/${user.username}/compare`}
+          onClick={onNavigate}
+          aria-label={`${TASTE_OVERLAP.compareTaste}: ${user.display_name || user.username}`}
+          style={{
+            flexShrink: 0, minHeight: 34, padding: '0.4rem 0.9rem', borderRadius: 'var(--radius-pill)',
+            fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', boxSizing: 'border-box',
+            display: 'inline-flex', alignItems: 'center',
+            background: 'var(--accent-secondary-fill)', color: 'var(--on-accent-fill)',
+          }}
+        >
+          {TASTE_OVERLAP.compare}
+        </Link>
+      )}
       <FollowButton targetId={user.id} isPublic={user.is_public} status={user.follow_status} viewerId={viewerId} />
       {blocks && (
         <UserModerationMenu
@@ -105,7 +124,7 @@ export function UserRow({ user, viewerId, onNavigate, surface = 'search_result',
  * The block list is loaded ONCE here and handed to every row. Mounting
  * useBlocks per row would fire one RPC per result.
  */
-export default function UserList({ users, viewerId, onNavigate, empty = 'No one here yet.', surface = 'search_result' }) {
+export default function UserList({ users, viewerId, onNavigate, empty = 'No one here yet.', surface = 'search_result', showCompare = false }) {
   const blocks = useBlocks(viewerId);
 
   if (!users?.length) {
@@ -114,7 +133,7 @@ export default function UserList({ users, viewerId, onNavigate, empty = 'No one 
   return (
     <div>
       {users.map(u => (
-        <UserRow key={u.id} user={u} viewerId={viewerId} onNavigate={onNavigate} surface={surface} blocks={blocks} />
+        <UserRow key={u.id} user={u} viewerId={viewerId} onNavigate={onNavigate} surface={surface} blocks={blocks} showCompare={showCompare} />
       ))}
     </div>
   );

@@ -14,6 +14,11 @@ import PremiumIcon from '../components/PremiumIcon.jsx';
 
 const { comparison: CMP } = PLANS_PAGE;
 
+// Comparison rows for features that already exist in the app link to them.
+const FEATURE_LINKS = {
+  fullStats: { to: '/compare', label: PLANS_PAGE.tryTasteOverlap },
+};
+
 function Tick() {
   return (
     <svg className="plan-tick" viewBox="0 0 24 24" aria-hidden="true">
@@ -223,6 +228,7 @@ export default function PlansPage() {
                     <th scope="row" className="cmp-feat">
                       {row.label}
                       {row.tag && <span className="cmp-soon">{row.tag}</span>}
+                      {FEATURE_LINKS[row.id] && <Link className="cmp-link" to={FEATURE_LINKS[row.id].to}>{FEATURE_LINKS[row.id].label} <span aria-hidden="true">→</span></Link>}
                     </th>
                     <td><Cell value={row.free} /></td>
                     <td><Cell value={row.premium} premium /></td>

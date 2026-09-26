@@ -27,6 +27,7 @@ configure({
   watchAvailabilityUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/watch-availability`,
   criticScoreUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/critic-score`,
   traktClientId: import.meta.env.VITE_TRAKT_CLIENT_ID,
+  simklClientId: import.meta.env.VITE_SIMKL_CLIENT_ID,
   isDev: import.meta.env.DEV,
   // PKCE instead of Supabase's default implicit flow. Implicit returns the
   // session in the URL fragment (`#access_token=…&refresh_token=…`), which puts

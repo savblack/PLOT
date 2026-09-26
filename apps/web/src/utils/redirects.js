@@ -34,6 +34,37 @@ export function getTraktCallbackUrl() {
   return getAppUrl('/auth/trakt');
 }
 
+export function getSimklCallbackUrl() {
+  return getAppUrl('/auth/simkl');
+}
+
+export function createSimklState(returnTo = '/import?source=simkl') {
+  const state = crypto.randomUUID();
+  sessionStorage.setItem('plot_simkl_oauth_state', state);
+  sessionStorage.setItem('plot_simkl_oauth_return_to', returnTo);
+  return state;
+}
+
+export function consumeSimklState(state) {
+  const expected = sessionStorage.getItem('plot_simkl_oauth_state');
+  sessionStorage.removeItem('plot_simkl_oauth_state');
+  return Boolean(expected && state && expected === state);
+}
+
+export function consumeSimklReturnTo() {
+  const value = sessionStorage.getItem('plot_simkl_oauth_return_to');
+  sessionStorage.removeItem('plot_simkl_oauth_return_to');
+  return value?.startsWith('/') ? value : '/import?source=simkl';
+}
+
+export function buildSimklAuthorizeUrl(clientId, state) {
+  const params = new URLSearchParams({
+    response_type: 'code', client_id: clientId,
+    redirect_uri: getSimklCallbackUrl(), state,
+  });
+  return `https://simkl.com/oauth/authorize?${params}`;
+}
+
 export function createTraktState(returnTo = '/settings') {
   const state = crypto.randomUUID();
   sessionStorage.setItem('plot_trakt_oauth_state', state);

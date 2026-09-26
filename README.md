@@ -40,6 +40,7 @@ This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the
    VITE_IMPORT_ANNOTATIONS_ENABLED=false
    VITE_TRACKING_JOBS_ENABLED=false
    VITE_TVTIME_IMPORT_ENABLED=false
+   VITE_SIMKL_CLIENT_ID=<Simkl OAuth app client ID>
    ```
 
 3. These values are browser-safe (they ship in the app bundle). `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` belong to PLOT Staging, PLOT's preview Supabase project (local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data). Pull them from the Supabase dashboard, project `PLOT Staging`. Don't repoint these at Production for routine dev. Keep service-role and TMDB API keys server-side or local-script-only.
@@ -132,22 +133,27 @@ Required function secrets:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `PLEX_TOKEN_SECRET` for encrypting Plex auth tokens at rest
 - `TRAKT_CLIENT_ID` and `TRAKT_CLIENT_SECRET` for the Trakt OAuth app
+- `SIMKL_CLIENT_ID`, `SIMKL_CLIENT_SECRET`, and `SIMKL_TOKEN_SECRET` for the Simkl OAuth app
 - `TRAKT_TOKEN_SECRET` for encrypting Trakt auth tokens at rest
 - `OMDB_API_KEY` for the `critic-score` function's Rotten Tomatoes lookups (already used by the marketing scripts — same key, needs setting separately for Supabase via `supabase secrets set OMDB_API_KEY=...`)
 
-## Plex and Trakt imports
+## Connected history imports and sync
 
 One-off watch-history imports from Plex and Trakt are Free. Ongoing two-way sync remains a separate Premium capability and is hidden until it is ready to launch. Plex tokens are handled by `media-sync`; Trakt OAuth tokens are handled by `trakt-sync`. Both are encrypted server-side and are never shown in the browser.
+
+Simkl uses a manual two-way sync: users connect their account, then choose Sync now to exchange movie and TV history. It does not run automatically. Keep the Simkl surfaces disabled until the OAuth application is approved, any required commercial licence is agreed, and the client ID is configured in both apps. Simkl access tokens are encrypted by `simkl-sync` and never exposed to either client.
 
 ```sh
 supabase secrets set PLEX_TOKEN_SECRET=your-long-random-secret
 supabase secrets set TRAKT_CLIENT_ID=... TRAKT_CLIENT_SECRET=... TRAKT_TOKEN_SECRET=...
+supabase secrets set SIMKL_CLIENT_ID=... SIMKL_CLIENT_SECRET=... SIMKL_TOKEN_SECRET=...
 supabase db push
 supabase functions deploy media-sync
 supabase functions deploy trakt-sync
+supabase functions deploy simkl-sync
 ```
 
-Plex history import requires at least one reachable Plex Media Server. Trakt history import uses the connected Trakt account. Both imports preserve existing Plot entries and add only titles that are not already in the user's history.
+Plex history import requires at least one reachable Plex Media Server. Trakt history import uses the connected Trakt account. These imports preserve existing Plot entries and add only titles that are not already in the user's history. Simkl sync also preserves existing Plot entries, pulls only activity changed since the previous sync, and sends Plot history to Simkl in API-compliant batches.
 
 ## Data Rules
 

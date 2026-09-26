@@ -126,3 +126,6 @@
 @media (prefers-reduced-motion: reduce) {
   .plans-switch input, .plans-switch input::after { transition: none; }
 }
+/* A comparison row for a feature that already exists links to it. */
+.cmp-link { display: block; width: fit-content; margin-top: 0.2rem; font-size: 0.75rem; font-weight: 600; color: inherit; text-underline-offset: 4px; }
+.cmp-link:hover { color: var(--accent); }

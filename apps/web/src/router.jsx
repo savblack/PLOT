@@ -39,6 +39,7 @@ const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'
 // Standalone pages
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
 const TraktCallbackPage = lazy(() => import('./pages/TraktCallbackPage.jsx'));
+const SimklCallbackPage = lazy(() => import('./pages/SimklCallbackPage.jsx'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 const OnboardingFlow    = lazy(() => import('./pages/OnboardingFlow.jsx'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage.jsx'));
@@ -52,6 +53,8 @@ const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
 const TalentPage        = lazy(() => import('./pages/TalentPage.jsx'));
 const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
+const TasteOverlapPage  = lazy(() => import('./pages/TasteOverlapPage.jsx'));
+const ComparePickerPage = lazy(() => import('./pages/ComparePickerPage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 const isPreview = isPreviewDeployment();
@@ -91,6 +94,7 @@ const router = createBrowserRouter([
   { path: '/logout',         element: <LogoutPage /> },
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
   { path: '/auth/trakt',     element: wrap(<TraktCallbackPage />) },
+  { path: '/auth/simkl',     element: wrap(<SimklCallbackPage />) },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
   // Onboarding (protected, skip onboarding check)
@@ -116,6 +120,8 @@ const router = createBrowserRouter([
       { path: 'u/:username/history', element: wrap(<ProfileSectionPage section="history" />) },
       { path: 'u/:username/favourites', element: wrap(<ProfileSectionPage section="favourites" />) },
       { path: 'u/:username/lists', element: wrap(<ProfileSectionPage section="lists" />) },
+      { path: 'u/:username/compare', element: wrap(<TasteOverlapPage />) },
+      { path: 'compare',  element: wrap(<ComparePickerPage />) },
       { path: 'home',     element: wrap(<DiscoverView />) },
       { path: 'new-releases', element: wrap(<NewReleasesView />) },
       { path: 'tonight',  element: wrap(<TonightView />) },

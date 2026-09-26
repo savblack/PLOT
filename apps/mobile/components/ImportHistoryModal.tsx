@@ -23,8 +23,9 @@ import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useMediaSync } from '../hooks/useMediaSync';
 import { useTraktSync } from '../hooks/useTraktSync';
+import { useSimklSync } from '../hooks/useSimklSync';
 
-type Platform = 'trakt-export' | 'tvtime' | 'plex' | 'trakt' | 'netflix' | 'prime' | 'disney' | 'max' | 'apple' | 'letterboxd' | 'imdb';
+type Platform = 'trakt-export' | 'tvtime' | 'plex' | 'trakt' | 'simkl' | 'netflix' | 'prime' | 'disney' | 'max' | 'apple' | 'letterboxd' | 'imdb';
 type PlatformConfig = { id: Platform; name: string; color: string; hint: string; accept?: string[]; kind?: 'connection' };
 
 // ── Platform config ───────────────────────────────────────────────────
@@ -44,6 +45,13 @@ const PLATFORMS: PlatformConfig[] = [
     name: 'Trakt',
     color: 'danger',
     hint: IMPORT_VIEW.connectionImportHint,
+    kind: 'connection',
+  },
+  {
+    id: 'simkl',
+    name: 'Simkl',
+    color: '#1F80E0',
+    hint: IMPORT_VIEW.simklSyncHint,
     kind: 'connection',
   },
   {
@@ -168,6 +176,15 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
   const plex = useMediaSync(userId);
   const plexSource = usePlexSource(userId);
   const trakt = useTraktSync(userId);
+  const simkl = useSimklSync(userId);
+  const availablePlatforms = useMemo(
+    () => PLATFORMS.filter(item => {
+      if (item.id === 'simkl') return Boolean(getConfig().simklClientId);
+      if (item.id === 'tvtime') return getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled;
+      return !['imdb', 'trakt-export'].includes(item.id) || getConfig().importEventsEnabled;
+    }),
+    [],
+  );
 
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
   const [step,         setStep]         = useState<Step>('pick-platform');
@@ -184,10 +201,11 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
   const [listResult, setListResult] = useState('');
   const [documentReport, setDocumentReport] = useState([] as string[]);
   const [alreadyCount, setAlreadyCount] = useState(0);
+  const [pushedCount, setPushedCount] = useState(0);
 
   const handleSelectPlatform = (p: Platform) => {
     setPlatform(p);
-    setStep(PLATFORMS.find(item => item.id === p)?.kind === 'connection' ? 'connection' : 'pick-file');
+    setStep(availablePlatforms.find(item => item.id === p)?.kind === 'connection' ? 'connection' : 'pick-file');
   };
 
   const handlePickFile = useCallback(async () => {
@@ -318,8 +336,8 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
     setStep('done');
   }, [plan, resolved, userId]);
 
-  const connection = platform === 'plex' ? plex : platform === 'trakt' ? trakt : null;
-  const connectionName = platform === 'plex' ? 'Plex' : 'Trakt';
+  const connection = platform === 'plex' ? plex : platform === 'trakt' ? trakt : platform === 'simkl' ? simkl : null;
+  const connectionName = platform === 'plex' ? 'Plex' : platform === 'trakt' ? 'Trakt' : 'Simkl';
 
   const handleConnectionImport = useCallback(async () => {
     if (!connection) return;
@@ -330,6 +348,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
     }
     setImportedCount(result.importedCount || 0);
     setAlreadyCount(result.alreadyCount || 0);
+    setPushedCount(result.pushedCount || 0);
     setStep('done');
   }, [connection]);
 
@@ -372,7 +391,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
           <ScrollView contentContainerStyle={styles.body}>
             <Text style={styles.stepTitle}>Choose your platform</Text>
             <Text style={styles.stepSub}>{IMPORT_VIEW.chooseSource}</Text>
-            {PLATFORMS.filter(p => p.id === 'tvtime' ? getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled : !['imdb', 'trakt-export'].includes(p.id) || getConfig().importEventsEnabled).map(p => (
+            {availablePlatforms.map(p => (
               <TouchableOpacity
                 key={p.id}
                 style={styles.platformCard}
@@ -402,8 +421,8 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
             <Text style={styles.stepTitle}>{connectionName}</Text>
             <Text style={styles.stepSub}>
               {connection.isConnected
-                ? IMPORT_VIEW.connectedReady(connectionName)
-                : IMPORT_VIEW.connectionImportHint}
+                ? platform === 'simkl' ? IMPORT_VIEW.simklConnectedReady : IMPORT_VIEW.connectedReady(connectionName)
+                : platform === 'simkl' ? IMPORT_VIEW.simklSyncHint : IMPORT_VIEW.connectionImportHint}
             </Text>
             {platform === 'plex' && (
               <View style={styles.hintBox}>
@@ -422,7 +441,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
               style={[styles.importBtn, styles.connectionAction, (connection.syncing || ('polling' in connection && connection.polling)) && styles.importBtnDisabled]}
               onPress={connection.isConnected
                 ? handleConnectionImport
-                : platform === 'plex' ? plex.startPlexAuth : trakt.connect}
+                : platform === 'plex' ? plex.startPlexAuth : platform === 'trakt' ? trakt.connect : simkl.connect}
               disabled={connection.syncing || ('polling' in connection && connection.polling) || (platform === 'plex' && connection.isConnected && !plexSource.selected)}
               activeOpacity={0.85}
             >
@@ -432,10 +451,15 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
                   : connection.syncing
                     ? IMPORT_VIEW.importingFrom(connectionName)
                     : connection.isConnected
-                      ? IMPORT_VIEW.importFrom(connectionName)
+                      ? platform === 'simkl' ? 'Sync now' : IMPORT_VIEW.importFrom(connectionName)
                       : IMPORT_VIEW.connectToImport(connectionName)}
               </Text>
             </TouchableOpacity>
+            {platform === 'simkl' && connection.isConnected && (
+              <TouchableOpacity onPress={simkl.disconnect} accessibilityRole="button">
+                <Text style={styles.disconnectText}>Disconnect Simkl</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -572,9 +596,11 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
             {documentReport.length > 0 && <ScrollView style={{ maxHeight: 180 }}><Text style={styles.previewTitle}>{IMPORT_VIEW.reportHeading}</Text>{documentReport.map((message, index) => <Text key={index} style={styles.previewMeta}>{message}</Text>)}</ScrollView>}
             {listResult && <Text style={styles.resolvingSub}>{listResult}</Text>}
             <Text style={styles.resolvingSub}>
-              {platform === 'plex' || platform === 'trakt'
-                ? IMPORT_VIEW.importedSummary(importedCount, alreadyCount)
-                : IMPORT_VIEW.resultSummary(importedCount, importResult.duplicates, importResult.failed, unmatched)}
+              {platform === 'simkl'
+                ? IMPORT_VIEW.simklSyncedSummary(importedCount, alreadyCount, pushedCount)
+                : platform === 'plex' || platform === 'trakt'
+                  ? IMPORT_VIEW.importedSummary(importedCount, alreadyCount)
+                  : IMPORT_VIEW.resultSummary(importedCount, importResult.duplicates, importResult.failed, unmatched)}
             </Text>
             <TouchableOpacity style={[styles.importBtn, { marginTop: spacing.lg }]} onPress={onClose} activeOpacity={0.85}>
               <Text style={styles.importBtnText}>Done</Text>
@@ -625,6 +651,13 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.textMuted,
     marginBottom: spacing.xl,
     lineHeight: 20,
+  },
+  disconnectText: {
+    marginTop: spacing.lg,
+    color: colors.textMuted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    textDecorationLine: 'underline',
   },
 
   platformCard: {

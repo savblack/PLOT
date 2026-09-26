@@ -115,6 +115,9 @@ verify_jwt = true
 [functions.trakt-sync]
 verify_jwt = true
 
+[functions.simkl-sync]
+verify_jwt = true
+
 [functions.stripe-billing]
 verify_jwt = true
 

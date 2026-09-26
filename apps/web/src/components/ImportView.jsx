@@ -18,6 +18,7 @@ import { MEDIA } from '../copy/media.js';
 import { IMPORT_VIEW } from '../copy/importView.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
+import { useSimklSync } from '../hooks/useSimklSync.js';
 
 /* ─────────────────────────── Platform icons ─────────────────────────── */
 
@@ -41,7 +42,7 @@ function PlatformIcon({ id, logoPath, size = 32 }) {
     );
   }
   // Fallback: colored square while loading
-  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054', imdb: 'var(--rating)', plex: 'var(--rating)', trakt: 'var(--danger)' };
+  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054', imdb: 'var(--rating)', plex: 'var(--rating)', trakt: 'var(--danger)', simkl: '#1F80E0' };
   return <div style={{ width: size, height: size, borderRadius: 8, background: colors[id] || '#333', flexShrink: 0 }} />;
 }
 
@@ -60,6 +61,12 @@ const PLATFORMS = [
     id: 'trakt',
     name: 'Trakt',
     format: 'Connected account',
+    kind: 'connection',
+  },
+  {
+    id: 'simkl',
+    name: 'Simkl',
+    format: 'Manual two-way sync',
     kind: 'connection',
   },
   {
@@ -202,9 +209,19 @@ function AccountImportView() {
   const plex = useMediaSync(user?.id);
   const plexSource = usePlexSource(user?.id);
   const trakt = useTraktSync(user?.id);
+  const simkl = useSimklSync(user?.id);
+  const availablePlatforms = useMemo(
+    () => PLATFORMS.filter(item => {
+      if (item.id === 'simkl') return Boolean(getConfig().simklClientId);
+      if (item.id === 'tvtime') return getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled;
+      return !['imdb', 'trakt-export'].includes(item.id) || getConfig().importEventsEnabled;
+    }),
+    [],
+  );
   const loadPlexIntegration = plex.loadIntegration;
   const loadTraktIntegration = trakt.loadIntegration;
-  const initialConnection = PLATFORMS.find(item => item.id === searchParams.get('source') && item.kind === 'connection') || null;
+  const loadSimklIntegration = simkl.loadIntegration;
+  const initialConnection = availablePlatforms.find(item => item.id === searchParams.get('source') && item.kind === 'connection') || null;
 
   const [step, setStep] = useState(initialConnection ? 2 : 1); // 1=platform 2=source 3=resolving 4=preview 5=done
   const [platform, setPlatform] = useState(initialConnection);
@@ -240,9 +257,10 @@ function AccountImportView() {
   useEffect(() => {
     loadPlexIntegration();
     loadTraktIntegration();
-  }, [loadPlexIntegration, loadTraktIntegration]);
+    loadSimklIntegration();
+  }, [loadPlexIntegration, loadTraktIntegration, loadSimklIntegration]);
 
-  const connection = platform?.id === 'plex' ? plex : platform?.id === 'trakt' ? trakt : null;
+  const connection = platform?.id === 'plex' ? plex : platform?.id === 'trakt' ? trakt : platform?.id === 'simkl' ? simkl : null;
 
   const handleConnect = useCallback(async () => {
     if (platform?.id === 'plex') {
@@ -250,8 +268,10 @@ function AccountImportView() {
       if (result?.integration?.id) plex.pollPlexAuth(result.integration.id);
     } else if (platform?.id === 'trakt') {
       trakt.connect('/import?source=trakt');
+    } else if (platform?.id === 'simkl') {
+      simkl.connect();
     }
-  }, [platform?.id, plex, trakt]);
+  }, [platform?.id, plex, trakt, simkl]);
 
   const handleConnectionImport = useCallback(async () => {
     if (!connection || !platform) return;
@@ -409,7 +429,7 @@ function AccountImportView() {
             {IMPORT_VIEW.chooseSource}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {PLATFORMS.filter(p => p.id === 'tvtime' ? getConfig().importEventsEnabled && getConfig().tvTimeImportEnabled : !['imdb', 'trakt-export'].includes(p.id) || getConfig().importEventsEnabled).map(p => (
+            {availablePlatforms.map(p => (
               <button
                 key={p.id}
                 onClick={() => { setPlatform(p); setStep(2); }}
@@ -448,8 +468,8 @@ function AccountImportView() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <p style={{ fontSize: '0.82rem', lineHeight: 1.55, color: 'var(--text-muted)', margin: 0 }}>
                 {connection?.isConnected
-                  ? IMPORT_VIEW.connectedReady(platform.name)
-                  : IMPORT_VIEW.connectionImportHint}
+                  ? platform.id === 'simkl' ? IMPORT_VIEW.simklConnectedReady : IMPORT_VIEW.connectedReady(platform.name)
+                  : platform.id === 'simkl' ? IMPORT_VIEW.simklSyncHint : IMPORT_VIEW.connectionImportHint}
               </p>
               {platform.id === 'plex' && (
                 <p style={{ fontSize: '0.75rem', lineHeight: 1.5, color: 'var(--text-muted)', margin: 0 }}>
@@ -470,7 +490,9 @@ function AccountImportView() {
               )}
               {connectionResult ? (
                 <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1rem', color: 'var(--text-primary)', fontSize: '0.88rem' }}>
-                  {IMPORT_VIEW.importedSummary(connectionResult.importedCount || 0, connectionResult.alreadyCount || 0)}
+                  {platform.id === 'simkl'
+                    ? IMPORT_VIEW.simklSyncedSummary(connectionResult.importedCount || 0, connectionResult.alreadyCount || 0, connectionResult.pushedCount || 0)
+                    : IMPORT_VIEW.importedSummary(connectionResult.importedCount || 0, connectionResult.alreadyCount || 0)}
                 </div>
               ) : (
                 <button
@@ -484,9 +506,17 @@ function AccountImportView() {
                     : connection?.syncing
                       ? IMPORT_VIEW.importingFrom(platform.name)
                       : connection?.isConnected
-                        ? IMPORT_VIEW.importFrom(platform.name)
+                        ? platform.id === 'simkl' ? 'Sync now' : IMPORT_VIEW.importFrom(platform.name)
                         : IMPORT_VIEW.connectToImport(platform.name)}
                 </button>
+              )}
+              {platform.id === 'simkl' && connection?.isConnected && (
+                <button
+                  type="button"
+                  onClick={connection.disconnect}
+                  disabled={connection.syncing}
+                  style={{ alignSelf: 'flex-start', border: 0, background: 'none', padding: 0, color: 'var(--text-muted)', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.75rem' }}
+                >Disconnect Simkl</button>
               )}
             </div>
           ) : <>

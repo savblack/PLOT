@@ -976,6 +976,15 @@ export type Database = {
           plex_token_iv: string | null
           provider: string
           selected_server: Json | null
+          simkl_last_activity: string | null
+          simkl_pkce_ciphertext: string | null
+          simkl_pkce_iv: string | null
+          simkl_refresh_token_ciphertext: string | null
+          simkl_refresh_token_iv: string | null
+          simkl_redirect_uri: string | null
+          simkl_token_ciphertext: string | null
+          simkl_token_expires_at: string | null
+          simkl_token_iv: string | null
           status: string
           sync_started_at: string | null
           trakt_redirect_uri: string | null
@@ -1003,6 +1012,15 @@ export type Database = {
           plex_token_iv?: string | null
           provider: string
           selected_server?: Json | null
+          simkl_last_activity?: string | null
+          simkl_pkce_ciphertext?: string | null
+          simkl_pkce_iv?: string | null
+          simkl_refresh_token_ciphertext?: string | null
+          simkl_refresh_token_iv?: string | null
+          simkl_redirect_uri?: string | null
+          simkl_token_ciphertext?: string | null
+          simkl_token_expires_at?: string | null
+          simkl_token_iv?: string | null
           status?: string
           sync_started_at?: string | null
           trakt_redirect_uri?: string | null
@@ -1030,6 +1048,15 @@ export type Database = {
           plex_token_iv?: string | null
           provider?: string
           selected_server?: Json | null
+          simkl_last_activity?: string | null
+          simkl_pkce_ciphertext?: string | null
+          simkl_pkce_iv?: string | null
+          simkl_refresh_token_ciphertext?: string | null
+          simkl_refresh_token_iv?: string | null
+          simkl_redirect_uri?: string | null
+          simkl_token_ciphertext?: string | null
+          simkl_token_expires_at?: string | null
+          simkl_token_iv?: string | null
           status?: string
           sync_started_at?: string | null
           trakt_redirect_uri?: string | null
