@@ -32,9 +32,11 @@ function parseOfficialCsv(text, fileName) {
   const releaseDate = column('release_date');
   const seasonNumber = column('season_number');
   const episodeNumber = column('episode_number');
+  const shortSeasonNumber = column('s_no');
+  const shortEpisodeNumber = column('ep_no');
   const showFile = fileName === 'tracking-prod-records-v2.csv';
   if (createdAt === -1 || (showFile
-    ? seriesName === -1 || key === -1 || seasonNumber === -1 || episodeNumber === -1
+    ? seriesName === -1 || key === -1
     : movieName === -1 || type === -1 || entityType === -1 || releaseDate === -1)) invalid();
 
   const entries = [];
@@ -50,20 +52,21 @@ function parseOfficialCsv(text, fileName) {
     if (!episodeWatch && !movieWatch) continue;
     const title = value(row, episodeWatch ? seriesName : movieName);
     if (!title) invalid();
-    const season = episodeWatch ? Number(value(row, seasonNumber)) : null;
-    const episode = episodeWatch ? Number(value(row, episodeNumber)) : null;
+    const season = episodeWatch ? Number(value(row, shortSeasonNumber) || value(row, seasonNumber)) : null;
+    const episode = episodeWatch ? Number(value(row, shortEpisodeNumber) || value(row, episodeNumber)) : null;
     if (episodeWatch && (!Number.isInteger(season) || season < 0 || !positive(episode))) invalid();
     const watched = watchDate(value(row, createdAt) || value(row, updatedAt));
     if (watched.datePrecision === 'day' && (value(row, createdAt) || value(row, updatedAt)).length > 10) {
       warnings.push({ path: `${fileName}[${index}]`, title, reason: 'timezone_unknown' });
     }
     const releaseYear = value(row, releaseDate).slice(0, 4);
+    const usableReleaseYear = /^\d{4}$/.test(releaseYear) && Number(releaseYear) >= 1800;
     entries.push({
       title,
       hint: episodeWatch ? 'tv' : 'movie',
       ...watched,
       ...(episodeWatch ? { seasonNumber: season, episodeNumber: episode } : {}),
-      year: !episodeWatch && /^\d{4}$/.test(releaseYear) ? releaseYear : null,
+      year: !episodeWatch && usableReleaseYear ? releaseYear : null,
       externalIds: {},
       ...(watchKey ? { eventId: watchKey } : {}),
     });
