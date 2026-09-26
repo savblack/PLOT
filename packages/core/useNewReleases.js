@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { tmdb, isEnglishOriginTitle, excludeKidsContent } from './tmdb.js';
 import { filterByGenre, filterByType } from './mediaFilters.js';
+import { TV_KEYWORD_GENRES, tvKeywordIds } from './keywordGenres.js';
 
 const hasPoster = item => !!item.poster_path;
 const MIN_RAIL_SIZE = 14;
@@ -26,6 +27,11 @@ export function buildGenreRailDefinitions(catalog) {
   };
   (catalog?.movie || []).forEach(genre => add(genre, 'movie'));
   (catalog?.tv || []).forEach(genre => add(genre, 'tv'));
+  // Horror, Romance and Thriller have no TV genre; their shows come from TMDB
+  // keywords instead (keywordGenres.js), the same as in Pick for Me.
+  for (const rail of rails.values()) {
+    if (!rail.tvGenreId && TV_KEYWORD_GENRES[rail.movieGenreId]) rail.tvKeywordGenre = rail.movieGenreId;
+  }
   return [...rails.values()].sort((a, b) => a.label.localeCompare(b.label));
 }
 
@@ -74,13 +80,27 @@ export function tagCinemaReleases(genreRails, nowPlaying) {
   }));
 }
 
-async function loadGenreRail({ movieGenreId, tvGenreId }, hideKids, client = tmdb) {
+/** Newest shows for a keyword-backed genre, or null when TMDB has no keyword for it. */
+async function newestTvByKeywordGenre(movieGenreId, client) {
+  const ids = await tvKeywordIds(movieGenreId, client);
+  return ids.length ? client.discoverNewestByKeyword('tv', ids.join('|')) : null;
+}
+
+async function loadGenreRail({ movieGenreId, tvGenreId, tvKeywordGenre }, hideKids, client = tmdb) {
   const [movieGenreRes, tvGenreRes] = await Promise.all([
     movieGenreId ? client.discoverNewestByGenre('movie', movieGenreId).catch(() => null) : Promise.resolve(null),
-    tvGenreId ? client.discoverNewestByGenre('tv', tvGenreId).catch(() => null) : Promise.resolve(null),
+    tvGenreId ? client.discoverNewestByGenre('tv', tvGenreId).catch(() => null)
+      : tvKeywordGenre ? newestTvByKeywordGenre(tvKeywordGenre, client).catch(() => null)
+      : Promise.resolve(null),
   ]);
   const movies = (movieGenreRes?.results || []).map(m => ({ ...m, media_type: 'movie' }));
-  const tv = (tvGenreRes?.results || []).map(s => ({ ...s, media_type: 'tv' }));
+  // Keyword-found shows carry the rail's genre id too, so the page's Horror
+  // (etc.) filter keeps them; TMDB's own genre_ids never include it for TV.
+  const tv = (tvGenreRes?.results || []).map(s => ({
+    ...s,
+    media_type: 'tv',
+    ...(tvKeywordGenre ? { genre_ids: [...new Set([...(s.genre_ids || []), tvKeywordGenre])] } : {}),
+  }));
   return excludeKidsContent([...movies, ...tv].filter(isEnglishOriginTitle), hideKids)
     .filter(hasPoster)
     .sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''))

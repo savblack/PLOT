@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { TV_KEYWORD_GENRES, tvKeywordIds, _resetKeywordGenreCache } from './keywordGenres.js';
 import { tmdb, excludeKidsContent, KIDS_GENRE_IDS } from './tmdb.js';
 import { supabase } from './supabase.js';
 import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
@@ -65,8 +66,14 @@ export const PICKER_STEPS = ['type', 'length', 'kind', 'quality'];
 /** Genres shown before "Show all": the ones people reach for first. */
 const FEATURED_GENRES = {
   movie: [35, 53, 18, 28, 27, 10749, 80, 878, 99, 16],
-  tv: [35, 18, 80, 10759, 10765, 9648, 99, 16, 10768, 37],
+  tv: [35, 18, 80, -53, 10759, 10765, 9648, -27, -10749, 99, 16, 10768, 37],
 };
+
+// Horror, Romance and Thriller for shows are keyword-backed (see
+// keywordGenres.js). In the picker they are negative ids, never a TMDB genre
+// id, whose absolute value is the movie genre they stand for.
+/** @param {number} id */
+export const isKeywordGenre = (id) => id < 0;
 export const FEATURED_GENRE_COUNT = 10;
 // Desktop lays genres out three across, so nine fills the grid.
 export const FEATURED_GENRE_COUNT_WIDE = 9;
@@ -162,6 +169,8 @@ const GAP_MS = 120;
  * @property {number|null} vote_average
  * @property {Array<{id: number, name: string, logo_path: string|null}>} providers Matching services, when known.
  * @property {boolean} onWatchlist
+ * @property {number[]} [keyword_ids] TMDB keyword ids, when details were fetched (TV).
+ * @property {number[]} [kw_genres] Keyword-backed genres a discover query found this for.
  */
 
 /** @returns {PickerOptions} */
@@ -397,13 +406,20 @@ export function savedSearchLabel(parts) {
  * @param {PickerOptions} options
  */
 export function pickerGenres(catalog, options) {
-  const list = catalog?.[options.mediaType] ?? [];
+  const base = catalog?.[options.mediaType] ?? [];
+  const keywordGenres = options.mediaType === 'tv'
+    ? Object.keys(TV_KEYWORD_GENRES).map(Number)
+      .map(id => (catalog?.movie ?? []).find(g => g.id === id))
+      .filter(Boolean)
+      .map(g => ({ id: -g.id, name: g.name, mood: GENRE_MOODS[g.id] ?? null }))
+    : [];
+  const list = [...base, ...keywordGenres];
   const featured = FEATURED_GENRES[options.mediaType] ?? [];
   const rank = (id) => { const i = featured.indexOf(id); return i === -1 ? featured.length : i; };
   return list
     .filter(g => !(options.mediaType === 'tv' && TV_EXCLUDED_GENRES.includes(g.id))
       && !(options.hideKids && KIDS_GENRE_IDS.has(g.id)))
-    .map(g => ({ ...g, mood: GENRE_MOODS[g.id] ?? null }))
+    .map(g => ({ ...g, mood: g.mood ?? GENRE_MOODS[g.id] ?? null }))
     .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
 }
 
@@ -538,6 +554,24 @@ function eraRange(eraId) {
 export const formatNeedsDetails = (options) =>
   options.mediaType === 'tv' && (options.tvFormat === 'oneSeason' || options.tvFormat === 'multiSeason');
 
+/** Every keyword id resolved for the chosen keyword-backed genres. @param {PickerOptions & { keywordGenres?: Record<number, number[]> }} options */
+function keywordIdsFor(options) {
+  const ids = options.genreIds.filter(isKeywordGenre).flatMap(id => options.keywordGenres?.[id] ?? []);
+  return [...new Set(ids)];
+}
+
+/**
+ * Keyword ids for each chosen keyword-backed genre (keyed by its negative id).
+ * @param {number[]} genreIds
+ * @param {{ searchKeyword: (q: string) => Promise<any> }} [client]
+ * @returns {Promise<Record<number, number[]>>}
+ */
+export async function resolveKeywordGenres(genreIds, client = tmdb) {
+  const chosen = genreIds.filter(isKeywordGenre);
+  const lists = await Promise.all(chosen.map(id => tvKeywordIds(-id, client)));
+  return Object.fromEntries(chosen.map((id, i) => [id, lists[i]]));
+}
+
 /**
  * TMDB /discover/{movie,tv} params for a set of options.
  * @param {PickerOptions} options
@@ -563,7 +597,12 @@ export function discoverParams(options, { providerIds, region, page = 1 }) {
     if (options.maxRuntime) params['with_runtime.lte'] = options.maxRuntime;
   }
   // Pipe is OR in TMDB: any of the chosen genres. without_genres is comma (none of).
-  if (options.genreIds.length) params.with_genres = options.genreIds.join('|');
+  // Keyword-backed genres go in with_keywords; loadDiscoverPage queries them
+  // apart from real genres, since TMDB would AND the two.
+  const real = options.genreIds.filter(id => !isKeywordGenre(id));
+  if (real.length) params.with_genres = real.join('|');
+  const keywordIds = keywordIdsFor(options);
+  if (keywordIds.length) params.with_keywords = keywordIds.join('|');
   if (without.length) params.without_genres = [...new Set(without)].join(',');
   if (gte) params[`${dateKey}.gte`] = gte;
   if (lte) params[`${dateKey}.lte`] = lte;
@@ -596,7 +635,9 @@ export function matchesOptions(c, options, providerIds, { checkServices = true }
     if (options.maxRuntime && c.runtime > options.maxRuntime) return false;
   }
   if (options.hideKids && c.genre_ids.some(id => KIDS_GENRE_IDS.has(id))) return false;
-  if (options.genreIds.length && !options.genreIds.some(id => c.genre_ids.includes(id))) return false;
+  if (options.genreIds.length && !options.genreIds.some(id => (isKeywordGenre(id)
+    ? c.kw_genres?.includes(id) || (options.keywordGenres?.[id] ?? []).some(k => c.keyword_ids?.includes(k))
+    : c.genre_ids.includes(id)))) return false;
   const { gte, lte } = eraRange(options.era);
   if (gte && (!c.release_date || c.release_date < gte)) return false;
   if (lte && (!c.release_date || c.release_date > lte)) return false;
@@ -636,7 +677,7 @@ export function drawFromPool(pool, count, { seen = new Set(), rng = Math.random 
 /** @type {Map<string, any>} keyed `${type}:${id}` */
 const detailsCache = new Map();
 /** Test seam. */
-export const _resetPickerCache = () => detailsCache.clear();
+export const _resetPickerCache = () => { detailsCache.clear(); _resetKeywordGenreCache(); };
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -660,6 +701,7 @@ async function slimDetails(client, type, id) {
       vote_average: d.vote_average ?? null,
       original_language: d.original_language ?? null,
       watchProviders: d['watch/providers'] ?? null,
+      keyword_ids: (d.keywords?.results ?? d.keywords?.keywords ?? []).map(k => k.id),
     };
     detailsCache.set(key, slim);
     return slim;
@@ -719,6 +761,7 @@ export async function loadWatchlistPool({
           miniseries: slim.miniseries,
           vote_average: slim.vote_average,
           original_language: slim.original_language,
+          keyword_ids: slim.keyword_ids,
           providers: regionFlatrate({ 'watch/providers': slim.watchProviders }, region)
             .filter(p => providerIds.includes(p.id)),
           onWatchlist: true,
@@ -742,9 +785,26 @@ export async function loadDiscoverPage({
 }) {
   const type = options.mediaType;
   const fetchPage = type === 'tv' ? client.discoverTV : client.discoverMovies;
-  const res = await fetchPage(discoverParams(options, { providerIds, region, page })).catch(() => null);
-  if (!res) throw new Error('Could not load titles from TMDB');
-  let pool = excludeKidsContent(res?.results ?? [], options.hideKids)
+  // Real genres and keyword-backed ones are separate queries, merged: TMDB
+  // would AND with_genres and with_keywords, but the viewer asked for either.
+  const real = options.genreIds.filter(id => !isKeywordGenre(id));
+  const keyword = options.genreIds.filter(isKeywordGenre);
+  const queries = keyword.length && real.length
+    ? [{ ...options, genreIds: real }, { ...options, genreIds: keyword }]
+    : [options];
+  const pages = await Promise.all(queries.map(async (q) => {
+    const kw = q.genreIds.filter(isKeywordGenre);
+    // A keyword genre TMDB has no keyword for matches nothing, rather than
+    // dropping the filter and returning everything.
+    if (kw.length && !keywordIdsFor(q).length) return { results: [], total_pages: 0, kwGenres: kw };
+    const res = await fetchPage(discoverParams(q, { providerIds, region, page })).catch(() => null);
+    if (!res) throw new Error('Could not load titles from TMDB');
+    return { ...res, kwGenres: kw };
+  }));
+  const seenIds = new Set();
+  const results = pages.flatMap(p => (p.results ?? []).map(r => ({ ...r, kwGenres: p.kwGenres })))
+    .filter(r => r?.id && !seenIds.has(r.id) && seenIds.add(r.id));
+  let pool = excludeKidsContent(results, options.hideKids)
     .filter(r => r?.id && r.poster_path && !excludeIds.has(r.id))
     .map(r => ({
       id: r.id,
@@ -760,6 +820,8 @@ export async function loadDiscoverPage({
       vote_average: r.vote_average ?? null,
       providers: [],
       onWatchlist: savedIds.has(r.id),
+      // From a keyword query, so it matches those genres by construction.
+      kw_genres: r.kwGenres,
     }));
 
   if (formatNeedsDetails(options)) {
@@ -774,7 +836,7 @@ export async function loadDiscoverPage({
       .map(d => ({ ...d.item, seasons: d.slim.seasons, runtime: d.slim.runtime, miniseries: d.slim.miniseries }))
       .filter(c => matchesOptions(c, options, providerIds, { checkServices: false }));
   }
-  return { pool, totalPages: Math.min(res?.total_pages ?? 1, 500) };
+  return { pool, totalPages: Math.min(Math.max(1, ...pages.map(p => p.total_pages ?? 1)), 500) };
 }
 
 /** Title ids the viewer has already watched, per type, so the picker does not suggest them. */
@@ -928,6 +990,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
       onlyWatchlist: options.onlyWatchlist,
     };
     const key = JSON.stringify([userId, opts, region, watchlistKey]);
+    if (opts.genreIds.some(isKeywordGenre)) opts.keywordGenres = await resolveKeywordGenres(opts.genreIds);
     if (run.current.key !== key) {
       run.current = { key, pool: [], seen: new Set(restoredSeen.current), page: 0, totalPages: 1, target: 0, exhausted: false };
       restoredSeen.current = [];
