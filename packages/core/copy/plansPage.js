@@ -68,7 +68,7 @@ export const PLANS_PAGE = {
     status: 'Planned',
     you: 'You',
   },
-  // Every cell is true (tick), false (dash) or a short value. `soon` tags a row planned for Free.
+  // Every cell is true (tick), false (dash) or a short value. `tag` is an optional note after the label.
   comparison: {
     title: 'Compare every feature',
     note: 'Premium features are coming soon.',
@@ -83,17 +83,18 @@ export const PLANS_PAGE = {
         { label: 'Discovery, search and where to watch', free: true, premium: true },
         { label: 'More like this', free: true, premium: true },
         { label: 'Pick for Me', free: false, premium: true },
-        { label: 'Find something you both want to watch', free: false, premium: true },
+        { label: 'Find something you both want to watch', free: true, premium: true, tag: 'Free with a Premium host' },
       ] },
       { title: 'Watching with others', rows: [
         { label: 'Follow friends and share profiles', free: true, premium: true },
-        { label: 'Join shared lists and watch sessions', free: true, premium: true, soon: true },
+        { label: 'Join shared lists and watch sessions', free: true, premium: true, tag: 'Free with a Premium host' },
         { label: 'Create collaborative lists', free: false, premium: true },
       ] },
       { title: 'Keeping track', rows: [
         { label: 'Movies, shows and episode progress', free: true, premium: true },
         { label: 'Watchlist, ratings, reviews and private notes', free: true, premium: true },
         { label: 'Viewing stats', free: 'Overview', premium: 'Deeper' },
+        { label: 'Import history from your other apps', free: true, premium: true },
         { label: 'Plex and Trakt', free: 'Manual', premium: 'Automatic' },
       ] },
       { title: 'Lists', rows: [
@@ -102,7 +103,7 @@ export const PLANS_PAGE = {
       ] },
       { title: 'Staying up to date', rows: [
         { label: 'Release calendar', free: true, premium: true },
-        { label: 'Movie and episode release notifications', free: true, premium: true, soon: true },
+        { label: 'Episode release notifications', free: true, premium: true, tag: 'Coming soon' },
         { label: 'Live calendar subscription', free: false, premium: true },
         { label: 'Actor and director alerts', free: false, premium: true },
         { label: 'Whole-season-ready alerts', free: false, premium: true },
@@ -162,10 +163,10 @@ export const PLANS_PAGE = {
   faqs: [
     { q: 'Can I upgrade now?', a: 'Not yet. Premium is planned at $3/month or $24/year, taxes included. The upgrade button shows a coming-soon message; it does not start a payment or a trial.' },
     { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Movie and episode release notifications are planned for Free. Free does not include personally tailored recommendations.' },
-    { q: 'Will plot recommend titles just for me?', a: 'Not yet. Free includes More like this on a title page. Personally tailored recommendations need more usage and aren’t planned until Premium can help pay for them.' },
+    { q: 'What does Pick for Me actually do?', a: 'It asks four quick questions: movie or show, how long you’ve got, what kind of story, and how new or how good. You get a shortlist of up to five, and you can limit it to your streaming services or your watchlist. Can’t decide? Surprise me gives you one pick.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. Joining a Premium host’s collaborative lists and shared watch sessions is planned for Free. Premium is only needed to create or host them.' },
     { q: 'How many lists are included in Free?', a: 'Free includes up to five custom lists.' },
-    { q: 'Does plot play the movie for us?', a: 'No. Shared watch sessions help you choose a title together. You watch it on your streaming service; plot does not stream or sync playback.' },
+    { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
     { q: 'Are these alerts and sync available now?', a: 'No. Movie and episode release notifications are planned for Free. Live calendar subscription, people alerts, deeper stats, automatic Plex/Trakt syncing and customisation are planned Premium features. Whole-season alerts need verified availability for every episode on your selected service.' },
   ],
   fineprint: 'Prices in US dollars, taxes included. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',

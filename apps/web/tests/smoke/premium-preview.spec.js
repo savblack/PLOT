@@ -13,7 +13,9 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('heading', { name: 'Less deciding. More watching.' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Compare every feature' })).toBeVisible();
     await expect(page.getByText('Premium features are coming soon.', { exact: true })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Movie and episode release notifications.*Coming soon/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Episode release notifications.*Coming soon/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Join shared lists and watch sessions.*Free with a Premium host/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Import history from your other apps/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Viewing stats.*Overview.*Deeper/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Plex and Trakt.*Manual.*Automatic/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Custom lists.*5.*Unlimited/ })).toBeVisible();

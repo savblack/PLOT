@@ -34,6 +34,12 @@ function Tick() {
   );
 }
 
+// "plot" in a label is the brand, so it takes the wordmark's face and tracking.
+function withWordmark(label) {
+  const parts = label.split(/\b(plot)\b/);
+  return parts.map((part, i) => (i % 2 ? <span key={i} className="plans-wordmark-inline">{part}</span> : part));
+}
+
 function FeatureRows({ items, className = '' }) {
   return (
     <ul className={`plan-rows ${className}`}>
@@ -41,7 +47,7 @@ function FeatureRows({ items, className = '' }) {
         <li key={item.label}>
           <svg className="plan-icon" viewBox="0 0 24 24" aria-hidden="true">{ICONS[item.icon]}</svg>
           <div>
-            <span className="plan-row-label">{item.label}</span>
+            <span className="plan-row-label">{withWordmark(item.label)}</span>
             {item.note && <span className="plan-row-note">{item.note}</span>}
           </div>
         </li>
@@ -223,7 +229,7 @@ export default function PlansPage() {
                   <tr key={row.label}>
                     <th scope="row" className="cmp-feat">
                       {row.label}
-                      {row.soon && <span className="cmp-soon">{PLANS_PAGE.comingSoon}</span>}
+                      {row.tag && <span className="cmp-soon">{row.tag}</span>}
                     </th>
                     <td><Cell value={row.free} /></td>
                     <td><Cell value={row.premium} premium /></td>
