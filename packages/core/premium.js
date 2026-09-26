@@ -11,8 +11,8 @@
 export const FREE_CUSTOM_LIST_CAP = 5;
 
 export const PREMIUM_PLANS = Object.freeze({
-  monthly: Object.freeze({ id: 'monthly', label: 'A$5/mo', amount: 5, currency: 'AUD' }),
-  yearly: Object.freeze({ id: 'yearly', label: 'A$40/yr', amount: 40, currency: 'AUD' }),
+  monthly: Object.freeze({ id: 'monthly', label: 'US$3/mo', amount: 3, currency: 'USD' }),
+  yearly: Object.freeze({ id: 'yearly', label: 'US$24/yr', amount: 24, currency: 'USD' }),
 });
 
 export function isPremiumProfile(profile) {

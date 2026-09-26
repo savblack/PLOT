@@ -8,7 +8,7 @@ import { tmdb } from '@plot/core/tmdb.js';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
 import { planHistoryImport } from '@plot/core/importPlan.js';
 import {
-  resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, chooseImportMatch, reviewImportDuplicates,
+  resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, resolveImportMatch, reviewImportDuplicates,
 } from '@plot/core/importPipeline.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -188,6 +188,7 @@ function AccountImportView() {
   const results = useMemo(() => reviewPendingWatchSummaries(rawResults), [rawResults]);
   const [existingRows, setExistingRows] = useState([]);
   const [importing, setImporting] = useState(false);
+  const [resolvingMatch, setResolvingMatch] = useState(false);
   const [importError, setImportError] = useState('');
   const [importResult, setImportResult] = useState({ duplicates: 0, failed: 0 });
   const [importedCount, setImportedCount] = useState(0);
@@ -237,6 +238,7 @@ function AccountImportView() {
       search: (title) => tmdb.search(title),
       findByImdbId: id => tmdb.findByImdbId(id),
       findByTvdbId: id => tmdb.findByTvdbId(id),
+      getSeason: (id, season) => tmdb.getSeason(id, season),
       onProgress: (done, total) => setResolveProgress({ done, total }),
     });
 
@@ -272,6 +274,18 @@ function AccountImportView() {
     [candidates, existingRows],
   );
 
+  const handleMatch = async (index, candidateKey) => {
+    setResolvingMatch(true);
+    try {
+      const resolved = await resolveImportMatch(results[index], candidateKey, {
+        getSeason: (id, season) => tmdb.getSeason(id, season),
+      });
+      setResults(current => current.map((entry, i) => i === index ? resolved : entry));
+    } finally {
+      setResolvingMatch(false);
+    }
+  };
+
   /* Row identity is preserved through the planner, so the preview can mark each
      result by whether its own row survived planning. */
   const plannedRows = useMemo(() => new Set(plan.rows), [plan]);
@@ -279,7 +293,7 @@ function AccountImportView() {
 
   /* Step 4 → 5 */
   const handleImport = useCallback(async () => {
-    if (results.some(needsDuplicateReview)) return;
+    if (resolvingMatch || results.some(needsDuplicateReview)) return;
     setImporting(true);
     setImportError('');
 
@@ -294,7 +308,7 @@ function AccountImportView() {
     if (failed) setImportError(IMPORT_VIEW.partialFailure(failed));
     setImporting(false);
     setStep(5);
-  }, [plan, platform?.id, user, results]);
+  }, [plan, platform?.id, user, results, resolvingMatch]);
 
   const newCount       = getConfig().importEventsEnabled ? results.filter(r => r.status === 'matched' && r.listSelected !== false && !alreadyImportedEvent(r)).length : plan.rows.length;
   const alreadyCount   = results[0]?.destination ? 0 : getConfig().importEventsEnabled ? results.filter(alreadyImportedEvent).length : plan.alreadyInHistory;
@@ -310,6 +324,7 @@ function AccountImportView() {
           onClick={() => step > 1 && step < 5 ? setStep(s => s - 1) : navigate('/settings')}
           style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.25rem', display: 'flex' }}
           aria-label="Back"
+          disabled={resolvingMatch || importing}
         >
           <BackIcon />
         </button>
@@ -541,8 +556,10 @@ function AccountImportView() {
                     {r.duplicateDecision === 'keep' && <p>{IMPORT_VIEW.duplicateConfirmed}</p>}
                     {!!r.candidates?.length && (
                       <select aria-label={`${IMPORT_VIEW.chooseMatch}: ${r.title}`}
+                        aria-busy={resolvingMatch}
                         value={r.status === 'matched' ? `${r.mediaType}:${r.tmdbId}` : ''}
-                        onChange={event => setResults(current => current.map((entry, index) => index === i ? chooseImportMatch(entry, event.target.value) : entry))}
+                        disabled={resolvingMatch || importing}
+                        onChange={event => handleMatch(i, event.target.value)}
                         style={{ maxWidth: '100%', marginTop: '0.4rem', color: 'var(--text-primary)', background: 'var(--surface)', border: '1px solid var(--border)' }}>
                         <option value="">{IMPORT_VIEW.skipMatch}</option>
                         {r.candidates.map(candidate => <option key={`${candidate.media_type}:${candidate.id}`} value={`${candidate.media_type}:${candidate.id}`}>
@@ -582,7 +599,7 @@ function AccountImportView() {
             </div>
             <button
               onClick={handleImport}
-              disabled={importing || !canConfirm || results.some(needsDuplicateReview)}
+              disabled={resolvingMatch || importing || !canConfirm || results.some(needsDuplicateReview)}
               style={{
                 padding: '0.7rem 1.5rem', borderRadius: 99,
                 background: !canConfirm ? 'var(--surface-raised)' : '#fff',

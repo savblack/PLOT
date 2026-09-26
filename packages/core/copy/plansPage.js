@@ -29,7 +29,7 @@ export const PLANS_PAGE = {
     recommended: 'Recommended',
     name: 'Premium',
     perMonth: '/mo',
-    billedYearly: (price, pct) => `Billed A$${price} yearly · save ${pct}%`,
+    billedYearly: (price, pct) => `Billed US$${price} yearly · save ${pct}%`,
     billedMonthly: 'Billed monthly',
     everythingInFreePlus: 'Everything in Free, plus:',
     highlights: {
@@ -92,7 +92,7 @@ export const PLANS_PAGE = {
     },
   },
 
-  finePrint: 'Prices are in Australian dollars. Your total and billing currency are shown at checkout.',
+  finePrint: 'Prices are in US dollars. Your total and billing currency are shown at checkout.',
   finePrintCancel: 'Cancel anytime. Payments are processed securely by Stripe.',
   finePrintContact: 'Need a hand?',
 

@@ -1,14 +1,14 @@
 # Migration and automatic tracking
 
-Implementation record, 17 September 2026. **Prepared locally, not launched.**
-TMDB clearance is confirmed. Pricing remains A$5/month and A$40/year. Public
+Implementation record, updated 23 September 2026. **Prepared locally, not launched.**
+TMDB clearance is confirmed. Pricing remains US$3/month and US$25/year. Public
 pricing, checkout and integration launch switches have not been enabled.
 
 ## Supported implementation
 
 ### Free saved-file migration
 
-Web and mobile share parsing, identifier resolution, match review, duplicate
+Current verification targets web; mobile is deferred. Web and mobile share parsing, identifier resolution, match review, duplicate
 review and atomic writes. Both require confirmation before importing. Ambiguous
 matches remain unselected; IMDb external IDs are resolved before title matching.
 No title or episode ID is invented. Unknown watch dates remain null.
@@ -16,10 +16,12 @@ No title or episode ID is invented. Unknown watch dates remain null.
 | Source | Verified scope | Limits |
 | --- | --- | --- |
 | Letterboxd | Strict saved diary/watched/ratings/reviews CSVs, watchlist and custom lists; ZIP/multi-file routing; browser overlap/reimport and iOS picker flows | Supported root layout only; unfamiliar files reported; watched-summary/diary overlaps require review; annotation flag remains off |
-| IMDb | Real saved movie ratings and movie watchlist CSV fixtures | TV entries, unknown versions and custom-list exports are explicitly rejected; Created/Modified/Date Rated never become watch dates |
-| Existing streaming exports | Existing parsers retained; shared synthetic flow tests | TV watches without reliable episode identity are rejected; authentic current export versions and native journeys still need verification |
+| IMDb | Real saved movie ratings, series/miniseries rating annotations and mixed movie/TV watchlists; web and staging persistence/replay | Episode/other rating types and custom-list exports remain unsupported; Created/Modified/Date Rated never become watch dates |
+| Netflix | Public saved Title/Date CSV; short-year dates; unique named episodes resolved within numeric seasons; manual title review; browser and staging replay | Localised/non-numeric seasons and account-wide activity export not verified |
+| Amazon Prime | Public native playback CSV; manual selection required; UTC start instants and title quoting; browser and staging replay | Playback is not evidence of completion; localised episode extraction and session consolidation not inferred |
+| Apple, Disney+, Max | Existing parsers and synthetic web flows; unsupported/competing JSON collections explicitly rejected | Authentic provider files remain unverified; TV watches without reliable episode identity are rejected |
 | TV Time | Liberator JSON/ZIP adapter, browser and iOS file flows | Disabled; complete authentic-file coverage still needed. GDPR CSV is unsupported because available synthetic fixtures do not verify real nested watch dates. Saved exports only, no recovery promise |
-| Trakt saved exports | Individual movie/episode history, watchlist, ZIP and limited annotation files; browser flows and iOS history/rating imports | Disabled; requires IMDb identifiers; annotations limited to non-empty sampled layouts; no complete native-account archive or aggregate watched-file claim |
+| Trakt saved exports | Individual movie/episode history, watchlist, ZIP and limited annotation files; browser flows and iOS history/rating imports | Disabled; history/watchlists can review missing identifiers or years; annotations limited to non-empty sampled layouts; no complete native-account archive or aggregate watched-file claim |
 
 Fixture sources and sanitisation are recorded in
 [the fixture README](../../packages/core/tests/fixtures/imports/README.md).
@@ -27,6 +29,13 @@ Savannah has already confirmed she has no saved exports available locally.
 A subsequent search found [public fixture sets and export excerpts](public-export-samples.md)
 for TV Time and Trakt. Their provenance and remaining real-file validation
 limits are recorded separately; these adapters are still not enabled.
+
+The normal web startup now accepts `VITE_IMPORT_ANNOTATIONS_ENABLED=true` for
+an explicitly configured staging build, alongside `VITE_IMPORT_EVENTS_ENABLED`.
+Both default off. The separate TV Time adapter remains internal-only. This wiring
+does not enable any deployed environment, prove the normal authenticated app
+journey, or approve public rollout. Current evidence and open gates are in
+`import-verification-matrix.md`; older dated sections there are historical.
 
 Individual watches use an additive private event store. Original provider event
 IDs, or SHA-256(file) plus original row position, make retries idempotent while

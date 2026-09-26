@@ -25,7 +25,13 @@ export function parseImportDocument(platform, text, { fileName = '' } = {}) {
     return document;
   }
   if (platform === 'tvtime') return parseTvTimeDocument(text, fileName);
-  return { entries: parsePlatform(platform, text, { fileName }), warnings: [], notImported: [] };
+  const notImported = [];
+  const entries = parsePlatform(platform, text, { fileName, onOmitted: index => {
+    notImported.push({ title: IMPORT_VIEW.sourceRecord(index + 1), reason: 'missing_title' });
+  } });
+  if (entries.some(row => row.annotation) && (!getConfig().importAnnotationsEnabled || !getConfig().importEventsEnabled)) throw new Error(IMPORT_VIEW.annotationsUnavailable);
+  const warnings = entries.some(row => row.requiresWatchReview) ? [{ title: 'Amazon Prime', reason: 'playback_review' }] : [];
+  return { entries, warnings, notImported };
 }
 
 /** @param {{warnings?: any[], notImported?: any[]}} document */

@@ -340,3 +340,24 @@ test('results retain entries left without a confirmed match', async ({ page }) =
   await expect(page.getByText('1 entry added · 0 duplicates skipped · 0 not confirmed · 1 left out without a confirmed match', { exact: true })).toBeVisible();
   expect(JSON.parse(await page.getByTestId('saved-events').textContent())).toHaveLength(1);
 });
+
+test('Trakt missing IDs and year require a user title choice before import', async ({ page }) => {
+  const { readFileSync } = await import('node:fs');
+  const { Buffer } = await import('node:buffer');
+  const record = JSON.parse(readFileSync(file, 'utf8'))[1];
+  const captured = JSON.parse(readFileSync(new URL('../../../../packages/core/tests/fixtures/imports/tmdb-trakt-matches.json', import.meta.url), 'utf8')).results;
+  const match = captured[record.movie.ids.imdb].movie_results[0];
+  record.movie.ids = {};
+  record.movie.year = null;
+  await page.goto('/tests/smoke/fixtures/history-import.html');
+  await page.getByRole('button', { name: 'Trakt saved export JSON export' }).click();
+  await page.locator('input[type=file]').setInputFiles({ name: 'watched-history.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify([record])) });
+  await expect(page.getByRole('combobox')).toHaveValue('');
+  await expect(page.getByTestId('saved-events')).toBeEmpty();
+  await page.getByRole('combobox').selectOption(`movie:${match.id}`);
+  await page.getByRole('button', { name: 'Import →', exact: true }).click();
+  await expect(page.getByText('1 entry added · 0 duplicates skipped · 0 not confirmed', { exact: true })).toBeVisible();
+  const events = JSON.parse(await page.getByTestId('saved-events').textContent());
+  expect(events).toHaveLength(1);
+  expect(events[0]).toMatchObject({ tmdb_id: match.id, watched_at: null });
+});

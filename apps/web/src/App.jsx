@@ -31,6 +31,7 @@ import { readCachedSession, writeCachedSession, clearCachedSession } from './uti
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
 import { updateProfile } from '@plot/core/profile.js';
+import { loadPremiumEntitlement } from '@plot/core/billing.js';
 import { AppContext, useApp } from './hooks/useApp.js';
 
 export { useApp };
@@ -159,6 +160,7 @@ export default function App() {
       .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
       .eq('id', userId)
       .maybeSingle();
+    if (data) data.is_premium = await loadPremiumEntitlement();
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
     setUserTimezone(data?.timezone || null);
@@ -185,6 +187,26 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, [loadProfile]);
+
+  // DOM focus/visibility belongs to web; the entitlement read lives in core.
+  // Recheck on return from Stripe and while open, even without a new webhook.
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    const refresh = async () => {
+      if (document.visibilityState === 'hidden') return;
+      const entitled = await loadPremiumEntitlement();
+      if (active) setProfile(current => current?.id === user.id
+        ? { ...current, is_premium: entitled } : current);
+    };
+    window.addEventListener('focus', refresh);
+    const timer = window.setInterval(refresh, 60_000);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refresh);
+      window.clearInterval(timer);
+    };
+  }, [user?.id]);
 
   /* ── Timezone mismatch check ── */
   const tzBanner = useMemo(() => {

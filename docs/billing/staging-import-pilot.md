@@ -84,14 +84,20 @@ Private executable evidence scripts: `staging-db.cjs` with `apply.sql`,
 `verify-database.mjs`, `web-flow.cjs`, and `verify-persistence.mjs` under the ignored
 pilot directory. Credentials must never be copied into tracked fixtures.
 
-### Catalogue routing limitation
+### Initial catalogue routing limitation (resolved 2026-09-23)
 
 The deployed edge function requires TMDB_PROXY_SHARED_SECRET. Its value is not
 locally available; secret listing reveals only its digest. No existing secret
 was rotated. For runtime web/iOS tests, a loopback-only bridge on port 5190 used
 the existing server-side TMDB key and fetched live catalogue responses. This
 proves live matching plus real staging persistence, but does not prove the
-deployed Worker-to-edge route. That admission-control chain remains to verify.
+deployed Worker-to-edge route. This was the limitation of the initial pilot.
+
+On 2026-09-23, both an authenticated request and the exact publishable-key
+headers used by core succeeded through the deployed staging Worker. The actual
+web import preview then resolved its titles through that route with no local
+catalogue bridge. No secret rotation or deployment was required. See the
+[session and routing verification](import-verification-matrix.md#session-renewal-and-deployed-catalogue-route-2026-09-23).
 
 Production, public flags, provider account links, automatic schedules and payment
 settings were not changed. QA accounts and imported synthetic records remain in
@@ -122,3 +128,82 @@ accounts plus access to a Plex server, the private staging Plex pilot was prepar
 
 Savannah is unsure whether PLOT has a registered Trakt application. Trakt live
 verification cannot proceed until its client credentials and callback are set up.
+
+## Fresh provider preflight, 23 September 2026
+
+After Savannah asked specifically about TV Time, Trakt and Plex, the existing
+authorised staging pilot was checked again:
+
+- `node .playwright/import-pilot/plex-connect.mjs profiles` reached the staging
+  media-sync endpoint but returned HTTP 500: the selected server is unreachable
+  or denied access. This does not distinguish a powered-off server, remote-access
+  routing problem or denied access. No profile was selected and no history imported.
+- `node scripts/supabase-staging.mjs secrets list --output json` confirmed that
+  **both TRAKT_CLIENT_ID and TRAKT_CLIENT_SECRET are absent** in PLOT Staging.
+  Only name presence was reported, never secret values. The first CLI attempt
+  was stopped by local telemetry-file sandbox permissions; the approved read-only
+  retry succeeded. No credentials, flags or provider settings were changed.
+- Live Trakt OAuth still needs the PLOT developer application's credentials and
+  an approved callback. A user's ordinary Trakt login alone is insufficient.
+- TV Time remains saved-file-only. Its Liberator adapter can be exercised with
+  existing fixtures, but a complete authentic saved archive and the separate
+  GDPR CSV representation remain unverified. Savannah already said she has no
+  saved export; do not repeatedly ask for the same unavailable file.
+
+These are current preflight results, not successful connected-account syncs.
+The focused Deno provider suite (`plexTracking.test.ts`, `traktPagination.test.ts`,
+`trackingWorkerAuth.test.ts`) passed seven tests. The core TV Time/Trakt import
+and Trakt annotation tests were rerun separately; these use fixtures, not live
+provider accounts.
+Plex requires reachable authorised server access; Trakt requires app credentials.
+No paid account, purchase, production deployment or account mutation was made.
+
+### Plex connection discovery follow-up
+
+`node .playwright/import-pilot/plex-connect.mjs sources` returned HTTP 200 and
+one advertised server. This proves account/resource discovery, not server
+reachability or profile access. Profile discovery's prior unreachable/denied
+result is still unresolved.
+
+Code inspection found that `plexServerRequest` sliced the first two resource
+connections before rejecting local/unsafe URLs. Local entries could therefore
+consume the entire attempt budget without any remote request. The local fix
+counts only distinct safe requests, retains the two-request limit and five-second
+timeout, and leaves the connection security policy unchanged. A regression
+places invalid/local/duplicate entries before two allowed remote URLs.
+This fix is not deployed and is not yet proven to explain Savannah's failure.
+
+Verification: four focused Plex tests passed; `pnpm run check` passed;
+`pnpm run edge:check` passed all 23 function typechecks and lint across 56 files
+after correcting the test mock's missing await; `git diff --check` passed.
+
+Staging rollout commands (subsequently approved and executed below):
+
+```sh
+node scripts/supabase-staging.mjs functions deploy media-sync
+node scripts/supabase-staging.mjs functions deploy tracking-worker
+node .playwright/import-pilot/plex-connect.mjs profiles
+```
+
+The wrapper fixes the destination to PLOT Staging. Both functions import the
+changed module. Their checked-in JWT settings remain unchanged. This approval
+request covers deployment and discovery only, not selecting a profile, importing
+history, scheduling jobs, changing credentials or deploying production.
+
+### Approved staging deployment and discovery result
+
+Savannah explicitly approved deploying to staging and checking Plex. Both
+`media-sync` and `tracking-worker` deployed successfully to the fixed staging
+project `uzrhfivnhdcfieuaxzip`, including the updated `plexTracking.ts` module.
+Remote deployment succeeded despite the CLI's Docker-not-running warning.
+
+Fresh `sources` discovery returned HTTP 200. The subsequent `profiles` check
+still returned HTTP 500: "The selected Plex server is unreachable or denied
+access. Check remote access and retry." The connection-budget fix therefore
+does not resolve the current live failure by itself. This result does not
+distinguish server downtime, remote-access routing or denied server access.
+
+No profile was selected, no viewing history was imported, no scheduler was
+installed and production was unchanged. Next requires confirming that the
+server is running and accessible remotely to the linked Plex account, then
+retrying profile discovery. Staging deployment approval is fulfilled, not pending.

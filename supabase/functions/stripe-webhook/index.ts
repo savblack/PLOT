@@ -19,6 +19,8 @@
 import Stripe from 'npm:stripe@22.3.2';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { cancelsAtPeriodEnd } from '../_shared/billingPolicy.ts';
+import { reconcileBillingSnapshot } from '../_shared/billingSnapshot.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
@@ -37,11 +39,6 @@ const json = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-// Statuses that keep the Premium entitlement. past_due is included so a
-// failing card keeps access through Stripe's retry window; the DB-side
-// is_premium() adds a 3-day grace on current_period_end.
-const ENTITLED = new Set(['active', 'trialing', 'past_due']);
-
 // Stripe API versions >= 2025-03-31 moved current_period_end onto the
 // subscription items; older versions have it on the subscription. Read both.
 function periodEnd(sub: Stripe.Subscription): string | null {
@@ -55,51 +52,48 @@ type SyncArgs = {
   userId: string;
   customerId: string;
   sub: Stripe.Subscription;
-  eventCreated: number;
+  event: Stripe.Event;
 };
 
-async function syncSubscription({ userId, customerId, sub, eventCreated }: SyncArgs) {
-  const db = admin();
-  const eventAt = new Date(eventCreated * 1000).toISOString();
-
-  // Out-of-order guard: never let an older event overwrite newer state.
-  const { data: existing } = await db
-    .from('billing_customers')
-    .select('last_event_at')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (existing?.last_event_at && existing.last_event_at > eventAt) return;
-
-  const end = periodEnd(sub);
-  const { error: billErr } = await db.from('billing_customers').upsert({
-    user_id: userId,
-    stripe_customer_id: customerId,
-    stripe_subscription_id: sub.id,
-    subscription_status: sub.status,
-    price_id: sub.items?.data?.[0]?.price?.id ?? null,
-    cancel_at_period_end: !!sub.cancel_at_period_end,
-    current_period_end: end,
-    last_event_at: eventAt,
-    updated_at: new Date().toISOString(),
-  });
-  if (billErr) throw new Error(`billing_customers upsert failed: ${billErr.message}`);
-
-  const entitled = ENTITLED.has(sub.status) && !!end && new Date(end).getTime() > Date.now();
-  const { error: profErr } = await db
-    .from('profiles')
-    .update({ is_premium: entitled })
-    .eq('id', userId);
-  if (profErr) throw new Error(`profiles badge update failed: ${profErr.message}`);
+async function syncSubscription({ userId, customerId, sub, event }: SyncArgs) {
+  return await reconcileBillingSnapshot(
+    async () => {
+      const { data, error } = await admin().from('billing_customers').select('revision').eq('user_id', userId).maybeSingle();
+      if (error) throw error;
+      return data?.revision ?? null;
+    },
+    () => stripe.subscriptions.retrieve(sub.id),
+    async (current, revision) => {
+      if ((typeof current.customer === 'string' ? current.customer : current.customer.id) !== customerId) throw new Error('Subscription customer mismatch');
+      const end = periodEnd(current);
+      const { data, error } = await admin().rpc('apply_stripe_subscription_snapshot', {
+        p_expected_revision: revision,
+        p_event_id: event.id,
+        p_event_type: event.type,
+        p_event_created: new Date(event.created * 1000).toISOString(),
+        p_user_id: userId,
+        p_customer_id: customerId,
+        p_subscription_id: current.id,
+        p_status: current.status,
+        p_price_id: current.items?.data?.[0]?.price?.id ?? null,
+        p_cancel_at_period_end: cancelsAtPeriodEnd(current, end),
+        p_current_period_end: end,
+      });
+      if (error) throw new Error(`Subscription transaction failed: ${error.message}`);
+      return data;
+    },
+  );
 }
 
 // Resolve the Supabase user for a subscription event: mapping table first,
 // then the metadata stamped onto the subscription at checkout time.
 async function resolveUser(customerId: string, sub: Stripe.Subscription) {
-  const { data } = await admin()
+  const { data, error } = await admin()
     .from('billing_customers')
     .select('user_id')
     .eq('stripe_customer_id', customerId)
     .maybeSingle();
+  if (error) throw new Error(`Billing account lookup failed: ${error.message}`);
   return data?.user_id ?? sub.metadata?.supabase_user_id ?? null;
 }
 
@@ -124,18 +118,6 @@ Deno.serve(async (req) => {
     return json({ error: 'Invalid signature' }, 400);
   }
 
-  // Idempotency: first delivery inserts the event id; replays insert nothing
-  // and are acknowledged without side effects.
-  const { data: fresh, error: logErr } = await admin()
-    .from('stripe_events')
-    .upsert({ id: event.id, type: event.type }, { onConflict: 'id', ignoreDuplicates: true })
-    .select('id');
-  if (logErr) {
-    console.error('Event log insert failed:', logErr.message);
-    return json({ error: 'Event log failure' }, 500);
-  }
-  if (!fresh?.length) return json({ received: true, duplicate: true });
-
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -145,12 +127,10 @@ Deno.serve(async (req) => {
         const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
         const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
         if (!userId || !customerId || !subId) {
-          console.error('checkout.session.completed missing linkage', { userId, customerId, subId });
-          break;
+          throw new Error('Checkout subscription is missing PLOT linkage');
         }
         const sub = await stripe.subscriptions.retrieve(subId);
-        await syncSubscription({ userId, customerId, sub, eventCreated: event.created });
-        break;
+        return json({ received: true, ...await syncSubscription({ userId, customerId, sub, event }) });
       }
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
@@ -161,16 +141,15 @@ Deno.serve(async (req) => {
           console.error(`${event.type}: no user for customer ${customerId}`);
           break;
         }
-        await syncSubscription({ userId, customerId, sub, eventCreated: event.created });
-        break;
+        return json({ received: true, ...await syncSubscription({ userId, customerId, sub, event }) });
       }
       default:
         break; // unrecognised events are acknowledged, not retried
     }
   } catch (err) {
     console.error(`Handler failed for ${event.type}:`, (err as Error).message);
-    // Remove the idempotency marker so Stripe's retry actually re-runs the handler.
-    await admin().from('stripe_events').delete().eq('id', event.id);
+    // The RPC rolls back its receipt with the failed state update. No cleanup
+    // request (which could also fail) is needed before Stripe retries.
     return json({ error: 'Handler failure' }, 500);
   }
 

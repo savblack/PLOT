@@ -4,7 +4,7 @@ Reviewed 16 September 2026. This is a build assessment, not evidence of a live p
 
 ## Product decision
 
-Keep the recorded A$5/month or A$40/year price (33% annual saving). Keep tracking,
+Keep the recorded US$3/month or US$25/year price (31% annual saving). Keep tracking,
 watch history, discovery, statistics, imports and data exports free. Existing lists
 must remain accessible after cancellation. Launch Premium around unlimited custom
 lists and a live release calendar. Treat Plex/Trakt sync as a later addition until
@@ -35,13 +35,13 @@ amounts; regional checkout prices and tax were not independently verified.
 
 - Stripe Checkout, customer portal, signed webhook, database entitlements and
   calendar feed already exist. Public pricing and media-sync flags remain disabled.
-- Correct shared/web prices to A$5/A$40; marketing already had those amounts.
+- Correct shared/web prices to US$3/US$25; marketing already had those amounts.
 - Move plans copy into core and retain the web shim. Show calendar benefits and free
   statistics/export instead of promising unavailable sync.
 - Preserve the selected plan through anonymous signup.
 - Show payment confirmation pending until the profile confirms entitlement.
 - Require STRIPE_CHECKOUT_ENABLED=true on the server, an explicit supported plan,
-  and an active AUD Stripe price matching the advertised amount and interval.
+  and an active USD Stripe price matching the advertised amount and interval.
 - Fail closed when the billing-account lookup fails, rather than creating another
   checkout after a database error.
 
@@ -52,15 +52,15 @@ amounts; regional checkout prices and tax were not independently verified.
 2. **Checkout concurrency:** persist a stable Stripe customer before checkout and
    reuse an open session. Current checks only catch an already-mapped active
    subscription; simultaneous first purchases can still create two subscriptions.
-3. **Webhook durability:** the current insert-before-processing event marker can
-   strand an event if the process dies. Replace with transactional processing or a
-   retryable claim/completion state. The read-then-upsert ordering guard is not
-   atomic. Test duplicate, concurrent and out-of-order delivery, plus a crash
-   between updating billing and updating the profile badge.
-4. **Entitlement consistency:** database is_premium() uses a three-day grace;
-   the profile badge calculation does not. Clients read that badge, which can be
-   stale when time expires without another webhook. Use an authoritative status
-   response for access and billing management, including expired/past-due users.
+3. **Webhook durability:** the staging migration and handler now atomically commit
+   subscription, badge and receipt with an account lock. Staging rollback tests
+   prove failure recovery, duplicate and older-event behaviour. Production rollout
+   and concurrent/equal-timestamp delivery checks remain. See
+   [test evidence](stripe-test-verification.md#subscription-and-access-follow-up-2026-09-23).
+4. **Entitlement consistency:** web now reads the authoritative entitlement and
+   retains billing management after expiry. The new badge write uses the database
+   grace policy. Staging backend rollout is complete; actual signed payment activation is pending;
+   native wiring remains deferred.
 5. **Lifecycle proof in Stripe test mode:** purchase both plans; delayed activation;
    decline; renewal; failed renewal and recovery; cancel at period end; resume;
    plan switch; expiry; portal access after loss of entitlement. Prove list data
@@ -76,8 +76,9 @@ amounts; regional checkout prices and tax were not independently verified.
 
 Schema work in items 2–4 must follow AGENTS.md: inspect live function bodies,
 run migration restore and function-diff checks, then obtain approval before
-production application. No migration, production configuration or payment was
-performed by this branch.
+production application. No production migration, production configuration or live payment was
+performed by this branch. Sandbox payments and rollback-only staging proofs are
+recorded separately from deployed readiness.
 
 Reference: [Stripe webhook guidance](https://docs.stripe.com/webhooks) covers
 retries, duplicates and non-guaranteed event order. Local checks do not substitute

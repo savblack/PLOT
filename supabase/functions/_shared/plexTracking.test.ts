@@ -1,4 +1,4 @@
-import { plexHistoryPage, publicPlexResources, selectedPlexServer, validatePlexHistory } from './plexTracking.ts';
+import { plexServerRequest, plexHistoryPage, publicPlexResources, selectedPlexServer, validatePlexHistory } from './plexTracking.ts';
 import series from '../../../packages/core/tests/fixtures/imports/tmdb-episode-series.json' with { type: 'json' };
 function assert(value: unknown) { if (!value) throw new Error('Assertion failed'); }
 function rejects(fn: () => unknown) { let failed = false; try { fn(); } catch { failed = true; } assert(failed); }
@@ -38,5 +38,26 @@ Deno.test('Plex episodes use parent series IDs and stable watch identities with 
     assert(page.records[0].event.watched_at === null && page.records[0].event.source_key !== page.records[1].event.source_key);
     assert(requests.filter(url => url.pathname === '/library/metadata/10').length === 1);
     assert(requests.every(url => !url.searchParams.has('X-Plex-Token')));
+  } finally { globalThis.fetch = original; }
+});
+
+Deno.test('Plex skips local, invalid and duplicate URLs before counting remote attempts', async () => {
+  const original = globalThis.fetch;
+  const requested: string[] = [];
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    await Promise.resolve();
+    const url = new URL(input instanceof Request ? input.url : input);
+    requested.push(url.hostname);
+    return requested.length === 1 ? new Response('', { status: 503 }) : new Response('<MediaContainer/>');
+  }) as typeof fetch;
+  try {
+    const result = await plexServerRequest({ connections: [
+      { uri: 'not a URL' }, { uri: 'http://192.168.1.2:32400' },
+      { uri: 'https://8-8-8-8.test.plex.direct:32400' },
+      { uri: 'https://8-8-8-8.test.plex.direct:32400' },
+      { uri: 'https://1-1-1-1.test.plex.direct:32400' },
+    ] }, 'test-token', '/accounts');
+    assert(result === '<MediaContainer/>');
+    assert(JSON.stringify(requested) === JSON.stringify(['8-8-8-8.test.plex.direct', '1-1-1-1.test.plex.direct']));
   } finally { globalThis.fetch = original; }
 });

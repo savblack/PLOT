@@ -75,17 +75,45 @@ export function chooseImportMatch(entry, candidateKey) {
   const chosen = { ...entry, status: 'matched', tmdbId: match.id, mediaType: match.media_type,
     tmdbTitle: match.title || match.name, posterPath: match.poster_path ?? null,
     genreIds: genreIdsFromItem(match), duplicateDecision: null };
+  // A named episode resolved for one series must never carry its ordinal into
+  // a different series when the user changes the title match.
+  if (entry.episodeTitle && entry.episodeResolvedFor !== match.id) chosen.episodeNumber = undefined;
   if (getConfig().importEventsEnabled && requiresEpisodeIdentity(chosen)) return { ...chosen, status: 'unmatched', reason: 'episode_identity_required' };
   return { ...chosen, duplicateCandidates: entry.knownEvents ? possibleWatchDuplicates(chosen, entry.knownEvents) : [] };
+}
+
+/** Resolve a named episode after the user selects a verified catalogue candidate.
+ * @param {any} entry
+ * @param {string} candidateKey
+ * @param {{ getSeason: (id: number, season: number) => Promise<any> }} deps
+ */
+export async function resolveImportMatch(entry, candidateKey, { getSeason }) {
+  const chosen = chooseImportMatch(entry, candidateKey);
+  if (!candidateKey || entry.source !== 'netflix' || !entry.episodeTitle
+      || chosen.mediaType !== 'tv' || !Number.isSafeInteger(entry.seasonNumber) || entry.seasonNumber < 0) return chosen;
+  try {
+    const season = await getSeason(chosen.tmdbId, entry.seasonNumber);
+    const episodes = (season?.episodes || []).filter(episode =>
+      matchTitle(episode.name) === matchTitle(entry.episodeTitle)
+      && Number.isSafeInteger(episode.episode_number) && episode.episode_number > 0);
+    const resolved = { ...entry, reason: 'review', episodeNumber: undefined, episodeResolvedFor: undefined };
+    if (episodes.length === 1) {
+      resolved.episodeNumber = episodes[0].episode_number;
+      resolved.episodeResolvedFor = chosen.tmdbId;
+    }
+    return chooseImportMatch(resolved, candidateKey);
+  } catch {
+    return { ...chosen, status: 'unmatched', episodeNumber: undefined, episodeResolvedFor: undefined, reason: 'search_failed' };
+  }
 }
 
 /**
  * Resolve parsed entries to TMDB titles.
  * @param {any[]} entries
- * @param {{ search: (title: string) => Promise<any>, findByImdbId?: (id: string) => Promise<any>, findByTvdbId?: (id: number|string) => Promise<any>, onProgress?: (done: number, total: number) => void }} [deps]
+ * @param {{ search: (title: string) => Promise<any>, findByImdbId?: (id: string) => Promise<any>, findByTvdbId?: (id: number|string) => Promise<any>, getSeason?: (id: number, season: number) => Promise<any>, onProgress?: (done: number, total: number) => void }} [deps]
  * @returns {Promise<any[]>} one result per entry, `status: 'matched' | 'unmatched'`
  */
-export async function resolveImportEntries(entries, { search, findByImdbId, findByTvdbId, onProgress } = /** @type {any} */ ({})) {
+export async function resolveImportEntries(entries, { search, findByImdbId, findByTvdbId, getSeason, onProgress } = /** @type {any} */ ({})) {
   const resolved = [];
   const searches = new Map();
 
@@ -118,7 +146,15 @@ export async function resolveImportEntries(entries, { search, findByImdbId, find
         if (!searches.has(key)) { requested = true; searches.set(key, search(entry.title)); }
         const res = await searches.get(key);
         const candidates = (res?.results || []).filter(r => Number.isSafeInteger(r.id) && r.id > 0 && ['movie', 'tv'].includes(r.media_type));
-        const match = entry.source === 'tvtime' && !entry.year ? null : pickTmdbMatch(entry, candidates);
+        const match = entry.requiresWatchReview || (['tvtime', 'trakt'].includes(entry.source) && !entry.year) ? null : pickTmdbMatch(entry, candidates);
+        if (entry.source === 'netflix' && entry.episodeTitle && match?.media_type === 'tv'
+            && Number.isSafeInteger(entry.seasonNumber) && entry.seasonNumber >= 0 && getSeason) {
+          const seasonKey = `season:${match.id}:${entry.seasonNumber}`;
+          if (!searches.has(seasonKey)) { requested = true; searches.set(seasonKey, getSeason(match.id, entry.seasonNumber)); }
+          return resolveImportMatch({ ...entry, candidates, reason: 'review' }, `tv:${match.id}`, {
+            getSeason: () => searches.get(seasonKey),
+          });
+        }
         return chooseImportMatch({ ...entry, candidates, reason: candidates.length ? 'review' : 'not_found' },
           match ? `${match.media_type}:${match.id}` : '');
       } catch {

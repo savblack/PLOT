@@ -6,7 +6,72 @@ No third-party implementation code was copied. Two minimised Trakt metadata
 records were subsequently retained as a parser fixture; see the fixture README
 for sanitisation and separately verified TMDB responses.
 
+## Netflix follow-up, 23 September 2026
+
+Inspected the public `NetflixViewingHistory.csv` in
+[previously-on-netflix at 3df3e05](https://github.com/akshitasure12/previously-on-netflix/blob/3df3e05decc921df2b1e3bdaf71d720ccedbea48/NetflixViewingHistory.csv).
+Its Title/Date layout contains DD/MM/YY values and named episodes under numeric
+season labels. Two title rows were retained with synthetic replacement watch
+dates in `netflix-viewing-history.csv`; no account identity or TMDB IDs were
+copied. The file exposed a real compatibility gap in short-year date handling.
+The two episode names were subsequently resolved at runtime through the staging
+catalogue Worker and imported into the existing synthetic QA account.
+
+This is evidence for this public saved-file shape, not all export locales or
+the separate account-wide `ViewingActivity.csv`. Full current Apple, Disney+
+and Max export samples remain unverified. Do not treat importer implementations
+or generic JSON examples as genuine provider exports.
+
+## Remaining streaming sample search, 23 September 2026
+
+A further GitHub/web search for Apple play-history CSVs, Apple's assumed
+Item_Description/Event_End_Timestamp pair, Disney watch-history JSON and Max
+export samples did not establish an authentic provider file. Results mostly
+described third-party browser trackers, unrelated datasets or importer plans.
+This is a bounded unsuccessful search, not evidence that exports do not exist.
+The Apple/Disney/Max real-file validation gate remains open. Existing synthetic
+transport tests cannot establish those provider contracts.
+
+## Amazon playback export, 23 September 2026
+
+Found a public saved [PrimeVideo.ViewingHistory.csv](https://github.com/JDizzle00/PythonScripts/blob/1eed86e871d33c4362328bf0b4454cd3e7dc7e1e/PrimeVideoStats/PrimeVideo.ViewingHistory.csv).
+It uses Playback Start/End Datetime (UTC), Title and Seconds Viewed, plus many
+device/network/location fields. The minimised fixture retains the headers and
+two title strings, clears all other original values and inserts synthetic dates
+and viewed seconds. No original location/device data or viewing dates are kept.
+
+This file contains playback sessions, including partial plays and non-film
+content. The parser therefore requires explicit title selection and displays a
+warning before and after import. UTC playback start is retained at instant
+precision. The sample also establishes an extra literal quote pair around some
+titles. No locale-specific episode-title extraction or session-to-completed-watch
+inference is made. Other native export versions remain unverified.
+
+## IMDb watchlist follow-up, 23 September 2026
+
+The public saved [Watchlist.csv in filmster](https://github.com/trygvels/filmster/blob/3ad8f4a3585326295d5e779ca0e18720cdf99dee/Watchlist.csv)
+contains 78 movies, seven TV series, two TV movies and one TV miniseries.
+Four minimised rows now cover those types, with personal dates, ratings and
+descriptions cleared. The IMDb IDs were resolved through the staging catalogue
+Worker and the returned TMDB responses captured separately. This extends
+watchlist compatibility beyond movies; it does not validate TV rating imports,
+episode lists, custom-list formats or every current export version.
+
+The separate [ratings.csv at 21b18d2](https://github.com/trygvels/filmster/blob/21b18d2f21c87ebf5f2247993e756f2b85ae9d19/ratings.csv)
+contains 80 series and 17 miniseries ratings, alongside movies and a few other
+title types. One series and one miniseries were retained with synthetic ratings
+and rating dates. These now establish series/miniseries rating annotations;
+other title types and complete-file compatibility remain separate work. The
+ratings do not establish episode completion or watch dates.
+
 ## Trakt
+
+[Trakt API issue 815](https://github.com/trakt/trakt-api/issues/815), inspected
+23 September 2026, publishes a first-hand watchlist response with null movie
+IMDb/TMDB IDs and year. The sanitised fixture removes rank and clears the
+personal listed date. It establishes nullable catalogue metadata, not a complete
+export envelope. PLOT now allows these records into manual title review rather
+than rejecting a whole file solely for missing metadata.
 
 [Yamtrack export fixtures](https://github.com/FuzzyGrim/Yamtrack/tree/acd13841485ccebda2169b01c0b285d5f95a4b1d/src/integrations/tests/mock_data/trakt_export)
 contain watched-history.json, ratings for movies/shows/seasons/episodes,

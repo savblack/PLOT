@@ -30,7 +30,7 @@ The API schema is stronger implementation evidence than the product-page snippet
 for example, history refresh restrictions must be honoured even though the product
 page describes automatic personalisation broadly.
 
-## Cost model in Australian dollars
+## Historical cost model (superseded) in Australian dollars
 
 Let N be paying subscribers, U be connected subscribers, M a monthly minimum,
 c the per-connected-user monthly fee and O all monthly payment/store, hosting,
@@ -43,6 +43,9 @@ support and tax costs. If the minimum is credited against usage:
 The following are sensitivity assumptions, **not Younify quotes**. All subscribers
 are connected, there is no minimum, and the amounts below are per subscriber per
 month, before O:
+
+The AUD model below is historical and must be recalculated for the new
+US$3/month and US$25/year pricing before a provider commitment.
 
 | Assumed provider charge | A$5 monthly plan remaining | A$40 annual plan remaining |
 | --- | ---: | ---: |
@@ -71,7 +74,7 @@ streaming flag or placeholder UI can make an unverified provider appear enabled.
 
 PLOT is a movie and TV journal with web and Expo 57 / React Native 0.86.3 apps.
 We are evaluating Younify Connect for incoming watch history, including individual
-episodes and rewatches, for Australian customers. Pricing is A$5/month or A$40/year.
+episodes and rewatches, for Australian customers. Pricing is US$3/month or US$25/year.
 
 Please provide sandbox access and the applicable evaluation/commercial terms;
 SDK compatibility with our native versions; Australian service/profile coverage;

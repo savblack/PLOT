@@ -34,7 +34,7 @@ test('Trakt rejects a whole file if any record is unsupported or invalid', () =>
     { type: 'show' }, { action: 'unknown' }, { id: 1.5 },
     { watched_at: '2024-02-30T00:00:00Z' }, { watched_at: '2024-01-01' },
     { watched_at: undefined }, { episode: { season: 1 } },
-    { show: { ...sample[0].show, ids: {} } },
+    { show: { ...sample[0].show, ids: { imdb: 'invalid' } } },
   ]) assert.throws(() => parse([sample[1], { ...sample[0], ...patch }]), /Unsupported Trakt/);
   assert.throws(() => parse({ history: sample }), /Unsupported Trakt/);
   assert.throws(() => parsePlatform('trakt', 'not JSON'), /Unsupported Trakt/);
@@ -65,4 +65,32 @@ test('Trakt watchlist exports preserve memberships without creating watch dates'
   records[0].my_rating = { rating: 8 };
   assert.deepEqual(parsePlatform('trakt', JSON.stringify(records), { fileName: 'lists-watchlist.json' })[0].sourceMetadata.trakt_rating, { rating: 8 });
   assert.throws(() => parsePlatform('trakt', file, { fileName: 'renamed.json' }), /Unsupported Trakt history/);
+});
+
+test('real orphaned Trakt watchlist record reaches review without inventing media IDs', () => {
+  const text = readFileSync(new URL('../fixtures/imports/trakt-missing-metadata-watchlist.json', import.meta.url), 'utf8');
+  const [entry] = parsePlatform('trakt', text, { fileName: 'lists-watchlist.json' });
+  assert.equal(entry.title, 'Nosferatu');
+  assert.equal(entry.year, null);
+  assert.deepEqual(entry.externalIds, {});
+  assert.equal(entry.destination.kind, 'watchlist');
+  assert.equal(entry.date, null);
+});
+
+test('Trakt missing identifiers use title/year; missing year always requires review', async () => {
+  const { configure } = await import('../../config.js');
+  const { resolveImportEntries } = await import('../../importPipeline.js');
+  const captured = JSON.parse(readFileSync(new URL('../fixtures/imports/tmdb-trakt-matches.json', import.meta.url))).results;
+  const match = captured[sample[1].movie.ids.imdb].movie_results[0];
+  const record = { ...sample[1], movie: { ...sample[1].movie, ids: {} } };
+  configure({ importEventsEnabled: true });
+  const deps = { search: async () => ({ results: [{ ...match, media_type: 'movie' }] }) };
+  const withYear = identifyImportEntries(parse([record]), 'trakt', 'missing-ids');
+  assert.equal((await resolveImportEntries(withYear, deps))[0].status, 'matched');
+  record.movie.year = null;
+  const withoutYear = identifyImportEntries(parse([record]), 'trakt', 'missing-year');
+  const [review] = await resolveImportEntries(withoutYear, deps);
+  assert.equal(review.status, 'unmatched');
+  assert.equal(review.reason, 'review');
+  assert.equal(review.tmdbId, undefined);
 });

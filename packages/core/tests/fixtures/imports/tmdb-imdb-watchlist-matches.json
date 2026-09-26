@@ -1,0 +1,127 @@
+{
+  "source": "TMDB find by IMDb ID via staging Worker",
+  "retrieved": "2026-09-23",
+  "results": {
+    "tt0087843": {
+      "movie_results": [
+        {
+          "adult": false,
+          "backdrop_path": "/xlDUjb0Q5Dv6jPQRF5VE4IMjIy.jpg",
+          "id": 311,
+          "title": "Once Upon a Time in America",
+          "original_title": "Once Upon a Time in America",
+          "overview": "A former Prohibition-era Jewish gangster returns to the Lower East Side of Manhattan over thirty years later, where he once again must confront the ghosts and regrets of his old life.",
+          "poster_path": "/i0enkzsL5dPeneWnjl1fCWm6L7k.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            18,
+            80
+          ],
+          "popularity": 24.893,
+          "release_date": "1984-05-23",
+          "softcore": false,
+          "video": false,
+          "vote_average": 8.4,
+          "vote_count": 6217
+        }
+      ],
+      "person_results": [],
+      "tv_results": [],
+      "tv_episode_results": [],
+      "tv_season_results": []
+    },
+    "tt6611916": {
+      "movie_results": [],
+      "person_results": [],
+      "tv_results": [
+        {
+          "adult": false,
+          "backdrop_path": "/jRhJlV4inm8wAAqTeHUX5HpjZcc.jpg",
+          "id": 70593,
+          "name": "Kingdom",
+          "original_name": "킹덤",
+          "overview": "In this zombie thriller set in Korea's medieval Joseon dynasty which has been defeated by corruption and famine, a mysterious rumor of the king’s death spreads, as does a strange plague that renders the infected immune to death and hungry for flesh. The crown prince, fallen victim to a conspiracy, sets out on a journey to unveil the evil scheme and save his people.",
+          "poster_path": "/AsICtiVtz4icMQQRwDvOzfaTzjK.jpg",
+          "media_type": "tv",
+          "original_language": "ko",
+          "genre_ids": [
+            18,
+            9648
+          ],
+          "popularity": 12.9139,
+          "first_air_date": "2019-01-25",
+          "softcore": false,
+          "vote_average": 8.202,
+          "vote_count": 1271,
+          "origin_country": [
+            "KR"
+          ]
+        }
+      ],
+      "tv_episode_results": [],
+      "tv_season_results": []
+    },
+    "tt7818686": {
+      "movie_results": [],
+      "person_results": [],
+      "tv_results": [
+        {
+          "adult": false,
+          "backdrop_path": "/pqmXTD2xyXCx15UmgN52Qmdwcke.jpg",
+          "id": 78319,
+          "name": "James Acaster: Repertoire",
+          "original_name": "James Acaster: Repertoire",
+          "overview": "Offbeat comic James Acaster covers the strange, the mundane and everything in between in this collection of four wide-ranging stand-up specials.",
+          "poster_path": "/oYmfMa9yaMZID0q4gPIsmJw9cEF.jpg",
+          "media_type": "tv",
+          "original_language": "en",
+          "genre_ids": [
+            35,
+            10767
+          ],
+          "popularity": 2.177,
+          "first_air_date": "2018-03-27",
+          "softcore": false,
+          "vote_average": 8.025,
+          "vote_count": 59,
+          "origin_country": [
+            "GB"
+          ]
+        }
+      ],
+      "tv_episode_results": [],
+      "tv_season_results": []
+    },
+    "tt0129686": {
+      "movie_results": [
+        {
+          "adult": false,
+          "backdrop_path": "/yb1Fnpt51RR8gaNK9Hk7jXHGyrx.jpg",
+          "id": 19493,
+          "title": "Hornblower: The Even Chance",
+          "original_title": "Hornblower: The Even Chance",
+          "overview": "Portsmouth, 1794. Under thundery skies and in lashing rain, 17-year-old midshipman Horatio Hornblower takes the first tentative steps of his naval career, but a feud with a shipmate causes complications.",
+          "poster_path": "/gEBjQzBRJMTil8XE2VoZrOg5IYs.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            10752,
+            12,
+            10770
+          ],
+          "popularity": 2.1167,
+          "release_date": "1998-10-07",
+          "softcore": false,
+          "video": false,
+          "vote_average": 7.547,
+          "vote_count": 64
+        }
+      ],
+      "person_results": [],
+      "tv_results": [],
+      "tv_episode_results": [],
+      "tv_season_results": []
+    }
+  }
+}

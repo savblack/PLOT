@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { importReportMessages, importListSelections, importListResultMessage } from '../../importDocument.js';
+import { parseImportDocument, importReportMessages, importListSelections, importListResultMessage } from '../../importDocument.js';
 import { writeImportSelection } from '../../importPipeline.js';
 import { configure } from '../../config.js';
 
@@ -59,4 +59,28 @@ test('large saved exports preserve every record without overflowing the argument
   assert.equal(document.entries.at(-1).recordIndex, count - 1);
   assert.equal(document.entries.at(-1).eventId, count);
   assert.ok(document.entries.every(entry => entry.date === null));
+});
+
+test('streaming JSON omissions remain explicit rather than silently losing source records', () => {
+  for (const platform of ['disney', 'max', 'apple']) {
+    const result = parseImportDocument(platform, JSON.stringify([{ title: 'Example' }, { title: '' }, {}]));
+    assert.equal(result.entries.length, 1);
+    assert.deepEqual(result.notImported, [
+      { title: 'Record 2', reason: 'missing_title' },
+      { title: 'Record 3', reason: 'missing_title' },
+    ]);
+  }
+});
+
+test('Max JSON field errors do not fall through to the CSV parser', () => {
+  assert.throws(() => parseImportDocument('max', JSON.stringify([{ title: 123 }])), TypeError);
+  assert.throws(() => parseImportDocument('max', '[{"title":"unfinished"'), SyntaxError);
+});
+
+test('streaming CSV reports untitled data rows but ignores genuinely blank lines', () => {
+  for (const platform of ['netflix', 'prime', 'max']) {
+    const result = parseImportDocument(platform, 'Title,Date\nExample,2024-08-26\n,2024-08-27\n,\n');
+    assert.equal(result.entries.length, 1);
+    assert.deepEqual(result.notImported, [{ title: 'Record 2', reason: 'missing_title' }]);
+  }
 });

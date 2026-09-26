@@ -2158,25 +2158,29 @@ export default function SettingsView() {
       {/* PLOT Premium — the free-user upsell branch is hidden while pricing
           isn't public (SHOW_PRICING_PAGE); existing subscribers still see
           their management row regardless. */}
-      {(premium.isPremium || SHOW_PRICING_PAGE || billingReturn) && (
+      {(premium.isPremium || premium.canManage || SHOW_PRICING_PAGE || billingReturn) && (
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.premium.groupTitle}</div>
-        {premium.isPremium ? (
+        {premium.isPremium || premium.canManage ? (
           <div className="settings-row" style={{ cursor: 'default' }}>
             <div className="settings-row-left">
               <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
                 <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </div>
               <div>
-                <div className="settings-row-label">{SETTINGS_VIEW.premium.youHavePremium}</div>
+                <div className="settings-row-label">{premium.isPremium ? SETTINGS_VIEW.premium.youHavePremium : SETTINGS_VIEW.premium.groupTitle}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {SETTINGS_VIEW.premium.thankYou}
+                  {premium.billing?.status === 'past_due' || premium.billing?.status === 'unpaid'
+                    ? SETTINGS_VIEW.premium.paymentNeedsAttention
+                    : !premium.isPremium ? SETTINGS_VIEW.premium.subscriptionEnded
+                    : premium.billing?.cancelAtPeriodEnd ? SETTINGS_VIEW.premium.cancellationScheduled
+                    : SETTINGS_VIEW.premium.thankYou}
                 </div>
               </div>
             </div>
-            <SettingsTextAction onClick={premium.openPortal} disabled={premium.busy}>
+            {premium.canManage && <SettingsTextAction onClick={premium.openPortal} disabled={premium.busy}>
               {premium.busy ? SETTINGS_VIEW.premium.opening : SETTINGS_VIEW.premium.manageSubscription}
-            </SettingsTextAction>
+            </SettingsTextAction>}
           </div>
         ) : SHOW_PRICING_PAGE && (
           <div className="settings-row" style={{ cursor: 'default' }}>

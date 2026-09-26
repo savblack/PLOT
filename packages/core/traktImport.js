@@ -1,5 +1,15 @@
 import { IMPORT_VIEW } from './copy/importView.js';
 
+// Trakt can retain watch/list records after a catalogue ID or year disappears.
+// Missing metadata needs review; malformed metadata still rejects the file.
+function validMedia(media) {
+  return media && typeof media.title === 'string' && !!media.title.trim()
+    && (media.year == null || (Number.isInteger(media.year) && media.year >= 1800 && media.year <= 9999))
+    && (media.ids == null || (typeof media.ids === 'object' && !Array.isArray(media.ids)))
+    && (media.ids?.imdb == null || /^tt\d+$/.test(media.ids.imdb))
+    && (media.ids?.tvdb == null || (Number.isSafeInteger(media.ids.tvdb) && media.ids.tvdb > 0));
+}
+
 /** Parse individual saved Trakt history events, never aggregate play counts.
  * External IDs remain provenance; the shared resolver obtains TMDB matches.
  * @param {string} text
@@ -16,9 +26,7 @@ export function parseTraktHistory(text) {
         !Object.hasOwn(record, 'watched_at')) throw new Error(IMPORT_VIEW.traktUnsupported);
     const isEpisode = record.type === 'episode';
     const media = isEpisode ? record.show : record.movie;
-    if (!media || typeof media.title !== 'string' || !media.title.trim() ||
-        !Number.isInteger(media.year) || media.year < 1800 || media.year > 9999 ||
-        !/^tt\d+$/.test(media.ids?.imdb || '')) throw new Error(IMPORT_VIEW.traktUnsupported);
+    if (!validMedia(media)) throw new Error(IMPORT_VIEW.traktUnsupported);
     const date = record.watched_at;
     if (date !== null && (typeof date !== 'string' ||
         !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(date) ||
@@ -51,17 +59,14 @@ export function parseTraktWatchlist(text) {
   return records.map(record => {
     const media = record?.type === 'show' ? record.show : record?.movie;
     if (!record || !['movie', 'show'].includes(record.type) ||
-        !Number.isSafeInteger(record.id) || record.id <= 0 || !media ||
-        typeof media.title !== 'string' || !media.title.trim() ||
-        !Number.isInteger(media.year) || media.year < 1800 || media.year > 9999 ||
-        !/^tt\d+$/.test(media.ids?.imdb || '') ||
+        !Number.isSafeInteger(record.id) || record.id <= 0 || !validMedia(media) ||
         (record.notes != null && typeof record.notes !== 'string')) throw new Error(IMPORT_VIEW.traktWatchlistUnsupported);
     return {
       title: media.title.trim(), year: media.year, hint: record.type === 'show' ? 'tv' : 'movie',
       date: null, listNote: record.notes || null,
       sourceMetadata: { trakt_rating: record.my_rating ?? null, listed_at: record.listed_at ?? null },
       eventId: `watchlist:${record.id}`,
-      externalIds: { imdb: media.ids.imdb, ...(media.ids.tvdb ? { tvdb: media.ids.tvdb } : {}) },
+      externalIds: { ...(media.ids?.imdb ? { imdb: media.ids.imdb } : {}), ...(media.ids?.tvdb ? { tvdb: media.ids.tvdb } : {}) },
       destination: { kind: 'watchlist', key: 'trakt:watchlist', name: IMPORT_VIEW.watchlistName },
     };
   });

@@ -54,7 +54,7 @@
   </script>
   <!-- End Google Tag Manager -->
   <title>Plans &amp; Pricing — PLOT</title>
-  <meta name="description" content="PLOT is free to use, forever. Go Premium for unlimited lists and a live release calendar: A$5/mo or A$40/yr." />
+  <meta name="description" content="PLOT is free to use, forever. Go Premium for unlimited lists and a live release calendar: US$3/mo or US$24/yr." />
   <link rel="canonical" href="https://theplot.tv/plans.html" />
   <meta name="theme-color" content="#ffffff" />
 
@@ -492,8 +492,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <span class="plan-flag">Recommended</span>
         <div class="plan-head">
           <h2 class="plan-name">Premium</h2>
-          <div class="plan-price"><span class="plan-amount" id="premiumAmount">A$3.33</span><span class="plan-per">/mo</span></div>
-          <p class="plan-billed" id="premiumBilled">Billed A$40 yearly · save 33%</p>
+          <div class="plan-price"><span class="plan-amount" id="premiumAmount">US$2</span><span class="plan-per">/mo</span></div>
+          <p class="plan-billed" id="premiumBilled">Billed US$24 yearly · save 33%</p>
           <p class="plan-tagline">Everything in Free, plus:</p>
         </div>
         <ul class="plan-features">
@@ -539,7 +539,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </dl>
     </div>
 
-    <p class="fineprint">Prices are in Australian dollars. Your total and billing currency are shown at checkout. Cancel anytime. Payments are processed securely by Stripe. Need a hand? <a href="mailto:contact@theplot.tv">contact@theplot.tv</a></p>
+    <p class="fineprint">Prices are in US dollars. Your total and billing currency are shown at checkout. Cancel anytime. Payments are processed securely by Stripe. Need a hand? <a href="mailto:contact@theplot.tv">contact@theplot.tv</a></p>
   </main>
 
   <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
@@ -577,7 +577,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <script>
     // Billing toggle — swaps the Premium price display and the checkout intent.
     (function () {
-      var MONTHLY = 5, ANNUAL = 40;
+      var MONTHLY = 3, ANNUAL = 24;
       var annualMonthly = (ANNUAL / 12).toFixed(2);
       var savePct = Math.round((1 - ANNUAL / (MONTHLY * 12)) * 100);
       var mo = document.getElementById('billMonthly');
@@ -591,8 +591,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         yr.classList.toggle('is-active', annual);
         mo.setAttribute('aria-pressed', String(!annual));
         yr.setAttribute('aria-pressed', String(annual));
-        amount.textContent = annual ? 'A$' + annualMonthly : 'A$' + MONTHLY;
-        billed.textContent = annual ? 'Billed A$' + ANNUAL + ' yearly · save ' + savePct + '%' : 'Billed monthly';
+        amount.textContent = annual ? 'US$' + annualMonthly : 'US$' + MONTHLY;
+        billed.textContent = annual ? 'Billed US$' + ANNUAL + ' yearly · save ' + savePct + '%' : 'Billed monthly';
         cta.href = 'https://app.theplot.tv/signup?intent=premium&plan=' + (annual ? 'yearly' : 'monthly');
       }
       mo.addEventListener('click', function () { setBilling(false); });

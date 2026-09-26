@@ -15,7 +15,7 @@ test('verified IMDb movie ratings preserve external IDs and ratings, not inferre
 
 test('unsupported IMDb files and mixed title types fail explicitly before writing', () => {
   assert.throws(() => parsePlatform('imdb', 'Title,Rating\nExample,5'), /Unsupported IMDb export/);
-  assert.throws(() => parsePlatform('imdb', fixture.replace(',Movie,', ',TV Episode,')), /non-movie ratings/);
+  assert.throws(() => parsePlatform('imdb', fixture.replace(',Movie,', ',TV Episode,')), /unsupported ratings/);
   assert.throws(() => parsePlatform('imdb', fixture.replace('tt0058003', 'not-an-id')), /invalid/);
 });
 
@@ -43,4 +43,21 @@ test('a failed identifier lookup never silently falls back to title matching', a
   });
   assert.equal(entry.status, 'unmatched');
   assert.equal(entry.reason, 'search_failed');
+});
+
+
+test('saved IMDb series ratings preserve rating dates without asserting any watched episodes', async () => {
+  const { parseImportDocument } = await import('../../importDocument.js');
+  const { configure } = await import('../../config.js');
+  const text = readFileSync(new URL('../fixtures/imports/imdb-tv-ratings.csv', import.meta.url), 'utf8');
+  configure({ importAnnotationsEnabled: true, importEventsEnabled: true });
+  const { entries } = parseImportDocument('imdb', text, { fileName: 'ratings.csv' });
+  assert.equal(entries.length, 2);
+  assert.ok(entries.every(row => row.hint === 'tv' && row.annotationScope === 'show' && row.date === null));
+  assert.ok(entries.every(row => row.annotation.rating === 7 && row.annotation.ratedAt === '2024-01-15'));
+  assert.ok(entries.every(row => row.episodeNumber == null && row.seasonNumber == null && row.eventId === `rating:${row.externalIds.imdb}`));
+  assert.throws(() => parseImportDocument('imdb', text.replaceAll('2024-01-15', '2024-02-30')), /rating date is invalid/);
+  configure({ importAnnotationsEnabled: false });
+  assert.throws(() => parseImportDocument('imdb', text), /available/);
+  configure({ importAnnotationsEnabled: true });
 });

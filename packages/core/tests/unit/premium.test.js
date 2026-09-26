@@ -9,8 +9,8 @@ test('FREE_CUSTOM_LIST_CAP is 5', () => {
 
 test('PREMIUM_PLANS exposes the monthly and yearly plan labels and is frozen', () => {
   assert.deepEqual(PREMIUM_PLANS, {
-    monthly: { id: 'monthly', label: 'A$5/mo', amount: 5, currency: 'AUD' },
-    yearly: { id: 'yearly', label: 'A$40/yr', amount: 40, currency: 'AUD' },
+    monthly: { id: 'monthly', label: 'US$3/mo', amount: 3, currency: 'USD' },
+    yearly: { id: 'yearly', label: 'US$24/yr', amount: 24, currency: 'USD' },
   });
   assert.ok(Object.isFrozen(PREMIUM_PLANS));
   assert.ok(Object.isFrozen(PREMIUM_PLANS.monthly));

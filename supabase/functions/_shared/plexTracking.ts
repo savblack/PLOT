@@ -19,10 +19,17 @@ export async function plexResources(token: string): Promise<Resource[]> {
   return parsePlexResources(await response.text()) as Resource[];
 }
 export async function plexServerRequest(server: Resource, token: string, path: string, params: Record<string,string> = {}) {
-  for (const connection of (server.connections || []).slice(0,2)) {
+  let attempted = 0;
+  const seen = new Set<string>();
+  for (const connection of server.connections || []) {
     let url: URL;
     try { url = new URL(path, connection.uri); } catch { continue; }
     if (!isSafePlexConnectionUrl(url)) continue;
+    if (seen.has(url.href)) continue;
+    seen.add(url.href);
+    // Local/invalid entries often precede the remote connection in Plex's
+    // resource list. Only actual distinct safe requests consume the budget.
+    if (attempted++ >= 2) break;
     for (const [key,value] of Object.entries(params)) url.searchParams.set(key,value);
     try {
       const response = await fetch(url, { headers: { Accept: 'application/xml', 'X-Plex-Token': server.accessToken || token },

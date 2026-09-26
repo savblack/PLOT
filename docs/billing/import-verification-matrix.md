@@ -1,8 +1,296 @@
 # Import verification matrix
 
-17 September 2026. Goal remains open: prove migrations across supported source
-formats and web/iOS. On 17 September, Savannah clarified that Android is not
-being built yet. Android is outside the current completion requirements.
+Current scope (23 September 2026): Savannah requested verification across import
+sources on web. Mobile is deferred, including iOS. Earlier native evidence is
+retained below as history, not as a current completion requirement. The goal
+remains open until the supported-format boundaries and remaining sample gaps
+are resolved; passing synthetic transports is not universal provider support.
+
+## Current web verification, 23 September 2026
+
+### Normal signed-in mixed Trakt ZIP
+
+`node scripts/verify-web-trakt-annotations.cjs .playwright/import-pilot --mixed-zip`
+passed against the same real local web/staging setup. A constructed ZIP packages
+the sourced history fixture and separate show/episode rating fixtures under their
+supported filenames. Ordinary login and Settings navigation lead to review of
+four records; no write happens before confirmation. The QA explicitly keeps
+fixture watches separate from other pilot sources where overlap review requires
+it. Watches and annotations go to their separate real RPCs. Reload/reimport
+reports all four as duplicates, and database snapshots prove no further writes.
+Existing history and event rows stay unchanged; the Trakt episode watch and
+episode rating retain their distinct season/episode identities. No uncaught
+browser errors occurred.
+
+This closes mixed-archive routing through the normal app; it remains a
+constructed archive of sourced fixtures, not a complete untouched native Trakt
+account export or live OAuth sync. Plex deployment approval is still pending.
+
+### Normal signed-in Trakt annotation journey
+
+`node scripts/verify-web-trakt-annotations.cjs .playwright/import-pilot` passed
+against the real web application on local port 5183, explicitly configured for
+PLOT Staging with event/annotation flags enabled. This uses the ordinary login,
+Home, Settings and Import routes, not the isolated fixture component. The
+existing authorised synthetic QA account imported the sanitised saved show-rating
+record, after preview and confirmation, through real staging Auth, catalogue
+and annotation RPCs. Reload/reimport reported one duplicate and zero insertions.
+Database snapshots showed unchanged history and watch events; the annotation
+was present with its original IMDb identity and rating. No uncaught page errors.
+
+The harness refuses requests to other Supabase project hosts. It does not
+connect a Trakt account or certify a complete native archive. Credentials remain
+private, production configuration is unchanged, and the Plex staging deployment
+approval request is still pending. This closes the ordinary-app annotation
+import-path gap only; annotation presentation outside import/export remains
+separate from this proof.
+
+`pnpm run check`, focused ESLint of the new verifier, and `git diff --check`
+passed. The local server is a staging-only development process, not a deployment.
+
+### Completion audit and next gates
+
+The goal is not complete. The following separates current evidence from the
+older dated implementation history below; a passing fixture suite is not proof
+of every provider's native export or the deployed normal application.
+
+| Requirement | Current evidence | Remaining work |
+| --- | --- | --- |
+| Supported real-file formats, clear unsupported versions | Pinned Netflix, Amazon, Letterboxd and IMDb samples; explicit parser/archive errors | Authentic Apple/Disney/Max files, complete native Trakt and TV Time files; remaining list/episode layouts |
+| Web select, resolve, review, confirm, results | 48 Chromium tests; prior authenticated staging history and session-recovery runs | Normal authenticated web journey for newly added annotations/native Amazon and mixed IMDb lists; fixture components are not that journey |
+| IDs, dates, rewatches, episode progress | Live staging catalogue and event persistence; missing dates stay unknown; named Netflix episode validation | Unverified source shapes must remain excluded; no completion inference from playback |
+| Existing edits and duplicate-safe retries | Staging event/replay/isolation scripts, batch/lost-response browser cases, rollback list-policy proofs | Exercise each newly verified format through the normal web entry point before rollout |
+| Ratings, reviews, list membership | Event metadata, list provenance and separate annotations persist; export collector includes annotations | Imported annotation display on ordinary rating/review surfaces is not established: current web reads this table for import review only. Do not imply ratings replace existing PLOT edits |
+| Free five-list allowance | Shared logic, browser selection and staging policy/RPC proofs | Further provider custom-list format support needs source evidence |
+| Release readiness | Local lint/build/unit/browser and authorised staging proofs | Production flags/deployment remain unapproved; mobile is explicitly deferred |
+
+`apps/web/src/main.jsx` now injects the default-off
+`VITE_IMPORT_ANNOTATIONS_ENABLED` setting. Previously only fixtures could turn
+on that core flag. The new setting enables a deliberate staging build without
+altering production configuration. It does not itself verify an authenticated
+annotation import or its presentation elsewhere in the app.
+
+### Unsupported streaming JSON layouts
+
+Disney+, Max and Apple JSON parsing now rejects unknown envelopes, scalar/null
+documents, malformed recognised collections and multiple competing collections.
+Previously an unknown envelope could appear to be empty history, or the first
+recognised collection could hide a second collection. Empty arrays and a single
+recognised empty collection remain valid. The shared explanation says the
+layout is unsupported and nothing was imported. Browser cases check that each
+of the three sources stops before offering confirmation or writing history.
+
+This tightens failure reporting; it does not establish authentic export support
+for these providers. The additional sample search is recorded in
+`public-export-samples.md` and left the real-file validation gate open.
+
+Verification: `pnpm run test:unit` passed 945 tests (304 web, 641 core),
+`pnpm run test:smoke` passed 48 tests, `pnpm run check` passed with existing
+warnings, and `git diff --check` passed. No deployment or migration.
+
+### Native Amazon playback CSV
+
+A pinned public saved PrimeVideo.ViewingHistory.csv establishes Amazon's UTC
+playback-start column and literal title quoting. The parser now recognises this
+layout, preserves valid start instants, leaves invalid/missing times unknown,
+and requires manual title selection for every playback row. The document report
+explains partial plays, trailers, channels and multiple sessions per watch; it
+remains visible after confirmation. Unselected activity stays out of history.
+This does not establish completed-watch or localised TV-episode inference.
+
+`node scripts/verify-import-sources.mjs .playwright/import-pilot --prime-playback`
+passed on the authorised synthetic QA accounts: two explicitly selected movies,
+exact UTC start instants, duplicate-free replay, cross-account isolation and
+unchanged existing summary dates/ratings/notes. The verifier explicitly chooses
+the 2020 Palm Springs and 2002 Chamber of Secrets after seeing live candidates;
+the product does not auto-select those years. Its log's generic matrix label
+refers only to this two-row mode. The browser case selects just one movie and
+checks that the second remains reported as left out.
+
+Verification: `pnpm run test:unit` passed 944 tests (304 web, 640 core),
+`pnpm run test:smoke` passed 45 tests, `pnpm run check` passed with existing
+warnings, and `git diff --check` passed. No production deployment or migration.
+
+### IMDb series and miniseries ratings
+
+The pinned public ratings CSV supplies series/miniseries records independently
+of the watchlist sample. These now become show-scope rating annotations, retaining
+the rating date without creating watch events or episode progress. Invalid
+rating dates reject the file. The document boundary requires both event and
+annotation support, so a disabled annotation writer cannot silently drop them.
+Existing movie-rating behavior is unchanged; episode and other unrecognised
+title types remain explicit errors.
+
+`node scripts/verify-import-watchlist.mjs .playwright/import-pilot --tv-ratings`
+passed: two live catalogue matches persisted as IMDb show ratings, replay
+reported two duplicates and no insertions, existing history/watch events were
+unchanged, and another synthetic QA account could not read the annotations.
+Browser coverage checks confirmation, separate annotation persistence and replay.
+
+Verification: `pnpm run test:unit` passed 943 tests (304 web, 639 core),
+`pnpm run test:smoke` passed 44 browser tests, `pnpm run check` passed
+with existing warnings, and `git diff --check` passed. No migration or deployment.
+
+### IMDb mixed movie and TV watchlists
+
+A pinned public saved IMDb watchlist supplies real movie, tvMovie, tvSeries and
+tvMiniSeries records. The parser now maps these to movie/TV watchlist membership
+and still rejects episode or unknown title types. Personal dates, ratings and
+descriptions were removed from the four-row fixture. Its IMDb identities were
+resolved through the staging Worker; browser tests use those captured responses.
+
+`node scripts/verify-import-watchlist.mjs .playwright/import-pilot` passed on the
+two authorised synthetic QA accounts: all four titles persisted in the actual
+watchlist, replay inserted nothing and reported four duplicates, history and
+watch events stayed unchanged, and another account could not read the owner's
+import provenance. The first verifier run used an incorrect table name for its
+post-write read; it was corrected to `lists`/`list_items` and rerun successfully.
+
+`pnpm run test:unit` passed 942 tests (304 web, 638 core),
+`pnpm run test:smoke` passed 43 browser tests, `pnpm run check` passed
+with existing warnings, and `git diff --check` passed. The browser test asserts
+four correctly typed list records and no watch events. IMDb TV ratings,
+episode watchlists and custom lists remain unverified/unsupported. TV series
+ratings were subsequently verified above.
+
+### Manual Netflix series review
+
+Web manual title selection now uses the shared episode resolver. When a Netflix
+series needs review, choosing a catalogue candidate fetches that candidate's
+season and accepts only a unique exact episode-name match. Confirmation and
+further title changes are disabled during the lookup. Failed lookups retain the
+candidates for retry; missing or ambiguous episodes remain unconfirmed, and a
+previous episode ordinal cannot survive a failed verification. Duplicate review
+is recalculated against the selected episode and existing imported events.
+
+Regression coverage includes a manual browser selection followed by confirmation
+and persistence, automatic named-episode resolution/replay, failed lookup retry,
+missing episodes, and changing the selected series. Localised and non-numeric
+season labels still require authentic format evidence before support is added.
+
+Verification: `pnpm run test:unit` passed 941 tests (304 web, 637 core),
+`pnpm run test:smoke` passed 42 browser tests, `pnpm run check` passed
+(existing lint warnings only), and `git diff --check` passed. No deployment or
+mobile change was made.
+
+### Explicit streaming omissions
+
+Netflix, Prime and Max CSV imports, and Disney+, Max and Apple JSON imports,
+now report data records without a usable title instead of silently filtering
+them out. Blank CSV rows are ignored. Reports identify the source record and
+remain visible after confirmation. Max JSON record errors and truncated JSON
+also remain parser errors instead of falling through into CSV parsing.
+
+The browser regression confirms that no event is written before confirmation,
+one valid entry imports, and the omitted entry remains in the results report.
+`pnpm run test:smoke` passed all 41 tests. After fixing an unnecessary regex
+escape caught by lint, `pnpm run check` passed with zero errors and 189 existing
+warnings. The focused parser/document command
+`node --test packages/core/tests/unit/importDocument.test.js packages/core/tests/unit/importParsing.test.js`
+passed all 59 tests. `pnpm run test:unit` passed all 940 tests (304 web,
+636 core), and `git diff --check` passed. This verifies reporting for the accepted parser shapes;
+authentic provider export coverage gaps described below remain open.
+
+### Trakt missing catalogue metadata
+
+The first-hand API response in `trakt/trakt-api#815` contains an orphaned movie
+watchlist record with null IMDb/TMDB IDs and release year. A sanitised fixture
+now captures that shape. History/watchlist parsing permits absent IDs and years
+while retaining the source event/list identity; invalid titles, identifiers,
+timestamps and episode ordinals remain errors. Available IMDb/TVDB IDs are
+resolved first, then title/year. A title-only Trakt result never auto-selects,
+even when the catalogue returns just one candidate.
+
+The new web regression proves no write before manual title selection, followed
+by one confirmed event with no invented date. This is parser/resolver/browser
+evidence; it does not certify complete native Trakt archive compatibility.
+The broader authentic-export gate remains open. Latest checks:
+`pnpm run test:unit` 937 passed (304 web, 633 core), `pnpm run test:smoke`
+40 passed, `pnpm run check` and `git diff --check` passed.
+
+### Streaming CSV column integrity
+
+Netflix, Prime and Max CSV fields now match whole normalised column names,
+not substrings. This prevents `Release Date` being treated as `Date` and
+`Profile Name` as `Name`. Explicit Date Watched/Watched Date aliases remain
+supported. Regression cases cover unrelated metadata before a valid watch
+column, missing watch columns and missing title columns. Missing watch dates
+remain unknown; a metadata-only file creates no guessed watch records.
+
+`pnpm run test:unit` passed 935 tests (304 web, 631 core); the focused parser
+suite also passed after retaining the Watched Date alias for Max.
+`pnpm run check`, `git diff --check` and the 39-test browser suite passed.
+The first browser permission review timed out before execution; its single
+retry started successfully and completed with all tests passing.
+
+### Netflix compatibility follow-up
+
+A public saved Netflix CSV exposed DD/MM/YY dates. Added a minimised fixture
+with synthetic replacement dates and a pinned source in the fixture README.
+The parser now expands Netflix's two-digit streaming-era years and detects
+day-first conventions from both short and full years. Other formats do not
+silently inherit a guessed century. Multiple colons in a movie title no longer
+cause it to be stripped into a guessed television series.
+
+Netflix rows with an explicit numeric Season/Series label and an episode name
+now retain those fields. Web passes a season lookup into the shared resolver,
+which accepts only a unique exact-normalised episode-name match in the matched
+series/season. Requests are cached per season. Missing/duplicate names or failed
+lookups remain unmatched; changing the selected series cannot reuse an episode
+ordinal resolved for a different series. Localised or non-numeric season labels
+are not inferred. Manual series review was subsequently added above.
+
+`node scripts/verify-import-sources.mjs .playwright/import-pilot --netflix-episodes`
+passed using the saved CSV fixture, real deployed catalogue lookups and the
+approved staging QA accounts: two episode events, exact date precision, safe
+replay, cross-account isolation and unchanged existing summary edits. This
+mode uses a separate stable QA source-account key. It does not repair older
+records whose original import omitted a date.
+
+Latest checks after these changes: `pnpm run test:unit` passed 933 tests
+(304 web, 629 core), `pnpm run test:smoke` passed 39 tests, `pnpm run check`
+passed, and `git diff --check` passed. No mobile files, migration, deployment,
+public flag or user account settings changed. Mobile rendering/season lookup
+wiring remains explicitly deferred by Savannah.
+
+### Earlier same-day source matrix
+
+- `pnpm run test:smoke`: 37 browser tests passed. Added Netflix, Prime, Disney+,
+  Max, Apple TV and IMDb review, explicit confirmation and reimport journeys.
+  Each checks no writes before confirmation, unknown dates and no duplicate
+  watches after replay. These use the actual web import UI and an isolated
+  writer; streaming payloads are synthetic, IMDb uses a sanitised public sample.
+- `node scripts/verify-import-sources.mjs .playwright/import-pilot`: passed for
+  all nine sources against the existing private staging QA accounts and deployed
+  catalogue Worker. Ten source events persisted with unknown dates; repeated
+  runs created no duplicates. Trakt episode ordinals survived. The second QA
+  account could read none of the first account's records. Existing PLOT summary
+  dates, ratings and notes stayed unchanged. This is shared-pipeline-to-database
+  evidence, separate from the browser fixture tests.
+- One Letterboxd row required review because the saved export says 1953 while
+  TMDB returns 1955 for Summer with Monika. It remained excluded; no fabricated
+  identifier or automatic choice was used. The other diary row persisted.
+- `node scripts/verify-import-recovery.mjs .playwright/import-pilot`: passed
+  again with 101 unique events, lost-response retry, unknown dates and isolation.
+- Fixed impossible numeric calendar dates being accepted and unfinished CSV
+  quotes being silently parsed. Invalid dates stay unknown; truncated quoted
+  files stop before matching/writing. Unit and browser regressions cover both.
+- `pnpm run test:unit`: 930 passed (304 web, 626 core).
+- `pnpm run check`: passed, zero lint errors, 189 existing warnings.
+- `git diff --check`: passed. No schema, deployment or public flag changed.
+
+The first browser run lacked the pinned Chromium binary. After installing it,
+macOS sandbox restrictions still prevented launch; the approved unrestricted
+run worked. Six new tests initially used an overly strict text selector and
+failed to recognise the visible combined movie/date label; that selector was
+corrected before the final 37-test pass.
+
+Remaining source-format limits are material: current authentic streaming export
+samples, complete native Trakt archives and complete TV Time Liberator exports
+are not established by this matrix. Streaming episode records without reliable
+season/episode identity are deliberately left out. TV Time GDPR CSV, IMDb episode ratings,
+episode watchlists and IMDb custom lists remain unsupported. TV Time's public adapter flag remains
+disabled. Do not advertise every provider export/version as verified.
 
 ## Current evidence
 
@@ -11,7 +299,7 @@ being built yet. Android is outside the current completion requirements.
 | Shared event pipeline | Unknown dates, source IDs, rewatches, duplicate review, batched writes, local-edit preservation; interrupted retry verified in browser and actual iOS UI | Live database/network interruption journey; process termination recovery |
 | Trakt saved files | History/watchlist ZIP routing and limited ratings/comments, browser flows, iOS history and episode-rating imports | Complete authentic native archive coverage and authorised staging journey |
 | Letterboxd | Saved CSVs, ZIP/multi-file routing, browser overlap/reimport/list-cap tests; actual iOS CSV and ZIP flows | Broader complete-export samples and authenticated staging journey |
-| IMDb | Movie rating/watchlist fixtures and shared tests; real iOS picker imported a movie rating with an unknown watch date | TV and custom-list formats, authenticated staging |
+| IMDb | Movie ratings, series/miniseries rating annotations and mixed movie/TV watchlists; web browser and authenticated staging persistence/replay verified above | Episode and other title-type ratings, episode watchlists and custom-list formats |
 | Netflix / Prime / Disney+ / Max / Apple | Existing parsers; synthetic shared-flow tests for unknown dates and rejection of ordinal-free TV records | Authentic current export versions, verified episode resolution, native journeys |
 | TV Time | Liberator JSON/ZIP adapter, browser and iOS file flows; GDPR fixtures inspected | GDPR CSV adapter and complete authentic saved-file coverage; no live connection |
 | Web isolation | Browser account switch discards the previous user's import preview | Live staging application journey |
@@ -33,7 +321,7 @@ being built yet. Android is outside the current completion requirements.
   does not prove the deployed browser route. Deploy the reviewed proxy changes
   before enabling imports, then exercise the route through the actual Worker.
 
-## Next implementation and verification work
+## Historical next steps (17 September, superseded by the current audit above)
 
 1. Complete remaining supported streaming native file journeys. Large-file,
    interrupted-write and archive-partition browser coverage is implemented;
@@ -604,3 +892,34 @@ Expired-session recovery and the deployed catalogue route also remain open.
 `pnpm run check` passed (lint: zero errors, 189 existing warnings; web build
 passed). `git diff --check` passed. No app implementation or schema changes
 were needed for these checks, and nothing was committed or deployed.
+
+### Session renewal and deployed catalogue route (2026-09-23)
+
+`node scripts/verify-import-session-recovery.cjs .playwright/import-pilot`
+checks an isolated Chrome context against the local full web app on port 5182,
+configured for the existing staging QA account and deployed staging catalogue
+Worker. Browser plugin was not available; regular Playwright was used. The
+harness reads private ignored credentials and rejects non-QA account names.
+
+Verified paths:
+- Real sign-in form → Home → Settings → Import watch history → Trakt saved-file
+  review. Successful catalogue requests went to the deployed staging Worker,
+  not the local bridge, and review recognised both existing source watches.
+- Expiring the cached session's `expires_at` in a new browser context forced a
+  real successful Supabase refresh request; import review remained accessible.
+- A separate context returned a controlled `refresh_token_not_found` response
+  to token renewal. PLOT redirected to login and exposed no confirmation button
+  for the previous preview. Real sign-in and file reselection then completed
+  with zero inserted, two duplicates, and zero unconfirmed records.
+- No uncaught page errors were observed.
+
+The expiry and revoked-refresh conditions are controlled browser-test inputs,
+not an hour-long natural JWT-expiry test or a server-side credential revocation.
+No real user's session was touched. Both the authenticated catalogue probe and
+core's exact publishable-key headers returned HTTP 200; the browser journey
+also proved CORS and matching through the deployed Worker-to-edge route. No
+secret was rotated, no code deployed, and no auth setting changed.
+
+These checks close the earlier web session-recovery and catalogue-routing gaps.
+Full native iOS navigation and restart verification remain blocked by the
+missing local Simulator application. Application code required no changes.

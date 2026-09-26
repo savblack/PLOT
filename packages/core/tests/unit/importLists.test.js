@@ -49,7 +49,7 @@ test('verified IMDb watchlists preserve external identity without treating list 
   assert.equal(entries[0].date,null);
   assert.equal(entries[0].destination.kind,'watchlist');
   assert.throws(()=>parsePlatform('imdb',text,{fileName:'renamed.csv'}),/original watchlist.csv filename/);
-  assert.throws(()=>parsePlatform('imdb',text.replace(',Movie,',',TV Series,'),{fileName:'watchlist.csv'}),/non-movie/);
+  assert.throws(()=>parsePlatform('imdb',text.replace(',Movie,',',TV Episode,'),{fileName:'watchlist.csv'}),/unsupported title type/);
 });
 
 test('mixed selections separate watches and lists and retain each skipped-list outcome', async () => {
@@ -113,4 +113,12 @@ test('Trakt watchlist writer retains source notes and rating metadata without wr
   assert.equal(calls[0].args.p_records[0].note, 'Watch together');
   assert.deepEqual(calls[0].args.p_records[0].source_metadata.trakt_rating, { rating: 8 });
   assert.equal(calls[0].args.p_records[0].event, undefined);
+});
+
+
+test('saved mixed IMDb watchlist preserves movie and series types without creating watches', () => {
+  const entries = parsePlatform('imdb', fixture('imdb-mixed-watchlist.csv'), { fileName: 'watchlist.csv' });
+  assert.deepEqual(entries.map(row => row.hint), ['movie', 'tv', 'tv', 'movie']);
+  assert.ok(entries.every(row => row.destination.kind === 'watchlist' && row.date === null));
+  assert.ok(entries.every(row => row.externalIds.imdb && row.eventId === `watchlist:${row.externalIds.imdb}`));
 });

@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "staging:managed-checkout-test": "bash scripts/staging-sql.sh scripts/staging-managed-checkout-test.sql",
     "dev": "pnpm --filter @plot/web run dev",
     "dev:website": "cd apps/website && wrangler pages dev . --port 5202",
     "build": "pnpm --filter @plot/web run build",
@@ -47,6 +48,7 @@
     "staging:saved-lists-test": "bash scripts/staging-sql.sh scripts/staging-saved-lists-test.sql",
     "staging:tracking-jobs-test": "bash scripts/staging-sql.sh scripts/staging-tracking-jobs-test.sql",
     "staging:watch-events-test": "bash scripts/staging-sql.sh scripts/staging-watch-events-test.sql",
+    "staging:billing-lifecycle-test": "bash scripts/staging-sql.sh scripts/staging-billing-lifecycle-test.sql",
     "staging:premium-flag-test": "bash scripts/staging-sql.sh scripts/staging-premium-flag-test.sql",
     "staging:pgss-guard-test": "bash scripts/staging-sql.sh scripts/staging-pgss-guard-test.sql",
     "mkt:plan": "node marketing/planner/plan.mjs",

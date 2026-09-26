@@ -85,3 +85,51 @@ cleared, ratings replaced with 3 stars, review text replaced with "Saved review"
 No TMDB IDs are present. Inspection found 92 review URLs also present in diary.csv;
 those URLs identify logged entries, unlike watched/ratings film URLs. These
 fixtures establish the saved CSV layouts, not current-version universality.
+
+`netflix-viewing-history.csv`: first two title rows from
+https://github.com/akshitasure12/previously-on-netflix/blob/3df3e05decc921df2b1e3bdaf71d720ccedbea48/NetflixViewingHistory.csv,
+inspected 23 September 2026. The public file uses Title/Date columns and
+DD/MM/YY dates. Watch dates were changed to synthetic values, retaining that
+representation and adding an ambiguous day/month regression. No account
+identity or TMDB identifier was copied. This establishes one saved CSV shape,
+not every Netflix export locale or the separate account-wide ViewingActivity.csv.
+
+`trakt-missing-metadata-watchlist.json`: minimised first-hand API response from
+https://github.com/trakt/trakt-api/issues/815, read 23 September 2026. Retained
+movie/list identity and null year/catalogue identifiers; removed rank and
+cleared listed_at. It demonstrates a real orphaned watchlist record, not a
+complete saved export. No TMDB ID was inferred. Matching must remain unselected
+without a year or verified external-ID result; Nosferatu is not a unique title.
+
+`imdb-mixed-watchlist.csv`: four rows covering movie, tvSeries, tvMiniSeries
+and tvMovie from the public saved `Watchlist.csv` in trygvels/filmster at
+commit 3ad8f4a3585326295d5e779ca0e18720cdf99dee, inspected 23 September 2026.
+Source: https://github.com/trygvels/filmster/blob/3ad8f4a3585326295d5e779ca0e18720cdf99dee/Watchlist.csv
+Created/modified/rated dates, personal ratings and descriptions were cleared;
+positions were renumbered. IMDb identifiers and catalogue fields were retained.
+This establishes this saved CSV layout, not all current IMDb export versions.
+
+`tmdb-imdb-watchlist-matches.json`: live TMDB find-by-IMDb responses for those
+four minimised records, captured through PLOT's staging Worker on 23 September
+2026. No catalogue IDs were guessed or taken from third-party generated data.
+
+`imdb-tv-ratings.csv`: one tvSeries and one tvMiniSeries record from
+https://github.com/trygvels/filmster/blob/21b18d2f21c87ebf5f2247993e756f2b85ae9d19/ratings.csv,
+inspected 23 September 2026. Personal ratings and rating dates replaced with
+synthetic 7/10 and 2024-01-15. Catalogue fields and IMDb identifiers retained.
+`tmdb-imdb-tv-rating-matches.json` contains their live find-by-IMDb responses
+through the staging Worker on the same date. These records establish the saved
+TV series/miniseries rating shape, not episode or other IMDb title-type support.
+
+`prime-viewing-history.csv`: two title records from the public saved
+https://github.com/JDizzle00/PythonScripts/blob/1eed86e871d33c4362328bf0b4454cd3e7dc7e1e/PrimeVideoStats/PrimeVideo.ViewingHistory.csv,
+inspected 23 September 2026. Retained header layout, BOM, and literal quote
+wrapping of titles. All other cells were cleared; playback start/end timestamps
+and viewed seconds were replaced with synthetic values. No location, device,
+network, account information or original viewing timestamps are retained.
+This is playback activity, not proof of completed watches. The importer must
+require explicit review rather than automatically treating sessions as watches.
+
+`tmdb-prime-search-matches.json`: live TMDB searches for the two retained movie
+titles through the staging Worker on 23 September 2026. The results include
+multiple films named Palm Springs; IDs came from responses, not guesses.

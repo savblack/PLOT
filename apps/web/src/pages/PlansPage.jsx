@@ -8,7 +8,7 @@ import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
 import './PlansPage.css';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 
-// Pricing (AUD). Annual is billed once a year; we surface the effective
+// Pricing (USD). Annual is billed once a year; we surface the effective
 // monthly price so the saving is obvious.
 const MONTHLY_PRICE = PREMIUM_PLANS.monthly.amount;
 const ANNUAL_PRICE = PREMIUM_PLANS.yearly.amount;
@@ -191,7 +191,7 @@ export default function PlansPage() {
             <div className="plan-card-head">
               <h2 className="plan-name">{PLANS_PAGE.premium.name}</h2>
               <div className="plan-price">
-                <span className="plan-amount">A${annual ? ANNUAL_MONTHLY : MONTHLY_PRICE}</span>
+                <span className="plan-amount">US${annual ? ANNUAL_MONTHLY : MONTHLY_PRICE}</span>
                 <span className="plan-per">{PLANS_PAGE.premium.perMonth}</span>
               </div>
               <p className="plan-billed">
