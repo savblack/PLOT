@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createCustomListRecord, customListCreationError, CUSTOM_LIST_LIMIT_CODE } from '../../customListCreation.js';
+import { createCustomListRecord, customListCreationError, isCustomListLimitError, CUSTOM_LIST_LIMIT_CODE } from '../../customListCreation.js';
 import { CUSTOM_LISTS } from '../../copy/customLists.js';
 
 function client(result, permission = { data: false, error: null }) {
@@ -29,6 +29,7 @@ test('a concurrent insert rejected by the cap produces the shared coming-soon me
   await assert.rejects(createCustomListRecord(db, 'owner', 'Sixth'), error => {
     assert.equal(error.code, CUSTOM_LIST_LIMIT_CODE);
     assert.equal(customListCreationError(error, 'fallback'), CUSTOM_LISTS.limitMessage);
+    assert.equal(isCustomListLimitError(error), true);
     assert.match(error.message, /5 custom lists.*planned for plot Premium/);
     return true;
   });
@@ -54,4 +55,11 @@ test('network/database failures are preserved', async () => {
   const db = client({ error: failure });
   await assert.rejects(createCustomListRecord(db, 'owner', 'List'), error => error === failure);
   assert.equal(db.calls.length, 2);
+});
+
+test('only the cap code counts as a list-limit error', () => {
+  assert.equal(isCustomListLimitError({ code: CUSTOM_LIST_LIMIT_CODE }), true);
+  assert.equal(isCustomListLimitError({ code: '42501' }), false);
+  assert.equal(isCustomListLimitError(new Error('network')), false);
+  assert.equal(isCustomListLimitError(null), false);
 });

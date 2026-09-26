@@ -15,8 +15,7 @@ import SideFilters from './SideFilters.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
-import { PLANS_PAGE } from '../copy/plansPage.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
+import UpgradeSheet from './UpgradeSheet.jsx';
 import { collectionPath, customListKey, titleCount, wantToWatchItems, searchCollectionTitles, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
 import { IconSearch } from './navIcons.jsx';
@@ -291,17 +290,10 @@ export default function MyListsView() {
         </div>
       </div>
 
-      {showCapNotice && (
-        <ConfirmModal
-          title={CUSTOM_LISTS.limitTitle}
-          message={CUSTOM_LISTS.limitMessage}
-          confirmLabel={PLANS_PAGE.previewAction}
-          onConfirm={() => navigate(premiumPlansPath('/my-lists'))}
-          onClose={() => setShowCapNotice(false)}
-        />
-      )}
+      {showCapNotice && <UpgradeSheet reason="lists" onClose={() => setShowCapNotice(false)} />}
       {creatingList && (
-        <CreateListModal lists={lists} onConfirm={handleCreate} onClose={() => setCreatingList(false)} />
+        <CreateListModal lists={lists} onConfirm={handleCreate} onClose={() => setCreatingList(false)}
+          onLimit={() => { setCreatingList(false); setShowCapNotice(true); }} />
       )}
       {confirmDelete && (
         <ConfirmModal

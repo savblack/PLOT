@@ -1,5 +1,4 @@
-import { customListCreationError } from '@plot/core/customListCreation.js';
-import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl } from '../utils/images.js';
@@ -9,6 +8,7 @@ import { canCreateCustomList } from '@plot/core/premium.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { MEDIA } from '../copy/media.js';
+import UpgradeSheet from './UpgradeSheet.jsx';
 
 /**
  * The films of a collection as rows, plus the "Save as list" footer. Used
@@ -25,6 +25,7 @@ import { MEDIA } from '../copy/media.js';
 export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
   const { user, customLists, profile } = useApp();
   const [saveState, setSaveState] = useState({ status: 'idle', message: '' });
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const existingList = findDuplicateCustomList(customLists?.lists || [], stub.name);
 
   const saveAsList = async () => {
@@ -32,10 +33,7 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
     const lists = customLists?.lists || [];
     if (!existingList && !canCreateCustomList(lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
-      setSaveState({
-        status: 'error',
-        message: CUSTOM_LISTS.limitMessage,
-      });
+      setShowUpgrade(true);
       return;
     }
     setSaveState({ status: 'saving', message: '' });
@@ -43,6 +41,7 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
     try {
       list = existingList || await customLists.createList(stub.name);
     } catch (error) {
+      if (isCustomListLimitError(error)) { setSaveState({ status: 'idle', message: '' }); setShowUpgrade(true); return; }
       setSaveState({ status: 'error', message: customListCreationError(error, MEDIA_PANEL.couldNotSaveCollection) });
       return;
     }
@@ -68,6 +67,7 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
 
   return (
     <div className="collection-card-body">
+      {showUpgrade && <UpgradeSheet reason="lists" onClose={() => setShowUpgrade(false)} />}
       {items.map(part => {
         const year = collectionPartYear(part);
         const rowMeta = [

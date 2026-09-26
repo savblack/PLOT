@@ -24,8 +24,10 @@ export const SHOW_MEDIA_SYNC_INTEGRATIONS = false;
 export const SHOW_GOOGLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_GOOGLE_LOGIN === 'true';
 export const SHOW_APPLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_APPLE_LOGIN === 'true';
 
-// Pricing/upgrade UI. Hidden while pricing isn't ready to be public. Mobile
-// has no upgrade nudge built yet — declared so the two flag sets stay
-// comparable. Mobile never gets a purchase button regardless of this flag
-// (Apple's anti-steering rules keep purchases on the web app).
+// Pricing page. Mobile has no /plans screen, so nothing reads this yet;
+// declared so the two flag sets stay comparable. The upgrade sheet
+// (components/UpgradeSheet) and Pick for Me's pop-up show the price and an
+// Upgrade button that only says checkout is coming soon, matching web. Mobile
+// never takes a payment in the app (Apple's anti-steering rules keep
+// purchases on the web app).
 export const SHOW_PRICING_PAGE = false;

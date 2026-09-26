@@ -2,11 +2,8 @@ import PrivateNote from '../../components/PrivateNote';
 import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
-import { customListCreationError } from '@plot/core/customListCreation.js';
-import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
-import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useMemo } from 'react';
-import { useRouter } from 'expo-router';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
   Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, LayoutAnimation,
@@ -31,7 +28,10 @@ import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
-import { EVENTS } from '../../lib/analytics';
+import { EVENTS, track } from '../../lib/analytics';
+import { useRouter } from 'expo-router';
+import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
+import UpgradeSheet from '../../components/UpgradeSheet';
 import HistorySection from '../../components/HistorySection';
 import { groupEntriesByMonth, monthLabel } from '@plot/core/history.js';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
@@ -315,7 +315,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
 
 
 // ── Create list modal ─────────────────────────────────────────────────
-function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => Promise<unknown>; onClose: () => void }) {
+function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: string) => Promise<unknown>; onClose: () => void; onLimit?: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [name, setName] = useState('');
@@ -330,6 +330,7 @@ function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => 
       if (created) onClose();
       else setError(MEDIA.couldNotCreateList);
     } catch (failure) {
+      if (onLimit && isCustomListLimitError(failure)) { onLimit(); return; }
       setError(customListCreationError(failure, MEDIA.couldNotCreateList));
     } finally {
       setBusy(false);
@@ -409,20 +410,19 @@ export default function MyListsScreen() {
   // Watching into select mode leaves Favourites alone.
   const watchingSel = useSelection();
   const wantSel     = useSelection();
-  const router = useRouter();
   const favSel      = useSelection();
 
   const [showAddFav,     setShowAddFav]     = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
+  const [showUpgrade,    setShowUpgrade]    = useState(false);
+  const router = useRouter();
 
   // Free accounts get FREE_CUSTOM_LIST_CAP lists; Premium unlimited. The DB
   // (RLS insert policy) is the authority — this is just friendlier UX.
   const requestCreateList = () => {
     if (!canCreateCustomList(customLists.lists.length, profile)) {
-      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage, [
-        { text: COMMON.cancel, style: 'cancel' },
-        { text: PLANS_PAGE.previewAction, onPress: () => router.push('/(app)/settings?premium=1' as any) },
-      ]);
+      track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
+      setShowUpgrade(true);
       return;
     }
     setShowCreateList(true);
@@ -813,10 +813,12 @@ export default function MyListsScreen() {
           onClose={() => setShowAddFav(false)}
         />
       )}
+      <UpgradeSheet visible={showUpgrade} reason="lists" onClose={() => setShowUpgrade(false)} onCompare={() => router.push(PREMIUM_SETTINGS_PATH as any)} />
       {showCreateList && (
         <CreateListModal
           onConfirm={(name) => customLists.createList(name)}
           onClose={() => setShowCreateList(false)}
+          onLimit={() => { setShowCreateList(false); setShowUpgrade(true); }}
         />
       )}
       {showAddToList && (

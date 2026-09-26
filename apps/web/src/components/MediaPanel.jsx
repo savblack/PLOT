@@ -1,7 +1,6 @@
 import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import PrivateNote from './PrivateNote.jsx';
-import { customListCreationError } from '@plot/core/customListCreation.js';
-import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip, formatDate } from '../utils/countdown.js';
@@ -26,6 +25,7 @@ import CreditsGrid from './TalentCredits.jsx';
 import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
+import UpgradeSheet from './UpgradeSheet.jsx';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
@@ -858,6 +858,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   const [showCreate,   setShowCreate]   = useState(false);
   const [createError,  setCreateError]  = useState('');
   const [isCreating,   setIsCreating]   = useState(false);
+  const [showUpgrade,  setShowUpgrade]  = useState(false);
   const [topOpen,      setTopOpen]      = useState(false);
   const [rankConflict, setRankConflict] = useState(null); // { rank, occupant }
   const [pickingMoveTo, setPickingMoveTo] = useState(false);
@@ -883,7 +884,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     }
     if (!canCreateCustomList(lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
-      setCreateError(CUSTOM_LISTS.limitMessage);
+      setShowUpgrade(true);
       return;
     }
 
@@ -905,7 +906,8 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
       setCreatingName('');
       setShowCreate(false);
     } catch (error) {
-      setCreateError(customListCreationError(error, MEDIA.couldNotCreateList));
+      if (isCustomListLimitError(error)) setShowUpgrade(true);
+      else setCreateError(customListCreationError(error, MEDIA.couldNotCreateList));
     } finally {
       setIsCreating(false);
     }
@@ -967,6 +969,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
           />
           <p>You can customise the cover and list details after creating it.</p>
           {createError && <div className="add-list-error">{createError}</div>}
+          {showUpgrade && <UpgradeSheet reason="lists" onClose={() => setShowUpgrade(false)} />}
           <div className="add-list-create-actions">
             <button type="button" className="btn btn-ghost btn-sm" disabled={isCreating} onClick={leaveCreate}>{COMMON.cancel}</button>
             <button type="submit" className="btn btn-primary btn-sm" disabled={!creatingName.trim() || isCreating}>

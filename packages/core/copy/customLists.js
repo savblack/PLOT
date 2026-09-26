@@ -21,6 +21,5 @@ export const CUSTOM_LISTS = Object.freeze({
   viewLess: 'View less',
   summary: (lists, titles) =>
     `${lists} ${lists === 1 ? 'list' : 'lists'} · ${titles} ${titles === 1 ? 'title' : 'titles'}`,
-  limitTitle: 'Unlimited lists are coming with Premium',
   limitMessage: `You can create up to ${FREE_CUSTOM_LIST_CAP} custom lists for free. Unlimited custom lists are planned for plot Premium.`,
 });

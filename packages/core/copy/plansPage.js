@@ -62,6 +62,23 @@ export const PLANS_PAGE = {
     { icon: 'customise', label: 'Customise your plot', note: 'Widgets, app icons and themes' },
   ],
   assurances: ['Nothing to pay today', 'Everything free today stays free', 'Friends join shared lists for free'],
+  // In-app upgrade sheet, opened where a Free limit is hit. Each reason leads with
+  // the Premium feature that lifts that limit; `also` picks premiumCard rows by icon.
+  upgradeSheet: {
+    close: 'Close',
+    compare: 'Compare every feature',
+    notNow: 'Not now',
+    alsoIn: 'Also in Premium',
+    annualAlt: 'or US$24/year · taxes included',
+    reasons: {
+      lists: {
+        context: (cap) => `You’ve used all ${cap} free lists`,
+        title: 'Make a list for every kind of night.',
+        body: 'Premium brings unlimited custom lists, plus smart lists that keep finding matches. The lists you have now stay exactly as they are.',
+        also: ['pick', 'together', 'sync'],
+      },
+    },
+  },
   host: {
     title: 'Only the host needs Premium.',
     body: 'Start a collaborative list or a shared watch session and invite anyone. Friends can add ideas with a free account.',

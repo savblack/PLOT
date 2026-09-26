@@ -28,6 +28,7 @@ Lists) and copy.
 | Type + Genre filters on Discover / New Releases / Upcoming | done |
 | Notifications screen + header bell | done |
 | "Help build PLOT" drawer section (feedback + Ko-fi), flat mobile variant | done |
+| Premium upgrade sheet at the Free list cap (My Lists, title panel, collections; content from `@plot/core/upgradeSheet.js`). "Compare every feature" opens Settings' Premium section, since mobile has no /plans | done |
 
 The upcoming feed had **three** independent implementations (web's
 `UpcomingContent`, mobile's Upcoming tab, mobile's `HomeReleases`). All three
