@@ -47,6 +47,7 @@ for (const connected of [false, true]) test(`Free imports offer Plex source sele
   await expect(page.getByRole('heading', { name: 'Import Watch History' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Plex Connected account/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Trakt Connected account/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Simkl Manual two-way sync/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Letterboxd CSV export/ })).toBeVisible();
   // Saved IMDb/Trakt exports require the event-store rollout flag.
   await expect(page.getByRole('button', { name: /IMDb CSV export/ })).toHaveCount(0);
@@ -65,6 +66,10 @@ for (const connected of [false, true]) test(`Free imports offer Plex source sele
   }
   if (!connected) await expect(page.getByText('This does not turn on automatic or two-way sync.')).toBeVisible();
   await expect(page.getByText(/Plex Media Server must be running/)).toBeVisible();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: /Simkl Manual two-way sync/ }).click();
+  await expect(page.getByRole('button', { name: 'Connect Simkl to import' })).toBeVisible();
+  await expect(page.getByText('Automatic sync is not turned on.')).toBeVisible();
   expect(pageErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('plex-import-ready.png'), fullPage: true });

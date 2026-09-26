@@ -24,6 +24,7 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import { useTraktSync } from '../../hooks/useTraktSync';
 import { useMediaSync } from '../../hooks/useMediaSync';
+import { useSimklSync } from '../../hooks/useSimklSync';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
 import { track, resetAnalytics, EVENTS } from '../../lib/analytics';
@@ -772,6 +773,7 @@ export default function SettingsScreen() {
   // ── Media integrations (Plex / Trakt) ────────────────────────────
   const trakt = useTraktSync(userId);
   const plex  = useMediaSync(userId);
+  const simkl = useSimklSync(userId);
 
   const syncedLabel = (iso?: string | null) =>
     `Connected · synced ${iso ? new Date(iso).toLocaleDateString() : 'never'}`;
@@ -1042,10 +1044,10 @@ export default function SettingsScreen() {
 
         {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
 
-        {/* Integrations — held for post-launch, same as web. Import Watch
-            History (under Support) stays available; it needs no credentials. */}
-        {SHOW_MEDIA_SYNC_INTEGRATIONS && (
+        {/* Plex and Trakt stay behind the post-launch flag. Simkl is a free,
+            manual connection and remains manageable once connected. */}
         <SettingsGroup title="Integrations">
+          {SHOW_MEDIA_SYNC_INTEGRATIONS && (<>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
             label="Plex"
@@ -1062,8 +1064,16 @@ export default function SettingsScreen() {
             trailing={trakt.isConnected ? undefined
               : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Connect</Text>}
           />
+          </>)}
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M5 7h11"/><Path d="M13 4l3 3-3 3"/><Path d="M19 17H8"/><Path d="M11 14l-3 3 3 3"/></Svg>}
+            label={SETTINGS_VIEW.integrations.simklName}
+            value={simkl.isConnected ? syncedLabel(simkl.integration?.last_sync_at) : SETTINGS_VIEW.integrations.simklBlurb}
+            onPress={simkl.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.simklName, simkl) : () => simkl.connect()}
+            trailing={simkl.isConnected ? undefined
+              : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.integrations.connectSimkl}</Text>}
+          />
         </SettingsGroup>
-        )}
 
         <TrackingSettings userId={userId} connect={trakt.connect} connectPlex={plex.startPlexAuth} plexPolling={plex.polling} connectionError={trakt.error || plex.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : plex.disconnect()} />
 

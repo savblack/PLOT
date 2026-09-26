@@ -23,6 +23,7 @@
  * @property {boolean} [importAnnotationsEnabled] Enable only after annotation storage and review are verified.
  * @property {boolean} [tvTimeImportEnabled] Internal preview only until saved-file validation is complete.
  * @property {boolean} [importEventsEnabled] Enable only after the event import migrations are installed.
+ * @property {string} simklClientId
  * @property {boolean} isDev
  * @property {Record<string, any>} [supabaseClientOptions] Optional createClient()
  *   options. Web leaves this undefined (default localStorage session); mobile
@@ -94,6 +95,7 @@ const defaults = {
   watchAvailabilityUrl: '',
   criticScoreUrl: '',
   traktClientId: '',
+  simklClientId: '',
   isDev: false,
   importAnnotationsEnabled: false,
   tvTimeImportEnabled: false,

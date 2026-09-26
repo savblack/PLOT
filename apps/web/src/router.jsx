@@ -39,6 +39,7 @@ const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'
 // Standalone pages
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
 const TraktCallbackPage = lazy(() => import('./pages/TraktCallbackPage.jsx'));
+const SimklCallbackPage = lazy(() => import('./pages/SimklCallbackPage.jsx'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 const OnboardingFlow    = lazy(() => import('./pages/OnboardingFlow.jsx'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage.jsx'));
@@ -91,6 +92,7 @@ const router = createBrowserRouter([
   { path: '/logout',         element: <LogoutPage /> },
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
   { path: '/auth/trakt',     element: wrap(<TraktCallbackPage />) },
+  { path: '/auth/simkl',     element: wrap(<SimklCallbackPage />) },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
   // Onboarding (protected, skip onboarding check)
