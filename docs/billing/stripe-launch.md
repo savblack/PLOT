@@ -79,10 +79,13 @@ This decision does not enable public checkout or authorize a production change.
    US$24/year. Verify Adaptive Pricing is enabled in the intended live PLOT
    account before launch; use USD as the fallback. Confirm local-currency monthly
    and yearly checkout, renewal, plan switching and refund behavior in sandbox.
-7. Deploy `stripe-billing` and `stripe-webhook`, enable `STRIPE_CHECKOUT_ENABLED=true` together with the public pricing flags,
-   then, with explicit approval, make one real low-value
-   purchase and confirm checkout, portal cancellation, webhook processing, and
-   loss of Premium access after the paid period ends.
+7. Deploy `stripe-billing` and `stripe-webhook`. Keep public pricing flags closed
+   and `STRIPE_CHECKOUT_ENABLED=false`. Use the private pilot allowlist below
+   for an explicitly approved low-value purchase. Confirm checkout, cancellation,
+   webhook processing, refund and loss of Premium access.
+8. Public launch requires a separately approved code change to the server gate
+   and client checkout controls. Setting `STRIPE_CHECKOUT_ENABLED=true` alone
+   does not open subscriptions. Verify the deployed behavior before announcing launch.
 
 Never put Stripe secret keys or price IDs in browser variables or tracked files.
 
