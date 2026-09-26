@@ -10,7 +10,7 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { posterUrl } from '../utils/images.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
-import { watchTogetherPath } from '../launchFeatures.js';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { TASTE_OVERLAP as T } from '../copy/tasteOverlap.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 import TasteShareDialog from '../components/TasteShareDialog.jsx';
@@ -56,6 +56,27 @@ function Poster({ item, className }) {
     <span className={className}>
       {src ? <img src={src} alt="" loading="lazy" /> : <span className="to-poster-fallback">{item.title}</span>}
     </span>
+  );
+}
+
+/**
+ * Watch together (#1039) with this person: its two-person overlap page. Only
+ * linked while SHOW_WATCH_TOGETHER is on, so the row never points at a route
+ * production doesn't serve.
+ */
+const watchTogetherPath = (username) => `/together/with/${encodeURIComponent(username)}`;
+
+function WatchlistRowText({ count, cta = false }) {
+  return (
+    <>
+      <span className="to-watchlist-icon" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></svg>
+      </span>
+      <span className="to-watchlist-text">
+        <strong>{T.watchlistOverlap(count)}</strong>
+        {cta && <span>{T.watchTogether}</span>}
+      </span>
+    </>
   );
 }
 
@@ -196,18 +217,16 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
           )}
         </section>
 
-        {sharedWatchlist > 0 && (
+        {sharedWatchlist > 0 && (SHOW_WATCH_TOGETHER ? (
           <Link className="to-watchlist" to={watchTogetherPath(target.username)}>
-            <span className="to-watchlist-icon" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></svg>
-            </span>
-            <span className="to-watchlist-text">
-              <strong>{T.watchlistOverlap(sharedWatchlist)}</strong>
-              <span>{T.watchTogether}</span>
-            </span>
+            <WatchlistRowText count={sharedWatchlist} cta />
             <svg className="to-watchlist-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
           </Link>
-        )}
+        ) : (
+          <div className="to-watchlist">
+            <WatchlistRowText count={sharedWatchlist} />
+          </div>
+        ))}
 
         <div className="to-share-row">
           <button type="button" className="btn btn-primary" onClick={() => setSharing(true)}>{T.share}</button>
