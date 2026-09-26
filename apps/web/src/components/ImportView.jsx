@@ -1,3 +1,4 @@
+import { TRACKING } from '@plot/core/copy/tracking.js';
 import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
 import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
@@ -470,7 +471,7 @@ function AccountImportView() {
                   style={{ alignSelf: 'flex-start', border: 0, borderRadius: 'var(--radius-md)', padding: '0.8rem 1rem', background: 'var(--accent)', color: 'white', fontWeight: 600, cursor: 'pointer' }}
                 >
                   {connection?.polling
-                    ? 'Waiting for Plex approval…'
+                    ? TRACKING.authorizing
                     : connection?.syncing
                       ? IMPORT_VIEW.importingFrom(platform.name)
                       : connection?.isConnected

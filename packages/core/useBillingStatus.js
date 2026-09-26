@@ -19,5 +19,5 @@ export function useBillingStatus(userId) {
     const timer = setInterval(load, 60_000);
     return () => { active = false; clearInterval(timer); };
   }, [userId]);
-  return result?.userId === userId ? result.data : null;
+  return result && result.userId === userId ? result.data : null;
 }

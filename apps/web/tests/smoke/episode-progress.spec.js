@@ -16,10 +16,12 @@ test('sparse episode undo persists across reimport and remount, with season isol
   await expect(page.locator('.ep-row.watched')).toHaveCount(0);
   await page.getByRole('button', { name: 'Mark season watched', exact: true }).click();
   await expect(page.locator('.ep-row.watched')).toHaveCount(4);
-  await page.getByRole('button', { name: 'S2', exact: true }).click();
+  await page.getByRole('button', { name: 'Season 1', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Season 2', exact: true }).click();
   await expect(page.locator('.ep-row')).toHaveCount(4);
   await expect(page.locator('.ep-row.watched')).toHaveCount(0);
-  await page.getByRole('button', { name: 'S1', exact: true }).click();
+  await page.getByRole('button', { name: 'Season 2', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Season 1', exact: true }).click();
   await expect(page.locator('.ep-row.watched')).toHaveCount(4);
   await page.getByRole('button', { name: 'Unmark season', exact: true }).click();
   await expect(page.locator('.ep-row.watched')).toHaveCount(0);

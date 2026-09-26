@@ -1,3 +1,4 @@
+import { TRACKING } from '@plot/core/copy/tracking.js';
 import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
 import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
@@ -417,7 +418,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
             >
               <Text style={styles.importBtnText}>
                 {'polling' in connection && connection.polling
-                  ? 'Waiting for Plex approval…'
+                  ? TRACKING.authorizing
                   : connection.syncing
                     ? IMPORT_VIEW.importingFrom(connectionName)
                     : connection.isConnected
