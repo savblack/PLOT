@@ -1,5 +1,5 @@
 // Watch together (Premium): pure rules shared by web and mobile. The server is
-// the authority (supabase/migrations/20260925120000_watch_together.sql); these
+// the authority (supabase/migrations/20260926100000_watch_together.sql); these
 // helpers only decide what to show. Design: docs/design/watch-together/README.md.
 
 /** @typedef {'profile' | 'following' | 'none'} RequestsFrom */

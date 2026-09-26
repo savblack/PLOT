@@ -8,5 +8,5 @@ export * from '@plot/core/navigation.js';
 
 const FEATURES = { watchTogether: SHOW_WATCH_TOGETHER };
 
+// Flagged items are never primary, so core's PRIMARY_NAV_ITEMS needs no filter.
 export const APP_NAV_ITEMS = CORE_NAV_ITEMS.filter(item => !item.feature || FEATURES[item.feature]);
-export const PRIMARY_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.primary);

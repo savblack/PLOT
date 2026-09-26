@@ -1,5 +1,5 @@
 -- Watch together, phase 2: the two-person yes-or-no session. Builds on
--- 20260925120000_watch_together.sql. Design: docs/design/watch-together/README.md.
+-- 20260926100000_watch_together.sql. Design: docs/design/watch-together/README.md.
 --
 -- One person starts a session with a partner. The deck is a snapshot of the
 -- titles they have both saved, shuffled once so both see the same order. Each
