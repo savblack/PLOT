@@ -150,6 +150,7 @@ function TabsLayout() {
       <Tabs.Screen name="requests" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="tonight" options={{ href: null }} />
+      <Tabs.Screen name="profile-section" options={{ href: null }} />
     </Tabs>
   );
 }
