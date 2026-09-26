@@ -10,7 +10,7 @@ import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
 /**
  * User-created custom lists, plus (with includeShared) the shared lists the
  * user is a member of. Shared lists come from Watch together
- * (supabase/migrations/20260926120000_watch_together_shared_lists.sql): each
+ * (supabase/migrations/20260926150000_watch_together_shared_lists.sql): each
  * list gains `role` ('owner' | 'member') and `people` (owner and members),
  * and members edit through RPCs because items stay owned by the list owner.
  *

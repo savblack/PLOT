@@ -1,5 +1,5 @@
 -- Watch together, phase 3: shared lists and "Saved by Sam too". Builds on
--- 20260926100000_watch_together.sql. Design: docs/design/watch-together/README.md.
+-- 20260926130000_watch_together.sql. Design: docs/design/watch-together/README.md.
 --
 -- A shared list is an ordinary custom list with members. It counts only
 -- against its creator's list allowance (the existing cap counts lists by

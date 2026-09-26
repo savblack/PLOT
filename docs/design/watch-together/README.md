@@ -142,17 +142,17 @@ Shared lists (from A)
 
 Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
 
-- Phase 1 (`20260926100000_watch_together.sql`): requests, pairings, share
+- Phase 1 (`20260926130000_watch_together.sql`): requests, pairings, share
   full watchlist, shared titles for two people or a group, Suggested, hub,
   picker, invite, profile tile, accept dialog, notifications, settings.
-- Phase 2 (`20260926110000_watch_together_sessions.sql`): the two-person
+- Phase 2 (`20260926140000_watch_together_sessions.sql`): the two-person
   yes-or-no session and its "started deciding" notification. The deck is a
   shuffled snapshot of titles you've both saved. Neither person sees the
   other's individual votes, only progress and matches. Live updates are a
   Realtime broadcast ping (no data) on `wt-session:<id>`, with a 5 second
   poll as a fallback. Sessions end after 12 hours, when either person ends
   them, when a new one starts, or when the pairing ends.
-- Phase 3 (`20260926120000_watch_together_shared_lists.sql`): shared lists
+- Phase 3 (`20260926150000_watch_together_shared_lists.sql`): shared lists
   and "Saved by Sam too". A shared list is a custom list with members, made
   from the overlap list (name, a head start from what you've both saved or
   empty, and partners to add). Items keep the owner's `user_id` so the

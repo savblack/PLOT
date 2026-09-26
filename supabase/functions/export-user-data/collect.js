@@ -44,7 +44,7 @@ export const EXPORT_STEPS = Object.freeze([
   { table: 'integration_items', match: { type: 'eq', column: 'user_id' } },
   { table: 'integration_outbox', match: { type: 'eq', column: 'user_id' } },
   { table: 'follows', match: { type: 'or', columns: ['follower_id', 'following_id'] } },
-  // Watch together (20260926100000 to 20260926120000). Optional so the export
+  // Watch together (20260926130000 to 20260926150000). Optional so the export
   // keeps working if this function is deployed before those migrations run.
   // Composite keys (no id column), so each names its own stable sort order.
   { table: 'watch_together', match: { type: 'or', columns: ['requester_id', 'recipient_id'] }, optional: true, order: ['requester_id', 'recipient_id'] },

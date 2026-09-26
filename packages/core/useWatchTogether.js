@@ -5,7 +5,7 @@ import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey } 
 /**
  * Watch together data hooks, shared by web and mobile. Every write goes
  * through a security definer RPC; the tables have no client write policies.
- * See supabase/migrations/20260926100000_watch_together.sql.
+ * See supabase/migrations/20260926130000_watch_together.sql.
  */
 
 /** @typedef {import('./watchTogether.js').WatchTogetherRow} WatchTogetherRow */
