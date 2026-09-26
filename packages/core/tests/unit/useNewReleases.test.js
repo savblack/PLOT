@@ -6,6 +6,7 @@ import {
   prepareNewReleaseGenreRails,
   tagCinemaReleases,
 } from '../../useNewReleases.js';
+import { _resetKeywordGenreCache } from '../../keywordGenres.js';
 
 const rails = [
   { key: 'horror', label: 'New in Horror', genreIds: [27], items: [{ id: 1, media_type: 'movie', genre_ids: [27] }] },
@@ -71,4 +72,37 @@ test('recent-only loading skips the per-genre catalogue Home does not render', a
   assert.deepEqual(calls, ['recent']);
   assert.deepEqual(data.genreRails, []);
   assert.deepEqual(data.recent.map(item => item.id), [1]);
+});
+
+// Keyword ids and titles below are opaque fixture values from a fake client.
+test('Horror, Romance and Thriller rails add shows found by TMDB keyword', async () => {
+  _resetKeywordGenreCache();
+  const seen = [];
+  const client = {
+    async getRecentReleases() { return { movies: [], tv: [] }; },
+    async getNowPlaying() { return []; },
+    async getGenreCatalog() {
+      return { movie: [{ id: 27, name: 'Horror' }, { id: 35, name: 'Comedy' }], tv: [{ id: 35, name: 'Comedy' }] };
+    },
+    async searchKeyword(q) { return { results: q === 'horror' ? [{ id: 7001, name: 'horror' }] : [] }; },
+    async discoverNewestByGenre(type, id) {
+      return { results: [{ id: type === 'movie' ? 100 + id : 200 + id, title: 'M', name: 'S', original_language: 'en', poster_path: '/p.jpg', release_date: '2026-09-01', first_air_date: '2026-09-02', genre_ids: [id] }] };
+    },
+    async discoverNewestByKeyword(type, ids) {
+      seen.push([type, ids]);
+      return { results: [{ id: 999, name: 'Scary show', original_language: 'en', poster_path: '/s.jpg', first_air_date: '2026-09-03', genre_ids: [9648] }] };
+    },
+  };
+  const defs = buildGenreRailDefinitions(await client.getGenreCatalog());
+  assert.equal(defs.find(r => r.key === 'horror').tvKeywordGenre, 27);
+  assert.equal(defs.find(r => r.key === 'comedy').tvKeywordGenre, undefined);
+
+  const { genreRails } = await loadNewReleaseData({ client });
+  assert.deepEqual(seen, [['tv', '7001']]);
+  const horror = genreRails.find(r => r.key === 'horror');
+  const show = horror.items.find(i => i.id === 999);
+  assert.equal(show.media_type, 'tv');
+  assert.ok(show.genre_ids.includes(27), 'kept by the page\'s Horror filter');
+  const filtered = prepareNewReleaseGenreRails(genreRails, ['tv', 'movie', 'cinema'], [27]);
+  assert.ok(filtered.find(r => r.key === 'horror').items.some(i => i.id === 999));
 });

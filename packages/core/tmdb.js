@@ -445,7 +445,7 @@ export const tmdb = {
     return withRegionalMovieReleaseDate(movie);
   },
   getTVDetails: (id) =>
-    fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos,aggregate_credits,external_ids' }),
+    fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos,aggregate_credits,external_ids,keywords' }),
 
   /**
    * A TMDB collection (franchise set): `{ id, name, poster_path, parts[] }`.
@@ -841,6 +841,8 @@ export const tmdb = {
      are TMDB /discover/{movie,tv} query keys, passed through as-is. */
   discoverMovies: (params = {}) => fetchFromTMDB('/discover/movie', params),
   discoverTV: (params = {}) => fetchFromTMDB('/discover/tv', params),
+  /** Keywords by name, e.g. "horror" → { results: [{ id, name }] }. */
+  searchKeyword: (query) => fetchFromTMDB('/search/keyword', { query }),
 
   /* ── Newest released titles in a genre ── */
   discoverNewestByGenre: async (type, genreId) => {
