@@ -33,7 +33,7 @@ begin;
 -- protect_premium_flag() and pooled backends carrying ''.
 set local request.jwt.claims = '{"role":"service_role"}';
 
-\ir ../supabase/migrations/20260925120000_taste_overlap.sql
+\ir ../supabase/migrations/20260926090000_taste_overlap.sql
 
 select username as c_name from public.profiles where id = :C
 \gset
@@ -59,12 +59,14 @@ grant select on t_titles to authenticated;
 select case when count(*) = 3 then 'PASS' else 'FAIL' end || '  Staging has three real titles to use'
   from t_titles;
 
--- A: title 1 rated 8, title 2 rated 4, title 3 rated 9.  C: title 1 rated 9, title 2 rated 7.
+-- A: title 1 rated 8, title 2 rated 4, title 3 rated 9.  C: title 1 rated 10, title 2 rated 7.
+-- C's 10 is five stars, the top of the scale; history.rating was numeric(2,1)
+-- until 20260925140000 and could not hold it.
 insert into public.history (user_id, tmdb_id, media_type, title, rating, watched_at)
 select :A::uuid, tmdb_id, media_type, title, 8::smallint, '2026-01-01'::timestamptz from t_titles where n = 1 union all
 select :A::uuid, tmdb_id, media_type, title, 4::smallint, '2026-02-01'::timestamptz from t_titles where n = 2 union all
 select :A::uuid, tmdb_id, media_type, title, 9::smallint, '2026-03-01'::timestamptz from t_titles where n = 3 union all
-select :C::uuid, tmdb_id, media_type, title, 9::smallint, '2026-01-02'::timestamptz from t_titles where n = 1 union all
+select :C::uuid, tmdb_id, media_type, title, 10::smallint, '2026-01-02'::timestamptz from t_titles where n = 1 union all
 select :C::uuid, tmdb_id, media_type, title, 7::smallint, '2026-02-02'::timestamptz from t_titles where n = 2;
 
 -- Both have title 1 on their watchlist; only A has title 2.
@@ -101,6 +103,11 @@ select case when exists (
           join t_titles t on t.n = 1 and (e->>'tmdb_id')::int = t.tmdb_id and e->>'media_type' = t.media_type
          where (e->>'rating')::numeric = 8)
             then 'PASS' else 'FAIL' end || '  ratings come back on the stored 1-10 scale';
+select case when exists (
+         select 1 from jsonb_array_elements(:'r'::jsonb->'theirs') e
+          join t_titles t on t.n = 1 and (e->>'tmdb_id')::int = t.tmdb_id and e->>'media_type' = t.media_type
+         where (e->>'rating')::numeric = 10)
+            then 'PASS' else 'FAIL' end || '  a five-star rating (10) is stored and returned';
 select case when (:'r'::jsonb->>'shared_watchlist')::int = 1
             then 'PASS' else 'FAIL' end || '  public target: watchlist overlap is counted (1)';
 select case when pg_temp.overlap(username)->>'error' = 'not_found'
