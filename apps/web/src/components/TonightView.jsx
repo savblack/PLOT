@@ -456,11 +456,10 @@ function Chips({ item }) {
   );
 }
 
-/* Favourite and watchlist, the same buttons as elsewhere: on the Top pick the
-   Home hero's corner buttons, on cards the poster-card ones (heart top-left,
-   bookmark top-right). Hover reveals the inactive one on desktop; an active
-   one always shows, and touch screens show both (app.css). `actions` is
-   absent in stories without them. */
+/* Favourite and watchlist, the same buttons as on Home: on the Top pick the
+   hero's corner buttons, on cards the Top 20 chart row's buttons on the
+   right. Desktop reveals them on hover; touch screens always show them.
+   `actions` is absent in stories without them. */
 function FavSave({ item, actions, variant }) {
   if (!actions) return null;
   const { watchlist, favorites, favWords } = actions;
@@ -480,15 +479,18 @@ function FavSave({ item, actions, variant }) {
       </div>
     );
   }
+  // Cards: Home's chart-row buttons on the right, revealed on hover.
   return (
-    <>
-      <button type="button" className={`card-fav-btn${fav ? ' faved' : ''}`} onClick={toggleFav} aria-label={fav ? favWords.un : favWords.noun}>
-        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+    <span className="tonight-card-actions search-row-actions">
+      <button type="button" className={`search-action-btn search-action-btn--heart${fav ? ' active' : ''}`} onClick={toggleFav}
+        data-tip={fav ? `Remove ${favWords.nounLower}` : favWords.noun} aria-label={fav ? `Remove ${item.title} from ${favWords.pluralLower}` : `Add ${item.title} to ${favWords.pluralLower}`}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" fill={fav ? 'currentColor' : 'none'} /></svg>
       </button>
-      <button type="button" className={`card-save-btn${saved ? ' saved' : ''}`} onClick={toggleSave} disabled={watchlist.loading} aria-label={saved ? MEDIA.removeFromList : MEDIA.addToList}>
-        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+      <button type="button" className={`search-action-btn${saved ? ' active' : ''}`} onClick={toggleSave} disabled={watchlist.loading}
+        data-tip={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist} aria-label={saved ? `Remove ${item.title} from list` : `Add ${item.title} to list`}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z" fill={saved ? 'currentColor' : 'none'} /></svg>
       </button>
-    </>
+    </span>
   );
 }
 
@@ -515,15 +517,13 @@ function PickCard({ item, index, onOpen, reveal, actions }) {
   return (
     <div className={`tonight-card${reveal ? ' tonight-card--dissolve' : ''}`}
       style={reveal ? { '--dissolve-delay': `${600 + index * 250}ms` } : { '--reveal-delay': `${(index + 1) * 90}ms` }}>
-      <span className="tonight-card-poster">
-        {img ? <img src={img} alt="" loading="lazy" /> : null}
-        <FavSave item={item} actions={actions} />
-      </span>
+      <span className="tonight-card-poster">{img ? <img src={img} alt="" loading="lazy" /> : null}</span>
       <span className="tonight-card-body">
         <button type="button" className="tonight-card-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
         <span className="tonight-card-meta">{resultMeta(item)}</span>
         <Chips item={item} />
       </span>
+      <FavSave item={item} actions={actions} />
     </div>
   );
 }

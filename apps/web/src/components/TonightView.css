@@ -364,17 +364,30 @@
 .tonight-hero .discover-hero-corner-btns { z-index: 1; }
 .tonight-hero:hover .discover-hero-corner-btn,
 .tonight-hero:focus-within .discover-hero-corner-btn { opacity: 1; }
-/* Poster-card buttons over the poster. The poster sits above the stretched
-   title so its buttons take the click; the image itself lets it through. */
-.tonight-card-poster { position: relative; z-index: 1; pointer-events: none; }
-.tonight-card-poster .card-fav-btn,
-.tonight-card-poster .card-save-btn { pointer-events: auto; width: 26px; height: 26px; top: 4px; }
-.tonight-card-poster .card-fav-btn { left: 4px; }
-.tonight-card-poster .card-save-btn { right: 4px; }
-.tonight-card:hover .card-fav-btn,
-.tonight-card:hover .card-save-btn,
-.tonight-card:focus-within .card-fav-btn,
-.tonight-card:focus-within .card-save-btn { opacity: 1; }
+/* Card buttons on the right, as on Home's Top 20 rows: over a fade into the
+   card so a long title runs under them, shown on hover or focus. */
+.tonight-card-actions {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-left: 1.5rem;
+  background: linear-gradient(to right, transparent, var(--surface-sunken) 35%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.tonight-card:hover .tonight-card-actions,
+.tonight-card:focus-within .tonight-card-actions { opacity: 1; pointer-events: auto; }
+.tonight-card-actions .search-action-btn:first-child::after { right: 0; left: auto; }
+@media (hover: none), (pointer: coarse) {
+  .tonight-card-actions { opacity: 1; pointer-events: auto; }
+  .tonight-card-actions .search-action-btn { min-width: 44px; min-height: 44px; }
+}
 
 .tonight-cards { display: grid; gap: 12px; }
 .tonight-card {

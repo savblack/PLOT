@@ -77,7 +77,7 @@ function useFakeActions() {
   const [saved, setSaved] = useState(() => new Set(POOL.filter(p => p.onWatchlist).map(p => p.id)));
   const flip = (set, id) => { const next = new Set(set); if (next.has(id)) next.delete(id); else next.add(id); return next; };
   return {
-    favWords: { noun: 'Favourite', un: 'Remove from favourites' },
+    favWords: { noun: 'Favourite', nounLower: 'favourite', pluralLower: 'favourites', un: 'Remove from favourites' },
     favorites: { isFavorite: (id) => favs.has(id), toggleFavorite: (item) => setFavs(s => flip(s, item.id)) },
     watchlist: { loading: false, isInList: (id) => saved.has(id), toggle: (item) => setSaved(s => flip(s, item.id)) },
   };
