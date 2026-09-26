@@ -39,27 +39,37 @@ const IconTv = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2" y="
 
 const IconLock = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>;
 const IconClose = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>;
-const IconBookmark = ({ filled }) => (
-  <svg aria-hidden="true" viewBox="0 0 24 24" className={filled ? 'filled' : undefined}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+// A pin, not the bookmark: the bookmark means the watchlist everywhere else.
+const IconPin = ({ filled }) => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" className={filled ? 'filled' : undefined}><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" /></svg>
 );
 
 /* Saved searches: the desktop side card and the phone section share rows. */
+// Two rows until opened, so the desktop column fits a laptop window without scrolling.
+const SAVED_SHOWN = 2;
 function SavedSearches({ picker, className = '' }) {
+  const [all, setAll] = useState(false);
   if (!picker.savedSearches?.length) return null;
+  const shown = all ? picker.savedSearches : picker.savedSearches.slice(0, SAVED_SHOWN);
   return (
     <section className={`hist-card tonight-saved ${className}`} aria-label={T.savedTitle}>
       <div className="hist-card-head"><span className="hist-card-title">{T.savedTitle}</span></div>
       <ul className="tonight-saved-list">
-        {picker.savedSearches.map(item => (
+        {shown.map(item => (
           <li key={item.id} className="tonight-saved-row">
             <button type="button" className="tonight-saved-open" onClick={() => picker.openSavedSearch(item.id)}>
-              <span className="tonight-saved-label">{item.label}</span>
+              <span className="tonight-saved-label" title={item.label}>{item.label}</span>
               <span className="tonight-saved-meta">{T.savedMeta(item.results.length, savedSearchDate(item.savedAt))}</span>
             </button>
             <button type="button" className="tonight-saved-remove" aria-label={T.removeSaved(item.label)} onClick={() => picker.removeSavedSearch(item.id)}><IconClose /></button>
           </li>
         ))}
       </ul>
+      {picker.savedSearches.length > SAVED_SHOWN && (
+        <button type="button" className="tonight-saved-more" onClick={() => setAll(v => !v)}>
+          {all ? T.savedFewer : T.savedAll(picker.savedSearches.length)}
+        </button>
+      )}
     </section>
   );
 }
@@ -480,7 +490,7 @@ function Results({ picker, onOpen }) {
         <h2 className="tonight-results-title">{T.heading[pickerTimeOfDay()]}</h2>
         <button type="button" className={`btn btn-secondary btn-sm tonight-save${picker.isSaved ? ' saved' : ''}`}
           aria-pressed={picker.isSaved} aria-label={picker.isSaved ? T.savedLabel : T.saveLabel} onClick={picker.toggleSaveSearch}>
-          <IconBookmark filled={picker.isSaved} />{picker.isSaved ? T.saved : T.save}
+          <IconPin filled={picker.isSaved} />{picker.isSaved ? T.saved : T.save}
         </button>
       </div>
       <div className="tonight-results-list">

@@ -311,10 +311,11 @@ function Reveal({ index, reduceMotion, children }: { index: number; reduceMotion
   );
 }
 
-function Bookmark({ color, filled }: { color: string; filled: boolean }) {
+// A pin, not the bookmark: the bookmark means the watchlist everywhere else.
+function Pin({ color, filled }: { color: string; filled: boolean }) {
   return (
     <Svg width={16} height={16} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+      <Path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
     </Svg>
   );
 }
@@ -357,7 +358,7 @@ function Results({ picker, onOpen, styles, colors, reduceMotion }: { picker: Pic
         <Text style={styles.resultsTitle} accessibilityRole="header">{T.heading[pickerTimeOfDay()]}</Text>
         <TouchableOpacity onPress={picker.toggleSaveSearch} style={[styles.btn, styles.btnSecondary, { minHeight: 38 }]} accessibilityRole="button"
           accessibilityLabel={picker.isSaved ? T.savedLabel : T.saveLabel} accessibilityState={{ selected: picker.isSaved }}>
-          <Bookmark color={colors.textPrimary} filled={picker.isSaved} />
+          <Pin color={colors.textPrimary} filled={picker.isSaved} />
           <Text style={styles.btnText}>{picker.isSaved ? T.saved : T.save}</Text>
         </TouchableOpacity>
       </View>

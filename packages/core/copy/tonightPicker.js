@@ -141,6 +141,8 @@ export const TONIGHT_PICKER = {
   saveLabel: 'Save these picks',
   savedLabel: 'Saved. Tap to remove from saved searches',
   savedTitle: 'Saved searches',
+  savedAll: (n) => `Show all ${n}`,
+  savedFewer: 'Show fewer',
   savedMeta: (count, date) => `${count} ${count === 1 ? 'pick' : 'picks'} · ${date}`,
   removeSaved: (label) => `Remove saved search: ${label}`,
   topPick: 'Top pick',

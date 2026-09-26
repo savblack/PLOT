@@ -4,7 +4,15 @@
    Phone is one column with a sticky sentence bar; >=1024px swaps in the
    264px side column History and Settings use. */
 
-.tonight-view { padding-bottom: 1rem; }
+.tonight-view { display: flex; flex-direction: column; padding-bottom: 1rem; }
+/* Phone: at least the visible scroll area tall, so the sticky bar below can sit on the bottom. */
+@media (max-width: 1023px) {
+  .tonight-view {
+    min-height: calc(100dvh - var(--header-h) - var(--tabbar-h) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0;
+  }
+  .tonight-view .tonight-layout { padding-bottom: 1.5rem; }
+}
 /* Tapping Back, Next or a tile twice in a row reads as a double-click; don't
    let that select the label. */
 .tonight-view button { -webkit-user-select: none; user-select: none; }
@@ -218,10 +226,13 @@
 
 /* ── Phone sticky bar ── */
 .tonight-bar {
+  /* .app-main already ends above the tab bar, so 0 is its bottom edge. With
+     the view at least a screen tall and this bar last, it sits on the bottom
+     even when the page is short. */
   position: sticky;
-  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  bottom: 0;
   z-index: 5;
-  margin-top: 1.5rem;
+  margin-top: auto;
   padding: 24px var(--gut) 16px;
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(12px);
@@ -482,6 +493,7 @@
 .tonight-saved-remove:hover { background: var(--surface-sunken); color: var(--text-primary); }
 .tonight-saved-remove svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .tonight-saved--phone { margin-top: 1.5rem; }
+.tonight-saved-more { align-self: flex-start; margin: 2px 4px 0; padding: 6px 0; border: 0; background: none; font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--accent-text); cursor: pointer; }
 
 /* ── Locked (Free): the upgrade pop-up over blurred placeholder picks ── */
 .tonight-go svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; margin-right: 6px; }
@@ -587,7 +599,10 @@
     gap: 72px;
     margin-top: 1rem;
   }
-  .tonight-side { display: flex; flex-direction: column; gap: 24px; width: 264px; flex-shrink: 0; }
+  .tonight-side { display: flex; flex-direction: column; gap: 16px; width: 264px; flex-shrink: 0; }
+  .tonight-qrow { padding-block: 8px; }
+  .tonight-saved-label { -webkit-line-clamp: 1; }
+  .tonight-saved-open { padding-block: 8px; }
   .tonight-main { flex: 1; }
   .tonight-bar { display: none; }
 
@@ -603,8 +618,13 @@
   .tonight-stepnav { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
   .tonight-stepnav-pick { display: inline-flex; padding-inline: 28px; }
 
-  .tonight-hero { height: 320px; border-radius: 24px; padding: 24px; }
-  .tonight-hero-title { font-size: 2rem; }
+  /* Sized so the heading, Top pick and four cards fit a 13" laptop window
+     (about 1440×780 of page) without scrolling. */
+  .tonight-hero { height: 224px; border-radius: 24px; padding: 20px 24px; }
+  .tonight-hero-title { font-size: 1.75rem; }
+  .tonight-card { padding: 10px; gap: 14px; }
+  .tonight-card-poster { width: 64px; height: 96px; border-radius: 10px; }
+  .tonight-card-title { font-size: 1.1rem; }
   .tonight-hero-meta { font-size: 0.875rem; }
   .tonight-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .tonight-results-title { font-size: 1.5rem; }
