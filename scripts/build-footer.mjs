@@ -12,6 +12,10 @@
  *   2. website/ui.css — the styles are injected between the
  *      `/* footer-css:start … *\/` / `/* footer-css:end *\/` markers, so every
  *      static page and the Storybook story get them from the one stylesheet.
+ *      Each page's `<link href="/ui.css?v=…">` carries a hash of that file, so
+ *      a changed stylesheet gets a new URL. The zone lets browsers keep CSS for
+ *      four hours; without the stamp, returning visitors got new footer markup
+ *      with the old stylesheet.
  *   3. The /whats-on and /movie|/tv edge functions (supabase/functions/
  *      marketing-feed, title-page) — markup and styles are emitted as a
  *      generated TS module (footer.generated.ts, FOOTER_HTML + FOOTER_CSS)
@@ -27,6 +31,7 @@
  * Page-specific spacing around the footer (the homepage's ticker clearance,
  * a page's margin-top) stays in that page's own styles.
  */
+import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
@@ -109,18 +114,31 @@ function sync(absPath, produce) {
   }
 }
 
+// ui.css as it should read, and the version stamp every page links it with.
+// Hashed from the expected text, not the file on disk, so --check agrees
+// with what a real run would write.
+const uiSrc = readFileSync(UI_CSS, 'utf8');
+if (!CSS_MARKER_RE.test(uiSrc)) {
+  console.error('✗ apps/website/ui.css: footer-css markers not found');
+  process.exit(1);
+}
+const uiNext = uiSrc.replace(CSS_MARKER_RE, () => cssBlock);
+const uiVersion = createHash('sha256').update(uiNext).digest('hex').slice(0, 8);
+const UI_LINK_RE = /href="\/ui\.css(?:\?v=[^"]*)?"/g;
+const stampUiLink = (src) => src.replace(UI_LINK_RE, `href="/ui.css?v=${uiVersion}"`);
+
 for (const page of PAGES) {
   sync(join(WEB, page), (src) => {
     if (src === null) return null;
     const rx = MARKER_RE.test(src) ? MARKER_RE : FOOTER_RE;
-    return rx.test(src) ? src.replace(rx, block) : null;
+    return rx.test(src) ? stampUiLink(src.replace(rx, () => block)) : null;
   });
 }
 
-sync(UI_CSS, (src) => {
-  if (src === null || !CSS_MARKER_RE.test(src)) return null;
-  return src.replace(CSS_MARKER_RE, cssBlock);
-});
+// 404.html has no footer but does load ui.css.
+sync(join(WEB, '404.html'), (src) => (src === null ? null : stampUiLink(src)));
+
+sync(UI_CSS, () => uiNext);
 
 sync(EDGE_TS, () => tsModule);
 sync(EDGE_TS_TITLE, () => tsModule);
