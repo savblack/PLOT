@@ -1,0 +1,36 @@
+[
+  {
+    "type": "movie",
+    "movie": {
+      "ids": {
+        "imdb": "tt0156887",
+        "trakt": 5677
+      },
+      "year": 1998,
+      "title": "Perfect Blue"
+    },
+    "rank": 1,
+    "id": 1085775335,
+    "listed_at": null,
+    "notes": null,
+    "my_rating": null
+  },
+  {
+    "type": "show",
+    "show": {
+      "ids": {
+        "imdb": "tt7923710",
+        "tvdb": 341871,
+        "trakt": 127400
+      },
+      "year": 2018,
+      "title": "My Mister",
+      "aired_episodes": 16
+    },
+    "rank": 3,
+    "id": 1183101440,
+    "listed_at": null,
+    "notes": null,
+    "my_rating": null
+  }
+]

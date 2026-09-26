@@ -36,6 +36,10 @@ This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the
    VITE_TMDB_PROXY_URL=<staging tmdb-proxy Worker URL>
    VITE_SHOW_APPLE_LOGIN=<optional; set false to temporarily hide Apple sign-in>
    VITE_TRAKT_CLIENT_ID=<Trakt OAuth app client ID>
+   VITE_IMPORT_EVENTS_ENABLED=false
+   VITE_IMPORT_ANNOTATIONS_ENABLED=false
+   VITE_TRACKING_JOBS_ENABLED=false
+   VITE_TVTIME_IMPORT_ENABLED=false
    ```
 
 3. These values are browser-safe (they ship in the app bundle). `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` belong to PLOT Staging, PLOT's preview Supabase project (local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data). Pull them from the Supabase dashboard, project `PLOT Staging`. Don't repoint these at Production for routine dev. Keep service-role and TMDB API keys server-side or local-script-only.

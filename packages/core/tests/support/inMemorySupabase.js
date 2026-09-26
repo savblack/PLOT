@@ -18,7 +18,8 @@ const MAX_ROWS = 1000;
 
 /** A thenable query builder: every method returns `this`, awaiting runs it. */
 class Query {
-  constructor(db, table, op, payload) {
+  constructor(db, table, op, payload, options = {}) {
+    this.options = options;
     this.db = db;
     this.table = table;
     this.op = op;
@@ -119,12 +120,15 @@ class Query {
     const incoming = Array.isArray(this.payload) ? this.payload : [this.payload];
     const written = incoming.map((row) => {
       const existing = this.db.findByUnique(this.table, row);
-      if (existing) { Object.assign(existing, row); return existing; }
+      if (existing) {
+        if (this.options.ignoreDuplicates) return null;
+        Object.assign(existing, row); return existing;
+      }
       const created = { id: this.db.nextId(), ...row };
       this.rows().push(created);
       return created;
     });
-    return this.shape(written);
+    return this.shape(written.filter(Boolean));
   }
 
   runUpdate() {
@@ -196,7 +200,7 @@ export function createInMemorySupabase({ tables = {}, unique = {}, session = nul
         select: (cols) => new Query(db, table, 'select').select(cols),
         insert: (payload) => new Query(db, table, 'insert', payload),
         update: (payload) => new Query(db, table, 'update', payload),
-        upsert: (payload) => new Query(db, table, 'upsert', payload),
+        upsert: (payload, options) => new Query(db, table, 'upsert', payload, options),
         delete: () => new Query(db, table, 'delete'),
       };
     },

@@ -16,6 +16,8 @@ import { initAnalytics, track, EVENTS } from './analytics';
 initAnalytics();
 
 configure({
+  trackingJobsEnabled: process.env.EXPO_PUBLIC_TRACKING_JOBS_ENABLED === 'true',
+  importEventsEnabled: process.env.EXPO_PUBLIC_IMPORT_EVENTS_ENABLED === 'true',
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
   tmdbProxyUrl: process.env.EXPO_PUBLIC_TMDB_PROXY_URL ?? '',

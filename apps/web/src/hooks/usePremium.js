@@ -2,13 +2,14 @@ import { useCallback, useState } from 'react';
 import { supabase } from '@plot/core/supabase.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { track, EVENTS } from '../lib/analytics.js';
-import { isPremiumProfile } from '@plot/core/premium.js';
+import { useBillingStatus } from '@plot/core/useBillingStatus.js';
+import { billingAccess } from '@plot/core/billing.js';
 
 /**
  * PLOT Premium billing actions (web only — redirects to Stripe).
  *
- * Premium *status* comes from profile.is_premium, already loaded by
- * App.jsx's profile select and mirrored by the stripe-webhook edge function.
+ * Billing status comes from the authenticated get_my_billing_status() RPC.
+ * The persisted badge alone is neither an entitlement nor a billing relationship.
  * Server-side gates (RLS + edge functions) are the authority; this hook just
  * previews upcoming subscriptions / opens the Stripe customer portal.
  */
@@ -30,6 +31,7 @@ async function callBilling(action, body = {}) {
 }
 
 export function usePremium(profile) {
+  const billing = useBillingStatus(profile?.id);
   const [comingSoon, setComingSoon] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -66,7 +68,8 @@ export function usePremium(profile) {
   }, [busy]);
 
   return {
-    isPremium: isPremiumProfile(profile),
+    ...billingAccess(billing),
+    billing,
     startCheckout,
     comingSoon,
     startTipCheckout,

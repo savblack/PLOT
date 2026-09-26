@@ -14,9 +14,11 @@
  *
  * Secrets: STRIPE_SECRET_KEY, STRIPE_PRICE_MONTHLY, STRIPE_PRICE_YEARLY.
  */
-import Stripe from 'npm:stripe@22.3.2';
+import Stripe from 'npm:stripe@22.6.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { CheckoutPendingError, subscriptionCheckout } from '../_shared/checkout.ts';
+import { checkoutPlan, matchesPremiumPrice, billingSettingsUrl } from '../_shared/billingPolicy.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
 // arbitrary email clients and marketing embeds), this is only ever called
@@ -44,13 +46,14 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-const SETTINGS_URL = 'https://app.theplot.tv/settings';
+const SETTINGS_URL = billingSettingsUrl(Deno.env.get('STRIPE_SETTINGS_URL'));
 const TIP_MIN_AMOUNT = 100;
 const TIP_MAX_AMOUNT = 50000;
 
 async function createPortalUrl(customerId: string) {
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
+    configuration: Deno.env.get('STRIPE_PORTAL_CONFIGURATION') || undefined,
     return_url: SETTINGS_URL,
   });
   return session.url;
@@ -89,20 +92,22 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_URL')!,
     serviceKey(),
   );
-  const { data: billing } = await admin
+  const { data: billing, error: billingError } = await admin
     .from('billing_customers')
     .select('stripe_customer_id')
     .eq('user_id', user.id)
     .maybeSingle();
 
+  if (billingError) return json({ error: 'Could not load billing account' }, 503);
+
   const action = new URL(req.url).searchParams.get('action');
 
   if (action === 'checkout') {
-    let plan = 'monthly';
-    try {
-      const body = await req.json();
-      if (body?.plan === 'yearly') plan = 'yearly';
-    } catch { /* default to monthly */ }
+    if (Deno.env.get('STRIPE_CHECKOUT_ENABLED') !== 'true') {
+      return json({ error: 'PLOT Premium subscriptions are not available yet' }, 503);
+    }
+    const plan = checkoutPlan(await req.json().catch(() => null));
+    if (!plan) return json({ error: 'Choose a monthly or yearly plan' }, 400);
 
     const price = plan === 'yearly'
       ? Deno.env.get('STRIPE_PRICE_YEARLY')
@@ -110,33 +115,15 @@ Deno.serve(async (req) => {
     if (!price) return json({ error: 'Billing is not configured' }, 500);
 
     try {
-      // A late webhook or stale profile badge must never let someone open a
-      // second subscription. Existing subscribers go straight to the portal.
-      if (billing?.stripe_customer_id) {
-        const subscriptions = await stripe.subscriptions.list({
-          customer: billing.stripe_customer_id,
-          status: 'all',
-          limit: 100,
-        });
-        if (subscriptions.data.some((sub) => ['active', 'trialing', 'past_due'].includes(sub.status))) {
-          return json({ url: await createPortalUrl(billing.stripe_customer_id) });
-        }
+      const configuredPrice = await stripe.prices.retrieve(price);
+      if (!matchesPremiumPrice(configuredPrice, plan)) {
+        return json({ error: 'Billing price configuration needs attention' }, 503);
       }
 
-      const session = await stripe.checkout.sessions.create({
-        mode: 'subscription',
-        line_items: [{ price, quantity: 1 }],
-        customer: billing?.stripe_customer_id ?? undefined,
-        customer_email: billing?.stripe_customer_id ? undefined : user.email,
-        client_reference_id: user.id,
-        metadata: { supabase_user_id: user.id },
-        subscription_data: { metadata: { supabase_user_id: user.id } },
-        success_url: `${SETTINGS_URL}?checkout=success`,
-        cancel_url: `${SETTINGS_URL}?checkout=cancelled`,
-        allow_promotion_codes: true,
-      });
-      return json({ url: session.url });
+      const url = await subscriptionCheckout(admin, stripe, user.id, price, SETTINGS_URL, createPortalUrl);
+      return json({ url });
     } catch (err) {
+      if (err instanceof CheckoutPendingError) return json({ error: err.message }, 409);
       console.error('Checkout session failed:', (err as Error).message);
       return json({ error: 'Could not start checkout' }, 500);
     }

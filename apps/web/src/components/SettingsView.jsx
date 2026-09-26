@@ -1,3 +1,4 @@
+import TrackingSettings from './TrackingSettings.jsx';
 import BroadcastAccountSettings from './BroadcastAccountSettings.jsx';
 // Web settings use DOM panels, browser sharing and Stripe portal redirects.
 // Shared navigation/copy lives in core; native layout parity: GitHub issue 922.
@@ -1912,6 +1913,7 @@ export default function SettingsView() {
       </div>
         </>}
         {activeSection === 'connections' && <>
+      <TrackingSettings userId={user?.id} connect={trakt.connect} connectPlex={sync.startPlexAuth} plexPolling={sync.polling} connectionError={trakt.error || sync.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : sync.disconnect()} />
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.integrations.groupTitle}</div>
         {premium.isPremium && SHOW_MEDIA_SYNC_INTEGRATIONS ? (
@@ -2132,7 +2134,7 @@ export default function SettingsView() {
       </div>
         </>}
         {activeSection === 'billing' && <SettingsBilling
-          isPremium={premium.isPremium} busy={premium.busy} error={premium.error} onManage={premium.openPortal}
+          isPremium={premium.isPremium} canManage={premium.canManage} billing={premium.billing} busy={premium.busy} error={premium.error} onManage={premium.openPortal}
           notice={billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : billingReturn === 'premium' ? (premium.isPremium ? SETTINGS_VIEW.premium.activeThankYou : SETTINGS_VIEW.billing.confirming) : null}
         />}
         {activeSection === 'privacy' && <>

@@ -1,3 +1,6 @@
+import { outgoingTrackingAllowed, trackingRequest, trackingUserAllowed } from '../_shared/trackingApi.ts'
+import { encryptToken, decryptToken, refreshAccessToken } from '../_shared/traktAuth.ts'
+import { readTraktPages } from '../_shared/traktPagination.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import type { Database } from '../_shared/database.types.ts'
@@ -28,9 +31,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const encoder = new TextEncoder()
-const decoder = new TextDecoder()
-
 const TRAKT_API = 'https://api.trakt.tv'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -48,42 +48,6 @@ function cleanDate(value: unknown) {
 }
 
 // ── Encryption (same AES-GCM approach as media-sync) ─────────────────────────
-
-async function tokenKey() {
-  // Use a dedicated secret only — never the service-role key (see media-sync).
-  const secret = Deno.env.get('TRAKT_TOKEN_SECRET') || Deno.env.get('PLEX_TOKEN_SECRET')
-  if (!secret) throw new Error('TRAKT_TOKEN_SECRET / PLEX_TOKEN_SECRET is not configured')
-  const keyBytes = await crypto.subtle.digest('SHA-256', encoder.encode(secret))
-  return crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['encrypt', 'decrypt'])
-}
-
-function bytesToBase64(bytes: Uint8Array) {
-  return btoa(String.fromCharCode(...bytes))
-}
-
-function base64ToBytes(value: string) {
-  return Uint8Array.from(atob(value), char => char.charCodeAt(0))
-}
-
-async function encryptToken(token: string) {
-  const iv = crypto.getRandomValues(new Uint8Array(12))
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    await tokenKey(),
-    encoder.encode(token),
-  )
-  return { ciphertext: bytesToBase64(new Uint8Array(encrypted)), iv: bytesToBase64(iv) }
-}
-
-async function decryptToken(ciphertext?: string | null, iv?: string | null) {
-  if (!ciphertext || !iv) throw new Error('Trakt token not found — reconnect your account')
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: base64ToBytes(iv) },
-    await tokenKey(),
-    base64ToBytes(ciphertext),
-  )
-  return decoder.decode(decrypted)
-}
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -115,11 +79,14 @@ function traktHeaders(accessToken: string) {
   }
 }
 
-async function traktGet(path: string, accessToken: string) {
-  const res = await fetch(`${TRAKT_API}${path}`, { headers: traktHeaders(accessToken) })
-  if (res.status === 401) throw new TraktAuthError('Trakt session expired')
-  if (!res.ok) throw new Error(`Trakt API error ${res.status} at ${path}`)
-  return res.json()
+function traktGet(path: string, accessToken: string) {
+  return readTraktPages(path, async pagePath => {
+    const res = await fetch(`${TRAKT_API}${pagePath}`, {
+      headers: traktHeaders(accessToken), signal: AbortSignal.timeout(15000),
+    })
+    if (res.status === 401) throw new TraktAuthError('Trakt session expired')
+    return res
+  })
 }
 
 async function traktGetAll(path: string, accessToken: string) {
@@ -152,25 +119,6 @@ async function traktPost(path: string, body: unknown, accessToken: string) {
   if (res.status === 401) throw new TraktAuthError('Trakt session expired')
   if (!res.ok) throw new Error(`Trakt API error ${res.status} at ${path}`)
   return res.status === 204 ? {} : res.json()
-}
-
-async function refreshAccessToken(
-  refreshToken: string,
-  redirectUri: string,
-): Promise<{ access_token: string; refresh_token: string; expires_in: number }> {
-  const res = await fetch(`${TRAKT_API}/oauth/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      refresh_token: refreshToken,
-      client_id: Deno.env.get('TRAKT_CLIENT_ID'),
-      client_secret: Deno.env.get('TRAKT_CLIENT_SECRET'),
-      redirect_uri: redirectUri,
-      grant_type: 'refresh_token',
-    }),
-  })
-  if (!res.ok) throw new Error(`Trakt token refresh failed (${res.status})`)
-  return res.json()
 }
 
 // ── TMDB poster enrichment ────────────────────────────────────────────────────
@@ -446,14 +394,16 @@ async function upsertTraktData(
 
   const uniqueHistoryRows = historyRowsFor(userId, historyItems, posterMap)
 
+  let watchedCount = 0
   if (uniqueHistoryRows.length > 0) {
-    const { error } = await supabaseAdmin
+    const { count: insertedCount, error } = await supabaseAdmin
       .from('history')
-      .upsert(uniqueHistoryRows, { onConflict: HISTORY_CONFLICT_TARGET })
+      .upsert(uniqueHistoryRows, { onConflict: HISTORY_CONFLICT_TARGET, ignoreDuplicates: true, count: 'exact' })
     if (error) throw error
+    watchedCount = insertedCount ?? 0
   }
 
-  return { watchlistCount: listRows.length, watchedCount: uniqueHistoryRows.length }
+  return { watchlistCount: listRows.length, watchedCount }
 }
 
 // ── Outbox processing ─────────────────────────────────────────────────────────
@@ -463,10 +413,12 @@ async function processOutbox(
   integration: IntegrationRef,
   accessToken: string,
 ) {
+  if (!await outgoingTrackingAllowed(integration.id, integration.user_id)) return 0
   const { data: actions, error } = await supabaseAdmin
     .from('integration_outbox')
     .select('*')
     .eq('user_id', integration.user_id)
+    .eq('integration_id', integration.id)
     .eq('status', 'pending')
     .in('action', ['trakt_watchlist_add', 'trakt_watchlist_remove'])
     .order('created_at', { ascending: true })
@@ -476,6 +428,7 @@ async function processOutbox(
   let processed = 0
 
   for (const action of actions || []) {
+    if (!await outgoingTrackingAllowed(integration.id, integration.user_id)) break
     try {
       const payload = (action.payload ?? {}) as Record<string, unknown>
       const tmdbId = Number(payload.tmdb_id)
@@ -570,6 +523,13 @@ async function handleExchange(
     trakt_token_expires_at:   new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
     trakt_redirect_uri:       redirectUri,
     last_error: null,
+  }
+
+  // Reauthorising may select a different Trakt account. Cancel old leases and
+  // cursors before making the new credentials available.
+  if (existing?.id) {
+    const { error } = await supabaseAdmin.from('media_integrations').update({ status: 'disabled' }).eq('id', existing.id)
+    if (error) throw error
   }
 
   const upsertQuery = existing?.id
@@ -688,17 +648,31 @@ async function handleDisconnect(
   supabaseAdmin: Db,
   userId: string,
 ) {
-  await supabaseAdmin
-    .from('media_integrations')
-    .update({
-      status: 'disabled',
-      trakt_token_ciphertext:   null,
-      trakt_token_iv:           null,
-      trakt_refresh_ciphertext: null,
-      trakt_refresh_iv:         null,
-    })
-    .eq('user_id', userId)
-    .eq('provider', 'trakt')
+  const { data: connection, error: readError } = await supabaseAdmin.from('media_integrations')
+    .select('*').eq('user_id', userId).eq('provider','trakt').maybeSingle()
+  if (readError) throw readError
+  if (!connection) return json({ ok: true })
+  // Stop jobs before the external revocation request. Keep encrypted material
+  // only if revocation needs retry; a disabled connection cannot be claimed.
+  const { error: stopError } = await supabaseAdmin.from('media_integrations')
+    .update({ status: 'disabled' }).eq('id',connection.id)
+  if (stopError) throw stopError
+  if (connection.trakt_token_ciphertext) {
+    try {
+      const token = await decryptToken(connection.trakt_token_ciphertext,connection.trakt_token_iv)
+      const response = await fetch(`${TRAKT_API}/oauth/revoke`, { method:'POST',
+        headers:{ 'Content-Type':'application/json' }, signal:AbortSignal.timeout(15000),
+        body:JSON.stringify({ token,client_id:Deno.env.get('TRAKT_CLIENT_ID'),client_secret:Deno.env.get('TRAKT_CLIENT_SECRET') }) })
+      if (!response.ok) throw new Error('revocation_failed')
+    } catch {
+      await supabaseAdmin.from('media_integrations').update({ last_error:'Updates stopped. Trakt access revocation failed. Retry disconnect or revoke PLOT in Trakt settings.' }).eq('id',connection.id).eq('status','disabled')
+      return json({ error:'Updates stopped. Retry disconnect to revoke Trakt access.' },502)
+    }
+  }
+  const { error: clearError } = await supabaseAdmin.from('media_integrations').update({
+    trakt_token_ciphertext:null,trakt_token_iv:null,trakt_refresh_ciphertext:null,trakt_refresh_iv:null,last_error:null,
+  }).eq('id',connection.id).eq('status','disabled')
+  if (clearError) throw clearError
   return json({ ok: true })
 }
 
@@ -720,12 +694,21 @@ serve(async (req) => {
       req.method === 'POST' ? await req.clone().json().catch(() => ({})) : {}
     const url = new URL(req.url)
     const action = String(body.action || url.searchParams.get('action') || '')
+    if (action !== 'disconnect' && Deno.env.get('TRACKING_JOBS_ENABLED') === 'true' && !trackingUserAllowed(user.id)) return json({ error: 'Tracking is not enabled for this account yet.' }, 503)
 
     // Ongoing two-way sync is Premium. OAuth exchange and one-off history
     // imports stay Free so switching to Plot is not paywalled.
     if (action === 'sync') {
       const { data: premium } = await supabaseAdmin.rpc('is_premium', { p_user: user.id })
       if (!premium) return json({ error: 'premium_required' }, 403)
+    }
+
+    if (req.method === 'POST' && ['sync', 'import'].includes(action) && Deno.env.get('TRACKING_JOBS_ENABLED') === 'true') {
+      if (Deno.env.get('TRAKT_TRACKING_ENABLED') !== 'true') return json({ error: 'Trakt tracking is not available yet' }, 503)
+      const connection = await findTraktIntegration(supabaseAdmin, user.id)
+      if (!connection) return json({ error: 'Connect Trakt first' }, 404)
+      const result = await trackingRequest('rpc/control_tracking', 'POST', { p_integration: connection.id, p_action: action }, req.headers.get('Authorization')!)
+      return json({ queued: true, ...result }, 202)
     }
 
     if (req.method === 'POST' && action === 'exchange')   return await handleExchange(body, supabaseAdmin, user.id)

@@ -1,0 +1,67 @@
+{
+  "source": "TMDB find by IMDb ID via staging Worker",
+  "retrieved": "2026-09-23",
+  "results": {
+    "tt10050772": {
+      "movie_results": [],
+      "person_results": [],
+      "tv_results": [
+        {
+          "adult": false,
+          "backdrop_path": "/3yA0Zw7jeftK4F51PbnZyJOoNs2.jpg",
+          "id": 88728,
+          "name": "I Think You Should Leave with Tim Robinson",
+          "original_name": "I Think You Should Leave with Tim Robinson",
+          "overview": "There is no such thing as an ordinary interaction in this offbeat sketch comedy series that features a deep roster of guest stars.",
+          "poster_path": "/26fMaTPRczCrTUOQ5svA1Db7l4h.jpg",
+          "media_type": "tv",
+          "original_language": "en",
+          "genre_ids": [
+            35
+          ],
+          "popularity": 13.4369,
+          "first_air_date": "2019-04-23",
+          "softcore": false,
+          "vote_average": 7.036,
+          "vote_count": 179,
+          "origin_country": [
+            "US"
+          ]
+        }
+      ],
+      "tv_episode_results": [],
+      "tv_season_results": []
+    },
+    "tt10574558": {
+      "movie_results": [],
+      "person_results": [],
+      "tv_results": [
+        {
+          "adult": false,
+          "backdrop_path": "/YauN3gyvgqktYhze4gXPWuoZBY.jpg",
+          "id": 97400,
+          "name": "Midnight Mass",
+          "original_name": "Midnight Mass",
+          "overview": "The arrival of a charismatic young priest brings glorious miracles, ominous mysteries and renewed religious fervor to a dying town desperate to believe.",
+          "poster_path": "/iYoMZYVD775MtBYJfv6OGY1FsnL.jpg",
+          "media_type": "tv",
+          "original_language": "en",
+          "genre_ids": [
+            9648,
+            18
+          ],
+          "popularity": 12.0963,
+          "first_air_date": "2021-09-24",
+          "softcore": false,
+          "vote_average": 7.575,
+          "vote_count": 1315,
+          "origin_country": [
+            "US"
+          ]
+        }
+      ],
+      "tv_episode_results": [],
+      "tv_season_results": []
+    }
+  }
+}

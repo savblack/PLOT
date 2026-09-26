@@ -28,12 +28,12 @@ export const HISTORY_CONFLICT_TARGET = 'user_id,tmdb_id,media_type'
  * whichever row happened to arrive last: sync ordering is not something to
  * depend on, and the surviving row should be the one the user calls current.
  */
-export function dedupeHistoryRows<T extends { tmdb_id: number; media_type: string; watched_at: string }>(rows: T[]): T[] {
+export function dedupeHistoryRows<T extends { tmdb_id: number; media_type: string; watched_at: string | null }>(rows: T[]): T[] {
   const byKey = new Map<string, T>()
   for (const row of rows) {
     const key = `${row.tmdb_id}::${row.media_type}`
     const seen = byKey.get(key)
-    if (!seen || row.watched_at > seen.watched_at) byKey.set(key, row)
+    if (!seen || (row.watched_at && (!seen.watched_at || row.watched_at > seen.watched_at))) byKey.set(key, row)
   }
   return [...byKey.values()]
 }

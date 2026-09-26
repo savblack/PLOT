@@ -9,7 +9,15 @@ export const EXPORT_STEPS = Object.freeze([
   { table: 'list_items', match: { type: 'eq', column: 'user_id' } },
   { table: 'private_title_notes', match: { type: 'eq', column: 'user_id' } },
   { table: 'history', match: { type: 'eq', column: 'user_id' } },
-  { table: 'history_board', match: { type: 'eq', column: 'user_id' } },
+  { table: 'imported_lists', match: { type: 'eq', column: 'user_id' } },
+  { table: 'imported_annotations', match: { type: 'eq', column: 'user_id' } },
+  { table: 'imported_list_entries', match: { type: 'eq', column: 'user_id' } },
+  { table: 'tracking_import_items', match: { type: 'eq', column: 'user_id' } },
+  { table: 'tracking_connections', match: { type: 'eq', column: 'user_id' } },
+  { table: 'tracking_jobs', match: { type: 'eq', column: 'user_id' }, omit: ['lease_token'] },
+  { table: 'tracking_review_items', match: { type: 'eq', column: 'user_id' } },
+  { table: 'episode_watch_overrides', match: { type: 'eq', column: 'user_id' } },
+  { table: 'watch_events', match: { type: 'eq', column: 'user_id' } },
   { table: 'watching_progress', match: { type: 'eq', column: 'user_id' } },
   { table: 'reminders', match: { type: 'eq', column: 'user_id' } },
   { table: 'user_favourites', match: { type: 'eq', column: 'user_id' } },
@@ -21,6 +29,8 @@ export const EXPORT_STEPS = Object.freeze([
     match: { type: 'eq', column: 'user_id' },
     omit: [
       'device_token_hash',
+      // Legacy resource blobs may contain provider-issued access tokens.
+      'plex_servers',
       'plex_token_ciphertext',
       'plex_token_iv',
       'auth_pin_id',
@@ -48,30 +58,28 @@ export async function runDataExport(supabaseClient, userId) {
   const data = {};
 
   for (const step of EXPORT_STEPS) {
-    // Notes persist beyond watchlist membership; paginate so long-lived accounts
-    // receive all of them rather than Supabase's default response limit.
-    if (step.table === 'private_title_notes') {
-      const rows = [];
-      for (let offset = 0; ; offset += 500) {
-        const result = await supabaseClient.from(step.table).select('*').eq('user_id', userId)
-          .order('tmdb_id').order('media_type').range(offset, offset + 499);
-        if (result.error) return { table: step.table, error: result.error };
-        rows.push(...(result.data || []));
-        if (!result.data || result.data.length < 500) break;
-      }
-      data[step.table] = rows;
-      continue;
+    const rows = [];
+    for (let from = 0; ; from += 1000) {
+      let query = supabaseClient.from(step.table).select('*');
+      query = step.match.type === 'or'
+        ? query.or(step.match.columns.map((column) => `${column}.eq.${userId}`).join(','))
+        : query.eq(step.match.column, userId);
+      // Use each table’s stable key for deterministic pagination.
+      const order = step.table === 'broadcast_preferences' ? ['user_id'] : step.table === 'private_title_notes' ? ['tmdb_id', 'media_type'] : step.table === 'follows' ? ['follower_id', 'following_id'] : step.table === 'tracking_connections' ? ['integration_id'] : ['id'];
+      for (const column of order) query = query.order(column, { ascending: true });
+      const result = await query.range(from, from + 999);
+      if (result?.error) return { table: step.table, error: result.error };
+      rows.push(...(result?.data ?? []).map(row => {
+        const clean = stripColumns(row, step.omit);
+        if (step.table === 'media_integrations' && clean.selected_server) {
+          const source = clean.selected_server;
+          clean.selected_server = { clientIdentifier: source.clientIdentifier, accountID: source.accountID, name: source.name, profileName: source.profileName };
+        }
+        return clean;
+      }));
+      if (!result?.data || result.data.length < 1000) break;
     }
-    const query = supabaseClient.from(step.table).select('*');
-    const result = step.match.type === 'or'
-      ? await query.or(step.match.columns.map((column) => `${column}.eq.${userId}`).join(','))
-      : await query.eq(step.match.column, userId);
-
-    if (result?.error) {
-      return { table: step.table, error: result.error };
-    }
-
-    data[step.table] = (result?.data ?? []).map((row) => stripColumns(row, step.omit));
+    data[step.table] = rows;
   }
 
   return { data };

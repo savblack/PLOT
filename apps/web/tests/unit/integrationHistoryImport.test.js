@@ -37,7 +37,7 @@ test('both import surfaces offer Plex and Trakt without enabling sync UI', () =>
   assert.match(webFlag, /SHOW_MEDIA_SYNC_INTEGRATIONS = false/);
   assert.match(mobileFlag, /SHOW_MEDIA_SYNC_INTEGRATIONS = false/);
   for (const source of [webPlex, mobilePlex]) {
-    assert.match(source, /status === 'authorized'/);
+    assert.match(source, /pollPlexAuthorization/);
   }
 });
 

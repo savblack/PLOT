@@ -20,9 +20,21 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// 3. In a hoisted workspace a package can appear only at the root; disabling the
-//    hierarchical (walk-up) lookup makes resolution deterministic.
+// 3. Keep React and other platform singletons on the app's resolution path.
+// Core's ZIP reader needs its own declared fflate version, not the older
+// transitive copy hoisted at the workspace root. Scope this exception so
+// enabling nested packages cannot also load core's different React peer.
 config.resolver.disableHierarchicalLookup = true;
+const coreRoot = path.resolve(workspaceRoot, 'packages/core');
+const coreFflate = path.dirname(require.resolve('fflate/package.json', { paths: [coreRoot] }));
+const defaultResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  const target = moduleName === 'fflate' && context.originModulePath.startsWith(coreRoot + path.sep)
+    ? coreFflate : moduleName;
+  return defaultResolveRequest
+    ? defaultResolveRequest(context, target, platform)
+    : context.resolveRequest(context, target, platform);
+};
 
 // Storybook is bundled behind STORYBOOK_ENABLED so `npm start` for the real
 // app doesn't pay for story discovery; `npm run storybook` sets it.

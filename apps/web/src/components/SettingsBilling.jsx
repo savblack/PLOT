@@ -6,7 +6,7 @@ import { PLANS_PAGE } from '../copy/plansPage.js';
 import { SettingsTextAction } from './SettingsPage.jsx';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 
-export default function SettingsBilling({ isPremium, busy, error, onManage, notice }) {
+export default function SettingsBilling({ isPremium, canManage = false, billing, busy, error, onManage, notice }) {
   const navigate = useNavigate();
   const explore = () => navigate(premiumPlansPath('/settings?section=billing'));
 
@@ -17,8 +17,8 @@ export default function SettingsBilling({ isPremium, busy, error, onManage, noti
           <h3>{T.premium.groupTitle}</h3>
           <span className="settings-status">{isPremium ? T.billing.active : T.billing.freePlan}</span>
         </div>
-        <p>{isPremium ? T.premium.thankYou : T.billing.intro}</p>
-        {!isPremium && (
+        <p>{canManage && !isPremium ? T.premium.subscriptionEnded : isPremium ? T.premium.thankYou : T.billing.intro}</p>
+        {!isPremium && !canManage && (
           <p className="settings-selection">
             {PLANS_PAGE.premium.priceSummary}
             <span aria-hidden="true"> · </span>
@@ -30,14 +30,14 @@ export default function SettingsBilling({ isPremium, busy, error, onManage, noti
             <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>
           ))}
         </ul>
-        {isPremium ? (
+        {canManage ? (
           <div className="settings-billing-actions">
-            <p>{T.billing.portalHint}</p>
+            <p>{billing?.status === 'past_due' || billing?.status === 'unpaid' ? T.premium.paymentNeedsAttention : billing?.cancelAtPeriodEnd ? T.premium.cancellationScheduled : T.billing.portalHint}</p>
             <SettingsTextAction disabled={busy} onClick={onManage}>
               {busy ? T.premium.opening : T.premium.manageSubscription}
             </SettingsTextAction>
           </div>
-        ) : (
+        ) : !isPremium && (
           <div className="settings-billing-actions">
             <p>{T.billing.exploreHint}</p>
             <SettingsTextAction onClick={explore}>{T.premium.upgradeButton}</SettingsTextAction>

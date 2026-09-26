@@ -10,7 +10,8 @@
     "npm:@supabase/realtime-js@2.112.3": "2.112.3",
     "npm:@supabase/storage-js@2.112.3": "2.112.3",
     "npm:@supabase/supabase-js@2": "2.112.3",
-    "npm:stripe@22.3.2": "22.3.2"
+    "npm:stripe@22.3.2": "22.3.2",
+    "npm:stripe@22.6.0": "22.6.0"
   },
   "jsr": {
     "@std/assert@1.0.19": {
@@ -85,12 +86,16 @@
     "stripe@22.3.2": {
       "integrity": "sha512-O13QOvgEIQvDlTy6Ubb5kB980wpbhmoZNsgCXKILjCMZS67f+bW+6w99k3gnSi/N1lkryoj1WYdpGT5Wc5edjg=="
     },
+    "stripe@22.6.0": {
+      "integrity": "sha512-Ezk+WYEEwX2DLxFrKfb6coznlCMZvCaCYMNPXNHFSZkBIEzF5Hgm7RLb38q/0h9Ol5jsUJGJRorvhzAvckgfhw=="
+    },
     "tslib@2.8.1": {
       "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="
     }
   },
   "redirects": {
-    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.112.3"
+    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.112.3",
+    "https://esm.sh/iceberg-js@^0.8.1?target=denonext": "https://esm.sh/iceberg-js@0.8.1?target=denonext"
   },
   "remote": {
     "https://deno.land/std@0.168.0/async/abortable.ts": "80b2ac399f142cc528f95a037a7d0e653296352d95c681e284533765961de409",
@@ -104,7 +109,18 @@
     "https://deno.land/std@0.168.0/async/retry.ts": "e8e5173623915bbc0ddc537698fa418cf875456c347eda1ed453528645b42e67",
     "https://deno.land/std@0.168.0/async/tee.ts": "3a47cc4e9a940904fd4341f0224907e199121c80b831faa5ec2b054c6d2eff5e",
     "https://deno.land/std@0.168.0/http/server.ts": "e99c1bee8a3f6571ee4cdeb2966efad465b8f6fe62bec1bdb59c1f007cc4d155",
-    "https://esm.sh/@supabase/supabase-js@2.112.3": "f6b9130984301066587e8917dfab3b3d60be47dc966bd3d04c733bc9423c1cf9"
+    "https://esm.sh/@supabase/auth-js@2.112.3/denonext/auth-js.mjs": "aef62c72178112ff2d0106d9418d6f40e811a9967a55d9cbf88000ada0525ab7",
+    "https://esm.sh/@supabase/functions-js@2.112.3/denonext/functions-js.mjs": "ce408d1254a08ce23746fec5a186f97d1af7b60a8ee3f3d989078953fff64533",
+    "https://esm.sh/@supabase/phoenix@0.4.5/denonext/phoenix.mjs": "40bd2a70829cd847848baac58e635bacd83fd62188f6624b44e2c295341004eb",
+    "https://esm.sh/@supabase/postgrest-js@2.112.3/denonext/postgrest-js.mjs": "afc43bf63bc66d42d2be9b3620f5ebc6a4cfadb44ed33bb7c6f6f86e351889f8",
+    "https://esm.sh/@supabase/realtime-js@2.112.3/denonext/realtime-js.mjs": "6a404d084080a2ccc860b15887f640f7d89b564597b9ac8de8b3211fad93d47d",
+    "https://esm.sh/@supabase/storage-js@2.112.3/denonext/storage-js.mjs": "e2073d5010e5e90e34bff604f710f09249de544030605963bb5d04640e22d1a0",
+    "https://esm.sh/@supabase/supabase-js@2.112.3": "f6b9130984301066587e8917dfab3b3d60be47dc966bd3d04c733bc9423c1cf9",
+    "https://esm.sh/@supabase/supabase-js@2.112.3/denonext/dist/tracingRegistry.mjs": "2e0f9f6da49144408ffdca4af7b92a99bc09f73b7334b11ffd85e47df76d379d",
+    "https://esm.sh/@supabase/supabase-js@2.112.3/denonext/supabase-js.mjs": "546d90fcc225da82acc3cd383db2f0a9301ff67b156d3e0638923830804c1d30",
+    "https://esm.sh/iceberg-js@0.8.1/denonext/iceberg-js.mjs": "d839d81a2e3966500ca2cdd0c1cb458e9608bacfc91f7bb67a69b2e878dcdb4f",
+    "https://esm.sh/iceberg-js@0.8.1?target=denonext": "58c849d7fe2bf4eca4a84eb501e83c161a7d8c34ca1bec15a962b3bec3062633",
+    "https://esm.sh/tslib@2.8.1/denonext/tslib.mjs": "c38da5dd6da6281964435002ce204cd586634fe3bdfb24a0ee116f48cf3292e9"
   },
   "workspace": {
     "packageJson": {
@@ -118,85 +134,6 @@
         "npm:globals@^17.12.0",
         "npm:typescript-eslint@^8.70.0"
       ]
-    },
-    "members": {
-      "apps/mobile": {
-        "packageJson": {
-          "dependencies": [
-            "npm:@plot/core@*",
-            "npm:@plot/ui@*",
-            "npm:@react-native-async-storage/async-storage@2.2.0",
-            "npm:@react-native-community/datetimepicker@9.1.0",
-            "npm:@storybook/addon-ondevice-actions@^10.6.0",
-            "npm:@storybook/addon-ondevice-backgrounds@^10.6.0",
-            "npm:@storybook/addon-ondevice-controls@^10.6.0",
-            "npm:@storybook/addon-ondevice-notes@^10.6.0",
-            "npm:@storybook/react-native@^10.6.0",
-            "npm:@storybook/react-vite@^10.6.0",
-            "npm:@supabase/supabase-js@^2.116.0",
-            "npm:@types/aes-js@^3.1.4",
-            "npm:@types/react@~19.2.2",
-            "npm:@vitejs/plugin-react@^6.1.1",
-            "npm:aes-js@^3.1.2",
-            "npm:expo-blur@~57.0.2",
-            "npm:expo-constants@~57.0.12",
-            "npm:expo-dev-client@~57.0.18",
-            "npm:expo-document-picker@~57.0.1",
-            "npm:expo-file-system@~57.0.4",
-            "npm:expo-font@~57.0.1",
-            "npm:expo-linear-gradient@~57.0.1",
-            "npm:expo-linking@~57.0.9",
-            "npm:expo-router@~57.0.20",
-            "npm:expo-secure-store@~57.0.3",
-            "npm:expo-status-bar@~57.0.1",
-            "npm:expo@~57.0.21",
-            "npm:posthog-react-native@^4.68.0",
-            "npm:react-dom@19.2.3",
-            "npm:react-native-get-random-values@1.11",
-            "npm:react-native-safe-area-context@5.7",
-            "npm:react-native-screens@4.26",
-            "npm:react-native-svg@15.15.4",
-            "npm:react-native-url-polyfill@3",
-            "npm:react-native-web@~0.21.2",
-            "npm:react-native-webview@13.16.1",
-            "npm:react-native@0.86.3",
-            "npm:react@19.2.3",
-            "npm:storybook@^10.6.0",
-            "npm:typescript@~6.0.3",
-            "npm:vite@^8.2.2"
-          ]
-        }
-      },
-      "apps/web": {
-        "packageJson": {
-          "dependencies": [
-            "npm:@cloudflare/vite-plugin@^1.54.7",
-            "npm:@playwright/test@^1.63.0",
-            "npm:@plot/core@*",
-            "npm:@plot/ui@*",
-            "npm:@storybook/react-vite@^10.6.0",
-            "npm:@supabase/supabase-js@^2.116.0",
-            "npm:@types/react-dom@^19.2.7",
-            "npm:@types/react@^19.2.17",
-            "npm:@vitejs/plugin-react@^6.1.1",
-            "npm:posthog-js@^1.428.5",
-            "npm:react-dom@^19.2.8",
-            "npm:react-router-dom@^7.18.3",
-            "npm:react@^19.2.8",
-            "npm:storybook@^10.6.0",
-            "npm:vite@^8.2.2",
-            "npm:wrangler@^4.131.0"
-          ]
-        }
-      },
-      "apps/website": {
-        "packageJson": {
-          "dependencies": [
-            "npm:@storybook/html-vite@^10.6.0",
-            "npm:storybook@^10.6.0"
-          ]
-        }
-      }
     }
   }
 }

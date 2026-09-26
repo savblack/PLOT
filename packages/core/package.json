@@ -15,5 +15,9 @@
   "peerDependencies": {
     "@supabase/supabase-js": "^2.110.7",
     "react": ">=19"
+  },
+  "dependencies": {
+    "@noble/hashes": "2.0.1",
+    "fflate": "0.8.3"
   }
 }

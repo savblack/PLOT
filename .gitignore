@@ -50,3 +50,6 @@ plot-posts/
 .guide-cache/
 # Python feed importer bytecode.
 scripts/guide/__pycache__/
+
+# Local package-manager cache.
+.pnpm-store/

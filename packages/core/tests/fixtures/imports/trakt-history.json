@@ -1,0 +1,41 @@
+[
+  {
+    "id": 12152226892,
+    "watched_at": null,
+    "action": "watch",
+    "type": "episode",
+    "episode": {
+      "title": "In the Driver's Seat",
+      "season": 2,
+      "number": 13,
+      "ids": {
+        "imdb": "tt38689179",
+        "trakt": 13522451,
+        "tvdb": 11471275
+      }
+    },
+    "show": {
+      "title": "High Potential",
+      "year": 2024,
+      "ids": {
+        "imdb": "tt22091076",
+        "trakt": 205414,
+        "tvdb": 434988
+      }
+    }
+  },
+  {
+    "id": 10985573513,
+    "watched_at": null,
+    "action": "watch",
+    "type": "movie",
+    "movie": {
+      "title": "Saint",
+      "year": 2010,
+      "ids": {
+        "imdb": "tt1167675",
+        "trakt": 31265
+      }
+    }
+  }
+]

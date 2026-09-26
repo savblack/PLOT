@@ -1,0 +1,26 @@
+{
+  "source": "TMDB tv/95396/season/2",
+  "retrieved": "2026-09-16",
+  "episodes": [
+    {
+      "id": 5469028,
+      "episode_number": 1,
+      "name": "Hello, Ms. Cobel"
+    },
+    {
+      "id": 5469115,
+      "episode_number": 2,
+      "name": "Goodbye, Mrs. Selvig"
+    },
+    {
+      "id": 5469117,
+      "episode_number": 3,
+      "name": "Who Is Alive?"
+    },
+    {
+      "id": 5469118,
+      "episode_number": 4,
+      "name": "Woe's Hollow"
+    }
+  ]
+}
