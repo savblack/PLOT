@@ -10,24 +10,30 @@ the marketing site, mobile, and four server-rendered surfaces.
 Three tiers, defined in PostHog as Actions and cohorts rather than in code, so
 the bar can move without a deploy.
 
-Proposed changes to all three (what each tier should contain, and a
-redefined Tier 3) are in [tiers.md](tiers.md). Not applied yet.
+What each tier contains and why is in [tiers.md](tiers.md), which also
+records the 2026-09-27 redefinition and the values it replaced.
 
 | Tier | Definition | Where |
 |---|---|---|
 | 1. Explorer | Any in-app action, browsing included | Action "Any in-app action (Tier 1)" |
 | 2. Committed | A durable write to the user's own library. **This is activation.** | Action "Committed action (Tier 2)", cohort "Activated (committed action)" |
-| 3. Retained | A committed action in 2+ distinct weeks | Cohort "Retained (returned and acted)" |
+| 3. Retained | A **self-directed** committed action in 2+ distinct weeks of the last 8 | Cohort "Retained (returned and acted)" |
 
-Tier 2 events: `watchlist_saved` (filtered to `already_saved != true`),
-`marked_watched`, `rating_set`, `favourite_added`, `list_item_added`,
-`custom_list_created`, `watching_started`, `season_watched`,
-`series_completed`, `import_completed`, `user_followed`, `plex_connected`,
-`trakt_connected`.
+Tier 2 events (since 2026-09-27): `watchlist_saved` (filtered to
+`already_saved != true`), `marked_watched`, `rating_set`, `review_written`,
+`favourite_added`, `list_item_added`, `custom_list_created`,
+`collection_saved_as_list`, `watching_started`, `season_watched`,
+`series_completed`, `episode_watched`, `import_completed`. Follows and
+integration connects moved to Tier 1: neither is a write to your own library.
 
 Tier 1 adds `title_viewed`, `search_performed`, `discover_tab_changed`,
-`watch_link_clicked`. It deliberately excludes `$pageview` and `$autocapture`,
-so bot traffic cannot qualify.
+`watch_link_clicked`, `tonight_picks_drawn`, `tonight_pick_opened`,
+`collection_viewed`, `user_followed`, the undo-side events
+(`watchlist_removed`, `history_entry_removed`, `episode_unwatched`,
+`season_unwatched`, `action_undone`), sharing (`title_shared`,
+`list_shared`, `profile_shared`) and the integration connects. It
+deliberately excludes `$pageview` and `$autocapture`, so bot traffic cannot
+qualify.
 
 ### Why activation is not an event
 
@@ -97,6 +103,17 @@ Encoded here once so nobody rediscovers them.
   reported the same event. Undo now fires `episode_unwatched` /
   `season_unwatched`.
 - **`activated` is retired.** See above.
+- **`premium_activated` is `premium_converted` before 2026-08-07.** Renamed in
+  #452; the two are the same conversion. Union them for any history longer
+  than that.
+- **`supporter_gate_hit` is not a PLOT event.** It fired once, on 2026-07-08,
+  from `localhost:5177/preview-monetization`: uncommitted local work, before the
+  host allowlist existed. The `$host` test filter already excludes it. It is
+  deliberately not in the catalog; do not build on it.
+- **`eng_analytics_test_census` is PostHog's, not ours.** A daily ping from
+  distinct id `eng_analytics_census:savblack/PLOT` (lib
+  `posthog-capture-v1-internal`), from PostHog's side of the GitHub
+  connection. Excluded by a `test_account_filters` rule since 2026-09-27.
 - **`feed_post_opened`, `digest_prompt_viewed` and `digest_prompt_dismissed`
   are retired** (2026-09-27). Nothing has fired them since the feed engagement
   layer (#532) and `DigestNudge` (#465) were deleted. Any insight built on them
@@ -380,6 +397,7 @@ recorded here to keep the change reversible.
 | `session_recording_minimum_duration_milliseconds` | `null` | `5000` | Drops drive-by sessions never worth watching. |
 | `test_account_filters` | 3 email rules + cohort 362972 | those, plus `$host` not containing `localhost` / `127.0.0.1` / `pages.dev` / `preview.theplot.tv`, plus `$internal_or_test_user` is not true | Retroactive: the toggle is default-checked, so existing insights clean up without a deploy. |
 | `test_account_filters` (2026-09-06) | the nine rules above | those, plus cohort 553124 `not_in` | Web analytics showed a 1.2K-session crawler burst on 2026-08-13 as real traffic. Nothing in the nine rules touched it: the crawlers sit on the production host with no email and no cohort. Retroactive, same default-checked toggle. |
+| `test_account_filters` (2026-09-27) | the twelve rules then present | those, plus the HogQL rule `not startsWith(distinct_id, 'eng_analytics_census:')` | PostHog's own daily repo census (`eng_analytics_test_census`) was landing in production numbers. Filtered by distinct id, not `$lib`: `posthog-capture-v1-internal` is also what server-side captures can carry, and a `$lib` rule could hide real Ko-fi conversions. |
 
 Unchanged and worth knowing: `session_recording_opt_in: true`,
 `autocapture_opt_out: false`, `heatmaps_opt_in: true`,

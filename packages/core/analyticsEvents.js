@@ -60,6 +60,10 @@ export const EVENTS = Object.freeze({
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_STARTED: 'premium_checkout_started',
   PREMIUM_CONVERTED: 'premium_converted',
+  // RETIRED 2026-08-07: the old name of premium_converted, renamed in #452.
+  // Last fired 2026-07-10. Kept so historical queries have a name to point at
+  // and a stray call site stays a loud reference (see ACTIVATED).
+  PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
   // The Tonight picker, PLOT's "what should I watch" surface. Fired from
   // useTonightPicker via the onTonightPicker seam. A draw with result_count 0

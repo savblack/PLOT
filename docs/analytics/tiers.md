@@ -1,10 +1,10 @@
 # Engagement tiers: proposed definitions
 
-Status: **proposal, not yet applied in PostHog** (2026-09-27). The live
-definitions are the three PostHog actions and cohorts listed in
-[README.md](README.md#what-counts-as-an-active-user). This file says what each
-tier should contain and why, so a change to them is a decision rather than
-drift. When a change here is applied, move it to "Applied" with the date.
+Status: **applied in PostHog on 2026-09-27** (see "Applied" at the end for
+what changed and the previous values). The live definitions are the PostHog
+actions and cohorts listed in [README.md](README.md#what-counts-as-an-active-user);
+this file says what each tier contains and why, so a change to them is a
+decision rather than drift. Change this file and PostHog together.
 
 ## The rule each tier answers
 
@@ -33,6 +33,7 @@ Everything in Tier 2, plus:
 | `collection_viewed` | **add** | Browsing a franchise page, same weight as `title_viewed`. |
 | `user_followed` | **move here from Tier 2** | Social, not library. See Tier 2. |
 | `watchlist_removed`, `history_entry_removed`, `episode_unwatched`, `season_unwatched` | **add** | Tidying the library is deliberate use, but undo must never count as a committed action. |
+| `action_undone` | **add** | Tapped Undo on the toast (#1067). Deliberate, and the restore fires no save event, so this is the only trace. |
 | `title_shared`, `list_shared`, `profile_shared` | **add** | Intentional, and outward-facing. |
 | `plex_connected`, `trakt_connected`, `simkl_connected` | **move here from Tier 2** | Setup. What it brings in is `import_completed`, which stays in Tier 2. |
 
@@ -107,12 +108,26 @@ changing anything, as the README does for other settings.
 4. Cohort 494036 (Retained): base it on action 342069, 2+ periods of 1 week
    within 8.
 
-Expected effect: activation (cohort 494035) will **drop** slightly, since
-people whose only committed action was a follow or a connection leave it, and
-will then **rise** as `review_written`, `episode_watched` and the newly counted
-imports arrive. Annotate the date on the funnel dashboard when it is applied,
-or the step will read as a real change.
+Expected effect, recomputed on the day: activation (cohort 494035) is
+**unchanged at 39**, because nobody had activated through a follow or a
+connection alone. Retained goes **2 to 3**. Rises after 2026-09-27 come from
+the newly counted events and imports reaching production, not from a jump in
+use.
 
 ## Applied
 
-None yet.
+**2026-09-27**, through the PostHog API, all four steps above, plus:
+
+- `action_undone` added to Tier 1.
+- `test_account_filters` gained `not startsWith(distinct_id, 'eng_analytics_census:')`
+  (see the README's settings table).
+- Funnel dashboard annotation 462175 marks the date.
+
+Previous values, to revert:
+
+| Object | Was |
+|---|---|
+| Action 333110 (Tier 2) | `watchlist_saved` (`already_saved` is not `true`), `marked_watched`, `rating_set`, `favourite_added`, `list_item_added`, `custom_list_created`, `watching_started`, `season_watched`, `series_completed`, `import_completed`, `user_followed`, `plex_connected`, `trakt_connected` |
+| Action 342069 (Self-directed) | The same list, but `watchlist_saved` filtered on `source` is not `onboarding` only (no `already_saved` filter) |
+| Action 333111 (Tier 1) | The Tier 2 list plus `title_viewed`, `search_performed`, `discover_tab_changed`, `watch_link_clicked` |
+| Cohort 494036 (Retained) | Action **333110**, performed regularly: 2+ periods of 1 week within **12** |
