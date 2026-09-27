@@ -1,0 +1,48 @@
+// Web-only editorial illustrations; all example content is shared with mobile.
+import { PREMIUM_EXAMPLES as EXAMPLES } from '@plot/core/copy/premiumExamples.js';
+
+function Artwork({ path, title }) {
+  return <img src={`https://image.tmdb.org/t/p/w342${path}`} alt={title} loading="lazy" decoding="async" onError={event => { event.currentTarget.style.visibility = 'hidden'; }} />;
+}
+
+export default function PremiumExample({ kind, caption }) {
+  const data = EXAMPLES[kind];
+  return (
+    <figure className={`plans-demo plans-demo--${kind}`}>
+      <div className="plans-demo-label">{data.label || EXAMPLES.preview}</div>
+      {kind === 'sync' && <>
+        <div className="plans-demo-list-heading"><strong>{data.title}</strong><small>{data.detail}</small></div>
+        <div className="plans-sync-flow"><div>{data.platforms.map(platform => <span key={platform}>{platform}</span>)}</div><span aria-hidden="true">→</span><strong>{data.destination}</strong></div>
+        <div className="plans-sync-result"><Artwork path={data.poster} title={data.film} /><div><strong>{data.film}</strong><p>{data.source}</p><p className="plans-sync-confirm">✓ {data.result}</p></div></div>
+      </>}
+      {kind === 'collaborative' && <>
+        <div className="plans-demo-list-heading"><strong>{data.title}</strong><small>{data.members}</small></div>
+        <div className="plans-shared-picks">{data.picks.map(pick => <div key={pick.title}>
+          <Artwork path={pick.poster} title={pick.title} /><div><strong>{pick.title}</strong><small>{pick.by}</small></div>
+        </div>)}</div>
+        <div className="plans-demo-result"><strong>{data.result}</strong></div>
+      </>}
+      {kind === 'insights' && <>
+        <div className="plans-demo-list-heading"><strong>{data.title}</strong></div>
+        <p className="plans-insight-heading">{data.chart}</p>
+        <div className="plans-insight-chart">{data.decades.map(decade => <div key={decade.label}>
+          <span>{decade.label}</span><span className="plans-insight-track"><span style={{ width: `${decade.width}%` }} /></span><strong>{decade.rating}</strong>
+        </div>)}</div>
+        <small className="plans-insight-scale">{data.scale}</small>
+        <p className="plans-insight-finding">{data.finding}</p>
+        <div className="plans-insight-comparison"><span className="plans-demo-label">{data.comparison}</span><strong>{data.titleExample}</strong><p>{data.ratings}</p><small>{data.disclaimer}</small></div>
+      </>}
+      {kind === 'lists' && <>
+        <div className="plans-demo-list-heading"><strong>{data.title}</strong><small>{data.meta}</small></div>
+        <p className="plans-insight-heading">{data.rulesLabel}</p>
+        <div className="plans-demo-filters">{data.rules.map(rule => <span key={rule}>{rule}</span>)}</div>
+        <div className="plans-demo-list-posters">{data.titles.map((title, index) => <div key={title.title}>
+          <Artwork path={title.poster} title={title.title} />
+          {index === data.titles.length - 1 && <span className="plans-smart-added">✓ {data.newMatch}</span>}
+        </div>)}</div>
+        <div className="plans-demo-result"><strong>{data.result}</strong></div>
+      </>}
+      <figcaption>{caption}</figcaption>
+    </figure>
+  );
+}
