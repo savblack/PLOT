@@ -37,7 +37,10 @@ function linkOrigin() {
 
 /** The reusable invite link, its preview, and Share / Copy. */
 export function InviteLinkCard({ compact = false }) {
-  const { user, profile } = useApp();
+  const { user, profile, watchlist } = useApp();
+  // Real posters: your saved titles first, topped up from trending.
+  const pool = useWatchTogetherExampleTitles(compact ? null : watchlist?.items);
+  const posters = Array.from({ length: 5 }, (_, i) => pool[i] || null);
   const { key } = useWatchTogetherLink(user?.id);
   const [copied, setCopied] = useState(false);
   const url = buildWatchTogetherLinkUrl({ username: profile?.username || '', key: key || '', origin: linkOrigin() });
@@ -77,14 +80,21 @@ export function InviteLinkCard({ compact = false }) {
       <p className="wt-card-body">{T.link.body}</p>
       <div className="wt-linkpreview" aria-hidden="true">
         <div className="wt-linkpreview-art">
-          {EXAMPLE_POSTERS.slice(0, 3).map((n, i) => <span key={n} className={`wt-linkpreview-poster wt-ph-${n}${i === 1 ? ' wt-linkpreview-poster--mid' : ''}`} />)}
+          <span className="wt-linkpreview-kicker">{T.navLabel}</span>
+          <span className="wt-linkpreview-row">
+            {posters.map((t, i) => (
+              t
+                ? <img key={`${t.media_type}:${t.tmdb_id}`} className={`wt-linkpreview-poster wt-linkpreview-poster--${i}`} src={posterUrl(t.poster_path, 'w185')} alt="" loading="lazy" />
+                : <span key={i} className={`wt-linkpreview-poster wt-linkpreview-poster--${i} wt-ph-${i + 1}`} />
+            ))}
+          </span>
           <span className="wt-linkpreview-mark"><Wordmark /></span>
         </div>
         <div className="wt-linkpreview-meta">
           <PersonAvatar person={profile} size="sm" />
           <span className="wt-person-text">
             <span className="wt-person-name">{T.link.previewTitle(name)}</span>
-            <span className="wt-note">{display}</span>
+            <span className="wt-note wt-linkpreview-url">{display}</span>
           </span>
         </div>
       </div>

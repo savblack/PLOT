@@ -358,15 +358,35 @@
 }
 
 .wt-linkpreview { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
+/* An inverted panel with five real posters, the middle one largest, so the
+   card reads like the link preview people will see in a chat. */
 .wt-linkpreview-art {
   position: relative;
-  min-height: 130px;
-  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-  background: var(--surface-sunken);
+  height: 190px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--text-primary);
+  color: var(--bg);
+  overflow: hidden;
 }
-.wt-linkpreview-poster { width: 40px; aspect-ratio: 2 / 3; border-radius: 6px; }
-.wt-linkpreview-poster--mid { width: 50px; }
-.wt-linkpreview-mark { position: absolute; left: 0.75rem; bottom: 0.5rem; font-size: 1.125rem; color: var(--text-primary); }
+.wt-linkpreview-kicker {
+  position: absolute; left: 0.9rem; top: 0.75rem;
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--bg) 70%, transparent);
+}
+.wt-linkpreview-row { display: flex; align-items: center; margin-top: 0.5rem; }
+.wt-linkpreview-poster {
+  display: block; flex-shrink: 0;
+  aspect-ratio: 2 / 3; object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid var(--text-primary);
+  background: color-mix(in srgb, var(--bg) 18%, var(--text-primary));
+}
+.wt-linkpreview-poster + .wt-linkpreview-poster { margin-left: -14px; }
+.wt-linkpreview-poster--0, .wt-linkpreview-poster--4 { width: 62px; opacity: 0.8; }
+.wt-linkpreview-poster--1, .wt-linkpreview-poster--3 { width: 78px; position: relative; z-index: 1; }
+.wt-linkpreview-poster--2 { width: 98px; position: relative; z-index: 2; }
+.wt-linkpreview-mark { position: absolute; left: 0.9rem; bottom: 0.6rem; font-size: 1.25rem; color: var(--bg); }
+.wt-linkpreview-url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wt-linkpreview-meta { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem; }
 .wt-linkcard .wt-top-actions { margin-top: 0; }
 .wt-linkcard--compact { gap: 0.75rem; }
