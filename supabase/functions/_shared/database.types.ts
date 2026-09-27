@@ -1203,9 +1203,9 @@ export type Database = {
           simkl_last_activity: string | null
           simkl_pkce_ciphertext: string | null
           simkl_pkce_iv: string | null
+          simkl_redirect_uri: string | null
           simkl_refresh_token_ciphertext: string | null
           simkl_refresh_token_iv: string | null
-          simkl_redirect_uri: string | null
           simkl_token_ciphertext: string | null
           simkl_token_expires_at: string | null
           simkl_token_iv: string | null
@@ -1239,9 +1239,9 @@ export type Database = {
           simkl_last_activity?: string | null
           simkl_pkce_ciphertext?: string | null
           simkl_pkce_iv?: string | null
+          simkl_redirect_uri?: string | null
           simkl_refresh_token_ciphertext?: string | null
           simkl_refresh_token_iv?: string | null
-          simkl_redirect_uri?: string | null
           simkl_token_ciphertext?: string | null
           simkl_token_expires_at?: string | null
           simkl_token_iv?: string | null
@@ -1275,9 +1275,9 @@ export type Database = {
           simkl_last_activity?: string | null
           simkl_pkce_ciphertext?: string | null
           simkl_pkce_iv?: string | null
+          simkl_redirect_uri?: string | null
           simkl_refresh_token_ciphertext?: string | null
           simkl_refresh_token_iv?: string | null
-          simkl_redirect_uri?: string | null
           simkl_token_ciphertext?: string | null
           simkl_token_expires_at?: string | null
           simkl_token_iv?: string | null
@@ -1780,6 +1780,7 @@ export type Database = {
           streaming_providers: Json | null
           timezone: string | null
           username: string | null
+          watch_together_requests_from: string
           watchlist_availability_alerts: boolean
         }
         Insert: {
@@ -1805,6 +1806,7 @@ export type Database = {
           streaming_providers?: Json | null
           timezone?: string | null
           username?: string | null
+          watch_together_requests_from?: string
           watchlist_availability_alerts?: boolean
         }
         Update: {
@@ -1830,6 +1832,7 @@ export type Database = {
           streaming_providers?: Json | null
           timezone?: string | null
           username?: string | null
+          watch_together_requests_from?: string
           watchlist_availability_alerts?: boolean
         }
         Relationships: []
@@ -2137,6 +2140,7 @@ export type Database = {
       user_custom_list_items: {
         Row: {
           added_at: string | null
+          added_by: string | null
           genre_ids: number[]
           id: string
           list_id: string
@@ -2148,6 +2152,7 @@ export type Database = {
         }
         Insert: {
           added_at?: string | null
+          added_by?: string | null
           genre_ids?: number[]
           id?: string
           list_id: string
@@ -2159,6 +2164,7 @@ export type Database = {
         }
         Update: {
           added_at?: string | null
+          added_by?: string | null
           genre_ids?: number[]
           id?: string
           list_id?: string
@@ -2182,6 +2188,35 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_custom_lists"
             referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
+      user_custom_list_members: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          list_id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          list_id: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          list_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_custom_list_members_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "user_custom_lists"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2338,6 +2373,152 @@ export type Database = {
         }
         Relationships: []
       }
+      watch_together: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          recipient_id: string
+          recipient_shares_full: boolean
+          requester_id: string
+          requester_shares_full: boolean
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          recipient_id: string
+          recipient_shares_full?: boolean
+          requester_id: string
+          requester_shares_full?: boolean
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          recipient_id?: string
+          recipient_shares_full?: boolean
+          requester_id?: string
+          requester_shares_full?: boolean
+          status?: string
+        }
+        Relationships: []
+      }
+      watch_together_closed: {
+        Row: {
+          closed_at: string
+          recipient_id: string
+          requester_id: string
+        }
+        Insert: {
+          closed_at?: string
+          recipient_id: string
+          requester_id: string
+        }
+        Update: {
+          closed_at?: string
+          recipient_id?: string
+          requester_id?: string
+        }
+        Relationships: []
+      }
+      watch_together_links: {
+        Row: {
+          created_at: string
+          link_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          link_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          link_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watch_together_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watch_together_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      watch_together_sessions: {
+        Row: {
+          created_at: string
+          deck: Json
+          ended_at: string | null
+          guest_id: string
+          host_id: string
+          id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          deck?: Json
+          ended_at?: string | null
+          guest_id: string
+          host_id: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          deck?: Json
+          ended_at?: string | null
+          guest_id?: string
+          host_id?: string
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      watch_together_votes: {
+        Row: {
+          created_at: string
+          media_type: string
+          session_id: string
+          tmdb_id: number
+          user_id: string
+          yes: boolean
+        }
+        Insert: {
+          created_at?: string
+          media_type: string
+          session_id: string
+          tmdb_id: number
+          user_id: string
+          yes: boolean
+        }
+        Update: {
+          created_at?: string
+          media_type?: string
+          session_id?: string
+          tmdb_id?: number
+          user_id?: string
+          yes?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watch_together_votes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "watch_together_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       watching_progress: {
         Row: {
           current_episode: number
@@ -2457,6 +2638,25 @@ export type Database = {
       }
     }
     Functions: {
+      accept_watch_together_link: {
+        Args: { p_key: string; p_share_full?: boolean }
+        Returns: string
+      }
+      add_shared_list_item: {
+        Args: {
+          p_genre_ids?: number[]
+          p_list: string
+          p_media_type: string
+          p_poster_path?: string
+          p_title: string
+          p_tmdb_id: number
+        }
+        Returns: undefined
+      }
+      add_shared_list_member: {
+        Args: { p_list: string; p_user: string }
+        Returns: boolean
+      }
       admit_critic_score_request: {
         Args: { p_caller_bucket: string }
         Returns: boolean
@@ -2497,11 +2697,17 @@ export type Database = {
         Returns: number
       }
       can_create_custom_list: { Args: never; Returns: boolean }
+      can_edit_shared_list: { Args: { p_list: string }; Returns: boolean }
+      can_see_full_watchlist: { Args: { p_other: string }; Returns: boolean }
       can_view_custom_list: {
         Args: { p_owner: string; p_visibility: string }
         Returns: boolean
       }
       can_view_profile: { Args: { p_uid: string }; Returns: boolean }
+      cancel_watch_together_request: {
+        Args: { p_recipient: string }
+        Returns: undefined
+      }
       claim_billing_checkout: {
         Args: { p_price_id: string; p_settings_url: string; p_user_id: string }
         Returns: Json
@@ -2517,6 +2723,15 @@ export type Database = {
       control_tracking: {
         Args: { p_action: string; p_integration: string }
         Returns: Json
+      }
+      create_shared_list: {
+        Args: { p_members: string[]; p_name: string; p_seed_partner?: string }
+        Returns: string
+      }
+      end_watch_together: { Args: { p_other: string }; Returns: undefined }
+      end_watch_together_session: {
+        Args: { p_session: string }
+        Returns: undefined
       }
       enqueue_due_tracking_jobs: {
         Args: { p_provider: string; p_users?: string[] }
@@ -2578,6 +2793,7 @@ export type Database = {
           visibility: string
         }[]
       }
+      get_watch_together_session: { Args: { p_session: string }; Returns: Json }
       import_saved_annotations: { Args: { p_records: Json }; Returns: Json }
       import_saved_list: {
         Args: { p_list: Json; p_records: Json }
@@ -2585,8 +2801,11 @@ export type Database = {
       }
       import_watch_events: { Args: { p_records: Json }; Returns: Json }
       is_accepted_follower: { Args: { p_target: string }; Returns: boolean }
+      is_custom_list_member: { Args: { p_list: string }; Returns: boolean }
       is_premium: { Args: { p_user?: string }; Returns: boolean }
       is_profile_public: { Args: { p_uid: string }; Returns: boolean }
+      is_watch_together_partner: { Args: { p_other: string }; Returns: boolean }
+      leave_shared_list: { Args: { p_list: string }; Returns: undefined }
       list_blocked_users: {
         Args: never
         Returns: {
@@ -2649,6 +2868,36 @@ export type Database = {
           type: string
         }[]
       }
+      list_shared_list_people: {
+        Args: { p_lists: string[] }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          is_owner: boolean
+          list_id: string
+          user_id: string
+          username: string
+        }[]
+      }
+      list_watch_together: {
+        Args: never
+        Returns: {
+          accepted_at: string
+          avatar_url: string
+          can_decide: boolean
+          created_at: string
+          direction: string
+          display_name: string
+          i_share_full: boolean
+          other_id: string
+          overlap_count: number
+          username: string
+        }[]
+      }
+      live_watch_together_session: {
+        Args: { p_other: string }
+        Returns: string
+      }
       marketing_recipient_list: {
         Args: never
         Returns: {
@@ -2656,16 +2905,32 @@ export type Database = {
           unsubscribe_token: string
         }[]
       }
+      my_watch_together_link: { Args: never; Returns: string }
+      new_watch_together_link_key: { Args: never; Returns: string }
       not_blocked: { Args: { p_uid: string }; Returns: boolean }
       profile_links_ok: { Args: { l: Json }; Returns: boolean }
       record_kofi_tip: { Args: { p_payload: Json }; Returns: Json }
+      refresh_premium_badges: { Args: never; Returns: number }
       release_marketing_linear_mirror: {
         Args: { p_owner: string }
         Returns: undefined
       }
+      remove_shared_list_item: {
+        Args: { p_list: string; p_tmdb_id: number }
+        Returns: undefined
+      }
+      rename_shared_list: {
+        Args: { p_list: string; p_name: string }
+        Returns: undefined
+      }
+      reset_watch_together_link: { Args: never; Returns: string }
       resolve_tracking_review: {
         Args: { p_keep: boolean; p_review: string }
         Returns: Json
+      }
+      respond_watch_together_request: {
+        Args: { p_accept: boolean; p_requester: string; p_share_full?: boolean }
+        Returns: undefined
       }
       run_marketing_linear_mirror: { Args: never; Returns: undefined }
       save_private_title_note: {
@@ -2722,6 +2987,28 @@ export type Database = {
         Args: { p_integration: string; p_selection: Json; p_servers: Json }
         Returns: undefined
       }
+      send_watch_together_request: {
+        Args: { p_recipient: string }
+        Returns: string
+      }
+      set_watch_together_share_full: {
+        Args: { p_other: string; p_share: boolean }
+        Returns: undefined
+      }
+      start_watch_together_session: {
+        Args: { p_other: string }
+        Returns: string
+      }
+      suggest_watch_together: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          id: string
+          overlap_count: number
+          username: string
+        }[]
+      }
       suggested_users: {
         Args: { p_limit?: number }
         Returns: {
@@ -2745,7 +3032,120 @@ export type Database = {
         }
         Returns: undefined
       }
+      taste_overlap: { Args: { p_username: string }; Returns: Json }
+      taste_overlap_rows: { Args: { p_user: string }; Returns: Json }
       username_available: { Args: { p_username: string }; Returns: boolean }
+      vote_watch_together: {
+        Args: {
+          p_media_type: string
+          p_session: string
+          p_tmdb_id: number
+          p_yes: boolean
+        }
+        Returns: boolean
+      }
+      watch_together_link_owner: {
+        Args: { p_key: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          id: string
+          username: string
+        }[]
+      }
+      watch_together_link_status: {
+        Args: { p_key: string }
+        Returns: {
+          avatar_url: string
+          can_decide: boolean
+          display_name: string
+          id: string
+          state: string
+          username: string
+        }[]
+      }
+      watch_together_overlap_count: {
+        Args: { p_other: string }
+        Returns: number
+      }
+      watch_together_row: {
+        Args: { p_other: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          recipient_id: string
+          recipient_shares_full: boolean
+          requester_id: string
+          requester_shares_full: boolean
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "watch_together"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      watch_together_savers: {
+        Args: { p_media_type: string; p_tmdb_id: number }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          id: string
+          username: string
+        }[]
+      }
+      watch_together_session_for_caller: {
+        Args: { p_session: string }
+        Returns: {
+          created_at: string
+          deck: Json
+          ended_at: string | null
+          guest_id: string
+          host_id: string
+          id: string
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "watch_together_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      watch_together_session_live: {
+        Args: {
+          s: Database["public"]["Tables"]["watch_together_sessions"]["Row"]
+        }
+        Returns: boolean
+      }
+      watch_together_status: {
+        Args: { p_other: string }
+        Returns: {
+          overlap_count: number
+          state: string
+        }[]
+      }
+      watch_together_titles: {
+        Args: { p_others: string[] }
+        Returns: {
+          genre_ids: number[]
+          media_type: string
+          poster_path: string
+          provider_ids: number[]
+          release_date: string
+          saved_by: string[]
+          title: string
+          tmdb_id: number
+        }[]
+      }
+      watchlist_keys: {
+        Args: { p_user: string }
+        Returns: {
+          media_type: string
+          tmdb_id: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
