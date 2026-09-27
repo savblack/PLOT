@@ -116,6 +116,23 @@ configure({
   // payload is already PII-free (codes and field names, never the message).
   onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
   onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
+  // The Tonight picker: one seam, four names, same shape as onWatchProgress.
+  onTonightPicker: ({ action, ...props }) => {
+    const name = {
+      drawn:               EVENTS.TONIGHT_PICKS_DRAWN,
+      opened:              EVENTS.TONIGHT_PICK_OPENED,
+      search_saved:        EVENTS.TONIGHT_SEARCH_SAVED,
+      saved_search_opened: EVENTS.TONIGHT_SAVED_SEARCH_OPENED,
+    }[action];
+    if (name) track(name, props);
+  },
+  onReview: (payload) => track(EVENTS.REVIEW_WRITTEN, payload),
+  onImport: ({ stage, ...props }) => {
+    const name = { started: EVENTS.IMPORT_STARTED, completed: EVENTS.IMPORT_COMPLETED, failed: EVENTS.IMPORT_FAILED }[stage];
+    if (name) track(name, props);
+  },
+  // The undo toast reversed a removal. Never a committed action.
+  onUndo: (payload) => track(EVENTS.ACTION_UNDONE, payload),
 });
 
 // Opt this browser out of analytics: visit either theplot.tv or app.theplot.tv

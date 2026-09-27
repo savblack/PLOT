@@ -27,6 +27,7 @@ import { useReminders }    from './hooks/useReminders.js';
 import { useTopLists }     from './hooks/useTopLists.js';
 import { useFavorites }    from './hooks/useFavorites.js';
 import { useCustomLists }  from './hooks/useCustomLists.js';
+import UndoToast from './components/UndoToast.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
@@ -407,6 +408,8 @@ export default function App() {
       {saveToast && (
         <SaveToast toast={saveToast} onClose={() => setSaveToast(null)} />
       )}
+
+      <UndoToast />
 
       {tzBanner && (
         <TimezoneBanner

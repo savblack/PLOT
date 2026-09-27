@@ -91,6 +91,23 @@
  *   success seams above. Built by reportActionFailure in actionFailures.js,
  *   which carries the error's code and a coarse kind but never its message:
  *   Postgres puts row values there.
+ * @property {(payload: { tmdb_id: number, media_type: string, has_rating: boolean, length: 'short' | 'medium' | 'long', edited: boolean }) => void} [onReview]
+ *   Analytics seam — fired when a written review (a history note) is saved
+ *   with new text, from useHistory's two write paths. Carries a length bucket,
+ *   never the text: reviews are user content.
+ * @property {(payload: { action: 'drawn' | 'opened' | 'search_saved' | 'saved_search_opened', mode?: string, media_type?: string, result_count?: number, reroll?: boolean, only_watchlist?: boolean, only_services?: boolean, genre_count?: number, tmdb_id?: number, position?: number }) => void} [onTonightPicker]
+ *   Analytics seam — the Tonight picker, from useTonightPicker: a draw (first
+ *   spin or reroll; result_count 0 is an empty result), a pick opened, and
+ *   saved searches. Picker settings are reported as shapes (counts, booleans),
+ *   not the genre ids themselves.
+ * @property {(payload: { stage: 'started' | 'completed' | 'failed', source: string, count?: number, failed_count?: number, reason?: string }) => void} [onImport]
+ *   Analytics seam — a history import's lifecycle, via reportImport in
+ *   importPipeline.js. `reason` is an IMPORT_FAILURE_REASONS slug, never the
+ *   parser's message (it can quote file contents).
+ * @property {(payload: { action: string, count: number, elapsed_ms: number }) => void} [onUndo]
+ *   Analytics seam — fired when the undo toast reverses a removal (undo.js).
+ *   The revert writes tables directly and fires no success seam, so an undone
+ *   removal never counts as a new save: this is the only event it produces.
  * @property {(payload: { resource: string, error_kind: string, error_code?: string, http_status?: number }) => void} [onLoadFailed]
  *   Analytics seam — fired when a library read (watchlist, history, custom
  *   lists, series progress, favourites) fails. Kept apart from onActionFailed
@@ -129,6 +146,10 @@ const defaults = {
   onProfileUpdate: undefined,
   onActionFailed: undefined,
   onLoadFailed: undefined,
+  onReview: undefined,
+  onTonightPicker: undefined,
+  onImport: undefined,
+  onUndo: undefined,
 };
 
 let config = { ...defaults };

@@ -25,6 +25,7 @@ import DrawerMenu from '../components/DrawerMenu';
 import MediaPanel from '../components/MediaPanel';
 import CollectionPanel from '../components/CollectionPanel';
 import type { Session } from '@supabase/supabase-js';
+import UndoToast from '../components/UndoToast';
 
 function AuthGuard({ session, onboardingComplete }: {
   session: Session | null;
@@ -218,6 +219,8 @@ function RootInner() {
             <OnboardingRefreshContext.Provider value={refreshOnboarding}>
               <AuthGuard session={session} onboardingComplete={onboardingComplete} />
             </OnboardingRefreshContext.Provider>
+            {/* After the navigator so it draws on top. The panel has its own. */}
+            <UndoToast />
           </MediaPanelProvider>
         </DrawerProvider>
       </AppDataProvider>

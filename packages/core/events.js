@@ -8,6 +8,10 @@
 export const LISTS_CHANGED_EVENT = 'plot:lists-changed';
 export const HISTORY_CHANGED_EVENT = 'plot:history-changed';
 export const MEDIA_INTEGRATION_CHANGED_EVENT = 'plot:media-integration-changed';
+/* Emitted by writes made outside useFavorites / useWatching (the undo toast's
+   restores) so a mounted hook reloads instead of serving stale rows. */
+export const FAVOURITES_CHANGED_EVENT = 'plot:favourites-changed';
+export const WATCHING_CHANGED_EVENT = 'plot:watching-changed';
 
 const listeners = new Map(); // event name -> Set<fn>
 

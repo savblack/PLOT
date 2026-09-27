@@ -67,6 +67,8 @@ import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { TrailerPlayer } from './TrailerPlayer';
 import CollectionCard from './CollectionCard';
 import { MEDIA } from '@plot/core/copy/media.js';
+import UndoToast from './UndoToast';
+import { clearUndo } from '@plot/core/undo.js';
 
 
 const SCREEN_H = Dimensions.get('window').height;
@@ -273,6 +275,9 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
 
   const finishSeriesIfComplete = async (nextSeason: number | undefined) => {
     if (!isSeriesComplete({ lastSeason, nextSeason, status: details?.status })) return;
+    // The tick that got here offered an undo; reversing only it would leave
+    // the completion (history row, stopped watching) behind.
+    clearUndo();
     // Finishing a show is the end of the engagement arc worth naming, and it's
     // only knowable here — core sees pointer moves, not the last season.
     track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: lastSeason });
@@ -299,7 +304,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
          below) writes no history, so ticking episodes on mobile used to leave
          no trace in your watch history at all. Mirrors web's MediaPanel. */
       if (selSeason === curSeason && ep.episode_number === curEp) {
-        const result = await watching.markEpisodeWatched(tvId);
+        const result = await watching.markEpisodeWatched(tvId, { undo: true });
         if (!result?.ok) {
           setActionError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
         } else {
@@ -308,13 +313,13 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
           await finishSeriesIfComplete(result.data?.current_season);
         }
       } else if (ep.episode_number < episodes.length) {
-        await watching.setProgress(tvId, selSeason, ep.episode_number + 1);
+        await watching.setProgress(tvId, selSeason, ep.episode_number + 1, { undo: true });
       } else {
-        await watching.setProgress(tvId, selSeason + 1, 1);
+        await watching.setProgress(tvId, selSeason + 1, 1, { undo: true });
         await finishSeriesIfComplete(selSeason + 1);
       }
     } else {
-      await watching.setProgress(tvId, selSeason, ep.episode_number);
+      await watching.setProgress(tvId, selSeason, ep.episode_number, { undo: true });
     }
     setToggling(null);
   };
@@ -350,7 +355,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
 
     setSeasonPending(true);
     setActionError('');
-    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season' });
+    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season', undo: true });
     if (!result?.ok) {
       setActionError(MEDIA_PANEL.couldNotUpdateSeason);
     } else if (!seasonState.isComplete) {
@@ -621,7 +626,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
               <TouchableOpacity
                 key={list.id}
                 style={styles.lsRow}
-                onPress={() => checked ? removeItem(list.id, item.id) : addItem(list.id, item)}
+                onPress={() => checked ? removeItem(list.id, item.id, { undo: true }) : addItem(list.id, item)}
                 activeOpacity={0.7}
               >
                 <View style={{ flex: 1 }}>
@@ -691,6 +696,8 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
           </View>
         </Modal>
       )}
+      {/* The list sheet is its own Modal, over the panel's, so it needs its own toast. */}
+      <UndoToast placement="panel" />
     </Modal>
   );
 }
@@ -863,7 +870,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const handleSaveFromPanel = async () => {
     if (!details) return;
     if (inList) {
-      await watchlist.removeFromList(itemId);
+      await watchlist.removeFromList(itemId, { undo: true });
       return;
     }
     const saved = await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
@@ -890,7 +897,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     setEngagementBusy(true);
     try {
       if (isWatching) {
-        await watching.stopWatching(itemId);
+        await watching.stopWatching(itemId, { undo: true });
         setEngagementPrompt(null);
         return;
       }
@@ -1242,7 +1249,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     {watched ? (
                       <TouchableOpacity
                         style={[styles.btnPrimary, styles.btnHalf, styles.btnSaved]}
-                        onPress={() => history.removeEntry(itemId, itemType)}
+                        onPress={() => history.removeEntry(itemId, itemType, { undo: true })}
                       >
                         <IconCheck color={colors.statusWatched} />
                         <Text style={[styles.btnPrimaryText, { color: colors.statusWatched }]}>Watched</Text>
@@ -1299,7 +1306,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     style={[styles.btnSecondary, styles.btnStandalone, isWatching && styles.btnWatching]}
                     onPress={async () => {
                       if (isWatching) {
-                        await watching.stopWatching(itemId);
+                        await watching.stopWatching(itemId, { undo: true });
                       } else {
                         /* Two writes with no rollback left a show in both
                            Watching and Saved permanently if the second failed.
@@ -1580,6 +1587,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           </View>
         )}
       </Animated.View>
+      <UndoToast placement="panel" />
     </Modal>
 
     {showListSheet && details && (

@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
-import { logWatchedItem } from './userMedia.js';
+import { logWatchedItem, restoreHistoryEntry } from './userMedia.js';
 import { normalizeRating } from './ratings.js';
 import { tmdbIdFromItem } from './media.js';
 import { on, emit, HISTORY_CHANGED_EVENT } from './events.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, historyFailureAction, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
+import { registerUndo, UNDO_ACTIONS } from './undo.js';
 
 // Moved to events.js, alongside the bus. Re-exported so existing import sites
 // keep resolving.
@@ -13,6 +14,40 @@ export { HISTORY_CHANGED_EVENT };
 
 function notifyHistoryChanged() {
   emit(HISTORY_CHANGED_EVENT);
+}
+
+/**
+ * Bucket a review's length for analytics. The text itself never leaves the
+ * device; "are people writing one line or a paragraph" is the question.
+ * @param {string} text trimmed review text
+ * @returns {'short' | 'medium' | 'long'}
+ */
+export function reviewLengthBucket(text) {
+  if (text.length < 80) return 'short';
+  if (text.length < 400) return 'medium';
+  return 'long';
+}
+
+/**
+ * The review_written payload for a save, or null when the save wrote no new
+ * review text (no note, a cleared note, or the same words as before, e.g. a
+ * re-save that only changed the stars).
+ * @param {{ tmdb_id: number, media_type: string, note?: string|null, previousNote?: string|null, rating?: number|null }} args
+ */
+export function reviewEventPayload({ tmdb_id, media_type, note, previousNote, rating }) {
+  const text = typeof note === 'string' ? note.trim() : '';
+  if (!text || text === (previousNote || '').trim()) return null;
+  return {
+    tmdb_id, media_type,
+    has_rating: rating != null,
+    length: reviewLengthBucket(text),
+    edited: !!previousNote?.trim(),
+  };
+}
+
+function reportReview(args) {
+  const payload = reviewEventPayload(args);
+  if (payload) getConfig().onReview?.(payload);
 }
 
 /**
@@ -24,7 +59,7 @@ function notifyHistoryChanged() {
  *   loadError: boolean;
  *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean; watchedAt?: string }) => Promise<any>;
  *   updateEntry: (tmdbId: number, updates: any, mediaType?: string) => Promise<any>;
- *   removeEntry: (tmdbId: number, mediaType?: string) => Promise<boolean>;
+ *   removeEntry: (tmdbId: number, mediaType?: string, opts?: { undo?: import('./undo.js').UndoOption }) => Promise<boolean>;
  *   isWatched: (tmdbId: number, mediaType?: string) => boolean;
  *   reload: () => Promise<void>;
  * }}
@@ -39,6 +74,10 @@ export function useHistory(userId) {
   // the closure that triggered them.
   const lastErrorRef = useRef(null);
   const getLastError = useCallback(() => lastErrorRef.current, []);
+  // Read by logWatched to tell a new review from an unchanged one, without
+  // making logWatched's identity depend on every history change.
+  const entriesRef = useRef(entries);
+  useEffect(() => { entriesRef.current = entries; }, [entries]);
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
@@ -113,6 +152,9 @@ export function useHistory(userId) {
       if (rating != null) {
         getConfig().onRating?.({ tmdb_id: row.tmdb_id, media_type: row.media_type, value: data.rating ?? rating });
       }
+      // Logging a title again updates its one row, so a note may already exist.
+      reportReview({ tmdb_id: row.tmdb_id, media_type: row.media_type, note, rating: data.rating ?? rating,
+        previousNote: entriesRef.current.find(e => e.tmdb_id === row.tmdb_id && e.media_type === row.media_type)?.note });
     }
     return data ?? null;
   }, [userId]);
@@ -150,13 +192,19 @@ export function useHistory(userId) {
       if ('rating' in normalizedUpdates && normalizedUpdates.rating != null) {
         getConfig().onRating?.({ tmdb_id: Number(tmdbId), media_type: data.media_type, value: normalizedUpdates.rating });
       }
+      if ('note' in normalizedUpdates) {
+        reportReview({ tmdb_id: Number(tmdbId), media_type: data.media_type, note: normalizedUpdates.note,
+          previousNote: target.note, rating: data.rating });
+      }
     }
     return data;
   }, [entries]);
 
   /* ── Remove entry ──
      Same row-id targeting (and same mediaType disambiguation) as updateEntry. */
-  const removeEntry = useCallback(async (tmdbId, mediaType) => {
+  // opts.undo offers the removal to the undo toast; the whole row comes back,
+  // rating, review and date included. Never set it on a rollback.
+  const removeEntry = useCallback(async (tmdbId, mediaType, opts) => {
     const target = entries.find(e => e.tmdb_id === Number(tmdbId) && (!mediaType || e.media_type === mediaType));
     if (!target) return false;
 
@@ -173,6 +221,11 @@ export function useHistory(userId) {
     notifyHistoryChanged();
     // The undo half of onWatched — without it, watched counts only ratchet up.
     getConfig().onHistoryRemove?.({ tmdb_id: Number(tmdbId), media_type: target.media_type });
+    registerUndo(opts?.undo, {
+      action: UNDO_ACTIONS.HISTORY_REMOVE,
+      title: target.title,
+      revert: () => restoreHistoryEntry(target),
+    });
     return true;
   }, [entries]);
 

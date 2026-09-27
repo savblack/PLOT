@@ -123,8 +123,10 @@ test('every core module with a success seam also reports failures', () => {
     .filter(name => name.endsWith('.js') && name !== 'config.js' && name !== 'actionFailures.js')
     .filter(name => {
       const source = readFileSync(join(root, name), 'utf8');
-      return /getConfig\(\)\.on(?!ActionFailed)[A-Z]\w*\?\.\(/.test(source)
-        && !source.includes('reportActionFailure(');
+      // Reads report through load_failed and imports through import_failed,
+      // so either of those counts as failure reporting too.
+      return /getConfig\(\)\.on(?!ActionFailed|LoadFailed)[A-Z]\w*\?\.\(/.test(source)
+        && !/reportActionFailure\(|reportLoadFailure\(|reportImport\('failed'/.test(source);
     });
   assert.deepEqual(missing, []);
 });
