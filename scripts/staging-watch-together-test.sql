@@ -10,7 +10,7 @@
 -- the real policies and security definer functions under a real auth.uid()
 -- against the real schema. This does.
 --
--- It applies 20260927100000 to 20260927130000 itself, inside the transaction,
+-- It applies 20260927100000 to 20260927140000 itself, inside the transaction,
 -- so it works whatever Staging's migration ledger says, and the final rollback
 -- removes the migrations, every fixture and the Premium row. Staging (and its
 -- ledger) is unchanged whether it passes or dies.
@@ -39,6 +39,7 @@ drop function if exists public.suggest_watch_together();
 \ir ../supabase/migrations/20260927110000_watch_together_sessions.sql
 \ir ../supabase/migrations/20260927120000_watch_together_shared_lists.sql
 \ir ../supabase/migrations/20260927130000_watch_together_free.sql
+\ir ../supabase/migrations/20260927140000_watch_together_visibility_and_stop.sql
 
 -- ── fixtures (as postgres) ───────────────────────────────────────────────────
 -- See staging-block-test.sql for why the claims must be valid even here.
@@ -301,11 +302,11 @@ select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  bystander pairin
   from public.list_watch_together() where other_id = :C and direction = 'paired';
 
 \echo ''
-\echo '=== Open questions for review (REPRO = current behaviour, not a failure) ==='
--- 1. "Share my full watchlist" is off, but a partner who is also an accepted
---    follower of a private profile can read that whole watchlist anyway,
---    because list_items' read policy (20260926090000) lets accepted followers
---    in. can_see_full_watchlist only knows about public profiles.
+\echo '=== Watchlist visibility agrees with the profile, and stopping leaves lists (20260927140000) ==='
+-- 1. A partner who is also an accepted follower of a private profile can read
+--    its watchlist through list_items (20260926090000), so Watch together must
+--    say the same: can_see_full_watchlist is true for them even with "share my
+--    full watchlist" off. Before 20260927140000 the two disagreed.
 reset role;
 set local request.jwt.claims = '{"role":"service_role"}';
 update public.profiles set is_public = false where id = :A;
@@ -313,19 +314,29 @@ insert into public.follows (follower_id, following_id) values (:C, :A);
 update public.follows set status = 'accepted' where follower_id = :C and following_id = :A;
 set local role authenticated;
 set local request.jwt.claims = :C_CLAIMS;
-select case when count(*) > 0 then 'REPRO' else 'OK   ' end
-       || '  partner C (follower, share toggle off) can read private A''s whole watchlist: ' || count(*) || ' rows'
-  from public.list_items where user_id = :A;   -- not joined to lists: followers can't read that table
+select count(*) as c_rows from public.list_items where user_id = :A   -- not joined to lists: followers can't read that table
+\gset
+-- can_see_full_watchlist isn't callable by signed-in users, so ask it as the
+-- owner while keeping C's claims (auth.uid() is still C).
+reset role;
+select case when :c_rows > 0 and public.can_see_full_watchlist(:A) then 'PASS' else 'FAIL' end
+       || '  follower partner C: watchlist rows (' || :c_rows || ') and can_see_full_watchlist agree';
+set local role authenticated;
 
--- 2. Ending a pairing leaves the person on shared lists; only a block
---    removes them.
+-- 2. Stopping an accepted pairing takes each person off the other's shared
+--    lists, as a block already did.
 set local request.jwt.claims = :A_CLAIMS;
 select public.create_shared_list('wt-proof-2', array[:C::uuid]) as lid2
 \gset
+select set_config('wt.lid2', :'lid2', true) \g /dev/null
 select public.end_watch_together(:C);
 set local request.jwt.claims = :C_CLAIMS;
-select case when count(*) = 1 then 'REPRO' else 'OK   ' end
-       || '  after the pairing ends, C can still read and edit the shared list'
+select case when count(*) = 0 then 'PASS' else 'FAIL' end
+       || '  after the pairing ends, C can no longer read the shared list'
   from public.user_custom_lists where id = :'lid2';
+do $$ declare l uuid := current_setting('wt.lid2')::uuid; begin
+  perform public.add_shared_list_item(l, current_setting('wt.t3')::int, current_setting('wt.m3'), 'x');
+  raise notice 'FAIL  C edited the list after the pairing ended';
+exception when others then raise notice 'PASS  C cannot edit it either (%)', sqlerrm; end $$;
 
 rollback;
