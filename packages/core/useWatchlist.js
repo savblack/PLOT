@@ -33,7 +33,7 @@ function enqueueTraktAction(userId, integrationId, action, payload) {
  *   isInList: (tmdbId: number) => boolean;
  *   addToList: (item: any, opts?: { source?: string }) => Promise<any>;
  *   removeFromList: (tmdbId: number) => Promise<any>;
- *   toggle: (item: any) => Promise<any>;
+ *   toggle: (item: any, opts?: { source?: string }) => Promise<any>;
  *   reload: () => Promise<void>;
  * }}
  */
@@ -201,11 +201,13 @@ export function useWatchlist(userId) {
   }, [listId, userId, items]);
 
   /* ── Toggle ── */
-  const toggle = useCallback(async (item) => {
+  // opts.source is forwarded to addToList, so a surface can label its saves
+  // (the Tonight picker's cards pass 'tonight').
+  const toggle = useCallback(async (item, opts) => {
     const id = tmdbIdFromItem(item);
     if (!id) return;
     if (isInList(id)) await removeFromList(id);
-    else await addToList(item);
+    else await addToList(item, opts);
   }, [isInList, addToList, removeFromList]);
 
   return { items, loading, error: listError, isInList, addToList, removeFromList, toggle, reload: bootstrap };

@@ -62,7 +62,20 @@ export const EVENTS = Object.freeze({
   PREMIUM_CHECKOUT_FAILED: 'premium_checkout_failed',
   PREMIUM_CHECKOUT_CANCELLED: 'premium_checkout_cancelled',
   PREMIUM_CONVERTED: 'premium_converted',
+  // RETIRED 2026-08-07: the old name of premium_converted, renamed in #452.
+  // Last fired 2026-07-10. Kept so historical queries have a name to point at
+  // and a stray call site stays a loud reference (see ACTIVATED).
+  PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
+  // The Tonight picker, PLOT's "what should I watch" surface. Fired from
+  // useTonightPicker via the onTonightPicker seam. A draw with result_count 0
+  // is an empty result; a failed draw is load_failed (resource tonight_picks).
+  // "Accepted a pick" is tonight_pick_opened, or watchlist_saved with
+  // source 'tonight'.
+  TONIGHT_PICKS_DRAWN: 'tonight_picks_drawn',
+  TONIGHT_PICK_OPENED: 'tonight_pick_opened',
+  TONIGHT_SEARCH_SAVED: 'tonight_search_saved',
+  TONIGHT_SAVED_SEARCH_OPENED: 'tonight_saved_search_opened',
   WATCH_LINK_CLICKED: 'watch_link_clicked',
   TIP_JAR_CLICKED: 'tip_jar_clicked',
   // PLOT's second paid-conversion type alongside premium_converted — a Ko-fi
@@ -78,8 +91,14 @@ export const EVENTS = Object.freeze({
   SEARCH_PERFORMED: 'search_performed',
   TITLE_VIEWED: 'title_viewed',
   DISCOVER_TAB_CHANGED: 'discover_tab_changed',
+  // RETIRED 2026-09-27, never emitted since the feed engagement layer was
+  // deleted in #532. Kept so a stray call site is a loud reference rather
+  // than a silent `undefined` event name (see ACTIVATED).
   FEED_POST_OPENED: 'feed_post_opened',
   RATING_SET: 'rating_set',
+  // A written review saved with new text. Props: tmdb_id, media_type,
+  // has_rating, length ('short'|'medium'|'long'), edited. Never the text.
+  REVIEW_WRITTEN: 'review_written',
   MARKED_WATCHED: 'marked_watched',
   // In-flow watch/rate prompts (PLO-473 / PLO-474). Not Tier 2 — they measure
   // prompt exposure and dismissals so the save→watch guardrail is readable.
@@ -133,12 +152,19 @@ export const EVENTS = Object.freeze({
   // a pile of pending requests that never get approved is a broken loop.
   FOLLOW_REQUEST_APPROVED: 'follow_request_approved',
   FOLLOW_REQUEST_DECLINED: 'follow_request_declined',
+  // Imports: fired on both apps via reportImport (importPipeline.js). Before
+  // 2026-09-27 mobile fired none of these, and Trakt/Simkl account imports
+  // never fired import_completed on either app.
   IMPORT_STARTED: 'import_started',
   IMPORT_COMPLETED: 'import_completed',
+  // Carries `reason`, an IMPORT_FAILURE_REASONS slug, never a parser message.
+  IMPORT_FAILED: 'import_failed',
   // Marketing email consent. `source` distinguishes the Settings toggle from the
   // in-app prompt so we can tell which surface actually earns opt-ins.
   MARKETING_EMAILS_OPTED_IN: 'marketing_emails_opted_in',
   MARKETING_EMAILS_OPTED_OUT: 'marketing_emails_opted_out',
+  // RETIRED 2026-09-27, never emitted since DigestNudge was deleted in #465.
+  // Kept for the same reason as FEED_POST_OPENED.
   DIGEST_PROMPT_VIEWED: 'digest_prompt_viewed',
   DIGEST_PROMPT_DISMISSED: 'digest_prompt_dismissed',
   // Settings / account actions

@@ -16,6 +16,40 @@ function notifyHistoryChanged() {
 }
 
 /**
+ * Bucket a review's length for analytics. The text itself never leaves the
+ * device; "are people writing one line or a paragraph" is the question.
+ * @param {string} text trimmed review text
+ * @returns {'short' | 'medium' | 'long'}
+ */
+export function reviewLengthBucket(text) {
+  if (text.length < 80) return 'short';
+  if (text.length < 400) return 'medium';
+  return 'long';
+}
+
+/**
+ * The review_written payload for a save, or null when the save wrote no new
+ * review text (no note, a cleared note, or the same words as before, e.g. a
+ * re-save that only changed the stars).
+ * @param {{ tmdb_id: number, media_type: string, note?: string|null, previousNote?: string|null, rating?: number|null }} args
+ */
+export function reviewEventPayload({ tmdb_id, media_type, note, previousNote, rating }) {
+  const text = typeof note === 'string' ? note.trim() : '';
+  if (!text || text === (previousNote || '').trim()) return null;
+  return {
+    tmdb_id, media_type,
+    has_rating: rating != null,
+    length: reviewLengthBucket(text),
+    edited: !!previousNote?.trim(),
+  };
+}
+
+function reportReview(args) {
+  const payload = reviewEventPayload(args);
+  if (payload) getConfig().onReview?.(payload);
+}
+
+/**
  * Watch history for a user.
  * @param {string|null|undefined} userId
  * @returns {{
@@ -39,6 +73,10 @@ export function useHistory(userId) {
   // the closure that triggered them.
   const lastErrorRef = useRef(null);
   const getLastError = useCallback(() => lastErrorRef.current, []);
+  // Read by logWatched to tell a new review from an unchanged one, without
+  // making logWatched's identity depend on every history change.
+  const entriesRef = useRef(entries);
+  useEffect(() => { entriesRef.current = entries; }, [entries]);
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
@@ -113,6 +151,9 @@ export function useHistory(userId) {
       if (rating != null) {
         getConfig().onRating?.({ tmdb_id: row.tmdb_id, media_type: row.media_type, value: data.rating ?? rating });
       }
+      // Logging a title again updates its one row, so a note may already exist.
+      reportReview({ tmdb_id: row.tmdb_id, media_type: row.media_type, note, rating: data.rating ?? rating,
+        previousNote: entriesRef.current.find(e => e.tmdb_id === row.tmdb_id && e.media_type === row.media_type)?.note });
     }
     return data ?? null;
   }, [userId]);
@@ -149,6 +190,10 @@ export function useHistory(userId) {
       notifyHistoryChanged();
       if ('rating' in normalizedUpdates && normalizedUpdates.rating != null) {
         getConfig().onRating?.({ tmdb_id: Number(tmdbId), media_type: data.media_type, value: normalizedUpdates.rating });
+      }
+      if ('note' in normalizedUpdates) {
+        reportReview({ tmdb_id: Number(tmdbId), media_type: data.media_type, note: normalizedUpdates.note,
+          previousNote: target.note, rating: data.rating });
       }
     }
     return data;

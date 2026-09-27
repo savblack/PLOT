@@ -56,6 +56,46 @@ function chunk(items, size) {
 const matchTitle = value => String(value || '').normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ');
 
 /** Only a unique title/type/year match can be accepted without review. */
+/** Why an import stopped. Slugs only: parser messages can quote file contents. */
+export const IMPORT_FAILURE_REASONS = Object.freeze({
+  UNREADABLE_FILE:     'unreadable_file',
+  EMPTY_FILE:          'empty_file',
+  LISTS_UNAVAILABLE:   'lists_unavailable',
+  HISTORY_READ_FAILED: 'history_read_failed',
+  MATCH_FAILED:        'match_failed',
+  WRITE_FAILED:        'write_failed',
+  CONNECTION_FAILED:   'connection_failed',
+});
+
+/**
+ * Report an import's lifecycle through the onImport seam. Both apps call this
+ * at the same three moments (the file parsed or the account import began; the
+ * write finished; the import stopped), so import_started / import_completed /
+ * import_failed mean the same thing on web and mobile. Never throws.
+ *
+ * @param {'started' | 'completed' | 'failed'} stage
+ * @param {{ source: string, count?: number, failed_count?: number, reason?: string }} props
+ */
+export function reportImport(stage, props) {
+  try { getConfig().onImport?.({ stage, ...props }); } catch { /* analytics is best-effort */ }
+}
+
+/**
+ * Report a finished file import from its write outcome. A write where every
+ * row failed is a failure, not a completion: import_completed is a Tier 2
+ * activation event, and an import that saved nothing must not activate anyone.
+ *
+ * @param {string} source
+ * @param {{ inserted: number, failed: number }} outcome
+ */
+export function reportImportOutcome(source, { inserted, failed }) {
+  if (!inserted && failed) {
+    reportImport('failed', { source, reason: IMPORT_FAILURE_REASONS.WRITE_FAILED, failed_count: failed });
+  } else {
+    reportImport('completed', { source, count: inserted, failed_count: failed });
+  }
+}
+
 export function pickTmdbMatch(entry, results = []) {
   const candidates = results.filter(r =>
     ['movie', 'tv'].includes(r.media_type) &&

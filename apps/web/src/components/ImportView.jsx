@@ -11,9 +11,9 @@ import { importReportMessages, importListSelections, importListResultMessage } f
 import { planHistoryImport } from '@plot/core/importPlan.js';
 import {
   resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, resolveImportMatch, reviewImportDuplicates,
+  reportImport, reportImportOutcome, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA } from '../copy/media.js';
 import { IMPORT_VIEW } from '../copy/importView.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
@@ -271,14 +271,20 @@ function AccountImportView() {
     } else if (platform?.id === 'simkl') {
       simkl.connect();
     }
-  }, [platform?.id, plex, trakt, simkl]);
+  }, [platform, plex, trakt, simkl]);
 
   const handleConnectionImport = useCallback(async () => {
     if (!connection || !platform) return;
+    const source = platform.id;
     setConnectionResult(null);
-    track(EVENTS.IMPORT_STARTED, { source: platform.id });
+    reportImport('started', { source });
     const result = await connection.importHistory();
-    if (result) setConnectionResult(result);
+    if (result) {
+      setConnectionResult(result);
+      reportImport('completed', { source, count: result.importedCount || 0 });
+    } else {
+      reportImport('failed', { source, reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
+    }
   }, [connection, platform]);
 
   /* Step 2 → 3 → 4 */
@@ -294,16 +300,22 @@ function AccountImportView() {
       if (!parsed.length && (document.warnings.length || document.notImported.length)) { setResults([]); setStep(4); return; }
     } catch (e) {
       setParseError(`Couldn't parse this file. Make sure you selected the right platform and the file is unmodified. (${e.message})`);
+      reportImport('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.UNREADABLE_FILE });
       return;
     }
-    if (parsed.some(row => row.destination) && !getConfig().importEventsEnabled) { setParseError(IMPORT_VIEW.listNotImported('not_available')); return; }
+    if (parsed.some(row => row.destination) && !getConfig().importEventsEnabled) {
+      setParseError(IMPORT_VIEW.listNotImported('not_available'));
+      reportImport('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.LISTS_UNAVAILABLE });
+      return;
+    }
     if (!parsed.length) {
       setParseError("No watch history found in this file. Check you exported from the right platform.");
+      reportImport('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.EMPTY_FILE });
       return;
     }
 
     const deduped = parsed;
-    track(EVENTS.IMPORT_STARTED, { source: platform.id, count: deduped.length });
+    reportImport('started', { source: platform.id, count: deduped.length });
 
     setStep(3);
     setResolveProgress({ done: 0, total: deduped.length });
@@ -326,12 +338,18 @@ function AccountImportView() {
     // new, and the write would overwrite their rating and note. Stop instead.
     if (existingError) {
       setImportError(IMPORT_VIEW.couldNotReadHistory);
+      reportImport('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
       setStep(2);
       return;
     }
 
     const review = await reviewImportDuplicates({ userId: user.id, resolved });
-    if (review.error) { setImportError(IMPORT_VIEW.couldNotReadHistory); setStep(2); return; }
+    if (review.error) {
+      setImportError(IMPORT_VIEW.couldNotReadHistory);
+      reportImport('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
+      setStep(2);
+      return;
+    }
     setExistingRows(resolved[0]?.destination ? [] : existing);
     setResults(review.resolved);
     setStep(4);
@@ -377,13 +395,13 @@ function AccountImportView() {
     const outcome = await writeImportDocument({ userId: user.id, resolved: results, summaryRows: plan.rows });
     const { inserted, failed, duplicates } = outcome;
     setListResult(importListResultMessage(outcome));
-    track(EVENTS.IMPORT_COMPLETED, { source: platform?.id, count: inserted });
+    reportImportOutcome(platform?.id, outcome);
     setImportedCount(inserted);
     setImportResult({ duplicates, failed });
     if (failed) setImportError(IMPORT_VIEW.partialFailure(failed));
     setImporting(false);
     setStep(5);
-  }, [plan, platform?.id, user, results, resolvingMatch]);
+  }, [plan, platform, user, results, resolvingMatch]);
 
   const newCount       = getConfig().importEventsEnabled ? results.filter(r => r.status === 'matched' && r.listSelected !== false && !alreadyImportedEvent(r)).length : plan.rows.length;
   const alreadyCount   = results[0]?.destination ? 0 : getConfig().importEventsEnabled ? results.filter(alreadyImportedEvent).length : plan.alreadyInHistory;
