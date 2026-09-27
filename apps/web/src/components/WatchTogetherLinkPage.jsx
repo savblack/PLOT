@@ -3,7 +3,7 @@
 // and a way to join. Signed in: accept (which pairs you straight away), or,
 // when neither of you has Premium, say you're in so it starts once either
 // upgrades. The key decides everything; the username is only for reading.
-// Rules: supabase/migrations/20260926160000_watch_together_free.sql.
+// Rules: supabase/migrations/20260927130000_watch_together_free.sql.
 // Mobile parity: not built yet; tracked in the Watch together PR.
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';

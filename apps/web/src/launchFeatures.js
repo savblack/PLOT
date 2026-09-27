@@ -21,7 +21,7 @@ export const SHOW_APPLE_LOGIN = import.meta.env.VITE_SHOW_APPLE_LOGIN !== 'false
 export const SHOW_PRICING_PAGE = true;
 
 // Watch together (Premium). Off in production until
-// supabase/migrations/20260926130000_watch_together.sql and the two after it
+// supabase/migrations/20260927100000_watch_together.sql and the two after it
 // are live there. On for per-branch previews and localhost, which use the
 // Staging project, so it can be tested before launch. VITE_SHOW_WATCH_TOGETHER
 // forces it either way.

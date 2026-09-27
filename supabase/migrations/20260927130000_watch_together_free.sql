@@ -63,7 +63,7 @@ $$;
 
 -- ── 2. Deciding needs Premium on at least one side ───────────────────────────
 
--- Same as 20260926130000 except the Premium rule: the caller or ANY partner in
+-- Same as 20260927100000 except the Premium rule: the caller or ANY partner in
 -- the group (not only a single partner) having Premium is enough.
 create or replace function public.watch_together_titles(p_others uuid[])
 returns table (tmdb_id int, media_type text, title text, poster_path text,
