@@ -298,7 +298,7 @@ covered once. Properties:
 
 | Prop | Meaning |
 |---|---|
-| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `block`, `unblock`, `report`. Canonical list: `FAILED_ACTIONS`. |
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`. Canonical list: `FAILED_ACTIONS`. |
 | `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
 | `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
 | `http_status` | When present. |

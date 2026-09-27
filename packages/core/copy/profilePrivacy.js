@@ -8,6 +8,9 @@
 //   private profile  you and accepted followers (signed-in people still see
 //                    your name, photo and bio so they can ask to follow)
 //   private notes    only ever you
+//   Want to Watch    its own setting (20260927150000_watchlist_visibility.sql):
+//                    everyone (public profiles only), followers, selected
+//                    people, or only you; private profiles start at only you
 // Reword the policy and this together, never one of them.
 
 export const PROFILE_PRIVACY = {
@@ -15,9 +18,9 @@ export const PROFILE_PRIVACY = {
   privateLabel: 'Profile is private',
   /** @param {string} favourites Region-spelled plural, from favoriteWords(region).pluralLower. */
   publicDescription: (favourites) =>
-    `Anyone can see your watch history, ratings, reviews, Want to Watch, Watching, top picks and ${favourites}.`,
+    `Anyone can see your watch history, ratings, reviews, Watching, top picks and ${favourites}. Want to Watch has its own setting below.`,
   privateDescription:
-    'Only you and followers you approve can see your activity. People signed in can still see your name, photo and bio, and ask to follow you.',
+    'Only you and followers you approve can see your activity. Want to Watch has its own setting below. People signed in can still see your name, photo and bio, and ask to follow you.',
   notesAlwaysPrivate: 'Private notes are only ever visible to you.',
 
   lockedTitle: 'Private account',
@@ -26,7 +29,30 @@ export const PROFILE_PRIVACY = {
   lockedPending: 'Your follow request is pending. You’ll see their watches, ratings and lists once they approve it.',
   lockedSubPage: 'This profile is private.',
   followRequestsIntro:
-    'People asking to follow your private profile. Approving lets them see your watch history, ratings, Want to Watch and any lists you share with followers.',
+    'People asking to follow your private profile. Approving lets them see your watch history, ratings and any lists you share with followers. Your Want to Watch has its own setting in Settings.',
+
+  watchlist: {
+    heading: 'Who can see your Want to Watch',
+    /** @type {Record<import('../watchlistVisibility.js').WatchlistVisibility, string>} */
+    option: {
+      everyone: 'Everyone',
+      followers: 'Followers',
+      selected: 'Selected people',
+      private: 'Only me',
+    },
+    /** @type {Record<import('../watchlistVisibility.js').WatchlistVisibility, string>} */
+    hint: {
+      everyone: 'Anyone who can see your profile.',
+      followers: 'Your approved followers.',
+      selected: 'Only the people you pick.',
+      private: 'Only you.',
+    },
+    pickHeading: 'People who can see it',
+    pickEmpty: 'Nobody to pick yet. Approved followers show up here.',
+    follower: 'Follows you',
+    partner: 'Watch together',
+    followerAndPartner: 'Follows you · Watch together',
+  },
 
   sectionsHeading: 'Sections shown',
   sectionsHelp: 'Changes your profile layout. It doesn’t hide anything from people who can see your profile.',

@@ -28,7 +28,6 @@ test('every profile-content read policy goes through can_view_profile', () => {
     'public profiles history is readable',
     'public profiles favourites readable',
     'public profiles top lists readable',
-    'public profiles list items readable',
     'public profiles watching progress readable',
     'feed posts visible by profile visibility',
   ]) {
@@ -36,6 +35,22 @@ test('every profile-content read policy goes through can_view_profile', () => {
     assert.ok(body, `${name}: no definition found`);
     assert.match(body, /can_view_profile\(/, `${name} must use can_view_profile`);
   }
+});
+
+// Want to Watch has its own setting (20260927150000), so its policy is the one
+// profile-content policy that must NOT use can_view_profile: that would hand
+// every follower of a private profile its watchlist again.
+test('the watchlist read policy goes through can_view_watchlist', () => {
+  const body = latestPolicy('public profiles list items readable');
+  assert.ok(body, 'no definition found');
+  assert.match(body, /can_view_watchlist\(/);
+  assert.doesNotMatch(body, /can_view_profile|is_accepted_follower|is_profile_public/);
+});
+
+test('the legacy lists.is_public policies are dropped', () => {
+  const sql = readFileSync(join(MIGRATIONS, '20260927150000_watchlist_visibility.sql'), 'utf8');
+  assert.match(sql, /drop policy if exists "public list items are readable" on public\.list_items/);
+  assert.match(sql, /drop policy if exists "public lists are readable" on public\.lists/);
 });
 
 test('link lists are not readable through the table, only by id', () => {

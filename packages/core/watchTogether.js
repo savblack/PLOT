@@ -62,8 +62,9 @@ export function tileMode({ viewerPremium, targetPublic, state }) {
 }
 
 /**
- * Whether the tile may show an overlap count. The server already withholds it
- * for private profiles before pairing; this keeps the UI from implying one.
+ * Whether the tile may show an overlap count. Before pairing, the server
+ * already withholds it unless you can see that watchlist (can_view_watchlist);
+ * this keeps the UI from implying one.
  *
  * @param {TileMode} mode
  * @param {number | null | undefined} count

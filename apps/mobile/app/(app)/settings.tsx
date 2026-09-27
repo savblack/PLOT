@@ -6,7 +6,7 @@ import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
   Modal, Alert, ActivityIndicator, StyleSheet, Switch, Platform, Linking,
@@ -14,7 +14,7 @@ import {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line, Polygon } from 'react-native-svg';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
@@ -40,6 +40,7 @@ import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
+import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
 import { favoriteWords } from '../../lib/spelling';
 
 // UUID token for the private calendar feed. Uses native crypto when the RN
@@ -695,6 +696,9 @@ export default function SettingsScreen() {
   const isPublic    = !!profile?.is_public;
   const includeKidsContent = profile?.include_kids_content ?? true;
   const { count: requestCount } = useFollowRequests(userId);
+  const { visibility: watchlistVisibility, refresh: refreshWatchlistVisibility } = useWatchlistVisibility(userId, isPublic);
+  // The choice is made on its own screen; re-read it on the way back.
+  useFocusEffect(useCallback(() => { refreshWatchlistVisibility(); }, [refreshWatchlistVisibility]));
 
   const toggleVisibility = async () => {
     if (!userId) return;
@@ -975,6 +979,12 @@ export default function SettingsScreen() {
             label={isPublic ? PROFILE_PRIVACY.publicLabel : PROFILE_PRIVACY.privateLabel}
             description={`${isPublic ? PROFILE_PRIVACY.publicDescription(favoriteWords(region).pluralLower) : PROFILE_PRIVACY.privateDescription} ${PROFILE_PRIVACY.notesAlwaysPrivate}`}
             trailing={<Switch value={isPublic} onValueChange={toggleVisibility} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.page.privacyLabel} />}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></Svg>}
+            label={PROFILE_PRIVACY.watchlist.heading}
+            value={PROFILE_PRIVACY.watchlist.option[watchlistVisibility]}
+            onPress={() => router.push('/(app)/watchlist-visibility')}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><Circle cx={9} cy={7} r={4}/><Path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></Svg>}
