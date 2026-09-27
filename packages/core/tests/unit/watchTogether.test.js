@@ -15,8 +15,9 @@ test('tile mode follows pair state first, then plan and privacy', () => {
 
 test('counts only show where the server may have sent one', () => {
   assert.equal(tileShowsCount('public', 14), true);
-  assert.equal(tileShowsCount('private', 14), false);
-  assert.equal(tileShowsCount('pending', 14), false);
+  // The server only sends a count you're allowed to see (public, followed, or paired).
+  assert.equal(tileShowsCount('private', 14), true);
+  assert.equal(tileShowsCount('pending', null), false);
   assert.equal(tileShowsCount('paired', null), false);
 });
 
@@ -119,4 +120,16 @@ test('exampleTitlePool keeps saved titles first, tops up from trending, skips re
   assert.equal(trending[1].release_date, '2024-01-01');
   const saved = [{ tmdb_id: 2, media_type: 'tv', title: 'B', poster_path: '/b.jpg' }, { tmdb_id: 9, media_type: 'movie', title: 'No poster' }];
   assert.deepEqual(exampleTitlePool(saved, trending).map(t => t.tmdb_id), [2, 1]);
+});
+
+test('reportWatchTogether sends the action and shape props through the seam, and never throws', async () => {
+  const { configure } = await import('../../config.js');
+  const { reportWatchTogether } = await import('../../useWatchTogether.js');
+  const seen = [];
+  configure({ onWatchTogether: (p) => seen.push(p) });
+  reportWatchTogether('link_shared', { method: 'copy' });
+  assert.deepEqual(seen, [{ action: 'link_shared', method: 'copy' }]);
+  configure({ onWatchTogether: () => { throw new Error('broken transport'); } });
+  assert.doesNotThrow(() => reportWatchTogether('match'));
+  configure({ onWatchTogether: undefined });
 });
