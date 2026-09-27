@@ -239,6 +239,19 @@ export default function PlansPage() {
           </table>
         </section>
 
+        <section className="plans-requests" aria-labelledby="premium-requests-title">
+          <div>
+            <h2 id="premium-requests-title" className="plans-h2">{PLANS_PAGE.requests.title}</h2>
+            <p>{PLANS_PAGE.requests.description}</p>
+          </div>
+          <div className="plans-request-action">
+            <a className="btn btn-primary" href={`mailto:contact@theplot.tv?subject=${encodeURIComponent(PLANS_PAGE.requests.subject)}`}>
+              {PLANS_PAGE.requests.action} <span aria-hidden="true">↗</span>
+            </a>
+            <p>{PLANS_PAGE.requests.hint}</p>
+          </div>
+        </section>
+
         <section className="faq-wrap" aria-labelledby="faq-title">
           <h2 id="faq-title" className="plans-h2">{PLANS_PAGE.faqTitle}</h2>
           <div className="faq-list">
