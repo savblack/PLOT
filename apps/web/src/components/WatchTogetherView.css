@@ -458,3 +458,9 @@
 .wt-demo-answers { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; }
 .wt-demo-answer { padding: 3px 10px; border-radius: var(--radius-pill); background: var(--surface-sunken); font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); }
 .wt-demo-answer.yes { background: var(--accent-fill); color: var(--on-accent-fill); }
+
+/* Example panel: title and chip pinned to the top like the demo's, the
+   posters and match centred in the space below. */
+.wt-example-head { align-items: flex-start; }
+.wt-example-head .wt-example-badge { align-self: flex-start; }
+.wt-example-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0.75rem; }

@@ -154,11 +154,14 @@ function Example({ titles }) {
   const shown = titles.slice(0, 5);
   return (
     <div className="wt-card wt-example">
-      <span className="wt-example-badge">{S.example}</span>
-      <div className="wt-person">
-        <span className="wt-avatar wt-avatar--md" aria-hidden="true">{S.exampleName.charAt(0)}</span>
-        <span className="wt-person-text"><span className="wt-person-name">{S.examplePair}</span><span className="wt-note">{S.exampleCount}</span></span>
+      <div className="wt-demo-head wt-example-head">
+        <div className="wt-person">
+          <span className="wt-avatar wt-avatar--md" aria-hidden="true">{S.exampleName.charAt(0)}</span>
+          <span className="wt-person-text"><span className="wt-person-name">{S.examplePair}</span><span className="wt-note">{S.exampleCount}</span></span>
+        </div>
+        <span className="wt-example-badge">{S.example}</span>
       </div>
+      <div className="wt-example-body">
       <ul className="wt-example-posters">
         {shown.length
           ? shown.map(t => (
@@ -175,6 +178,7 @@ function Example({ titles }) {
           <span className="wt-person-text"><span className="wt-person-name">{S.exampleMatch(shown[0].title)}</span><span className="wt-note">{S.exampleMatchNote}</span></span>
         </div>
       )}
+      </div>
     </div>
   );
 }
