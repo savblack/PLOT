@@ -106,3 +106,17 @@ test('unlockedPartners returns only partners that were locked and can decide now
   assert.deepEqual(unlockedPartners(partners, ['sam', 'jess', 'gone']).map(p => p.other_id), ['sam']);
   assert.deepEqual(unlockedPartners(partners, null), []);
 });
+
+test('exampleTitlePool keeps saved titles first, tops up from trending, skips repeats and posterless rows', async () => {
+  const { exampleTitlePool, trendingAsTitles } = await import('../../watchTogether.js');
+  const trending = trendingAsTitles([
+    { id: 1, media_type: 'movie', title: 'A', poster_path: '/a.jpg' },
+    { id: 2, media_type: 'tv', name: 'B', poster_path: '/b.jpg', first_air_date: '2024-01-01' },
+    { id: 3, media_type: 'person', name: 'C', poster_path: '/c.jpg' },
+    { id: 4, media_type: 'movie', title: 'D', poster_path: null },
+  ]);
+  assert.deepEqual(trending.map(t => t.title), ['A', 'B']);
+  assert.equal(trending[1].release_date, '2024-01-01');
+  const saved = [{ tmdb_id: 2, media_type: 'tv', title: 'B', poster_path: '/b.jpg' }, { tmdb_id: 9, media_type: 'movie', title: 'No poster' }];
+  assert.deepEqual(exampleTitlePool(saved, trending).map(t => t.tmdb_id), [2, 1]);
+});

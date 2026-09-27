@@ -253,3 +253,41 @@ export function unlockedPartners(partners, rememberedLocked) {
   const was = new Set(rememberedLocked || []);
   return partners.filter(p => was.has(p.other_id) && p.can_decide !== false);
 }
+
+/**
+ * TMDB trending results as example titles: movies and shows with a poster.
+ *
+ * @param {any[] | null | undefined} results  tmdb.getTrending().results
+ * @returns {SessionCard[]}
+ */
+export function trendingAsTitles(results) {
+  return (results || [])
+    .filter(r => r && (r.media_type === 'movie' || r.media_type === 'tv') && r.poster_path && (r.title || r.name))
+    .map(r => ({
+      tmdb_id: r.id,
+      media_type: r.media_type,
+      title: r.title || r.name,
+      poster_path: r.poster_path,
+      release_date: r.release_date || r.first_air_date || null,
+    }));
+}
+
+/**
+ * Titles for the start page's example and demo: the viewer's own saved titles
+ * that have a poster, topped up from trending, without repeats.
+ *
+ * @param {{ tmdb_id: number, media_type: string, poster_path?: string | null }[] | null | undefined} saved
+ * @param {SessionCard[] | null | undefined} fallback
+ */
+export function exampleTitlePool(saved, fallback) {
+  const seen = new Set();
+  const out = [];
+  for (const t of [...(saved || []), ...(fallback || [])]) {
+    if (!t || !t.tmdb_id || !t.media_type || !t.poster_path) continue;
+    const k = titleKey(t);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(t);
+  }
+  return out;
+}

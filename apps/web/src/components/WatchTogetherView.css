@@ -316,8 +316,16 @@
   font-size: 0.6875rem;
   font-weight: 700;
 }
-.wt-example-posters { display: flex; gap: 0.5rem; }
-.wt-example-poster { width: 56px; aspect-ratio: 2 / 3; border-radius: var(--radius-sm, 8px); flex-shrink: 1; min-width: 0; }
+.wt-example-posters {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.5rem;
+}
+.wt-example-title { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.wt-example-poster { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 8px; background: var(--surface-sunken); }
+.wt-example-caption {
+  font-size: 0.75rem; line-height: 1.25; font-weight: 600; color: var(--text-primary);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .wt-example-match { padding-top: 0.6rem; border-top: 1px solid var(--border); }
 .wt-heart { width: 20px; height: 20px; flex-shrink: 0; fill: var(--accent); stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
 
@@ -415,3 +423,9 @@
   .wt-start--premium .wt-start-welcome { grid-column: 1 / -1; }
   .wt-start-pair--single { grid-template-columns: minmax(0, 1fr); max-width: 420px; }
 }
+
+/* What you and Sam said about the last card in the demo. */
+.wt-demo-response { align-self: stretch; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding-top: 0.6rem; border-top: 1px solid var(--border); }
+.wt-demo-answers { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; }
+.wt-demo-answer { padding: 3px 10px; border-radius: var(--radius-pill); background: var(--surface-sunken); font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); }
+.wt-demo-answer.yes { background: var(--accent-fill); color: var(--on-accent-fill); }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
-import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey } from './watchTogether.js';
+import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey, trendingAsTitles, exampleTitlePool, DEMO_SIZE } from './watchTogether.js';
+import { tmdb } from './tmdb.js';
 
 /**
  * Watch together data hooks, shared by web and mobile. Every write goes
@@ -278,4 +279,24 @@ export async function startWatchTogetherSession(otherId) {
 /** The live session with a partner, if any. @param {string} otherId */
 export async function liveWatchTogetherSession(otherId) {
   return call('live_watch_together_session', { p_other: otherId });
+}
+
+/**
+ * Real titles for the start page's example and demo: your saved titles with
+ * posters, topped up from this week's trending when you have too few, so the
+ * example is never blank. Never guesses TMDB ids.
+ *
+ * @param {{ tmdb_id: number, media_type: string, poster_path?: string | null }[] | null | undefined} saved
+ */
+export function useWatchTogetherExampleTitles(saved) {
+  const [trending, setTrending] = useState(/** @type {import('./watchTogether.js').SessionCard[]} */ ([]));
+  const own = exampleTitlePool(saved, []);
+  const needMore = own.length < DEMO_SIZE * 2;
+  useEffect(() => {
+    if (!needMore) return undefined;
+    let live = true;
+    tmdb.getTrending('all', 'week').then(r => { if (live) setTrending(trendingAsTitles(r?.results)); }, () => {});
+    return () => { live = false; };
+  }, [needMore]);
+  return exampleTitlePool(saved, trending);
 }

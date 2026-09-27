@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { personName, pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
-import { useWatchTogetherLink } from '@plot/core/useWatchTogether.js';
+import { useWatchTogetherLink, useWatchTogetherExampleTitles } from '@plot/core/useWatchTogether.js';
 import { buildWatchTogetherLinkUrl, SHARE_ORIGIN } from '@plot/core/sharing.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
@@ -139,39 +139,53 @@ function Pitch({ premium }) {
   );
 }
 
-function Example() {
+function Example({ titles }) {
+  const shown = titles.slice(0, 5);
   return (
     <div className="wt-card wt-example">
       <span className="wt-example-badge">{S.example}</span>
       <div className="wt-person">
-        <span className="wt-avatar wt-avatar--md" aria-hidden="true">S</span>
+        <span className="wt-avatar wt-avatar--md" aria-hidden="true">{S.exampleName.charAt(0)}</span>
         <span className="wt-person-text"><span className="wt-person-name">{S.examplePair}</span><span className="wt-note">{S.exampleCount}</span></span>
       </div>
-      <div className="wt-example-posters" aria-hidden="true">
-        {EXAMPLE_POSTERS.map(n => <span key={n} className={`wt-example-poster wt-ph-${n}`} />)}
-      </div>
-      <div className="wt-person wt-example-match">
-        <svg className="wt-heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z" /></svg>
-        <span className="wt-person-text"><span className="wt-person-name">{S.exampleMatch}</span><span className="wt-note">{S.exampleMatchNote}</span></span>
-      </div>
+      <ul className="wt-example-posters">
+        {shown.length
+          ? shown.map(t => (
+            <li key={`${t.media_type}:${t.tmdb_id}`} className="wt-example-title">
+              <img className="wt-example-poster" src={posterUrl(t.poster_path, 'w185')} alt="" loading="lazy" />
+              <span className="wt-example-caption">{t.title}</span>
+            </li>
+          ))
+          : EXAMPLE_POSTERS.map(n => <li key={n} className="wt-example-title" aria-hidden="true"><span className={`wt-example-poster wt-ph-${n}`} /></li>)}
+      </ul>
+      {shown[0] && (
+        <div className="wt-person wt-example-match">
+          <svg className="wt-heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z" /></svg>
+          <span className="wt-person-text"><span className="wt-person-name">{S.exampleMatch(shown[0].title)}</span><span className="wt-note">{S.exampleMatchNote}</span></span>
+        </div>
+      )}
     </div>
   );
 }
 
 /**
- * Five titles from your own watchlist, with an example partner who answers at
- * random. The parent keys this on whether the watchlist has loaded, so the
- * deck is drawn once from real items.
+ * Five of your own titles (topped up from trending), with an example partner
+ * who answers at random and always matches by the last card. Each answer shows
+ * what you and Sam said. The parent keys this on the pool size, so the deck is
+ * drawn once real titles have loaded.
  */
-function Demo({ premium, items }) {
-  const [deck, setDeck] = useState(() => pickDemoDeck(items));
+function Demo({ premium, pool }) {
+  const [deck, setDeck] = useState(() => pickDemoDeck(pool));
   const [index, setIndex] = useState(0);
   const [match, setMatch] = useState(null);
-  const pool = deck;
-  const card = pool[index];
-  const again = () => { setDeck(pickDemoDeck(items)); setIndex(0); setMatch(null); };
+  const [last, setLast] = useState(/** @type {{ title: string, mine: boolean, theirs: boolean } | null} */ (null));
+  const card = deck[index];
+  const name = S.exampleName;
+  const say = (yes) => (yes ? T.session.yes : T.session.no);
+  const again = () => { setDeck(pickDemoDeck(pool)); setIndex(0); setMatch(null); setLast(null); };
   const answer = (yes) => {
-    const theirs = demoPartnerSaysYes({ index, total: pool.length, matchedSoFar: !!match });
+    const theirs = demoPartnerSaysYes({ index, total: deck.length, matchedSoFar: !!match });
+    setLast({ title: card.title, mine: yes, theirs });
     if (yes && theirs) setMatch(card);
     setIndex(i => i + 1);
   };
@@ -182,8 +196,17 @@ function Demo({ premium, items }) {
       <span className="wt-example-badge">{S.example}</span>
     </div>
   );
+  const response = last && (
+    <div className="wt-demo-response" role="status">
+      <span className="wt-note">{last.title}</span>
+      <span className="wt-demo-answers">
+        <span className={`wt-demo-answer${last.mine ? ' yes' : ''}`}>{S.demoYouSaid(say(last.mine))}</span>
+        <span className={`wt-demo-answer${last.theirs ? ' yes' : ''}`}>{S.demoTheySaid(name, say(last.theirs))}</span>
+      </span>
+    </div>
+  );
 
-  if (!pool.length) {
+  if (!deck.length) {
     return <div className="wt-card wt-example wt-demo">{head}<p className="wt-note">{S.demoEmpty}</p></div>;
   }
   if (match) {
@@ -202,19 +225,28 @@ function Demo({ premium, items }) {
     );
   }
   if (!card) {
-    return <div className="wt-card wt-example wt-demo">{head}<button type="button" className="btn btn-secondary btn-sm" onClick={again}>{S.demoAgain}</button></div>;
+    return (
+      <div className="wt-card wt-example wt-demo">
+        {head}
+        {response}
+        <span className="wt-person-name">{S.demoNoMatchTitle}</span>
+        <p className="wt-card-body">{S.demoNoMatchBody}</p>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={again}>{S.demoAgain}</button>
+      </div>
+    );
   }
   const year = (card.release_date || '').slice(0, 4);
   return (
     <div className="wt-card wt-example wt-demo">
       {head}
-      <DemoPoster title={card} counter={T.session.counter(index + 1, pool.length)} />
+      <DemoPoster title={card} counter={T.session.counter(index + 1, deck.length)} />
       <span className="wt-person-name wt-center">{card.title}</span>
       {year && <span className="wt-note">{[year, card.media_type === 'tv' ? T.overlap.show : null].filter(Boolean).join(' · ')}</span>}
       <div className="wt-top-actions">
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => answer(false)}>{T.session.no}</button>
         <button type="button" className="btn btn-primary btn-sm" onClick={() => answer(true)}>{T.session.yes}</button>
       </div>
+      {response}
       <p className="wt-note wt-center">{S.demoNote}</p>
     </div>
   );
@@ -271,7 +303,7 @@ function PremiumWelcome() {
 
 export default function WatchTogetherStart({ premium, suggested, onInvite }) {
   const { watchlist } = useApp();
-  const items = watchlist?.items || [];
+  const titles = useWatchTogetherExampleTitles(watchlist?.items);
   const [sent, setSent] = useState(() => new Set());
   const invite = async (person) => {
     if (await onInvite(person)) setSent(prev => new Set(prev).add(person.id));
@@ -297,7 +329,7 @@ export default function WatchTogetherStart({ premium, suggested, onInvite }) {
             <span className="wt-note">{S.premiumSeeItBody}</span>
           </div>
           <div className="wt-start-pair wt-start-pair--single">
-            <Demo key={items.length ? 'ready' : 'empty'} premium items={items} />
+            <Demo key={titles.length >= 5 ? 'ready' : 'waiting'} premium pool={titles} />
           </div>
         </div>
       </div>
@@ -318,8 +350,8 @@ export default function WatchTogetherStart({ premium, suggested, onInvite }) {
           <span className="wt-note">{S.seeItBody}</span>
         </div>
         <div className="wt-start-pair">
-          <Example />
-          <Demo key={items.length ? 'ready' : 'empty'} premium={premium} items={items} />
+          <Example titles={titles} />
+          <Demo key={titles.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={titles} />
         </div>
       </div>
       <div className="wt-start-how"><HowItWorks /></div>
