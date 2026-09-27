@@ -150,6 +150,17 @@ export const EVENTS = Object.freeze({
   // Which profile fields people actually fill in. Props carry the field names
   // that changed, never the values — bios and links are user content.
   PROFILE_UPDATED: 'profile_updated',
+  // A user-initiated write that failed: save, edit, rate, review, list
+  // create/rename/delete, follow, block, … One name for all of them; the
+  // `action` prop (FAILED_ACTIONS in actionFailures.js) says which. Carries
+  // `error_kind` and the SQLSTATE/PostgREST `error_code`, never the message.
+  // Fired from core's canonical mutation sites via the onActionFailed seam, so
+  // every surface on both apps is covered once. Not Tier 1 or Tier 2.
+  ACTION_FAILED: 'action_failed',
+  // A library read that failed (watchlist, history, custom lists, series
+  // progress, favourites). `resource` says which. Separate from action_failed
+  // so a failed page load never counts as a failed user action.
+  LOAD_FAILED: 'load_failed',
   // Integrations
   PLEX_CONNECTED: 'plex_connected',
   PLEX_SYNCED: 'plex_synced',

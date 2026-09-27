@@ -81,6 +81,10 @@ configure({
     if (name) track(name, { tmdb_id, ...(season != null ? { season } : {}), ...(episode != null ? { episode } : {}) });
   },
   onProfileUpdate: ({ fields }) => track(EVENTS.PROFILE_UPDATED, { fields }),
+  // Failed writes, from the same canonical sites as the seams above. The
+  // payload is already PII-free (codes and field names, never the message).
+  onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
+  onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
   // The storage seam: mobile persists the Supabase session encrypted, key held
   // in the Keychain/Keystore via SecureStore (see lib/secureStorage.ts).
   supabaseClientOptions: {

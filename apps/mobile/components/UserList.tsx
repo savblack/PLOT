@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '../lib/supabase';
+import { followUser, unfollowUser } from '@plot/core/useFollows.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { Avatar, ProfileBadges } from './Avatar';
@@ -41,17 +41,15 @@ export function FollowButton({
     if (busy) return;
     setBusy(true);
     if (status) {
-      await supabase.from('follows').delete().eq('follower_id', viewerId).eq('following_id', targetId);
-      setStatus(null);
-      onChange?.(null);
+      if (await unfollowUser({ viewerId, targetId })) {
+        setStatus(null);
+        onChange?.(null);
+      }
     } else {
-      const { error } = await supabase.from('follows').insert({ follower_id: viewerId, following_id: targetId });
-      if (!error) {
-        const { data } = await supabase.from('follows')
-          .select('status').eq('follower_id', viewerId).eq('following_id', targetId).maybeSingle();
-        const s = data?.status ?? null;
-        setStatus(s);
-        onChange?.(s);
+      const result = await followUser({ viewerId, targetId });
+      if (result.ok) {
+        setStatus(result.status);
+        onChange?.(result.status);
       }
     }
     setBusy(false);
