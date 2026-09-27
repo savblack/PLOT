@@ -10,7 +10,7 @@
 -- the real policies and security definer functions under a real auth.uid()
 -- against the real schema. This does.
 --
--- It applies 20260927100000 to 20260927150000 itself, inside the transaction,
+-- It applies 20260927100000 to 20260927160000 itself, inside the transaction,
 -- so it works whatever Staging's migration ledger says, and the final rollback
 -- removes the migrations, every fixture and the Premium row. Staging (and its
 -- ledger) is unchanged whether it passes or dies.
@@ -34,9 +34,9 @@ begin;
 -- production will; the rollback puts Staging's copies back.
 drop function if exists public.list_watch_together();
 drop function if exists public.suggest_watch_together();
--- 20260927150000 drops the share-full columns in favour of watchlist_viewers,
+-- 20260927160000 drops the share-full columns in favour of watchlist_viewers,
 -- and phase 1's functions name them, so put them back for the replay. The
--- replay of 20260927150000 below carries any flags over and drops them again.
+-- replay of 20260927160000 below carries any flags over and drops them again.
 alter table if exists public.watch_together
   add column if not exists requester_shares_full boolean not null default false,
   add column if not exists recipient_shares_full boolean not null default false;
@@ -46,7 +46,7 @@ alter table if exists public.watch_together
 \ir ../supabase/migrations/20260927120000_watch_together_shared_lists.sql
 \ir ../supabase/migrations/20260927130000_watch_together_free.sql
 \ir ../supabase/migrations/20260927140000_watch_together_visibility_and_stop.sql
-\ir ../supabase/migrations/20260927150000_watchlist_visibility.sql
+\ir ../supabase/migrations/20260927160000_watchlist_visibility.sql
 
 -- ── fixtures (as postgres) ───────────────────────────────────────────────────
 -- See staging-block-test.sql for why the claims must be valid even here.
@@ -311,7 +311,7 @@ select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  bystander pairin
 \echo ''
 \echo '=== Watchlist visibility: one rule for list_items and Watch together, and stopping leaves lists ==='
 -- 1. Watch together and list_items agree for a partner who also follows a
---    private profile. Since 20260927150000 a private profile's watchlist is
+--    private profile. Since 20260927160000 a private profile's watchlist is
 --    "only me" by default, so a follower no longer sees it; the per-partner
 --    switch adds them to the owner's selected list, and then both agree it's
 --    visible. (Before 20260927140000 the two disagreed.)

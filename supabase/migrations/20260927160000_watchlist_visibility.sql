@@ -30,14 +30,21 @@
 -- readable" (list_items via lists.is_public). No list has is_public = true
 -- today, but an owner can set it on their own list and bypass this setting.
 --
+-- Must run after 20260927150000_watch_together_counts_for_followers.sql
+-- (#1071). Both recreate watch_together_status and suggest_watch_together, and
+-- the bodies here are that migration's with one line each changed:
+-- can_view_profile -> can_view_watchlist for the overlap count. Running this
+-- one first would let #1071's older rule undo it and show counts for
+-- watchlists this migration hides. Numbered 160000 for that reason.
+--
 -- Recreated from their latest bodies (only the lines named change):
 --   can_see_full_watchlist        20260927140000  share-full terms -> can_view_watchlist
 --   respond_watch_together_request 20260927100000 recipient_shares_full -> share_watchlist_with
 --   set_watch_together_share_full 20260927100000  columns -> share_watchlist_with
 --   accept_watch_together_link    20260927130000  recipient_shares_full -> share_watchlist_with
 --   list_watch_together           20260927130000  i_share_full reads watchlist_viewers
---   watch_together_status         20260927100000  is_profile_public -> can_view_watchlist
---   suggest_watch_together        20260927130000  is_profile_public (overlap only) -> can_view_watchlist
+--   watch_together_status         20260927150000  can_view_profile -> can_view_watchlist
+--   suggest_watch_together        20260927150000  can_view_profile (overlap only) -> can_view_watchlist
 --   taste_overlap                 20260926093000  shared_watchlist null unless can_view_watchlist
 
 -- ── 1. Setting and selected list ─────────────────────────────────────────────
@@ -101,7 +108,7 @@ revoke all on function public.can_view_watchlist(uuid) from public;
 grant execute on function public.can_view_watchlist(uuid) to anon, authenticated;
 
 comment on function public.can_view_watchlist(uuid) is
-  'Who can read a watchlist: the owner; otherwise per profiles.watchlist_visibility (see 20260927150000). Never across a block. Every watchlist read, direct or through Watch together, uses this.';
+  'Who can read a watchlist: the owner; otherwise per profiles.watchlist_visibility (see 20260927160000). Never across a block. Every watchlist read, direct or through Watch together, uses this.';
 
 -- ── 3. Read policies ─────────────────────────────────────────────────────────
 drop policy if exists "public profiles list items readable" on public.list_items;

@@ -101,7 +101,7 @@ select case when count(*) = 4 then 'PASS' else 'FAIL' end || '  owner sees all f
 \echo ''
 \echo '=== As B (accepted follower of private A) ==='
 set local request.jwt.claims = :B_CLAIMS;
--- Applies 20260926090000 alone. 20260927150000 narrows Want to Watch again
+-- Applies 20260926090000 alone. 20260927160000 narrows Want to Watch again
 -- (a private profile's is only me by default); staging-watchlist-visibility-test.sql
 -- proves that rule.
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  follower sees Want to Watch (newly allowed)'

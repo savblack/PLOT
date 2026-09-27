@@ -10,7 +10,7 @@ import {
 import { PROFILE_PRIVACY } from '../../copy/profilePrivacy.js';
 
 const MIGRATION = join(dirname(fileURLToPath(import.meta.url)),
-  '../../../../supabase/migrations/20260927150000_watchlist_visibility.sql');
+  '../../../../supabase/migrations/20260927160000_watchlist_visibility.sql');
 
 test('unset follows the profile: public is everyone, private is only me', () => {
   assert.equal(effectiveWatchlistVisibility({ is_public: true, watchlist_visibility: null }), 'everyone');

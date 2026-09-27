@@ -8,7 +8,7 @@
 //   private profile  you and accepted followers (signed-in people still see
 //                    your name, photo and bio so they can ask to follow)
 //   private notes    only ever you
-//   Want to Watch    its own setting (20260927150000_watchlist_visibility.sql):
+//   Want to Watch    its own setting (20260927160000_watchlist_visibility.sql):
 //                    everyone (public profiles only), followers, selected
 //                    people, or only you; private profiles start at only you
 // Reword the policy and this together, never one of them.

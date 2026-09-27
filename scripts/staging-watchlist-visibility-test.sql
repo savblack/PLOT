@@ -1,4 +1,4 @@
--- Proof that "Who can see your Want to Watch" (20260927150000) means what each
+-- Proof that "Who can see your Want to Watch" (20260927160000) means what each
 -- choice says, under a real auth.uid().
 --
 --   set -a; . .env; set +a
@@ -22,7 +22,7 @@
 
 begin;
 
-\ir ../supabase/migrations/20260927150000_watchlist_visibility.sql
+\ir ../supabase/migrations/20260927160000_watchlist_visibility.sql
 
 -- ── fixtures (as postgres) ───────────────────────────────────────────────────
 -- See staging-block-test.sql for why the claims must be valid even here.

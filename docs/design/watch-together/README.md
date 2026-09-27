@@ -93,7 +93,7 @@ Requests and consent
 Privacy
 - Private profile: the partner sees titles on both watchlists and picks in
   shared sessions. An opt-in "Also share my full watchlist" is off by default.
-  Since `20260927150000_watchlist_visibility.sql` the watchlist has its own
+  Since `20260927160000_watchlist_visibility.sql` the watchlist has its own
   setting ("Who can see your Want to Watch": everyone, followers, selected
   people, only me), and a private profile starts at only me. The switch adds
   that partner to the owner's selected people, the same list Settings ›
@@ -190,7 +190,7 @@ Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
   `can_see_full_watchlist` uses `can_view_profile`, and stopping watching
   together removes each person from the other's shared lists, as blocking
   already did.
-- Watchlist visibility (`20260927150000_watchlist_visibility.sql`): the
+- Watchlist visibility (`20260927160000_watchlist_visibility.sql`): the
   per-partner share flags move onto `watchlist_viewers` and the
   `*_shares_full` columns are dropped. `can_see_full_watchlist`, overlap
   counts and `taste_overlap` all use `can_view_watchlist`.

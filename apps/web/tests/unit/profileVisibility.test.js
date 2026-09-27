@@ -37,7 +37,7 @@ test('every profile-content read policy goes through can_view_profile', () => {
   }
 });
 
-// Want to Watch has its own setting (20260927150000), so its policy is the one
+// Want to Watch has its own setting (20260927160000), so its policy is the one
 // profile-content policy that must NOT use can_view_profile: that would hand
 // every follower of a private profile its watchlist again.
 test('the watchlist read policy goes through can_view_watchlist', () => {
@@ -48,7 +48,7 @@ test('the watchlist read policy goes through can_view_watchlist', () => {
 });
 
 test('the legacy lists.is_public policies are dropped', () => {
-  const sql = readFileSync(join(MIGRATIONS, '20260927150000_watchlist_visibility.sql'), 'utf8');
+  const sql = readFileSync(join(MIGRATIONS, '20260927160000_watchlist_visibility.sql'), 'utf8');
   assert.match(sql, /drop policy if exists "public list items are readable" on public\.list_items/);
   assert.match(sql, /drop policy if exists "public lists are readable" on public\.lists/);
 });

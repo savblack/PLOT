@@ -1,5 +1,5 @@
 // Who can see your watchlist ("Want to Watch"). The rule itself lives in the
-// database (can_view_watchlist, supabase/migrations/20260927150000_watchlist_visibility.sql);
+// database (can_view_watchlist, supabase/migrations/20260927160000_watchlist_visibility.sql);
 // this mirrors how the stored setting reads so both apps show the same choice.
 // Change the two together, never one of them.
 import { useState, useEffect, useCallback } from 'react';
