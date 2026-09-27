@@ -18,6 +18,7 @@
     "@plot/ui": "*",
     "@supabase/supabase-js": "^2.116.0",
     "posthog-js": "^1.434.0",
+    "web-vitals": "^6.2.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.4"
