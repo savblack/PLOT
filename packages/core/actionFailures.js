@@ -66,6 +66,7 @@ export const FAILED_LOADS = Object.freeze({
   HISTORY:      'history',
   WATCHING:     'watching',
   FAVOURITES:   'favourites',
+  TONIGHT_PICKS: 'tonight_picks',
 });
 
 /**

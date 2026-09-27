@@ -1180,7 +1180,6 @@ export default function SettingsView() {
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
   const [billingReturn,       setBillingReturn]       = useState(null); // null|'premium'|'tip'
-  const premiumEventFired = useRef(false);
 
   const showConfirm = useCallback((opts) => setConfirmModal(opts), [setConfirmModal]);
 
@@ -1203,13 +1202,6 @@ export default function SettingsView() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount for the return-URL params
   }, []);
-
-  useEffect(() => {
-    if (billingReturn === 'premium' && profile?.is_premium && !premiumEventFired.current) {
-      premiumEventFired.current = true;
-      track(EVENTS.PREMIUM_CONVERTED, {});
-    }
-  }, [billingReturn, profile?.is_premium]);
 
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;

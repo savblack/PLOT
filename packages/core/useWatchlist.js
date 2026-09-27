@@ -222,7 +222,9 @@ export function useWatchlist(userId) {
 
   /* ── Toggle ──
      A toggle is always one direct tap on a bookmark, never a step of a bigger
-     action, so a toggle-off offers undo unless the caller passes undo: false. */
+     action, so a toggle-off offers undo unless the caller passes undo: false.
+     opts.source is forwarded to addToList, so a surface can label its saves
+     (the Tonight picker's cards pass 'tonight'). */
   const toggle = useCallback(async (item, opts) => {
     const id = tmdbIdFromItem(item);
     if (!id) return;

@@ -6,8 +6,11 @@
  *   - billing_customers  (entitlement source of truth, service-role only)
  *   - profiles.is_premium (cosmetic badge mirror read by the app/OG cards)
  *
- * Subscribed events (configure exactly these on the Stripe endpoint):
+ * Subscribed events (configure these on the Stripe endpoint):
  *   checkout.session.completed     first purchase — maps Stripe customer -> user
+ *                                  and records paid one-time tips
+ *   checkout.session.async_payment_succeeded  delayed-payment tips
+ *   checkout.session.expired        abandoned Premium Checkout sessions
  *   customer.subscription.updated  renewals, plan switches, past_due, cancel_at_period_end
  *   customer.subscription.deleted  final cancellation
  *
@@ -21,6 +24,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { cancelsAtPeriodEnd } from '../_shared/billingPolicy.ts';
 import { reconcileBillingSnapshot } from '../_shared/billingSnapshot.ts';
+import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
@@ -62,7 +66,7 @@ async function syncSubscription({ userId, customerId, sub, event }: SyncArgs) {
       if (error) throw error;
       return data?.revision ?? null;
     },
-    () => stripe.subscriptions.retrieve(sub.id),
+    () => stripe.subscriptions.retrieve(sub.id, { expand: ['items.data.price'] }),
     async (current, revision) => {
       if ((typeof current.customer === 'string' ? current.customer : current.customer.id) !== customerId) throw new Error('Subscription customer mismatch');
       const end = periodEnd(current);
@@ -97,6 +101,74 @@ async function resolveUser(customerId: string, sub: Stripe.Subscription) {
   return data?.user_id ?? sub.metadata?.supabase_user_id ?? null;
 }
 
+async function capturePremiumConversion(userId: string, sub: Stripe.Subscription, event: Stripe.Event) {
+  try {
+    const rawPrice = sub.items?.data?.[0]?.price;
+    const price = typeof rawPrice === 'string' ? await stripe.prices.retrieve(rawPrice) : rawPrice;
+    const interval = price?.recurring?.interval;
+    await capturePostHogEvent('premium_converted', userId, {
+      channel: 'stripe',
+      checkout_type: 'subscription',
+      plan: interval === 'year' ? 'yearly' : interval === 'month' ? 'monthly' : null,
+      price_id: price?.id ?? null,
+      amount: typeof price?.unit_amount === 'number' ? price.unit_amount / 100 : null,
+      currency: normaliseCurrency(price?.currency),
+    }, new Date(event.created * 1000).toISOString());
+  } catch (err) {
+    // Analytics must never make Stripe retry a successfully-applied billing
+    // event. The subscription state is already committed at this point.
+    console.error(`stripe-webhook: PostHog conversion capture failed for ${event.id}: ${(err as Error).message}`);
+  }
+}
+
+async function recordPremiumCheckoutCancellation(event: Stripe.Event) {
+  const session = event.data.object as Stripe.Checkout.Session;
+  if (session.mode !== 'subscription') return;
+  const userId = session.client_reference_id ?? session.metadata?.supabase_user_id;
+  if (!userId) return;
+  const { error: receiptError } = await admin().from('stripe_events').insert({ id: event.id, type: event.type });
+  if (receiptError?.code === '23505') return;
+  if (receiptError) throw receiptError;
+  try {
+    await capturePostHogEvent('premium_checkout_cancelled', userId, {
+      channel: 'stripe',
+      checkout_type: 'subscription',
+      reason: 'session_expired',
+    }, new Date(event.created * 1000).toISOString());
+  } catch (err) {
+    // The receipt makes the event idempotent. Analytics failure should not
+    // make Stripe retry an already-recorded expiry.
+    console.error(`stripe-webhook: checkout cancellation capture failed for ${event.id}: ${(err as Error).message}`);
+  }
+}
+
+async function captureStripeTip(session: Stripe.Checkout.Session, event: Stripe.Event) {
+  if (session.payment_status !== 'paid') return;
+  const userId = session.client_reference_id ?? session.metadata?.supabase_user_id;
+  if (!userId) return;
+  try {
+    await capturePostHogEvent('support_converted', userId, {
+      channel: 'stripe',
+      checkout_type: 'tip',
+      matched: true,
+      // Match Ko-fi's major-unit amount property (for example, 5.00 AUD).
+      amount: typeof session.amount_total === 'number' ? session.amount_total / 100 : null,
+      currency: normaliseCurrency(session.currency),
+    }, new Date(event.created * 1000).toISOString());
+  } catch (err) {
+    console.error(`stripe-webhook: PostHog tip capture failed for ${event.id}: ${(err as Error).message}`);
+  }
+}
+
+async function recordStripeTip(event: Stripe.Event) {
+  const session = event.data.object as Stripe.Checkout.Session;
+  if (session.mode !== 'payment' || session.metadata?.kind !== 'tip' || session.payment_status !== 'paid') return;
+  const { error: receiptError } = await admin().from('stripe_events').insert({ id: event.id, type: event.type });
+  if (receiptError?.code === '23505') return;
+  if (receiptError) throw receiptError;
+  await captureStripeTip(session, event);
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -122,16 +194,27 @@ Deno.serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (session.mode !== 'subscription') break; // one-time tips need no state
+        if (session.mode !== 'subscription') {
+          await recordStripeTip(event);
+          break;
+        }
         const userId = session.client_reference_id ?? session.metadata?.supabase_user_id;
         const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
         const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
         if (!userId || !customerId || !subId) {
           throw new Error('Checkout subscription is missing PLOT linkage');
         }
-        const sub = await stripe.subscriptions.retrieve(subId);
-        return json({ received: true, ...await syncSubscription({ userId, customerId, sub, event }) });
+        const sub = await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
+        const result = await syncSubscription({ userId, customerId, sub, event });
+        if ((result as { applied?: boolean } | null)?.applied) await capturePremiumConversion(userId, sub, event);
+        return json({ received: true, ...result });
       }
+      case 'checkout.session.async_payment_succeeded':
+        await recordStripeTip(event);
+        break;
+      case 'checkout.session.expired':
+        await recordPremiumCheckoutCancellation(event);
+        break;
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
