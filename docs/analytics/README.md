@@ -116,6 +116,21 @@ Encoded here once so nobody rediscovers them.
   which excludes `source: 'onboarding'` outright. Do not fix it by reordering
   steps.
 
+## Monetization events
+
+Payment events are server-side only. They must never be emitted by the browser's
+checkout return page, because a refresh would double-count a conversion.
+
+| Event | Sender | Required properties |
+|---|---|---|
+| `premium_checkout_started` | Stripe billing function | `channel: 'stripe'`, `checkout_type: 'subscription'`, `plan`, `price_id`, `amount` in major currency units, `currency` |
+| `premium_converted` | Stripe webhook | `channel: 'stripe'`, `checkout_type: 'subscription'`, `plan`, `price_id`, `amount` in major currency units, `currency` |
+| `support_converted` | Ko-fi or Stripe webhook | `channel: 'kofi'` or `'stripe'`, `checkout_type`, `amount` in major currency units, `currency` |
+
+Currency values are normalised to uppercase ISO 4217 codes before capture, so a
+Ko-fi `AUD` tip and a Stripe `aud` payment land in the same dashboard series.
+All monetization dashboards keep PostHog's internal and test-account filter on.
+
 ## Bots
 
 Historically, roughly 9 in 10 "people" on theplot.tv were scrapers: they fired
