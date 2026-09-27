@@ -164,7 +164,7 @@ export const FOOTER_CSS = `
 }
 .footer-col a {
   color: var(--ink, #292924);
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   line-height: 1.3;
   white-space: nowrap;
 }
