@@ -26,6 +26,27 @@ test('TV Time ZIP accepts official tracking CSV files', () => {
   assert.equal(zipped.entries[0].title, 'The Lobster');
 });
 
+test('TV Time ZIP accepts the gdpr-data folder layout used by the published Trakt fixture', () => {
+  const movieCsv = 'type,updated_at,created_at,entity_type,release_date,movie_name\nwatch,2022-04-10 11:26:55,2022-04-10 11:26:55,movie,2017-10-12,What Happened to Monday';
+  const episodeCsv = 'created_at,key,series_name,s_no,ep_no\n2021-10-10 11:49:11,watch-episode-02531a20-2745-4f3c-b0b0-25475135b863-021e25cc,Fringe,2,10';
+  const document = prepareTvTimeArchive(zipSync({
+    'gdpr-data/tracking-prod-records.csv': strToU8(movieCsv),
+    'gdpr-data/tracking-prod-records-v2.csv': strToU8(episodeCsv),
+    'gdpr-data/ip_address.csv': strToU8('ip\n127.0.0.1'),
+  }));
+  assert.equal(document.entries.length, 2);
+  assert.deepEqual(document.entries.map(row => row.sourceFile).sort(), ['tracking-prod-records-v2.csv', 'tracking-prod-records.csv']);
+  assert.equal(document.notImported[0].title, 'gdpr-data/ip_address.csv');
+});
+
+test('TV Time ZIP rejects duplicate canonical files across root and gdpr-data paths', () => {
+  const csv = 'type,updated_at,created_at,entity_type,release_date,movie_name\nwatch,2024-01-02 07:16:58,2024-01-02 07:16:58,movie,2015-10-28,The Lobster';
+  assert.throws(() => prepareTvTimeArchive(zipSync({
+    'tracking-prod-records.csv': strToU8(csv),
+    'gdpr-data/tracking-prod-records.csv': strToU8(csv),
+  })), /invalid or unsupported/);
+});
+
 test('TV Time ZIP rejects missing supported files, malformed data and unsafe names', () => {
   assert.throws(() => prepareTvTimeArchive(strToU8('not zip')), /invalid or unsupported/);
   assert.throws(() => prepareTvTimeArchive(zipSync({ 'unknown.json': strToU8('[]') })), /No supported/);

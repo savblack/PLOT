@@ -25,6 +25,7 @@ export function prepareImportArchive(platform, bytes) {
   let expanded = 0;
   let count = 0;
   const names = new Set();
+  const canonicalNames = new Set();
   const omitted = [];
   let contents;
   try {
@@ -35,16 +36,19 @@ export function prepareImportArchive(platform, bytes) {
       if (!path || path.includes('\\') || path.startsWith('/') || path.split('/').includes('..') || path.includes('\0') || names.has(path)) throw new Error(IMPORT_VIEW.archiveInvalid);
       names.add(path);
       if (path.endsWith('/')) return false;
+      const canonicalPath = platform === 'tvtime' && path.startsWith('gdpr-data/') ? path.slice('gdpr-data/'.length) : path;
       // Accept only documented source paths. Unfamiliar files are reported,
       // never silently interpreted as a different format.
       const annotationSupported = platform === 'trakt' && Object.hasOwn(TRAKT_ANNOTATION_FILES, path) &&
         getConfig().importAnnotationsEnabled && getConfig().importEventsEnabled;
       const letterboxdSupported = platform === 'letterboxd' && (/^lists\/[^/]+\.csv$/.test(path) ||
         (['ratings.csv', 'reviews.csv'].includes(path) && getConfig().importAnnotationsEnabled && getConfig().importEventsEnabled));
-      if (!SUPPORTED[platform].has(path) && !annotationSupported && !letterboxdSupported) {
+      if (!SUPPORTED[platform].has(canonicalPath) && !annotationSupported && !letterboxdSupported) {
         omitted.push({ title: path, reason: 'archive_file_unsupported' });
         return false;
       }
+      if (canonicalNames.has(canonicalPath)) throw new Error(IMPORT_VIEW.archiveInvalid);
+      canonicalNames.add(canonicalPath);
       return true;
     } });
     for (const entry of metadata) {
@@ -56,7 +60,10 @@ export function prepareImportArchive(platform, bytes) {
     if ((error instanceof RangeError && error.message === 'ZIP limits exceeded') || (error instanceof Error && error.message === IMPORT_VIEW.archiveTooLarge)) throw new Error(IMPORT_VIEW.archiveTooLarge, { cause: error });
     throw new Error(IMPORT_VIEW.archiveInvalid, { cause: error });
   }
-  const files = Object.entries(contents).map(([name, data]) => ({ name, text: strFromU8(data) }));
+  const files = Object.entries(contents).map(([name, data]) => ({
+    name: platform === 'tvtime' && name.startsWith('gdpr-data/') ? name.slice('gdpr-data/'.length) : name,
+    text: strFromU8(data),
+  }));
   if (!files.length) throw new Error(IMPORT_VIEW.archiveNoSupportedFiles);
   const document = prepareImportFiles(platform, files);
   document.notImported.push(...omitted);
