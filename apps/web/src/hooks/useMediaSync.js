@@ -86,7 +86,6 @@ export function useMediaSync(userId) {
     try {
       const result = await callSync('import-history');
       if (result?.importedCount) emit(HISTORY_CHANGED_EVENT);
-      track(EVENTS.IMPORT_COMPLETED, { source: 'plex', count: result?.importedCount || 0 });
       await loadIntegration();
       return result;
     } catch (e) {

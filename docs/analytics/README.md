@@ -94,6 +94,17 @@ Encoded here once so nobody rediscovers them.
   reported the same event. Undo now fires `episode_unwatched` /
   `season_unwatched`.
 - **`activated` is retired.** See above.
+- **`feed_post_opened`, `digest_prompt_viewed` and `digest_prompt_dismissed`
+  are retired** (2026-09-27). Nothing has fired them since the feed engagement
+  layer (#532) and `DigestNudge` (#465) were deleted. Any insight built on them
+  is empty, not broken. The keys stay, for the same reason as `activated`.
+- **`import_completed` before 2026-09-27 is web-only and Plex-only for
+  accounts.** Mobile fired no import events at all, and Trakt / Simkl account
+  imports never fired `import_completed` on either app, so people who
+  activated by importing on mobile were missing from the Tier 2 cohort. Both
+  apps now report through `reportImport()` in `importPipeline.js`. A write
+  that saved nothing because every row failed is `import_failed`
+  (`reason: write_failed`), not a completion, so it cannot activate anyone.
 - **`user_followed` / `user_unfollowed` before 2026-09-27 are undercounted.**
   The Follow button on user lists (search results, followers, following) wrote
   `follows` directly and fired nothing; only the profile header's button was
@@ -283,6 +294,34 @@ snippet carries a hand-written `dropOpaqueException`.
 runs them, and holds them to the same answers as the app's — three of them are
 single-line, where a stray paren would otherwise ship a page whose analytics
 throws on load.
+
+## Tonight picker
+
+The "what should I watch" half of PLOT. Fired from `useTonightPicker` in core
+through the `onTonightPicker` seam, so both apps report identically:
+
+| Event | When | Props |
+|---|---|---|
+| `tonight_picks_drawn` | A draw finished (first spin or Regenerate) | `mode` (`five` / `surprise`), `media_type`, `result_count` (0 = empty), `reroll`, `only_watchlist`, `only_services`, `genre_count` |
+| `tonight_pick_opened` | A result card was opened | `tmdb_id`, `media_type`, `mode`, `position` (1-based) |
+| `tonight_search_saved` / `tonight_saved_search_opened` | Saved searches | `mode`, `result_count` |
+
+A failed draw is `load_failed` with `resource: tonight_picks`. "Accepted a
+pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
+(the save buttons on web's result cards). Genres are reported as a count, not
+ids. The picker is Premium, so free viewers only ever produce
+`premium_gate_hit` (`feature: tonight_picker`).
+
+## Reviews
+
+`review_written` fires from `useHistory` when a save carries review text that
+differs from what was stored: a new review, or an edit (`edited: true`). A
+star-only re-save that sends the same note back does not fire it. Props are
+`tmdb_id`, `media_type`, `has_rating` and `length` (`short` under 80
+characters, `medium` under 400, `long`). The text never leaves the device.
+
+It is not in the Tier 2 action. A review saved alongside a first watch already
+fires `marked_watched`, but an edit that only adds a note fires nothing else.
 
 ## Failed writes
 
