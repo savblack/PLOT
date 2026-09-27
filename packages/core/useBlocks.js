@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 
 /**
  * The viewer's blocked accounts, and the actions that change them.
@@ -47,6 +48,7 @@ export function useBlocks(viewerId) {
     setBusy(false);
     if (err) {
       setError(err.message);
+      reportActionFailure(FAILED_ACTIONS.BLOCK, err);
       return false;
     }
     getConfig().onBlock?.({ blocked: true });
@@ -69,6 +71,7 @@ export function useBlocks(viewerId) {
     setBusy(false);
     if (err) {
       setError(err.message);
+      reportActionFailure(FAILED_ACTIONS.UNBLOCK, err);
       return false;
     }
     getConfig().onBlock?.({ blocked: false });

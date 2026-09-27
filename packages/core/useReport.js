@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 import { validateReport } from './moderation.js';
 
 /**
@@ -34,6 +35,8 @@ export function useReport(viewerId) {
     setBusy(false);
     if (err) {
       setError(err.message);
+      // Surface only, as with onReport: no ids of either party.
+      reportActionFailure(FAILED_ACTIONS.REPORT, err, { surface });
       return false;
     }
     // Reason and surface only. The reported account's id is deliberately not an

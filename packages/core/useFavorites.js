@@ -5,6 +5,7 @@ import { findHistoryEntry, logWatchedItem, saveFavorite } from './userMedia.js';
 import { markMediaAsWatched } from './mediaStatus.js';
 import { emit, HISTORY_CHANGED_EVENT } from './events.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 
 /**
  * Favourited titles for a user.
@@ -24,11 +25,12 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_favourites')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+    if (error) reportLoadFailure(FAILED_LOADS.FAVOURITES, error);
     setFavorites(data || []);
     setLoading(false);
   }, [userId]);
@@ -97,6 +99,9 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
       if (error) {
         console.error('Failed to remove favourite', error);
         setFavorites(previous);
+        reportActionFailure(FAILED_ACTIONS.FAVOURITE_REMOVE, error, {
+          tmdb_id: tmdbId, media_type: previous.find(f => f.tmdb_id === tmdbId)?.media_type,
+        });
       } else {
         // Analytics seam (platform-injected; see config.js) — fired from the one
         // canonical spot so every surface that toggles a favourite is covered.
@@ -124,6 +129,7 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
       if (error) {
         console.error('Failed to save favourite', error);
         setFavorites(prev => prev.filter(f => f.tmdb_id !== tmdbId));
+        reportActionFailure(FAILED_ACTIONS.FAVOURITE_ADD, error, { tmdb_id: tmdbId, media_type: row.media_type });
         return;
       }
 

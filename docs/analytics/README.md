@@ -94,6 +94,13 @@ Encoded here once so nobody rediscovers them.
   reported the same event. Undo now fires `episode_unwatched` /
   `season_unwatched`.
 - **`activated` is retired.** See above.
+- **`user_followed` / `user_unfollowed` before 2026-09-27 are undercounted.**
+  The Follow button on user lists (search results, followers, following) wrote
+  `follows` directly and fired nothing; only the profile header's button was
+  counted. Both now go through `followUser`, so expect a step up that is not
+  real growth.
+- **`watchlist_cleared` on mobile before 2026-09-27 is unreliable.** It fired
+  whether or not the delete succeeded.
 - **`engagement_prompt_shown` / `engagement_prompt_dismissed` are not Tier 2.**
   They measure the in-panel watch/rate prompts (PLO-473 / PLO-474): exposure
   and how people leave (`action`: `not_yet`, `skip`, `write_review`). Accepting
@@ -277,6 +284,47 @@ runs them, and holds them to the same answers as the app's — three of them are
 single-line, where a stray paren would otherwise ship a page whose analytics
 throws on load.
 
+## Failed writes
+
+Error tracking above catches *thrown* errors. A Supabase write that fails does
+not throw: it returns `{ error }`, the hook logs it, and the user sees "Could
+not save". None of that reached PostHog until `action_failed` (2026-09-27),
+which is why the 42P10 outage on `history` ran for nine days unnoticed.
+
+`action_failed` fires from `reportActionFailure()` in
+`packages/core/actionFailures.js`, called on the error branch of the same core
+mutation sites that fire the success seams, so both apps and every surface are
+covered once. Properties:
+
+| Prop | Meaning |
+|---|---|
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `block`, `unblock`, `report`. Canonical list: `FAILED_ACTIONS`. |
+| `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
+| `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
+| `http_status` | When present. |
+| `tmdb_id`, `media_type`, `list_id`, `fields`, `progress_action`, `surface` | Same context the matching success event carries. `fields` is column *names* only. |
+
+The error's message, details and hint are **never** sent: Postgres puts row
+values in them. A unit test fails if a core module gains a success seam without
+also calling `reportActionFailure`.
+
+Not Tier 1 or Tier 2. Tile 10 on the dashboard plots it as a rate. Read it against the matching success event
+(`action_failed` where `action = watchlist_save` vs `watchlist_saved`), broken
+down by `error_kind`. A spike in `schema` means the database and the client
+disagree and is always worth a look.
+
+The Settings bulk clears (`watchlist_clear`, `history_clear`) and the list-row
+follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
+`unfollowUser`), so they are covered the same way.
+
+### `load_failed`
+
+A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
+`watching`, `favourites`) fires `load_failed` via `reportLoadFailure()`, with
+the same `error_kind` / `error_code` / `http_status` props. It is a separate
+event on purpose: a page that fails to load is not a failed user action, and
+counting it as `action_failed` would skew every failed-write rate.
+
 ## PostHog settings that are not in this repo
 
 These were changed through the API on 2026-08-18 and exist only in the PostHog
@@ -308,6 +356,9 @@ Objects created at the same time:
 | Cohort | Retained (returned and acted) | 494036 |
 | Cohort | Internal / Test users (pre-existing) | 362972 |
 | Cohort | Bots (landed, never engaged) — added 2026-09-06 | 553124 |
+| Insight | 8. Failed writes by action — added 2026-09-27 | 12255797 |
+| Insight | 9. Failed loads by resource — added 2026-09-27 | 12255798 |
+| Insight | 10. Failure rate by action — added 2026-09-27 | 12255805 |
 
 `POSTHOG_PERSONAL_API_KEY` in the root `.env` is scoped to project 471234 and
 can read and write all of the above via `https://us.posthog.com/api/projects/471234/`.
@@ -327,6 +378,9 @@ acquisition tiles are scoped to Real visitors.
 5. Friction: where sign-in and signup die
 6. The core product loop
 7. Where real visitors actually come from
+8. Failed writes by action (`action_failed`)
+9. Failed loads by resource (`load_failed`)
+10. Failure rate by action: weekly `action_failed ÷ (action_failed + success event)` for the seven actions with a 1:1 success event (`watchlist_save`, `mark_watched`, `rating_set`, `favourite_add`, `custom_list_create`, `list_item_add`, `follow`)
 
 ## Cross-checking against the database
 

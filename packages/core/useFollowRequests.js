@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 
 /**
  * Incoming follow requests for the signed-in user (owner of a private profile).
@@ -29,6 +30,8 @@ export function useFollowRequests(userId) {
       // Analytics seam (see config.js) — both outcomes are tracked so a stalled
       // approval queue is visible, not just the follows that got through.
       getConfig().onFollowRequestDecision?.({ target_user_id: followerId, approved: true });
+    } else {
+      reportActionFailure(FAILED_ACTIONS.FOLLOW_REQUEST_DECISION, error);
     }
   }, [userId]);
 
@@ -38,6 +41,8 @@ export function useFollowRequests(userId) {
     if (!error) {
       setRequests(r => r.filter(x => x.follower_id !== followerId));
       getConfig().onFollowRequestDecision?.({ target_user_id: followerId, approved: false });
+    } else {
+      reportActionFailure(FAILED_ACTIONS.FOLLOW_REQUEST_DECISION, error);
     }
   }, [userId]);
 

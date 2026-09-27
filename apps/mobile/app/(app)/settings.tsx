@@ -29,7 +29,7 @@ import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
 import { track, resetAnalytics, EVENTS } from '../../lib/analytics';
 import { deleteAccountAndSignOut } from '@plot/core/deleteAccount.js';
-import { clearWatchHistory } from '@plot/core/userMedia.js';
+import { clearWatchHistory, clearSavedAndWatching } from '@plot/core/userMedia.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -851,30 +851,21 @@ export default function SettingsScreen() {
     ]);
   };
 
+  // Shared helper, which reports a failure itself. This used to discard every
+  // error and track watchlist_cleared regardless.
+  const clearLists = async (watching: boolean) => {
+    setClearingList(true);
+    const { error } = await clearSavedAndWatching({ userId: userId!, saved: true, watching });
+    setClearingList(false);
+    if (error) Alert.alert('Could not clear', SETTINGS_VIEW.errors.failedToClearLists);
+    else track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching, customListCount: 0 });
+  };
+
   const handleClearWatchlist = () => {
     Alert.alert('Clear watchlist?', 'This removes everything from your Saved list (want-to-watch). Items in your custom lists are not affected.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear Saved only', onPress: async () => {
-        setClearingList(true);
-        const { data: myList } = await supabase.from('lists')
-          .select('id').eq('user_id', userId!).eq('name', 'My List').maybeSingle();
-        if (myList?.id) {
-          await supabase.from('list_items').delete().eq('list_id', myList.id);
-        }
-        setClearingList(false);
-        track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching: false, customListCount: 0 });
-      }},
-      { text: 'Clear Saved + Watching', style: 'destructive', onPress: async () => {
-        setClearingList(true);
-        const { data: myList } = await supabase.from('lists')
-          .select('id').eq('user_id', userId!).eq('name', 'My List').maybeSingle();
-        await Promise.all([
-          myList?.id ? supabase.from('list_items').delete().eq('list_id', myList.id) : Promise.resolve(),
-          supabase.from('watching_progress').delete().eq('user_id', userId!),
-        ]);
-        setClearingList(false);
-        track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching: true, customListCount: 0 });
-      }},
+      { text: 'Clear Saved only', onPress: () => clearLists(false) },
+      { text: 'Clear Saved + Watching', style: 'destructive', onPress: () => clearLists(true) },
     ]);
   };
 

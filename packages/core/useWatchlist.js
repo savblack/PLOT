@@ -6,6 +6,7 @@ import { tmdb, getTmdbRegion } from './tmdb.js';
 import { providerIdsForRegion, tmdbIdFromItem } from './media.js';
 import { deleteListItem, saveListItem, getOrCreateMyListId } from './userMedia.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 
 /** Fire-and-forget: enqueue a watchlist change to the Trakt outbox. */
 function enqueueTraktAction(userId, integrationId, action, payload) {
@@ -72,6 +73,7 @@ export function useWatchlist(userId) {
       if (!resolvedListId) {
         const msg = 'Could not get or create list';
         console.error('[useWatchlist]', msg);
+        reportLoadFailure(FAILED_LOADS.WATCHLIST, null);
         setListError(msg);
         return;
       }
@@ -85,6 +87,7 @@ export function useWatchlist(userId) {
       setItems(listItems || []);
     } catch (e) {
       console.error('[useWatchlist] bootstrap failed:', e);
+      reportLoadFailure(FAILED_LOADS.WATCHLIST, e);
       setListError(e?.message || 'Unknown error loading your list.');
     } finally {
       setLoading(false);
@@ -134,6 +137,9 @@ export function useWatchlist(userId) {
 
     if (error) {
       console.error('[useWatchlist] INSERT list_items failed:', error);
+      reportActionFailure(FAILED_ACTIONS.WATCHLIST_SAVE, error, {
+        tmdb_id, media_type: row?.media_type ?? item.media_type,
+      });
       return null;
     }
     if (data) {
@@ -166,6 +172,10 @@ export function useWatchlist(userId) {
 
     if (error) {
       console.error('[useWatchlist] DELETE list_items failed:', error);
+      reportActionFailure(FAILED_ACTIONS.WATCHLIST_REMOVE, error, {
+        tmdb_id: Number(tmdbId),
+        media_type: items.find(i => i.tmdb_id === Number(tmdbId))?.media_type,
+      });
       return false;
     }
     const removed = items.find(i => i.tmdb_id === Number(tmdbId));
