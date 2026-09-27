@@ -10,6 +10,9 @@ the marketing site, mobile, and four server-rendered surfaces.
 Three tiers, defined in PostHog as Actions and cohorts rather than in code, so
 the bar can move without a deploy.
 
+Proposed changes to all three (what each tier should contain, and a
+redefined Tier 3) are in [tiers.md](tiers.md). Not applied yet.
+
 | Tier | Definition | Where |
 |---|---|---|
 | 1. Explorer | Any in-app action, browsing included | Action "Any in-app action (Tier 1)" |
