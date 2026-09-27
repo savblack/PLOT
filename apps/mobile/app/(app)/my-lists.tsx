@@ -41,6 +41,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { COMMON } from '@plot/core/copy/common.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { LIST_VISIBILITIES, listVisibility, isListShareable, type ListVisibility } from '@plot/core/customLists.js';
+import { createUndoBatch, UNDO_ACTIONS, type UndoOption } from '@plot/core/undo.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -527,9 +528,13 @@ export default function MyListsScreen() {
                 count={watchingList.length}
                 deleteLabel={MEDIA.stopWatching}
                 menuLabel="Watching options"
-                onDelete={() => {
-                  watchingSel.selected.forEach(tmdbId => watching.stopWatching(tmdbId));
+                onDelete={async () => {
+                  // One undo for the whole selection, offered once every stop lands.
+                  const ids = [...watchingSel.selected];
+                  const batch = createUndoBatch({ action: UNDO_ACTIONS.WATCHING_STOP });
                   watchingSel.exit();
+                  await Promise.all(ids.map(tmdbId => watching.stopWatching(tmdbId, { undo: batch })));
+                  batch.offer();
                 }}
               />
             }
@@ -560,9 +565,12 @@ export default function MyListsScreen() {
                 count={sortedSaved.length}
                 deleteLabel={MEDIA.removeFromWatchlist}
                 menuLabel="Want to Watch options"
-                onDelete={() => {
-                  wantSel.selected.forEach(tmdbId => watchlist.removeFromList(tmdbId));
+                onDelete={async () => {
+                  const ids = [...wantSel.selected];
+                  const batch = createUndoBatch({ action: UNDO_ACTIONS.WATCHLIST_REMOVE });
                   wantSel.exit();
+                  await Promise.all(ids.map(tmdbId => watchlist.removeFromList(tmdbId, { undo: batch })));
+                  batch.offer();
                 }}
               />
             }
@@ -715,7 +723,7 @@ export default function MyListsScreen() {
                       { text: 'Delete', style: 'destructive', onPress: () => customLists.deleteList(list.id) },
                     ])}
                     onAddItem={() => setShowAddToList(list.id)}
-                    onRemoveItem={(tmdbId) => customLists.removeItem(list.id, tmdbId)}
+                    onRemoveItem={(tmdbId, opts) => customLists.removeItem(list.id, tmdbId, opts)}
                     onSetVisibility={(visibility) => customLists.setListVisibility(list.id, visibility)}
                     onShare={() => handleShareList(list)}
                     onRename={(name) => customLists.renameList(list.id, name)}
@@ -840,7 +848,7 @@ export default function MyListsScreen() {
 function CustomListCard({
   list, onDelete, onAddItem, onRemoveItem, onSetVisibility, onShare, onRename, typeFilters,
 }: {
-  list: any; onDelete: () => void; onAddItem: () => void; onRemoveItem: (tmdbId: number) => void;
+  list: any; onDelete: () => void; onAddItem: () => void; onRemoveItem: (tmdbId: number, opts?: { undo?: UndoOption }) => unknown;
   onSetVisibility: (visibility: ListVisibility) => void; onShare: () => void; onRename: (name: string) => void; typeFilters: string[];
 }) {
   const { colors } = useTheme();
@@ -908,9 +916,12 @@ function CustomListCard({
           <>
             {sel.selected.size > 0 && (
               <TouchableOpacity
-                onPress={() => {
-                  sel.selected.forEach(tmdbId => onRemoveItem(tmdbId));
+                onPress={async () => {
+                  const ids = [...sel.selected];
+                  const batch = createUndoBatch({ action: UNDO_ACTIONS.LIST_ITEM_REMOVE });
                   sel.exit();
+                  await Promise.all(ids.map(tmdbId => onRemoveItem(tmdbId, { undo: batch })));
+                  batch.offer({ meta: { listName: list.name } });
                 }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={{ marginLeft: spacing.sm }}
@@ -953,7 +964,7 @@ function CustomListCard({
             items={items}
             sel={sel}
             onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
-            onRemove={onRemoveItem}
+            onRemove={(tmdbId: number) => onRemoveItem(tmdbId, { undo: true })}
             removeLabel={MEDIA.removeFromList}
           />
         )

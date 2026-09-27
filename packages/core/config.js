@@ -104,6 +104,10 @@
  *   Analytics seam — a history import's lifecycle, via reportImport in
  *   importPipeline.js. `reason` is an IMPORT_FAILURE_REASONS slug, never the
  *   parser's message (it can quote file contents).
+ * @property {(payload: { action: string, count: number, elapsed_ms: number }) => void} [onUndo]
+ *   Analytics seam — fired when the undo toast reverses a removal (undo.js).
+ *   The revert writes tables directly and fires no success seam, so an undone
+ *   removal never counts as a new save: this is the only event it produces.
  * @property {(payload: { resource: string, error_kind: string, error_code?: string, http_status?: number }) => void} [onLoadFailed]
  *   Analytics seam — fired when a library read (watchlist, history, custom
  *   lists, series progress, favourites) fails. Kept apart from onActionFailed
@@ -145,6 +149,7 @@ const defaults = {
   onReview: undefined,
   onTonightPicker: undefined,
   onImport: undefined,
+  onUndo: undefined,
 };
 
 let config = { ...defaults };

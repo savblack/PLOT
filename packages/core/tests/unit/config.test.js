@@ -38,6 +38,7 @@ test('getConfig starts with the documented defaults', () => {
     onReview: undefined,
     onTonightPicker: undefined,
     onImport: undefined,
+    onUndo: undefined,
   });
 });
 

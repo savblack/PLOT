@@ -1,5 +1,5 @@
 import { readListItems } from './listReads.js';
-import { on, LISTS_CHANGED_EVENT } from './events.js';
+import { on, emit, LISTS_CHANGED_EVENT } from './events.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { tmdb, getTmdbRegion } from './tmdb.js';
@@ -7,6 +7,7 @@ import { providerIdsForRegion, tmdbIdFromItem } from './media.js';
 import { deleteListItem, saveListItem, getOrCreateMyListId } from './userMedia.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
+import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
 
 /** Fire-and-forget: enqueue a watchlist change to the Trakt outbox. */
 function enqueueTraktAction(userId, integrationId, action, payload) {
@@ -32,8 +33,8 @@ function enqueueTraktAction(userId, integrationId, action, payload) {
  *   error: string|null;
  *   isInList: (tmdbId: number) => boolean;
  *   addToList: (item: any, opts?: { source?: string }) => Promise<any>;
- *   removeFromList: (tmdbId: number) => Promise<any>;
- *   toggle: (item: any, opts?: { source?: string }) => Promise<any>;
+ *   removeFromList: (tmdbId: number, opts?: { undo?: import('./undo.js').UndoOption }) => Promise<any>;
+ *   toggle: (item: any, opts?: { source?: string, undo?: import('./undo.js').UndoOption }) => Promise<any>;
  *   reload: () => Promise<void>;
  * }}
  */
@@ -164,8 +165,10 @@ export function useWatchlist(userId) {
     return data;
   }, [listId, userId, isInList]);
 
-  /* ── Remove item ── */
-  const removeFromList = useCallback(async (tmdbId) => {
+  /* ── Remove item ──
+     opts.undo offers the removal to the undo toast (see undo.js). Leave it off
+     when this is one step of a bigger action such as Mark as watched. */
+  const removeFromList = useCallback(async (tmdbId, opts) => {
     if (!listId) return false;
 
     const { error } = await deleteListItem({ listId, tmdbId, userId });
@@ -197,16 +200,35 @@ export function useWatchlist(userId) {
         title:      removed?.title ?? null,
       });
     }
+
+    if (removed) {
+      const integrationId = traktIntegrationId.current;
+      registerUndo(opts?.undo, {
+        action: UNDO_ACTIONS.WATCHLIST_REMOVE,
+        title: removed.title,
+        revert: async () => {
+          await restoreRow('list_items', removed);
+          emit(LISTS_CHANGED_EVENT);
+          if (integrationId) {
+            enqueueTraktAction(userId, integrationId, 'trakt_watchlist_add', {
+              tmdb_id: removed.tmdb_id, media_type: removed.media_type, title: removed.title,
+            });
+          }
+        },
+      });
+    }
     return true;
   }, [listId, userId, items]);
 
-  /* ── Toggle ── */
-  // opts.source is forwarded to addToList, so a surface can label its saves
-  // (the Tonight picker's cards pass 'tonight').
+  /* ── Toggle ──
+     A toggle is always one direct tap on a bookmark, never a step of a bigger
+     action, so a toggle-off offers undo unless the caller passes undo: false.
+     opts.source is forwarded to addToList, so a surface can label its saves
+     (the Tonight picker's cards pass 'tonight'). */
   const toggle = useCallback(async (item, opts) => {
     const id = tmdbIdFromItem(item);
     if (!id) return;
-    if (isInList(id)) await removeFromList(id);
+    if (isInList(id)) await removeFromList(id, { undo: opts?.undo ?? true });
     else await addToList(item, opts);
   }, [isInList, addToList, removeFromList]);
 

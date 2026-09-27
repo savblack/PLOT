@@ -131,6 +131,8 @@ configure({
     const name = { started: EVENTS.IMPORT_STARTED, completed: EVENTS.IMPORT_COMPLETED, failed: EVENTS.IMPORT_FAILED }[stage];
     if (name) track(name, props);
   },
+  // The undo toast reversed a removal. Never a committed action.
+  onUndo: (payload) => track(EVENTS.ACTION_UNDONE, payload),
 });
 
 // Opt this browser out of analytics: visit either theplot.tv or app.theplot.tv

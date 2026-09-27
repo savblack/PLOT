@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
-import { logWatchedItem } from './userMedia.js';
+import { logWatchedItem, restoreHistoryEntry } from './userMedia.js';
 import { normalizeRating } from './ratings.js';
 import { tmdbIdFromItem } from './media.js';
 import { on, emit, HISTORY_CHANGED_EVENT } from './events.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, historyFailureAction, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
+import { registerUndo, UNDO_ACTIONS } from './undo.js';
 
 // Moved to events.js, alongside the bus. Re-exported so existing import sites
 // keep resolving.
@@ -58,7 +59,7 @@ function reportReview(args) {
  *   loadError: boolean;
  *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean; watchedAt?: string }) => Promise<any>;
  *   updateEntry: (tmdbId: number, updates: any, mediaType?: string) => Promise<any>;
- *   removeEntry: (tmdbId: number, mediaType?: string) => Promise<boolean>;
+ *   removeEntry: (tmdbId: number, mediaType?: string, opts?: { undo?: import('./undo.js').UndoOption }) => Promise<boolean>;
  *   isWatched: (tmdbId: number, mediaType?: string) => boolean;
  *   reload: () => Promise<void>;
  * }}
@@ -201,7 +202,9 @@ export function useHistory(userId) {
 
   /* ── Remove entry ──
      Same row-id targeting (and same mediaType disambiguation) as updateEntry. */
-  const removeEntry = useCallback(async (tmdbId, mediaType) => {
+  // opts.undo offers the removal to the undo toast; the whole row comes back,
+  // rating, review and date included. Never set it on a rollback.
+  const removeEntry = useCallback(async (tmdbId, mediaType, opts) => {
     const target = entries.find(e => e.tmdb_id === Number(tmdbId) && (!mediaType || e.media_type === mediaType));
     if (!target) return false;
 
@@ -218,6 +221,11 @@ export function useHistory(userId) {
     notifyHistoryChanged();
     // The undo half of onWatched — without it, watched counts only ratchet up.
     getConfig().onHistoryRemove?.({ tmdb_id: Number(tmdbId), media_type: target.media_type });
+    registerUndo(opts?.undo, {
+      action: UNDO_ACTIONS.HISTORY_REMOVE,
+      title: target.title,
+      revert: () => restoreHistoryEntry(target),
+    });
     return true;
   }, [entries]);
 
