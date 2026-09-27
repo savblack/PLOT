@@ -35,6 +35,7 @@ test('getConfig starts with the documented defaults', () => {
     onProfileUpdate: undefined,
     onActionFailed: undefined,
     onLoadFailed: undefined,
+    onUndo: undefined,
   });
 });
 

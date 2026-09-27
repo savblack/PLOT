@@ -50,6 +50,8 @@ export const FAILED_ACTIONS = Object.freeze({
   BLOCK:                   'block',
   UNBLOCK:                 'unblock',
   REPORT:                  'report',
+  // Reverting an earlier removal from the undo toast (undo.js).
+  UNDO:                    'undo',
 });
 
 /**
@@ -127,7 +129,7 @@ function errorIdentity(error) {
  * @param {string} action one of FAILED_ACTIONS
  * @param {any} error the Supabase error, or null when the call returned no row
  * @param {{ tmdb_id?: number, media_type?: string, list_id?: string, fields?: string[],
- *   progress_action?: string, kind?: FailureKind }} [context] ids and field
+ *   progress_action?: string, undone_action?: string, kind?: FailureKind }} [context] ids and field
  *   *names* only, the same props the matching success event carries. `kind`
  *   overrides classification for failures that never reached the server.
  */

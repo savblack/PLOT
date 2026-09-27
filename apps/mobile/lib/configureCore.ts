@@ -85,6 +85,8 @@ configure({
   // payload is already PII-free (codes and field names, never the message).
   onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
   onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
+  // The undo toast reversed a removal. Never a committed action.
+  onUndo: (payload) => track(EVENTS.ACTION_UNDONE, payload),
   // The storage seam: mobile persists the Supabase session encrypted, key held
   // in the Keychain/Keystore via SecureStore (see lib/secureStorage.ts).
   supabaseClientOptions: {

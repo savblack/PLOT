@@ -91,6 +91,10 @@
  *   success seams above. Built by reportActionFailure in actionFailures.js,
  *   which carries the error's code and a coarse kind but never its message:
  *   Postgres puts row values there.
+ * @property {(payload: { action: string, count: number, elapsed_ms: number }) => void} [onUndo]
+ *   Analytics seam — fired when the undo toast reverses a removal (undo.js).
+ *   The revert writes tables directly and fires no success seam, so an undone
+ *   removal never counts as a new save: this is the only event it produces.
  * @property {(payload: { resource: string, error_kind: string, error_code?: string, http_status?: number }) => void} [onLoadFailed]
  *   Analytics seam — fired when a library read (watchlist, history, custom
  *   lists, series progress, favourites) fails. Kept apart from onActionFailed
@@ -129,6 +133,7 @@ const defaults = {
   onProfileUpdate: undefined,
   onActionFailed: undefined,
   onLoadFailed: undefined,
+  onUndo: undefined,
 };
 
 let config = { ...defaults };

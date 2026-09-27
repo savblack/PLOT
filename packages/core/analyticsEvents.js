@@ -161,6 +161,10 @@ export const EVENTS = Object.freeze({
   // progress, favourites). `resource` says which. Separate from action_failed
   // so a failed page load never counts as a failed user action.
   LOAD_FAILED: 'load_failed',
+  // The undo toast reversed a removal. `action` is an UNDO_ACTIONS value
+  // (undo.js), plus `count` and `elapsed_ms`. The restore fires nothing else,
+  // so it never counts as a save. Tier 1 at most, never Tier 2.
+  ACTION_UNDONE: 'action_undone',
   // Integrations
   PLEX_CONNECTED: 'plex_connected',
   PLEX_SYNCED: 'plex_synced',

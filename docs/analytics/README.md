@@ -94,6 +94,12 @@ Encoded here once so nobody rediscovers them.
   reported the same event. Undo now fires `episode_unwatched` /
   `season_unwatched`.
 - **`activated` is retired.** See above.
+- **An undone removal is `action_undone`, not a new save.** The undo toast
+  (`packages/core/undo.js`, 2026-09-27) writes the removed row straight back
+  and fires no success seam, so undoing "removed from Want to Watch" does not
+  produce a second `watchlist_saved`. The original `watchlist_removed` (or
+  `favourite_removed`, `history_entry_removed`, …) still stands; net them
+  against `action_undone` by `action` if a removal count matters. Not Tier 2.
 - **`user_followed` / `user_unfollowed` before 2026-09-27 are undercounted.**
   The Follow button on user lists (search results, followers, following) wrote
   `follows` directly and fired nothing; only the profile header's button was
