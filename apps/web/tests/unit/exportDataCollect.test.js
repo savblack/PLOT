@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { EXPORT_STEPS, runDataExport } from '../../../../supabase/functions/export-user-data/collect.js';
 
-function createExportClient({ rowsByTable = {}, failingTable = null } = {}) {
+function createExportClient({ rowsByTable = {}, failingTable = null, inRows = {}, missingTables = [] } = {}) {
   const calls = [];
+  const inCalls = [];
+  const orders = {};
 
   const client = {
     from(table) {
@@ -20,11 +22,17 @@ function createExportClient({ rowsByTable = {}, failingTable = null } = {}) {
             },
             order(column) {
               if (table === 'broadcast_preferences') assert.equal(column, 'user_id');
+              (orders[table] ??= []).push(column);
               return this;
             },
             async range(from, to) {
+              if (missingTables.includes(table)) return { error: { code: 'PGRST205', message: 'missing' } };
               if (failingTable === table) return { error: { message: `failed:${table}` } };
               return { data: (rowsByTable[table] ?? []).slice(from, to + 1), error: null };
+            },
+            async in(column, values) {
+              inCalls.push([table, column, values]);
+              return { data: inRows[table] ?? [], error: null };
             },
           };
         },
@@ -32,7 +40,7 @@ function createExportClient({ rowsByTable = {}, failingTable = null } = {}) {
     },
   };
 
-  return { client, calls };
+  return { client, calls, inCalls, orders };
 }
 
 test('runDataExport reads every export step in order, scoped to the user', async () => {
@@ -128,4 +136,47 @@ test('private note exports read past the response page limit', async () => {
   const { client } = createExportClient({ rowsByTable: { private_title_notes: rows } });
   const result = await runDataExport(client, 'owner');
   assert.deepEqual(result.data.private_title_notes, rows);
+});
+
+test('runDataExport includes Watch together rows and shared lists the user is a member of', async () => {
+  const rowsByTable = {
+    user_custom_list_members: [{ list_id: 'list-9', user_id: 'user-123' }],
+    watch_together: [{ requester_id: 'user-123', recipient_id: 'u2', status: 'accepted' }],
+  };
+  const inRows = {
+    user_custom_lists: [{ id: 'list-9', user_id: 'owner', name: 'Jess and Sam' }],
+    user_custom_list_items: [{ list_id: 'list-9', tmdb_id: 1, user_id: 'owner', added_by: 'user-123' }],
+  };
+  const { client, calls, inCalls, orders } = createExportClient({ rowsByTable, inRows });
+
+  const result = await runDataExport(client, 'user-123');
+
+  assert.equal(result.error, undefined);
+  assert.deepEqual(result.data.watch_together, rowsByTable.watch_together);
+  assert.deepEqual(result.data.shared_custom_lists, inRows.user_custom_lists);
+  assert.deepEqual(result.data.shared_custom_list_items, inRows.user_custom_list_items);
+  assert.deepEqual(inCalls, [['user_custom_lists', 'id', ['list-9']], ['user_custom_list_items', 'list_id', ['list-9']]]);
+  assert.deepEqual(calls.find((c) => c.table === 'watch_together_sessions'), { table: 'watch_together_sessions', method: 'or', filter: 'host_id.eq.user-123,guest_id.eq.user-123' });
+  // Three of these tables have composite keys and no id column: paging by id
+  // would fail the whole export once their migrations are live.
+  assert.deepEqual(orders.watch_together, ['requester_id', 'recipient_id']);
+  assert.deepEqual(orders.watch_together_votes, ['session_id', 'tmdb_id', 'media_type']);
+  assert.deepEqual(orders.user_custom_list_members, ['list_id']);
+  assert.deepEqual(orders.watch_together_sessions, ['id']);
+  assert.deepEqual(orders.watch_together_links, ['user_id']);
+});
+
+test('runDataExport skips Watch together tables that do not exist yet', async () => {
+  const missingTables = ['watch_together', 'watch_together_sessions', 'watch_together_votes', 'watch_together_links', 'user_custom_list_members'];
+  const { client } = createExportClient({ missingTables });
+  const result = await runDataExport(client, 'user-123');
+  assert.equal(result.error, undefined);
+  assert.deepEqual(result.data.watch_together, []);
+  assert.deepEqual(result.data.shared_custom_lists, []);
+});
+
+test('a missing table that is not optional still fails the export', async () => {
+  const { client } = createExportClient({ missingTables: ['history'] });
+  const result = await runDataExport(client, 'user-123');
+  assert.equal(result.table, 'history');
 });

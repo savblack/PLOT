@@ -35,6 +35,8 @@ import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { listVisibility, showsOnProfile } from '@plot/core/customLists.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 import { EVENTS } from '../lib/analytics.js';
+import { WatchTogetherTile } from '../components/WatchTogetherParts.jsx';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 
 const posterUrl = (path, size = 'w342') =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
@@ -686,6 +688,10 @@ export default function PublicProfilePage() {
                     />
                   </div>}
               />
+
+              {SHOW_WATCH_TOGETHER && viewer && !isOwn && (
+                <WatchTogetherTile person={p} viewer={viewer} viewerProfile={viewerProfile} />
+              )}
 
               {locked && (
                 <div className="public-profile-status-card" style={{ marginTop: '1.6rem' }}>

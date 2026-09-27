@@ -109,7 +109,7 @@ export default function MyListsView() {
     return <LoadingSpinner />;
   }
 
-  const { lists, createList, deleteList } = customLists;
+  const { lists, ownedCount, createList, deleteList } = customLists;
 
   // One index behind both the column and the covers, so the two can't drift.
   const collections = [
@@ -147,7 +147,7 @@ export default function MyListsView() {
   // Free accounts get FREE_CUSTOM_LIST_CAP lists; Premium unlimited. The
   // DB (RLS insert policy) is the authority; this is just friendlier UX.
   const requestCreate = () => {
-    if (!canCreateCustomList(lists.length, profile)) {
+    if (!canCreateCustomList(ownedCount ?? lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
       setShowCapNotice(true);
       return;
