@@ -14,6 +14,7 @@ import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { isOpaqueBrowserException } from './utils/opaqueException.js';
 import { writeStorage } from './utils/storage.js';
 import { track, EVENTS, _setPostHogClient } from './lib/analytics.js';
+import { startHumanWebVitalsCapture } from './lib/webVitals.js';
 
 // Inject web env into the shared core before anything renders or fetches.
 // Core modules read these via getConfig() — never import.meta.env directly.
@@ -138,6 +139,12 @@ const currentArticle = currentArticleAttribution();
 // Nothing breaks in the gap: every analytics call in lib/analytics.js queues
 // until _setPostHogClient() hands it the real client below.
 if (posthogToken) {
+  // Project-level automatic Web Vitals capture stays off because the marketing
+  // site receives mostly scraper traffic. The app opts in only after a trusted
+  // human interaction, so real app performance remains measurable without
+  // reopening that ingestion problem.
+  startHumanWebVitalsCapture();
+
   import('posthog-js').then(({ default: posthog }) => {
     posthog.init(posthogToken, {
       // Default to the managed reverse proxy rather than to posthog-js's own

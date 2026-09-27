@@ -111,9 +111,9 @@ Encoded here once so nobody rediscovers them.
 
 ## Bots
 
-Roughly 9 in 10 "people" on theplot.tv are scrapers: they fire one `$pageview`
-plus `$web_vitals`, never `$pageleave`, and never return. They present as
-ordinary desktop Chrome, Firefox and Edge, so user-agent blocklists do not touch
+Historically, roughly 9 in 10 "people" on theplot.tv were scrapers: they fired
+one `$pageview` plus `$web_vitals`, never `$pageleave`, and never returned. They
+present as ordinary desktop Chrome, Firefox and Edge, so user-agent blocklists do not touch
 them, and posthog-js's built-in filter already misses them.
 
 They are excluded behaviourally instead. The **Real visitors** cohort is anyone
@@ -126,6 +126,12 @@ scope. So the same population is *also* defined as the **Bots (landed, never
 engaged)** cohort (553124) and added to `test_account_filters` as a `not_in`
 rule, which Web analytics does respect. Same people, two mechanisms, because the
 two surfaces filter differently.
+
+Web Vitals use a separate safeguard. Project-level automatic capture remains
+off, so marketing-page and drive-by bot sessions do not emit `$web_vitals` at
+all. The web app starts a manual observer only on `app.theplot.tv`, and only
+after a trusted visible pointer, touch, wheel, or keyboard interaction. Synthetic
+events, preview hosts, and the marketing site are ignored.
 
 Bots are the exact complement of Real visitors, widened so it can never swallow
 a person: a `$pageview` and then no Tier 1 action (it negates **action 333111**,

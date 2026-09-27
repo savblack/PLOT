@@ -184,6 +184,9 @@ importers:
       posthog-js:
         specifier: ^1.434.0
         version: 1.434.0(@types/react@19.3.0)(react@19.3.0)
+      web-vitals:
+        specifier: ^6.2.2
+        version: 6.2.2
       react:
         specifier: ^19.3.0
         version: 19.3.0
