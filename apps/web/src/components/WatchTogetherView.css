@@ -24,12 +24,13 @@
 .wt-back { align-self: flex-start; font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-decoration: none; }
 .wt-back:hover { color: var(--text-primary); }
 
+/* Same quiet pink as the Premium marker in the nav (.app-nav-premium). */
 .wt-premium {
   flex-shrink: 0;
   padding: 3px 8px;
   border-radius: var(--radius-badge);
-  background: color-mix(in srgb, var(--badge-premium) 12%, transparent);
-  color: var(--badge-premium);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent-text);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -404,8 +405,8 @@
 .wt-ph-5 { background: color-mix(in srgb, var(--text-primary) 50%, var(--surface-sunken)); }
 
 /* "You're on Premium" (start page) and "just upgraded" news (hub). Tinted
-   with the Premium badge blue so it reads as the Premium moment, not a
-   section; stays until dismissed. */
+   with the brand green so it reads as the Premium moment, not a section;
+   stays until dismissed. */
 .wt-welcome {
   position: relative;
   display: flex;
@@ -413,22 +414,22 @@
   gap: 0.75rem;
   padding: 1rem 2.75rem 1rem 1.1rem;
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--badge-premium) 12%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--badge-premium) 28%, transparent);
+  background: color-mix(in srgb, var(--accent-secondary) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 30%, transparent);
   color: var(--text-primary);
 }
 .wt-welcome--stack { flex-direction: column; padding-right: 1.1rem; }
 .wt-welcome .wt-banner-title { font-size: 1.125rem; }
 .wt-welcome-body { font-size: 0.8125rem; line-height: 1.45; color: var(--text-secondary); }
 .wt-welcome .wt-top-actions { margin-top: 0; }
-.wt-welcome-icon { width: 22px; height: 22px; flex-shrink: 0; margin-top: 2px; fill: none; stroke: var(--badge-premium); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.wt-welcome-icon { width: 22px; height: 22px; flex-shrink: 0; margin-top: 2px; fill: none; stroke: var(--accent-secondary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .wt-welcome-close {
   position: absolute; top: 0.6rem; right: 0.6rem;
   width: 32px; height: 32px; border: 0; border-radius: var(--radius-pill);
   background: transparent; color: var(--text-secondary);
   display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
 }
-.wt-welcome-close:hover { background: color-mix(in srgb, var(--badge-premium) 14%, transparent); color: var(--text-primary); }
+.wt-welcome-close:hover { background: color-mix(in srgb, var(--accent-secondary) 16%, transparent); color: var(--text-primary); }
 .wt-welcome-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .wt-welcome-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 
