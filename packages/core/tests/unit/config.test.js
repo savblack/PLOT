@@ -34,6 +34,7 @@ test('getConfig starts with the documented defaults', () => {
     onWatchProgress: undefined,
     onProfileUpdate: undefined,
     onActionFailed: undefined,
+    onLoadFailed: undefined,
   });
 });
 

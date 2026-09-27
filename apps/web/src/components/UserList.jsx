@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@plot/core/supabase.js';
+import { followUser, unfollowUser } from '@plot/core/useFollows.js';
 import ProfileBadges from './ProfileBadges.jsx';
 import UserModerationMenu from './UserModerationMenu.jsx';
 import { useBlocks } from '@plot/core/useBlocks.js';
@@ -28,15 +28,10 @@ export function FollowButton({ targetId, isPublic, status: initial = null, viewe
     if (busy) return;
     setBusy(true);
     if (status) {
-      await supabase.from('follows').delete().eq('follower_id', viewerId).eq('following_id', targetId);
-      setStatus(null);
+      if (await unfollowUser({ viewerId, targetId })) setStatus(null);
     } else {
-      const { error } = await supabase.from('follows').insert({ follower_id: viewerId, following_id: targetId });
-      if (!error) {
-        const { data } = await supabase.from('follows')
-          .select('status').eq('follower_id', viewerId).eq('following_id', targetId).maybeSingle();
-        setStatus(data?.status ?? null);
-      }
+      const result = await followUser({ viewerId, targetId });
+      if (result.ok) setStatus(result.status);
     }
     setBusy(false);
     onChange?.();

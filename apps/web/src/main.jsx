@@ -114,6 +114,7 @@ configure({
   // Failed writes, from the same canonical sites as the seams above. The
   // payload is already PII-free (codes and field names, never the message).
   onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
+  onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
 });
 
 // Opt this browser out of analytics: visit either theplot.tv or app.theplot.tv

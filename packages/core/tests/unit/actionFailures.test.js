@@ -128,3 +128,72 @@ test('every core module with a success seam also reports failures', () => {
     });
   assert.deepEqual(missing, []);
 });
+
+/* ── Follow-ups: shared follow writes, bulk clear, load failures ── */
+
+test('followUser fires user_followed on success and action_failed on failure, never both', async () => {
+  const { followUser, unfollowUser } = await import('../../useFollows.js');
+  const client = createInMemorySupabase({ tables: { follows: [] } });
+  const follows = [];
+  const failures = [];
+  configure({
+    supabaseClient: client,
+    onFollow: (p) => follows.push(p),
+    onActionFailed: (p) => failures.push(p),
+  });
+
+  const ok = await followUser({ viewerId: 'u1', targetId: 'u2' });
+  assert.equal(ok.ok, true);
+  assert.deepEqual(follows, [{ target_user_id: 'u2', following: true }]);
+
+  client.failNext('follows', 'insert', { code: '42501', message: 'rls' });
+  const denied = await followUser({ viewerId: 'u1', targetId: 'u3' });
+  assert.deepEqual(denied, { ok: false, status: null });
+  assert.equal(follows.length, 1);
+  assert.deepEqual(failures, [{ action: 'follow', error_kind: 'permission', error_code: '42501' }]);
+
+  client.failNext('follows', 'delete', { message: 'TypeError: Failed to fetch' });
+  assert.equal(await unfollowUser({ viewerId: 'u1', targetId: 'u2' }), false);
+  assert.equal(failures[1].action, 'unfollow');
+  assert.equal(failures[1].error_kind, 'network');
+  configure({ onFollow: undefined });
+});
+
+test('clearSavedAndWatching reports a failed clear instead of passing it off as success', async () => {
+  const { clearSavedAndWatching } = await import('../../userMedia.js');
+  const client = createInMemorySupabase({ tables: {
+    lists: [{ id: 'l1', user_id: 'u1', name: 'My List' }],
+    list_items: [{ id: 'i1', list_id: 'l1', tmdb_id: 1 }],
+    watching_progress: [{ id: 'w1', user_id: 'u1', tmdb_id: 2 }],
+  } });
+  configure({ supabaseClient: client });
+  const events = capture();
+
+  client.failNext('watching_progress', 'delete', { code: '57014', message: 'timeout' });
+  const failed = await clearSavedAndWatching({ userId: 'u1', saved: true, watching: true });
+  assert.equal(failed.error.code, '57014');
+  assert.deepEqual(events, [{
+    action: 'watchlist_clear', error_kind: 'timeout', error_code: '57014', fields: ['saved', 'watching'],
+  }]);
+
+  const cleared = await clearSavedAndWatching({ userId: 'u1', saved: true, watching: true });
+  assert.equal(cleared.error, null);
+  assert.equal(client.__db.tables.list_items.length, 0);
+  assert.equal(client.__db.tables.watching_progress.length, 0);
+  assert.equal(events.length, 1);
+});
+
+test('reportLoadFailure uses its own seam, so a failed read never counts as a failed action', async () => {
+  const { reportLoadFailure, FAILED_LOADS } = await import('../../actionFailures.js');
+  const actions = capture();
+  const loads = [];
+  configure({ onLoadFailed: (p) => loads.push(p) });
+
+  reportLoadFailure(FAILED_LOADS.HISTORY, { code: 'PGRST301', message: 'JWT expired', details: 'secret' });
+
+  assert.deepEqual(actions, []);
+  assert.deepEqual(loads, [{ resource: 'history', error_kind: 'auth', error_code: 'PGRST301' }]);
+  configure({ onLoadFailed: () => { throw new Error('boom'); } });
+  assert.doesNotThrow(() => reportLoadFailure(FAILED_LOADS.WATCHING, null));
+  configure({ onLoadFailed: undefined });
+});

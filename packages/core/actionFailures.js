@@ -26,12 +26,14 @@ import { getConfig } from './config.js';
 export const FAILED_ACTIONS = Object.freeze({
   WATCHLIST_SAVE:          'watchlist_save',
   WATCHLIST_REMOVE:        'watchlist_remove',
+  WATCHLIST_CLEAR:         'watchlist_clear',
   MARK_WATCHED:            'mark_watched',
   RATING_SET:              'rating_set',
   REVIEW_SAVE:             'review_save',
   REVIEW_CLEAR:            'review_clear',
   HISTORY_UPDATE:          'history_update',
   HISTORY_REMOVE:          'history_remove',
+  HISTORY_CLEAR:           'history_clear',
   FAVOURITE_ADD:           'favourite_add',
   FAVOURITE_REMOVE:        'favourite_remove',
   CUSTOM_LIST_CREATE:      'custom_list_create',
@@ -48,6 +50,20 @@ export const FAILED_ACTIONS = Object.freeze({
   BLOCK:                   'block',
   UNBLOCK:                 'unblock',
   REPORT:                  'report',
+});
+
+/**
+ * The library reads a load failure can be reported for. Reads get their own
+ * event (load_failed) rather than sharing action_failed: a page that fails to
+ * load is not a failed user action, and mixing the two would skew any rate of
+ * action_failed against its matching success event.
+ */
+export const FAILED_LOADS = Object.freeze({
+  WATCHLIST:    'watchlist',
+  CUSTOM_LISTS: 'custom_lists',
+  HISTORY:      'history',
+  WATCHING:     'watching',
+  FAVOURITES:   'favourites',
 });
 
 /**
@@ -146,4 +162,21 @@ export function historyFailureAction(updates, { logging = false } = {}) {
   }
   if (has('rating') && updates.rating != null) return FAILED_ACTIONS.RATING_SET;
   return logging ? FAILED_ACTIONS.MARK_WATCHED : FAILED_ACTIONS.HISTORY_UPDATE;
+}
+
+/**
+ * Report a failed library read through the onLoadFailed seam. Same payload
+ * rules as reportActionFailure: code and kind, never the message.
+ *
+ * @param {string} resource one of FAILED_LOADS
+ * @param {any} error
+ */
+export function reportLoadFailure(resource, error) {
+  try {
+    getConfig().onLoadFailed?.({
+      resource,
+      error_kind: classifyFailure(error),
+      ...errorIdentity(error),
+    });
+  } catch { /* analytics is best-effort */ }
 }

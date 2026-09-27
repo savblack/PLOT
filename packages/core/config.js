@@ -91,6 +91,10 @@
  *   success seams above. Built by reportActionFailure in actionFailures.js,
  *   which carries the error's code and a coarse kind but never its message:
  *   Postgres puts row values there.
+ * @property {(payload: { resource: string, error_kind: string, error_code?: string, http_status?: number }) => void} [onLoadFailed]
+ *   Analytics seam — fired when a library read (watchlist, history, custom
+ *   lists, series progress, favourites) fails. Kept apart from onActionFailed
+ *   so failed reads never skew a failed-write rate. See reportLoadFailure.
  */
 
 /** @type {PlotCoreConfig} */
@@ -124,6 +128,7 @@ const defaults = {
   onWatchProgress: undefined,
   onProfileUpdate: undefined,
   onActionFailed: undefined,
+  onLoadFailed: undefined,
 };
 
 let config = { ...defaults };

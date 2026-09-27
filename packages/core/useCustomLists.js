@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { genreIdsFromItem, mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { getConfig } from './config.js';
-import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
+import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 import { createCustomListRecord, CUSTOM_LIST_LIMIT_CODE } from './customListCreation.js';
 import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
 
@@ -40,7 +40,10 @@ export function useCustomLists(userId) {
       }
       data.sort((a,b) => String(a.created_at || '').localeCompare(String(b.created_at || '')));
       setLists(data);
-    } catch { /* Retain the last complete collection on a failed page. */ }
+    } catch (error) {
+      // Retain the last complete collection on a failed page.
+      reportLoadFailure(FAILED_LOADS.CUSTOM_LISTS, error);
+    }
     setLoading(false);
   }, [userId]);
 

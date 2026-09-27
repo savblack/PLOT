@@ -6,7 +6,7 @@ import { tmdb, getTmdbRegion } from './tmdb.js';
 import { providerIdsForRegion, tmdbIdFromItem } from './media.js';
 import { deleteListItem, saveListItem, getOrCreateMyListId } from './userMedia.js';
 import { getConfig } from './config.js';
-import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
+import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 
 /** Fire-and-forget: enqueue a watchlist change to the Trakt outbox. */
 function enqueueTraktAction(userId, integrationId, action, payload) {
@@ -73,6 +73,7 @@ export function useWatchlist(userId) {
       if (!resolvedListId) {
         const msg = 'Could not get or create list';
         console.error('[useWatchlist]', msg);
+        reportLoadFailure(FAILED_LOADS.WATCHLIST, null);
         setListError(msg);
         return;
       }
@@ -86,6 +87,7 @@ export function useWatchlist(userId) {
       setItems(listItems || []);
     } catch (e) {
       console.error('[useWatchlist] bootstrap failed:', e);
+      reportLoadFailure(FAILED_LOADS.WATCHLIST, e);
       setListError(e?.message || 'Unknown error loading your list.');
     } finally {
       setLoading(false);

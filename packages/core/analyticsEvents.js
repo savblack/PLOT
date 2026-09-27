@@ -157,6 +157,10 @@ export const EVENTS = Object.freeze({
   // Fired from core's canonical mutation sites via the onActionFailed seam, so
   // every surface on both apps is covered once. Not Tier 1 or Tier 2.
   ACTION_FAILED: 'action_failed',
+  // A library read that failed (watchlist, history, custom lists, series
+  // progress, favourites). `resource` says which. Separate from action_failed
+  // so a failed page load never counts as a failed user action.
+  LOAD_FAILED: 'load_failed',
   // Integrations
   PLEX_CONNECTED: 'plex_connected',
   PLEX_SYNCED: 'plex_synced',

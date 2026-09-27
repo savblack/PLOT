@@ -5,7 +5,7 @@ import { normalizeRating } from './ratings.js';
 import { tmdbIdFromItem } from './media.js';
 import { on, emit, HISTORY_CHANGED_EVENT } from './events.js';
 import { getConfig } from './config.js';
-import { reportActionFailure, historyFailureAction, FAILED_ACTIONS } from './actionFailures.js';
+import { reportActionFailure, reportLoadFailure, historyFailureAction, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 
 // Moved to events.js, alongside the bus. Re-exported so existing import sites
 // keep resolving.
@@ -67,6 +67,7 @@ export function useHistory(userId) {
     } catch (e) {
       console.error('[useHistory] load failed', e);
       setLoadError(true);
+      reportLoadFailure(FAILED_LOADS.HISTORY, e);
     } finally {
       setLoading(false);
     }

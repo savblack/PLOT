@@ -22,7 +22,7 @@ import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { useShare } from '../hooks/useShare.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
-import { clearWatchHistory } from '@plot/core/userMedia.js';
+import { clearWatchHistory, clearSavedAndWatching } from '@plot/core/userMedia.js';
 import { updateProfile } from '@plot/core/profile.js';
 import {
   AVATAR_MAX_MB, validateAvatarFile, isDuplicateUsernameError,
@@ -1381,21 +1381,8 @@ export default function SettingsView() {
     setShowClearWatchlist(false);
     setClearingWatchlist(true);
 
-    let myListId = null;
-    if (saved) {
-      const { data: myList, error: listLookupError } = await supabase.from('lists')
-        .select('id').eq('user_id', user.id).eq('name', 'My List').maybeSingle();
-      if (listLookupError) {
-        setActionError(listLookupError.message || SETTINGS_VIEW.errors.failedToClearLists);
-        setClearingWatchlist(false);
-        return;
-      }
-      myListId = myList?.id ?? null;
-    }
-
     const results = await Promise.all([
-      saved && myListId ? supabase.from('list_items').delete().eq('list_id', myListId) : Promise.resolve({ error: null }),
-      clearWatching ? supabase.from('watching_progress').delete().eq('user_id', user.id) : Promise.resolve({ error: null }),
+      clearSavedAndWatching({ userId: user.id, saved, watching: clearWatching }),
       ...customListIds.map(id => customLists.deleteList(id).then(ok => ({ error: ok ? null : new Error(SETTINGS_VIEW.errors.failedToDeleteCustomList) }))),
     ]);
     const firstError = results.find(result => result.error)?.error;

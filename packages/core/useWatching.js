@@ -6,7 +6,7 @@ import { baseMediaRow, tmdbIdFromItem } from './media.js';
 import { logWatchedItem } from './userMedia.js';
 import { getNextEpisodeProgress, isRewind } from './watchingProgress.js';
 import { getConfig } from './config.js';
-import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
+import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 
 /**
  * Currently-watching shows + episode progress for a user.
@@ -47,6 +47,7 @@ export function useWatching(userId) {
     } catch (e) {
       console.error('[useWatching] load failed', e);
       setError(true);
+      reportLoadFailure(FAILED_LOADS.WATCHING, e);
     } finally {
       setLoading(false);
     }

@@ -94,6 +94,13 @@ Encoded here once so nobody rediscovers them.
   reported the same event. Undo now fires `episode_unwatched` /
   `season_unwatched`.
 - **`activated` is retired.** See above.
+- **`user_followed` / `user_unfollowed` before 2026-09-27 are undercounted.**
+  The Follow button on user lists (search results, followers, following) wrote
+  `follows` directly and fired nothing; only the profile header's button was
+  counted. Both now go through `followUser`, so expect a step up that is not
+  real growth.
+- **`watchlist_cleared` on mobile before 2026-09-27 is unreliable.** It fired
+  whether or not the delete succeeded.
 - **`engagement_prompt_shown` / `engagement_prompt_dismissed` are not Tier 2.**
   They measure the in-panel watch/rate prompts (PLO-473 / PLO-474): exposure
   and how people leave (`action`: `not_yet`, `skip`, `write_review`). Accepting
@@ -300,8 +307,17 @@ Not Tier 1 or Tier 2. Read it as a rate against the matching success event
 down by `error_kind`. A spike in `schema` means the database and the client
 disagree and is always worth a look.
 
-Not yet covered: the bulk clears in Settings and the follow buttons in
-`UserList`, which write `supabase` directly rather than through a core hook.
+The Settings bulk clears (`watchlist_clear`, `history_clear`) and the list-row
+follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
+`unfollowUser`), so they are covered the same way.
+
+### `load_failed`
+
+A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
+`watching`, `favourites`) fires `load_failed` via `reportLoadFailure()`, with
+the same `error_kind` / `error_code` / `http_status` props. It is a separate
+event on purpose: a page that fails to load is not a failed user action, and
+counting it as `action_failed` would skew every failed-write rate.
 
 ## PostHog settings that are not in this repo
 
@@ -334,6 +350,8 @@ Objects created at the same time:
 | Cohort | Retained (returned and acted) | 494036 |
 | Cohort | Internal / Test users (pre-existing) | 362972 |
 | Cohort | Bots (landed, never engaged) — added 2026-09-06 | 553124 |
+| Insight | 8. Failed writes by action — added 2026-09-27 | 12255797 |
+| Insight | 9. Failed loads by resource — added 2026-09-27 | 12255798 |
 
 `POSTHOG_PERSONAL_API_KEY` in the root `.env` is scoped to project 471234 and
 can read and write all of the above via `https://us.posthog.com/api/projects/471234/`.
@@ -353,6 +371,8 @@ acquisition tiles are scoped to Real visitors.
 5. Friction: where sign-in and signup die
 6. The core product loop
 7. Where real visitors actually come from
+8. Failed writes by action (`action_failed`)
+9. Failed loads by resource (`load_failed`)
 
 ## Cross-checking against the database
 

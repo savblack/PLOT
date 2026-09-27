@@ -5,7 +5,7 @@ import { findHistoryEntry, logWatchedItem, saveFavorite } from './userMedia.js';
 import { markMediaAsWatched } from './mediaStatus.js';
 import { emit, HISTORY_CHANGED_EVENT } from './events.js';
 import { getConfig } from './config.js';
-import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
+import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 
 /**
  * Favourited titles for a user.
@@ -25,11 +25,12 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_favourites')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+    if (error) reportLoadFailure(FAILED_LOADS.FAVOURITES, error);
     setFavorites(data || []);
     setLoading(false);
   }, [userId]);
