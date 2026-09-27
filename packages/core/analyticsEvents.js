@@ -59,6 +59,8 @@ export const EVENTS = Object.freeze({
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_STARTED: 'premium_checkout_started',
+  PREMIUM_CHECKOUT_FAILED: 'premium_checkout_failed',
+  PREMIUM_CHECKOUT_CANCELLED: 'premium_checkout_cancelled',
   PREMIUM_CONVERTED: 'premium_converted',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
   WATCH_LINK_CLICKED: 'watch_link_clicked',
