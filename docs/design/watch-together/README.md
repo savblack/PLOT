@@ -93,6 +93,10 @@ Requests and consent
 Privacy
 - Private profile: the partner sees titles on both watchlists and picks in
   shared sessions. An opt-in "Also share my full watchlist" is off by default.
+  A partner who is also an accepted follower can already read the whole
+  watchlist (the profile rule from `can_view_profile`), so Watch together
+  treats them the same way and the switch only adds access for a partner who
+  can't see the profile.
 - Public profile: don't mention watchlist sharing (it is already public); the
   accept sheet says they won't see "any lists you've set to private" or
   private notes. The per-person watchlist switch in G only shows for private
@@ -180,6 +184,10 @@ Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
   link pairs you straight away (sharing it is the owner's consent). Reset in
   Settings › Privacy › Watch together. Link previews come from
   `functions/watch-with/[username]/[key].js`.
+- Fixes (`20260927140000_watch_together_visibility_and_stop.sql`):
+  `can_see_full_watchlist` uses `can_view_profile`, and stopping watching
+  together removes each person from the other's shared lists, as blocking
+  already did.
 - Start page (`WatchTogetherStart.jsx`): what anyone with nobody to watch with
   yet sees at `/together`. People you follow with titles in common (private
   profiles say "Shows once they accept"), or a pitch if you follow nobody;
