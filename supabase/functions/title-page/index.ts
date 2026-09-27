@@ -17,7 +17,7 @@
  * Public function: verify_jwt = false in supabase/config.toml.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { FOOTER_HTML } from './footer.generated.ts';
+import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 
 const SITE = 'https://theplot.tv';
@@ -187,20 +187,9 @@ h1.title{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,2.9rem);font-we
 .rel img,.rel .noart2{width:100%;aspect-ratio:2/3;border-radius:10px;object-fit:cover;background:var(--surface);display:block;}
 .rel .rt{font-size:.78rem;font-weight:600;margin-top:8px;line-height:1.3;}
 .rel a:hover .rt{color:var(--accent);}
-/* The footer partial shipped with no CSS at all here — it rendered as a raw
-   list of underlined links. Cream ground, matching the page. */
-footer{margin-top:40px;background:var(--bg);}
-.footer-inner{max-width:960px;margin:0 auto;padding:26px 28px 34px;display:flex;align-items:center;justify-content:space-between;gap:1.2rem 2rem;flex-wrap:wrap;}
-.footer-logo{text-decoration:none;font-family:var(--display);font-weight:700;letter-spacing:-.045em;font-size:1.4rem;line-height:1;color:var(--ink);}
-.footer-nav{display:flex;gap:1.2rem;flex-wrap:wrap;}
-.footer-nav a{font-size:.8rem;color:var(--mut);text-decoration:none;white-space:nowrap;transition:color .2s;}
-.footer-nav a:hover{color:var(--ink);}
-.footer-bottom{width:100%;padding-top:1.1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
-.footer-copy{font-size:.74rem;color:var(--mut);}
-.footer-social{display:flex;gap:1rem;align-items:center;}
-.footer-social a{color:var(--mut);display:inline-flex;transition:color .2s;}
-.footer-social a:hover{color:var(--ink);}
-.footer-social svg{width:19px;height:19px;display:block;}
+/* Shared site footer — generated from website/_partials/footer.css. */
+${FOOTER_CSS}
+.site-footer{margin-top:40px;}
 @media (max-width:640px){
 .wrap{padding:64px 16px 0;}
 nav.topnav{padding:0 1rem;}
@@ -224,7 +213,6 @@ nav.topnav{padding:0 1rem;}
 .watch-label{width:100%;}
 .cast{gap:18px;}
 .cast figure{width:96px;}
-.footer-inner{padding:24px 16px 30px;}
 }
 `;
 

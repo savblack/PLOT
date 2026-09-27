@@ -514,7 +514,8 @@ release post and the question are deliberately about the same title.
   service-role and nothing serves it.
 - **There is no public archive.** The digest lives in the inbox it was sent to.
   On the site the newsletter is just a signup form, at the foot of What's On
-  under `#newsletter`, which the nav and footer link to. `theplot.tv/newsletter`
+  under `#newsletter` (the homepage has its own form; neither the nav nor the
+  footer links to it). `theplot.tv/newsletter`
   and `/newsletter/<week_start>` 301 there (`apps/website/functions/newsletter.js`
   and `newsletter/[issue].js`) so older links still land somewhere.
 - Recipients come from the `marketing_recipient_list()` RPC, not a plain select

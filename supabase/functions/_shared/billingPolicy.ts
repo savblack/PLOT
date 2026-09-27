@@ -40,3 +40,8 @@ export function billingSettingsUrl(value?: string): string {
   }
   return url.href;
 }
+
+/** Private launch pilot: compare only the server-verified Auth user ID. */
+export function isCheckoutPilot(userId: string | undefined, configuredIds?: string): boolean {
+  return Boolean(userId && configuredIds?.split(',').map(id => id.trim()).filter(Boolean).includes(userId));
+}

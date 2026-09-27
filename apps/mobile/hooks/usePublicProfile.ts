@@ -35,6 +35,9 @@ export interface PublicProfileState {
   topMovies: ProfilePoster[];
   topTv: ProfilePoster[];
   favourites: ProfilePoster[];
+  watching: ProfilePoster[];
+  wantToWatch: ProfilePoster[];
+  customLists: { id: string; name: string; visibility?: string; items: ProfilePoster[] }[];
   refresh: () => Promise<void>;
 }
 

@@ -3,15 +3,17 @@ import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../../lib/share';
 import { EVENTS } from '../../../lib/analytics';
 /**
- * Public profile — /u/:username (mirrors web PublicProfilePage).
- * Header + follow button + stats, a locked state for private profiles the
- * viewer doesn't follow, and recently watched / Top 5 / favourites poster
- * grids. Followers/Following open a bottom-sheet user list.
+ * Public profile — /u/:username (mirrors web PublicProfilePage on a phone).
+ * Compact identity, a locked state for private profiles the viewer doesn't
+ * follow, then Top 5, lists, favourites, watch history, Watching and Want to
+ * watch. Selection comes from publicProfileLayout in @plot/core; the shelves
+ * themselves are components/ProfileShelves.tsx. "View all" opens
+ * app/(app)/profile-section.tsx.
  */
 import { useState, useMemo, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Image, StyleSheet,
-  ActivityIndicator, Dimensions, Modal,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  ActivityIndicator, Modal,
 } from 'react-native';
 import { Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -30,25 +32,15 @@ import { useBlocks } from '@plot/core/useBlocks.js';
 import UserModerationMenu from '../../../components/UserModerationMenu';
 import { Avatar, ProfileBadges } from '../../../components/Avatar';
 import { UserList, SocialUser } from '../../../components/UserList';
-import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
+import { Palette, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../../lib/tabBar';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { publicProfileLayout } from '@plot/core/publicProfileLayout.js';
-
-const SCREEN_W = Dimensions.get('window').width;
-const GRID_GAP = spacing.sm;
-const GRID_COLS = 4;
-const POSTER_W = (SCREEN_W - spacing.xl * 2 - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS;
-const POSTER_H = POSTER_W * 1.5; // 2:3 poster — explicit height (aspectRatio collapses in a flex-wrap row on Fabric)
-
-interface PosterItem {
-  tmdb_id: number;
-  media_type?: string;
-  title?: string;
-  poster_path?: string | null;
-  rank?: number;
-}
+import { MEDIA } from '@plot/core/copy/media.js';
+import {
+  ShelfItem, ShelfList, PosterGrid, TopFiveGrid, PosterRail, ListCovers, HistoryRows, ShelfHeading, ShelfButton, ShelfSwitch,
+} from '../../../components/ProfileShelves';
 
 /**
  * `usernameOverride` lets the profile tab reuse this screen for the signed-in
@@ -68,29 +60,54 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
   const username = usernameOverride ?? params.username ?? '';
   const { userId: viewerId, profile: viewerProfile } = useAppData();
 
-  const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites, refresh: refreshProfile } =
-    usePublicProfile(username, viewerId);
+  const {
+    loading, profile, locked, watchCount, recent, topMovies, topTv, favourites, watching, wantToWatch, customLists,
+    refresh: refreshProfile,
+  } = usePublicProfile(username, viewerId);
   const { followers, following, status, follow, unfollow, busy, canFollow, refresh } =
     useFollows(profile?.id, viewerId, profile?.follow_status ?? null);
   const blocks = useBlocks(viewerId);
 
   const [followList, setFollowList] = useState<'followers' | 'following' | null>(null);
+  const [expandedList, setExpandedList] = useState<string | null>(null);
+  // Default to whichever list has picks, so a TV-only profile doesn't open on an
+  // empty shelf. The viewer's choice is kept per profile, so it resets on navigation.
+  const [pickChoice, setPickChoice] = useState<{ id: string; type: 'movie' | 'tv' } | null>(null);
+  const pickType: 'movie' | 'tv' = pickChoice && pickChoice.id === profile?.id
+    ? pickChoice.type
+    : (!topMovies.length && topTv.length ? 'tv' : 'movie');
+  const setPickType = (type: 'movie' | 'tv') => { if (profile?.id) setPickChoice({ id: profile.id, type }); };
 
   const isOwn = !!viewerId && !!profile?.id && viewerId === profile.id;
-  const fw = favoriteWords(isOwn ? viewerProfile?.region : undefined);
+  // Viewer's own region, not the profile owner's (AGENTS.md: region-aware spelling).
+  const fw = favoriteWords(viewerProfile?.region);
   const found = !loading && !!profile;
   const isPrivate = !!profile && !profile.is_public;
   const name = profile ? (profile.display_name || profile.username) : '';
 
-  const openMedia = (it: PosterItem) => {
+  const openMedia = (it: ShelfItem) => {
     if (it.tmdb_id) openPanel(it.tmdb_id, it.media_type === 'tv' ? 'tv' : 'movie');
   };
+  const openSection = (section: 'history' | 'favourites' | 'lists') =>
+    router.push({ pathname: '/(app)/profile-section', params: { username: profile?.username ?? username, section } } as any);
 
-  // Same selection as web: honours the owner's section toggles and the Top 5 cap.
-  // Watching, Want to Watch and lists aren't rendered here yet (web parity: issue 931).
-  const layout = publicProfileLayout({ locked, sections: profile?.profile_sections, recent, topMovies, topTv, favourites });
-  const noPublicContent = !locked && watchCount === 0 && layout.recent.length === 0
-    && layout.topMovies.length === 0 && layout.topTv.length === 0 && layout.favourites.length === 0;
+  // What shows, and in what order, is shared with web: honours the owner's
+  // section toggles, the Top 5 cap, the list cap and never shows an empty shelf.
+  const content = publicProfileLayout({
+    locked, sections: profile?.profile_sections, recent, topMovies, topTv, favourites, watching, wantToWatch, customLists,
+  });
+  const hasPicks = content.topMovies.length > 0 || content.topTv.length > 0;
+  const picks = pickType === 'tv' ? content.topTv : content.topMovies;
+  const lists = content.customLists as ShelfList[];
+  const expanded = lists.find((l) => l.id === expandedList);
+
+  const share = () => { void shareLink({
+    url: buildProfileShareUrl({ username: profile?.username }),
+    title: `${name} on PLOT`,
+    text: SHARING.profileText(name),
+    event: EVENTS.PROFILE_SHARED,
+    eventProps: { profile_id: profile?.id },
+  }); };
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -101,14 +118,6 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
             <Path d="M15 18l-6-6 6-6" />
           </Svg>
         </TouchableOpacity>
-        {found && isOwn && (
-          <>
-            <View style={{ flex: 1 }} />
-            <TouchableOpacity onPress={() => setEditing(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ paddingRight: spacing.md }}>
-              <Text style={styles.editTop}>Edit</Text>
-            </TouchableOpacity>
-          </>
-        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}>
@@ -125,9 +134,9 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
           </View>
         ) : (
           <View style={styles.body}>
-            {/* Header */}
+            {/* Compact identity, like web's ProfileIntro on a phone. */}
             <View style={styles.header}>
-              <Avatar url={profile!.avatar_url} name={name} size={80} colors={colors} />
+              <Avatar url={profile!.avatar_url} name={name} size={64} colors={colors} />
               <View style={styles.headerText}>
                 <View style={styles.nameLine}>
                   <Text style={styles.name} numberOfLines={2}>{name}</Text>
@@ -142,43 +151,33 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
               </View>
             </View>
 
-            {!!profile!.bio && <Text style={styles.bio}>{profile!.bio}</Text>}
-
-            {/* Fixed set of external links, rendered from the shared definition
-                so a link added on web can't go missing here. */}
-            {!!profile!.links && Object.keys(profile!.links).length > 0 && (
-              <View style={styles.linksRow}>
-                {SOCIAL_LINKS.filter((l: any) => profile!.links?.[l.key]).map((l: any) => (
-                  <TouchableOpacity
-                    key={l.key}
-                    onPress={() => Linking.openURL(l.url(profile!.links?.[l.key]))}
-                    accessibilityRole="link"
-                    accessibilityLabel={l.label}
-                  >
-                    <Text style={styles.linkChip}>{l.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
             <View style={styles.actions}>
-              <TouchableOpacity style={styles.btnSecondary} accessibilityRole="button" onPress={() => { void shareLink({
-                url: buildProfileShareUrl({ username: profile?.username }),
-                title: `${name} on PLOT`,
-                text: SHARING.profileText(name),
-                event: EVENTS.PROFILE_SHARED,
-                eventProps: { profile_id: profile?.id },
-              }); }}>
+              {isOwn ? (
+                <TouchableOpacity style={styles.btnSecondary} onPress={() => setEditing(true)} accessibilityRole="button">
+                  <Text style={styles.btnSecondaryText}>{PUBLIC_PROFILE_PAGE.editProfile}</Text>
+                </TouchableOpacity>
+              ) : canFollow && (
+                status === 'accepted' ? (
+                  <TouchableOpacity style={styles.btnSecondary} onPress={unfollow} disabled={busy} accessibilityRole="button">
+                    <Text style={styles.btnSecondaryText}>Following</Text>
+                  </TouchableOpacity>
+                ) : status === 'pending' ? (
+                  <TouchableOpacity style={styles.btnSecondary} onPress={unfollow} disabled={busy} accessibilityRole="button">
+                    <Text style={styles.btnSecondaryText}>Requested</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={styles.btnPrimary} onPress={follow} disabled={busy} accessibilityRole="button">
+                    <Text style={styles.btnPrimaryText}>{isPrivate ? PUBLIC_PROFILE_PAGE.requestToFollow : PUBLIC_PROFILE_PAGE.follow}</Text>
+                  </TouchableOpacity>
+                )
+              )}
+              <TouchableOpacity style={styles.btnSecondary} accessibilityRole="button" onPress={share}>
                 <Text style={styles.btnSecondaryText}>{PUBLIC_PROFILE_PAGE.shareProfile}</Text>
               </TouchableOpacity>
-
-            </View>
-
-            {/* Report / block. Its own row rather than inside the follow block:
-                the follow actions are gated on canFollow, and Guideline 1.2
-                wants these available to any signed-in viewer regardless. */}
-            {!isOwn && !!viewerId && !!profile?.id && (
-              <View style={styles.actions}>
+              {/* Report / block. Guideline 1.2 wants both wherever another
+                  account's content is rendered. Renders nothing for your own
+                  profile or when signed out. */}
+              {!isOwn && !!viewerId && !!profile?.id && (
                 <UserModerationMenu
                   targetId={profile.id}
                   targetName={profile.display_name || profile.username}
@@ -191,37 +190,37 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
                   // away. refresh() only reloads follows.
                   onChanged={() => { void refresh(); void refreshProfile(); }}
                 />
-              </View>
-            )}
-
-            {/* Actions (follow) — own-profile edit lives in the top bar */}
-            {!isOwn && canFollow && (
-              <View style={styles.actions}>
-                {status === 'accepted' ? (
-                  <TouchableOpacity style={styles.btnSecondary} onPress={unfollow} disabled={busy}>
-                    <Text style={styles.btnSecondaryText}>Following</Text>
-                  </TouchableOpacity>
-                ) : status === 'pending' ? (
-                  <TouchableOpacity style={styles.btnSecondary} onPress={unfollow} disabled={busy}>
-                    <Text style={styles.btnSecondaryText}>Requested</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity style={styles.btnPrimary} onPress={follow} disabled={busy}>
-                    <Text style={styles.btnPrimaryText}>{isPrivate ? PUBLIC_PROFILE_PAGE.requestToFollow : 'Follow'}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-
-            {/* Stats */}
-            <View style={styles.stats}>
-              {!locked && <Stat num={String(watchCount)} label="Watched" colors={colors} />}
-              {!locked && avgRating != null && <Stat num={String(avgRating)} label="Avg rating" colors={colors} />}
-              <TouchableOpacity onPress={() => setFollowList('followers')}><Stat num={String(followers)} label="Followers" colors={colors} /></TouchableOpacity>
-              <TouchableOpacity onPress={() => setFollowList('following')}><Stat num={String(following)} label="Following" colors={colors} /></TouchableOpacity>
+              )}
             </View>
 
-            {/* Private lock */}
+            {!!profile!.bio && <Text style={styles.bio}>{profile!.bio}</Text>}
+
+            {/* Nonzero counts only, inline, as on web. */}
+            {((!locked && watchCount > 0) || followers > 0 || following > 0) && (
+              <View style={styles.stats}>
+                {!locked && watchCount > 0 && <Stat num={watchCount} label="watched" styles={styles} />}
+                {followers > 0 && <TouchableOpacity onPress={() => setFollowList('followers')} accessibilityRole="button"><Stat num={followers} label="followers" styles={styles} /></TouchableOpacity>}
+                {following > 0 && <TouchableOpacity onPress={() => setFollowList('following')} accessibilityRole="button"><Stat num={following} label="following" styles={styles} /></TouchableOpacity>}
+              </View>
+            )}
+
+            {/* Fixed set of external links, rendered from the shared definition
+                so a link added on web can't go missing here. */}
+            {!!profile!.links && Object.keys(profile!.links).length > 0 && (
+              <View style={styles.linksRow}>
+                {SOCIAL_LINKS.filter((l: { key: string }) => profile!.links?.[l.key]).map((l: { key: string; label: string; url: (v: string) => string }) => (
+                  <TouchableOpacity
+                    key={l.key}
+                    onPress={() => Linking.openURL(l.url(profile!.links![l.key]))}
+                    accessibilityRole="link"
+                    accessibilityLabel={l.label}
+                  >
+                    <Text style={styles.linkChip}>{l.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
             {locked && (
               <View style={styles.lockCard}>
                 <Text style={styles.lockKicker}>{PROFILE_PRIVACY.lockedTitle.toUpperCase()}</Text>
@@ -233,21 +232,66 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
               </View>
             )}
 
-            {layout.recent.length > 0 && (
-              <Section title={PUBLIC_PROFILE_PAGE.watchHistory} colors={colors}><PosterGrid items={layout.recent} styles={styles} onPress={openMedia} /></Section>
-            )}
-            {layout.topMovies.length > 0 && (
-              <Section title={PUBLIC_PROFILE_PAGE.topFilms} colors={colors}><PosterGrid items={layout.topMovies} ranked styles={styles} onPress={openMedia} /></Section>
-            )}
-            {layout.topTv.length > 0 && (
-              <Section title={PUBLIC_PROFILE_PAGE.topTv} colors={colors}><PosterGrid items={layout.topTv} ranked styles={styles} onPress={openMedia} /></Section>
-            )}
-            {layout.favourites.length > 0 && (
-              <Section title={fw.plural} colors={colors}><PosterGrid items={layout.favourites} styles={styles} onPress={openMedia} /></Section>
+            {hasPicks && (
+              <View style={styles.section}>
+                <ShelfHeading
+                  title={PUBLIC_PROFILE_PAGE.topFive}
+                  // Always both, so a visitor can see the other list exists even when it is empty.
+                  right={<ShelfSwitch label={PUBLIC_PROFILE_PAGE.topFive} value={pickType} onChange={setPickType}
+                    options={[{ value: 'movie', label: MEDIA.movies }, { value: 'tv', label: MEDIA.tv }]} />}
+                />
+                {picks.length > 0 ? (
+                  <>
+                    <TopFiveGrid items={picks} onOpen={openMedia} />
+                    <Text style={styles.hint}>{PUBLIC_PROFILE_PAGE.tapPosterForDetails}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.sparse}>{PUBLIC_PROFILE_PAGE.noPicksOfType(pickType === 'tv' ? MEDIA.tv : MEDIA.movies)}</Text>
+                )}
+              </View>
             )}
 
-            {noPublicContent && (
-              <Text style={styles.noContent}>{name} hasn't logged anything public yet.</Text>
+            {lists.length > 0 && (
+              <View style={styles.section}>
+                <ShelfHeading title={PUBLIC_PROFILE_PAGE.lists} right={<ShelfButton label={PUBLIC_PROFILE_PAGE.viewAll} onPress={() => openSection('lists')} />} />
+                <ListCovers lists={lists} countLabel={PUBLIC_PROFILE_PAGE.titleCount} expandedId={expandedList}
+                  onToggle={(id) => setExpandedList((v) => (v === id ? null : id))} />
+                {expanded && (
+                  <View style={styles.expanded}>
+                    <ShelfHeading title={expanded.name} right={<ShelfButton label={PUBLIC_PROFILE_PAGE.showLess} onPress={() => setExpandedList(null)} />} />
+                    <PosterRail items={expanded.items} onOpen={openMedia} />
+                  </View>
+                )}
+              </View>
+            )}
+
+            {content.favourites.length > 0 && (
+              <View style={styles.section}>
+                <ShelfHeading title={fw.plural} right={<ShelfButton label={PUBLIC_PROFILE_PAGE.viewAll} onPress={() => openSection('favourites')} />} />
+                <PosterGrid items={content.favourites.slice(0, 10)} columns={5} onOpen={openMedia} />
+              </View>
+            )}
+
+            {content.recent.length > 0 && (
+              <View style={styles.section}>
+                <ShelfHeading title={PUBLIC_PROFILE_PAGE.watchHistory} right={<ShelfButton label={PUBLIC_PROFILE_PAGE.viewAll} onPress={() => openSection('history')} />} />
+                <HistoryRows items={content.recent.slice(0, 4)} onOpen={openMedia} />
+              </View>
+            )}
+
+            {([[PUBLIC_PROFILE_PAGE.watching, content.watching], [PUBLIC_PROFILE_PAGE.wantToWatch, content.wantToWatch]] as [string, ShelfItem[]][])
+              .map(([label, items]) => items.length > 0 && (
+                <View style={styles.section} key={label}>
+                  <ShelfHeading title={label} />
+                  <PosterRail items={items} onOpen={openMedia} />
+                </View>
+              ))}
+
+            {!locked && content.empty && (
+              <View style={styles.sparseWrap}>
+                <Text style={styles.sparse}>{PUBLIC_PROFILE_PAGE.noPublicTitles}</Text>
+                {isOwn && <ShelfButton label={PUBLIC_PROFILE_PAGE.addFirstPick} onPress={() => router.push('/(app)/my-lists' as any)} />}
+              </View>
             )}
           </View>
         )}
@@ -285,55 +329,11 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
   );
 }
 
-function Stat({ num, label, colors }: { num: string; label: string; colors: Palette }) {
+function Stat({ num, label, styles }: { num: number; label: string; styles: ReturnType<typeof makeStyles> }) {
   return (
-    <View style={{ alignItems: 'center' }}>
-      <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, lineHeight: fontSize.xxl + 2 }}>{num}</Text>
-      <Text style={{ fontFamily: fontFamily.sans, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginTop: 3 }}>{label}</Text>
-    </View>
-  );
-}
-
-// Module scope, not defined inside ProfileScreen: a component declared during
-// render gets a new identity every render, so React unmounts and remounts the
-// whole grid each time — losing scroll position and re-fetching every poster.
-function PosterGrid({ items, ranked = false, styles, onPress }: {
-  items: PosterItem[];
-  ranked?: boolean;
-  styles: ReturnType<typeof makeStyles>;
-  onPress: (it: PosterItem) => void;
-}) {
-  if (!items?.length) return null;
-  return (
-    <View style={styles.grid}>
-      {items.map((it, i) => {
-        const img = posterUrl(it.poster_path, 'w185');
-        return (
-          <TouchableOpacity
-            key={`${it.tmdb_id}-${it.rank ?? i}`}
-            style={styles.poster}
-            activeOpacity={0.8}
-            onPress={() => onPress(it)}
-          >
-            {img
-              ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-              : <View style={styles.posterFallback}><Text style={styles.posterFallbackText} numberOfLines={3}>{it.title}</Text></View>}
-            {ranked && it.rank != null && (
-              <View style={styles.rankBadge}><Text style={styles.rankText}>{it.rank}</Text></View>
-            )}
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-function Section({ title, colors, children }: { title: string; colors: Palette; children: React.ReactNode }) {
-  return (
-    <View style={{ marginTop: spacing.xl }}>
-      <Text style={{ fontFamily: fontFamily.sansBold, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', color: colors.textMuted, marginBottom: spacing.md }}>{title}</Text>
-      {children}
-    </View>
+    <Text style={styles.stat}>
+      <Text style={styles.statNum}>{num}</Text> {label}
+    </Text>
   );
 }
 
@@ -380,41 +380,40 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   emptyWrap: { alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing.xxl * 2, gap: spacing.md },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, textAlign: 'center' },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingTop: spacing.lg },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },
   headerText: { flex: 1, minWidth: 0 },
   nameLine: { flexDirection: 'row', alignItems: 'center' },
   name: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, flexShrink: 1 },
   handle: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
-  actions: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg },
-  btnPrimary: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl, borderRadius: radii.pill, backgroundColor: colors.textPrimary },
+  actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg },
+  btnPrimary: { minHeight: 36, justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radii.pill, backgroundColor: colors.textPrimary },
   btnPrimaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.bg },
-  btnSecondary: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl, borderRadius: radii.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.textPrimary },
+  btnSecondary: { minHeight: 36, justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radii.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.textPrimary },
   btnSecondaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   bio: {
     fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 21,
-    color: colors.textSecondary, paddingHorizontal: spacing.xl, marginTop: spacing.lg,
+    color: colors.textSecondary, marginTop: spacing.md,
   },
   linksRow: {
     flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm,
-    paddingHorizontal: spacing.xl, marginTop: spacing.md,
+    marginTop: spacing.md,
   },
   linkChip: {
     fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted,
     borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
     borderRadius: radii.pill, paddingHorizontal: spacing.md, paddingVertical: 4,
   },
-  editTop: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
-  stats: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xxl, marginTop: spacing.xl, flexWrap: 'wrap' },
+  stats: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md, flexWrap: 'wrap' },
+  stat: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  statNum: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary },
+  section: { marginTop: spacing.xxl },
+  expanded: { marginTop: spacing.lg },
+  hint: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.md },
+  sparse: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  sparseWrap: { marginTop: spacing.xxl, alignItems: 'flex-start', gap: spacing.md },
   lockCard: { marginTop: spacing.xl, padding: spacing.lg, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceRaised },
   lockKicker: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 1, color: colors.accent },
   lockCopy: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 21, marginTop: spacing.sm },
-  noContent: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xl },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP, alignItems: 'flex-start' },
-  poster: { width: POSTER_W, height: POSTER_H, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceRaised, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  posterFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 4 },
-  posterFallbackText: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
-  rankBadge: { position: 'absolute', top: 0, left: 0, minWidth: 22, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: 'rgba(0,0,0,0.6)', borderBottomRightRadius: 8 },
-  rankText: { fontFamily: fontFamily.display, fontSize: fontSize.sm, color: '#fff', textAlign: 'center' },
   sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   sheet: { backgroundColor: colors.surface, borderTopLeftRadius: radii.md, borderTopRightRadius: radii.md, maxHeight: '75%', paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
   sheetHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },

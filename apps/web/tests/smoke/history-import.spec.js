@@ -53,7 +53,7 @@ test('TV Time reports omitted rewatches before confirmation and retains the repo
   const { Buffer } = await import('node:buffer');
   const sample = JSON.parse(readFileSync(file, 'utf8'))[1].movie;
   await page.goto('/tests/smoke/fixtures/history-import.html');
-  await page.getByRole('button', { name: 'TV Time saved export JSON export' }).click();
+  await page.getByRole('button', { name: 'TV Time saved export JSON or CSV export' }).click();
   await page.locator('input[type=file]').setInputFiles({ name: 'movies.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify([
     { title: sample.title, id: sample.ids, is_watched: true, watched_at: null, rating: 8, rewatch_count: 2 },
   ])) });
@@ -68,6 +68,27 @@ test('TV Time reports omitted rewatches before confirmation and retains the repo
   expect(events[0]).toMatchObject({ source: 'tvtime', date_precision: 'unknown', watched_at: null, external_ids: { rewatch_count: 2 } });
 });
 
+test('TV Time official CSV previews and imports an episode watch', async ({ page }, testInfo) => {
+  const { readFileSync } = await import('node:fs');
+  const { Buffer } = await import('node:buffer');
+  const sample = JSON.parse(readFileSync(file, 'utf8'))[0];
+  const csv = [
+    'user_id,created_at,s_id,ep_id,key,updated_at,is_followed,series_name,season_number,episode_number',
+    `10000001,2024-02-29 12:30:15,1,2,watch-episode-smoke,2024-02-29 12:30:15,,${sample.show.title},${sample.episode.season},${sample.episode.number}`,
+  ].join('\n');
+  await page.goto('/tests/smoke/fixtures/history-import.html');
+  await page.getByRole('button', { name: 'TV Time saved export JSON or CSV export' }).click();
+  await page.locator('input[type=file]').setInputFiles({ name: 'tracking-prod-records-v2.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await expect(page.getByText(`Season ${sample.episode.season}, episode ${sample.episode.number}`)).toBeVisible();
+  await expect(page.getByText(/Watch time has no timezone/)).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('tv-time-official-csv-preview.png'), fullPage: true });
+  await page.getByRole('combobox').selectOption({ index: 1 });
+  await page.getByRole('button', { name: 'Import →', exact: true }).click();
+  await expect(page.getByText('1 entry added · 0 duplicates skipped · 0 not confirmed')).toBeVisible();
+  const events = JSON.parse(await page.getByTestId('saved-events').textContent());
+  expect(events[0]).toMatchObject({ source: 'tvtime', season_number: sample.episode.season, episode_number: sample.episode.number, watched_on: '2024-02-29', watched_at: null, date_precision: 'day' });
+});
+
 test('TV Time multiple files separate membership from watches and reimport individual files safely', async ({ page }) => {
   const { readFileSync } = await import('node:fs');
   const { Buffer } = await import('node:buffer');
@@ -76,7 +97,7 @@ test('TV Time multiple files separate membership from watches and reimport indiv
   const movies = { name: 'movies.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify([movie])) };
   const lists = { name: 'lists.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify([{ name: 'Together', shows: [], movies: [movie] }])) };
   await page.goto('/tests/smoke/fixtures/history-import.html');
-  await page.getByRole('button', { name: 'TV Time saved export JSON export' }).click();
+  await page.getByRole('button', { name: 'TV Time saved export JSON or CSV export' }).click();
   await page.locator('input[type=file]').setInputFiles([lists, movies]);
   await expect(page.getByRole('checkbox', { name: 'Include this list' })).toBeVisible();
   await expect(page.getByTestId('saved-events')).toBeEmpty();
@@ -85,7 +106,7 @@ test('TV Time multiple files separate membership from watches and reimport indiv
   expect(JSON.parse(await page.getByTestId('saved-events').textContent())).toHaveLength(1);
   await expect(page.getByTestId('saved-lists')).toHaveText('["Together"]');
   await page.getByRole('button', { name: 'Restart import' }).click();
-  await page.getByRole('button', { name: 'TV Time saved export JSON export' }).click();
+  await page.getByRole('button', { name: 'TV Time saved export JSON or CSV export' }).click();
   await page.locator('input[type=file]').setInputFiles(movies);
   await page.getByRole('button', { name: 'Import →', exact: true }).click();
   await expect(page.getByText('0 entries added · 1 duplicate skipped · 0 not confirmed')).toBeVisible();
@@ -99,13 +120,13 @@ test('TV Time ZIP upload reports extra files and preserves extracted-file reimpo
   const sample = JSON.parse(readFileSync(file, 'utf8'))[1].movie;
   const text = JSON.stringify([{ title: sample.title, id: sample.ids, is_watched: true, watched_at: null, rating: null }]);
   await page.goto('/tests/smoke/fixtures/history-import.html');
-  await page.getByRole('button', { name: 'TV Time saved export JSON export' }).click();
+  await page.getByRole('button', { name: 'TV Time saved export JSON or CSV export' }).click();
   await page.locator('input[type=file]').setInputFiles({ name: 'tvtime.zip', mimeType: 'application/zip', buffer: Buffer.from(zipSync({ 'movies.json': strToU8(text), 'activity_history.csv': strToU8('alternate representation') })) });
   await expect(page.getByText(/activity_history.csv: This archive file is not imported/)).toBeVisible();
   await page.getByRole('button', { name: 'Import →', exact: true }).click();
   await expect(page.getByText('1 entry added · 0 duplicates skipped · 0 not confirmed')).toBeVisible();
   await page.getByRole('button', { name: 'Restart import' }).click();
-  await page.getByRole('button', { name: 'TV Time saved export JSON export' }).click();
+  await page.getByRole('button', { name: 'TV Time saved export JSON or CSV export' }).click();
   await page.locator('input[type=file]').setInputFiles({ name: 'movies.json', mimeType: 'application/json', buffer: Buffer.from(text) });
   await page.getByRole('button', { name: 'Import →', exact: true }).click();
   await expect(page.getByText('0 entries added · 1 duplicate skipped · 0 not confirmed')).toBeVisible();

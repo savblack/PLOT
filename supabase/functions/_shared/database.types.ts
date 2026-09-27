@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -59,12 +59,50 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_checkout_attempts: {
+        Row: {
+          lease_token: string | null
+          lease_until: string | null
+          managed_payments: boolean
+          operation_id: string
+          price_id: string
+          session_id: string | null
+          settings_url: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          lease_token?: string | null
+          lease_until?: string | null
+          managed_payments?: boolean
+          operation_id?: string
+          price_id: string
+          session_id?: string | null
+          settings_url: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          lease_token?: string | null
+          lease_until?: string | null
+          managed_payments?: boolean
+          operation_id?: string
+          price_id?: string
+          session_id?: string | null
+          settings_url?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       billing_customers: {
         Row: {
           cancel_at_period_end: boolean
           current_period_end: string | null
           last_event_at: string | null
+          past_due_since: string | null
           price_id: string | null
+          revision: number
           stripe_customer_id: string
           stripe_subscription_id: string | null
           subscription_status: string | null
@@ -75,7 +113,9 @@ export type Database = {
           cancel_at_period_end?: boolean
           current_period_end?: string | null
           last_event_at?: string | null
+          past_due_since?: string | null
           price_id?: string | null
+          revision?: number
           stripe_customer_id: string
           stripe_subscription_id?: string | null
           subscription_status?: string | null
@@ -86,12 +126,50 @@ export type Database = {
           cancel_at_period_end?: boolean
           current_period_end?: string | null
           last_event_at?: string | null
+          past_due_since?: string | null
           price_id?: string | null
+          revision?: number
           stripe_customer_id?: string
           stripe_subscription_id?: string | null
           subscription_status?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      broadcast_preferences: {
+        Row: {
+          channel_ids: string[] | null
+          market_id: string
+          user_id: string
+        }
+        Insert: {
+          channel_ids?: string[] | null
+          market_id: string
+          user_id: string
+        }
+        Update: {
+          channel_ids?: string[] | null
+          market_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      critic_score_request_quota: {
+        Row: {
+          bucket: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          bucket?: string
+          request_count?: number
+          window_start?: string
         }
         Relationships: []
       }
@@ -113,6 +191,36 @@ export type Database = {
           fetched_at?: string
           imdb_id?: string
           source?: string | null
+        }
+        Relationships: []
+      }
+      episode_watch_overrides: {
+        Row: {
+          episode_number: number
+          id: string
+          season_number: number
+          tmdb_id: number
+          updated_at: string
+          user_id: string
+          watched: boolean
+        }
+        Insert: {
+          episode_number: number
+          id?: string
+          season_number: number
+          tmdb_id: number
+          updated_at?: string
+          user_id: string
+          watched: boolean
+        }
+        Update: {
+          episode_number?: number
+          id?: string
+          season_number?: number
+          tmdb_id?: number
+          updated_at?: string
+          user_id?: string
+          watched?: boolean
         }
         Relationships: []
       }
@@ -292,6 +400,104 @@ export type Database = {
           watchStatus?: string | null
         }
         Relationships: []
+      }
+      imported_annotations: {
+        Row: {
+          annotation: Json
+          annotation_scope: string
+          episode_number: number | null
+          external_ids: Json
+          id: string
+          imported_at: string
+          media_type: string
+          season_number: number | null
+          source: string
+          source_key: string
+          tmdb_id: number
+          user_id: string
+        }
+        Insert: {
+          annotation: Json
+          annotation_scope: string
+          episode_number?: number | null
+          external_ids?: Json
+          id?: string
+          imported_at?: string
+          media_type: string
+          season_number?: number | null
+          source: string
+          source_key: string
+          tmdb_id: number
+          user_id: string
+        }
+        Update: {
+          annotation?: Json
+          annotation_scope?: string
+          episode_number?: number | null
+          external_ids?: Json
+          id?: string
+          imported_at?: string
+          media_type?: string
+          season_number?: number | null
+          source?: string
+          source_key?: string
+          tmdb_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      imported_list_entries: {
+        Row: {
+          id: string
+          payload: Json
+          source_key: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          payload: Json
+          source_key: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          payload?: Json
+          source_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      imported_lists: {
+        Row: {
+          id: string
+          list_id: string | null
+          metadata: Json
+          source_key: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          list_id?: string | null
+          metadata: Json
+          source_key: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          list_id?: string | null
+          metadata?: Json
+          source_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imported_lists_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "user_custom_lists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       integration_items: {
         Row: {
@@ -572,6 +778,24 @@ export type Database = {
           run_type?: string
           started_at?: string
           status?: string
+        }
+        Relationships: []
+      }
+      marketing_linear_mirror_lease: {
+        Row: {
+          lease_until: string
+          owner: string
+          singleton: boolean
+        }
+        Insert: {
+          lease_until: string
+          owner: string
+          singleton?: boolean
+        }
+        Update: {
+          lease_until?: string
+          owner?: string
+          singleton?: boolean
         }
         Relationships: []
       }
@@ -1502,6 +1726,36 @@ export type Database = {
         }
         Relationships: []
       }
+      private_title_notes: {
+        Row: {
+          media_type: string
+          note: string
+          revision: number
+          title: string
+          tmdb_id: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          media_type: string
+          note: string
+          revision?: number
+          title?: string
+          tmdb_id: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          media_type?: string
+          note?: string
+          revision?: number
+          title?: string
+          tmdb_id?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1616,6 +1870,51 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          linear_issue_id: string | null
+          linear_issue_url: string | null
+          linear_sync_error: string | null
+          linear_synced_at: string | null
+          reason: string
+          reported_id: string
+          reporter_id: string | null
+          status: string
+          surface: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          linear_issue_id?: string | null
+          linear_issue_url?: string | null
+          linear_sync_error?: string | null
+          linear_synced_at?: string | null
+          reason: string
+          reported_id: string
+          reporter_id?: string | null
+          status?: string
+          surface: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          linear_issue_id?: string | null
+          linear_issue_url?: string | null
+          linear_sync_error?: string | null
+          linear_synced_at?: string | null
+          reason?: string
+          reported_id?: string
+          reporter_id?: string | null
+          status?: string
+          surface?: string
+        }
+        Relationships: []
+      }
       stripe_events: {
         Row: {
           id: string
@@ -1634,9 +1933,211 @@ export type Database = {
         }
         Relationships: []
       }
+      tracking_connections: {
+        Row: {
+          automatic_enabled: boolean
+          created_at: string
+          cursor_at: string | null
+          integration_id: string
+          last_full_at: string | null
+          last_success_at: string | null
+          next_sync_at: string
+          outgoing_enabled: boolean
+          user_id: string
+        }
+        Insert: {
+          automatic_enabled?: boolean
+          created_at?: string
+          cursor_at?: string | null
+          integration_id: string
+          last_full_at?: string | null
+          last_success_at?: string | null
+          next_sync_at?: string
+          outgoing_enabled?: boolean
+          user_id: string
+        }
+        Update: {
+          automatic_enabled?: boolean
+          created_at?: string
+          cursor_at?: string | null
+          integration_id?: string
+          last_full_at?: string | null
+          last_success_at?: string | null
+          next_sync_at?: string
+          outgoing_enabled?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_connections_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: true
+            referencedRelation: "media_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_import_items: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          source_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          payload: Json
+          source_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          source_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tracking_jobs: {
+        Row: {
+          attempts: number
+          available_at: string
+          checkpoint: Json
+          created_at: string
+          duplicates: number
+          finished_at: string | null
+          id: string
+          imported: number
+          integration_id: string
+          last_error: string | null
+          lease_token: string | null
+          lease_until: string | null
+          mode: string
+          provider: string
+          review_count: number
+          skipped: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          checkpoint?: Json
+          created_at?: string
+          duplicates?: number
+          finished_at?: string | null
+          id?: string
+          imported?: number
+          integration_id: string
+          last_error?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          mode: string
+          provider: string
+          review_count?: number
+          skipped?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          checkpoint?: Json
+          created_at?: string
+          duplicates?: number
+          finished_at?: string | null
+          id?: string
+          imported?: number
+          integration_id?: string
+          last_error?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          mode?: string
+          provider?: string
+          review_count?: number
+          skipped?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_jobs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "media_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_review_items: {
+        Row: {
+          created_at: string
+          decision: string
+          id: string
+          integration_id: string
+          payload: Json
+          source_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision?: string
+          id?: string
+          integration_id: string
+          payload: Json
+          source_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          id?: string
+          integration_id?: string
+          payload?: Json
+          source_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_review_items_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "media_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       user_custom_list_items: {
         Row: {
           added_at: string | null
+          genre_ids: number[]
           id: string
           list_id: string
           media_type: string
@@ -1647,6 +2148,7 @@ export type Database = {
         }
         Insert: {
           added_at?: string | null
+          genre_ids?: number[]
           id?: string
           list_id: string
           media_type: string
@@ -1657,6 +2159,7 @@ export type Database = {
         }
         Update: {
           added_at?: string | null
+          genre_ids?: number[]
           id?: string
           list_id?: string
           media_type?: string
@@ -1673,6 +2176,13 @@ export type Database = {
             referencedRelation: "user_custom_lists"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_custom_list_items_parent_owner_fkey"
+            columns: ["list_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "user_custom_lists"
+            referencedColumns: ["id", "user_id"]
+          },
         ]
       }
       user_custom_lists: {
@@ -1682,6 +2192,7 @@ export type Database = {
           is_public: boolean
           name: string
           user_id: string
+          visibility: string
         }
         Insert: {
           created_at?: string | null
@@ -1689,6 +2200,7 @@ export type Database = {
           is_public?: boolean
           name: string
           user_id: string
+          visibility?: string
         }
         Update: {
           created_at?: string | null
@@ -1696,12 +2208,14 @@ export type Database = {
           is_public?: boolean
           name?: string
           user_id?: string
+          visibility?: string
         }
         Relationships: []
       }
       user_favourites: {
         Row: {
           created_at: string | null
+          genre_ids: number[]
           id: string
           media_type: string
           poster_path: string | null
@@ -1711,6 +2225,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          genre_ids?: number[]
           id?: string
           media_type: string
           poster_path?: string | null
@@ -1720,6 +2235,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          genre_ids?: number[]
           id?: string
           media_type?: string
           poster_path?: string | null
@@ -1762,6 +2278,63 @@ export type Database = {
           title?: string
           tmdb_id?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      watch_events: {
+        Row: {
+          created_at: string
+          date_precision: string
+          episode_number: number | null
+          external_ids: Json
+          id: string
+          media_type: string
+          season_number: number | null
+          source: string
+          source_account: string
+          source_key: string
+          source_rating: number | null
+          source_review: string | null
+          tmdb_id: number
+          user_id: string
+          watched_at: string | null
+          watched_on: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_precision: string
+          episode_number?: number | null
+          external_ids?: Json
+          id?: string
+          media_type: string
+          season_number?: number | null
+          source: string
+          source_account: string
+          source_key: string
+          source_rating?: number | null
+          source_review?: string | null
+          tmdb_id: number
+          user_id: string
+          watched_at?: string | null
+          watched_on?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_precision?: string
+          episode_number?: number | null
+          external_ids?: Json
+          id?: string
+          media_type?: string
+          season_number?: number | null
+          source?: string
+          source_account?: string
+          source_key?: string
+          source_rating?: number | null
+          source_review?: string | null
+          tmdb_id?: number
+          user_id?: string
+          watched_at?: string | null
+          watched_on?: string | null
         }
         Relationships: []
       }
@@ -1888,16 +2461,97 @@ export type Database = {
         Args: { p_caller_bucket: string }
         Returns: boolean
       }
+      apply_stripe_subscription_event: {
+        Args: {
+          p_cancel_at_period_end: boolean
+          p_current_period_end: string
+          p_customer_id: string
+          p_event_created: string
+          p_event_id: string
+          p_event_type: string
+          p_price_id: string
+          p_status: string
+          p_subscription_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      apply_stripe_subscription_snapshot: {
+        Args: {
+          p_cancel_at_period_end: boolean
+          p_current_period_end: string
+          p_customer_id: string
+          p_event_created: string
+          p_event_id: string
+          p_event_type: string
+          p_expected_revision: number
+          p_price_id: string
+          p_status: string
+          p_subscription_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       auth_note_fail: {
         Args: { p_ip: string; p_scope: string; p_window_ms: number }
         Returns: number
       }
       can_create_custom_list: { Args: never; Returns: boolean }
+      can_view_custom_list: {
+        Args: { p_owner: string; p_visibility: string }
+        Returns: boolean
+      }
+      can_view_profile: { Args: { p_uid: string }; Returns: boolean }
+      claim_billing_checkout: {
+        Args: { p_price_id: string; p_settings_url: string; p_user_id: string }
+        Returns: Json
+      }
       claim_marketing_linear_mirror: {
         Args: { p_owner: string }
         Returns: boolean
       }
+      claim_tracking_job: {
+        Args: { p_provider: string; p_users?: string[] }
+        Returns: Json
+      }
+      control_tracking: {
+        Args: { p_action: string; p_integration: string }
+        Returns: Json
+      }
+      enqueue_due_tracking_jobs: {
+        Args: { p_provider: string; p_users?: string[] }
+        Returns: number
+      }
+      fail_tracking_job: {
+        Args: {
+          p_error: string
+          p_job: string
+          p_lease: string
+          p_retry_seconds?: number
+          p_terminal?: boolean
+        }
+        Returns: boolean
+      }
+      finish_tracking_page: {
+        Args: {
+          p_checkpoint: Json
+          p_done: boolean
+          p_job: string
+          p_lease: string
+          p_records: Json
+          p_skipped?: number
+        }
+        Returns: Json
+      }
       generate_username: { Args: { p_seed: string }; Returns: string }
+      get_follow_counts: {
+        Args: { p_target: string }
+        Returns: {
+          followers: number
+          following: number
+        }[]
+      }
+      get_my_billing_status: { Args: never; Returns: Json }
       get_profile_card: {
         Args: { p_username: string }
         Returns: {
@@ -1914,9 +2568,35 @@ export type Database = {
           username: string
         }[]
       }
+      get_shared_list: {
+        Args: { p_list_id: string }
+        Returns: {
+          id: string
+          items: Json
+          name: string
+          user_id: string
+          visibility: string
+        }[]
+      }
+      import_saved_annotations: { Args: { p_records: Json }; Returns: Json }
+      import_saved_list: {
+        Args: { p_list: Json; p_records: Json }
+        Returns: Json
+      }
+      import_watch_events: { Args: { p_records: Json }; Returns: Json }
       is_accepted_follower: { Args: { p_target: string }; Returns: boolean }
       is_premium: { Args: { p_user?: string }; Returns: boolean }
       is_profile_public: { Args: { p_uid: string }; Returns: boolean }
+      list_blocked_users: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          created_at: string
+          display_name: string
+          id: string
+          username: string
+        }[]
+      }
       list_follow_requests: {
         Args: never
         Returns: {
@@ -1926,10 +2606,6 @@ export type Database = {
           requested_at: string
           username: string
         }[]
-      }
-      release_marketing_linear_mirror: {
-        Args: { p_owner: string }
-        Returns: undefined
       }
       list_followers: {
         Args: { p_target: string }
@@ -1980,7 +2656,55 @@ export type Database = {
           unsubscribe_token: string
         }[]
       }
+      not_blocked: { Args: { p_uid: string }; Returns: boolean }
+      profile_links_ok: { Args: { l: Json }; Returns: boolean }
       record_kofi_tip: { Args: { p_payload: Json }; Returns: Json }
+      release_marketing_linear_mirror: {
+        Args: { p_owner: string }
+        Returns: undefined
+      }
+      resolve_tracking_review: {
+        Args: { p_keep: boolean; p_review: string }
+        Returns: Json
+      }
+      run_marketing_linear_mirror: { Args: never; Returns: undefined }
+      save_private_title_note: {
+        Args: {
+          p_expected_revision: number
+          p_media_type: string
+          p_note: string
+          p_title?: string
+          p_tmdb_id: number
+          p_user_id: string
+        }
+        Returns: {
+          media_type: string
+          note: string
+          revision: number
+          title: string
+          tmdb_id: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "private_title_notes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      save_tracking_tokens: {
+        Args: {
+          p_access: string
+          p_access_iv: string
+          p_expires: string
+          p_job: string
+          p_lease: string
+          p_refresh: string
+          p_refresh_iv: string
+        }
+        Returns: boolean
+      }
       search_users: {
         Args: { p_query: string }
         Returns: {
@@ -1993,6 +2717,10 @@ export type Database = {
           is_supporter: boolean
           username: string
         }[]
+      }
+      select_plex_tracking_source: {
+        Args: { p_integration: string; p_selection: Json; p_servers: Json }
+        Returns: undefined
       }
       suggested_users: {
         Args: { p_limit?: number }
@@ -2036,12 +2764,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2065,11 +2793,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2090,11 +2818,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2115,11 +2843,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2132,11 +2860,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

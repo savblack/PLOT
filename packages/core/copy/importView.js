@@ -52,7 +52,7 @@ export const IMPORT_VIEW = {
   conflictingFiles: 'Two selected files have the same name but different contents. Import them separately so their source identity stays clear.',
   reportHeading: 'Review what will be left out or changed',
   tvTimeName: 'TV Time saved export',
-  tvTimeHint: 'Choose one or more previously saved TV Time Liberator files: shows.json, movies.json, lists.json or favorites.json. Keep the original filename. You can also choose its ZIP archive. GDPR CSV files are not supported yet. PLOT cannot recover unavailable exports or connect a TV Time account.',
+  tvTimeHint: 'Choose one or more saved TV Time files. GDPR archives use tracking-prod-records-v2.csv for shows and tracking-prod-records.csv for movies. TV Time Liberator JSON files and ZIP archives also work. Keep the original filenames. Plot cannot recover unavailable exports or connect a TV Time account.',
   sourceRecord: (number) => `Record ${number}`,
   documentReport: (reason, count) => ({
     missing_title: 'This source record has no usable title and will not be imported.',
@@ -67,7 +67,7 @@ export const IMPORT_VIEW = {
     duplicate_file: 'Duplicate file selection was left out.',
     empty_list: 'Empty list will not be imported.',
   }[reason] || 'This record needs review and will not be imported.'),
-  tvTimeUnsupported: 'Unsupported TV Time saved file or record. Keep the original shows.json, movies.json, lists.json or favorites.json filename from TV Time Liberator. No records were imported.',
+  tvTimeUnsupported: 'Unsupported TV Time saved file or record. Keep the original tracking-prod-records-v2.csv, tracking-prod-records.csv, shows.json, movies.json, lists.json or favorites.json filename. No records were imported.',
   watchlistName: 'Watchlist',
   traktAnnotationUnsupported: 'Unsupported Trakt rating or review record. Nothing was imported.',
   traktWatchlistUnsupported: 'Unsupported Trakt watchlist record. This preview accepts lists-watchlist.json with movie/show records. Missing identifiers require title review. Nothing was imported.',

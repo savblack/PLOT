@@ -23,9 +23,9 @@ import type { Database } from '../_shared/database.types.ts'
 // `never` and the real client was not even assignable to it. Bind it to
 // the schema instead.
 type Db = SupabaseClient<Database>;
-// Shared site footer markup — generated from website/_partials/footer.html.
-// Run `npm run footer` to regenerate after editing the partial.
-import { FOOTER_HTML } from './footer.generated.ts';
+// Shared site footer markup and styles — generated from website/_partials/footer.html
+// and footer.css. Run `npm run footer` to regenerate after editing either partial.
+import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
 
@@ -460,11 +460,13 @@ ${head}
   .nav-logo { text-decoration: none; display: flex; align-items: center; font-family: var(--display); font-size: 1.65rem; font-weight: 700; letter-spacing: -0.045em; color: var(--ink); line-height: 1; user-select: none; }
   .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
   .nav-links li { display: flex; }
-  .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--ink); font-size: 0.9rem; font-weight: 500; transition: color 0.2s, background 0.2s; }
-  .nav-links a:hover { color: var(--mut); }
+  /* Small tracked capitals: the same values as apps/website/nav.css. */
+  .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--mut); font-size: 0.69rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s, background 0.2s; }
+  .nav-links a:hover { color: var(--ink); }
   .nav-links a.current { color: var(--ink); }
   .nav-cta { background: var(--fill); padding: 0.6rem 1.1rem !important; border-radius: 9999px; line-height: 1; }
-  .nav-cta:hover { color: var(--ink) !important; background: var(--fill-hover); }
+  .nav-links a.nav-cta { color: var(--ink); font-weight: 700; }
+  .nav-cta:hover { background: var(--fill-hover); }
   .nav-hamburger { display: none; background: none; border: none; cursor: pointer; padding: 14px 12px; margin-right: -12px; flex-direction: column; gap: 5px; }
   .nav-hamburger span { display: block; width: 22px; height: 2px; background: var(--ink); border-radius: 2px; transition: all 0.3s var(--ease); }
   .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
@@ -699,30 +701,9 @@ ${head}
   .mcard .mc-t { display: block; font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.1rem; line-height: 1.2; transition: color 0.25s var(--ease); }
   .mcard:hover .mc-t { color: var(--mut); }
 
-  footer {
-    background: var(--bg); color: var(--ink); border-top: 1px solid var(--hair);
-    position: relative; z-index: 3; margin-top: 90px; padding: 2.6rem 3rem;
-  }
-  .footer-inner {
-    max-width: 1100px; margin: 0 auto; display: flex; align-items: center;
-    justify-content: space-between; gap: 1.5rem 2rem; flex-wrap: wrap;
-  }
-  .footer-logo {
-    text-decoration: none; font-family: var(--display); font-weight: 700; letter-spacing: -0.045em;
-    font-size: 1.7rem; line-height: 1; color: var(--ink); user-select: none;
-  }
-  .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
-  .footer-nav a { font-size: 0.82rem; color: var(--mut); text-decoration: none; transition: color 0.2s; white-space: nowrap; }
-  .footer-nav a:hover { color: var(--ink); }
-  .footer-bottom {
-    width: 100%; padding-top: 1.2rem; margin-top: 0.4rem; border-top: 1px solid var(--hair);
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-  }
-  .footer-copy { font-size: 0.75rem; color: var(--mut); }
-  .footer-social { display: flex; gap: 1rem; align-items: center; }
-  .footer-social a { color: var(--mut); display: inline-flex; transition: color 0.2s; }
-  .footer-social a:hover { color: var(--ink); }
-  .footer-social svg { width: 19px; height: 19px; display: block; }
+  /* Shared site footer — generated from website/_partials/footer.css. */
+${FOOTER_CSS}
+  .site-footer { margin-top: 90px; }
 
   @media (max-width: 900px) {
     .feed-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
@@ -754,7 +735,6 @@ ${head}
     .dex { overflow-x: auto; scrollbar-width: none; }
     .dex::-webkit-scrollbar { display: none; }
     .dex-links { flex-wrap: nowrap; }
-    footer { padding-left: 1.5rem; padding-right: 1.5rem; }
   }
 </style>
 </head>
@@ -1099,7 +1079,7 @@ const tailList = (posts: FeedPost[]) => sectionCard('More updates', undefined,
 // ── Newsletter signup ─────────────────────────────────────────────
 // There is no archive: the digest goes out by email and lives only there,
 // so this form is the whole of the newsletter on the site. It sits at the
-// foot of What's On under #newsletter, which the nav links straight to.
+// foot of What's On under #newsletter, where the /newsletter redirects land.
 // Posts to theplot.tv/api/newsletter (the same proxy the homepage form uses),
 // including the honeypot field that endpoint expects.
 const subscribeForm = (placement: string) => `
@@ -1148,8 +1128,8 @@ const subscribeForm = (placement: string) => `
 </script>`;
 
 const SUBSCRIBE_CSS = `
-  /* Charcoal card. scroll-margin clears the fixed topnav: the footer links
-     straight to #newsletter, and without it the heading lands under it. */
+  /* Charcoal card. scroll-margin clears the fixed topnav: the /newsletter
+     redirects land on #newsletter, and without it the heading lands under it. */
   /* .nlsub.card outranks the later .card rule in the main stylesheet, which
      otherwise paints this cream and leaves cream text unreadable on it. */
   .nlsub.card, .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }

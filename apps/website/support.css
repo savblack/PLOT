@@ -32,7 +32,7 @@ h2 { font-size: 2rem; line-height: 1.15; }
 .policy-links a { padding: .5rem 0; }
 .skip-link { position: absolute; left: 1rem; top: -100px; z-index: 2000; background: var(--bg); padding: .7rem 1rem; }
 .skip-link:focus { top: 1rem; }
-    footer { margin-top: 5rem; }
+    .site-footer { margin-top: 5rem; }
 
 
 @media (max-width: 760px) {
@@ -42,7 +42,7 @@ h2 { font-size: 2rem; line-height: 1.15; }
   .contact-panel, .policy-section { padding: 1.5rem; }
   .faq-list { grid-template-columns: 1fr; }
   .help-section { margin-top: 1rem; }
-  footer { padding: 2rem 1.5rem; margin-top: 3rem; }
+  .site-footer { margin-top: 3rem; }
 }
 /* Keep support actions neutral; reserve the accent for interaction states. */
 #navbar .nav-cta { background: var(--ink); color: var(--bg); }

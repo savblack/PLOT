@@ -9,6 +9,7 @@ import {
   drawFromPool,
   loadWatchlistPool,
   loadDiscoverPage,
+  resolveKeywordGenres,
   loadWatchedIds,
   pickerGenres,
   pickerGenreTiles,
@@ -378,4 +379,65 @@ test('saved searches add newest first, replace duplicates and cap', () => {
 
 test('saved search labels drop "Find me" and start with a capital', () => {
   assert.equal(savedSearchLabel([{ text: 'Find me' }, { text: 'a movie' }, { text: 'under 2 hours.' }]), 'A movie under 2 hours.');
+});
+
+// Keyword-backed TV genres. Keyword ids are opaque fixture values from a fake client.
+test('shows get Horror, Romance and Thriller from the movie catalog as keyword genres', () => {
+  const catalog = { movie: [{ id: 27, name: 'Horror' }, { id: 10749, name: 'Romance' }, { id: 53, name: 'Thriller' }], tv: [{ id: 18, name: 'Drama' }] };
+  const tv = pickerGenres(catalog, opts({ mediaType: 'tv', hideKids: true }));
+  assert.deepEqual(tv.map(g => g.name).sort(), ['Drama', 'Horror', 'Romance', 'Thriller']);
+  const horror = tv.find(g => g.name === 'Horror');
+  assert.equal(horror.id, -27);
+  assert.equal(horror.mood, 'Scary');
+  assert.equal(pickerGenres(catalog, opts({ mediaType: 'movie' })).some(g => g.id < 0), false);
+});
+
+test('keyword genres resolve by exact name and are shared for the session', async () => {
+  _resetPickerCache();
+  let calls = 0;
+  const client = { async searchKeyword(q) { calls++; return { results: [{ id: 9001, name: q }, { id: 9002, name: `${q} movie` }] }; } };
+  const map = await resolveKeywordGenres([-27, 18], client);
+  assert.deepEqual(Object.keys(map), ['-27']);
+  assert.ok(map[-27].includes(9001));
+  assert.equal(map[-27].includes(9002), false);
+  const before = calls;
+  await resolveKeywordGenres([-27], client);
+  assert.equal(calls, before, 'second lookup served from cache');
+});
+
+test('keyword genres go in with_keywords and are queried apart from real genres', async () => {
+  const options = { ...opts({ mediaType: 'tv', genreIds: [18, -27] }), keywordGenres: { [-27]: [9001, 9003] } };
+  const seen = [];
+  const client = {
+    async discoverTV(params) {
+      seen.push(params);
+      return params.with_keywords
+        ? { total_pages: 3, results: [{ id: 1, name: 'Scary', poster_path: '/a.jpg', genre_ids: [9648] }] }
+        : { total_pages: 5, results: [{ id: 2, name: 'Moving', poster_path: '/b.jpg', genre_ids: [18] }] };
+    },
+  };
+  const { pool, totalPages } = await loadDiscoverPage({ options, providerIds: [], region: 'AU', client });
+  assert.equal(seen.length, 2);
+  assert.equal(seen.find(p => p.with_keywords).with_keywords, '9001|9003');
+  assert.equal(seen.find(p => p.with_keywords).with_genres, undefined);
+  assert.equal(seen.find(p => !p.with_keywords).with_genres, '18');
+  assert.deepEqual(pool.map(c => c.id).sort(), [1, 2]);
+  assert.deepEqual(pool.find(c => c.id === 1).kw_genres, [-27]);
+  assert.equal(totalPages, 5);
+});
+
+test('a keyword genre with no keyword found matches nothing, not everything', async () => {
+  let fetched = 0;
+  const client = { async discoverTV() { fetched++; return { results: [{ id: 3, name: 'Any', poster_path: '/c.jpg' }] }; } };
+  const options = { ...opts({ mediaType: 'tv', genreIds: [-10749] }), keywordGenres: { [-10749]: [] } };
+  const { pool } = await loadDiscoverPage({ options, providerIds: [], region: 'AU', client });
+  assert.equal(fetched, 0);
+  assert.deepEqual(pool, []);
+});
+
+test('watchlist shows match a keyword genre through their keywords', () => {
+  const options = { ...opts({ mediaType: 'tv', genreIds: [-53], onlyServices: false }), keywordGenres: { [-53]: [9010] } };
+  const base = { id: 5, media_type: 'tv', title: 'T', genre_ids: [80], runtime: 45, seasons: 2, miniseries: false, vote_average: 7, release_date: '2020-01-01', providers: [] };
+  assert.equal(matchesOptions({ ...base, keyword_ids: [9010] }, options, []), true);
+  assert.equal(matchesOptions({ ...base, keyword_ids: [1] }, options, []), false);
 });

@@ -60,6 +60,7 @@
     "staging:billing-lifecycle-test": "bash scripts/staging-sql.sh scripts/staging-billing-lifecycle-test.sql",
     "staging:security-scan-test": "bash scripts/staging-sql.sh scripts/staging-security-scan-test.sql",
     "staging:premium-flag-test": "bash scripts/staging-sql.sh scripts/staging-premium-flag-test.sql",
+    "staging:premium-badge-refresh-test": "bash scripts/staging-sql.sh scripts/staging-premium-badge-refresh-test.sql",
     "staging:taste-overlap-test": "bash scripts/staging-sql.sh scripts/staging-taste-overlap-test.sql",
     "staging:pgss-guard-test": "bash scripts/staging-sql.sh scripts/staging-pgss-guard-test.sql",
     "mkt:plan": "node marketing/planner/plan.mjs",
