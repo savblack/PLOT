@@ -85,6 +85,12 @@
  *   Analytics seam — fired when a profile is edited. Carries the *names* of the
  *   changed fields only, never the values: bios, links and display names are
  *   user content and must not reach analytics.
+ * @property {(payload: { action: string, error_kind: string, error_code?: string, http_status?: number, tmdb_id?: number, media_type?: string, list_id?: string, fields?: string[], progress_action?: string }) => void} [onActionFailed]
+ *   Analytics seam — fired when a user-initiated write fails (save, edit,
+ *   rate, review, list create/delete, …), from the same canonical sites as the
+ *   success seams above. Built by reportActionFailure in actionFailures.js,
+ *   which carries the error's code and a coarse kind but never its message:
+ *   Postgres puts row values there.
  */
 
 /** @type {PlotCoreConfig} */
@@ -117,6 +123,7 @@ const defaults = {
   onHistoryRemove: undefined,
   onWatchProgress: undefined,
   onProfileUpdate: undefined,
+  onActionFailed: undefined,
 };
 
 let config = { ...defaults };

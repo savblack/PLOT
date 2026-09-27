@@ -6,6 +6,7 @@ import { baseMediaRow, tmdbIdFromItem } from './media.js';
 import { logWatchedItem } from './userMedia.js';
 import { getNextEpisodeProgress, isRewind } from './watchingProgress.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 
 /**
  * Currently-watching shows + episode progress for a user.
@@ -89,6 +90,8 @@ export function useWatching(userId) {
       // Analytics seam (platform-injected; see config.js). Series progress is
       // reported from these canonical spots so both apps get it for free.
       getConfig().onWatchProgress?.({ tmdb_id, action: 'started' });
+    } else {
+      reportActionFailure(FAILED_ACTIONS.WATCH_PROGRESS, error, { tmdb_id, media_type: 'tv', progress_action: 'started' });
     }
     return data;
   }, [userId]);
@@ -97,6 +100,11 @@ export function useWatching(userId) {
   const markEpisodeWatched = useCallback(async (tmdbId) => {
     const progress = items.find(i => i.tmdb_id === Number(tmdbId));
     if (!progress) {
+      // Never reached the server: the panel offered a tick for a show this
+      // hook has no progress row for.
+      reportActionFailure(FAILED_ACTIONS.WATCH_PROGRESS, null, {
+        tmdb_id: Number(tmdbId), media_type: 'tv', progress_action: 'episode', kind: 'client_state',
+      });
       return {
         ok: false,
         code: 'missing-progress',
@@ -124,6 +132,9 @@ export function useWatching(userId) {
       .single();
 
     if (error || !data) {
+      reportActionFailure(FAILED_ACTIONS.WATCH_PROGRESS, error, {
+        tmdb_id: Number(tmdbId), media_type: 'tv', progress_action: 'episode',
+      });
       return {
         ok: false,
         code: 'save-failed',
@@ -182,6 +193,9 @@ export function useWatching(userId) {
     // Callers that only nudge the pointer ignore this; the season-level bulk
     // action needs to know whether the write actually landed.
     if (error || !data) {
+      reportActionFailure(FAILED_ACTIONS.WATCH_PROGRESS, error, {
+        tmdb_id: Number(tmdbId), media_type: 'tv', progress_action: reason,
+      });
       return { ok: false, code: 'save-failed', error: error?.message || null };
     }
     return { ok: true, data };
@@ -194,7 +208,12 @@ export function useWatching(userId) {
       .delete()
       .eq('user_id', userId)
       .eq('tmdb_id', Number(tmdbId));
-    if (error) return false;
+    if (error) {
+      reportActionFailure(FAILED_ACTIONS.WATCH_PROGRESS, error, {
+        tmdb_id: Number(tmdbId), media_type: 'tv', progress_action: 'stopped',
+      });
+      return false;
+    }
     setItems(prev => prev.filter(i => i.tmdb_id !== Number(tmdbId)));
     getConfig().onWatchProgress?.({ tmdb_id: Number(tmdbId), action: 'stopped' });
     return true;

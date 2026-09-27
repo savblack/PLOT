@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { logWatchedItem } from './userMedia.js';
 import { normalizeRating } from './ratings.js';
+import { tmdbIdFromItem } from './media.js';
 import { on, emit, HISTORY_CHANGED_EVENT } from './events.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, historyFailureAction, FAILED_ACTIONS } from './actionFailures.js';
 
 // Moved to events.js, alongside the bus. Re-exported so existing import sites
 // keep resolving.
@@ -83,6 +85,12 @@ export function useHistory(userId) {
     if (error) {
       console.error('Failed to log watched item', error);
       lastErrorRef.current = error.message || 'Unknown error saving watch status.';
+      reportActionFailure(historyFailureAction({ rating, note }, { logging: true }), error, {
+        tmdb_id: row?.tmdb_id ?? tmdbIdFromItem(item),
+        media_type: row?.media_type ?? item?.media_type,
+        fields: Object.entries({ rating, note, dnf, watched_at: watchedAt })
+          .filter(([, value]) => value != null).map(([key]) => key),
+      });
     } else {
       lastErrorRef.current = null;
     }
@@ -121,12 +129,20 @@ export function useHistory(userId) {
       ? { ...updates, rating: normalizeRating(updates.rating) || null }
       : updates;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('history')
       .update(normalizedUpdates)
       .eq('id', target.id)
       .select()
       .single();
+    // Checked on `data`, not `error`: callers treat a null row as failure, and
+    // an update RLS narrows to zero rows returns one without an error.
+    if (!data) {
+      if (error) console.error('[useHistory] update failed', error);
+      reportActionFailure(historyFailureAction(updates), error, {
+        tmdb_id: Number(tmdbId), media_type: target.media_type, fields: Object.keys(updates),
+      });
+    }
     if (data) {
       setEntries(prev => prev.map(e => e.id === target.id ? data : e));
       notifyHistoryChanged();
@@ -147,7 +163,11 @@ export function useHistory(userId) {
       .from('history')
       .delete()
       .eq('id', target.id);
-    if (error) return false; // keep local state intact so the entry doesn't ghost-reappear
+    if (error) {
+      // Keep local state intact so the entry doesn't ghost-reappear.
+      reportActionFailure(FAILED_ACTIONS.HISTORY_REMOVE, error, { tmdb_id: Number(tmdbId), media_type: target.media_type });
+      return false;
+    }
     setEntries(prev => prev.filter(e => e.id !== target.id));
     notifyHistoryChanged();
     // The undo half of onWatched — without it, watched counts only ratchet up.

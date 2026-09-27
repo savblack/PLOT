@@ -6,6 +6,7 @@ import { tmdb, getTmdbRegion } from './tmdb.js';
 import { providerIdsForRegion, tmdbIdFromItem } from './media.js';
 import { deleteListItem, saveListItem, getOrCreateMyListId } from './userMedia.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 
 /** Fire-and-forget: enqueue a watchlist change to the Trakt outbox. */
 function enqueueTraktAction(userId, integrationId, action, payload) {
@@ -134,6 +135,9 @@ export function useWatchlist(userId) {
 
     if (error) {
       console.error('[useWatchlist] INSERT list_items failed:', error);
+      reportActionFailure(FAILED_ACTIONS.WATCHLIST_SAVE, error, {
+        tmdb_id, media_type: row?.media_type ?? item.media_type,
+      });
       return null;
     }
     if (data) {
@@ -166,6 +170,10 @@ export function useWatchlist(userId) {
 
     if (error) {
       console.error('[useWatchlist] DELETE list_items failed:', error);
+      reportActionFailure(FAILED_ACTIONS.WATCHLIST_REMOVE, error, {
+        tmdb_id: Number(tmdbId),
+        media_type: items.find(i => i.tmdb_id === Number(tmdbId))?.media_type,
+      });
       return false;
     }
     const removed = items.find(i => i.tmdb_id === Number(tmdbId));

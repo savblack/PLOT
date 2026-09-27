@@ -111,6 +111,9 @@ configure({
     if (name) track(name, { tmdb_id, ...(season != null ? { season } : {}), ...(episode != null ? { episode } : {}) });
   },
   onProfileUpdate: ({ fields }) => track(EVENTS.PROFILE_UPDATED, { fields }),
+  // Failed writes, from the same canonical sites as the seams above. The
+  // payload is already PII-free (codes and field names, never the message).
+  onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
 });
 
 // Opt this browser out of analytics: visit either theplot.tv or app.theplot.tv

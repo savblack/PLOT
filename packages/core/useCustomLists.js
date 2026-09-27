@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { genreIdsFromItem, mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 import { createCustomListRecord, CUSTOM_LIST_LIMIT_CODE } from './customListCreation.js';
 import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
 
@@ -53,8 +54,10 @@ export function useCustomLists(userId) {
     try {
       data = await createCustomListRecord(supabase, userId, name);
     } catch (error) {
+      // The Free cap is a gate, not a failure: premium_gate_hit covers it.
       if (error.code === CUSTOM_LIST_LIMIT_CODE) throw error;
       console.error('Failed to create custom list', error);
+      reportActionFailure(FAILED_ACTIONS.CUSTOM_LIST_CREATE, error);
       return null;
     }
     if (data) {
@@ -72,6 +75,7 @@ export function useCustomLists(userId) {
       .eq('user_id', userId);
     if (error) {
       console.error('Failed to delete custom list', error);
+      reportActionFailure(FAILED_ACTIONS.CUSTOM_LIST_DELETE, error, { list_id: listId });
       return false;
     }
     setLists(prev => prev.filter(l => l.id !== listId));
@@ -90,6 +94,7 @@ export function useCustomLists(userId) {
       .single();
     if (error) {
       console.error('Failed to rename custom list', error);
+      reportActionFailure(FAILED_ACTIONS.CUSTOM_LIST_RENAME, error, { list_id: listId });
       return null;
     }
     if (data) setLists(prev => prev.map(l => l.id === listId ? { ...l, name: data.name } : l));
@@ -108,6 +113,7 @@ export function useCustomLists(userId) {
       .single();
     if (error) {
       console.error('Failed to update custom list visibility', error);
+      reportActionFailure(FAILED_ACTIONS.CUSTOM_LIST_VISIBILITY, error, { list_id: listId });
       return null;
     }
     if (data) {
@@ -137,6 +143,9 @@ export function useCustomLists(userId) {
       .single();
     if (error) {
       console.error('Failed to add custom list item', error);
+      reportActionFailure(FAILED_ACTIONS.LIST_ITEM_ADD, error, {
+        list_id: listId, tmdb_id: tmdbId, media_type: row.media_type,
+      });
       return null;
     }
     if (data) {
@@ -161,6 +170,10 @@ export function useCustomLists(userId) {
       .eq('tmdb_id', Number(tmdbId));
     if (error) {
       console.error('Failed to remove custom list item', error);
+      reportActionFailure(FAILED_ACTIONS.LIST_ITEM_REMOVE, error, {
+        list_id: listId, tmdb_id: Number(tmdbId),
+        media_type: lists.find(l => l.id === listId)?.items?.find(i => i.tmdb_id === Number(tmdbId))?.media_type,
+      });
       return false;
     }
     const removed = lists.find(l => l.id === listId)?.items?.find(i => i.tmdb_id === Number(tmdbId));

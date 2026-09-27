@@ -33,6 +33,7 @@ test('getConfig starts with the documented defaults', () => {
     onHistoryRemove: undefined,
     onWatchProgress: undefined,
     onProfileUpdate: undefined,
+    onActionFailed: undefined,
   });
 });
 

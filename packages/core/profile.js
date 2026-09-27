@@ -12,6 +12,7 @@
  */
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 
 /**
  * Apply a partial update to a user's profile.
@@ -39,6 +40,7 @@ export async function updateProfile({ userId, patch }) {
   // marketing_emails_opted_in, …) still fire alongside it at their own call
   // sites; they're the ones funnels are built on, this one is coverage.
   if (!error) getConfig().onProfileUpdate?.({ fields: Object.keys(patch) });
+  else reportActionFailure(FAILED_ACTIONS.PROFILE_UPDATE, error, { fields: Object.keys(patch) });
 
   return { data, error };
 }

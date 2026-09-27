@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 
 /**
  * Follow relationship between the signed-in viewer and `targetId`.
@@ -50,6 +51,8 @@ export function useFollows(targetId, viewerId, initialStatus = null) {
       setStatus(s);
       if (s === 'accepted') setFollowers(c => c + 1);
       getConfig().onFollow?.({ target_user_id: targetId, following: true });
+    } else {
+      reportActionFailure(FAILED_ACTIONS.FOLLOW, error);
     }
     setBusy(false);
   }, [viewerId, targetId, busy, status, readStatus]);
@@ -65,6 +68,8 @@ export function useFollows(targetId, viewerId, initialStatus = null) {
       setStatus(null);
       if (wasAccepted) setFollowers(c => Math.max(0, c - 1));
       getConfig().onFollow?.({ target_user_id: targetId, following: false });
+    } else {
+      reportActionFailure(FAILED_ACTIONS.UNFOLLOW, error);
     }
     setBusy(false);
   }, [viewerId, targetId, busy, status]);

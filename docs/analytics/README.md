@@ -271,6 +271,38 @@ runs them, and holds them to the same answers as the app's — three of them are
 single-line, where a stray paren would otherwise ship a page whose analytics
 throws on load.
 
+## Failed writes
+
+Error tracking above catches *thrown* errors. A Supabase write that fails does
+not throw: it returns `{ error }`, the hook logs it, and the user sees "Could
+not save". None of that reached PostHog until `action_failed` (2026-09-27),
+which is why the 42P10 outage on `history` ran for nine days unnoticed.
+
+`action_failed` fires from `reportActionFailure()` in
+`packages/core/actionFailures.js`, called on the error branch of the same core
+mutation sites that fire the success seams, so both apps and every surface are
+covered once. Properties:
+
+| Prop | Meaning |
+|---|---|
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `block`, `unblock`, `report`. Canonical list: `FAILED_ACTIONS`. |
+| `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
+| `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
+| `http_status` | When present. |
+| `tmdb_id`, `media_type`, `list_id`, `fields`, `progress_action`, `surface` | Same context the matching success event carries. `fields` is column *names* only. |
+
+The error's message, details and hint are **never** sent: Postgres puts row
+values in them. A unit test fails if a core module gains a success seam without
+also calling `reportActionFailure`.
+
+Not Tier 1 or Tier 2. Read it as a rate against the matching success event
+(`action_failed` where `action = watchlist_save` vs `watchlist_saved`), broken
+down by `error_kind`. A spike in `schema` means the database and the client
+disagree and is always worth a look.
+
+Not yet covered: the bulk clears in Settings and the follow buttons in
+`UserList`, which write `supabase` directly rather than through a core hook.
+
 ## PostHog settings that are not in this repo
 
 These were changed through the API on 2026-08-18 and exist only in the PostHog
