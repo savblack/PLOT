@@ -129,3 +129,14 @@
 /* A comparison row for a feature that already exists links to it. */
 .cmp-link { display: block; width: fit-content; margin-top: 0.2rem; font-size: 0.75rem; font-weight: 600; color: inherit; text-underline-offset: 4px; }
 .cmp-link:hover { color: var(--accent); }
+
+.plans-requests { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2rem; padding-top: 3.5rem; }
+.plans-requests p { margin-top: 0.75rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; }
+.plans-request-action { text-align: right; }
+.plans-request-action .btn { display: inline-flex; gap: 0.5rem; width: fit-content; min-height: 44px; text-decoration: none; }
+.plans-request-action .btn-primary:hover { color: var(--on-accent-fill); }
+.plans-request-action p { font-size: 0.75rem; }
+@media (max-width: 760px) {
+  .plans-requests { grid-template-columns: 1fr; gap: 1.25rem; }
+  .plans-request-action { text-align: left; }
+}

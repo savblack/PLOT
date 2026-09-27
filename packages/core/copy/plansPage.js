@@ -177,6 +177,13 @@ export const PLANS_PAGE = {
       description: 'Make plot feel like yours: Home Screen widgets, custom app icons, custom profile pages and themes.' },
   ],
   planSummary: ['Pick a movie or show by time and service', 'Automatic Plex and Trakt syncing', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
+  requests: {
+    title: 'What would make Premium worth it for you?',
+    description: 'Tell us what you’d love to see included.',
+    action: 'Suggest a Premium feature',
+    hint: 'Opens your email app.',
+    subject: 'Plot Premium feature request',
+  },
   faqTitle: 'Before you ask',
   faqs: [
     { q: 'Can I upgrade now?', a: 'Not yet. Premium is planned at $3/month or $24/year, taxes included. The upgrade button shows a coming-soon message; it does not start a payment or a trial.' },
