@@ -302,7 +302,7 @@ The error's message, details and hint are **never** sent: Postgres puts row
 values in them. A unit test fails if a core module gains a success seam without
 also calling `reportActionFailure`.
 
-Not Tier 1 or Tier 2. Read it as a rate against the matching success event
+Not Tier 1 or Tier 2. Tile 10 on the dashboard plots it as a rate. Read it against the matching success event
 (`action_failed` where `action = watchlist_save` vs `watchlist_saved`), broken
 down by `error_kind`. A spike in `schema` means the database and the client
 disagree and is always worth a look.
@@ -352,6 +352,7 @@ Objects created at the same time:
 | Cohort | Bots (landed, never engaged) — added 2026-09-06 | 553124 |
 | Insight | 8. Failed writes by action — added 2026-09-27 | 12255797 |
 | Insight | 9. Failed loads by resource — added 2026-09-27 | 12255798 |
+| Insight | 10. Failure rate by action — added 2026-09-27 | 12255805 |
 
 `POSTHOG_PERSONAL_API_KEY` in the root `.env` is scoped to project 471234 and
 can read and write all of the above via `https://us.posthog.com/api/projects/471234/`.
@@ -373,6 +374,7 @@ acquisition tiles are scoped to Real visitors.
 7. Where real visitors actually come from
 8. Failed writes by action (`action_failed`)
 9. Failed loads by resource (`load_failed`)
+10. Failure rate by action: weekly `action_failed ÷ (action_failed + success event)` for the seven actions with a 1:1 success event (`watchlist_save`, `mark_watched`, `rating_set`, `favourite_add`, `custom_list_create`, `list_item_add`, `follow`)
 
 ## Cross-checking against the database
 
