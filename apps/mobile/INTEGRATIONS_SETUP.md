@@ -84,9 +84,9 @@ supabase secrets set \
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` are injected
 automatically by the platform — do not set them manually.
 
-**Calendar** (already shipped in Settings → Calendar) uses `calendar-feed`, which
-needs only `TMDB_API_KEY` + the auto-provided Supabase secrets. Deploy it too if it
-isn't already:
+**Calendar** uses `calendar-feed`. The live URL is Premium. Free accounts share a
+one-time `.ics` instead. The function needs only `TMDB_API_KEY` plus the
+auto-provided Supabase secrets. Deploy it too if it isn't already:
 ```
 supabase functions deploy calendar-feed --project-ref mkegtssedjyqldysvzga
 ```

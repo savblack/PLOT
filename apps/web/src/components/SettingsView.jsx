@@ -2106,8 +2106,8 @@ export default function SettingsView() {
             {!premium.isPremium ? (
               <>
                 <SettingsTextAction onClick={() => showConfirm({
-                  title: SETTINGS_VIEW.billing.calendarComingSoon,
-                  message: SETTINGS_VIEW.billing.calendarComingSoonMessage,
+                  title: SETTINGS_VIEW.calendarFeed.needsPremium,
+                  message: SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
                   confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
                   onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
                 })}>
