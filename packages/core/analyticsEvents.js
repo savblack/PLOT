@@ -76,6 +76,16 @@ export const EVENTS = Object.freeze({
   TONIGHT_PICK_OPENED: 'tonight_pick_opened',
   TONIGHT_SEARCH_SAVED: 'tonight_search_saved',
   TONIGHT_SAVED_SEARCH_OPENED: 'tonight_saved_search_opened',
+  // Watch together (Premium, one of you needs it). Fired from
+  // useWatchTogether via the onWatchTogether seam, except link_shared, which
+  // the share button reports through reportWatchTogether. Props are shapes,
+  // never who: no user ids, usernames or link keys.
+  WATCH_TOGETHER_INVITE_SENT: 'watch_together_invite_sent',
+  WATCH_TOGETHER_REQUEST_ACCEPTED: 'watch_together_request_accepted',
+  WATCH_TOGETHER_LINK_SHARED: 'watch_together_link_shared',
+  WATCH_TOGETHER_LINK_ACCEPTED: 'watch_together_link_accepted',
+  WATCH_TOGETHER_SESSION_STARTED: 'watch_together_session_started',
+  WATCH_TOGETHER_MATCH: 'watch_together_match',
   WATCH_LINK_CLICKED: 'watch_link_clicked',
   TIP_JAR_CLICKED: 'tip_jar_clicked',
   // PLOT's second paid-conversion type alongside premium_converted — a Ko-fi

@@ -92,7 +92,11 @@ const MIN_SUBMIT_MS = 1200;
 // Caps how long a form token can be stockpiled before use — not a security
 // boundary on its own (the rate limit does that job), just hygiene so tokens
 // can't be minted far in advance and hoarded.
-const MAX_TOKEN_AGE_MS = 15 * 60 * 1000; // 15 minutes
+// 15 minutes. The web client refreshes sooner
+// (SIGNUP_FORM_TOKEN_REFRESH_AFTER_MS in apps/web/src/utils/signupFormToken.js)
+// so a form left open does not POST an expired token and paint a fake
+// confirmation. Keep that margin if this window changes.
+const MAX_TOKEN_AGE_MS = 15 * 60 * 1000;
 
 // Deliberately low — this is an exceptional path (Turnstile already failed
 // for this browser), not the general signup rate.

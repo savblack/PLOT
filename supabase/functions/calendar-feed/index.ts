@@ -107,6 +107,17 @@ Deno.serve(async (req) => {
   }
 
   const userId = profile.id;
+
+  // Calendar apps poll this URL with no JWT. is_premium() is the entitlement,
+  // the same call media-sync uses for the token owner. An RPC error must not
+  // blank a working Premium feed, so a failed check still serves events.
+  // A definite non-Premium result is an empty calendar (200), not a 401:
+  // clients keep the subscription and simply stop showing events.
+  const { data: premium, error: premiumError } = await db.rpc('is_premium', { p_user: userId });
+  if (!premiumError && premium !== true) {
+    return icsResponse([]);
+  }
+
   const today = new Date().toISOString().slice(0, 10);
 
   // Fetch all sources in parallel
@@ -192,6 +203,10 @@ Deno.serve(async (req) => {
 
   events.sort((a, b) => a.date.localeCompare(b.date));
 
+  return icsResponse(events);
+});
+
+function icsResponse(events: CalEvent[]): Response {
   return new Response(generateICS(events), {
     headers: {
       'Content-Type': 'text/calendar;charset=utf-8',
@@ -199,4 +214,4 @@ Deno.serve(async (req) => {
       'Cache-Control': 'no-cache, no-store, must-revalidate',
     },
   });
-});
+}

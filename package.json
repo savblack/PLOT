@@ -54,6 +54,7 @@
     "staging:block-test": "bash scripts/staging-sql.sh scripts/staging-block-test.sql",
     "staging:visibility-test": "bash scripts/staging-sql.sh scripts/staging-visibility-test.sql",
     "staging:watch-together-test": "bash scripts/staging-sql.sh scripts/staging-watch-together-test.sql",
+    "staging:watchlist-visibility-test": "bash scripts/staging-sql.sh scripts/staging-watchlist-visibility-test.sql",
     "staging:import-annotations-test": "bash scripts/staging-sql.sh scripts/staging-import-annotations-test.sql",
     "staging:saved-lists-test": "bash scripts/staging-sql.sh scripts/staging-saved-lists-test.sql",
     "staging:tracking-jobs-test": "bash scripts/staging-sql.sh scripts/staging-tracking-jobs-test.sql",

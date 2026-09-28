@@ -47,11 +47,19 @@ export const FAILED_ACTIONS = Object.freeze({
   FOLLOW:                  'follow',
   UNFOLLOW:                'unfollow',
   FOLLOW_REQUEST_DECISION: 'follow_request_decision',
+  WATCHLIST_SHARE:         'watchlist_share',
   BLOCK:                   'block',
   UNBLOCK:                 'unblock',
   REPORT:                  'report',
   // Reverting an earlier removal from the undo toast (undo.js).
   UNDO:                    'undo',
+  // Watch together (useWatchTogether.js). Only unexpected failures: the
+  // server's premium_required and not_allowed answers are rules, not errors.
+  WATCH_TOGETHER_INVITE:        'watch_together_invite',
+  WATCH_TOGETHER_RESPOND:       'watch_together_respond',
+  WATCH_TOGETHER_LINK_ACCEPT:   'watch_together_link_accept',
+  WATCH_TOGETHER_SESSION_START: 'watch_together_session_start',
+  WATCH_TOGETHER_VOTE:          'watch_together_vote',
 });
 
 /**

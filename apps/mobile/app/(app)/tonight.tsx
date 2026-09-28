@@ -496,7 +496,8 @@ function Locked({ picker, onUpgrade, styles, colors, dark }: {
         <TouchableOpacity onPress={onUpgrade} style={[styles.btn, styles.btnPrimary, styles.unlockCta]} accessibilityRole="button">
           <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{PLANS_PAGE.upgradeAction}</Text>
         </TouchableOpacity>
-        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.priceSummary}</Text>
+        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.priceTerms}</Text>
+        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.trialNote}</Text>
       </View>
     </View>
   );

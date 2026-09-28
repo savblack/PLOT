@@ -14,7 +14,7 @@ test('the lists sheet names the free cap and fills the meter to it', () => {
 
 test('the lists sheet reuses the plans page rows, in order', () => {
   const labels = upgradeSheetContent('lists').also.map(row => row.label);
-  assert.deepEqual(labels, ['Pick for Me', 'Find something you both want', 'Automatic Plex and Trakt syncing']);
+  assert.deepEqual(labels, ['Pick for Me', 'Find something you both want']);
 });
 
 test('an unknown reason returns null instead of an empty sheet', () => {

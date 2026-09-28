@@ -51,6 +51,7 @@ import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 import { WatchTogetherSettings } from './WatchTogetherParts.jsx';
+import WatchlistVisibilitySetting from './WatchlistVisibilitySetting.jsx';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1911,7 +1912,7 @@ export default function SettingsView() {
       <TrackingSettings userId={user?.id} connect={trakt.connect} connectPlex={sync.startPlexAuth} plexPolling={sync.polling} connectionError={trakt.error || sync.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : sync.disconnect()} />
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.integrations.groupTitle}</div>
-        {premium.isPremium && SHOW_MEDIA_SYNC_INTEGRATIONS ? (
+        {SHOW_MEDIA_SYNC_INTEGRATIONS && premium.isPremium ? (
           <>
             <div className="settings-row" style={{ cursor: 'default' }}>
               <div className="settings-row-left">
@@ -1919,11 +1920,7 @@ export default function SettingsView() {
                 <div>
                   <div className="settings-row-label">{SETTINGS_VIEW.integrations.plexName}<PremiumBadge /></div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {sync.isConnected ? SETTINGS_VIEW.integrations.connectedLastSynced(
-                      sync.integration?.last_sync_at
-                        ? new Date(sync.integration.last_sync_at).toLocaleDateString()
-                        : SETTINGS_VIEW.integrations.never
-                    ) : SETTINGS_VIEW.integrations.notConnected}
+                    {sync.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.notConnected}
                   </div>
                 </div>
               </div>
@@ -1931,7 +1928,7 @@ export default function SettingsView() {
                 {sync.isConnected ? (
                   <>
                     <SettingsTextAction onClick={sync.sync} disabled={sync.syncing}>
-                      {sync.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
+                      {sync.syncing ? SETTINGS_VIEW.integrations.importing : SETTINGS_VIEW.integrations.importWatchHistory}
                     </SettingsTextAction>
                     <SettingsTextAction onClick={sync.disconnect} tone="danger">
                       {SETTINGS_VIEW.integrations.disconnect}
@@ -1957,11 +1954,7 @@ export default function SettingsView() {
                   <div className="settings-row-label">{SETTINGS_VIEW.integrations.traktName}<PremiumBadge /></div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {trakt.isConnected
-                      ? SETTINGS_VIEW.integrations.connectedLastSynced(
-                          trakt.integration?.last_sync_at
-                            ? new Date(trakt.integration.last_sync_at).toLocaleDateString()
-                            : SETTINGS_VIEW.integrations.never
-                        )
+                      ? SETTINGS_VIEW.integrations.connected
                       : SETTINGS_VIEW.integrations.connectTraktToSync}
                   </div>
                 </div>
@@ -1970,7 +1963,7 @@ export default function SettingsView() {
                 {trakt.isConnected ? (
                   <>
                     <SettingsTextAction onClick={trakt.sync} disabled={trakt.syncing}>
-                      {trakt.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
+                      {trakt.syncing ? SETTINGS_VIEW.integrations.importing : SETTINGS_VIEW.integrations.importWatchHistory}
                     </SettingsTextAction>
                     <SettingsTextAction onClick={trakt.disconnect} tone="danger">
                       {SETTINGS_VIEW.integrations.disconnect}
@@ -2002,8 +1995,12 @@ export default function SettingsView() {
                 </div>
                 <div className="settings-inline-actions">
                   <SettingsTextAction onClick={() => showConfirm({
-                    title: SETTINGS_VIEW.billing.syncComingSoon,
-                    message: SETTINGS_VIEW.billing.syncComingSoonMessage,
+                    title: SHOW_MEDIA_SYNC_INTEGRATIONS
+                      ? SETTINGS_VIEW.integrations.syncNeedsPremium
+                      : SETTINGS_VIEW.billing.syncComingSoon,
+                    message: SHOW_MEDIA_SYNC_INTEGRATIONS
+                      ? SETTINGS_VIEW.integrations.syncNeedsPremiumMessage
+                      : SETTINGS_VIEW.billing.syncComingSoonMessage,
                     confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
                     onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
                   })}>
@@ -2110,8 +2107,8 @@ export default function SettingsView() {
             {!premium.isPremium ? (
               <>
                 <SettingsTextAction onClick={() => showConfirm({
-                  title: SETTINGS_VIEW.billing.calendarComingSoon,
-                  message: SETTINGS_VIEW.billing.calendarComingSoonMessage,
+                  title: SETTINGS_VIEW.calendarFeed.needsPremium,
+                  message: SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
                   confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
                   onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
                 })}>
@@ -2195,6 +2192,11 @@ export default function SettingsView() {
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsSwitch label={SETTINGS_VIEW.page.privacyLabel} checked={isPublic} disabled={savingVisibility} onChange={handleTogglePublic} />
           </div>
+        </div>
+
+        {/* Who can see Want to Watch: its own setting, separate from the profile. */}
+        <div className="settings-row" style={{ cursor: 'default', display: 'block' }}>
+          <WatchlistVisibilitySetting />
         </div>
 
         {/* Shareable link — works for private profiles too (logged-in visitors

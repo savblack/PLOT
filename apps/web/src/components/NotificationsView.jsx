@@ -149,7 +149,7 @@ export default function NotificationsView() {
       onReviewWatch={setReviewing} onDeclineWatch={r => watch.respond(r.other_id, false)}
       onMarkAllRead={handleMarkAllRead}
       wasUnread={n => unreadIds?.has(n.id) ?? false} />
-    {reviewing && <AcceptDialog person={reviewing} viewerIsPublic={!!profile?.is_public}
+    {reviewing && <AcceptDialog person={reviewing} viewer={profile}
       onClose={() => setReviewing(null)}
       onDecline={() => { watch.respond(reviewing.other_id, false); setReviewing(null); }}
       onAccept={shareFull => { watch.respond(reviewing.other_id, true, shareFull); setReviewing(null); }} />}

@@ -143,3 +143,20 @@ export function IconWatchTogether() {
     </svg>
   );
 }
+
+/* Nav id → icon, keyed by APP_NAV_ITEMS. Both shells render the same nav list,
+   so they read the same map: the sidebar held a private copy of this and the
+   drawer had no icons at all, which is how the two surfaces came to disagree
+   about whether a destination has a glyph. A new nav item shows up in both the
+   moment it is added here. */
+export const NAV_ICONS = {
+  home: IconHome,
+  guide: IconGuide,
+  calendar: IconCalendar,
+  'my-lists': IconLists,
+  history: IconHistory,
+  tonight: IconTonight,
+  together: IconWatchTogether,
+  search: IconSearch,
+  settings: IconSettings,
+};

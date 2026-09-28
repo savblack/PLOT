@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './AuthPage.css';
 import { track, identifyUser, EVENTS } from '../lib/analytics.js';
@@ -10,9 +10,11 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Turnstile from '../components/Turnstile.jsx';
 import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { COMMON } from '../copy/common.js';
-import { AUTH_PAGE } from '../copy/authPage.js';
+import { AUTH_PAGE, captchaFailureCopy } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
 import { captchaSubmitPlan, CAPTCHA_TOKEN_WAIT_MS } from '@plot/core/captchaGate.js';
+import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js';
+import { signupFormTokenIsStale } from '../utils/signupFormToken.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 
@@ -138,7 +140,15 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // success) anything posted sooner than its server-side minimum, measured
   // from that issuance. A fast click has to wait out the window or the
   // success screen would describe an account that was never created.
+  // The same timestamp decides when the token is too old to reuse. Past
+  // signup-bypass's 15-minute cap the function again returns { ok: true }
+  // and creates nothing.
   const formTokenAtRef = useRef(0);
+  // Bumped on every fetch so a slow GET cannot overwrite a newer token.
+  const formTokenFetchGen = useRef(0);
+  // Password submit, magic link, OAuth, and mode switches all advance this.
+  // An attempt that loses the epoch must not keep going after an await.
+  const authEpochRef = useRef(0);
   // Latched for the lifetime of this page, never reset on success: once an OAuth
   // handoff is under way the browser is leaving, and a second /authorize would do
   // real damage (see beginOAuth).
@@ -174,21 +184,36 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // the server declined to create.
   const BYPASS_MIN_PAGE_MS = 1500;
 
-  const rememberFormToken = (token) => {
-    if (!token) return;
-    formTokenRef.current = token;
-    formTokenAtRef.current = Date.now();
-  };
-
-  const ensureFormToken = async () => {
-    if (formTokenRef.current) return formTokenRef.current;
+  const loadFormToken = useCallback(async () => {
+    const gen = ++formTokenFetchGen.current;
     try {
       const supabase = await loadSupabase();
       const { data } = await supabase.functions.invoke('signup-bypass', { method: 'GET' });
-      rememberFormToken(data?.formToken);
+      if (gen !== formTokenFetchGen.current || !data?.formToken) return formTokenRef.current;
+      formTokenRef.current = data.formToken;
+      formTokenAtRef.current = Date.now();
     } catch { /* bypass simply won't be available if this fails */ }
     return formTokenRef.current;
+  }, []);
+
+  const ensureFormToken = async () => {
+    if (formTokenRef.current && !signupFormTokenIsStale(formTokenAtRef.current)) {
+      return formTokenRef.current;
+    }
+    // Drop the expired token before the fetch. A failed refresh must not
+    // fall back to it and paint a confirmation for an account that was
+    // never created.
+    formTokenRef.current = null;
+    formTokenAtRef.current = 0;
+    return loadFormToken();
   };
+
+  const beginAuthAttempt = () => {
+    authEpochRef.current = advanceAuthEpoch(authEpochRef.current);
+    return authEpochRef.current;
+  };
+
+  const attemptIsCurrent = (epoch) => authAttemptIsCurrent(epoch, authEpochRef.current);
 
   const resolveCaptchaPlan = async (authMode) => {
     let plan = captchaSubmitPlan({
@@ -245,12 +270,10 @@ export default function AuthPage({ initialMode = 'signup' }) {
       track(EVENTS.SIGNUP_FORM_VIEWED);
       // Fetched unconditionally (not just once Turnstile fails) so the token's
       // age reflects real time-on-page even if bypass turns out to be needed
-      // later. No side effects server-side — safe to call every visit.
-      loadSupabase().then((supabase) => supabase.functions.invoke('signup-bypass', { method: 'GET' }))
-        .then(({ data }) => { rememberFormToken(data?.formToken); })
-        .catch(() => { /* bypass simply won't be available if this fails */ });
+      // later. No side effects server-side. Safe to call every visit.
+      loadFormToken();
     }
-  }, [mode, hasSession]);
+  }, [mode, hasSession, loadFormToken]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -266,33 +289,40 @@ export default function AuthPage({ initialMode = 'signup' }) {
     const submittedPassword = fields.password;
     setEmail(submittedEmail);
     setPassword(submittedPassword);
+    // Captured now. A mode switch during the captcha wait must not change
+    // which request this handler sends, and must not let it finish.
+    const submittedMode = mode;
 
     if (!submittedEmail) {
       setError(AUTH_PAGE.invalidEmail);
       return;
     }
-    if (mode !== 'forgot') {
-      if (!submittedPassword || (mode === 'signup' && submittedPassword.length < 6)) {
+    if (submittedMode !== 'forgot') {
+      if (!submittedPassword || (submittedMode === 'signup' && submittedPassword.length < 6)) {
         setError(AUTH_PAGE.weakPassword);
         return;
       }
     }
 
+    const epoch = beginAuthAttempt();
     setLoading(true);
-    const plan = await resolveCaptchaPlan(mode);
+    const plan = await resolveCaptchaPlan(submittedMode);
+    if (!attemptIsCurrent(epoch)) return;
     if (plan === 'unavailable') {
       setError(AUTH_PAGE.verificationUnavailable);
       setLoading(false);
       return;
     }
     const supabase = await loadSupabase();
+    if (!attemptIsCurrent(epoch)) return;
     const tokenForRequest = captchaTokenRef.current;
 
-    if (mode === 'forgot') {
+    if (submittedMode === 'forgot') {
       const { error } = await supabase.auth.resetPasswordForEmail(submittedEmail, {
         redirectTo: getAuthCallbackUrl(),
         captchaToken: tokenForRequest,
       });
+      if (!attemptIsCurrent(epoch)) return;
       if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
       else {
         track(EVENTS.PASSWORD_RESET_REQUESTED);
@@ -301,12 +331,13 @@ export default function AuthPage({ initialMode = 'signup' }) {
       return;
     }
 
-    if (mode === 'login') {
+    if (submittedMode === 'login') {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: submittedEmail,
         password: submittedPassword,
         options: { captchaToken: tokenForRequest },
       });
+      if (!attemptIsCurrent(epoch)) return;
       if (error) {
         // Sign-in failures are their own funnel — deliberately not folded into
         // signup_submit_failed, which would inflate every signup-attempt metric.
@@ -330,6 +361,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         }
         track(EVENTS.SIGNUP_BYPASS_OFFERED);
         const formToken = await ensureFormToken();
+        if (!attemptIsCurrent(epoch)) return;
         if (!formToken) {
           setError(COMMON.genericError);
           setLoading(false);
@@ -337,7 +369,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
           return;
         }
         await waitOutMinimum(formTokenAtRef.current, BYPASS_MIN_PAGE_MS);
-        await submitViaBypass(submittedEmail, submittedPassword);
+        if (!attemptIsCurrent(epoch)) return;
+        await submitViaBypass(submittedEmail, submittedPassword, epoch);
         return;
       }
 
@@ -346,6 +379,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         password: submittedPassword,
         options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: tokenForRequest },
       });
+      if (!attemptIsCurrent(epoch)) return;
       if (error) {
         setError(friendlyError(error.message));
         setLoading(false);
@@ -381,8 +415,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // timing, per-IP rate limit) and creates the account via the Admin API,
   // bypassing the need for a Turnstile token. On success it hands back a
   // confirmation link delivered only to the supplied mailbox.
-  const submitViaBypass = async (submittedEmail, submittedPassword) => {
+  const submitViaBypass = async (submittedEmail, submittedPassword, epoch) => {
     const supabase = await loadSupabase();
+    if (!attemptIsCurrent(epoch)) return;
     const { data, error } = await supabase.functions.invoke('signup-bypass', {
       method: 'POST',
       body: {
@@ -392,6 +427,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         formToken: formTokenRef.current,
       },
     });
+    if (!attemptIsCurrent(epoch)) return;
     if (error) {
       setError(COMMON.genericError);
       setLoading(false);
@@ -405,9 +441,11 @@ export default function AuthPage({ initialMode = 'signup' }) {
       return;
     }
     if (!data?.requires_email_confirmation) {
-      // Honeypot/timing fake-success — indistinguishable from a real success
-      // response, but no account was actually created. A genuine user can
-      // never hit this branch (the honeypot field is invisible to humans).
+      // Honeypot, or a submit that arrived sooner than the server minimum.
+      // signup-bypass answers { ok: true } and creates nothing, so those
+      // cases look like success on purpose. An expired form token used to
+      // land here too. ensureFormToken refreshes before that 15-minute cap,
+      // and a failed refresh does not post the old token.
       setLoading(false);
       setSuccess(true);
       return;
@@ -436,6 +474,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
     // /authorize calls inside four seconds from a single tap-happy device.
     if (oauthStartingRef.current) return;
     oauthStartingRef.current = true;
+    // Cancels a password submit that is still inside the captcha wait.
+    beginAuthAttempt();
     setLoading(true);
     setError(null);
     try { sessionStorage.setItem('plot_auth_method', provider); } catch { /* ignore */ }
@@ -474,9 +514,11 @@ export default function AuthPage({ initialMode = 'signup' }) {
     ).trim();
     setEmail(submittedEmail);
     if (!submittedEmail) { setError('Enter your email address first, then request a link.'); return; }
+    const epoch = beginAuthAttempt();
     setLoading(true);
     setError(null);
     const plan = await resolveCaptchaPlan('magic');
+    if (!attemptIsCurrent(epoch)) return;
     if (plan === 'unavailable') {
       setError(AUTH_PAGE.verificationUnavailable);
       setLoading(false);
@@ -484,22 +526,29 @@ export default function AuthPage({ initialMode = 'signup' }) {
     }
     try { sessionStorage.setItem('plot_auth_method', 'magic_link'); } catch { /* ignore */ }
     const supabase = await loadSupabase();
+    if (!attemptIsCurrent(epoch)) return;
     const { error } = await supabase.auth.signInWithOtp({
       email: submittedEmail,
       options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: captchaTokenRef.current },
     });
+    if (!attemptIsCurrent(epoch)) return;
     setLoading(false);
     if (error) { setError(friendlyError(error.message)); resetCaptcha(); }
     else setMagicSent(true);
   };
 
   const switchMode = (next) => {
+    // Invalidates a submit that is still waiting on Turnstile, and drops any
+    // form token so the next signup view fetches a new one.
+    authEpochRef.current = advanceAuthEpoch(authEpochRef.current);
+    formTokenFetchGen.current += 1;
     setMode(next);
     setError(null);
     setSuccess(false);
     setMagicSent(false);
     setResendStatus(null);
     setFormStarted(false);
+    setLoading(false);
     formTokenRef.current = null;
     formTokenAtRef.current = 0;
   };
@@ -521,6 +570,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const headings = AUTH_PAGE.heading;
   const subheadings = AUTH_PAGE.subheading;
   const ctaLabels = AUTH_PAGE.submitLabel;
+  const captchaCopy = captchaFailureCopy(mode);
 
   return (
     <div className={`auth-page auth-page--${mode}`}>
@@ -681,7 +731,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                       </button>
                     </div>
                     {mode === 'login' && (
-                      <button type="button" className="auth-forgot-link" onClick={() => switchMode('forgot')}>
+                      <button type="button" className="auth-forgot-link" onClick={() => switchMode('forgot')} disabled={loading}>
                         {AUTH_PAGE.forgotPassword}
                       </button>
                     )}
@@ -692,6 +742,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   siteKey={TURNSTILE_SITE_KEY}
                   onToken={handleCaptchaToken}
                   resetSignal={captchaNonce}
+                  failureMessage={captchaCopy.failed}
+                  blockedMessage={captchaCopy.blocked}
                   onBlocked={mode === 'signup'
                     ? (attempt) => track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt })
                     : undefined}
@@ -722,11 +774,11 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
               <div className="auth-toggle">
                 {mode === 'forgot' ? (
-                  <button onClick={() => switchMode('login')}>{AUTH_PAGE.backToSignIn}</button>
+                  <button type="button" onClick={() => switchMode('login')} disabled={loading}>{AUTH_PAGE.backToSignIn}</button>
                 ) : mode === 'signup' ? (
-                  <p>{AUTH_PAGE.alreadyHaveAccount} <button onClick={() => switchMode('login')}>{AUTH_PAGE.signIn}</button></p>
+                  <p>{AUTH_PAGE.alreadyHaveAccount} <button type="button" onClick={() => switchMode('login')} disabled={loading}>{AUTH_PAGE.signIn}</button></p>
                 ) : (
-                  <p>{AUTH_PAGE.noAccountYet} <button onClick={() => switchMode('signup')}>{AUTH_PAGE.signUp}</button></p>
+                  <p>{AUTH_PAGE.noAccountYet} <button type="button" onClick={() => switchMode('signup')} disabled={loading}>{AUTH_PAGE.signUp}</button></p>
                 )}
               </div>
             </>

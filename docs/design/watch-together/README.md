@@ -93,10 +93,12 @@ Requests and consent
 Privacy
 - Private profile: the partner sees titles on both watchlists and picks in
   shared sessions. An opt-in "Also share my full watchlist" is off by default.
-  A partner who is also an accepted follower can already read the whole
-  watchlist (the profile rule from `can_view_profile`), so Watch together
-  treats them the same way and the switch only adds access for a partner who
-  can't see the profile.
+  Since `20260927160000_watchlist_visibility.sql` the watchlist has its own
+  setting ("Who can see your Want to Watch": everyone, followers, selected
+  people, only me), and a private profile starts at only me. The switch adds
+  that partner to the owner's selected people, the same list Settings ›
+  Privacy edits, and moves "only me" to "selected people". It's hidden when
+  the watchlist is already open to everyone.
 - Public profile: don't mention watchlist sharing (it is already public); the
   accept sheet says they won't see "any lists you've set to private" or
   private notes. The per-person watchlist switch in G only shows for private
@@ -117,7 +119,9 @@ Suggested (J and the hub banner)
 - At most 5 people, name and Invite button only, no reason line.
 - Rank mutual follows first, then one-way follows. Within each group, rank by
   watchlist overlap only when that watchlist is public.
-- Private profiles you follow may appear, never with a count.
+- Private profiles you follow may appear, with a count: since 2026-09-26
+  accepted followers can already see a private watchlist, so the count reveals
+  nothing new (20260927150000). Private profiles you don't follow never show one.
 - Never suggest people already paired or pending, anyone blocked either way,
   anyone whose request expired or was cancelled in the last 60 days, or anyone
   whose request setting excludes you.
@@ -188,6 +192,10 @@ Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
   `can_see_full_watchlist` uses `can_view_profile`, and stopping watching
   together removes each person from the other's shared lists, as blocking
   already did.
+- Watchlist visibility (`20260927160000_watchlist_visibility.sql`): the
+  per-partner share flags move onto `watchlist_viewers` and the
+  `*_shares_full` columns are dropped. `can_see_full_watchlist`, overlap
+  counts and `taste_overlap` all use `can_view_watchlist`.
 - Start page (`WatchTogetherStart.jsx`): what anyone with nobody to watch with
   yet sees at `/together`. People you follow with titles in common (private
   profiles say "Shows once they accept"), or a pitch if you follow nobody;

@@ -21,21 +21,31 @@ test('Plex and Trakt expose Free history-only actions while sync stays Premium',
   assert.doesNotMatch(trakt.match(/async function handleImportHistory[\s\S]+?\n}\n/)?.[0] || '', /fetchTraktWatchlist|processOutbox/);
 });
 
-test('both import surfaces offer Plex and Trakt without enabling sync UI', () => {
+test('both import surfaces offer Plex and Trakt, and sync UI is Premium-gated', () => {
   const webImport = read('../../src/components/ImportView.jsx');
   const mobileImport = read('../../../mobile/components/ImportHistoryModal.tsx');
   const webPlex = read('../../src/hooks/useMediaSync.js');
   const mobilePlex = read('../../../mobile/hooks/useMediaSync.ts');
   const webFlag = read('../../src/launchFeatures.js');
   const mobileFlag = read('../../../mobile/lib/launchFeatures.ts');
+  const webSettings = read('../../src/components/SettingsView.jsx');
+  const mobileSettings = read('../../../mobile/app/(app)/settings.tsx');
 
   for (const source of [webImport, mobileImport]) {
     assert.match(source, /id: 'plex'/);
     assert.match(source, /id: 'trakt'/);
     assert.match(source, /importHistory/);
   }
-  assert.match(webFlag, /SHOW_MEDIA_SYNC_INTEGRATIONS = false/);
-  assert.match(mobileFlag, /SHOW_MEDIA_SYNC_INTEGRATIONS = false/);
+  assert.match(webFlag, /SHOW_MEDIA_SYNC_INTEGRATIONS = true/);
+  assert.match(mobileFlag, /SHOW_MEDIA_SYNC_INTEGRATIONS = true/);
+  assert.match(webSettings, /SHOW_MEDIA_SYNC_INTEGRATIONS && premium\.isPremium/);
+  assert.match(webSettings, /SETTINGS_VIEW\.integrations\.syncNeedsPremium/);
+  assert.match(webSettings, /SETTINGS_VIEW\.integrations\.connectPlex/);
+  assert.match(webSettings, /SETTINGS_VIEW\.integrations\.connectTrakt/);
+  assert.match(mobileSettings, /SHOW_MEDIA_SYNC_INTEGRATIONS && profile\?\.is_premium/);
+  assert.match(mobileSettings, /SHOW_MEDIA_SYNC_INTEGRATIONS && !profile\?\.is_premium/);
+  assert.match(mobileSettings, /openPremiumSyncGate/);
+  assert.match(mobileSettings, /startPlexAuth\(\)/);
   for (const source of [webPlex, mobilePlex]) {
     assert.match(source, /pollPlexAuthorization/);
   }

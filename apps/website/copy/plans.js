@@ -8,14 +8,14 @@
 export const PLANS_PAGE = {
   meta: {
     title: 'Plans & Pricing — plot',
-    description: 'plot is free to use, forever. Premium is coming soon, with unlimited lists, a live release calendar and Pick for Me: US$3/mo or US$24/yr, taxes included.',
-    ogDescription: 'Free to use, forever. Premium is coming soon, with unlimited lists, a live release calendar and Pick for Me.',
+    description: 'plot is free to use, forever. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial (card required). Checkout is not open yet.',
+    ogDescription: 'Free to use, forever. Premium is US$3/month or US$24/year with a 7-day free trial. Checkout is not open yet.',
   },
 
   hero: {
     pageLabel: 'Plans',
     h1: 'Do more with everything you watch',
-    lede: 'Start free and keep every movie and show in one place. Premium is coming soon, with unlimited lists, a live release calendar in your calendar app and Pick for Me.',
+    lede: 'Start free and keep every movie and show in one place. Premium is coming soon: US$3/month or US$24/year, taxes included, with a 7-day free trial (card required). It adds unlimited lists, a live release calendar in your calendar app and Pick for Me.',
   },
 
   billingToggle: {
@@ -48,6 +48,7 @@ export const PLANS_PAGE = {
     per: '/mo',
     billed: 'US$24 billed yearly · taxes included',
     billedMonthly: 'US$3 billed monthly · taxes included',
+    trial: '7-day free trial, card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
     tagline: 'Everything in Free, plus:',
     features: [
       'Unlimited custom lists',
@@ -84,11 +85,11 @@ export const PLANS_PAGE = {
       },
       {
         q: 'Can I get Premium now?',
-        a: 'Not yet. Premium is coming soon at US$3/month or US$24/year, taxes included. Upgrading in the app shows a coming-soon message and doesn’t take a payment.',
+        a: 'Not yet. Checkout is not open. When it opens, Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial. A card is required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
       },
       {
         q: 'Can I cancel anytime?',
-        a: 'Yes. Once Premium opens, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.',
+        a: 'Yes, once Premium opens. Cancel during the 7-day trial and you pay $0. After the trial, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.',
       },
       {
         q: 'What happens to my lists if I downgrade?',
@@ -97,5 +98,5 @@ export const PLANS_PAGE = {
     ],
   },
 
-  fineprint: 'Prices are in US dollars and include tax. Your total and billing currency are shown at checkout. Cancel anytime. Payments are processed securely by Stripe. Need a hand? contact@theplot.tv',
+  fineprint: 'Prices are in US dollars and include tax. Premium is a 7-day free trial with a card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? contact@theplot.tv',
 };

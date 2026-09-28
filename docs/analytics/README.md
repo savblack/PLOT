@@ -353,6 +353,27 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
 
+## Watch together
+
+Fired from `useWatchTogether` in core through the `onWatchTogether` seam, so
+both apps report the same way. `watch_together_link_shared` is the exception:
+the share button lives in the app and calls `reportWatchTogether` itself.
+Props are shapes only, never user ids, usernames or invite link keys.
+
+| Event | When | Props |
+|---|---|---|
+| `watch_together_invite_sent` | An in-app request was sent | none |
+| `watch_together_request_accepted` | Someone accepted a request sent to them | `share_full` |
+| `watch_together_link_shared` | The invite link was shared or copied | `method` (`share` / `copy`) |
+| `watch_together_link_accepted` | Someone accepted an invite link (pairs straight away) | `share_full` |
+| `watch_together_session_started` | A two-person yes-or-no session started | none |
+| `watch_together_match` | A vote made a match (both said yes) | none |
+
+Pairing is free; deciding needs Premium on one side. When nobody in a pairing
+or group has it, the overlap page fires `premium_gate_hit` with
+`feature: watch_together`. Read it next to `premium_checkout_started` to see
+whether Watch together drives upgrades.
+
 ## Reviews
 
 `review_written` fires from `useHistory` when a save carries review text that
@@ -378,7 +399,7 @@ covered once. Properties:
 
 | Prop | Meaning |
 |---|---|
-| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `block`, `unblock`, `report`. Canonical list: `FAILED_ACTIONS`. |
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote` (unexpected errors only, never the server's Premium or permission answers). Canonical list: `FAILED_ACTIONS`. |
 | `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
 | `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
 | `http_status` | When present. |

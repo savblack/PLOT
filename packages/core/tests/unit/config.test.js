@@ -37,6 +37,7 @@ test('getConfig starts with the documented defaults', () => {
     onLoadFailed: undefined,
     onReview: undefined,
     onTonightPicker: undefined,
+    onWatchTogether: undefined,
     onImport: undefined,
     onUndo: undefined,
   });
