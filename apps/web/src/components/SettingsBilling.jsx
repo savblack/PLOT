@@ -19,12 +19,14 @@ export default function SettingsBilling({ isPremium, canManage = false, billing,
         </div>
         <p>{canManage && !isPremium ? T.premium.subscriptionEnded : isPremium ? T.premium.thankYou : T.billing.intro}</p>
         {!isPremium && !canManage && (
-          <p className="settings-selection">
-            {PLANS_PAGE.premium.priceSummary}
-            <span aria-hidden="true"> · </span>
-            {PLANS_PAGE.comingSoon}
-          </p>
-          <p className="settings-selection settings-trial">{PLANS_PAGE.premium.trialNote}</p>
+          <>
+            <p className="settings-selection">
+              {PLANS_PAGE.premium.priceSummary}
+              <span aria-hidden="true"> · </span>
+              {PLANS_PAGE.comingSoon}
+            </p>
+            <p className="settings-selection settings-trial">{PLANS_PAGE.premium.trialNote}</p>
+          </>
         )}
         <ul className="settings-premium-features">
           {(isPremium ? T.billing.features : PLANS_PAGE.planSummary).map(feature => (
