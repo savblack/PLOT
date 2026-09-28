@@ -1,9 +1,12 @@
+import { SETTINGS_VIEW } from './settingsView.js';
+
 export const TRACKING = {
   sourceSelected: 'Server and profile selected. Ready to import.',
   title: 'Watch tracking',
-  description: 'One-time Trakt history and watchlist imports are free. Automatic updates require Premium. Trakt imports what Trakt already knows; it does not connect your streaming accounts.',
+  description: 'One-time Trakt history and watchlist imports are free. Trakt imports what Trakt already knows; it does not connect your streaming accounts.',
   connect: 'Connect Trakt for migration',
-  connectPlex: 'Connect Plex (Premium)',
+  // Same label as the settings connection row.
+  connectPlex: SETTINGS_VIEW.integrations.connectPlex,
   authExpired: 'Plex sign-in expired. Connect again to retry.',
   authPopupBlocked: 'Allow a new browser window to connect Plex, then retry.',
   authFailed: 'Could not confirm Plex sign-in. Check your connection and retry.',
@@ -27,7 +30,7 @@ export const TRACKING = {
   cancel: 'Cancel job',
   disconnect: 'Disconnect and retain imported data',
   loading: 'Loading tracking status…',
-  error: 'Could not update tracking. Check your connection and retry. Premium is required for automatic updates.',
+  error: 'Could not update tracking. Check your connection and retry.',
   never: 'No successful sync yet',
   success: (date) => `Last successful sync: ${date}`,
   counts: (job) => `${job.imported} imported, ${job.duplicates} already imported, ${job.skipped} skipped, ${job.review_count || 0} flagged for review`,

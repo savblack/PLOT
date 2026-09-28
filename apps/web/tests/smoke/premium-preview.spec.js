@@ -17,7 +17,8 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('row', { name: /Join shared lists and watch sessions.*Free with a Premium host/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Import history from your other apps/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Viewing stats.*Overview.*Deeper/ })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Plex and Trakt.*Manual.*Automatic/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Plex and Trakt/ })).toHaveCount(0);
+    await expect(page.getByText('Automatic Plex and Trakt syncing')).toHaveCount(0);
     await expect(page.getByRole('row', { name: /Custom lists.*5.*Unlimited/ })).toBeVisible();
 
     // Annual is the default: $2/month, billed $24 yearly; monthly shows $3.

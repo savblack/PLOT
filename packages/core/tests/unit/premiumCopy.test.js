@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { PLANS_PAGE } from '../../copy/plansPage.js';
 import { SETTINGS_VIEW } from '../../copy/settingsView.js';
+import { TRACKING } from '../../copy/tracking.js';
 
 const TRIAL = '7-day free trial, card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.';
 
@@ -44,6 +45,33 @@ test('closed checkout still states the trial and does not deny it', () => {
   assert.match(upgrade.a, /Checkout is not open/);
   assert.match(upgrade.a, /US\$3\/month or US\$24\/year, taxes included, with a 7-day free trial/);
   assert.doesNotMatch(upgrade.a, /does not start a payment or a trial/);
+});
+
+test('public copy does not sell automatic Plex or Trakt sync as Premium', () => {
+  const blob = JSON.stringify({ PLANS_PAGE, SETTINGS_VIEW, TRACKING });
+  assert.equal(PLANS_PAGE.premiumCard.some(row => row.icon === 'sync'), false);
+  assert.equal(PLANS_PAGE.premiumFeatures.some(row => row.id === 'autoSync'), false);
+  assert.equal(PLANS_PAGE.planSummary.some(line => /plex|trakt|sync/i.test(line)), false);
+  assert.deepEqual(SETTINGS_VIEW.billing.features, PLANS_PAGE.planSummary);
+  assert.equal(PLANS_PAGE.faqs.some(item => /sync/i.test(item.q) || /plex|trakt/i.test(item.a)), false);
+  assert.match(PLANS_PAGE.freeFeatures.find(item => item.id === 'imports').description, /Import watch history yourself/);
+  assert.doesNotMatch(PLANS_PAGE.freeFeatures.find(item => item.id === 'imports').description, /automatic|premium/i);
+  assert.equal(TRACKING.connectPlex, SETTINGS_VIEW.integrations.connectPlex);
+  assert.equal(SETTINGS_VIEW.integrations.requestedAccessMessage('Plex'), 'Requested access: Plex');
+  for (const pattern of [
+    /automatic plex/i,
+    /plex and trakt sync/i,
+    /automatic plex\/trakt/i,
+    /syncing is planned/i,
+    /automatic syncing/i,
+    /needs plot premium to sync/i,
+    /automatic updates require premium/i,
+    /premium is required for automatic/i,
+    /part of plot premium/i,
+    /connect plex \(premium\)/i,
+  ]) {
+    assert.doesNotMatch(blob, pattern);
+  }
 });
 
 test('free stays free and does not inherit the premium trial', () => {

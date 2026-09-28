@@ -91,7 +91,7 @@ Lead stories (positioning priority, not a statistical ranking):
 1. **Pick for Me**, the tonight picker (movie or show, time, services → shortlist / Surprise me). **Built.**
 2. Watchlist overlap / “something you both want”
 3. Create / host collaborative lists
-4. Automatic Plex and Trakt syncing
+4. Automatic Plex and Trakt syncing. **Do not list this in public copy.** Savannah may not ship it. Manual import stays Free.
 5. Deeper viewing stats
 6. Unlimited custom lists + smart lists
 7. Live calendar subscription
@@ -107,7 +107,7 @@ Lead stories (positioning priority, not a statistical ranking):
 
 - Playback or synced watching inside Plot
 - Personally tailored recommendations (yet)
-- Instant or verified two-way Plex/Trakt sync (say “automatic syncing”; do not overclaim)
+- Automatic Plex or Trakt sync as a Premium benefit. Public copy must not promise it.
 - Checkout / payment while coming-soon gates remain
 
 ---
@@ -152,7 +152,9 @@ Suggested priority for “Less deciding. More watching.” (matches plans storie
 
 Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into tickets before coding schema-heavy items; confirm irreversibles with Savannah (`AGENTS.md` Decisions).
 
-### 5.1 Automatic Plex + Trakt syncing — **Premium** (first paid gate)
+### 5.1 Automatic Plex + Trakt syncing — not a public Premium promise
+
+**Public copy:** do not list automatic Plex or Trakt sync as a Premium benefit. Savannah may not ship it. Settings can keep Connect and Sync now for an account that already has the controls. Plans, the FAQ, the upgrade sheet, and billing must not sell it.
 
 **Intent:** Keep watch history current without another manual import. Manual import/export stays Free.
 
@@ -165,7 +167,7 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 - Flag on, both platforms
 - Settings shows Connect and Sync now for Premium. The coming-soon dialog is only the flag-off fallback
 - Free users: Explore Premium, no Connect or Sync now
-- Copy does not claim instant or verified two-way syncing
+- Copy does not claim automatic sync, or instant or verified two-way syncing, as a Premium benefit
 - Not done here: a real Plex PIN approval and a real Trakt OAuth round trip
 
 **Related (out of first-paid scope):** Plex → Overseerr/Sonarr/Radarr requests design in `docs/superpowers/specs/2026-08-23-plex-sonarr-radarr-requests-design.md`. Personal/homelab; productisation later. Fix `processOutbox` action filter before adding `media_request` actions.
