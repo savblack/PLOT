@@ -171,6 +171,7 @@ def avatar_svg(ground, ink, pink):
 WORDMARK_AVATARS = {
     'cream': ('#F8F2EA', '#292924'), 'charcoal': ('#292924', '#F0EFE8'),
     'pink': ('#FF88C8', '#292924'), 'sage': ('#DBE1B0', '#292924'),
+    'pink-on-charcoal': ('#292924', '#FF88C8'),
 }
 WM_PX = 400          # word width lands around 70% of the box, inside the circle
 WM_TRACK = -0.045
