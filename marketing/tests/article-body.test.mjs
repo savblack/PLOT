@@ -51,7 +51,10 @@ test('an HTML table keeps colspan and emphasis, and drops event handlers', () =>
 test('an HTML comment is omitted, and an unclosed comment is escaped', () => {
   const html = renderArticleBlock('<table><tr><td>Stay<!-- <script>alert(1)</script> --></td></tr></table>');
   assert.match(html, /<td>Stay<\/td>/);
-  assert.doesNotMatch(html, /<!--|<script|alert/);
+  assert.equal(html.includes('<!--'), false);
+  assert.equal(html.includes('<script'), false);
+  assert.equal(html.includes('<SCRIPT'), false);
+  assert.equal(html.includes('alert'), false);
   const open = renderArticleBlock('<table><tr><td>Stay<!-- never closed</td></tr></table>');
   assert.match(open, /^<p>&lt;table&gt;/);
   assert.doesNotMatch(open, /<table/);
@@ -60,7 +63,9 @@ test('an HTML comment is omitted, and an unclosed comment is escaped', () => {
 test('a script inside a table is not emitted', () => {
   const html = renderArticleBlock('<table><tr><td><script>alert(1)</script>Stay</td></tr></table>');
   assert.match(html, /<td>Stay<\/td>/);
-  assert.doesNotMatch(html, /<script|alert/);
+  assert.equal(html.includes('<script'), false);
+  assert.equal(html.includes('<SCRIPT'), false);
+  assert.equal(html.includes('alert'), false);
 });
 
 test('a link inside a table is text, not an anchor', () => {
