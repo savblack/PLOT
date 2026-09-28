@@ -1782,6 +1782,7 @@ export type Database = {
           username: string | null
           watch_together_requests_from: string
           watchlist_availability_alerts: boolean
+          watchlist_visibility: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1808,6 +1809,7 @@ export type Database = {
           username?: string | null
           watch_together_requests_from?: string
           watchlist_availability_alerts?: boolean
+          watchlist_visibility?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -1834,6 +1836,7 @@ export type Database = {
           username?: string | null
           watch_together_requests_from?: string
           watchlist_availability_alerts?: boolean
+          watchlist_visibility?: string | null
         }
         Relationships: []
       }
@@ -2378,27 +2381,21 @@ export type Database = {
           accepted_at: string | null
           created_at: string
           recipient_id: string
-          recipient_shares_full: boolean
           requester_id: string
-          requester_shares_full: boolean
           status: string
         }
         Insert: {
           accepted_at?: string | null
           created_at?: string
           recipient_id: string
-          recipient_shares_full?: boolean
           requester_id: string
-          requester_shares_full?: boolean
           status?: string
         }
         Update: {
           accepted_at?: string | null
           created_at?: string
           recipient_id?: string
-          recipient_shares_full?: boolean
           requester_id?: string
-          requester_shares_full?: boolean
           status?: string
         }
         Relationships: []
@@ -2597,6 +2594,24 @@ export type Database = {
         }
         Relationships: []
       }
+      watchlist_viewers: {
+        Row: {
+          created_at: string
+          owner_id: string
+          viewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          owner_id: string
+          viewer_id: string
+        }
+        Update: {
+          created_at?: string
+          owner_id?: string
+          viewer_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       marketing_template_stats: {
@@ -2704,6 +2719,7 @@ export type Database = {
         Returns: boolean
       }
       can_view_profile: { Args: { p_uid: string }; Returns: boolean }
+      can_view_watchlist: { Args: { p_owner: string }; Returns: boolean }
       cancel_watch_together_request: {
         Args: { p_recipient: string }
         Returns: undefined
@@ -2804,6 +2820,10 @@ export type Database = {
       is_custom_list_member: { Args: { p_list: string }; Returns: boolean }
       is_premium: { Args: { p_user?: string }; Returns: boolean }
       is_profile_public: { Args: { p_uid: string }; Returns: boolean }
+      is_selected_watchlist_viewer: {
+        Args: { p_owner: string }
+        Returns: boolean
+      }
       is_watch_together_partner: { Args: { p_other: string }; Returns: boolean }
       leave_shared_list: { Args: { p_list: string }; Returns: undefined }
       list_blocked_users: {
@@ -2894,6 +2914,18 @@ export type Database = {
           username: string
         }[]
       }
+      list_watchlist_viewer_candidates: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          id: string
+          is_follower: boolean
+          is_partner: boolean
+          selected: boolean
+          username: string
+        }[]
+      }
       live_watch_together_session: {
         Args: { p_other: string }
         Returns: string
@@ -2909,6 +2941,10 @@ export type Database = {
       new_watch_together_link_key: { Args: never; Returns: string }
       not_blocked: { Args: { p_uid: string }; Returns: boolean }
       profile_links_ok: { Args: { l: Json }; Returns: boolean }
+      prune_watchlist_viewer: {
+        Args: { p_owner: string; p_viewer: string }
+        Returns: undefined
+      }
       record_kofi_tip: { Args: { p_payload: Json }; Returns: Json }
       refresh_premium_badges: { Args: never; Returns: number }
       release_marketing_linear_mirror: {
@@ -2995,6 +3031,10 @@ export type Database = {
         Args: { p_other: string; p_share: boolean }
         Returns: undefined
       }
+      share_watchlist_with: {
+        Args: { p_on: boolean; p_promote?: boolean; p_viewer: string }
+        Returns: undefined
+      }
       start_watch_together_session: {
         Args: { p_other: string }
         Returns: string
@@ -3074,9 +3114,7 @@ export type Database = {
           accepted_at: string | null
           created_at: string
           recipient_id: string
-          recipient_shares_full: boolean
           requester_id: string
-          requester_shares_full: boolean
           status: string
         }
         SetofOptions: {
@@ -3146,6 +3184,7 @@ export type Database = {
           tmdb_id: number
         }[]
       }
+      watchlist_visibility_of: { Args: { p_owner: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
