@@ -198,12 +198,21 @@ const safeAttrs = (tag, raw) => {
  * @returns {string | null} a scroll wrapper, or null when the markup is not a table
  */
 const sanitizeTableHtml = (input) => {
-  const src = String(input).replace(/<!--[\s\S]*?-->/g, '');
+  const src = String(input);
   let i = 0;
   const out = [];
   const stack = [];
 
   while (i < src.length) {
+    // Skip a comment in the scanner. A replace of `<!--...-->` is not enough:
+    // `<!<!---->` still contains `<!--` after one pass, which is the injection
+    // CodeQL flags. An unclosed comment fails the whole table.
+    if (src.startsWith('<!--', i)) {
+      const end = src.indexOf('-->', i + 4);
+      if (end === -1) return null;
+      i = end + 3;
+      continue;
+    }
     if (src[i] !== '<') {
       const next = src.indexOf('<', i);
       const text = next === -1 ? src.slice(i) : src.slice(i, next);
