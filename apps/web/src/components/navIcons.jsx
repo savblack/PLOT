@@ -160,3 +160,14 @@ export const NAV_ICONS = {
   search: IconSearch,
   settings: IconSettings,
 };
+
+// Share: an arrow up out of a tray. The share-card entry on History's side
+// cards and, later, the profile's Share menu.
+export function IconShare() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 15V4m0 0-4 4m4-4 4 4" />
+      <path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
+    </svg>
+  );
+}

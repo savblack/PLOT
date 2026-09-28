@@ -46,6 +46,35 @@ const FIXTURE = [
   ['Gladiator II', 'movie', '2025-11-30', 4],
 ];
 
+// The owner's Top 5s, for the share cards. Resolved the same way.
+const TOP5 = {
+  movies: ['Heat', 'Aftersun', 'Anatomy of a Fall', 'Paddington 2', 'Past Lives'],
+  tv: ['Succession', 'Fleabag', 'The Bear', 'Severance', 'Mad Men'],
+};
+const PROFILE = { id: 'story', username: 'savannah', display_name: 'Savannah', region: 'AU' };
+
+export function useFixtureTopLists() {
+  const [lists, setLists] = useState({ movies: [], tv: [] });
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const out = { movies: [], tv: [] };
+      for (const kind of ['movies', 'tv']) {
+        const type = kind === 'tv' ? 'tv' : 'movie';
+        for (const [i, title] of TOP5[kind].entries()) {
+          const hit = await tmdb.resolveTitle(title, type);
+          out[kind].push({ rank: i + 1, list_type: kind, media_type: type, tmdb_id: hit?.id ?? i + 1, title: hit?.title ?? hit?.name ?? title, poster_path: hit?.poster_path ?? null });
+        }
+      }
+      if (alive) setLists(out);
+    })();
+    return () => { alive = false; };
+  }, []);
+  return lists;
+}
+
+export { PROFILE as FIXTURE_PROFILE };
+
 function useFixtureEntries() {
   const [entries, setEntries] = useState([]);
   useEffect(() => {
@@ -85,8 +114,11 @@ function LiveHistory() {
   const [year, setYear] = useState(2026);
   const yearEntries = entries.filter(e => e.watched_at.startsWith(String(year)));
   const { details, loading } = useHistoryDetails(yearEntries);
+  const topLists = useFixtureTopLists();
   return (
     <HistoryPage
+      topLists={topLists}
+      profile={PROFILE}
       entries={entries}
       details={details}
       detailsLoading={loading}
