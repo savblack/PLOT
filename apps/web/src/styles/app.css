@@ -385,6 +385,39 @@ svg { stroke-width: 1.5; }
 .nav-drawer-item.active {
   color: var(--accent);
 }
+/* The row was always a flex line with a 0.85rem gap waiting for a glyph; the
+   drawer simply never rendered one, so it read as a list of bare words next to
+   a rail where every destination has an icon. Same size and weight as the
+   rail's, so the two shells draw one nav. */
+.nav-drawer-item svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  flex-shrink: 0;
+}
+/* The profile row's avatar stands in for an icon, so it is sized to the icon
+   column rather than to a face. 18px, not a more flattering 20: two extra
+   pixels here push this row's label off the 51.6px edge every other row sits
+   on, and one left edge is the whole point of putting glyphs in this drawer. */
+.nav-drawer-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  flex-shrink: 0;
+}
+.nav-drawer-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
 .nav-drawer-label {
   font-size: 0.95rem;
   font-weight: 600;
