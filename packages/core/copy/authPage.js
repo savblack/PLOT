@@ -72,13 +72,36 @@ export const AUTH_PAGE = {
   and: 'and',
   privacyPolicy: 'Privacy Policy',
 
-  // Shown under the form when Turnstile fails. Signup still submits: the
-  // page routes that attempt through signup-bypass instead of leaving the
-  // button disabled.
-  verificationFailed: 'Verification failed to load. You can still create your account.',
-  verificationBlocked: 'Still blocked. An ad blocker or privacy setting is the usual cause. You can still create your account.',
+  // Shown under the Turnstile widget when it errors. Login, password reset,
+  // and magic link have no bypass, so the shared wording stays neutral.
+  verificationFailed: 'Verification failed to load. Wait a moment and try again.',
+  verificationBlocked: 'Still blocked. An ad blocker or privacy setting is the usual cause. Wait a moment and try again.',
+  // Signup still submits: that attempt goes through signup-bypass.
+  verificationFailedSignup: 'Verification failed to load. You can still create your account.',
+  verificationBlockedSignup: 'Still blocked. An ad blocker or privacy setting is the usual cause. You can still create your account.',
   verificationRetry: 'Retry',
   // Login, reset, and magic link have no bypass. Said when the widget
-  // never returns a token.
+  // never returns a token and the submit itself has to stop.
   verificationUnavailable: 'The security check did not finish. Wait a moment and try again.',
 };
+
+/**
+ * Copy for a Turnstile failure. Signup is the only mode that can continue
+ * without a token, so it is the only mode that may say the account can
+ * still be created.
+ *
+ * @param {'signup'|'login'|'forgot'|'magic'|string} mode
+ * @returns {{ failed: string, blocked: string }}
+ */
+export function captchaFailureCopy(mode) {
+  if (mode === 'signup') {
+    return {
+      failed: AUTH_PAGE.verificationFailedSignup,
+      blocked: AUTH_PAGE.verificationBlockedSignup,
+    };
+  }
+  return {
+    failed: AUTH_PAGE.verificationFailed,
+    blocked: AUTH_PAGE.verificationBlocked,
+  };
+}
