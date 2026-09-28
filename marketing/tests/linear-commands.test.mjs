@@ -93,6 +93,25 @@ test('a body paragraph keeps its own soft line breaks as one paragraph', () => {
   assert.deepEqual(r.fields.page_body, ['One sentence. Still the same para.', 'Next para.']);
 });
 
+test('a comparison table keeps its row breaks', () => {
+  const r = parseCommand([
+    '/copy',
+    'body:',
+    'Opening paragraph.',
+    '',
+    '| Stay | Export | Switch |',
+    '| --- | --- | --- |',
+    '| Keep the diary | Download a file | Move the account |',
+    '',
+    'Closing paragraph.',
+  ].join('\n'));
+  assert.deepEqual(r.fields.page_body, [
+    'Opening paragraph.',
+    '| Stay | Export | Switch |\n| --- | --- | --- |\n| Keep the diary | Download a file | Move the account |',
+    'Closing paragraph.',
+  ]);
+});
+
 test('accepts the short aliases', () => {
   const r = parseCommand('/copy\ncta: track_it\ntitle: a headline');
   assert.deepEqual(r.fields, { cta_variant: 'track_it', page_title: 'a headline' });

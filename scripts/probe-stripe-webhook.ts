@@ -12,8 +12,14 @@ let profileFail = false;
 let transactionFail = false;
 let currentSubscription: Record<string, unknown>;
 let stripeFail = false;
+const posthogEvents: Record<string, unknown>[] = [];
 globalThis.fetch = async (input, init) => {
  const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
+ if(url.origin === 'https://a.theplot.tv') {
+  const body = init?.body ? JSON.parse(String(init.body)) : null;
+  if (body) posthogEvents.push(body);
+  return new Response('{}', {headers:{'content-type':'application/json'}});
+ }
  if(url.origin === 'https://api.stripe.com') {
   if(stripeFail) return new Response(JSON.stringify({error:{message:'Unavailable',type:'api_error'}}),{status:503,headers:{'content-type':'application/json'}});
   return new Response(JSON.stringify(currentSubscription),{headers:{'content-type':'application/json'}});
@@ -37,15 +43,18 @@ globalThis.fetch = async (input, init) => {
 };
 await import('../supabase/functions/stripe-webhook/index.ts');
 const now = Math.floor(Date.now()/1000);
-async function deliver(id: string, status: string, end: number, cancelAt: number | null = null, currentStatus = status) {
- const event={id,type:'customer.subscription.updated',created:now,data:{object:{id:'sub_local',customer:'cus_local',status,metadata:{supabase_user_id:'qa-local'},items:{data:[{current_period_end:end,price:{id:'price_local'}}]},cancel_at_period_end:false,cancel_at:cancelAt}}};
- currentSubscription={...event.data.object,status:currentStatus};
+async function sendEvent(event: Record<string, unknown>) {
  const body=JSON.stringify(event);
  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode('local-signing-placeholder'),{name:'HMAC',hash:'SHA-256'},false,['sign']);
  const bytes=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(`${now}.${body}`));
  const signature=Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');
  const response=await handler(new Request('http://localhost/webhook',{method:'POST',headers:{'stripe-signature':`t=${now},v1=${signature}`},body}));
  return {status:response.status,body:await response.json()};
+}
+async function deliver(id: string, status: string, end: number, cancelAt: number | null = null, currentStatus = status) {
+ const event={id,type:'customer.subscription.updated',created:now,data:{object:{id:'sub_local',customer:'cus_local',status,metadata:{supabase_user_id:'qa-local'},items:{data:[{current_period_end:end,price:{id:'price_local'}}]},cancel_at_period_end:false,cancel_at:cancelAt}}};
+ currentSubscription={...event.data.object,status:currentStatus};
+ return sendEvent(event);
 }
 function check(value: boolean,label: string){if(!value)throw Error(label);console.log('PASS '+label);}
 check((await handler(new Request('http://localhost/webhook',{method:'POST',body:'{}'}))).status===400,'unsigned request rejected');
@@ -77,3 +86,31 @@ stripeFail=true;
 check((await deliver('evt_stripe_unavailable','active',now+86400)).status===500,'Stripe lookup failure is retryable without stale payload fallback');
 stripeFail=false;
 check((await deliver('evt_stripe_unavailable','active',now+86400)).body.applied===true,'Stripe recovery applies unfinished event');
+
+currentSubscription={
+ id:'sub_local',
+ customer:'cus_local',
+ status:'active',
+ metadata:{supabase_user_id:'qa-local'},
+ items:{data:[{
+  current_period_end:now+86400,
+  price:{id:'price_local',recurring:{interval:'month'},unit_amount:300,currency:'usd'},
+ }]},
+};
+const conversion = await sendEvent({
+ id:'evt_checkout_completed',
+ type:'checkout.session.completed',
+ created:now,
+ data:{object:{
+  id:'cs_local',
+  mode:'subscription',
+  client_reference_id:'qa-local',
+  customer:'cus_local',
+  subscription:'sub_local',
+ }},
+});
+const captured = posthogEvents.at(-1);
+const capturedProperties = captured?.properties as Record<string, unknown> | undefined;
+check(conversion.status===200&&captured?.event==='premium_converted','checkout completion captures conversion');
+check(capturedProperties?.channel==='stripe'&&capturedProperties?.checkout_type==='subscription','conversion has Stripe channel and subscription checkout type');
+check(capturedProperties?.amount===3&&capturedProperties?.currency==='USD','conversion has normalized amount and currency');

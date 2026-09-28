@@ -1,10 +1,11 @@
 import { readListItems } from './listReads.js';
-import { on, LISTS_CHANGED_EVENT } from './events.js';
+import { on, emit, LISTS_CHANGED_EVENT } from './events.js';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { genreIdsFromItem, mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
+import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
 import { createCustomListRecord, CUSTOM_LIST_LIMIT_CODE } from './customListCreation.js';
 import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
 
@@ -27,7 +28,7 @@ import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
  *   renameList: (listId: string, name: string) => Promise<any>;
  *   setListVisibility: (listId: string, visibility: import('./customLists.js').ListVisibility) => Promise<any>;
  *   addItem: (listId: string, item: any) => Promise<any>;
- *   removeItem: (listId: string, tmdbId: number) => Promise<any>;
+ *   removeItem: (listId: string, tmdbId: number, opts?: { undo?: import('./undo.js').UndoOption }) => Promise<any>;
  *   isInList: (listId: string, tmdbId: number) => boolean;
  *   createSharedList: (name: string, memberIds: string[], seedPartnerId?: string | null) => Promise<string | null>;
  *   addMember: (listId: string, memberId: string) => Promise<boolean>;
@@ -204,7 +205,8 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
     return data ?? null;
   }, [userId, isShared]);
 
-  const removeItem = useCallback(async (listId, tmdbId) => {
+  // opts.undo: see useWatchlist.removeFromList.
+  const removeItem = useCallback(async (listId, tmdbId, opts) => {
     if (!userId) return false;
     const { error } = isShared(listId)
       ? await supabase.rpc('remove_shared_list_item', { p_list: listId, p_tmdb_id: Number(tmdbId) })
@@ -230,6 +232,17 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
     getConfig().onCustomListItemChange?.({
       list_id: listId, tmdb_id: Number(tmdbId), media_type: removed?.media_type, action: 'removed',
     });
+    if (removed) {
+      registerUndo(opts?.undo, {
+        action: UNDO_ACTIONS.LIST_ITEM_REMOVE,
+        title: removed.title,
+        meta: { listName: lists.find(l => l.id === listId)?.name },
+        revert: async () => {
+          await restoreRow('user_custom_list_items', { ...removed, list_id: listId, user_id: userId });
+          emit(LISTS_CHANGED_EVENT);
+        },
+      });
+    }
     return true;
   }, [userId, lists, isShared]);
 

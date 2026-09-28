@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { personName, pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
-import { useWatchTogetherLink, useWatchTogetherExampleTitles } from '@plot/core/useWatchTogether.js';
+import { useWatchTogetherLink, useWatchTogetherExampleTitles, reportWatchTogether } from '@plot/core/useWatchTogether.js';
 import { buildWatchTogetherLinkUrl, SHARE_ORIGIN } from '@plot/core/sharing.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
@@ -50,11 +50,12 @@ export function InviteLinkCard({ compact = false }) {
   const share = async () => {
     if (!url) return;
     const result = await shareUrl({ url, title: T.link.previewTitle(name), text: T.link.shareText });
+    if (result.ok) reportWatchTogether('link_shared', { method: result.method });
     if (result.ok && result.method === 'copy') setCopied(true);
   };
   const copy = async () => {
     if (!url) return;
-    try { await navigator.clipboard.writeText(url); setCopied(true); } catch { /* clipboard blocked */ }
+    try { await navigator.clipboard.writeText(url); setCopied(true); reportWatchTogether('link_shared', { method: 'copy' }); } catch { /* clipboard blocked */ }
   };
 
   if (compact) {
@@ -145,6 +146,7 @@ function Pitch({ premium }) {
       <h2 className="wt-card-title" id="wt-start-title">{S.pitchTitle}</h2>
       <p className="wt-card-body">{S.pitchBody}</p>
       {!premium && <PremiumPrompt label={S.getPremium} />}
+      <HowItWorks premium={premium} inCard />
     </section>
   );
 }
@@ -153,11 +155,14 @@ function Example({ titles }) {
   const shown = titles.slice(0, 5);
   return (
     <div className="wt-card wt-example">
-      <span className="wt-example-badge">{S.example}</span>
-      <div className="wt-person">
-        <span className="wt-avatar wt-avatar--md" aria-hidden="true">{S.exampleName.charAt(0)}</span>
-        <span className="wt-person-text"><span className="wt-person-name">{S.examplePair}</span><span className="wt-note">{S.exampleCount}</span></span>
+      <div className="wt-demo-head wt-example-head">
+        <div className="wt-person">
+          <span className="wt-avatar wt-avatar--md" aria-hidden="true">{S.exampleName.charAt(0)}</span>
+          <span className="wt-person-text"><span className="wt-person-name">{S.examplePair}</span><span className="wt-note">{S.exampleCount}</span></span>
+        </div>
+        <span className="wt-example-badge">{S.example}</span>
       </div>
+      <div className="wt-example-body">
       <ul className="wt-example-posters">
         {shown.length
           ? shown.map(t => (
@@ -174,6 +179,7 @@ function Example({ titles }) {
           <span className="wt-person-text"><span className="wt-person-name">{S.exampleMatch(shown[0].title)}</span><span className="wt-note">{S.exampleMatchNote}</span></span>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -272,11 +278,12 @@ function DemoPoster({ title, counter }) {
   );
 }
 
-function HowItWorks({ premium }) {
+function HowItWorks({ premium, inCard = false }) {
   const steps = premium ? [{ ...S.steps[0], body: S.premiumFirstStep }, ...S.steps.slice(1)] : S.steps;
+  const Heading = inCard ? 'h3' : 'h2';
   return (
-    <section className="wt-how" aria-labelledby="wt-how-title">
-      <h2 className="wt-card-title" id="wt-how-title">{S.howTitle}</h2>
+    <section className={`wt-how${inCard ? ' wt-how--in-card' : ''}`} aria-labelledby={inCard ? 'wt-how-title-card' : 'wt-how-title'}>
+      <Heading className="wt-card-title" id={inCard ? 'wt-how-title-card' : 'wt-how-title'}>{S.howTitle}</Heading>
       <ol className="wt-steps">
         {steps.map((step, i) => (
           <li key={step.title} className="wt-step">
@@ -332,7 +339,7 @@ export default function WatchTogetherStart({ premium, suggested, onInvite }) {
             : <Pitch premium />}
         </div>
         <div className="wt-start-link"><InviteLinkCard /></div>
-        <div className="wt-start-how"><HowItWorks premium /></div>
+        {suggested.length > 0 && <div className="wt-start-how"><HowItWorks premium /></div>}
         <div className="wt-start-seeit">
           <div className="wt-person-text">
             <h2 className="wt-card-title">{S.seeItTitle}</h2>
@@ -364,7 +371,7 @@ export default function WatchTogetherStart({ premium, suggested, onInvite }) {
           <Demo key={titles.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={titles} />
         </div>
       </div>
-      <div className="wt-start-how"><HowItWorks /></div>
+      {suggested.length > 0 && <div className="wt-start-how"><HowItWorks /></div>}
       <div className="wt-start-link"><InviteLinkCard /></div>
       <div className="wt-start-note">
         <div className="wt-banner wt-banner--plain">

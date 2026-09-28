@@ -101,7 +101,8 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef }) {
             <span className="upgrade-sheet-amount">{PLANS_PAGE.premium.price}</span>
             <span>{PLANS_PAGE.premium.period}</span>
           </div>
-          <p className="upgrade-sheet-alt">{S.annualAlt}</p>
+          <p className="upgrade-sheet-alt">{PLANS_PAGE.premium.priceTerms}</p>
+          <p className="upgrade-sheet-trial">{PLANS_PAGE.premium.trialNote}</p>
         </div>
 
         <button type="button" className="btn btn-primary" onClick={() => premium.startCheckout()}>

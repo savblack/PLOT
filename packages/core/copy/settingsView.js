@@ -2,6 +2,8 @@
 // Lives in @plot/core/copy so the two platforms can't drift word by word;
 // apps/web/src/copy/settingsView.js re-exports it so src/copy stays the single place
 // the web app and the Storybook Content page look for copy.
+import { IMPORT_VIEW } from './importView.js';
+import { PLANS_PAGE } from './plansPage.js';
 
 export const SETTINGS_VIEW = {
   page: {
@@ -43,24 +45,23 @@ export const SETTINGS_VIEW = {
     intro: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch.',
     // Keep this list aligned with PLANS_PAGE.planSummary — SettingsBilling also
     // reads the plans catalog for price copy so the two surfaces cannot drift.
-    features: ['Pick a movie or show by time and service', 'Automatic Plex and Trakt syncing', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
+    features: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
     cycle: 'Choose your billing cycle',
     monthly: 'Monthly',
     yearly: 'Yearly',
     checkout: 'Explore Premium',
     comingSoon: 'plot Premium is coming soon',
-    comingSoonMessage: 'plot Premium is coming soon. Checkout is not open yet. There is nothing to pay today.',
-    exploreHint: 'Preview what’s planned. Checkout is not open yet.',
+    // Same closed-checkout wording as the plans page, so Settings cannot deny the trial.
+    comingSoonMessage: PLANS_PAGE.checkoutMessage,
+    exploreHint: 'Checkout is not open yet. When Premium opens, the 7-day trial needs a card, and you won’t be charged until 7 days after you start.',
     portalHint: 'Update payment details, view invoices or cancel your subscription.',
     supportTitle: 'A little support goes a long way.',
     supportHint: 'Don’t want to subscribe but like what Plot is doing? Feel free to support it on Ko-fi. Plot is built and run by a solo developer with no external funding or backing. Every contribution helps keep it running, growing and, most importantly, independent.',
     supportAction: 'Support on Ko-fi',
     supportNote: 'Optional support. A Ko-fi tip does not activate Premium.',
     viewPremium: 'Explore Premium',
-    syncComingSoon: 'Automatic syncing is coming soon',
-    syncComingSoonMessage: 'Automatic Plex and Trakt syncing is planned for plot Premium. Manual imports stay free. Connections are not available yet.',
-    calendarComingSoon: 'Live calendar subscription is coming soon',
-    calendarComingSoonMessage: 'A live calendar feed is planned for plot Premium. You can still download a one-time calendar snapshot for free.',
+    syncComingSoon: 'Connections are not available',
+    syncComingSoonMessage: 'Manual imports stay free.',
     confirming: 'Confirming your subscription. This may take a moment.',
   },
   region: {
@@ -170,21 +171,27 @@ export const SETTINGS_VIEW = {
     genresLabel: 'Genres',
     selectedCount: (n) => `${n} selected`,
     plexName: 'Plex',
-    plexBlurb: 'Sync your Plex watchlist and history',
+    plexBlurb: 'One-off history import stays free.',
     traktName: 'Trakt',
-    traktBlurb: 'Sync Netflix, Prime, Disney+ & more',
+    traktBlurb: 'One-off history import stays free.',
     simklName: 'Simkl',
     simklBlurb: 'Manually exchange watch history with Simkl',
-    pausedNeedsPremium: 'Paused, needs plot Premium to sync',
-    requestedAccessMessage: (name) => `Requested access: ${name} sync`,
+    pausedNeedsPremium: 'Paused',
+    syncNeedsPremium: 'Manual imports stay free',
+    syncNeedsPremiumMessage: 'Import watch history yourself. That stays on Free.',
+    requestedAccessMessage: (name) => `Requested access: ${name}`,
     requested: 'Requested ✓',
     requestAccess: 'Request access',
     disconnect: 'Disconnect',
+    // Plex and Trakt stay on import wording. Simkl is the manual exchange that
+    // still uses connectedLastSynced and syncNow.
+    connected: 'Connected',
+    importing: IMPORT_VIEW.importing,
     connectedLastSynced: (date) => `Connected · Last synced ${date}`,
     never: 'never',
     notConnected: 'Not connected',
     connectPlex: 'Connect Plex',
-    connectTraktToSync: 'Connect to sync Netflix, Prime, Disney+ & more',
+    connectTraktToSync: 'Connect your Trakt account.',
     connectTrakt: 'Connect Trakt',
     connectSimkl: 'Connect Simkl',
     syncNow: 'Sync now',
@@ -229,6 +236,7 @@ export const SETTINGS_VIEW = {
     groupTitle: 'Calendar',
     subscribeLabel: 'Subscribe to Calendar',
     needsPremium: 'A live calendar feed needs plot Premium',
+    needsPremiumMessage: 'Live calendar subscription is included with plot Premium. The one-time snapshot on this page stays free.',
     liveFeedPrivate: 'Live feed of your watchlist',
     getUrlHint: 'Get a URL for Google or Apple Calendar',
     requestedCalendarSubscribeMessage: 'Requested access: Calendar subscribe',
@@ -239,6 +247,10 @@ export const SETTINGS_VIEW = {
     loadingEvents: 'Loading events…',
     eventCount: (n) => `${n} event${n !== 1 ? 's' : ''} · one-time snapshot`,
     downloadIcs: 'Download .ics',
+    shareIcs: 'Share .ics',
+    snapshotHint: 'One-time file of upcoming releases. It does not stay updated.',
+    emptySnapshot: 'Nothing upcoming to export yet.',
+    shareFailed: 'Could not share your calendar file. Please try again.',
   },
 
   export: {

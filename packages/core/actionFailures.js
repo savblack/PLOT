@@ -51,6 +51,15 @@ export const FAILED_ACTIONS = Object.freeze({
   BLOCK:                   'block',
   UNBLOCK:                 'unblock',
   REPORT:                  'report',
+  // Reverting an earlier removal from the undo toast (undo.js).
+  UNDO:                    'undo',
+  // Watch together (useWatchTogether.js). Only unexpected failures: the
+  // server's premium_required and not_allowed answers are rules, not errors.
+  WATCH_TOGETHER_INVITE:        'watch_together_invite',
+  WATCH_TOGETHER_RESPOND:       'watch_together_respond',
+  WATCH_TOGETHER_LINK_ACCEPT:   'watch_together_link_accept',
+  WATCH_TOGETHER_SESSION_START: 'watch_together_session_start',
+  WATCH_TOGETHER_VOTE:          'watch_together_vote',
 });
 
 /**
@@ -65,6 +74,7 @@ export const FAILED_LOADS = Object.freeze({
   HISTORY:      'history',
   WATCHING:     'watching',
   FAVOURITES:   'favourites',
+  TONIGHT_PICKS: 'tonight_picks',
 });
 
 /**
@@ -128,7 +138,7 @@ function errorIdentity(error) {
  * @param {string} action one of FAILED_ACTIONS
  * @param {any} error the Supabase error, or null when the call returned no row
  * @param {{ tmdb_id?: number, media_type?: string, list_id?: string, fields?: string[],
- *   progress_action?: string, kind?: FailureKind }} [context] ids and field
+ *   progress_action?: string, undone_action?: string, kind?: FailureKind }} [context] ids and field
  *   *names* only, the same props the matching success event carries. `kind`
  *   overrides classification for failures that never reached the server.
  */

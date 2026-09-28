@@ -3,10 +3,27 @@ import { supabase } from './supabase.js';
 import { tmdb } from './tmdb.js';
 import { localDateStr } from './date.js';
 import { baseMediaRow, tmdbIdFromItem } from './media.js';
-import { logWatchedItem } from './userMedia.js';
+import { logWatchedItem, revertEpisodeHistory } from './userMedia.js';
 import { getNextEpisodeProgress, isRewind } from './watchingProgress.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
+import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
+import { on, emit, WATCHING_CHANGED_EVENT } from './events.js';
+
+/** Put a show's episode pointer back where it was (undo toast). */
+async function restorePointer(userId, before) {
+  const { error } = await supabase
+    .from('watching_progress')
+    .update({
+      current_season:  before.current_season,
+      current_episode: before.current_episode,
+      updated_at:      before.updated_at,
+    })
+    .eq('user_id', userId)
+    .eq('tmdb_id', Number(before.tmdb_id));
+  if (error) throw error;
+  emit(WATCHING_CHANGED_EVENT);
+}
 
 /**
  * Currently-watching shows + episode progress for a user.
@@ -16,9 +33,9 @@ import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } 
  *   loading: boolean;
  *   error: boolean;
  *   startWatching: (item: any) => Promise<any>;
- *   markEpisodeWatched: (tmdbId: number) => Promise<any>;
- *   stopWatching: (tmdbId: number) => Promise<any>;
- *   setProgress: (tmdbId: number, season: number, episode: number, opts?: { reason?: 'episode' | 'season' }) => Promise<{ ok: boolean; code?: string; error?: string|null; data?: any }>;
+ *   markEpisodeWatched: (tmdbId: number, opts?: { undo?: import('./undo.js').UndoOption }) => Promise<any>;
+ *   stopWatching: (tmdbId: number, opts?: { undo?: import('./undo.js').UndoOption }) => Promise<any>;
+ *   setProgress: (tmdbId: number, season: number, episode: number, opts?: { reason?: 'episode' | 'season', undo?: import('./undo.js').UndoOption }) => Promise<{ ok: boolean; code?: string; error?: string|null; data?: any }>;
  *   fetchSeason: (tmdbId: number, seasonNum: number) => Promise<any>;
  *   isWatching: (tmdbId: number) => boolean;
  *   getProgress: (tmdbId: number) => any;
@@ -55,6 +72,7 @@ export function useWatching(userId) {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
   useEffect(() => { loadWatching(); }, [loadWatching]);
+  useEffect(() => on(WATCHING_CHANGED_EVENT, loadWatching), [loadWatching]);
 
   /* ── Fetch season data (ref-cached — stable identity, no re-render on write) ── */
   const fetchSeason = useCallback(async (tmdbId, seasonNum) => {
@@ -98,7 +116,10 @@ export function useWatching(userId) {
   }, [userId]);
 
   /* ── Mark current episode watched (advance) ── */
-  const markEpisodeWatched = useCallback(async (tmdbId) => {
+  // opts.undo offers the tick to the undo toast. Reverting moves the pointer
+  // back and returns the show's history row to exactly what it was (or
+  // removes it, if this tick created it).
+  const markEpisodeWatched = useCallback(async (tmdbId, opts) => {
     const progress = items.find(i => i.tmdb_id === Number(tmdbId));
     if (!progress) {
       // Never reached the server: the panel offered a tick for a show this
@@ -151,6 +172,14 @@ export function useWatching(userId) {
       episode: progress.current_episode,
     });
 
+    // Only read when an undo was asked for: it is an extra round trip.
+    let historyBefore = null;
+    if (opts?.undo && userId) {
+      const { data: row } = await supabase.from('history').select('*')
+        .eq('user_id', userId).eq('tmdb_id', Number(tmdbId)).eq('media_type', 'tv').maybeSingle();
+      historyBefore = row ?? null;
+    }
+
     // Log completed episode to history via shared helper, which validates the
     // date and signals the change.
     if (userId) {
@@ -160,6 +189,16 @@ export function useWatching(userId) {
         watchedAt: localDateStr(),
       });
     }
+
+    registerUndo(opts?.undo, {
+      action: UNDO_ACTIONS.WATCH_PROGRESS,
+      title: progress.title,
+      meta: { season: nextProgress.nextSeason, episode: nextProgress.nextEpisode },
+      revert: async () => {
+        await restorePointer(userId, progress);
+        await revertEpisodeHistory({ userId, tmdbId, before: historyBefore });
+      },
+    });
 
     return { ok: true, data };
   }, [items, userId, fetchSeason]);
@@ -175,8 +214,9 @@ export function useWatching(userId) {
   // forward action, from the same call sites. Reporting those as watched let
   // undo count as engagement, which quietly inflated every activation and
   // retention number built on it. A backwards move now reports its own event.
-  const setProgress = useCallback(async (tmdbId, season, episode, { reason = 'episode' } = {}) => {
-    const rewinding = isRewind(items.find(i => i.tmdb_id === Number(tmdbId)), season, episode);
+  const setProgress = useCallback(async (tmdbId, season, episode, { reason = 'episode', undo } = {}) => {
+    const before = items.find(i => i.tmdb_id === Number(tmdbId));
+    const rewinding = isRewind(before, season, episode);
     const { data, error } = await supabase
       .from('watching_progress')
       .update({ current_season: season, current_episode: episode, updated_at: new Date().toISOString() })
@@ -190,6 +230,14 @@ export function useWatching(userId) {
         ? (reason === 'season' ? 'season_undone' : 'episode_undone')
         : reason;
       getConfig().onWatchProgress?.({ tmdb_id: Number(tmdbId), action, season, episode });
+      if (before) {
+        registerUndo(undo, {
+          action: UNDO_ACTIONS.WATCH_PROGRESS,
+          title: before.title,
+          meta: { season, episode },
+          revert: () => restorePointer(userId, before),
+        });
+      }
     }
     // Callers that only nudge the pointer ignore this; the season-level bulk
     // action needs to know whether the write actually landed.
@@ -203,7 +251,9 @@ export function useWatching(userId) {
   }, [userId, items]);
 
   /* ── Stop watching ── */
-  const stopWatching = useCallback(async (tmdbId) => {
+  // opts.undo: see useWatchlist.removeFromList. Never set it when stopping is
+  // one step of Mark as watched.
+  const stopWatching = useCallback(async (tmdbId, opts) => {
     const { error } = await supabase
       .from('watching_progress')
       .delete()
@@ -215,10 +265,21 @@ export function useWatching(userId) {
       });
       return false;
     }
+    const stopped = items.find(i => i.tmdb_id === Number(tmdbId));
     setItems(prev => prev.filter(i => i.tmdb_id !== Number(tmdbId)));
     getConfig().onWatchProgress?.({ tmdb_id: Number(tmdbId), action: 'stopped' });
+    if (stopped) {
+      registerUndo(opts?.undo, {
+        action: UNDO_ACTIONS.WATCHING_STOP,
+        title: stopped.title,
+        revert: async () => {
+          await restoreRow('watching_progress', stopped);
+          emit(WATCHING_CHANGED_EVENT);
+        },
+      });
+    }
     return true;
-  }, [userId]);
+  }, [userId, items]);
 
   /* ── Check if watching ── */
   const isWatching = useCallback(

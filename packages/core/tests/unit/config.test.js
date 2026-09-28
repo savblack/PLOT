@@ -35,6 +35,11 @@ test('getConfig starts with the documented defaults', () => {
     onProfileUpdate: undefined,
     onActionFailed: undefined,
     onLoadFailed: undefined,
+    onReview: undefined,
+    onTonightPicker: undefined,
+    onWatchTogether: undefined,
+    onImport: undefined,
+    onUndo: undefined,
   });
 });
 

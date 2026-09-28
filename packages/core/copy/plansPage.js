@@ -1,6 +1,10 @@
 // Shared plan preview for web and mobile. Planned features are never shown as live entitlements.
-// Pricing is US$3/month or US$24/year, taxes included, shown in local currency at checkout
-// (Stripe Adaptive Pricing). $24/year is exactly four months free against monthly.
+// Pricing is US$3/month or US$24/year, taxes included, with a 7-day card-required free trial.
+// The first charge is 7 days after the trial starts. Cancel during the trial and the charge is $0.
+// Stripe Adaptive Pricing shows the price in local currency at checkout. $24/year is exactly
+// four months free against monthly. Checkout stays closed until it is restored (PLO-493).
+// The 7-day trial lives on the Stripe Price objects behind STRIPE_PRICE_MONTHLY and
+// STRIPE_PRICE_YEARLY. Do not put those price IDs in this file.
 export const PLANS_PAGE = {
   back: '← Back',
   backToApp: '← Back to plot',
@@ -14,7 +18,7 @@ export const PLANS_PAGE = {
   previewAction: 'Explore Premium',
   tryTasteOverlap: 'Try taste overlap',
   upgradeAction: 'Upgrade to Premium',
-  checkoutMessage: 'plot Premium is coming soon. Checkout is not open yet. There is nothing to pay today.',
+  checkoutMessage: 'Checkout is not open yet. When Premium opens, it is US$3/month or US$24/year, taxes included, with a 7-day free trial. A card is required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
   free: {
     name: 'Free',
     price: '$0',
@@ -31,7 +35,10 @@ export const PLANS_PAGE = {
     price: '$3',
     annualMonthlyPrice: '$2',
     period: '/month',
+    // Compact label. Watch together reads this and is left on the shorter form.
     priceSummary: '$3/month or $24/year',
+    priceTerms: 'US$3/month or US$24/year, taxes included',
+    trialNote: '7-day free trial, card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
     monthlyBilled: 'US$3 billed monthly · taxes included',
     annualBilled: 'US$24 billed yearly · taxes included',
     availability: 'Premium is in the works. These features are a preview of what’s coming.',
@@ -57,12 +64,17 @@ export const PLANS_PAGE = {
   premiumCard: [
     { icon: 'pick', label: 'Pick for Me', note: 'A shortlist for tonight, sized to your time and services' },
     { icon: 'together', label: 'Find something you both want', note: 'The overlap in your watchlists' },
-    { icon: 'sync', label: 'Automatic Plex and Trakt syncing', note: 'Manual imports stay free' },
     { icon: 'lists', label: 'Unlimited and smart lists', note: 'Rules that keep finding matches' },
     { icon: 'stats', label: 'Deeper viewing stats', note: 'Beyond the Free overview' },
     { icon: 'customise', label: 'Customise your plot', note: 'Widgets, app icons and themes' },
   ],
-  assurances: ['Nothing to pay today', 'Everything free today stays free', 'Friends join shared lists for free'],
+  assurances: [
+    '7-day free trial, card required',
+    'You won’t be charged until 7 days after you start',
+    'Cancel during the trial and you pay $0',
+    'Everything free today stays free',
+    'Friends join shared lists for free',
+  ],
   // In-app upgrade sheet, opened where a Free limit is hit. Each reason leads with
   // the Premium feature that lifts that limit; `also` picks premiumCard rows by icon.
   upgradeSheet: {
@@ -70,13 +82,12 @@ export const PLANS_PAGE = {
     compare: 'Compare every feature',
     notNow: 'Not now',
     alsoIn: 'Also in Premium',
-    annualAlt: 'or US$24/year · taxes included',
     reasons: {
       lists: {
         context: (cap) => `You’ve used all ${cap} free lists`,
         title: 'Make a list for every kind of night.',
         body: 'Premium brings unlimited custom lists, plus smart lists that keep finding matches. The lists you have now stay exactly as they are.',
-        also: ['pick', 'together', 'sync'],
+        also: ['pick', 'together'],
       },
     },
   },
@@ -101,7 +112,7 @@ export const PLANS_PAGE = {
         { label: 'Discovery, search and where to watch', free: true, premium: true },
         { label: 'More like this', free: true, premium: true },
         { label: 'Pick for Me', free: false, premium: true },
-        { label: 'Find something you both want to watch', free: true, premium: true, tag: 'Free with a Premium host' },
+        { label: 'Find something you both want to watch', free: true, premium: true, tag: 'Free if one of you has Premium' },
       ] },
       { title: 'Watching with others', rows: [
         { label: 'Follow friends and share profiles', free: true, premium: true },
@@ -113,7 +124,6 @@ export const PLANS_PAGE = {
         { label: 'Watchlist, ratings, reviews and private notes', free: true, premium: true },
         { id: 'fullStats', label: 'Viewing stats', free: 'Overview', premium: 'Deeper' },
         { label: 'Import history from your other apps', free: true, premium: true },
-        { label: 'Plex and Trakt', free: 'Manual', premium: 'Automatic' },
       ] },
       { title: 'Lists', rows: [
         { label: 'Custom lists', free: '5', premium: 'Unlimited' },
@@ -147,18 +157,16 @@ export const PLANS_PAGE = {
     { id: 'releaseAlerts', label: 'Movie and episode release notifications', planned: true,
       description: 'Get a notification when movies and episodes you follow are released. Planned for Free.' },
     { id: 'participation', label: 'Join collaborative lists and shared watch sessions', planned: true,
-      description: 'Join a Premium host for free. Only the person hosting needs Premium.' },
+      description: 'Join for free. For watching together, only one of you needs Premium; for a collaborative list, only the person who made it does.' },
     { id: 'imports', label: 'Manual imports and data exports',
-      description: 'Import watch history yourself and export your data. Automatic Plex and Trakt syncing is planned for Premium.' },
+      description: 'Import watch history yourself and export your data.' },
   ],
   customLists: (cap) => `Currently up to ${cap} custom lists`,
   premiumFeatures: [
     { id: 'watchTogether', label: 'Find something you both want to watch', highlight: true,
-      description: 'Find the overlap in your watchlists, then choose together. Invite friends to a shared list so everyone can add their ideas. They can join for free.' },
+      description: 'Find the overlap in your watchlists, then swipe through it together until you both say yes. Only one of you needs Premium, so the other person joins for free. Invite anyone with a link.' },
     { id: 'filmPicker', label: 'Pick for Me', highlight: true,
       description: 'Choose a movie or a show, how much time you have and the services you use. Get five options for tonight, or let a random pick make the decision.' },
-    { id: 'autoSync', label: 'Automatic Plex and Trakt syncing', highlight: true,
-      description: 'Keep watch history in sync automatically. Manual imports stay free. Planned as Premium; not claimed as instant or verified two-way syncing yet.' },
     { id: 'fullStats', label: 'Deeper viewing stats', highlight: true,
       description: 'Additional stats beyond the Free overview you already have, starting with taste overlap: see how your ratings line up with anyone you follow.' },
     { id: 'collaborativeLists', label: 'Create collaborative lists', highlight: true,
@@ -167,7 +175,7 @@ export const PLANS_PAGE = {
       description: 'A list for every mood, theme and movie marathon, with no limit on how many you create.' },
     { id: 'smartLists', label: 'Smart lists, including new discoveries',
       description: 'Save filter rules that automatically update your lists, including discoveries beyond your saved titles.' },
-    { id: 'calendarSubscription', label: 'Live calendar subscription',
+    { id: 'calendarSubscription', label: 'Live calendar subscription', live: true,
       description: 'Keep upcoming releases updated in your calendar app automatically.' },
     { id: 'peopleAlerts', label: 'Actor and director release alerts',
       description: 'Follow the people you love watching and hear about their new releases.' },
@@ -176,18 +184,25 @@ export const PLANS_PAGE = {
     { id: 'customize', label: 'Customise your plot', highlight: true,
       description: 'Make plot feel like yours: Home Screen widgets, custom app icons, custom profile pages and themes.' },
   ],
-  planSummary: ['Pick a movie or show by time and service', 'Automatic Plex and Trakt syncing', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
+  planSummary: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
+  requests: {
+    title: 'What would make Premium worth it for you?',
+    description: 'Tell us what you’d love to see included.',
+    action: 'Suggest a Premium feature',
+    hint: 'Opens your email app.',
+    subject: 'Plot Premium feature request',
+  },
   faqTitle: 'Before you ask',
   faqs: [
-    { q: 'Can I upgrade now?', a: 'Not yet. Premium is planned at $3/month or $24/year, taxes included. The upgrade button shows a coming-soon message; it does not start a payment or a trial.' },
+    { q: 'Can I upgrade now?', a: 'Not yet. Checkout is not open. When it opens, Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial. A card is required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.' },
     { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Movie and episode release notifications are planned for Free. Free does not include personally tailored recommendations.' },
     { q: 'What does Pick for Me actually do?', a: 'It asks four quick questions: movie or show, how long you’ve got, what kind of story, and how new or how good. You get a shortlist of up to five, and you can limit it to your streaming services or your watchlist. Can’t decide? Surprise me gives you one pick.' },
-    { q: 'Can my friends join without Premium?', a: 'Yes. Joining a Premium host’s collaborative lists and shared watch sessions is planned for Free. Premium is only needed to create or host them.' },
+    { q: 'Can my friends join without Premium?', a: 'Yes. To find something you both want to watch, only one of you needs Premium, so the other person joins for free. Anyone can send an invite. Collaborative lists work the same way: only the person who makes the list needs Premium.' },
     { q: 'How many lists are included in Free?', a: 'Free includes up to five custom lists.' },
     { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
-    { q: 'Are these alerts and sync available now?', a: 'No. Movie and episode release notifications are planned for Free. Live calendar subscription, people alerts, deeper stats, automatic Plex/Trakt syncing and customisation are planned Premium features. Whole-season alerts need verified availability for every episode on your selected service.' },
+    { q: 'Are these alerts available now?', a: 'Movie and episode release notifications are planned for Free and are not available yet. Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. People alerts, deeper stats and customisation are still planned. Whole-season alerts need verified availability for every episode on your selected service.' },
   ],
-  fineprint: 'Prices in US dollars, taxes included. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
+  fineprint: 'Prices in US dollars, taxes included. Premium is a 7-day free trial with a card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
   terms: 'Terms',
   privacy: 'Privacy',
 };

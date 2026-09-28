@@ -9,9 +9,31 @@ configuration change, or subscription activation was performed.
 The Stripe connector listed PLOT sandbox (`acct_1TquK0Erc2irccea`, livemode=false).
 Read-only queries returned no prices and no webhook endpoints. The connector
 then became unavailable following a session plugin change. Stripe CLI and local
-Stripe API credentials were not available. Sandbox purchases, renewals, payment
-failures, cancellation, plan switching, portal access and signed delivery into
-staging remain **untested**. Re-enable the Stripe connector to resume setup.
+Stripe API credentials were not available at that point. The original sandbox
+purchase and signed delivery into staging were later completed on 2026-09-27;
+the other lifecycle scenarios remain **untested**.
+
+## Monetization payload regression probe
+
+The real webhook handler includes a repeatable local regression probe for the
+server-side PostHog payload. It replaces Stripe, Supabase and PostHog network
+calls with isolated doubles, signs each request with a local HMAC secret, and
+asserts that a completed subscription captures:
+
+- `channel: stripe`
+- `checkout_type: subscription`
+- `amount: 3`
+- `currency: USD`
+
+Run it from the repository root:
+
+```sh
+deno run --no-config --node-modules-dir=none --no-lock --allow-env --allow-read scripts/probe-stripe-webhook.ts
+```
+
+This is a regression check for the deployed handler, not a substitute for the
+dedicated Stripe sandbox smoke test. The sandbox test completed on 2026-09-27
+and the synthetic subscription was canceled after PostHog verification.
 
 ## Actual handler probe
 

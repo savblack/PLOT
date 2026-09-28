@@ -496,7 +496,8 @@ function Locked({ picker, onUpgrade, styles, colors, dark }: {
         <TouchableOpacity onPress={onUpgrade} style={[styles.btn, styles.btnPrimary, styles.unlockCta]} accessibilityRole="button">
           <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{PLANS_PAGE.upgradeAction}</Text>
         </TouchableOpacity>
-        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.priceSummary}</Text>
+        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.priceTerms}</Text>
+        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.trialNote}</Text>
       </View>
     </View>
   );
@@ -521,7 +522,7 @@ export default function TonightScreen() {
     streamingProviders: profile?.streaming_providers,
     region: profile?.region || DEFAULT_REGION,
   });
-  const open = (item: PickerCandidate) => openPanel(item.id, item.media_type);
+  const open = (item: PickerCandidate) => { picker.openPick(item); openPanel(item.id, item.media_type); };
   const inResults = picker.phase === 'results' || picker.phase === 'empty' || picker.phase === 'error';
   const spinning = picker.phase === 'spinning';
   // Picks straight from a spin get the reveal; a saved search or restored page does not.

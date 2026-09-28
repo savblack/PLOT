@@ -46,6 +46,7 @@ alter table if exists public.watch_together
 \ir ../supabase/migrations/20260927120000_watch_together_shared_lists.sql
 \ir ../supabase/migrations/20260927130000_watch_together_free.sql
 \ir ../supabase/migrations/20260927140000_watch_together_visibility_and_stop.sql
+\ir ../supabase/migrations/20260927150000_watch_together_counts_for_followers.sql
 \ir ../supabase/migrations/20260927160000_watchlist_visibility.sql
 
 -- ── fixtures (as postgres) ───────────────────────────────────────────────────

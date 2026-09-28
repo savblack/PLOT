@@ -16,8 +16,8 @@
 4. **Never promise personally tailored recommendations yet.** Free has “More like this” on a title page only. Tailored recs wait until Premium revenue can fund them.
 5. **iOS / mobile does not sell Premium in-app.** Web upgrade only. Mobile `SHOW_PRICING_PAGE = false`; no StoreKit / IAP surface. See `docs/launch/app-store-launch-sprint.md`.
 6. **Ko-fi tips ≠ Premium.** `is_supporter` is recognition only. Do not wire tips into `is_premium()`.
-7. **Pricing decided:** **US$3/month or US$24/year**, USD primary, converted to local currency at checkout. `plansPage.js` on `main` already says $3/$24. See §2 for the Stripe mechanism still to confirm.
-8. **Plex + Trakt stay hidden (2026-09-24).** `SHOW_MEDIA_SYNC_INTEGRATIONS` stays `false` on both platforms. Production has `PLEX_TOKEN_SECRET` / `TRAKT_TOKEN_SECRET` but **no `TRAKT_CLIENT_ID` / `TRAKT_CLIENT_SECRET`**, and no Trakt OAuth app is set up. Work on other Premium features meanwhile. A mobile Premium gate for the sync rows is ready on local branch `agent/plo-492-media-sync` (not pushed).
+7. **Pricing decided:** **US$3/month or US$24/year**, taxes included, **7-day card-required free trial** (first charge 7 days after start; cancel in the trial is $0). USD primary, converted to local currency at checkout. Public checkout stays closed until PLO-493. See §2.
+8. **Plex + Trakt Settings UI is on (PLO-492).** `SHOW_MEDIA_SYNC_INTEGRATIONS` is `true` on web and mobile. Premium members see Connect and Import watch history. Public copy does not call that automatic or two-way sync. Free accounts get the Premium gate. Checkout stays closed (PLO-493). A human Premium account still has to smoke a real Plex PIN and Trakt OAuth on staging or production: this repo does not have those credentials, and production was last noted as missing `TRAKT_CLIENT_ID` / `TRAKT_CLIENT_SECRET`.
 
 ---
 
@@ -30,20 +30,20 @@
 | Stripe plumbing | `stripe-billing`, `stripe-webhook`, `billing_customers`, `is_premium()`, portal + tip paths exist. |
 | Checkout | **Hard-closed:** `usePremium.startCheckout` stubs; `stripe-billing` returns 503 `premium_coming_soon` for `action=checkout`. |
 | Free list cap | Free: 5 custom lists (`FREE_CUSTOM_LIST_CAP`). Premium: unlimited via `can_create_custom_list()`. Enforced in DB. Sixth-list UX → Explore Premium. |
-| Live calendar feed | Backend `calendar-feed` + token exist. UI Premium-gates subscribe; free users get one-time `.ics` snapshot. |
-| Plex / Trakt sync | Edge functions implement sync and return `premium_required` for non-Premium. **UI flag off:** `SHOW_MEDIA_SYNC_INTEGRATIONS = false` (web + mobile). Premium users still see “coming soon”. |
+| Live calendar feed | Premium URL on web and mobile. Free gets a one-time `.ics`. `calendar-feed` returns an empty calendar when `is_premium()` is false. |
+| Plex / Trakt sync | Edge functions return `premium_required` for non-Premium `sync`. **UI flag on:** `SHOW_MEDIA_SYNC_INTEGRATIONS = true` (web + mobile). Premium Settings shows Connect and Import watch history. Public copy does not call it automatic or two-way sync. Free Settings shows the Premium gate. Live OAuth still needs a Premium account smoke. |
 | Marketing homepage previews | Illustrative Tonight / Together / Following storyboards only. Not live product. |
 | Pick for Me (tonight picker) | **Live on `main`** (PR #1029, merged 2026-09-25; follow-up #1045, 2026-09-26). See §5.2. |
 | Watch together (overlap + shared lists) | **In review:** PR #1039 (`agent/watch-together`, web, phases 1 to 3). Decisions in `docs/design/watch-together/README.md` on `agent/watch-together-design`. |
 | `/plans` rebuild | **In review:** PR #1031 (`agent/premium-plans-a2`), side-by-side plans at US$3/$24. |
-| One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free; *automatic* sync is still the Premium item. |
+| One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free. Public copy does not list automatic sync as a Premium benefit. |
 | Stats, smart lists, people alerts, season-ready, customise | **Not built** as product features (copy only). |
 
 ---
 
 ## 2. Pricing (resolve before charging)
 
-**Decided (Savannah, 2026-09-24/25):** **US$3/month or US$24/year.** The earlier A$5/A$40 plans copy and the US$25/year figure are both superseded. `packages/core/copy/plansPage.js` on `main` already shows `$3/month or $24/year`; Settings (web + mobile) and the Pick for Me upgrade pop-up read that one string (`PLANS_PAGE.premium.priceSummary`). Nothing in the app fetches prices from Stripe, so everyone sees `$`, whatever their country.
+**Decided (Savannah, 2026-09-24/25, trial locked with PLO-494):** **US$3/month or US$24/year**, taxes included, plus a **7-day card-required free trial**. The first charge is 7 days after the trial starts. Cancel during the trial and the charge is $0. The earlier A$5/A$40 plans copy and the US$25/year figure are both superseded. `packages/core/copy/plansPage.js` is the price and trial copy. Settings, the upgrade sheet, and Pick for Me read `priceTerms` and `trialNote`. Watch together still reads the shorter `priceSummary`. Nothing in the app fetches prices from Stripe, so everyone sees USD until checkout. Adaptive Pricing still shows local currency there. Public checkout stays closed until PLO-493.
 
 USD is primary; buyers outside the US see it converted at checkout. The intended Stripe mechanism is **Adaptive Pricing** on Checkout (one USD price; Stripe shows and charges local currency, buyer pays the FX margin). The alternative is fixed per-currency `currency_options` (round local prices, manual upkeep). **Still to confirm:** that Adaptive Pricing covers subscriptions on this account. Showing a real local price *inside* the app would need a small endpoint reading the price and its currency options from Stripe; not built.
 
@@ -55,7 +55,7 @@ Never put Stripe secret keys or price IDs in browser vars or tracked files.
 | Locked plans copy + `docs/billing/stripe-launch.md` | **A$5/month or A$40/year** (marked tentative but likely in Sep 21 decisions) |
 | Linear [PLO-494](https://linear.app/savblack/issue/PLO-494) (first-paid track, 2026-09-23) | **USD $3/month + USD $25/year** live Stripe prices; notes AUD prices on product inactive |
 
-**Decision (Savannah, 2026-09-24, annual price updated 2026-09-25):** USD is the primary price: USD $3/month, $24/year, taxes included. PLO-494's live $25/year Stripe price needs replacing with a $24/year price before launch. Buyers outside the US see it converted to their currency. The intended Stripe mechanism is **Adaptive Pricing** on Checkout (one USD price; Stripe shows and charges local currency at checkout, and the buyer pays the FX margin). The alternative is fixed per-currency `currency_options` on the price, which gives round local prices but needs manual upkeep. Confirm in the Stripe Dashboard that Adaptive Pricing covers subscriptions on this account before relying on it. Plans copy should show USD with a note that checkout shows local currency.
+**Decision (Savannah, 2026-09-24, annual price updated 2026-09-25, trial locked 2026-09-28):** USD is the primary price: USD $3/month, $24/year, taxes included, with a 7-day card-required trial. The earlier $25/year price is not the launch price. Buyers outside the US see it converted to their currency. The intended Stripe mechanism is **Adaptive Pricing** on Checkout (one USD price; Stripe shows and charges local currency at checkout, and the buyer pays the FX margin). The alternative is fixed per-currency `currency_options` on the price, which gives round local prices but needs manual upkeep. Confirm in the Stripe Dashboard that Adaptive Pricing covers subscriptions on this account before relying on it. Plans copy should show USD with a note that checkout shows local currency.
 
 **Agent action:** once Savannah confirms the Stripe mechanism, update `packages/core/copy/plansPage.js`, Settings copy, `docs/billing/stripe-launch.md`, and Supabase secrets `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` together.
 
@@ -91,10 +91,10 @@ Lead stories (positioning priority, not a statistical ranking):
 1. **Pick for Me**, the tonight picker (movie or show, time, services → shortlist / Surprise me). **Built.**
 2. Watchlist overlap / “something you both want”
 3. Create / host collaborative lists
-4. Automatic Plex and Trakt syncing
+4. Automatic Plex and Trakt syncing. **Do not list this in public copy.** Savannah may not ship it. Manual import stays Free.
 5. Deeper viewing stats
 6. Unlimited custom lists + smart lists
-7. Live calendar subscription
+7. Live calendar subscription. **Built (PLO-519).** Premium URL on web and mobile. Free keeps a one-time snapshot.
 8. Actor / director release alerts
 9. Whole-season-ready alerts (verified episode availability on selected services/region)
 10. Customise your plot (widgets, custom icons, custom profile pages, themes)
@@ -107,7 +107,7 @@ Lead stories (positioning priority, not a statistical ranking):
 
 - Playback or synced watching inside Plot
 - Personally tailored recommendations (yet)
-- Instant or verified two-way Plex/Trakt sync (say “automatic syncing”; do not overclaim)
+- Automatic Plex or Trakt sync as a Premium benefit. Public copy must not promise it.
 - Checkout / payment while coming-soon gates remain
 
 ---
@@ -135,7 +135,7 @@ Suggested priority for “Less deciding. More watching.” (matches plans storie
 1. ~~Tonight’s movie picker~~ **Done: Pick for Me** (§5.2).
 2. **Watchlist overlap + host collaborative lists** — social Premium; join stays Free. **In review as Watch together (PR #1039).**
 3. **Unlimited lists** — gated on both platforms. Hitting the 5-list cap (or a server-side cap rejection from a stale tab) opens the shared upgrade sheet on web and mobile (`UpgradeSheet`, content from `@plot/core/upgradeSheet.js`). When checkout opens, wire the sheet's Upgrade button to real checkout.
-4. **Live calendar subscription** — largely wired; polish Premium path and free “Request access” / snapshot.
+4. **Live calendar subscription** — shipped (PLO-519). Premium URL on web and mobile. Free keeps a one-time snapshot. The feed returns an empty calendar when `is_premium()` is false.
 5. **Deeper stats** — define what “additional” means beyond today’s Free overview.
 6. **Smart lists** — filter rules that auto-update, including discoveries beyond saved titles.
 7. **People alerts** + **whole-season-ready** — need notification infrastructure; season-ready needs verified episode-level availability.
@@ -152,21 +152,23 @@ Suggested priority for “Less deciding. More watching.” (matches plans storie
 
 Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into tickets before coding schema-heavy items; confirm irreversibles with Savannah (`AGENTS.md` Decisions).
 
-### 5.1 Automatic Plex + Trakt syncing — **Premium** (first paid gate)
+### 5.1 Automatic Plex + Trakt syncing — not a public Premium promise
+
+**Public copy:** do not list automatic or two-way Plex or Trakt sync as a Premium benefit. Savannah may not ship it. Settings can keep Connect and Import watch history. Do not label those rows Sync now, Last synced, or automatic updates. Plans, the FAQ, the upgrade sheet, and billing must not sell it.
 
 **Intent:** Keep watch history current without another manual import. Manual import/export stays Free.
 
 **Already built:**
 - `supabase/functions/media-sync`, `supabase/functions/trakt-sync` (Premium-gated with `is_premium` → `premium_required`)
 - Client hooks: `apps/web/src/hooks/useMediaSync.js`, mobile equivalents
-- Flag: `SHOW_MEDIA_SYNC_INTEGRATIONS` in `apps/web/src/launchFeatures.js` and `apps/mobile/lib/launchFeatures.ts` (**false**)
+- Flag: `SHOW_MEDIA_SYNC_INTEGRATIONS` in `apps/web/src/launchFeatures.js` and `apps/mobile/lib/launchFeatures.ts` (**true**, PLO-492)
 
-**To build / verify (PLO-492):**
-- Flip flag on both platforms
-- Settings UI shows connect/sync for Premium (not coming-soon modal)
-- Free users: upgrade path via Explore Premium, no free unlock
-- E2E: Premium account completes Plex sync and Trakt sync successfully
-- Copy: do not claim instant or verified two-way syncing
+**Shipped in the UI (PLO-492).** Still needs a human Premium smoke before calling the sync itself done:
+- Flag on, both platforms
+- Settings shows Connect and Import watch history for Premium. The coming-soon dialog is only the flag-off fallback
+- Free users: Explore Premium, no Connect or Sync now
+- Copy does not claim automatic sync, or instant or verified two-way syncing, as a Premium benefit
+- Not done here: a real Plex PIN approval and a real Trakt OAuth round trip
 
 **Related (out of first-paid scope):** Plex → Overseerr/Sonarr/Radarr requests design in `docs/superpowers/specs/2026-08-23-plex-sonarr-radarr-requests-design.md`. Personal/homelab; productisation later. Fix `processOutbox` action filter before adding `media_request` actions.
 
@@ -260,11 +262,13 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 **Intent:** Auto-updating calendar URL in the user’s calendar app. One-time `.ics` snapshot stays Free.
 
-**Already built:**
-- `calendar_token`, `calendar-feed` edge function
-- Settings: Premium can generate/manage URL; non-Premium sees needs-Premium / Explore Premium; snapshot download not Premium-gated (`docs/qa/public-launch-checklist.md`)
+**Shipped (PLO-519):**
+- `calendar_token` on profiles, `calendar-feed` edge function (`verify_jwt = false`)
+- The feed calls `is_premium()` for the token owner. A non-Premium token gets a valid empty calendar, so the calendar app keeps the subscription and stops showing events. If that check errors, the feed still serves events, so a Premium subscriber is not blanked by an RPC failure.
+- Web Settings: Premium can generate, copy, and revoke the URL. Free sees Explore Premium. The one-time `.ics` download on the same page stays free.
+- Mobile Settings: same gate. Free and Premium can share a one-time `.ics`. iOS attaches the file. Android’s share sheet only sends text, so the calendar text goes in the message.
 
-**To finish:** Ensure path works end-to-end when Checkout is open; mobile parity; no secrets in exports (`export-user-data` already careful).
+**Left:** Checkout is PLO-493 and is separate. The feed works for any account whose `is_premium()` is true. `export-user-data` already omits `calendar_token`.
 
 ### 5.9 Actor / director release alerts — **Premium**
 
@@ -326,7 +330,7 @@ From `docs/launch/app-store-launch-sprint.md` and billing docs:
 | --- | --- |
 | `packages/core/copy/plansPage.js` | Canonical Free/Premium matrix + pricing copy |
 | `packages/core/premium.js` | `FREE_CUSTOM_LIST_CAP`, `isPremiumProfile`, `canCreateCustomList`, friendly errors |
-| `packages/core/copy/settingsView.js` | Settings Premium / sync / calendar coming-soon strings |
+| `packages/core/copy/settingsView.js` | Settings Premium and sync gate strings |
 | `apps/web/src/hooks/usePremium.js` | Checkout stub + portal/tip |
 | `apps/web/src/launchFeatures.js` | `SHOW_PRICING_PAGE`, `SHOW_MEDIA_SYNC_INTEGRATIONS` |
 | `apps/mobile/lib/launchFeatures.ts` | Mobile flags (pricing page off) |

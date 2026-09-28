@@ -14,6 +14,8 @@
 // rather than a bot user, so replies are indistinguishable by author — the
 // shape of the text is what has to carry it.)
 
+import { keepsParagraphBreaks } from './articleBody.js';
+
 export const BOT_MARKER = '🤖 **PLOT**';
 
 // Article fields an operator can set from a comment, mapped to their column key
@@ -95,8 +97,15 @@ const isFieldLine = (line) => {
 
 // Paragraphs, blank-line separated — the same split the web desk's textarea uses
 // (mergeCopyFromForm in admin-review), so both editors produce the same array.
+// A comparison table is one of those paragraphs, but its row breaks are the
+// syntax. Collapsing them is what turned a markdown table into one line of pipes.
 const parseParagraphs = (value) =>
-  value.split(/\n\s*\n/).map((p) => p.trim().replace(/\n+/g, ' ')).filter(Boolean);
+  value.split(/\n\s*\n/).map((p) => {
+    const trimmed = p.trim();
+    if (!trimmed) return '';
+    if (keepsParagraphBreaks(trimmed)) return trimmed;
+    return trimmed.replace(/\n+/g, ' ');
+  }).filter(Boolean);
 
 /**
  * Commands that act on the whole week rather than on one post, so they do not
@@ -254,4 +263,9 @@ export const HELP_TEXT = [
   '',
   'Angle brackets are placeholders, not syntax. Pasting a line unedited writes',
   'the placeholder, so delete what you are not changing.',
+  '',
+  'A comparison table is its own paragraph in `body`, with a blank line before',
+  'and after it. Use a GitHub-style table, one row per line, including the',
+  '`| --- |` separator. Do not wrap it in a code fence. An HTML `<table>` in',
+  'that same paragraph also works. Details are in marketing/REVIEW.md.',
 ].join('\n');

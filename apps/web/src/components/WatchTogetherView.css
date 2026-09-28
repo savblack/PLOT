@@ -303,8 +303,6 @@
   .wt-start-how { order: 4; }
   .wt-start-note { order: 5; }
   .wt-start-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .wt-steps { flex-direction: row; }
-  .wt-step { flex: 1 1 0; flex-direction: column; }
 }
 
 .wt-example { border-style: dashed; border-color: var(--border-strong, var(--border)); }
@@ -349,6 +347,16 @@
 .wt-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.9rem; }
 .wt-step { display: flex; gap: 0.75rem; align-items: flex-start; }
 .wt-step .wt-person-name { white-space: normal; }
+/* Desktop: the three steps sit side by side. (After the base rules so it wins.) */
+@media (min-width: 900px) {
+  .wt-steps { flex-direction: row; gap: 1.25rem; }
+  .wt-step { flex: 1 1 0; }
+}
+/* Inside the pitch card when you follow nobody: steps fill the space under
+   Get Premium instead of a separate section. */
+.wt-how--in-card { padding-top: 0.9rem; margin-top: 0.4rem; border-top: 1px solid var(--border); }
+.wt-how--in-card .wt-card-title { font-size: 1.0625rem; }
+.wt-how--in-card .wt-steps { flex-direction: column; }
 .wt-step-n {
   width: 32px; height: 32px; flex-shrink: 0;
   border-radius: var(--radius-pill);
@@ -450,3 +458,9 @@
 .wt-demo-answers { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; }
 .wt-demo-answer { padding: 3px 10px; border-radius: var(--radius-pill); background: var(--surface-sunken); font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); }
 .wt-demo-answer.yes { background: var(--accent-fill); color: var(--on-accent-fill); }
+
+/* Example panel: title and chip pinned to the top like the demo's, the
+   posters and match centred in the space below. */
+.wt-example-head { align-items: flex-start; }
+.wt-example-head .wt-example-badge { align-self: flex-start; }
+.wt-example-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0.75rem; }

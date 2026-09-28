@@ -66,6 +66,7 @@ import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { SavedByTooRow } from './WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import { clearUndo } from '@plot/core/undo.js';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -243,7 +244,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
     if (pending) return;
     setPending(true);
     setError('');
-    const result = await watching.markEpisodeWatched(tvId);
+    const result = await watching.markEpisodeWatched(tvId, { undo: true });
     if (!result?.ok) {
       setError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
     } else if (isSeriesComplete({
@@ -252,6 +253,8 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
       status: details?.status,
     })) {
       track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: getLastSeasonNumber(details) });
+      // Undoing only the tick would leave the completion behind.
+      clearUndo();
       const finished = await onSeriesFinished?.();
       if (finished && !finished.ok) setError(finished.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
     }
@@ -397,6 +400,9 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
 
   const finishSeriesIfComplete = useCallback(async (nextSeason) => {
     if (!isSeriesComplete({ lastSeason, nextSeason, status: details?.status })) return;
+    // The tick that got here offered an undo; reversing only it would leave
+    // the completion (history row, stopped watching) behind.
+    clearUndo();
     // Finishing a show is the end of the engagement arc worth naming, and it's
     // only knowable here — core sees pointer moves, not the last season.
     track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: lastSeason });
@@ -424,7 +430,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     if (!watched) {
       // Mark watched: advance progress past this episode
       if (selSeason === currentSeason && ep.episode_number === currentEp) {
-        const result = await watching.markEpisodeWatched(tvId);
+        const result = await watching.markEpisodeWatched(tvId, { undo: true });
         if (!result?.ok) {
           setEpisodeActionError(result?.error || 'Could not update this episode right now. Please try again.');
         } else {
@@ -433,17 +439,17 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
           await finishSeriesIfComplete(result.data?.current_season);
         }
       } else if (ep.episode_number < episodes.length) {
-        await watching.setProgress(tvId, selSeason, ep.episode_number + 1);
+        await watching.setProgress(tvId, selSeason, ep.episode_number + 1, { undo: true });
       } else {
         // Last episode of season → advance to next season
         const nextSeason = selSeason + 1;
-        await watching.setProgress(tvId, nextSeason, 1);
+        await watching.setProgress(tvId, nextSeason, 1, { undo: true });
         userChangedSeason.current = false; // allow auto-follow to next season
         await finishSeriesIfComplete(nextSeason);
       }
     } else {
       // Unmark: pull progress back to this episode
-      await watching.setProgress(tvId, selSeason, ep.episode_number);
+      await watching.setProgress(tvId, selSeason, ep.episode_number, { undo: true });
     }
 
     checkingEpRef.current = false;
@@ -488,7 +494,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     // just pressed. Pin the selection so the season you acted on stays on
     // screen and visibly flips to fully watched.
     userChangedSeason.current = true;
-    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season' });
+    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season', undo: true });
     if (!result?.ok) {
       setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
     } else if (!seasonState.isComplete) {
@@ -1146,7 +1152,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
             return (
               <button
                 key={list.id}
-                onClick={() => checked ? removeItem(list.id, itemId) : addItem(list.id, item)}
+                onClick={() => checked ? removeItem(list.id, itemId, { undo: true }) : addItem(list.id, item)}
                 className={`add-list-row${checked ? ' selected' : ''}`}
               >
                 <span className="add-list-cover" aria-hidden="true"><i /><i /><i /></span>
@@ -1515,7 +1521,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
 
   const handleWatchingStatus = useCallback(async () => {
     if (isWatching) {
-      const stopped = await watching.stopWatching(itemId);
+      const stopped = await watching.stopWatching(itemId, { undo: true });
       return stopped
         ? { ok: true }
         : { ok: false, error: 'Could not clear the active watching state. Please try again.' };
@@ -1531,7 +1537,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const handleWatchedStatus = useCallback(async (dnf) => {
     const isSameWatchedState = watched && (!!watchedEntry?.dnf === dnf);
     if (isSameWatchedState) {
-      const removed = await history.removeEntry(itemId, itemType);
+      const removed = await history.removeEntry(itemId, itemType, { undo: true });
       if (removed) setEngagementPrompt(null);
       return removed
         ? { ok: true }
@@ -1588,13 +1594,13 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
 
   const handleClearStatus = useCallback(async () => {
     if (isWatching) {
-      const stopped = await watching.stopWatching(itemId);
+      const stopped = await watching.stopWatching(itemId, { undo: true });
       return stopped
         ? { ok: true }
         : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
     }
     if (watched) {
-      const removed = await history.removeEntry(itemId, itemType);
+      const removed = await history.removeEntry(itemId, itemType, { undo: true });
       return removed
         ? { ok: true }
         : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
@@ -1655,7 +1661,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const handleSaveFromPanel = useCallback(async () => {
     if (!details) return;
     if (inList) {
-      await watchlist.removeFromList(itemId);
+      await watchlist.removeFromList(itemId, { undo: true });
       return;
     }
     const saved = await watchlist.addToList({ ...details, id: itemId, media_type: itemType });

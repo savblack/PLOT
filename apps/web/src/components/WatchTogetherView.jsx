@@ -21,6 +21,7 @@ import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { AcceptDialog, PersonAvatar, ShareListDialog, WatchTogetherTile } from './WatchTogetherParts.jsx';
 import WatchTogetherStart, { InviteLinkCard } from './WatchTogetherStart.jsx';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
+import { EVENTS, track } from '../lib/analytics.js';
 import './WatchTogetherView.css';
 
 function Chevron() {
@@ -323,6 +324,8 @@ function Together({ wt, usernames }) {
   // The hook keys on the sorted ids, so a fresh array each render is fine.
   const { titles, loading, error } = useWatchTogetherTitles(people.map(p => p.other_id));
   const locked = error === 'premium_required';
+  // Nobody here has Premium yet: the moment that should drive an upgrade.
+  useEffect(() => { if (locked) track(EVENTS.PREMIUM_GATE_HIT, { feature: 'watch_together' }); }, [locked]);
   const [kind, setKind] = useState('all');
   const [topId, setTopId] = useState(null);
 

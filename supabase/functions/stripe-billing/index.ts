@@ -19,6 +19,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { CheckoutPendingError, subscriptionCheckout } from '../_shared/checkout.ts';
 import { checkoutPlan, matchesPremiumPrice, billingSettingsUrl, isCheckoutPilot } from '../_shared/billingPolicy.ts';
+import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
 // arbitrary email clients and marketing embeds), this is only ever called
@@ -49,6 +50,21 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
 const SETTINGS_URL = billingSettingsUrl(Deno.env.get('STRIPE_SETTINGS_URL'));
 const TIP_MIN_AMOUNT = 100;
 const TIP_MAX_AMOUNT = 50000;
+
+async function captureCheckoutFailure(userId: string, reason: string, plan: string | null = null) {
+  try {
+    await capturePostHogEvent('premium_checkout_failed', userId, {
+      channel: 'stripe',
+      checkout_type: 'subscription',
+      reason,
+      plan,
+    });
+  } catch (err) {
+    // Analytics must never change the billing response or cause a Stripe
+    // checkout attempt to be retried.
+    console.error(`stripe-billing: checkout failure capture failed for ${userId}: ${(err as Error).message}`);
+  }
+}
 
 async function createPortalUrl(customerId: string) {
   const session = await stripe.billingPortal.sessions.create({
@@ -107,23 +123,49 @@ Deno.serve(async (req) => {
 
   if (action === 'checkout') {
     const plan = checkoutPlan(await req.json().catch(() => null));
-    if (!plan) return json({ error: 'Choose a monthly or yearly plan' }, 400);
+    if (!plan) {
+      await captureCheckoutFailure(user.id, 'invalid_plan');
+      return json({ error: 'Choose a monthly or yearly plan' }, 400);
+    }
 
     const price = plan === 'yearly'
       ? Deno.env.get('STRIPE_PRICE_YEARLY')
       : Deno.env.get('STRIPE_PRICE_MONTHLY');
-    if (!price) return json({ error: 'Billing is not configured' }, 500);
+    if (!price) {
+      await captureCheckoutFailure(user.id, 'billing_not_configured', plan);
+      return json({ error: 'Billing is not configured' }, 500);
+    }
 
     try {
       const configuredPrice = await stripe.prices.retrieve(price);
       if (!matchesPremiumPrice(configuredPrice, plan)) {
+        await captureCheckoutFailure(user.id, 'price_mismatch', plan);
         return json({ error: 'Billing price configuration needs attention' }, 503);
       }
 
       const url = await subscriptionCheckout(admin, stripe, user.id, price, SETTINGS_URL, createPortalUrl);
+      // Capture only after Stripe has returned a real Checkout URL. The gate
+      // above stays closed until launch, so preview clicks cannot masquerade as
+      // checkout starts.
+      try {
+        await capturePostHogEvent('premium_checkout_started', user.id, {
+          channel: 'stripe',
+          checkout_type: 'subscription',
+          plan,
+          price_id: configuredPrice.id,
+          amount: typeof configuredPrice.unit_amount === 'number' ? configuredPrice.unit_amount / 100 : null,
+          currency: normaliseCurrency(configuredPrice.currency),
+        });
+      } catch (err) {
+        console.error(`stripe-billing: PostHog capture failed for ${user.id}: ${(err as Error).message}`);
+      }
       return json({ url });
     } catch (err) {
-      if (err instanceof CheckoutPendingError) return json({ error: err.message }, 409);
+      if (err instanceof CheckoutPendingError) {
+        await captureCheckoutFailure(user.id, 'checkout_pending', plan);
+        return json({ error: err.message }, 409);
+      }
+      await captureCheckoutFailure(user.id, 'stripe_error', plan);
       console.error('Checkout session failed:', (err as Error).message);
       return json({ error: 'Could not start checkout' }, 500);
     }

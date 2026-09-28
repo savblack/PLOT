@@ -127,7 +127,8 @@ function UnlockDialog({ picker, navigate }) {
       <button type="button" className="btn btn-primary tonight-unlock-cta" onClick={() => navigate(premiumPlansPath('/tonight'))}>
         {PLANS_PAGE.upgradeAction}
       </button>
-      <p className="tonight-unlock-price">{PLANS_PAGE.premium.priceSummary}</p>
+      <p className="tonight-unlock-price">{PLANS_PAGE.premium.priceTerms}</p>
+      <p className="tonight-unlock-price">{PLANS_PAGE.premium.trialNote}</p>
     </section>
   );
 }
@@ -467,7 +468,7 @@ function FavSave({ item, actions, variant }) {
   const fav = favorites.isFavorite(item.id);
   const saved = watchlist.isInList(item.id);
   const toggleFav = (e) => { e.stopPropagation(); favorites.toggleFavorite({ ...item, media_type: type }); };
-  const toggleSave = (e) => { e.stopPropagation(); watchlist.toggle({ ...item, media_type: type }); };
+  const toggleSave = (e) => { e.stopPropagation(); watchlist.toggle({ ...item, media_type: type }, { source: 'tonight' }); };
   const icon = (d, on) => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
   );
@@ -649,7 +650,7 @@ export default function TonightView() {
     <TonightPage
       premium={premium}
       picker={picker}
-      onOpen={(item) => openPanel(item.id, item.media_type)}
+      onOpen={(item) => { picker.openPick(item); openPanel(item.id, item.media_type); }}
       navigate={navigate}
       actions={{ watchlist, favorites, favWords: favoriteWords(profile?.region) }}
     />

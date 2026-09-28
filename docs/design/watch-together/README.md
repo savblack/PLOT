@@ -119,7 +119,9 @@ Suggested (J and the hub banner)
 - At most 5 people, name and Invite button only, no reason line.
 - Rank mutual follows first, then one-way follows. Within each group, rank by
   watchlist overlap only when that watchlist is public.
-- Private profiles you follow may appear, never with a count.
+- Private profiles you follow may appear, with a count: since 2026-09-26
+  accepted followers can already see a private watchlist, so the count reveals
+  nothing new (20260927150000). Private profiles you don't follow never show one.
 - Never suggest people already paired or pending, anyone blocked either way,
   anyone whose request expired or was cancelled in the last 60 days, or anyone
   whose request setting excludes you.

@@ -25,6 +25,7 @@ import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 import { personName } from '@plot/core/watchTogether.js';
 import { SharedListPeopleDialog } from './WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
 
 /* The lists themselves: one component per list, each rendering into a
    `Frame` it is handed. On My Lists the frame is a section on the page (the
@@ -456,9 +457,13 @@ export function WatchingSection({ watching, hidden, Frame = ListSection }) {
 
   if (hidden) return null;
 
-  const stopSelected = () => {
-    selection.selected.forEach(tmdbId => watching.stopWatching(tmdbId));
+  // One undo for the whole selection, offered once every stop has landed.
+  const stopSelected = async () => {
+    const ids = [...selection.selected];
+    const batch = createUndoBatch({ action: UNDO_ACTIONS.WATCHING_STOP });
     selection.exit();
+    await Promise.all(ids.map(tmdbId => watching.stopWatching(tmdbId, { undo: batch })));
+    batch.offer();
   };
 
   return (
@@ -566,9 +571,12 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
 
   if (narrowed && items.length === 0) return null;
 
-  const removeSelected = () => {
-    selection.selected.forEach(tmdbId => watchlist.removeFromList(tmdbId));
+  const removeSelected = async () => {
+    const ids = [...selection.selected];
+    const batch = createUndoBatch({ action: UNDO_ACTIONS.WATCHLIST_REMOVE });
     selection.exit();
+    await Promise.all(ids.map(tmdbId => watchlist.removeFromList(tmdbId, { undo: batch })));
+    batch.offer();
   };
 
   return (
@@ -744,9 +752,12 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
     const ok = await renameList(list.id, renameValue);
     if (ok) setRenaming(false);
   };
-  const removeSelected = () => {
-    selection.selected.forEach(tmdbId => removeItem(list.id, tmdbId));
+  const removeSelected = async () => {
+    const ids = [...selection.selected];
+    const batch = createUndoBatch({ action: UNDO_ACTIONS.LIST_ITEM_REMOVE });
     selection.exit();
+    await Promise.all(ids.map(tmdbId => removeItem(list.id, tmdbId, { undo: batch })));
+    batch.offer({ meta: { listName: list.name } });
   };
   // Shared lists: members can rename, add people and leave; only the owner
   // can change visibility or delete (docs/design/watch-together/README.md).

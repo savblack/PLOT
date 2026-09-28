@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TV_KEYWORD_GENRES, tvKeywordIds, _resetKeywordGenreCache } from './keywordGenres.js';
 import { tmdb, excludeKidsContent, KIDS_GENRE_IDS } from './tmdb.js';
 import { supabase } from './supabase.js';
+import { getConfig } from './config.js';
+import { reportLoadFailure, FAILED_LOADS } from './actionFailures.js';
 import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 
 // Pick for Me, the tonight picker (Premium). The viewer picks movie or TV first, then the
@@ -865,6 +867,25 @@ export async function loadWatchedIds(userId, client = supabase) {
  */
 
 /**
+ * The tonight_picks_drawn payload. Shapes of the request, never the genre ids
+ * themselves: enough to see which setups come back empty, without mirroring
+ * the viewer's taste into analytics.
+ * @param {any} options picker options
+ * @param {{ mode: string, resultCount: number, reroll: boolean, hasServices: boolean }} draw
+ */
+export function pickerDrawPayload(options, { mode, resultCount, reroll, hasServices }) {
+  return {
+    mode,
+    media_type: options.mediaType,
+    result_count: resultCount,
+    reroll,
+    only_watchlist: !!options.onlyWatchlist,
+    only_services: !!(options.onlyServices && hasServices),
+    genre_count: options.genreIds?.length ?? 0,
+  };
+}
+
+/**
  * State for the picker panel. The genre catalog loads for the questions, but
  * title discovery and details requests wait until go(). Without Premium (enabled false) the
  * viewer can answer every question; go() then opens the 'locked' phase (the
@@ -1039,7 +1060,13 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     return { picked, canSpinAgain: cur.pool.length > picked.length || moreToLoad };
   }, [options, hasServices, region, userId, watchlistItems, watchlistKey, providerIds]);
 
-  const go = useCallback(async (nextMode = 'five') => {
+  const report = useCallback((action, props = {}) => {
+    try { getConfig().onTonightPicker?.({ action, ...props }); } catch { /* analytics is best-effort */ }
+  }, []);
+
+  // `reroll` marks the Regenerate button, so a first draw and "show me
+  // others" are separable; everything else about the draw is identical.
+  const go = useCallback(async (nextMode = 'five', { reroll = false } = {}) => {
     const version = ++drawVersion.current;
     setMode(nextMode);
     if (!enabled) {
@@ -1058,10 +1085,12 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     let picked = [];
     let more = false;
     let failed = false;
+    let failure = null;
     try {
       ({ picked, canSpinAgain: more } = await draw(nextMode));
-    } catch {
+    } catch (e) {
       failed = true;
+      failure = e;
     }
     const wait = PICKER_MIN_SPIN_MS - (Date.now() - started);
     if (wait > 0) await sleep(wait);
@@ -1069,7 +1098,12 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     setResults(picked);
     setCanSpinAgain(more);
     setPhase(failed ? 'error' : picked.length ? 'results' : 'empty');
-  }, [enabled, draw, storage, storageKey, options, step, userId]);
+    if (failed) {
+      reportLoadFailure(FAILED_LOADS.TONIGHT_PICKS, failure);
+    } else {
+      report('drawn', pickerDrawPayload(options, { mode: nextMode, resultCount: picked.length, reroll, hasServices }));
+    }
+  }, [enabled, draw, storage, storageKey, options, step, userId, report, hasServices]);
 
   // Back from upgrading with a kept request: draw it without another tap.
   useEffect(() => {
@@ -1092,7 +1126,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     if (storage) Promise.resolve(storage.setItem(savedKey, serialiseSavedSearches(next))).catch(() => {});
   }, [storage, savedKey]);
 
-  const spinAgain = useCallback(() => go(mode), [go, mode]);
+  const spinAgain = useCallback(() => go(mode, { reroll: true }), [go, mode]);
   const backToOptions = useCallback(() => setPhase('setup'), []);
   // Closing the pop-up keeps the kept answers: upgrading from the plans page
   // later still lands the viewer on their picks.
@@ -1112,7 +1146,8 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   const saveSearch = useCallback(() => {
     if (!visibleResults.length) return;
     writeSaved(addSavedSearch(saved, { label: savedSearchLabel(sentence), options, mode, results: visibleResults }));
-  }, [visibleResults, saved, sentence, options, mode, writeSaved]);
+    report('search_saved', { mode, result_count: visibleResults.length });
+  }, [visibleResults, saved, sentence, options, mode, writeSaved, report]);
   const removeSavedSearch = useCallback((id) => writeSaved(saved.filter(i => i.id !== id)), [saved, writeSaved]);
   // The results' Save button: saves, or un-saves picks already saved.
   const toggleSaveSearch = useCallback(() => {
@@ -1134,7 +1169,19 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     setPhase('results');
     run.current = { ...run.current, key: '' };
     restoredSeen.current = item.results.map(r => r.id);
-  }, [saved, enabled, userId]);
+    report('saved_search_opened', { mode: item.mode, result_count: item.results.length });
+  }, [saved, enabled, userId, report]);
+  // Call from the result card's open handler. The panel opening is each app's
+  // job; knowing it came from a pick, and which one, is the picker's.
+  const openPick = useCallback((item) => {
+    const index = visibleResults.findIndex(r => r.id === item?.id);
+    report('opened', {
+      tmdb_id: item?.id,
+      media_type: item?.media_type || options.mediaType,
+      mode,
+      position: index + 1 || undefined,
+    });
+  }, [visibleResults, options.mediaType, mode, report]);
   const filtersSummary = useMemo(() => pickerFiltersSummary(options, { hasServices }), [options, hasServices]);
   const answers = useMemo(() => pickerAnswers(options, { genres }), [options, genres]);
 
@@ -1146,7 +1193,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     mode, results: visible.results, canSpinAgain: visible.canSpinAgain,
     step, goToStep, nextStep, prevStep,
     sentence, filtersSummary, answers,
-    go, spinAgain, backToOptions, closeLock,
+    go, spinAgain, backToOptions, closeLock, openPick,
     savedSearches: enabled ? saved : [], isSaved, toggleSaveSearch, removeSavedSearch, openSavedSearch,
   };
 }

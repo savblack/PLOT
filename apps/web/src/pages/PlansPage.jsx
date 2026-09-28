@@ -157,6 +157,7 @@ export default function PlansPage() {
                 <span className="plan-per">{PLANS_PAGE.premium.period}</span>
               </div>
               <p className="plan-billed">{annual ? PLANS_PAGE.premium.annualBilled : PLANS_PAGE.premium.monthlyBilled}</p>
+              <p className="plan-trial">{PLANS_PAGE.premium.trialNote}</p>
             </div>
             {canManage ? (
               <button className="btn btn-secondary" onClick={premium.openPortal} disabled={premium.busy}>
@@ -237,6 +238,19 @@ export default function PlansPage() {
               </tbody>
             ))}
           </table>
+        </section>
+
+        <section className="plans-requests" aria-labelledby="premium-requests-title">
+          <div>
+            <h2 id="premium-requests-title" className="plans-h2">{PLANS_PAGE.requests.title}</h2>
+            <p>{PLANS_PAGE.requests.description}</p>
+          </div>
+          <div className="plans-request-action">
+            <a className="btn btn-primary" href={`mailto:contact@theplot.tv?subject=${encodeURIComponent(PLANS_PAGE.requests.subject)}`}>
+              {PLANS_PAGE.requests.action} <span aria-hidden="true">↗</span>
+            </a>
+            <p>{PLANS_PAGE.requests.hint}</p>
+          </div>
         </section>
 
         <section className="faq-wrap" aria-labelledby="faq-title">

@@ -22,6 +22,8 @@
 
 begin;
 
+-- Production runs #1071's migration first; so does this, in case Staging lacks it.
+\ir ../supabase/migrations/20260927150000_watch_together_counts_for_followers.sql
 \ir ../supabase/migrations/20260927160000_watchlist_visibility.sql
 
 -- ── fixtures (as postgres) ───────────────────────────────────────────────────

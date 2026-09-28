@@ -85,6 +85,35 @@ configure({
   // payload is already PII-free (codes and field names, never the message).
   onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
   onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
+  // The Tonight picker: one seam, four names, same shape as onWatchProgress.
+  onTonightPicker: ({ action, ...props }) => {
+    const name = {
+      drawn:               EVENTS.TONIGHT_PICKS_DRAWN,
+      opened:              EVENTS.TONIGHT_PICK_OPENED,
+      search_saved:        EVENTS.TONIGHT_SEARCH_SAVED,
+      saved_search_opened: EVENTS.TONIGHT_SAVED_SEARCH_OPENED,
+    }[action];
+    if (name) track(name, props);
+  },
+  // Watch together: one seam, six names (see analyticsEvents.js).
+  onWatchTogether: ({ action, ...props }) => {
+    const name = {
+      invite_sent:      EVENTS.WATCH_TOGETHER_INVITE_SENT,
+      request_accepted: EVENTS.WATCH_TOGETHER_REQUEST_ACCEPTED,
+      link_shared:      EVENTS.WATCH_TOGETHER_LINK_SHARED,
+      link_accepted:    EVENTS.WATCH_TOGETHER_LINK_ACCEPTED,
+      session_started:  EVENTS.WATCH_TOGETHER_SESSION_STARTED,
+      match:            EVENTS.WATCH_TOGETHER_MATCH,
+    }[action];
+    if (name) track(name, props);
+  },
+  onReview: (payload) => track(EVENTS.REVIEW_WRITTEN, payload),
+  onImport: ({ stage, ...props }) => {
+    const name = { started: EVENTS.IMPORT_STARTED, completed: EVENTS.IMPORT_COMPLETED, failed: EVENTS.IMPORT_FAILED }[stage];
+    if (name) track(name, props);
+  },
+  // The undo toast reversed a removal. Never a committed action.
+  onUndo: (payload) => track(EVENTS.ACTION_UNDONE, payload),
   // The storage seam: mobile persists the Supabase session encrypted, key held
   // in the Keychain/Keystore via SecureStore (see lib/secureStorage.ts).
   supabaseClientOptions: {

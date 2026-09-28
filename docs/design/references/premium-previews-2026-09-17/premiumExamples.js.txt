@@ -1,0 +1,37 @@
+// Illustrative examples, not live account data. Artwork is verified in
+// docs/research/premium-example-evidence.json (17 September 2026).
+export const PREMIUM_EXAMPLES = {
+  preview: 'Feature preview',
+  sync: {
+    label: 'Planned integration preview', platforms: ['Plex', 'Trakt'], destination: 'PLOT',
+    title: 'Your watching, up to date.', source: 'Watched on Plex', result: 'Added to your PLOT history',
+    film: 'The Grand Budapest Hotel', poster: '/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg',
+    detail: 'Watch history · Episode progress',
+  },
+  collaborative: {
+    title: 'Friday film club', members: 'You, Alex and Sam',
+    picks: [
+      { title: 'Dune: Part Two', poster: '/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg', by: 'Added by you' },
+      { title: 'Materialists', poster: '/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg', by: 'Added by Alex' },
+      { title: 'The Grand Budapest Hotel', poster: '/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg', by: 'Added by Sam' },
+    ],
+    result: 'Three people. One shared list.',
+  },
+  insights: {
+    title: 'Your taste, in focus', label: 'Example insights', chart: 'Your highest-rated decades',
+    decades: [{ label: '1990s', rating: '3.6', width: 72 }, { label: '2000s', rating: '4.2', width: 84 }, { label: '2010s', rating: '3.8', width: 76 }],
+    scale: 'Average rating out of 5',
+    finding: 'You have a soft spot for the 2000s.',
+    comparison: 'A film you love more than the crowd', titleExample: 'The Grand Budapest Hotel',
+    ratings: 'You: 5.0 · Community: 4.1', disclaimer: 'Sample ratings for illustration',
+  },
+  lists: {
+    title: 'The Sunday film club', meta: 'Smart list · Updates automatically', rulesLabel: 'Your saved rules',
+    rules: ['Comedy', 'Under 2 hours'], result: 'New matches, without the searching.', newMatch: 'Automatically added',
+    titles: [
+      { title: 'The Grand Budapest Hotel', poster: '/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg' },
+      { title: 'Moonrise Kingdom', poster: '/y4SXcbNl6CEF2t36icuzuBioj7K.jpg' },
+      { title: 'Fantastic Mr. Fox', poster: '/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg' },
+    ],
+  },
+};
