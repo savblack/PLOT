@@ -127,7 +127,8 @@ function UnlockDialog({ picker, navigate }) {
       <button type="button" className="btn btn-primary tonight-unlock-cta" onClick={() => navigate(premiumPlansPath('/tonight'))}>
         {PLANS_PAGE.upgradeAction}
       </button>
-      <p className="tonight-unlock-price">{PLANS_PAGE.premium.priceSummary}</p>
+      <p className="tonight-unlock-price">{PLANS_PAGE.premium.priceTerms}</p>
+      <p className="tonight-unlock-price">{PLANS_PAGE.premium.trialNote}</p>
     </section>
   );
 }

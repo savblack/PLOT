@@ -139,7 +139,7 @@ Required function secrets:
 
 ## Connected history imports and sync
 
-One-off watch-history imports from Plex and Trakt are Free. Ongoing two-way sync remains a separate Premium capability and is hidden until it is ready to launch. Plex tokens are handled by `media-sync`; Trakt OAuth tokens are handled by `trakt-sync`. Both are encrypted server-side and are never shown in the browser.
+One-off watch-history imports from Plex and Trakt are Free. Public copy does not list automatic Plex or Trakt sync as a Premium benefit. Plex tokens are handled by `media-sync`; Trakt OAuth tokens are handled by `trakt-sync`. Both are encrypted server-side and are never shown in the browser.
 
 Simkl uses a manual two-way sync: users connect their account, then choose Sync now to exchange movie and TV history. It does not run automatically. Keep the Simkl surfaces disabled until the OAuth application is approved, any required commercial licence is agreed, and the client ID is configured in both apps. Simkl access tokens are encrypted by `simkl-sync` and never exposed to either client.
 

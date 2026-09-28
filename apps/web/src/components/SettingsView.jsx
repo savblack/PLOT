@@ -1919,11 +1919,7 @@ export default function SettingsView() {
                 <div>
                   <div className="settings-row-label">{SETTINGS_VIEW.integrations.plexName}<PremiumBadge /></div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {sync.isConnected ? SETTINGS_VIEW.integrations.connectedLastSynced(
-                      sync.integration?.last_sync_at
-                        ? new Date(sync.integration.last_sync_at).toLocaleDateString()
-                        : SETTINGS_VIEW.integrations.never
-                    ) : SETTINGS_VIEW.integrations.notConnected}
+                    {sync.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.notConnected}
                   </div>
                 </div>
               </div>
@@ -1931,7 +1927,7 @@ export default function SettingsView() {
                 {sync.isConnected ? (
                   <>
                     <SettingsTextAction onClick={sync.sync} disabled={sync.syncing}>
-                      {sync.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
+                      {sync.syncing ? SETTINGS_VIEW.integrations.importing : SETTINGS_VIEW.integrations.importWatchHistory}
                     </SettingsTextAction>
                     <SettingsTextAction onClick={sync.disconnect} tone="danger">
                       {SETTINGS_VIEW.integrations.disconnect}
@@ -1957,11 +1953,7 @@ export default function SettingsView() {
                   <div className="settings-row-label">{SETTINGS_VIEW.integrations.traktName}<PremiumBadge /></div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {trakt.isConnected
-                      ? SETTINGS_VIEW.integrations.connectedLastSynced(
-                          trakt.integration?.last_sync_at
-                            ? new Date(trakt.integration.last_sync_at).toLocaleDateString()
-                            : SETTINGS_VIEW.integrations.never
-                        )
+                      ? SETTINGS_VIEW.integrations.connected
                       : SETTINGS_VIEW.integrations.connectTraktToSync}
                   </div>
                 </div>
@@ -1970,7 +1962,7 @@ export default function SettingsView() {
                 {trakt.isConnected ? (
                   <>
                     <SettingsTextAction onClick={trakt.sync} disabled={trakt.syncing}>
-                      {trakt.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
+                      {trakt.syncing ? SETTINGS_VIEW.integrations.importing : SETTINGS_VIEW.integrations.importWatchHistory}
                     </SettingsTextAction>
                     <SettingsTextAction onClick={trakt.disconnect} tone="danger">
                       {SETTINGS_VIEW.integrations.disconnect}
