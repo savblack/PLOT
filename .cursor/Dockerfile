@@ -43,8 +43,10 @@ RUN corepack enable \
     && corepack prepare pnpm@10.6.3 --activate
 
 # Cloud Agent VMs historically run as ubuntu. Keep that name so snapshot/user
-# config stays stable if we ever switch base images.
-RUN useradd --create-home --shell /bin/bash ubuntu \
+# config stays stable if we ever switch base images. Skip useradd when the
+# account already exists. /bin/sh here is dash, so `id ... &>/dev/null`
+# backgrounds id and the useradd never runs. Use a POSIX redirect.
+RUN id -u ubuntu >/dev/null 2>&1 || useradd --create-home --shell /bin/bash ubuntu \
     && echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ubuntu \
     && chmod 0440 /etc/sudoers.d/ubuntu
 
