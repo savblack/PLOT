@@ -15,7 +15,10 @@ concurrency:
 
 jobs:
   batch:
-    runs-on: ubuntu-latest
+    # macOS, not Ubuntu: the copy worker runs Claude inside sandbox-exec
+    # (marketing/lib/cli-runner.mjs) and refuses to start anywhere else, so an
+    # Ubuntu runner fails every week at the copy step.
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
 
