@@ -157,6 +157,7 @@ export default function PlansPage() {
                 <span className="plan-per">{PLANS_PAGE.premium.period}</span>
               </div>
               <p className="plan-billed">{annual ? PLANS_PAGE.premium.annualBilled : PLANS_PAGE.premium.monthlyBilled}</p>
+              <p className="plan-trial">{PLANS_PAGE.premium.trialNote}</p>
             </div>
             {canManage ? (
               <button className="btn btn-secondary" onClick={premium.openPortal} disabled={premium.busy}>

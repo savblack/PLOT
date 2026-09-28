@@ -1,6 +1,10 @@
 // Shared plan preview for web and mobile. Planned features are never shown as live entitlements.
 // Pricing is US$3/month or US$24/year, taxes included, shown in local currency at checkout
 // (Stripe Adaptive Pricing). $24/year is exactly four months free against monthly.
+// A 7-day free trial starts when Checkout opens. A card is required. Cancel during
+// the trial and the charge is $0. Checkout is still closed, so trialNote has no
+// charge date. When Checkout opens, replace its last sentence with
+// "You won’t be charged until [date]."
 export const PLANS_PAGE = {
   back: '← Back',
   backToApp: '← Back to plot',
@@ -14,7 +18,7 @@ export const PLANS_PAGE = {
   previewAction: 'Explore Premium',
   tryTasteOverlap: 'Try taste overlap',
   upgradeAction: 'Upgrade to Premium',
-  checkoutMessage: 'plot Premium is coming soon. Checkout is not open yet. There is nothing to pay today.',
+  checkoutMessage: 'plot Premium is coming soon. Checkout is not open yet. There is nothing to pay today. Your 7-day free trial starts when Checkout opens. A card is required. Cancel during the trial and you pay $0. You won’t be charged until the trial ends.',
   free: {
     name: 'Free',
     price: '$0',
@@ -34,6 +38,7 @@ export const PLANS_PAGE = {
     priceSummary: '$3/month or $24/year',
     monthlyBilled: 'US$3 billed monthly · taxes included',
     annualBilled: 'US$24 billed yearly · taxes included',
+    trialNote: '7-day free trial when Checkout opens. A card is required. Cancel during the trial and you pay $0. You won’t be charged until the trial ends.',
     availability: 'Premium is in the works. These features are a preview of what’s coming.',
     manageSubscription: 'Manage subscription',
     opening: 'Opening…',
@@ -186,7 +191,8 @@ export const PLANS_PAGE = {
   },
   faqTitle: 'Before you ask',
   faqs: [
-    { q: 'Can I upgrade now?', a: 'Not yet. Premium is planned at $3/month or $24/year, taxes included. The upgrade button shows a coming-soon message; it does not start a payment or a trial.' },
+    { q: 'Can I upgrade now?', a: 'Not yet. Premium is US$3/month or US$24/year, taxes included. The upgrade button shows a coming-soon message and does not take a payment. The 7-day free trial starts when Checkout opens.' },
+    { q: 'Is there a free trial?', a: 'Yes, once Checkout opens. Premium includes a 7-day free trial on US$3/month or US$24/year. A card is required. Cancel during the trial and you pay $0. You won’t be charged until the trial ends. Checkout is not open yet, so the trial has not started and there is nothing to pay today.' },
     { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Movie and episode release notifications are planned for Free. Free does not include personally tailored recommendations.' },
     { q: 'What does Pick for Me actually do?', a: 'It asks four quick questions: movie or show, how long you’ve got, what kind of story, and how new or how good. You get a shortlist of up to five, and you can limit it to your streaming services or your watchlist. Can’t decide? Surprise me gives you one pick.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. Joining a Premium host’s collaborative lists and shared watch sessions is planned for Free. Premium is only needed to create or host them.' },
@@ -194,7 +200,7 @@ export const PLANS_PAGE = {
     { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
     { q: 'Are these alerts and sync available now?', a: 'No. Movie and episode release notifications are planned for Free. Live calendar subscription, people alerts, deeper stats, automatic Plex/Trakt syncing and customisation are planned Premium features. Whole-season alerts need verified availability for every episode on your selected service.' },
   ],
-  fineprint: 'Prices in US dollars, taxes included. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
+  fineprint: 'Prices in US dollars, taxes included. A 7-day free trial starts when Checkout opens. A card is required. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
   terms: 'Terms',
   privacy: 'Privacy',
 };

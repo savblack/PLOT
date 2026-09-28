@@ -21,7 +21,11 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('row', { name: /Custom lists.*5.*Unlimited/ })).toBeVisible();
 
     // Annual is the default: $2/month, billed $24 yearly; monthly shows $3.
+    // The trial line is visible before any click, and it starts when Checkout opens.
     await expect(page.getByText('US$24 billed yearly · taxes included', { exact: true })).toBeVisible();
+    await expect(page.getByText('7-day free trial when Checkout opens. A card is required. Cancel during the trial and you pay $0. You won’t be charged until the trial ends.', { exact: true })).toBeVisible();
+    await expect(page.getByText('$25')).toHaveCount(0);
+    await expect(page.getByText(/does not start a payment or a trial/)).toHaveCount(0);
     await page.getByRole('button', { name: 'Monthly' }).click();
     await expect(page.getByText('US$3 billed monthly · taxes included', { exact: true })).toBeVisible();
 
@@ -32,6 +36,8 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('row', { name: /Pick for Me/ })).toBeVisible();
     await page.getByRole('button', { name: 'Upgrade to Premium' }).click();
     await expect(page.getByRole('status')).toContainText('Checkout is not open yet');
+    await expect(page.getByRole('status')).toContainText('7-day free trial starts when Checkout opens');
+    await expect(page.getByRole('status')).toContainText('You won’t be charged until the trial ends');
     expect(billingRequests).toEqual([]);
     expect(errors).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

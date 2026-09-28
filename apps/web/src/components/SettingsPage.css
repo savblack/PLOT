@@ -91,6 +91,7 @@
 .settings-page .settings-text-action:disabled { opacity: .55; cursor: wait; }
 .settings-preference-copy { min-width: 0; }
 .settings-selection { display: block; color: var(--text-secondary); font-size: .8rem; margin-top: .4rem; line-height: 1.6; overflow-wrap: anywhere; }
+.settings-trial { color: var(--text-primary); font-weight: 600; }
 .settings-switch { border: 0; background: none; padding: 10px 0; min-width: 44px; min-height: 44px; flex-shrink: 0; cursor: pointer; }
 .settings-switch > span { display: block; width: 44px; height: 24px; background: var(--text-muted); border-radius: var(--radius-pill); padding: 3px; }
 .settings-switch > span::after { content: ''; display: block; width: 18px; height: 18px; background: var(--surface); border-radius: 50%; }

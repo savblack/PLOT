@@ -62,6 +62,7 @@ export default function UpgradeSheet({
                 </Text>
               </View>
               <Text style={styles.alt}>{S.annualAlt}</Text>
+              <Text style={styles.trial}>{PLANS_PAGE.premium.trialNote}</Text>
             </View>
 
             <TouchableOpacity style={styles.primary} onPress={() => setComingSoon(true)} accessibilityRole="button">
@@ -115,6 +116,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   price: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   amount: { fontFamily: fontFamily.display, fontSize: 28, letterSpacing: -1.1, color: colors.textPrimary },
   alt: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
+  trial: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, lineHeight: 18, color: colors.textPrimary },
   primary: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl, borderRadius: 999, backgroundColor: colors.accentFill },
   primaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.onAccentFill },
   note: { padding: spacing.md, borderRadius: radii.md, backgroundColor: colors.surfaceSunken, fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textPrimary },

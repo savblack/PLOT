@@ -144,6 +144,7 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.customLists(FREE_CUSTOM_LIST_CAP)}</Text>
         <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansMedium }}>{PLANS_PAGE.premium.name}</Text>
         <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.premium.priceSummary}</Text>
+        <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansBold }}>{PLANS_PAGE.premium.trialNote}</Text>
         {PLANS_PAGE.premiumFeatures.map(feature => <View key={feature.id} style={{ gap: spacing.xs }}>
           <Text style={{ color: colors.textPrimary }}>{feature.label}</Text>
           <Text style={{ color: colors.textSecondary }}>{feature.description}</Text>

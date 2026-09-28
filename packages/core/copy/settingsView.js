@@ -1,3 +1,4 @@
+import { PLANS_PAGE } from './plansPage.js';
 // Shared copy: used by the web app and mobile's app/(app)/settings.tsx.
 // Lives in @plot/core/copy so the two platforms can't drift word by word;
 // apps/web/src/copy/settingsView.js re-exports it so src/copy stays the single place
@@ -49,7 +50,8 @@ export const SETTINGS_VIEW = {
     yearly: 'Yearly',
     checkout: 'Explore Premium',
     comingSoon: 'plot Premium is coming soon',
-    comingSoonMessage: 'plot Premium is coming soon. Checkout is not open yet. There is nothing to pay today.',
+    // Same sentence as the plans checkout note, so Settings cannot drift from it.
+    comingSoonMessage: PLANS_PAGE.checkoutMessage,
     exploreHint: 'Preview what’s planned. Checkout is not open yet.',
     portalHint: 'Update payment details, view invoices or cancel your subscription.',
     supportTitle: 'A little support goes a long way.',

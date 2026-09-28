@@ -33,6 +33,7 @@
 .upgrade-sheet-price { display: flex; align-items: baseline; gap: 0.25rem; font-size: 0.82rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .upgrade-sheet-amount { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; line-height: 1; letter-spacing: -0.04em; color: var(--text-primary); }
 .upgrade-sheet-alt { flex-basis: 100%; margin: 0; font-size: 0.75rem; color: var(--text-muted); }
+.upgrade-sheet-trial { flex-basis: 100%; margin: 0.35rem 0 0; font-size: 0.8rem; font-weight: 600; line-height: 1.5; color: var(--text-primary); }
 
 .upgrade-sheet .btn { min-height: 44px; }
 .upgrade-sheet-note { width: 100%; margin: 0; padding: 0.7rem 0.8rem; border-radius: var(--radius-badge); background: var(--surface-sunken); font-size: 0.8rem; line-height: 1.55; }

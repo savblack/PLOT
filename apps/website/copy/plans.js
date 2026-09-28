@@ -8,7 +8,7 @@
 export const PLANS_PAGE = {
   meta: {
     title: 'Plans & Pricing — plot',
-    description: 'plot is free to use, forever. Premium is coming soon, with unlimited lists, a live release calendar and Pick for Me: US$3/mo or US$24/yr, taxes included.',
+    description: 'plot is free to use, forever. Premium is coming soon at US$3/mo or US$24/yr, taxes included, with a 7-day free trial when Checkout opens.',
     ogDescription: 'Free to use, forever. Premium is coming soon, with unlimited lists, a live release calendar and Pick for Me.',
   },
 
@@ -48,6 +48,7 @@ export const PLANS_PAGE = {
     per: '/mo',
     billed: 'US$24 billed yearly · taxes included',
     billedMonthly: 'US$3 billed monthly · taxes included',
+    trialNote: '7-day free trial when Checkout opens. A card is required. Cancel during the trial and you pay $0. You won’t be charged until the trial ends.',
     tagline: 'Everything in Free, plus:',
     features: [
       'Unlimited custom lists',
@@ -80,15 +81,19 @@ export const PLANS_PAGE = {
     items: [
       {
         q: 'Is the Free plan really free?',
-        a: 'Yes. No credit card and no trial clock. Track as much as you like on Free, for as long as you like.',
+        a: 'Yes. Free needs no card and has no time limit. Track as much as you like, for as long as you like.',
       },
       {
         q: 'Can I get Premium now?',
-        a: 'Not yet. Premium is coming soon at US$3/month or US$24/year, taxes included. Upgrading in the app shows a coming-soon message and doesn’t take a payment.',
+        a: 'Not yet. Premium is coming soon at US$3/month or US$24/year, taxes included. Upgrading in the app shows a coming-soon message and doesn’t take a payment. The 7-day free trial starts when Checkout opens.',
+      },
+      {
+        q: 'Is there a free trial?',
+        a: 'Yes, once Checkout opens. Premium includes a 7-day free trial. A card is required. Cancel during the trial and you pay $0. You won’t be charged until the trial ends. Checkout is not open yet, so the trial has not started and there is nothing to pay today.',
       },
       {
         q: 'Can I cancel anytime?',
-        a: 'Yes. Once Premium opens, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.',
+        a: 'Yes. Once Checkout opens, cancel during the 7-day trial and you pay $0. After the trial, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.',
       },
       {
         q: 'What happens to my lists if I downgrade?',
@@ -97,5 +102,5 @@ export const PLANS_PAGE = {
     ],
   },
 
-  fineprint: 'Prices are in US dollars and include tax. Your total and billing currency are shown at checkout. Cancel anytime. Payments are processed securely by Stripe. Need a hand? contact@theplot.tv',
+  fineprint: 'Prices are in US dollars and include tax. A 7-day free trial starts when Checkout opens. A card is required. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? contact@theplot.tv',
 };
