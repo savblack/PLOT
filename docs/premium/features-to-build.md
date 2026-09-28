@@ -16,7 +16,7 @@
 4. **Never promise personally tailored recommendations yet.** Free has “More like this” on a title page only. Tailored recs wait until Premium revenue can fund them.
 5. **iOS / mobile does not sell Premium in-app.** Web upgrade only. Mobile `SHOW_PRICING_PAGE = false`; no StoreKit / IAP surface. See `docs/launch/app-store-launch-sprint.md`.
 6. **Ko-fi tips ≠ Premium.** `is_supporter` is recognition only. Do not wire tips into `is_premium()`.
-7. **Pricing decided:** **US$3/month or US$24/year**, USD primary, converted to local currency at checkout. `plansPage.js` on `main` already says $3/$24. See §2 for the Stripe mechanism still to confirm.
+7. **Pricing decided:** **US$3/month or US$24/year**, taxes included, **7-day card-required free trial** (first charge 7 days after start; cancel in the trial is $0). USD primary, converted to local currency at checkout. Public checkout stays closed until PLO-493. See §2.
 8. **Plex + Trakt Settings UI is on (PLO-492).** `SHOW_MEDIA_SYNC_INTEGRATIONS` is `true` on web and mobile. Premium members see Connect and Sync now. Free accounts get the Premium gate, not a free sync. Checkout stays closed (PLO-493). A human Premium account still has to smoke a real Plex PIN and Trakt OAuth on staging or production: this repo does not have those credentials, and production was last noted as missing `TRAKT_CLIENT_ID` / `TRAKT_CLIENT_SECRET`.
 
 ---
@@ -43,7 +43,7 @@
 
 ## 2. Pricing (resolve before charging)
 
-**Decided (Savannah, 2026-09-24/25):** **US$3/month or US$24/year.** The earlier A$5/A$40 plans copy and the US$25/year figure are both superseded. `packages/core/copy/plansPage.js` on `main` already shows `$3/month or $24/year`; Settings (web + mobile) and the Pick for Me upgrade pop-up read that one string (`PLANS_PAGE.premium.priceSummary`). Nothing in the app fetches prices from Stripe, so everyone sees `$`, whatever their country.
+**Decided (Savannah, 2026-09-24/25, trial locked with PLO-494):** **US$3/month or US$24/year**, taxes included, plus a **7-day card-required free trial**. The first charge is 7 days after the trial starts. Cancel during the trial and the charge is $0. The earlier A$5/A$40 plans copy and the US$25/year figure are both superseded. `packages/core/copy/plansPage.js` is the price and trial copy. Settings, the upgrade sheet, and Pick for Me read `priceTerms` and `trialNote`. Watch together still reads the shorter `priceSummary`. Nothing in the app fetches prices from Stripe, so everyone sees USD until checkout. Adaptive Pricing still shows local currency there. Public checkout stays closed until PLO-493.
 
 USD is primary; buyers outside the US see it converted at checkout. The intended Stripe mechanism is **Adaptive Pricing** on Checkout (one USD price; Stripe shows and charges local currency, buyer pays the FX margin). The alternative is fixed per-currency `currency_options` (round local prices, manual upkeep). **Still to confirm:** that Adaptive Pricing covers subscriptions on this account. Showing a real local price *inside* the app would need a small endpoint reading the price and its currency options from Stripe; not built.
 
@@ -55,7 +55,7 @@ Never put Stripe secret keys or price IDs in browser vars or tracked files.
 | Locked plans copy + `docs/billing/stripe-launch.md` | **A$5/month or A$40/year** (marked tentative but likely in Sep 21 decisions) |
 | Linear [PLO-494](https://linear.app/savblack/issue/PLO-494) (first-paid track, 2026-09-23) | **USD $3/month + USD $25/year** live Stripe prices; notes AUD prices on product inactive |
 
-**Decision (Savannah, 2026-09-24, annual price updated 2026-09-25):** USD is the primary price: USD $3/month, $24/year, taxes included. PLO-494's live $25/year Stripe price needs replacing with a $24/year price before launch. Buyers outside the US see it converted to their currency. The intended Stripe mechanism is **Adaptive Pricing** on Checkout (one USD price; Stripe shows and charges local currency at checkout, and the buyer pays the FX margin). The alternative is fixed per-currency `currency_options` on the price, which gives round local prices but needs manual upkeep. Confirm in the Stripe Dashboard that Adaptive Pricing covers subscriptions on this account before relying on it. Plans copy should show USD with a note that checkout shows local currency.
+**Decision (Savannah, 2026-09-24, annual price updated 2026-09-25, trial locked 2026-09-28):** USD is the primary price: USD $3/month, $24/year, taxes included, with a 7-day card-required trial. The earlier $25/year price is not the launch price. Buyers outside the US see it converted to their currency. The intended Stripe mechanism is **Adaptive Pricing** on Checkout (one USD price; Stripe shows and charges local currency at checkout, and the buyer pays the FX margin). The alternative is fixed per-currency `currency_options` on the price, which gives round local prices but needs manual upkeep. Confirm in the Stripe Dashboard that Adaptive Pricing covers subscriptions on this account before relying on it. Plans copy should show USD with a note that checkout shows local currency.
 
 **Agent action:** once Savannah confirms the Stripe mechanism, update `packages/core/copy/plansPage.js`, Settings copy, `docs/billing/stripe-launch.md`, and Supabase secrets `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` together.
 

@@ -2,6 +2,7 @@
 // Lives in @plot/core/copy so the two platforms can't drift word by word;
 // apps/web/src/copy/settingsView.js re-exports it so src/copy stays the single place
 // the web app and the Storybook Content page look for copy.
+import { PLANS_PAGE } from './plansPage.js';
 
 export const SETTINGS_VIEW = {
   page: {
@@ -49,8 +50,9 @@ export const SETTINGS_VIEW = {
     yearly: 'Yearly',
     checkout: 'Explore Premium',
     comingSoon: 'plot Premium is coming soon',
-    comingSoonMessage: 'plot Premium is coming soon. Checkout is not open yet. There is nothing to pay today.',
-    exploreHint: 'Preview what’s planned. Checkout is not open yet.',
+    // Same closed-checkout wording as the plans page, so Settings cannot deny the trial.
+    comingSoonMessage: PLANS_PAGE.checkoutMessage,
+    exploreHint: 'Checkout is not open yet. When Premium opens, the 7-day trial needs a card, and you won’t be charged until 7 days after you start.',
     portalHint: 'Update payment details, view invoices or cancel your subscription.',
     supportTitle: 'A little support goes a long way.',
     supportHint: 'Don’t want to subscribe but like what Plot is doing? Feel free to support it on Ko-fi. Plot is built and run by a solo developer with no external funding or backing. Every contribution helps keep it running, growing and, most importantly, independent.',

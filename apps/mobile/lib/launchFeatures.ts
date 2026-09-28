@@ -26,8 +26,9 @@ export const SHOW_APPLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_APPLE_LOGIN === 'tr
 
 // Pricing page. Mobile has no /plans screen, so nothing reads this yet;
 // declared so the two flag sets stay comparable. The upgrade sheet
-// (components/UpgradeSheet) and Pick for Me's pop-up show the price and an
-// Upgrade button that only says checkout is coming soon, matching web. Mobile
+// (components/UpgradeSheet) and Pick for Me's pop-up show the price, the
+// 7-day card-required trial, and an Upgrade button that says checkout is
+// not open yet, matching web. Mobile
 // never takes a payment in the app (Apple's anti-steering rules keep
 // purchases on the web app).
 export const SHOW_PRICING_PAGE = false;

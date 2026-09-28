@@ -22,6 +22,7 @@ for (const width of [390, 1440]) {
 
     // Annual is the default: $2/month, billed $24 yearly; monthly shows $3.
     await expect(page.getByText('US$24 billed yearly · taxes included', { exact: true })).toBeVisible();
+    await expect(page.getByText('7-day free trial, card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Monthly' }).click();
     await expect(page.getByText('US$3 billed monthly · taxes included', { exact: true })).toBeVisible();
 
@@ -45,7 +46,8 @@ for (const width of [390, 1440]) {
     await expect(page.getByText('US$3 billed monthly · taxes included', { exact: true })).toBeVisible();
     await page.goto('/pricing?intent=premium&plan=yearly');
     await page.getByRole('button', { name: 'Upgrade to Premium' }).click();
-    await expect(page.getByRole('status')).toContainText('There is nothing to pay today');
+    await expect(page.getByRole('status')).toContainText('7-day free trial');
+    await expect(page.getByRole('status')).toContainText('You won’t be charged until 7 days after you start');
     expect(billingRequests).toEqual([]);
 
     await page.goto('/plans?from=%2Fsettings%3Fsection%3Dbilling');

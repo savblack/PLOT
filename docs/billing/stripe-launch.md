@@ -2,6 +2,11 @@
 
 Current release decision (26 September 2026): US$3/month or US$24/year,
 tax-inclusive Managed Payments with Adaptive Pricing and AUD settlement.
+The launch package adds a 7-day card-required free trial on those Price
+objects (`trial_period_days` = 7). The first charge is 7 days after the
+trial starts. Cancel during the trial and the charge is $0. Supabase
+secrets `STRIPE_PRICE_MONTHLY` and `STRIPE_PRICE_YEARLY` point at those
+prices outside this repo. Do not copy the price IDs into tracked files.
 Bangladesh is accepted with owner-managed registration, filing and remittance;
 configuration is deferred by the owner until the first sale, not verified or
 completed. No Radar purchase or Bangladesh exclusion. Historical audit entries

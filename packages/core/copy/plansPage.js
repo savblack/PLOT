@@ -1,6 +1,10 @@
 // Shared plan preview for web and mobile. Planned features are never shown as live entitlements.
-// Pricing is US$3/month or US$24/year, taxes included, shown in local currency at checkout
-// (Stripe Adaptive Pricing). $24/year is exactly four months free against monthly.
+// Pricing is US$3/month or US$24/year, taxes included, with a 7-day card-required free trial.
+// The first charge is 7 days after the trial starts. Cancel during the trial and the charge is $0.
+// Stripe Adaptive Pricing shows the price in local currency at checkout. $24/year is exactly
+// four months free against monthly. Checkout stays closed until it is restored (PLO-493).
+// The 7-day trial lives on the Stripe Price objects behind STRIPE_PRICE_MONTHLY and
+// STRIPE_PRICE_YEARLY. Do not put those price IDs in this file.
 export const PLANS_PAGE = {
   back: '← Back',
   backToApp: '← Back to plot',
@@ -14,7 +18,7 @@ export const PLANS_PAGE = {
   previewAction: 'Explore Premium',
   tryTasteOverlap: 'Try taste overlap',
   upgradeAction: 'Upgrade to Premium',
-  checkoutMessage: 'plot Premium is coming soon. Checkout is not open yet. There is nothing to pay today.',
+  checkoutMessage: 'Checkout is not open yet. When Premium opens, it is US$3/month or US$24/year, taxes included, with a 7-day free trial. A card is required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
   free: {
     name: 'Free',
     price: '$0',
@@ -31,7 +35,10 @@ export const PLANS_PAGE = {
     price: '$3',
     annualMonthlyPrice: '$2',
     period: '/month',
+    // Compact label. Watch together reads this and is left on the shorter form.
     priceSummary: '$3/month or $24/year',
+    priceTerms: 'US$3/month or US$24/year, taxes included',
+    trialNote: '7-day free trial, card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
     monthlyBilled: 'US$3 billed monthly · taxes included',
     annualBilled: 'US$24 billed yearly · taxes included',
     availability: 'Premium is in the works. These features are a preview of what’s coming.',
@@ -62,7 +69,13 @@ export const PLANS_PAGE = {
     { icon: 'stats', label: 'Deeper viewing stats', note: 'Beyond the Free overview' },
     { icon: 'customise', label: 'Customise your plot', note: 'Widgets, app icons and themes' },
   ],
-  assurances: ['Nothing to pay today', 'Everything free today stays free', 'Friends join shared lists for free'],
+  assurances: [
+    '7-day free trial, card required',
+    'You won’t be charged until 7 days after you start',
+    'Cancel during the trial and you pay $0',
+    'Everything free today stays free',
+    'Friends join shared lists for free',
+  ],
   // In-app upgrade sheet, opened where a Free limit is hit. Each reason leads with
   // the Premium feature that lifts that limit; `also` picks premiumCard rows by icon.
   upgradeSheet: {
@@ -70,7 +83,6 @@ export const PLANS_PAGE = {
     compare: 'Compare every feature',
     notNow: 'Not now',
     alsoIn: 'Also in Premium',
-    annualAlt: 'or US$24/year · taxes included',
     reasons: {
       lists: {
         context: (cap) => `You’ve used all ${cap} free lists`,
@@ -186,7 +198,7 @@ export const PLANS_PAGE = {
   },
   faqTitle: 'Before you ask',
   faqs: [
-    { q: 'Can I upgrade now?', a: 'Not yet. Premium is planned at $3/month or $24/year, taxes included. The upgrade button shows a coming-soon message; it does not start a payment or a trial.' },
+    { q: 'Can I upgrade now?', a: 'Not yet. Checkout is not open. When it opens, Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial. A card is required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.' },
     { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Movie and episode release notifications are planned for Free. Free does not include personally tailored recommendations.' },
     { q: 'What does Pick for Me actually do?', a: 'It asks four quick questions: movie or show, how long you’ve got, what kind of story, and how new or how good. You get a shortlist of up to five, and you can limit it to your streaming services or your watchlist. Can’t decide? Surprise me gives you one pick.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. Joining a Premium host’s collaborative lists and shared watch sessions is planned for Free. Premium is only needed to create or host them.' },
@@ -194,7 +206,7 @@ export const PLANS_PAGE = {
     { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
     { q: 'Are these alerts and sync available now?', a: 'No. Movie and episode release notifications are planned for Free. Live calendar subscription, people alerts, deeper stats, automatic Plex/Trakt syncing and customisation are planned Premium features. Whole-season alerts need verified availability for every episode on your selected service.' },
   ],
-  fineprint: 'Prices in US dollars, taxes included. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
+  fineprint: 'Prices in US dollars, taxes included. Premium is a 7-day free trial with a card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
   terms: 'Terms',
   privacy: 'Privacy',
 };
