@@ -1,10 +1,10 @@
 import { isPreviewDeployment } from './utils/previewDeployment.js';
 
-// Visible to everyone; usable with PLOT Premium. Server-side enforcement lives in
-// the media-sync / trakt-sync edge functions (403 premium_required). Hidden for
-// launch — direct Plex/Trakt sync is held for post-launch until the full
-// production credential set is ready. Flip to true once that's done.
-export const SHOW_MEDIA_SYNC_INTEGRATIONS = false;
+// Visible in Settings; usable with PLOT Premium. Server-side enforcement lives
+// in the media-sync / trakt-sync edge functions (403 premium_required on sync).
+// On so a Premium member can connect Plex and Trakt. Free accounts stay on the
+// upgrade path in Settings. Flip back to false to hide the connect rows.
+export const SHOW_MEDIA_SYNC_INTEGRATIONS = true;
 
 // Social sign-in buttons. A button only appears once its provider is actually
 // configured, so users never hit one that errors.

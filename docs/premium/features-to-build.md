@@ -17,7 +17,7 @@
 5. **iOS / mobile does not sell Premium in-app.** Web upgrade only. Mobile `SHOW_PRICING_PAGE = false`; no StoreKit / IAP surface. See `docs/launch/app-store-launch-sprint.md`.
 6. **Ko-fi tips ≠ Premium.** `is_supporter` is recognition only. Do not wire tips into `is_premium()`.
 7. **Pricing decided:** **US$3/month or US$24/year**, USD primary, converted to local currency at checkout. `plansPage.js` on `main` already says $3/$24. See §2 for the Stripe mechanism still to confirm.
-8. **Plex + Trakt stay hidden (2026-09-24).** `SHOW_MEDIA_SYNC_INTEGRATIONS` stays `false` on both platforms. Production has `PLEX_TOKEN_SECRET` / `TRAKT_TOKEN_SECRET` but **no `TRAKT_CLIENT_ID` / `TRAKT_CLIENT_SECRET`**, and no Trakt OAuth app is set up. Work on other Premium features meanwhile. A mobile Premium gate for the sync rows is ready on local branch `agent/plo-492-media-sync` (not pushed).
+8. **Plex + Trakt Settings UI is on (PLO-492).** `SHOW_MEDIA_SYNC_INTEGRATIONS` is `true` on web and mobile. Premium members see Connect and Sync now. Free accounts get the Premium gate, not a free sync. Checkout stays closed (PLO-493). A human Premium account still has to smoke a real Plex PIN and Trakt OAuth on staging or production: this repo does not have those credentials, and production was last noted as missing `TRAKT_CLIENT_ID` / `TRAKT_CLIENT_SECRET`.
 
 ---
 
@@ -31,7 +31,7 @@
 | Checkout | **Hard-closed:** `usePremium.startCheckout` stubs; `stripe-billing` returns 503 `premium_coming_soon` for `action=checkout`. |
 | Free list cap | Free: 5 custom lists (`FREE_CUSTOM_LIST_CAP`). Premium: unlimited via `can_create_custom_list()`. Enforced in DB. Sixth-list UX → Explore Premium. |
 | Live calendar feed | Backend `calendar-feed` + token exist. UI Premium-gates subscribe; free users get one-time `.ics` snapshot. |
-| Plex / Trakt sync | Edge functions implement sync and return `premium_required` for non-Premium. **UI flag off:** `SHOW_MEDIA_SYNC_INTEGRATIONS = false` (web + mobile). Premium users still see “coming soon”. |
+| Plex / Trakt sync | Edge functions return `premium_required` for non-Premium `sync`. **UI flag on:** `SHOW_MEDIA_SYNC_INTEGRATIONS = true` (web + mobile). Premium Settings shows Connect and Sync now. Free Settings shows the Premium gate. Live OAuth still needs a Premium account smoke. |
 | Marketing homepage previews | Illustrative Tonight / Together / Following storyboards only. Not live product. |
 | Pick for Me (tonight picker) | **Live on `main`** (PR #1029, merged 2026-09-25; follow-up #1045, 2026-09-26). See §5.2. |
 | Watch together (overlap + shared lists) | **In review:** PR #1039 (`agent/watch-together`, web, phases 1 to 3). Decisions in `docs/design/watch-together/README.md` on `agent/watch-together-design`. |
@@ -159,14 +159,14 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 **Already built:**
 - `supabase/functions/media-sync`, `supabase/functions/trakt-sync` (Premium-gated with `is_premium` → `premium_required`)
 - Client hooks: `apps/web/src/hooks/useMediaSync.js`, mobile equivalents
-- Flag: `SHOW_MEDIA_SYNC_INTEGRATIONS` in `apps/web/src/launchFeatures.js` and `apps/mobile/lib/launchFeatures.ts` (**false**)
+- Flag: `SHOW_MEDIA_SYNC_INTEGRATIONS` in `apps/web/src/launchFeatures.js` and `apps/mobile/lib/launchFeatures.ts` (**true**, PLO-492)
 
-**To build / verify (PLO-492):**
-- Flip flag on both platforms
-- Settings UI shows connect/sync for Premium (not coming-soon modal)
-- Free users: upgrade path via Explore Premium, no free unlock
-- E2E: Premium account completes Plex sync and Trakt sync successfully
-- Copy: do not claim instant or verified two-way syncing
+**Shipped in the UI (PLO-492).** Still needs a human Premium smoke before calling the sync itself done:
+- Flag on, both platforms
+- Settings shows Connect and Sync now for Premium. The coming-soon dialog is only the flag-off fallback
+- Free users: Explore Premium, no Connect or Sync now
+- Copy does not claim instant or verified two-way syncing
+- Not done here: a real Plex PIN approval and a real Trakt OAuth round trip
 
 **Related (out of first-paid scope):** Plex → Overseerr/Sonarr/Radarr requests design in `docs/superpowers/specs/2026-08-23-plex-sonarr-radarr-requests-design.md`. Personal/homelab; productisation later. Fix `processOutbox` action filter before adding `media_request` actions.
 
@@ -326,7 +326,7 @@ From `docs/launch/app-store-launch-sprint.md` and billing docs:
 | --- | --- |
 | `packages/core/copy/plansPage.js` | Canonical Free/Premium matrix + pricing copy |
 | `packages/core/premium.js` | `FREE_CUSTOM_LIST_CAP`, `isPremiumProfile`, `canCreateCustomList`, friendly errors |
-| `packages/core/copy/settingsView.js` | Settings Premium / sync / calendar coming-soon strings |
+| `packages/core/copy/settingsView.js` | Settings Premium, sync gate, and calendar coming-soon strings |
 | `apps/web/src/hooks/usePremium.js` | Checkout stub + portal/tip |
 | `apps/web/src/launchFeatures.js` | `SHOW_PRICING_PAGE`, `SHOW_MEDIA_SYNC_INTEGRATIONS` |
 | `apps/mobile/lib/launchFeatures.ts` | Mobile flags (pricing page off) |
