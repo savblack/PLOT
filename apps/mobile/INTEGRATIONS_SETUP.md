@@ -95,6 +95,10 @@ supabase functions deploy calendar-feed --project-ref mkegtssedjyqldysvzga
 
 ## 4. Verify
 
+Connect and Sync now in Settings are for a Premium account. A free account sees
+Explore Premium instead, and the server still returns `premium_required` on
+`sync`. One-off history import stays free.
+
 1. **Trakt**: Settings → Integrations → Trakt → **Connect**. The system browser
    opens trakt.tv authorize; approve; it redirects to `plot://auth/trakt?code=…`,
    the app catches it (`app/_layout.tsx` deep-link listener → `exchangeTraktCode`),

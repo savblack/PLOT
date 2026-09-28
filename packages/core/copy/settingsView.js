@@ -176,6 +176,8 @@ export const SETTINGS_VIEW = {
     simklName: 'Simkl',
     simklBlurb: 'Manually exchange watch history with Simkl',
     pausedNeedsPremium: 'Paused, needs plot Premium to sync',
+    syncNeedsPremium: 'Automatic syncing needs plot Premium',
+    syncNeedsPremiumMessage: 'Plex and Trakt syncing is part of plot Premium. Manual imports stay free.',
     requestedAccessMessage: (name) => `Requested access: ${name} sync`,
     requested: 'Requested ✓',
     requestAccess: 'Request access',

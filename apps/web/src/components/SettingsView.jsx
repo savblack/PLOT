@@ -1911,7 +1911,7 @@ export default function SettingsView() {
       <TrackingSettings userId={user?.id} connect={trakt.connect} connectPlex={sync.startPlexAuth} plexPolling={sync.polling} connectionError={trakt.error || sync.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : sync.disconnect()} />
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.integrations.groupTitle}</div>
-        {premium.isPremium && SHOW_MEDIA_SYNC_INTEGRATIONS ? (
+        {SHOW_MEDIA_SYNC_INTEGRATIONS && premium.isPremium ? (
           <>
             <div className="settings-row" style={{ cursor: 'default' }}>
               <div className="settings-row-left">
@@ -2002,8 +2002,12 @@ export default function SettingsView() {
                 </div>
                 <div className="settings-inline-actions">
                   <SettingsTextAction onClick={() => showConfirm({
-                    title: SETTINGS_VIEW.billing.syncComingSoon,
-                    message: SETTINGS_VIEW.billing.syncComingSoonMessage,
+                    title: SHOW_MEDIA_SYNC_INTEGRATIONS
+                      ? SETTINGS_VIEW.integrations.syncNeedsPremium
+                      : SETTINGS_VIEW.billing.syncComingSoon,
+                    message: SHOW_MEDIA_SYNC_INTEGRATIONS
+                      ? SETTINGS_VIEW.integrations.syncNeedsPremiumMessage
+                      : SETTINGS_VIEW.billing.syncComingSoonMessage,
                     confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
                     onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
                   })}>

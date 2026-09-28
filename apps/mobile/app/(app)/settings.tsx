@@ -789,6 +789,20 @@ export default function SettingsScreen() {
     ]);
   };
 
+  // Free accounts can see the rows, but Connect and Sync stay on Premium.
+  // Explore Premium opens the in-app preview. Mobile does not link out to pay.
+  const openPremiumSyncGate = (connected: boolean, disconnect: () => void) => {
+    Alert.alert(
+      SETTINGS_VIEW.integrations.syncNeedsPremium,
+      SETTINGS_VIEW.integrations.syncNeedsPremiumMessage,
+      [
+        { text: SETTINGS_VIEW.premium.upgradeButton, onPress: () => setPremiumExpanded(true) },
+        ...(connected ? [{ text: SETTINGS_VIEW.integrations.disconnect, style: 'destructive' as const, onPress: disconnect }] : []),
+        { text: COMMON.cancel, style: 'cancel' as const },
+      ],
+    );
+  };
+
   const saveProviders = async (newProviders: any[]) => {
     await updateProfile({ userId: userId!, patch: { streaming_providers: newProviders } });
     refreshProfile();
@@ -1035,10 +1049,9 @@ export default function SettingsScreen() {
 
         {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
 
-        {/* Plex and Trakt stay behind the post-launch flag. Simkl is a free,
-            manual connection and remains manageable once connected. */}
+        {/* Plex and Trakt are Premium. Simkl is a free, manual connection. */}
         <SettingsGroup title="Integrations">
-          {SHOW_MEDIA_SYNC_INTEGRATIONS && (<>
+          {SHOW_MEDIA_SYNC_INTEGRATIONS && profile?.is_premium && (<>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
             label="Plex"
@@ -1054,6 +1067,22 @@ export default function SettingsScreen() {
             onPress={trakt.isConnected ? () => openIntegrationMenu('Trakt', trakt) : () => trakt.connect()}
             trailing={trakt.isConnected ? undefined
               : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Connect</Text>}
+          />
+          </>)}
+          {SHOW_MEDIA_SYNC_INTEGRATIONS && !profile?.is_premium && (<>
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
+            label={SETTINGS_VIEW.integrations.plexName}
+            value={plex.isConnected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : SETTINGS_VIEW.integrations.plexBlurb}
+            onPress={() => openPremiumSyncGate(plex.isConnected, () => { void plex.disconnect(); })}
+            trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
+            label={SETTINGS_VIEW.integrations.traktName}
+            value={trakt.isConnected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : SETTINGS_VIEW.integrations.traktBlurb}
+            onPress={() => openPremiumSyncGate(trakt.isConnected, () => { void trakt.disconnect(); })}
+            trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
           />
           </>)}
           <SettingsRow
