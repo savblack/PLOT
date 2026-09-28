@@ -28,6 +28,13 @@ patterns='eyJhbGciOiJ|-----BEGIN[A-Z ]*PRIVATE KEY-----|SERVICE_ROLE_KEY[[:space
 # Assembled separately because the character class needs both quote characters,
 # which a single-quoted shell string cannot hold.
 patterns="$patterns|PGPASSWORD=[\"']?[A-Za-z0-9_./+-]{6,}"
+
+# Chromatic project tokens. Added after one reached a working tree hardcoded
+# into an npm script; nothing here would have caught it on the way in. The
+# prefix is distinctive enough that the hex tail only guards against matching
+# prose, so this cannot fire on the env var NAME the token should be read from.
+patterns="$patterns|chpt_[0-9a-f]{10,}"
+
 # .env.example holds placeholders by design; this script and the hook that
 # calls it necessarily contain the patterns they scan for.
 exclude='\.env\.example|\.githooks/pre-commit|scripts/scan-secrets\.sh'

@@ -53,3 +53,11 @@ scripts/guide/__pycache__/
 
 # Local package-manager cache.
 .pnpm-store/
+
+# Plot is a pnpm workspace and .npmrc's node-linker=hoisted is load-bearing
+# (Metro and check-expo-sdk-deps.mjs both assume a flat node_modules). An npm or
+# yarn lockfile here means the wrong package manager ran; committing one would
+# leave the repo with two competing dependency graphs, so ignore it outright
+# rather than rely on noticing it in `git status`.
+package-lock.json
+yarn.lock

@@ -30,6 +30,7 @@
     "storybook:website": "pnpm --filter @plot/website-storybook run storybook",
     "storybook:web": "pnpm --filter @plot/web run storybook",
     "test-storybook:web": "pnpm --filter @plot/web run test-storybook",
+    "chromatic": "pnpm --filter @plot/web run build-storybook:stats && pnpm --filter @plot/web run chromatic",
     "storybook:mobile": "pnpm --filter @plot/mobile run storybook",
     "storybook:mobile:web": "pnpm --filter @plot/mobile run storybook:web",
     "storybook:web:deploy": "bash scripts/deploy-storybook.sh apps/web plot-storybook-web-app",
@@ -88,6 +89,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "chromatic": "^18.9.4",
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.6",
