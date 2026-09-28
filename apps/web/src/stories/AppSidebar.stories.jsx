@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { FeedbackPanel } from '../components/SettingsView.jsx';
+import { MemoryRouter } from 'react-router-dom';
 import AppSidebar from '../components/AppSidebar.jsx';
+import UpgradeSheet from '../components/UpgradeSheet.jsx';
+import { AppContext } from '../hooks/useApp.js';
+import { useTheme } from '../hooks/useTheme.js';
 
 /* The sidebar only appears above 1024px in the app, and its two most stateful
    rows (notifications, profile) only render for a signed-in viewer — which is
@@ -119,3 +123,29 @@ export const FreeViewerOnPickForMe = { args: { ...signedIn, currentView: 'tonigh
 export const PremiumViewerOnPickForMe = {
   args: { ...signedIn, currentView: 'tonight', profile: { ...profile, is_premium: true } },
 };
+
+// The theme switcher, with the real hook so a pick applies to the story.
+function ThemeSwitcherDemo({ premium, ...args }) {
+  const { mode, family, setMode, setFamily } = useTheme({ isPremium: premium });
+  const [locked, setLocked] = useState(null);
+  return (
+    <MemoryRouter>
+      <AppContext.Provider value={{ profile: { id: 'story-user', is_premium: premium } }}>
+        <AppSidebar
+          {...args}
+          profile={{ ...profile, is_premium: premium }}
+          themeMode={mode}
+          themeFamily={family}
+          onPickMode={setMode}
+          onPickFamily={setFamily}
+          onThemeLocked={setLocked}
+          defaultThemeOpen
+        />
+        {locked && <UpgradeSheet reason="themes" family={locked} onClose={() => setLocked(null)} />}
+      </AppContext.Provider>
+    </MemoryRouter>
+  );
+}
+
+export const ThemeSwitcherPremium = { args: signedIn, render: (args) => <ThemeSwitcherDemo {...args} premium /> };
+export const ThemeSwitcherFree = { args: signedIn, render: (args) => <ThemeSwitcherDemo {...args} premium={false} /> };

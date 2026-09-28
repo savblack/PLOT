@@ -258,7 +258,7 @@ export default function DesignSystemPage() {
 
         <h3 className="ds-subsection-title">Spending the accent</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          <code>--accent</code> (#E05578) is a signal, not a decorative palette colour. Everything else is black, white, and grey. Use it only where it earns its place:
+          <code>--accent</code> (#E05578 on Light; its hue is per theme under Premium themes) is a signal, not a decorative palette colour. Everything else is black, white, and grey. Use it only where it earns its place:
         </p>
         <div className="ds-utility-grid">
           {accentRules.map(([label, purpose]) => (

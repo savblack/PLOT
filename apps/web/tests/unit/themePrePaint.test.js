@@ -2,22 +2,23 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import vm from 'node:vm';
-import { premiumPalettes } from '@plot/core/tokens.js';
-import { BASE_THEMES, PREMIUM_THEMES, themeAttributes } from '@plot/core/themes.js';
+import { themeFamilies } from '@plot/core/tokens.js';
+import { LEGACY_THEMES, THEME_FAMILIES, THEME_MODES, readThemePreference, themeAttributes } from '@plot/core/themes.js';
 
 // The pre-paint script in index.html runs before any module loads, so it
-// carries its own copy of the palette id -> base map. These tests run that
-// script against every stored value and hold it to @plot/core/themes.js.
+// carries a generated copy of the family list and the retired theme ids. These
+// tests run that script against stored values and hold it to themes.js.
 const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const script = [...html.matchAll(/<script data-cfasync="false">([\s\S]*?)<\/script>/g)]
   .map(m => m[1])
   .find(body => body.includes('plot-theme'));
 
-function prePaint(stored, systemDark = false) {
+function prePaint(mode, family, systemDark = false) {
   const attrs = {};
+  const store = { 'plot-theme': mode, 'plot-theme-family': family };
   const context = {
     window: {
-      localStorage: { getItem: () => stored },
+      localStorage: { getItem: (key) => store[key] ?? null },
       matchMedia: () => ({ matches: systemDark }),
     },
     document: { documentElement: { setAttribute: (k, v) => { attrs[k] = v; } } },
@@ -26,31 +27,54 @@ function prePaint(stored, systemDark = false) {
   return attrs;
 }
 
+const expected = (mode, family, systemDark) => {
+  const pref = readThemePreference(mode, family);
+  const { mode: resolved, palette } = themeAttributes(pref, systemDark);
+  return palette ? { 'data-theme': resolved, 'data-palette': palette } : { 'data-theme': resolved };
+};
+
 test('the pre-paint script exists', () => {
-  assert.ok(script && script.includes('plot-theme'));
+  assert.ok(script && script.includes('plot-theme-family'));
 });
 
-test('the pre-paint script paints every theme the way useTheme will', () => {
-  for (const id of [...BASE_THEMES, ...PREMIUM_THEMES]) {
-    for (const systemDark of [false, true]) {
-      const { mode, palette } = themeAttributes(id, systemDark);
-      const attrs = prePaint(id, systemDark);
-      assert.equal(attrs['data-theme'], mode, `${id} mode`);
-      assert.equal(attrs['data-palette'], palette ?? undefined, `${id} palette`);
+test('the pre-paint script paints every family and mode the way useTheme will', () => {
+  for (const family of [...THEME_FAMILIES, null]) {
+    for (const mode of [...THEME_MODES, null]) {
+      for (const systemDark of [false, true]) {
+        assert.deepEqual(prePaint(mode, family, systemDark), expected(mode, family, systemDark), `${family}/${mode}/${systemDark}`);
+      }
     }
   }
 });
 
-test('an empty or unknown stored value paints light with no palette', () => {
-  assert.deepEqual(prePaint(null), { 'data-theme': 'light' });
-  assert.deepEqual(prePaint('sepia'), { 'data-theme': 'light' });
+test('a retired theme id paints as the family and mode it became', () => {
+  for (const id of Object.keys(LEGACY_THEMES)) {
+    assert.deepEqual(prePaint(id, 'rose'), expected(id, 'rose', false), id);
+  }
 });
 
-test('the boot loader paints each palette on its own ground', () => {
-  for (const [id, { colors }] of Object.entries(premiumPalettes)) {
-    assert.ok(
-      html.includes(`[data-palette="${id}"] body { background: ${colors.bg}; }`),
-      `index.html should paint ${id} on ${colors.bg}`,
-    );
+test('an unknown stored value paints the default light', () => {
+  assert.deepEqual(prePaint('sepia', 'ocean'), { 'data-theme': 'light' });
+});
+
+test('the boot loader paints each variant on its own ground', () => {
+  for (const [id, family] of Object.entries(themeFamilies)) {
+    for (const mode of ['light', 'dark']) {
+      const line = `[data-palette="${id}"][data-theme="${mode}"] body { background: ${family[mode].bg}; }`;
+      assert.ok(html.includes(line), `index.html should paint ${id} ${mode}`);
+    }
+  }
+});
+
+// The generated family blocks must be live CSS, not swallowed by an unclosed
+// comment around the markers.
+test('tokens.css carries a live block for every family variant', () => {
+  const css = readFileSync(new URL('../../src/styles/tokens.css', import.meta.url), 'utf8');
+  const region = css.slice(css.indexOf('/* @palettes:start */') + '/* @palettes:start */'.length, css.indexOf('/* @palettes:end */'));
+  assert.doesNotMatch(region, /\/\*|\*\//);
+  for (const [id, family] of Object.entries(themeFamilies)) {
+    for (const mode of ['light', 'dark']) {
+      assert.match(region, new RegExp(`:root\\[data-palette="${id}"\\]\\[data-theme="${mode}"\\] \\{\\n  --bg: ${family[mode].bg};`));
+    }
   }
 });

@@ -11,6 +11,7 @@ import { usePremium } from '../hooks/usePremium.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import PremiumIcon from './PremiumIcon.jsx';
+import { ThemeMiniaturePair } from './ThemeMiniature.jsx';
 import './UpgradeSheet.css';
 
 const S = PLANS_PAGE.upgradeSheet;
@@ -20,17 +21,19 @@ const S = PLANS_PAGE.upgradeSheet;
  *   reason: import('@plot/core/upgradeSheet.js').UpgradeReason,
  *   onClose: () => void,
  *   returnFocusRef?: { current: HTMLElement | null },
+ *   family?: string,
  * }} props  returnFocusRef: where focus goes on close when the element that had
- *   it is gone (e.g. the create-list dialog the sheet replaced).
+ *   it is gone (e.g. the create-list dialog the sheet replaced). theme: for
+ *   reason 'themes', the Premium family tapped, drawn light and dark (never applied).
  */
-export default function UpgradeSheet({ reason, onClose, returnFocusRef }) {
+export default function UpgradeSheet({ reason, onClose, returnFocusRef, family }) {
   const { profile } = useApp();
   const premium = usePremium(profile);
   const navigate = useNavigate();
   const location = useLocation();
   const sheetRef = useRef(null);
   const titleId = useId();
-  const content = upgradeSheetContent(reason);
+  const content = upgradeSheetContent(reason, { family });
   // Callers pass inline handlers; reading them through refs keeps the setup
   // below to one run per open, so focus and scroll lock aren't reset on render.
   const onCloseRef = useRef(onClose);
@@ -91,8 +94,12 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef }) {
           )}
           {content.context}
         </p>
+        {content.preview && <ThemeMiniaturePair family={content.preview.family} className="upgrade-sheet-preview" />}
         <h2 id={titleId} className="upgrade-sheet-title">{content.title}</h2>
-        <p className="upgrade-sheet-body">{content.body}</p>
+        <p className="upgrade-sheet-body">
+          {content.preview && <>{content.preview.line} </>}
+          {content.body}
+        </p>
 
         <div className="upgrade-sheet-offer">
           <div className="upgrade-sheet-offer-name">

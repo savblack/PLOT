@@ -64,3 +64,4 @@
 @media (prefers-reduced-motion: reduce) {
   .upgrade-sheet, .upgrade-sheet-scrim { animation: none; }
 }
+.upgrade-sheet .upgrade-sheet-preview { max-width: 340px; }

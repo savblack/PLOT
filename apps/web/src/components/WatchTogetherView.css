@@ -259,7 +259,7 @@
   font-size: 0.875rem; font-weight: 800; pointer-events: none;
   transition: opacity 0.1s;
 }
-.wt-stamp--yes { left: 1rem; background: var(--accent-fill); color: var(--on-accent-fill); }
+.wt-stamp--yes { left: 1rem; background: var(--artwork-fill); color: var(--on-artwork-fill); }
 .wt-stamp--no { right: 1rem; top: 3.2rem; background: var(--surface); color: var(--text-primary); }
 .wt-session-buttons { display: flex; justify-content: center; gap: 0.75rem; }
 .wt-session-foot {

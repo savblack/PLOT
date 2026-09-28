@@ -1,25 +1,49 @@
-// Settings > Profile & account: the Appearance (light/dark/system, free) and
-// Themes (Premium palettes) rows. Web only for now: mobile parity is tracked
-// in https://github.com/savblack/PLOT/issues/1090. Which themes exist and
-// who may pick them come from @plot/core/themes.js; this file only renders.
-import { PREMIUM_THEMES, BASE_THEMES, themeSwatch, isPremiumTheme } from '@plot/core/themes.js';
+// Settings > Profile & account: the Appearance row (Light / Dark / System,
+// always free) and the Themes row (a swatch per family, each showing its light
+// and dark halves; the default is free, the rest are Premium). Web only for
+// now: mobile parity is tracked in https://github.com/savblack/PLOT/issues/1090.
+// Which families exist and who may pick them come from @plot/core/themes.js;
+// this file only renders.
+import { THEME_FAMILIES, THEME_MODES, familySwatch, isPremiumFamily } from '@plot/core/themes.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { regionalWords } from '../utils/spelling.js';
 import './SettingsThemeRows.css';
 
 const A = SETTINGS_VIEW.appearance;
 
+/** A family's chip: its light half and its dark half, each with a line of ink and an accent dot. */
+export function FamilyChip({ family, className = 'settings-theme-swatch-chip' }) {
+  const { light, dark } = familySwatch(family);
+  return (
+    <span className={className} aria-hidden="true">
+      {[light, dark].map((half, i) => (
+        <span key={i} className="family-chip-half" style={{ background: half.bg, borderColor: half.border }}>
+          <span className="family-chip-ink" style={{ background: half.text }} />
+          <span className="family-chip-dot" style={{ background: half.accent }} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /**
  * @param {{
- *   theme: import('@plot/core/themes.js').ThemeId,
- *   setTheme: (id: import('@plot/core/themes.js').ThemeId) => boolean,
+ *   mode: import('@plot/core/themes.js').ThemeMode,
+ *   family: import('@plot/core/themes.js').ThemeFamily,
+ *   setMode: (mode: import('@plot/core/themes.js').ThemeMode) => boolean,
+ *   setFamily: (family: import('@plot/core/themes.js').ThemeFamily) => boolean,
  *   isPremium: boolean,
- *   onLocked: () => void,
+ *   onLocked: (family: string) => void,
+ *   onPreview: () => void,
+ *   region?: string | null,
  *   premiumBadge?: import('react').ReactNode,
- * }} props  onLocked: a Free viewer picked a Premium theme (open the upgrade sheet).
+ * }} props  onLocked: a Free viewer picked a Premium family (open the upgrade
+ *   sheet with its preview). onPreview: open the Themes gallery (Premium only).
+ *   region: the viewer's own profile region, for colour/color.
  */
-export default function SettingsThemeRows({ theme, setTheme, isPremium, onLocked, premiumBadge }) {
-  const pickTheme = (id) => {
-    if (!setTheme(id)) onLocked();
+export default function SettingsThemeRows({ mode, family, setMode, setFamily, isPremium, onLocked, onPreview, region, premiumBadge }) {
+  const pickFamily = (id) => {
+    if (!setFamily(id)) onLocked(id);
   };
 
   return (
@@ -32,16 +56,16 @@ export default function SettingsThemeRows({ theme, setTheme, isPremium, onLocked
           <span className="settings-row-label">{A.label}</span>
         </div>
         <div className="settings-theme-tabs" role="tablist" aria-label={A.optionsLabel}>
-          {BASE_THEMES.map(t => (
+          {THEME_MODES.map(m => (
             <button
-              key={t}
+              key={m}
               type="button"
               role="tab"
-              aria-selected={theme === t}
-              className={`settings-theme-tab${theme === t ? ' is-active' : ''}`}
-              onClick={() => pickTheme(t)}
+              aria-selected={mode === m}
+              className={`settings-theme-tab${mode === m ? ' is-active' : ''}`}
+              onClick={() => setMode(m)}
             >
-              {A.modes[t]}
+              {A.modes[m]}
             </button>
           ))}
         </div>
@@ -54,36 +78,34 @@ export default function SettingsThemeRows({ theme, setTheme, isPremium, onLocked
           </div>
           <div>
             <div className="settings-row-label">{A.themesLabel}{!isPremium && premiumBadge}</div>
-            <div className="settings-theme-hint">{isPremium ? A.themesHint : A.themesLockedHint}</div>
+            <div className="settings-theme-hint">{isPremium ? A.themesHint(regionalWords('color', region).nounLower) : A.themesLockedHint}</div>
           </div>
         </div>
         <div className="settings-theme-swatches" role="radiogroup" aria-label={A.themesOptionsLabel}>
-          {PREMIUM_THEMES.map(id => {
-            const swatch = themeSwatch(id);
-            const name = A.themes[id];
-            const selected = isPremiumTheme(theme) && theme === id;
+          {THEME_FAMILIES.map(id => {
+            const name = A.families[id];
+            const selected = family === id;
+            const locked = isPremiumFamily(id) && !isPremium;
             return (
               <button
                 key={id}
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                aria-label={isPremium ? name : A.lockedTheme(name)}
+                aria-label={locked ? A.lockedTheme(name) : name}
                 className={`settings-theme-swatch${selected ? ' is-active' : ''}`}
-                onClick={() => pickTheme(id)}
+                onClick={() => pickFamily(id)}
               >
-                <span
-                  className="settings-theme-swatch-chip"
-                  aria-hidden="true"
-                  style={{ background: swatch.bg, borderColor: swatch.border }}
-                >
-                  <span style={{ background: swatch.surface, borderColor: swatch.border }} />
-                  <span style={{ background: swatch.text }} />
-                </span>
+                <FamilyChip family={id} />
                 <span className="settings-theme-swatch-name" aria-hidden="true">{name}</span>
               </button>
             );
           })}
+          {isPremium && (
+            <button type="button" className="settings-theme-preview" onClick={onPreview} aria-label={A.previewLabel}>
+              {A.preview}
+            </button>
+          )}
         </div>
       </div>
     </>

@@ -1,0 +1,93 @@
+/* A flat, hairline-drawn miniature of the app in one theme. Everything is a
+   block of that theme's own colours (set as --m-* on the scene). */
+.theme-mini {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  box-sizing: border-box;
+}
+.theme-mini-scene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  background: var(--m-bg);
+}
+.theme-mini-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 6%;
+  width: 24%;
+  padding: 7% 4%;
+  box-sizing: border-box;
+  border-right: 1px solid var(--m-border);
+}
+.theme-mini-logo {
+  width: 70%;
+  height: 7%;
+  border-radius: 3px;
+  background: var(--m-text);
+}
+.theme-mini-nav {
+  width: 85%;
+  height: 5%;
+  border-radius: 3px;
+  background: var(--m-muted);
+  opacity: 0.45;
+}
+.theme-mini-nav.is-active {
+  background: var(--m-accent);
+  opacity: 1;
+}
+.theme-mini-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8%;
+  padding: 7% 6%;
+  box-sizing: border-box;
+}
+.theme-mini-title {
+  width: 45%;
+  height: 8%;
+  border-radius: 3px;
+  background: var(--m-text);
+}
+.theme-mini-posters {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5%;
+}
+.theme-mini-posters span {
+  border-radius: 4px;
+  background: var(--m-sunken);
+  border: 1px solid var(--m-border);
+}
+.theme-mini-foot {
+  display: flex;
+  align-items: center;
+  gap: 6%;
+  height: 11%;
+}
+.theme-mini-fill {
+  width: 26%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--m-fill);
+}
+.theme-mini-line {
+  width: 30%;
+  height: 45%;
+  border-radius: 3px;
+  background: var(--m-accent);
+}
+.theme-mini-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+}

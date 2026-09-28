@@ -222,16 +222,44 @@ export const SETTINGS_VIEW = {
     optionsLabel: 'Appearance options',
     modes: { light: 'Light', dark: 'Dark', system: 'System' },
     themesLabel: 'Themes',
-    themesOptionsLabel: 'Premium themes',
-    themesHint: 'Four extra themes for Plot on the web.',
-    themesLockedHint: 'Part of Premium. Light, dark and system stay free.',
-    themes: {
+    themesOptionsLabel: 'Themes',
+    // `colour` is regionalWords('color', region).nounLower from @plot/core/spelling.js.
+    themesHint: (colour) => `Each theme comes in light and dark, with its own accent ${colour}.`,
+    themesLockedHint: 'Premium themes. The default look stays free in light, dark and system.',
+    // Keyed by family id (the default, then themeFamilies in
+    // @plot/core/tokens.js).
+    families: {
+      default: 'Default',
       sage: 'Sage',
       mist: 'Mist',
-      espresso: 'Espresso',
-      midnight: 'Midnight',
+      rose: 'Rose',
+      ink: 'Ink',
+      plum: 'Plum',
     },
     lockedTheme: (name) => `${name} (Premium)`,
+    // Opens the Themes gallery (/settings/themes) from the Settings row. Premium only.
+    preview: 'Preview',
+    previewLabel: 'Preview every theme',
+    // The Themes gallery page.
+    gallery: {
+      title: 'Themes',
+      back: '← Settings',
+      intro: 'How Plot looks on this browser. Every theme comes in light and dark and follows the Light, Dark and System setting. The default is free; Premium themes change the paper, the ink and the accent, never what anything means.',
+      free: 'Free',
+      premium: 'Premium',
+      inUse: 'In use',
+      applyLabel: (name) => `Use ${name}`,
+      lockedNote: 'Premium themes are part of Premium. You can look here, and the default stays free in light, dark and system.',
+    },
+    // The quick switcher in the desktop sidebar.
+    switcher: {
+      toggle: 'Appearance',
+      thisBrowser: 'This browser',
+      mode: 'Mode',
+      current: (name, premium) => (premium ? `${name} · Premium` : name),
+    },
+    // The upgrade sheet when a Free viewer picks a Premium theme.
+    previewing: (name) => `That’s ${name}, in light and dark.`,
   },
 
   premium: {

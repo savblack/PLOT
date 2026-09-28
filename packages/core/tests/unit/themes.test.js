@@ -1,89 +1,99 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { colors, premiumPalettes } from '../../tokens.js';
+import { colors, themeFamilies, themeFamilyVariants } from '../../tokens.js';
 import {
-  BASE_THEMES,
-  PREMIUM_THEMES,
-  canUseTheme,
-  effectiveTheme,
-  isPremiumTheme,
-  normalizeTheme,
+  DEFAULT_FAMILY,
+  LEGACY_THEMES,
+  PREMIUM_FAMILIES,
+  THEME_FAMILIES,
+  THEME_MODES,
+  canUseFamily,
+  effectiveFamily,
+  familySwatch,
+  isPremiumFamily,
+  readThemePreference,
   themeAttributes,
-  themeBase,
-  themeSwatch,
+  themeColors,
 } from '../../themes.js';
 import { SETTINGS_VIEW } from '../../copy/settingsView.js';
 import { PLANS_PAGE } from '../../copy/plansPage.js';
 
-test('light, dark and system are free; every palette is Premium', () => {
-  assert.deepEqual([...BASE_THEMES], ['light', 'dark', 'system']);
-  assert.deepEqual([...PREMIUM_THEMES], ['sage', 'mist', 'espresso', 'midnight']);
-  for (const id of BASE_THEMES) {
-    assert.equal(isPremiumTheme(id), false);
-    for (const isPremium of [true, false, null, undefined]) assert.equal(canUseTheme(id, isPremium), true);
+test('the default family is free; Sage, Mist, Rose, Ink and Plum are the Premium ones', () => {
+  assert.deepEqual([...THEME_MODES], ['light', 'dark', 'system']);
+  assert.deepEqual([...PREMIUM_FAMILIES], ['sage', 'mist', 'rose', 'ink', 'plum']);
+  assert.deepEqual([...THEME_FAMILIES], ['default', 'sage', 'mist', 'rose', 'ink', 'plum']);
+  assert.equal(isPremiumFamily(DEFAULT_FAMILY), false);
+  for (const isPremium of [true, false, null, undefined]) assert.equal(canUseFamily('default', isPremium), true);
+});
+
+test('every family in the data ships (no hidden candidates right now)', () => {
+  assert.deepEqual(Object.keys(themeFamilyVariants), Object.keys(themeFamilies));
+  assert.equal(isPremiumFamily('ocean'), false);
+});
+
+test('only a confirmed entitlement unlocks a Premium family', () => {
+  assert.equal(canUseFamily('sage', true), true);
+  assert.equal(canUseFamily('sage', false), false);
+  assert.equal(canUseFamily('sage', null), false);
+  assert.equal(canUseFamily('sage', undefined), false);
+  assert.equal(canUseFamily('sepia', true), false);
+  assert.equal(canUseFamily('toString', true), false);
+});
+
+test('a Premium family falls back to the default once Premium is known to be off, and is kept while loading', () => {
+  for (const id of PREMIUM_FAMILIES) {
+    assert.equal(effectiveFamily(id, false), 'default');
+    assert.equal(effectiveFamily(id, true), id);
+    assert.equal(effectiveFamily(id, null), id);
+    assert.equal(effectiveFamily(id, undefined), id);
   }
-  for (const id of PREMIUM_THEMES) assert.equal(isPremiumTheme(id), true);
+  assert.equal(effectiveFamily('default', false), 'default');
+  assert.equal(effectiveFamily('sepia', true), 'default');
 });
 
-test('only a confirmed entitlement unlocks a palette', () => {
-  assert.equal(canUseTheme('midnight', true), true);
-  assert.equal(canUseTheme('midnight', false), false);
-  assert.equal(canUseTheme('midnight', null), false);
-  assert.equal(canUseTheme('midnight', undefined), false);
-  assert.equal(canUseTheme('sepia', true), false);
-  assert.equal(canUseTheme('toString', true), false);
+test('the stored mode and family read back as a preference', () => {
+  assert.deepEqual(readThemePreference('dark', 'sage'), { family: 'sage', mode: 'dark', migrated: false });
+  assert.deepEqual(readThemePreference('system', null), { family: 'default', mode: 'system', migrated: false });
+  assert.deepEqual(readThemePreference(null, null), { family: 'default', mode: 'light', migrated: false });
+  assert.deepEqual(readThemePreference('sepia', 'nope'), { family: 'default', mode: 'light', migrated: false });
+  assert.deepEqual(readThemePreference('light', 'ocean'), { family: 'default', mode: 'light', migrated: false });
 });
 
-test('a palette falls back to its light or dark base once Premium is known to be off', () => {
-  assert.equal(effectiveTheme('sage', false), 'light');
-  assert.equal(effectiveTheme('mist', false), 'light');
-  assert.equal(effectiveTheme('espresso', false), 'dark');
-  assert.equal(effectiveTheme('midnight', false), 'dark');
-  for (const id of PREMIUM_THEMES) assert.equal(effectiveTheme(id, true), id);
+test('retired single theme ids migrate to a family and mode', () => {
+  const cases = {
+    sage: ['sage', 'light'], cinema: ['sage', 'dark'], mist: ['mist', 'light'], midnight: ['mist', 'dark'],
+    ink: ['ink', 'light'], linen: ['default', 'light'], espresso: ['default', 'dark'], clay: ['default', 'dark'],
+    burgundy: ['default', 'dark'],
+  };
+  for (const [stored, [family, mode]] of Object.entries(cases)) {
+    assert.deepEqual(readThemePreference(stored, 'rose'), { family, mode, migrated: true }, stored);
+  }
+  for (const { family } of Object.values(LEGACY_THEMES)) assert.ok(family === 'default' || isPremiumFamily(family), family);
 });
 
-test('a palette is kept while the entitlement is still loading', () => {
-  assert.equal(effectiveTheme('espresso', null), 'espresso');
-  assert.equal(effectiveTheme('espresso', undefined), 'espresso');
+test('themeAttributes resolves system live and omits the palette for the default', () => {
+  assert.deepEqual(themeAttributes({ family: 'default', mode: 'light' }, true), { mode: 'light', palette: null });
+  assert.deepEqual(themeAttributes({ family: 'default', mode: 'system' }, true), { mode: 'dark', palette: null });
+  assert.deepEqual(themeAttributes({ family: 'sage', mode: 'system' }, false), { mode: 'light', palette: 'sage' });
+  assert.deepEqual(themeAttributes({ family: 'mist', mode: 'dark' }, false), { mode: 'dark', palette: 'mist' });
 });
 
-test('free themes are never changed by the entitlement', () => {
-  for (const id of BASE_THEMES) {
-    for (const isPremium of [true, false, null]) assert.equal(effectiveTheme(id, isPremium), id);
+test('families only override tokens the base defines', () => {
+  for (const [id, family] of Object.entries(themeFamilyVariants)) {
+    for (const mode of ['light', 'dark']) {
+      for (const key of Object.keys(family[mode])) assert.ok(key in colors.light, `${id}.${mode}.${key}`);
+    }
   }
 });
 
-test('unknown or missing stored values become light', () => {
-  for (const value of [null, undefined, '', 'sepia', 'constructor', 42]) {
-    assert.equal(normalizeTheme(value), 'light');
-    assert.equal(effectiveTheme(value, true), 'light');
-  }
-  assert.equal(themeBase('sepia'), 'light');
-});
-
-test('themeAttributes gives the light/dark mode and palette to put on the document', () => {
-  assert.deepEqual(themeAttributes('light', true), { mode: 'light', palette: null });
-  assert.deepEqual(themeAttributes('dark', false), { mode: 'dark', palette: null });
-  assert.deepEqual(themeAttributes('system', true), { mode: 'dark', palette: null });
-  assert.deepEqual(themeAttributes('system', false), { mode: 'light', palette: null });
-  assert.deepEqual(themeAttributes('sage', true), { mode: 'light', palette: 'sage' });
-  assert.deepEqual(themeAttributes('midnight', false), { mode: 'dark', palette: 'midnight' });
-});
-
-test('premiumPalettes only override tokens their base defines', () => {
-  for (const [id, palette] of Object.entries(premiumPalettes)) {
-    assert.ok(palette.base === 'light' || palette.base === 'dark', id);
-    for (const key of Object.keys(palette.colors)) assert.ok(key in colors.light, `${id}.${key}`);
-  }
-});
-
-test('every palette has a name in the settings copy and a swatch', () => {
-  for (const id of PREMIUM_THEMES) {
-    assert.equal(typeof SETTINGS_VIEW.appearance.themes[id], 'string', id);
-    const swatch = themeSwatch(id);
-    assert.equal(swatch.bg, premiumPalettes[id].colors.bg);
-    assert.equal(swatch.text, premiumPalettes[id].colors.textPrimary);
+test('every shipped family has a name and a light/dark swatch', () => {
+  for (const id of THEME_FAMILIES) {
+    assert.equal(typeof SETTINGS_VIEW.appearance.families[id], 'string', id);
+    const { light, dark } = familySwatch(id);
+    assert.equal(light.bg, themeColors(id, 'light').bg);
+    assert.equal(dark.bg, themeColors(id, 'dark').bg);
+    assert.equal(dark.accent, themeColors(id, 'dark').accent);
   }
 });
 
@@ -100,18 +110,79 @@ function contrast(a, b) {
 
 const TEXT = ['textPrimary', 'textSecondary', 'textMuted', 'accentText', 'accentSecondary', 'danger', 'rating', 'statusWatched', 'statusWatching', 'success'];
 const GROUNDS = ['bg', 'surface', 'surfaceRaised', 'surfaceSunken'];
+const FILL_PAIRS = [
+  ['onAccentFill', 'accentFill'],
+  ['onAccentFill', 'accentFillHover'],
+  ['onAccentSecondaryFill', 'accentSecondaryFill'],
+  ['onArtworkFill', 'artworkFill'],
+  ['onArtworkFill', 'artworkFillHover'],
+];
 
-test('every text token clears 4.5:1 on every ground in every palette', () => {
-  for (const [id, palette] of Object.entries(premiumPalettes)) {
-    const base = palette.base === 'dark' ? { ...colors.light, ...colors.dark } : colors.light;
-    const set = { ...base, ...palette.colors };
+// Every variant in the data, hidden ones included, so a family is ready to ship.
+const variant = (id, mode) => {
+  const base = mode === 'dark' ? { ...colors.light, ...colors.dark } : { ...colors.light };
+  return { ...base, ...themeFamilyVariants[id][mode] };
+};
+const VARIANTS = Object.keys(themeFamilyVariants).flatMap(id => ['light', 'dark'].map(mode => [id, mode]));
+
+test('every text token clears 4.5:1 on every ground, in every family and mode', () => {
+  for (const [id, mode] of VARIANTS) {
+    const set = variant(id, mode);
     for (const text of TEXT) {
       for (const ground of GROUNDS) {
         const ratio = contrast(set[text], set[ground]);
-        assert.ok(ratio >= 4.5, `${id}: ${text} on ${ground} is ${ratio.toFixed(2)}:1`);
+        assert.ok(ratio >= 4.5, `${id} ${mode}: ${text} on ${ground} is ${ratio.toFixed(2)}:1`);
       }
     }
   }
+});
+
+test('text on every fill clears 4.5:1, in every family and mode (the default too)', () => {
+  const all = [['default', 'light'], ['default', 'dark'], ...VARIANTS];
+  for (const [id, mode] of all) {
+    const set = id === 'default' ? themeColors('default', mode) : variant(id, mode);
+    for (const [text, fill] of FILL_PAIRS) {
+      const ratio = contrast(set[text], set[fill]);
+      assert.ok(ratio >= 4.5, `${id} ${mode}: ${text} on ${fill} is ${ratio.toFixed(2)}:1`);
+    }
+  }
+});
+
+test('body text reads over the highlight in every light variant', () => {
+  for (const [id, mode] of [['default', 'light'], ...VARIANTS.filter(([, m]) => m === 'light')]) {
+    const set = id === 'default' ? themeColors('default', mode) : variant(id, mode);
+    const ratio = contrast(set.textPrimary, set.highlight);
+    assert.ok(ratio >= 4.5, `${id}: text on highlight is ${ratio.toFixed(2)}:1`);
+  }
+});
+
+test('the accent is a real signal: at least 3:1 against the ground', () => {
+  for (const [id, mode] of VARIANTS) {
+    const set = variant(id, mode);
+    const ratio = contrast(set.accent, set.bg);
+    assert.ok(ratio >= 3, `${id} ${mode}: accent on bg is ${ratio.toFixed(2)}:1`);
+  }
+});
+
+test('every variant carries its own accent set and rating', () => {
+  for (const [id, mode] of VARIANTS) {
+    const c = themeFamilyVariants[id][mode];
+    for (const key of ['accent', 'accentDim', 'accentText', 'accentFill', 'accentFillHover', 'onAccentFill', 'artworkFill', 'onArtworkFill', 'rating', 'border', 'borderStrong']) {
+      assert.equal(typeof c[key], 'string', `${id}.${mode}.${key}`);
+    }
+  }
+});
+
+test('Ink light keeps a fill that shows on artwork: white with ink text', () => {
+  const ink = themeColors('ink', 'light');
+  assert.equal(ink.accentFill, '#111111');
+  assert.equal(ink.artworkFill, ink.surfaceRaised);
+  assert.equal(ink.onArtworkFill, ink.textPrimary);
+});
+
+test('the default family is exactly the base tokens', () => {
+  assert.deepEqual(themeColors('default', 'light'), colors.light);
+  assert.deepEqual(themeColors('default', 'dark'), { ...colors.light, ...colors.dark });
 });
 
 test('the plans copy sells themes as live and widgets and app icons as coming', () => {

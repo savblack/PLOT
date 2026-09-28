@@ -34,6 +34,6 @@
 .tsm-divider { height: 1px; margin: 0.35rem 0.4rem; background: var(--border); }
 .tsm-message {
   margin: 0.3rem 0.4rem 0.2rem; padding: 0.5rem 0.6rem;
-  border-radius: 8px; background: var(--accent-secondary-fill); color: var(--on-accent-fill);
+  border-radius: 8px; background: var(--accent-secondary-fill); color: var(--on-accent-secondary-fill);
   font-size: 0.78rem; line-height: 1.4;
 }

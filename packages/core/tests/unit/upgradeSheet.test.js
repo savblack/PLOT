@@ -25,6 +25,14 @@ test('the themes sheet has no meter and names the free themes that stay free', (
   const content = upgradeSheetContent('themes');
   assert.equal(content.meter, 0);
   assert.equal(content.context, 'Themes are part of Premium');
-  assert.match(content.body, /Light, dark and system stay free/);
+  assert.match(content.body, /stays free in light, dark and system/);
   assert.equal(content.also.length, 2);
+});
+
+test('the themes sheet previews the Premium family tapped, and only a Premium one', () => {
+  assert.deepEqual(upgradeSheetContent('themes', { family: 'sage' }).preview, { family: 'sage', line: 'That’s Sage, in light and dark.' });
+  assert.equal(upgradeSheetContent('themes', { family: 'default' }).preview, null);
+  assert.equal(upgradeSheetContent('themes', { family: 'ocean' }).preview, null);
+  assert.equal(upgradeSheetContent('themes').preview, null);
+  assert.equal(upgradeSheetContent('lists', { family: 'sage' }).preview, null);
 });

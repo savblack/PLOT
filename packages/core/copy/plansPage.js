@@ -93,7 +93,7 @@ export const PLANS_PAGE = {
       themes: {
         context: () => 'Themes are part of Premium',
         title: 'Give plot a new look.',
-        body: 'Premium adds four themes to Plot on the web: Sage, Mist, Espresso and Midnight. Light, dark and system stay free.',
+        body: 'Premium adds themes to Plot on the web, each in light and dark with its own accent. The default look stays free in light, dark and system.',
         also: ['pick', 'together'],
       },
     },
@@ -144,7 +144,7 @@ export const PLANS_PAGE = {
         { label: 'Whole-season-ready alerts', free: false, premium: true },
       ] },
       { title: 'Make it yours', rows: [
-        { label: 'Themes', free: 'Light and dark', premium: 'Four more', tag: 'On the web' },
+        { label: 'Themes', free: 'Default, light and dark', premium: 'Every theme', tag: 'On the web' },
         { label: 'Widgets and app icons', free: false, premium: true, tag: 'Coming soon' },
       ] },
     ],
@@ -190,7 +190,7 @@ export const PLANS_PAGE = {
     { id: 'seasonReady', label: 'Whole-season-ready alerts',
       description: 'Know when every episode is verified available on your selected services in your region. Airing dates alone do not qualify.' },
     { id: 'themes', label: 'Themes', live: true,
-      description: 'Four extra themes for Plot on the web: Sage, Mist, Espresso and Midnight. Light, dark and system stay free.' },
+      description: 'Themes for Plot on the web, each in light and dark with its own accent. The default look stays free in light, dark and system.' },
     { id: 'customize', label: 'Customise your plot', highlight: true,
       description: 'Make plot feel like yours: Home Screen widgets, custom app icons and custom profile pages.' },
   ],

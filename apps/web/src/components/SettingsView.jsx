@@ -1133,7 +1133,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
    SettingsView
 ═══════════════════════════════════════ */
 export default function SettingsView() {
-  const { profile, user, theme, setTheme, refreshProfile, watchlist, watching, reminders, customLists } = useApp();
+  const { profile, user, themeMode, themeFamily, setThemeMode, setThemeFamily, refreshProfile, watchlist, watching, reminders, customLists } = useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = SETTINGS_SECTIONS.some(item => item.id === searchParams.get('section')) ? searchParams.get('section') : 'account';
@@ -1145,7 +1145,7 @@ export default function SettingsView() {
   const trakt = useTraktSync(user?.id);
   const simkl = useSimklSync(user?.id);
   const premium = usePremium(profile);
-  const [showThemeUpgrade, setShowThemeUpgrade] = useState(false);
+  const [themeUpgrade, setThemeUpgrade] = useState(null); // Premium family a Free viewer tapped
   const { events: calEvents, loading: calLoading } = useCalendar(
     watchlist?.items ?? [],
     watching?.items ?? [],
@@ -1835,13 +1835,17 @@ export default function SettingsView() {
 
         {/* Theme */}
         <SettingsThemeRows
-          theme={theme}
-          setTheme={setTheme}
+          mode={themeMode}
+          family={themeFamily}
+          setMode={setThemeMode}
+          setFamily={setThemeFamily}
           isPremium={isPremiumProfile(profile)}
-          onLocked={() => setShowThemeUpgrade(true)}
+          onLocked={(id) => setThemeUpgrade(id)}
+          onPreview={() => navigate('/settings/themes')}
+          region={profile?.region}
           premiumBadge={<PremiumBadge />}
         />
-        {showThemeUpgrade && <UpgradeSheet reason="themes" onClose={() => setShowThemeUpgrade(false)} />}
+        {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
 
       </div>
       <div className="settings-group"><div className="settings-group-title">{SETTINGS_VIEW.page.emailPreferences}</div>

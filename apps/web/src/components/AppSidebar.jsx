@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { APP_NAV_ITEMS, isActiveView } from '../navigation.js';
 import PlotLogo from './PlotLogo.jsx';
+import SidebarThemeSwitcher from './SidebarThemeSwitcher.jsx';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { APP_SHELL } from '../copy/appShell.js';
@@ -47,6 +48,12 @@ const SETTINGS_NAV_ITEM = APP_NAV_ITEMS.find(item => item.id === 'settings');
  * @param {Function} props.onNavigate        Called with a view id.
  * @param {Function} props.onFeedback        Opens the existing feedback composer.
  * @param {Function} props.onNavigateProfile Called with a username.
+ * @param {string}   [props.themeMode]       useTheme().mode (light | dark | system).
+ * @param {string}   [props.themeFamily]     useTheme().family showing.
+ * @param {Function} [props.onPickMode]      useTheme().setMode.
+ * @param {Function} [props.onPickFamily]    useTheme().setFamily; false for a locked family.
+ * @param {Function} [props.onThemeLocked]   Called with a Premium family a Free viewer tapped.
+ * @param {boolean}  [props.defaultThemeOpen] Seeds the theme switcher, for Storybook.
  * @param {boolean}  [props.defaultHelpOpen] Seeds the help disclosure. Only so
  *   Storybook can render the open state; the app leaves it closed and lets the
  *   viewer decide.
@@ -61,6 +68,12 @@ export default function AppSidebar({
   onNavigate,
   onNavigateProfile,
   onFeedback,
+  themeMode,
+  themeFamily,
+  onPickMode,
+  onPickFamily,
+  onThemeLocked,
+  defaultThemeOpen = false,
   defaultHelpOpen = false,
 }) {
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
@@ -176,6 +189,17 @@ export default function AppSidebar({
               <span className="app-sidebar-label">{SETTINGS_VIEW.support.supportPlot}</span>
             </a>
           </div>
+        )}
+        {profile?.username && onPickFamily && (
+          <SidebarThemeSwitcher
+            mode={themeMode}
+            family={themeFamily}
+            onPickMode={onPickMode}
+            onPickFamily={onPickFamily}
+            isPremium={isPremiumProfile(profile)}
+            onLocked={onThemeLocked}
+            defaultOpen={defaultThemeOpen}
+          />
         )}
         {profile?.username && (
           <div className="app-sidebar-foot-profile">

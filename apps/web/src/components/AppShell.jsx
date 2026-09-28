@@ -10,6 +10,8 @@ import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { TONIGHT_PICKER } from '@plot/core/copy/tonightPicker.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import AppSidebar from './AppSidebar.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
+import { useApp } from '../hooks/useApp.js';
 import {
   IconMenu, IconClose, IconSearch, IconArrowUp,
 } from './navIcons.jsx';
@@ -34,6 +36,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const mainRef = useRef(null);
 
   const { unread, refreshCount } = useNotifications(user?.id);
+  const { themeMode, themeFamily, setThemeMode, setThemeFamily } = useApp() ?? {};
+  const [themeUpgrade, setThemeUpgrade] = useState(null); // Premium family a Free viewer tapped in the sidebar
 
   // Keep the bell badge fresh as the user navigates (e.g. after viewing the feed).
   useEffect(() => { refreshCount(); }, [currentView, refreshCount]);
@@ -129,7 +133,13 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         onFeedback={() => user ? setFeedbackOpen(true) : navigate('/login')}
         onNavigate={go}
         onNavigateProfile={(username) => navigate(`/u/${username}`)}
+        themeMode={themeMode}
+        themeFamily={themeFamily}
+        onPickMode={setThemeMode}
+        onPickFamily={setThemeFamily}
+        onThemeLocked={setThemeUpgrade}
       />
+      {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
 
       {feedbackOpen && user && (
         <Suspense fallback={null}>

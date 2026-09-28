@@ -136,7 +136,7 @@ export default function App() {
   const [loading, setLoading] = useState(() => !readCachedSession());
   // Premium palettes need a known entitlement: null while it loads (the
   // stored theme keeps showing), false once signed out or not Premium.
-  const { theme, setTheme } = useTheme({
+  const { mode: themeMode, family: themeFamily, setMode: setThemeMode, setFamily: setThemeFamily } = useTheme({
     isPremium: user ? (profile ? isPremiumProfile(profile) : null) : (loading ? null : false),
   });
 
@@ -343,8 +343,10 @@ export default function App() {
     broadcastPreferences,
     user,
     profile,
-    theme,
-    setTheme,
+    themeMode,
+    themeFamily,
+    setThemeMode,
+    setThemeFamily,
     openPanel,
     closePanel,
     openSearch,

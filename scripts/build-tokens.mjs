@@ -8,7 +8,9 @@
  *   node scripts/build-tokens.mjs --check   # CI: fail if the managed block is stale
  *
  * Only the COLOR + RADII subset is generated — it lives between the
- * `@tokens:start` / `@tokens:end` markers in apps/web/src/styles/tokens.css.
+ * `@tokens:start` / `@tokens:end` markers in apps/web/src/styles/tokens.css,
+ * plus the Premium theme family blocks between `@palettes:start` / `@palettes:end`
+ * there and the family list + boot-loader colours in apps/web/index.html.
  * Web-only tokens (typography, layout, motion, glass, shadow) are hand-authored
  * OUTSIDE the markers and are never touched here. Edit values in tokens.js, then
  * run --write; --check enforces that nobody hand-patched the generated block.
@@ -16,10 +18,12 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { colors, premiumPalettes, radii, cssVarName } from '@plot/core/tokens.js';
+import { colors, themeFamilies, radii, cssVarName } from '@plot/core/tokens.js';
+import { LEGACY_THEMES } from '@plot/core/themes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CSS_PATH = resolve(__dirname, '..', 'apps', 'web', 'src', 'styles', 'tokens.css');
+const HTML_PATH = resolve(__dirname, '..', 'apps', 'web', 'index.html');
 
 // Render the generated declarations for one theme block.
 function emit(colorSet, { withRadii }) {
@@ -43,35 +47,81 @@ function replaceRegion(css, selector, body) {
   return css.slice(0, blockStart) + nextBlock + css.slice(blockEnd);
 }
 
+// "#RRGGBB" -> "r,g,b" for the generated rgba() glass values.
+function rgb(hex) {
+  const h = hex.replace('#', '');
+  return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).join(',');
+}
+
+// Premium theme families: one :root[data-palette="<family>"][data-theme="<mode>"]
+// block per variant, generated whole (glass included, derived from the
+// variant's own ground) between the @palettes markers. The three-part selector
+// outranks [data-theme="dark"], so a family wins over its base in any order.
+function emitPalettes() {
+  return Object.entries(themeFamilies).flatMap(([id, family]) => ['light', 'dark'].map((mode) => {
+    const c = family[mode];
+    const glass = mode === 'dark'
+      ? [`  --glass-bg: rgba(${rgb(c.surface)},0.85);`, `  --glass-border: ${c.border};`]
+      : [`  --glass-bg: rgba(${rgb(c.bg)},0.86);`, `  --glass-border: rgba(${rgb(c.textPrimary)},0.06);`];
+    return [`:root[data-palette="${id}"][data-theme="${mode}"] {`, emit(c, { withRadii: false }), ...glass, '}'].join('\n');
+  })).join('\n');
+}
+
+// Replace the text between `start` and `end` marker lines (markers kept).
+function replaceBetween(text, start, end, body, file) {
+  const a = text.indexOf(start);
+  const b = text.indexOf(end, a);
+  if (a < 0 || b < 0) throw new Error(`${start} … ${end} markers not found in ${file}`);
+  const lineEnd = text.indexOf('\n', a) + 1;
+  const indent = text.slice(text.lastIndexOf('\n', b) + 1, b);
+  return text.slice(0, lineEnd) + body + '\n' + indent + text.slice(b);
+}
+
 const current = readFileSync(CSS_PATH, 'utf8');
 let next = current;
 next = replaceRegion(next, ':root', emit(colors.light, { withRadii: true }));
 next = replaceRegion(next, '[data-theme="dark"]', emit(colors.dark, { withRadii: false }));
-// Premium palettes: one :root[data-palette="<id>"] block each, which must
-// already exist in tokens.css with its markers (the hand-authored glass lines
-// sit outside them). :root raises specificity above [data-theme="dark"], so a
-// palette wins over its base regardless of source order.
-for (const [id, palette] of Object.entries(premiumPalettes)) {
-  next = replaceRegion(next, `:root[data-palette="${id}"]`, emit(palette.colors, { withRadii: false }));
-}
+next = replaceBetween(next, '/* @palettes:start', '/* @palettes:end */', emitPalettes(), 'tokens.css');
+
+// index.html paints before any module loads, so it carries its own copy of the
+// family ids and the retired single-theme ids (pre-paint script), plus each
+// variant's ground, ink and fill for the boot loader (critical CSS).
+const htmlCurrent = readFileSync(HTML_PATH, 'utf8');
+const q = (value) => `'${value}'`;
+const familyList = Object.keys(themeFamilies).map(id => `${q(id)}: 1`).join(', ');
+const legacyList = Object.entries(LEGACY_THEMES).map(([id, p]) => `${q(id)}: [${q(p.family)}, ${q(p.mode)}]`).join(', ');
+let htmlNext = replaceBetween(htmlCurrent, '// @palettes:start', '// @palettes:end', [
+  `          var families = { ${familyList} };`,
+  `          var legacy = { ${legacyList} };`,
+].join('\n'), 'index.html');
+htmlNext = replaceBetween(htmlNext, '/* @palettes:start', '/* @palettes:end */', Object.entries(themeFamilies).flatMap(([id, family]) => ['light', 'dark'].map((mode) => {
+  const c = family[mode];
+  const sel = `[data-palette="${id}"][data-theme="${mode}"]`;
+  return [
+    `      ${sel} body { background: ${c.bg}; }`,
+    `      ${sel} .initial-wordmark { color: ${c.textPrimary}; }`,
+    `      ${sel} .initial-wordmark::after { background: ${c.accentFill}; }`,
+  ].join('\n');
+})).join('\n'), 'index.html');
 
 const mode = process.argv.includes('--write') ? 'write' : 'check';
 
 if (mode === 'write') {
-  if (next !== current) {
+  if (next !== current || htmlNext !== htmlCurrent) {
     writeFileSync(CSS_PATH, next);
-    console.log('✓ tokens.css regenerated from @plot/core/tokens.js');
+    writeFileSync(HTML_PATH, htmlNext);
+    console.log('✓ tokens.css and index.html regenerated from @plot/core/tokens.js');
   } else {
-    console.log('✓ tokens.css already up to date');
+    console.log('✓ tokens.css and index.html already up to date');
   }
 } else {
-  if (next !== current) {
-    console.error('✗ tokens.css is out of sync with @plot/core/tokens.js.');
-    console.error('  The generated color/radii block was hand-edited or values changed in tokens.js.');
+  if (next !== current || htmlNext !== htmlCurrent) {
+    console.error(`✗ ${next !== current ? 'tokens.css' : 'index.html'} is out of sync with @plot/core/tokens.js.`);
+    console.error('  A generated block was hand-edited or values changed in tokens.js.');
     console.error('  Fix the value in packages/core/tokens.js, then run `npm run tokens:build`.');
     process.exit(1);
   }
   const n = Object.keys(colors.light).length + Object.keys(colors.dark).length + Object.keys(radii).length
-    + Object.values(premiumPalettes).reduce((sum, p) => sum + Object.keys(p.colors).length, 0);
-  console.log(`✓ tokens in sync (${n} generated color + radii declarations)`);
+    + Object.values(themeFamilies).reduce((sum, f) => sum + Object.keys(f.light).length + Object.keys(f.dark).length, 0);
+  console.log(`✓ tokens in sync (${n} generated color + radii declarations, ${Object.keys(themeFamilies).length} Premium families)`);
 }

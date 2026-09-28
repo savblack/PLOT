@@ -652,7 +652,7 @@ svg { stroke-width: 1.5; }
   border: 1px solid var(--accent-secondary-fill);
   border-radius: var(--radius-pill);
   background: var(--accent-secondary-fill);
-  color: var(--on-accent-fill);
+  color: var(--on-accent-secondary-fill);
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -4177,7 +4177,7 @@ svg { stroke-width: 1.5; }
   padding: 0.15rem 0.55rem;
   border-radius: var(--radius-badge);
   background: var(--accent-secondary-fill);
-  color: var(--on-accent-fill);
+  color: var(--on-accent-secondary-fill);
   font-size: 0.7rem;
   font-weight: 600;
 }
@@ -4487,17 +4487,18 @@ svg { stroke-width: 1.5; }
 .panel-engagement-stars {
   display: flex;
   gap: 1px;
-  /* Match the Write a review / Mark as watched fill pink, not the darker
-     --accent used for type and icon accents elsewhere. */
-  color: var(--accent-fill);
+  /* --review-star: the fill pink on the free themes (matching the Write a
+     review / Mark as watched fill); a Premium family's accent, since its fill
+     is too pale against its ground to read as a line. */
+  color: var(--review-star);
   flex-shrink: 0;
 }
 .panel-engagement-stars .half-star-empty {
-  color: var(--accent-fill);
+  color: var(--review-star);
   opacity: 0.4;
 }
 .panel-engagement-stars .half-star-fill {
-  color: var(--accent-fill);
+  color: var(--review-star);
 }
 .panel-engagement-star {
   display: inline-flex;

@@ -26,12 +26,12 @@ function Preview({ initialSection = 'viewing', premium = false }) {
   const [broadcastValue, setBroadcastValue] = useState({ market_id: 'Sydney', channel_ids: null });
   // The real hook, so the Appearance and Themes rows apply what they pick
   // (and a Free viewer's Premium pick opens the upgrade sheet instead).
-  const { theme, setTheme } = useTheme({ isPremium: premium });
+  const { mode, family, setMode, setFamily } = useTheme({ isPremium: premium });
   return (
     <MemoryRouter initialEntries={[`/settings?section=${initialSection}`]}>
       <AppContext.Provider value={{
         broadcastPreferences: { value: broadcastValue, loading: false, saving: false, error: false, retry: noop, save: async value => { setBroadcastValue(value); return true; } },
-        profile: { ...profile, is_premium: premium }, user: null, theme, setTheme,
+        profile: { ...profile, is_premium: premium }, user: null, themeMode: mode, themeFamily: family, setThemeMode: setMode, setThemeFamily: setFamily,
         refreshProfile: noop, watchlist: { items: [] }, watching: { items: [], fetchSeason: noop },
         reminders: { reminders: [] }, customLists: { lists: [] },
       }}>
