@@ -82,7 +82,9 @@ gitignored so a stray one cannot be committed, but delete it rather than leave i
 - `pnpm run chromatic` — Chromatic visual snapshots of the web Storybook. Needs
   `CHROMATIC_PROJECT_TOKEN` (see the README's Local Setup); `check` runs it in CI and skips itself
   when the token is absent. Visual diffs deliberately do **not** fail the build — approve
-  or reject them in Chromatic. Never put the token in a `package.json` script.
+  or reject them in Chromatic. Builds on `main` auto-accept, so `main` always records the
+  baseline and a PR shows only what that PR changed; review happens on the PR, not after
+  merge. Never put the token in a `package.json` script.
 - `pnpm --filter @plot/mobile` run typecheck — **required when touching mobile**; `pnpm run lint` covers it too
 - `pnpm run edge:check` — **required when touching `supabase/functions/`**; type-checks every
   edge function with `deno check` against the generated DB types. Nothing else compiles them,
