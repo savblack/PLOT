@@ -95,6 +95,18 @@ configure({
     }[action];
     if (name) track(name, props);
   },
+  // Watch together: one seam, six names (see analyticsEvents.js).
+  onWatchTogether: ({ action, ...props }) => {
+    const name = {
+      invite_sent:      EVENTS.WATCH_TOGETHER_INVITE_SENT,
+      request_accepted: EVENTS.WATCH_TOGETHER_REQUEST_ACCEPTED,
+      link_shared:      EVENTS.WATCH_TOGETHER_LINK_SHARED,
+      link_accepted:    EVENTS.WATCH_TOGETHER_LINK_ACCEPTED,
+      session_started:  EVENTS.WATCH_TOGETHER_SESSION_STARTED,
+      match:            EVENTS.WATCH_TOGETHER_MATCH,
+    }[action];
+    if (name) track(name, props);
+  },
   onReview: (payload) => track(EVENTS.REVIEW_WRITTEN, payload),
   onImport: ({ stage, ...props }) => {
     const name = { started: EVENTS.IMPORT_STARTED, completed: EVENTS.IMPORT_COMPLETED, failed: EVENTS.IMPORT_FAILED }[stage];

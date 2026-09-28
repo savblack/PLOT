@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { personName, pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
-import { useWatchTogetherLink, useWatchTogetherExampleTitles } from '@plot/core/useWatchTogether.js';
+import { useWatchTogetherLink, useWatchTogetherExampleTitles, reportWatchTogether } from '@plot/core/useWatchTogether.js';
 import { buildWatchTogetherLinkUrl, SHARE_ORIGIN } from '@plot/core/sharing.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
@@ -50,11 +50,12 @@ export function InviteLinkCard({ compact = false }) {
   const share = async () => {
     if (!url) return;
     const result = await shareUrl({ url, title: T.link.previewTitle(name), text: T.link.shareText });
+    if (result.ok) reportWatchTogether('link_shared', { method: result.method });
     if (result.ok && result.method === 'copy') setCopied(true);
   };
   const copy = async () => {
     if (!url) return;
-    try { await navigator.clipboard.writeText(url); setCopied(true); } catch { /* clipboard blocked */ }
+    try { await navigator.clipboard.writeText(url); setCopied(true); reportWatchTogether('link_shared', { method: 'copy' }); } catch { /* clipboard blocked */ }
   };
 
   if (compact) {
