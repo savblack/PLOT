@@ -259,9 +259,9 @@ revoke all on function public.run_premium_alerts(text) from public, anon, authen
 comment on function public.run_premium_alerts(text) is
   'Calls the premium-alerts Edge Function for people or seasons. Bearer and base URL come from Vault so no credential lands in the schema.';
 
--- Already installed by 20260912090000; repeated so this stands on its own
--- against a restored database.
-create extension if not exists pg_cron;
+-- pg_cron is already installed (20260912090000). Not repeated here: the block
+-- below skips scheduling when the cron schema is absent, which keeps this file
+-- applicable in a plain Postgres sandbox (db:migration-test, db:function-diff).
 
 do $do$
 begin
