@@ -324,16 +324,6 @@ export default function DesignSystemPage() {
           </div>
 
           <div className="ds-bar-item">
-            <div className="ds-bar-copy"><strong>Primary tab bar</strong><p>Bottom navigation for the main destinations.</p></div>
-            <div className="ds-fake-tabbar">
-              <button className="tab-btn active">Home</button>
-              <button className="tab-btn">Calendar</button>
-              <button className="tab-btn">My Lists</button>
-              <button className="tab-btn">History</button>
-            </div>
-          </div>
-
-          <div className="ds-bar-item">
             <div className="ds-bar-copy"><strong>Sub-tab toolbar</strong><p>In-view navigation for modes inside one destination.</p></div>
             <div className="sub-tabs ds-fake-subtabs">
               <button className="sub-tab-btn active">Discover</button>
