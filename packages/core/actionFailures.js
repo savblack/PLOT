@@ -59,6 +59,8 @@ export const FAILED_ACTIONS = Object.freeze({
   WATCH_TOGETHER_LINK_ACCEPT:   'watch_together_link_accept',
   WATCH_TOGETHER_SESSION_START: 'watch_together_session_start',
   WATCH_TOGETHER_VOTE:          'watch_together_vote',
+  // Joining a collaborative list from its invite link (useListInvites.js).
+  LIST_INVITE_ACCEPT:           'list_invite_accept',
 });
 
 /**
