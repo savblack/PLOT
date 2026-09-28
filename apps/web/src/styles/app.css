@@ -201,68 +201,6 @@ svg { stroke-width: 1.5; }
   padding-inline: calc(50vw - 50% + 0.75rem);
 }
 
-/* ── Bottom Tab Bar ─────────────────────────────── */
-/* Flush, full-width bar — mirrors .app-header's construction (solid
-   --surface fill, single hairline border, safe-area padding) at the
-   opposite edge. */
-.tab-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  box-shadow: none;
-  display: flex;
-  align-items: stretch;
-}
-
-.tab-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.4rem 0.1rem;
-  background: none;
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: color 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.tab-btn svg {
-  width: 22px;
-  height: 22px;
-  fill: none;
-  stroke: currentColor;
-}
-.tab-btn.active {
-  color: var(--accent);
-}
-.tab-btn-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--surface-raised);
-  border: 1.5px solid var(--text-muted);
-}
-.tab-btn-avatar-initial {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-.tab-btn.active .tab-btn-avatar {
-  border-color: var(--accent);
-}
-
 /* ── Back to top ─────────────────────────────── */
 .scroll-top-btn {
   position: fixed;
@@ -491,7 +429,6 @@ svg { stroke-width: 1.5; }
      bar: the sticky sub-tab bars pin to top: 0 of .app-main, which was always
      the scroll container rather than the header. */
   .app-header,
-  .tab-bar,
   .nav-drawer,
   .nav-drawer-overlay {
     display: none;
@@ -7349,7 +7286,6 @@ a.provider-chip--link:hover {
   }
 
   .icon-btn,
-  .tab-btn,
   .sub-tab-btn,
   .multi-select-btn,
   .platform-chip,
@@ -7471,13 +7407,7 @@ a.provider-chip--link:hover {
     padding: 0 0.7rem 0 0.9rem;
   }
 
-  .tab-btn {
-    font-size: 0.58rem;
-    letter-spacing: 0.035em;
-  }
-
   .icon-btn,
-  .tab-btn,
   .sub-tab-btn,
   .multi-select-btn,
   .platform-chip,
