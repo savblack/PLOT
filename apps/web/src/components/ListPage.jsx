@@ -14,6 +14,7 @@ import { customListIdFromKey, customListKey, sortListItems, titleCount, wantToWa
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { CustomListSection, FavoritesSection, WantToWatchSection } from './ListSections.jsx';
+import { SmartListSection } from './SmartListSection.jsx';
 import { IconSearch } from './navIcons.jsx';
 import SideFilters from './SideFilters.jsx';
 import KebabMenu from './KebabMenu.jsx';
@@ -117,6 +118,7 @@ export default function ListPage() {
 
   const customId = customListIdFromKey(key);
   const list = customId ? customLists.lists.find(l => l.id === customId) : null;
+  const smartList = customId && !list ? customLists.smartLists?.find(l => l.id === customId) : null;
 
   const matchQuery = useCallback((items) => {
     const term = query.trim().toLowerCase();
@@ -158,6 +160,20 @@ export default function ListPage() {
     body = <WantToWatchSection items={items} count={want.length} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
   } else if (key === 'favorites') {
     body = <FavoritesSection favorites={favorites} visibleItems={sortItems(matchQuery(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters)))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
+  } else if (smartList) {
+    body = (
+      <SmartListSection
+        key={customListKey(smartList.id)}
+        list={smartList}
+        customLists={customLists}
+        historyEntries={history.entries}
+        historyReady={!history.loading}
+        refine={items => sortItems(matchQuery(items))}
+        onDeleted={() => navigate('/my-lists')}
+        Frame={Frame}
+        pageLayout
+      />
+    );
   } else if (list) {
     body = (
       <CustomListSection

@@ -89,6 +89,12 @@ export const PLANS_PAGE = {
         body: 'Premium brings unlimited custom lists, plus smart lists that keep finding matches. The lists you have now stay exactly as they are.',
         also: ['pick', 'together'],
       },
+      smartLists: {
+        context: () => 'Smart lists come with Premium',
+        title: 'Lists that fill themselves.',
+        body: 'Save a few rules, like comedies from the 2010s on your services, and the list keeps finding matches, including new discoveries.',
+        also: ['pick', 'together'],
+      },
     },
   },
   host: {
@@ -173,7 +179,7 @@ export const PLANS_PAGE = {
       description: 'Build your next movie night together. Invite friends to add titles, even when they use Free.' },
     { id: 'unlimitedLists', label: 'Unlimited custom lists', highlight: true,
       description: 'A list for every mood, theme and movie marathon, with no limit on how many you create.' },
-    { id: 'smartLists', label: 'Smart lists, including new discoveries',
+    { id: 'smartLists', label: 'Smart lists, including new discoveries', live: true,
       description: 'Save filter rules that automatically update your lists, including discoveries beyond your saved titles.' },
     { id: 'calendarSubscription', label: 'Live calendar subscription', live: true,
       description: 'Keep upcoming releases updated in your calendar app automatically.' },

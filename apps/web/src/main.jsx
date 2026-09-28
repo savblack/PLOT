@@ -77,8 +77,8 @@ configure({
     track(EVENTS.RATING_SET, { tmdb_id, media_type, value }),
   onFollow: ({ target_user_id, following }) =>
     track(following ? EVENTS.USER_FOLLOWED : EVENTS.USER_UNFOLLOWED, { target_user_id }),
-  onCustomListChange: ({ list_id, action }) =>
-    track(action === 'created' ? EVENTS.CUSTOM_LIST_CREATED : EVENTS.CUSTOM_LIST_DELETED, { list_id }),
+  onCustomListChange: ({ list_id, action, smart }) =>
+    track(action === 'created' ? EVENTS.CUSTOM_LIST_CREATED : EVENTS.CUSTOM_LIST_DELETED, { list_id, ...smart }),
   onCustomListItemChange: ({ list_id, tmdb_id, media_type, action }) =>
     track(action === 'added' ? EVENTS.LIST_ITEM_ADDED : EVENTS.LIST_ITEM_REMOVED,
       { list_id, tmdb_id, media_type }),

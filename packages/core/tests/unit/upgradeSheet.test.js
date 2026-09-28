@@ -20,3 +20,12 @@ test('the lists sheet reuses the plans page rows, in order', () => {
 test('an unknown reason returns null instead of an empty sheet', () => {
   assert.equal(upgradeSheetContent('nope'), null);
 });
+
+test('the smart lists sheet has no limit meter and sells the rules', () => {
+  const content = upgradeSheetContent('smartLists');
+  assert.equal(content.meter, 0);
+  assert.ok(content.context.length > 0);
+  assert.match(content.body, /keeps finding matches/);
+  assert.doesNotMatch(`${content.context} ${content.title} ${content.body}`, /—/);
+  assert.deepEqual(content.also.map(row => row.label), ['Pick for Me', 'Find something you both want']);
+});

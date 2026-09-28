@@ -47,3 +47,5 @@ export const UpgradeShowsComingSoon = {
     await expect(body.getByRole('status')).toHaveTextContent('Checkout is not open yet');
   },
 };
+
+export const SmartLists = { args: { reason: 'smartLists' } };
