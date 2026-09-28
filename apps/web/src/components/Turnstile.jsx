@@ -50,8 +50,19 @@ const PERSISTENT_FAILURE_THRESHOLD = 1;
  *                                      PERSISTENT_FAILURE_THRESHOLD (signals a caller may want
  *                                      to offer an alternate path), and again with false if the
  *                                      widget later succeeds (e.g. after Retry actually works).
+ * @param {string}   [props.failureMessage] First-failure line. Neutral unless the caller
+ *                                      passes signup copy. Login, reset, and magic link have no bypass.
+ * @param {string}   [props.blockedMessage] Persistent-failure line. Same rule as failureMessage.
  */
-export default function Turnstile({ siteKey, onToken, resetSignal = 0, onBlocked, onPersistentlyBlocked }) {
+export default function Turnstile({
+  siteKey,
+  onToken,
+  resetSignal = 0,
+  onBlocked,
+  onPersistentlyBlocked,
+  failureMessage = AUTH_PAGE.verificationFailed,
+  blockedMessage = AUTH_PAGE.verificationBlocked,
+}) {
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
   const onTokenRef = useRef(onToken);
@@ -124,14 +135,14 @@ export default function Turnstile({ siteKey, onToken, resetSignal = 0, onBlocked
       />
       {failCount > PERSISTENT_FAILURE_THRESHOLD ? (
         <p className="auth-turnstile-error">
-          {AUTH_PAGE.verificationBlocked}{' '}
+          {blockedMessage}{' '}
           <button type="button" onClick={() => setRetryNonce((n) => n + 1)}>
             {AUTH_PAGE.verificationRetry}
           </button>
         </p>
       ) : failCount > 0 ? (
         <p className="auth-turnstile-error">
-          {AUTH_PAGE.verificationFailed}{' '}
+          {failureMessage}{' '}
           <button type="button" onClick={() => setRetryNonce((n) => n + 1)}>
             {AUTH_PAGE.verificationRetry}
           </button>

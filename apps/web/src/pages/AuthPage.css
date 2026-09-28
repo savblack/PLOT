@@ -211,7 +211,8 @@
   text-underline-offset: 2px;
 }
 
-.auth-forgot-link:hover { color: var(--text-primary); }
+.auth-forgot-link:hover:not(:disabled) { color: var(--text-primary); }
+.auth-forgot-link:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .auth-field input {
   width: 100%;
@@ -371,7 +372,8 @@ a.auth-cta { text-decoration: none; }
   padding: 0;
 }
 
-.auth-toggle button:hover { opacity: 0.6; }
+.auth-toggle button:hover:not(:disabled) { opacity: 0.6; }
+.auth-toggle button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Footer */
 .auth-panel-footer {
