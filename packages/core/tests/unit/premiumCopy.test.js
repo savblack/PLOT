@@ -92,6 +92,17 @@ test('public copy does not sell automatic Plex or Trakt sync as Premium', () => 
   }
 });
 
+test('live calendar subscription is a Premium benefit that exists', () => {
+  const alerts = PLANS_PAGE.faqs.find(item => item.q === 'Are these alerts available now?');
+  assert.match(alerts.a, /Live calendar subscription is available with plot Premium/);
+  assert.doesNotMatch(alerts.a, /planned Premium features/);
+  assert.equal(SETTINGS_VIEW.billing.calendarComingSoon, undefined);
+  assert.match(SETTINGS_VIEW.calendarFeed.needsPremiumMessage, /one-time snapshot/);
+  assert.doesNotMatch(SETTINGS_VIEW.calendarFeed.needsPremiumMessage, /coming soon|planned/i);
+  const calendar = PLANS_PAGE.premiumFeatures.find(item => item.id === 'calendarSubscription');
+  assert.equal(calendar.live, true);
+});
+
 test('free stays free and does not inherit the premium trial', () => {
   assert.equal(PLANS_PAGE.free.price, '$0');
   assert.equal(PLANS_PAGE.free.noCard, 'No card needed');

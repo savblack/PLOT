@@ -19,7 +19,7 @@ import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
-import { setUserTimezone } from '@plot/core/date.js';
+import { localDateStr, setUserTimezone } from '@plot/core/date.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import { useTraktSync } from '../../hooks/useTraktSync';
@@ -41,6 +41,9 @@ import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { favoriteWords } from '../../lib/spelling';
+import { buildCalendarEvents } from '@plot/core/calendar.js';
+import { generateICS } from '@plot/core/ics.js';
+import { shareCalendarFile } from '../../lib/shareCalendarFile';
 
 // UUID token for the private calendar feed. Uses native crypto when the RN
 // runtime provides it, else an RFC4122-shaped Math.random fallback (RN has no
@@ -148,7 +151,9 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
         {PLANS_PAGE.premiumFeatures.map(feature => <View key={feature.id} style={{ gap: spacing.xs }}>
           <Text style={{ color: colors.textPrimary }}>{feature.label}</Text>
           <Text style={{ color: colors.textSecondary }}>{feature.description}</Text>
-          <Text style={{ color: colors.textMuted }}>{('pendingValidation' in feature && feature.pendingValidation) ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
+          {('live' in feature && feature.live) ? null : (
+            <Text style={{ color: colors.textMuted }}>{('pendingValidation' in feature && feature.pendingValidation) ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
+          )}
         </View>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
         <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
@@ -656,7 +661,7 @@ export default function SettingsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { userId, user, profile, refreshProfile } = useAppData();
+  const { userId, user, profile, refreshProfile, watchlist, watching } = useAppData();
 
   const [showProviders,  setShowProviders]  = useState(false);
   const [showGenres,     setShowGenres]     = useState(false);
@@ -714,12 +719,13 @@ export default function SettingsScreen() {
   // ── Calendar ICS subscription ────────────────────────────────────
   const [localCalToken,      setLocalCalToken]      = useState<string | null>(null);
   const [generatingCalToken, setGeneratingCalToken] = useState(false);
+  const [sharingIcs, setSharingIcs] = useState(false);
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
   const calFeedUrl    = calendarToken ? edgeFunctionUrl('calendar-feed', { token: calendarToken }) : null;
   const calWebcalUrl  = calFeedUrl ? calFeedUrl.replace(/^https?:\/\//, 'webcal://') : null;
 
   const handleGenerateCalToken = async () => {
-    if (!userId || generatingCalToken) return;
+    if (!profile?.is_premium || !userId || generatingCalToken) return;
     setGeneratingCalToken(true);
     const token = generateCalendarToken();
     const { error } = await updateProfile({ userId, patch: { calendar_token: token } });
@@ -769,6 +775,51 @@ export default function SettingsScreen() {
         { text: 'Cancel', style: 'cancel' },
       ],
     );
+  };
+
+  // Free accounts can see the row. The live URL stays on Premium, same gate
+  // as Plex and Trakt. Explore Premium opens the in-app preview.
+  const openPremiumCalendarGate = () => {
+    Alert.alert(
+      SETTINGS_VIEW.calendarFeed.needsPremium,
+      SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
+      [
+        { text: SETTINGS_VIEW.premium.upgradeButton, onPress: () => setPremiumExpanded(true) },
+        ...(calendarToken ? [{ text: SETTINGS_VIEW.confirm.revoke, style: 'destructive' as const, onPress: handleRevokeCalToken }] : []),
+        { text: COMMON.cancel, style: 'cancel' as const },
+      ],
+    );
+  };
+
+  const handleShareSnapshot = async () => {
+    if (sharingIcs) return;
+    if (watchlist.loading || watching.loading) {
+      Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.loadingEvents);
+      return;
+    }
+    if (watchlist.error || watching.error) {
+      Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.shareFailed);
+      return;
+    }
+    setSharingIcs(true);
+    try {
+      const events = await buildCalendarEvents({
+        watchlist: watchlist.items ?? [],
+        watching: watching.items ?? [],
+        todayStr: localDateStr(),
+        fetchTvDetails: (tmdbId: number) => tmdb.getTVDetails(tmdbId),
+        fetchSeason: (tmdbId: number, seasonNumber: number) => tmdb.getSeason(tmdbId, seasonNumber),
+      });
+      if (!events.length) {
+        Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.emptySnapshot);
+        return;
+      }
+      await shareCalendarFile(generateICS(events));
+    } catch {
+      Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.shareFailed);
+    } finally {
+      setSharingIcs(false);
+    }
   };
 
   // ── Media integrations (Plex / Trakt) ────────────────────────────
@@ -1026,17 +1077,37 @@ export default function SettingsScreen() {
         </SettingsGroup>
 
         {/* Calendar */}
-        <SettingsGroup title="Calendar">
+        <SettingsGroup title={SETTINGS_VIEW.calendarFeed.groupTitle}>
+          {profile?.is_premium ? (
+            <SettingsRow
+              icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={18} rx={2} ry={2}/><Line x1={16} y1={2} x2={16} y2={6}/><Line x1={8} y1={2} x2={8} y2={6}/><Line x1={3} y1={10} x2={21} y2={10}/></Svg>}
+              label={SETTINGS_VIEW.calendarFeed.subscribeLabel}
+              description={calendarToken ? SETTINGS_VIEW.calendarFeed.liveFeedPrivate : SETTINGS_VIEW.calendarFeed.getUrlHint}
+              value={calendarToken ? 'On' : undefined}
+              onPress={calendarToken ? openCalendarMenu : handleGenerateCalToken}
+              trailing={calendarToken
+                ? undefined
+                : <Text style={{ color: generatingCalToken ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>
+                    {generatingCalToken ? SETTINGS_VIEW.calendarFeed.generating : SETTINGS_VIEW.calendarFeed.generateLink}
+                  </Text>}
+            />
+          ) : (
+            <SettingsRow
+              icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={18} rx={2} ry={2}/><Line x1={16} y1={2} x2={16} y2={6}/><Line x1={8} y1={2} x2={8} y2={6}/><Line x1={3} y1={10} x2={21} y2={10}/></Svg>}
+              label={SETTINGS_VIEW.calendarFeed.subscribeLabel}
+              description={SETTINGS_VIEW.calendarFeed.needsPremium}
+              onPress={openPremiumCalendarGate}
+              trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
+            />
+          )}
           <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={18} rx={2} ry={2}/><Line x1={16} y1={2} x2={16} y2={6}/><Line x1={8} y1={2} x2={8} y2={6}/><Line x1={3} y1={10} x2={21} y2={10}/></Svg>}
-            label={SETTINGS_VIEW.calendarFeed.subscribeLabel}
-            value={calendarToken ? 'On' : undefined}
-            onPress={calendarToken ? openCalendarMenu : handleGenerateCalToken}
-            trailing={calendarToken
-              ? undefined
-              : <Text style={{ color: generatingCalToken ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>
-                  {generatingCalToken ? 'Generating…' : 'Generate'}
-                </Text>}
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><Polyline points="7 10 12 15 17 10"/><Line x1={12} y1={15} x2={12} y2={3}/></Svg>}
+            label={SETTINGS_VIEW.calendarFeed.exportLabel}
+            description={SETTINGS_VIEW.calendarFeed.snapshotHint}
+            onPress={handleShareSnapshot}
+            trailing={<Text style={{ color: sharingIcs ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>
+              {sharingIcs ? SETTINGS_VIEW.export.preparing : SETTINGS_VIEW.calendarFeed.shareIcs}
+            </Text>}
           />
         </SettingsGroup>
 

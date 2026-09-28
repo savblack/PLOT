@@ -30,7 +30,7 @@
 | Stripe plumbing | `stripe-billing`, `stripe-webhook`, `billing_customers`, `is_premium()`, portal + tip paths exist. |
 | Checkout | **Hard-closed:** `usePremium.startCheckout` stubs; `stripe-billing` returns 503 `premium_coming_soon` for `action=checkout`. |
 | Free list cap | Free: 5 custom lists (`FREE_CUSTOM_LIST_CAP`). Premium: unlimited via `can_create_custom_list()`. Enforced in DB. Sixth-list UX → Explore Premium. |
-| Live calendar feed | Backend `calendar-feed` + token exist. UI Premium-gates subscribe; free users get one-time `.ics` snapshot. |
+| Live calendar feed | Premium URL on web and mobile. Free gets a one-time `.ics`. `calendar-feed` returns an empty calendar when `is_premium()` is false. |
 | Plex / Trakt sync | Edge functions return `premium_required` for non-Premium `sync`. **UI flag on:** `SHOW_MEDIA_SYNC_INTEGRATIONS = true` (web + mobile). Premium Settings shows Connect and Import watch history. Public copy does not call it automatic or two-way sync. Free Settings shows the Premium gate. Live OAuth still needs a Premium account smoke. |
 | Marketing homepage previews | Illustrative Tonight / Together / Following storyboards only. Not live product. |
 | Pick for Me (tonight picker) | **Live on `main`** (PR #1029, merged 2026-09-25; follow-up #1045, 2026-09-26). See §5.2. |
@@ -94,7 +94,7 @@ Lead stories (positioning priority, not a statistical ranking):
 4. Automatic Plex and Trakt syncing. **Do not list this in public copy.** Savannah may not ship it. Manual import stays Free.
 5. Deeper viewing stats
 6. Unlimited custom lists + smart lists
-7. Live calendar subscription
+7. Live calendar subscription. **Built (PLO-519).** Premium URL on web and mobile. Free keeps a one-time snapshot.
 8. Actor / director release alerts
 9. Whole-season-ready alerts (verified episode availability on selected services/region)
 10. Customise your plot (widgets, custom icons, custom profile pages, themes)
@@ -135,7 +135,7 @@ Suggested priority for “Less deciding. More watching.” (matches plans storie
 1. ~~Tonight’s movie picker~~ **Done: Pick for Me** (§5.2).
 2. **Watchlist overlap + host collaborative lists** — social Premium; join stays Free. **In review as Watch together (PR #1039).**
 3. **Unlimited lists** — gated on both platforms. Hitting the 5-list cap (or a server-side cap rejection from a stale tab) opens the shared upgrade sheet on web and mobile (`UpgradeSheet`, content from `@plot/core/upgradeSheet.js`). When checkout opens, wire the sheet's Upgrade button to real checkout.
-4. **Live calendar subscription** — largely wired; polish Premium path and free “Request access” / snapshot.
+4. **Live calendar subscription** — shipped (PLO-519). Premium URL on web and mobile. Free keeps a one-time snapshot. The feed returns an empty calendar when `is_premium()` is false.
 5. **Deeper stats** — define what “additional” means beyond today’s Free overview.
 6. **Smart lists** — filter rules that auto-update, including discoveries beyond saved titles.
 7. **People alerts** + **whole-season-ready** — need notification infrastructure; season-ready needs verified episode-level availability.
@@ -262,11 +262,13 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 **Intent:** Auto-updating calendar URL in the user’s calendar app. One-time `.ics` snapshot stays Free.
 
-**Already built:**
-- `calendar_token`, `calendar-feed` edge function
-- Settings: Premium can generate/manage URL; non-Premium sees needs-Premium / Explore Premium; snapshot download not Premium-gated (`docs/qa/public-launch-checklist.md`)
+**Shipped (PLO-519):**
+- `calendar_token` on profiles, `calendar-feed` edge function (`verify_jwt = false`)
+- The feed calls `is_premium()` for the token owner. A non-Premium token gets a valid empty calendar, so the calendar app keeps the subscription and stops showing events. If that check errors, the feed still serves events, so a Premium subscriber is not blanked by an RPC failure.
+- Web Settings: Premium can generate, copy, and revoke the URL. Free sees Explore Premium. The one-time `.ics` download on the same page stays free.
+- Mobile Settings: same gate. Free and Premium can share a one-time `.ics`. iOS attaches the file. Android’s share sheet only sends text, so the calendar text goes in the message.
 
-**To finish:** Ensure path works end-to-end when Checkout is open; mobile parity; no secrets in exports (`export-user-data` already careful).
+**Left:** Checkout is PLO-493 and is separate. The feed works for any account whose `is_premium()` is true. `export-user-data` already omits `calendar_token`.
 
 ### 5.9 Actor / director release alerts — **Premium**
 
@@ -328,7 +330,7 @@ From `docs/launch/app-store-launch-sprint.md` and billing docs:
 | --- | --- |
 | `packages/core/copy/plansPage.js` | Canonical Free/Premium matrix + pricing copy |
 | `packages/core/premium.js` | `FREE_CUSTOM_LIST_CAP`, `isPremiumProfile`, `canCreateCustomList`, friendly errors |
-| `packages/core/copy/settingsView.js` | Settings Premium, sync gate, and calendar coming-soon strings |
+| `packages/core/copy/settingsView.js` | Settings Premium and sync gate strings |
 | `apps/web/src/hooks/usePremium.js` | Checkout stub + portal/tip |
 | `apps/web/src/launchFeatures.js` | `SHOW_PRICING_PAGE`, `SHOW_MEDIA_SYNC_INTEGRATIONS` |
 | `apps/mobile/lib/launchFeatures.ts` | Mobile flags (pricing page off) |

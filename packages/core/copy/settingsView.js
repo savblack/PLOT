@@ -62,8 +62,6 @@ export const SETTINGS_VIEW = {
     viewPremium: 'Explore Premium',
     syncComingSoon: 'Connections are not available',
     syncComingSoonMessage: 'Manual imports stay free.',
-    calendarComingSoon: 'Live calendar subscription is coming soon',
-    calendarComingSoonMessage: 'A live calendar feed is planned for plot Premium. You can still download a one-time calendar snapshot for free.',
     confirming: 'Confirming your subscription. This may take a moment.',
   },
   region: {
@@ -238,6 +236,7 @@ export const SETTINGS_VIEW = {
     groupTitle: 'Calendar',
     subscribeLabel: 'Subscribe to Calendar',
     needsPremium: 'A live calendar feed needs plot Premium',
+    needsPremiumMessage: 'Live calendar subscription is included with plot Premium. The one-time snapshot on this page stays free.',
     liveFeedPrivate: 'Live feed of your watchlist',
     getUrlHint: 'Get a URL for Google or Apple Calendar',
     requestedCalendarSubscribeMessage: 'Requested access: Calendar subscribe',
@@ -248,6 +247,10 @@ export const SETTINGS_VIEW = {
     loadingEvents: 'Loading events…',
     eventCount: (n) => `${n} event${n !== 1 ? 's' : ''} · one-time snapshot`,
     downloadIcs: 'Download .ics',
+    shareIcs: 'Share .ics',
+    snapshotHint: 'One-time file of upcoming releases. It does not stay updated.',
+    emptySnapshot: 'Nothing upcoming to export yet.',
+    shareFailed: 'Could not share your calendar file. Please try again.',
   },
 
   export: {
