@@ -5,6 +5,7 @@ import { profileUrl } from '../utils/images.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import CreditsGrid from '../components/TalentCredits.jsx';
+import { PersonAlertButton } from '../components/PremiumAlertButtons.jsx';
 import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';
 import './TalentPage.css';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
@@ -67,6 +68,7 @@ function TalentPageContent({ personId }) {
           <div className="talent-kicker">{knownFor}</div>
           <h1>{person.name}</h1>
           {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
+          <div className="talent-alert"><PersonAlertButton person={person} /></div>
         </div>
       </header>
       {person.biography && (

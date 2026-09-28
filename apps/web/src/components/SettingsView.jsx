@@ -46,6 +46,7 @@ import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
+import PremiumAlertsSettings from './PremiumAlertsSettings.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -1906,6 +1907,7 @@ export default function SettingsView() {
         </div>
 
       </div>
+      <PremiumAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
         </>}
         {activeSection === 'connections' && <>
       <TrackingSettings userId={user?.id} connect={trakt.connect} connectPlex={sync.startPlexAuth} plexPolling={sync.polling} connectionError={trakt.error || sync.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : sync.disconnect()} />

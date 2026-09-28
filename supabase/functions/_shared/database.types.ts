@@ -1296,29 +1296,65 @@ export type Database = {
       }
       notifications: {
         Row: {
-          actor_id: string
+          actor_id: string | null
+          air_date: string | null
           created_at: string
+          dedupe_key: string | null
           id: string
+          media_poster_path: string | null
+          media_title: string | null
+          media_type: string | null
+          person_name: string | null
+          person_role: string | null
+          person_tmdb_id: number | null
           post_id: string | null
+          provider_name: string | null
           read_at: string | null
+          release_kind: string | null
+          season_number: number | null
+          tmdb_id: number | null
           type: string
           user_id: string
         }
         Insert: {
-          actor_id: string
+          actor_id?: string | null
+          air_date?: string | null
           created_at?: string
+          dedupe_key?: string | null
           id?: string
+          media_poster_path?: string | null
+          media_title?: string | null
+          media_type?: string | null
+          person_name?: string | null
+          person_role?: string | null
+          person_tmdb_id?: number | null
           post_id?: string | null
+          provider_name?: string | null
           read_at?: string | null
+          release_kind?: string | null
+          season_number?: number | null
+          tmdb_id?: number | null
           type: string
           user_id: string
         }
         Update: {
-          actor_id?: string
+          actor_id?: string | null
+          air_date?: string | null
           created_at?: string
+          dedupe_key?: string | null
           id?: string
+          media_poster_path?: string | null
+          media_title?: string | null
+          media_type?: string | null
+          person_name?: string | null
+          person_role?: string | null
+          person_tmdb_id?: number | null
           post_id?: string | null
+          provider_name?: string | null
           read_at?: string | null
+          release_kind?: string | null
+          season_number?: number | null
+          tmdb_id?: number | null
           type?: string
           user_id?: string
         }
@@ -1726,6 +1762,33 @@ export type Database = {
         }
         Relationships: []
       }
+      person_alerts: {
+        Row: {
+          created_at: string
+          known_for: string | null
+          name: string
+          profile_path: string | null
+          tmdb_person_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          known_for?: string | null
+          name: string
+          profile_path?: string | null
+          tmdb_person_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          known_for?: string | null
+          name?: string
+          profile_path?: string | null
+          tmdb_person_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       private_title_notes: {
         Row: {
           media_type: string
@@ -1912,6 +1975,30 @@ export type Database = {
           reporter_id?: string | null
           status?: string
           surface?: string
+        }
+        Relationships: []
+      }
+      season_ready_alerts: {
+        Row: {
+          created_at: string
+          poster_path: string | null
+          title: string
+          tmdb_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          poster_path?: string | null
+          title: string
+          tmdb_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          poster_path?: string | null
+          title?: string
+          tmdb_id?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -2640,12 +2727,23 @@ export type Database = {
           actor_display_name: string
           actor_id: string
           actor_username: string
+          air_date: string
           created_at: string
           id: string
+          media_poster_path: string
+          media_title: string
+          media_type: string
+          person_name: string
+          person_role: string
+          person_tmdb_id: number
           post_id: string
           post_poster_path: string
           post_title: string
+          provider_name: string
           read_at: string
+          release_kind: string
+          season_number: number
+          tmdb_id: number
           type: string
         }[]
       }
@@ -2657,6 +2755,7 @@ export type Database = {
         }[]
       }
       not_blocked: { Args: { p_uid: string }; Returns: boolean }
+      premium_user_ids: { Args: { p_users: string[] }; Returns: string[] }
       profile_links_ok: { Args: { l: Json }; Returns: boolean }
       record_kofi_tip: { Args: { p_payload: Json }; Returns: Json }
       release_marketing_linear_mirror: {
@@ -2668,6 +2767,7 @@ export type Database = {
         Returns: Json
       }
       run_marketing_linear_mirror: { Args: never; Returns: undefined }
+      run_premium_alerts: { Args: { p_only: string }; Returns: undefined }
       save_private_title_note: {
         Args: {
           p_expected_revision: number

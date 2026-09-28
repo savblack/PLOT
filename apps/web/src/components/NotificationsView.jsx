@@ -11,9 +11,10 @@ import { useWatchTogether } from '@plot/core/useWatchTogether.js';
 import { AcceptDialog } from './WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { COMMON } from '../copy/common.js';
-import { notificationPhrase, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T } from '@plot/core/copy/notifications.js';
-import { groupNotifications, notificationKind, actorName, rollupNames } from '@plot/core/notificationGroups.js';
+import { notificationPhrase, alertPhrase, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T } from '@plot/core/copy/notifications.js';
+import { groupNotifications, notificationKind, actorName, rollupNames, isAlertNotification } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
+import { posterUrl } from '../utils/images.js';
 import './NotificationsView.css';
 
 const KindIcon = ({ kind }) => kind === 'request'
@@ -30,8 +31,15 @@ function Avatar({ url, name, small = false, kind }) {
   </span>;
 }
 
+// Premium alert rows have no actor: the poster stands where the avatar would.
+function Poster({ path }) {
+  return path
+    ? <img className="notif-poster" src={posterUrl(path, 'w92')} alt="" />
+    : <span className="notif-poster" aria-hidden="true" />;
+}
+
 /** Pure layout; data comes from the hooks in NotificationsView (and from a story). */
-export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onMarkAllRead, now, wasUnread = () => false }) {
+export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onMarkAllRead, now, wasUnread = () => false }) {
   const { rollup, groups } = useMemo(() => groupNotifications(list, now), [list, now]);
   const unread = list.filter(wasUnread).length;
   const requestTotal = requests.length + watchRequests.length;
@@ -100,7 +108,17 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
           {groups.map(group => <div className="notif-group" key={group.key}>
             <div className="notif-group-label">{labels[group.key]}</div>
             <div className="notif-rows">
-              {group.items.map(n => <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpen?.(n.actor_username, n.type)}>
+              {group.items.map(n => isAlertNotification(n)
+                ? <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpenTitle?.(n.tmdb_id, n.media_type)}>
+                  <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
+                  <Poster path={n.media_poster_path} />
+                  <span className="notif-row-text">
+                    <span className="notif-badge">{ALERT_NOTIFICATIONS.badges[n.type]}</span>
+                    <span className="notif-row-line"><strong>{n.media_title || ALERT_NOTIFICATIONS.untitled}</strong> {alertPhrase(n)}</span>
+                  </span>
+                  <span className="hist-card-note notif-time">{relativeTime(n.created_at, now)}</span>
+                </button>
+                : <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpen?.(n.actor_username, n.type)}>
                 <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
                 <Avatar url={n.actor_avatar_url} name={actorName(n)} kind={notificationKind(n.type)} />
                 <span className="notif-row-text"><strong>{actorName(n)}</strong> {notificationPhrase(n.type)}{n.post_title && <span className="hist-card-note"> · {n.post_title}</span>}</span>
@@ -124,7 +142,7 @@ function notificationPath(username, type) {
 }
 
 export default function NotificationsView() {
-  const { user, profile } = useApp();
+  const { user, profile, openPanel } = useApp();
   const navigate = useNavigate();
   const { list, loading, refreshList, markAllRead } = useNotifications(user?.id);
   const { requests, loading: requestsLoading, approve, decline } = useFollowRequests(user?.id);
@@ -146,6 +164,7 @@ export default function NotificationsView() {
   return <>
     <NotificationsPage list={list} requests={requests} watchRequests={watch.incoming} loading={loading || requestsLoading} now={now}
       onApprove={approve} onDecline={decline} onOpen={(username, type) => { if (username) navigate(notificationPath(username, type)); }}
+      onOpenTitle={(tmdbId, mediaType) => openPanel(tmdbId, mediaType === 'movie' ? 'movie' : 'tv', 'notification')}
       onReviewWatch={setReviewing} onDeclineWatch={r => watch.respond(r.other_id, false)}
       onMarkAllRead={handleMarkAllRead}
       wasUnread={n => unreadIds?.has(n.id) ?? false} />
