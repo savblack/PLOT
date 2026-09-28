@@ -45,7 +45,7 @@ export const SETTINGS_VIEW = {
     intro: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch.',
     // Keep this list aligned with PLANS_PAGE.planSummary — SettingsBilling also
     // reads the plans catalog for price copy so the two surfaces cannot drift.
-    features: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
+    features: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Themes now, with widgets and app icons to come'],
     cycle: 'Choose your billing cycle',
     monthly: 'Monthly',
     yearly: 'Yearly',
@@ -213,6 +213,25 @@ export const SETTINGS_VIEW = {
     label: 'Email digest',
     onHint: "You'll get the plot digest by email. Unsubscribe any time.",
     offHint: 'The chart, what to watch this weekend, and what just landed on streaming.',
+  },
+
+  // Theme picker (web only for now; mobile parity is a GitHub issue). Palette
+  // values and the Premium rule live in @plot/core/tokens.js + themes.js.
+  appearance: {
+    label: 'Appearance',
+    optionsLabel: 'Appearance options',
+    modes: { light: 'Light', dark: 'Dark', system: 'System' },
+    themesLabel: 'Themes',
+    themesOptionsLabel: 'Premium themes',
+    themesHint: 'Four extra themes for Plot on the web.',
+    themesLockedHint: 'Part of Premium. Light, dark and system stay free.',
+    themes: {
+      sage: 'Sage',
+      mist: 'Mist',
+      espresso: 'Espresso',
+      midnight: 'Midnight',
+    },
+    lockedTheme: (name) => `${name} (Premium)`,
   },
 
   premium: {

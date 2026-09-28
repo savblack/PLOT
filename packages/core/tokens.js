@@ -139,6 +139,77 @@ export const colors = {
   },
 };
 
+// Premium palettes (PLO-523). Each one sits on a light or dark `base` and
+// overrides only the ground, ink and hairline tokens; accents, chips and
+// status colours are inherited from that base so a palette changes the mood,
+// not what anything means. The web app renders them as
+// [data-palette="<id>"] blocks in tokens.css (generated, like the two above)
+// alongside data-theme="<base>", so every existing [data-theme="dark"] rule
+// still applies. Every text token clears 4.5:1 on bg, surface, raised and
+// sunken (tests/unit/themes.test.js). The light palettes carry a slightly
+// deeper `rating` because the base amber lands at 4.3:1 on their sunken
+// ground. Gating and resolution live in themes.js.
+export const premiumPalettes = {
+  sage: {
+    base: 'light',
+    colors: {
+      bg: '#F2F4EC',
+      surface: '#FAFBF6',
+      surfaceRaised: '#FFFFFF',
+      surfaceSunken: '#EBEEE2',
+      textPrimary: '#23261F',
+      textSecondary: '#51584A',
+      textMuted: '#5B6253',
+      border: 'rgba(35,38,31,0.08)',
+      borderStrong: 'rgba(35,38,31,0.16)',
+      rating: '#A14A08',
+    },
+  },
+  mist: {
+    base: 'light',
+    colors: {
+      bg: '#F1F4F6',
+      surface: '#F9FBFC',
+      surfaceRaised: '#FFFFFF',
+      surfaceSunken: '#E9EDF0',
+      textPrimary: '#1F2428',
+      textSecondary: '#4C5760',
+      textMuted: '#56616A',
+      border: 'rgba(31,36,40,0.08)',
+      borderStrong: 'rgba(31,36,40,0.16)',
+      rating: '#A14A08',
+    },
+  },
+  espresso: {
+    base: 'dark',
+    colors: {
+      bg: '#16110E',
+      surface: '#221B16',
+      surfaceRaised: '#2E2520',
+      surfaceSunken: '#100C0A',
+      textPrimary: '#F3EADF',
+      textSecondary: '#BDB0A1',
+      textMuted: '#A6998A',
+      border: 'rgba(243,234,223,0.08)',
+      borderStrong: 'rgba(243,234,223,0.16)',
+    },
+  },
+  midnight: {
+    base: 'dark',
+    colors: {
+      bg: '#0D1117',
+      surface: '#161C24',
+      surfaceRaised: '#212833',
+      surfaceSunken: '#090C11',
+      textPrimary: '#E8EDF2',
+      textSecondary: '#A4AEBA',
+      textMuted: '#8D98A4',
+      border: 'rgba(232,237,242,0.08)',
+      borderStrong: 'rgba(232,237,242,0.16)',
+    },
+  },
+};
+
 export const radii = {
   md: 16,
   lg: 24,

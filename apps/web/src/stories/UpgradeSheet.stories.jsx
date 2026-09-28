@@ -26,6 +26,7 @@ export default {
 };
 
 export const Lists = {};
+export const Themes = { args: { reason: 'themes' } };
 
 // Focus opens on the sheet itself; Shift+Tab from there must wrap inside it.
 export const ReverseTabStaysInside = {

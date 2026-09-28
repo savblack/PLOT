@@ -90,11 +90,22 @@
     <script data-cfasync="false">
       (function () {
         try {
+          // Premium palette id -> its light/dark base. Mirrors premiumPalettes in
+          // packages/core/tokens.js (apps/web/tests/unit/themes.test.js keeps
+          // the two equal). The Premium check happens once React has the
+          // profile; this only paints the stored choice before that.
+          var palettes = { sage: 'light', mist: 'light', espresso: 'dark', midnight: 'dark' };
           var stored = window.localStorage.getItem('plot-theme') || 'light';
-          var resolved = stored === 'system'
-            ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-            : stored;
-          document.documentElement.setAttribute('data-theme', resolved);
+          var root = document.documentElement;
+          if (Object.prototype.hasOwnProperty.call(palettes, stored)) {
+            root.setAttribute('data-theme', palettes[stored]);
+            root.setAttribute('data-palette', stored);
+          } else {
+            var resolved = stored === 'system'
+              ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+              : stored === 'dark' ? 'dark' : 'light';
+            root.setAttribute('data-theme', resolved);
+          }
         } catch (e) {}
       })();
     </script>
@@ -105,6 +116,10 @@
       html, body, #root { height: 100%; margin: 0; }
       body { background: #f8f2ea; }
       [data-theme="dark"] body { background: #0c0c0c; }
+      [data-palette="sage"] body { background: #F2F4EC; }
+      [data-palette="mist"] body { background: #F1F4F6; }
+      [data-palette="espresso"] body { background: #16110E; }
+      [data-palette="midnight"] body { background: #0D1117; }
       .app-boot-loader {
         position: fixed;
         inset: 0;

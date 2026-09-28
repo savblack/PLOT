@@ -10,6 +10,8 @@ export type Palette = { readonly [K in keyof typeof coreColors.light]: string };
 
 // Full palette per resolved theme. `dark` in the core holds only the values
 // that differ from light, so the full dark palette is light overlaid with it.
+// Premium palettes (core `premiumPalettes` + themes.js) ship on web only for
+// now; mobile parity is https://github.com/savblack/PLOT/issues/1090.
 export const palettes: { light: Palette; dark: Palette } = {
   light: coreColors.light,
   dark: { ...coreColors.light, ...coreColors.dark },

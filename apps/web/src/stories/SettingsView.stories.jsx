@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { configure } from '@plot/core/config.js';
 import { AppContext } from '../hooks/useApp.js';
 import SettingsView from '../components/SettingsView.jsx';
+import { useTheme } from '../hooks/useTheme.js';
 
 // Offline fixture with no authenticated user. Navigation, search, sign-out cancel
 // and coming-soon checkout can be reviewed without touching real account data.
@@ -23,11 +24,14 @@ const profile = {
 
 function Preview({ initialSection = 'viewing', premium = false }) {
   const [broadcastValue, setBroadcastValue] = useState({ market_id: 'Sydney', channel_ids: null });
+  // The real hook, so the Appearance and Themes rows apply what they pick
+  // (and a Free viewer's Premium pick opens the upgrade sheet instead).
+  const { theme, setTheme } = useTheme({ isPremium: premium });
   return (
     <MemoryRouter initialEntries={[`/settings?section=${initialSection}`]}>
       <AppContext.Provider value={{
         broadcastPreferences: { value: broadcastValue, loading: false, saving: false, error: false, retry: noop, save: async value => { setBroadcastValue(value); return true; } },
-        profile: { ...profile, is_premium: premium }, user: null, theme: 'system', setTheme: noop,
+        profile: { ...profile, is_premium: premium }, user: null, theme, setTheme,
         refreshProfile: noop, watchlist: { items: [] }, watching: { items: [], fetchSeason: noop },
         reminders: { reminders: [] }, customLists: { lists: [] },
       }}>
@@ -41,3 +45,5 @@ export const Viewing = {};
 export const Billing = { args: { initialSection: 'billing' } };
 export const PremiumBilling = { args: { initialSection: 'billing', premium: true } };
 export const Connections = { args: { initialSection: 'connections' } };
+export const Account = { args: { initialSection: 'account' } };
+export const PremiumAccount = { args: { initialSection: 'account', premium: true } };

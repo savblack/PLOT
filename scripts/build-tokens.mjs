@@ -16,7 +16,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { colors, radii, cssVarName } from '@plot/core/tokens.js';
+import { colors, premiumPalettes, radii, cssVarName } from '@plot/core/tokens.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CSS_PATH = resolve(__dirname, '..', 'apps', 'web', 'src', 'styles', 'tokens.css');
@@ -47,6 +47,13 @@ const current = readFileSync(CSS_PATH, 'utf8');
 let next = current;
 next = replaceRegion(next, ':root', emit(colors.light, { withRadii: true }));
 next = replaceRegion(next, '[data-theme="dark"]', emit(colors.dark, { withRadii: false }));
+// Premium palettes: one :root[data-palette="<id>"] block each, which must
+// already exist in tokens.css with its markers (the hand-authored glass lines
+// sit outside them). :root raises specificity above [data-theme="dark"], so a
+// palette wins over its base regardless of source order.
+for (const [id, palette] of Object.entries(premiumPalettes)) {
+  next = replaceRegion(next, `:root[data-palette="${id}"]`, emit(palette.colors, { withRadii: false }));
+}
 
 const mode = process.argv.includes('--write') ? 'write' : 'check';
 
@@ -64,6 +71,7 @@ if (mode === 'write') {
     console.error('  Fix the value in packages/core/tokens.js, then run `npm run tokens:build`.');
     process.exit(1);
   }
-  const n = Object.keys(colors.light).length + Object.keys(colors.dark).length + Object.keys(radii).length;
+  const n = Object.keys(colors.light).length + Object.keys(colors.dark).length + Object.keys(radii).length
+    + Object.values(premiumPalettes).reduce((sum, p) => sum + Object.keys(p.colors).length, 0);
   console.log(`✓ tokens in sync (${n} generated color + radii declarations)`);
 }

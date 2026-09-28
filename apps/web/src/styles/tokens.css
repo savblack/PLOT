@@ -204,3 +204,79 @@
 
   --shadow-overlay: 0 2px 8px rgba(0,0,0,0.5);
 }
+
+/* ── Premium palettes (PLO-523) ──────── */
+/* Set alongside data-theme="<base>" by useTheme and the pre-paint script in
+   index.html, so every [data-theme="dark"] rule still applies. Each block
+   overrides the ground, ink and hairlines only; glass is hand-authored below
+   the markers from that palette's bg (light) or surface (dark). */
+:root[data-palette="sage"] {
+  /* @tokens:start — colors generated from packages/core/tokens.js.
+     Do not hand-edit; change values in tokens.js then run `npm run tokens:build`. */
+  --bg: #F2F4EC;
+  --surface: #FAFBF6;
+  --surface-raised: #FFFFFF;
+  --surface-sunken: #EBEEE2;
+  --text-primary: #23261F;
+  --text-secondary: #51584A;
+  --text-muted: #5B6253;
+  --border: rgba(35,38,31,0.08);
+  --border-strong: rgba(35,38,31,0.16);
+  --rating: #A14A08;
+  /* @tokens:end */
+
+  --glass-bg:       rgba(242,244,236,0.86);
+  --glass-border:   rgba(35,38,31,0.06);
+}
+:root[data-palette="mist"] {
+  /* @tokens:start — colors generated from packages/core/tokens.js.
+     Do not hand-edit; change values in tokens.js then run `npm run tokens:build`. */
+  --bg: #F1F4F6;
+  --surface: #F9FBFC;
+  --surface-raised: #FFFFFF;
+  --surface-sunken: #E9EDF0;
+  --text-primary: #1F2428;
+  --text-secondary: #4C5760;
+  --text-muted: #56616A;
+  --border: rgba(31,36,40,0.08);
+  --border-strong: rgba(31,36,40,0.16);
+  --rating: #A14A08;
+  /* @tokens:end */
+
+  --glass-bg:       rgba(241,244,246,0.86);
+  --glass-border:   rgba(31,36,40,0.06);
+}
+:root[data-palette="espresso"] {
+  /* @tokens:start — colors generated from packages/core/tokens.js.
+     Do not hand-edit; change values in tokens.js then run `npm run tokens:build`. */
+  --bg: #16110E;
+  --surface: #221B16;
+  --surface-raised: #2E2520;
+  --surface-sunken: #100C0A;
+  --text-primary: #F3EADF;
+  --text-secondary: #BDB0A1;
+  --text-muted: #A6998A;
+  --border: rgba(243,234,223,0.08);
+  --border-strong: rgba(243,234,223,0.16);
+  /* @tokens:end */
+
+  --glass-bg:       rgba(34,27,22,0.85);
+  --glass-border:   rgba(243,234,223,0.08);
+}
+:root[data-palette="midnight"] {
+  /* @tokens:start — colors generated from packages/core/tokens.js.
+     Do not hand-edit; change values in tokens.js then run `npm run tokens:build`. */
+  --bg: #0D1117;
+  --surface: #161C24;
+  --surface-raised: #212833;
+  --surface-sunken: #090C11;
+  --text-primary: #E8EDF2;
+  --text-secondary: #A4AEBA;
+  --text-muted: #8D98A4;
+  --border: rgba(232,237,242,0.08);
+  --border-strong: rgba(232,237,242,0.16);
+  /* @tokens:end */
+
+  --glass-bg:       rgba(22,28,36,0.85);
+  --glass-border:   rgba(232,237,242,0.08);
+}

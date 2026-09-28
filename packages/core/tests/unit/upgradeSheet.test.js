@@ -20,3 +20,11 @@ test('the lists sheet reuses the plans page rows, in order', () => {
 test('an unknown reason returns null instead of an empty sheet', () => {
   assert.equal(upgradeSheetContent('nope'), null);
 });
+
+test('the themes sheet has no meter and names the free themes that stay free', () => {
+  const content = upgradeSheetContent('themes');
+  assert.equal(content.meter, 0);
+  assert.equal(content.context, 'Themes are part of Premium');
+  assert.match(content.body, /Light, dark and system stay free/);
+  assert.equal(content.also.length, 2);
+});

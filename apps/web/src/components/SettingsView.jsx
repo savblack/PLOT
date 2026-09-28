@@ -43,9 +43,12 @@ import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
+import SettingsThemeRows from './SettingsThemeRows.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -1142,6 +1145,7 @@ export default function SettingsView() {
   const trakt = useTraktSync(user?.id);
   const simkl = useSimklSync(user?.id);
   const premium = usePremium(profile);
+  const [showThemeUpgrade, setShowThemeUpgrade] = useState(false);
   const { events: calEvents, loading: calLoading } = useCalendar(
     watchlist?.items ?? [],
     watching?.items ?? [],
@@ -1830,28 +1834,14 @@ export default function SettingsView() {
         </div>
 
         {/* Theme */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            </div>
-            <span className="settings-row-label">Appearance</span>
-          </div>
-          <div className="settings-theme-tabs" role="tablist" aria-label="Appearance options">
-            {['light','dark','system'].map(t => (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={theme === t}
-                className={`settings-theme-tab${theme === t ? ' is-active' : ''}`}
-                onClick={() => setTheme(t)}
-              >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <SettingsThemeRows
+          theme={theme}
+          setTheme={setTheme}
+          isPremium={isPremiumProfile(profile)}
+          onLocked={() => setShowThemeUpgrade(true)}
+          premiumBadge={<PremiumBadge />}
+        />
+        {showThemeUpgrade && <UpgradeSheet reason="themes" onClose={() => setShowThemeUpgrade(false)} />}
 
       </div>
       <div className="settings-group"><div className="settings-group-title">{SETTINGS_VIEW.page.emailPreferences}</div>
