@@ -17,7 +17,7 @@
 5. **iOS / mobile does not sell Premium in-app.** Web upgrade only. Mobile `SHOW_PRICING_PAGE = false`; no StoreKit / IAP surface. See `docs/launch/app-store-launch-sprint.md`.
 6. **Ko-fi tips ≠ Premium.** `is_supporter` is recognition only. Do not wire tips into `is_premium()`.
 7. **Pricing decided:** **US$3/month or US$24/year**, taxes included, **7-day card-required free trial** (first charge 7 days after start; cancel in the trial is $0). USD primary, converted to local currency at checkout. Public checkout stays closed until PLO-493. See §2.
-8. **Plex + Trakt Settings UI is on (PLO-492).** `SHOW_MEDIA_SYNC_INTEGRATIONS` is `true` on web and mobile. Premium members see Connect and Sync now. Free accounts get the Premium gate, not a free sync. Checkout stays closed (PLO-493). A human Premium account still has to smoke a real Plex PIN and Trakt OAuth on staging or production: this repo does not have those credentials, and production was last noted as missing `TRAKT_CLIENT_ID` / `TRAKT_CLIENT_SECRET`.
+8. **Plex + Trakt Settings UI is on (PLO-492).** `SHOW_MEDIA_SYNC_INTEGRATIONS` is `true` on web and mobile. Premium members see Connect and Import watch history. Public copy does not call that automatic or two-way sync. Free accounts get the Premium gate. Checkout stays closed (PLO-493). A human Premium account still has to smoke a real Plex PIN and Trakt OAuth on staging or production: this repo does not have those credentials, and production was last noted as missing `TRAKT_CLIENT_ID` / `TRAKT_CLIENT_SECRET`.
 
 ---
 
@@ -31,12 +31,12 @@
 | Checkout | **Hard-closed:** `usePremium.startCheckout` stubs; `stripe-billing` returns 503 `premium_coming_soon` for `action=checkout`. |
 | Free list cap | Free: 5 custom lists (`FREE_CUSTOM_LIST_CAP`). Premium: unlimited via `can_create_custom_list()`. Enforced in DB. Sixth-list UX → Explore Premium. |
 | Live calendar feed | Backend `calendar-feed` + token exist. UI Premium-gates subscribe; free users get one-time `.ics` snapshot. |
-| Plex / Trakt sync | Edge functions return `premium_required` for non-Premium `sync`. **UI flag on:** `SHOW_MEDIA_SYNC_INTEGRATIONS = true` (web + mobile). Premium Settings shows Connect and Sync now. Free Settings shows the Premium gate. Live OAuth still needs a Premium account smoke. |
+| Plex / Trakt sync | Edge functions return `premium_required` for non-Premium `sync`. **UI flag on:** `SHOW_MEDIA_SYNC_INTEGRATIONS = true` (web + mobile). Premium Settings shows Connect and Import watch history. Public copy does not call it automatic or two-way sync. Free Settings shows the Premium gate. Live OAuth still needs a Premium account smoke. |
 | Marketing homepage previews | Illustrative Tonight / Together / Following storyboards only. Not live product. |
 | Pick for Me (tonight picker) | **Live on `main`** (PR #1029, merged 2026-09-25; follow-up #1045, 2026-09-26). See §5.2. |
 | Watch together (overlap + shared lists) | **In review:** PR #1039 (`agent/watch-together`, web, phases 1 to 3). Decisions in `docs/design/watch-together/README.md` on `agent/watch-together-design`. |
 | `/plans` rebuild | **In review:** PR #1031 (`agent/premium-plans-a2`), side-by-side plans at US$3/$24. |
-| One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free; *automatic* sync is still the Premium item. |
+| One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free. Public copy does not list automatic sync as a Premium benefit. |
 | Stats, smart lists, people alerts, season-ready, customise | **Not built** as product features (copy only). |
 
 ---
@@ -154,7 +154,7 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 ### 5.1 Automatic Plex + Trakt syncing — not a public Premium promise
 
-**Public copy:** do not list automatic Plex or Trakt sync as a Premium benefit. Savannah may not ship it. Settings can keep Connect and Sync now for an account that already has the controls. Plans, the FAQ, the upgrade sheet, and billing must not sell it.
+**Public copy:** do not list automatic or two-way Plex or Trakt sync as a Premium benefit. Savannah may not ship it. Settings can keep Connect and Import watch history. Do not label those rows Sync now, Last synced, or automatic updates. Plans, the FAQ, the upgrade sheet, and billing must not sell it.
 
 **Intent:** Keep watch history current without another manual import. Manual import/export stays Free.
 
@@ -165,7 +165,7 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 **Shipped in the UI (PLO-492).** Still needs a human Premium smoke before calling the sync itself done:
 - Flag on, both platforms
-- Settings shows Connect and Sync now for Premium. The coming-soon dialog is only the flag-off fallback
+- Settings shows Connect and Import watch history for Premium. The coming-soon dialog is only the flag-off fallback
 - Free users: Explore Premium, no Connect or Sync now
 - Copy does not claim automatic sync, or instant or verified two-way syncing, as a Premium benefit
 - Not done here: a real Plex PIN approval and a real Trakt OAuth round trip

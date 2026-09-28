@@ -2,6 +2,7 @@
 // Lives in @plot/core/copy so the two platforms can't drift word by word;
 // apps/web/src/copy/settingsView.js re-exports it so src/copy stays the single place
 // the web app and the Storybook Content page look for copy.
+import { IMPORT_VIEW } from './importView.js';
 import { PLANS_PAGE } from './plansPage.js';
 
 export const SETTINGS_VIEW = {
@@ -184,6 +185,10 @@ export const SETTINGS_VIEW = {
     requested: 'Requested ✓',
     requestAccess: 'Request access',
     disconnect: 'Disconnect',
+    // Plex and Trakt stay on import wording. Simkl is the manual exchange that
+    // still uses connectedLastSynced and syncNow.
+    connected: 'Connected',
+    importing: IMPORT_VIEW.importing,
     connectedLastSynced: (date) => `Connected · Last synced ${date}`,
     never: 'never',
     notConnected: 'Not connected',

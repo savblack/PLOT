@@ -58,6 +58,24 @@ test('public copy does not sell automatic Plex or Trakt sync as Premium', () => 
   assert.doesNotMatch(PLANS_PAGE.freeFeatures.find(item => item.id === 'imports').description, /automatic|premium/i);
   assert.equal(TRACKING.connectPlex, SETTINGS_VIEW.integrations.connectPlex);
   assert.equal(SETTINGS_VIEW.integrations.requestedAccessMessage('Plex'), 'Requested access: Plex');
+  assert.equal(SETTINGS_VIEW.integrations.connected, 'Connected');
+  assert.equal(SETTINGS_VIEW.integrations.importing, 'Importing…');
+  for (const line of [
+    TRACKING.sync,
+    TRACKING.enableAutomatic,
+    TRACKING.disableAutomatic,
+    TRACKING.enableOutgoing,
+    TRACKING.disableOutgoing,
+    TRACKING.outgoingDescription,
+    TRACKING.never,
+    TRACKING.success('1 Jan'),
+    TRACKING.statuses.running,
+    SETTINGS_VIEW.integrations.plexBlurb,
+    SETTINGS_VIEW.integrations.traktBlurb,
+    SETTINGS_VIEW.integrations.connectTraktToSync,
+  ]) {
+    assert.doesNotMatch(line, /automatic|two-way|outgoing|sync/i, line);
+  }
   for (const pattern of [
     /automatic plex/i,
     /plex and trakt sync/i,

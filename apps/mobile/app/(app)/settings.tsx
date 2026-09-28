@@ -777,20 +777,24 @@ export default function SettingsScreen() {
   const simkl = useSimklSync(userId);
 
   const syncedLabel = (iso?: string | null) =>
-    `Connected · synced ${iso ? new Date(iso).toLocaleDateString() : 'never'}`;
+    SETTINGS_VIEW.integrations.connectedLastSynced(
+      iso ? new Date(iso).toLocaleDateString() : SETTINGS_VIEW.integrations.never,
+    );
 
   const openIntegrationMenu = (
     name: string,
     i: { sync: () => void; disconnect: () => void; syncing: boolean },
+    actionLabel = SETTINGS_VIEW.integrations.syncNow,
+    busyLabel = COMMON.syncing,
   ) => {
     Alert.alert(name, undefined, [
-      { text: i.syncing ? 'Syncing…' : 'Sync now', onPress: () => i.sync() },
+      { text: i.syncing ? busyLabel : actionLabel, onPress: () => i.sync() },
       { text: 'Disconnect', style: 'destructive', onPress: () => i.disconnect() },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
 
-  // Free accounts can see the rows, but Connect and Sync stay on Premium.
+  // Free accounts can see the rows. Connect stays on Premium.
   // Explore Premium opens the in-app preview. Mobile does not link out to pay.
   const openPremiumSyncGate = (connected: boolean, disconnect: () => void) => {
     Alert.alert(
@@ -1055,17 +1059,17 @@ export default function SettingsScreen() {
           {SHOW_MEDIA_SYNC_INTEGRATIONS && profile?.is_premium && (<>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label="Plex"
-            value={plex.isConnected ? syncedLabel(plex.integration?.last_sync_at) : (plex.polling ? 'Waiting for approval…' : undefined)}
-            onPress={plex.isConnected ? () => openIntegrationMenu('Plex', plex) : () => plex.startPlexAuth()}
+            label={SETTINGS_VIEW.integrations.plexName}
+            value={plex.isConnected ? SETTINGS_VIEW.integrations.connected : (plex.polling ? 'Waiting for approval…' : undefined)}
+            onPress={plex.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.plexName, plex, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => plex.startPlexAuth()}
             trailing={plex.isConnected ? undefined
               : <Text style={{ color: plex.polling ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{plex.polling ? 'Waiting…' : 'Connect'}</Text>}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label="Trakt"
-            value={trakt.isConnected ? syncedLabel(trakt.integration?.last_sync_at) : SETTINGS_VIEW.integrations.connectTraktToSync}
-            onPress={trakt.isConnected ? () => openIntegrationMenu('Trakt', trakt) : () => trakt.connect()}
+            label={SETTINGS_VIEW.integrations.traktName}
+            value={trakt.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.connectTraktToSync}
+            onPress={trakt.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.traktName, trakt, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => trakt.connect()}
             trailing={trakt.isConnected ? undefined
               : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Connect</Text>}
           />
