@@ -99,6 +99,8 @@ export const Streak = { render: () => <Harness preset={CARD_IDS.STREAK} /> };
 export const Top5 = { render: () => <Harness preset={CARD_IDS.TOP5_MOVIES} /> };
 /** Thin data: every card locked with its unlock line. */
 export const Locked = { render: () => <Harness preset={CARD_IDS.HIGHLIGHTS} thin /> };
+/** Opened from the profile before the cards have loaded. */
+export const Loading = { render: () => <ShareCardSheet cards={[]} loading preset={CARD_IDS.TOP5_MOVIES} profile={FIXTURE_PROFILE} source="story" onClose={() => {}} /> };
 /** Every card at post size. */
 export const PostGallery = { render: () => <Gallery format="post" /> };
 /** Every card at story size. */

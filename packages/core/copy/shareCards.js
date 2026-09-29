@@ -34,6 +34,8 @@ export const SHARE_CARDS = {
   unlockTop5: (have, needed) => `Pick ${needed} for your Top 5 to unlock. ${have} of ${needed}.`,
   // Entry points
   shareAsCard: 'Share as a card',
+  shareACard: 'Share a card',
+  loadingCards: 'Getting your cards ready',
   shareCardAria: (what) => `Share ${what} as a card`,
   // On the cards themselves
   site: 'theplot.tv',

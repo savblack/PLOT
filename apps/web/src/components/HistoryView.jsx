@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useHistory } from '../hooks/useHistory.js';
@@ -24,7 +24,7 @@ import { HISTORY_VIEW as T } from '../copy/historyView.js';
 import { SHARE_CARDS } from '../copy/shareCards.js';
 import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
 import { useTopLists } from '../hooks/useTopLists.js';
-import { useSearchParams } from 'react-router-dom';
+import { useSharePreset } from '../hooks/useSharePreset.js';
 import { MEDIA } from '../copy/media.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 
@@ -516,11 +516,7 @@ export default function HistoryView() {
   const { user, profile, openPanel, navigateTo } = useApp();
   const { lists: topLists } = useTopLists(user?.id);
   // ?share=<card> opens the sheet on that card once, then leaves the URL clean.
-  const [searchParams, setSearchParams] = useSearchParams();
-  const sharePreset = searchParams.get('share');
-  const clearSharePreset = useCallback(() => {
-    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('share'); return next; }, { replace: true });
-  }, [setSearchParams]);
+  const [sharePreset, clearSharePreset] = useSharePreset();
   const { entries, loading } = useHistory(user?.id);
   const { genres: genreList } = useGenres();
   const today = useMemo(() => new Date(), []);
