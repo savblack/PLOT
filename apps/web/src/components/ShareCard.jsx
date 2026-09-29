@@ -118,6 +118,26 @@ function Top5({ card, story }) {
   );
 }
 
+function MonthWrap({ card }) {
+  const rows = [
+    [T.rowTitles, String(card.count)],
+    [T.rowBestNight, card.bestNight ? `${card.bestNight.label} · ${T.nightCount(card.bestNight.count)}` : T.none],
+    [T.rowFiveStars, card.fiveStars.length ? card.fiveStars.slice(0, 2).join(', ') : T.none],
+    [T.rowDidntFinish, String(card.dnf)],
+  ];
+  return (
+    <>
+      <div className="sc-title">{T.monthWrapTitle(card.monthName)}</div>
+      <div className="sc-panel sc-wrap">
+        {rows.map(([label, value]) => (
+          <div key={label} className="sc-wrap-row"><span>{label}</span><b>{value}</b></div>
+        ))}
+      </div>
+      <Foot />
+    </>
+  );
+}
+
 /**
  * @param {{ card: object, format?: 'post'|'story', nodeRef?: import('react').Ref<HTMLDivElement> }} props
  */
@@ -126,6 +146,7 @@ export default function ShareCard({ card, format = 'post', nodeRef }) {
   const story = f.id === 'story';
   const Body = card.id === CARD_IDS.HIGHLIGHTS ? Highlights
     : card.id === CARD_IDS.STREAK ? Streak
+    : card.id === CARD_IDS.MONTH_WRAP ? MonthWrap
     : Top5;
   return (
     <div

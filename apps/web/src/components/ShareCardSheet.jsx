@@ -66,6 +66,7 @@ function unlockLine(card) {
   const { have, needed } = card.need;
   if (card.id === 'streak') return T.unlockStreak(needed);
   if (card.id.startsWith('top5')) return T.unlockTop5(have, needed);
+  if (card.id === 'month-wrap') return T.unlockMonth(have, needed, card.monthName);
   return T.unlockTitles(have, needed);
 }
 

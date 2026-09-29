@@ -33,8 +33,8 @@ export function useShareCards({ userId, profile, enabled = true, now, leadWith =
   const cards = useMemo(() => {
     if (!active || !profile) return [];
     const genreName = (id) => genres.find(g => g.id === id)?.name ?? null;
-    const cards = buildShareCards({ entries: yearEntries, details, genreName, year, now: today, topLists, profile });
+    const cards = buildShareCards({ entries: yearEntries, allEntries: entries, details, genreName, year, now: today, topLists, profile });
     return leadWith === 'top5' ? leadWithTop5(cards) : cards;
-  }, [active, profile, yearEntries, details, genres, year, today, topLists, leadWith]);
+  }, [active, profile, entries, yearEntries, details, genres, year, today, topLists, leadWith]);
   return { cards, loading: active && (historyLoading || listsLoading) };
 }

@@ -32,6 +32,7 @@ export const SHARE_CARDS = {
   unlockTitles: (have, needed) => `Log ${needed} titles this year to unlock. ${have} of ${needed}.`,
   unlockStreak: (needed) => `Watch on ${needed} days in a row to unlock.`,
   unlockTop5: (have, needed) => `Pick ${needed} for your Top 5 to unlock. ${have} of ${needed}.`,
+  unlockMonth: (have, needed, monthName) => `Log ${needed} titles in ${monthName} to unlock. ${have} of ${needed}.`,
   // Entry points
   shareAsCard: 'Share as a card',
   shareACard: 'Share a card',
@@ -50,10 +51,24 @@ export const SHARE_CARDS = {
   top5Short: (owner) => `${owner ? `${owner} ` : ''}Top 5`,
   kindMovies: 'Movies',
   kindTv: 'TV',
+  monthWrapTitle: (monthName) => `${monthName}, wrapped`,
+  rowTitles: 'Titles',
+  rowBestNight: 'Best night',
+  rowFiveStars: 'Five stars',
+  rowDidntFinish: "Didn't finish",
+  none: 'None',
+  nightCount: (n) => `${n} ${n === 1 ? 'title' : 'titles'}`,
+  // The moments (path 3)
+  streakToast: (days) => `That's a ${days}-day streak.`,
+  shareIt: 'Share it',
+  shareTheCard: 'Share the card',
+  dismiss: 'Dismiss',
+  monthWrapNoticeBody: (count, monthName) => `${count} titles in ${monthName}.`,
   // Captions: the post text, with the profile link at the end
   captions: {
     highlights: (card, url) => `${card.count} titles in ${card.year}${card.isCurrentYear ? ' so far' : ''}${card.genre ? `, mostly ${card.genre.toLowerCase()}` : ''}. ${url}`.trim(),
     streak: (card, url) => `${card.days}-day watch streak on PLOT. ${url}`.trim(),
     top5: (card, url) => `My Top 5 ${card.kind === 'tv' ? 'TV series' : 'films'} on PLOT. Follow me: ${url}`.trim(),
+    monthWrap: (card, url) => `${card.monthName}, wrapped: ${card.count} titles${card.fiveStars.length ? `, ${card.fiveStars.length} five-star` : ''}. ${url}`.trim(),
   },
 };

@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import {
   CARD_IDS, CARD_FORMATS, THRESHOLDS,
-  highlightsCard, streakCard, top5Card, buildShareCards, presetIndex, shareCaption, cardFilename, leadWithTop5,
+  highlightsCard, streakCard, top5Card, buildShareCards, presetIndex, shareCaption, cardFilename, leadWithTop5, monthWrapCard,
 } from '../../shareCards.js';
 import { detailsKey } from '../../historyStats.js';
 import { SHARE_CARDS } from '../../copy/shareCards.js';
@@ -85,12 +85,12 @@ test('buildShareCards keeps carousel order and marks availability', () => {
     topLists: { movies: five, tv: five.slice(0, 2) },
     profile: { username: 'sav' },
   });
-  assert.deepEqual(cards.map(c => c.id), [CARD_IDS.HIGHLIGHTS, CARD_IDS.STREAK, CARD_IDS.TOP5_MOVIES, CARD_IDS.TOP5_TV]);
-  assert.deepEqual(cards.map(c => c.available), [true, false, true, false]);
+  assert.deepEqual(cards.map(c => c.id), [CARD_IDS.HIGHLIGHTS, CARD_IDS.STREAK, CARD_IDS.TOP5_MOVIES, CARD_IDS.TOP5_TV, CARD_IDS.MONTH_WRAP]);
+  assert.deepEqual(cards.map(c => c.available), [true, false, true, false, false]);
   assert.equal(presetIndex(cards, CARD_IDS.TOP5_MOVIES), 2);
   assert.equal(presetIndex(cards, 'nope'), 0);
   // The profile's order: both Top 5s first, then the year cards.
-  assert.deepEqual(leadWithTop5(cards).map(c => c.id), [CARD_IDS.TOP5_MOVIES, CARD_IDS.TOP5_TV, CARD_IDS.HIGHLIGHTS, CARD_IDS.STREAK]);
+  assert.deepEqual(leadWithTop5(cards).map(c => c.id), [CARD_IDS.TOP5_MOVIES, CARD_IDS.TOP5_TV, CARD_IDS.HIGHLIGHTS, CARD_IDS.STREAK, CARD_IDS.MONTH_WRAP]);
   assert.equal(presetIndex(leadWithTop5(cards), CARD_IDS.TOP5_MOVIES), 0);
 });
 
@@ -110,4 +110,19 @@ test('formats and filenames', () => {
   assert.deepEqual(CARD_FORMATS.post, { id: 'post', width: 1200, height: 800 });
   assert.deepEqual(CARD_FORMATS.story, { id: 'story', width: 1080, height: 1920 });
   assert.equal(cardFilename({ id: CARD_IDS.STREAK }, 'story'), 'plot-streak-story.png');
+});
+
+test('month wrap card: last month only, best night, five stars, dnf', () => {
+  const d = (n, extra = {}) => row(`2026-08-${String(n).padStart(2, '0')}`, extra);
+  const es = [d(23, { rating: 10, title: 'Aftersun' }), d(23), d(23, { rating: 10, title: 'Heat' }), d(9, { dnf: true }), d(2), d(30, { rating: 7 }), row('2026-09-02'), row('2026-07-30')];
+  const c = monthWrapCard({ entries: es, now: NOW });
+  assert.equal(c.id, CARD_IDS.MONTH_WRAP);
+  assert.equal(c.monthName, 'August');
+  assert.equal(c.count, 6);
+  assert.deepEqual(c.bestNight, { day: 23, count: 3, label: 'Sun 23' });
+  assert.deepEqual(c.fiveStars, ['Aftersun', 'Heat']);
+  assert.equal(c.dnf, 1);
+  assert.equal(c.need.met, true);
+  assert.equal(monthWrapCard({ entries: [], now: NOW }).bestNight, null);
+  assert.match(shareCaption(c, { username: 'sav' }, SHARE_CARDS.captions), /^August, wrapped: 6 titles, 2 five-star\. https:/);
 });

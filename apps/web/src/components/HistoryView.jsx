@@ -360,9 +360,9 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
     onSharePresetUsed?.();
   }, [sharePreset, onSharePresetUsed]);
   const shareCards = useMemo(
-    () => (profile ? buildShareCards({ entries: yearEntries, details, genreName, year: activeYear, now: today, topLists, profile }) : []),
+    () => (profile ? buildShareCards({ entries: yearEntries, allEntries: entries, details, genreName, year: activeYear, now: today, topLists, profile }) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- genreName reads genreList
-    [yearEntries, details, genreList, activeYear, today, topLists, profile],
+    [entries, yearEntries, details, genreList, activeYear, today, topLists, profile],
   );
   const cardReady = (id) => !!shareCards.find(c => c.id === id)?.available;
   const canShare = shareCards.length > 0;
