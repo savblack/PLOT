@@ -27,3 +27,5 @@ export const Full = {};
 export const NoRequests = { args: { requests: [] } };
 export const CaughtUp = { args: { requests: [], wasUnread: () => false } };
 export const Empty = { args: { list: [], requests: [] } };
+/** First week of the month: last month wrapped, with the share card offered. */
+export const MonthWrap = { args: { requests: [], moment: { year: 2026, month: 7, monthName: 'August', key: '2026-08', count: 14, sentence: '14 titles and a 4-day streak. Your busiest month.' }, onShareMoment: () => {}, onDismissMoment: () => {} } };

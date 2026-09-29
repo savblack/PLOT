@@ -20,7 +20,7 @@ configure({
 
 const TODAY = new Date(2026, 8, 16);
 
-// A year with enough in it for every card: 84 titles, a 12-day streak ending
+// A year with enough in it for every card: 94 titles (ten of them in August), a 12-day streak ending
 // today, ratings, and horror as the top genre.
 function makeEntries() {
   const rows = [];
@@ -29,7 +29,7 @@ function makeEntries() {
     id: id++, tmdb_id: 100000 + id, media_type: 'movie', title: `Title ${id}`, poster_path: null,
     watched_at: date, rating: null, note: null, dnf: false, genre_ids: [18], created_at: `${date}T20:00:00Z`, ...extra,
   });
-  for (let i = 0; i < 72; i++) {
+  for (let i = 0; i < 82; i++) {
     const d = new Date(Date.UTC(2026, 0, 3 + i * 3));
     push(d.toISOString().slice(0, 10), { rating: 6 + (i % 5), genre_ids: i % 3 === 0 ? [27] : i % 3 === 1 ? [27, 18] : [35] });
   }

@@ -12,6 +12,10 @@ export const MEDIA_INTEGRATION_CHANGED_EVENT = 'plot:media-integration-changed';
    restores) so a mounted hook reloads instead of serving stale rows. */
 export const FAVOURITES_CHANGED_EVENT = 'plot:favourites-changed';
 export const WATCHING_CHANGED_EVENT = 'plot:watching-changed';
+/* Ask the app to open the share sheet on a card: { card, source }. Any
+   surface can emit it (a toast, a notification); one host in each app
+   listens and draws the sheet. */
+export const SHARE_CARD_REQUESTED_EVENT = 'plot:share-card-requested';
 
 const listeners = new Map(); // event name -> Set<fn>
 
