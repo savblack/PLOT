@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "PLOT public API",
+    "title": "Plot public API",
     "version": "1.0.0",
     "summary": "The endpoints theplot.tv serves to anyone, without an account.",
     "description": "PLOT is a film and television companion. This description covers the only endpoints theplot.tv offers publicly: newsletter and waitlist signup, and a health check for them. There is no public API for member data. Watch history, lists, ratings and private notes are reachable only through an authenticated session in the PLOT app, and no part of this API exposes them.",
@@ -11,7 +11,7 @@
     }
   },
   "externalDocs": {
-    "description": "PLOT public API documentation",
+    "description": "Plot public API documentation",
     "url": "https://theplot.tv/api/docs.md"
   },
   "servers": [

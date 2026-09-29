@@ -1,12 +1,12 @@
 ---
 name: plot-whats-on
-description: Read PLOT's What's On recommendations, its editorial guide to what is worth watching now. Use when someone asks what to watch, or what is new on streaming.
+description: Read Plot's What's On recommendations, its editorial guide to what is worth watching now. Use when someone asks what to watch, or what is new on streaming.
 ---
 
 # Reading What's On
 
-What's On is PLOT's editorial feed: short pieces on what is worth watching now,
-what has just landed on streaming, and what is coming. It is written by PLOT,
+What's On is Plot's editorial feed: short pieces on what is worth watching now,
+what has just landed on streaming, and what is coming. It is written by Plot,
 not generated from ratings.
 
 ## Where it is
@@ -24,9 +24,9 @@ Each piece is written for the day it was published, and streaming availability
 moves. Check the date before repeating a recommendation, and say when it is from
 if it is not recent.
 
-Titles mentioned in a piece usually have a PLOT page of their own. See the
+Titles mentioned in a piece usually have a Plot page of their own. See the
 `plot-titles` skill for how to link to one.
 
 ## Attribution
 
-If you quote or summarise a piece, name PLOT and link to the piece you used.
+If you quote or summarise a piece, name Plot and link to the piece you used.
