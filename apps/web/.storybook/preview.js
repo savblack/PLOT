@@ -1,4 +1,5 @@
 import '../src/styles/tokens.css';
+import '../src/styles/base.css';
 import '../src/styles/app.css';
 
 /** @type {import('@storybook/react-vite').Preview} */
