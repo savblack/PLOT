@@ -188,13 +188,13 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
   );
 }
 
-function CrowdCard({ entries, details, openPanel }) {
+function CrowdCard({ entries, details, openPanel, onShare, shareReady }) {
   const cmp = crowdComparison(entries, details);
   if (!cmp || cmp.compared < 3) return null;
   const sentence = crowdSentence(cmp);
   return (
     <div className="hist-card">
-      <span className="hist-card-label">{T.crowdHeading}</span>
+      <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.crowdHeading}</span><ShareIcon what={T.crowdHeading} ready={shareReady} onClick={onShare} /></div>
       <div className="hist-card-body">
         <span className="hist-card-lead">{sentence}</span>
         <div className="hist-crowd-row">
@@ -226,12 +226,12 @@ function CompareCard() {
   );
 }
 
-function PeopleCard({ entries, details, navigateTo }) {
+function PeopleCard({ entries, details, navigateTo, onShare, shareReady }) {
   const people = recurringPeople(entries, details);
   if (!people.length) return null;
   return (
     <div className="hist-card">
-      <span className="hist-card-label">{T.peopleHeading}</span>
+      <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.peopleHeading}</span><ShareIcon what={T.peopleHeading} ready={shareReady} onClick={onShare} /></div>
       <div className="hist-card-body">
         {people.map(p => {
           const img = profileUrl(p.profile_path, 'w185');
@@ -475,8 +475,10 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
               shareReady={cardReady(CARD_IDS.STREAK)}
             />
           )}
-          <CrowdCard entries={yearEntries} details={details} openPanel={openPanel} />
-          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo} />
+          <CrowdCard entries={yearEntries} details={details} openPanel={openPanel}
+            onShare={canShare ? () => setShareCard(CARD_IDS.CROWD) : null} shareReady={cardReady(CARD_IDS.CROWD)} />
+          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo}
+            onShare={canShare ? () => setShareCard(CARD_IDS.PERSON) : null} shareReady={cardReady(CARD_IDS.PERSON)} />
           <CompareCard />
           <Filters
             types={types} setTypes={setTypes}

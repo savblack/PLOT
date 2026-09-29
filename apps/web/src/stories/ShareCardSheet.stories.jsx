@@ -40,7 +40,10 @@ function makeEntries() {
   return rows;
 }
 const ENTRIES = makeEntries();
-const DETAILS = new Map(ENTRIES.map(e => [`${e.media_type}:${e.tmdb_id}`, { runtime: 105, vote_average: 7.1 }]));
+// A recurring face on every ninth title, so Your person has someone; the
+// crowd votes sit under the ratings, so the crowd card leans kinder.
+const CAST = [{ id: 1, name: 'Florence Pugh', profile_path: null }];
+const DETAILS = new Map(ENTRIES.map((e, i) => [`${e.media_type}:${e.tmdb_id}`, { runtime: 105, vote_average: 7.1, credits: { cast: i % 9 === 0 ? CAST : [] } }]));
 const GENRES = { 27: 'Horror', 18: 'Drama', 35: 'Comedy' };
 const genreName = (id) => GENRES[id] ?? null;
 

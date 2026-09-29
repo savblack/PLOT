@@ -7687,6 +7687,8 @@ a.provider-chip--link:hover {
 .hist-share--ready { background: var(--accent-fill); color: var(--on-accent-fill); }
 .hist-share--ready:hover { background: var(--accent-fill-hover); }
 .hist-share:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hist-card-head--label { min-height: 0; padding: 0; }
+.hist-card-head--label .hist-share { width: 24px; height: 24px; }
 .hist-card-foot .hist-share { width: 24px; height: 24px; margin: -4px 0; }
 .hist-card-foot .hist-share svg { width: 12px; height: 12px; }
 .hist-card-body .hist-card-note,
