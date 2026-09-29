@@ -3,7 +3,7 @@
 // The endpoint exists because the homepage's poster surfaces are drawn in the
 // browser, so *something* public has to answer them. What it must not be is a
 // free TMDB proxy: the Pages Function supplies the upstream credentials itself,
-// so before this file anyone could spend PLOT's TMDB quota by calling
+// so before this file anyone could spend Plot's TMDB quota by calling
 // theplot.tv/api/discover directly, from anywhere, without a key.
 //
 // Two defences, in order of how much they are worth:
@@ -48,7 +48,7 @@ const ALLOWED_PARAMS = new Map([
   ['sort_by', new Set(['popularity.desc', 'vote_average.desc'])],
   ['vote_count.gte', new Set(['200', '2500'])],
   ['with_genres', new Set(['27', '10749'])], // Horror, Romance — the two category rings
-  ['include_adult', new Set(['false'])],     // PLOT never asks TMDB for adult results
+  ['include_adult', new Set(['false'])],     // Plot never asks TMDB for adult results
 ]);
 
 /**
@@ -63,7 +63,7 @@ function allowedOrigin(origin, self) {
 }
 
 /**
- * Did this request come from a PLOT page?
+ * Did this request come from a Plot page?
  *
  * Browsers send `Sec-Fetch-Site` on every fetch and will not let page script
  * forge it, so it is the first choice. Safari before 16.4 does not send it at
