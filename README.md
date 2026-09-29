@@ -49,7 +49,9 @@ This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the
 
    `VITE_AUTH_REDIRECT_BASE_URL` is optional for local web development. Set it when auth and provider callbacks must use a stable production URL or a native deep-link base.
 
-4. Start the app:
+4. Optional, for visual regression only: add `CHROMATIC_PROJECT_TOKEN=<Chromatic project token>` to the same `.env`. It is not browser-safe and nothing needs it to build or run Plot. Without it, `pnpm run chromatic` and the CI step skip themselves. Never inline it into a `package.json` script.
+
+5. Start the app:
 
    ```sh
    pnpm run dev

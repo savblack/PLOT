@@ -11,7 +11,9 @@
     "test:smoke": "pnpm run build && playwright test",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test-storybook": "vitest run --project=storybook"
+    "build-storybook:stats": "storybook build --stats-json",
+    "test-storybook": "vitest run --project=storybook",
+    "chromatic": "chromatic --storybook-build-dir=storybook-static --storybook-base-dir=apps/web --only-changed --exit-zero-on-changes --auto-accept-changes main"
   },
   "dependencies": {
     "@plot/core": "*",

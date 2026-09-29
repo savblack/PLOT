@@ -1,4 +1,4 @@
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import ConfirmModal from '../components/ConfirmModal.jsx';
 
 export default {
@@ -22,7 +22,10 @@ export const Default = {
     const cancel = within(dialog).getByRole('button', { name: 'Cancel' });
     const confirm = within(dialog).getByRole('button', { name: 'Remove' });
 
-    await expect(cancel).toHaveFocus();
+    // ConfirmModal focuses Cancel from a useEffect, so this cannot be read on
+    // the same tick the story renders. Reading it synchronously passed in the
+    // vitest run and failed in Chromatic, which is the race, not the renderer.
+    await waitFor(() => expect(cancel).toHaveFocus());
     await userEvent.click(confirm);
     await expect(args.onConfirm).toHaveBeenCalledOnce();
     await expect(args.onClose).toHaveBeenCalledOnce();
