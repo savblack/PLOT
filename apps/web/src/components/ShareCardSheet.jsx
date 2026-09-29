@@ -7,6 +7,7 @@ import { cardToPng, canCopyImages, copyImage, downloadBlob, xIntentUrl, threadsI
 import { SHARE_CARDS as T } from '../copy/shareCards.js';
 import { IconChevronLeft, IconChevronRight, IconClose } from './navIcons.jsx';
 import ShareCard from './ShareCard.jsx';
+import Spinner from './Spinner.jsx';
 import './ShareCardSheet.css';
 
 /* The share sheet: a modal over whatever page opened it, never a page of its
@@ -74,11 +75,19 @@ function unlockLine(card) {
  *   preset?: string,            card id to open on
  *   profile: object,            the owner (username for the caption)
  *   source: string,             where it was opened from, for analytics
+ *   loading?: boolean,          cards still on their way (the profile loads them on open)
  *   onClose: () => void,
  * }} props
  */
-export default function ShareCardSheet({ cards, preset, profile, source, onClose }) {
+export default function ShareCardSheet({ cards, preset, profile, source, loading = false, onClose }) {
   const [index, setIndex] = useState(() => presetIndex(cards, preset));
+  // When the cards arrive after the sheet opened, land on the preset then.
+  const presetApplied = useRef(cards.length > 0);
+  useEffect(() => {
+    if (presetApplied.current || !cards.length) return;
+    presetApplied.current = true;
+    setIndex(presetIndex(cards, preset));
+  }, [cards, preset]);
   const [format, setFormat] = useState('post');
   const [busy, setBusy] = useState(null); // target while an image is being made
   const [status, setStatus] = useState(null); // { text, action?: { label, onClick } }
@@ -91,7 +100,7 @@ export default function ShareCardSheet({ cards, preset, profile, source, onClose
   const card = cards[Math.min(index, cards.length - 1)];
   const size = CARD_FORMATS[format];
   const [captionEdited, setCaptionEdited] = useState(null);
-  const caption = captionEdited ?? shareCaption(card, profile, T.captions);
+  const caption = captionEdited ?? (card ? shareCaption(card, profile, T.captions) : '');
 
   useEffect(() => { track(EVENTS.SHARE_CARD_OPENED, { source, card: card?.id }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -176,7 +185,7 @@ export default function ShareCardSheet({ cards, preset, profile, source, onClose
     height: size.height * scale,
   }), [size, scale]);
 
-  if (!card) return null;
+  if (!card && !loading) return null;
 
   const sheet = (
     <div className="scs-overlay" onClick={onClose}>
@@ -200,10 +209,16 @@ export default function ShareCardSheet({ cards, preset, profile, source, onClose
         </div>
 
         <div className="scs-stage" ref={stageRef}>
-          {cards.length > 1 && (
+          {!card && (
+            <div className="scs-loading" role="status" aria-live="polite">
+              <Spinner size="md" ariaHidden />
+              <span>{T.loadingCards}</span>
+            </div>
+          )}
+          {card && cards.length > 1 && (
             <button type="button" className="scs-arrow scs-arrow--prev" aria-label={T.previousCard} disabled={index === 0} onClick={() => setIndex(i => i - 1)}><IconChevronLeft /></button>
           )}
-          <div className={`scs-preview${card.available ? '' : ' scs-preview--locked'}`} style={previewStyle} aria-label={T.cardOf(index + 1, cards.length)}>
+          {card && <div className={`scs-preview${card.available ? '' : ' scs-preview--locked'}`} style={previewStyle} aria-label={T.cardOf(index + 1, cards.length)}>
             <div className="scs-scaler" style={{ transform: `scale(${scale})` }}>
               <ShareCard card={card} format={format} nodeRef={cardRef} />
             </div>
@@ -213,8 +228,8 @@ export default function ShareCardSheet({ cards, preset, profile, source, onClose
                 <span className="scs-lock-line">{unlockLine(card)}</span>
               </div>
             )}
-          </div>
-          {cards.length > 1 && (
+          </div>}
+          {card && cards.length > 1 && (
             <button type="button" className="scs-arrow scs-arrow--next" aria-label={T.nextCard} disabled={index === cards.length - 1} onClick={() => setIndex(i => i + 1)}><IconChevronRight /></button>
           )}
         </div>
@@ -225,7 +240,7 @@ export default function ShareCardSheet({ cards, preset, profile, source, onClose
           </div>
         )}
 
-        {card.available && (
+        {card?.available && (
           <>
             <label className="scs-caption">
               <span className="scs-caption-label">{T.caption}</span>

@@ -121,6 +121,16 @@ export function buildShareCards({ entries = [], details, genreName, year, now = 
   ].map(card => ({ ...card, available: card.need.met }));
 }
 
+/**
+ * The carousel with the two Top 5 cards first. The profile opens the sheet
+ * this way: Top 5 is what you came for from a profile, so both of them lead
+ * and the year cards follow.
+ */
+export function leadWithTop5(cards) {
+  const isTop5 = c => c.id === CARD_IDS.TOP5_MOVIES || c.id === CARD_IDS.TOP5_TV;
+  return [...cards.filter(isTop5), ...cards.filter(c => !isTop5(c))];
+}
+
 /** Index of the card to open on, or 0 when the preset is unknown. */
 export function presetIndex(cards, presetId) {
   const i = cards.findIndex(c => c.id === presetId);
