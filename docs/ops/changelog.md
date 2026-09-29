@@ -1,6 +1,6 @@
 # Public product changelog
 
-PLOT keeps a public, dated changelog at [theplot.tv/changelog](https://theplot.tv/changelog).
+Plot keeps a public, dated changelog at [theplot.tv/changelog](https://theplot.tv/changelog).
 
 Treat the changelog as a **member-facing product surface**, not an eng log.
 Competitors and scrapers will read it. Write every entry as if the GitHub repo

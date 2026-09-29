@@ -6,7 +6,7 @@
 
 ## Context
 
-PLOT is adding shareable stat cards (Highlights, Streak, Activity, You vs the crowd,
+Plot is adding shareable stat cards (Highlights, Streak, Activity, You vs the crowd,
 Top 5 movies / TV, Genres, Your person, Month wrap) for X, Threads and Instagram
 Stories. See `docs/design/share-cards.md` for the cards and the paths to them.
 

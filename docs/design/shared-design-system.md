@@ -213,7 +213,7 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
 - Motion should explain state changes before it decorates them.
 - Fast interactions use `--transition-fast`; larger surface transitions use `--transition`.
 - The bounce easing token is reserved for special arrivals, not routine navigation.
-- The PLOT loader stays centered and fades each letter in sequence.
+- The Plot loader stays centered and fades each letter in sequence.
 - Icons stay monochrome and lightweight until hover, focus, or active state.
 - Buttons are compact and sized to their label — never full-width.
 

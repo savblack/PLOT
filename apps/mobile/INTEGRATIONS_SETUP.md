@@ -17,7 +17,7 @@ Prereq: `supabase login` and `supabase link --project-ref mkegtssedjyqldysvzga`
 ## 1. Trakt
 
 ### 1a. Trakt OAuth app
-1. Go to https://trakt.tv/oauth/applications → your PLOT app (or create one).
+1. Go to https://trakt.tv/oauth/applications → your Plot app (or create one).
 2. Under **Redirect URI**, add the mobile scheme on its own line (keep the existing web one):
    ```
    https://app.theplot.tv/auth/trakt      ← existing (web)

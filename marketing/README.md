@@ -1,4 +1,4 @@
-# PLOT marketing automation
+# Plot marketing automation
 
 The inventory of every automation (what starts it, which secrets it uses, where
 the content lands) is [`docs/ops/gtm-automations.md`](../docs/ops/gtm-automations.md).
@@ -173,7 +173,7 @@ baseline the new times can be compared against.
 
 ### The queue is a rolling window, not a week
 
-The Buffer plan caps **10 scheduled posts per channel**, and a week of PLOT is
+The Buffer plan caps **10 scheduled posts per channel**, and a week of Plot is
 about **16 per channel** — roughly 2.6 posts a day, each fanning out to two or
 three channels. A week does not fit, and never will on this plan.
 

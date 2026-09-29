@@ -3,7 +3,7 @@
 16 September 2026. Implemented locally; not deployed.
 
 Free accounts may create five custom lists. A sixth creation attempt on web or
-mobile shows the shared PLOT Premium coming-soon message. Built-in lists do not
+mobile shows the shared Plot Premium coming-soon message. Built-in lists do not
 count. Existing lists remain readable/editable after a downgrade or above the cap;
 existing Premium entitlements still allow unlimited lists. No checkout is offered
 by this notice.
