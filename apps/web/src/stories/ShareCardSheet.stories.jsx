@@ -4,7 +4,7 @@ import { configure } from '@plot/core/config.js';
 import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
 import ShareCardSheet from '../components/ShareCardSheet.jsx';
 import ShareCard from '../components/ShareCard.jsx';
-import { useFixtureTopLists, FIXTURE_PROFILE } from './HistoryView.stories.jsx';
+import { useFixtureTopLists, FIXTURE_PROFILE } from './shareCardFixtures.js';
 
 /* The share sheet and the cards inside it, on made-up history. Top 5 posters
    are resolved through the TMDB proxy at mount (never hardcoded ids), so the
