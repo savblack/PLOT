@@ -9,13 +9,16 @@ import { useGenres } from '../hooks/useGenres.js';
 import { useShare } from '../hooks/useShare.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { EVENTS } from '../lib/analytics.js';
-import { ALL_TYPES, filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
+import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
 import { customListIdFromKey, customListKey, sortListItems, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { CustomListSection, FavoritesSection, WantToWatchSection } from './ListSections.jsx';
 import { IconSearch } from './navIcons.jsx';
 import SideFilters from './SideFilters.jsx';
+import MobilePageControls from './MobilePageControls.jsx';
+import { TYPE_ROWS } from './sideFilterRows.js';
+import { MEDIA } from '../copy/media.js';
 import KebabMenu from './KebabMenu.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 
@@ -125,20 +128,35 @@ export default function ListPage() {
 
   const sortItems = useCallback((items) => sortListItems(items, sort), [sort]);
 
-  const showFilter = key === 'want' || key === 'favorites';
+  const showFilter = key === 'want' || key === 'favorites' || !!list;
+  // Only CustomListSection reads this on the page: it swaps an emptied grid for
+  // "No items match". Want to Watch and Favourites return null when narrowed,
+  // which here would take the header and filters with it.
+  const narrowed = isTypeNarrowed(typeFilters) || genreFilters.length > 0 || query.trim() !== '';
 
   // What the frame needs from the page. A fresh object per render is fine —
   // it re-renders the frame, which is the point; only a changing component
   // identity would remount it.
   const framePage = useMemo(() => ({
+    // The column is display:none below 1024px and the bottom bar is hidden
+    // above it, so each width gets one copy. The bar portals to the body, so
+    // sitting inside the hidden column does not hide it.
     filter: showFilter ? (
-      <SideFilters
-        typeFilters={typeFilters}
-        setTypeFilters={setTypeFilters}
-        genreFilters={genreFilters}
-        setGenreFilters={setGenreFilters}
-        genres={genres}
-      />
+      <>
+        <SideFilters
+          typeFilters={typeFilters}
+          setTypeFilters={setTypeFilters}
+          genreFilters={genreFilters}
+          setGenreFilters={setGenreFilters}
+          genres={genres}
+        />
+        <MobilePageControls
+          groups={[
+            { heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes, options: TYPE_ROWS, value: typeFilters, defaultValue: ALL_TYPES, onChange: setTypeFilters },
+            { heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres, columns: 2, options: genres.map(g => ({ id: g.id, label: g.name })), value: genreFilters, defaultValue: [], onChange: setGenreFilters },
+          ]}
+        />
+      </>
     ) : null,
     query,
     onQuery: setQuery,
@@ -163,12 +181,12 @@ export default function ListPage() {
       <CustomListSection
         key={customListKey(list.id)}
         list={list}
-        visibleItems={sortItems(matchQuery(list.items || []))}
+        visibleItems={sortItems(matchQuery(filterByTypeAndGenre(list.items, typeFilters, genreFilters)))}
         count={(list.items || []).length}
         customLists={customLists}
-        typeFilters={ALL_TYPES}
-        genreFilters={[]}
-        narrowed={false}
+        typeFilters={typeFilters}
+        genreFilters={genreFilters}
+        narrowed={narrowed}
         share={shareList}
         shareCopied={copied}
         onDeleted={() => navigate('/my-lists')}

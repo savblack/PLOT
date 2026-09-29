@@ -24,3 +24,17 @@ test('findDuplicateCustomList can exclude the current list id', () => {
 
   assert.equal(findDuplicateCustomList(lists, 'Weekend Watch', '1'), null);
 });
+
+test('custom list rows filter by type and genre like Favourites', async () => {
+  const { filterByTypeAndGenre } = await import('@plot/core/mediaFilters.js');
+  // Shaped like custom_list_items rows. Filtering never reads tmdb_id, so none is set.
+  const rows = [
+    { id: 'row-1', media_type: 'tv',    genre_ids: [1] },
+    { id: 'row-2', media_type: 'movie', genre_ids: [2] },
+    { id: 'row-3', media_type: 'movie', genre_ids: [] },
+  ];
+
+  assert.deepEqual(filterByTypeAndGenre(rows, ['tv'], []).map(r => r.id), ['row-1']);
+  assert.deepEqual(filterByTypeAndGenre(rows, ['tv', 'movie', 'cinema'], [2]).map(r => r.id), ['row-2', 'row-3']);
+  assert.deepEqual(filterByTypeAndGenre(undefined, ['tv'], []), []);
+});
