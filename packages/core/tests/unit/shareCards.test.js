@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import {
   CARD_IDS, CARD_FORMATS, THRESHOLDS,
-  highlightsCard, streakCard, top5Card, buildShareCards, presetIndex, shareCaption, cardFilename,
+  highlightsCard, streakCard, top5Card, buildShareCards, presetIndex, shareCaption, cardFilename, leadWithTop5,
 } from '../../shareCards.js';
 import { detailsKey } from '../../historyStats.js';
 import { SHARE_CARDS } from '../../copy/shareCards.js';
@@ -89,6 +89,9 @@ test('buildShareCards keeps carousel order and marks availability', () => {
   assert.deepEqual(cards.map(c => c.available), [true, false, true, false]);
   assert.equal(presetIndex(cards, CARD_IDS.TOP5_MOVIES), 2);
   assert.equal(presetIndex(cards, 'nope'), 0);
+  // The profile's order: both Top 5s first, then the year cards.
+  assert.deepEqual(leadWithTop5(cards).map(c => c.id), [CARD_IDS.TOP5_MOVIES, CARD_IDS.TOP5_TV, CARD_IDS.HIGHLIGHTS, CARD_IDS.STREAK]);
+  assert.equal(presetIndex(leadWithTop5(cards), CARD_IDS.TOP5_MOVIES), 0);
 });
 
 test('captions end with the profile link and read as a post', () => {

@@ -587,7 +587,7 @@ export default function PublicProfilePage() {
     setShareCard({ id: sharePreset, source: 'link' }); // eslint-disable-line react-hooks/set-state-in-effect
     clearSharePreset();
   }, [sharePreset, isOwn, clearSharePreset]);
-  const shareCards = useShareCards({ userId: viewer?.id, profile: viewerProfile, enabled: !!shareCard && !!isOwn });
+  const shareCards = useShareCards({ userId: viewer?.id, profile: viewerProfile, enabled: !!shareCard && !!isOwn, leadWith: 'top5' });
   const fw = favoriteWords(viewerProfile?.region);
   const found = !loading && !!profile;
   const isPrivate = !!p && !p.is_public;

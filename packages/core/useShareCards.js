@@ -4,7 +4,7 @@ import { useHistoryDetails } from './useHistoryDetails.js';
 import { useTopLists } from './useTopLists.js';
 import { useGenres } from './useGenres.js';
 import { entriesInYear } from './historyStats.js';
-import { buildShareCards } from './shareCards.js';
+import { buildShareCards, leadWithTop5 } from './shareCards.js';
 
 /**
  * The share cards for the signed-in user, from wherever the sheet opens.
@@ -16,10 +16,11 @@ import { buildShareCards } from './shareCards.js';
  * the sheet is actually opened. The year is the current one: the profile
  * has no year switcher, and "Your 2026 so far" is the card people post.
  *
- * @param {{ userId?: string|null, profile?: object|null, enabled?: boolean, now?: Date }} a
+ * @param {{ userId?: string|null, profile?: object|null, enabled?: boolean, now?: Date, leadWith?: 'top5'|null }} a
+ *   `leadWith: 'top5'` puts both Top 5 cards at the front of the carousel (the profile's order).
  * @returns {{ cards: object[], loading: boolean }}
  */
-export function useShareCards({ userId, profile, enabled = true, now } = {}) {
+export function useShareCards({ userId, profile, enabled = true, now, leadWith = null } = {}) {
   // One clock per mount, so the memo below does not churn on a fresh Date.
   const [today] = useState(() => now ?? new Date());
   const active = enabled && !!userId;
@@ -32,7 +33,8 @@ export function useShareCards({ userId, profile, enabled = true, now } = {}) {
   const cards = useMemo(() => {
     if (!active || !profile) return [];
     const genreName = (id) => genres.find(g => g.id === id)?.name ?? null;
-    return buildShareCards({ entries: yearEntries, details, genreName, year, now: today, topLists, profile });
-  }, [active, profile, yearEntries, details, genres, year, today, topLists]);
+    const cards = buildShareCards({ entries: yearEntries, details, genreName, year, now: today, topLists, profile });
+    return leadWith === 'top5' ? leadWithTop5(cards) : cards;
+  }, [active, profile, yearEntries, details, genres, year, today, topLists, leadWith]);
   return { cards, loading: active && (historyLoading || listsLoading) };
 }
