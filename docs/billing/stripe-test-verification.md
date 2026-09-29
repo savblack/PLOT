@@ -230,7 +230,9 @@ at Savannah's request.
 
 The billing edge function now accepts server-only `STRIPE_SETTINGS_URL` and
 `STRIPE_PORTAL_CONFIGURATION` so staging returns to the QA app and uses the tested
-portal without changing production defaults. `.env.example` contains USD placeholders.
+portal without changing production defaults. `STRIPE_PRICE_MONTHLY` and
+`STRIPE_PRICE_YEARLY` take USD price IDs; both are server-only and live in the
+repo-root `.env`.
 
 The deployed staging `export-user-data` preflight returned HTTP 401 without CORS
 headers. The local handler now answers OPTIONS with 204 and adds CORS headers to

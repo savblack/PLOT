@@ -56,6 +56,12 @@ export const EVENTS = Object.freeze({
   TITLE_SHARED: 'title_shared',
   LIST_SHARED: 'list_shared',
   PROFILE_SHARED: 'profile_shared',
+  // Share cards (docs/design/share-cards.md). `opened` carries { source, card }
+  // so the dashboards can say which path earns the posts; `sent` carries
+  // { card, format, target } where target is copy | download | x | threads |
+  // instagram on web and share | save on mobile.
+  SHARE_CARD_OPENED: 'share_card_opened',
+  SHARE_CARD_SENT: 'share_card_sent',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_STARTED: 'premium_checkout_started',
