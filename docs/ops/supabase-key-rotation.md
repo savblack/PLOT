@@ -50,7 +50,10 @@ service rather than by reading the repo:
 | GitHub Actions secrets | `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_ANON_KEY` |
 | Cloudflare Pages build vars | `VITE_SUPABASE_ANON_KEY`, production **and** preview |
 | Cloudflare Workers | inline constants — `plot-og` had one, but it was deleted on 2026-09-18 and is no longer deployed |
-| Tracked source | the six files above, plus `.env.example` |
+| Tracked source | the six files above |
+
+The repo-root `.env.example` used to belong in that row and carried a publishable
+key. It was deleted on 2026-09-29, so no tracked file outside those six holds one.
 
 `notify_signup_service_role_key` belongs to `supabase/notify-signup-trigger.sql`,
 which sits outside `migrations/` deliberately and therefore appears in no deploy.

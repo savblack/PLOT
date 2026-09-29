@@ -31,7 +31,10 @@ apps/website/.claude/
 *.sw?
 .env
 .env.*
-!.env.example
+# Only mobile keeps a committed template. A repo-root .env.example was deleted
+# on 2026-09-18 and silently restored by #1046 eight days later, carrying a live
+# publishable key; scoping the negation means the next one cannot be committed.
+!apps/mobile/.env.example
 *.zip
 *-mockup.html
 *-mockups.html
