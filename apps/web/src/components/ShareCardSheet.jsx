@@ -67,6 +67,10 @@ function unlockLine(card) {
   if (card.id === 'streak') return T.unlockStreak(needed);
   if (card.id.startsWith('top5')) return T.unlockTop5(have, needed);
   if (card.id === 'month-wrap') return T.unlockMonth(have, needed, card.monthName);
+  if (card.id === 'activity') return T.unlockActivity(have, needed);
+  if (card.id === 'crowd') return T.unlockCrowd(have, needed);
+  if (card.id === 'genres') return T.unlockGenres(have, needed);
+  if (card.id === 'person') return T.unlockPerson(have, needed);
   return T.unlockTitles(have, needed);
 }
 

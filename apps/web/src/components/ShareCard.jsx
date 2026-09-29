@@ -1,4 +1,4 @@
-import { posterUrl } from '../utils/images.js';
+import { posterUrl, profileUrl } from '../utils/images.js';
 import { CARD_IDS, CARD_FORMATS } from '@plot/core/shareCards.js';
 import { SHARE_CARDS as T } from '../copy/shareCards.js';
 import './ShareCard.css';
@@ -118,6 +118,106 @@ function Top5({ card, story }) {
   );
 }
 
+const DAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
+
+function Activity({ card }) {
+  const cols = card.weeks.length;
+  return (
+    <>
+      <div className="sc-title">{T.activityTitle}</div>
+      <div className="sc-panel sc-act">
+        <div className="sc-hm" style={{ gridTemplateColumns: `auto repeat(${cols}, 1fr)` }}>
+          <span style={{ gridRow: 1, gridColumn: 1 }} />
+          {card.months.map(m => <span key={`${m.label}-${m.col}`} className="sc-hm-m" style={{ gridRow: 1, gridColumn: m.col + 2 }}>{m.label}</span>)}
+          {/* Every cell is placed by hand: with the month labels sitting in
+              row 1 by column, auto-placement would pour the cells into the
+              gaps beside them. */}
+          {[0, 1, 2, 3, 4, 5, 6].map(d => (
+            <div key={d} className="sc-hm-r" style={{ display: 'contents' }}>
+              <span className="sc-hm-d" style={{ gridRow: d + 2, gridColumn: 1 }}>{DAY_LABELS[d]}</span>
+              {card.weeks.map((w, wi) => {
+                const c = w[d];
+                const cls = ['sc-hm-c', c.best ? 'sc-hm-c--best' : c.level ? `sc-hm-c--l${c.level}` : '', c.future ? 'sc-hm-c--future' : '', c.today ? 'sc-hm-c--today' : ''].filter(Boolean).join(' ');
+                return <i key={wi} className={cls} style={{ gridRow: d + 2, gridColumn: wi + 2 }} />;
+              })}
+            </div>
+          ))}
+        </div>
+        {card.best && (
+          <div className="sc-hm-legend"><i className="sc-hm-c sc-hm-c--best" /><span>{T.bestDay(card.best.label, card.best.count)}</span></div>
+        )}
+      </div>
+      <Foot />
+    </>
+  );
+}
+
+function Crowd({ card, story }) {
+  // The arc runs from the left end (harsher) to the right (kinder); the
+  // gauge is 0..1 along it. Radius 42 around (50,54) in a 100x60 box.
+  const angle = Math.PI * (1 - card.gauge);
+  const ex = 50 + 42 * Math.cos(angle), ey = 54 - 42 * Math.sin(angle);
+  // The arc never exceeds a half circle, so the large-arc flag is always 0.
+  const large = 0;
+  return (
+    <>
+      <div className="sc-title">{T.crowdTitle}</div>
+      <div className={`sc-panel sc-crowd${story ? ' sc-crowd--story' : ''}`}>
+        <div className="sc-arc">
+          <svg viewBox="0 0 100 60">
+            <path d="M8 54 A42 42 0 0 1 92 54" fill="none" stroke="#F1E9DC" strokeWidth="9" strokeLinecap="round" />
+            {card.gauge > 0.02 && <path d={`M8 54 A42 42 0 ${large} 1 ${ex.toFixed(1)} ${ey.toFixed(1)}`} fill="none" stroke="#FF88C8" strokeWidth="9" strokeLinecap="round" />}
+            <text x="50" y="44" textAnchor="middle" fontFamily="Gabarito" fontWeight="700" fontSize="17" fill="#292924">{card.delta}</text>
+            <text x="50" y="56" textAnchor="middle" fontFamily="DM Sans" fontWeight="600" fontSize="6" fill="#5F5A52" letterSpacing=".8">{T.crowdWord[card.word]}</text>
+          </svg>
+        </div>
+        <div className="sc-crowd-text">
+          <div className="sc-big sc-crowd-head">{card.headline}</div>
+          {card.except && <div className="sc-sub">{card.except}</div>}
+          <div className="sc-lab">{T.crowdAcross(card.compared)}</div>
+        </div>
+      </div>
+      <Foot />
+    </>
+  );
+}
+
+function Genres({ card }) {
+  return (
+    <>
+      <div className="sc-title">{T.genresTitle}</div>
+      <div className="sc-panel sc-genres">
+        {card.rows.map((r, i) => (
+          <div key={r.name} className="sc-bar">
+            <span className="sc-bar-n">{r.name}</span>
+            <span className="sc-bar-t"><span className={`sc-bar-f${i === 0 ? ' sc-bar-f--lead' : ''}`} style={{ width: `${Math.max(r.width, 14)}%` }}>{r.pct}%</span></span>
+            <span className="sc-bar-c">{T.genreCount(r.count)}</span>
+          </div>
+        ))}
+      </div>
+      <Foot />
+    </>
+  );
+}
+
+function Person({ card, story }) {
+  const img = profileUrl(card.profile_path, 'w185');
+  return (
+    <>
+      <div className="sc-title">{T.personTitle}</div>
+      <div className={`sc-panel sc-person${story ? ' sc-person--story' : ''}`}>
+        <div className="sc-person-avatar">{img ? <img src={img} alt="" crossOrigin="anonymous" /> : <span>{(card.name || '?').charAt(0)}</span>}</div>
+        <div className="sc-person-text">
+          <div className="sc-big sc-person-name">{card.name}</div>
+          {card.line && <div className="sc-sub">{card.line}.</div>}
+          <div className="sc-chips">{card.titles.map(t => <span key={t} className="sc-chip">{t}</span>)}</div>
+        </div>
+      </div>
+      <Foot />
+    </>
+  );
+}
+
 function MonthWrap({ card }) {
   const rows = [
     [T.rowTitles, String(card.count)],
@@ -147,6 +247,10 @@ export default function ShareCard({ card, format = 'post', nodeRef }) {
   const Body = card.id === CARD_IDS.HIGHLIGHTS ? Highlights
     : card.id === CARD_IDS.STREAK ? Streak
     : card.id === CARD_IDS.MONTH_WRAP ? MonthWrap
+    : card.id === CARD_IDS.ACTIVITY ? Activity
+    : card.id === CARD_IDS.CROWD ? Crowd
+    : card.id === CARD_IDS.GENRES ? Genres
+    : card.id === CARD_IDS.PERSON ? Person
     : Top5;
   return (
     <div
