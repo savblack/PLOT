@@ -44,7 +44,7 @@ test('canCreateCustomList enforces the free cap by list count for non-premium pr
 });
 
 test('friendlyPremiumError translates the premium_required code and passes other messages through', () => {
-  assert.equal(friendlyPremiumError('premium_required'), 'This is a PLOT Premium feature. Upgrade from Settings to unlock it.');
+  assert.equal(friendlyPremiumError('premium_required'), 'This is a Plot Premium feature. Upgrade from Settings to unlock it.');
   assert.equal(friendlyPremiumError('some_other_error'), 'some_other_error');
   assert.equal(friendlyPremiumError(undefined), undefined);
   assert.equal(friendlyPremiumError(null), null);

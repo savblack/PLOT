@@ -14,8 +14,8 @@ export const ONBOARDING_FLOW = {
     eyebrow: 'Your first pick',
     title: 'Start with this one.',
     subtitle: (title) => `${title || 'This title'} will open as soon as setup is done.`,
-    cta: 'Set up my PLOT →',
-    ctaLabel: 'Set up my PLOT',
+    cta: 'Set up my Plot →',
+    ctaLabel: 'Set up my Plot',
   },
   // Genre picking used to be step 2. It was the only step that couldn't render
   // without a live TMDB call, and nothing downstream read profiles.genres, so it

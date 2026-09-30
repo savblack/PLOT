@@ -13,7 +13,7 @@ export default function TermsPage() {
         <p className="legal-meta">Last updated: June 2026</p>
 
         <h2>1. Acceptance of Terms</h2>
-        <p><strong>By creating an account, accessing, or using PLOT in any way, you agree to be legally bound by these Terms of Service in their entirety. Your use of the Service constitutes your full and unconditional acceptance of these Terms and all risk associated with that use. If you do not agree to every provision of these Terms, you must immediately stop using the Service and delete your account.</strong></p>
+        <p><strong>By creating an account, accessing, or using Plot in any way, you agree to be legally bound by these Terms of Service in their entirety. Your use of the Service constitutes your full and unconditional acceptance of these Terms and all risk associated with that use. If you do not agree to every provision of these Terms, you must immediately stop using the Service and delete your account.</strong></p>
         <p>These Terms form a binding legal agreement between you and SUSUMU HOUSE ("we", "us", "our"). We reserve the right to update these Terms at any time. Continued use of the Service following any update constitutes acceptance of the revised Terms.</p>
 
         <h2>2. Account Registration &amp; Eligibility</h2>
@@ -34,12 +34,12 @@ export default function TermsPage() {
         <p>We reserve the right, but have no obligation, to monitor content on the Service. We may remove any content and terminate any account at our sole discretion, without notice or liability to you.</p>
 
         <h2>4. Third-Party Data &amp; Services</h2>
-        <p>Movie and television metadata displayed on PLOT is provided by The Movie Database (TMDB). This product uses the TMDB API but is not endorsed or certified by TMDB. We make no representations or warranties regarding the accuracy, completeness, or reliability of any third-party data. You use such data entirely at your own risk. We are not responsible for any errors, omissions, or inaccuracies in third-party content.</p>
-        <p>Streaming availability ("where to watch") is sourced from JustWatch via the TMDB API and may be inaccurate or out of date. Some outbound links to streaming services and retailers are affiliate links: PLOT may earn a commission on qualifying purchases or sign-ups made through them, at no additional cost to you. As an Amazon Associate, PLOT earns from qualifying purchases. Affiliate relationships never affect which services are shown or their order.</p>
+        <p>Movie and television metadata displayed on Plot is provided by The Movie Database (TMDB). This product uses the TMDB API but is not endorsed or certified by TMDB. We make no representations or warranties regarding the accuracy, completeness, or reliability of any third-party data. You use such data entirely at your own risk. We are not responsible for any errors, omissions, or inaccuracies in third-party content.</p>
+        <p>Streaming availability ("where to watch") is sourced from JustWatch via the TMDB API and may be inaccurate or out of date. Some outbound links to streaming services and retailers are affiliate links: Plot may earn a commission on qualifying purchases or sign-ups made through them, at no additional cost to you. As an Amazon Associate, Plot earns from qualifying purchases. Affiliate relationships never affect which services are shown or their order.</p>
         <p>The Service may integrate with or link to third-party platforms and services. We have no control over, and assume no responsibility for, the content, privacy practices, or terms of any third-party service. Your dealings with third parties are solely between you and them.</p>
 
         <h2>5. User Content</h2>
-        <p>You retain ownership of content you create on PLOT. By submitting content, you grant SUSUMU HOUSE a perpetual, worldwide, non-exclusive, royalty-free, sublicensable licence to use, store, display, reproduce, and distribute that content for the purpose of operating and improving the Service.</p>
+        <p>You retain ownership of content you create on Plot. By submitting content, you grant SUSUMU HOUSE a perpetual, worldwide, non-exclusive, royalty-free, sublicensable licence to use, store, display, reproduce, and distribute that content for the purpose of operating and improving the Service.</p>
         <p>You are solely responsible for all content you submit and represent that you have all rights necessary to grant the above licence. You agree to indemnify and hold harmless SUSUMU HOUSE from any claims arising from your content. We are not responsible for and expressly disclaim liability for any user-generated content on the Service.</p>
 
         <h2>6. No Warranties: Service Provided "As Is"</h2>
@@ -66,7 +66,7 @@ export default function TermsPage() {
         <p>We may revise these Terms at any time by posting updated Terms to this page. Your continued use of the Service after any such changes constitutes your binding acceptance of the new Terms.</p>
 
         <h2>13. Contact &amp; Governing Law</h2>
-        <p>PLOT is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. These Terms are governed by and construed in accordance with the laws of New South Wales, Australia, without regard to its conflict of law principles. You irrevocably submit to the exclusive jurisdiction of the courts of New South Wales, Australia for the resolution of any dispute arising out of or in connection with these Terms. For questions, contact us at contact@susumuhouse.com or via the app.</p>
+        <p>Plot is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. These Terms are governed by and construed in accordance with the laws of New South Wales, Australia, without regard to its conflict of law principles. You irrevocably submit to the exclusive jurisdiction of the courts of New South Wales, Australia for the resolution of any dispute arising out of or in connection with these Terms. For questions, contact us at contact@susumuhouse.com or via the app.</p>
       </div>
     </div>
   );

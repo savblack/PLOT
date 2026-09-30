@@ -30,7 +30,7 @@ export function Avatar({
 }
 
 /**
- * Blue check: paid PLOT Premium subscription (matches web ProfileBadges).
+ * Blue check: paid Plot Premium subscription (matches web ProfileBadges).
  * Colour comes from the shared palette, not a literal, so it can't drift from
  * web or miss a theme.
  */
