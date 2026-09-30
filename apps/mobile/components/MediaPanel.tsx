@@ -298,11 +298,11 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
     }
     if (!watched) {
       /* Ticking the episode you're actually up to goes through
-         markEpisodeWatched, which logs a history row for the completed episode
-         and handles season rollover when the season's episode count isn't
-         known from `episodes`. Advancing progress directly (the branches
-         below) writes no history, so ticking episodes on mobile used to leave
-         no trace in your watch history at all. Mirrors web's MediaPanel. */
+         markEpisodeWatched, which handles season rollover when the season's
+         episode count isn't known from `episodes`. Neither it nor the
+         branches below write history: that row means the title is watched,
+         and finishSeriesIfComplete logs it once the series is done. Mirrors
+         web's MediaPanel. */
       if (selSeason === curSeason && ep.episode_number === curEp) {
         const result = await watching.markEpisodeWatched(tvId, { undo: true });
         if (!result?.ok) {
