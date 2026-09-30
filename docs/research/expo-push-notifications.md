@@ -1,4 +1,4 @@
-# Shipping iOS push notifications on PLOT mobile
+# Shipping iOS push notifications on Plot mobile
 
 > **Superseded premise (2026-08-23).** `watchlist-availability-alerts` — the email job this
 > research treats as an existing pipeline to extend — has since been removed (function, cron
@@ -92,7 +92,7 @@ uploaded, and uploading a new APNs key does not change users' existing Expo push
 Keys that Expo generates can be downloaded from the Expo website.
 (https://docs.expo.dev/app-signing/app-credentials/)
 
-Since PLOT is enrolled in the Apple Developer Program and has never submitted an app, the
+Since Plot is enrolled in the Apple Developer Program and has never submitted an app, the
 2-key budget is untouched. The practical instruction is: let EAS generate the key, and treat
 it as an account-level asset rather than an app-level one.
 
@@ -129,7 +129,7 @@ need to, because it regenerates them from the app config every time. What must l
 The plugin options are `icon`, `color`, `defaultChannel` and `sounds` (of which `icon`,
 `color` and `defaultChannel` are Android-only), plus `enableBackgroundRemoteNotifications`,
 which is iOS and adds `remote-notification` to `UIBackgroundModes` in Info.plist. That last
-one should stay `false` for PLOT's launch scope, because a "now streaming" alert is a visible
+one should stay `false` for Plot's launch scope, because a "now streaming" alert is a visible
 alert, not a silent background wake.
 (https://docs.expo.dev/versions/v56.0.0/sdk/notifications/)
 
@@ -181,7 +181,7 @@ via `eas credentials --platform ios`). That is a separate piece of work.
 
 ### What the client must do
 
-There are two token types and PLOT should use the Expo one. `getExpoPushTokenAsync(options)`
+There are two token types and Plot should use the Expo one. `getExpoPushTokenAsync(options)`
 returns an Expo push token and requires a `projectId`, which defaults to
 `Constants.expoConfig.extra.eas.projectId` and is already set in `app.json`.
 `getDevicePushTokenAsync()` returns the raw APNs token and is only needed if you talk to APNs
@@ -250,7 +250,7 @@ scheduled pass rather than being folded into the send.
 Expo also offers enhanced push security: an opt-in setting on the EAS dashboard that requires
 an access token on every push request, sent as `Authorization: Bearer ${accessToken}`.
 Without it, anyone holding a leaked Expo push token can send notifications that appear to come
-from PLOT. Requests without a token then fail with `UNAUTHORIZED`. This should be switched on,
+from Plot. Requests without a token then fail with `UNAUTHORIZED`. This should be switched on,
 with the token held as a Supabase function secret alongside the existing
 `AVAILABILITY_ALERTS_CRON_SECRET` and `RESEND_API_KEY`.
 (https://docs.expo.dev/push-notifications/sending-notifications/)
@@ -287,7 +287,7 @@ tap happened before any listener could be attached. It is paired with
 keeps returning the same response and the app re-navigates.
 (https://docs.expo.dev/versions/v56.0.0/sdk/notifications/)
 
-For PLOT the payload should carry a router path such as
+For Plot the payload should carry a router path such as
 `data: { url: "/notifications" }`, or a title-specific path when the alert is about one
 title. The `scheme` is already `plot` and `applinks:app.theplot.tv` is already an associated
 domain, so no linking configuration changes are needed.
@@ -327,7 +327,7 @@ alert, which is already a per-user preference.
 On timing, the system prompt can only be shown once. Asking on first launch, before the user
 has a watchlist, spends that one prompt on a user who has no reason to say yes. The
 point-of-value moment is the first time a title is saved to the watchlist, or the moment the
-user turns the alert on in Settings. This is the same shape as PLOT's existing preference for
+user turns the alert on in Settings. This is the same shape as Plot's existing preference for
 deferring auth prompts to the point of action.
 
 `requestPermissionsAsync` takes an `ios` object supporting `allowAlert`, `allowBadge`,
@@ -342,7 +342,7 @@ Provisional authorisation is a genuinely attractive option for this specific use
 removes the prompt entirely, lets the user see a real "now streaming" alert before deciding,
 and converts on evidence rather than on a promise. The cost is that provisional notifications
 do not appear on the lock screen as banners and make no sound, so a user who never opens
-Notification Center never sees them. Given PLOT is relaunching to a small audience and the
+Notification Center never sees them. Given Plot is relaunching to a small audience and the
 alert is low-frequency, the recommendation is: request provisional at first watchlist save,
 and offer an explicit "make these alerts louder" upgrade in Settings that requests full
 authorisation. Note that `getPermissionsAsync` returns `PROVISIONAL` as a distinct
@@ -360,7 +360,7 @@ The disclosure that follows:
 
 - **Identifiers / Device ID**, since the push token is a device-level identifier. Purpose:
   App Functionality. Linked to the user's identity, because it is stored against `user_id`.
-- **Identifiers / User ID** is already implied by PLOT's accounts and is not newly triggered
+- **Identifiers / User ID** is already implied by Plot's accounts and is not newly triggered
   by push, but the push table makes the linkage explicit.
 
 Apple's optional-disclosure exemption does not apply. It requires all four conditions to hold,

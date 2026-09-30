@@ -1,4 +1,4 @@
-# PLOT What’s On guidelines
+# Plot What’s On guidelines
 
 This is the research and writing standard for every article at
 `theplot.tv/whats-on`. It exists to make the website useful on its own terms:
@@ -66,7 +66,7 @@ into an article by themselves.
 - Studio, distributor, streamer, network and production-company pressrooms.
 - Official trailers, release announcements and press kits.
 - Official festival programme pages and filmmaker interviews.
-- PLOT’s verified provider/release data for where and when to watch.
+- Plot’s verified provider/release data for where and when to watch.
 
 Use these for dates, release plans, platform availability, cast, crew, official
 synopsis, trailer details and confirmed production facts. Do not upgrade a
@@ -92,7 +92,7 @@ that merely repeat it.
   where accessible.
 - Criterion essays and filmmaker interviews from reputable publications.
 
-Use criticism to sharpen PLOT’s own point of view, not to borrow someone else’s
+Use criticism to sharpen Plot’s own point of view, not to borrow someone else’s
 language. Never quote a review unless a short quotation is essential and
 licensed for use; normally, paraphrase the idea instead.
 
@@ -109,7 +109,7 @@ film has endured. Do not reduce an anniversary post to a birthday calculation.
 
 - TMDB for title IDs, basic credits, poster paths and initial metadata.
 - OMDb’s pre-fetched IMDb, Rotten Tomatoes and Metacritic fields when present.
-- JustWatch/PLOT availability data for regional viewing information.
+- JustWatch/Plot availability data for regional viewing information.
 
 Reference data verifies a baseline. It does not substitute for reporting,
 criticism or an editorial idea. Never use TMDB vote averages or vote counts.
@@ -130,7 +130,7 @@ leave it out.
 
 - Keep every consulted external URL in `sources`.
 - Separate confirmed facts from interpretation. A date, credit, deal, platform
-  or quote needs a source; PLOT’s view of why a title works is clearly written
+  or quote needs a source; Plot’s view of why a title works is clearly written
   as criticism, not disguised fact.
 - Cross-check time-sensitive facts against a primary source where possible:
   release dates, streaming platforms, casting and trailers.
@@ -140,7 +140,7 @@ leave it out.
   without revealing a turn, ending or surprise.
 - Do not make claims about reception without a source, and never summarise
   reception (“critics kept coming back to”, “reviews landed mixed”, “critics
-  have praised”). Write PLOT’s own observation instead.
+  have praised”). Write Plot’s own observation instead.
 - Only include ratings from the brief’s pre-fetched ratings block: at most one
   score per article, woven into a point, never as the closing paragraph, never
   a pre-release IMDb average, never an audience score.
@@ -160,7 +160,7 @@ leave it out.
   itself, so “On This Day: Die Hard turns 38” says it twice and breaks
   sentence case.
 - Never show the reader the seams. If a fact could not be checked, cut it; an
-  article never says PLOT could not verify something.
+  article never says Plot could not verify something.
 - Sister articles about the same title (a trailer, then a countdown, then a
   home-release post) must agree on credits and facts. Read the earlier article
   before writing the later one.

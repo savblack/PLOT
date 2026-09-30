@@ -45,7 +45,7 @@ Unit tests cover native-browser cancellation, clipboard fallback, URL validation
 invitation attribution, public-list signup links, title links and unavailable lists.
 The web preview was driven through a real TMDB-resolved Severance share link to
 signup without creating an account. Build/lint, mobile typecheck and the five existing
-browser smoke tests were run. The simulator opened its installed PLOT build, but
+browser smoke tests were run. The simulator opened its installed Plot build, but
 loading this worktree's bundle was not confirmed: new native share sheets still need
 runtime verification before release.
 

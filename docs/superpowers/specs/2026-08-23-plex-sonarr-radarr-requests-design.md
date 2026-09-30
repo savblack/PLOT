@@ -1,4 +1,4 @@
-# PLOT → Plex / Sonarr / Radarr download requests
+# Plot → Plex / Sonarr / Radarr download requests
 
 Status: **design in progress.** Sections 1–4 below are settled with Savannah.
 Section 5 onward is proposed but NOT yet approved. Read "Where to pick up" last.
@@ -7,7 +7,7 @@ Date: 2026-08-23
 
 ## 1. Goal
 
-From PLOT, get a title onto a self-hosted Plex + Sonarr + Radarr stack:
+From Plot, get a title onto a self-hosted Plex + Sonarr + Radarr stack:
 
 - saving a title mirrors it into the user's **Plex watchlist**, and
 - an explicit **Request** action sends it to Sonarr/Radarr to be downloaded.
@@ -23,25 +23,25 @@ without a rewrite.
 | Audience | Personal now, product-shaped later. No Settings UI, no docs, no support burden yet. |
 | Overseerr / Jellyseerr | Not currently installed. **Willing to install Overseerr** — the design assumes it. |
 | Trigger | **Explicit "Request" action.** Saving a title must NOT auto-download. |
-| Status feedback | **Full status**: requested → downloading → in your library, badged in PLOT. |
+| Status feedback | **Full status**: requested → downloading → in your library, badged in Plot. |
 | Plex watchlist mirroring | **Yes**, keep it. Saves mirror to the Plex watchlist independently of Request. |
 | Approach | **A: local companion → Overseerr API.** See §3. |
 
 ### Approaches considered and rejected
 
 - **B. Companion → Sonarr/Radarr directly.** Drops the Overseerr dependency, but
-  the companion inherits TMDB→TVDB mapping (Sonarr is TVDB-native, PLOT is
+  the companion inherits TMDB→TVDB mapping (Sonarr is TVDB-native, Plot is
   TMDB-native), quality profile ids, root folder paths, season monitoring and
   search triggering. Status feedback also gets much harder. Fallback only if
   Overseerr proves annoying to run.
-- **C. Expose Overseerr publicly, PLOT pushes to it.** No local process and no
-  polling latency, but PLOT-the-cloud-service would hold a credential reaching
+- **C. Expose Overseerr publicly, Plot pushes to it.** No local process and no
+  polling latency, but Plot-the-cloud-service would hold a credential reaching
   into the house — directly contradicting the SSRF stance already taken in
   `supabase/functions/_shared/plexConnectionPolicy.js`. Also a non-starter as a
   product feature. Rejected outright.
 - **Zero-code: Overseerr's native Plex watchlist auto-request.** Ruled out by the
   two decisions above — it auto-requests *everything* on the watchlist and
-  reports nothing back to PLOT.
+  reports nothing back to Plot.
 
 ## 3. What already exists in the repo
 
@@ -50,7 +50,7 @@ A lot of this was scaffolded already. Do not rebuild it.
 - `supabase/migrations/20260426000000_add_media_integrations.sql` — creates
   `media_integrations` (provider `'plex' | 'companion'`), `integration_items`,
   and `integration_outbox` (single action: `plex_watchlist_add`). RLS on all three.
-- **The PLOT → Plex watchlist leg is fully built** —
+- **The Plot → Plex watchlist leg is fully built** —
   `supabase/functions/media-sync/index.ts:460` (`addPlexWatchlistItem`). It goes
   through plex.tv's *cloud* API (`metadata.provider.plex.tv`), so it never
   touches the LAN. Saving a title already enqueues outbox rows.
@@ -86,7 +86,7 @@ A lot of this was scaffolded already. Do not rebuild it.
 Two independent legs off one queue:
 
 ```
-PLOT client
+Plot client
   ├─ save a title   → outbox row: plex_watchlist_add   (exists today)
   └─ tap "Request"  → outbox row: media_request         (new)
                             │
@@ -100,7 +100,7 @@ PLOT client
                                           your Plex server
                                                  │
                             companion reads status back ──┘
-                            → integration_items → badge in PLOT
+                            → integration_items → badge in Plot
 ```
 
 The watchlist leg runs entirely in the cloud. The request leg never leaves the
@@ -150,7 +150,7 @@ Checked against the Overseerr OpenAPI spec on 2026-08-23, not recalled from memo
 - **Status enum**: `1` UNKNOWN, `2` PENDING, `3` PROCESSING,
   `4` PARTIALLY_AVAILABLE, `5` AVAILABLE, `6` DELETED.
 
-**TMDB ids are the only identifier in play, in both directions.** PLOT already
+**TMDB ids are the only identifier in play, in both directions.** Plot already
 stores `tmdb_id` on every list item, so there is no id mapping anywhere in the
 system. This is the main reason approach A is cheap.
 
@@ -159,7 +159,7 @@ Sources:
 - <https://github.com/cyanheads/seerr-mcp-server>
 - <https://smarthomepursuits.com/setup-overseerr>
 
-## 6. Homelab setup required (Savannah's side, outside PLOT)
+## 6. Homelab setup required (Savannah's side, outside Plot)
 
 1. **Overseerr container** — `sctx/overseerr`, port 5055, on the same Docker
    network / LAN as Plex, Sonarr and Radarr. `restart: unless-stopped`, one
@@ -175,10 +175,10 @@ Sources:
 3. **Overseerr API key** — Settings → General → API Key. The only credential the
    companion needs.
 4. **Leave Overseerr's Plex watchlist auto-request OFF** (Settings → Users).
-   Otherwise it pulls the whole PLOT watchlist in behind your back, defeating the
+   Otherwise it pulls the whole Plot watchlist in behind your back, defeating the
    explicit-Request decision.
 5. **Companion container** — alongside the others. Four env vars: Supabase
-   functions URL, PLOT device token, `OVERSEERR_URL=http://overseerr:5055`,
+   functions URL, Plot device token, `OVERSEERR_URL=http://overseerr:5055`,
    `OVERSEERR_API_KEY`.
 6. **Firewall: nothing.** No port forwards, no reverse proxy, no tunnel, no
    dynamic DNS. The companion only makes outbound HTTPS calls to Supabase.
@@ -222,7 +222,7 @@ as success**, not an error.
 ### Error handling
 
 - Overseerr unreachable → row stays `claimed`, lease expires after 10 min, retried.
-- Cap at 5 attempts, then `error` with the message surfaced in PLOT.
+- Cap at 5 attempts, then `error` with the message surfaced in Plot.
 - `409` already requested → `done`.
 - `404` unknown TMDB id → `error`, surfaced.
 - Companion offline → rows sit `pending`; show "Waiting for your server" when the
@@ -233,7 +233,7 @@ as success**, not an error.
 - Follow the existing vitest patterns in `apps/web/tests/unit/`; `packages/core`
   already has ~342 tests.
 - Unit: outbox action filtering, Overseerr payload building, status enum mapping
-  (1–6 → PLOT labels), 409 handling, stale-claim reclaim.
+  (1–6 → Plot labels), 409 handling, stale-claim reclaim.
 - Companion loop against a stubbed `fetch`.
 
 ### Opportunistic fix

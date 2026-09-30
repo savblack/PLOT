@@ -1,15 +1,15 @@
 ---
 name: plot-worktree
 description: >-
-  Start any new PLOT feature, fix, or task in an isolated sibling Git worktree
+  Start any new Plot feature, fix, or task in an isolated sibling Git worktree
   at ../PLOT-worktrees. Use before writing code when branching off main, when
   another agent may be working in parallel, or when something mentions
-  new-feature / worktrees. Never nest worktrees under the PLOT checkout.
+  new-feature / worktrees. Never nest worktrees under the Plot checkout.
 ---
 
-# PLOT worktree
+# Plot worktree
 
-PLOT-owned skill (not from `npx skills`). Survives `npx skills update`.
+Plot-owned skill (not from `npx skills`). Survives `npx skills update`.
 Canonical summary also lives in `AGENTS.md` (that file wins on conflict).
 
 Every task gets its own worktree and branch from `origin/main`. Never build on

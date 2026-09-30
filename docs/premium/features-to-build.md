@@ -1,4 +1,4 @@
-# PLOT Premium: features to build (agent handoff)
+# Plot Premium: features to build (agent handoff)
 
 **Audience:** another agent picking up Premium product work.  
 **Status of this doc:** locked Free/Premium *positioning* as of 2026-09-23; build status updated 2026-09-26 (after #1045). **Pick for Me** (the tonight picker) is live on `main`; Watch together is in review; most other Premium *product* features are not built yet. Checkout is hard-closed.  

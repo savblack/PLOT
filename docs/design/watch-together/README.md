@@ -1,4 +1,4 @@
-# PLOT Watch together design
+# Plot Watch together design
 
 Design spec for the Premium "Find something you both want to watch" feature
 (`watchTogether` in `packages/core/copy/plansPage.js`). Built on web behind
