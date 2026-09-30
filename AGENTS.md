@@ -329,6 +329,15 @@ So:
 - **`pnpm run db:restore-drill`** proves the nightly backup still restores. `pg_restore`
   exits 0 even when tables fail, so run this after any migration adding an extension type,
   and compare the table count against production. See `docs/ops/db-restore.md`.
+- **`pnpm run db:drift`** (nightly via `.github/workflows/migration-drift.yml`) compares
+  production's and Staging's `schema_migrations` with `supabase/migrations`, then Staging's
+  schema with production's. Read-only. It exists because Staging drifted 18 migrations
+  behind `main` in September 2026 without anyone noticing, and because a ledger row is not
+  proof: two branches shared version `20260926160000`, so Staging recorded main's
+  `refresh_premium_badges` as applied and never ran it. Run it on your branch before merging
+  a migration: a version already taken on Staging by another branch fails it. After
+  applying or hand-repairing anything on Staging, record it in `schema_migrations` in the
+  same transaction.
 
 **Supabase `config.toml` pins `verify_jwt` per function.** Public functions set
 `verify_jwt = false`; forgetting it on redeploy makes the gateway reject requests before the
