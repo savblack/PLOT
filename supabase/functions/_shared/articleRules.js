@@ -5,7 +5,7 @@
 //
 // Written after a full read of the live What's On catalogue on 13 September
 // 2026 found the same defects across dozens of published articles: em dashes
-// the field spec already banned, PLOT's own paraphrase wrapped in quotation
+// the field spec already banned, Plot's own paraphrase wrapped in quotation
 // marks so it read as an uncredited review quote, "critics kept coming back
 // to" reception narration, a three-score ratings sentence bolted on as the
 // closing paragraph of nearly every piece, and "an interesting detail:" trivia
@@ -25,7 +25,7 @@ const DASH_RE = /[–—]/;
 const QUOTED_PASSAGE_RE = /["“]([^"”]{40,})["”]/;
 
 // House style writes film and show titles bare, but a writer quoting one is
-// making a style slip, not passing off a review as PLOT's own words, and the
+// making a style slip, not passing off a review as Plot's own words, and the
 // two need different advice. A title carries no sentence punctuation and is
 // capitalised like a title ("Blades of the Guardians: Wind Rises in the
 // Desert"); a lifted sentence has commas or a full stop, or reads as prose.
@@ -56,7 +56,7 @@ const NARRATED_RESEARCH = [
 ];
 
 // The reader must never be shown the seams of the pipeline. Two published
-// articles told them outright that PLOT had failed to check something.
+// articles told them outright that Plot had failed to check something.
 const EXPOSED_RESEARCH = [
   /\b(?:could not|couldn't|cannot|can't|unable to|failed to)\s+(?:verify|confirm|find|resolve)\b/i,
   /\b(?:our|database|internal)\s+records\b/i,
@@ -72,7 +72,7 @@ const AUDIENCE_SCORE = /\baudience (?:score|rating)\b|\bpopcornmeter\b|\bverifie
 // Day: Die Hard turns 38" shipped exactly this way.
 const TITLE_CASE_LABEL = /^(?:On This Day|First Look|Trailer Drop|Watch Tonight|Hidden Gem|Now Streaming|Now At Home|Coming Soon|The Week Ahead|New This Week)\b/;
 
-// PLOT defaults to US framing and US spelling. These are the forms that reach
+// Plot defaults to US framing and US spelling. These are the forms that reach
 // an article; words spelled the same either side of the Atlantic need no entry.
 const UK_SPELLINGS = [
   [/\btheatres?\b/i, 'theater/theaters'],
@@ -135,12 +135,12 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, { guide 
     if (quoted && looksLikeTitle(quoted[1])) {
       errors.push(`${field} puts a title in quotation marks ("${quoted[1].slice(0, 40)}…"); house style writes titles bare`);
     } else if (quoted) {
-      errors.push(`${field} quotes a passage ("${quoted[1].slice(0, 40)}…"); paraphrase in PLOT's voice instead of quoting`);
+      errors.push(`${field} quotes a passage ("${quoted[1].slice(0, 40)}…"); paraphrase in Plot's voice instead of quoting`);
     }
     for (const re of NARRATED_RESEARCH) {
       const hit = re.exec(text);
       if (hit) {
-        errors.push(`${field} narrates research or reception ("${hit[0]}"); state PLOT's own view directly`);
+        errors.push(`${field} narrates research or reception ("${hit[0]}"); state Plot's own view directly`);
         break;
       }
     }
@@ -163,7 +163,7 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, { guide 
     for (const [re, better] of UK_SPELLINGS) {
       const hit = re.exec(text);
       if (hit) {
-        errors.push(`${field} uses UK spelling ("${hit[0]}"); PLOT defaults to US spelling (${better})`);
+        errors.push(`${field} uses UK spelling ("${hit[0]}"); Plot defaults to US spelling (${better})`);
         break;
       }
     }
@@ -223,13 +223,13 @@ export const socialErrors = (copy = {}, { home_kind } = {}) => {
     }
     for (const re of NARRATED_RESEARCH.slice(0, 6)) {
       const hit = re.exec(text);
-      if (hit) { errors.push(`${field} narrates research ("${hit[0]}"); state it as PLOT's own`); break; }
+      if (hit) { errors.push(`${field} narrates research ("${hit[0]}"); state it as Plot's own`); break; }
     }
     const audience = AUDIENCE_SCORE.exec(text);
     if (audience) errors.push(`${field} cites an audience score ("${audience[0]}")`);
     for (const [re, better] of UK_SPELLINGS) {
       const hit = re.exec(text);
-      if (hit) { errors.push(`${field} uses UK spelling ("${hit[0]}"); PLOT defaults to US spelling (${better})`); break; }
+      if (hit) { errors.push(`${field} uses UK spelling ("${hit[0]}"); Plot defaults to US spelling (${better})`); break; }
     }
     const store = STORE_JARGON.exec(text);
     if (store) errors.push(`${field} calls a rental a store ("${store[0]}"); name the platforms, or say "on digital"`);

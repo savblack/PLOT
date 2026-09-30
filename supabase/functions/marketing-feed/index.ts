@@ -1,5 +1,5 @@
 /**
- * marketing-feed — "What's On", PLOT's update feed at theplot.tv/whats-on.
+ * marketing-feed — "What's On", Plot's update feed at theplot.tv/whats-on.
  *
  * Every marketing post is originally published here; social posts link back.
  * Served via a Vercel rewrite from the static site:
@@ -148,7 +148,7 @@ type FeedPost = {
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
-// Feed/article hero. Most posts use the plain TMDB still (no PLOT branding) set
+// Feed/article hero. Most posts use the plain TMDB still (no Plot branding) set
 // in copy.hero_image; the branded render (media[0]) is for social channels.
 // Trending charts have no hero_image, so they keep their branded chart render.
 const postImage = (p: FeedPost) => {
@@ -156,8 +156,8 @@ const postImage = (p: FeedPost) => {
   if (typeof hero === 'string' && /^https?:\/\//.test(hero)) return hero;
   return p.media?.[0]?.landscape_path ? mediaUrl(p.media[0].landscape_path) : null;
 };
-// Static branded 1200×630 fallback (PLOT wordmark + tagline) for pages with no
-// per-post image, so every shared PLOT link previews on-brand.
+// Static branded 1200×630 fallback (Plot wordmark + tagline) for pages with no
+// per-post image, so every shared Plot link previews on-brand.
 const OG_FALLBACK = `${SITE}/og-image.png`;
 // Link-preview image: prefer the branded per-post social render, then the plain
 // hero still, then the static brand image. (The on-page hero keeps using
@@ -290,7 +290,7 @@ const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?
       ${facts ? `<span class="sm-facts">${esc(facts)}</span>` : ''}
       ${status}
     </div>
-    <a class="sm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your PLOT</a>
+    <a class="sm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your Plot</a>
   </aside>`;
 };
 
@@ -338,7 +338,7 @@ const trailerModule = async (post: FeedPost, ref = post.tmdb_refs?.[0]) => {
       </div>
       <div class="tm-actions">
         <a class="tm-youtube" href="${youtubeUrl}" target="_blank" rel="noopener noreferrer">Open on YouTube</a>
-        <a class="tm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your PLOT</a>
+        <a class="tm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your Plot</a>
       </div>
     </div>
   </aside>`;
@@ -1063,7 +1063,7 @@ const trendingTeaser = (items: ChartItem[], prior: ChartItem[] | null) => `<ol c
 }).join('')}</ol>`;
 
 // The release date is the point of a countdown post, so it's a badge on the
-// card rather than buried in a dek. Uses scheduled_for (when PLOT posted the
+// card rather than buried in a dek. Uses scheduled_for (when Plot posted the
 // update) — the only date FeedPost actually carries; not a claim about the
 // title's own release date, which this function has no source for.
 const comingSoonCards = (posts: FeedPost[]) => `<div class="datecards">${posts.map((p) => {
@@ -1470,7 +1470,7 @@ Deno.serve(async (req) => {
         ${note ? `<span class="gt-note">${esc(note)}</span>` : ''}
       </span>
       ${chip ? `<span class="gt-chip">${esc(chip)}</span>` : ''}
-      ${rid ? `<a class="gt-add" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&tmdb_id=${rid}&src=whats_on_guide" data-cta="guide_save" aria-label="Save ${esc(r.title)} to your PLOT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>` : ''}
+      ${rid ? `<a class="gt-add" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&tmdb_id=${rid}&src=whats_on_guide" data-cta="guide_save" aria-label="Save ${esc(r.title)} to your Plot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>` : ''}
     </div>`;
   }).join('');
 
