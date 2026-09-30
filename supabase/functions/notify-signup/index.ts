@@ -28,7 +28,7 @@ import { adminClient } from '../_shared/supabaseAdmin.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = Deno.env.get('SIGNUP_NOTIFY_TO_EMAIL')
-const FROM_EMAIL = 'PLOT <signups@theplot.tv>'
+const FROM_EMAIL = 'Plot <signups@theplot.tv>'
 
 function escapeHtml(value: string) {
   return value
@@ -76,7 +76,7 @@ async function sendSignupEmail({
 }) {
   const html = `
     <div style="font-family: sans-serif; max-width: 520px; color: #1a1a1a;">
-      <h2 style="margin: 0 0 4px; font-size: 1.1rem;">New PLOT signup</h2>
+      <h2 style="margin: 0 0 4px; font-size: 1.1rem;">New Plot signup</h2>
       <p style="margin: 0 0 20px; font-size: 0.8rem; color: #888;">${escapeHtml(formatSignedUpAt(createdAt))} · via ${escapeHtml(method)}</p>
       <div style="background: #f5f4f2; border-radius: 8px; padding: 16px; font-size: 0.92rem; line-height: 1.6;">
         <div><strong>${escapeHtml(email || 'unknown email')}</strong></div>
@@ -94,7 +94,7 @@ async function sendSignupEmail({
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: [TO_EMAIL],
-      subject: `New PLOT signup: ${email || userId}`,
+      subject: `New Plot signup: ${email || userId}`,
       html,
     }),
   })

@@ -370,7 +370,7 @@ async function upsertTraktData(
     await staleBase
   }
 
-  // Upsert matched items into the user's PLOT watchlist
+  // Upsert matched items into the user's Plot watchlist
   const watchlistId = await ensureWatchlist(supabaseAdmin, userId)
   const listRows = integrationRows.flatMap(r =>
     r.tmdb_id && r.media_type && r.sync_state === 'active'
@@ -665,7 +665,7 @@ async function handleDisconnect(
         body:JSON.stringify({ token,client_id:Deno.env.get('TRAKT_CLIENT_ID'),client_secret:Deno.env.get('TRAKT_CLIENT_SECRET') }) })
       if (!response.ok) throw new Error('revocation_failed')
     } catch {
-      await supabaseAdmin.from('media_integrations').update({ last_error:'Updates stopped. Trakt access revocation failed. Retry disconnect or revoke PLOT in Trakt settings.' }).eq('id',connection.id).eq('status','disabled')
+      await supabaseAdmin.from('media_integrations').update({ last_error:'Updates stopped. Trakt access revocation failed. Retry disconnect or revoke Plot in Trakt settings.' }).eq('id',connection.id).eq('status','disabled')
       return json({ error:'Updates stopped. Retry disconnect to revoke Trakt access.' },502)
     }
   }

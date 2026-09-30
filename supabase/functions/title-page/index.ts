@@ -1,5 +1,5 @@
 /**
- * title-page — PLOT's public, indexable title pages at theplot.tv/movie|tv/<slug>.
+ * title-page — Plot's public, indexable title pages at theplot.tv/movie|tv/<slug>.
  *
  * The "where to watch X" SEO surface (think JustWatch/Reelgood): a server-rendered
  * page per movie / show with regional streaming availability, cast, related titles,
@@ -315,7 +315,7 @@ type SitemapTitle = {
   name?: string;
 };
 
-// Seed the sitemap from PLOT's tracked catalogue plus TMDB's current discovery
+// Seed the sitemap from Plot's tracked catalogue plus TMDB's current discovery
 // feeds. Fetching the live feeds here means newly popular and newly released
 // titles become crawlable within the sitemap's one-day cache window, without
 // hardcoding opaque TMDB IDs or creating thin duplicate pages.
@@ -441,7 +441,7 @@ Deno.serve(async (req) => {
   const poster = img(data.poster_path, 'w342');
   const backdrop = img(data.backdrop_path, 'w1280');
   const posterImage = img(data.poster_path, 'w780') || '';
-  // Link-preview image. This was the branded PLOT card at /api/og on the app
+  // Link-preview image. This was the branded Plot card at /api/og on the app
   // domain — a Vercel path that has not existed since the move to Cloudflare,
   // so it resolved to the SPA shell as text/html and every title page unfurled
   // with no image. Its Cloudflare replacement (the plot-og Worker) cannot
