@@ -34,8 +34,8 @@ import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
    turning up). The frame matches the Calendar's: 264px side column, 72px
    gap, 24px Gabarito month names on the stream.
 
-   Every number here comes from history rows plus the TMDB details PLOT
-   already fetches for the media panel. Nothing is compared with other PLOT
+   Every number here comes from history rows plus the TMDB details Plot
+   already fetches for the media panel. Nothing is compared with other Plot
    users. */
 
 const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

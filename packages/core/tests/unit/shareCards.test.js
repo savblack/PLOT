@@ -102,9 +102,9 @@ test('captions end with the profile link and read as a post', () => {
   hl.genre = 'Horror';
   assert.equal(shareCaption(hl, profile, SHARE_CARDS.captions), '12 titles in 2026 so far, mostly horror. https://app.theplot.tv/u/savannah?src=profile_share&ref=savannah');
   const st = { id: CARD_IDS.STREAK, days: 7 };
-  assert.match(shareCaption(st, profile, SHARE_CARDS.captions), /^7-day watch streak on PLOT\. https:/);
+  assert.match(shareCaption(st, profile, SHARE_CARDS.captions), /^7-day watch streak on Plot\. https:/);
   const t5 = { id: CARD_IDS.TOP5_TV, kind: 'tv' };
-  assert.match(shareCaption(t5, profile, SHARE_CARDS.captions), /^My Top 5 TV series on PLOT\. Follow me: https:/);
+  assert.match(shareCaption(t5, profile, SHARE_CARDS.captions), /^My Top 5 TV series on Plot\. Follow me: https:/);
   assert.equal(shareCaption({ id: 'x' }, {}, SHARE_CARDS.captions), '');
 });
 

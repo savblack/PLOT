@@ -298,18 +298,18 @@ test('an import over the row cap does not overwrite a rating already in history'
   assert.equal(plan.alreadyInHistory, 1200);
 });
 
-test('a concurrent PLOT edit survives the write even after an empty preview read', async () => {
+test('a concurrent Plot edit survives the write even after an empty preview read', async () => {
   const client = createInMemorySupabase({ unique: { history: ['user_id', 'tmdb_id', 'media_type'] } });
   configure({ supabaseClient: client });
   // Reuse the existing test-double identifier above, not a real title mapping.
   const row = { user_id: 'u1', tmdb_id: 1, media_type: 'movie', note: 'imported' };
   client.beforeNext('history', 'upsert', db => {
-    db.tables.history = [{ ...row, note: 'edited in PLOT', rating: 9 }];
+    db.tables.history = [{ ...row, note: 'edited in Plot', rating: 9 }];
   });
   const result = await writeImportRows([row]);
   assert.equal(result.inserted, 0);
   assert.equal(result.failed, 0);
-  assert.equal(client.__db.tables.history[0].note, 'edited in PLOT');
+  assert.equal(client.__db.tables.history[0].note, 'edited in Plot');
   assert.equal(client.__db.tables.history[0].rating, 9);
 });
 

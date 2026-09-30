@@ -101,7 +101,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   // At sidebar widths there is no header at all — the brand, search and
   // notifications live in the sidebar, and the title moves into the content
   // column as .app-page-heading so it shares a left edge with the section
-  // headers below it. Home's VIEW_TITLES entry is the brand ("PLOT"), which the
+  // headers below it. Home's VIEW_TITLES entry is the brand ("Plot"), which the
   // sidebar already shows, so prefer the nav item's own label here and fall
   // back to the shared titles.
   const isProfileView = (currentView || '').startsWith('u/');

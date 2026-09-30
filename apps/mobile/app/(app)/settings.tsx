@@ -1121,7 +1121,7 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
-        {/* PLOT Premium — status only; purchases and subscription management
+        {/* Plot Premium — status only; purchases and subscription management
             stay on the web app (Apple IAP rules: no external purchase links). */}
         {profile?.is_premium && (
           <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
@@ -1210,7 +1210,7 @@ export default function SettingsScreen() {
             label={COMMON.privacyPolicy}
             onPress={() => Linking.openURL('https://theplot.tv/privacy.html')}
           />
-          {/* Guideline 1.2 holds PLOT to its own community standards, so they
+          {/* Guideline 1.2 holds Plot to its own community standards, so they
               have to be reachable from inside the app, not only from the site. */}
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><Circle cx={9} cy={7} r={4}/><Path d="M23 21v-2a4 4 0 0 0-3-3.87"/></Svg>}

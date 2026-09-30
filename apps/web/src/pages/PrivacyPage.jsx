@@ -13,11 +13,11 @@ export default function PrivacyPage() {
         <p className="legal-meta">Last updated: June 2026</p>
 
         <h2>1. Agreement to This Policy</h2>
-        <p><strong>By creating an account or using PLOT in any way, you acknowledge that you have read, understood, and agree to this Privacy Policy in full. If you do not agree, you must not use the Service.</strong></p>
+        <p><strong>By creating an account or using Plot in any way, you acknowledge that you have read, understood, and agree to this Privacy Policy in full. If you do not agree, you must not use the Service.</strong></p>
         <p>You use the Service at your own risk. While we take reasonable steps to protect your data, no method of transmission over the internet or electronic storage is completely secure. We cannot guarantee the absolute security of your information, and by using the Service you accept this inherent risk.</p>
 
         <h2>2. What We Collect</h2>
-        <p>When you use PLOT, we may collect:</p>
+        <p>When you use Plot, we may collect:</p>
         <ul>
           <li><strong>Account information</strong>: your email address and hashed password (managed via Supabase Auth)</li>
           <li><strong>Profile and preference data</strong>: your username, display name, optional bio, region, timezone, and channel/provider preferences</li>
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
         <h2>3. How We Use Your Data</h2>
         <p>We use your data to operate, maintain, and improve the Service, including:</p>
         <ul>
-          <li>Providing and personalizing your PLOT experience</li>
+          <li>Providing and personalizing your Plot experience</li>
           <li>Displaying your watch history, lists, reminders, and watch progress inside your account</li>
           <li>Sending transactional emails (account confirmation, password reset)</li>
           <li>Operating calendar links, support workflows, and optional media integrations</li>
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
         <p>We do not sell your personal data to third parties.</p>
 
         <h2>4. Third-Party Services &amp; Disclaimer</h2>
-        <p>The Service relies on third-party infrastructure and data providers. By using PLOT, you acknowledge and accept that your data may be processed by these third parties under their own policies, over which SUSUMU HOUSE has no control:</p>
+        <p>The Service relies on third-party infrastructure and data providers. By using Plot, you acknowledge and accept that your data may be processed by these third parties under their own policies, over which SUSUMU HOUSE has no control:</p>
         <ul>
           <li><strong>Supabase</strong>: authentication, database, storage, and edge functions</li>
           <li><strong>The Movie Database (TMDB)</strong>: movie and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
@@ -52,7 +52,7 @@ export default function PrivacyPage() {
           <li><strong>Resend</strong>: feedback email delivery and transactional notification support where applicable.</li>
           <li><strong>Google Fonts</strong>: typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
         </ul>
-        <p><strong>Affiliate links.</strong> Some links to streaming services and retailers include an affiliate identifier that tells the destination the visit came from PLOT. It contains no personal information about you, and we do not share your account data with these third parties. PLOT may earn a commission on qualifying purchases made through these links, at no additional cost to you.</p>
+        <p><strong>Affiliate links.</strong> Some links to streaming services and retailers include an affiliate identifier that tells the destination the visit came from Plot. It contains no personal information about you, and we do not share your account data with these third parties. Plot may earn a commission on qualifying purchases made through these links, at no additional cost to you.</p>
         <p>We are not liable for the acts or omissions of these third-party providers, including any data breaches, service outages, or loss of data that occurs on their infrastructure. Your use of the Service constitutes your acceptance of their respective policies.</p>
 
         <h2>5. Data Security &amp; Limitation of Liability</h2>
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
         <p>Your data is retained for as long as your account remains active. You may request deletion of your account and associated app data at any time through account settings. Account deletion removes the current app records tied to your user account, including lists, favourites, reminders, history, integration records, feedback rows, and the original feedback attachment objects associated with your account. We may retain operational logs, anonymised analytics, and temporary backup copies for a limited period where required for security, debugging, or normal infrastructure recovery.</p>
 
         <h2>7. Cookies &amp; Local Storage</h2>
-        <p>PLOT uses cookies and local storage for session management, authentication, and limited product analytics state. We do not use advertising cookies. By using the Service, you consent to this use.</p>
+        <p>Plot uses cookies and local storage for session management, authentication, and limited product analytics state. We do not use advertising cookies. By using the Service, you consent to this use.</p>
 
         <h2>8. Your Rights</h2>
         <p>Depending on your jurisdiction, you may have rights regarding your personal data. To exercise any such rights, contact us via the app. We will respond to reasonable requests in accordance with applicable law but are not liable for any inability to fully comply where doing so conflicts with our legal obligations or technical constraints. You can download a copy of your data at any time from Settings.</p>
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
         <p>We reserve the right to update this Privacy Policy at any time. Changes will be posted to this page with an updated "last updated" date. Your continued use of the Service after any changes constitutes your acceptance of the revised policy.</p>
 
         <h2>11. Contact</h2>
-        <p>PLOT is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related inquiries, contact us at contact@susumuhouse.com or via the app.</p>
+        <p>Plot is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related inquiries, contact us at contact@susumuhouse.com or via the app.</p>
       </div>
     </div>
   );

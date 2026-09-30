@@ -3,7 +3,7 @@ import { PROFILE_BADGES } from '../copy/profileBadges';
 /**
  * The badges that sit after a display name.
  *
- *   Premium (blue check) — paid PLOT Premium subscription, entitlement.
+ *   Premium (blue check) — paid Plot Premium subscription, entitlement.
  *   Supporter (pink heart) — has tipped via Ko-fi, recognition only.
  *
  * They're independent: someone can have neither, either, or both. Order is

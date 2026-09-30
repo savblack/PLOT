@@ -600,7 +600,7 @@ export default function PublicProfilePage() {
     if (!p) return;
     share({
       url: buildProfileShareUrl({ username: p.username }),
-      title: `${name} on PLOT`,
+      title: `${name} on Plot`,
       text: SHARING.profileText(name),
       event: EVENTS.PROFILE_SHARED,
       eventProps: { profile_id: p.id },

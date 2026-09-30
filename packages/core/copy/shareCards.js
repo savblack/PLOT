@@ -79,12 +79,12 @@ export const SHARE_CARDS = {
   // Captions: the post text, with the profile link at the end
   captions: {
     highlights: (card, url) => `${card.count} titles in ${card.year}${card.isCurrentYear ? ' so far' : ''}${card.genre ? `, mostly ${card.genre.toLowerCase()}` : ''}. ${url}`.trim(),
-    streak: (card, url) => `${card.days}-day watch streak on PLOT. ${url}`.trim(),
-    top5: (card, url) => `My Top 5 ${card.kind === 'tv' ? 'TV series' : 'films'} on PLOT. Follow me: ${url}`.trim(),
-    activity: (card, url) => `${card.watchDays} nights in on PLOT this year. ${url}`.trim(),
-    crowd: (card, url) => `${card.headline || 'Me vs the crowd on PLOT.'} ${url}`.trim(),
-    genres: (card, url) => `What I watch, according to PLOT: ${card.rows.slice(0, 3).map(r => r.name.toLowerCase()).join(', ')}. ${url}`.trim(),
-    person: (card, url) => `My person this year on PLOT: ${card.name}. ${url}`.trim(),
+    streak: (card, url) => `${card.days}-day watch streak on Plot. ${url}`.trim(),
+    top5: (card, url) => `My Top 5 ${card.kind === 'tv' ? 'TV series' : 'films'} on Plot. Follow me: ${url}`.trim(),
+    activity: (card, url) => `${card.watchDays} nights in on Plot this year. ${url}`.trim(),
+    crowd: (card, url) => `${card.headline || 'Me vs the crowd on Plot.'} ${url}`.trim(),
+    genres: (card, url) => `What I watch, according to Plot: ${card.rows.slice(0, 3).map(r => r.name.toLowerCase()).join(', ')}. ${url}`.trim(),
+    person: (card, url) => `My person this year on Plot: ${card.name}. ${url}`.trim(),
     monthWrap: (card, url) => `${card.monthName}, wrapped: ${card.count} titles${card.fiveStars.length ? `, ${card.fiveStars.length} five-star` : ''}. ${url}`.trim(),
   },
 };

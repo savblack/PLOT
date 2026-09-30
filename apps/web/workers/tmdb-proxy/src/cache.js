@@ -5,8 +5,8 @@
 // the web app and the mobile app both call this from a client, and any
 // credential a client holds is a credential an attacker has. What can be
 // changed is what a call costs. A response served from cache reaches neither
-// Supabase nor TMDB, so caching turns "anyone can spend PLOT's TMDB quota" into
-// "anyone can spend PLOT's TMDB quota once per path per TTL".
+// Supabase nor TMDB, so caching turns "anyone can spend Plot's TMDB quota" into
+// "anyone can spend Plot's TMDB quota once per path per TTL".
 //
 // Everything here is safe to share between callers: TMDB answers are the same
 // for everybody, and the parts that are not (`region`, `language`) travel in
@@ -20,7 +20,7 @@ const TTLS = [
   [/^collection\/\d+$/, 86400],
   [/^person\/\d+(\/combined_credits)?$/, 86400],
   // Title, season and episode records change when a broadcaster moves something
-  // or artwork is replaced. Six hours is well inside how fast PLOT needs to see
+  // or artwork is replaced. Six hours is well inside how fast Plot needs to see
   // that, and it collapses the repeat views a popular title gets in a day.
   [/^(movie|tv)\/\d+$/, 21600],
   [/^(movie|tv)\/\d+\/(recommendations|reviews|watch\/providers)$/, 21600],
