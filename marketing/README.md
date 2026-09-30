@@ -1,4 +1,4 @@
-# PLOT marketing automation
+# Plot marketing automation
 
 The inventory of every automation (what starts it, which secrets it uses, where
 the content lands) is [`docs/ops/gtm-automations.md`](../docs/ops/gtm-automations.md).
@@ -173,7 +173,7 @@ baseline the new times can be compared against.
 
 ### The queue is a rolling window, not a week
 
-The Buffer plan caps **10 scheduled posts per channel**, and a week of PLOT is
+The Buffer plan caps **10 scheduled posts per channel**, and a week of Plot is
 about **16 per channel** — roughly 2.6 posts a day, each fanning out to two or
 three channels. A week does not fit, and never will on this plan.
 
@@ -514,7 +514,8 @@ release post and the question are deliberately about the same title.
   service-role and nothing serves it.
 - **There is no public archive.** The digest lives in the inbox it was sent to.
   On the site the newsletter is just a signup form, at the foot of What's On
-  under `#newsletter`, which the nav and footer link to. `theplot.tv/newsletter`
+  under `#newsletter` (the homepage has its own form; neither the nav nor the
+  footer links to it). `theplot.tv/newsletter`
   and `/newsletter/<week_start>` 301 there (`apps/website/functions/newsletter.js`
   and `newsletter/[issue].js`) so older links still land somewhere.
 - Recipients come from the `marketing_recipient_list()` RPC, not a plain select

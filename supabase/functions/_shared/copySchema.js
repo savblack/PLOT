@@ -21,7 +21,7 @@ export const COPY_FIELDS = [
   ['alt_text', 'string', 'One-sentence literal description of the image for accessibility.'],
   ['cta_variant', `enum: ${CTA_VARIANTS.join(' | ')}`, 'Which approved CTA this post uses (or "none").'],
   ['page_title', 'string', 'Headline for the theplot.tv article. Plain, specific, sentence case, no clickbait, no em or en dashes (hyphens in compound words and names are fine).'],
-  ['page_body', 'string[]', '3-5 short paragraphs forming a short blog post for theplot.tv/whats-on. Same voice. Draw on the research pack in this brief AND your own web research; always paraphrase in PLOT\'s voice, never quote reviews or copy Wikipedia sentences, never wrap your own words in quotation marks. No spoilers, no links, no hashtags, no em or en dashes (hyphens in compounds and names stay). Ratings: at most one score, never in the closing paragraph. No "critics have…" reception narration, no "fun fact" asides.'],
+  ['page_body', 'string[]', '3-5 short paragraphs forming a short blog post for theplot.tv/whats-on. Same voice. Draw on the research pack in this brief AND your own web research; always paraphrase in Plot\'s voice, never quote reviews or copy Wikipedia sentences, never wrap your own words in quotation marks. No spoilers, no links, no hashtags, no em or en dashes (hyphens in compounds and names stay). Ratings: at most one score, never in the closing paragraph. No "critics have…" reception narration, no "fun fact" asides.'],
   ['sources', 'array of {title, url}', 'The sources you actually used or consulted (the TMDB/Wikipedia/IMDb links in the brief, plus anything you browsed). Stored for our review only, never shown publicly. Use [] if you used none.'],
 ];
 
@@ -54,7 +54,7 @@ export const POST_TYPE_BRIEFS = {
 // page_body (one short paragraph per pick) and a search-shaped page_title.
 export const GUIDE_FIELDS = [
   ['page_title', 'string', 'Article headline, search-shaped and plain (e.g. "The best sci-fi on Max right now" or "If you loved Severance, watch these next"). Sentence case, no clickbait, no em or en dashes.'],
-  ['page_body', 'string[]', 'EXACTLY one intro paragraph, then exactly ONE paragraph per title listed in the brief (same order, one-to-one — never combine two titles into one paragraph or split one title across two), then exactly one closing paragraph. Total length must equal the title count + 2. Each title paragraph names the title, says why it earns its spot, and names where it streams when known. Only include a title that genuinely fits the guide\'s genre or premise. PLOT\'s voice; paraphrase, never quote reviews or copy synopses; no spoilers, no links, no hashtags, no em or en dashes.'],
+  ['page_body', 'string[]', 'EXACTLY one intro paragraph, then exactly ONE paragraph per title listed in the brief (same order, one-to-one — never combine two titles into one paragraph or split one title across two), then exactly one closing paragraph. Total length must equal the title count + 2. Each title paragraph names the title, says why it earns its spot, and names where it streams when known. Only include a title that genuinely fits the guide\'s genre or premise. Plot\'s voice; paraphrase, never quote reviews or copy synopses; no spoilers, no links, no hashtags, no em or en dashes.'],
   ['sources', 'array of {title, url}', 'Sources you actually consulted. Stored for review only, never shown. Use [] if none.'],
 ];
 
@@ -120,7 +120,7 @@ const relativeTimeErrors = (copy, { days_until: daysUntil, when_label: whenLabel
 const PLATFORM_REQUIRED = new Set(['now_streaming', 'watch_tonight', 'hidden_gem']);
 
 // A named service, a named platform, or the plain words for a paid digital
-// release. "Plus" spelled out counts: PLOT writes both Disney+ and Disney Plus.
+// release. "Plus" spelled out counts: Plot writes both Disney+ and Disney Plus.
 const NAMES_A_PLATFORM = new RegExp(
   '\\b(?:Netflix|HBO Max|Max|Disney\\s?(?:\\+|Plus)|Hulu|Peacock|Paramount\\s?(?:\\+|Plus)|Prime Video|Apple TV|Fandango|Shudder|Starz|Google Play|YouTube|Criterion|Mubi|Vudu|BritBox|AMC\\s?(?:\\+|Plus)|Tubi|Plex|Sky|Stan|Binge|Kanopy|Netflix)\\b'
   + '|\\b(?:rent or buy|to rent|rental|premium video|video on demand|digital(?:ly)? (?:release|purchase|rental))\\b',

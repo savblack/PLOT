@@ -17,8 +17,10 @@ export const APP_SHELL = {
   scrollRailRight: 'Scroll right',
   profile: 'Profile',
   beta: 'Beta',
+  // Marks a Premium nav destination for Free viewers.
+  premium: 'Premium',
   viewYourProfile: 'View your profile',
-  helpBuild: 'Help build PLOT',
+  helpBuild: 'Help build Plot',
   giveFeedback: 'Give feedback',
   opensNewTab: 'opens in a new tab',
 };

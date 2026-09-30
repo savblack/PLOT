@@ -120,3 +120,54 @@ export function IconHistory() {
     </svg>
   );
 }
+
+// A starred list: Pick for Me's shortlist of picks.
+export function IconTonight() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h10M3 12h7M3 18h7" />
+      <path d="m18 11 1.4 2.9 3.1.4-2.3 2.2.6 3.1-2.8-1.5-2.8 1.5.6-3.1-2.3-2.2 3.1-.4Z" />
+    </svg>
+  );
+}
+
+// Watch together: a sofa. Chosen from the options on the design canvas
+// (docs/design/watch-together/README.md, "Nav icon").
+export function IconWatchTogether() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3" />
+      <path d="M3 13a2 2 0 0 1 4 0v1h10v-1a2 2 0 0 1 4 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M6 19v2" />
+      <path d="M18 19v2" />
+    </svg>
+  );
+}
+
+/* Nav id → icon, keyed by APP_NAV_ITEMS. Both shells render the same nav list,
+   so they read the same map: the sidebar held a private copy of this and the
+   drawer had no icons at all, which is how the two surfaces came to disagree
+   about whether a destination has a glyph. A new nav item shows up in both the
+   moment it is added here. */
+export const NAV_ICONS = {
+  home: IconHome,
+  guide: IconGuide,
+  calendar: IconCalendar,
+  'my-lists': IconLists,
+  history: IconHistory,
+  tonight: IconTonight,
+  together: IconWatchTogether,
+  search: IconSearch,
+  settings: IconSettings,
+};
+
+// Share: an arrow up out of a tray. The share-card entry on History's side
+// cards and, later, the profile's Share menu.
+export function IconShare() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 15V4m0 0-4 4m4-4 4 4" />
+      <path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
+    </svg>
+  );
+}

@@ -15,7 +15,7 @@ export default defineConfig([
     'dist', '**/dist/**',
     'storybook-static', '**/storybook-static/**',
     '.claude', 'apps/website/.claude',
-    'supabase/.temp', 'node_modules', 'archive/',
+    'supabase/.temp', 'node_modules', '.pnpm-store', '.playwright', 'archive/',
     'apps/mobile/ios/**', 'apps/mobile/android/**', 'apps/mobile/.expo/**',
     // Same story: `wrangler dev`/`pages dev` writes bundled worker JS under
     // .wrangler/tmp/, so running `npm run dev:website` once leaves lint errors

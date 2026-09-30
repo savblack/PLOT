@@ -68,7 +68,7 @@ function json(body: unknown, origin: string | null, status = 200, extraHeaders: 
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const RESEND_API_URL = 'https://api.resend.com/emails';
-const CONFIRM_FROM = 'PLOT <hello@theplot.tv>';
+const CONFIRM_FROM = 'Plot <hello@theplot.tv>';
 
 async function sendConfirmationEmail(email: string, actionLink: string) {
   const resendKey = Deno.env.get('RESEND_API_KEY');
@@ -79,8 +79,8 @@ async function sendConfirmationEmail(email: string, actionLink: string) {
     body: JSON.stringify({
       from: CONFIRM_FROM,
       to: [email],
-      subject: 'Confirm your PLOT account',
-      text: `Confirm your PLOT account by opening this link:\n\n${actionLink}\n\nIf you did not request this, you can ignore this email.`,
+      subject: 'Confirm your Plot account',
+      text: `Confirm your Plot account by opening this link:\n\n${actionLink}\n\nIf you did not request this, you can ignore this email.`,
     }),
   });
   if (!res.ok) throw new Error(`Resend request failed (${res.status})`);
@@ -92,7 +92,11 @@ const MIN_SUBMIT_MS = 1200;
 // Caps how long a form token can be stockpiled before use — not a security
 // boundary on its own (the rate limit does that job), just hygiene so tokens
 // can't be minted far in advance and hoarded.
-const MAX_TOKEN_AGE_MS = 15 * 60 * 1000; // 15 minutes
+// 15 minutes. The web client refreshes sooner
+// (SIGNUP_FORM_TOKEN_REFRESH_AFTER_MS in apps/web/src/utils/signupFormToken.js)
+// so a form left open does not POST an expired token and paint a fake
+// confirmation. Keep that margin if this window changes.
+const MAX_TOKEN_AGE_MS = 15 * 60 * 1000;
 
 // Deliberately low — this is an exceptional path (Turnstile already failed
 // for this browser), not the general signup rate.

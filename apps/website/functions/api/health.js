@@ -3,7 +3,7 @@
 // "is theplot.tv serving its Functions?", which is the only question this host
 // can answer for itself. Probing Supabase from here would turn a public,
 // uncacheable URL into a free way to generate load on it.
-const BODY = JSON.stringify({ status: 'pass', description: 'PLOT public API' });
+const BODY = JSON.stringify({ status: 'pass', description: 'Plot public API' });
 
 export async function onRequest({ request }) {
   if (request.method !== 'GET' && request.method !== 'HEAD') {

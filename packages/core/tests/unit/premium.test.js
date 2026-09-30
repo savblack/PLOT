@@ -1,10 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { FREE_CUSTOM_LIST_CAP, isPremiumProfile, canCreateCustomList, friendlyPremiumError } from '../../premium.js';
+import { PREMIUM_PLANS, FREE_CUSTOM_LIST_CAP, isPremiumProfile, canCreateCustomList, friendlyPremiumError } from '../../premium.js';
 
 test('FREE_CUSTOM_LIST_CAP is 5', () => {
   assert.equal(FREE_CUSTOM_LIST_CAP, 5);
+});
+
+test('PREMIUM_PLANS exposes the monthly and yearly plan labels and is frozen', () => {
+  assert.deepEqual(PREMIUM_PLANS, {
+    monthly: { id: 'monthly', label: 'US$3/mo', amount: 3, currency: 'USD' },
+    yearly: { id: 'yearly', label: 'US$24/yr', amount: 24, currency: 'USD' },
+  });
+  assert.ok(Object.isFrozen(PREMIUM_PLANS));
+  assert.ok(Object.isFrozen(PREMIUM_PLANS.monthly));
+  assert.ok(Object.isFrozen(PREMIUM_PLANS.yearly));
+  assert.throws(() => { PREMIUM_PLANS.monthly = 'x'; }, TypeError);
 });
 
 test('isPremiumProfile reads is_premium truthily and handles a missing profile', () => {
@@ -33,7 +44,7 @@ test('canCreateCustomList enforces the free cap by list count for non-premium pr
 });
 
 test('friendlyPremiumError translates the premium_required code and passes other messages through', () => {
-  assert.equal(friendlyPremiumError('premium_required'), 'This is a PLOT Premium feature. Upgrade from Settings to unlock it.');
+  assert.equal(friendlyPremiumError('premium_required'), 'This is a Plot Premium feature. Upgrade from Settings to unlock it.');
   assert.equal(friendlyPremiumError('some_other_error'), 'some_other_error');
   assert.equal(friendlyPremiumError(undefined), undefined);
   assert.equal(friendlyPremiumError(null), null);

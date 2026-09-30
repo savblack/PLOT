@@ -11,6 +11,7 @@ import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { ENGAGEMENT_PROMPT } from '../copy/engagementPrompt.js';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
+import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
 import { RESET_PASSWORD_PAGE } from '../copy/resetPasswordPage.js';
 import { SAVE_PAGE } from '../copy/savePage.js';
@@ -32,6 +33,7 @@ const MODULES = {
   importView: IMPORT_VIEW,
   mediaPanel: MEDIA_PANEL,
   onboardingFlow: ONBOARDING_FLOW,
+  profilePrivacy: PROFILE_PRIVACY,
   publicProfilePage: PUBLIC_PROFILE_PAGE,
   resetPasswordPage: RESET_PASSWORD_PAGE,
   savePage: SAVE_PAGE,
@@ -126,6 +128,11 @@ function ContentCatalog() {
 
 export default {
   title: 'Content/Catalog',
+  // A lookup table, not a visual surface: one row per string, so its height
+  // grows with the catalog. It passed Chromatic's 25M-pixel capture limit once
+  // stories got the app's line-height (972 x 27,657px), and a diff on it would
+  // only ever say "copy changed", which copy:check already polices.
+  parameters: { chromatic: { disableSnapshot: true } },
 };
 
 export const AllCopy = () => <ContentCatalog />;

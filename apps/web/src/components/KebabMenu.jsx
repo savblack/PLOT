@@ -29,9 +29,13 @@ export default function KebabMenu({ ariaLabel = 'Open menu', items, trigger = 'Â
                 key={item.label}
                 type="button"
                 className={`kebab-menu-item${item.danger ? ' kebab-menu-item--danger' : ''}`}
+                // Items with `checked` are one choice from a set (a list's visibility).
+                {...(item.checked === undefined ? {} : { role: 'menuitemradio', 'aria-checked': item.checked })}
+                title={item.hint}
                 onClick={() => { item.onClick(); setOpen(false); }}
               >
                 {item.label}
+                {item.checked && <span aria-hidden="true" className="kebab-menu-check"> âœ“</span>}
               </button>
             ))}
           </div>

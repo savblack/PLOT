@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PRICING_PAGE } from './launchFeatures.js';
+import { SHOW_PRICING_PAGE, SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 import { isPreviewDeployment } from './utils/previewDeployment.js';
 
 // The auth entry/exit points must never fail, so they're bundled eagerly (not
@@ -31,13 +31,17 @@ const MyListsView   = lazy(() => import('./components/MyListsView.jsx'));
 const HistoryView   = lazy(() => import('./components/HistoryView.jsx'));
 const ListPage      = lazy(() => import('./components/ListPage.jsx'));
 const SearchView  = lazy(() => import('./components/SearchView.jsx'));
+const TonightView = lazy(() => import('./components/TonightView.jsx'));
 const SettingsView= lazy(() => import('./components/SettingsView.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
+const WatchTogetherView = lazy(() => import('./components/WatchTogetherView.jsx'));
+const WatchTogetherLinkPage = lazy(() => import('./components/WatchTogetherLinkPage.jsx'));
 
 // Standalone pages
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
 const TraktCallbackPage = lazy(() => import('./pages/TraktCallbackPage.jsx'));
+const SimklCallbackPage = lazy(() => import('./pages/SimklCallbackPage.jsx'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 const OnboardingFlow    = lazy(() => import('./pages/OnboardingFlow.jsx'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage.jsx'));
@@ -51,6 +55,8 @@ const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
 const TalentPage        = lazy(() => import('./pages/TalentPage.jsx'));
 const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
+const TasteOverlapPage  = lazy(() => import('./pages/TasteOverlapPage.jsx'));
+const ComparePickerPage = lazy(() => import('./pages/ComparePickerPage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 const isPreview = isPreviewDeployment();
@@ -89,7 +95,8 @@ const router = createBrowserRouter([
   { path: '/signup',         element: <AuthPage initialMode="signup" /> },
   { path: '/logout',         element: <LogoutPage /> },
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
-  { path: '/auth/trakt',     element: SHOW_MEDIA_SYNC_INTEGRATIONS ? wrap(<TraktCallbackPage />) : <Navigate to="/settings" replace /> },
+  { path: '/auth/trakt',     element: wrap(<TraktCallbackPage />) },
+  { path: '/auth/simkl',     element: wrap(<SimklCallbackPage />) },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
   // Onboarding (protected, skip onboarding check)
@@ -105,7 +112,7 @@ const router = createBrowserRouter([
   // App shell — layout route with child views
   {
     element: wrap(
-      <ProtectedRoute publicPrefixes={['/u/']}>
+      <ProtectedRoute publicPrefixes={['/u/', '/watch-with/']}>
         <AppErrorBoundary><App /></AppErrorBoundary>
       </ProtectedRoute>
     ),
@@ -115,8 +122,11 @@ const router = createBrowserRouter([
       { path: 'u/:username/history', element: wrap(<ProfileSectionPage section="history" />) },
       { path: 'u/:username/favourites', element: wrap(<ProfileSectionPage section="favourites" />) },
       { path: 'u/:username/lists', element: wrap(<ProfileSectionPage section="lists" />) },
+      { path: 'u/:username/compare', element: wrap(<TasteOverlapPage />) },
+      { path: 'compare',  element: wrap(<ComparePickerPage />) },
       { path: 'home',     element: wrap(<DiscoverView />) },
       { path: 'new-releases', element: wrap(<NewReleasesView />) },
+      { path: 'tonight',  element: wrap(<TonightView />) },
       { path: 'guide',    element: wrap(<GuideView />) },
       { path: 'calendar', element: wrap(<CalendarView />) },
       { path: 'watching', element: <Navigate to="/my-lists" replace /> },
@@ -131,6 +141,15 @@ const router = createBrowserRouter([
       { path: 'requests', element: <Navigate to="/notifications" replace /> },
       { path: 'notifications', element: wrap(<NotificationsView />) },
       { path: 'import',   element: wrap(<ImportView />) },
+      ...(SHOW_WATCH_TOGETHER ? [
+        { path: 'together', element: wrap(<WatchTogetherView />) },
+        { path: 'together/pick', element: wrap(<WatchTogetherView page="pick" />) },
+        { path: 'together/invite', element: wrap(<WatchTogetherView page="invite" />) },
+        { path: 'together/with/:usernames', element: wrap(<WatchTogetherView page="with" />) },
+        { path: 'together/session/:sessionId', element: wrap(<WatchTogetherView page="session" />) },
+        { path: 'together/join/:username', element: wrap(<WatchTogetherView page="join" />) },
+        { path: 'watch-with/:username/:key', element: wrap(<WatchTogetherLinkPage />) },
+      ] : []),
     ],
   },
 

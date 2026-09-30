@@ -9,7 +9,7 @@ export function feedbackTypeLabel(type) {
 }
 
 export function anonymizedFeedbackReporter({ userId, userEmail } = {}) {
-  return userId || userEmail ? 'Signed-in PLOT user' : 'Anonymous visitor';
+  return userId || userEmail ? 'Signed-in Plot user' : 'Anonymous visitor';
 }
 
 export function buildFeedbackAttachmentPath(fileName, id = crypto.randomUUID()) {

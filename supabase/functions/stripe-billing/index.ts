@@ -1,7 +1,7 @@
 /**
  * stripe-billing
  *
- * Authenticated billing actions for the PLOT Premium subscription:
+ * Authenticated billing actions for the Plot Premium subscription:
  *   POST ?action=checkout  {plan: 'monthly' | 'yearly'} -> {url}  Stripe Checkout
  *   POST ?action=portal                                 -> {url}  Customer Portal
  *   POST ?action=tip       {amount: 500}                -> {url}  One-time Stripe Checkout
@@ -14,9 +14,12 @@
  *
  * Secrets: STRIPE_SECRET_KEY, STRIPE_PRICE_MONTHLY, STRIPE_PRICE_YEARLY.
  */
-import Stripe from 'npm:stripe@22.3.2';
+import Stripe from 'npm:stripe@22.6.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { CheckoutPendingError, subscriptionCheckout } from '../_shared/checkout.ts';
+import { checkoutPlan, matchesPremiumPrice, billingSettingsUrl, isCheckoutPilot } from '../_shared/billingPolicy.ts';
+import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
 // arbitrary email clients and marketing embeds), this is only ever called
@@ -44,13 +47,29 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-const SETTINGS_URL = 'https://app.theplot.tv/settings';
+const SETTINGS_URL = billingSettingsUrl(Deno.env.get('STRIPE_SETTINGS_URL'));
 const TIP_MIN_AMOUNT = 100;
 const TIP_MAX_AMOUNT = 50000;
+
+async function captureCheckoutFailure(userId: string, reason: string, plan: string | null = null) {
+  try {
+    await capturePostHogEvent('premium_checkout_failed', userId, {
+      channel: 'stripe',
+      checkout_type: 'subscription',
+      reason,
+      plan,
+    });
+  } catch (err) {
+    // Analytics must never change the billing response or cause a Stripe
+    // checkout attempt to be retried.
+    console.error(`stripe-billing: checkout failure capture failed for ${userId}: ${(err as Error).message}`);
+  }
+}
 
 async function createPortalUrl(customerId: string) {
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
+    configuration: Deno.env.get('STRIPE_PORTAL_CONFIGURATION') || undefined,
     return_url: SETTINGS_URL,
   });
   return session.url;
@@ -77,66 +96,76 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  // Close new subscriptions before any Stripe/customer work. Portal and tips remain available.
-  if (new URL(req.url).searchParams.get('action') === 'checkout') {
-    return json({ error: 'PLOT Premium is coming soon.', code: 'premium_coming_soon' }, 503);
+  const action = new URL(req.url).searchParams.get('action');
+  const pilotIds = Deno.env.get('STRIPE_CHECKOUT_PILOT_USER_IDS');
+  // Public checkout stays closed, even if the general launch switch is enabled.
+  if (action === 'checkout' && !pilotIds?.trim()) {
+    return json({ error: 'Plot Premium is coming soon.', code: 'premium_coming_soon' }, 503);
   }
 
   const { user } = await getAuthedUser(req);
   if (!user) return json({ error: 'Unauthorized' }, 401);
+  if (action === 'checkout' && !isCheckoutPilot(user.id, pilotIds)) {
+    return json({ error: 'Plot Premium is coming soon.', code: 'premium_coming_soon' }, 503);
+  }
 
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     serviceKey(),
   );
-  const { data: billing } = await admin
+  const { data: billing, error: billingError } = await admin
     .from('billing_customers')
     .select('stripe_customer_id')
     .eq('user_id', user.id)
     .maybeSingle();
 
-  const action = new URL(req.url).searchParams.get('action');
+  if (billingError) return json({ error: 'Could not load billing account' }, 503);
 
   if (action === 'checkout') {
-    let plan = 'monthly';
-    try {
-      const body = await req.json();
-      if (body?.plan === 'yearly') plan = 'yearly';
-    } catch { /* default to monthly */ }
+    const plan = checkoutPlan(await req.json().catch(() => null));
+    if (!plan) {
+      await captureCheckoutFailure(user.id, 'invalid_plan');
+      return json({ error: 'Choose a monthly or yearly plan' }, 400);
+    }
 
     const price = plan === 'yearly'
       ? Deno.env.get('STRIPE_PRICE_YEARLY')
       : Deno.env.get('STRIPE_PRICE_MONTHLY');
-    if (!price) return json({ error: 'Billing is not configured' }, 500);
+    if (!price) {
+      await captureCheckoutFailure(user.id, 'billing_not_configured', plan);
+      return json({ error: 'Billing is not configured' }, 500);
+    }
 
     try {
-      // A late webhook or stale profile badge must never let someone open a
-      // second subscription. Existing subscribers go straight to the portal.
-      if (billing?.stripe_customer_id) {
-        const subscriptions = await stripe.subscriptions.list({
-          customer: billing.stripe_customer_id,
-          status: 'all',
-          limit: 100,
-        });
-        if (subscriptions.data.some((sub) => ['active', 'trialing', 'past_due'].includes(sub.status))) {
-          return json({ url: await createPortalUrl(billing.stripe_customer_id) });
-        }
+      const configuredPrice = await stripe.prices.retrieve(price);
+      if (!matchesPremiumPrice(configuredPrice, plan)) {
+        await captureCheckoutFailure(user.id, 'price_mismatch', plan);
+        return json({ error: 'Billing price configuration needs attention' }, 503);
       }
 
-      const session = await stripe.checkout.sessions.create({
-        mode: 'subscription',
-        line_items: [{ price, quantity: 1 }],
-        customer: billing?.stripe_customer_id ?? undefined,
-        customer_email: billing?.stripe_customer_id ? undefined : user.email,
-        client_reference_id: user.id,
-        metadata: { supabase_user_id: user.id },
-        subscription_data: { metadata: { supabase_user_id: user.id } },
-        success_url: `${SETTINGS_URL}?checkout=success`,
-        cancel_url: `${SETTINGS_URL}?checkout=cancelled`,
-        allow_promotion_codes: true,
-      });
-      return json({ url: session.url });
+      const url = await subscriptionCheckout(admin, stripe, user.id, price, SETTINGS_URL, createPortalUrl);
+      // Capture only after Stripe has returned a real Checkout URL. The gate
+      // above stays closed until launch, so preview clicks cannot masquerade as
+      // checkout starts.
+      try {
+        await capturePostHogEvent('premium_checkout_started', user.id, {
+          channel: 'stripe',
+          checkout_type: 'subscription',
+          plan,
+          price_id: configuredPrice.id,
+          amount: typeof configuredPrice.unit_amount === 'number' ? configuredPrice.unit_amount / 100 : null,
+          currency: normaliseCurrency(configuredPrice.currency),
+        });
+      } catch (err) {
+        console.error(`stripe-billing: PostHog capture failed for ${user.id}: ${(err as Error).message}`);
+      }
+      return json({ url });
     } catch (err) {
+      if (err instanceof CheckoutPendingError) {
+        await captureCheckoutFailure(user.id, 'checkout_pending', plan);
+        return json({ error: err.message }, 409);
+      }
+      await captureCheckoutFailure(user.id, 'stripe_error', plan);
       console.error('Checkout session failed:', (err as Error).message);
       return json({ error: 'Could not start checkout' }, 500);
     }
@@ -179,8 +208,8 @@ Deno.serve(async (req) => {
             currency: 'aud',
             unit_amount: amount,
             product_data: {
-              name: 'PLOT Tip',
-              description: 'One-time support for PLOT',
+              name: 'Plot Tip',
+              description: 'One-time support for Plot',
             },
           },
         }],

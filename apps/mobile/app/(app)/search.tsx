@@ -345,7 +345,7 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
           <TouchableOpacity
             style={[styles.actionBtn, watched && styles.actionBtnActive]}
             onPress={() => watched
-              ? history.removeEntry(item.id, mediaType)
+              ? history.removeEntry(item.id, mediaType, { undo: true })
               /* Straight to logWatched left the title in Saved and in
                  Watching. Marking watched here makes the same transition it
                  does anywhere else. */

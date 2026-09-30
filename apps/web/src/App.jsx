@@ -27,6 +27,9 @@ import { useReminders }    from './hooks/useReminders.js';
 import { useTopLists }     from './hooks/useTopLists.js';
 import { useFavorites }    from './hooks/useFavorites.js';
 import { useCustomLists }  from './hooks/useCustomLists.js';
+import UndoToast from './components/UndoToast.jsx';
+import StreakToast from './components/StreakToast.jsx';
+import ShareCardHost from './components/ShareCardHost.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
@@ -36,7 +39,9 @@ import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
 import { onPendingWatchQueued } from '@plot/core/engagementPrompt.js';
 import { updateProfile } from '@plot/core/profile.js';
+import { loadPremiumEntitlement } from '@plot/core/billing.js';
 import { AppContext, useApp } from './hooks/useApp.js';
+import { SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 
 export { useApp };
 
@@ -166,6 +171,7 @@ export default function App() {
       .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
       .eq('id', userId)
       .maybeSingle();
+    if (data) data.is_premium = await loadPremiumEntitlement();
     if (activeUserIdRef.current !== userId) return;
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
@@ -204,6 +210,26 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, [loadProfile]);
+
+  // DOM focus/visibility belongs to web; the entitlement read lives in core.
+  // Recheck on return from Stripe and while open, even without a new webhook.
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    const refresh = async () => {
+      if (document.visibilityState === 'hidden') return;
+      const entitled = await loadPremiumEntitlement();
+      if (active) setProfile(current => current?.id === user.id
+        ? { ...current, is_premium: entitled } : current);
+    };
+    window.addEventListener('focus', refresh);
+    const timer = window.setInterval(refresh, 60_000);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refresh);
+      window.clearInterval(timer);
+    };
+  }, [user?.id]);
 
   /* ── Timezone mismatch check ── */
   const tzBanner = useMemo(() => {
@@ -279,7 +305,7 @@ export default function App() {
   const reminders    = useReminders(user?.id);
   const topLists     = useTopLists(user?.id);
   const favorites    = useFavorites(user?.id, { watching, watchlist });
-  const customLists  = useCustomLists(user?.id);
+  const customLists  = useCustomLists(user?.id, { includeShared: SHOW_WATCH_TOGETHER });
 
   /* ── Pending "save to watchlist" deep link (newsletter / chart page) ── */
   const handleSaveResult = useCallback((result) => {
@@ -384,6 +410,10 @@ export default function App() {
       {saveToast && (
         <SaveToast toast={saveToast} onClose={() => setSaveToast(null)} />
       )}
+
+      <UndoToast />
+      <StreakToast />
+      <ShareCardHost />
 
       {tzBanner && (
         <TimezoneBanner

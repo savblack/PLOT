@@ -8,6 +8,7 @@ import PlotLogo from '../components/PlotLogo.jsx';
 import { AUTH_PAGE } from '../copy/authPage.js';
 import { AUTH_CALLBACK_PAGE } from '../copy/authCallbackPage.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
+import { takeReturnPath } from '../utils/authReturn.js';
 
 // Report a sign-in that died here. Unlike reportAuth this fires even with no
 // method marker: an expired confirmation link opened in a fresh tab has none, and
@@ -100,7 +101,16 @@ export default function AuthCallbackPage() {
         reportAuth(session, method);
         // resolveAuthCallback guarantees a confirmed session before returning a
         // path, so we never land the user in the app logged-out.
-        navigate(path || '/onboarding', { replace: true });
+        let dest = path || '/onboarding';
+        // Someone sent to sign in on the way to a page (a taste comparison
+        // link, say) goes back there, but only once their account is set up:
+        // new accounts finish onboarding first, which then sends them on.
+        if (dest === '/onboarding' && session?.user?.id) {
+          const { data: prof } = await supabase.from('profiles')
+            .select('onboarding_complete').eq('id', session.user.id).maybeSingle();
+          if (prof?.onboarding_complete) dest = takeReturnPath(dest);
+        }
+        navigate(dest, { replace: true });
       } catch (e) {
         // Anything unexpected (client init, network) surfaces the error screen
         // rather than hanging on the loader forever.

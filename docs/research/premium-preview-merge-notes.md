@@ -1,8 +1,8 @@
-# PLOT Premium preview: merge notes
+# Plot Premium preview: merge notes
 
 The homepage now demonstrates three planned Premium benefits: choosing a film by time, service and mood; finding a shared watchlist match; and following actors/directors for new releases. Each panel animates once, rotates automatically, and can be selected with Tonight / Together / Following. Hover, focus, hidden tabs and offscreen sections pause rotation. Reduced-motion visitors can select panels without animations or automatic switching.
 
-The homepage links to the public app `/plans` page. `/pricing` remains an alias. Both display planned features, A$5/month or A$40/year, and a coming-soon response instead of checkout. Mobile Settings reads the same feature catalog. Existing subscriber management and tips are preserved. The billing endpoint rejects subscription checkout before customer or payment work.
+The homepage links to the public app `/plans` page. `/pricing` remains an alias. Both display planned features, US$3/month or US$24/year (taxes included), and a coming-soon response instead of checkout. Mobile Settings reads the same feature catalog. Existing subscriber management and tips are preserved. The billing endpoint rejects subscription checkout before customer or payment work.
 
 ## Free feature coverage
 
@@ -32,7 +32,7 @@ The notifications, film recommendation, selected services and illustrated watchl
 
 ## Verified artwork and examples (17 September 2026)
 
-All poster and profile paths were resolved through PLOT's TMDB proxy searches, not guessed. See `premium-example-evidence.json` for the returned IDs, paths, credits, runtime, genres and Australian subscription providers. Remote artwork uses the existing TMDB image host allowed by the website CSP; lazy loading and fixed image boxes avoid unnecessary requests and layout shifts. Failed images reveal the existing geometric/initials fallback.
+All poster and profile paths were resolved through Plot's TMDB proxy searches, not guessed. See `premium-example-evidence.json` for the returned IDs, paths, credits, runtime, genres and Australian subscription providers. Remote artwork uses the existing TMDB image host allowed by the website CSP; lazy loading and fixed image boxes avoid unnecessary requests and layout shifts. Failed images reveal the existing geometric/initials fallback.
 
 - Tonight: The Grand Budapest Hotel, 100 minutes, Comedy, with the 120-minute limit selected. Disney Plus appears in the Australian `flatrate` provider response (not only rental/purchase). Only Disney+ is selected in the illustration. The caption explicitly identifies Australia and the verification date; this is a dated marketing example, not a live personalised recommendation. Recheck availability before future releases that update this example.
 - Together: Widow's Bay (TV) appears in both illustrative lists, alongside Dune: Part Two and Materialists. All three posters were resolved through TMDB title searches, using TV search for Widow’s Bay. No real user's watchlist is represented.

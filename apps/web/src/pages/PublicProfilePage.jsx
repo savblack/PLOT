@@ -14,6 +14,12 @@ import { useBlocks } from '@plot/core/useBlocks.js';
 import UserModerationMenu from '../components/UserModerationMenu.jsx';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useShare } from '../hooks/useShare.js';
+import { useShareCards } from '../hooks/useShareCards.js';
+import { useSharePreset } from '../hooks/useSharePreset.js';
+import { CARD_IDS } from '@plot/core/shareCards.js';
+import KebabMenu from '../components/KebabMenu.jsx';
+import ShareCardSheet from '../components/ShareCardSheet.jsx';
+import { SHARE_CARDS } from '../copy/shareCards.js';
 import { useCustomLists } from '@plot/core/useCustomLists.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -26,12 +32,17 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import {
-  SOCIAL_LINKS, PROFILE_SECTIONS, ALL_SECTION_KEYS,
+  SOCIAL_LINKS, PROFILE_SECTIONS, ALL_SECTION_KEYS, isSectionEnabled,
   USERNAME_RE, validateAvatarFile, isDuplicateUsernameError,
 } from '@plot/core/profileFields.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
+import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
+import { listVisibility, showsOnProfile } from '@plot/core/customLists.js';
+import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 import { EVENTS } from '../lib/analytics.js';
+import { WatchTogetherTile } from '../components/WatchTogetherParts.jsx';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 
 const posterUrl = (path, size = 'w342') =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
@@ -266,7 +277,7 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
       <div style={{ padding: '0 1.25rem 1.5rem' }}>
         {users === null
           ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader size="sm" /></div>
-          : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
+          : <UserList users={users} viewerId={viewerId} onNavigate={onClose} showCompare empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
       </div>
     </ResponsiveDialog>
   );
@@ -289,7 +300,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
   const fileRef = useRef(null);
   const nameInputRef = useRef(null);
   const unameInputRef = useRef(null);
-  const { lists: customLists, setListPublic } = useCustomLists(userId);
+  const { lists: customLists, setListVisibility } = useCustomLists(userId);
 
   useEffect(() => {
     // .app-main (not document.body) is the actual scrolling container — it's
@@ -498,8 +509,8 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
           {/* Which sections show on the profile */}
           <div>
-            <label className="pp-field-label">Sections shown</label>
-            <p className="pp-toggle-help" style={{ marginBottom: '0.5rem' }}>Choose which rails appear on your profile.</p>
+            <label className="pp-field-label">{PROFILE_PRIVACY.sectionsHeading}</label>
+            <p className="pp-toggle-help" style={{ marginBottom: '0.5rem' }}>{PROFILE_PRIVACY.sectionsHelp}</p>
             {PROFILE_SECTIONS.map((s) => (
               <label key={s.key} className="pp-section-toggle">
                 <span>{s.key === 'favourites' ? favWord : s.label}</span>
@@ -512,18 +523,24 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
               </label>
             ))}
             {customLists.length > 0 && <p className="pp-toggle-help" style={{ margin: '0.6rem 0 0.3rem' }}>{PUBLIC_PROFILE_PAGE.publicListLimit(PUBLIC_LIST_LIMIT)}</p>}
-            {customLists.map((list) => (
-              <label key={list.id} className="pp-section-toggle">
-                <span>{list.name}</span>
-                <input
-                  type="checkbox"
-                  checked={!!list.is_public}
-                  disabled={!list.is_public && customLists.filter((l) => l.is_public).length >= PUBLIC_LIST_LIMIT}
-                  onChange={(e) => setListPublic(list.id, e.target.checked)}
-                  style={{ width: 20, height: 20, accentColor: 'var(--accent)' }}
-                />
-              </label>
-            ))}
+            {/* Checked = on the profile (followers or public). This writes the
+                list's visibility, so the label says who that is. */}
+            {customLists.map((list) => {
+              const visibility = listVisibility(list);
+              const onProfile = showsOnProfile(visibility);
+              return (
+                <label key={list.id} className="pp-section-toggle">
+                  <span>{list.name}<span className="pp-toggle-help" style={{ display: 'block' }}>{PROFILE_PRIVACY.listVisibility[visibility]}</span></span>
+                  <input
+                    type="checkbox"
+                    checked={onProfile}
+                    disabled={!onProfile && customLists.filter((l) => showsOnProfile(listVisibility(l))).length >= PUBLIC_LIST_LIMIT}
+                    onChange={(e) => setListVisibility(list.id, e.target.checked ? 'public' : 'private')}
+                    style={{ width: 20, height: 20, accentColor: 'var(--accent)' }}
+                  />
+                </label>
+              );
+            })}
           </div>
 
           {!!error && <div className="pp-error">{error}</div>}
@@ -557,6 +574,20 @@ export default function PublicProfilePage() {
 
   const p = profile ? { ...profile, ...edits } : profile;
   const isOwn = viewer?.id && profile?.id && viewer.id === profile.id;
+
+  // Share a card (path 2 in docs/design/share-cards.md): the owner's Share
+  // menu opens the sheet on Top 5 movies; ?share=<card> opens it on that
+  // card. Owner-only (ADR 0001): the cards come from the viewer's own history
+  // and are never built for someone else's profile. Nothing loads until the
+  // sheet is open.
+  const [shareCard, setShareCard] = useState(null); // { id, source } | null
+  const [sharePreset, clearSharePreset] = useSharePreset();
+  useEffect(() => {
+    if (!sharePreset || !isOwn) return;
+    setShareCard({ id: sharePreset, source: 'link' }); // eslint-disable-line react-hooks/set-state-in-effect
+    clearSharePreset();
+  }, [sharePreset, isOwn, clearSharePreset]);
+  const shareCards = useShareCards({ userId: viewer?.id, profile: viewerProfile, enabled: !!shareCard && !!isOwn, leadWith: 'top5' });
   const fw = favoriteWords(viewerProfile?.region);
   const found = !loading && !!profile;
   const isPrivate = !!p && !p.is_public;
@@ -569,7 +600,7 @@ export default function PublicProfilePage() {
     if (!p) return;
     share({
       url: buildProfileShareUrl({ username: p.username }),
-      title: `${name} on PLOT`,
+      title: `${name} on Plot`,
       text: SHARING.profileText(name),
       event: EVENTS.PROFILE_SHARED,
       eventProps: { profile_id: p.id },
@@ -634,7 +665,15 @@ export default function PublicProfilePage() {
                     {isOwn ? (
                       <>
                         <button type="button" className="btn btn-secondary" onClick={() => setEditing(true)}>Edit profile</button>
-                        <button type="button" className="btn btn-secondary" onClick={shareProfile}>{copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.shareProfile}</button>
+                        <KebabMenu
+                          ariaLabel={PUBLIC_PROFILE_PAGE.shareProfile}
+                          trigger={copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.share}
+                          buttonClassName="btn btn-secondary"
+                          items={[
+                            { label: PUBLIC_PROFILE_PAGE.copyProfileLink, onClick: shareProfile },
+                            { label: SHARE_CARDS.shareACard, onClick: () => setShareCard({ id: CARD_IDS.TOP5_MOVIES, source: 'profile' }) },
+                          ]}
+                        />
 
                       </>
                     ) : !viewer ? (
@@ -654,6 +693,11 @@ export default function PublicProfilePage() {
                       )
                     )}
                     {!isOwn && <button type="button" className="btn btn-secondary" onClick={shareProfile}>{copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.shareProfile}</button>}
+                    {/* Taste overlap (Premium). Shown wherever a comparison is
+                        possible; Free viewers land on its upsell. */}
+                    {viewer && !isOwn && !locked && (
+                      <Link to={`/u/${p.username}/compare`} className="btn btn-secondary">{TASTE_OVERLAP.compareTaste}</Link>
+                    )}
                     {/* Report / block. Guideline 1.2 wants both wherever another
                         account's content is rendered, and the profile is the
                         surface with the most of it. Renders nothing for your own
@@ -673,13 +717,17 @@ export default function PublicProfilePage() {
                   </div>}
               />
 
+              {SHOW_WATCH_TOGETHER && viewer && !isOwn && (
+                <WatchTogetherTile person={p} viewer={viewer} viewerProfile={viewerProfile} />
+              )}
+
               {locked && (
                 <div className="public-profile-status-card" style={{ marginTop: '1.6rem' }}>
-                  <p className="public-profile-status-kicker">Private account</p>
+                  <p className="public-profile-status-kicker">{PROFILE_PRIVACY.lockedTitle}</p>
                   <p className="public-profile-status-copy">
                     {status === 'pending'
-                      ? 'Your follow request is pending. You’ll see their watches and lists once they approve it.'
-                      : `Follow ${name} to stay up to date on their watch activity.`}
+                      ? PROFILE_PRIVACY.lockedPending
+                      : PROFILE_PRIVACY.lockedFollow(name)}
                   </p>
                 </div>
               )}
@@ -719,6 +767,16 @@ export default function PublicProfilePage() {
             setEditing(false);
             if (usernameChanged) navigate(`/u/${next.username}`, { replace: true });
           }}
+        />
+      )}
+      {shareCard && isOwn && (
+        <ShareCardSheet
+          cards={shareCards.cards}
+          loading={shareCards.loading}
+          preset={shareCard.id}
+          profile={viewerProfile}
+          source={shareCard.source}
+          onClose={() => setShareCard(null)}
         />
       )}
     </>
@@ -764,7 +822,10 @@ export function ProfileSectionPage({ section }) {
   const lists = (customLists || []).filter(list => list.items?.length);
   const expanded = lists.find(list => list.id === expandedList);
   const busy = loading || (profile && !locked && fetching);
-  const empty = section === 'lists' ? lists.length === 0 : result.items.length === 0;
+  // Section toggles are layout, not access (RLS already scoped the rows), but
+  // "View all" on a rail the owner hid shouldn't bring it back either.
+  const hidden = paged && !isSectionEnabled(profile?.profile_sections, section === 'favourites' ? 'favourites' : 'recent');
+  const empty = hidden || (section === 'lists' ? lists.length === 0 : result.items.length === 0);
   return <>
     <style>{profileStyles}</style>
     <div className="pp-view pp-section-page">
@@ -772,7 +833,8 @@ export function ProfileSectionPage({ section }) {
         <div><Link to={`/u/${username}`} className="pp-back">{name || `@${username}`}</Link><h1 className="pp-section-title">{title}</h1></div>
       </div>
       {busy ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader /></div>
-        : !profile || locked ? <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>
+        : locked ? <p className="pp-sparse-line">{PROFILE_PRIVACY.lockedSubPage}</p>
+        : !profile ? <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>
         : result.error ? <div role="alert" className="pp-sparse"><p>{COMMON.genericError}</p><button className="btn btn-secondary btn-sm" onClick={() => setRetry(value => value + 1)}>{PUBLIC_PROFILE_PAGE.retry}</button></div>
         : empty ? <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>
         : section === 'lists' ? <>

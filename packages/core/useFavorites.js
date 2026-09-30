@@ -3,8 +3,10 @@ import { supabase } from './supabase.js';
 import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { findHistoryEntry, logWatchedItem, saveFavorite } from './userMedia.js';
 import { markMediaAsWatched } from './mediaStatus.js';
-import { emit, HISTORY_CHANGED_EVENT } from './events.js';
+import { on, emit, HISTORY_CHANGED_EVENT, FAVOURITES_CHANGED_EVENT } from './events.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
+import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
 
 /**
  * Favourited titles for a user.
@@ -15,7 +17,7 @@ import { getConfig } from './config.js';
  *   favorites: any[];
  *   loading: boolean;
  *   isFavorite: (tmdbId: number) => boolean;
- *   toggleFavorite: (item: any) => Promise<any>;
+ *   toggleFavorite: (item: any, opts?: { undo?: import('./undo.js').UndoOption }) => Promise<any>;
  * }}
  */
 export function useFavorites(userId, { watching, watchlist } = {}) {
@@ -24,17 +26,19 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_favourites')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+    if (error) reportLoadFailure(FAILED_LOADS.FAVOURITES, error);
     setFavorites(data || []);
     setLoading(false);
   }, [userId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
   useEffect(() => { load(); }, [load]);
+  useEffect(() => on(FAVOURITES_CHANGED_EVENT, load), [load]);
 
   const isFavorite = useCallback(
     (tmdbId) => favorites.some(f => f.tmdb_id === Number(tmdbId)),
@@ -80,7 +84,9 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
     }
   }, [userId, watching, watchlist]);
 
-  const toggleFavorite = useCallback(async (item) => {
+  // An unfavourite offers undo (see undo.js) unless the caller passes
+  // undo: false. Like the bookmark, the heart is always one direct tap.
+  const toggleFavorite = useCallback(async (item, opts) => {
     if (!userId) return;
     const tmdbId = tmdbIdFromItem(item);
     if (!tmdbId) return;
@@ -97,14 +103,28 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
       if (error) {
         console.error('Failed to remove favourite', error);
         setFavorites(previous);
+        reportActionFailure(FAILED_ACTIONS.FAVOURITE_REMOVE, error, {
+          tmdb_id: tmdbId, media_type: previous.find(f => f.tmdb_id === tmdbId)?.media_type,
+        });
       } else {
         // Analytics seam (platform-injected; see config.js) — fired from the one
         // canonical spot so every surface that toggles a favourite is covered.
+        const removed = previous.find(f => f.tmdb_id === tmdbId);
         getConfig().onFavourite?.({
           tmdb_id: tmdbId,
-          media_type: previous.find(f => f.tmdb_id === tmdbId)?.media_type,
+          media_type: removed?.media_type,
           favourited: false,
         });
+        if (removed) {
+          registerUndo(opts?.undo ?? true, {
+            action: UNDO_ACTIONS.FAVOURITE_REMOVE,
+            title: removed.title,
+            revert: async () => {
+              await restoreRow('user_favourites', removed);
+              emit(FAVOURITES_CHANGED_EVENT);
+            },
+          });
+        }
       }
     } else {
       const row = mediaIdentityRow(item);
@@ -124,6 +144,7 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
       if (error) {
         console.error('Failed to save favourite', error);
         setFavorites(prev => prev.filter(f => f.tmdb_id !== tmdbId));
+        reportActionFailure(FAILED_ACTIONS.FAVOURITE_ADD, error, { tmdb_id: tmdbId, media_type: row.media_type });
         return;
       }
 

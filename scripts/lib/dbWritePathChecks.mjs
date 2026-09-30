@@ -140,6 +140,20 @@ export function extractMigrationKeyChanges(sql) {
     adds.push({ table: m[2].toLowerCase(), name: m[1], key: colKey(m[3]) });
   }
 
+  // Table-level keys on newly created tables are also pending constraints.
+  // Limit matches to identifier-only columns: expressions/checks cannot prove
+  // that an application's ON CONFLICT target is backed by a unique key.
+  const tables = /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:public\.)?([a-z0-9_]+)\s*\(([\s\S]*?)\)\s*;/gi;
+  for (const table of body.matchAll(tables)) {
+    const keys = /(?:^|[,\n])\s*(?:constraint\s+([a-z0-9_]+)\s+)?(unique|primary\s+key)\s*\(([a-z0-9_,\s]+)\)/gi;
+    for (const key of table[2].matchAll(keys)) {
+      const name = key[1] || (key[2].toLowerCase() === 'unique'
+        ? `${table[1]}_${key[3].replace(/\s/g, '').replace(/,/g, '_')}_key`
+        : `${table[1]}_pkey`);
+      adds.push({ table: table[1].toLowerCase(), name, key: colKey(key[3]) });
+    }
+  }
+
   // `alter table <table> … add constraint <name> unique|primary key (cols)`.
   // The table is the nearest `alter table` to the left: one statement can carry
   // several `add constraint` clauses, and they all belong to that table.

@@ -1,9 +1,10 @@
+import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
+import { getEpisodeGuideState } from '@plot/core/episodeProgress.js';
 import PrivateNote from './PrivateNote';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../lib/share';
-import { customListCreationError } from '@plot/core/customListCreation.js';
-import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 /**
  * MediaPanel — slide-up detail sheet, mobile port of web MediaPanel.jsx.
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
@@ -40,6 +41,9 @@ import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { ENGAGEMENT_PROMPT } from '@plot/core/copy/engagementPrompt.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
+import UpgradeSheet from './UpgradeSheet';
+import { useRouter } from 'expo-router';
+import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import {
   ENGAGEMENT_SNOOZE_KEY,
   ENGAGEMENT_PENDING_KEY,
@@ -59,12 +63,12 @@ import { readStorage, writeStorage, removeStorage } from '../lib/storage';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
-import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
-import { useRouter } from 'expo-router';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { TrailerPlayer } from './TrailerPlayer';
 import CollectionCard from './CollectionCard';
 import { MEDIA } from '@plot/core/copy/media.js';
+import UndoToast from './UndoToast';
+import { clearUndo } from '@plot/core/undo.js';
 
 
 const SCREEN_H = Dimensions.get('window').height;
@@ -226,27 +230,41 @@ function StarRow({
 // ── Episode guide ─────────────────────────────────────────────────────
 function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }> }) {
   const { colors } = useTheme();
+  const { userId } = useAppData();
+  const sparse = useEpisodeWatches(userId, tvId);
+  const isTracking = !!progress || sparse.hasEpisodes;
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const seasons = (details?.seasons || []).filter((s: any) => s.season_number > 0);
+  const seasons = (details?.seasons || []).filter((s: any) => s.season_number > 0 || (s.season_number === 0 && Object.keys(sparse.states).some(key => key.startsWith('0:'))));
   const [selSeason, setSelSeason] = useState(progress?.current_season || 1);
   const [episodes,  setEpisodes]  = useState<any[]>([]);
   const [loading,   setLoading]   = useState(false);
+  const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || loading;
   const [toggling,  setToggling]  = useState<number | null>(null);
   const [actionError, setActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
 
   useEffect(() => {
     setLoading(true);
+    let cancelled = false;
     tmdb.getSeason(tvId, selSeason).then((data: any) => {
+      if (cancelled) return;
       setEpisodes(data?.episodes ?? []);
       setLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setEpisodes([]);
+      setActionError(MEDIA_PANEL.episodesLoadError);
+      setLoading(false);
     });
+    return () => { cancelled = true; };
   }, [tvId, selSeason]);
 
   const curSeason = progress?.current_season || 0;
   const curEp     = progress?.current_episode || 0;
-  const isWatched = (ep: any) => selSeason < curSeason || (selSeason === curSeason && ep.episode_number < curEp);
-  const isCurrent = (ep: any) => selSeason === curSeason && ep.episode_number === curEp;
+  const episodeState = (episodeNumber: number) => getEpisodeGuideState({
+    currentSeason: curSeason, currentEpisode: curEp, selectedSeason: selSeason,
+    episodeNumber, episodeStates: sparse.states,
+  });
 
   /* ── Finish the series when progress rolls past its final season ──
      Mirrors web's MediaPanel: an ended show whose last episode you just
@@ -257,6 +275,9 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
 
   const finishSeriesIfComplete = async (nextSeason: number | undefined) => {
     if (!isSeriesComplete({ lastSeason, nextSeason, status: details?.status })) return;
+    // The tick that got here offered an undo; reversing only it would leave
+    // the completion (history row, stopped watching) behind.
+    clearUndo();
     // Finishing a show is the end of the engagement arc worth naming, and it's
     // only knowable here — core sees pointer moves, not the last season.
     track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: lastSeason });
@@ -265,10 +286,16 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
   };
 
   const handleToggle = async (ep: any) => {
-    if (!progress || toggling !== null) return;
+    if (!isTracking || progressBlocked || seasonPending || toggling !== null) return;
     setToggling(ep.episode_number);
     setActionError('');
-    const watched = isWatched(ep);
+    const watched = episodeState(ep.episode_number).isWatched;
+    if (sparse.hasEpisodes) {
+      const ok = await sparse.setWatched(selSeason, [ep.episode_number], !watched);
+      if (!ok) setActionError(MEDIA_PANEL.couldNotUpdateWatchStatus);
+      setToggling(null);
+      return;
+    }
     if (!watched) {
       /* Ticking the episode you're actually up to goes through
          markEpisodeWatched, which logs a history row for the completed episode
@@ -277,7 +304,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
          below) writes no history, so ticking episodes on mobile used to leave
          no trace in your watch history at all. Mirrors web's MediaPanel. */
       if (selSeason === curSeason && ep.episode_number === curEp) {
-        const result = await watching.markEpisodeWatched(tvId);
+        const result = await watching.markEpisodeWatched(tvId, { undo: true });
         if (!result?.ok) {
           setActionError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
         } else {
@@ -286,13 +313,13 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
           await finishSeriesIfComplete(result.data?.current_season);
         }
       } else if (ep.episode_number < episodes.length) {
-        await watching.setProgress(tvId, selSeason, ep.episode_number + 1);
+        await watching.setProgress(tvId, selSeason, ep.episode_number + 1, { undo: true });
       } else {
-        await watching.setProgress(tvId, selSeason + 1, 1);
+        await watching.setProgress(tvId, selSeason + 1, 1, { undo: true });
         await finishSeriesIfComplete(selSeason + 1);
       }
     } else {
-      await watching.setProgress(tvId, selSeason, ep.episode_number);
+      await watching.setProgress(tvId, selSeason, ep.episode_number, { undo: true });
     }
     setToggling(null);
   };
@@ -302,11 +329,21 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
     currentEpisode: curEp,
     currentSeason: curSeason,
     episodeCount: episodes.length,
+    episodeNumbers: episodes.map(ep => ep.episode_number),
+    episodeStates: sparse.states,
     selectedSeason: selSeason,
   });
 
   const handleToggleSeason = async () => {
-    if (!progress || seasonPending || toggling !== null) return;
+    if (!isTracking || progressBlocked || seasonPending || toggling !== null) return;
+    if (sparse.hasEpisodes) {
+      setSeasonPending(true);
+      setActionError('');
+      const ok = await sparse.setWatched(selSeason, episodes.map(ep => ep.episode_number), !seasonState.isComplete);
+      if (!ok) setActionError(MEDIA_PANEL.couldNotUpdateSeason);
+      setSeasonPending(false);
+      return;
+    }
     const target = getSeasonToggleProgress({
       isComplete: seasonState.isComplete,
       selectedSeason: selSeason,
@@ -318,7 +355,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
 
     setSeasonPending(true);
     setActionError('');
-    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season' });
+    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season', undo: true });
     if (!result?.ok) {
       setActionError(MEDIA_PANEL.couldNotUpdateSeason);
     } else if (!seasonState.isComplete) {
@@ -348,7 +385,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
         </ScrollView>
       )}
 
-      {progress && episodes.length > 0 && (
+      {isTracking && episodes.length > 0 && (
         <View style={styles.seasonBulk}>
           <View style={styles.seasonBulkInfo}>
             <Text style={styles.seasonBulkTitle}>{MEDIA_PANEL.seasonLabel(selSeason)}</Text>
@@ -359,9 +396,9 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
           <TouchableOpacity
             style={styles.seasonBulkBtn}
             onPress={handleToggleSeason}
-            disabled={seasonPending}
+            disabled={seasonPending || progressBlocked || toggling !== null}
             accessibilityRole="button"
-            accessibilityState={{ disabled: seasonPending }}
+            accessibilityState={{ disabled: seasonPending || progressBlocked || toggling !== null }}
             accessibilityLabel={
               seasonState.isComplete
                 ? `${MEDIA_PANEL.unmarkSeasonWatched} ${selSeason}`
@@ -379,14 +416,22 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
         </View>
       )}
 
+      {sparse.hasEpisodes && <Text style={styles.seasonBulkCount}>{MEDIA_PANEL.sparseEpisodeProgress}</Text>}
+      {sparse.error && (
+        <View>
+          <Text style={styles.epActionError}>{MEDIA_PANEL.episodeProgressLoadError}</Text>
+          <TouchableOpacity onPress={sparse.reload} accessibilityRole="button" style={styles.seasonBulkBtn}>
+            <Text style={styles.seasonBulkBtnText}>{MEDIA_PANEL.retryEpisodeProgress}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {actionError ? <Text style={styles.epActionError}>{actionError}</Text> : null}
 
-      {loading ? (
+      {loading || sparse.loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.lg }} />
       ) : (
         episodes.map(ep => {
-          const watched = isWatched(ep);
-          const current = isCurrent(ep);
+          const { isWatched: watched, isCurrent: current } = episodeState(ep.episode_number);
           const isToggling = toggling === ep.episode_number;
           const epCode = `S${String(selSeason).padStart(2,'0')}E${String(ep.episode_number).padStart(2,'0')}`;
           return (
@@ -403,12 +448,13 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
                 </View>
                 <Text style={[styles.epTitle, watched && styles.epTitleWatched, current && styles.epTitleCurrent]} numberOfLines={2}>{ep.name}</Text>
               </View>
-              {progress && (
+              {isTracking && (
                 isToggling ? (
                   <ActivityIndicator size="small" color={colors.chipEpisode} />
                 ) : (
                   <TouchableOpacity
                     onPress={() => handleToggle(ep)}
+                    disabled={progressBlocked || seasonPending || toggling !== null}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     accessibilityLabel={watched ? `Mark ${epCode} unwatched` : `Mark ${epCode} watched`}
                     accessibilityRole="button"
@@ -476,6 +522,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
   const insets = useSafeAreaInsets();
   const { lists, isInList, addItem, removeItem, createList } = customLists;
   const { profile } = useAppData();
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [name, setName]         = useState('');
@@ -493,11 +540,8 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
     if (!trimmed) return;
     if (findDuplicateCustomList(lists, trimmed)) { setError('A list with that name already exists.'); return; }
     if (!canCreateCustomList(lists.length, profile)) {
-      setError(CUSTOM_LISTS.limitMessage);
-      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage, [
-        { text: COMMON.cancel, style: 'cancel' },
-        { text: PLANS_PAGE.previewAction, onPress: () => { onClose(); router.push('/(app)/settings?premium=1' as any); } },
-      ]);
+      track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
+      setShowUpgrade(true);
       return;
     }
     setBusy(true);
@@ -507,7 +551,8 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
       await addItem(newList.id, item);
       setCreating(false); setName(''); setError('');
     } catch (error) {
-      setError(customListCreationError(error, MEDIA.couldNotCreateList));
+      if (isCustomListLimitError(error)) setShowUpgrade(true);
+      else setError(customListCreationError(error, MEDIA.couldNotCreateList));
     } finally {
       setBusy(false);
     }
@@ -515,6 +560,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <UpgradeSheet visible={showUpgrade} reason="lists" onClose={() => setShowUpgrade(false)} onCompare={() => { onClose(); router.push(PREMIUM_SETTINGS_PATH as any); }} />
       <TouchableOpacity style={styles.lsOverlay} onPress={onClose} activeOpacity={1} />
       <View style={[styles.lsSheet, { paddingBottom: insets.bottom + spacing.lg }]}>
         <View style={styles.lsHandle} />
@@ -580,7 +626,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
               <TouchableOpacity
                 key={list.id}
                 style={styles.lsRow}
-                onPress={() => checked ? removeItem(list.id, item.id) : addItem(list.id, item)}
+                onPress={() => checked ? removeItem(list.id, item.id, { undo: true }) : addItem(list.id, item)}
                 activeOpacity={0.7}
               >
                 <View style={{ flex: 1 }}>
@@ -650,6 +696,8 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
           </View>
         </Modal>
       )}
+      {/* The list sheet is its own Modal, over the panel's, so it needs its own toast. */}
+      <UndoToast placement="panel" />
     </Modal>
   );
 }
@@ -822,7 +870,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const handleSaveFromPanel = async () => {
     if (!details) return;
     if (inList) {
-      await watchlist.removeFromList(itemId);
+      await watchlist.removeFromList(itemId, { undo: true });
       return;
     }
     const saved = await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
@@ -849,7 +897,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     setEngagementBusy(true);
     try {
       if (isWatching) {
-        await watching.stopWatching(itemId);
+        await watching.stopWatching(itemId, { undo: true });
         setEngagementPrompt(null);
         return;
       }
@@ -1201,7 +1249,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     {watched ? (
                       <TouchableOpacity
                         style={[styles.btnPrimary, styles.btnHalf, styles.btnSaved]}
-                        onPress={() => history.removeEntry(itemId, itemType)}
+                        onPress={() => history.removeEntry(itemId, itemType, { undo: true })}
                       >
                         <IconCheck color={colors.statusWatched} />
                         <Text style={[styles.btnPrimaryText, { color: colors.statusWatched }]}>Watched</Text>
@@ -1258,7 +1306,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     style={[styles.btnSecondary, styles.btnStandalone, isWatching && styles.btnWatching]}
                     onPress={async () => {
                       if (isWatching) {
-                        await watching.stopWatching(itemId);
+                        await watching.stopWatching(itemId, { undo: true });
                       } else {
                         /* Two writes with no rollback left a show in both
                            Watching and Saved permanently if the second failed.
@@ -1539,6 +1587,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           </View>
         )}
       </Animated.View>
+      <UndoToast placement="panel" />
     </Modal>
 
     {showListSheet && details && (

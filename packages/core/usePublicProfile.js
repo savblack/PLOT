@@ -67,10 +67,12 @@ export function usePublicProfile(username, viewerId = null) {
       // any real user's rating count today, so the average stays exact in
       // practice while bounding the payload as history keeps growing.
       supabase.from('history').select('rating').eq('user_id', uid).not('rating', 'is', null).limit(2000),
-      // Only lists the owner has explicitly marked public are readable here (RLS-enforced too).
+      // Lists that belong on the profile. RLS then drops the ones this viewer
+      // can't read (a followers list for a non-follower). 'link' lists are
+      // readable by anyone with the link but deliberately never listed here.
       supabase.from('user_custom_lists')
-        .select('id, name, items:user_custom_list_items(tmdb_id, media_type, title, poster_path)')
-        .eq('user_id', uid).eq('is_public', true).order('created_at', { ascending: true }),
+        .select('id, name, visibility, items:user_custom_list_items(tmdb_id, media_type, title, poster_path)')
+        .eq('user_id', uid).in('visibility', ['public', 'followers']).order('created_at', { ascending: true }),
       supabase.from('watching_progress')
         .select('tmdb_id, title, poster_path, current_season, current_episode')
         .eq('user_id', uid).order('updated_at', { ascending: false }).limit(18),

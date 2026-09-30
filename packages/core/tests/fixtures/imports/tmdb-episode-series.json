@@ -1,0 +1,10 @@
+{
+  "source": "TMDB search/tv query=Severance",
+  "retrieved": "2026-09-16",
+  "result": {
+    "id": 95396,
+    "name": "Severance",
+    "first_air_date": "2022-02-17",
+    "media_type": "tv"
+  }
+}

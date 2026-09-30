@@ -11,7 +11,12 @@ test('getConfig starts with the documented defaults', () => {
     watchAvailabilityUrl: '',
     criticScoreUrl: '',
     traktClientId: '',
+    simklClientId: '',
     isDev: false,
+    importAnnotationsEnabled: false,
+    tvTimeImportEnabled: false,
+    importEventsEnabled: false,
+    trackingJobsEnabled: false,
     supabaseClientOptions: undefined,
     supabaseClient: undefined,
     affiliate: undefined,
@@ -28,6 +33,13 @@ test('getConfig starts with the documented defaults', () => {
     onHistoryRemove: undefined,
     onWatchProgress: undefined,
     onProfileUpdate: undefined,
+    onActionFailed: undefined,
+    onLoadFailed: undefined,
+    onReview: undefined,
+    onTonightPicker: undefined,
+    onWatchTogether: undefined,
+    onImport: undefined,
+    onUndo: undefined,
   });
 });
 

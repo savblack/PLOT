@@ -1,0 +1,42 @@
+[
+  {
+    "rated_at": null,
+    "rating": 8,
+    "type": "show",
+    "show": {
+      "title": "Frieren: Beyond Journey's End",
+      "year": 2023,
+      "ids": {
+        "trakt": 198225,
+        "tvdb": 424536,
+        "imdb": "tt22248376"
+      },
+      "aired_episodes": 38
+    }
+  },
+  {
+    "rated_at": null,
+    "rating": 7,
+    "type": "episode",
+    "episode": {
+      "season": 1,
+      "number": 1,
+      "title": "Pilot (1)",
+      "ids": {
+        "trakt": 342245,
+        "tvdb": 127131,
+        "imdb": "tt0636289"
+      }
+    },
+    "show": {
+      "title": "Lost",
+      "year": 2004,
+      "ids": {
+        "trakt": 4583,
+        "tvdb": 73739,
+        "imdb": "tt0411008"
+      },
+      "aired_episodes": 118
+    }
+  }
+]

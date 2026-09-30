@@ -3,7 +3,7 @@
  *
  * Receives Ko-fi payment notifications for ko-fi.com/J7P123TYGK and records
  * them in kofi_supporters, flipping profiles.is_supporter when the donor's
- * email matches a PLOT account.
+ * email matches a Plot account.
  *
  * Recognition only. A Ko-fi tip grants no entitlement — that stays Stripe's
  * job (billing_customers / is_premium). Nothing here touches billing.
@@ -15,7 +15,7 @@
  * bearer secret — compare in constant time and never log the payload.
  *
  * Every newly-recorded tip (not a replay) also fires a `support_converted`
- * PostHog event — PLOT's second paid-conversion type alongside
+ * PostHog event — Plot's second paid-conversion type alongside
  * `premium_converted` (see packages/core/analyticsEvents.js). Ko-fi hosts its
  * own checkout, so there's no client-side redirect-back to hook the way
  * Premium does; this calls PostHog's HTTP capture API directly instead of
@@ -29,6 +29,7 @@
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { capturePostHogEvent, normaliseCurrency, normaliseMajorAmount } from '../_shared/posthog.ts';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -36,35 +37,20 @@ const json = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-// Same PostHog project token hardcoded elsewhere in this repo (e.g.
-// supabase/functions/marketing-feed/index.ts) — it's a public write-only
-// token, not a secret.
-const POSTHOG_TOKEN = 'phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U';
-
 // Fires the support_converted paid-conversion event for a newly-recorded tip.
 // Best-effort: a PostHog outage must never fail the webhook ack Ko-fi is
 // waiting on. Fields are whitelisted rather than forwarding the payload, so a
 // donor's email/name/message can never end up in PostHog even by accident.
 async function captureSupportConversion(payload: Record<string, unknown>, userId: string | null, txn: string) {
   try {
-    await fetch('https://a.theplot.tv/i/v0/e/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: POSTHOG_TOKEN,
-        event: 'support_converted',
-        properties: {
-          distinct_id: userId ?? `kofi:${txn}`,
-          channel: 'kofi',
-          matched: userId !== null,
-          amount: typeof payload.amount === 'string' ? Number(payload.amount) : null,
-          currency: typeof payload.currency === 'string' ? payload.currency : null,
-          kofi_type: typeof payload.type === 'string' ? payload.type : null,
-          is_first_subscription_payment: payload.is_first_subscription_payment === true,
-        },
-        timestamp: typeof payload.timestamp === 'string' ? payload.timestamp : undefined,
-      }),
-    });
+    await capturePostHogEvent('support_converted', userId ?? `kofi:${txn}`, {
+      channel: 'kofi',
+      matched: userId !== null,
+      amount: normaliseMajorAmount(payload.amount),
+      currency: normaliseCurrency(payload.currency),
+      kofi_type: typeof payload.type === 'string' ? payload.type : null,
+      is_first_subscription_payment: payload.is_first_subscription_payment === true,
+    }, typeof payload.timestamp === 'string' ? payload.timestamp : undefined);
   } catch (err) {
     // Analytics must never break the webhook ack. Log the transaction id
     // only, matching the rest of this file's logging discipline.

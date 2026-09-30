@@ -3,6 +3,7 @@ import { baseMediaRow, mediaIdentityRow, genreIdsFromItem } from './media.js';
 import { localDateStr } from './date.js';
 import { normalizeRating } from './ratings.js';
 import { emit, HISTORY_CHANGED_EVENT } from './events.js';
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 
 export async function saveListItem({ listId, userId, item, providerIds = [], streamingDate = null }) {
   const mediaRow = baseMediaRow(item);
@@ -188,6 +189,80 @@ export async function clearWatchHistory({ userId }) {
 
   const { error } = await supabase.from('history').delete().eq('user_id', userId);
   if (!error) emit(HISTORY_CHANGED_EVENT);
+  else reportActionFailure(FAILED_ACTIONS.HISTORY_CLEAR, error);
 
   return { error };
 }
+
+/**
+ * Empty the Saved list and/or all series progress (Settings' bulk clear).
+ * Custom lists are deleted through useCustomLists, not here.
+ *
+ * Both settings screens open-coded this; mobile ignored every error and
+ * reported watchlist_cleared regardless, so a failed clear looked like a
+ * successful one.
+ *
+ * @param {{ userId: string, saved?: boolean, watching?: boolean }} args
+ * @returns {Promise<{ error: any }>} the first failure, if any
+ */
+export async function clearSavedAndWatching({ userId, saved = false, watching = false }) {
+  if (!userId || (!saved && !watching)) return { error: null };
+
+  const fail = (error) => {
+    reportActionFailure(FAILED_ACTIONS.WATCHLIST_CLEAR, error, {
+      fields: [saved && 'saved', watching && 'watching'].filter(Boolean),
+    });
+    return { error };
+  };
+
+  let myListId = null;
+  if (saved) {
+    const { data, error } = await supabase.from('lists')
+      .select('id').eq('user_id', userId).eq('name', 'My List').maybeSingle();
+    if (error) return fail(error);
+    myListId = data?.id ?? null;
+  }
+
+  const results = await Promise.all([
+    myListId ? supabase.from('list_items').delete().eq('list_id', myListId) : { error: null },
+    watching ? supabase.from('watching_progress').delete().eq('user_id', userId) : { error: null },
+  ]);
+  const error = results.find(r => r.error)?.error ?? null;
+  return error ? fail(error) : { error: null };
+}
+
+// The columns a removed history row is written back with (undo toast). `id`
+// is left out: it is an integer sequence, and the row gets a fresh one.
+const HISTORY_RESTORE_COLUMNS = ['user_id', 'tmdb_id', 'media_type', 'title', 'poster_path', 'release_date', 'genre_ids', 'rating', 'note', 'dnf', 'mood', 'watched_at', 'created_at'];
+
+/**
+ * Put a removed history entry back exactly as it was: rating, review, date.
+ * The undo toast's revert for useHistory.removeEntry. A duplicate key means
+ * the title was logged again in the meantime, which counts as restored.
+ * @param {Record<string, any>} entry the row as it was before removal
+ */
+export async function restoreHistoryEntry(entry) {
+  const row = {};
+  for (const column of HISTORY_RESTORE_COLUMNS) if (entry?.[column] !== undefined) row[column] = entry[column];
+  const { error } = await supabase.from('history').insert(row);
+  if (error && error.code !== '23505') throw error;
+  emit(HISTORY_CHANGED_EVENT);
+}
+
+/**
+ * Undo an episode tick's effect on the show's history row. The tick upserts
+ * the one row per title, so the row either existed (put its fields back) or
+ * the tick created it (remove it).
+ * @param {{ userId: string, tmdbId: number, before: Record<string, any>|null }} args
+ */
+export async function revertEpisodeHistory({ userId, tmdbId, before }) {
+  const { error } = before
+    ? await supabase.from('history')
+      .update({ watched_at: before.watched_at, rating: before.rating, note: before.note, dnf: before.dnf })
+      .eq('id', before.id)
+    : await supabase.from('history').delete()
+      .eq('user_id', userId).eq('tmdb_id', Number(tmdbId)).eq('media_type', 'tv');
+  if (error) throw error;
+  emit(HISTORY_CHANGED_EVENT);
+}
+

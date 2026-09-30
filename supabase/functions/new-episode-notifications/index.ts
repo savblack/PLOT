@@ -31,7 +31,7 @@
  * source of truth and push is a delivery channel on top of it.
  *
  * Auth: called by pg_cron via pg_net with the Vault service-role bearer
- * (run_new_episode_notifications, 20260925120000). Also runnable by hand with
+ * (run_new_episode_notifications, 20261001090000). Also runnable by hand with
  * the same bearer; POST {"dry_run": true} reports what it would write and
  * writes nothing.
  *

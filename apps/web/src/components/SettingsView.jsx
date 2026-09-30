@@ -1,3 +1,4 @@
+import TrackingSettings from './TrackingSettings.jsx';
 import BroadcastAccountSettings from './BroadcastAccountSettings.jsx';
 // Web settings use DOM panels, browser sharing and Stripe portal redirects.
 // Shared navigation/copy lives in core; native layout parity: GitHub issue 922.
@@ -14,13 +15,14 @@ import { supabase } from '@plot/core/supabase.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
+import { useSimklSync } from '../hooks/useSimklSync.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { useShare } from '../hooks/useShare.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
-import { clearWatchHistory } from '@plot/core/userMedia.js';
+import { clearWatchHistory, clearSavedAndWatching } from '@plot/core/userMedia.js';
 import { updateProfile } from '@plot/core/profile.js';
 import {
   AVATAR_MAX_MB, validateAvatarFile, isDuplicateUsernameError,
@@ -33,11 +35,13 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
+import { favoriteWords } from '../utils/spelling.js';
 import { MODERATION } from '../copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
@@ -46,6 +50,9 @@ import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
+import { WatchTogetherSettings } from './WatchTogetherParts.jsx';
+import WatchlistVisibilitySetting from './WatchlistVisibilitySetting.jsx';
+import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -60,6 +67,14 @@ const TRAKT_ICON = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <path d="M8 12.5l2.5 2.5L16 9" />
+  </svg>
+);
+const SIMKL_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 7h11" />
+    <path d="M13 4l3 3-3 3" />
+    <path d="M19 17H8" />
+    <path d="M11 14l-3 3 3 3" />
   </svg>
 );
 
@@ -1126,6 +1141,7 @@ export default function SettingsView() {
   };
   const sync  = useMediaSync(user?.id);
   const trakt = useTraktSync(user?.id);
+  const simkl = useSimklSync(user?.id);
   const premium = usePremium(profile);
   const { events: calEvents, loading: calLoading } = useCalendar(
     watchlist?.items ?? [],
@@ -1167,7 +1183,6 @@ export default function SettingsView() {
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
   const [billingReturn,       setBillingReturn]       = useState(null); // null|'premium'|'tip'
-  const premiumEventFired = useRef(false);
 
   const showConfirm = useCallback((opts) => setConfirmModal(opts), [setConfirmModal]);
 
@@ -1190,13 +1205,6 @@ export default function SettingsView() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount for the return-URL params
   }, []);
-
-  useEffect(() => {
-    if (billingReturn === 'premium' && profile?.is_premium && !premiumEventFired.current) {
-      premiumEventFired.current = true;
-      track(EVENTS.PREMIUM_CONVERTED, {});
-    }
-  }, [billingReturn, profile?.is_premium]);
 
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
@@ -1243,6 +1251,8 @@ export default function SettingsView() {
   useEffect(() => { sync.loadIntegration(); }, [sync.loadIntegration]);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
   useEffect(() => { trakt.loadIntegration(); }, [trakt.loadIntegration]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
+  useEffect(() => { simkl.loadIntegration(); }, [simkl.loadIntegration]);
 
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
   const marketingEmailsEnabled = !!profile?.marketing_emails;
@@ -1366,21 +1376,8 @@ export default function SettingsView() {
     setShowClearWatchlist(false);
     setClearingWatchlist(true);
 
-    let myListId = null;
-    if (saved) {
-      const { data: myList, error: listLookupError } = await supabase.from('lists')
-        .select('id').eq('user_id', user.id).eq('name', 'My List').maybeSingle();
-      if (listLookupError) {
-        setActionError(listLookupError.message || SETTINGS_VIEW.errors.failedToClearLists);
-        setClearingWatchlist(false);
-        return;
-      }
-      myListId = myList?.id ?? null;
-    }
-
     const results = await Promise.all([
-      saved && myListId ? supabase.from('list_items').delete().eq('list_id', myListId) : Promise.resolve({ error: null }),
-      clearWatching ? supabase.from('watching_progress').delete().eq('user_id', user.id) : Promise.resolve({ error: null }),
+      clearSavedAndWatching({ userId: user.id, saved, watching: clearWatching }),
       ...customListIds.map(id => customLists.deleteList(id).then(ok => ({ error: ok ? null : new Error(SETTINGS_VIEW.errors.failedToDeleteCustomList) }))),
     ]);
     const firstError = results.find(result => result.error)?.error;
@@ -1912,9 +1909,10 @@ export default function SettingsView() {
       </div>
         </>}
         {activeSection === 'connections' && <>
+      <TrackingSettings userId={user?.id} connect={trakt.connect} connectPlex={sync.startPlexAuth} plexPolling={sync.polling} connectionError={trakt.error || sync.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : sync.disconnect()} />
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.integrations.groupTitle}</div>
-        {premium.isPremium && SHOW_MEDIA_SYNC_INTEGRATIONS ? (
+        {SHOW_MEDIA_SYNC_INTEGRATIONS && premium.isPremium ? (
           <>
             <div className="settings-row" style={{ cursor: 'default' }}>
               <div className="settings-row-left">
@@ -1922,11 +1920,7 @@ export default function SettingsView() {
                 <div>
                   <div className="settings-row-label">{SETTINGS_VIEW.integrations.plexName}<PremiumBadge /></div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {sync.isConnected ? SETTINGS_VIEW.integrations.connectedLastSynced(
-                      sync.integration?.last_sync_at
-                        ? new Date(sync.integration.last_sync_at).toLocaleDateString()
-                        : SETTINGS_VIEW.integrations.never
-                    ) : SETTINGS_VIEW.integrations.notConnected}
+                    {sync.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.notConnected}
                   </div>
                 </div>
               </div>
@@ -1934,7 +1928,7 @@ export default function SettingsView() {
                 {sync.isConnected ? (
                   <>
                     <SettingsTextAction onClick={sync.sync} disabled={sync.syncing}>
-                      {sync.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
+                      {sync.syncing ? SETTINGS_VIEW.integrations.importing : SETTINGS_VIEW.integrations.importWatchHistory}
                     </SettingsTextAction>
                     <SettingsTextAction onClick={sync.disconnect} tone="danger">
                       {SETTINGS_VIEW.integrations.disconnect}
@@ -1960,11 +1954,7 @@ export default function SettingsView() {
                   <div className="settings-row-label">{SETTINGS_VIEW.integrations.traktName}<PremiumBadge /></div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {trakt.isConnected
-                      ? SETTINGS_VIEW.integrations.connectedLastSynced(
-                          trakt.integration?.last_sync_at
-                            ? new Date(trakt.integration.last_sync_at).toLocaleDateString()
-                            : SETTINGS_VIEW.integrations.never
-                        )
+                      ? SETTINGS_VIEW.integrations.connected
                       : SETTINGS_VIEW.integrations.connectTraktToSync}
                   </div>
                 </div>
@@ -1973,7 +1963,7 @@ export default function SettingsView() {
                 {trakt.isConnected ? (
                   <>
                     <SettingsTextAction onClick={trakt.sync} disabled={trakt.syncing}>
-                      {trakt.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
+                      {trakt.syncing ? SETTINGS_VIEW.integrations.importing : SETTINGS_VIEW.integrations.importWatchHistory}
                     </SettingsTextAction>
                     <SettingsTextAction onClick={trakt.disconnect} tone="danger">
                       {SETTINGS_VIEW.integrations.disconnect}
@@ -2005,8 +1995,12 @@ export default function SettingsView() {
                 </div>
                 <div className="settings-inline-actions">
                   <SettingsTextAction onClick={() => showConfirm({
-                    title: SETTINGS_VIEW.billing.syncComingSoon,
-                    message: SETTINGS_VIEW.billing.syncComingSoonMessage,
+                    title: SHOW_MEDIA_SYNC_INTEGRATIONS
+                      ? SETTINGS_VIEW.integrations.syncNeedsPremium
+                      : SETTINGS_VIEW.billing.syncComingSoon,
+                    message: SHOW_MEDIA_SYNC_INTEGRATIONS
+                      ? SETTINGS_VIEW.integrations.syncNeedsPremiumMessage
+                      : SETTINGS_VIEW.billing.syncComingSoonMessage,
                     confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
                     onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
                   })}>
@@ -2017,6 +2011,45 @@ export default function SettingsView() {
               </div>
             ))}
           </>
+        )}
+
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">{SIMKL_ICON}</div>
+            <div>
+              <div className="settings-row-label">{SETTINGS_VIEW.integrations.simklName}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {simkl.isConnected
+                  ? SETTINGS_VIEW.integrations.connectedLastSynced(
+                      simkl.integration?.last_sync_at
+                        ? new Date(simkl.integration.last_sync_at).toLocaleDateString()
+                        : SETTINGS_VIEW.integrations.never
+                    )
+                  : SETTINGS_VIEW.integrations.simklBlurb}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            {simkl.isConnected ? (
+              <>
+                <SettingsTextAction onClick={simkl.sync} disabled={simkl.syncing}>
+                  {simkl.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
+                </SettingsTextAction>
+                <SettingsTextAction onClick={simkl.disconnect} tone="danger">
+                  {SETTINGS_VIEW.integrations.disconnect}
+                </SettingsTextAction>
+              </>
+            ) : (
+              <SettingsTextAction onClick={simkl.connect}>
+                {SETTINGS_VIEW.integrations.connectSimkl}
+              </SettingsTextAction>
+            )}
+          </div>
+        </div>
+        {simkl.error && (
+          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+            {simkl.error}
+          </div>
         )}
 
         {/* ── Import watch history ── */}
@@ -2074,8 +2107,8 @@ export default function SettingsView() {
             {!premium.isPremium ? (
               <>
                 <SettingsTextAction onClick={() => showConfirm({
-                  title: SETTINGS_VIEW.billing.calendarComingSoon,
-                  message: SETTINGS_VIEW.billing.calendarComingSoonMessage,
+                  title: SETTINGS_VIEW.calendarFeed.needsPremium,
+                  message: SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
                   confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
                   onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
                 })}>
@@ -2132,7 +2165,7 @@ export default function SettingsView() {
       </div>
         </>}
         {activeSection === 'billing' && <SettingsBilling
-          isPremium={premium.isPremium} busy={premium.busy} error={premium.error} onManage={premium.openPortal}
+          isPremium={premium.isPremium} canManage={premium.canManage} billing={premium.billing} busy={premium.busy} error={premium.error} onManage={premium.openPortal}
           notice={billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : billingReturn === 'premium' ? (premium.isPremium ? SETTINGS_VIEW.premium.activeThankYou : SETTINGS_VIEW.billing.confirming) : null}
         />}
         {activeSection === 'privacy' && <>
@@ -2147,17 +2180,23 @@ export default function SettingsView() {
               </svg>
             </div>
             <div>
-              <div className="settings-row-label">{isPublic ? 'Profile is public' : 'Profile is private'}</div>
+              <div className="settings-row-label">{isPublic ? PROFILE_PRIVACY.publicLabel : PROFILE_PRIVACY.privateLabel}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {isPublic
-                  ? 'Anyone with your link can see your watch count, recent watches and public lists.'
-                  : 'Only you can see your activity. Make it public to share a profile link.'}
+                  ? PROFILE_PRIVACY.publicDescription(favoriteWords(region).pluralLower)
+                  : PROFILE_PRIVACY.privateDescription}
+                {' '}{PROFILE_PRIVACY.notesAlwaysPrivate}
               </div>
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsSwitch label={SETTINGS_VIEW.page.privacyLabel} checked={isPublic} disabled={savingVisibility} onChange={handleTogglePublic} />
           </div>
+        </div>
+
+        {/* Who can see Want to Watch: its own setting, separate from the profile. */}
+        <div className="settings-row" style={{ cursor: 'default', display: 'block' }}>
+          <WatchlistVisibilitySetting />
         </div>
 
         {/* Shareable link — works for private profiles too (logged-in visitors
@@ -2192,6 +2231,14 @@ export default function SettingsView() {
 
       </div>
 
+          {SHOW_WATCH_TOGETHER && (
+            <div className="settings-group">
+              <div className="settings-group-title">{WATCH_TOGETHER.settings.title}</div>
+              <div className="settings-row" style={{ cursor: 'default', display: 'block' }}>
+                <WatchTogetherSettings user={user} profile={profile} />
+              </div>
+            </div>
+          )}
           <BlockedAccounts viewerId={user?.id} />
           <div className="settings-group">
         {/* Export all data */}

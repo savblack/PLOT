@@ -1,0 +1,79 @@
+import { test, expect } from '@playwright/test';
+
+const userId = '00000000-0000-4000-8000-000000000321';
+const profile = {
+  id: userId,
+  username: 'import-test',
+  onboarding_complete: true,
+  region: 'AU',
+  timezone: 'Australia/Sydney',
+  streaming_providers: [],
+  genres: [],
+};
+
+for (const connected of [false, true]) test(`Free imports offer Plex source selection with tracking off (connected: ${connected})`, async ({ page }, testInfo) => {
+  const pageErrors = [];
+  const consoleErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('console', message => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  await page.addInitScript(({ userId, profile }) => {
+    const user = { id: userId, aud: 'authenticated', role: 'authenticated', email: 'import-test@example.invalid', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() };
+    localStorage.setItem('sb-placeholder-auth-token', JSON.stringify({ access_token: 'test-session-not-a-real-token', refresh_token: 'test-refresh', token_type: 'bearer', expires_at: Math.floor(Date.now() / 1000) + 3600, user }));
+    localStorage.setItem('plot-cached-profile', JSON.stringify({ userId, profile }));
+  }, { userId, profile });
+
+  await page.route('https://placeholder.invalid/**', route => route.fulfill({ json: { results: [] } }));
+  await page.route('https://placeholder.supabase.co/**', route => {
+    const url = route.request().url();
+    if (url.includes('/auth/v1/user')) return route.fulfill({ json: { id: userId, role: 'authenticated' } });
+    if (url.includes('/rest/v1/profiles')) return route.fulfill({ json: profile });
+    if (url.includes('/rest/v1/media_integrations')) {
+      const isPlexQuery = new URL(url).searchParams.get('provider') === 'eq.plex';
+      return route.fulfill({ json: connected && isPlexQuery ? { id: 'plex-test', provider: 'plex', status: 'active' } : null });
+    }
+    if (url.includes('/functions/v1/media-sync')) {
+      const body = route.request().postDataJSON();
+      if (body.action === 'select-source') {
+        expect(body.serverId).toBe('server-test');
+        expect(body.accountID).toBe('7');
+        return route.fulfill({ json: { selection: { clientIdentifier: body.serverId, accountID: body.accountID } } });
+      }
+      return route.fulfill({ json: body.serverId ? { profiles: [{ accountID: '7', name: 'My profile' }] } : { servers: [{ clientIdentifier: 'server-test', name: 'My server' }] } });
+    }
+    if (url.includes('/rest/v1/lists')) return route.fulfill({ json: { id: 'test-list', user_id: userId, name: '__watchlist__' } });
+    return route.fulfill({ json: [] });
+  });
+
+  await page.goto('/import');
+  await expect(page.getByRole('heading', { name: 'Import Watch History' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Plex Connected account/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Trakt Connected account/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Simkl Manual two-way sync/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Letterboxd CSV export/ })).toBeVisible();
+  // Saved IMDb/Trakt exports require the event-store rollout flag.
+  await expect(page.getByRole('button', { name: /IMDb CSV export/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Trakt JSON export/ })).toHaveCount(0);
+  await page.getByRole('button', { name: /Plex Connected account/ }).click();
+  if (connected) {
+    const importButton = page.getByRole('button', { name: 'Import from Plex', exact: true });
+    await expect(importButton).toBeDisabled();
+    await page.getByRole('button', { name: /Choose.*server|Choose.*profile/i }).click();
+    await page.getByRole('button', { name: 'My server', exact: true }).click();
+    await page.getByRole('button', { name: 'My profile', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('Server and profile selected');
+    await expect(importButton).toBeEnabled();
+  } else {
+    await expect(page.getByRole('button', { name: 'Connect Plex to import' })).toBeVisible();
+  }
+  if (!connected) await expect(page.getByText('This does not turn on automatic or two-way sync.')).toBeVisible();
+  await expect(page.getByText(/Plex Media Server must be running/)).toBeVisible();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: /Simkl Manual two-way sync/ }).click();
+  await expect(page.getByRole('button', { name: 'Connect Simkl to import' })).toBeVisible();
+  await expect(page.getByText('Automatic sync is not turned on.')).toBeVisible();
+  expect(pageErrors).toEqual([]);
+  expect(consoleErrors).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('plex-import-ready.png'), fullPage: true });
+});

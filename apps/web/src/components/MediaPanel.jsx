@@ -1,6 +1,6 @@
+import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import PrivateNote from './PrivateNote.jsx';
-import { customListCreationError } from '@plot/core/customListCreation.js';
-import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip, formatDate } from '../utils/countdown.js';
@@ -25,6 +25,7 @@ import CreditsGrid from './TalentCredits.jsx';
 import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
+import UpgradeSheet from './UpgradeSheet.jsx';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
@@ -63,6 +64,9 @@ import EngagementPromptBar from './EngagementPromptBar.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
+import { SavedByTooRow } from './WatchTogetherParts.jsx';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import { clearUndo } from '@plot/core/undo.js';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -240,7 +244,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
     if (pending) return;
     setPending(true);
     setError('');
-    const result = await watching.markEpisodeWatched(tvId);
+    const result = await watching.markEpisodeWatched(tvId, { undo: true });
     if (!result?.ok) {
       setError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
     } else if (isSeriesComplete({
@@ -249,6 +253,8 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
       status: details?.status,
     })) {
       track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: getLastSeasonNumber(details) });
+      // Undoing only the tick would leave the completion behind.
+      clearUndo();
       const finished = await onSeriesFinished?.();
       if (finished && !finished.ok) setError(finished.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
     }
@@ -292,13 +298,15 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
 }
 
 /* ── Season selector + episode list ── */
-function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
-  const { watching } = useApp();
-  const seasons     = (details?.seasons || []).filter(s => s.season_number > 0);
+export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
+  const { watching, user } = useApp();
+  const sparse = useEpisodeWatches(user?.id, tvId);
+  const seasons     = (details?.seasons || []).filter(s => s.season_number > 0 || (s.season_number === 0 && Object.keys(sparse.states).some(key => key.startsWith('0:'))));
   const [selSeason, setSelSeason] = useState(currentProgress?.current_season || 1);
   const [episodes,  setEpisodes]  = useState([]);
   const [epLoading, setEpLoading] = useState(false);
   const [epError,   setEpError]   = useState(false);
+  const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || epLoading || epError;
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
   const [episodeActionError, setEpisodeActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
@@ -323,7 +331,9 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
     setEpLoading(true);
     setEpError(false);
     setEpisodeActionError('');
+    let cancelled = false;
     tmdb.getSeason(tvId, selSeason).then(data => {
+      if (cancelled) return;
       if (data?.episodes?.length) {
         setEpisodes(data.episodes);
       } else {
@@ -331,7 +341,13 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
         setEpError(!data);
       }
       setEpLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setEpisodes([]);
+      setEpError(true);
+      setEpLoading(false);
     });
+    return () => { cancelled = true; };
   }, [tvId, selSeason]);
 
   // Fetch episode air times from TVMaze (has airstamp even for streaming shows)
@@ -384,6 +400,9 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
 
   const finishSeriesIfComplete = useCallback(async (nextSeason) => {
     if (!isSeriesComplete({ lastSeason, nextSeason, status: details?.status })) return;
+    // The tick that got here offered an undo; reversing only it would leave
+    // the completion (history row, stopped watching) behind.
+    clearUndo();
     // Finishing a show is the end of the engagement arc worth naming, and it's
     // only knowable here — core sees pointer moves, not the last season.
     track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: lastSeason });
@@ -395,15 +414,23 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
 
   /* ── Toggle an episode's watched state ── */
   const handleCheckEp = useCallback(async (ep, watched) => {
-    if (!currentProgress || checkingEpRef.current) return;
+    if ((!currentProgress && !sparse.hasEpisodes) || progressBlocked || seasonPending || checkingEpRef.current) return;
     checkingEpRef.current = true;
     setCheckingEp(ep.episode_number);
     setEpisodeActionError('');
 
+    if (sparse.hasEpisodes) {
+      const ok = await sparse.setWatched(selSeason, [ep.episode_number], !watched);
+      if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateWatchStatus);
+      checkingEpRef.current = false;
+      setCheckingEp(null);
+      return;
+    }
+
     if (!watched) {
       // Mark watched: advance progress past this episode
       if (selSeason === currentSeason && ep.episode_number === currentEp) {
-        const result = await watching.markEpisodeWatched(tvId);
+        const result = await watching.markEpisodeWatched(tvId, { undo: true });
         if (!result?.ok) {
           setEpisodeActionError(result?.error || 'Could not update this episode right now. Please try again.');
         } else {
@@ -412,33 +439,45 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
           await finishSeriesIfComplete(result.data?.current_season);
         }
       } else if (ep.episode_number < episodes.length) {
-        await watching.setProgress(tvId, selSeason, ep.episode_number + 1);
+        await watching.setProgress(tvId, selSeason, ep.episode_number + 1, { undo: true });
       } else {
         // Last episode of season → advance to next season
         const nextSeason = selSeason + 1;
-        await watching.setProgress(tvId, nextSeason, 1);
+        await watching.setProgress(tvId, nextSeason, 1, { undo: true });
         userChangedSeason.current = false; // allow auto-follow to next season
         await finishSeriesIfComplete(nextSeason);
       }
     } else {
       // Unmark: pull progress back to this episode
-      await watching.setProgress(tvId, selSeason, ep.episode_number);
+      await watching.setProgress(tvId, selSeason, ep.episode_number, { undo: true });
     }
 
     checkingEpRef.current = false;
     setCheckingEp(null);
-  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length, finishSeriesIfComplete]);
+  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length, finishSeriesIfComplete, sparse, progressBlocked, seasonPending]);
 
   /* ── Mark / unmark the whole selected season ── */
   const seasonState = getSeasonWatchState({
     currentEpisode: currentEp,
     currentSeason,
     episodeCount: episodes.length,
+    episodeNumbers: episodes.map(ep => ep.episode_number),
+    episodeStates: sparse.states,
     selectedSeason: selSeason,
   });
 
   const handleToggleSeason = useCallback(async () => {
-    if (!currentProgress || seasonPending || checkingEpRef.current) return;
+    if ((!currentProgress && !sparse.hasEpisodes) || progressBlocked || seasonPending || checkingEpRef.current) return;
+    if (sparse.hasEpisodes) {
+      checkingEpRef.current = true;
+      setSeasonPending(true);
+      setEpisodeActionError('');
+      const ok = await sparse.setWatched(selSeason, episodes.map(ep => ep.episode_number), !seasonState.isComplete);
+      if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
+      checkingEpRef.current = false;
+      setSeasonPending(false);
+      return;
+    }
     const target = getSeasonToggleProgress({
       isComplete: seasonState.isComplete,
       selectedSeason: selSeason,
@@ -455,16 +494,16 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
     // just pressed. Pin the selection so the season you acted on stays on
     // screen and visibly flips to fully watched.
     userChangedSeason.current = true;
-    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season' });
+    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season', undo: true });
     if (!result?.ok) {
       setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
     } else if (!seasonState.isComplete) {
       await finishSeriesIfComplete(target.nextSeason);
     }
     setSeasonPending(false);
-  }, [currentProgress, seasonPending, seasonState.isComplete, selSeason, watching, tvId, finishSeriesIfComplete]);
+  }, [currentProgress, seasonPending, seasonState.isComplete, selSeason, watching, tvId, finishSeriesIfComplete, sparse, progressBlocked, episodes]);
 
-  const isTracking = !!currentProgress;
+  const isTracking = !!currentProgress || sparse.hasEpisodes;
 
   return (
     <div>
@@ -512,7 +551,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
             type="button"
             className="season-bulk-link"
             onClick={handleToggleSeason}
-            disabled={seasonPending}
+            disabled={seasonPending || progressBlocked || checkingEp !== null}
           >
             {seasonPending
               ? MEDIA_PANEL.updating
@@ -523,6 +562,13 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
         )}
       </div>
 
+      {sparse.hasEpisodes && <p className="season-bulk-count">{MEDIA_PANEL.sparseEpisodeProgress}</p>}
+      {sparse.error && (
+        <div role="alert">
+          <p>{MEDIA_PANEL.episodeProgressLoadError}</p>
+          <button className="season-bulk-btn" onClick={sparse.reload}>{MEDIA_PANEL.retryEpisodeProgress}</button>
+        </div>
+      )}
       {episodeActionError && (
         <div style={{
           marginBottom: '0.85rem',
@@ -538,7 +584,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
         </div>
       )}
 
-      {epLoading ? (
+      {epLoading || sparse.loading ? (
         <LoadingSpinner />
       ) : episodes.length === 0 ? (
         <div style={{ padding: '1rem 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -552,6 +598,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
               currentSeason,
               episodeNumber: ep.episode_number,
               selectedSeason: selSeason,
+              episodeStates: sparse.states,
             });
             const chip       = ep.air_date ? countdownChip(ep.air_date) : null;
             const isUpcoming = chip && chip.cls !== 'chip-muted';
@@ -563,7 +610,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
               <div
                 key={ep.episode_number}
                 className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}`}
-                onClick={isTracking && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
+                onClick={isTracking && !progressBlocked && !seasonPending && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
                 <div className="ep-info">
@@ -591,6 +638,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
                     </span>
                   ) : (
                     <button
+                      disabled={progressBlocked || seasonPending || checkingEp !== null}
                       className={`ep-check-btn${isActive ? ' checked' : ''}`}
                       onClick={(e) => { e.stopPropagation(); handleCheckEp(ep, watched); }}
                       aria-label={watched ? MEDIA.markUnwatched : MEDIA.markWatched}
@@ -813,11 +861,12 @@ function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note,
 /* ── Add to custom list sheet ── */
 function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   const { customLists, topLists, profile } = useApp();
-  const { lists, createList, addItem, removeItem, isInList } = customLists;
+  const { lists, ownedCount, createList, addItem, removeItem, isInList } = customLists;
   const [creatingName, setCreatingName] = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
   const [createError,  setCreateError]  = useState('');
   const [isCreating,   setIsCreating]   = useState(false);
+  const [showUpgrade,  setShowUpgrade]  = useState(false);
   const [topOpen,      setTopOpen]      = useState(false);
   const [rankConflict, setRankConflict] = useState(null); // { rank, occupant }
   const [pickingMoveTo, setPickingMoveTo] = useState(false);
@@ -841,9 +890,9 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
       setCreateError(`"${duplicateList.name}" already exists.`);
       return;
     }
-    if (!canCreateCustomList(lists.length, profile)) {
+    if (!canCreateCustomList(ownedCount ?? lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
-      setCreateError(CUSTOM_LISTS.limitMessage);
+      setShowUpgrade(true);
       return;
     }
 
@@ -865,7 +914,8 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
       setCreatingName('');
       setShowCreate(false);
     } catch (error) {
-      setCreateError(customListCreationError(error, MEDIA.couldNotCreateList));
+      if (isCustomListLimitError(error)) setShowUpgrade(true);
+      else setCreateError(customListCreationError(error, MEDIA.couldNotCreateList));
     } finally {
       setIsCreating(false);
     }
@@ -927,6 +977,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
           />
           <p>You can customise the cover and list details after creating it.</p>
           {createError && <div className="add-list-error">{createError}</div>}
+          {showUpgrade && <UpgradeSheet reason="lists" onClose={() => setShowUpgrade(false)} />}
           <div className="add-list-create-actions">
             <button type="button" className="btn btn-ghost btn-sm" disabled={isCreating} onClick={leaveCreate}>{COMMON.cancel}</button>
             <button type="submit" className="btn btn-primary btn-sm" disabled={!creatingName.trim() || isCreating}>
@@ -1101,7 +1152,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
             return (
               <button
                 key={list.id}
-                onClick={() => checked ? removeItem(list.id, itemId) : addItem(list.id, item)}
+                onClick={() => checked ? removeItem(list.id, itemId, { undo: true }) : addItem(list.id, item)}
                 className={`add-list-row${checked ? ' selected' : ''}`}
               >
                 <span className="add-list-cover" aria-hidden="true"><i /><i /><i /></span>
@@ -1470,7 +1521,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
 
   const handleWatchingStatus = useCallback(async () => {
     if (isWatching) {
-      const stopped = await watching.stopWatching(itemId);
+      const stopped = await watching.stopWatching(itemId, { undo: true });
       return stopped
         ? { ok: true }
         : { ok: false, error: 'Could not clear the active watching state. Please try again.' };
@@ -1486,7 +1537,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const handleWatchedStatus = useCallback(async (dnf) => {
     const isSameWatchedState = watched && (!!watchedEntry?.dnf === dnf);
     if (isSameWatchedState) {
-      const removed = await history.removeEntry(itemId, itemType);
+      const removed = await history.removeEntry(itemId, itemType, { undo: true });
       if (removed) setEngagementPrompt(null);
       return removed
         ? { ok: true }
@@ -1543,13 +1594,13 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
 
   const handleClearStatus = useCallback(async () => {
     if (isWatching) {
-      const stopped = await watching.stopWatching(itemId);
+      const stopped = await watching.stopWatching(itemId, { undo: true });
       return stopped
         ? { ok: true }
         : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
     }
     if (watched) {
-      const removed = await history.removeEntry(itemId, itemType);
+      const removed = await history.removeEntry(itemId, itemType, { undo: true });
       return removed
         ? { ok: true }
         : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
@@ -1610,7 +1661,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const handleSaveFromPanel = useCallback(async () => {
     if (!details) return;
     if (inList) {
-      await watchlist.removeFromList(itemId);
+      await watchlist.removeFromList(itemId, { undo: true });
       return;
     }
     const saved = await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
@@ -1869,6 +1920,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 provider logos, because that answers the question at a glance.
                 Everything it used to sit under — the overview, the cast, the
                 trailer, the episode guide — now sits under it. ── */}
+            {SHOW_WATCH_TOGETHER && details && <SavedByTooRow tmdbId={itemId} mediaType={itemType} />}
             {details && (
               <section className="panel-card panel-watch">
                 <button

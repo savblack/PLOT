@@ -5,6 +5,8 @@ const smokeBaseUrl = `http://127.0.0.1:${smokePort}`;
 
 export default defineConfig({
   testDir: './tests/smoke',
+  // CircleCI's medium executor has two CPUs; ten browsers starve Vite startup.
+  workers: process.env.CI ? 2 : undefined,
   timeout: 30_000,
   expect: {
     timeout: 10_000,
@@ -19,6 +21,7 @@ export default defineConfig({
       VITE_SUPABASE_URL: 'https://placeholder.supabase.co',
       VITE_SUPABASE_ANON_KEY: 'placeholder-not-a-key',
       VITE_TMDB_PROXY_URL: 'https://placeholder.invalid',
+      VITE_SIMKL_CLIENT_ID: 'placeholder-simkl-client-id',
       VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: '',
     },
     // Vite preview ignores the Cloudflare SPA fallback (see assets.

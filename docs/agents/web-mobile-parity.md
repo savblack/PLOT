@@ -27,7 +27,8 @@ Lists) and copy.
 | Official platform Top 10 charts on mobile | done |
 | Type + Genre filters on Discover / New Releases / Upcoming | done |
 | Notifications screen + header bell | done |
-| "Help build PLOT" drawer section (feedback + Ko-fi), flat mobile variant | done |
+| "Help build Plot" drawer section (feedback + Ko-fi), flat mobile variant | done |
+| Premium upgrade sheet at the Free list cap (My Lists, title panel, collections; content from `@plot/core/upgradeSheet.js`). "Compare every feature" opens Settings' Premium section, since mobile has no /plans | done |
 
 The upcoming feed had **three** independent implementations (web's
 `UpcomingContent`, mobile's Upcoming tab, mobile's `HomeReleases`). All three
@@ -45,7 +46,7 @@ the app — see the blocker below.
    `steps = Math.round(dragOffset / rowHeight)`, clamp to `[1, maxRank]`, then
    walk `topLists.moveUp` / `moveDown` one step at a time.
 2. **The drawer's rows carry no icons.** Web's rail puts an icon on every row,
-   including the two "Help build PLOT" links; the drawer is text-only
+   including the two "Help build Plot" links; the drawer is text-only
    throughout, so its flat section follows its neighbours. If the drawer gains
    icons, port the whole set via `react-native-svg`, not only these two rows.
 3. **6f — Discover section headers.** Apply web's `DiscoverSectionHeader`
@@ -58,7 +59,7 @@ export.
 
 ### Ko-fi on iOS is an unresolved App Review question
 
-The drawer's **Support PLOT** row is the first outbound donation link in the
+The drawer's **Support Plot** row is the first outbound donation link in the
 iOS app. Before an App Store submission, decide whether to remove it or gate it
 in `lib/launchFeatures.ts`; Apple guideline 3.1.1's donation carve-outs are not
 an obvious fit for a Ko-fi tip to an individual developer.
@@ -92,7 +93,7 @@ written up in [docs/ops/mobile-builds.md](../ops/mobile-builds.md) — read that
 before debugging a simulator that lists no devices, or a `pod install` that dies
 talking about Unicode.
 
-**Xcode is still not the only path.** PLOT is
+**Xcode is still not the only path.** Plot is
 enrolled in the Apple Developer Program (Individual, confirmed 2026-09-11), and
 EAS builds on hosted macOS workers, so an `eas build --profile development`
 puts a signed build on a real iPhone without Xcode existing locally. That is

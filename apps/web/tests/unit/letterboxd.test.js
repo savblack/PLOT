@@ -35,7 +35,7 @@ test('handles blank ratings and missing watched date (watched.csv shape)', () =>
   assert.equal(row.title, 'Anora');
   assert.equal(row.rating, null);       // no rating column -> null
   assert.equal(row.note, null);
-  assert.equal(row.date, '2024-05-05'); // falls back to logged Date
+  assert.equal(row.date, null); // logged Date is not evidence of when it was watched
 });
 
 test('skips blank title rows and tolerates an empty file', () => {

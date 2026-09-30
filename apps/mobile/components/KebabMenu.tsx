@@ -20,6 +20,8 @@ export interface KebabMenuItem {
   label: string;
   onPress: () => void;
   danger?: boolean;
+  /** Set on items that are one choice from a set (a list's visibility). */
+  checked?: boolean;
 }
 
 export default function KebabMenu({
@@ -57,9 +59,12 @@ export default function KebabMenu({
                 style={styles.item}
                 onPress={() => { setOpen(false); item.onPress(); }}
                 activeOpacity={0.7}
-                accessibilityRole="button"
+                accessibilityRole={item.checked === undefined ? 'button' : 'radio'}
+                accessibilityState={item.checked === undefined ? undefined : { checked: item.checked }}
               >
-                <Text style={[styles.itemText, item.danger && styles.itemTextDanger]}>{item.label}</Text>
+                <Text style={[styles.itemText, item.danger && styles.itemTextDanger]}>
+                  {item.label}{item.checked ? <Text style={styles.itemCheck}>  ✓</Text> : null}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -85,4 +90,5 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   item: { paddingVertical: spacing.md, paddingHorizontal: spacing.lg },
   itemText: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary },
   itemTextDanger: { color: colors.danger },
+  itemCheck: { color: colors.accent },
 });

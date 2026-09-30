@@ -1,9 +1,13 @@
+import { readListItems } from './listReads.js';
+import { on, emit, LISTS_CHANGED_EVENT } from './events.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { tmdb, getTmdbRegion } from './tmdb.js';
 import { providerIdsForRegion, tmdbIdFromItem } from './media.js';
 import { deleteListItem, saveListItem, getOrCreateMyListId } from './userMedia.js';
 import { getConfig } from './config.js';
+import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
+import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
 
 /** Fire-and-forget: enqueue a watchlist change to the Trakt outbox. */
 function enqueueTraktAction(userId, integrationId, action, payload) {
@@ -29,8 +33,8 @@ function enqueueTraktAction(userId, integrationId, action, payload) {
  *   error: string|null;
  *   isInList: (tmdbId: number) => boolean;
  *   addToList: (item: any, opts?: { source?: string }) => Promise<any>;
- *   removeFromList: (tmdbId: number) => Promise<any>;
- *   toggle: (item: any) => Promise<any>;
+ *   removeFromList: (tmdbId: number, opts?: { undo?: import('./undo.js').UndoOption }) => Promise<any>;
+ *   toggle: (item: any, opts?: { source?: string, undo?: import('./undo.js').UndoOption }) => Promise<any>;
  *   reload: () => Promise<void>;
  * }}
  */
@@ -70,6 +74,7 @@ export function useWatchlist(userId) {
       if (!resolvedListId) {
         const msg = 'Could not get or create list';
         console.error('[useWatchlist]', msg);
+        reportLoadFailure(FAILED_LOADS.WATCHLIST, null);
         setListError(msg);
         return;
       }
@@ -77,20 +82,13 @@ export function useWatchlist(userId) {
       setListId(resolvedListId);
 
       // ── 2. Load items
-      const { data: listItems, error: itemsErr } = await supabase
-        .from('list_items')
-        .select('*')
-        .eq('list_id', resolvedListId)
-        .order('created_at', { ascending: false });
-
-      if (itemsErr) {
-        console.error('[useWatchlist] SELECT list_items failed:', itemsErr);
-        setListError(itemsErr.message);
-      }
+      const listItems = await readListItems({ userId, listId: resolvedListId });
+      listItems.sort((a,b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
 
       setItems(listItems || []);
     } catch (e) {
       console.error('[useWatchlist] bootstrap failed:', e);
+      reportLoadFailure(FAILED_LOADS.WATCHLIST, e);
       setListError(e?.message || 'Unknown error loading your list.');
     } finally {
       setLoading(false);
@@ -99,6 +97,7 @@ export function useWatchlist(userId) {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- bootstrap encapsulates the staged local state updates
   useEffect(() => { bootstrap(); }, [bootstrap]);
+  useEffect(() => on(LISTS_CHANGED_EVENT, bootstrap), [bootstrap]);
 
   /* ── Check membership ── */
   const isInList = useCallback(
@@ -139,6 +138,9 @@ export function useWatchlist(userId) {
 
     if (error) {
       console.error('[useWatchlist] INSERT list_items failed:', error);
+      reportActionFailure(FAILED_ACTIONS.WATCHLIST_SAVE, error, {
+        tmdb_id, media_type: row?.media_type ?? item.media_type,
+      });
       return null;
     }
     if (data) {
@@ -163,14 +165,20 @@ export function useWatchlist(userId) {
     return data;
   }, [listId, userId, isInList]);
 
-  /* ── Remove item ── */
-  const removeFromList = useCallback(async (tmdbId) => {
+  /* ── Remove item ──
+     opts.undo offers the removal to the undo toast (see undo.js). Leave it off
+     when this is one step of a bigger action such as Mark as watched. */
+  const removeFromList = useCallback(async (tmdbId, opts) => {
     if (!listId) return false;
 
     const { error } = await deleteListItem({ listId, tmdbId, userId });
 
     if (error) {
       console.error('[useWatchlist] DELETE list_items failed:', error);
+      reportActionFailure(FAILED_ACTIONS.WATCHLIST_REMOVE, error, {
+        tmdb_id: Number(tmdbId),
+        media_type: items.find(i => i.tmdb_id === Number(tmdbId))?.media_type,
+      });
       return false;
     }
     const removed = items.find(i => i.tmdb_id === Number(tmdbId));
@@ -192,15 +200,36 @@ export function useWatchlist(userId) {
         title:      removed?.title ?? null,
       });
     }
+
+    if (removed) {
+      const integrationId = traktIntegrationId.current;
+      registerUndo(opts?.undo, {
+        action: UNDO_ACTIONS.WATCHLIST_REMOVE,
+        title: removed.title,
+        revert: async () => {
+          await restoreRow('list_items', removed);
+          emit(LISTS_CHANGED_EVENT);
+          if (integrationId) {
+            enqueueTraktAction(userId, integrationId, 'trakt_watchlist_add', {
+              tmdb_id: removed.tmdb_id, media_type: removed.media_type, title: removed.title,
+            });
+          }
+        },
+      });
+    }
     return true;
   }, [listId, userId, items]);
 
-  /* ── Toggle ── */
-  const toggle = useCallback(async (item) => {
+  /* ── Toggle ──
+     A toggle is always one direct tap on a bookmark, never a step of a bigger
+     action, so a toggle-off offers undo unless the caller passes undo: false.
+     opts.source is forwarded to addToList, so a surface can label its saves
+     (the Tonight picker's cards pass 'tonight'). */
+  const toggle = useCallback(async (item, opts) => {
     const id = tmdbIdFromItem(item);
     if (!id) return;
-    if (isInList(id)) await removeFromList(id);
-    else await addToList(item);
+    if (isInList(id)) await removeFromList(id, { undo: opts?.undo ?? true });
+    else await addToList(item, opts);
   }, [isInList, addToList, removeFromList]);
 
   return { items, loading, error: listError, isInList, addToList, removeFromList, toggle, reload: bootstrap };

@@ -19,6 +19,11 @@
  * @property {string} watchAvailabilityUrl Server-side JustWatch partner availability resolver.
  * @property {string} criticScoreUrl Server-side OMDb-backed critic score resolver.
  * @property {string} traktClientId
+ * @property {boolean} [trackingJobsEnabled] Enable only after worker pilots and migrations.
+ * @property {boolean} [importAnnotationsEnabled] Enable only after annotation storage and review are verified.
+ * @property {boolean} [tvTimeImportEnabled] Internal preview only until saved-file validation is complete.
+ * @property {boolean} [importEventsEnabled] Enable only after the event import migrations are installed.
+ * @property {string} simklClientId
  * @property {boolean} isDev
  * @property {Record<string, any>} [supabaseClientOptions] Optional createClient()
  *   options. Web leaves this undefined (default localStorage session); mobile
@@ -53,8 +58,9 @@
  *   Analytics seam — fired when a custom list is created or deleted.
  * @property {(payload: { list_id: string, tmdb_id: number, media_type: string, action: 'added' | 'removed' }) => void} [onCustomListItemChange]
  *   Analytics seam — fired when a title is added to or removed from a custom list.
- * @property {(payload: { list_id: string, is_public: boolean }) => void} [onCustomListVisibility]
- *   Analytics seam — fired when a custom list is made public or private.
+ * @property {(payload: { list_id: string, visibility: 'private' | 'followers' | 'public' | 'link', is_public: boolean }) => void} [onCustomListVisibility]
+ *   Analytics seam — fired when a custom list's visibility changes. is_public is
+ *   kept for dashboards built before visibility existed (true for public/link).
  * @property {(payload: { tmdb_id: number, media_type: string, favourited: boolean }) => void} [onFavourite]
  *   Analytics seam — fired on favourite (favourited:true) / unfavourite (false).
  * @property {(payload: { target_user_id: string, approved: boolean }) => void} [onFollowRequestDecision]
@@ -79,6 +85,37 @@
  *   Analytics seam — fired when a profile is edited. Carries the *names* of the
  *   changed fields only, never the values: bios, links and display names are
  *   user content and must not reach analytics.
+ * @property {(payload: { action: string, error_kind: string, error_code?: string, http_status?: number, tmdb_id?: number, media_type?: string, list_id?: string, fields?: string[], progress_action?: string }) => void} [onActionFailed]
+ *   Analytics seam — fired when a user-initiated write fails (save, edit,
+ *   rate, review, list create/delete, …), from the same canonical sites as the
+ *   success seams above. Built by reportActionFailure in actionFailures.js,
+ *   which carries the error's code and a coarse kind but never its message:
+ *   Postgres puts row values there.
+ * @property {(payload: { tmdb_id: number, media_type: string, has_rating: boolean, length: 'short' | 'medium' | 'long', edited: boolean }) => void} [onReview]
+ *   Analytics seam — fired when a written review (a history note) is saved
+ *   with new text, from useHistory's two write paths. Carries a length bucket,
+ *   never the text: reviews are user content.
+ * @property {(payload: { action: 'drawn' | 'opened' | 'search_saved' | 'saved_search_opened', mode?: string, media_type?: string, result_count?: number, reroll?: boolean, only_watchlist?: boolean, only_services?: boolean, genre_count?: number, tmdb_id?: number, position?: number }) => void} [onTonightPicker]
+ *   Analytics seam — the Tonight picker, from useTonightPicker: a draw (first
+ *   spin or reroll; result_count 0 is an empty result), a pick opened, and
+ *   saved searches. Picker settings are reported as shapes (counts, booleans),
+ *   not the genre ids themselves.
+ * @property {(payload: { action: 'invite_sent' | 'request_accepted' | 'link_shared' | 'link_accepted' | 'session_started' | 'match', method?: string, can_decide?: boolean, share_full?: boolean, deck_size?: number, card_number?: number }) => void} [onWatchTogether]
+ *   Analytics seam — Watch together, from useWatchTogether (and
+ *   reportWatchTogether for the share button). Shapes only: never user ids,
+ *   usernames or invite link keys.
+ * @property {(payload: { stage: 'started' | 'completed' | 'failed', source: string, count?: number, failed_count?: number, reason?: string }) => void} [onImport]
+ *   Analytics seam — a history import's lifecycle, via reportImport in
+ *   importPipeline.js. `reason` is an IMPORT_FAILURE_REASONS slug, never the
+ *   parser's message (it can quote file contents).
+ * @property {(payload: { action: string, count: number, elapsed_ms: number }) => void} [onUndo]
+ *   Analytics seam — fired when the undo toast reverses a removal (undo.js).
+ *   The revert writes tables directly and fires no success seam, so an undone
+ *   removal never counts as a new save: this is the only event it produces.
+ * @property {(payload: { resource: string, error_kind: string, error_code?: string, http_status?: number }) => void} [onLoadFailed]
+ *   Analytics seam — fired when a library read (watchlist, history, custom
+ *   lists, series progress, favourites) fails. Kept apart from onActionFailed
+ *   so failed reads never skew a failed-write rate. See reportLoadFailure.
  */
 
 /** @type {PlotCoreConfig} */
@@ -89,7 +126,12 @@ const defaults = {
   watchAvailabilityUrl: '',
   criticScoreUrl: '',
   traktClientId: '',
+  simklClientId: '',
   isDev: false,
+  importAnnotationsEnabled: false,
+  tvTimeImportEnabled: false,
+  importEventsEnabled: false,
+  trackingJobsEnabled: false,
   supabaseClientOptions: undefined,
   supabaseClient: undefined,
   affiliate: undefined,
@@ -106,6 +148,13 @@ const defaults = {
   onHistoryRemove: undefined,
   onWatchProgress: undefined,
   onProfileUpdate: undefined,
+  onActionFailed: undefined,
+  onLoadFailed: undefined,
+  onReview: undefined,
+  onTonightPicker: undefined,
+  onWatchTogether: undefined,
+  onImport: undefined,
+  onUndo: undefined,
 };
 
 let config = { ...defaults };

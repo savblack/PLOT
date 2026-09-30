@@ -1,3 +1,5 @@
+import { WATCH_TOGETHER } from './copy/watchTogether.js';
+
 export const APP_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: '/home', primary: true },
   { id: 'calendar', label: 'Calendar', path: '/calendar', primary: true },
@@ -10,6 +12,13 @@ export const APP_NAV_ITEMS = [
   // and its drawer hardcodes its own list. Not primary, so it stays out of the
   // web bottom tab bar; the sidebar and drawer render it.
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
+  // Pick for Me, the tonight picker (Premium). Free viewers land on the Premium gate,
+  // never on fake results. Mobile lists it in its drawer (DrawerMenu.tsx).
+  { id: 'tonight', label: 'Pick for Me', path: '/tonight', primary: false, premium: true },
+  // Premium. Web only for now; `feature` lets the web shim hide it behind
+  // SHOW_WATCH_TOGETHER until its migration is live. Mobile parity is tracked
+  // in the Watch together PR.
+  { id: 'together', label: WATCH_TOGETHER.navLabel, path: '/together', primary: false, premium: true, feature: 'watchTogether' },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
 ];
@@ -36,7 +45,7 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
  * routes (`person/4110`) resolve, and to the brand for anything unknown.
  *
  * WHY: /person/:id and /import had no entry, so both fell through to the brand
- * and rendered a second "PLOT" wordmark in the content column, directly beside
+ * and rendered a second "Plot" wordmark in the content column, directly beside
  * the one the sidebar already shows.
  *
  * @param {string} view

@@ -2,7 +2,7 @@
  * Resolves a title's legal VOD offers through the JustWatch Content Partner API.
  *
  * The browser supplies a TMDB id, not a title string, so the partner verifies
- * the exact movie/show before PLOT exposes a provider clickout. The token stays
+ * the exact movie/show before Plot exposes a provider clickout. The token stays
  * server-side. This function intentionally returns no data when the partner
  * token is absent; clients retain TMDB's regional availability and its exact
  * JustWatch title page rather than reverting to a provider search.

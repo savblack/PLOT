@@ -1,16 +1,16 @@
-# PLOT Maintenance → Relaunch Sprint
+# Plot Maintenance → Relaunch Sprint
 
 Written 2026-08-10, revised the same day after a full decision review.
-This is the plan of record for taking PLOT dark to the public, finishing the iOS
+This is the plan of record for taking Plot dark to the public, finishing the iOS
 app, and relaunching web + iOS + pricing together.
 
 ## The shape of it
 
-PLOT goes dark to the public now. All 20 existing users are blocked and emailed.
+Plot goes dark to the public now. All 20 existing users are blocked and emailed.
 Everything unfinished gets built behind that curtain, and web, iOS and pricing all
 go live on one day of your choosing.
 
-**6 to 8 weeks.** There is no go-dark sprint and no payments sprint; PLOT is live now and
+**6 to 8 weeks.** There is no go-dark sprint and no payments sprint; Plot is live now and
 launches free.
 
 ## Decisions
@@ -31,7 +31,7 @@ re-litigated later.
 | 8 | **In-app + email + push**, with push scoped to watchlist availability alerts only. |
 | 9 | **Approve then hold**: get App Store approval, sit on it, release on your date. |
 | 10 | iOS auth is **email + Sign in with Apple + Google**. |
-| 11 | **Statistics ships entirely free. Premium is cut from this cycle** (2026-08-13); prices reset to A$5/mo, A$40/yr for whenever it does ship. |
+| 11 | **Statistics ships entirely free. Premium is cut from this cycle** (2026-08-13); prices reset to A$5/mo, A$40/yr for whenever it does ship. (Superseded 2026-09-25: US$3/mo or US$24/yr, taxes included.) |
 | 12 | **Web inherits core work for free** and gets no dedicated sprint. |
 | 13 | **6 to 8 weeks**, with the cut list agreed in advance. Revised from 5 to 7 by the social rethink. |
 
@@ -58,14 +58,14 @@ trouble rather than one being invested in.
 ### Why there is no feed (revised 2026-08-10)
 
 The original decision was that the feed stays off behind its flag. That has been
-superseded: PLOT is not getting a Twitter-shaped feed at all. The social surface is
+superseded: Plot is not getting a Twitter-shaped feed at all. The social surface is
 **profiles**, closer to Goodreads, and the engagement layer is deleted rather than
 dormant.
 
 The reason it is a deletion and not a flag is that it was provably never used.
 `post_likes` and `post_comments` both hold **0 rows** on production, so removing
 them destroys nothing, and this is the safest moment it will ever be. Half-removal
-is how PLOT has twice ended up doing dead-code cleanups, one of which accidentally
+is how Plot has twice ended up doing dead-code cleanups, one of which accidentally
 deleted the live checkout page.
 
 What stays is the substrate. `feed_posts` is populated by three database triggers
@@ -77,7 +77,7 @@ activity it has generated would render an empty room, and an empty social surfac
 is worse than none.
 
 **Report and block still ship**, and are now scoped to what actually exists.
-Guideline 1.2 applies to PLOT regardless of the feed: the guideline reads
+Guideline 1.2 applies to Plot regardless of the feed: the guideline reads
 "user-generated content **or** social networking services" and never mentions a
 feed, so avatars, usernames and bios clear the threshold on their own (see
 `docs/research/app-store-guideline-1-2.md`). Dropping comments shrinks the surface
@@ -129,7 +129,7 @@ taxonomy pays for part of the sharing work, but not all of it.
 8. **The publishing machine keeps running.** `marketing-weekly-batch.yml` runs
    Sundays and pushes the week into Buffer, which sends it; `marketing-publish.yml`
    reads back daily what Buffer did. The copy convention in
-   `marketing/copy/AGENT.md` must be retargeted from "start your PLOT" to the
+   `marketing/copy/AGENT.md` must be retargeted from "start your Plot" to the
    waitlist, or nine weeks of daily posts drive traffic into a wall.
 9. **Ops**: disable signups in the Supabase Auth dashboard (the anon key is public,
    so `auth.signUp()` is callable directly and a client gate alone is not a block).
@@ -205,15 +205,16 @@ tier is far more generous, but the lesson stands.
 
 ## Sprint 4 — Payments: CUT from this cycle (2026-08-13)
 
-**PLOT launches free. Premium does not ship.**
+**Plot launches free. Premium does not ship.**
 
-**Licence:** TMDB clearance is confirmed by Savannah. PLOT has TMDB's approval to
+**Licence:** TMDB clearance is confirmed by Savannah. Plot has TMDB's approval to
 use its API without a contract. This is not a launch blocker. Historical quotes
 are not current cost assumptions.
 
-The planned prices remain A$5/month or A$40/year, up from the original A$3 and
-A$25. Recheck current operating costs before Premium launches instead of carrying
-forward an old TMDB quote.
+The planned prices are US$3/month or US$24/year, taxes included, with Stripe
+showing local currency at checkout (set 2026-09-25; previously A$5/A$40, and
+originally A$3/A$25). Recheck current operating costs before Premium launches
+instead of carrying forward an old TMDB quote.
 
 `SHOW_PRICING_PAGE` stays off. When Premium does ship:
 

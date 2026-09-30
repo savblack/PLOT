@@ -56,14 +56,45 @@ export const EVENTS = Object.freeze({
   TITLE_SHARED: 'title_shared',
   LIST_SHARED: 'list_shared',
   PROFILE_SHARED: 'profile_shared',
+  // Share cards (docs/design/share-cards.md). `opened` carries { source, card }
+  // so the dashboards can say which path earns the posts; `sent` carries
+  // { card, format, target } where target is copy | download | x | threads |
+  // instagram on web and share | save on mobile.
+  SHARE_CARD_OPENED: 'share_card_opened',
+  SHARE_CARD_SENT: 'share_card_sent',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_STARTED: 'premium_checkout_started',
+  PREMIUM_CHECKOUT_FAILED: 'premium_checkout_failed',
+  PREMIUM_CHECKOUT_CANCELLED: 'premium_checkout_cancelled',
   PREMIUM_CONVERTED: 'premium_converted',
+  // RETIRED 2026-08-07: the old name of premium_converted, renamed in #452.
+  // Last fired 2026-07-10. Kept so historical queries have a name to point at
+  // and a stray call site stays a loud reference (see ACTIVATED).
+  PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
+  // The Tonight picker, Plot's "what should I watch" surface. Fired from
+  // useTonightPicker via the onTonightPicker seam. A draw with result_count 0
+  // is an empty result; a failed draw is load_failed (resource tonight_picks).
+  // "Accepted a pick" is tonight_pick_opened, or watchlist_saved with
+  // source 'tonight'.
+  TONIGHT_PICKS_DRAWN: 'tonight_picks_drawn',
+  TONIGHT_PICK_OPENED: 'tonight_pick_opened',
+  TONIGHT_SEARCH_SAVED: 'tonight_search_saved',
+  TONIGHT_SAVED_SEARCH_OPENED: 'tonight_saved_search_opened',
+  // Watch together (Premium, one of you needs it). Fired from
+  // useWatchTogether via the onWatchTogether seam, except link_shared, which
+  // the share button reports through reportWatchTogether. Props are shapes,
+  // never who: no user ids, usernames or link keys.
+  WATCH_TOGETHER_INVITE_SENT: 'watch_together_invite_sent',
+  WATCH_TOGETHER_REQUEST_ACCEPTED: 'watch_together_request_accepted',
+  WATCH_TOGETHER_LINK_SHARED: 'watch_together_link_shared',
+  WATCH_TOGETHER_LINK_ACCEPTED: 'watch_together_link_accepted',
+  WATCH_TOGETHER_SESSION_STARTED: 'watch_together_session_started',
+  WATCH_TOGETHER_MATCH: 'watch_together_match',
   WATCH_LINK_CLICKED: 'watch_link_clicked',
   TIP_JAR_CLICKED: 'tip_jar_clicked',
-  // PLOT's second paid-conversion type alongside premium_converted — a Ko-fi
+  // Plot's second paid-conversion type alongside premium_converted — a Ko-fi
   // tip (recognition-only, see kofi_supporters/is_supporter; grants no
   // entitlement). Fired server-side from supabase/functions/kofi-webhook via
   // PostHog's HTTP capture API, not posthog-js: Ko-fi hosts its own checkout,
@@ -76,8 +107,14 @@ export const EVENTS = Object.freeze({
   SEARCH_PERFORMED: 'search_performed',
   TITLE_VIEWED: 'title_viewed',
   DISCOVER_TAB_CHANGED: 'discover_tab_changed',
+  // RETIRED 2026-09-27, never emitted since the feed engagement layer was
+  // deleted in #532. Kept so a stray call site is a loud reference rather
+  // than a silent `undefined` event name (see ACTIVATED).
   FEED_POST_OPENED: 'feed_post_opened',
   RATING_SET: 'rating_set',
+  // A written review saved with new text. Props: tmdb_id, media_type,
+  // has_rating, length ('short'|'medium'|'long'), edited. Never the text.
+  REVIEW_WRITTEN: 'review_written',
   MARKED_WATCHED: 'marked_watched',
   // In-flow watch/rate prompts (PLO-473 / PLO-474). Not Tier 2 — they measure
   // prompt exposure and dismissals so the save→watch guardrail is readable.
@@ -131,12 +168,19 @@ export const EVENTS = Object.freeze({
   // a pile of pending requests that never get approved is a broken loop.
   FOLLOW_REQUEST_APPROVED: 'follow_request_approved',
   FOLLOW_REQUEST_DECLINED: 'follow_request_declined',
+  // Imports: fired on both apps via reportImport (importPipeline.js). Before
+  // 2026-09-27 mobile fired none of these, and Trakt/Simkl account imports
+  // never fired import_completed on either app.
   IMPORT_STARTED: 'import_started',
   IMPORT_COMPLETED: 'import_completed',
+  // Carries `reason`, an IMPORT_FAILURE_REASONS slug, never a parser message.
+  IMPORT_FAILED: 'import_failed',
   // Marketing email consent. `source` distinguishes the Settings toggle from the
   // in-app prompt so we can tell which surface actually earns opt-ins.
   MARKETING_EMAILS_OPTED_IN: 'marketing_emails_opted_in',
   MARKETING_EMAILS_OPTED_OUT: 'marketing_emails_opted_out',
+  // RETIRED 2026-09-27, never emitted since DigestNudge was deleted in #465.
+  // Kept for the same reason as FEED_POST_OPENED.
   DIGEST_PROMPT_VIEWED: 'digest_prompt_viewed',
   DIGEST_PROMPT_DISMISSED: 'digest_prompt_dismissed',
   // Settings / account actions
@@ -150,6 +194,21 @@ export const EVENTS = Object.freeze({
   // Which profile fields people actually fill in. Props carry the field names
   // that changed, never the values — bios and links are user content.
   PROFILE_UPDATED: 'profile_updated',
+  // A user-initiated write that failed: save, edit, rate, review, list
+  // create/rename/delete, follow, block, … One name for all of them; the
+  // `action` prop (FAILED_ACTIONS in actionFailures.js) says which. Carries
+  // `error_kind` and the SQLSTATE/PostgREST `error_code`, never the message.
+  // Fired from core's canonical mutation sites via the onActionFailed seam, so
+  // every surface on both apps is covered once. Not Tier 1 or Tier 2.
+  ACTION_FAILED: 'action_failed',
+  // A library read that failed (watchlist, history, custom lists, series
+  // progress, favourites). `resource` says which. Separate from action_failed
+  // so a failed page load never counts as a failed user action.
+  LOAD_FAILED: 'load_failed',
+  // The undo toast reversed a removal. `action` is an UNDO_ACTIONS value
+  // (undo.js), plus `count` and `elapsed_ms`. The restore fires nothing else,
+  // so it never counts as a save. Tier 1 at most, never Tier 2.
+  ACTION_UNDONE: 'action_undone',
   // Integrations
   PLEX_CONNECTED: 'plex_connected',
   PLEX_SYNCED: 'plex_synced',
@@ -160,6 +219,9 @@ export const EVENTS = Object.freeze({
   TRAKT_CONNECT_STARTED: 'trakt_connect_started',
   TRAKT_CONNECTED: 'trakt_connected',
   TRAKT_SYNCED: 'trakt_synced',
+  SIMKL_CONNECT_STARTED: 'simkl_connect_started',
+  SIMKL_CONNECTED: 'simkl_connected',
+  SIMKL_SYNCED: 'simkl_synced',
   // One name for both providers, distinguished by a `provider` prop: churn off
   // an integration is the same question whichever one it was.
   INTEGRATION_DISCONNECTED: 'integration_disconnected',

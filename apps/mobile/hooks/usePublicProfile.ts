@@ -10,6 +10,7 @@ export interface PublicProfile {
   is_supporter: boolean;
   is_public: boolean;
   follow_status: string | null;
+  profile_sections?: string[] | null;
   bio?: string | null;
   links?: Record<string, string> | null;
 }
@@ -34,6 +35,9 @@ export interface PublicProfileState {
   topMovies: ProfilePoster[];
   topTv: ProfilePoster[];
   favourites: ProfilePoster[];
+  watching: ProfilePoster[];
+  wantToWatch: ProfilePoster[];
+  customLists: { id: string; name: string; visibility?: string; items: ProfilePoster[] }[];
   refresh: () => Promise<void>;
 }
 

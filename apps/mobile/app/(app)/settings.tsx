@@ -1,3 +1,4 @@
+import TrackingSettings from '../../components/TrackingSettings';
 import BroadcastSettings from '../../components/BroadcastSettings';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
@@ -5,7 +6,7 @@ import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
   Modal, Alert, ActivityIndicator, StyleSheet, Switch, Platform, Linking,
@@ -13,21 +14,22 @@ import {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line, Polygon } from 'react-native-svg';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
-import { setUserTimezone } from '@plot/core/date.js';
+import { localDateStr, setUserTimezone } from '@plot/core/date.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import { useTraktSync } from '../../hooks/useTraktSync';
 import { useMediaSync } from '../../hooks/useMediaSync';
+import { useSimklSync } from '../../hooks/useSimklSync';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
 import { track, resetAnalytics, EVENTS } from '../../lib/analytics';
 import { deleteAccountAndSignOut } from '@plot/core/deleteAccount.js';
-import { clearWatchHistory } from '@plot/core/userMedia.js';
+import { clearWatchHistory, clearSavedAndWatching } from '@plot/core/userMedia.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -37,6 +39,12 @@ import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
+import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
+import { favoriteWords } from '../../lib/spelling';
+import { buildCalendarEvents } from '@plot/core/calendar.js';
+import { generateICS } from '@plot/core/ics.js';
+import { shareCalendarFile } from '../../lib/shareCalendarFile';
 
 // UUID token for the private calendar feed. Uses native crypto when the RN
 // runtime provides it, else an RFC4122-shaped Math.random fallback (RN has no
@@ -75,10 +83,11 @@ function Chevron() {
 
 // ── Settings row ──────────────────────────────────────────────────────
 function SettingsRow({
-  icon, label, value, onPress, danger = false, trailing,
+  icon, label, description, value, onPress, danger = false, trailing,
 }: {
   icon: React.ReactNode;
   label: string;
+  description?: string;
   value?: string;
   onPress?: () => void;
   danger?: boolean;
@@ -94,7 +103,14 @@ function SettingsRow({
       disabled={!onPress}
     >
       <View style={[styles.rowIcon, danger && styles.rowIconDanger]}>{icon}</View>
-      <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+      {description ? (
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+          <Text style={styles.rowDescription}>{description}</Text>
+        </View>
+      ) : (
+        <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+      )}
       <View style={styles.rowRight}>
         {value ? <Text style={styles.rowValue} numberOfLines={1}>{value}</Text> : null}
         {trailing ?? (onPress ? <Chevron /> : null)}
@@ -131,11 +147,14 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
         </Text>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.customLists(FREE_CUSTOM_LIST_CAP)}</Text>
         <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansMedium }}>{PLANS_PAGE.premium.name}</Text>
-        <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.premium.priceSummary}</Text>
+        <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.premium.priceTerms}</Text>
+        <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.trialNote}</Text>
         {PLANS_PAGE.premiumFeatures.map(feature => <View key={feature.id} style={{ gap: spacing.xs }}>
           <Text style={{ color: colors.textPrimary }}>{feature.label}</Text>
           <Text style={{ color: colors.textSecondary }}>{feature.description}</Text>
-          <Text style={{ color: colors.textMuted }}>{('pendingValidation' in feature && feature.pendingValidation) ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
+          {('live' in feature && feature.live) ? null : (
+            <Text style={{ color: colors.textMuted }}>{('pendingValidation' in feature && feature.pendingValidation) ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
+          )}
         </View>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
         <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
@@ -643,7 +662,7 @@ export default function SettingsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { userId, user, profile, refreshProfile } = useAppData();
+  const { userId, user, profile, refreshProfile, watchlist, watching } = useAppData();
 
   const [showProviders,  setShowProviders]  = useState(false);
   const [showGenres,     setShowGenres]     = useState(false);
@@ -683,10 +702,14 @@ export default function SettingsScreen() {
   const isPublic    = !!profile?.is_public;
   const includeKidsContent = profile?.include_kids_content ?? true;
   const { count: requestCount } = useFollowRequests(userId);
+  const { visibility: watchlistVisibility, refresh: refreshWatchlistVisibility } = useWatchlistVisibility(userId, isPublic);
+  // The choice is made on its own screen; re-read it on the way back.
+  useFocusEffect(useCallback(() => { refreshWatchlistVisibility(); }, [refreshWatchlistVisibility]));
 
   const toggleVisibility = async () => {
     if (!userId) return;
-    await updateProfile({ userId, patch: { is_public: !isPublic } });
+    const { error } = await updateProfile({ userId, patch: { is_public: !isPublic } });
+    if (error) { Alert.alert(COMMON.genericError); return; }
     track(EVENTS.PROFILE_VISIBILITY_CHANGED, { is_public: !isPublic });
     refreshProfile();
   };
@@ -700,12 +723,13 @@ export default function SettingsScreen() {
   // ── Calendar ICS subscription ────────────────────────────────────
   const [localCalToken,      setLocalCalToken]      = useState<string | null>(null);
   const [generatingCalToken, setGeneratingCalToken] = useState(false);
+  const [sharingIcs, setSharingIcs] = useState(false);
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
   const calFeedUrl    = calendarToken ? edgeFunctionUrl('calendar-feed', { token: calendarToken }) : null;
   const calWebcalUrl  = calFeedUrl ? calFeedUrl.replace(/^https?:\/\//, 'webcal://') : null;
 
   const handleGenerateCalToken = async () => {
-    if (!userId || generatingCalToken) return;
+    if (!profile?.is_premium || !userId || generatingCalToken) return;
     setGeneratingCalToken(true);
     const token = generateCalendarToken();
     const { error } = await updateProfile({ userId, patch: { calendar_token: token } });
@@ -757,22 +781,86 @@ export default function SettingsScreen() {
     );
   };
 
+  // Free accounts can see the row. The live URL stays on Premium, same gate
+  // as Plex and Trakt. Explore Premium opens the in-app preview.
+  const openPremiumCalendarGate = () => {
+    Alert.alert(
+      SETTINGS_VIEW.calendarFeed.needsPremium,
+      SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
+      [
+        { text: SETTINGS_VIEW.premium.upgradeButton, onPress: () => setPremiumExpanded(true) },
+        ...(calendarToken ? [{ text: SETTINGS_VIEW.confirm.revoke, style: 'destructive' as const, onPress: handleRevokeCalToken }] : []),
+        { text: COMMON.cancel, style: 'cancel' as const },
+      ],
+    );
+  };
+
+  const handleShareSnapshot = async () => {
+    if (sharingIcs) return;
+    if (watchlist.loading || watching.loading) {
+      Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.loadingEvents);
+      return;
+    }
+    if (watchlist.error || watching.error) {
+      Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.shareFailed);
+      return;
+    }
+    setSharingIcs(true);
+    try {
+      const events = await buildCalendarEvents({
+        watchlist: watchlist.items ?? [],
+        watching: watching.items ?? [],
+        todayStr: localDateStr(),
+        fetchTvDetails: (tmdbId: number) => tmdb.getTVDetails(tmdbId),
+        fetchSeason: (tmdbId: number, seasonNumber: number) => tmdb.getSeason(tmdbId, seasonNumber),
+      });
+      if (!events.length) {
+        Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.emptySnapshot);
+        return;
+      }
+      await shareCalendarFile(generateICS(events));
+    } catch {
+      Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.shareFailed);
+    } finally {
+      setSharingIcs(false);
+    }
+  };
+
   // ── Media integrations (Plex / Trakt) ────────────────────────────
   const trakt = useTraktSync(userId);
   const plex  = useMediaSync(userId);
+  const simkl = useSimklSync(userId);
 
   const syncedLabel = (iso?: string | null) =>
-    `Connected · synced ${iso ? new Date(iso).toLocaleDateString() : 'never'}`;
+    SETTINGS_VIEW.integrations.connectedLastSynced(
+      iso ? new Date(iso).toLocaleDateString() : SETTINGS_VIEW.integrations.never,
+    );
 
   const openIntegrationMenu = (
     name: string,
     i: { sync: () => void; disconnect: () => void; syncing: boolean },
+    actionLabel = SETTINGS_VIEW.integrations.syncNow,
+    busyLabel = COMMON.syncing,
   ) => {
     Alert.alert(name, undefined, [
-      { text: i.syncing ? 'Syncing…' : 'Sync now', onPress: () => i.sync() },
+      { text: i.syncing ? busyLabel : actionLabel, onPress: () => i.sync() },
       { text: 'Disconnect', style: 'destructive', onPress: () => i.disconnect() },
       { text: 'Cancel', style: 'cancel' },
     ]);
+  };
+
+  // Free accounts can see the rows. Connect stays on Premium.
+  // Explore Premium opens the in-app preview. Mobile does not link out to pay.
+  const openPremiumSyncGate = (connected: boolean, disconnect: () => void) => {
+    Alert.alert(
+      SETTINGS_VIEW.integrations.syncNeedsPremium,
+      SETTINGS_VIEW.integrations.syncNeedsPremiumMessage,
+      [
+        { text: SETTINGS_VIEW.premium.upgradeButton, onPress: () => setPremiumExpanded(true) },
+        ...(connected ? [{ text: SETTINGS_VIEW.integrations.disconnect, style: 'destructive' as const, onPress: disconnect }] : []),
+        { text: COMMON.cancel, style: 'cancel' as const },
+      ],
+    );
   };
 
   const saveProviders = async (newProviders: any[]) => {
@@ -837,30 +925,21 @@ export default function SettingsScreen() {
     ]);
   };
 
+  // Shared helper, which reports a failure itself. This used to discard every
+  // error and track watchlist_cleared regardless.
+  const clearLists = async (watching: boolean) => {
+    setClearingList(true);
+    const { error } = await clearSavedAndWatching({ userId: userId!, saved: true, watching });
+    setClearingList(false);
+    if (error) Alert.alert('Could not clear', SETTINGS_VIEW.errors.failedToClearLists);
+    else track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching, customListCount: 0 });
+  };
+
   const handleClearWatchlist = () => {
     Alert.alert('Clear watchlist?', 'This removes everything from your Saved list (want-to-watch). Items in your custom lists are not affected.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear Saved only', onPress: async () => {
-        setClearingList(true);
-        const { data: myList } = await supabase.from('lists')
-          .select('id').eq('user_id', userId!).eq('name', 'My List').maybeSingle();
-        if (myList?.id) {
-          await supabase.from('list_items').delete().eq('list_id', myList.id);
-        }
-        setClearingList(false);
-        track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching: false, customListCount: 0 });
-      }},
-      { text: 'Clear Saved + Watching', style: 'destructive', onPress: async () => {
-        setClearingList(true);
-        const { data: myList } = await supabase.from('lists')
-          .select('id').eq('user_id', userId!).eq('name', 'My List').maybeSingle();
-        await Promise.all([
-          myList?.id ? supabase.from('list_items').delete().eq('list_id', myList.id) : Promise.resolve(),
-          supabase.from('watching_progress').delete().eq('user_id', userId!),
-        ]);
-        setClearingList(false);
-        track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching: true, customListCount: 0 });
-      }},
+      { text: 'Clear Saved only', onPress: () => clearLists(false) },
+      { text: 'Clear Saved + Watching', style: 'destructive', onPress: () => clearLists(true) },
     ]);
   };
 
@@ -967,8 +1046,15 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
-            label="Public profile"
-            trailing={<Switch value={isPublic} onValueChange={toggleVisibility} trackColor={{ true: colors.accent }} />}
+            label={isPublic ? PROFILE_PRIVACY.publicLabel : PROFILE_PRIVACY.privateLabel}
+            description={`${isPublic ? PROFILE_PRIVACY.publicDescription(favoriteWords(region).pluralLower) : PROFILE_PRIVACY.privateDescription} ${PROFILE_PRIVACY.notesAlwaysPrivate}`}
+            trailing={<Switch value={isPublic} onValueChange={toggleVisibility} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.page.privacyLabel} />}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></Svg>}
+            label={PROFILE_PRIVACY.watchlist.heading}
+            value={PROFILE_PRIVACY.watchlist.option[watchlistVisibility]}
+            onPress={() => router.push('/(app)/watchlist-visibility')}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><Circle cx={9} cy={7} r={4}/><Path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></Svg>}
@@ -1001,21 +1087,41 @@ export default function SettingsScreen() {
         </SettingsGroup>
 
         {/* Calendar */}
-        <SettingsGroup title="Calendar">
+        <SettingsGroup title={SETTINGS_VIEW.calendarFeed.groupTitle}>
+          {profile?.is_premium ? (
+            <SettingsRow
+              icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={18} rx={2} ry={2}/><Line x1={16} y1={2} x2={16} y2={6}/><Line x1={8} y1={2} x2={8} y2={6}/><Line x1={3} y1={10} x2={21} y2={10}/></Svg>}
+              label={SETTINGS_VIEW.calendarFeed.subscribeLabel}
+              description={calendarToken ? SETTINGS_VIEW.calendarFeed.liveFeedPrivate : SETTINGS_VIEW.calendarFeed.getUrlHint}
+              value={calendarToken ? 'On' : undefined}
+              onPress={calendarToken ? openCalendarMenu : handleGenerateCalToken}
+              trailing={calendarToken
+                ? undefined
+                : <Text style={{ color: generatingCalToken ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>
+                    {generatingCalToken ? SETTINGS_VIEW.calendarFeed.generating : SETTINGS_VIEW.calendarFeed.generateLink}
+                  </Text>}
+            />
+          ) : (
+            <SettingsRow
+              icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={18} rx={2} ry={2}/><Line x1={16} y1={2} x2={16} y2={6}/><Line x1={8} y1={2} x2={8} y2={6}/><Line x1={3} y1={10} x2={21} y2={10}/></Svg>}
+              label={SETTINGS_VIEW.calendarFeed.subscribeLabel}
+              description={SETTINGS_VIEW.calendarFeed.needsPremium}
+              onPress={openPremiumCalendarGate}
+              trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
+            />
+          )}
           <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={18} rx={2} ry={2}/><Line x1={16} y1={2} x2={16} y2={6}/><Line x1={8} y1={2} x2={8} y2={6}/><Line x1={3} y1={10} x2={21} y2={10}/></Svg>}
-            label={SETTINGS_VIEW.calendarFeed.subscribeLabel}
-            value={calendarToken ? 'On' : undefined}
-            onPress={calendarToken ? openCalendarMenu : handleGenerateCalToken}
-            trailing={calendarToken
-              ? undefined
-              : <Text style={{ color: generatingCalToken ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>
-                  {generatingCalToken ? 'Generating…' : 'Generate'}
-                </Text>}
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><Polyline points="7 10 12 15 17 10"/><Line x1={12} y1={15} x2={12} y2={3}/></Svg>}
+            label={SETTINGS_VIEW.calendarFeed.exportLabel}
+            description={SETTINGS_VIEW.calendarFeed.snapshotHint}
+            onPress={handleShareSnapshot}
+            trailing={<Text style={{ color: sharingIcs ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>
+              {sharingIcs ? SETTINGS_VIEW.export.preparing : SETTINGS_VIEW.calendarFeed.shareIcs}
+            </Text>}
           />
         </SettingsGroup>
 
-        {/* PLOT Premium — status only; purchases and subscription management
+        {/* Plot Premium — status only; purchases and subscription management
             stay on the web app (Apple IAP rules: no external purchase links). */}
         {profile?.is_premium && (
           <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
@@ -1029,28 +1135,53 @@ export default function SettingsScreen() {
 
         {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
 
-        {/* Integrations — held for post-launch, same as web. Import Watch
-            History (under Support) stays available; it needs no credentials. */}
-        {SHOW_MEDIA_SYNC_INTEGRATIONS && (
+        {/* Plex and Trakt are Premium. Simkl is a free, manual connection. */}
         <SettingsGroup title="Integrations">
+          {SHOW_MEDIA_SYNC_INTEGRATIONS && profile?.is_premium && (<>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label="Plex"
-            value={plex.isConnected ? syncedLabel(plex.integration?.last_sync_at) : (plex.polling ? 'Waiting for approval…' : undefined)}
-            onPress={plex.isConnected ? () => openIntegrationMenu('Plex', plex) : () => plex.startPlexAuth()}
+            label={SETTINGS_VIEW.integrations.plexName}
+            value={plex.isConnected ? SETTINGS_VIEW.integrations.connected : (plex.polling ? 'Waiting for approval…' : undefined)}
+            onPress={plex.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.plexName, plex, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => plex.startPlexAuth()}
             trailing={plex.isConnected ? undefined
               : <Text style={{ color: plex.polling ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{plex.polling ? 'Waiting…' : 'Connect'}</Text>}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label="Trakt"
-            value={trakt.isConnected ? syncedLabel(trakt.integration?.last_sync_at) : SETTINGS_VIEW.integrations.connectTraktToSync}
-            onPress={trakt.isConnected ? () => openIntegrationMenu('Trakt', trakt) : () => trakt.connect()}
+            label={SETTINGS_VIEW.integrations.traktName}
+            value={trakt.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.connectTraktToSync}
+            onPress={trakt.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.traktName, trakt, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => trakt.connect()}
             trailing={trakt.isConnected ? undefined
               : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Connect</Text>}
           />
+          </>)}
+          {SHOW_MEDIA_SYNC_INTEGRATIONS && !profile?.is_premium && (<>
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
+            label={SETTINGS_VIEW.integrations.plexName}
+            value={plex.isConnected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : SETTINGS_VIEW.integrations.plexBlurb}
+            onPress={() => openPremiumSyncGate(plex.isConnected, () => { void plex.disconnect(); })}
+            trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
+            label={SETTINGS_VIEW.integrations.traktName}
+            value={trakt.isConnected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : SETTINGS_VIEW.integrations.traktBlurb}
+            onPress={() => openPremiumSyncGate(trakt.isConnected, () => { void trakt.disconnect(); })}
+            trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
+          />
+          </>)}
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M5 7h11"/><Path d="M13 4l3 3-3 3"/><Path d="M19 17H8"/><Path d="M11 14l-3 3 3 3"/></Svg>}
+            label={SETTINGS_VIEW.integrations.simklName}
+            value={simkl.isConnected ? syncedLabel(simkl.integration?.last_sync_at) : SETTINGS_VIEW.integrations.simklBlurb}
+            onPress={simkl.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.simklName, simkl) : () => simkl.connect()}
+            trailing={simkl.isConnected ? undefined
+              : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.integrations.connectSimkl}</Text>}
+          />
         </SettingsGroup>
-        )}
+
+        <TrackingSettings userId={userId} connect={trakt.connect} connectPlex={plex.startPlexAuth} plexPolling={plex.polling} connectionError={trakt.error || plex.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : plex.disconnect()} />
 
         {/* Support */}
         <SettingsGroup title="Support">
@@ -1079,7 +1210,7 @@ export default function SettingsScreen() {
             label={COMMON.privacyPolicy}
             onPress={() => Linking.openURL('https://theplot.tv/privacy.html')}
           />
-          {/* Guideline 1.2 holds PLOT to its own community standards, so they
+          {/* Guideline 1.2 holds Plot to its own community standards, so they
               have to be reachable from inside the app, not only from the site. */}
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><Circle cx={9} cy={7} r={4}/><Path d="M23 21v-2a4 4 0 0 0-3-3.87"/></Svg>}
@@ -1242,6 +1373,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowLabel: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
   rowLabelDanger: { color: colors.danger },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  rowDescription: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
   rowValue: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, maxWidth: 160 },
 
   // Appearance segmented rail — mirrors web .settings-theme-tabs

@@ -1,9 +1,9 @@
-// PLOT-owned entry point for marketing-site title discovery. The existing
+// Plot-owned entry point for marketing-site title discovery. The existing
 // Cloudflare Worker keeps its distributed per-IP rate limiting in front of the
 // Supabase implementation.
 //
 // This function supplies the upstream credentials itself, so an unguarded
-// version is a TMDB proxy anyone may spend PLOT's quota through. See
+// version is a TMDB proxy anyone may spend Plot's quota through. See
 // _lib/discover.js for what guards it and how much each guard is worth. The
 // edge cache below is the load-bearing half: the homepage asks for nine
 // distinct queries, and a cache hit costs TMDB nothing at all.

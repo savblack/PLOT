@@ -1,0 +1,455 @@
+{
+  "source": "TMDB search via staging Worker",
+  "retrieved": "2026-09-23",
+  "results": {
+    "Palm Springs": {
+      "page": 1,
+      "results": [
+        {
+          "adult": false,
+          "backdrop_path": "/d7JUXVvjvVCXWs1mlpyO5ESdWdT.jpg",
+          "id": 587792,
+          "title": "Palm Springs",
+          "original_title": "Palm Springs",
+          "overview": "When carefree Nyles and reluctant maid of honor Sarah have a chance encounter at a Palm Springs wedding, things get complicated when they find themselves unable to escape the venue, themselves, or each other.",
+          "poster_path": "/gnAfqiV7yO3Jq9IntTmwkcaICqc.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            35,
+            10749,
+            878
+          ],
+          "popularity": 12.5404,
+          "release_date": "2020-07-10",
+          "softcore": false,
+          "video": false,
+          "vote_average": 7.338,
+          "vote_count": 3894
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/rSwSGol1wy81BIj7kYODKx2AwDH.jpg",
+          "id": 266557,
+          "title": "Palm Springs",
+          "original_title": "Palm Springs",
+          "overview": "A gambler in need of cash plots a romance between his daughter and a wealthy Englishman. The daughter, however, has plans of her own.",
+          "poster_path": "/pM8BNBN7A16bwgW3oS0VmxXDGQN.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            35,
+            18,
+            10402
+          ],
+          "popularity": 1.1528,
+          "release_date": "1936-06-05",
+          "softcore": false,
+          "video": false,
+          "vote_average": 8,
+          "vote_count": 1
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/rr2PYSz9wwyokQKdh9vyTedACRy.jpg",
+          "id": 209676,
+          "title": "Palm Springs",
+          "original_title": "Palm Springs",
+          "overview": "This short is about a purple dinosaur named Sigmund, who likes to bounce on top of trees.  Preserved by the Academy Film Archive in 2011.",
+          "poster_path": "/qpi6EelzDw2EyNcbw8nCm70TxrV.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            16
+          ],
+          "popularity": 1.0603,
+          "release_date": "1989-12-31",
+          "softcore": false,
+          "video": false,
+          "vote_average": 6,
+          "vote_count": 27
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/keL0VyHtFmEBXSqQm7BASm62kez.jpg",
+          "id": 42985,
+          "title": "Palm Springs Weekend",
+          "original_title": "Palm Springs Weekend",
+          "overview": "Set in Palm Springs during a long, fun-filled weekend where several Los Angeles college students flock to spring break, centering on Jim who finds romance with Bunny, the daughter of Palm Springs harred, stressful police chief. Jim's bumbling roommate, Biff, tries to get Amanda, a tomboyish girl's attention with a so-called love gadget. Meanwhile, Gayle Lewis is a high school senior posing as a wealthy college girl who is pursued by Eric Dean, a wealthy and spoiled college prepie, while Gayle has eyes for a cowboy from Texas, named Stretch. Also Jim and Biff's basketball coach, Campbell, tries to romance Naomi, the owner of the motel where all of the gang is staying at, which is interfered by Naomi's young, trouble-making, brat son who's dubbed, Boom-Boom.",
+          "poster_path": "/v5lt8axlnmTD5lWdE2pGmbaRjD9.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            35,
+            10749
+          ],
+          "popularity": 1.4049,
+          "release_date": "1963-11-05",
+          "softcore": false,
+          "video": false,
+          "vote_average": 4.974,
+          "vote_count": 19
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/gzcTwlBWMjY0JCSKIJh4pzJhNDQ.jpg",
+          "id": 358876,
+          "title": "Christmas in Palm Springs",
+          "original_title": "Christmas in Palm Springs",
+          "overview": "Jessica has a big presentation in Palm Springs. There are a couple of problems though: her two kids who will do anything to get mom and dad back together again - even if they have to hack mom's phone or pose as a secretary to make sure dad's in Palm Springs too. And father Joe who'll do anything to charm his way back into Jessica's life.",
+          "poster_path": "/kaCk7Xwg9m8BiLBf24KziUAp2Kj.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            35,
+            10770
+          ],
+          "popularity": 2.0237,
+          "release_date": "2014-11-23",
+          "softcore": false,
+          "video": false,
+          "vote_average": 5,
+          "vote_count": 16
+        },
+        {
+          "adult": false,
+          "backdrop_path": null,
+          "id": 253636,
+          "title": "Sunkist Stars at Palm Springs",
+          "original_title": "Sunkist Stars at Palm Springs",
+          "overview": "Winners of the Lucky Stars National Dance Contest - one woman from each state of the United States - are welcomed to Palm Springs. Palm Springs being the desert playground for the movie stars, the women are introduced to the cavalcade of stars vacationing in Palm Springs at the time.",
+          "poster_path": "/59ZEvHCyC3tHkfca6s6mVPFt2rk.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            10402,
+            35
+          ],
+          "popularity": 1.5908,
+          "release_date": "1936-01-11",
+          "softcore": false,
+          "video": false,
+          "vote_average": 4.7,
+          "vote_count": 3
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/rsy0wweZQCl6TiH3gLKTRkXQVAj.jpg",
+          "id": 606910,
+          "title": "Sinatra in Palm Springs",
+          "original_title": "Sinatra in Palm Springs",
+          "overview": "Palm Springs, a small desert oasis 100 miles East of Los Angeles was Sinatra's true home for 50 years. During his brief yet turbulent marriage to Ava Gardner his Palm Springs home was center stage. For the rest of his life, the Rancho Mirage compound on Frank Sinatra Drive, was the home he called \"My Heaven\". Palm Springs still feels the ghost of Frank Sinatra.",
+          "poster_path": "/dHlcb8WfZ8BSv5DkZZJhXHjNjzS.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            99
+          ],
+          "popularity": 1.2229,
+          "release_date": "2018-02-20",
+          "softcore": false,
+          "video": false,
+          "vote_average": 7,
+          "vote_count": 1
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/oCXrK5n08x6ft65K0COcs8u3Tuw.jpg",
+          "id": 74547,
+          "title": "The Saint In Palm Springs",
+          "original_title": "The Saint In Palm Springs",
+          "overview": "George Sanders makes his final appearance as crook-turned-detective Simon Templar, a.k.a. \"The Saint,\" in The Saint in Palm Springs. The gimmick in this one is a set of rare stamps, smuggled from England. Wendy Barrie is the true heir to this treasure, and the Saint is engaged to protect her and the stamps. Our hero meets Barrie in a posh Palm Springs resort, where a gang of homicidal thieves have converged to relieve the girl of her inheritance. Three murders and one kidnapping attempt later, the villains are foiled by the Saint, with the aid of his onetime partner in crime Pearly Gates (Paul Guilfoyle). The Saint in Palm Springs is the sixth in RKO's series of films based on the character created by Leslie Charteris.",
+          "poster_path": "/tKGqbKpvCeqw2LyxPhI30lINrUs.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            80,
+            9648
+          ],
+          "popularity": 1.4636,
+          "release_date": "1941-01-24",
+          "softcore": false,
+          "video": false,
+          "vote_average": 6.1,
+          "vote_count": 12
+        },
+        {
+          "adult": false,
+          "backdrop_path": null,
+          "id": 1006634,
+          "title": "Palm Springs Naturally",
+          "original_title": "Palm Springs Naturally",
+          "overview": "A documentary featuring naturist resorts in southern California.",
+          "poster_path": null,
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            99
+          ],
+          "popularity": 0.8826,
+          "release_date": "2003-09-01",
+          "softcore": false,
+          "video": false,
+          "vote_average": 0,
+          "vote_count": 0
+        },
+        {
+          "adult": false,
+          "backdrop_path": null,
+          "id": 1707084,
+          "title": "SPREE in Palm Springs",
+          "original_title": "SPREE in Palm Springs",
+          "overview": "Pat Rocco and members of SPREE (Society of Pat Rocco Enlightened Enthusiasts) charter a bus from Los Angeles to Palm Springs for a weekend getaway, where they relax poolside and take a trip on the aerial tramway to snowy Mount San Jacinto.",
+          "poster_path": null,
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [],
+          "popularity": 0.4253,
+          "release_date": "",
+          "softcore": false,
+          "video": false,
+          "vote_average": 0,
+          "vote_count": 0
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/sqZMSB6fLPCD6MMDuJ97OCXcKlI.jpg",
+          "id": 726503,
+          "title": "Desert Utopia: Mid-Century Architecture in Palm Springs",
+          "original_title": "Desert Utopia: Mid-Century Architecture in Palm Springs",
+          "overview": "Southern California’s Coachella Valley, including the communities of Palm Springs, Palm Desert, Desert Hot Springs, boasts hundreds of extraordinary midcentury modern homes, public buildings and commercial structures. Modern designers such as William F. Cody, Albert Frey, William Krisel, John Lautner, Richard Neutra, R.M. Schindler, Donald Wexler, E. Stewart Williams left their collective mark on this desert paradise. Desert Utopia: Mid-Century Architecture in Palm Springs traces the history of modern architecture in Palm Springs from the first bold forays into modernist design to the preservation challenges facing the region today. Director Jake Gorst’s film features rare archival images and footage as well as interviews with historians, homeowners and the architects who helped create this mecca of modernism.",
+          "poster_path": "/hHU8Ze81eL9DB88f4r42jyZ4SGp.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            99,
+            36
+          ],
+          "popularity": 0.7786,
+          "release_date": "2010-01-01",
+          "softcore": false,
+          "video": false,
+          "vote_average": 0,
+          "vote_count": 0
+        },
+        {
+          "adult": false,
+          "backdrop_path": null,
+          "id": 715022,
+          "title": "The Who: Palm Springs 11/11/2006",
+          "original_title": "The Who: Palm Springs 11/11/2006",
+          "overview": "The Who perform at the Indian Wells Tennis Garden in Palm Springs, CA.",
+          "poster_path": "/wGlloMubwUib8IwG6oLLpkssmOG.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [],
+          "popularity": 1.1794,
+          "release_date": "2006-11-11",
+          "softcore": false,
+          "video": false,
+          "vote_average": 0,
+          "vote_count": 0
+        },
+        {
+          "adult": false,
+          "backdrop_path": null,
+          "id": 1369960,
+          "title": "A Lez in Wonderland",
+          "original_title": "Broute-minou à Palm Springs",
+          "overview": "A fun, fresh reality-comedy on the largest lesbian event in the world: the Dinah Shore Weekend in Palm Springs.",
+          "poster_path": "/rwGBZ5MFsD0W0YKwjPs8wVx9ggv.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            99
+          ],
+          "popularity": 0.8573,
+          "release_date": "2006-11-16",
+          "softcore": false,
+          "video": false,
+          "vote_average": 1,
+          "vote_count": 1
+        },
+        {
+          "adult": false,
+          "backdrop_path": null,
+          "id": 749947,
+          "title": "Abby & Emily Go to Palm Springs",
+          "original_title": "Abby & Emily Go to Palm Springs",
+          "overview": "Abby and Emily have recently started dating and are off on their first vacation together, which results in a poetic slice of a relationship as it evolves in real time, with the opinions and occasional intrusion of best friends from both camps. It doesn't attempt to resolve everything but instead exposes the raw roller coaster of emotions that rise to the surface even as love starts to set in. It is at times funny, maddening, confusing and in the end, real.",
+          "poster_path": "/kAjtP2sYnPs2yVfdoyIej8ovkZ6.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [],
+          "popularity": 0.4996,
+          "release_date": "2020-06-01",
+          "softcore": false,
+          "video": false,
+          "vote_average": 0,
+          "vote_count": 0
+        },
+        {
+          "adult": false,
+          "backdrop_path": null,
+          "id": 244921,
+          "title": "Still Kicking: The Fabulous Palm Springs Follies",
+          "original_title": "Still Kicking: The Fabulous Palm Springs Follies",
+          "overview": "A year in the life of the Palm Springs Follies, featuring beautiful, ageless performers from around the world in a show that is always Standing Room Only.  The film intercuts colorful interviews with the participants and footage of auditions, rehearsals, and the actual performances.",
+          "poster_path": "/71Y5quZgwPph7gA5KIAB7lwUvVY.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            99,
+            10402
+          ],
+          "popularity": 1.2407,
+          "release_date": "1997-08-10",
+          "softcore": false,
+          "video": false,
+          "vote_average": 4.5,
+          "vote_count": 2
+        },
+        {
+          "adult": false,
+          "backdrop_path": null,
+          "id": 1232268,
+          "title": "Mid-Century Moderns: The Homes That Define Palm Springs",
+          "original_title": "Mid-Century Moderns: The Homes That Define Palm Springs",
+          "overview": "This documentary film goes beyond the walls and hedges of Mid-Century homes that were built in neighborhoods like Twin Palms, Vista Las Palmas and Racquet Club Estates. The film features interviews with noted architects James Harlan, author of The Alexanders. Watch as home owners in various Palm Springs neighborhoods speak directly to the pride that goes beyond home ownership as they tour us through their homes. They gladly accept that they are the stewards of these mid-Century monuments that they live with everyday.",
+          "poster_path": "/zRlJQHR7acSRZ9Ue7mlQ1HupMh6.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            99
+          ],
+          "popularity": 0.7061,
+          "release_date": "2013-01-23",
+          "softcore": false,
+          "video": false,
+          "vote_average": 0,
+          "vote_count": 0
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/fXilPlimkfLcr2z1OuFw7S6s3f6.jpg",
+          "id": 11589,
+          "name": "P.S. I Luv U",
+          "original_name": "P.S. I Luv U",
+          "overview": "P.S. I Luv U is an American crime drama series. The title derived from the phone number of fictitious Palm Security and Investigations, which was 774-5888, which can be reached by dialing \"PSI-LUVU\" on a standard North American telephone.",
+          "poster_path": "/cAfhxy5MHheMTs4gnzBGiccBovh.jpg",
+          "media_type": "tv",
+          "original_language": "en",
+          "genre_ids": [
+            80,
+            18
+          ],
+          "popularity": 6.7085,
+          "first_air_date": "1991-09-15",
+          "softcore": false,
+          "vote_average": 6.4,
+          "vote_count": 5,
+          "origin_country": [
+            "US"
+          ]
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/xii0228MSGngADlY9TKPOvUOAcT.jpg",
+          "id": 5225,
+          "name": "Hidden Palms",
+          "original_name": "Hidden Palms",
+          "overview": "Johnny Miller was a typical 15-year-old until his father committed suicide. Now Johnny lives in Palm Springs with his mother and her new husband. On the outside, Palm Springs is a paradise - but as Johnny learns the secrets that lie just beneath the surface of this seemingly typical neighborhood, he and his family wonder how well they really know the people who live right next door.",
+          "poster_path": "/ShEWZ8yaePvHknK9iPbzBUyyzx.jpg",
+          "media_type": "tv",
+          "original_language": "en",
+          "genre_ids": [
+            18
+          ],
+          "popularity": 6.8935,
+          "first_air_date": "2007-05-30",
+          "softcore": false,
+          "vote_average": 5.6,
+          "vote_count": 31,
+          "origin_country": [
+            "US",
+            "HK"
+          ]
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/sTuw5ARn1a795wtb63IFNxOddc1.jpg",
+          "id": 462181,
+          "title": "Palm Swings",
+          "original_title": "Palm Swings",
+          "overview": "After moving to Palm Springs, a young married couple puts their love to the test when they discover that their neighbors are swingers.",
+          "poster_path": "/e65F1qDaThjdmthr94SwrA4McaA.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            35,
+            18,
+            10749
+          ],
+          "popularity": 5.09,
+          "release_date": "2017-10-03",
+          "softcore": false,
+          "video": false,
+          "vote_average": 5.871,
+          "vote_count": 62
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/she5yGj0WXwcZKZRmbAhEJ2RWKh.jpg",
+          "id": 73446,
+          "name": "Desert Flippers",
+          "original_name": "Desert Flippers",
+          "overview": "Wisconsin transplants Eric and Lindsey Bennett are transforming sunny Palm Springs, California one dilapidated house at a time, renovating 20 properties a year while raising two small children.",
+          "poster_path": "/6YWDI7QUFpdxNlmqRv6oFe4SgaQ.jpg",
+          "media_type": "tv",
+          "original_language": "en",
+          "genre_ids": [
+            10764
+          ],
+          "popularity": 3.7445,
+          "first_air_date": "2016-08-25",
+          "softcore": false,
+          "vote_average": 5.3,
+          "vote_count": 3,
+          "origin_country": [
+            "US"
+          ]
+        }
+      ],
+      "total_pages": 2,
+      "total_results": 22
+    },
+    "Harry Potter and the Chamber of Secrets": {
+      "page": 1,
+      "results": [
+        {
+          "adult": false,
+          "backdrop_path": "/zuYEvft5fuzBDOeq4ClYpiu9LlO.jpg",
+          "id": 672,
+          "title": "Harry Potter and the Chamber of Secrets",
+          "original_title": "Harry Potter and the Chamber of Secrets",
+          "overview": "Cars fly, trees fight back, and a mysterious house-elf comes to warn Harry Potter at the start of his second year at Hogwarts. Adventure and danger await when bloody writing on a wall announces: The Chamber Of Secrets Has Been Opened. To save Hogwarts will require all of Harry, Ron and Hermione's magical abilities and courage.",
+          "poster_path": "/sdEOH0992YZ0QSxgXNIGLq1ToUi.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [
+            12,
+            14
+          ],
+          "popularity": 47.3494,
+          "release_date": "2002-11-15",
+          "softcore": false,
+          "video": false,
+          "vote_average": 7.707,
+          "vote_count": 24097
+        }
+      ],
+      "total_pages": 1,
+      "total_results": 1
+    }
+  }
+}

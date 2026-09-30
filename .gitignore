@@ -31,7 +31,10 @@ apps/website/.claude/
 *.sw?
 .env
 .env.*
-!.env.example
+# Only mobile keeps a committed template. A repo-root .env.example was deleted
+# on 2026-09-18 and silently restored by #1046 eight days later, carrying a live
+# publishable key; scoping the negation means the next one cannot be committed.
+!apps/mobile/.env.example
 *.zip
 *-mockup.html
 *-mockups.html
@@ -50,3 +53,14 @@ plot-posts/
 .guide-cache/
 # Python feed importer bytecode.
 scripts/guide/__pycache__/
+
+# Local package-manager cache.
+.pnpm-store/
+
+# Plot is a pnpm workspace and .npmrc's node-linker=hoisted is load-bearing
+# (Metro and check-expo-sdk-deps.mjs both assume a flat node_modules). An npm or
+# yarn lockfile here means the wrong package manager ran; committing one would
+# leave the repo with two competing dependency graphs, so ignore it outright
+# rather than rely on noticing it in `git status`.
+package-lock.json
+yarn.lock

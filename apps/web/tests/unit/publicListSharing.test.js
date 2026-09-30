@@ -7,7 +7,7 @@ const request = new Request('https://app.theplot.tv/list/test-list');
 test('public list includes a signup path, sign-in and useful empty state without inventing titles', async () => {
   const original = globalThis.fetch;
   globalThis.fetch = async (url) => Response.json(
-    url.includes('user_custom_lists?') ? [{ id: 'test-list', name: '<Weekend picks>', user_id: 'test-owner' }] : [],
+    url.includes('/rpc/get_shared_list') ? [{ id: 'test-list', name: '<Weekend picks>', user_id: 'test-owner', visibility: 'public', items: [] }] : [],
   );
   try {
     const response = await onRequest({ request, params: { id: 'test-list' }, env: {} });
@@ -36,9 +36,9 @@ test('a private or unavailable list does not reveal list content or cache its re
 test('list titles lead to the save preview with attribution instead of leaving the app', async () => {
   const original = globalThis.fetch;
   globalThis.fetch = async (url) => Response.json(
-    url.includes('user_custom_lists?') ? [{ id: 'test-list', name: 'Weekend', user_id: 'test-owner' }]
-      : url.includes('user_custom_list_items?') ? [{ tmdb_id: 95396, media_type: 'tv', title: 'Severance', poster_path: null }]
-        : [],
+    url.includes('/rpc/get_shared_list')
+      ? [{ id: 'test-list', name: 'Weekend', user_id: 'test-owner', visibility: 'public', items: [{ tmdb_id: 95396, media_type: 'tv', title: 'Severance', poster_path: null }] }]
+      : [],
   );
   try {
     const response = await onRequest({ request, params: { id: 'test-list' }, env: {} });

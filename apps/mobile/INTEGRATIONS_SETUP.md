@@ -17,7 +17,7 @@ Prereq: `supabase login` and `supabase link --project-ref mkegtssedjyqldysvzga`
 ## 1. Trakt
 
 ### 1a. Trakt OAuth app
-1. Go to https://trakt.tv/oauth/applications → your PLOT app (or create one).
+1. Go to https://trakt.tv/oauth/applications → your Plot app (or create one).
 2. Under **Redirect URI**, add the mobile scheme on its own line (keep the existing web one):
    ```
    https://app.theplot.tv/auth/trakt      ← existing (web)
@@ -84,9 +84,9 @@ supabase secrets set \
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` are injected
 automatically by the platform — do not set them manually.
 
-**Calendar** (already shipped in Settings → Calendar) uses `calendar-feed`, which
-needs only `TMDB_API_KEY` + the auto-provided Supabase secrets. Deploy it too if it
-isn't already:
+**Calendar** uses `calendar-feed`. The live URL is Premium. Free accounts share a
+one-time `.ics` instead. The function needs only `TMDB_API_KEY` plus the
+auto-provided Supabase secrets. Deploy it too if it isn't already:
 ```
 supabase functions deploy calendar-feed --project-ref mkegtssedjyqldysvzga
 ```
@@ -95,10 +95,14 @@ supabase functions deploy calendar-feed --project-ref mkegtssedjyqldysvzga
 
 ## 4. Verify
 
+Connect and Import watch history in Settings are for a Premium account. A free account sees
+Explore Premium instead, and the server still returns `premium_required` on
+`sync`. One-off history import stays free. Do not label Plex or Trakt as automatic or two-way sync.
+
 1. **Trakt**: Settings → Integrations → Trakt → **Connect**. The system browser
    opens trakt.tv authorize; approve; it redirects to `plot://auth/trakt?code=…`,
    the app catches it (`app/_layout.tsx` deep-link listener → `exchangeTraktCode`),
-   and the row flips to **Connected**. Then **Sync now**.
+   and the row flips to **Connected**. Then **Import watch history**.
    - If it doesn't return to the app: the redirect URI isn't allowlisted (§1a).
    - If "Trakt isn't configured yet": `EXPO_PUBLIC_TRAKT_CLIENT_ID` isn't in the
      built bundle (§1b — rebuild).
@@ -112,5 +116,5 @@ supabase functions deploy calendar-feed --project-ref mkegtssedjyqldysvzga
 - `hooks/useTraktSync.ts` — connect / exchange / sync / disconnect
 - `hooks/useMediaSync.ts` — Plex start-auth / poll / sync / disconnect
 - `app/_layout.tsx` — global deep-link listener for the Trakt `code`
-- `app/(app)/settings.tsx` — Integrations UI (status / Connect / Sync now / Disconnect)
+- `app/(app)/settings.tsx` — Integrations UI (status / Connect / Import watch history / Disconnect)
 - `lib/core/useWatchlist.js` — already enqueues Trakt outbox rows on save/unsave

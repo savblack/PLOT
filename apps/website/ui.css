@@ -75,65 +75,218 @@
   }
 }
 
-/* Footer — one shared source for every page and Storybook. */
-footer {
-  background: var(--dark);
-  color: var(--text-dark);
-  border-top: 1px solid var(--glass-border);
-  padding: 2.6rem 3rem;
-  margin-top: -1px;
+/* The nav's own links keep the CTA arrow off. */
+.nav-links a[data-cta="nav"]::after { content: none; }
+
+/* footer-css:start (generated from _partials/footer.css — edit there, then run `npm run footer`) */
+/* Footer — the shared site footer's styles. Single source for every consumer:
+   `npm run footer` copies this into ui.css (static pages + Storybook) and into
+   the marketing-feed and title-page edge functions, which don't load ui.css.
+   Edit here, never in a copy.
+
+   Every colour is a theme.css token with its value as the fallback, so the
+   footer renders the same on pages that define the tokens under other names.
+   The link list is a div with role="navigation", not a <nav>: nav.css styles
+   every <nav> as the fixed top bar. Type rules are set in full because pages
+   style bare h2 and p. */
+.site-footer {
+  /* An inline-size container has no intrinsic width, so it must be told to
+     fill the row: some pages lay out body as a centred flex column. */
+  container-type: inline-size;
+  width: 100%;
+  box-sizing: border-box;
   position: relative;
   z-index: 3;
+  margin-top: -1px;
+  overflow: hidden;
+  background: var(--bg, #f8f2ea);
+  color: var(--ink, #292924);
+  border-top: 1px solid rgba(41, 41, 36, 0.12);
+  font-family: var(--sans, 'DM Sans', system-ui, sans-serif);
 }
 .footer-inner {
-  max-width: 1100px;
+  max-width: 1360px;
   margin: 0 auto;
+  padding: 6rem 2.5rem 0;
+}
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 3rem 4rem;
+}
+.footer-lede {
+  margin: 0;
+  color: inherit;
+  text-align: left;
+  font-family: var(--display, 'Gabarito', 'DM Sans', system-ui, sans-serif);
+  font-size: clamp(1.55rem, 2.8vw, 2.5rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+.footer-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem 2rem;
   flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin-top: 1.75rem;
 }
-.footer-logo {
+.footer-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 1.5rem;
+  border-radius: 9999px;
+  background: var(--fill, #ff88c8);
+  color: var(--ink, #292924);
+  font-size: 0.95rem;
+  font-weight: 600;
   text-decoration: none;
-  font-family: var(--display);
-  font-weight: 400;
-  letter-spacing: -0.05em;
-  font-size: 1.8rem;
-  line-height: 1;
-  color: var(--text-dark);
-  user-select: none;
+  transition: background 0.25s var(--ease, ease), transform 0.25s var(--ease, ease);
 }
-.footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
-.footer-nav a {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: color 0.2s;
+.footer-cta:hover { background: var(--fill-hover, #ff9fd3); transform: translateY(-1px); }
+.footer-login {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 0.25rem;
+  color: var(--ink, #292924);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.footer-cols {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  column-gap: 5rem;
+}
+.footer-heading {
+  margin: 0 0 1rem;
+  font-family: var(--sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.69rem;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #5f5a52);
+}
+.footer-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.footer-col a {
+  color: var(--ink, #292924);
+  font-size: 0.875rem;
+  line-height: 1.3;
   white-space: nowrap;
 }
-.footer-nav a:hover { color: var(--text); }
+
+/* Text links underline in the brand pink on hover and keyboard focus. */
+.footer-col a,
+.footer-login {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.2s;
+}
+.footer-col a:hover,
+.footer-col a:focus-visible,
+.footer-login:hover,
+.footer-login:focus-visible { text-decoration-color: var(--fill, #ff88c8); }
+
 .footer-bottom {
-  width: 100%;
-  padding-top: 1.2rem;
-  margin-top: 0.4rem;
-  border-top: 1px solid var(--glass-border);
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   gap: 1rem;
-  flex-wrap: wrap;
+  margin-top: 3rem;
 }
-.footer-copy { font-size: 0.75rem; color: var(--text-secondary); }
-.footer-social { display: flex; gap: 1rem; align-items: center; }
-.footer-social a { color: var(--text-secondary); display: inline-flex; transition: color 0.2s; }
-.footer-social a:hover { color: var(--text); }
+.footer-copy { font-size: 0.8rem; color: var(--text-secondary, #5f5a52); }
+.footer-social { display: flex; align-items: center; margin-right: -12px; }
+.footer-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--ink, #292924);
+  transition: color 0.2s;
+}
+.footer-social a:hover { color: var(--text-secondary, #5f5a52); }
 .footer-social svg { width: 19px; height: 19px; display: block; }
-.nav-links a[data-cta="nav"]::after,
-.footer-inner a::after { content: none; }
-@media (max-width: 600px) {
-  footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+
+/* The wordmark bleeds off both sides and sinks below the bottom edge. The
+   SVG is 108% of the footer's width, pulled 4% left; the strip is cropped
+   13.9% (of that width) above the letters' baseline, so the edge cuts the
+   lower part of p, o and t at every screen size. vw first for browsers
+   without container units. */
+.footer-wordmark {
+  display: block;
+  margin-top: 4rem;
+  overflow: hidden;
+  height: calc(108vw * 681 / 1508 - 13.9vw);
+  height: calc(108cqw * 681 / 1508 - 13.9cqw);
 }
+.footer-wordmark svg {
+  display: block;
+  width: 108vw;
+  width: 108cqw;
+  height: auto;
+  aspect-ratio: 1508 / 871;
+  margin-left: -4vw;
+  margin-left: -4cqw;
+  fill: var(--surface, #f1e9dc);
+  transition: fill 0.3s var(--ease, ease);
+}
+.footer-wordmark:hover svg { fill: var(--surface-hover, #eadfcf); }
+.footer-wordmark:focus-visible { outline: 2px solid var(--ink, #292924); outline-offset: -4px; }
+
+/* Only the pill carries the CSS arrow (ui.css gives every a[data-cta] one;
+   defined here too because the edge-function pages don't load ui.css). */
+.site-footer a::after { content: none; }
+.site-footer .footer-cta::after {
+  content: "";
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.4em;
+  background: currentColor;
+  clip-path: polygon(0 43%, 73% 43%, 43% 13%, 53% 3%, 100% 50%, 53% 97%, 43% 87%, 73% 57%, 0 57%);
+  transition: transform 180ms var(--ease, ease);
+}
+.site-footer .footer-cta:hover::after,
+.site-footer .footer-cta:focus-visible::after { transform: rotate(-45deg); }
+.footer-cta:focus-visible,
+.footer-col a:focus-visible,
+.footer-login:focus-visible,
+.footer-social a:focus-visible { outline: 2px solid var(--ink, #292924); outline-offset: 2px; border-radius: 4px; }
+
+@media (max-width: 900px) {
+  .footer-top { flex-direction: column; align-items: stretch; }
+  .footer-cols { column-gap: 3.5rem; }
+}
+@media (max-width: 600px) {
+  .footer-inner { padding: 3.5rem 1.25rem 0; }
+  .footer-lede { font-size: 1.55rem; line-height: 1.12; }
+  .footer-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem 0.75rem; }
+  .footer-bottom { margin-top: 2.25rem; }
+  .footer-wordmark { margin-top: 2rem; }
+}
+@media (pointer: coarse) {
+  .footer-col a { display: inline-flex; align-items: center; min-height: 44px; }
+  .footer-col ul { gap: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .footer-cta, .footer-wordmark svg, .site-footer .footer-cta::after { transition: none; }
+}
+/* footer-css:end */
 
 /* Chips — small labels. Cream by default; pink and sage carry meaning. */
 .chip {

@@ -1,8 +1,8 @@
-# PLOT analytics
+# Plot analytics
 
 What the numbers mean, where they are defined, and what not to trust.
 
-PostHog project **PLOT** (`471234`, US cloud). One project serves the web app,
+PostHog project **Plot** (`471234`, US cloud). One project serves the web app,
 the marketing site, mobile, and four server-rendered surfaces.
 
 ## What counts as an active user
@@ -10,21 +10,30 @@ the marketing site, mobile, and four server-rendered surfaces.
 Three tiers, defined in PostHog as Actions and cohorts rather than in code, so
 the bar can move without a deploy.
 
+What each tier contains and why is in [tiers.md](tiers.md), which also
+records the 2026-09-27 redefinition and the values it replaced.
+
 | Tier | Definition | Where |
 |---|---|---|
 | 1. Explorer | Any in-app action, browsing included | Action "Any in-app action (Tier 1)" |
 | 2. Committed | A durable write to the user's own library. **This is activation.** | Action "Committed action (Tier 2)", cohort "Activated (committed action)" |
-| 3. Retained | A committed action in 2+ distinct weeks | Cohort "Retained (returned and acted)" |
+| 3. Retained | A **self-directed** committed action in 2+ distinct weeks of the last 8 | Cohort "Retained (returned and acted)" |
 
-Tier 2 events: `watchlist_saved` (filtered to `already_saved != true`),
-`marked_watched`, `rating_set`, `favourite_added`, `list_item_added`,
-`custom_list_created`, `watching_started`, `season_watched`,
-`series_completed`, `import_completed`, `user_followed`, `plex_connected`,
-`trakt_connected`.
+Tier 2 events (since 2026-09-27): `watchlist_saved` (filtered to
+`already_saved != true`), `marked_watched`, `rating_set`, `review_written`,
+`favourite_added`, `list_item_added`, `custom_list_created`,
+`collection_saved_as_list`, `watching_started`, `season_watched`,
+`series_completed`, `episode_watched`, `import_completed`. Follows and
+integration connects moved to Tier 1: neither is a write to your own library.
 
 Tier 1 adds `title_viewed`, `search_performed`, `discover_tab_changed`,
-`watch_link_clicked`. It deliberately excludes `$pageview` and `$autocapture`,
-so bot traffic cannot qualify.
+`watch_link_clicked`, `tonight_picks_drawn`, `tonight_pick_opened`,
+`collection_viewed`, `user_followed`, the undo-side events
+(`watchlist_removed`, `history_entry_removed`, `episode_unwatched`,
+`season_unwatched`, `action_undone`), sharing (`title_shared`,
+`list_shared`, `profile_shared`) and the integration connects. It
+deliberately excludes `$pageview` and `$autocapture`, so bot traffic cannot
+qualify.
 
 ### Why activation is not an event
 
@@ -94,6 +103,41 @@ Encoded here once so nobody rediscovers them.
   reported the same event. Undo now fires `episode_unwatched` /
   `season_unwatched`.
 - **`activated` is retired.** See above.
+- **`premium_activated` is `premium_converted` before 2026-08-07.** Renamed in
+  #452; the two are the same conversion. Union them for any history longer
+  than that.
+- **`supporter_gate_hit` is not a Plot event.** It fired once, on 2026-07-08,
+  from `localhost:5177/preview-monetization`: uncommitted local work, before the
+  host allowlist existed. The `$host` test filter already excludes it. It is
+  deliberately not in the catalog; do not build on it.
+- **`eng_analytics_test_census` is PostHog's, not ours.** A daily ping from
+  distinct id `eng_analytics_census:savblack/PLOT` (lib
+  `posthog-capture-v1-internal`), from PostHog's side of the GitHub
+  connection. Excluded by a `test_account_filters` rule since 2026-09-27.
+- **`feed_post_opened`, `digest_prompt_viewed` and `digest_prompt_dismissed`
+  are retired** (2026-09-27). Nothing has fired them since the feed engagement
+  layer (#532) and `DigestNudge` (#465) were deleted. Any insight built on them
+  is empty, not broken. The keys stay, for the same reason as `activated`.
+- **`import_completed` before 2026-09-27 is web-only and Plex-only for
+  accounts.** Mobile fired no import events at all, and Trakt / Simkl account
+  imports never fired `import_completed` on either app, so people who
+  activated by importing on mobile were missing from the Tier 2 cohort. Both
+  apps now report through `reportImport()` in `importPipeline.js`. A write
+  that saved nothing because every row failed is `import_failed`
+  (`reason: write_failed`), not a completion, so it cannot activate anyone.
+- **An undone removal is `action_undone`, not a new save.** The undo toast
+  (`packages/core/undo.js`, 2026-09-27) writes the removed row straight back
+  and fires no success seam, so undoing "removed from Want to Watch" does not
+  produce a second `watchlist_saved`. The original `watchlist_removed` (or
+  `favourite_removed`, `history_entry_removed`, …) still stands; net them
+  against `action_undone` by `action` if a removal count matters. Not Tier 2.
+- **`user_followed` / `user_unfollowed` before 2026-09-27 are undercounted.**
+  The Follow button on user lists (search results, followers, following) wrote
+  `follows` directly and fired nothing; only the profile header's button was
+  counted. Both now go through `followUser`, so expect a step up that is not
+  real growth.
+- **`watchlist_cleared` on mobile before 2026-09-27 is unreliable.** It fired
+  whether or not the delete succeeded.
 - **`engagement_prompt_shown` / `engagement_prompt_dismissed` are not Tier 2.**
   They measure the in-panel watch/rate prompts (PLO-473 / PLO-474): exposure
   and how people leave (`action`: `not_yet`, `skip`, `write_review`). Accepting
@@ -109,11 +153,26 @@ Encoded here once so nobody rediscovers them.
   which excludes `source: 'onboarding'` outright. Do not fix it by reordering
   steps.
 
+## Monetization events
+
+Payment events are server-side only. They must never be emitted by the browser's
+checkout return page, because a refresh would double-count a conversion.
+
+| Event | Sender | Required properties |
+|---|---|---|
+| `premium_checkout_started` | Stripe billing function | `channel: 'stripe'`, `checkout_type: 'subscription'`, `plan`, `price_id`, `amount` in major currency units, `currency` |
+| `premium_converted` | Stripe webhook | `channel: 'stripe'`, `checkout_type: 'subscription'`, `plan`, `price_id`, `amount` in major currency units, `currency` |
+| `support_converted` | Ko-fi or Stripe webhook | `channel: 'kofi'` or `'stripe'`, `checkout_type`, `amount` in major currency units, `currency` |
+
+Currency values are normalised to uppercase ISO 4217 codes before capture, so a
+Ko-fi `AUD` tip and a Stripe `aud` payment land in the same dashboard series.
+All monetization dashboards keep PostHog's internal and test-account filter on.
+
 ## Bots
 
-Roughly 9 in 10 "people" on theplot.tv are scrapers: they fire one `$pageview`
-plus `$web_vitals`, never `$pageleave`, and never return. They present as
-ordinary desktop Chrome, Firefox and Edge, so user-agent blocklists do not touch
+Historically, roughly 9 in 10 "people" on theplot.tv were scrapers: they fired
+one `$pageview` plus `$web_vitals`, never `$pageleave`, and never returned. They
+present as ordinary desktop Chrome, Firefox and Edge, so user-agent blocklists do not touch
 them, and posthog-js's built-in filter already misses them.
 
 They are excluded behaviourally instead. The **Real visitors** cohort is anyone
@@ -126,6 +185,12 @@ scope. So the same population is *also* defined as the **Bots (landed, never
 engaged)** cohort (553124) and added to `test_account_filters` as a `not_in`
 rule, which Web analytics does respect. Same people, two mechanisms, because the
 two surfaces filter differently.
+
+Web Vitals use a separate safeguard. Project-level automatic capture remains
+off, so marketing-page and drive-by bot sessions do not emit `$web_vitals` at
+all. The web app starts a manual observer only on `app.theplot.tv`, and only
+after a trusted visible pointer, touch, wheel, or keyboard interaction. Synthetic
+events, preview hosts, and the marketing site are ignored.
 
 Bots are the exact complement of Real visitors, widened so it can never swallow
 a person: a `$pageview` and then no Tier 1 action (it negates **action 333111**,
@@ -271,6 +336,96 @@ runs them, and holds them to the same answers as the app's — three of them are
 single-line, where a stray paren would otherwise ship a page whose analytics
 throws on load.
 
+## Tonight picker
+
+The "what should I watch" half of Plot. Fired from `useTonightPicker` in core
+through the `onTonightPicker` seam, so both apps report identically:
+
+| Event | When | Props |
+|---|---|---|
+| `tonight_picks_drawn` | A draw finished (first spin or Regenerate) | `mode` (`five` / `surprise`), `media_type`, `result_count` (0 = empty), `reroll`, `only_watchlist`, `only_services`, `genre_count` |
+| `tonight_pick_opened` | A result card was opened | `tmdb_id`, `media_type`, `mode`, `position` (1-based) |
+| `tonight_search_saved` / `tonight_saved_search_opened` | Saved searches | `mode`, `result_count` |
+
+A failed draw is `load_failed` with `resource: tonight_picks`. "Accepted a
+pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
+(the save buttons on web's result cards). Genres are reported as a count, not
+ids. The picker is Premium, so free viewers only ever produce
+`premium_gate_hit` (`feature: tonight_picker`).
+
+## Watch together
+
+Fired from `useWatchTogether` in core through the `onWatchTogether` seam, so
+both apps report the same way. `watch_together_link_shared` is the exception:
+the share button lives in the app and calls `reportWatchTogether` itself.
+Props are shapes only, never user ids, usernames or invite link keys.
+
+| Event | When | Props |
+|---|---|---|
+| `watch_together_invite_sent` | An in-app request was sent | none |
+| `watch_together_request_accepted` | Someone accepted a request sent to them | `share_full` |
+| `watch_together_link_shared` | The invite link was shared or copied | `method` (`share` / `copy`) |
+| `watch_together_link_accepted` | Someone accepted an invite link (pairs straight away) | `share_full` |
+| `watch_together_session_started` | A two-person yes-or-no session started | none |
+| `watch_together_match` | A vote made a match (both said yes) | none |
+
+Pairing is free; deciding needs Premium on one side. When nobody in a pairing
+or group has it, the overlap page fires `premium_gate_hit` with
+`feature: watch_together`. Read it next to `premium_checkout_started` to see
+whether Watch together drives upgrades.
+
+## Reviews
+
+`review_written` fires from `useHistory` when a save carries review text that
+differs from what was stored: a new review, or an edit (`edited: true`). A
+star-only re-save that sends the same note back does not fire it. Props are
+`tmdb_id`, `media_type`, `has_rating` and `length` (`short` under 80
+characters, `medium` under 400, `long`). The text never leaves the device.
+
+It is not in the Tier 2 action. A review saved alongside a first watch already
+fires `marked_watched`, but an edit that only adds a note fires nothing else.
+
+## Failed writes
+
+Error tracking above catches *thrown* errors. A Supabase write that fails does
+not throw: it returns `{ error }`, the hook logs it, and the user sees "Could
+not save". None of that reached PostHog until `action_failed` (2026-09-27),
+which is why the 42P10 outage on `history` ran for nine days unnoticed.
+
+`action_failed` fires from `reportActionFailure()` in
+`packages/core/actionFailures.js`, called on the error branch of the same core
+mutation sites that fire the success seams, so both apps and every surface are
+covered once. Properties:
+
+| Prop | Meaning |
+|---|---|
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote` (unexpected errors only, never the server's Premium or permission answers). Canonical list: `FAILED_ACTIONS`. |
+| `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
+| `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
+| `http_status` | When present. |
+| `tmdb_id`, `media_type`, `list_id`, `fields`, `progress_action`, `surface` | Same context the matching success event carries. `fields` is column *names* only. |
+
+The error's message, details and hint are **never** sent: Postgres puts row
+values in them. A unit test fails if a core module gains a success seam without
+also calling `reportActionFailure`.
+
+Not Tier 1 or Tier 2. Tile 10 on the dashboard plots it as a rate. Read it against the matching success event
+(`action_failed` where `action = watchlist_save` vs `watchlist_saved`), broken
+down by `error_kind`. A spike in `schema` means the database and the client
+disagree and is always worth a look.
+
+The Settings bulk clears (`watchlist_clear`, `history_clear`) and the list-row
+follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
+`unfollowUser`), so they are covered the same way.
+
+### `load_failed`
+
+A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
+`watching`, `favourites`) fires `load_failed` via `reportLoadFailure()`, with
+the same `error_kind` / `error_code` / `http_status` props. It is a separate
+event on purpose: a page that fails to load is not a failed user action, and
+counting it as `action_failed` would skew every failed-write rate.
+
 ## PostHog settings that are not in this repo
 
 These were changed through the API on 2026-08-18 and exist only in the PostHog
@@ -284,6 +439,7 @@ recorded here to keep the change reversible.
 | `session_recording_minimum_duration_milliseconds` | `null` | `5000` | Drops drive-by sessions never worth watching. |
 | `test_account_filters` | 3 email rules + cohort 362972 | those, plus `$host` not containing `localhost` / `127.0.0.1` / `pages.dev` / `preview.theplot.tv`, plus `$internal_or_test_user` is not true | Retroactive: the toggle is default-checked, so existing insights clean up without a deploy. |
 | `test_account_filters` (2026-09-06) | the nine rules above | those, plus cohort 553124 `not_in` | Web analytics showed a 1.2K-session crawler burst on 2026-08-13 as real traffic. Nothing in the nine rules touched it: the crawlers sit on the production host with no email and no cohort. Retroactive, same default-checked toggle. |
+| `test_account_filters` (2026-09-27) | the twelve rules then present | those, plus the HogQL rule `not startsWith(distinct_id, 'eng_analytics_census:')` | PostHog's own daily repo census (`eng_analytics_test_census`) was landing in production numbers. Filtered by distinct id, not `$lib`: `posthog-capture-v1-internal` is also what server-side captures can carry, and a `$lib` rule could hide real Ko-fi conversions. |
 
 Unchanged and worth knowing: `session_recording_opt_in: true`,
 `autocapture_opt_out: false`, `heatmaps_opt_in: true`,
@@ -302,6 +458,9 @@ Objects created at the same time:
 | Cohort | Retained (returned and acted) | 494036 |
 | Cohort | Internal / Test users (pre-existing) | 362972 |
 | Cohort | Bots (landed, never engaged) — added 2026-09-06 | 553124 |
+| Insight | 8. Failed writes by action — added 2026-09-27 | 12255797 |
+| Insight | 9. Failed loads by resource — added 2026-09-27 | 12255798 |
+| Insight | 10. Failure rate by action — added 2026-09-27 | 12255805 |
 
 `POSTHOG_PERSONAL_API_KEY` in the root `.env` is scoped to project 471234 and
 can read and write all of the above via `https://us.posthog.com/api/projects/471234/`.
@@ -321,6 +480,9 @@ acquisition tiles are scoped to Real visitors.
 5. Friction: where sign-in and signup die
 6. The core product loop
 7. Where real visitors actually come from
+8. Failed writes by action (`action_failed`)
+9. Failed loads by resource (`load_failed`)
+10. Failure rate by action: weekly `action_failed ÷ (action_failed + success event)` for the seven actions with a 1:1 success event (`watchlist_save`, `mark_watched`, `rating_set`, `favourite_add`, `custom_list_create`, `list_item_add`, `follow`)
 
 ## Cross-checking against the database
 

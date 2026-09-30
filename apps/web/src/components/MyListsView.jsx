@@ -1,5 +1,5 @@
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useGenres } from '../hooks/useGenres.js';
@@ -7,6 +7,8 @@ import { useSelection } from '../hooks/useSelection.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { COMMON } from '../copy/common.js';
+import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
+import { listVisibility } from '@plot/core/customLists.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
@@ -15,8 +17,7 @@ import SideFilters from './SideFilters.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
-import { PLANS_PAGE } from '../copy/plansPage.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
+import UpgradeSheet from './UpgradeSheet.jsx';
 import { collectionPath, customListKey, titleCount, wantToWatchItems, searchCollectionTitles, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
 import { IconSearch } from './navIcons.jsx';
@@ -90,6 +91,8 @@ export default function MyListsView() {
   const { user, profile, topLists, favorites, customLists, watching, watchlist, openPanel } = useApp();
   const fw = favoriteWords(profile?.region);
   const navigate = useNavigate();
+  // The sheet can replace the create-list dialog; focus comes back here after.
+  const newListRef = useRef(null);
   const { genres } = useGenres();
   const selection = useSelection();
   const [creatingList,  setCreatingList]  = useState(false);
@@ -106,7 +109,7 @@ export default function MyListsView() {
     return <LoadingSpinner />;
   }
 
-  const { lists, createList, deleteList } = customLists;
+  const { lists, ownedCount, createList, deleteList } = customLists;
 
   // One index behind both the column and the covers, so the two can't drift.
   const collections = [
@@ -144,7 +147,7 @@ export default function MyListsView() {
   // Free accounts get FREE_CUSTOM_LIST_CAP lists; Premium unlimited. The
   // DB (RLS insert policy) is the authority; this is just friendlier UX.
   const requestCreate = () => {
-    if (!canCreateCustomList(lists.length, profile)) {
+    if (!canCreateCustomList(ownedCount ?? lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
       setShowCapNotice(true);
       return;
@@ -206,7 +209,7 @@ export default function MyListsView() {
         count={coverCount(c.items, c.empty)}
         posters={posters(visible)}
         dim={narrowed && visible.length === 0 && c.items.length > 0}
-        badge={c.list?.is_public && <span className="mylists-public-badge">Public</span>}
+        badge={c.list && listVisibility(c.list) !== 'private' && <span className="mylists-public-badge">{PROFILE_PRIVACY.listVisibilityBadge[listVisibility(c.list)]}</span>}
         onOpen={open(c.key)}
         editMode={selection.editMode}
         selectable={!!c.list}
@@ -277,7 +280,7 @@ export default function MyListsView() {
                 <div className="list-covers">
                   {collections.map(cover)}
                   {!selection.editMode && (
-                    <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestCreate} aria-label="Create new list">
+                    <button ref={newListRef} type="button" className="list-cover list-cover--new interactive-surface" onClick={requestCreate} aria-label="Create new list">
                       <span className="list-cover-art list-cover-art--dashed">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                       </span>
@@ -291,17 +294,10 @@ export default function MyListsView() {
         </div>
       </div>
 
-      {showCapNotice && (
-        <ConfirmModal
-          title={CUSTOM_LISTS.limitTitle}
-          message={CUSTOM_LISTS.limitMessage}
-          confirmLabel={PLANS_PAGE.previewAction}
-          onConfirm={() => navigate(premiumPlansPath('/my-lists'))}
-          onClose={() => setShowCapNotice(false)}
-        />
-      )}
+      {showCapNotice && <UpgradeSheet reason="lists" onClose={() => setShowCapNotice(false)} returnFocusRef={newListRef} />}
       {creatingList && (
-        <CreateListModal lists={lists} onConfirm={handleCreate} onClose={() => setCreatingList(false)} />
+        <CreateListModal lists={lists} onConfirm={handleCreate} onClose={() => setCreatingList(false)}
+          onLimit={() => { setCreatingList(false); setShowCapNotice(true); }} />
       )}
       {confirmDelete && (
         <ConfirmModal

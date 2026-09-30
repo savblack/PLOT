@@ -1,0 +1,130 @@
+/* "Share your match". The dialog portals out of the page, so it sets its own
+   type and sizing rather than inheriting them. */
+.tsd-surface { font-family: var(--font-sans); color: var(--text-primary); }
+.tsd-surface .btn { box-sizing: border-box; min-height: 40px; text-decoration: none; }
+
+.tsd {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.75rem;
+  align-items: center;
+  padding: 1.1rem 1.25rem 1.4rem;
+}
+
+/* The preview sits on a sunken stage so the cream card doesn't blend into
+   the cream dialog. */
+.tsd-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+}
+.tsd-preview {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  aspect-ratio: 9 / 16;
+  border-radius: 14px;
+  box-shadow: var(--shadow-overlay);
+}
+
+.tsd-controls { display: flex; flex-direction: column; gap: 1.5rem; }
+.tsd-group { display: flex; flex-direction: column; gap: 0.75rem; }
+.tsd-label {
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Colour swatches: a dot with its name under it. */
+.tsd-swatches { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+.tsd-swatch {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);
+}
+.tsd-swatch input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.tsd-swatch-dot {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 0 0 3px var(--surface), 0 0 0 3px transparent;
+  transition: box-shadow var(--transition-fast, 0.15s);
+}
+.tsd-swatch:hover .tsd-swatch-dot { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--border-strong); }
+.tsd-swatch.is-active { color: var(--text-primary); }
+.tsd-swatch.is-active .tsd-swatch-dot { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
+.tsd-swatch:focus-within .tsd-swatch-dot { outline: 2px solid var(--accent); outline-offset: 6px; }
+
+/* Name row: text on the left, a switch on the right. */
+.tsd-name {
+  flex-direction: row; align-items: center; gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.tsd-name-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.tsd-name-title { font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+.tsd-name.is-locked .tsd-name-title { color: var(--text-muted); cursor: default; }
+.tsd-hint { font-size: 0.75rem; line-height: 1.45; color: var(--text-muted); }
+
+.tsd-switch {
+  appearance: none; -webkit-appearance: none;
+  flex-shrink: 0;
+  position: relative;
+  width: 44px; height: 26px; margin: 0;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  cursor: pointer;
+  transition: background var(--transition-fast, 0.15s);
+}
+.tsd-switch::after {
+  content: '';
+  position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-overlay);
+  transition: transform var(--transition-fast, 0.15s);
+}
+.tsd-switch:checked { background: var(--accent); }
+.tsd-switch:checked::after { transform: translateX(18px); }
+.tsd-switch:disabled { opacity: 0.45; cursor: not-allowed; }
+.tsd-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.tsd-actions { flex: 1; display: flex; align-items: center; gap: 0.75rem; justify-content: space-between; flex-wrap: wrap; }
+.tsd-networks { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.tsd-networks-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-right: 0.2rem; }
+.tsd-network {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  min-height: 40px; padding: 0 0.8rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--text-primary);
+  cursor: pointer;
+}
+.tsd-network:hover:not(:disabled) { background: var(--surface-sunken); }
+.tsd-network:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tsd-network:disabled { opacity: 0.5; cursor: progress; }
+.tsd-message {
+  margin: 0; padding: 0.6rem 0.8rem; border-radius: var(--radius-md);
+  background: var(--accent-secondary-fill); color: var(--on-accent-fill);
+  font-size: 0.8rem; line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .tsd { grid-template-columns: 1fr; gap: 1.25rem; padding: 0.75rem 1rem 1.1rem; }
+  .tsd-stage { padding: 1rem; }
+  .tsd-preview { max-width: 180px; }
+  .tsd-swatches { gap: 1.5rem; }
+  .tsd-networks-label { display: none; }
+  .tsd-network span { display: none; }
+  .tsd-network { width: 40px; padding: 0; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tsd-switch, .tsd-switch::after, .tsd-swatch-dot { transition: none; }
+}

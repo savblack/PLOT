@@ -1,5 +1,5 @@
 /**
- * marketing-feed — "What's On", PLOT's update feed at theplot.tv/whats-on.
+ * marketing-feed — "What's On", Plot's update feed at theplot.tv/whats-on.
  *
  * Every marketing post is originally published here; social posts link back.
  * Served via a Vercel rewrite from the static site:
@@ -23,11 +23,12 @@ import type { Database } from '../_shared/database.types.ts'
 // `never` and the real client was not even assignable to it. Bind it to
 // the schema instead.
 type Db = SupabaseClient<Database>;
-// Shared site footer markup — generated from website/_partials/footer.html.
-// Run `npm run footer` to regenerate after editing the partial.
-import { FOOTER_HTML } from './footer.generated.ts';
+// Shared site footer markup and styles — generated from website/_partials/footer.html
+// and footer.css. Run `npm run footer` to regenerate after editing either partial.
+import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
+import { ARTICLE_TABLE_CSS, articleExcerpt, isArticleTable, renderArticleBlock } from '../_shared/articleBody.js';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -139,11 +140,15 @@ type FeedPost = {
     trailer_url?: string | null;
     when_label?: string | null;
     title?: { title?: string | null; where?: string | null } | null;
+    // The week ahead stores its dated set here. It predates this type and was
+    // never declared; the rows read it so a title can carry its release date
+    // without a TMDB lookup.
+    titles?: { tmdb_id?: number; when_label?: string | null; release_kind?: string | null; poster_path?: string | null }[] | null;
   } | null;
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
-// Feed/article hero. Most posts use the plain TMDB still (no PLOT branding) set
+// Feed/article hero. Most posts use the plain TMDB still (no Plot branding) set
 // in copy.hero_image; the branded render (media[0]) is for social channels.
 // Trending charts have no hero_image, so they keep their branded chart render.
 const postImage = (p: FeedPost) => {
@@ -151,8 +156,8 @@ const postImage = (p: FeedPost) => {
   if (typeof hero === 'string' && /^https?:\/\//.test(hero)) return hero;
   return p.media?.[0]?.landscape_path ? mediaUrl(p.media[0].landscape_path) : null;
 };
-// Static branded 1200×630 fallback (PLOT wordmark + tagline) for pages with no
-// per-post image, so every shared PLOT link previews on-brand.
+// Static branded 1200×630 fallback (Plot wordmark + tagline) for pages with no
+// per-post image, so every shared Plot link previews on-brand.
 const OG_FALLBACK = `${SITE}/og-image.png`;
 // Link-preview image: prefer the branded per-post social render, then the plain
 // hero still, then the static brand image. (The on-page hero keeps using
@@ -285,7 +290,7 @@ const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?
       ${facts ? `<span class="sm-facts">${esc(facts)}</span>` : ''}
       ${status}
     </div>
-    <a class="sm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your PLOT</a>
+    <a class="sm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your Plot</a>
   </aside>`;
 };
 
@@ -333,7 +338,7 @@ const trailerModule = async (post: FeedPost, ref = post.tmdb_refs?.[0]) => {
       </div>
       <div class="tm-actions">
         <a class="tm-youtube" href="${youtubeUrl}" target="_blank" rel="noopener noreferrer">Open on YouTube</a>
-        <a class="tm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your PLOT</a>
+        <a class="tm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your Plot</a>
       </div>
     </div>
   </aside>`;
@@ -460,11 +465,13 @@ ${head}
   .nav-logo { text-decoration: none; display: flex; align-items: center; font-family: var(--display); font-size: 1.65rem; font-weight: 700; letter-spacing: -0.045em; color: var(--ink); line-height: 1; user-select: none; }
   .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
   .nav-links li { display: flex; }
-  .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--ink); font-size: 0.9rem; font-weight: 500; transition: color 0.2s, background 0.2s; }
-  .nav-links a:hover { color: var(--mut); }
+  /* Small tracked capitals: the same values as apps/website/nav.css. */
+  .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--mut); font-size: 0.69rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s, background 0.2s; }
+  .nav-links a:hover { color: var(--ink); }
   .nav-links a.current { color: var(--ink); }
   .nav-cta { background: var(--fill); padding: 0.6rem 1.1rem !important; border-radius: 9999px; line-height: 1; }
-  .nav-cta:hover { color: var(--ink) !important; background: var(--fill-hover); }
+  .nav-links a.nav-cta { color: var(--ink); font-weight: 700; }
+  .nav-cta:hover { background: var(--fill-hover); }
   .nav-hamburger { display: none; background: none; border: none; cursor: pointer; padding: 14px 12px; margin-right: -12px; flex-direction: column; gap: 5px; }
   .nav-hamburger span { display: block; width: 22px; height: 2px; background: var(--ink); border-radius: 2px; transition: all 0.3s var(--ease); }
   .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
@@ -499,6 +506,7 @@ ${head}
 
   /* lead story: still left, copy right, in one card */
   .feature { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 28px; align-items: center; padding: 24px; text-decoration: none; color: inherit; }
+  .feature.text-led { grid-template-columns: minmax(0, 1fr); }
   .f-media img { width: 320px; height: 240px; object-fit: cover; display: block; border-radius: 14px; }
   .f-media .ph { width: 320px; height: 240px; background: var(--bg); display: flex; align-items: flex-end; padding: 22px; border-radius: 14px; }
   .f-media .ph span { font-family: var(--display); font-weight: 600; font-size: 1.4rem; color: var(--ink); line-height: 1.1; }
@@ -597,15 +605,18 @@ ${head}
   .crumbs a { color: var(--mut); text-decoration: none; }
   .crumbs a:hover { color: var(--ink); }
   .crumbs .sep2 { color: var(--faint); }
-  .post { max-width: 680px; margin: 0 auto; padding-top: 24px; }
+  .post { width: 100%; max-width: 680px; min-width: 0; margin: 0 auto; padding-top: 24px; }
   .post-head .a-meta { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
   .post-head .a-meta .d { color: var(--mut); }
   .post-head .a-meta .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); opacity: 0.6; }
   .post-head h1 { font-family: var(--display); font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 700; line-height: 1.02; letter-spacing: -0.03em; }
   figure.hero { margin: 40px 0 44px; }
   figure.hero img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; border-radius: 20px; }
+  /* No still: the title leads. There is no image frame to leave empty. */
+  .post.text-led .post-head h1 { margin-bottom: 28px; }
   .post-body p { font-size: 1.06rem; color: #3a3630; margin-bottom: 24px; }
   .post-body p.lede { font-weight: 600; color: var(--ink); margin-bottom: 30px; }
+${ARTICLE_TABLE_CSS}
   .endcta { display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-top: 52px; padding: 28px 32px; background: var(--paper); border-radius: 20px; }
   .endcta .ec-title { display: block; font-family: var(--display); font-weight: 700; font-size: 1.6rem; line-height: 1.05; letter-spacing: -0.03em; }
   .endcta .ec-sub { display: block; color: var(--mut); font-size: 0.9rem; margin-top: 8px; }
@@ -621,7 +632,10 @@ ${head}
   .gt-col .gt-row:last-child { border-bottom: none; }
   .gt-art { flex-shrink: 0; display: block; width: 40px; }
   .gt-art img, .gt-ph { width: 40px; height: 60px; object-fit: cover; border-radius: 6px; display: block; background: var(--bg); }
-  .gt-name { flex-grow: 1; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 0.94rem; letter-spacing: -0.015em; line-height: 1.2; text-decoration: none; color: var(--ink); }
+  .gt-text { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .gt-note { font-size: 0.76rem; color: var(--mut); }
+  .gt-chip { flex-shrink: 0; background: var(--sage); color: var(--ink); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .gt-name { min-width: 0; font-family: var(--display); font-weight: 700; font-size: 0.94rem; letter-spacing: -0.015em; line-height: 1.2; text-decoration: none; color: var(--ink); }
   .gt-name:hover { color: var(--accent); }
   .gt-add { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--fill); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
   .gt-add:hover { background: var(--fill-hover); }
@@ -699,30 +713,9 @@ ${head}
   .mcard .mc-t { display: block; font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.1rem; line-height: 1.2; transition: color 0.25s var(--ease); }
   .mcard:hover .mc-t { color: var(--mut); }
 
-  footer {
-    background: var(--bg); color: var(--ink); border-top: 1px solid var(--hair);
-    position: relative; z-index: 3; margin-top: 90px; padding: 2.6rem 3rem;
-  }
-  .footer-inner {
-    max-width: 1100px; margin: 0 auto; display: flex; align-items: center;
-    justify-content: space-between; gap: 1.5rem 2rem; flex-wrap: wrap;
-  }
-  .footer-logo {
-    text-decoration: none; font-family: var(--display); font-weight: 700; letter-spacing: -0.045em;
-    font-size: 1.7rem; line-height: 1; color: var(--ink); user-select: none;
-  }
-  .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
-  .footer-nav a { font-size: 0.82rem; color: var(--mut); text-decoration: none; transition: color 0.2s; white-space: nowrap; }
-  .footer-nav a:hover { color: var(--ink); }
-  .footer-bottom {
-    width: 100%; padding-top: 1.2rem; margin-top: 0.4rem; border-top: 1px solid var(--hair);
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-  }
-  .footer-copy { font-size: 0.75rem; color: var(--mut); }
-  .footer-social { display: flex; gap: 1rem; align-items: center; }
-  .footer-social a { color: var(--mut); display: inline-flex; transition: color 0.2s; }
-  .footer-social a:hover { color: var(--ink); }
-  .footer-social svg { width: 19px; height: 19px; display: block; }
+  /* Shared site footer — generated from website/_partials/footer.css. */
+${FOOTER_CSS}
+  .site-footer { margin-top: 90px; }
 
   @media (max-width: 900px) {
     .feed-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
@@ -734,6 +727,7 @@ ${head}
     .post { padding-top: 40px; }
     .more-grid { grid-template-columns: 1fr; gap: 22px; }
     .mcard { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: center; }
+    .mcard.text-led { display: block; }
     .mcard .kick { margin: 0 0 5px; }
     .mcard .mc-t { font-size: 1.05rem; }
     .endcta, .article-cta { flex-direction: column; align-items: flex-start; gap: 20px; padding: 22px; }
@@ -754,7 +748,6 @@ ${head}
     .dex { overflow-x: auto; scrollbar-width: none; }
     .dex::-webkit-scrollbar { display: none; }
     .dex-links { flex-wrap: nowrap; }
-    footer { padding-left: 1.5rem; padding-right: 1.5rem; }
   }
 </style>
 </head>
@@ -810,19 +803,19 @@ ${FOOTER_HTML}
 
 const entryRow = (p: FeedPost) => {
   const img = postImage(p);
-  const dek = postBody(p)[0];
-  return `<a class="row" href="${FEED_PATH}/${esc(p.slug)}">
+  const dek = articleExcerpt(postBody(p));
+  return `<a class="row${img ? '' : ' text-led'}" href="${FEED_PATH}/${esc(p.slug)}">
     <span class="row-main">${kicker(p)}
     <span class="row-t">${esc(postTitle(p))}</span>
     ${dek ? `<span class="row-dek">${esc(dek)}</span>` : ''}</span>
-    ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
+    ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : ''}
   </a>`;
 };
 
 const moreCard = (p: FeedPost) => {
   const img = postImage(p);
-  return `<a class="mcard" href="${FEED_PATH}/${esc(p.slug)}">
-    ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
+  return `<a class="mcard${img ? '' : ' text-led'}" href="${FEED_PATH}/${esc(p.slug)}">
+    ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : ''}
     ${kicker(p)}
     <span class="mc-t">${esc(postTitle(p))}</span>
   </a>`;
@@ -830,11 +823,9 @@ const moreCard = (p: FeedPost) => {
 
 const featuredHero = (p: FeedPost) => {
   const img = postImage(p);
-  const dek = postBody(p)[0];
-  return `<a class="feature card r3" href="${FEED_PATH}/${esc(p.slug)}">
-    <div class="f-media">${img
-      ? `<img src="${esc(img)}" alt="">`
-      : `<div class="ph"><span>${esc(postTitle(p))}</span></div>`}</div>
+  const dek = articleExcerpt(postBody(p));
+  return `<a class="feature card r3${img ? '' : ' text-led'}" href="${FEED_PATH}/${esc(p.slug)}">
+    ${img ? `<div class="f-media"><img src="${esc(img)}" alt=""></div>` : ''}
     <div class="f-text">
       ${kicker(p, true)}
       <h2>${esc(postTitle(p))}</h2>
@@ -1039,8 +1030,8 @@ const sectionCard = (label: string, viewAllHref: string | undefined, body: strin
 const railRow = (p: FeedPost) => {
   const img = postImage(p);
   const d = new Date(p.scheduled_for).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-  return `<a class="rail-row r3" href="${FEED_PATH}/${esc(p.slug)}">
-    ${img ? `<img class="rail-thumb" src="${esc(img)}" alt="" loading="lazy">` : '<span class="rail-thumb ph"></span>'}
+  return `<a class="rail-row r3${img ? '' : ' text-led'}" href="${FEED_PATH}/${esc(p.slug)}">
+    ${img ? `<img class="rail-thumb" src="${esc(img)}" alt="" loading="lazy">` : ''}
     <span class="rail-body">${kicker(p)}<span class="rail-t">${esc(postTitle(p))}</span></span>
     <span class="rail-date sc">${esc(d)}</span>
   </a>`;
@@ -1072,7 +1063,7 @@ const trendingTeaser = (items: ChartItem[], prior: ChartItem[] | null) => `<ol c
 }).join('')}</ol>`;
 
 // The release date is the point of a countdown post, so it's a badge on the
-// card rather than buried in a dek. Uses scheduled_for (when PLOT posted the
+// card rather than buried in a dek. Uses scheduled_for (when Plot posted the
 // update) — the only date FeedPost actually carries; not a claim about the
 // title's own release date, which this function has no source for.
 const comingSoonCards = (posts: FeedPost[]) => `<div class="datecards">${posts.map((p) => {
@@ -1099,7 +1090,7 @@ const tailList = (posts: FeedPost[]) => sectionCard('More updates', undefined,
 // ── Newsletter signup ─────────────────────────────────────────────
 // There is no archive: the digest goes out by email and lives only there,
 // so this form is the whole of the newsletter on the site. It sits at the
-// foot of What's On under #newsletter, which the nav links straight to.
+// foot of What's On under #newsletter, where the /newsletter redirects land.
 // Posts to theplot.tv/api/newsletter (the same proxy the homepage form uses),
 // including the honeypot field that endpoint expects.
 const subscribeForm = (placement: string) => `
@@ -1148,8 +1139,8 @@ const subscribeForm = (placement: string) => `
 </script>`;
 
 const SUBSCRIBE_CSS = `
-  /* Charcoal card. scroll-margin clears the fixed topnav: the footer links
-     straight to #newsletter, and without it the heading lands under it. */
+  /* Charcoal card. scroll-margin clears the fixed topnav: the /newsletter
+     redirects land on #newsletter, and without it the heading lands under it. */
   /* .nlsub.card outranks the later .card rule in the main stylesheet, which
      otherwise paints this cream and leaves cream text unreadable on it. */
   .nlsub.card, .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }
@@ -1386,7 +1377,7 @@ Deno.serve(async (req) => {
   const shareImg = postShareImage(typed);
   const title = postTitle(typed);
   const body = postBody(typed);
-  const description = body[0] ? String(body[0]).slice(0, 160) : `Film & TV updates from plot.`;
+  const description = articleExcerpt(body, 160) || `Film & TV updates from plot.`;
   const pageUrl = entryUrl(typed);
 
   const { data: others } = await baseQuery()
@@ -1434,28 +1425,52 @@ Deno.serve(async (req) => {
   const inlineTitles = typed.post_type === 'guide' && typed.copy?.inline_titles === true && body.length === refs.length + 2;
 
   const titleParagraph = (text: string, r: TmdbRef) => {
+    if (isArticleTable(text)) return renderArticleBlock(text);
     const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
     return `<div style="display:flex;gap:16px;align-items:flex-start;margin:20px 0">
         <a href="${esc(titleHref(r.media_type, refId(r) ?? 0, r.title))}" style="flex-shrink:0;width:84px">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:8px;background:var(--paper);border:1px solid var(--hair)"></span>'}</a>
         <p style="margin:0;flex:1">${esc(text)}</p>
       </div>`;
   };
-  const bodyLede = body.length ? `<p class="lede">${esc(body[0])}</p>` : '';
+  const bodyLede = body.length ? renderArticleBlock(body[0], { lede: true }) : '';
   const paragraphs = (from: number, to?: number) =>
-    body.slice(from, to).map((p) => `<p>${esc(p)}</p>`).join('');
+    body.slice(from, to).map((p) => renderArticleBlock(p)).join('');
 
   // What the modules did not feature. Poster, name, and the same action — the
   // grid this replaces offered neither, so an eleven-title guide carried less
   // than a one-title article. No service is named here: where to watch is the
   // app's job, and naming one would cost a lookup per row.
   const shown = new Set<TmdbRef>();
+  // Date and release kind for the week ahead, already in payload, so a row costs
+  // no extra lookup. Keyed by tmdb_id because payload entries carry that name
+  // even where tmdb_refs do not. A `trending` post never gets here — every one
+  // of those slugs is served as the persistent chart page instead.
+  const rowContext = (r: TmdbRef): { note?: string; chip?: string; poster?: string } => {
+    const rid = refId(r);
+    if (!rid) return {};
+    if (typed.post_type === 'upcoming') {
+      const item = (typed.payload?.titles || []).find((i) => i.tmdb_id === rid);
+      const KIND: Record<string, string> = { cinema: 'In cinemas', streaming: 'Streaming', tv: 'On TV' };
+      return item
+        ? { note: item.when_label || '', chip: KIND[item.release_kind ?? ''] || '', poster: item.poster_path || '' }
+        : {};
+    }
+    return {};
+  };
+
   const restRows = (list: TmdbRef[]) => list.map((r) => {
     const rid = refId(r);
-    const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
+    const { note, chip, poster: fallback } = rowContext(r);
+    const posterPath = r.poster_path || fallback || '';
+    const poster = posterPath ? `https://image.tmdb.org/t/p/w185${esc(posterPath)}` : null;
     return `<div class="gt-row">
       <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-art">${poster ? `<img src="${poster}" alt="" loading="lazy">` : '<span class="gt-ph"></span>'}</a>
-      <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-name">${esc(r.title)}</a>
-      ${rid ? `<a class="gt-add" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&tmdb_id=${rid}&src=whats_on_guide" data-cta="guide_save" aria-label="Save ${esc(r.title)} to your PLOT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>` : ''}
+      <span class="gt-text">
+        <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-name">${esc(r.title)}</a>
+        ${note ? `<span class="gt-note">${esc(note)}</span>` : ''}
+      </span>
+      ${chip ? `<span class="gt-chip">${esc(chip)}</span>` : ''}
+      ${rid ? `<a class="gt-add" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&tmdb_id=${rid}&src=whats_on_guide" data-cta="guide_save" aria-label="Save ${esc(r.title)} to your Plot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>` : ''}
     </div>`;
   }).join('');
 
@@ -1490,11 +1505,16 @@ Deno.serve(async (req) => {
   if (storyHtml && lead) shown.add(lead.ref);
   if (runnerUpHtml && runnerUp) shown.add(runnerUp.ref);
   const rest = refs.filter((r) => !shown.has(r));
-  const titlesSection = typed.post_type === 'guide' && rest.length && !inlineTitles
+  const TAIL_HEAD: Record<string, string> = {
+    guide: 'Also in this guide',
+    upcoming: 'Everything landing this week',
+  };
+  const tailHead = TAIL_HEAD[typed.post_type];
+  const titlesSection = tailHead && rest.length && !inlineTitles
     ? `<section class="gt">
         <div class="gt-head">
-          <h2>Also in this guide</h2>
-          <span class="gt-count">${rest.length} more</span>
+          <h2>${esc(tailHead)}</h2>
+          <span class="gt-count">${rest.length}${typed.post_type === 'guide' ? ' more' : ' titles'}</span>
         </div>
         <div class="gt-card">
           <div class="gt-col">${restRows(rest.slice(0, Math.ceil(rest.length / 2)))}</div>
@@ -1508,7 +1528,7 @@ Deno.serve(async (req) => {
     <nav class="crumbs" aria-label="Breadcrumb">
       <a href="${SITE}">Home</a><span class="sep2">/</span><a href="${FEED_PATH}">What's On</a>${k ? `<span class="sep2">/</span><span>${esc(TYPE_META[typed.post_type]?.label ?? 'Update')}</span>` : ''}
     </nav>
-    <article class="post r2">
+    <article class="post r2${hero ? '' : ' text-led'}">
       <header class="post-head">
         <div class="a-meta"><span class="d sc">${esc(fmtDate(typed.scheduled_for))}</span><span class="sep"></span><span class="d sc">${readMins} min read</span></div>
         <h1>${esc(title)}</h1>
@@ -1518,7 +1538,7 @@ Deno.serve(async (req) => {
         ${bodyLede}
         ${storyHtml}
         ${inlineTitles
-          ? [...refs.map((r, i) => titleParagraph(body[i + 1], r)), `<p>${esc(body[refs.length + 1])}</p>`].join('')
+          ? [...refs.map((r, i) => titleParagraph(body[i + 1], r)), renderArticleBlock(body[refs.length + 1])].join('')
           : runnerUpHtml
             ? `${paragraphs(1, runnerUpAt + 1)}${runnerUpHtml}${paragraphs(runnerUpAt + 1)}`
             : paragraphs(1)}

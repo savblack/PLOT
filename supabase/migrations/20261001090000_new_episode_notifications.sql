@@ -1,5 +1,14 @@
 -- New-episode notifications: a notification type with no actor.
 --
+-- Builds on 20260928120000_premium_alerts.sql (#1095), which must merge first.
+-- That migration added the shared title columns, admits 'new_episode' in the
+-- type check, and made list_notifications() actor-optional. This one adds the
+-- episode columns and extends list_notifications() from #1095's body.
+--
+-- Numbered 20261001090000, after every migration open at the time. It was
+-- 20260925120000, which collided with 20260925120000_checkout_managed_payments
+-- (already applied in production, so this would have been skipped).
+--
 -- Every notification so far is social: "<actor> did something", so actor_id was
 -- NOT NULL and list_notifications() inner-joined profiles on it. new_episode is
 -- about a title instead. The row names the show and the episode (or the first
@@ -30,26 +39,32 @@ alter table public.notifications
   add column if not exists media_poster_path text,
   add column if not exists air_date          date;
 
--- Keeps every existing type (the post_* types have no writer since
--- 20260814000000, but the check never dropped them and this is not the place).
+-- The whole check is replaced, so it has to name every type in use. This is
+-- #1095's list unchanged: the four watch_together_* types (20260927100000 to
+-- 20260927120000) and #1095's person_release and season_ready. Dropping any of
+-- them would make every write of that type fail.
 alter table public.notifications drop constraint if exists notifications_type_check;
 alter table public.notifications add constraint notifications_type_check
   check (type in ('follow_request', 'follow_accepted', 'new_follower',
                   'post_like', 'post_comment', 'comment_like',
-                  'new_episode'));
+                  'watch_together_request', 'watch_together_accepted',
+                  'watch_together_session', 'watch_together_list',
+                  'new_episode', 'person_release', 'season_ready'));
 
--- Social rows keep their actor; title rows must say which episode they mean.
+-- new_episode rows must say which episode they mean. Only new_episode is
+-- constrained here: #1095's notifications_alert_shape_check already requires
+-- an actor on every social type and leaves new_episode to this check, so the
+-- two constraints never contradict each other.
 alter table public.notifications drop constraint if exists notifications_subject_check;
 alter table public.notifications add constraint notifications_subject_check
   check (
-    (type = 'new_episode'
-      and actor_id is null
+    type <> 'new_episode'
+    or (actor_id is null
       and media_type = 'tv'
       and tmdb_id is not null
       and season_number is not null
       and episode_number is not null
       and episode_count >= 1)
-    or (type <> 'new_episode' and actor_id is not null)
   );
 
 -- One row per person per episode, however many times the job runs. Not partial,
@@ -60,11 +75,12 @@ create unique index if not exists notifications_new_episode_once
 
 -- ── 2. list_notifications() ─────────────────────────────────────────────────
 
--- redefines: list_notifications (inner join on profiles becomes a left join so
--- actorless rows survive; adds the title columns). The body is the
--- 20260918030000 body plus those changes: the not_blocked clause and the
--- referenced-post visibility checks are carried over unchanged. Run
--- `pnpm run db:function-diff` before merging to confirm against production.
+-- redefines: list_notifications (#1095's body from 20260928120000, plus
+-- episode_number and episode_count). Everything else is carried over
+-- unchanged: the left join for actorless rows, the not_blocked clause on the
+-- actor, the referenced-post visibility checks, and #1095's alert columns.
+-- Run `pnpm run db:function-diff` before merging to confirm against
+-- production.
 --
 -- The OUT columns change, which create or replace cannot do, so it is dropped
 -- and recreated. A new function is executable by PUBLIC by default, hence the
@@ -76,13 +92,18 @@ returns table (id uuid, type text, actor_id uuid, actor_username text,
                post_title text, post_poster_path text,
                created_at timestamptz, read_at timestamptz,
                tmdb_id integer, media_type text, season_number integer,
-               episode_number integer, episode_count integer,
-               media_title text, media_poster_path text, air_date date)
+               media_title text, media_poster_path text, air_date date,
+               person_tmdb_id integer, person_name text, person_role text,
+               release_kind text, provider_name text,
+               episode_number integer, episode_count integer)
 language sql stable security definer set search_path = public as $$
   select n.id, n.type, n.actor_id, p.username, p.display_name, p.avatar_url,
          n.post_id, fp.title, fp.poster_path, n.created_at, n.read_at,
-         n.tmdb_id, n.media_type, n.season_number, n.episode_number,
-         n.episode_count, n.media_title, n.media_poster_path, n.air_date
+         n.tmdb_id, n.media_type, n.season_number,
+         n.media_title, n.media_poster_path, n.air_date,
+         n.person_tmdb_id, n.person_name, n.person_role,
+         n.release_kind, n.provider_name,
+         n.episode_number, n.episode_count
   from public.notifications n
   left join public.profiles p on p.id = n.actor_id
   left join public.feed_posts fp

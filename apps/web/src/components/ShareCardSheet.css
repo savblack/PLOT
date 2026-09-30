@@ -1,0 +1,202 @@
+/* The share sheet. Overlay and dialog follow ConfirmModal; the bar follows
+   the canvas: one labelled pill, then round icon buttons, all in the deeper
+   cream with charcoal icons so the card is the only coloured thing here. */
+
+/* ConfirmModal declares these inline; the sheet needs its own copy. */
+@keyframes scsFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scsSlideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.scs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: scsFadeIn 0.15s ease;
+}
+.scs {
+  width: 100%;
+  max-width: 620px;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-overlay);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  animation: scsSlideUp 0.18s var(--ease);
+}
+.scs-head { display: flex; align-items: center; gap: 0.75rem; }
+.scs-title {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.scs-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.scs-close svg { width: 16px; height: 16px; }
+
+.scs-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 120px;
+}
+.scs-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.scs-preview {
+  position: relative;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-overlay);
+}
+.scs-scaler { transform-origin: top left; }
+.scs-preview--locked .scs-scaler { filter: saturate(0.4); opacity: 0.45; }
+.scs-lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-primary);
+}
+.scs-lock-title { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+.scs-lock-line { font-size: 0.85rem; color: var(--text-secondary); max-width: 28ch; }
+.scs-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-overlay);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 1;
+}
+.scs-arrow svg { width: 16px; height: 16px; }
+.scs-arrow:disabled { opacity: 0.35; cursor: default; }
+.scs-arrow--prev { left: 0; }
+.scs-arrow--next { right: 0; }
+
+.scs-dots { display: flex; justify-content: center; gap: 6px; }
+.scs-dots i { width: 22px; height: 6px; border-radius: 999px; background: var(--surface-sunken); }
+.scs-dots i.on { background: var(--accent-fill); }
+
+.scs-caption { display: flex; flex-direction: column; gap: 0.3rem; }
+.scs-caption-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.scs-caption textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 0.5rem 0.65rem;
+}
+.scs-caption textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.scs-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.scs-pill,
+.scs-circ {
+  border: 0;
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.scs-pill:hover, .scs-circ:hover { background: var(--border-strong); }
+.scs-pill:disabled, .scs-circ:disabled { opacity: 0.55; cursor: default; }
+.scs-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.scs-pill svg { width: 16px; height: 16px; }
+.scs-circ { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; }
+.scs-circ svg { width: 17px; height: 17px; }
+.scs-pill:focus-visible, .scs-circ:focus-visible, .scs-close:focus-visible, .scs-arrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.scs-hint { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+.scs-status {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.scs-status-action {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent-text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scs-overlay, .scs { animation: none; }
+}
+
+@media (max-width: 600px) {
+  .scs-overlay { align-items: flex-end; padding: 0; }
+  .scs { max-width: none; border-radius: var(--radius-lg) var(--radius-lg) 0 0; max-height: 92vh; padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); }
+  .scs-arrow { display: none; }
+}

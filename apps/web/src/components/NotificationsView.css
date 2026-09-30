@@ -15,6 +15,17 @@
 .notif-caught-up-copy strong { font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: var(--font-display-tracking); color: var(--text-primary); }
 .notif-caught-up-copy span { font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
 
+/* Last month, wrapped: one card at the top in the first week of the month,
+   Share the card as the pink fill. */
+.notif-moment { flex-direction: row; align-items: center; gap: 14px; padding: 14px 16px; border-color: var(--accent-fill); }
+.notif-moment-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.notif-moment-text strong { font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: var(--font-display-tracking); color: var(--text-primary); }
+.notif-moment-actions { display: inline-flex; gap: 6px; flex-shrink: 0; }
+@media (max-width: 480px) {
+  .notif-moment { flex-wrap: wrap; }
+  .notif-moment-actions { width: 100%; }
+}
+
 /* Requests: cards, two across, Approve as the pink fill. */
 .notif-request-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .notif-request { flex-direction: row; align-items: center; gap: 12px; padding: 12px; }

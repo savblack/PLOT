@@ -2,11 +2,8 @@ import PrivateNote from '../../components/PrivateNote';
 import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
-import { customListCreationError } from '@plot/core/customListCreation.js';
-import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
-import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useMemo } from 'react';
-import { useRouter } from 'expo-router';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
   Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, LayoutAnimation,
@@ -31,7 +28,10 @@ import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
-import { EVENTS } from '../../lib/analytics';
+import { EVENTS, track } from '../../lib/analytics';
+import { useRouter } from 'expo-router';
+import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
+import UpgradeSheet from '../../components/UpgradeSheet';
 import HistorySection from '../../components/HistorySection';
 import { groupEntriesByMonth, monthLabel } from '@plot/core/history.js';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
@@ -39,6 +39,9 @@ import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { COMMON } from '@plot/core/copy/common.js';
+import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
+import { LIST_VISIBILITIES, listVisibility, isListShareable, type ListVisibility } from '@plot/core/customLists.js';
+import { createUndoBatch, UNDO_ACTIONS, type UndoOption } from '@plot/core/undo.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -315,7 +318,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
 
 
 // ── Create list modal ─────────────────────────────────────────────────
-function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => Promise<unknown>; onClose: () => void }) {
+function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: string) => Promise<unknown>; onClose: () => void; onLimit?: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [name, setName] = useState('');
@@ -330,6 +333,7 @@ function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => 
       if (created) onClose();
       else setError(MEDIA.couldNotCreateList);
     } catch (failure) {
+      if (onLimit && isCustomListLimitError(failure)) { onLimit(); return; }
       setError(customListCreationError(failure, MEDIA.couldNotCreateList));
     } finally {
       setBusy(false);
@@ -409,20 +413,19 @@ export default function MyListsScreen() {
   // Watching into select mode leaves Favourites alone.
   const watchingSel = useSelection();
   const wantSel     = useSelection();
-  const router = useRouter();
   const favSel      = useSelection();
 
   const [showAddFav,     setShowAddFav]     = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
+  const [showUpgrade,    setShowUpgrade]    = useState(false);
+  const router = useRouter();
 
   // Free accounts get FREE_CUSTOM_LIST_CAP lists; Premium unlimited. The DB
   // (RLS insert policy) is the authority — this is just friendlier UX.
   const requestCreateList = () => {
     if (!canCreateCustomList(customLists.lists.length, profile)) {
-      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage, [
-        { text: COMMON.cancel, style: 'cancel' },
-        { text: PLANS_PAGE.previewAction, onPress: () => router.push('/(app)/settings?premium=1' as any) },
-      ]);
+      track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
+      setShowUpgrade(true);
       return;
     }
     setShowCreateList(true);
@@ -448,9 +451,9 @@ export default function MyListsScreen() {
   const watchingList = byType(watching.items.map((i: any) => ({ ...i, media_type: 'tv' })));
   const favList      = byType(favorites.favorites);
 
-  const handleShareList = (list: { id: string; name: string; is_public: boolean }) => shareLink({
-    url: list.is_public ? buildListShareUrl({ listId: list.id }) : null,
-    title: `${list.name} · PLOT`,
+  const handleShareList = (list: { id: string; name: string; is_public: boolean; visibility?: string }) => shareLink({
+    url: isListShareable(listVisibility(list), profile?.is_public) ? buildListShareUrl({ listId: list.id }) : null,
+    title: `${list.name} · Plot`,
     text: SHARING.listText(list.name),
     event: EVENTS.LIST_SHARED,
     eventProps: { list_id: list.id },
@@ -525,9 +528,13 @@ export default function MyListsScreen() {
                 count={watchingList.length}
                 deleteLabel={MEDIA.stopWatching}
                 menuLabel="Watching options"
-                onDelete={() => {
-                  watchingSel.selected.forEach(tmdbId => watching.stopWatching(tmdbId));
+                onDelete={async () => {
+                  // One undo for the whole selection, offered once every stop lands.
+                  const ids = [...watchingSel.selected];
+                  const batch = createUndoBatch({ action: UNDO_ACTIONS.WATCHING_STOP });
                   watchingSel.exit();
+                  await Promise.all(ids.map(tmdbId => watching.stopWatching(tmdbId, { undo: batch })));
+                  batch.offer();
                 }}
               />
             }
@@ -558,9 +565,12 @@ export default function MyListsScreen() {
                 count={sortedSaved.length}
                 deleteLabel={MEDIA.removeFromWatchlist}
                 menuLabel="Want to Watch options"
-                onDelete={() => {
-                  wantSel.selected.forEach(tmdbId => watchlist.removeFromList(tmdbId));
+                onDelete={async () => {
+                  const ids = [...wantSel.selected];
+                  const batch = createUndoBatch({ action: UNDO_ACTIONS.WATCHLIST_REMOVE });
                   wantSel.exit();
+                  await Promise.all(ids.map(tmdbId => watchlist.removeFromList(tmdbId, { undo: batch })));
+                  batch.offer();
                 }}
               />
             }
@@ -713,8 +723,8 @@ export default function MyListsScreen() {
                       { text: 'Delete', style: 'destructive', onPress: () => customLists.deleteList(list.id) },
                     ])}
                     onAddItem={() => setShowAddToList(list.id)}
-                    onRemoveItem={(tmdbId) => customLists.removeItem(list.id, tmdbId)}
-                    onSetPublic={(isPublic) => customLists.setListPublic(list.id, isPublic)}
+                    onRemoveItem={(tmdbId, opts) => customLists.removeItem(list.id, tmdbId, opts)}
+                    onSetVisibility={(visibility) => customLists.setListVisibility(list.id, visibility)}
                     onShare={() => handleShareList(list)}
                     onRename={(name) => customLists.renameList(list.id, name)}
                   />
@@ -813,10 +823,12 @@ export default function MyListsScreen() {
           onClose={() => setShowAddFav(false)}
         />
       )}
+      <UpgradeSheet visible={showUpgrade} reason="lists" onClose={() => setShowUpgrade(false)} onCompare={() => router.push(PREMIUM_SETTINGS_PATH as any)} />
       {showCreateList && (
         <CreateListModal
           onConfirm={(name) => customLists.createList(name)}
           onClose={() => setShowCreateList(false)}
+          onLimit={() => { setShowCreateList(false); setShowUpgrade(true); }}
         />
       )}
       {showAddToList && (
@@ -834,28 +846,34 @@ export default function MyListsScreen() {
 
 // ── Custom list card ──────────────────────────────────────────────────
 function CustomListCard({
-  list, onDelete, onAddItem, onRemoveItem, onSetPublic, onShare, onRename, typeFilters,
+  list, onDelete, onAddItem, onRemoveItem, onSetVisibility, onShare, onRename, typeFilters,
 }: {
-  list: any; onDelete: () => void; onAddItem: () => void; onRemoveItem: (tmdbId: number) => void;
-  onSetPublic: (isPublic: boolean) => void; onShare: () => void; onRename: (name: string) => void; typeFilters: string[];
+  list: any; onDelete: () => void; onAddItem: () => void; onRemoveItem: (tmdbId: number, opts?: { undo?: UndoOption }) => unknown;
+  onSetVisibility: (visibility: ListVisibility) => void; onShare: () => void; onRename: (name: string) => void; typeFilters: string[];
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { open: openPanel } = useMediaPanel();
+  const { profile } = useAppData();
   const [open,     setOpen]     = useState(true);
   const [renaming, setRenaming] = useState(false);
   const [name,     setName]     = useState(list.name);
   const sel = useSelection();
 
   const items = (filterByType(list.items || [], typeFilters) ?? []) as any[];
+  const visibility = listVisibility(list);
+  const shareable = isListShareable(visibility, profile?.is_public);
 
   // Same item order as web's list kebab: Select, Rename, visibility, Share,
   // Delete. Deleting the list itself still goes through onDelete's confirm.
   const menuItems: KebabMenuItem[] = [
     ...((list.items || []).length > 0 ? [{ label: COMMON.select, onPress: sel.enter }] : []),
     { label: 'Rename', onPress: () => setRenaming(true) },
-    { label: list.is_public ? COMMON.makePrivate : COMMON.makePublic, onPress: () => onSetPublic(!list.is_public) },
-    ...(list.is_public ? [{ label: 'Share link', onPress: onShare }] : []),
+    ...LIST_VISIBILITIES.map((v) => ({
+      label: PROFILE_PRIVACY.listVisibility[v], checked: v === visibility,
+      onPress: () => { if (v !== visibility) onSetVisibility(v); },
+    })),
+    ...(shareable ? [{ label: 'Share link', onPress: onShare }] : []),
     { label: COMMON.delete, onPress: onDelete, danger: true },
   ];
 
@@ -890,17 +908,20 @@ function CustomListCard({
         ) : (
           <Text style={styles.customListName} numberOfLines={1}>{list.name}</Text>
         )}
-        {list.is_public && (
-          <View style={styles.publicBadge}><Text style={styles.publicBadgeText}>Public</Text></View>
+        {visibility !== 'private' && (
+          <View style={styles.publicBadge}><Text style={styles.publicBadgeText}>{PROFILE_PRIVACY.listVisibilityBadge[visibility]}</Text></View>
         )}
         <Text style={styles.customListCount}>{list.items?.length || 0}</Text>
         {sel.editMode ? (
           <>
             {sel.selected.size > 0 && (
               <TouchableOpacity
-                onPress={() => {
-                  sel.selected.forEach(tmdbId => onRemoveItem(tmdbId));
+                onPress={async () => {
+                  const ids = [...sel.selected];
+                  const batch = createUndoBatch({ action: UNDO_ACTIONS.LIST_ITEM_REMOVE });
                   sel.exit();
+                  await Promise.all(ids.map(tmdbId => onRemoveItem(tmdbId, { undo: batch })));
+                  batch.offer({ meta: { listName: list.name } });
                 }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={{ marginLeft: spacing.sm }}
@@ -922,7 +943,7 @@ function CustomListCard({
           </>
         ) : (
           <>
-            {list.is_public && <TouchableOpacity onPress={(event) => { event.stopPropagation(); onShare(); }} accessibilityRole="button" accessibilityLabel={COMMON.share} style={{ marginRight: spacing.sm }}>
+            {shareable && <TouchableOpacity onPress={(event) => { event.stopPropagation(); onShare(); }} accessibilityRole="button" accessibilityLabel={COMMON.share} style={{ marginRight: spacing.sm }}>
               <Text style={styles.sectionActionText}>{COMMON.share}</Text>
             </TouchableOpacity>}
             <TouchableOpacity onPress={onAddItem} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Add item to list" accessibilityRole="button">
@@ -943,7 +964,7 @@ function CustomListCard({
             items={items}
             sel={sel}
             onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
-            onRemove={onRemoveItem}
+            onRemove={(tmdbId: number) => onRemoveItem(tmdbId, { undo: true })}
             removeLabel={MEDIA.removeFromList}
           />
         )

@@ -2,9 +2,10 @@
 import { useState } from 'react';
 import { APP_NAV_ITEMS, isActiveView } from '../navigation.js';
 import PlotLogo from './PlotLogo.jsx';
+import { isPremiumProfile } from '@plot/core/premium.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { APP_SHELL } from '../copy/appShell.js';
-import { IconHome, IconGuide, IconCalendar, IconLists, IconHistory, IconSearch, IconBell, IconSettings } from './navIcons.jsx';
+import { IconBell, IconSettings, NAV_ICONS } from './navIcons.jsx';
 
 /* The desktop nav rail. Replaces the bottom tab bar and the nav drawer above
    1024px — the two of them listed the same destinations bar Settings.
@@ -13,18 +14,6 @@ import { IconHome, IconGuide, IconCalendar, IconLists, IconHistory, IconSearch, 
    signed-in rows (notifications with an unread badge, the profile row) can be
    rendered in Storybook without an auth session. AppShell owns the routing and
    the notification count. */
-
-// Keyed by the same ids as APP_NAV_ITEMS so the rail builds off the shared nav
-// list rather than a second hardcoded one that can drift from mobile.
-const SIDEBAR_ICONS = {
-  home: IconHome,
-  guide: IconGuide,
-  calendar: IconCalendar,
-  'my-lists': IconLists,
-  history: IconHistory,
-  search: IconSearch,
-  settings: IconSettings,
-};
 
 // Search leads the desktop list; Settings follows Notifications.
 const SIDEBAR_NAV_ITEMS = [
@@ -62,6 +51,8 @@ export default function AppSidebar({
 }) {
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
   const [helpOpen, setHelpOpen] = useState(defaultHelpOpen);
+  // Free viewers see which destinations are Premium before they tap in.
+  const showPremiumPill = !isPremiumProfile(profile);
 
   return (
     <aside className="app-sidebar">
@@ -90,8 +81,8 @@ export default function AppSidebar({
 
       <div className="app-sidebar-scroll">
         <nav className="app-sidebar-nav">
-          {SIDEBAR_NAV_ITEMS.map(({ id, label }) => {
-            const Icon = SIDEBAR_ICONS[id];
+          {SIDEBAR_NAV_ITEMS.map(({ id, label, premium }) => {
+            const Icon = NAV_ICONS[id];
             return (
               <button
                 key={id}
@@ -102,6 +93,7 @@ export default function AppSidebar({
               >
                 {Icon && <Icon />}
                 <span className="app-sidebar-label">{label}</span>
+                {premium && showPremiumPill && !collapsed && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
               </button>
             );
           })}

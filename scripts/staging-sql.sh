@@ -39,7 +39,7 @@ export PGDATABASE=postgres
 export PGPORT=5432
 export PGCONNECT_TIMEOUT=10
 
-out="$(psql -tA -f "$FILE" 2>&1)"
+out="$(psql -X -tA -f "$FILE" 2>&1)"
 status=$?
 
 printf '%s\n' "$out" | grep -E 'PASS|FAIL|REPRO|^===|^---|rolled back|ERROR' | sed 's/^psql:[^ ]* //' || true

@@ -1,0 +1,14 @@
+[
+  {
+    "type": "movie",
+    "movie": {
+      "ids": { "imdb": null, "slug": "nosferatu", "tmdb": null, "trakt": 287264 },
+      "year": null,
+      "title": "Nosferatu"
+    },
+    "id": 646678280,
+    "listed_at": null,
+    "notes": null,
+    "my_rating": null
+  }
+]

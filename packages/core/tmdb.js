@@ -8,7 +8,7 @@ export const getTmdbRegion = () => userRegion;
 
 const ENGLISH_SPEAKING_REGIONS = new Set(['AU', 'CA', 'GB', 'IE', 'NZ', 'US']);
 
-const KIDS_GENRE_IDS = new Set([10751, 10762]); // Family (movie+tv), Kids (tv)
+export const KIDS_GENRE_IDS = new Set([10751, 10762]); // Family (movie+tv), Kids (tv)
 
 /**
  * @param {Array<{genre_ids?: number[]}>} items
@@ -342,8 +342,19 @@ const dedupeResults = (results) => {
 };
 
 export const tmdb = {
+  findByTvdbId: (id) => {
+    if (!/^[1-9]\d*$/.test(String(id))) throw new Error('Invalid TVDB identifier');
+    return fetchFromTMDB(`/find/${id}`, { external_source: 'tvdb_id' });
+  },
+  findByImdbId: (id) => {
+    if (!/^tt\d+$/.test(id)) throw new Error('Invalid IMDb identifier');
+    return fetchFromTMDB(`/find/${id}`, { external_source: 'imdb_id' });
+  },
   /* ── Search ── */
   search: (query) => fetchFromTMDB('/search/multi', { query }),
+  findByExternalId: (externalId) => fetchFromTMDB(`/find/${encodeURIComponent(externalId)}`, {
+    external_source: 'imdb_id',
+  }),
   searchPeople: (query) => fetchFromTMDB('/search/person', { query }),
 
   /**
@@ -434,7 +445,7 @@ export const tmdb = {
     return withRegionalMovieReleaseDate(movie);
   },
   getTVDetails: (id) =>
-    fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos,aggregate_credits,external_ids' }),
+    fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos,aggregate_credits,external_ids,keywords' }),
 
   /**
    * A TMDB collection (franchise set): `{ id, name, poster_path, parts[] }`.
@@ -824,6 +835,14 @@ export const tmdb = {
     if (minRating)  params['vote_average.gte'] = minRating;
     return fetchFromTMDB(`/discover/${type}`, params);
   },
+
+  /* ── Raw movie / TV discover ──
+     For callers that build their own filter set (the Tonight picker). Params
+     are TMDB /discover/{movie,tv} query keys, passed through as-is. */
+  discoverMovies: (params = {}) => fetchFromTMDB('/discover/movie', params),
+  discoverTV: (params = {}) => fetchFromTMDB('/discover/tv', params),
+  /** Keywords by name, e.g. "horror" → { results: [{ id, name }] }. */
+  searchKeyword: (query) => fetchFromTMDB('/search/keyword', { query }),
 
   /* ── Newest released titles in a genre ── */
   discoverNewestByGenre: async (type, genreId) => {

@@ -132,6 +132,33 @@ a paid API; see `marketing/copy/AGENT.md`).
   re-checks the length before trusting the flag, so a mismatch just falls back to the
   old end-of-article poster grid rather than showing misaligned images — but the
   per-title layout is lost for that post until regenerated.
+- **Comparison table**: put it in its own paragraph, with a blank line before and
+  after. GitHub-style markdown is the one to use in `/copy`:
+
+  ```
+  | Stay | Export | Switch |
+  | --- | --- | --- |
+  | Keep the diary | Download a file | Move the account |
+  ```
+
+  One row per line, including the `| --- |` separator. Do not wrap the table in a
+  code fence, and do not leave a cell blank. A blank cell and a row break look the
+  same once the lines have been flattened, and the page will show the pipes as
+  text. A table that was already saved as one line of pipes still renders when
+  every row has the same number of cells. If it does not, paste it again with
+  the line breaks kept. Cells are plain text. Bold, links, and images in a markdown cell are not
+  rendered. An HTML `<table>` in that same paragraph also works, if you need a
+  cell to span columns or a `<strong>`. Allowed tags are `table`, `thead`,
+  `tbody`, `tfoot`, `tr`, `th`, `td`, `caption`, `br`, `strong`, and `em`.
+  `colspan`, `rowspan`, and `scope` are kept. Anything else is stripped, and a
+  table that is not actually a table is shown as text. The article still needs
+  at least three paragraphs. The table counts as one. No em or en dashes in the
+  cells. The same rules as the rest of the article apply.
+- **No hero image**: leave `hero_image` empty and do not attach a landscape still.
+  The article is text-led. There is no image frame on the page, and the feed row
+  does not keep an empty picture box. A post that still has a landscape file in
+  `media` uses that file, which is how the trending chart keeps its card. Link
+  previews fall back to the brand image when nothing else is there.
 - **Regenerate**: rewrite the copy fresh per the contract and save (all fields).
   This does not edit or delete a post already sitting in Buffer.
 - **Reschedule**: PATCH `scheduled_for = "<YYYY-MM-DD>T12:00:00.000Z"` (noon UTC renders

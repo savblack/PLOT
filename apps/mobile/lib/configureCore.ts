@@ -16,11 +16,14 @@ import { initAnalytics, track, EVENTS } from './analytics';
 initAnalytics();
 
 configure({
+  trackingJobsEnabled: process.env.EXPO_PUBLIC_TRACKING_JOBS_ENABLED === 'true',
+  importEventsEnabled: process.env.EXPO_PUBLIC_IMPORT_EVENTS_ENABLED === 'true',
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
   tmdbProxyUrl: process.env.EXPO_PUBLIC_TMDB_PROXY_URL ?? '',
   criticScoreUrl: `${process.env.EXPO_PUBLIC_SUPABASE_URL ?? ''}/functions/v1/critic-score`,
   traktClientId: process.env.EXPO_PUBLIC_TRAKT_CLIENT_ID ?? '',
+  simklClientId: process.env.EXPO_PUBLIC_SIMKL_CLIENT_ID ?? '',
   isDev: typeof __DEV__ !== 'undefined' ? __DEV__ : false,
   // Analytics seams: core fires these from the one canonical spot for each
   // action, whatever surface triggered it, so mobile gets the same engagement
@@ -48,8 +51,8 @@ configure({
   onCustomListItemChange: ({ list_id, tmdb_id, media_type, action }) =>
     track(action === 'added' ? EVENTS.LIST_ITEM_ADDED : EVENTS.LIST_ITEM_REMOVED,
       { list_id, tmdb_id, media_type }),
-  onCustomListVisibility: ({ list_id, is_public }) =>
-    track(EVENTS.LIST_VISIBILITY_CHANGED, { list_id, is_public }),
+  onCustomListVisibility: ({ list_id, visibility, is_public }) =>
+    track(EVENTS.LIST_VISIBILITY_CHANGED, { list_id, visibility, is_public }),
   onFavourite: ({ tmdb_id, media_type, favourited }) =>
     track(favourited ? EVENTS.FAVOURITE_ADDED : EVENTS.FAVOURITE_REMOVED, { tmdb_id, media_type }),
   onFollowRequestDecision: ({ target_user_id, approved }) =>
@@ -78,6 +81,39 @@ configure({
     if (name) track(name, { tmdb_id, ...(season != null ? { season } : {}), ...(episode != null ? { episode } : {}) });
   },
   onProfileUpdate: ({ fields }) => track(EVENTS.PROFILE_UPDATED, { fields }),
+  // Failed writes, from the same canonical sites as the seams above. The
+  // payload is already PII-free (codes and field names, never the message).
+  onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
+  onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
+  // The Tonight picker: one seam, four names, same shape as onWatchProgress.
+  onTonightPicker: ({ action, ...props }) => {
+    const name = {
+      drawn:               EVENTS.TONIGHT_PICKS_DRAWN,
+      opened:              EVENTS.TONIGHT_PICK_OPENED,
+      search_saved:        EVENTS.TONIGHT_SEARCH_SAVED,
+      saved_search_opened: EVENTS.TONIGHT_SAVED_SEARCH_OPENED,
+    }[action];
+    if (name) track(name, props);
+  },
+  // Watch together: one seam, six names (see analyticsEvents.js).
+  onWatchTogether: ({ action, ...props }) => {
+    const name = {
+      invite_sent:      EVENTS.WATCH_TOGETHER_INVITE_SENT,
+      request_accepted: EVENTS.WATCH_TOGETHER_REQUEST_ACCEPTED,
+      link_shared:      EVENTS.WATCH_TOGETHER_LINK_SHARED,
+      link_accepted:    EVENTS.WATCH_TOGETHER_LINK_ACCEPTED,
+      session_started:  EVENTS.WATCH_TOGETHER_SESSION_STARTED,
+      match:            EVENTS.WATCH_TOGETHER_MATCH,
+    }[action];
+    if (name) track(name, props);
+  },
+  onReview: (payload) => track(EVENTS.REVIEW_WRITTEN, payload),
+  onImport: ({ stage, ...props }) => {
+    const name = { started: EVENTS.IMPORT_STARTED, completed: EVENTS.IMPORT_COMPLETED, failed: EVENTS.IMPORT_FAILED }[stage];
+    if (name) track(name, props);
+  },
+  // The undo toast reversed a removal. Never a committed action.
+  onUndo: (payload) => track(EVENTS.ACTION_UNDONE, payload),
   // The storage seam: mobile persists the Supabase session encrypted, key held
   // in the Keychain/Keystore via SecureStore (see lib/secureStorage.ts).
   supabaseClientOptions: {

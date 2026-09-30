@@ -28,10 +28,15 @@ function corsHeaders(origin: string | null): Record<string, string> {
 const BASE = 'https://api.themoviedb.org/3';
 const PROXY_SECRET_HEADER = 'x-plot-tmdb-proxy-secret';
 const ALLOWED_PATHS = [
+  /^find\/(tt\d+|[1-9]\d*)$/,
   /^search\/multi$/,
   /^search\/person$/,
   // Type-scoped title search — see tmdb.searchTitles in @plot/core.
   /^search\/(movie|tv)$/,
+  // Keyword lookup by name: Horror / Romance / Thriller for shows (TMDB's TV
+  // catalog has no such genres) in Pick for Me and New Releases. See
+  // packages/core/keywordGenres.js.
+  /^search\/keyword$/,
   /^trending\/(all|movie|tv)\/(day|week)$/,
   /^movie\/(now_playing|top_rated|upcoming)$/,
   /^tv\/(on_the_air|airing_today|top_rated)$/,
@@ -109,6 +114,15 @@ Deno.serve(async (req) => {
       status: 403,
       headers: { ...CORS, 'Content-Type': 'application/json' },
     });
+  }
+  if (cleanPath.startsWith('find/')) {
+    const expectedSource = cleanPath.startsWith('find/tt') ? 'imdb_id' : 'tvdb_id';
+    if (url.searchParams.get('external_source') !== expectedSource) {
+      return new Response(JSON.stringify({ error: 'External identifier source does not match' }), {
+        status: 400,
+        headers: { ...CORS, 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   // Forward all query params except 'path' to TMDB.

@@ -1,0 +1,31 @@
+[
+  {
+    "type": "season",
+    "season": {
+      "number": 10,
+      "ids": {
+        "trakt": 4984,
+        "tvdb": 16103
+      },
+      "aired_episodes": 17
+    },
+    "show": {
+      "title": "Friends",
+      "year": 1994,
+      "ids": {
+        "trakt": 1657,
+        "tvdb": 79168,
+        "imdb": "tt0108778"
+      },
+      "aired_episodes": 228
+    },
+    "comment": {
+      "id": 814117,
+      "comment": "Saved review",
+      "spoiler": false,
+      "review": false,
+      "created_at": null,
+      "updated_at": null
+    }
+  }
+]

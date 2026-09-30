@@ -340,7 +340,6 @@
 }
 
 .ds-fake-header,
-.ds-fake-tabbar,
 .ds-fake-subtabs,
 .ds-fake-filterbar,
 .ds-fake-rail-header,
@@ -360,13 +359,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
-}
-
-.ds-fake-tabbar {
-  display: flex;
-  justify-content: stretch;
-  min-height: var(--tabbar-h);
-  padding: 0;
 }
 
 .ds-fake-subtabs,

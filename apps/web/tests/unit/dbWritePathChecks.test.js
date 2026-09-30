@@ -366,3 +366,20 @@ test('the verdict never echoes the value', () => {
     assert.ok(!reason.includes(fragment), `reason leaked ${fragment}`);
   }
 });
+
+
+test('pending table-level uniqueness satisfies episode upserts without accepting checks', () => {
+  const schema = projectPendingSchema(new Map(), [{ file: 'new-table.sql', sql: `
+    create table public.episode_watch_overrides (
+      id uuid primary key default gen_random_uuid(),
+      user_id uuid, tmdb_id integer check (tmdb_id > 0),
+      season_number integer, episode_number integer,
+      unique(user_id, tmdb_id, season_number, episode_number)
+    );
+    create table public.unrelated (id integer, check (id > 0));
+  ` }]);
+  const keys = schema.get('episode_watch_overrides');
+  assert.ok(keys.some(key => key.key === colKey('user_id,tmdb_id,season_number,episode_number')));
+  assert.equal(schema.has('unrelated'), false);
+  assert.equal(keys.some(key => key.key === 'tmdb_id'), false);
+});

@@ -1,26 +1,24 @@
-/* Progress is a single pointer (current_season + current_episode), not a set of
-   watched episodes: everything before the pointer counts as watched. A season
-   is therefore fully watched when the pointer sits past its last episode, and
-   marking one watched means moving the pointer to the next season's episode 1 —
-   which necessarily marks every earlier season watched too. Unmarking pulls the
-   pointer back to the season's first episode, which un-watches everything after
-   it. Both are inherent to the pointer model, not choices this helper makes. */
+import { getEpisodeGuideState } from './episodeProgress.js';
+
+/* Legacy progress is a continuous pointer. Explicit episode states supplement
+   it: imported watches add only their own episode, and manual corrections win
+   over both. Sparse season edits use saveEpisodeWatches rather than moving the
+   pointer. Legacy pointer helpers below retain their existing behaviour. */
 export function getSeasonWatchState({
   currentEpisode = 0,
   currentSeason = 0,
   episodeCount = 0,
   selectedSeason = 0,
+  episodeStates = {},
+  episodeNumbers = Array.from({ length: episodeCount }, (_, i) => i + 1),
 } = {}) {
-  if (!episodeCount || !selectedSeason) {
+  if (!episodeCount || selectedSeason < 0) {
     return { episodeCount: 0, watchedCount: 0, isComplete: false };
   }
 
-  let watchedCount = 0;
-  if (selectedSeason < currentSeason) {
-    watchedCount = episodeCount;
-  } else if (selectedSeason === currentSeason) {
-    watchedCount = Math.min(Math.max(currentEpisode - 1, 0), episodeCount);
-  }
+  const watchedCount = episodeNumbers.filter(episodeNumber => getEpisodeGuideState({
+    currentEpisode, currentSeason, episodeNumber, selectedSeason, episodeStates,
+  }).isWatched).length;
 
   return { episodeCount, watchedCount, isComplete: watchedCount >= episodeCount };
 }

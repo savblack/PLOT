@@ -44,3 +44,23 @@ test('findDuplicateCustomList excludes only the given id, not other duplicates',
   assert.deepEqual(findDuplicateCustomList(lists, 'Comfort Watches', 'a'), { id: 'b', name: '  comfort   watches ' });
   assert.equal(findDuplicateCustomList([lists[0]], 'Comfort Watches', 'a'), null);
 });
+
+import { LIST_VISIBILITIES, listVisibility, isListShareable, showsOnProfile } from '../../customLists.js';
+
+test('listVisibility reads the column and falls back to is_public for rows without it', () => {
+  assert.equal(listVisibility({ visibility: 'followers', is_public: false }), 'followers');
+  assert.equal(listVisibility({ visibility: 'link', is_public: true }), 'link');
+  assert.equal(listVisibility({ is_public: true }), 'public');
+  assert.equal(listVisibility({ is_public: false }), 'private');
+  assert.equal(listVisibility({ visibility: 'everyone', is_public: false }), 'private');
+  assert.equal(listVisibility(null), 'private');
+});
+
+test('share links are offered only where a logged-out visitor can open them', () => {
+  assert.deepEqual(LIST_VISIBILITIES.filter(v => isListShareable(v, true)), ['public', 'link']);
+  assert.deepEqual(LIST_VISIBILITIES.filter(v => isListShareable(v, false)), ['link']);
+});
+
+test('only public and followers lists sit on the profile', () => {
+  assert.deepEqual(LIST_VISIBILITIES.filter(showsOnProfile), ['followers', 'public']);
+});

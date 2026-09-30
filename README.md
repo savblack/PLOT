@@ -1,6 +1,6 @@
-# PLOT
+# Plot
 
-PLOT is a private React/Vite app for discovering and logging movies and TV shows. Public profile sharing is deferred from the first public release while account-visibility rules are still being designed. It uses Supabase for auth, storage, database access, and edge functions, TMDB for media metadata, and PostHog for product analytics.
+Plot is a private React/Vite app for discovering and logging movies and TV shows. Public profile sharing is deferred from the first public release while account-visibility rules are still being designed. It uses Supabase for auth, storage, database access, and edge functions, TMDB for media metadata, and PostHog for product analytics.
 
 ## Stack
 
@@ -34,15 +34,24 @@ This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the
    VITE_SUPABASE_URL=<PLOT Staging project URL>
    VITE_SUPABASE_ANON_KEY=<PLOT Staging publishable/anon key>
    VITE_TMDB_PROXY_URL=<staging tmdb-proxy Worker URL>
+   VITE_SHOW_APPLE_LOGIN=<optional; set false to temporarily hide Apple sign-in>
+   VITE_TRAKT_CLIENT_ID=<Trakt OAuth app client ID>
+   VITE_IMPORT_EVENTS_ENABLED=false
+   VITE_IMPORT_ANNOTATIONS_ENABLED=false
+   VITE_TRACKING_JOBS_ENABLED=false
+   VITE_TVTIME_IMPORT_ENABLED=false
+   VITE_SIMKL_CLIENT_ID=<Simkl OAuth app client ID>
    ```
 
-3. These values are browser-safe (they ship in the app bundle). `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` belong to PLOT Staging, PLOT's preview Supabase project (local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data). Pull them from the Supabase dashboard, project `PLOT Staging`. Don't repoint these at Production for routine dev. Keep service-role and TMDB API keys server-side or local-script-only.
+3. These values are browser-safe (they ship in the app bundle). `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` belong to PLOT Staging, Plot's preview Supabase project (local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data). Pull them from the Supabase dashboard, project `PLOT Staging`. Don't repoint these at Production for routine dev. Keep service-role and TMDB API keys server-side or local-script-only.
 
    `VITE_TMDB_PROXY_URL` must point at the staging tmdb-proxy Cloudflare Worker (`https://tmdb-proxy-staging.<subdomain>.workers.dev`), not the Supabase edge function directly: the Worker adds a shared-secret header the browser cannot set. See `apps/web/workers/tmdb-proxy/wrangler.toml`.
 
    `VITE_AUTH_REDIRECT_BASE_URL` is optional for local web development. Set it when auth and provider callbacks must use a stable production URL or a native deep-link base.
 
-4. Start the app:
+4. Optional, for visual regression only: add `CHROMATIC_PROJECT_TOKEN=<Chromatic project token>` to the same `.env`. It is not browser-safe and nothing needs it to build or run Plot. Without it, `pnpm run chromatic` and the CI step skip themselves. Never inline it into a `package.json` script.
+
+5. Start the app:
 
    ```sh
    pnpm run dev
@@ -113,6 +122,7 @@ Deploy functions with the Supabase CLI after configuring project secrets:
 ```sh
 supabase functions deploy tmdb-proxy
 supabase functions deploy media-sync
+supabase functions deploy trakt-sync
 supabase functions deploy delete-account
 supabase functions deploy critic-score
 ```
@@ -124,19 +134,28 @@ Required function secrets:
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `PLEX_TOKEN_SECRET` for encrypting Plex auth tokens at rest
+- `TRAKT_CLIENT_ID` and `TRAKT_CLIENT_SECRET` for the Trakt OAuth app
+- `SIMKL_CLIENT_ID`, `SIMKL_CLIENT_SECRET`, and `SIMKL_TOKEN_SECRET` for the Simkl OAuth app
+- `TRAKT_TOKEN_SECRET` for encrypting Trakt auth tokens at rest
 - `OMDB_API_KEY` for the `critic-score` function's Rotten Tomatoes lookups (already used by the marketing scripts — same key, needs setting separately for Supabase via `supabase secrets set OMDB_API_KEY=...`)
 
-## Plex Sync
+## Connected history imports and sync
 
-Plot syncs Plex through the `media-sync` Edge Function. Users connect from Journal → Watchlist → Connect Plex, sign in on Plex, and return to Plot. Plex tokens are encrypted server-side and are never shown in the browser.
+One-off watch-history imports from Plex and Trakt are Free. Public copy does not list automatic Plex or Trakt sync as a Premium benefit. Plex tokens are handled by `media-sync`; Trakt OAuth tokens are handled by `trakt-sync`. Both are encrypted server-side and are never shown in the browser.
+
+Simkl uses a manual two-way sync: users connect their account, then choose Sync now to exchange movie and TV history. It does not run automatically. Keep the Simkl surfaces disabled until the OAuth application is approved, any required commercial licence is agreed, and the client ID is configured in both apps. Simkl access tokens are encrypted by `simkl-sync` and never exposed to either client.
 
 ```sh
 supabase secrets set PLEX_TOKEN_SECRET=your-long-random-secret
+supabase secrets set TRAKT_CLIENT_ID=... TRAKT_CLIENT_SECRET=... TRAKT_TOKEN_SECRET=...
+supabase secrets set SIMKL_CLIENT_ID=... SIMKL_CLIENT_SECRET=... SIMKL_TOKEN_SECRET=...
 supabase db push
 supabase functions deploy media-sync
+supabase functions deploy trakt-sync
+supabase functions deploy simkl-sync
 ```
 
-The sync imports Plex Universal Watchlist titles into Plot, queues Plot Watchlist additions back to Plex, and imports watched history when a reachable Plex Media Server is available.
+Plex history import requires at least one reachable Plex Media Server. Trakt history import uses the connected Trakt account. These imports preserve existing Plot entries and add only titles that are not already in the user's history. Simkl sync also preserves existing Plot entries, pulls only activity changed since the previous sync, and sends Plot history to Simkl in API-compliant batches.
 
 ## Data Rules
 

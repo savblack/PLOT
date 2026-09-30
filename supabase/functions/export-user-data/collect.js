@@ -9,7 +9,15 @@ export const EXPORT_STEPS = Object.freeze([
   { table: 'list_items', match: { type: 'eq', column: 'user_id' } },
   { table: 'private_title_notes', match: { type: 'eq', column: 'user_id' } },
   { table: 'history', match: { type: 'eq', column: 'user_id' } },
-  { table: 'history_board', match: { type: 'eq', column: 'user_id' } },
+  { table: 'imported_lists', match: { type: 'eq', column: 'user_id' } },
+  { table: 'imported_annotations', match: { type: 'eq', column: 'user_id' } },
+  { table: 'imported_list_entries', match: { type: 'eq', column: 'user_id' } },
+  { table: 'tracking_import_items', match: { type: 'eq', column: 'user_id' } },
+  { table: 'tracking_connections', match: { type: 'eq', column: 'user_id' } },
+  { table: 'tracking_jobs', match: { type: 'eq', column: 'user_id' }, omit: ['lease_token'] },
+  { table: 'tracking_review_items', match: { type: 'eq', column: 'user_id' } },
+  { table: 'episode_watch_overrides', match: { type: 'eq', column: 'user_id' } },
+  { table: 'watch_events', match: { type: 'eq', column: 'user_id' } },
   { table: 'watching_progress', match: { type: 'eq', column: 'user_id' } },
   { table: 'reminders', match: { type: 'eq', column: 'user_id' } },
   { table: 'user_favourites', match: { type: 'eq', column: 'user_id' } },
@@ -21,6 +29,8 @@ export const EXPORT_STEPS = Object.freeze([
     match: { type: 'eq', column: 'user_id' },
     omit: [
       'device_token_hash',
+      // Legacy resource blobs may contain provider-issued access tokens.
+      'plex_servers',
       'plex_token_ciphertext',
       'plex_token_iv',
       'auth_pin_id',
@@ -34,8 +44,37 @@ export const EXPORT_STEPS = Object.freeze([
   { table: 'integration_items', match: { type: 'eq', column: 'user_id' } },
   { table: 'integration_outbox', match: { type: 'eq', column: 'user_id' } },
   { table: 'follows', match: { type: 'or', columns: ['follower_id', 'following_id'] } },
+  // Watch together (20260927100000 to 20260927120000). Optional so the export
+  // keeps working if this function is deployed before those migrations run.
+  // Composite keys (no id column), so each names its own stable sort order.
+  { table: 'watch_together', match: { type: 'or', columns: ['requester_id', 'recipient_id'] }, optional: true, order: ['requester_id', 'recipient_id'] },
+  { table: 'watch_together_sessions', match: { type: 'or', columns: ['host_id', 'guest_id'] }, optional: true },
+  { table: 'watch_together_votes', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['session_id', 'tmdb_id', 'media_type'] },
+  { table: 'watch_together_links', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['user_id'] },
+  { table: 'user_custom_list_members', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['list_id'] },
   { table: 'feedback', match: { type: 'eq', column: 'user_id' } },
 ]);
+
+// PostgREST reports a table that doesn't exist yet as PGRST205 (schema cache)
+// or Postgres 42P01.
+function isMissingTable(error) {
+  return error?.code === 'PGRST205' || error?.code === '42P01';
+}
+
+/**
+ * Shared lists the user is on but didn't create: user_custom_lists and
+ * user_custom_list_items are exported by owner above, so a member's copy has
+ * to be looked up through their memberships.
+ */
+async function sharedListsFor(supabaseClient, memberships) {
+  const ids = memberships.map((m) => m.list_id);
+  if (!ids.length) return { lists: [], items: [] };
+  const lists = await supabaseClient.from('user_custom_lists').select('*').in('id', ids);
+  if (lists.error) return { error: { table: 'shared_custom_lists', error: lists.error } };
+  const items = await supabaseClient.from('user_custom_list_items').select('*').in('list_id', ids);
+  if (items.error) return { error: { table: 'shared_custom_list_items', error: items.error } };
+  return { lists: lists.data ?? [], items: items.data ?? [] };
+}
 
 function stripColumns(row, omit) {
   if (!omit || omit.length === 0) return row;
@@ -48,31 +87,38 @@ export async function runDataExport(supabaseClient, userId) {
   const data = {};
 
   for (const step of EXPORT_STEPS) {
-    // Notes persist beyond watchlist membership; paginate so long-lived accounts
-    // receive all of them rather than Supabase's default response limit.
-    if (step.table === 'private_title_notes') {
-      const rows = [];
-      for (let offset = 0; ; offset += 500) {
-        const result = await supabaseClient.from(step.table).select('*').eq('user_id', userId)
-          .order('tmdb_id').order('media_type').range(offset, offset + 499);
-        if (result.error) return { table: step.table, error: result.error };
-        rows.push(...(result.data || []));
-        if (!result.data || result.data.length < 500) break;
+    const rows = [];
+    for (let from = 0; ; from += 1000) {
+      let query = supabaseClient.from(step.table).select('*');
+      query = step.match.type === 'or'
+        ? query.or(step.match.columns.map((column) => `${column}.eq.${userId}`).join(','))
+        : query.eq(step.match.column, userId);
+      // Use each table’s stable key for deterministic pagination.
+      const order = step.order ?? (step.table === 'broadcast_preferences' ? ['user_id'] : step.table === 'private_title_notes' ? ['tmdb_id', 'media_type'] : step.table === 'follows' ? ['follower_id', 'following_id'] : step.table === 'tracking_connections' ? ['integration_id'] : ['id']);
+      for (const column of order) query = query.order(column, { ascending: true });
+      const result = await query.range(from, from + 999);
+      if (result?.error) {
+        // Tables from a migration that isn't live yet export as empty.
+        if (step.optional && isMissingTable(result.error)) break;
+        return { table: step.table, error: result.error };
       }
-      data[step.table] = rows;
-      continue;
+      rows.push(...(result?.data ?? []).map(row => {
+        const clean = stripColumns(row, step.omit);
+        if (step.table === 'media_integrations' && clean.selected_server) {
+          const source = clean.selected_server;
+          clean.selected_server = { clientIdentifier: source.clientIdentifier, accountID: source.accountID, name: source.name, profileName: source.profileName };
+        }
+        return clean;
+      }));
+      if (!result?.data || result.data.length < 1000) break;
     }
-    const query = supabaseClient.from(step.table).select('*');
-    const result = step.match.type === 'or'
-      ? await query.or(step.match.columns.map((column) => `${column}.eq.${userId}`).join(','))
-      : await query.eq(step.match.column, userId);
-
-    if (result?.error) {
-      return { table: step.table, error: result.error };
-    }
-
-    data[step.table] = (result?.data ?? []).map((row) => stripColumns(row, step.omit));
+    data[step.table] = rows;
   }
+
+  const shared = await sharedListsFor(supabaseClient, data.user_custom_list_members ?? []);
+  if (shared.error) return shared.error;
+  data.shared_custom_lists = shared.lists;
+  data.shared_custom_list_items = shared.items;
 
   return { data };
 }

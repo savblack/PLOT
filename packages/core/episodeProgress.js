@@ -3,15 +3,20 @@ export function getEpisodeGuideState({
   currentSeason = 0,
   episodeNumber = 0,
   selectedSeason = 0,
+  episodeStates = {},
 }) {
-  const isCurrent = selectedSeason === currentSeason && episodeNumber === currentEpisode;
+
 
   let isWatched = false;
-  if (selectedSeason < currentSeason) {
+  if (selectedSeason > 0 && selectedSeason < currentSeason) {
     isWatched = true;
   } else if (selectedSeason === currentSeason) {
     isWatched = episodeNumber < currentEpisode;
   }
+
+  const explicit = episodeStates[`${selectedSeason}:${episodeNumber}`];
+  if (typeof explicit === 'boolean') isWatched = explicit;
+  const isCurrent = !isWatched && selectedSeason === currentSeason && episodeNumber === currentEpisode;
 
   return {
     isCurrent,

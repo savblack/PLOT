@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { takeReturnPath } from '../utils/authReturn.js';
 import { supabase } from '@plot/core/supabase.js';
 import { tmdb } from '@plot/core/tmdb.js';
 // This route renders outside the App-shell layout, but reuses several of its
@@ -253,7 +254,9 @@ export default function OnboardingFlow() {
       return;
     }
 
-    navigate('/home', { replace: true });
+    // A new account made on the way to a specific page (a taste comparison
+    // link, say) goes back there once it is set up.
+    navigate(takeReturnPath('/home'), { replace: true });
   };
 
   const toggleSeed = (item) => {

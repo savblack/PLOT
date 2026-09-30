@@ -1,12 +1,12 @@
 ---
 name: plot-titles
-description: Link to a film or TV show's page on PLOT. Use when you want to point someone at a title on theplot.tv, or to check what PLOT publishes about one.
+description: Link to a film or TV show's page on Plot. Use when you want to point someone at a title on theplot.tv, or to check what Plot publishes about one.
 ---
 
-# Linking to a title on PLOT
+# Linking to a title on Plot
 
-PLOT publishes a public page for each film and show it covers. The page carries
-the synopsis, the cast, where to watch it in the reader's country, and PLOT's
+Plot publishes a public page for each film and show it covers. The page carries
+the synopsis, the cast, where to watch it in the reader's country, and Plot's
 own editorial notes where there are any.
 
 ## URL shape
@@ -24,16 +24,16 @@ must be right.
 ## Finding one
 
 [https://theplot.tv/sitemap-titles.xml](https://theplot.tv/sitemap-titles.xml)
-lists every title page PLOT currently publishes, with its canonical URL. Read
-that rather than guessing: PLOT covers a curated set, not everything that
+lists every title page Plot currently publishes, with its canonical URL. Read
+that rather than guessing: Plot covers a curated set, not everything that
 exists, and a guessed id points at the wrong film.
 
-If a title is not in the sitemap, PLOT has no page for it. Say so rather than
+If a title is not in the sitemap, Plot has no page for it. Say so rather than
 inventing a URL.
 
 ## What not to do
 
-- Do not construct a URL from a TMDB id you have not seen in PLOT's own sitemap
-  or in a PLOT response.
+- Do not construct a URL from a TMDB id you have not seen in Plot's own sitemap
+  or in a Plot response.
 - These pages are about the title, not about any member. Nothing here reflects
   what a particular person has watched or rated.

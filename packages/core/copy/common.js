@@ -9,7 +9,7 @@
 // copy module (see src/copy/<surface>.js) until it's reused elsewhere.
 //
 // None of these vary by region (see src/utils/spelling.js for the words that
-// do) — they're identical in every English dialect PLOT supports.
+// do) — they're identical in every English dialect Plot supports.
 
 export const COMMON = {
   cancel: 'Cancel',
@@ -44,8 +44,6 @@ export const COMMON = {
   syncing: 'Syncing…',
   clearSearch: 'Clear search',
   searchTitles: 'Search titles',
-  makePublic: 'Make public',
-  makePrivate: 'Make private',
   privacyPolicy: 'Privacy Policy',
   communityStandards: 'Community Standards',
   termsOfService: 'Terms of Service',

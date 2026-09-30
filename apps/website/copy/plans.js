@@ -8,20 +8,20 @@
 export const PLANS_PAGE = {
   meta: {
     title: 'Plans & Pricing — plot',
-    description: 'plot is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more: A$5/mo or A$40/yr.',
-    ogDescription: 'Free to use, forever. Go Premium for unlimited lists and automatic sync across every service you watch.',
+    description: 'plot is free to use, forever. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial (card required). Checkout is not open yet.',
+    ogDescription: 'Free to use, forever. Premium is US$3/month or US$24/year with a 7-day free trial. Checkout is not open yet.',
   },
 
   hero: {
     pageLabel: 'Plans',
     h1: 'Do more with everything you watch',
-    lede: 'Start free and keep every movie and show in one place. Go Premium for unlimited lists and automatic sync from every service you use.',
+    lede: 'Start free and keep every movie and show in one place. Premium is coming soon: US$3/month or US$24/year, taxes included, with a 7-day free trial (card required). It adds unlimited lists, a live release calendar in your calendar app and Pick for Me.',
   },
 
   billingToggle: {
     monthly: 'Monthly',
     annual: 'Annual',
-    saveBadge: 'Save 33%', // hardcoded in HTML; JS recomputes the live % from MONTHLY/ANNUAL
+    saveBadge: '4 months free', // hardcoded in HTML; $24/yr against $3/mo
   },
 
   freePlan: {
@@ -33,33 +33,34 @@ export const PLANS_PAGE = {
       'Track movies & TV in one place',
       'Watchlist, history & release calendar',
       'Discover feed + Top 10 charts',
-      'Up to 3 custom lists',
+      'Up to 5 custom lists',
       'Follow friends & share your profile',
     ],
     cta: 'Get started free',
   },
 
   premiumPlan: {
-    flag: 'Recommended',
+    flag: 'Coming soon',
     name: 'Premium',
     // Amount/billed line are recalculated by JS when the billing toggle
     // changes; these are the initial (annual) values rendered in the HTML.
-    amount: 'A$3.33',
+    amount: 'US$2',
     per: '/mo',
-    billed: 'Billed A$40 yearly · save 33%',
-    billedMonthly: 'Billed monthly',
+    billed: 'US$24 billed yearly · taxes included',
+    billedMonthly: 'US$3 billed monthly · taxes included',
+    trial: '7-day free trial, card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
     tagline: 'Everything in Free, plus:',
     features: [
       'Unlimited custom lists',
-      'Auto-sync your watchlist & history from Plex',
-      'Sync Netflix, Prime, Disney+ & more via Trakt',
-      'Everything stays up to date, automatically',
+      'Live release calendar in your calendar app',
+      'Pick for Me: a shortlist for tonight',
     ],
-    cta: 'Go Premium',
+    cta: 'Explore Premium',
   },
 
   comparison: {
     title: 'Compare plans',
+    note: 'Premium features are coming soon.',
     columns: { feature: 'Feature', free: 'Free', premium: 'Premium' },
     rows: [
       { feature: 'Track movies & TV', free: true, premium: true },
@@ -68,11 +69,10 @@ export const PLANS_PAGE = {
       { feature: 'Discover feed + Top 10 charts', free: true, premium: true },
       { feature: 'Search every movie & show', free: true, premium: true },
       { feature: 'Follow friends & share profile', free: true, premium: true },
-      { feature: 'Reminders & where-to-watch', free: true, premium: true },
-      { feature: 'Custom lists', free: 'Up to 3', premium: 'Unlimited' },
-      { feature: 'Plex sync', free: false, premium: true },
-      { feature: 'Trakt sync (Netflix, Prime, Disney+…)', free: false, premium: true },
-      { feature: 'Automatic background sync', free: false, premium: true },
+      { feature: 'Where to watch', free: true, premium: true },
+      { feature: 'Custom lists', free: 'Up to 5', premium: 'Unlimited' },
+      { feature: 'Live calendar subscription', free: false, premium: true },
+      { feature: 'Pick for Me', free: false, premium: true },
     ],
   },
 
@@ -81,22 +81,22 @@ export const PLANS_PAGE = {
     items: [
       {
         q: 'Is the Free plan really free?',
-        a: 'Yes — no credit card, no trial clock. Track as much as you want on Free for as long as you like.',
+        a: 'Yes. No credit card and no trial clock. Track as much as you like on Free, for as long as you like.',
+      },
+      {
+        q: 'Can I get Premium now?',
+        a: 'Not yet. Checkout is not open. When it opens, Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial. A card is required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
       },
       {
         q: 'Can I cancel anytime?',
-        a: 'Anytime, in one click from Settings. You keep Premium until the end of the period you already paid for.',
+        a: 'Yes, once Premium opens. Cancel during the 7-day trial and you pay $0. After the trial, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.',
       },
       {
         q: 'What happens to my lists if I downgrade?',
-        a: "Nothing is deleted. Your lists stay exactly as they are — you just can't create new ones past the free limit until you upgrade again.",
-      },
-      {
-        q: 'How does sync work?',
-        a: 'Connect Plex or Trakt once and plot keeps your watchlist and history current automatically — including what you watch on Netflix, Prime, Disney+ and more.',
+        a: 'Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.',
       },
     ],
   },
 
-  fineprint: 'US, UK and euro customers have fixed local prices. Stripe converts prices for other supported locations at checkout. Cancel anytime. Payments are processed securely by Stripe. Need a hand? contact@theplot.tv',
+  fineprint: 'Prices are in US dollars and include tax. Premium is a 7-day free trial with a card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? contact@theplot.tv',
 };

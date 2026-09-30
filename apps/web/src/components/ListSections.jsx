@@ -1,11 +1,12 @@
 import PrivateNote from './PrivateNote.jsx';
-import { customListCreationError } from '@plot/core/customListCreation.js';
+import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip } from '../utils/countdown.js';
 import { posterUrl } from '../utils/images.js';
 import { tmdb } from '@plot/core/tmdb.js';
-import { findDuplicateCustomList } from '@plot/core/customLists.js';
+import { findDuplicateCustomList, LIST_VISIBILITIES, listVisibility, isListShareable } from '@plot/core/customLists.js';
+import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { COMMON } from '../copy/common.js';
@@ -20,6 +21,11 @@ import { CardGrid, ListCard, SelectCircle } from './ListCards.jsx';
 import { MEDIA } from '../copy/media.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { privateNoteKey } from '@plot/core/privateNotes.js';
+import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
+import { personName } from '@plot/core/watchTogether.js';
+import { SharedListPeopleDialog } from './WatchTogetherParts.jsx';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
 
 /* The lists themselves: one component per list, each rendering into a
    `Frame` it is handed. On My Lists the frame is a section on the page (the
@@ -277,7 +283,7 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
 }
 
 /* ── Create list sheet ── */
-export function CreateListModal({ lists, onConfirm, onClose }) {
+export function CreateListModal({ lists, onConfirm, onClose, onLimit }) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -298,6 +304,7 @@ export function CreateListModal({ lists, onConfirm, onClose }) {
         setError(MEDIA.couldNotCreateList);
       }
     } catch (failure) {
+      if (onLimit && isCustomListLimitError(failure)) { onLimit(); return; }
       setError(customListCreationError(failure, MEDIA.couldNotCreateList));
     } finally {
       setIsSubmitting(false);
@@ -450,9 +457,13 @@ export function WatchingSection({ watching, hidden, Frame = ListSection }) {
 
   if (hidden) return null;
 
-  const stopSelected = () => {
-    selection.selected.forEach(tmdbId => watching.stopWatching(tmdbId));
+  // One undo for the whole selection, offered once every stop has landed.
+  const stopSelected = async () => {
+    const ids = [...selection.selected];
+    const batch = createUndoBatch({ action: UNDO_ACTIONS.WATCHING_STOP });
     selection.exit();
+    await Promise.all(ids.map(tmdbId => watching.stopWatching(tmdbId, { undo: batch })));
+    batch.offer();
   };
 
   return (
@@ -560,9 +571,12 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
 
   if (narrowed && items.length === 0) return null;
 
-  const removeSelected = () => {
-    selection.selected.forEach(tmdbId => watchlist.removeFromList(tmdbId));
+  const removeSelected = async () => {
+    const ids = [...selection.selected];
+    const batch = createUndoBatch({ action: UNDO_ACTIONS.WATCHLIST_REMOVE });
     selection.exit();
+    await Promise.all(ids.map(tmdbId => watchlist.removeFromList(tmdbId, { undo: batch })));
+    batch.offer();
   };
 
   return (
@@ -714,9 +728,16 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
 
 /* ── One custom list, as a page: grid plus rename / public / share / delete ── */
 export function CustomListSection({ list, visibleItems, count, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
-  const { openPanel, favorites, watchlist, privateNotes, profile } = useApp();
+  const { openPanel, favorites, watchlist, privateNotes, profile, user } = useApp();
   const fw = favoriteWords(profile?.region);
-  const { renameList, setListPublic, addItem, removeItem, deleteList } = customLists;
+  const { renameList, setListVisibility, addItem, removeItem, deleteList, leaveList } = customLists;
+  const visibility = listVisibility(list);
+  const shareable = isListShareable(visibility, profile?.is_public);
+  const isOwner = list.role !== 'member';
+  const shared = SHOW_WATCH_TOGETHER && (!isOwner || list.people?.length > 0);
+  const others = (list.people || []).filter(p => p.user_id !== user?.id);
+  const [addingPeople, setAddingPeople] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const selection = useSelection();
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(list.name);
@@ -731,25 +752,54 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
     const ok = await renameList(list.id, renameValue);
     if (ok) setRenaming(false);
   };
-  const removeSelected = () => {
-    selection.selected.forEach(tmdbId => removeItem(list.id, tmdbId));
+  const removeSelected = async () => {
+    const ids = [...selection.selected];
+    const batch = createUndoBatch({ action: UNDO_ACTIONS.LIST_ITEM_REMOVE });
     selection.exit();
+    await Promise.all(ids.map(tmdbId => removeItem(list.id, tmdbId, { undo: batch })));
+    batch.offer({ meta: { listName: list.name } });
   };
+  // Shared lists: members can rename, add people and leave; only the owner
+  // can change visibility or delete (docs/design/watch-together/README.md).
   const menuItems = [
     { label: 'Rename', onClick: () => { setRenameValue(list.name); setRenaming(true); } },
-    { label: list.is_public ? COMMON.makePrivate : 'Make public', onClick: () => setListPublic(list.id, !list.is_public) },
-    ...(list.is_public && share ? [{ label: 'Share link', onClick: () => share(list) }] : []),
-    { label: 'Delete list', onClick: () => setConfirmDelete(true), danger: true },
+    ...(shared ? [{ label: WATCH_TOGETHER.sharedList.addPeople, onClick: () => setAddingPeople(true) }] : []),
+    // Only the creator sets visibility, shares or deletes; members can leave.
+    ...(isOwner ? LIST_VISIBILITIES.map(v => ({
+      label: PROFILE_PRIVACY.listVisibility[v], hint: PROFILE_PRIVACY.listVisibilityHint[v],
+      checked: v === visibility, onClick: () => { if (v !== visibility) setListVisibility(list.id, v); },
+    })) : []),
+    ...(isOwner && shareable && share ? [{ label: 'Share link', onClick: () => share(list) }] : []),
+    isOwner
+      ? { label: 'Delete list', onClick: () => setConfirmDelete(true), danger: true }
+      : { label: WATCH_TOGETHER.sharedList.leave, onClick: () => setConfirmLeave(true), danger: true },
   ];
+  // On a shared list each title says who added it. added_by is null for titles
+  // the owner added before the list was shared, so those fall back to the owner.
+  const addedByLabel = (item) => {
+    if (!shared) return null;
+    const by = item.added_by || list.user_id;
+    if (by === user?.id) return WATCH_TOGETHER.sharedList.addedByYou;
+    const person = (list.people || []).find(p => p.user_id === by);
+    return person ? WATCH_TOGETHER.sharedList.addedBy(personName(person)) : null;
+  };
+  const cardMeta = (item) => {
+    const kind = item.media_type === 'tv' ? MEDIA.series : MEDIA.movie;
+    const by = addedByLabel(item);
+    return by ? `${kind} · ${by}` : kind;
+  };
+  const subtitle = shared && others.length
+    ? WATCH_TOGETHER.sharedList.sharedWith(others.map(personName).join(', '))
+    : visibility === 'private' ? undefined : PROFILE_PRIVACY.listVisibility[visibility];
 
   return (
     <Frame
       title={list.name}
       count={count ?? allItems.length}
-      subtitle={list.is_public ? 'Public' : undefined}
+      subtitle={subtitle}
       headerRight={
         <>
-          {list.is_public && share && <button type="button" className="btn btn-ghost btn-sm" onClick={() => share(list)}>{shareCopied ? COMMON.copied : COMMON.share}</button>}
+          {shareable && share && <button type="button" className="btn btn-ghost btn-sm" onClick={() => share(list)}>{shareCopied ? COMMON.copied : COMMON.share}</button>}
           <HeaderIconButton label={`Add item to ${list.name}`} onClick={() => setShowAdd(true)}>
             <PlusIcon />
           </HeaderIconButton>
@@ -793,7 +843,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
                 key={item.id}
                 title={title}
                 img={posterUrl(item.poster_path, 'w185')}
-                meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}
+                meta={cardMeta(item)}
                 {...(pageLayout ? cardState(item, historyEntries, privateNotes) : {})}
                 {...(pageLayout ? cardActions(item, favorites, watchlist, fw) : {})}
                 onOpen={() => openPanel(item.tmdb_id, item.media_type)}
@@ -807,13 +857,24 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
         {pageLayout && <div className="list-page-rows">{visible.map(item => {
           const title = item.title || MEDIA.unknown;
           const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, item.media_type);
-          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie} open={open} selection={selection} />;
+          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={cardMeta(item)} open={open} selection={selection} />;
         })}</div>}
         </div>
       )}
 
       {showAdd && (
         <AddToFavoritesModal title="Add to List" onAdd={(item) => addItem(list.id, item)} onClose={() => setShowAdd(false)} />
+      )}
+      {addingPeople && <SharedListPeopleDialog list={list} onAdd={memberId => customLists.addMember(list.id, memberId)} onClose={() => setAddingPeople(false)} />}
+      {confirmLeave && (
+        <ConfirmModal
+          title={WATCH_TOGETHER.sharedList.leaveTitle(list.name)}
+          message={WATCH_TOGETHER.sharedList.leaveBody}
+          confirmLabel={WATCH_TOGETHER.sharedList.leave}
+          danger
+          onConfirm={async () => { await leaveList(list.id); onDeleted?.(); }}
+          onClose={() => setConfirmLeave(false)}
+        />
       )}
       {confirmDelete && (
         <ConfirmModal

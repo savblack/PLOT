@@ -37,3 +37,9 @@ test('new_episode rows are title rows with their own kind, and bucket by day lik
   assert.equal(rollup, null);
   assert.deepEqual(groups.map(g => [g.key, g.items.map(n => n.id)]), [['today', [7, 9]]]);
 });
+
+test('watch together requests leave the stream; accepted ones stay', () => {
+  const { groups } = groupNotifications([row(1, 'watch_together_request', 1), row(2, 'watch_together_accepted', 2)], now);
+  assert.deepEqual(groups.map(g => g.items.map(n => n.id)), [[2]]);
+  assert.equal(notificationKind('watch_together_request'), 'request');
+});

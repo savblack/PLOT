@@ -145,7 +145,7 @@ test('a tab claimed by both sets is flagged', () => {
 });
 
 /* /person/:id and /import had no VIEW_TITLES entry, so both fell through to the
- * brand and rendered a second "PLOT" wordmark in the content column, beside the
+ * brand and rendered a second "Plot" wordmark in the content column, beside the
  * one the sidebar already shows. Found by opening the two routes nothing in the
  * audit had visited. */
 

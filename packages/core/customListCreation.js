@@ -2,9 +2,15 @@ import { CUSTOM_LISTS } from './copy/customLists.js';
 
 export const CUSTOM_LIST_LIMIT_CODE = 'custom_list_limit_reached';
 
+/** True when the server refused a new list because the Free cap is reached
+ * (a stale tab can think it has room). Callers open the upgrade sheet for it. */
+export function isCustomListLimitError(error) {
+  return error?.code === CUSTOM_LIST_LIMIT_CODE;
+}
+
 /** Preserve the cap message across creation surfaces, including stale tabs. */
 export function customListCreationError(error, fallback) {
-  return error?.code === CUSTOM_LIST_LIMIT_CODE ? CUSTOM_LISTS.limitMessage : fallback;
+  return isCustomListLimitError(error) ? CUSTOM_LISTS.limitMessage : fallback;
 }
 
 /** Insert through the database cap; do not infer entitlement from a stale profile.

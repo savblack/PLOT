@@ -160,6 +160,8 @@ svg { stroke-width: 1.5; }
    the sidebar breakpoint, where the app header still carries the title. */
 .app-page-heading.app-page-heading--with-subtitle { margin-bottom: .5rem; }
 .app-page-heading.app-page-heading--guide { margin-bottom: 0; }
+/* Pick for Me drops its subline on phone, where the questions need the room. */
+.app-page-subtitle--desktop-only { display: none; }
 .app-page-subtitle {
   margin: 0;
   padding: 0 var(--gut);
@@ -197,68 +199,6 @@ svg { stroke-width: 1.5; }
   margin-inline: calc(50% - 50vw);
   /* .sub-tabs carries its own 0.75rem inline padding; keep it. */
   padding-inline: calc(50vw - 50% + 0.75rem);
-}
-
-/* ── Bottom Tab Bar ─────────────────────────────── */
-/* Flush, full-width bar — mirrors .app-header's construction (solid
-   --surface fill, single hairline border, safe-area padding) at the
-   opposite edge. */
-.tab-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  box-shadow: none;
-  display: flex;
-  align-items: stretch;
-}
-
-.tab-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.4rem 0.1rem;
-  background: none;
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: color 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.tab-btn svg {
-  width: 22px;
-  height: 22px;
-  fill: none;
-  stroke: currentColor;
-}
-.tab-btn.active {
-  color: var(--accent);
-}
-.tab-btn-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--surface-raised);
-  border: 1.5px solid var(--text-muted);
-}
-.tab-btn-avatar-initial {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-.tab-btn.active .tab-btn-avatar {
-  border-color: var(--accent);
 }
 
 /* ── Back to top ─────────────────────────────── */
@@ -383,6 +323,39 @@ svg { stroke-width: 1.5; }
 .nav-drawer-item.active {
   color: var(--accent);
 }
+/* The row was always a flex line with a 0.85rem gap waiting for a glyph; the
+   drawer simply never rendered one, so it read as a list of bare words next to
+   a rail where every destination has an icon. Same size and weight as the
+   rail's, so the two shells draw one nav. */
+.nav-drawer-item svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  flex-shrink: 0;
+}
+/* The profile row's avatar stands in for an icon, so it is sized to the icon
+   column rather than to a face. 18px, not a more flattering 20: two extra
+   pixels here push this row's label off the 51.6px edge every other row sits
+   on, and one left edge is the whole point of putting glyphs in this drawer. */
+.nav-drawer-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  flex-shrink: 0;
+}
+.nav-drawer-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
 .nav-drawer-label {
   font-size: 0.95rem;
   font-weight: 600;
@@ -456,7 +429,6 @@ svg { stroke-width: 1.5; }
      bar: the sticky sub-tab bars pin to top: 0 of .app-main, which was always
      the scroll container rather than the header. */
   .app-header,
-  .tab-bar,
   .nav-drawer,
   .nav-drawer-overlay {
     display: none;
@@ -471,6 +443,7 @@ svg { stroke-width: 1.5; }
   .app-page-heading {
     display: block;
   }
+  .app-page-subtitle--desktop-only { display: block; }
 
   .app-page-breadcrumb {
     display: inline-flex;
@@ -607,6 +580,18 @@ svg { stroke-width: 1.5; }
   flex-shrink: 0;
 }
 
+/* Premium marker on a nav item, for viewers without Premium. */
+.app-sidebar-premium {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: var(--radius-badge);
+  background: color-mix(in srgb, var(--badge-premium) 12%, transparent);
+  color: var(--badge-premium);
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .app-sidebar-avatar {
   width: 24px;
   height: 24px;
@@ -641,6 +626,21 @@ svg { stroke-width: 1.5; }
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+/* Premium marker on a nav destination, shown to Free viewers only. A quiet
+   pink tint with pink text, so it labels the item without competing with it. */
+.app-nav-premium {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent-text);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  flex-shrink: 0;
 }
 .app-sidebar-scroll { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
 .app-sidebar-nav { padding: 8px 12px 24px; overflow: visible; flex-shrink: 0; align-items: stretch; }
@@ -700,7 +700,8 @@ svg { stroke-width: 1.5; }
     gap: 0;
   }
   .sidebar-collapsed .app-sidebar-beta,
-  .sidebar-collapsed .app-sidebar-badge {
+  .sidebar-collapsed .app-sidebar-badge,
+  .sidebar-collapsed .app-sidebar-premium {
     display: none;
   }
   .sidebar-collapsed .app-sidebar-nav,
@@ -5577,6 +5578,7 @@ a.provider-chip--link:hover {
 }
 .kebab-menu-item:hover { background: color-mix(in srgb, var(--surface-raised) 85%, var(--text-primary) 15%); }
 .kebab-menu-item--danger { color: #ef4444; }
+.kebab-menu-check { color: var(--accent); }
 
 /* ═══════════════════════════════════════
    LOADING
@@ -6250,7 +6252,7 @@ a.provider-chip--link:hover {
   margin: 2rem auto;
   padding: 0 1rem;
 }
-/* Under the "PLOT's Picks" header the row's own top margin is the header's
+/* Under the "Plot's Picks" header the row's own top margin is the header's
    spacing twice over. */
 .discover-featured-section .discover-hero-row {
   margin-top: 0.25rem;
@@ -7284,7 +7286,6 @@ a.provider-chip--link:hover {
   }
 
   .icon-btn,
-  .tab-btn,
   .sub-tab-btn,
   .multi-select-btn,
   .platform-chip,
@@ -7406,13 +7407,7 @@ a.provider-chip--link:hover {
     padding: 0 0.7rem 0 0.9rem;
   }
 
-  .tab-btn {
-    font-size: 0.58rem;
-    letter-spacing: 0.035em;
-  }
-
   .icon-btn,
-  .tab-btn,
   .sub-tab-btn,
   .multi-select-btn,
   .platform-chip,
@@ -7671,6 +7666,31 @@ a.provider-chip--link:hover {
   text-wrap: pretty;
 }
 .hist-card-note { font-size: 12px; color: var(--text-muted); line-height: 1.35; padding: 0 4px; }
+/* Share-as-a-card, on the side cards that have a card behind them. Pink once
+   the card has enough data, the sunken cream while it does not; an icon, not
+   a button, so the column stays quiet. */
+.hist-share {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.hist-share svg { width: 14px; height: 14px; }
+.hist-share:hover { background: var(--border-strong); }
+.hist-share--ready { background: var(--accent-fill); color: var(--on-accent-fill); }
+.hist-share--ready:hover { background: var(--accent-fill-hover); }
+.hist-share:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hist-card-head--label { min-height: 0; padding: 0; }
+.hist-card-head--label .hist-share { width: 24px; height: 24px; }
+.hist-card-foot .hist-share { width: 24px; height: 24px; margin: -4px 0; }
+.hist-card-foot .hist-share svg { width: 12px; height: 12px; }
 .hist-card-body .hist-card-note,
 .hist-crowd-row .hist-card-note,
 .hist-person .hist-card-note { padding: 0; }

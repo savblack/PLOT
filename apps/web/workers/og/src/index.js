@@ -91,7 +91,8 @@ async function loadProfile(handle) {
   const [cRes, revRes, fRes, recentRes, ratedRes] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
     fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&note=not.is.null&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
-    fetch(`${SUPABASE_URL}/rest/v1/follows?following_id=eq.${profile.id}&status=eq.accepted&select=follower_id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
+    // follows rows are readable only by the two people in them; anon counts via the RPC.
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/get_follow_counts`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_target: profile.id }) }),
     fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=tmdb_id,media_type,watched_at&order=watched_at.desc&limit=6`, { headers }),
     fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=rating&rating=not.is.null`, { headers }),
   ]);
@@ -99,7 +100,7 @@ async function loadProfile(handle) {
   const count = (r) => parseInt((r.headers.get('content-range') || '0-0/0').split('/')[1], 10) || 0;
   const watchCount = count(cRes);
   const reviews = count(revRes);
-  const followers = count(fRes);
+  const followers = Number((await fRes.json().catch(() => []))?.[0]?.followers) || 0;
 
   const recentRaw = await recentRes.json().catch(() => []);
   const rated = await ratedRes.json().catch(() => []);
@@ -118,14 +119,15 @@ async function loadProfile(handle) {
 
 async function loadList(id) {
   const h2 = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
-  const lRes = await fetch(`${SUPABASE_URL}/rest/v1/user_custom_lists?id=eq.${encodeURIComponent(id)}&is_public=eq.true&select=name,user_id&limit=1`, { headers: h2 });
-  const list = (await lRes.json())?.[0];
+  // One list by id; 'link' lists are only readable this way (20260926090000).
+  const lRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_shared_list`, {
+    method: 'POST', headers: { ...h2, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_list_id: id }),
+  });
+  const rows = await lRes.json().catch(() => []);
+  const list = Array.isArray(rows) ? rows[0] : null;
   if (!list) return null;
-  const [iRes, oRes] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/user_custom_list_items?list_id=eq.${encodeURIComponent(id)}&select=poster_path&order=added_at.asc&limit=5`, { headers: h2 }),
-    fetch(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username&limit=1`, { headers: h2 }),
-  ]);
-  const items = await iRes.json().catch(() => []);
+  const items = Array.isArray(list.items) ? list.items.slice(0, 5) : [];
+  const oRes = await fetch(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username&limit=1`, { headers: h2 });
   const owner = (await oRes.json().catch(() => []))?.[0] || null;
   return {
     name: list.name,
