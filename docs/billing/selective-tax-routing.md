@@ -593,7 +593,7 @@ remains a separate follow-up. No production changes, deployment or launch.
 ### Linked plan-switch invoice paid, 26 September 2026
 
 Completed the previously interrupted one-day advance to 27 September 2029 in
-PLOT sandbox. Read-only Stripe verification confirms invoice
+Plot sandbox. Read-only Stripe verification confirms invoice
 in_1UJoL4Erc2ircceaKslYPjpE is paid: USD3.00 due and USD3.00 paid,
 livemode false, automatic tax complete with liability assigned to Stripe.
 After payment delivery, the authenticated staging billing RPC remains active,

@@ -15,6 +15,9 @@ import { notificationPhrase, alertPhrase, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMP
 import { groupNotifications, notificationKind, actorName, rollupNames, isAlertNotification } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
 import { posterUrl } from '../utils/images.js';
+import { requestShareCard, CARD_IDS } from '@plot/core/shareCards.js';
+import { useMonthWrapMoment } from '../hooks/useMonthWrapMoment.js';
+import { SHARE_CARDS } from '../copy/shareCards.js';
 import './NotificationsView.css';
 
 const KindIcon = ({ kind }) => kind === 'request'
@@ -39,11 +42,11 @@ function Poster({ path }) {
 }
 
 /** Pure layout; data comes from the hooks in NotificationsView (and from a story). */
-export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onMarkAllRead, now, wasUnread = () => false }) {
+export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onMarkAllRead, now, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
   const { rollup, groups } = useMemo(() => groupNotifications(list, now), [list, now]);
   const unread = list.filter(wasUnread).length;
   const requestTotal = requests.length + watchRequests.length;
-  const empty = !loading && list.length === 0 && requestTotal === 0;
+  const empty = !loading && list.length === 0 && requestTotal === 0 && !moment;
   const labels = { today: T.today, yesterday: T.yesterday, earlier: T.earlier };
   return <div className="hist-page notif-page">
     {unread > 0
@@ -63,6 +66,16 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
     {loading ? <p className="hist-card-note notif-status" role="status">{COMMON.loading}</p>
       : empty ? <div className="empty-state"><div className="empty-title">{NOTIFICATIONS_EMPTY.title}</div><div className="empty-body">{NOTIFICATIONS_EMPTY.body}</div></div>
       : <div className="notif-body">
+        {moment && <section className="hist-card notif-moment" aria-label={SHARE_CARDS.monthWrapTitle(moment.monthName)}>
+          <div className="notif-moment-text">
+            <strong>{SHARE_CARDS.monthWrapTitle(moment.monthName)}</strong>
+            <span className="hist-card-note">{moment.sentence || SHARE_CARDS.monthWrapNoticeBody(moment.count, moment.monthName)}</span>
+          </div>
+          <div className="notif-moment-actions">
+            <button type="button" className="btn btn-primary btn-sm" onClick={onShareMoment}>{SHARE_CARDS.shareTheCard}</button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={onDismissMoment}>{SHARE_CARDS.dismiss}</button>
+          </div>
+        </section>}
         {requestTotal > 0 && <section className="notif-section">
           <div className="cal-stream-month"><h2 className="cal-stream-month-name">{T.requests}</h2><span className="cal-stream-month-count">{T.requestCount(requestTotal)}</span></div>
           <div className="notif-request-grid">
@@ -152,6 +165,9 @@ export default function NotificationsView() {
   // dots until the person explicitly uses the Option C "Mark all read" action.
   const [unreadIds, setUnreadIds] = useState(null);
   const [now] = useState(() => Date.now());
+  // Last month, wrapped: a client-side notice in the first week of the month.
+  const [today] = useState(() => new Date());
+  const { moment, dismiss: dismissMoment } = useMonthWrapMoment(user?.id, today);
   useEffect(() => { refreshList(); }, [refreshList]);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- snapshot the unread set once the first load lands
@@ -167,8 +183,11 @@ export default function NotificationsView() {
       onOpenTitle={(tmdbId, mediaType) => openPanel(tmdbId, mediaType === 'movie' ? 'movie' : 'tv', 'notification')}
       onReviewWatch={setReviewing} onDeclineWatch={r => watch.respond(r.other_id, false)}
       onMarkAllRead={handleMarkAllRead}
-      wasUnread={n => unreadIds?.has(n.id) ?? false} />
-    {reviewing && <AcceptDialog person={reviewing} viewerIsPublic={!!profile?.is_public}
+      wasUnread={n => unreadIds?.has(n.id) ?? false}
+      moment={moment}
+      onShareMoment={() => requestShareCard({ card: CARD_IDS.MONTH_WRAP, source: 'notification' })}
+      onDismissMoment={dismissMoment} />
+    {reviewing && <AcceptDialog person={reviewing} viewer={profile}
       onClose={() => setReviewing(null)}
       onDecline={() => { watch.respond(reviewing.other_id, false); setReviewing(null); }}
       onAccept={shareFull => { watch.respond(reviewing.other_id, true, shareFull); setReviewing(null); }} />}

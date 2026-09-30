@@ -61,9 +61,9 @@ function withPostHog(fn: (ph: PostHog) => void) {
  * Native has no hostname to allowlist the way the browser surfaces do (see
  * apps/web/src/utils/analyticsHost.js), so __DEV__ is the equivalent gate: a
  * simulator running `expo start` must not report into the one production
- * PostHog project. `.env.example` has always said to leave the token blank in
- * dev, but the real local .env has it filled in, so convention alone was not
- * holding. EXPO_PUBLIC_POSTHOG_FORCE=1 is the deliberate-testing escape hatch,
+ * PostHog project. `apps/mobile/.env.example` has always said to leave the
+ * token blank in dev, but the real local .env has it filled in, so convention
+ * alone was not holding. EXPO_PUBLIC_POSTHOG_FORCE=1 is the deliberate-testing escape hatch,
  * mirroring VITE_PUBLIC_POSTHOG_FORCE on web.
  */
 function analyticsAllowed() {

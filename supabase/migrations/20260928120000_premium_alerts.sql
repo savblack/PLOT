@@ -18,11 +18,14 @@
 -- Overlap with PR #1032 (new_episode notifications): the shared title columns
 -- here (tmdb_id, media_type, season_number, media_title, media_poster_path,
 -- air_date) use that PR's names and types, and the type check already admits
--- 'new_episode', so it can land on top of this by adding its own
--- episode_number/episode_count columns and extending list_notifications() from
--- the body below. Its notifications_subject_check must then allow these two
--- types to have no actor (it currently requires an actor for every type other
--- than new_episode).
+-- 'new_episode'. #1032's migration (20261001090000) builds on this one: it adds
+-- episode_number and episode_count and extends list_notifications() from the
+-- body below. So this PR merges first. If list_notifications() or
+-- notifications_type_check changes here, #1032 needs the same change.
+--
+-- This must be newer than main's newest migration when it merges. If
+-- 20260928160000 (#1091) lands first, renumber this to sort after it but
+-- before 20261001090000.
 
 -- ── 1. Opt-ins ───────────────────────────────────────────────────────────────
 

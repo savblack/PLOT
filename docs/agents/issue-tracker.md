@@ -3,7 +3,7 @@
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
 Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
-For PLOT that is `savblack/PLOT`.
+For Plot that is `savblack/PLOT`.
 
 ## Conventions
 

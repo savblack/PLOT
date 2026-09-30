@@ -4,7 +4,7 @@
 // `now` is passed, so the whole file is unit-testable.
 //
 // Comparisons are always against TMDB's audience (vote_average), never other
-// PLOT users: the user base is far too small for "people like you" to mean
+// Plot users: the user base is far too small for "people like you" to mean
 // anything yet.
 
 import { ratingToStars } from './ratings.js';

@@ -108,7 +108,7 @@ staging for inspection.
 After Savannah requested live Trakt/Plex verification and confirmed she has both
 accounts plus access to a Plex server, the private staging Plex pilot was prepared:
 
-- Production read-only preflight found her PLOT account, its Premium display flag,
+- Production read-only preflight found her Plot account, its Premium display flag,
   no Trakt/Plex credentials and no tracking-job schema. Production was unchanged.
 - Eleven focused provider tests passed (pagination, rewatches, episode identity,
   rate-limit handling, selected Plex profile and worker authentication).
@@ -126,7 +126,7 @@ accounts plus access to a Plex server, the private staging Plex pilot was prepar
   The user-facing Plex sign-in page was opened. Authorization, server/profile
   selection, history reconciliation and disconnect are still pending.
 
-Savannah is unsure whether PLOT has a registered Trakt application. Trakt live
+Savannah is unsure whether Plot has a registered Trakt application. Trakt live
 verification cannot proceed until its client credentials and callback are set up.
 
 ## Fresh provider preflight, 23 September 2026
@@ -143,7 +143,7 @@ authorised staging pilot was checked again:
   Only name presence was reported, never secret values. The first CLI attempt
   was stopped by local telemetry-file sandbox permissions; the approved read-only
   retry succeeded. No credentials, flags or provider settings were changed.
-- Live Trakt OAuth still needs the PLOT developer application's credentials and
+- Live Trakt OAuth still needs the Plot developer application's credentials and
   an approved callback. A user's ordinary Trakt login alone is insufficient.
 - TV Time remains saved-file-only. Its Liberator adapter can be exercised with
   existing fixtures, but a complete authentic saved archive and the separate

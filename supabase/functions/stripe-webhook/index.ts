@@ -1,7 +1,7 @@
 /**
  * stripe-webhook
  *
- * Receives Stripe events for the PLOT Premium subscription and maintains
+ * Receives Stripe events for the Plot Premium subscription and maintains
  * billing state:
  *   - billing_customers  (entitlement source of truth, service-role only)
  *   - profiles.is_premium (cosmetic badge mirror read by the app/OG cards)
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
         const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
         const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
         if (!userId || !customerId || !subId) {
-          throw new Error('Checkout subscription is missing PLOT linkage');
+          throw new Error('Checkout subscription is missing Plot linkage');
         }
         const sub = await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
         const result = await syncSubscription({ userId, customerId, sub, event });

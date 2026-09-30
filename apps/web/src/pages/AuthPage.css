@@ -53,7 +53,7 @@
   pointer-events: none;
 }
 
-/* Logout confirmation uses the current PLOT charcoal between posters and at
+/* Logout confirmation uses the current Plot charcoal between posters and at
    the poster wall's top/bottom fade, instead of the legacy near-black. */
 .auth-page--logout .auth-visual,
 .auth-page--logout .poster-cell,
@@ -66,7 +66,7 @@
   background: linear-gradient(to bottom, var(--text-primary) 0%, transparent 20%, transparent 75%, var(--text-primary) 100%);
 }
 
-/* PLOT brand mark on the poster wall */
+/* Plot brand mark on the poster wall */
 .auth-visual-brand {
   position: absolute;
   bottom: 2.5rem;
@@ -109,7 +109,7 @@
   background: var(--surface);
 }
 
-/* PLOT link at top */
+/* Plot link at top */
 .auth-panel-logo {
   display: inline-block;
   width: fit-content;

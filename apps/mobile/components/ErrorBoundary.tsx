@@ -23,7 +23,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (!this.state.hasError) return this.props.children;
-    // Kind, PLOT-voiced crash screen — never surface the raw exception to users
+    // Kind, Plot-voiced crash screen — never surface the raw exception to users
     // (it's logged in componentDidCatch). Mirrors the web CrashScreen copy.
     return (
       <View style={styles.container}>

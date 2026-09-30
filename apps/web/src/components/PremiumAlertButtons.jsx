@@ -6,7 +6,7 @@
 // premium_required.
 //
 // Mobile parity: not shipped on mobile yet. Tracked in the GitHub issue
-// "Mobile parity: actor/director and season-ready alerts" (#1093).
+// "Mobile parity: actor/director and season-ready alerts" (issue 1093).
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { usePremium } from '../hooks/usePremium.js';

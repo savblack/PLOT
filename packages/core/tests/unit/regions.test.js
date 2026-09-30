@@ -23,7 +23,7 @@ function withTZ(tz, fn) {
   }
 }
 
-test('REGIONS starts with the three regions PLOT has real traffic data for', () => {
+test('REGIONS starts with the three regions Plot has real traffic data for', () => {
   assert.deepEqual(REGIONS.slice(0, 3), [
     { code: 'US', name: 'United States' },
     { code: 'AU', name: 'Australia' },

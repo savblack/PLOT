@@ -90,7 +90,7 @@ export default function NotificationsScreen() {
             // Premium alerts render read-only here for now: the opt-in toggles
             // and opening the title from a row are web-only until the mobile
             // parity issue ("Mobile parity: actor/director and season-ready
-            // alerts", #1093) lands. The wording is shared with web via core.
+            // alerts", issue 1093) lands. The wording is shared with web via core.
             if (isAlertNotification(n)) {
               const title = n.media_title || ALERT_NOTIFICATIONS.untitled;
               const phrase = alertPhrase(n) ?? '';

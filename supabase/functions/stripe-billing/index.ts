@@ -1,7 +1,7 @@
 /**
  * stripe-billing
  *
- * Authenticated billing actions for the PLOT Premium subscription:
+ * Authenticated billing actions for the Plot Premium subscription:
  *   POST ?action=checkout  {plan: 'monthly' | 'yearly'} -> {url}  Stripe Checkout
  *   POST ?action=portal                                 -> {url}  Customer Portal
  *   POST ?action=tip       {amount: 500}                -> {url}  One-time Stripe Checkout
@@ -208,8 +208,8 @@ Deno.serve(async (req) => {
             currency: 'aud',
             unit_amount: amount,
             product_data: {
-              name: 'PLOT Tip',
-              description: 'One-time support for PLOT',
+              name: 'Plot Tip',
+              description: 'One-time support for Plot',
             },
           },
         }],

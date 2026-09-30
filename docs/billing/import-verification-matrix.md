@@ -60,7 +60,7 @@ of every provider's native export or the deployed normal application.
 | Web select, resolve, review, confirm, results | 48 Chromium tests; prior authenticated staging history and session-recovery runs | Normal authenticated web journey for newly added annotations/native Amazon and mixed IMDb lists; fixture components are not that journey |
 | IDs, dates, rewatches, episode progress | Live staging catalogue and event persistence; missing dates stay unknown; named Netflix episode validation | Unverified source shapes must remain excluded; no completion inference from playback |
 | Existing edits and duplicate-safe retries | Staging event/replay/isolation scripts, batch/lost-response browser cases, rollback list-policy proofs | Exercise each newly verified format through the normal web entry point before rollout |
-| Ratings, reviews, list membership | Event metadata, list provenance and separate annotations persist; export collector includes annotations | Imported annotation display on ordinary rating/review surfaces is not established: current web reads this table for import review only. Do not imply ratings replace existing PLOT edits |
+| Ratings, reviews, list membership | Event metadata, list provenance and separate annotations persist; export collector includes annotations | Imported annotation display on ordinary rating/review surfaces is not established: current web reads this table for import review only. Do not imply ratings replace existing Plot edits |
 | Free five-list allowance | Shared logic, browser selection and staging policy/RPC proofs | Further provider custom-list format support needs source evidence |
 | Release readiness | Local lint/build/unit/browser and authorised staging proofs | Production flags/deployment remain unapproved; mobile is explicitly deferred |
 
@@ -264,7 +264,7 @@ wiring remains explicitly deferred by Savannah.
   all nine sources against the existing private staging QA accounts and deployed
   catalogue Worker. Ten source events persisted with unknown dates; repeated
   runs created no duplicates. Trakt episode ordinals survived. The second QA
-  account could read none of the first account's records. Existing PLOT summary
+  account could read none of the first account's records. Existing Plot summary
   dates, ratings and notes stayed unchanged. This is shared-pipeline-to-database
   evidence, separate from the browser fixture tests.
 - One Letterboxd row required review because the saved export says 1953 while
@@ -349,7 +349,7 @@ passes; their older totals are not the current suite total.
 
 ## Native proof details
 
-A separate `PLOT Import QA` simulator was created (iOS 26.5, iPhone 17 Pro).
+A separate `Plot Import QA` simulator was created (iOS 26.5, iPhone 17 Pro).
 The existing local SDK 57 development binary was copied for this test, with
 document sharing enabled only in that temporary binary. The original simulator
 was not modified. A temporary Metro project at `/tmp/plot-import-native-fixture`
@@ -473,7 +473,7 @@ https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT.
 
 ## Native ZIP verification and Metro correction
 
-An actual iOS 26.5 Files-picker run in the isolated `PLOT Import QA` simulator
+An actual iOS 26.5 Files-picker run in the isolated `Plot Import QA` simulator
 initially failed: Metro's root-only resolution selected transitive fflate 0.4.9
 instead of core's declared 0.8.3. The old decoder ignored the ZIP filter and
 passed activity_history.csv to the JSON parser. Browser tests and native bundle
@@ -506,7 +506,7 @@ on both platforms, using the shared document pipeline. Movies and shows resolve
 through their IMDb identifiers. Watchlist record IDs are namespaced separately
 from history event IDs. Listed dates never become watch dates; source notes and
 raw attached rating metadata are retained in imported-list provenance, without
-overwriting existing PLOT edits. The source label is now Trakt saved export.
+overwriting existing Plot edits. The source label is now Trakt saved export.
 
 Focused tests cover movie/show parsing, original-filename detection, preservation
 of notes/rating metadata, and list-only writing. Browser verification exercises
@@ -562,7 +562,7 @@ author profiles and social counters are excluded from the parsed record.
 Both event construction and the legacy/new selection writer reject annotation
 records explicitly. The parser is not wired into file/ZIP dispatch yet: an
 additive annotation store, ownership policies, export inclusion, review UI and
-non-destructive application to existing PLOT data are still required before
+non-destructive application to existing Plot data are still required before
 these files can be offered. Current archive reports continue to mark separate
 rating/review files unsupported. Tests cover shape, scope, dates, validation and
 both watch-writer guards; they do not prove annotation persistence.
@@ -614,7 +614,7 @@ dispatcher. The separately disabled annotation flag is still required.
 - Web/mobile previews identify rating/review scope and annotation dates instead
   of showing an unknown watch date. Spoiler text is not exposed. They explain
   that source annotations remain private, exportable and separate from existing
-  PLOT edits. There is not yet a post-import annotation browsing/apply screen.
+  Plot edits. There is not yet a post-import annotation browsing/apply screen.
 - Annotation duplicate reads are owner-filtered, paginated beyond 1,000 rows and
   kept separate from watch collision review. Changing a title match still uses
   the corresponding candidate records. The shared history planner excludes
@@ -668,7 +668,7 @@ preserves an unknown-date watched record plus a separate private rating record.
 The preview explicitly explains this source-specific behaviour. A rating date
 never becomes the watch date. Reviews retain unknown spoiler status and stay
 hidden in previews; a review only creates a diary watch when its Watched Date is
-present. Existing PLOT edits remain authoritative.
+present. Existing Plot edits remain authoritative.
 
 Evidence:
 - Six new core tests cover public saved layouts, unknown dates, separate rating
@@ -909,7 +909,7 @@ Verified paths:
 - Expiring the cached session's `expires_at` in a new browser context forced a
   real successful Supabase refresh request; import review remained accessible.
 - A separate context returned a controlled `refresh_token_not_found` response
-  to token renewal. PLOT redirected to login and exposed no confirmation button
+  to token renewal. Plot redirected to login and exposed no confirmation button
   for the previous preview. Real sign-in and file reselection then completed
   with zero inserted, two duplicates, and zero unconfirmed records.
 - No uncaught page errors were observed.

@@ -4,7 +4,7 @@
 
 `wip/operator-desk-checkpoint` (also `origin/plot-main`, commit `be55846`,
 2026-07-03) contains a from-scratch replacement for `admin-review`: a
-standalone Vite/React SPA at `control-desk/` ("PLOT Operator Desk"), three new
+standalone Vite/React SPA at `control-desk/` ("Plot Operator Desk"), three new
 edge functions (`operator-api`, `operator-publish`, `operator-sync`), and a
 richer data model — independent per-platform copy variants, a kanban queue, a
 calendar view, and an append-only audit trail (`operator_approval_decisions`,

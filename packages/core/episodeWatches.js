@@ -11,7 +11,7 @@ export function episodeWatchStates(events, overrides) {
       states[`${event.season_number}:${event.episode_number}`] = true;
     }
   }
-  // A PLOT correction wins over all source events, including later reimports.
+  // A Plot correction wins over all source events, including later reimports.
   for (const override of overrides) states[`${override.season_number}:${override.episode_number}`] = override.watched;
   return states;
 }

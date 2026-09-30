@@ -178,7 +178,7 @@ function Hub({ wt, premium, profile }) {
       )}
 
       {reviewing && (
-        <AcceptDialog person={reviewing} viewerIsPublic={!!profile?.is_public} busy={busy}
+        <AcceptDialog person={reviewing} viewer={profile} busy={busy}
           onClose={() => setReviewing(null)}
           onDecline={() => answer(reviewing, false)}
           onAccept={(shareFull) => answer(reviewing, true, shareFull)} />
