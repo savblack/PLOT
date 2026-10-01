@@ -1300,6 +1300,8 @@ export type Database = {
           air_date: string | null
           created_at: string
           dedupe_key: string | null
+          episode_count: number
+          episode_number: number | null
           id: string
           media_poster_path: string | null
           media_title: string | null
@@ -1321,6 +1323,8 @@ export type Database = {
           air_date?: string | null
           created_at?: string
           dedupe_key?: string | null
+          episode_count?: number
+          episode_number?: number | null
           id?: string
           media_poster_path?: string | null
           media_title?: string | null
@@ -1342,6 +1346,8 @@ export type Database = {
           air_date?: string | null
           created_at?: string
           dedupe_key?: string | null
+          episode_count?: number
+          episode_number?: number | null
           id?: string
           media_poster_path?: string | null
           media_title?: string | null
@@ -1714,6 +1720,33 @@ export type Database = {
           },
         ]
       }
+      person_alerts: {
+        Row: {
+          created_at: string
+          known_for: string | null
+          name: string
+          profile_path: string | null
+          tmdb_person_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          known_for?: string | null
+          name: string
+          profile_path?: string | null
+          tmdb_person_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          known_for?: string | null
+          name?: string
+          profile_path?: string | null
+          tmdb_person_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_charts: {
         Row: {
           cumulative_weeks: number | null
@@ -1759,33 +1792,6 @@ export type Database = {
           tmdb_title?: string | null
           updated_at?: string
           week?: string
-        }
-        Relationships: []
-      }
-      person_alerts: {
-        Row: {
-          created_at: string
-          known_for: string | null
-          name: string
-          profile_path: string | null
-          tmdb_person_id: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          known_for?: string | null
-          name: string
-          profile_path?: string | null
-          tmdb_person_id: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          known_for?: string | null
-          name?: string
-          profile_path?: string | null
-          tmdb_person_id?: number
-          user_id?: string
         }
         Relationships: []
       }
@@ -2968,6 +2974,8 @@ export type Database = {
           actor_username: string
           air_date: string
           created_at: string
+          episode_count: number
+          episode_number: number
           id: string
           media_poster_path: string
           media_title: string
@@ -3068,6 +3076,7 @@ export type Database = {
         Returns: undefined
       }
       run_marketing_linear_mirror: { Args: never; Returns: undefined }
+      run_new_episode_notifications: { Args: never; Returns: undefined }
       run_premium_alerts: { Args: { p_only: string }; Returns: undefined }
       save_private_title_note: {
         Args: {
