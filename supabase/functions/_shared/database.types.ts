@@ -2233,6 +2233,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_custom_list_invites: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          invite_key: string
+          list_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          invite_key: string
+          list_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          invite_key?: string
+          list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_custom_list_invites_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: true
+            referencedRelation: "user_custom_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_custom_list_items: {
         Row: {
           added_at: string | null
@@ -2322,6 +2351,7 @@ export type Database = {
           id: string
           is_public: boolean
           name: string
+          rules: Json | null
           user_id: string
           visibility: string
         }
@@ -2330,6 +2360,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           name: string
+          rules?: Json | null
           user_id: string
           visibility?: string
         }
@@ -2338,6 +2369,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           name?: string
+          rules?: Json | null
           user_id?: string
           visibility?: string
         }
@@ -2746,6 +2778,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_list_invite: { Args: { p_key: string }; Returns: string }
       accept_watch_together_link: {
         Args: { p_key: string; p_share_full?: boolean }
         Returns: string
@@ -2965,6 +2998,21 @@ export type Database = {
           username: string
         }[]
       }
+      list_host_is_premium: { Args: { p_list: string }; Returns: boolean }
+      list_invite_preview: {
+        Args: { p_key: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          host_premium: boolean
+          item_count: number
+          list_id: string
+          list_name: string
+          owner_id: string
+          state: string
+          username: string
+        }[]
+      }
       list_notifications: {
         Args: never
         Returns: {
@@ -3043,6 +3091,7 @@ export type Database = {
           unsubscribe_token: string
         }[]
       }
+      my_list_invite: { Args: { p_list: string }; Returns: string }
       my_watch_together_link: { Args: never; Returns: string }
       new_watch_together_link_key: { Args: never; Returns: string }
       not_blocked: { Args: { p_uid: string }; Returns: boolean }
@@ -3066,6 +3115,7 @@ export type Database = {
         Args: { p_list: string; p_name: string }
         Returns: undefined
       }
+      reset_list_invite: { Args: { p_list: string }; Returns: string }
       reset_watch_together_link: { Args: never; Returns: string }
       resolve_tracking_review: {
         Args: { p_keep: boolean; p_review: string }
