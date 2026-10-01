@@ -15,8 +15,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useNotifications } from '@plot/core/useNotifications.js';
-import { notificationPhrase, NOTIFICATIONS_EMPTY, NEW_EPISODE_NOTIFICATION as EP } from '@plot/core/copy/notifications.js';
-import { isTitleNotification } from '@plot/core/notificationGroups.js';
+import { notificationPhrase, alertPhrase, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NEW_EPISODE_NOTIFICATION as EP } from '@plot/core/copy/notifications.js';
+import { isAlertNotification, isTitleNotification } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
 import { Avatar } from '../../components/Avatar';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -31,13 +31,18 @@ interface NotificationRow {
   actor_display_name?: string;
   actor_avatar_url?: string | null;
   post_title?: string;
+  // Title rows (Premium alerts and new_episode): no actor, a title instead.
   tmdb_id?: number | null;
   media_type?: string | null;
+  media_title?: string | null;
+  media_poster_path?: string | null;
   season_number?: number | null;
   episode_number?: number | null;
   episode_count?: number | null;
-  media_title?: string | null;
-  media_poster_path?: string | null;
+  person_name?: string | null;
+  person_role?: string | null;
+  release_kind?: string | null;
+  provider_name?: string | null;
 }
 
 const POST_TYPES = new Set(['post_like', 'post_comment', 'comment_like']);
@@ -90,6 +95,25 @@ export default function NotificationsScreen() {
           <Text style={styles.empty}>{NOTIFICATIONS_EMPTY.title}{'\n'}{NOTIFICATIONS_EMPTY.body}</Text>
         ) : (
           list.map((n: NotificationRow) => {
+            // Premium alerts render read-only here for now: the opt-in toggles
+            // and opening the title from a row are web-only until the mobile
+            // parity issue ("Mobile parity: actor/director and season-ready
+            // alerts", issue 1093) lands. The wording is shared with web via core.
+            if (isAlertNotification(n)) {
+              const title = n.media_title || ALERT_NOTIFICATIONS.untitled;
+              const phrase = alertPhrase(n) ?? '';
+              return (
+                <View key={n.id} style={[styles.row, !n.read_at && styles.rowUnread]} accessibilityLabel={`${title} ${phrase}`}>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowMuted}>{ALERT_NOTIFICATIONS.badges[n.type as keyof typeof ALERT_NOTIFICATIONS.badges]}</Text>
+                    <Text style={styles.rowText}>
+                      <Text style={styles.rowName}>{title}</Text>{' '}{phrase}
+                    </Text>
+                    <Text style={styles.rowTime}>{relativeTime(n.created_at)}</Text>
+                  </View>
+                </View>
+              );
+            }
             if (isTitleNotification(n)) {
               const title = n.media_title || EP.untitled;
               const phrase = EP.phrase({

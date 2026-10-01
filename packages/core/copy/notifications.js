@@ -68,6 +68,49 @@ export const NEW_EPISODE_NOTIFICATION = Object.freeze({
 });
 
 /**
+ * Premium alert rows (person_release, season_ready) have no actor, so they
+ * don't fit NOTIFICATIONS' "<name> …" shape: they read "<title> <phrase>",
+ * under a small badge. Episode notifications are a separate Free type.
+ */
+export const ALERT_NOTIFICATIONS = Object.freeze({
+  badges: Object.freeze({
+    person_release: 'New release',
+    season_ready: 'Whole season ready',
+  }),
+  untitled: 'A title you follow',
+  roles: Object.freeze({
+    /** @param {string} name */ cast: (name) => `with ${name}`,
+    /** @param {string} name */ director: (name) => `from director ${name}`,
+    /** @param {string} name */ creator: (name) => `from creator ${name}`,
+  }),
+  kinds: Object.freeze({
+    theatrical: 'is in cinemas',
+    digital: 'is out to watch at home',
+    premiere: 'has premiered',
+  }),
+  /** @param {number} season @param {string} services */
+  seasonReady: (season, services) => `season ${season} is ready: every episode is on ${services}`,
+});
+
+/**
+ * The line after the title on an alert row, or null for any other type.
+ * @param {{ type: string, person_name?: string | null, person_role?: string | null, release_kind?: string | null, season_number?: number | null, provider_name?: string | null }} n
+ * @returns {string | null}
+ */
+export function alertPhrase(n) {
+  const A = ALERT_NOTIFICATIONS;
+  if (n.type === 'person_release') {
+    const role = /** @type {Record<string, (name: string) => string>} */ (A.roles)[n.person_role ?? ''] ?? A.roles.cast;
+    const kind = /** @type {Record<string, string>} */ (A.kinds)[n.release_kind ?? ''] ?? A.kinds.premiere;
+    return n.person_name ? `${role(n.person_name)} ${kind}` : kind;
+  }
+  if (n.type === 'season_ready' && n.season_number != null && n.provider_name) {
+    return A.seasonReady(n.season_number, n.provider_name);
+  }
+  return null;
+}
+
+/**
  * Phrase for a notification type, falling back for types we haven't worded
  * yet. A helper rather than a bare map lookup so the fallback lives in one
  * place and callers don't each have to widen the index type.

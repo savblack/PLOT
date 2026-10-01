@@ -133,3 +133,11 @@ verify_jwt = true
 # Rotated sb_secret keys are not user JWTs.
 [functions.tracking-worker]
 verify_jwt = false
+
+# Premium alerts (actor/director releases, whole-season-ready): called twice a
+# day by pg_cron via pg_net with the Vault service-role bearer
+# (run_premium_alerts, 20260928120000), so verify_jwt stays true and the
+# handler also requires the service role. Declared because a new function
+# without an entry here can be silently skipped by the deploy integration.
+[functions.premium-alerts]
+verify_jwt = true
