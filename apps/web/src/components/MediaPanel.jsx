@@ -26,6 +26,7 @@ import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
+import { PersonAlertButton, SeasonReadyAlert } from './PremiumAlertButtons.jsx';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
@@ -117,6 +118,7 @@ function TalentPanelView({ person, credits, error, onOpenTitle }) {
           <div className="talent-kicker">{knownFor}</div>
           <h1>{person.name}</h1>
           {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
+          <div className="talent-alert"><PersonAlertButton person={person} /></div>
         </div>
       </header>
       {person.biography && <p className="talent-biography">{biographyPreview}</p>}
@@ -2042,6 +2044,11 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 )}
               </section>
             )}
+
+            {/* Premium: a heads-up once every episode of a finished season is
+                on the viewer's services. Beside Where to watch, because it is
+                the same question asked of the future. */}
+            {!isMovie && details && <SeasonReadyAlert show={details} />}
 
             {/* ── What everyone else thought ──
                 The two numbers read as a pair, with a real audience review in
