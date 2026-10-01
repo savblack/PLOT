@@ -353,6 +353,17 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
 
+## Smart lists
+
+A smart list (Premium) is a custom list that stores rules and fills itself when
+it opens. Creating one fires the usual `custom_list_created`, with extra props
+so the two kinds can be told apart: `smart: true`, `source` (`discover` /
+`watchlist` / `history`), `media_type` (`any` / `movie` / `tv`),
+`genre_count` and `only_services`. Genres are a count, never ids, as with Pick
+for Me. Free viewers who try to make one fire `premium_gate_hit` with
+`feature: smart_lists`. Titles saved from a smart list are ordinary
+`watchlist_saved` / `favourite_added` events.
+
 ## Watch together
 
 Fired from `useWatchTogether` in core through the `onWatchTogether` seam, so
@@ -407,7 +418,7 @@ covered once. Properties:
 
 | Prop | Meaning |
 |---|---|
-| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, and `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers). Canonical list: `FAILED_ACTIONS`. |
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `smart_list_update`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, and `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers). Canonical list: `FAILED_ACTIONS`. |
 | `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
 | `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
 | `http_status` | When present. |
@@ -429,7 +440,7 @@ follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
 ### `load_failed`
 
 A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
-`watching`, `favourites`) fires `load_failed` via `reportLoadFailure()`, with
+`watching`, `favourites`, `smart_list`) fires `load_failed` via `reportLoadFailure()`, with
 the same `error_kind` / `error_code` / `http_status` props. It is a separate
 event on purpose: a page that fails to load is not a failed user action, and
 counting it as `action_failed` would skew every failed-write rate.
