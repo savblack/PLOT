@@ -66,6 +66,7 @@
     "staging:premium-badge-refresh-test": "bash scripts/staging-sql.sh scripts/staging-premium-badge-refresh-test.sql",
     "staging:taste-overlap-test": "bash scripts/staging-sql.sh scripts/staging-taste-overlap-test.sql",
     "staging:pgss-guard-test": "bash scripts/staging-sql.sh scripts/staging-pgss-guard-test.sql",
+    "staging:rls-bypass-views-test": "bash scripts/staging-sql.sh scripts/staging-rls-bypass-views-test.sql",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",
     "mkt:copy:pull": "node marketing/copy/pull.mjs",
