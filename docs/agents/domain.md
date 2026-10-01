@@ -4,7 +4,7 @@ How the engineering skills should consume this repo's domain documentation when 
 
 ## Layout: single-context
 
-PLOT is a **single-context** repo: one `CONTEXT.md` and one `docs/adr/` at the repo root,
+Plot is a **single-context** repo: one `CONTEXT.md` and one `docs/adr/` at the repo root,
 shared by every workspace.
 
 ```
@@ -20,7 +20,7 @@ shared by every workspace.
 └── apps/website/
 ```
 
-This is a deliberate choice, not an oversight: PLOT is multi-package but single-domain.
+This is a deliberate choice, not an oversight: Plot is multi-package but single-domain.
 `packages/core` exists precisely so the web and mobile apps cannot develop separate
 vocabularies for the same concepts, and `AGENTS.md` treats drift between them as the
 project's main hazard. Splitting the domain doc per workspace would work against the rule
@@ -51,7 +51,7 @@ language the project does not use (reconsider), or there is a real gap (note it 
 
 Two vocabulary rules already enforced elsewhere in this repo, which any domain doc must respect:
 
-- The brand is always written `PLOT`, all caps, in prose, copy and comments.
+- Brand casing follows its typography: `plot` in the logo and anywhere the brand is set in Gabarito, `Plot` in all other prose, copy and comments.
 - User-facing strings belong in `packages/core/copy`, and `pnpm run copy:check` fails the build
   if an app file hardcodes one the catalog already owns. A glossary term and its user-facing
   wording are not the same thing; the catalog owns the latter.

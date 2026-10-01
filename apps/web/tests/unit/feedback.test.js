@@ -15,7 +15,7 @@ test('feedbackTypeLabel falls back to general feedback', () => {
 test('anonymizedFeedbackReporter hides direct user identity', () => {
   assert.equal(
     anonymizedFeedbackReporter({ userId: 'user-123', userEmail: 'user@example.com' }),
-    'Signed-in PLOT user'
+    'Signed-in Plot user'
   );
   assert.equal(anonymizedFeedbackReporter({}), 'Anonymous visitor');
 });

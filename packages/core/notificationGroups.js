@@ -1,13 +1,35 @@
 // Shapes the notifications feed for the page: requests first, new followers
 // rolled into one line, everything else grouped by day. Shared by web and native.
 
-/** @typedef {{ id: string, type: string, created_at: string, read_at?: string | null, actor_display_name?: string | null, actor_username?: string | null, actor_avatar_url?: string | null }} NotificationRow */
+/** @typedef {{ id: string, type: string, created_at: string, read_at?: string | null, actor_display_name?: string | null, actor_username?: string | null, actor_avatar_url?: string | null, tmdb_id?: number | null, media_type?: string | null, season_number?: number | null, episode_number?: number | null, episode_count?: number | null, media_title?: string | null, media_poster_path?: string | null, air_date?: string | null, person_name?: string | null, person_role?: string | null, release_kind?: string | null, provider_name?: string | null }} NotificationRow */
 
 /** Which badge a row wears. @param {string} type */
 export function notificationKind(type) {
   if (type === 'follow_request' || type === 'watch_together_request') return 'request';
   if (type === 'new_follower' || type === 'follow_accepted') return 'follow';
+  if (type === 'new_episode') return 'episode';
   return 'activity';
+}
+
+/** Premium alert types: about a title, with no actor. */
+export const ALERT_TYPES = Object.freeze(['person_release', 'season_ready']);
+
+/**
+ * True for Premium alert rows. These have no actor, so they render a poster
+ * instead of an avatar and open the title rather than a profile.
+ * @param {NotificationRow} n
+ */
+export function isAlertNotification(n) {
+  return ALERT_TYPES.includes(n.type) && n.tmdb_id != null;
+}
+
+/**
+ * True for rows about a title rather than a person. These have no actor, so
+ * they render a poster instead of an avatar and open the title, not a profile.
+ * @param {NotificationRow} n
+ */
+export function isTitleNotification(n) {
+  return n.type === 'new_episode' && n.tmdb_id != null;
 }
 
 /** @param {NotificationRow} n */

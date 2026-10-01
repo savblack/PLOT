@@ -49,7 +49,7 @@ export const Open = {
   render: args => <SearchPalette {...args} />,
   play: async ({ args, canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body);
-    const dialog = body.getByRole('dialog', { name: 'Search PLOT' });
+    const dialog = body.getByRole('dialog', { name: 'Search Plot' });
     const input = within(dialog).getByRole('combobox');
 
     await expect(input).toHaveFocus();

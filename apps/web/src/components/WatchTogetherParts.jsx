@@ -18,6 +18,7 @@ import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
 import { useApp } from '../hooks/useApp.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import './WatchTogetherView.css';
+import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
 
 export function PersonAvatar({ person, size = 'md' }) {
   const name = personName(person);
@@ -38,9 +39,11 @@ function Cross() {
  * the private-profile opt-in to share the full watchlist.
  *
  * @param {{ person: { display_name?: string | null, username?: string | null, avatar_url?: string | null },
- *   viewerIsPublic: boolean, busy?: boolean, onAccept: (shareFull: boolean) => void, onDecline: () => void, onClose: () => void }} props
+ *   viewer: { id?: string, is_public?: boolean | null } | null | undefined, busy?: boolean, onAccept: (shareFull: boolean) => void, onDecline: () => void, onClose: () => void }} props
  */
-export function AcceptDialog({ person, viewerIsPublic, busy = false, onAccept, onDecline, onClose }) {
+export function AcceptDialog({ person, viewer, busy = false, onAccept, onDecline, onClose }) {
+  // Already visible to everyone: nothing to share, so the sheet doesn't offer it.
+  const viewerWatchlistOpen = useWatchlistVisibility(viewer?.id, !!viewer?.is_public).visibility === 'everyone';
   const [shareFull, setShareFull] = useState(false);
   const name = personName(person);
   return (
@@ -55,11 +58,11 @@ export function AcceptDialog({ person, viewerIsPublic, busy = false, onAccept, o
           <p className="wt-accept-line"><Check />{T.accept.seesOverlap}</p>
           <p className="wt-accept-line"><Check />{T.accept.seesPicks}</p>
           <p className="wt-accept-label">{T.accept.wontSee(name)}</p>
-          {!viewerIsPublic && <p className="wt-accept-line"><Cross />{T.accept.hidesRest}</p>}
+          {!viewerWatchlistOpen && <p className="wt-accept-line"><Cross />{T.accept.hidesRest}</p>}
           <p className="wt-accept-line"><Cross />{T.accept.hidesPrivateLists}</p>
           <p className="wt-accept-line"><Cross />{T.accept.hidesNotes}</p>
         </div>
-        {!viewerIsPublic && (
+        {!viewerWatchlistOpen && (
           <div className="wt-accept-card wt-accept-share">
             <span>
               <span className="wt-accept-share-title">{T.accept.shareFull}</span>
@@ -134,7 +137,7 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
       </div>
       {foot && <p className="wt-note">{foot}</p>}
       {reviewing && (
-        <AcceptDialog person={person} viewerIsPublic={!!viewerProfile?.is_public} busy={busy}
+        <AcceptDialog person={person} viewer={viewerProfile} busy={busy}
           onClose={() => setReviewing(false)}
           onDecline={() => { setReviewing(false); run(() => respond(person.id, false)); }}
           onAccept={(shareFull) => { setReviewing(false); run(() => respond(person.id, true, shareFull)); }} />
@@ -153,6 +156,7 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
 export function WatchTogetherSettings({ user, profile }) {
   const userId = user?.id;
   const { partners, setShareFull, end } = useWatchTogether(userId);
+  const { visibility: watchlistVisibility, refresh: refreshWatchlistVisibility } = useWatchlistVisibility(userId, !!profile?.is_public);
   const { key, reset } = useWatchTogetherLink(userId);
   const [resetDone, setResetDone] = useState(false);
   const [from, setFrom] = useState(/** @type {string | null} */ (null));
@@ -200,10 +204,10 @@ export function WatchTogetherSettings({ user, profile }) {
               </span>
               <button type="button" className="btn btn-secondary btn-sm wt-stop" onClick={() => end(p.other_id)}>{T.settings.stop}</button>
             </div>
-            {!profile?.is_public && (
+            {watchlistVisibility !== 'everyone' && (
               <div className="wt-settings-share">
                 <span>{T.settings.shareFull}</span>
-                <SettingsSwitch label={`${T.settings.shareFull}: ${personName(p)}`} checked={p.i_share_full} onChange={() => setShareFull(p.other_id, !p.i_share_full)} />
+                <SettingsSwitch label={`${T.settings.shareFull}: ${personName(p)}`} checked={p.i_share_full} onChange={async () => { await setShareFull(p.other_id, !p.i_share_full); refreshWatchlistVisibility(); }} />
               </div>
             )}
           </div>
@@ -294,7 +298,7 @@ export function ShareListDialog({ partner, overlapCount, onClose }) {
 /**
  * "Add people" on a shared list: partners who aren't on it yet. `locked`
  * when the list's owner doesn't have Premium, so it can't take new people
- * (supabase/migrations/20260928160000_collaborative_list_invites.sql).
+ * (supabase/migrations/20261001110000_collaborative_list_invites.sql).
  *
  * @param {{ list: { id: string, people?: { user_id: string }[] }, locked?: boolean, onAdd: (id: string) => Promise<boolean>, onClose: () => void }} props
  */

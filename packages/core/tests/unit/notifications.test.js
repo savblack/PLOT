@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { relativeTime } from '../../date.js';
-import { notificationPhrase, NOTIFICATIONS } from '../../copy/notifications.js';
+import { notificationPhrase, NOTIFICATIONS, NEW_EPISODE_NOTIFICATION } from '../../copy/notifications.js';
 
 const NOW = Date.parse('2026-08-23T12:00:00Z');
 
@@ -38,4 +38,15 @@ test('notificationPhrase completes the sentence for every known type', () => {
 test('notificationPhrase falls back for an unknown type rather than rendering blank', () => {
   assert.equal(notificationPhrase('reaction_added'), 'interacted with you');
   assert.equal(notificationPhrase(undefined), 'interacted with you');
+});
+
+test('NEW_EPISODE_NOTIFICATION words single episodes, premieres and same-day drops', () => {
+  const { phrase } = NEW_EPISODE_NOTIFICATION;
+  assert.equal(phrase({ season_number: 5, episode_number: 3 }), 'S5 E3 is out');
+  assert.equal(phrase({ season_number: 5, episode_number: 3, episode_count: 1 }), 'S5 E3 is out');
+  assert.equal(phrase({ season_number: 5, episode_number: 1, episode_count: 1 }), 'season 5 premiere is out');
+  assert.equal(phrase({ season_number: 2, episode_number: 1, episode_count: 8 }), 'season 2 is out, 8 episodes');
+  assert.equal(phrase({ season_number: 2, episode_number: 4, episode_count: 3 }), 'S2 E4 to E6 are out');
+  // A null count (older rows, or a caller that dropped it) reads as one episode.
+  assert.equal(phrase({ season_number: 1, episode_number: 2, episode_count: null }), 'S1 E2 is out');
 });

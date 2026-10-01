@@ -1,4 +1,4 @@
-# PLOT Watch together design
+# Plot Watch together design
 
 Design spec for the Premium "Find something you both want to watch" feature
 (`watchTogether` in `packages/core/copy/plansPage.js`). Built on web behind
@@ -93,10 +93,12 @@ Requests and consent
 Privacy
 - Private profile: the partner sees titles on both watchlists and picks in
   shared sessions. An opt-in "Also share my full watchlist" is off by default.
-  A partner who is also an accepted follower can already read the whole
-  watchlist (the profile rule from `can_view_profile`), so Watch together
-  treats them the same way and the switch only adds access for a partner who
-  can't see the profile.
+  Since `20260927160000_watchlist_visibility.sql` the watchlist has its own
+  setting ("Who can see your Want to Watch": everyone, followers, selected
+  people, only me), and a private profile starts at only me. The switch adds
+  that partner to the owner's selected people, the same list Settings ›
+  Privacy edits, and moves "only me" to "selected people". It's hidden when
+  the watchlist is already open to everyone.
 - Public profile: don't mention watchlist sharing (it is already public); the
   accept sheet says they won't see "any lists you've set to private" or
   private notes. The per-person watchlist switch in G only shows for private
@@ -197,6 +199,10 @@ Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
   `can_see_full_watchlist` uses `can_view_profile`, and stopping watching
   together removes each person from the other's shared lists, as blocking
   already did.
+- Watchlist visibility (`20260927160000_watchlist_visibility.sql`): the
+  per-partner share flags move onto `watchlist_viewers` and the
+  `*_shares_full` columns are dropped. `can_see_full_watchlist`, overlap
+  counts and `taste_overlap` all use `can_view_watchlist`.
 - Start page (`WatchTogetherStart.jsx`): what anyone with nobody to watch with
   yet sees at `/together`. People you follow with titles in common (private
   profiles say "Shows once they accept"), or a pitch if you follow nobody;
@@ -204,7 +210,7 @@ Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
   invite link; "Got an invite?". Free members also see Get Premium. Mobile
   stacks; from 900px the people and invite link sit side by side.
 - Collaborative list invites
-  (`20260928160000_collaborative_list_invites.sql`): one reusable link per
+  (`20261001110000_collaborative_list_invites.sql`): one reusable link per
   list at `/join-list/<key>` (`user_custom_list_invites`, no client policies),
   `my_list_invite` and `reset_list_invite` (owner only; getting a link needs
   Premium), `list_invite_preview` (signed out too, block filtered),

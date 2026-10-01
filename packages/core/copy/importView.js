@@ -6,7 +6,7 @@
 export const IMPORT_VIEW = {
   letterboxdUnsupported: 'Unsupported Letterboxd export layout or invalid record. Keep the original CSV filename and contents. Nothing was imported.',
   annotationsUnavailable: 'Rating and review imports are not available in this build.',
-  annotationPreview: 'Ratings and reviews are saved privately as imported source records and included in your data export. They do not mark titles watched or replace your PLOT ratings and notes.',
+  annotationPreview: 'Ratings and reviews are saved privately as imported source records and included in your data export. They do not mark titles watched or replace your Plot ratings and notes.',
   annotationCounts: (saved, unmatched) => `${saved} already imported · ${unmatched} unmatched`,
   annotationAlreadySaved: 'Already imported',
   annotationLabel: (row) => {
@@ -22,18 +22,18 @@ export const IMPORT_VIEW = {
   episodeLabel: (season, episode) => `Season ${season}, episode ${episode}`,
   filePickerHint: (name, archives) => `${archives ? 'CSV, JSON or ZIP' : 'CSV or JSON'} from ${name}`,
   csvUnclosedQuote: 'This CSV has an unfinished quoted field. Export the file again or choose an intact copy. Nothing was imported.',
-  unsupportedJsonLayout: 'This JSON export layout is not supported. PLOT cannot identify one history collection safely. Choose a supported history file from the export. Nothing was imported.',
+  unsupportedJsonLayout: 'This JSON export layout is not supported. Plot cannot identify one history collection safely. Choose a supported history file from the export. Nothing was imported.',
   fileReadFailed: 'Could not read the file. Please try again.',
   listPreview: (list) => `Import into ${list.name}. These titles will not be marked watched. Free accounts can have five custom lists.`,
   selectList: 'Include this list',
   episodeIdentityRequired: 'This export does not identify the episode reliably. This entry will be left out to avoid marking the whole series watched.',
-  listNotImported: (reason) => ({ free_list_limit: 'List not imported: your five free custom lists are already in use.', deleted_in_plot: 'List not imported: you previously deleted it in PLOT.', not_selected: 'List not imported: not selected.', not_available: 'List imports are not available in this build.', invalid_list: 'This list could not be imported.' }[reason] || 'This list could not be imported.'),
+  listNotImported: (reason) => ({ free_list_limit: 'List not imported: your five free custom lists are already in use.', deleted_in_plot: 'List not imported: you previously deleted it in Plot.', not_selected: 'List not imported: not selected.', not_available: 'List imports are not available in this build.', invalid_list: 'This list could not be imported.' }[reason] || 'This list could not be imported.'),
   conflictingSourceRecords: 'These files contain conflicting values for the same source entry. Import them separately and review the difference. Nothing was imported.',
   pendingWatchSummary: 'A diary watch for this film is also selected. This watched-film summary may describe the same viewing. Leave the summary out unless it represents another watch.',
   possibleDuplicate: 'A similar watch is already saved. Leave this entry out, or confirm it is a separate watch.',
   keepSeparateWatch: 'Save as a separate watch',
   duplicateConfirmed: 'Confirmed as a separate watch',
-  eventPreview: 'Each selected watch is saved separately. Existing PLOT ratings and notes stay unchanged. Previously imported records are skipped.',
+  eventPreview: 'Each selected watch is saved separately. Existing Plot ratings and notes stay unchanged. Previously imported records are skipped.',
   resultSummary: (inserted, duplicates, failed, unmatched = 0) => `${inserted} ${inserted === 1 ? 'entry' : 'entries'} added · ${duplicates} ${duplicates === 1 ? 'duplicate' : 'duplicates'} skipped · ${failed} not confirmed${unmatched ? ` · ${unmatched} left out without a confirmed match` : ''}`,
   finished: 'Import complete',
   incomplete: 'Import needs attention',
@@ -72,7 +72,7 @@ export const IMPORT_VIEW = {
   traktAnnotationUnsupported: 'Unsupported Trakt rating or review record. Nothing was imported.',
   traktWatchlistUnsupported: 'Unsupported Trakt watchlist record. This preview accepts lists-watchlist.json with movie/show records. Missing identifiers require title review. Nothing was imported.',
   traktName: 'Trakt saved export',
-  traktHint: (annotations = false) => `Choose extracted JSON files or a ZIP with files at its root. Supported files: watched-history.json and lists-watchlist.json.${annotations ? ' You can also import ratings-shows.json, ratings-episodes.json and comments-seasons.json as private source annotations.' : ''} Available IMDb/TVDB identifiers are checked first. Missing identifiers use title/year matching; missing years require review. Watchlist notes and attached ratings are retained as source data without changing existing PLOT edits. Other files are reported as unsupported.`,
+  traktHint: (annotations = false) => `Choose extracted JSON files or a ZIP with files at its root. Supported files: watched-history.json and lists-watchlist.json.${annotations ? ' You can also import ratings-shows.json, ratings-episodes.json and comments-seasons.json as private source annotations.' : ''} Available IMDb/TVDB identifiers are checked first. Missing identifiers use title/year matching; missing years require review. Watchlist notes and attached ratings are retained as source data without changing existing Plot edits. Other files are reported as unsupported.`,
   traktUnsupported: 'Unsupported Trakt history file or record. Choose an individual-event history JSON with movie/show titles, episode numbers and valid watch dates (or null for unknown dates). No records were imported.',
 
   letterboxdHint: (annotations = false) => `Letterboxd → Settings → Import & Export → Export your data. Extract diary.csv, watched.csv, watchlist.csv or an individual custom-list CSV.${annotations ? ' Separate ratings.csv and reviews.csv files are also supported.' : ''} Choose the extracted CSV files or their ZIP. Keep original filenames. Overlapping watched summaries require review when diary entries for the same film are selected.`,
@@ -109,7 +109,7 @@ export const IMPORT_VIEW = {
   // episode of a series watched on the same night.
   mergedIntoOneEntry: 'Merged into one entry',
   partialFailureHeading: 'Some entries could not be confirmed',
-  partialFailure: (n) => `${n} ${n === 1 ? 'entry could' : 'entries could'} not be confirmed. Some may already be saved. Your existing PLOT edits are unchanged, and you can safely retry the import.`,
+  partialFailure: (n) => `${n} ${n === 1 ? 'entry could' : 'entries could'} not be confirmed. Some may already be saved. Your existing Plot edits are unchanged, and you can safely retry the import.`,
   // Shown when the existing-history read fails. The import stops rather than
   // continuing, because planning against a partial history would overwrite
   // ratings and notes on titles it could not see.

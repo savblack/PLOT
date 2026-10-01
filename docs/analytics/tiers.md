@@ -11,7 +11,7 @@ decision rather than drift. Change this file and PostHog together.
 | Tier | Question | Rule for membership |
 |---|---|---|
 | 1. Explorer | Did a real person use the app? | Any deliberate in-app action. Browsing counts. Page and screen views do not, so bots cannot qualify. |
-| 2. Committed | Did they put something of theirs into PLOT? | A durable write to **their own** journal or library: a save, a watch, a rating, a review, a list. This is activation. |
+| 2. Committed | Did they put something of theirs into Plot? | A durable write to **their own** journal or library: a save, a watch, a rating, a review, a list. This is activation. |
 | 3. Retained | Did it become a habit? | Tier 2, done **unprompted**, in 2+ distinct weeks within a rolling 8-week window. |
 
 The test for Tier 2 is "would they lose something if they deleted their
@@ -28,7 +28,7 @@ Everything in Tier 2, plus:
 | `search_performed` | live | Intent to find something. |
 | `discover_tab_changed` | live | Browsing Discover. |
 | `watch_link_clicked` | live | Left to watch something: the strongest browse signal. |
-| `tonight_picks_drawn` | **add** | Asked PLOT what to watch. The picker's core loop (#1066). |
+| `tonight_picks_drawn` | **add** | Asked Plot what to watch. The picker's core loop (#1066). |
 | `tonight_pick_opened` | **add** | Looked at a pick. |
 | `collection_viewed` | **add** | Browsing a franchise page, same weight as `title_viewed`. |
 | `user_followed` | **move here from Tier 2** | Social, not library. See Tier 2. |
@@ -72,7 +72,7 @@ extra filter, `watchlist_saved.source != onboarding`. Today it has drifted:
 ## Tier 3: Retained. Yes, keep it, but redefine it
 
 Tier 3 already exists (cohort 494036: Tier 2 in 2+ distinct weeks of the last
-12). It is needed, because it is the only tier that measures whether PLOT
+12). It is needed, because it is the only tier that measures whether Plot
 works rather than whether onboarding does. But its current definition is
 wrong in two ways:
 

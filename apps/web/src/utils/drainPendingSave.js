@@ -38,7 +38,7 @@ export async function drainPendingSave({ intent }, deps) {
   const { tmdb_id, media_type, source } = intent;
   const src = source || 'deep_link';
 
-  // These surfaces promise a route into PLOT, not a silent write to the
+  // These surfaces promise a route into Plot, not a silent write to the
   // default watchlist. The title panel exposes both Add to watchlist and List.
   if (['whats_on_article', 'whats_on_guide', 'chart', 'newsletter'].includes(src)) {
     (openSavePrompt || openPanel)(tmdb_id, media_type, src);

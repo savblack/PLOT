@@ -2,8 +2,8 @@
 // without an account can open it. Signed out: whose list it is and a way to
 // join Plot. Signed in: join the list, free, as long as its owner has Premium.
 // The key decides everything. Rules: packages/core/listInvites.js and
-// supabase/migrations/20260928160000_collaborative_list_invites.sql.
-// Mobile parity: not built yet; tracked in #1089.
+// supabase/migrations/20261001110000_collaborative_list_invites.sql.
+// Mobile parity: not built yet; tracked in issue 1089.
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';

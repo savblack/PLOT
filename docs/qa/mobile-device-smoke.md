@@ -13,7 +13,7 @@ How to get it running at all: [docs/ops/mobile-builds.md](../ops/mobile-builds.m
 ## Before you start
 
 - **Use a Staging account, not a production one.** Mobile reads the same
-  Supabase project the app is configured for, and PLOT has live users.
+  Supabase project the app is configured for, and Plot has live users.
 - **Mobile analytics land in the production PostHog project.** There is no host
   allowlist on mobile the way there is on web (`apps/web/src/utils/analyticsHost.js`
   gates web to three production hosts; mobile has no equivalent). Everything
@@ -30,7 +30,7 @@ Neither is a bug, both look like one, and both cost a confused ten minutes the
 first time.
 
 - [ ] **Developer Mode.** iOS 16+ refuses to run an internally-distributed
-      build until it is on: tapping the icon gives "PLOT requires Developer Mode
+      build until it is on: tapping the icon gives "Plot requires Developer Mode
       to run". Settings ▸ Privacy & Security ▸ Developer Mode ▸ on, restart the
       phone, then confirm at the prompt with your passcode. The menu item only
       appears once a development-signed app is installed, so it will not be
@@ -141,7 +141,7 @@ One pass, just to see them render. Details come later.
 
 ## Phase 5: the writes
 
-This is what PLOT is for, and every one of these is a Tier 2 activation event
+This is what Plot is for, and every one of these is a Tier 2 activation event
 in `docs/analytics/README.md`. A write that fails here fails for every launch
 user.
 
@@ -193,7 +193,7 @@ and redirects nowhere. Watched: killed process, fresh pid, straight onto the
 deep-linked profile. Do not re-derive this from the old warning.
 
 - [ ] With the app **already running**, open an `app.theplot.tv/u/<username>`
-      link. It opens in PLOT, on that profile.
+      link. It opens in Plot, on that profile.
 - [ ] With the app **fully killed**, open the same link. This is the cold-start
       case above: it should land on the profile rather than the home tab. If it
       lands on home, the guard is eating the link after all — say so here.
@@ -283,7 +283,7 @@ untouched this run.
 **Results:**
 
 - [x] **Warm start, signed out.** `plot://u/test-1` leaves the app on `(auth)`.
-      iOS showed its "Open in PLOT?" confirmation first, so the scheme really is
+      iOS showed its "Open in Plot?" confirmation first, so the scheme really is
       registered and the link really did reach the app.
 - [x] **Warm start, signed in.** `plot://u/test-1` opens straight on that
       profile, correctly rendered as a private account.
@@ -293,7 +293,7 @@ untouched this run.
       screen, complete with `Go back · Sitemap` developer links and rendered in
       dark theme while the app is in light. `app.json` claims both prefixes on
       Android, and on iOS `applinks:app.theplot.tv` claims the whole host, so a
-      real `app.theplot.tv/save/...` link opens PLOT and dead-ends here. Both are
+      real `app.theplot.tv/save/...` link opens Plot and dead-ends here. Both are
       live routes on web. **This is the one finding from this run that needs a
       fix, not a note.**
 - [x] **The block not-found render, watched on device at last.** From test-1's
@@ -303,7 +303,7 @@ untouched this run.
       Identical to web. Staging was returned to 0 blocks, 0 reports, 0 follows.
 - [ ] **Cold start cannot be tested in a development build.** Killing the app
       and opening the link hands the cold launch to the **Expo Dev Launcher**,
-      which shows its own server picker before any PLOT code runs. Retested the
+      which shows its own server picker before any Plot code runs. Retested the
       same day against a Release build — see below.
 
 ### 2026-09-14 — same day, Release build
@@ -324,7 +324,7 @@ shipped build does. The session survived the reinstall.
       `plot://save/12345` and `plot://list/abc123` both render expo-router's
       "Unmatched Route — Page could not be found" screen **in Release**, black,
       with `Go back · Sitemap` developer links and the raw URL. This screen is
-      **not** dev-only, which is the assumption worth killing: a shipped PLOT
+      **not** dev-only, which is the assumption worth killing: a shipped Plot
       build hands a user who taps `app.theplot.tv/save/...` a black screen
       offering them a route sitemap.
 

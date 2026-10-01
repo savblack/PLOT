@@ -8,7 +8,7 @@ import { reportWatchTogether } from './useWatchTogether.js';
  * Collaborative list invites, shared by web and mobile. Every read and write
  * goes through a security definer RPC; the invites table has no client
  * policies. Rules: listInvites.js and
- * supabase/migrations/20260928160000_collaborative_list_invites.sql.
+ * supabase/migrations/20261001110000_collaborative_list_invites.sql.
  */
 
 /** @typedef {import('./listInvites.js').ListInvitePreview} ListInvitePreview */

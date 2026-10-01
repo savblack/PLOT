@@ -47,8 +47,7 @@ export default {
   title: 'Components/UndoToast',
   component: UndoToast,
   parameters: { layout: 'fullscreen' },
-  // index.css (the body font) is not loaded in Storybook; the app has it.
-  decorators: [(Story) => <div style={{ minHeight: '100vh', padding: '1.5rem', fontFamily: 'var(--font-sans)' }}><Story /></div>],
+  decorators: [(Story) => <div style={{ minHeight: '100vh', padding: '1.5rem' }}><Story /></div>],
 };
 
 export const Playground = { render: () => <Harness region="GB" autoOffer="Remove from Want to Watch" /> };

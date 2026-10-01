@@ -73,7 +73,7 @@ const RESEND_API_URL = 'https://api.resend.com/emails'
 //
 // FROM_EMAIL stays on theplot.tv: Resend will only send from a verified domain.
 const TO_EMAIL = 'sav.black@outlook.com'
-const FROM_EMAIL = 'PLOT Feedback <feedback@theplot.tv>'
+const FROM_EMAIL = 'Plot Feedback <feedback@theplot.tv>'
 const LINEAR_API_URL = 'https://api.linear.app/graphql'
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 // Backfill caps. A retry run walks rows one at a time against a rate-limited
@@ -91,7 +91,7 @@ function feedbackTypeLabel(type: string) {
 }
 
 function anonymizedFeedbackReporter({ userId, userEmail }: { userId: string | null, userEmail: string | null }) {
-  return userId || userEmail ? 'Signed-in PLOT user' : 'Anonymous visitor'
+  return userId || userEmail ? 'Signed-in Plot user' : 'Anonymous visitor'
 }
 
 function buildFeedbackLinearTitle(type: string, message: string) {
@@ -435,8 +435,8 @@ async function sendFeedbackEmail({
   `
 
   const subject = syncError
-    ? `PLOT feedback (Linear sync failed): ${feedbackTypeLabel(type)}`
-    : `PLOT feedback mirrored: ${feedbackTypeLabel(type)}`
+    ? `Plot feedback (Linear sync failed): ${feedbackTypeLabel(type)}`
+    : `Plot feedback mirrored: ${feedbackTypeLabel(type)}`
 
   try {
     const res = await fetch(RESEND_API_URL, {

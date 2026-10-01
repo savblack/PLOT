@@ -47,6 +47,7 @@ export const FAILED_ACTIONS = Object.freeze({
   FOLLOW:                  'follow',
   UNFOLLOW:                'unfollow',
   FOLLOW_REQUEST_DECISION: 'follow_request_decision',
+  WATCHLIST_SHARE:         'watchlist_share',
   BLOCK:                   'block',
   UNBLOCK:                 'unblock',
   REPORT:                  'report',

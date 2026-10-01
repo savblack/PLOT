@@ -15,11 +15,16 @@ import { ratingToStars } from '@plot/core/ratings.js';
 import { posterUrl, profileUrl } from '../utils/images.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import { IconChevronLeft, IconChevronRight, IconSearch } from './navIcons.jsx';
+import { IconChevronLeft, IconChevronRight, IconSearch, IconShare } from './navIcons.jsx';
+import ShareCardSheet from './ShareCardSheet.jsx';
 import SideFilters, { FilterRow } from './SideFilters.jsx';
 import MobilePageControls from './MobilePageControls.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { HISTORY_VIEW as T } from '../copy/historyView.js';
+import { SHARE_CARDS } from '../copy/shareCards.js';
+import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
+import { useTopLists } from '../hooks/useTopLists.js';
+import { useSharePreset } from '../hooks/useSharePreset.js';
 import { MEDIA } from '../copy/media.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 
@@ -29,8 +34,8 @@ import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
    turning up). The frame matches the Calendar's: 264px side column, 72px
    gap, 24px Gabarito month names on the stream.
 
-   Every number here comes from history rows plus the TMDB details PLOT
-   already fetches for the media panel. Nothing is compared with other PLOT
+   Every number here comes from history rows plus the TMDB details Plot
+   already fetches for the media panel. Nothing is compared with other Plot
    users. */
 
 const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -73,7 +78,25 @@ function Stat({ value, label }) {
   );
 }
 
-function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName }) {
+/* The share-card entry on a side card: an icon in the head, pink when that
+   card can be shared right now, cream when its data is still thin. Path 1
+   in docs/design/share-cards.md. */
+function ShareIcon({ what, ready, onClick }) {
+  if (!onClick) return null;
+  return (
+    <button
+      type="button"
+      className={`hist-share${ready ? ' hist-share--ready' : ''}`}
+      onClick={onClick}
+      aria-label={SHARE_CARDS.shareCardAria(what)}
+      title={SHARE_CARDS.shareAsCard}
+    >
+      <IconShare />
+    </button>
+  );
+}
+
+function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName, onShare, shareReady }) {
   const wd = favouriteWeekday(entries);
   const mins = movieMinutes(entries, details);
   const sentence = yearSentence({
@@ -87,6 +110,7 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
       <div className="hist-card-head">
         <span className="hist-card-title">{isCurrentYear ? T.yearSoFar(year) : T.yearCardTitle(year)}</span>
         {detailsLoading && <span className="hist-card-note" aria-live="polite">{T.loadingInsights}</span>}
+        <ShareIcon what={isCurrentYear ? T.yearSoFar(year) : T.yearCardTitle(year)} ready={shareReady} onClick={onShare} />
       </div>
       <div className="hist-stats">
         <Stat value={entries.length} label={T.titles} />
@@ -100,7 +124,7 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
 
 /* One title per day: the month as a strip of what you saw. `month` is the
    index into the year's month groups (newest first). */
-function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, today, openPanel }) {
+function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, today, openPanel, onShare, shareReady }) {
   const group = monthGroups[monthIndex];
   const perDay = useMemo(() => (group ? titlePerDay(entries, year, group.month) : new Map()), [entries, year, group]);
   if (!group) return null;
@@ -157,19 +181,20 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
       {s.best > 1 && (
         <div className="hist-card-foot">
           <span>{T.bestStreak} <b>{s.best}</b>{s.bestMonth ? ` in ${s.bestMonth.slice(0, 3)}` : ''}</span>
+          <ShareIcon what={T.bestStreak} ready={shareReady} onClick={onShare} />
         </div>
       )}
     </div>
   );
 }
 
-function CrowdCard({ entries, details, openPanel }) {
+function CrowdCard({ entries, details, openPanel, onShare, shareReady }) {
   const cmp = crowdComparison(entries, details);
   if (!cmp || cmp.compared < 3) return null;
   const sentence = crowdSentence(cmp);
   return (
     <div className="hist-card">
-      <span className="hist-card-label">{T.crowdHeading}</span>
+      <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.crowdHeading}</span><ShareIcon what={T.crowdHeading} ready={shareReady} onClick={onShare} /></div>
       <div className="hist-card-body">
         <span className="hist-card-lead">{sentence}</span>
         <div className="hist-crowd-row">
@@ -201,12 +226,12 @@ function CompareCard() {
   );
 }
 
-function PeopleCard({ entries, details, navigateTo }) {
+function PeopleCard({ entries, details, navigateTo, onShare, shareReady }) {
   const people = recurringPeople(entries, details);
   if (!people.length) return null;
   return (
     <div className="hist-card">
-      <span className="hist-card-label">{T.peopleHeading}</span>
+      <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.peopleHeading}</span><ShareIcon what={T.peopleHeading} ready={shareReady} onClick={onShare} /></div>
       <div className="hist-card-body">
         {people.map(p => {
           const img = profileUrl(p.profile_path, 'w185');
@@ -303,7 +328,7 @@ function MonthGroup({ group, allGroups, today, openPanel }) {
  * @param {Function} props.onYear
  * @param {Date}    [props.today]
  */
-export function HistoryPage({ entries, details, detailsLoading, genreList, openPanel, navigateTo, activeYear, onYear, today = new Date() }) {
+export function HistoryPage({ entries, details, detailsLoading, genreList, openPanel, navigateTo, activeYear, onYear, today = new Date(), topLists, profile, sharePreset = null, onSharePresetUsed }) {
   const years = useMemo(() => yearsWithEntries(entries), [entries]);
   const yearEntries = useMemo(() => entriesInYear(entries, activeYear), [entries, activeYear]);
 
@@ -325,6 +350,22 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   useEffect(() => { setMonthIndex(0); }, [activeYear, monthGroups.length]); // eslint-disable-line react-hooks/set-state-in-effect
 
   const genreName = (id) => genreList.find(g => g.id === id)?.name ?? null;
+
+  // The share sheet: which card it opened on, or null when closed. A preset
+  // from the URL (?share=<card>) opens it once on arrival.
+  const [shareCard, setShareCard] = useState(null);
+  useEffect(() => {
+    if (!sharePreset) return;
+    setShareCard(sharePreset); // eslint-disable-line react-hooks/set-state-in-effect
+    onSharePresetUsed?.();
+  }, [sharePreset, onSharePresetUsed]);
+  const shareCards = useMemo(
+    () => (profile ? buildShareCards({ entries: yearEntries, allEntries: entries, details, genreName, year: activeYear, now: today, topLists, profile }) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- genreName reads genreList
+    [entries, yearEntries, details, genreList, activeYear, today, topLists, profile],
+  );
+  const cardReady = (id) => !!shareCards.find(c => c.id === id)?.available;
+  const canShare = shareCards.length > 0;
   // Only genres that occur in this year's history, so the menu offers nothing
   // that would empty the page; alphabetical, as the Calendar lists them.
   const genreOptions = useMemo(
@@ -418,6 +459,8 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
             details={details}
             detailsLoading={detailsLoading}
             genreName={genreName}
+            onShare={canShare ? () => setShareCard(CARD_IDS.HIGHLIGHTS) : null}
+            shareReady={cardReady(CARD_IDS.HIGHLIGHTS)}
           />
           {monthGroups.length > 0 && (
             <MiniMonthCard
@@ -428,10 +471,14 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
               entries={filtered}
               today={today}
               openPanel={openPanel}
+              onShare={canShare ? () => setShareCard(CARD_IDS.STREAK) : null}
+              shareReady={cardReady(CARD_IDS.STREAK)}
             />
           )}
-          <CrowdCard entries={yearEntries} details={details} openPanel={openPanel} />
-          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo} />
+          <CrowdCard entries={yearEntries} details={details} openPanel={openPanel}
+            onShare={canShare ? () => setShareCard(CARD_IDS.CROWD) : null} shareReady={cardReady(CARD_IDS.CROWD)} />
+          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo}
+            onShare={canShare ? () => setShareCard(CARD_IDS.PERSON) : null} shareReady={cardReady(CARD_IDS.PERSON)} />
           <CompareCard />
           <Filters
             types={types} setTypes={setTypes}
@@ -452,6 +499,15 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
           ))}
         </div>
       </div>
+      {shareCard && (
+        <ShareCardSheet
+          cards={shareCards}
+          preset={shareCard}
+          profile={profile}
+          source={sharePreset ? 'link' : 'history'}
+          onClose={() => setShareCard(null)}
+        />
+      )}
     </div>
   );
 }
@@ -459,7 +515,10 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
 /* Container: the signed-in user's history, TMDB details for the selected
    year, and the genre list. */
 export default function HistoryView() {
-  const { user, openPanel, navigateTo } = useApp();
+  const { user, profile, openPanel, navigateTo } = useApp();
+  const { lists: topLists } = useTopLists(user?.id);
+  // ?share=<card> opens the sheet on that card once, then leaves the URL clean.
+  const [sharePreset, clearSharePreset] = useSharePreset();
   const { entries, loading } = useHistory(user?.id);
   const { genres: genreList } = useGenres();
   const today = useMemo(() => new Date(), []);
@@ -482,6 +541,10 @@ export default function HistoryView() {
       activeYear={activeYear}
       onYear={setYear}
       today={today}
+      topLists={topLists}
+      profile={profile}
+      sharePreset={sharePreset}
+      onSharePresetUsed={clearSharePreset}
     />
   );
 }

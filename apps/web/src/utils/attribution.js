@@ -84,7 +84,7 @@ export function captureAttribution() {
  *
  * Unlike first-touch attribution, this intentionally reflects the link being
  * acted on now. It becomes a session property, so signup events can answer both
- * “where did this person first find PLOT?” and “which article converted them?”.
+ * “where did this person first find Plot?” and “which article converted them?”.
  */
 export function currentArticleAttribution() {
   if (!canUseDOM()) return {};

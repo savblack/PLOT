@@ -1,6 +1,6 @@
-# PLOT
+# Plot
 
-PLOT is a private React/Vite app for discovering and logging movies and TV shows. Public profile sharing is deferred from the first public release while account-visibility rules are still being designed. It uses Supabase for auth, storage, database access, and edge functions, TMDB for media metadata, and PostHog for product analytics.
+Plot is a private React/Vite app for discovering and logging movies and TV shows. Public profile sharing is deferred from the first public release while account-visibility rules are still being designed. It uses Supabase for auth, storage, database access, and edge functions, TMDB for media metadata, and PostHog for product analytics.
 
 ## Stack
 
@@ -43,13 +43,15 @@ This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the
    VITE_SIMKL_CLIENT_ID=<Simkl OAuth app client ID>
    ```
 
-3. These values are browser-safe (they ship in the app bundle). `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` belong to PLOT Staging, PLOT's preview Supabase project (local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data). Pull them from the Supabase dashboard, project `PLOT Staging`. Don't repoint these at Production for routine dev. Keep service-role and TMDB API keys server-side or local-script-only.
+3. These values are browser-safe (they ship in the app bundle). `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` belong to PLOT Staging, Plot's preview Supabase project (local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data). Pull them from the Supabase dashboard, project `PLOT Staging`. Don't repoint these at Production for routine dev. Keep service-role and TMDB API keys server-side or local-script-only.
 
    `VITE_TMDB_PROXY_URL` must point at the staging tmdb-proxy Cloudflare Worker (`https://tmdb-proxy-staging.<subdomain>.workers.dev`), not the Supabase edge function directly: the Worker adds a shared-secret header the browser cannot set. See `apps/web/workers/tmdb-proxy/wrangler.toml`.
 
    `VITE_AUTH_REDIRECT_BASE_URL` is optional for local web development. Set it when auth and provider callbacks must use a stable production URL or a native deep-link base.
 
-4. Start the app:
+4. Optional, for visual regression only: add `CHROMATIC_PROJECT_TOKEN=<Chromatic project token>` to the same `.env`. It is not browser-safe and nothing needs it to build or run Plot. Without it, `pnpm run chromatic` and the CI step skip themselves. Never inline it into a `package.json` script.
+
+5. Start the app:
 
    ```sh
    pnpm run dev

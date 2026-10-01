@@ -9,6 +9,6 @@
     "test": "node --test test/cache.test.mjs"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0"
+    "wrangler": "^4.144.0"
   }
 }

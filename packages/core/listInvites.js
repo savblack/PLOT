@@ -2,7 +2,7 @@
  * Collaborative lists: the host needs Premium, friends join free (PLO-525).
  * Pure rules shared by web and mobile; the data calls are in useListInvites.js
  * and the server rules in
- * supabase/migrations/20260928160000_collaborative_list_invites.sql, which
+ * supabase/migrations/20261001110000_collaborative_list_invites.sql, which
  * checks Premium on the list owner, never on the person joining.
  */
 

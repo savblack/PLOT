@@ -81,7 +81,7 @@ const GH_CONTENT_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_CONTENT') || LEGACY_GH_
 const GH_WEBSITE_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_WEBSITE') || LEGACY_GH_TOKEN;
 const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const ALERT_TO = Deno.env.get('MARKETING_ADMIN_EMAIL') ?? 'sav.black@outlook.com';
-const ALERT_FROM = 'PLOT Marketing <feedback@theplot.tv>';
+const ALERT_FROM = 'Plot Marketing <feedback@theplot.tv>';
 
 // The board's columns, in the order a post moves through them:
 //
@@ -788,7 +788,7 @@ const checkDispatchToken = async (force = false): Promise<string | null> => {
         : `GitHub answered ${status}`;
     console.error(`GitHub token unhealthy: ${which} — ${reason}`);
     await alertOperator(
-      'PLOT marketing: a GitHub token has stopped working',
+      'Plot marketing: a GitHub token has stopped working',
       `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
         <h1 style="font-size:1.2rem;">A GitHub token is not working</h1>
         <p style="font-size:.95rem;line-height:1.6;">Unhealthy: <strong>${which}</strong> — ${reason}.</p>

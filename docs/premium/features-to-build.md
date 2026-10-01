@@ -1,4 +1,4 @@
-# PLOT Premium: features to build (agent handoff)
+# Plot Premium: features to build (agent handoff)
 
 **Audience:** another agent picking up Premium product work.  
 **Status of this doc:** locked Free/Premium *positioning* as of 2026-09-23; build status updated 2026-09-26 (after #1045). **Pick for Me** (the tonight picker) is live on `main`; Watch together is in review; most other Premium *product* features are not built yet. Checkout is hard-closed.  
@@ -37,7 +37,8 @@
 | Watch together (overlap + shared lists) | **In review:** PR #1039 (`agent/watch-together`, web, phases 1 to 3). Decisions in `docs/design/watch-together/README.md` on `agent/watch-together-design`. |
 | `/plans` rebuild | **In review:** PR #1031 (`agent/premium-plans-a2`), side-by-side plans at US$3/$24. |
 | One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free. Public copy does not list automatic sync as a Premium benefit. |
-| Stats, smart lists, people alerts, season-ready, customise | **Not built** as product features (copy only). |
+| People alerts + season-ready | **Built on web (PLO-521).** Opt-ins in `person_alerts` / `season_ready_alerts` (Premium checked in RLS), daily `premium-alerts` Edge Function via pg_cron, in-app notifications. Mobile shows the rows read-only; toggles are a parity issue. See §5.9 and §5.10. |
+| Stats, smart lists, customise | **Not built** as product features (copy only). |
 
 ---
 
@@ -278,6 +279,8 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 **Acceptance sketch:** Follow person → store preference → fire on new credit/release with region sanity → respect mute/unsubscribe.
 
+**Built (PLO-521, web):** "Get alerts" on the talent page and the panel's talent view writes `person_alerts`. The daily `premium-alerts` run (`only: people`, 21:00 UTC) reads each followed person's `combined_credits` and writes a `person_release` notification for: a TV series they act in or created that premiered in the last three days (never today, which may not have aired), or a film they act in (billed 12th or higher) or directed whose first general release (TMDB release type 3 theatrical or 4 digital) in the follower's own region was in the last three days. Festival premieres, limited runs, playing yourself, talk, news and reality are skipped. One alert per title per person (`dedupe_key`). Remove from the page or Settings > Viewing. Rules: `supabase/functions/_shared/premiumAlerts.js`, tests in `apps/web/tests/unit/premiumAlerts.test.js`.
+
 ### 5.10 Whole-season-ready alerts — **Premium**
 
 **Intent:** Notify when **every** episode is verified available on the user’s selected services in their region. Airing dates alone do **not** qualify.
@@ -285,6 +288,14 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 **Depends on:** episode-level availability data quality. Do not ship if evidence is only TMDB air dates.
 
 **Acceptance sketch:** Explicit verification rule documented; false positives worse than silence.
+
+**Built (PLO-521, web), with this verification rule.** The daily run (`only: seasons`, 21:30 UTC) alerts on a show's latest season only when all of these hold:
+
+1. TMDB says the season is finished: its last episode is marked `finale`, or the show is Ended/Canceled, or the next episode is in a later season. A mid-season break or an unannounced finale is not finished.
+2. Every episode TMDB lists for the season has an air date before today, and the list is complete (episodes 1 to `episode_count`, no gaps). The finale aired within the last 180 days.
+3. TMDB's **season-level** watch providers (JustWatch data) list the season under subscription, free or ad-supported for one of the person's selected services, in their region. Rent and buy do not count.
+
+Air dates alone never qualify: rule 3 is required. **Known limit:** TMDB has no per-episode provider data, so rule 3 is season-level availability after the whole season has aired, not an episode-by-episode check. A service that carries only part of a finished season would still pass. Closing that needs JustWatch partner season offers with an episode count, which this repo does not call yet.
 
 ### 5.11 Customise your plot — **Premium** (supporting, not lead)
 

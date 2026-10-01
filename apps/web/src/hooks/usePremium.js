@@ -6,7 +6,7 @@ import { useBillingStatus } from '@plot/core/useBillingStatus.js';
 import { billingAccess } from '@plot/core/billing.js';
 
 /**
- * PLOT Premium billing actions (web only — redirects to Stripe).
+ * Plot Premium billing actions (web only — redirects to Stripe).
  *
  * Billing status comes from the authenticated get_my_billing_status() RPC.
  * The persisted badge alone is neither an entitlement nor a billing relationship.

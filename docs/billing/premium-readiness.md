@@ -1,4 +1,4 @@
-# PLOT Premium readiness
+# Plot Premium readiness
 
 Reviewed 16 September 2026. This is a build assessment, not evidence of a live payment test.
 
@@ -25,10 +25,10 @@ Integration delivery and remaining work are tracked in
 Official sources accessed 16 September 2026. Prices below are displayed dollar
 amounts; regional checkout prices and tax were not independently verified.
 
-| Product | Paid offer | Implication for PLOT |
+| Product | Paid offer | Implication for Plot |
 | --- | --- | --- |
-| [Letterboxd](https://letterboxd.com/pro/) | Pro $19/year: statistics, streaming filters/alerts, no ads. Patron $49/year adds custom artwork and presentation. Unlimited lists are free. | A list limit alone is not a compelling differentiator. Journal presentation fits PLOT better than charging for basic tracking. |
-| [SIMKL](https://simkl.com/vip/) | Pro $34.99/year. VIP $34.99 every six months adds reviews of viewing periods, calendar sync, backup and exports. Lifetime $249. | Calendar sync is an established paid convenience. Keep PLOT data export free as already promised. |
+| [Letterboxd](https://letterboxd.com/pro/) | Pro $19/year: statistics, streaming filters/alerts, no ads. Patron $49/year adds custom artwork and presentation. Unlimited lists are free. | A list limit alone is not a compelling differentiator. Journal presentation fits Plot better than charging for basic tracking. |
+| [SIMKL](https://simkl.com/vip/) | Pro $34.99/year. VIP $34.99 every six months adds reviews of viewing periods, calendar sync, backup and exports. Lifetime $249. | Calendar sync is an established paid convenience. Keep Plot data export free as already promised. |
 | [Trakt May 2026 product update](https://forums.trakt.tv/t/trakt-product-update-may-2026/111812) | Official direction: useful free tracking and casual Plex sync; VIP for heavier use, multiple servers, near-real-time sync and deeper control. | Basic sync is becoming less distinctive. Current checkout price could not be verified; do not reuse the old US$60 figure as a fresh quote. |
 
 ## Existing implementation and changes in this branch

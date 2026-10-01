@@ -18,7 +18,7 @@ This doc is about getting it to run. The checks to run once it does are in
 
 ## Account status: enrolled, as an individual
 
-Confirmed 2026-09-11. PLOT is enrolled in the Apple Developer Program on an
+Confirmed 2026-09-11. Plot is enrolled in the Apple Developer Program on an
 **Individual** membership. That retires what was the longest lead time on the
 launch path: TestFlight, APNs, Sign in with Apple and submission are all
 available now, gated only on setup rather than on waiting for Apple.
@@ -30,9 +30,9 @@ over whether enrolment existed. The research doc was right.)
 ### The one thing to settle before publishing
 
 An Individual membership publishes under **your own legal name**. Every legal
-surface PLOT already ships says something different:
+surface Plot already ships says something different:
 
-> PLOT is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann
+> Plot is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann
 > Street, Surry Hills, NSW 2010
 
 That wording is in `TermsPage.jsx`, `PrivacyPage.jsx`, the marketing site's
@@ -66,7 +66,7 @@ app has been built and driven on an iPhone 17 Pro simulator — see the run log 
 this machine had no Xcode at all, and older revisions of this file and of
 `docs/agents/web-mobile-parity.md` say so; ignore them.
 
-Getting there cost two hours, almost none of it spent on PLOT. Both traps are
+Getting there cost two hours, almost none of it spent on Plot. Both traps are
 worth knowing because neither error names its own cause.
 
 **1. The simulator can have zero device types.** Xcode installs, runtimes
@@ -111,7 +111,7 @@ cd apps/mobile && npx expo run:ios --device "<simulator name>"
 
 **What a development build cannot test.** The Expo Dev Launcher owns the cold
 launch, so killing the app and opening a deep link shows its server picker
-rather than exercising PLOT's startup. Cold-start behaviour needs
+rather than exercising Plot's startup. Cold-start behaviour needs
 `npx expo run:ios --configuration Release`.
 
 Installing Xcode itself still needs a human: the App Store wants an Apple

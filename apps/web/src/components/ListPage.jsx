@@ -107,7 +107,7 @@ export default function ListPage() {
 
   const shareList = useCallback((list) => share({
     url: isListShareable(listVisibility(list), profile?.is_public) ? buildListShareUrl({ listId: list.id }) : null,
-    title: `${list.name} · PLOT`,
+    title: `${list.name} · Plot`,
     text: SHARING.listText(list.name),
     event: EVENTS.LIST_SHARED,
     eventProps: { list_id: list.id },

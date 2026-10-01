@@ -12,7 +12,7 @@ export const Primary = () => {
   const a = document.createElement('a');
   a.className = 'btn btn-primary btn-large';
   a.href = '#';
-  a.textContent = 'Start your PLOT';
+  a.textContent = 'Start your Plot';
   return a;
 };
 
@@ -20,7 +20,7 @@ export const Outline = () => {
   const a = document.createElement('a');
   a.className = 'btn btn-outline btn-large';
   a.href = '#';
-  a.textContent = 'Start your PLOT';
+  a.textContent = 'Start your Plot';
   return a;
 };
 

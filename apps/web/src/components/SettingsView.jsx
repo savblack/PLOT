@@ -46,11 +46,13 @@ import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
+import PremiumAlertsSettings from './PremiumAlertsSettings.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 import { WatchTogetherSettings } from './WatchTogetherParts.jsx';
+import WatchlistVisibilitySetting from './WatchlistVisibilitySetting.jsx';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1906,6 +1908,7 @@ export default function SettingsView() {
         </div>
 
       </div>
+      <PremiumAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
         </>}
         {activeSection === 'connections' && <>
       <TrackingSettings userId={user?.id} connect={trakt.connect} connectPlex={sync.startPlexAuth} plexPolling={sync.polling} connectionError={trakt.error || sync.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : sync.disconnect()} />
@@ -2191,6 +2194,11 @@ export default function SettingsView() {
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsSwitch label={SETTINGS_VIEW.page.privacyLabel} checked={isPublic} disabled={savingVisibility} onChange={handleTogglePublic} />
           </div>
+        </div>
+
+        {/* Who can see Want to Watch: its own setting, separate from the profile. */}
+        <div className="settings-row" style={{ cursor: 'default', display: 'block' }}>
+          <WatchlistVisibilitySetting />
         </div>
 
         {/* Shareable link — works for private profiles too (logged-in visitors

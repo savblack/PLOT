@@ -16,7 +16,7 @@ test('the initial document paints before React starts', () => {
   assert.ok(criticalStyles >= 0, 'the initial loader should have inline critical styles');
   assert.ok(loader > criticalStyles, 'the initial loader should appear after its critical styles');
   assert.ok(entry > loader, 'content should be present before the React entry module');
-  assert.match(html, /class="initial-wordmark" role="img" aria-label="Loading PLOT">plot<\/span>/);
+  assert.match(html, /class="initial-wordmark" role="img" aria-label="Loading Plot">plot<\/span>/);
   assert.match(main, /import\('\.\/router\.jsx'\)/, 'the route graph should load after the initial paint');
   assert.doesNotMatch(main, /import router from ['"]\.\/router\.jsx['"]/, 'the route graph must not be render-blocking');
   assert.match(main, /import\('\.\/index\.css'\)/, 'global CSS should load after the initial paint');

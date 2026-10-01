@@ -2,7 +2,7 @@
 // opens from a list's menu. The invite link lets anyone join for free; people
 // you already watch together with can be added straight away. Rules and data
 // live in @plot/core (listInvites.js, useListInvites.js). Mobile parity: not
-// built yet; tracked in #1089.
+// built yet; tracked in issue 1089.
 import { useState } from 'react';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import { PersonAvatar } from './WatchTogetherParts.jsx';

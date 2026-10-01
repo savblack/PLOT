@@ -23,6 +23,10 @@
 --
 -- Additive: one table, five new functions. add_shared_list_member is
 -- recreated from its only body (20260927120000) with one added line.
+--
+-- Renumbered from 20260928160000 to 20261001110000: by the time this merges,
+-- main had applied newer migrations (20261001090000), and an older version
+-- would be skipped. It must sort after main's newest migration when it lands.
 
 -- ── 1. Invite links ──────────────────────────────────────────────────────────
 create table if not exists public.user_custom_list_invites (
