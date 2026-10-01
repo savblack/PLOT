@@ -141,8 +141,6 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
   // Validate watchedAt format to prevent bad date strings reaching the DB
   const safeWatchedAt = DATE_RE.test(watchedAt) ? watchedAt : localDateStr();
 
-  const normalizedRating = normalizeRating(rating);
-
   const row = {
     user_id: userId,
     ...mediaRow,
@@ -152,10 +150,17 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
     // to [] rather than null to keep the two arms shaped the same.
     genre_ids: genreIdsFromItem(item),
     watched_at: safeWatchedAt,
-    rating: normalizedRating || null,
-    note: note ?? null,
-    dnf: dnf ?? false,
   };
+
+  // The upsert updates only the columns it is sent, so a field the caller left
+  // undefined must stay off the row entirely. Sending the defaults here meant
+  // every date-only watch (the status menu, finishing a series, favouriting) of a
+  // title you had already reviewed wiped its rating and note and reset dnf.
+  // An explicit null is still how a caller clears one. New rows pick up the
+  // column defaults (null, null, false).
+  if (rating !== undefined) row.rating = normalizeRating(rating) || null;
+  if (note !== undefined) row.note = note;
+  if (dnf !== undefined) row.dnf = dnf ?? false;
 
   // One row per title: watching something again updates the row already there,
   // moving its date, so duplicate taps and re-imports don't pile up either.
@@ -246,23 +251,6 @@ export async function restoreHistoryEntry(entry) {
   for (const column of HISTORY_RESTORE_COLUMNS) if (entry?.[column] !== undefined) row[column] = entry[column];
   const { error } = await supabase.from('history').insert(row);
   if (error && error.code !== '23505') throw error;
-  emit(HISTORY_CHANGED_EVENT);
-}
-
-/**
- * Undo an episode tick's effect on the show's history row. The tick upserts
- * the one row per title, so the row either existed (put its fields back) or
- * the tick created it (remove it).
- * @param {{ userId: string, tmdbId: number, before: Record<string, any>|null }} args
- */
-export async function revertEpisodeHistory({ userId, tmdbId, before }) {
-  const { error } = before
-    ? await supabase.from('history')
-      .update({ watched_at: before.watched_at, rating: before.rating, note: before.note, dnf: before.dnf })
-      .eq('id', before.id)
-    : await supabase.from('history').delete()
-      .eq('user_id', userId).eq('tmdb_id', Number(tmdbId)).eq('media_type', 'tv');
-  if (error) throw error;
   emit(HISTORY_CHANGED_EVENT);
 }
 

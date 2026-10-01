@@ -1545,9 +1545,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     }
 
     const result = await markMediaAsWatched({
+      // dnf is an option, not an item field: baseMediaRow drops anything on
+      // the item that isn't identity, so "Didn't finish" used to save as a
+      // plain watch. Rating and note are left out so the switch keeps them.
       logWatched: () => history.logWatched(
-        { ...details, id: itemId, media_type: itemType, dnf },
-        { watchedAt: defaultWatchedAt },
+        { ...details, id: itemId, media_type: itemType },
+        { dnf, watchedAt: defaultWatchedAt },
       ),
       clearWatching: () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
