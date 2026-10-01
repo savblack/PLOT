@@ -213,7 +213,7 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
 - Motion should explain state changes before it decorates them.
 - Fast interactions use `--transition-fast`; larger surface transitions use `--transition`.
 - The bounce easing token is reserved for special arrivals, not routine navigation.
-- The PLOT loader stays centered and fades each letter in sequence.
+- The Plot loader stays centered and fades each letter in sequence.
 - Icons stay monochrome and lightweight until hover, focus, or active state.
 - Buttons are compact and sized to their label — never full-width.
 
@@ -238,6 +238,35 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
 - Use `PlotLoader` for loading states rather than one-off spinners on branded surfaces.
 - Reuse the same button families, input treatments, chips, legal-page layouts, and quiet
   empty-state tone across both surfaces.
+
+### Three patterns the title panel established (Sept 2026)
+
+The title panel redesign (savblack/PLOT#976) introduced three reusable shapes. They are
+system patterns, not panel one-offs: reuse them rather than re-deriving a near-miss.
+
+- **The pinned foot bar** (`.panel-take`). A `position: sticky; bottom: 0` bar inside the
+  panel's own scroll container, on `--surface-sunken` with a single `--border` hairline on
+  top and no shadow. It stays visible at every scroll position so the one thing we most
+  want from the reader is never scrolled away, and it expands upward on click rather than
+  navigating. Collapsed it is one line: a label that changes with state, plus a truncated
+  preview of what is already written. The icon carries the affordance (plus when empty,
+  pencil when written) and there is no button copy. Use it for the panel's primary
+  contribution, not for navigation or for a second row of actions.
+- **Disclosure cards** (`.panel-card` + `.panel-disclosure`). A sunken 20px card whose
+  header is a bare `<button>` carrying `aria-expanded`, with the chevron as a direct child
+  (`.panel-disclosure > svg`, scoped so it does not recolour icons inside the row). When
+  collapsed the header keeps the answer visible in miniature (Where to watch shows
+  overlapped provider marks), so collapsing hides detail, never the fact. Prefer this to a
+  tab or a jump link when a section is long but its summary is one glance.
+- **The segmented run bar** (`.collection-run-seg`). Progress through a countable set of
+  things is one segment per item, not a continuous fill: 8px tall, pill radius,
+  `--status-watching` when done and a 12% `--text-primary` mix when not. It reads as
+  "three of seven films" without a label. A continuous bar is still right for progress
+  through one thing (an episode, an upload); the segmented bar is for a set whose members
+  are individually meaningful.
+
+All three follow the standing rules: flat, structure from hairlines and surface tokens,
+`--status-watching` for progress, and the accent reserved for interaction and hierarchy.
 
 ## Surface ownership
 

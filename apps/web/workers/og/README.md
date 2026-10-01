@@ -5,7 +5,7 @@
 > branded share cards, and bringing it back is a deploy plus a secret — but
 > **only on Workers Paid**. See "Why it is off" before changing anything here.
 
-Renders the 1200×630 Open Graph cards for shared PLOT links (profile / list /
+Renders the 1200×630 Open Graph cards for shared Plot links (profile / list /
 post / title) with Satori, via `workers-og`.
 
 ## Why it is off
@@ -27,7 +27,7 @@ Two consequences worth knowing before reaching for an obvious fix:
 Today `og:image` points at the title's TMDB backdrop (`functions/save.js`,
 `supabase/functions/title-page`) or the static `apps/web/public/og-image.png`.
 The trade: TMDB backdrops are sometimes key art rather than stills, so card
-quality varies by title, and no share carries PLOT branding in the image.
+quality varies by title, and no share carries Plot branding in the image.
 
 ## Bringing it back
 

@@ -1,6 +1,6 @@
 // A smart list's own page (Premium): the rules in the subtitle, the matches
 // they find right now, and Rename / Edit rules / Delete. Finding matches is
-// @plot/core/useSmartList.js; mobile has no counterpart yet (see #1094,
+// @plot/core/useSmartList.js; mobile has no counterpart yet (see issue 1094,
 // Mobile parity: smart lists).
 import { useMemo, useState } from 'react';
 import { useApp } from '../hooks/useApp.js';

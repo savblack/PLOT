@@ -56,6 +56,12 @@ export const EVENTS = Object.freeze({
   TITLE_SHARED: 'title_shared',
   LIST_SHARED: 'list_shared',
   PROFILE_SHARED: 'profile_shared',
+  // Share cards (docs/design/share-cards.md). `opened` carries { source, card }
+  // so the dashboards can say which path earns the posts; `sent` carries
+  // { card, format, target } where target is copy | download | x | threads |
+  // instagram on web and share | save on mobile.
+  SHARE_CARD_OPENED: 'share_card_opened',
+  SHARE_CARD_SENT: 'share_card_sent',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_STARTED: 'premium_checkout_started',
@@ -67,7 +73,7 @@ export const EVENTS = Object.freeze({
   // and a stray call site stays a loud reference (see ACTIVATED).
   PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
-  // The Tonight picker, PLOT's "what should I watch" surface. Fired from
+  // The Tonight picker, Plot's "what should I watch" surface. Fired from
   // useTonightPicker via the onTonightPicker seam. A draw with result_count 0
   // is an empty result; a failed draw is load_failed (resource tonight_picks).
   // "Accepted a pick" is tonight_pick_opened, or watchlist_saved with
@@ -88,7 +94,7 @@ export const EVENTS = Object.freeze({
   WATCH_TOGETHER_MATCH: 'watch_together_match',
   WATCH_LINK_CLICKED: 'watch_link_clicked',
   TIP_JAR_CLICKED: 'tip_jar_clicked',
-  // PLOT's second paid-conversion type alongside premium_converted — a Ko-fi
+  // Plot's second paid-conversion type alongside premium_converted — a Ko-fi
   // tip (recognition-only, see kofi_supporters/is_supporter; grants no
   // entitlement). Fired server-side from supabase/functions/kofi-webhook via
   // PostHog's HTTP capture API, not posthog-js: Ko-fi hosts its own checkout,

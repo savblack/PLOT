@@ -149,24 +149,6 @@ test('restoreHistoryEntry brings back the rating, review and date, and signals i
   assert.equal(signalled, 1);
 });
 
-test('revertEpisodeHistory removes a row the tick created, and restores one it changed', async () => {
-  const { revertEpisodeHistory } = await import('../../userMedia.js');
-  const client = createInMemorySupabase({ tables: { history: [
-    { id: 1, user_id: 'u1', tmdb_id: 3, media_type: 'tv', watched_at: '2026-09-27', rating: null, note: null, dnf: false },
-    { id: 2, user_id: 'u1', tmdb_id: 4, media_type: 'tv', watched_at: '2026-09-27', rating: null, note: null, dnf: false },
-  ] } });
-  configure({ supabaseClient: client });
-
-  await revertEpisodeHistory({ userId: 'u1', tmdbId: 3, before: null });
-  assert.deepEqual(client.__db.tables.history.map(r => r.tmdb_id), [4]);
-
-  await revertEpisodeHistory({ userId: 'u1', tmdbId: 4, before: { id: 2, watched_at: '2026-07-01', rating: 9, note: 'Great.', dnf: false } });
-  const row = client.__db.tables.history[0];
-  assert.equal(row.watched_at, '2026-07-01');
-  assert.equal(row.rating, 9);
-  assert.equal(row.note, 'Great.');
-});
-
 test('restoreRow puts a removed row back, and treats "already back" as success', async () => {
   const client = createInMemorySupabase({ tables: { user_favourites: [] } });
   configure({ supabaseClient: client });

@@ -131,7 +131,7 @@ export function detectDayFirst(rawDates) {
 // Letterboxd exports a ZIP of CSVs; the richest single file is diary.csv
 // (Date, Name, Year, Letterboxd URI, Rating, Rewatch, Tags, Watched Date), but
 // watched.csv / ratings.csv / reviews.csv share the same Name/Year/Rating columns.
-// Ratings are 0.5–5 stars → doubled to PLOT's 1–10 scale. Letterboxd is film-only.
+// Ratings are 0.5–5 stars → doubled to Plot's 1–10 scale. Letterboxd is film-only.
 export function parseLetterboxd(text) {
   const rows = parseCSV(text);
   if (rows.length < 2) return [];
@@ -437,7 +437,7 @@ export function parseLetterboxdList(text, fileName = '') {
     destination = { kind: 'watchlist', key: 'letterboxd:watchlist', name: 'Watchlist' };
     items = rows.slice(first + 1);
   } else {
-    if (fileName && header.join(',') === 'Date,Name,Year,Letterboxd URI' && !/^(letterboxd[_-])?watched\.csv$/i.test(fileName)) throw new Error('This file could be a watchlist or watched export. Keep the original watched.csv or watchlist.csv filename so PLOT can distinguish them.');
+    if (fileName && header.join(',') === 'Date,Name,Year,Letterboxd URI' && !/^(letterboxd[_-])?watched\.csv$/i.test(fileName)) throw new Error('This file could be a watchlist or watched export. Keep the original watched.csv or watchlist.csv filename so Plot can distinguish them.');
     return null;
   }
   return items.filter(row => row.some(value => value.trim())).map(row => {

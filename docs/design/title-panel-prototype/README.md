@@ -1,4 +1,4 @@
-# PLOT title detail panel prototype
+# Plot title detail panel prototype
 
 Standalone design prototype of the redesigned title detail panel
 (`apps/web/src/components/MediaPanel.jsx`). Not connected to the app or live data.
@@ -11,7 +11,7 @@ python3 -m http.server 5291 --bind 127.0.0.1
 
 Open http://127.0.0.1:5291/docs/design/title-panel-prototype/ (use another port if occupied).
 
-Artwork is existing PLOT hero imagery standing in for the real poster and backdrop;
+Artwork is existing Plot hero imagery standing in for the real poster and backdrop;
 provider logos are the TMDB ones the app already renders. Scores, offers, watch dates
 and review text are fictional. Where to watch and the foot bar are the only working
 controls; everything else is static.

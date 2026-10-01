@@ -33,7 +33,7 @@ export function traktWatchRecord(input: unknown, account: string) {
 }
 
 /** Watchlist membership is not a watch. Stable source identity also prevents a
- * later sync from resurrecting an item the user removed from PLOT. */
+ * later sync from resurrecting an item the user removed from Plot. */
 export function traktWatchlistRecord(input: unknown, account: string, kind: 'movie'|'show') {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
   const raw = input as Record<string, unknown>;

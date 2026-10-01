@@ -14,6 +14,12 @@ import { useBlocks } from '@plot/core/useBlocks.js';
 import UserModerationMenu from '../components/UserModerationMenu.jsx';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useShare } from '../hooks/useShare.js';
+import { useShareCards } from '../hooks/useShareCards.js';
+import { useSharePreset } from '../hooks/useSharePreset.js';
+import { CARD_IDS } from '@plot/core/shareCards.js';
+import KebabMenu from '../components/KebabMenu.jsx';
+import ShareCardSheet from '../components/ShareCardSheet.jsx';
+import { SHARE_CARDS } from '../copy/shareCards.js';
 import { useCustomLists } from '@plot/core/useCustomLists.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -568,6 +574,20 @@ export default function PublicProfilePage() {
 
   const p = profile ? { ...profile, ...edits } : profile;
   const isOwn = viewer?.id && profile?.id && viewer.id === profile.id;
+
+  // Share a card (path 2 in docs/design/share-cards.md): the owner's Share
+  // menu opens the sheet on Top 5 movies; ?share=<card> opens it on that
+  // card. Owner-only (ADR 0001): the cards come from the viewer's own history
+  // and are never built for someone else's profile. Nothing loads until the
+  // sheet is open.
+  const [shareCard, setShareCard] = useState(null); // { id, source } | null
+  const [sharePreset, clearSharePreset] = useSharePreset();
+  useEffect(() => {
+    if (!sharePreset || !isOwn) return;
+    setShareCard({ id: sharePreset, source: 'link' }); // eslint-disable-line react-hooks/set-state-in-effect
+    clearSharePreset();
+  }, [sharePreset, isOwn, clearSharePreset]);
+  const shareCards = useShareCards({ userId: viewer?.id, profile: viewerProfile, enabled: !!shareCard && !!isOwn, leadWith: 'top5' });
   const fw = favoriteWords(viewerProfile?.region);
   const found = !loading && !!profile;
   const isPrivate = !!p && !p.is_public;
@@ -580,7 +600,7 @@ export default function PublicProfilePage() {
     if (!p) return;
     share({
       url: buildProfileShareUrl({ username: p.username }),
-      title: `${name} on PLOT`,
+      title: `${name} on Plot`,
       text: SHARING.profileText(name),
       event: EVENTS.PROFILE_SHARED,
       eventProps: { profile_id: p.id },
@@ -645,7 +665,15 @@ export default function PublicProfilePage() {
                     {isOwn ? (
                       <>
                         <button type="button" className="btn btn-secondary" onClick={() => setEditing(true)}>Edit profile</button>
-                        <button type="button" className="btn btn-secondary" onClick={shareProfile}>{copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.shareProfile}</button>
+                        <KebabMenu
+                          ariaLabel={PUBLIC_PROFILE_PAGE.shareProfile}
+                          trigger={copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.share}
+                          buttonClassName="btn btn-secondary"
+                          items={[
+                            { label: PUBLIC_PROFILE_PAGE.copyProfileLink, onClick: shareProfile },
+                            { label: SHARE_CARDS.shareACard, onClick: () => setShareCard({ id: CARD_IDS.TOP5_MOVIES, source: 'profile' }) },
+                          ]}
+                        />
 
                       </>
                     ) : !viewer ? (
@@ -739,6 +767,16 @@ export default function PublicProfilePage() {
             setEditing(false);
             if (usernameChanged) navigate(`/u/${next.username}`, { replace: true });
           }}
+        />
+      )}
+      {shareCard && isOwn && (
+        <ShareCardSheet
+          cards={shareCards.cards}
+          loading={shareCards.loading}
+          preset={shareCard.id}
+          profile={viewerProfile}
+          source={shareCard.source}
+          onClose={() => setShareCard(null)}
         />
       )}
     </>

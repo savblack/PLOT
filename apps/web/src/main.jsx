@@ -312,6 +312,6 @@ Promise.all([
       window.location.reload();
       return;
     }
-    console.error('PLOT startup error:', error);
+    console.error('Plot startup error:', error);
     window.__plotShowStartupFallback?.();
   });

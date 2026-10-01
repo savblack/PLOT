@@ -11,7 +11,13 @@ const FALLBACK = '<!doctype html><meta charset="utf-8">'
 
 export async function titlePage(request, type, slug) {
   const rawType = type === 'tv' ? 'tv' : 'movie';
-  const country = request.cf && request.cf.country;
+  // Geo is the default, not the verdict. A reader abroad, or one checking
+  // another country, can ask for a region with ?r=XX; this used to be built
+  // from request.cf alone and silently dropped anything the visitor asked for,
+  // which is why the page could not offer a region control at all.
+  const asked = new URL(request.url).searchParams.get('r');
+  const wanted = /^[A-Za-z]{2}$/.test(asked || '') ? asked.toUpperCase() : null;
+  const country = wanted || (request.cf && request.cf.country);
   const params = new URLSearchParams({ type: rawType, slug: slug || '' });
   if (country) params.set('r', country);
 

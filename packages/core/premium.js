@@ -1,5 +1,5 @@
 /**
- * PLOT Premium — shared plan constants and pure helpers.
+ * Plot Premium — shared plan constants and pure helpers.
  *
  * Lives in core so the mobile app inherits the same plan rules. Anything
  * web-only (Stripe checkout redirects) belongs in hooks/usePremium.js,
@@ -29,6 +29,6 @@ export function canCreateCustomList(listCount, profile) {
 /** Turn the edge functions' `premium_required` 403 into a human message. */
 export function friendlyPremiumError(message) {
   return message === 'premium_required'
-    ? 'This is a PLOT Premium feature. Upgrade from Settings to unlock it.'
+    ? 'This is a Plot Premium feature. Upgrade from Settings to unlock it.'
     : message;
 }

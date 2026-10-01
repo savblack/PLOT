@@ -128,6 +128,11 @@ function ContentCatalog() {
 
 export default {
   title: 'Content/Catalog',
+  // A lookup table, not a visual surface: one row per string, so its height
+  // grows with the catalog. It passed Chromatic's 25M-pixel capture limit once
+  // stories got the app's line-height (972 x 27,657px), and a diff on it would
+  // only ever say "copy changed", which copy:check already polices.
+  parameters: { chromatic: { disableSnapshot: true } },
 };
 
 export const AllCopy = () => <ContentCatalog />;

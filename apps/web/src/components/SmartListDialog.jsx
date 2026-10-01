@@ -1,6 +1,6 @@
 // Create or edit a smart list's rules (Premium). The rules and what they mean
 // live in @plot/core/smartLists.js; this is only the form. Mobile has no
-// counterpart yet: see #1094 (Mobile parity: smart lists).
+// counterpart yet: see issue 1094 (Mobile parity: smart lists).
 import { useEffect, useId, useState } from 'react';
 import { tmdb } from '@plot/core/tmdb.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';

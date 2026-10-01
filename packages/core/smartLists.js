@@ -3,7 +3,7 @@
 // apps read the same rules the same way.
 //
 // A smart list is a user_custom_lists row whose `rules` column is set
-// (supabase/migrations/20260928100000_smart_lists.sql). That migration is the
+// (supabase/migrations/20261001100000_smart_lists.sql). That migration is the
 // authority: only Premium can write rules, a smart list stays private, and it
 // never holds items. These helpers decide what the UI offers and what it shows.
 //

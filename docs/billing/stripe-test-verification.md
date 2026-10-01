@@ -6,7 +6,7 @@ Savannah prioritised Stripe test-mode subscriptions on 2026-09-23 and deferred
 mobile verification. Public checkout remains closed. No live payment, production
 configuration change, or subscription activation was performed.
 
-The Stripe connector listed PLOT sandbox (`acct_1TquK0Erc2irccea`, livemode=false).
+The Stripe connector listed Plot sandbox (`acct_1TquK0Erc2irccea`, livemode=false).
 Read-only queries returned no prices and no webhook endpoints. The connector
 then became unavailable following a session plugin change. Stripe CLI and local
 Stripe API credentials were not available at that point. The original sandbox
@@ -69,12 +69,12 @@ need regression tests, staging validation and migration checks where applicable.
 Tax configuration remains a separate launch check; no automatic tax setting was
 changed during these tests.
 
-## PLOT sandbox API execution (2026-09-23)
+## Plot sandbox API execution (2026-09-23)
 
 Connector access restored. All mutations explicitly used
 `acct_1TquK0Erc2irccea`, `livemode=false`. No live-mode call was made.
 
-Created one PLOT Premium product and two active AUD prices:
+Created one Plot Premium product and two active AUD prices:
 - Product: `prod_VJPhoX1JOplXs6`
 - Monthly A$5: `price_1UImsKErc2ircceaRcpEdnqT`
 - Yearly A$40: `price_1UImsXErc2ircceaFMw8yGps`
@@ -99,9 +99,9 @@ The monthly customer's test clock is `clock_1UImspErc2ircceazA16fwIx`.
 The connector can create clocks but does not expose advancement (search and
 operation lookup both failed). Renewal, failed-renewal recovery and terminal
 expiry were therefore not simulated. The test subscriptions remain in the
-sandbox for follow-up; no production users or PLOT entitlement rows were linked.
+sandbox for follow-up; no production users or Plot entitlement rows were linked.
 
-Hosted Checkout, portal flows, signed delivery into PLOT staging, entitlement
+Hosted Checkout, portal flows, signed delivery into Plot staging, entitlement
 activation/downgrade, preserved lists and calendar access remain unverified.
 Staging needs sandbox credentials and a configured webhook before those tests.
 Public checkout stays closed. Automatic tax was not enabled; tax setup remains
@@ -113,7 +113,7 @@ Savannah changed Premium to US$3/month and US$25/year. Shared plan constants,
 web/marketing copy and server validation now use USD 300/2500 minor units.
 Annual effective monthly price is US$2.08, with a rounded 31% saving.
 
-New PLOT sandbox prices:
+New Plot sandbox prices:
 - Monthly: `price_1UImw9Erc2irccea4KZMlYAo` (product default).
 - Yearly: `price_1UImwCErc2ircceaORvnsHkZ`.
 
@@ -131,14 +131,14 @@ shared labels. Device testing remains deferred.
 
 ## USD Checkout and portal execution (2026-09-23)
 
-All operations used PLOT sandbox `acct_1TquK0Erc2irccea`, `livemode=false`.
-No real card, customer or PLOT entitlement was used.
+All operations used Plot sandbox `acct_1TquK0Erc2irccea`, `livemode=false`.
+No real card, customer or Plot entitlement was used.
 
 - Monthly API subscription `sub_1UIn1uErc2ircceabuxu0MV9` was active with
   invoice `in_1UIn1vErc2ircceaDy1FhGZL` paid USD 300 minor units.
 - Yearly API subscription `sub_1UIn23Erc2ircceajHRJS543` was active with
   invoice `in_1UIn23Erc2ircceaFji7hryR` paid USD 2500 minor units.
-- Hosted Checkout visibly showed PLOT sandbox, PLOT Premium and US$3/month.
+- Hosted Checkout visibly showed Plot sandbox, Plot Premium and US$3/month.
   A synthetic email and Stripe's test Visa completed the payment. Read-back of
   session `cs_test_a1wV1djUOMPRH4iOdxTNIqxrR9C97hCH6fYwIgpZ7bPQIbLPM9X0yZ05hV`
   confirmed `status=complete`, `payment_status=paid`, `amount_total=300`,
@@ -150,16 +150,16 @@ No real card, customer or PLOT entitlement was used.
   and the Cancel subscription action. Both flows were exercised in the browser.
 - The scheduled cancellation used `cancel_at=1792750117`, equal to the item's
   period end, while `cancel_at_period_end=false`. The webhook now normalises this
-  form to PLOT's stored period-end flag. Regression coverage checks timestamp
+  form to Plot's stored period-end flag. Regression coverage checks timestamp
   cancellation, reversal, terminal cancellation, missing dates and unrelated
   cancellation dates. Arbitrary mid-period cancellation is not relabelled as
   period-end cancellation.
 - Checkout's initial return failed because the local server was stopped. After
-  restarting the staging-backed preview, the portal return reached PLOT's login
+  restarting the staging-backed preview, the portal return reached Plot's login
   page. This proves navigation only, not an authenticated Premium activation.
 
 The sandbox had no webhook endpoints when checked. These sessions were created
-directly through Stripe, without PLOT user linkage. Annual hosted Checkout,
+directly through Stripe, without Plot user linkage. Annual hosted Checkout,
 plan switching, failed renewal/recovery, signed staging delivery, entitlement
 expiry and preserved free-user access remain unverified. The default portal did
 not expose plan switching. Configure and test its two-price catalogue before
@@ -179,7 +179,7 @@ No schema migration, deployment, live subscription activation or commit was made
 
 ## Subscription and access follow-up (2026-09-23)
 
-All Stripe operations below used **PLOT sandbox**, `acct_1TquK0Erc2irccea`,
+All Stripe operations below used **Plot sandbox**, `acct_1TquK0Erc2irccea`,
 `livemode=false`. Public checkout is still closed. Plex was left paused.
 
 ### Hosted payment and plan changes
@@ -206,7 +206,7 @@ All Stripe operations below used **PLOT sandbox**, `acct_1TquK0Erc2irccea`,
   `shortening_interval`. Payment-method updates and invoices are available;
   cancellation is at period end. No tax setting changed.
 
-These remain Stripe-side synthetic purchases, not purchases linked to PLOT
+These remain Stripe-side synthetic purchases, not purchases linked to Plot
 accounts. A payment succeeded; entitlement delivery into staging is not proven.
 
 ### Local fixes, not deployed
@@ -230,7 +230,9 @@ at Savannah's request.
 
 The billing edge function now accepts server-only `STRIPE_SETTINGS_URL` and
 `STRIPE_PORTAL_CONFIGURATION` so staging returns to the QA app and uses the tested
-portal without changing production defaults. `.env.example` contains USD placeholders.
+portal without changing production defaults. `STRIPE_PRICE_MONTHLY` and
+`STRIPE_PRICE_YEARLY` take USD price IDs; both are server-only and live in the
+repo-root `.env`.
 
 The deployed staging `export-user-data` preflight returned HTTP 401 without CORS
 headers. The local handler now answers OPTIONS with 204 and adds CORS headers to
@@ -266,14 +268,14 @@ functions instead, without recreating their schema or contacting providers.
 
 ### Remaining test boundary and requested next action
 
-Finish renewal, failed-renewal recovery and signed staging delivery with a PLOT
+Finish renewal, failed-renewal recovery and signed staging delivery with a Plot
 sandbox key, endpoint signing secret and test-clock controls. The connector does
 not expose test-clock advancement; the Dashboard login is pending. Do not paste
 keys into chat. Store credentials only in the staging secret store or private
 local environment.
 
 The approved staging rollout was completed on 2026-09-24: the billing migration
-and `stripe-billing`, `stripe-webhook`, and `export-user-data` are deployed to **PLOT
+and `stripe-billing`, `stripe-webhook`, and `export-user-data` are deployed to **Plot
 Staging only**. Public/production checkout stays closed. Stage migration first,
 then functions; the new webhook requires the RPC. Production deployment, live
 subscriptions, checkout concurrency hardening, tax setup and mobile verification
@@ -312,14 +314,14 @@ Production was not changed. No commit or push occurred.
 - Stripe webhook POST and billing OPTIONS returned 500. A secret-name-only inspection found no `STRIPE*` configuration in staging. These endpoints are deployed but not payment-ready.
 - `git diff --check`: passed. Earlier full build/unit/edge/schema checks remain recorded above; this follow-up changed only verification scripts and documentation.
 
-Remaining: configure the PLOT sandbox API key, webhook signing secret, prices and
+Remaining: configure the Plot sandbox API key, webhook signing secret, prices and
 portal settings in staging, then prove signed delivery and renewal/recovery.
 Chrome had no Stripe Dashboard tab open at verification time. Keep credentials
 out of chat and tracked files. Production checkout remains closed.
 
 ## Signed sandbox activation: 2026-09-24
 
-Created `PLOT staging billing`, a restricted sandbox key: Customers, Products,
+Created `Plot staging billing`, a restricted sandbox key: Customers, Products,
 Prices and Subscriptions read; Customer Portal and Checkout Sessions write.
 Saved it as `STRIPE_SECRET_KEY` in PLOT Staging through the encrypted secret store.
 No production credential or checkout setting changed.
@@ -336,8 +338,8 @@ Using synthetic import-pilot account 1 (no real user data):
 - Actual signed webhook delivery changed the self-only billing RPC from no
   subscription/free to active/Premium, ending 2026-10-24. No manual entitlement write.
 - The deployed portal action returned HTTP 200 and a sandbox portal URL.
-- Setting cancellation at period end through Stripe propagated to PLOT while
-  retaining Premium. Reversing cancellation also propagated to PLOT, restoring
+- Setting cancellation at period end through Stripe propagated to Plot while
+  retaining Premium. Reversing cancellation also propagated to Plot, restoring
   `cancelAtPeriodEnd: false` while keeping active Premium.
 - Staging checkout was closed again after the controlled purchase; the deployed
   checkout action returned HTTP 503 with the expected not-available message.
@@ -359,7 +361,7 @@ Existing non-terminal subscriptions route to the portal rather than permitting
 another purchase. A completed session may be replaced after its subscription ends.
 
 With Savannah's approval, applied and recorded migration `20260924020000` on
-PLOT staging `uzrhfivnhdcfieuaxzip`, then deployed `stripe-billing` there.
+Plot staging `uzrhfivnhdcfieuaxzip`, then deployed `stripe-billing` there.
 Production remains unchanged and checkout remains closed.
 
 Verification:
@@ -371,7 +373,7 @@ Verification:
 - `node .playwright/import-pilot/billing-api.cjs checkout`: HTTP 503, expected closed-checkout message.
 
 Stripe prompted for phone verification when saving the approved change from
-Customers read to write on `PLOT staging billing`. The save is not yet confirmed.
+Customers read to write on `Plot staging billing`. The save is not yet confirmed.
 The new first-purchase path must still be tested against Stripe after verification;
 unit and SQL tests are not evidence of that live sandbox result. Natural renewal,
 failed-renewal recovery, equal-timestamp event delivery and final browser lifecycle
@@ -380,7 +382,7 @@ assertions also remain outstanding.
 ## Deployed concurrency and renewal/recovery: 2026-09-24
 
 Savannah completed Stripe's phone verification. Reopening the key editor showed
-Customers **Write** selected for `PLOT staging billing`.
+Customers **Write** selected for `Plot staging billing`.
 
 - `.playwright/import-pilot/checkout-live.mjs` created a private synthetic staging
   billing account and made four simultaneous requests to the deployed handler.
@@ -393,13 +395,13 @@ Customers **Write** selected for `PLOT staging billing`.
 - Attached sandbox test clock `clock_1UJ243Erc2ircceawz6s59ZE` to synthetic customer
   `cus_VJeRTQZmutgemI`. Advanced through October renewal and invoice finalization.
   Invoice `in_1UJ24iErc2irccealoi3V01E` was paid USD 300. Actual signed delivery
-  advanced PLOT's period end to 2026-11-24.
+  advanced Plot's period end to 2026-11-24.
 - Saved Stripe's synthetic decline-on-charge card ending 0341 and selected it for
   this test subscription only. November renewal invoice
   `in_1UJ284Erc2ircceaOH6L6ypm` failed: open, USD 300 due, zero paid, one attempt.
-  Both Stripe and PLOT reported `past_due`.
+  Both Stripe and Plot reported `past_due`.
 - Restored the original 4242 test payment method and charged the sandbox invoice.
-  Stripe confirmed paid USD 300 and active; PLOT's actual RPC confirmed active,
+  Stripe confirmed paid USD 300 and active; Plot's actual RPC confirmed active,
   Premium, manageable billing and period end 2026-12-24.
 - `.playwright/import-pilot/verify-real-billing.cjs .playwright/import-pilot`
   passed actual staging sign-in and Settings assertions without mocked billing:
@@ -453,7 +455,7 @@ rotate the previously exposed old sandbox keys. Production checkout remains clos
 ## Adaptive Pricing decision and configuration: 2026-09-24
 
 Savannah confirmed US$3/month and US$25/year as base prices, with Stripe Adaptive
-Pricing elsewhere. The PLOT sandbox account `acct_1TquK0Erc2irccea` displayed
+Pricing elsewhere. The Plot sandbox account `acct_1TquK0Erc2irccea` displayed
 `Enable Adaptive Pricing` checked in Settings > Payments > Adaptive Pricing.
 Supported currencies shown include AUD, GBP and EUR. No setting was changed;
 hosted Checkout already inherits this setting because the handler omits a
@@ -490,11 +492,11 @@ as recorded below. No production change, commit or push.
 
 ## Adaptive Pricing account constraint: 2026-09-24
 
-Recovered browser access using a fresh tab. The PLOT annual hosted Checkout
+Recovered browser access using a fresh tab. The Plot annual hosted Checkout
 rendered USD 25.00 only. Stripe's session API confirmed
 `adaptive_pricing.enabled: true`, subscription mode, USD integration currency.
 Updated only the synthetic customer `cus_VJfNaUzP7worwO` to a UK-location test
-email and created new sessions through the deployed PLOT staging handler. The
+email and created new sessions through the deployed Plot staging handler. The
 new annual session still rendered USD only. No purchase was submitted.
 Staging checkout was closed in cleanup and verified HTTP 503.
 
@@ -520,8 +522,8 @@ Post-deployment verification:
 - `node .playwright/import-pilot/staging-db.cjs scripts/staging-billing-grace-test.sql`: passed all grace assertions.
 - `node .playwright/import-pilot/staging-db.cjs scripts/staging-billing-lifecycle-test.sql`: all nine groups passed, including account isolation and free access after expiry.
 - All SQL fixtures rolled back.
-- Actual Stripe sandbox subscription `sub_1UJ196Erc2ircceaiLwXWLSU` was set to cancel at period end. Signed delivery changed PLOT's cancellation flag to true and revision from 0 to 1 while retaining active Premium.
-- Restored cancellation to false through Stripe. Signed delivery restored PLOT's flag and advanced revision to 2. The synthetic subscription is active, Premium and manageable, ending 2026-12-24.
+- Actual Stripe sandbox subscription `sub_1UJ196Erc2ircceaiLwXWLSU` was set to cancel at period end. Signed delivery changed Plot's cancellation flag to true and revision from 0 to 1 while retaining active Premium.
+- Restored cancellation to false through Stripe. Signed delivery restored Plot's flag and advanced revision to 2. The synthetic subscription is active, Premium and manageable, ending 2026-12-24.
 - `node .playwright/import-pilot/billing-api.cjs checkout`: HTTP 503, expected closed-checkout message.
 
 Production was unchanged. No commit or push. Remaining billing blockers are
@@ -530,7 +532,7 @@ and the separately approved production launch configuration and rollout.
 
 ## Sandbox USD settlement and localized checkout: 2026-09-24
 
-Inspected PLOT sandbox's Linked accounts and payouts settings. Settlement
+Inspected Plot sandbox's Linked accounts and payouts settings. Settlement
 currencies can be added separately from bank accounts. Enabled USD in sandbox
 `acct_1TquK0Erc2irccea`, retaining AUD as default; no bank details or production
 settings changed. The settings table now lists USD (0.91%). Stripe's public
@@ -552,17 +554,17 @@ Source: [Stripe multi-currency settlement](https://docs.stripe.com/payouts/multi
 
 ## Local-currency lifecycle pilot: 2026-09-24
 
-Used the existing synthetic staging customer `cus_VJfNaUzP7worwO`, PLOT sandbox
+Used the existing synthetic staging customer `cus_VJfNaUzP7worwO`, Plot sandbox
 `acct_1TquK0Erc2irccea`, and Stripe's 4242 test card. No real payment, bank
 details, production configuration or tax setting was changed.
 
-- Annual GBP Checkout completed: session `cs_test_b1edxCfBwDJt6AMCdSbWsQHYHes0oo7mdMWQB1OqUyqEEZ31Pp8IX02BPK`, subscription `sub_1UJ4PXErc2ircceahNjKlUIP`, invoice `in_1UJ4PVErc2ircceaxMJwSxCF`. Stripe confirmed `paid`, USD base 2500 and GBP presentment 1964. PLOT's authenticated status RPC returned active, Premium, manageable, period end 2027-09-24.
-- Attached test clock `clock_1UJ4QlErc2ircceaz5mdncMr` to that synthetic customer. Advanced through the annual renewal and invoice finalization. Invoice `in_1UJ4SIErc2ircceaT5zhjq2u` was paid for the subscription cycle. Payment `pi_3UJ4T6Erc2irccea1ReTReDv` succeeded with USD base 2500 and GBP presentment 1964. PLOT's period end advanced to 2028-09-24 and Premium remained true.
-- Fully refunded the original payment `pi_3UJ4PWErc2irccea1P5RvIof`. Refund `sandbox-refund-reference-retained-in-Stripe` succeeded, returning GBP 1964 (USD base 2500). The refund did not cancel the ongoing subscription; PLOT remained Premium after the paid renewal.
-- The customer portal displayed the USD base plan, "Charged in GBP", and GBP invoice amounts. Its monthly switch confirmation quoted approximately GBP 2.36 for USD 3 and correctly deferred the change until the paid annual period ended. Schedule `sub_sched_1UJ4TiErc2irccea1DBQiMc4` executed on simulated 2028-09-24. Invoice `in_1UJ4e6Erc2ircceaq3ermHmm` was paid; payment `pi_3UJ4eAErc2irccea1JkIlhtU` succeeded for USD base 300 / GBP presentment 236. PLOT saved the monthly price, period end 2028-10-24, revision 5 and Premium true.
-- Monthly renewal also passed: invoice `in_1UJ4euErc2ircceaePlEUssU`, payment `pi_3UJ4ewErc2irccea0LhgKXAH`, USD base 300 / GBP presentment 236. PLOT's period end advanced to 2028-11-24.
-- Switched monthly back to yearly through the portal on simulated 2028-10-29. The preview applied unused-month credit and quoted GBP 17.66 / USD 22.48 due immediately. Invoice `in_1UJ4fcErc2ircceaVX742Ze9` and payment `pi_3UJ4fdErc2irccea1pIO7Yxl` confirmed those exact paid amounts. PLOT saved the annual price, active status, end 2029-10-29, revision 7 and Premium true.
-- Simulator limitation: a pending monthly phase reduced the maximum clock step to two months, despite the subscription page initially showing the older annual limit. The exact maximum date also triggered a Dashboard boundary-validation tooltip. Smaller steps on the canonical simulation page completed successfully. These rejected advances did not change PLOT or the subscription.
+- Annual GBP Checkout completed: session `cs_test_b1edxCfBwDJt6AMCdSbWsQHYHes0oo7mdMWQB1OqUyqEEZ31Pp8IX02BPK`, subscription `sub_1UJ4PXErc2ircceahNjKlUIP`, invoice `in_1UJ4PVErc2ircceaxMJwSxCF`. Stripe confirmed `paid`, USD base 2500 and GBP presentment 1964. Plot's authenticated status RPC returned active, Premium, manageable, period end 2027-09-24.
+- Attached test clock `clock_1UJ4QlErc2ircceaz5mdncMr` to that synthetic customer. Advanced through the annual renewal and invoice finalization. Invoice `in_1UJ4SIErc2ircceaT5zhjq2u` was paid for the subscription cycle. Payment `pi_3UJ4T6Erc2irccea1ReTReDv` succeeded with USD base 2500 and GBP presentment 1964. Plot's period end advanced to 2028-09-24 and Premium remained true.
+- Fully refunded the original payment `pi_3UJ4PWErc2irccea1P5RvIof`. Refund `sandbox-refund-reference-retained-in-Stripe` succeeded, returning GBP 1964 (USD base 2500). The refund did not cancel the ongoing subscription; Plot remained Premium after the paid renewal.
+- The customer portal displayed the USD base plan, "Charged in GBP", and GBP invoice amounts. Its monthly switch confirmation quoted approximately GBP 2.36 for USD 3 and correctly deferred the change until the paid annual period ended. Schedule `sub_sched_1UJ4TiErc2irccea1DBQiMc4` executed on simulated 2028-09-24. Invoice `in_1UJ4e6Erc2ircceaq3ermHmm` was paid; payment `pi_3UJ4eAErc2irccea1JkIlhtU` succeeded for USD base 300 / GBP presentment 236. Plot saved the monthly price, period end 2028-10-24, revision 5 and Premium true.
+- Monthly renewal also passed: invoice `in_1UJ4euErc2ircceaePlEUssU`, payment `pi_3UJ4ewErc2irccea0LhgKXAH`, USD base 300 / GBP presentment 236. Plot's period end advanced to 2028-11-24.
+- Switched monthly back to yearly through the portal on simulated 2028-10-29. The preview applied unused-month credit and quoted GBP 17.66 / USD 22.48 due immediately. Invoice `in_1UJ4fcErc2ircceaVX742Ze9` and payment `pi_3UJ4fdErc2irccea1pIO7Yxl` confirmed those exact paid amounts. Plot saved the annual price, active status, end 2029-10-29, revision 7 and Premium true.
+- Simulator limitation: a pending monthly phase reduced the maximum clock step to two months, despite the subscription page initially showing the older annual limit. The exact maximum date also triggered a Dashboard boundary-validation tooltip. Smaller steps on the canonical simulation page completed successfully. These rejected advances did not change Plot or the subscription.
 - `node .playwright/import-pilot/localized-billing-api.cjs status`: authenticated entitlement checks passed. Read-only staging SQL confirmed annual price, active status, period end 2028-09-24, revision 3 and authoritative Premium true after renewal.
 - `node .playwright/import-pilot/localized-billing-api.cjs checkout`: HTTP 503, checkout remains closed.
 

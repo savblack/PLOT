@@ -1,6 +1,6 @@
 import { PUBLIC_PROFILE_PAGE } from './copy/publicProfilePage.js';
 
-// The editable shape of a PLOT profile: which social links exist, and which
+// The editable shape of a Plot profile: which social links exist, and which
 // content rails a user can show or hide.
 //
 // Both were hardcoded inside apps/web/src/pages/PublicProfilePage.jsx. Mobile's

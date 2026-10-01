@@ -5,6 +5,7 @@ import { tmdb } from '@plot/core/tmdb.js';
 import { useHistoryDetails } from '@plot/core/useHistoryDetails.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { HistoryPage } from '../components/HistoryView.jsx';
+import { useFixtureTopLists, FIXTURE_PROFILE as PROFILE } from './shareCardFixtures.js';
 
 // The page is presentational; this story feeds it a made-up year of watching.
 // Titles are resolved through the TMDB proxy at mount (never hardcoded ids),
@@ -85,8 +86,11 @@ function LiveHistory() {
   const [year, setYear] = useState(2026);
   const yearEntries = entries.filter(e => e.watched_at.startsWith(String(year)));
   const { details, loading } = useHistoryDetails(yearEntries);
+  const topLists = useFixtureTopLists();
   return (
     <HistoryPage
+      topLists={topLists}
+      profile={PROFILE}
       entries={entries}
       details={details}
       detailsLoading={loading}

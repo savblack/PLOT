@@ -1,17 +1,17 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "PLOT public API",
+    "title": "Plot public API",
     "version": "1.0.0",
     "summary": "The endpoints theplot.tv serves to anyone, without an account.",
-    "description": "PLOT is a film and television companion. This description covers the only endpoints theplot.tv offers publicly: newsletter and waitlist signup, and a health check for them. There is no public API for member data. Watch history, lists, ratings and private notes are reachable only through an authenticated session in the PLOT app, and no part of this API exposes them.",
+    "description": "Plot is a film and television companion. This description covers the only endpoints theplot.tv offers publicly: newsletter and waitlist signup, and a health check for them. There is no public API for member data. Watch history, lists, ratings and private notes are reachable only through an authenticated session in the Plot app, and no part of this API exposes them.",
     "contact": {
-      "name": "PLOT",
+      "name": "Plot",
       "url": "https://theplot.tv/about.html"
     }
   },
   "externalDocs": {
-    "description": "PLOT public API documentation",
+    "description": "Plot public API documentation",
     "url": "https://theplot.tv/api/docs.md"
   },
   "servers": [
@@ -25,7 +25,7 @@
       "get": {
         "operationId": "getUnsubscribe",
         "summary": "Unsubscribe confirmation page",
-        "description": "Opens the confirmation page for an unsubscribe link sent in a PLOT email. The token comes from that email; there is no way to obtain one for an address you do not control.",
+        "description": "Opens the confirmation page for an unsubscribe link sent in a Plot email. The token comes from that email; there is no way to obtain one for an address you do not control.",
         "parameters": [
           { "$ref": "#/components/parameters/action" },
           { "$ref": "#/components/parameters/token" }
@@ -39,7 +39,7 @@
       "post": {
         "operationId": "subscribe",
         "summary": "Subscribe an email address, or complete an unsubscribe",
-        "description": "Without query parameters, subscribes the address in the request body to the PLOT digest, or to the mobile app waitlist when list is mobile-app. The response is the same whether or not the address was already subscribed, so it cannot be used to test whether someone has an account. With action=unsubscribe and a token, the request body is ignored and the subscription is ended; email clients use this form for one-click unsubscribe.",
+        "description": "Without query parameters, subscribes the address in the request body to the Plot digest, or to the mobile app waitlist when list is mobile-app. The response is the same whether or not the address was already subscribed, so it cannot be used to test whether someone has an account. With action=unsubscribe and a token, the request body is ignored and the subscription is ended; email clients use this form for one-click unsubscribe.",
         "parameters": [
           { "$ref": "#/components/parameters/action" },
           { "$ref": "#/components/parameters/token" }
@@ -115,7 +115,7 @@
         "name": "token",
         "in": "query",
         "required": false,
-        "description": "The unsubscribe token from a PLOT email. Required when action=unsubscribe.",
+        "description": "The unsubscribe token from a Plot email. Required when action=unsubscribe.",
         "schema": { "type": "string" }
       }
     },
@@ -133,7 +133,7 @@
           "list": {
             "type": "string",
             "enum": ["mobile-app"],
-            "description": "Omit for the weekly PLOT digest. Use mobile-app to join the app launch waitlist instead."
+            "description": "Omit for the weekly Plot digest. Use mobile-app to join the app launch waitlist instead."
           },
           "source": {
             "type": "string",

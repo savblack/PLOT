@@ -18,6 +18,10 @@
 -- Smart lists still count toward the Free cap in
 -- enforce_custom_list_creation_cap (it counts every row), which is correct:
 -- only Premium can create one, and Premium has no cap.
+--
+-- Renumbered from 20260928100000 to 20261001100000: by the time this merges,
+-- main had applied newer migrations (20261001090000), and an older version
+-- would be skipped. It must sort after main's newest migration when it lands.
 
 alter table public.user_custom_lists
   add column if not exists rules jsonb;
