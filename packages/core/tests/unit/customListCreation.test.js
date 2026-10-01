@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createCustomListRecord, customListCreationError, isCustomListLimitError, CUSTOM_LIST_LIMIT_CODE } from '../../customListCreation.js';
+import { createCustomListRecord, customListCreationError, isCustomListLimitError, isSmartListPremiumError, CUSTOM_LIST_LIMIT_CODE, SMART_LIST_PREMIUM_CODE } from '../../customListCreation.js';
 import { CUSTOM_LISTS } from '../../copy/customLists.js';
 
 function client(result, permission = { data: false, error: null }) {
@@ -62,4 +62,20 @@ test('only the cap code counts as a list-limit error', () => {
   assert.equal(isCustomListLimitError({ code: '42501' }), false);
   assert.equal(isCustomListLimitError(new Error('network')), false);
   assert.equal(isCustomListLimitError(null), false);
+});
+
+test('a smart list sends its rules with the insert', async () => {
+  const db = client({ data: { id: 'smart' }, error: null });
+  const rules = { v: 1, source: 'discover', mediaType: 'movie', genreIds: [] };
+  await createCustomListRecord(db, 'owner', ' Friday ', { rules });
+  assert.deepEqual(db.calls, ['user_custom_lists', { user_id: 'owner', name: 'Friday', rules }]);
+});
+
+test('the database refusing smart list rules becomes the Premium gate', async () => {
+  const db = client({ error: { code: 'P0001', message: SMART_LIST_PREMIUM_CODE } });
+  await assert.rejects(createCustomListRecord(db, 'owner', 'Smart', { rules: { v: 1 } }), error => {
+    assert.equal(isSmartListPremiumError(error), true);
+    assert.equal(isCustomListLimitError(error), false);
+    return true;
+  });
 });

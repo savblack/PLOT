@@ -40,6 +40,7 @@ export const FAILED_ACTIONS = Object.freeze({
   CUSTOM_LIST_RENAME:      'custom_list_rename',
   CUSTOM_LIST_DELETE:      'custom_list_delete',
   CUSTOM_LIST_VISIBILITY:  'custom_list_visibility',
+  SMART_LIST_UPDATE:       'smart_list_update',
   LIST_ITEM_ADD:           'list_item_add',
   LIST_ITEM_REMOVE:        'list_item_remove',
   WATCH_PROGRESS:          'watch_progress',
@@ -75,6 +76,7 @@ export const FAILED_LOADS = Object.freeze({
   WATCHING:     'watching',
   FAVOURITES:   'favourites',
   TONIGHT_PICKS: 'tonight_picks',
+  SMART_LIST:   'smart_list',
 });
 
 /**

@@ -6,12 +6,12 @@
 import { PLANS_PAGE } from './copy/plansPage.js';
 import { FREE_CUSTOM_LIST_CAP } from './premium.js';
 
-/** @typedef {'lists' | 'alerts'} UpgradeReason */
+/** @typedef {'lists' | 'smartLists' | 'alerts'} UpgradeReason */
 
 /**
  * @typedef {object} UpgradeSheetContent
  * @property {string} context  what just happened, e.g. "You've used all 5 free lists"
- * @property {number} meter    how many filled segments the limit meter shows
+ * @property {number} meter    how many filled segments the limit meter shows (0: no meter)
  * @property {string} title
  * @property {string} body
  * @property {Array<{icon: string, label: string, note?: string}>} also
