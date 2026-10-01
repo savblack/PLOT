@@ -9,9 +9,15 @@ const person = (name, username) => ({ actor_display_name: name, actor_username: 
 // (AGENTS.md: never guess one), and there are no poster paths, so the
 // placeholder slot renders.
 const alert = (type, media_title, extra) => ({ actor_id: null, tmdb_id: 0, media_poster_path: null, media_title, type, ...extra });
+const episode = (season_number, episode_number, episode_count, media_title) => ({
+  type: 'new_episode', actor_id: null, tmdb_id: 0, media_type: 'tv', season_number, episode_number, episode_count, media_title, media_poster_path: null,
+});
 const list = [
   { id: 'a1', created_at: at(1), read_at: null, ...alert('person_release', 'Harbour Lights', { media_type: 'movie', person_name: 'Ada Quill', person_role: 'cast', release_kind: 'theatrical' }) },
+  { id: 'e1', created_at: at(2), read_at: null, ...episode(5, 1, 1, 'Quiet Hours') },
   { id: 'a2', created_at: at(3), read_at: null, ...alert('season_ready', 'The Night Desk', { media_type: 'tv', season_number: 2, provider_name: 'Service One' }) },
+  { id: 'e2', created_at: at(4), read_at: null, ...episode(2, 1, 8, 'Low Tide') },
+  { id: 'e3', created_at: at(26), read_at: at(20), ...episode(3, 4, 1, 'Small Mercies') },
   { id: '1', type: 'follow_request', created_at: at(2), read_at: null, ...person('Priya Nair', 'priya') },
   { id: '2', type: 'new_follower', created_at: at(4), read_at: null, ...person('Tom Reilly', 'tomr') },
   { id: '3', type: 'follow_accepted', created_at: at(6), read_at: null, ...person('Mei Chen', 'meichen') },

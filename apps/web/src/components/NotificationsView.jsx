@@ -11,8 +11,8 @@ import { useWatchTogether } from '@plot/core/useWatchTogether.js';
 import { AcceptDialog } from './WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { COMMON } from '../copy/common.js';
-import { notificationPhrase, alertPhrase, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T } from '@plot/core/copy/notifications.js';
-import { groupNotifications, notificationKind, actorName, rollupNames, isAlertNotification } from '@plot/core/notificationGroups.js';
+import { notificationPhrase, alertPhrase, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T, NEW_EPISODE_NOTIFICATION as EP } from '@plot/core/copy/notifications.js';
+import { groupNotifications, notificationKind, actorName, rollupNames, isAlertNotification, isTitleNotification } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
 import { posterUrl } from '../utils/images.js';
 import { requestShareCard, CARD_IDS } from '@plot/core/shareCards.js';
@@ -26,19 +26,20 @@ const KindIcon = ({ kind }) => kind === 'request'
     ? <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
     : <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z" /></svg>;
 
+// Title rows (Premium alerts and new_episode) have no actor: the poster stands
+// where the avatar would.
+function Poster({ path }) {
+  return path
+    ? <img className="notif-poster" src={posterUrl(path, 'w92')} alt="" />
+    : <span className="notif-poster" aria-hidden="true" />;
+}
+
 function Avatar({ url, name, small = false, kind }) {
   const cls = `notif-avatar${small ? ' notif-avatar--sm' : ''}`;
   return <span className="notif-avatar-wrap">
     {url ? <img className={cls} src={url} alt="" /> : <span className={cls} aria-hidden="true">{(name || '?').charAt(0).toUpperCase()}</span>}
     {kind && <span className={`notif-kind notif-kind--${kind}`} aria-hidden="true"><KindIcon kind={kind} /></span>}
   </span>;
-}
-
-// Premium alert rows have no actor: the poster stands where the avatar would.
-function Poster({ path }) {
-  return path
-    ? <img className="notif-poster" src={posterUrl(path, 'w92')} alt="" />
-    : <span className="notif-poster" aria-hidden="true" />;
 }
 
 /** Pure layout; data comes from the hooks in NotificationsView (and from a story). */
@@ -131,6 +132,16 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
                   </span>
                   <span className="hist-card-note notif-time">{relativeTime(n.created_at, now)}</span>
                 </button>
+                : isTitleNotification(n)
+                ? <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpenTitle?.(n.tmdb_id, n.media_type)}>
+                  <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
+                  <Poster path={n.media_poster_path} />
+                  <span className="notif-row-text">
+                    <span className="notif-badge">{(n.episode_count ?? 1) > 1 ? EP.badgePlural : EP.badge}</span>
+                    <span className="notif-row-line"><strong>{n.media_title || EP.untitled}</strong> {EP.phrase(n)}</span>
+                  </span>
+                  <span className="hist-card-note notif-time">{relativeTime(n.created_at, now)}</span>
+                </button>
                 : <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpen?.(n.actor_username, n.type)}>
                 <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
                 <Avatar url={n.actor_avatar_url} name={actorName(n)} kind={notificationKind(n.type)} />
@@ -182,6 +193,7 @@ export default function NotificationsView() {
       onApprove={approve} onDecline={decline} onOpen={(username, type) => { if (username) navigate(notificationPath(username, type)); }}
       onOpenTitle={(tmdbId, mediaType) => openPanel(tmdbId, mediaType === 'movie' ? 'movie' : 'tv', 'notification')}
       onReviewWatch={setReviewing} onDeclineWatch={r => watch.respond(r.other_id, false)}
+      onOpenTitle={(tmdbId, mediaType) => openPanel(tmdbId, mediaType === 'movie' ? 'movie' : 'tv', 'notification')}
       onMarkAllRead={handleMarkAllRead}
       wasUnread={n => unreadIds?.has(n.id) ?? false}
       moment={moment}

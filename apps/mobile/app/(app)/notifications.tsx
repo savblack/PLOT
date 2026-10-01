@@ -1,22 +1,25 @@
 /**
  * Notifications — /(app)/notifications (mirrors web NotificationsView).
- * Accepted follow requests, new requests, new followers and post activity.
+ * Accepted follow requests, new requests, new followers, post activity, and
+ * new episodes of followed shows (title rows: a poster instead of an avatar,
+ * and they open the title rather than a profile).
  */
 import { useEffect, useMemo } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useNotifications } from '@plot/core/useNotifications.js';
-import { notificationPhrase, alertPhrase, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY } from '@plot/core/copy/notifications.js';
-import { isAlertNotification } from '@plot/core/notificationGroups.js';
+import { notificationPhrase, alertPhrase, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NEW_EPISODE_NOTIFICATION as EP } from '@plot/core/copy/notifications.js';
+import { isAlertNotification, isTitleNotification } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
 import { Avatar } from '../../components/Avatar';
-import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 
 interface NotificationRow {
@@ -28,11 +31,14 @@ interface NotificationRow {
   actor_display_name?: string;
   actor_avatar_url?: string | null;
   post_title?: string;
-  // Premium alert rows (person_release, season_ready): no actor, a title instead.
+  // Title rows (Premium alerts and new_episode): no actor, a title instead.
   tmdb_id?: number | null;
   media_type?: string | null;
   media_title?: string | null;
+  media_poster_path?: string | null;
   season_number?: number | null;
+  episode_number?: number | null;
+  episode_count?: number | null;
   person_name?: string | null;
   person_role?: string | null;
   release_kind?: string | null;
@@ -48,13 +54,15 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { userId } = useAppData();
   const { list, loading, refreshList, markAllRead } = useNotifications(userId);
+  const { open: openPanel } = useMediaPanel();
 
   // Load the feed and clear the unread badge on open — same as web.
   useEffect(() => { refreshList(); }, [refreshList]);
   useEffect(() => { markAllRead(); }, [markAllRead]);
 
   const go = (n: NotificationRow) => {
-    if (n.type === 'follow_request') router.push('/(app)/requests');
+    if (isTitleNotification(n) && n.tmdb_id != null) openPanel(n.tmdb_id, n.media_type === 'movie' ? 'movie' : 'tv');
+    else if (n.type === 'follow_request') router.push('/(app)/requests');
     // No feed surface on mobile yet (SHOW_SOCIAL_FEED is off on both
     // platforms), so post activity opens the actor instead of a dead route.
     else if (n.actor_username) router.push(`/(app)/u/${n.actor_username}`);
@@ -104,6 +112,37 @@ export default function NotificationsScreen() {
                     <Text style={styles.rowTime}>{relativeTime(n.created_at)}</Text>
                   </View>
                 </View>
+              );
+            }
+            if (isTitleNotification(n)) {
+              const title = n.media_title || EP.untitled;
+              const phrase = EP.phrase({
+                season_number: n.season_number ?? 0,
+                episode_number: n.episode_number ?? 0,
+                episode_count: n.episode_count,
+              });
+              const poster = posterUrl(n.media_poster_path, 'w92');
+              return (
+                <TouchableOpacity
+                  key={n.id}
+                  style={[styles.row, !n.read_at && styles.rowUnread]}
+                  onPress={() => go(n)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${title} ${phrase}`}
+                >
+                  {poster
+                    ? <Image source={{ uri: poster }} style={styles.poster} />
+                    : <View style={styles.poster} />}
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowBadge}>{(n.episode_count ?? 1) > 1 ? EP.badgePlural : EP.badge}</Text>
+                    <Text style={styles.rowText}>
+                      <Text style={styles.rowName}>{title}</Text>
+                      {' '}{phrase}
+                    </Text>
+                    <Text style={styles.rowTime}>{relativeTime(n.created_at)}</Text>
+                  </View>
+                </TouchableOpacity>
               );
             }
             const name = n.actor_display_name || n.actor_username || '';
@@ -157,5 +196,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowName: { fontFamily: fontFamily.sansBold },
   rowMuted: { color: colors.textMuted },
   rowReview: { color: colors.accent },
+  // Title rows: the poster stands where the 44pt avatar would.
+  poster: { width: 44, height: 66, borderRadius: radii.sm, backgroundColor: colors.surfaceSunken },
+  rowBadge: { fontFamily: fontFamily.sansMedium, fontSize: 12, color: colors.textSecondary, marginBottom: 2 },
   rowTime: { fontFamily: fontFamily.sans, fontSize: 12, color: colors.textMuted, marginTop: 2 },
 });
