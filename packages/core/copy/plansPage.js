@@ -95,6 +95,13 @@ export const PLANS_PAGE = {
         body: 'Save a few rules, like comedies from the 2010s on your services, and the list keeps finding matches, including new discoveries.',
         also: ['pick', 'together'],
       },
+      // A Free list owner choosing Invite people. Only the host needs Premium.
+      collaborativeLists: {
+        context: () => 'Collaborative lists are part of Premium',
+        title: 'Build a list together.',
+        body: 'Send a link and anyone can add titles to your list. Only you need Premium. Friends join with a free account.',
+        also: ['together', 'lists'],
+      },
       alerts: {
         context: (_cap) => 'Alerts are a Premium feature',
         title: 'Hear about it when it’s ready.',
@@ -106,7 +113,9 @@ export const PLANS_PAGE = {
   host: {
     title: 'Only the host needs Premium.',
     body: 'Start a collaborative list or a shared watch session and invite anyone. Friends can add ideas with a free account.',
-    status: 'Planned',
+    // Live on web (PLO-525): Premium hosts invite by link, Free friends join.
+    // Mobile parity: #1089.
+    status: 'New',
     you: 'You',
   },
   // Every cell is true (tick), false (dash) or a short value. `tag` is an optional note after the label.
@@ -168,7 +177,7 @@ export const PLANS_PAGE = {
     { id: 'social', label: 'Follow friends and share profiles' },
     { id: 'releaseAlerts', label: 'Movie and episode release notifications', planned: true,
       description: 'Get a notification when movies and episodes you follow are released. Planned for Free.' },
-    { id: 'participation', label: 'Join collaborative lists and shared watch sessions', planned: true,
+    { id: 'participation', label: 'Join collaborative lists and shared watch sessions',
       description: 'Join for free. For watching together, only one of you needs Premium; for a collaborative list, only the person who made it does.' },
     { id: 'imports', label: 'Manual imports and data exports',
       description: 'Import watch history yourself and export your data.' },
@@ -181,7 +190,7 @@ export const PLANS_PAGE = {
       description: 'Choose a movie or a show, how much time you have and the services you use. Get five options for tonight, or let a random pick make the decision.' },
     { id: 'fullStats', label: 'Deeper viewing stats', highlight: true,
       description: 'Additional stats beyond the Free overview you already have, starting with taste overlap: see how your ratings line up with anyone you follow.' },
-    { id: 'collaborativeLists', label: 'Create collaborative lists', highlight: true,
+    { id: 'collaborativeLists', label: 'Create collaborative lists', highlight: true, live: true,
       description: 'Build your next movie night together. Invite friends to add titles, even when they use Free.' },
     { id: 'unlimitedLists', label: 'Unlimited custom lists', highlight: true,
       description: 'A list for every mood, theme and movie marathon, with no limit on how many you create.' },

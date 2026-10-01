@@ -23,6 +23,13 @@ import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 import { personName } from '@plot/core/watchTogether.js';
 import { SharedListPeopleDialog } from './WatchTogetherParts.jsx';
+import { ListInviteDialog } from './CollaborativeListParts.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
+import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
+import { listInviteAction } from '@plot/core/listInvites.js';
+import { useListHostPremium } from '@plot/core/useListInvites.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
+import { EVENTS, track } from '../lib/analytics.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
@@ -715,7 +722,20 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   const shared = SHOW_WATCH_TOGETHER && (!isOwner || list.people?.length > 0);
   const others = (list.people || []).filter(p => p.user_id !== user?.id);
   const [addingPeople, setAddingPeople] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  // Collaborative lists (PLO-525): the owner needs Premium to invite anyone;
+  // members can add people only while the owner has it.
+  const hostPremium = useListHostPremium(list.id, { enabled: SHOW_WATCH_TOGETHER && !isOwner });
+  const invitePeople = () => {
+    const action = listInviteAction({ isOwner, viewerPremium: isPremiumProfile(profile), hostPremium });
+    if (action === 'upgrade') {
+      track(EVENTS.PREMIUM_GATE_HIT, { feature: 'collaborative_lists' });
+      setUpgrading(true);
+    } else if (action === 'invite') setInviting(true);
+    else setAddingPeople(true);
+  };
   const selection = useSelection();
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(list.name);
@@ -741,7 +761,8 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   // can change visibility or delete (docs/design/watch-together/README.md).
   const menuItems = [
     { label: 'Rename', onClick: () => { setRenameValue(list.name); setRenaming(true); } },
-    ...(shared ? [{ label: WATCH_TOGETHER.sharedList.addPeople, onClick: () => setAddingPeople(true) }] : []),
+    // Owners invite (any of their lists can become collaborative); members add people.
+    ...(SHOW_WATCH_TOGETHER ? [{ label: isOwner ? COLLABORATIVE_LISTS.invite : WATCH_TOGETHER.sharedList.addPeople, onClick: invitePeople }] : []),
     // Only the creator sets visibility, shares or deletes; members can leave.
     ...(isOwner ? LIST_VISIBILITIES.map(v => ({
       label: PROFILE_PRIVACY.listVisibility[v], hint: PROFILE_PRIVACY.listVisibilityHint[v],
@@ -843,7 +864,9 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
       {showAdd && (
         <AddToFavoritesModal title="Add to List" onAdd={(item) => addItem(list.id, item)} onClose={() => setShowAdd(false)} />
       )}
-      {addingPeople && <SharedListPeopleDialog list={list} onAdd={memberId => customLists.addMember(list.id, memberId)} onClose={() => setAddingPeople(false)} />}
+      {addingPeople && <SharedListPeopleDialog list={list} locked={hostPremium !== true} onAdd={memberId => customLists.addMember(list.id, memberId)} onClose={() => setAddingPeople(false)} />}
+      {inviting && <ListInviteDialog list={list} onClose={() => setInviting(false)} />}
+      {upgrading && <UpgradeSheet reason="collaborativeLists" onClose={() => setUpgrading(false)} />}
       {confirmLeave && (
         <ConfirmModal
           title={WATCH_TOGETHER.sharedList.leaveTitle(list.name)}

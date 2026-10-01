@@ -95,7 +95,7 @@ configure({
     }[action];
     if (name) track(name, props);
   },
-  // Watch together: one seam, six names (see analyticsEvents.js).
+  // Watch together: one seam, eight names (see analyticsEvents.js).
   onWatchTogether: ({ action, ...props }) => {
     const name = {
       invite_sent:      EVENTS.WATCH_TOGETHER_INVITE_SENT,
@@ -104,6 +104,8 @@ configure({
       link_accepted:    EVENTS.WATCH_TOGETHER_LINK_ACCEPTED,
       session_started:  EVENTS.WATCH_TOGETHER_SESSION_STARTED,
       match:            EVENTS.WATCH_TOGETHER_MATCH,
+      list_invite_shared: EVENTS.COLLAB_LIST_INVITE_SHARED,
+      list_joined:      EVENTS.COLLAB_LIST_JOINED,
     }[action];
     if (name) track(name, props);
   },

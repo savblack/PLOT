@@ -6,7 +6,7 @@
 import { PLANS_PAGE } from './copy/plansPage.js';
 import { FREE_CUSTOM_LIST_CAP } from './premium.js';
 
-/** @typedef {'lists' | 'smartLists' | 'alerts'} UpgradeReason */
+/** @typedef {'lists' | 'smartLists' | 'collaborativeLists' | 'alerts'} UpgradeReason */
 
 /**
  * @typedef {object} UpgradeSheetContent

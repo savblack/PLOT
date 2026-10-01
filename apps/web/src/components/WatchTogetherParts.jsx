@@ -14,6 +14,7 @@ import { tileMode, tileShowsCount, personName, REQUESTS_FROM_OPTIONS } from '@pl
 import { useWatchTogether, useWatchTogetherStatus, useWatchTogetherLink } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
 import { useApp } from '../hooks/useApp.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import './WatchTogetherView.css';
@@ -295,17 +296,26 @@ export function ShareListDialog({ partner, overlapCount, onClose }) {
 }
 
 /**
- * "Add people" on a shared list: partners who aren't on it yet.
+ * "Add people" on a shared list: partners who aren't on it yet. `locked`
+ * when the list's owner doesn't have Premium, so it can't take new people
+ * (supabase/migrations/20261001140000_collaborative_list_invites.sql).
  *
- * @param {{ list: { id: string, people?: { user_id: string }[] }, onAdd: (id: string) => Promise<boolean>, onClose: () => void }} props
+ * @param {{ list: { id: string, people?: { user_id: string }[] }, locked?: boolean, onAdd: (id: string) => Promise<boolean>, onClose: () => void }} props
  */
-export function SharedListPeopleDialog({ list, onAdd, onClose }) {
+export function SharedListPeopleDialog({ list, locked = false, onAdd, onClose }) {
   const { user } = useApp();
   const { partners } = useWatchTogether(user?.id);
   const onList = new Set((list.people || []).map(p => p.user_id));
   const [added, setAdded] = useState(() => new Set());
   const candidates = partners.filter(p => !onList.has(p.other_id));
   const L = T.sharedList;
+  if (locked) {
+    return (
+      <ResponsiveDialog title={L.addPeople} onClose={onClose}>
+        <div className="wt-accept"><p className="wt-note">{COLLABORATIVE_LISTS.hostNeedsPremium}</p></div>
+      </ResponsiveDialog>
+    );
+  }
   return (
     <ResponsiveDialog title={L.addPeople} onClose={onClose}>
       <div className="wt-accept">
