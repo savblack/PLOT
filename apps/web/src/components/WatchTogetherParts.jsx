@@ -298,7 +298,7 @@ export function ShareListDialog({ partner, overlapCount, onClose }) {
 /**
  * "Add people" on a shared list: partners who aren't on it yet. `locked`
  * when the list's owner doesn't have Premium, so it can't take new people
- * (supabase/migrations/20261001110000_collaborative_list_invites.sql).
+ * (supabase/migrations/20261001140000_collaborative_list_invites.sql).
  *
  * @param {{ list: { id: string, people?: { user_id: string }[] }, locked?: boolean, onAdd: (id: string) => Promise<boolean>, onClose: () => void }} props
  */

@@ -210,7 +210,7 @@ Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
   invite link; "Got an invite?". Free members also see Get Premium. Mobile
   stacks; from 900px the people and invite link sit side by side.
 - Collaborative list invites
-  (`20261001110000_collaborative_list_invites.sql`): one reusable link per
+  (`20261001140000_collaborative_list_invites.sql`): one reusable link per
   list at `/join-list/<key>` (`user_custom_list_invites`, no client policies),
   `my_list_invite` and `reset_list_invite` (owner only; getting a link needs
   Premium), `list_invite_preview` (signed out too, block filtered),

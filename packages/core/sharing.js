@@ -61,7 +61,7 @@ export function buildWatchTogetherLinkUrl({ username = '', key = '', origin = SH
 /**
  * A collaborative list invite link. The key is the whole link: it picks the
  * list and is what lets someone join. Reusable until the list owner resets it.
- * See supabase/migrations/20261001110000_collaborative_list_invites.sql.
+ * See supabase/migrations/20261001140000_collaborative_list_invites.sql.
  * @param {{key?: string, origin?: string}} options
  */
 export function buildListInviteUrl({ key = '', origin = SHARE_ORIGIN } = {}) {
