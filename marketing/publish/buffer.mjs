@@ -228,7 +228,7 @@ export const channelCapacity = async () => {
  *
  * This is what "let Buffer pick the time" actually means. The alternative —
  * `mode: addToQueue`, which drops a post into the next free slot — cannot be
- * used here, because it lets QUEUE ORDER decide the date. PLOT's copy is
+ * used here, because it lets QUEUE ORDER decide the date. Plot's copy is
  * day-specific ("14 days until...", "aired last night"), and Threads has only
  * two slots a day against roughly sixteen posts a week, so posts would quietly
  * land on days their own text contradicts. Pinning the day and borrowing the

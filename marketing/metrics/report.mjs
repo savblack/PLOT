@@ -58,7 +58,7 @@ const main = async () => {
   ` : '<p>No published posts this week yet.</p>';
 
   const html = `<div style="font-family:sans-serif;max-width:640px;color:#1a1a1a;">
-    <h1 style="font-size:1.3rem;margin:0 0 6px;">PLOT marketing — weekly report</h1>
+    <h1 style="font-size:1.3rem;margin:0 0 6px;">Plot marketing — weekly report</h1>
     <p style="margin:0 0 20px;color:#888;font-size:0.85rem;">${new Date().toDateString()}</p>
 
     <table style="border-collapse:collapse;font-size:0.85rem;width:100%;">
@@ -81,7 +81,7 @@ const main = async () => {
     ${troubledRows ? `<h2 style="font-size:1rem;margin:24px 0 8px;">Needs attention</h2><ul style="font-size:0.9rem;">${troubledRows}</ul>` : ''}
   </div>`;
 
-  await sendEmail({ to: ADMIN_EMAIL, subject: 'PLOT marketing — weekly report', html });
+  await sendEmail({ to: ADMIN_EMAIL, subject: 'Plot marketing — weekly report', html });
   console.log(`Weekly report sent to ${ADMIN_EMAIL}.`);
 };
 

@@ -111,7 +111,7 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW_NAME: reconcile
-          ALERT_SUBJECT: 'PLOT marketing: nothing is queued'
+          ALERT_SUBJECT: 'Plot marketing: nothing is queued'
           ALERT_BODY: >-
             No marketing posts are scheduled for the next 3 days. Either the
             weekly batch did not run, or everything it produced was rejected.

@@ -143,7 +143,7 @@ function branchNewVersions(files) {
 const LEDGER_SQL = `select version, name from supabase_migrations.schema_migrations`;
 
 // Objects owned by an extension are skipped: their definitions belong to the
-// platform, not to PLOT's migrations.
+// platform, not to Plot's migrations.
 //
 // Privileges are compared as what anon and authenticated can actually DO, not
 // as raw ACL strings. Production spells out anon/authenticated on every

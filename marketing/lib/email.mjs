@@ -7,7 +7,7 @@ const apiKey = () => {
   return key;
 };
 
-export const FROM_MARKETING = 'PLOT <hello@theplot.tv>';
+export const FROM_MARKETING = 'Plot <hello@theplot.tv>';
 export const ADMIN_EMAIL = process.env.MARKETING_ADMIN_EMAIL || 'feedback@theplot.tv';
 
 export const sendEmail = async ({ to, subject, html, from = FROM_MARKETING, headers = undefined }) => {
