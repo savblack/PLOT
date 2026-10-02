@@ -37,12 +37,12 @@ test('closed checkout still states the trial and does not deny it', () => {
   assert.doesNotMatch(PLANS_PAGE.checkoutMessage, /nothing to pay today/i);
   assert.doesNotMatch(PLANS_PAGE.checkoutMessage, /does not start a payment/i);
   assert.equal(SETTINGS_VIEW.billing.comingSoonMessage, PLANS_PAGE.checkoutMessage);
-  assert.match(SETTINGS_VIEW.billing.exploreHint, /Checkout is not open yet/);
-  assert.match(SETTINGS_VIEW.billing.exploreHint, /7-day trial needs a card/);
+  assert.match(SETTINGS_VIEW.billing.exploreHint, /7-day free trial/);
+  assert.doesNotMatch(SETTINGS_VIEW.billing.exploreHint, /not open yet|needs a card/);
   assert.doesNotMatch(SETTINGS_VIEW.billing.exploreHint, /nothing to pay today/i);
 
   const upgrade = PLANS_PAGE.faqs.find(item => item.q === 'Can I upgrade now?');
-  assert.match(upgrade.a, /Checkout is not open/);
+  assert.doesNotMatch(upgrade.a, /not open|Not yet/);
   assert.match(upgrade.a, /US\$3\/month or US\$24\/year, taxes included, with a 7-day free trial for new subscribers/);
   assert.doesNotMatch(upgrade.a, /does not start a payment or a trial/);
 });

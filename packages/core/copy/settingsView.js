@@ -50,10 +50,10 @@ export const SETTINGS_VIEW = {
     monthly: 'Monthly',
     yearly: 'Yearly',
     checkout: 'Explore Premium',
-    comingSoon: 'plot Premium is coming soon',
+    comingSoon: 'plot Premium',
     // Same closed-checkout wording as the plans page, so Settings cannot deny the trial.
     comingSoonMessage: PLANS_PAGE.checkoutMessage,
-    exploreHint: 'Checkout is not open yet. When Premium opens, the 7-day trial needs a card, and you won’t be charged until 7 days after you start.',
+    exploreHint: 'New subscribers get a 7-day free trial. You won’t be charged until 7 days after you start.',
     portalHint: 'Update payment details, view invoices or cancel your subscription.',
     supportTitle: 'A little support goes a long way.',
     supportHint: 'Don’t want to subscribe but like what Plot is doing? Feel free to support it on Ko-fi. Plot is built and run by a solo developer with no external funding or backing. Every contribution helps keep it running, growing and, most importantly, independent.',
