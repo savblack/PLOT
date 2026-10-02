@@ -94,7 +94,7 @@ const finishBatchRun = async (supabase, runId, patch) => {
 /**
  * Room left per Buffer service, as a mutable budget for this run.
  *
- * The plan caps the queue at 10 posts PER CHANNEL, and a week of PLOT is about
+ * The plan caps the queue at 10 posts PER CHANNEL, and a week of Plot is about
  * 16 per channel — roughly 2.6 posts a day, each fanning out to two or three
  * channels. So a week does not fit, and this is not an edge case to guard
  * against but the normal condition of every run.

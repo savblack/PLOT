@@ -35,7 +35,7 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // posts: [{ title, facts: string[], meta: object, copy?: {...} }]
 export const serialize = (date, posts) => {
   const out = [
-    `# PLOT — What's On — ${date}`,
+    `# Plot — What's On — ${date}`,
     '',
     '<!-- Built by marketing/manual/build.mjs. Images sit beside this file.',
     '     Replace every TODO inside the <copy> blocks (voice guide: marketing/VOICE.md).',

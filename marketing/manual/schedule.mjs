@@ -14,7 +14,7 @@ export const TYPES = {
   countdown:             { label: 'Countdown',              render: true,  feed: true },
   spotlight:             { label: 'Spotlight',              feed: false, card: 'title', kicker: 'Spotlight' },
   hidden_gem:            { label: 'Hidden gem',             feed: false, card: 'title', kicker: 'Hidden gem' },
-  what_to_watch_tonight: { label: 'What to watch tonight',  feed: false, card: 'title', kicker: 'Tonight on PLOT' },
+  what_to_watch_tonight: { label: 'What to watch tonight',  feed: false, card: 'title', kicker: 'Tonight on Plot' },
   text_question:         { label: 'Text question',          feed: false },  // text-only, no image
   question_of_week:      { label: 'Question of the week',   feed: false },  // text-only, no image
 };

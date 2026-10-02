@@ -4,6 +4,10 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import { SHOW_PRICING_PAGE, SHOW_WATCH_TOGETHER } from './launchFeatures.js';
+import {
+  loadDiscoverView, loadTonightView, loadGuideView, loadCalendarView, loadMyListsView,
+  loadHistoryView, loadListPage, loadSearchView, loadSettingsView,
+} from './routeChunks.js';
 import { isPreviewDeployment } from './utils/previewDeployment.js';
 
 // The auth entry/exit points must never fail, so they're bundled eagerly (not
@@ -21,18 +25,18 @@ const App = lazy(() => import('./App.jsx'));
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute.jsx'));
 
 // Layout + views
-const DiscoverView = lazy(() => import('./components/DiscoverView.jsx'));
+const DiscoverView = lazy(loadDiscoverView);
 const NewReleasesView = lazy(() => import('./components/NewReleasesView.jsx'));
 const BroadcastRegionSettingsPreview = lazy(() => import('./components/BroadcastRegionSettings.jsx'));
 const BroadcastGuidePreview = lazy(() => import('./components/BroadcastGuidePreview.jsx'));
-const GuideView   = lazy(() => import('./components/GuideView.jsx'));
-const CalendarView= lazy(() => import('./components/CalendarView.jsx'));
-const MyListsView   = lazy(() => import('./components/MyListsView.jsx'));
-const HistoryView   = lazy(() => import('./components/HistoryView.jsx'));
-const ListPage      = lazy(() => import('./components/ListPage.jsx'));
-const SearchView  = lazy(() => import('./components/SearchView.jsx'));
-const TonightView = lazy(() => import('./components/TonightView.jsx'));
-const SettingsView= lazy(() => import('./components/SettingsView.jsx'));
+const GuideView   = lazy(loadGuideView);
+const CalendarView= lazy(loadCalendarView);
+const MyListsView   = lazy(loadMyListsView);
+const HistoryView   = lazy(loadHistoryView);
+const ListPage      = lazy(loadListPage);
+const SearchView  = lazy(loadSearchView);
+const TonightView = lazy(loadTonightView);
+const SettingsView= lazy(loadSettingsView);
 const ThemesGallery = lazy(() => import('./components/ThemesGallery.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));

@@ -61,7 +61,7 @@ begin
     'event', jsonb_build_object('source', 'test', 'source_account', 'saved-export',
       'source_key', 'atomic-watch', 'tmdb_id', tmdb_id, 'media_type', media_type,
       'date_precision', 'unknown', 'external_ids', '{}'::jsonb),
-    'summary', to_jsonb(f) || jsonb_build_object('note', 'must not replace PLOT note', 'rating', 1)))
+    'summary', to_jsonb(f) || jsonb_build_object('note', 'must not replace Plot note', 'rating', 1)))
     into payload from event_test_fixture f;
   result := public.import_watch_events(payload);
   if result->>'inserted' <> '1' then raise exception 'Event not inserted'; end if;
@@ -69,9 +69,9 @@ begin
   if result->>'duplicates' <> '1' then raise exception 'Retry duplicated event'; end if;
   if exists (select 1 from public.history h join event_test_fixture f using (id)
     where h.note is distinct from f.note or h.rating is distinct from f.rating) then
-    raise exception 'Import replaced PLOT edit';
+    raise exception 'Import replaced Plot edit';
   end if;
-  raise notice 'PASS atomic import, repeat-file idempotency and PLOT edit preservation';
+  raise notice 'PASS atomic import, repeat-file idempotency and Plot edit preservation';
   payload := jsonb_set(payload, '{0,event,source_key}', '"rollback-watch"');
   begin
     perform public.import_watch_events(payload || '[{"event":{},"summary":{}}]'::jsonb);

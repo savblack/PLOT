@@ -127,7 +127,7 @@ for (const p of rows) (byday[dkey(p.scheduled_for)] = byday[dkey(p.scheduled_for
 const days = Object.keys(byday).sort().map((d) => `<h2>${esc(day(byday[d][0].scheduled_for))}</h2>${byday[d].map(post).join('')}`).join('');
 const n = (s) => rows.filter((p) => p.status === s).length;
 
-const html = `<!doctype html><meta charset=utf-8><title>PLOT: Week Review</title><style>
+const html = `<!doctype html><meta charset=utf-8><title>Plot: Week Review</title><style>
 body{font-family:'DM Sans',system-ui,sans-serif;color:#15140f;max-width:760px;margin:0 auto;padding:24px 18px 80px;background:#fbfaf8}
 h1{font-size:1.5rem;font-weight:400;margin:0 0 4px}h2{font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:#76746c;margin:30px 0 12px;border-bottom:1px solid #e7e3dc;padding-bottom:6px}
 .sub{color:#76746c;margin:0 0 8px}
@@ -145,7 +145,7 @@ h1{font-size:1.5rem;font-weight:400;margin:0 0 4px}h2{font-size:.85rem;text-tran
 iframe{width:100%;height:760px;border:1px solid #e7e3dc;border-radius:12px;background:#fff}
 a{color:#0F6E56}
 </style>
-<h1>PLOT: Week Review</h1>
+<h1>Plot: Week Review</h1>
 <p class=sub>${rows.length} posts · ${n('needs_review')} need review · ${n('approved')} approved · ${n('vetoed')} rejected</p>
 ${paused ? '<div class=paused>⏸ Publishing is paused — approved posts will not send until resumed.</div>' : ''}
 ${days || '<p class=sub>Nothing in the pipeline yet.</p>'}

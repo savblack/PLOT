@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { track, resetAnalytics, EVENTS } from '../lib/analytics.js';
+import { _resetHistoryCache } from '@plot/core/useHistory.js';
 import { clearCachedSession } from '../utils/sessionCache.js';
 import './AuthPage.css';
 import { loadSupabase } from '../utils/loadSupabase.js';
@@ -25,6 +26,7 @@ export default function LogoutPage() {
       // unmounted. Clear the cached profile, including calendar_token, before
       // any network operation or redirect can fail.
       clearCachedSession();
+      _resetHistoryCache();
       // Capture before the reset, or the event lands on the fresh anonymous
       // profile instead of the person who actually signed out.
       track(EVENTS.USER_SIGNED_OUT, {});

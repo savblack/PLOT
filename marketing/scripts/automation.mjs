@@ -264,7 +264,7 @@ const printDoctor = () => {
     ['Manual fallback output', MANUAL_OUTPUT_ROOT],
   ];
 
-  console.log('PLOT marketing automation');
+  console.log('Plot marketing automation');
   for (const [label, value] of lines) console.log(`${label}: ${value}`);
   console.log('\nCommands:');
   console.log('  npm run weekly');

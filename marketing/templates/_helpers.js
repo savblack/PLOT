@@ -40,7 +40,7 @@ const metaCaps = (kind, dateText) => {
   return line;
 };
 
-// Brand chrome on every card: big PLOT wordmark top-left, and a footer
+// Brand chrome on every card: big plot wordmark top-left, and a footer
 // strip with the site. (TMDB attribution lives in the profile bios and the
 // website footer, not on the cards.)
 const plotMark = () => el('div', 'plot-mark', 'plot');

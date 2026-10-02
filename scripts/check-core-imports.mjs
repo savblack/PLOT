@@ -9,7 +9,7 @@
 //
 // CI's `tsc --noEmit` did catch it. What it cannot be trusted to catch is the
 // same mistake made from a nested git worktree (inside the main checkout, e.g.
-// <repo>/.claude/worktrees/<name>). PLOT's convention is sibling worktrees at
+// <repo>/.claude/worktrees/<name>). Plot's convention is sibling worktrees at
 // ../PLOT-worktrees/<name> (AGENTS.md + .agents/skills/plot-worktree). Nested
 // trees are unsafe: TypeScript walks up the ancestor node_modules chain and
 // reaches <repo>/node_modules/@plot/core -> <repo>/packages/core — the PARENT
