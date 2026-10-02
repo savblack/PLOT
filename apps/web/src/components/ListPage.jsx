@@ -84,9 +84,6 @@ function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQ
             <div className="list-page-toolbar-actions">
               <button type="button" className="list-page-view" aria-label={CUSTOM_LISTS.gridView} aria-pressed={view === 'grid'} onClick={() => onView('grid')}><GridIcon /></button>
               <button type="button" className="list-page-view" aria-label={CUSTOM_LISTS.listView} aria-pressed={view === 'rows'} onClick={() => onView('rows')}><RowsIcon /></button>
-              {/* Below the sidebar width a shared list's Add is one more round
-                  control here, not a pink button (A8). */}
-              {onAdd && <button type="button" className="list-page-view list-page-add" aria-label={COLLABORATIVE_LISTS.page.addTitle} onClick={onAdd}><PlusIcon /></button>}
               <KebabMenu
                 ariaLabel={CUSTOM_LISTS.sortList}
                 buttonClassName="list-page-view"
@@ -97,6 +94,9 @@ function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQ
                   { label: CUSTOM_LISTS.titleDescending, onClick: () => onSort('title-desc') },
                 ]}
               />
+              {/* Below the sidebar width a shared list's Add is one more round
+                  control here, not a pink button (A8). */}
+              {onAdd && <button type="button" className="list-page-view list-page-add" aria-label={COLLABORATIVE_LISTS.page.addTitle} onClick={onAdd}><PlusIcon /></button>}
               <div className="list-page-actions">{headerRight}</div>
             </div>
           </div>

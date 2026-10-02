@@ -404,7 +404,7 @@ export function ListPeopleSheet({ members, onInvite, onWatchTogether, onClose })
         <button type="button" className="btn btn-secondary" onClick={onInvite}><PeopleIcon />{P.addPerson}</button>
         {onWatchTogether && <button type="button" className="btn btn-primary" onClick={onWatchTogether}><SofaIcon />{T.navLabel}</button>}
       </div>}>
-      <div className="wt-accept">
+      <div className="wt-accept cl-people-sheet">
         {members.map(m => (
           <div key={m.user_id} className="wt-row">
             <PersonAvatar person={m} />

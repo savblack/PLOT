@@ -58,7 +58,7 @@
 .cl-people-count { flex-shrink: 0; font-size: 12px; color: var(--text-muted); }
 .cl-people-row[aria-pressed="true"] .cal-filter-name,
 .cl-people-row[aria-pressed="true"] .cl-people-count { color: var(--accent-text); font-weight: 600; }
-.cl-people > div:last-child { padding: 0 8px; }
+.cl-people > div:last-child { display: flex; justify-content: flex-end; padding: 0 8px; }
 .cl-invite-btn { display: inline-flex; align-items: center; }
 
 /* "Added by Sam · 2d ago" under a row's kind (B5). */
@@ -77,6 +77,9 @@
 /* The people sheet's two actions share the row equally (Savannah's call for
    this bottom sheet; see docs/design/shared-design-system.md). */
 .cl-sheet-actions { width: 100%; }
+/* The sheet header already draws a hairline; the first person row's own
+   top border would make it two. */
+.cl-people-sheet > .wt-row:first-child { border-top: 0; padding-top: 0; }
 .cl-sheet-actions .btn { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; }
 
 @media (max-width: 1023px) {
