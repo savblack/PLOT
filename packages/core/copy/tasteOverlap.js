@@ -35,6 +35,8 @@ export const TASTE_OVERLAP = {
   /** @param {string} name */
   sameDecade: (name) => `${name}’s too`,
   noDecade: 'Not enough titles saved yet',
+  /** @param {string} name */
+  theirNoDecade: (name) => `Not enough titles from ${name} yet`,
   tougherCritic: 'Tougher critic',
   even: 'Even',
   /** @param {string} tougherAvg @param {string} otherAvg */

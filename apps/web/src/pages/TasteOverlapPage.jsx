@@ -182,7 +182,8 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
             <span className="to-tile-label">{T.yourDecade}</span>
             <span className="to-tile-value">{o.decades.mine ? T.decade(o.decades.mine) : '–'}</span>
             <span className="to-tile-note">
-              {!o.decades.mine || !o.decades.theirs ? T.noDecade
+              {!o.decades.mine ? T.noDecade
+                : !o.decades.theirs ? T.theirNoDecade(name)
                 : o.decades.mine === o.decades.theirs ? T.sameDecade(name)
                 : T.theirDecade(name, o.decades.theirs)}
             </span>
