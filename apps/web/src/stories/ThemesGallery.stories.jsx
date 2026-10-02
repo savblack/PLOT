@@ -33,7 +33,8 @@ export const FreeTapStaysLocked = {
   play: async () => {
     const body = within(document.body);
     fireEvent.click(body.getByRole('button', { name: SETTINGS_VIEW.appearance.lockedTheme('Sage') }));
-    await expect(body.getByRole('dialog')).toHaveTextContent('That’s Sage, in light and dark.');
+    // The sheet opens on the next render, so wait for it rather than checking at once.
+    await expect(await body.findByRole('dialog')).toHaveTextContent('That’s Sage, in light and dark.');
     await expect(document.documentElement.dataset.palette).toBeUndefined();
   },
 };
