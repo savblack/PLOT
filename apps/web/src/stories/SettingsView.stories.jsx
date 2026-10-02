@@ -1,4 +1,3 @@
-import '../index.css';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { configure } from '@plot/core/config.js';
