@@ -377,7 +377,7 @@ export const PhoneInListSearch = phone({
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     fireEvent.click(canvas.getByRole('button', { name: C.page.searchOpen }));
-    const search = canvas.getByLabelText(CUSTOM_LISTS.searchThisList);
+    const search = canvas.getByRole('searchbox', { name: CUSTOM_LISTS.searchThisList });
     await fireEvent.input(search, { target: { value: 'after' } });
     await waitFor(() => expect(canvas.queryAllByText('Perfect Days')).toHaveLength(0));
     await expect(canvas.queryAllByText('Aftersun').length).toBeGreaterThan(0);
