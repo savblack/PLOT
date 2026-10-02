@@ -12,6 +12,11 @@ export default {
         dark: { name: 'dark', value: '#0c0c0c' },
       },
     },
+    // Chromatic freezes CSS animations on their first frame by default. Every
+    // dialog and sheet here fades in from opacity 0, so snapshots caught them
+    // see-through, with whatever the page underneath had rendered by then
+    // showing through: a diff on every run. Capture the settled frame instead.
+    chromatic: { pauseAnimationAtEnd: true },
   },
   initialGlobals: {
     backgrounds: { value: 'light' },
