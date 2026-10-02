@@ -65,7 +65,14 @@
       "expo-status-bar",
       "expo-secure-store",
       "expo-apple-authentication",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Plot to save share cards to your photos.",
+          "savePhotosPermission": "Allow Plot to save share cards to your photos."
+        }
+      ]
     ],
     "extra": {
       "router": {},

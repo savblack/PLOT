@@ -32,7 +32,7 @@ import { myListsSearchSources, searchCollectionTitles, wantToWatchItems } from '
 import { localDateStr } from '@plot/core/date.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { EVENTS, track } from '../../lib/analytics';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import HistorySection from '../../components/HistorySection';
@@ -397,8 +397,13 @@ export default function MyListsScreen() {
   const { watchlist, watching, favorites, customLists, topLists, history, profile } = useAppData();
   const fw = favoriteWords(profile?.region);
 
+  const shareRaw = useLocalSearchParams<{ share?: string | string[] }>().share;
+  const sharePreset = (Array.isArray(shareRaw) ? shareRaw[0] : shareRaw) || null;
   const [tab,          setTab]          = useState('all');
   const [topDragging, setTopDragging]  = useState(false);
+  // ?share=<card> opens History on that card. The param holds the tab on
+  // History until the sheet closes, so a cold link does not land on All.
+  const viewTab = sharePreset ? 'history' : tab;
   const [typeFilters,  setTypeFilters]  = useState<string[]>([]);
   const today = useMemo(() => new Date(), []);
   const [historyYear,  setHistoryYear]  = useState(today.getFullYear());
@@ -489,15 +494,15 @@ export default function MyListsScreen() {
     eventProps: { list_id: list.id },
   });
 
-  const isAll       = tab === 'all';
-  const showWatching  = isAll || tab === 'watching';
-  const showWant      = isAll || tab === 'want';
-  const showTop10     = isAll || tab === 'top10';
-  const showFavs      = isAll || tab === 'favorites';
-  const showLists     = isAll || tab === 'lists';
+  const isAll       = viewTab === 'all';
+  const showWatching  = isAll || viewTab === 'watching';
+  const showWant      = isAll || viewTab === 'want';
+  const showTop10     = isAll || viewTab === 'top10';
+  const showFavs      = isAll || viewTab === 'favorites';
+  const showLists     = isAll || viewTab === 'lists';
   // History is the one tab that isn't part of "All" — web scopes it the
   // same way, since a full watch history would bury every other section.
-  const isHistory     = tab === 'history';
+  const isHistory     = viewTab === 'history';
 
   const historyIndex = historyGroups.findIndex(
     (g: any) => g.year === historyYear && g.month === historyMonth);
@@ -593,7 +598,7 @@ export default function MyListsScreen() {
             ))}
           </CollapsibleSection>
         )}
-        {tab === 'watching' && watching.items.length === 0 && (
+        {viewTab === 'watching' && watching.items.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>Not watching anything</Text>
             <Text style={styles.emptyBody}>Start a series from Want to Watch or Search.</Text>
@@ -734,6 +739,11 @@ export default function MyListsScreen() {
             groups={historyGroups}
             hasAnyEntries={(history.entries || []).length > 0}
             expandSignal={historyExpand}
+            sharePreset={sharePreset}
+            onSharePresetUsed={() => {
+              setTab('history');
+              router.setParams({ share: '' });
+            }}
           />
         )}
 
@@ -805,7 +815,15 @@ export default function MyListsScreen() {
             {/* favourites carries a null label in the shared list — it is the one
                 tab whose wording is region-dependent (Favourites/Favorites). */}
             {TABS.map(t => (
-              <SubTab key={t.id} label={t.label ?? fw.plural} active={tab === t.id} onPress={() => setTab(t.id)} />
+              <SubTab
+                key={t.id}
+                label={t.label ?? fw.plural}
+                active={viewTab === t.id}
+                onPress={() => {
+                  if (t.id !== 'history' && sharePreset) router.setParams({ share: '' });
+                  setTab(t.id);
+                }}
+              />
             ))}
           </ScrollView>
           <View style={styles.tabsRowActions}>
