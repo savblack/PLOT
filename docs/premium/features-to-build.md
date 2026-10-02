@@ -37,7 +37,7 @@
 | Watch together (overlap + shared lists) | **In review:** PR #1039 (`agent/watch-together`, web, phases 1 to 3). Decisions in `docs/design/watch-together/README.md` on `agent/watch-together-design`. |
 | `/plans` rebuild | **In review:** PR #1031 (`agent/premium-plans-a2`), side-by-side plans at US$3/$24. |
 | One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free. Public copy does not list automatic sync as a Premium benefit. |
-| People alerts + season-ready | **Built on web (PLO-521).** Opt-ins in `person_alerts` / `season_ready_alerts` (Premium checked in RLS), daily `premium-alerts` Edge Function via pg_cron, in-app notifications. Mobile shows the rows read-only; toggles are a parity issue. See §5.9 and §5.10. |
+| Following people + season-ready | **Built on web (PLO-521, round 2 design).** Follow from the title panel's Cast and Directed by rows, a person's page, Home and the Your people page (`/your-people`); Premium checked in RLS. Daily `premium-alerts` run keeps `people_feed` current and writes release-day notifications; `people-feed-refresh` fills a new follow straight away. Home also gained Continue watching (free). Whole-season alerts stay as built, secondary. Mobile shows the rows read-only; the rest is issue #1093. See §5.9 and §5.10. |
 | Stats, smart lists, customise | **Not built** as product features (copy only). |
 
 ---
@@ -279,7 +279,11 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 **Acceptance sketch:** Follow person → store preference → fire on new credit/release with region sanity → respect mute/unsubscribe.
 
-**Built (PLO-521, web):** "Get alerts" on the talent page and the panel's talent view writes `person_alerts`. The daily `premium-alerts` run (`only: people`, 21:00 UTC) reads each followed person's `combined_credits` and writes a `person_release` notification for: a TV series they act in or created that premiered in the last three days (never today, which may not have aired), or a film they act in (billed 12th or higher) or directed whose first general release (TMDB release type 3 theatrical or 4 digital) in the follower's own region was in the last three days. Festival premieres, limited runs, playing yourself, talk, news and reality are skipped. One alert per title per person (`dedupe_key`). Remove from the page or Settings > Viewing. Rules: `supabase/functions/_shared/premiumAlerts.js`, tests in `apps/web/tests/unit/premiumAlerts.test.js`.
+**Built (PLO-521, web, round 2 design, boards R2-1a to R2-5b):** Follow from a + badge on each Cast headshot in the title panel (hover on desktop, always on phones), a Follow button on the Directed by / Created by row, Follow on a person's page (with a Coming up strip above All credits), the Your people invite on Home, and the search on the Your people page. Following is `person_alerts`; the insert policy calls `is_premium()`, and Free gets the upgrade sheet (alerts reason). A toast confirms the follow with how many dated titles are now in Your people.
+
+What counts (Savannah, round 2): films billed in the top 12 or directed; series the person is a regular in (3+ episodes, or any count on a new series) or created, including each new season, whole drop or weekly. One update per title, or per season. Playing yourself, talk, news and reality never count.
+
+How: the daily run (`only: people`, 21:00 UTC) refreshes `people_feed` (one row per person per title or season, with each film's first general release per region) and writes a `person_release` row on release day: a film on its first theatrical or digital release in the follower's region, a series or season on its premiere. A show the follower already follows through a list or watching is left to `new_episode` (#1032), so a premiere is never announced twice. `people-feed-refresh` fills the feed for a person the moment they are followed. Home's Your people shelf (after Top 20 This Week) and the Your people page read `people_feed`; chips are Out today, In cinemas, New season and Dated. Rules: `supabase/functions/_shared/premiumAlerts.js` (server) and `packages/core/peopleFeed.js` (client), tests in `apps/web/tests/unit/premiumAlerts.test.js`, `apps/web/tests/unit/peopleRules.test.js` and `packages/core/tests/unit/peopleFeed.test.js`.
 
 ### 5.10 Whole-season-ready alerts — **Premium**
 

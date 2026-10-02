@@ -1,6 +1,6 @@
-// Premium alert toggles: release alerts on a person (talent page and the panel's
-// talent view) and a whole-season-ready alert on a show (title panel). The
-// opt-in logic lives in @plot/core/usePremiumAlerts.js and the database is the
+// Premium whole-season-ready alert on a show (title panel). Following people
+// has its own controls in PeopleFollow.jsx. The opt-in logic lives in
+// @plot/core/usePremiumAlerts.js and the database is the
 // authority on Premium; a Free account gets the upgrade sheet, either up front
 // (billing status already says Free) or when the insert comes back
 // premium_required.
@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { usePremium } from '../hooks/usePremium.js';
-import { usePersonAlert, useSeasonReadyAlert } from '@plot/core/usePremiumAlerts.js';
+import { useSeasonReadyAlert } from '@plot/core/usePremiumAlerts.js';
 import { PREMIUM_ALERTS as A } from '@plot/core/copy/premiumAlerts.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import './PremiumAlertButtons.css';
@@ -39,31 +39,6 @@ function useGatedToggle(alert) {
   };
   const failed = alert.error && alert.error !== 'premium_required';
   return { onClick, sheetOpen, closeSheet: () => setSheetOpen(false), failed };
-}
-
-/** "Get alerts" for an actor or director. `person` is TMDB person details. */
-export function PersonAlertButton({ person }) {
-  const { user } = useApp();
-  const alert = usePersonAlert(user?.id, person);
-  const gate = useGatedToggle(alert);
-  if (!user || !person?.id || !person?.name) return null;
-  return (
-    <>
-      <button
-        type="button"
-        className={`btn btn-secondary btn-sm alert-toggle${alert.on ? ' alert-toggle--on' : ''}`}
-        onClick={gate.onClick}
-        disabled={alert.loading || alert.busy}
-        aria-pressed={alert.on}
-        aria-label={alert.on ? A.person.onLabel(person.name) : A.person.offLabel(person.name)}
-      >
-        <BellIcon on={alert.on} />
-        {alert.on ? A.person.on : A.person.off}
-      </button>
-      {gate.failed && <p className="alert-toggle-error" role="alert">{A.error}</p>}
-      {gate.sheetOpen && <UpgradeSheet reason="alerts" onClose={gate.closeSheet} />}
-    </>
-  );
 }
 
 /** Whole-season-ready alert card for a TV show. `show` is TMDB TV details. */

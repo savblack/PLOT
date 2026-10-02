@@ -3,17 +3,22 @@
  * Calendar remains the source of truth for constructing release events; this
  * helper only turns that shared event stream into a compact preview.
  *
+ * Up next is future air dates only: a show already on the Continue watching
+ * shelf (an episode out and unwatched) is passed in `exclude` and left out, so
+ * a show never appears in both (continueWatching.js).
+ *
  * @param {any[]} events
  * @param {string} todayStr YYYY-MM-DD in the viewer's local calendar
  * @param {number} [limit=3]
+ * @param {Set<number>} [exclude] tmdb ids on the Continue watching shelf
  */
-export function selectHomeUpNext(events = [], todayStr, limit = 3) {
+export function selectHomeUpNext(events = [], todayStr, limit = 3, exclude = new Set()) {
   const seen = new Set();
   const upcoming = [];
   for (const event of events) {
     if (event?.type !== 'episode' || !event.date || event.date < todayStr) continue;
     const key = event.item?.tmdb_id ?? event.item?.title;
-    if (key == null || seen.has(key)) continue;
+    if (key == null || seen.has(key) || exclude.has(Number(event.item?.tmdb_id))) continue;
     seen.add(key);
     upcoming.push(event);
     if (upcoming.length === limit) break;

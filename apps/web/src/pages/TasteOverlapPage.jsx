@@ -7,7 +7,6 @@ import { MIN_SHARED_RATINGS } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
-import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { posterUrl } from '../utils/images.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
@@ -24,6 +23,26 @@ function Avatar({ url, name, className = '' }) {
   return url
     ? <img className={`to-avatar ${className}`} src={url} alt="" />
     : <span className={`to-avatar ${className}`} aria-hidden="true">{initialOf(name)}</span>;
+}
+
+/* The shape of the page while taste_overlap is in flight: the match card and
+   the genre bars, so the layout does not jump when the answer lands. The
+   request crosses to the production region and back, about two seconds from
+   Australia, so a lone spinner read as stuck. */
+function LoadingSkeleton() {
+  return (
+    <div className="to-skeleton" role="status" aria-label={T.loading}>
+      <section className="to-card to-match" aria-hidden="true">
+        <span className="to-skel to-skel--kicker" />
+        <span className="to-skel to-skel--note" />
+        <span className="to-skel-venn"><span className="to-skel to-skel--circle" /><span className="to-skel to-skel--circle" /></span>
+      </section>
+      <section className="to-card" aria-hidden="true">
+        <span className="to-skel to-skel--title" />
+        {[0, 1, 2, 3].map(i => <span key={i} className="to-skel to-skel--bar" />)}
+      </section>
+    </div>
+  );
 }
 
 function BackButton({ to }) {
@@ -103,7 +122,7 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
   if (!premium) {
     body = <Upsell from={upsellFrom} />;
   } else if (loading) {
-    body = <div className="to-loading"><PlotLoader /></div>;
+    body = <LoadingSkeleton />;
   } else if (error) {
     const message = error === 'not_visible' ? T.notVisible(name) : error === 'not_found' ? T.notFound : T.failed;
     body = (
@@ -163,7 +182,8 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
             <span className="to-tile-label">{T.yourDecade}</span>
             <span className="to-tile-value">{o.decades.mine ? T.decade(o.decades.mine) : '–'}</span>
             <span className="to-tile-note">
-              {!o.decades.mine || !o.decades.theirs ? T.noDecade
+              {!o.decades.mine ? T.noDecade
+                : !o.decades.theirs ? T.theirNoDecade(name)
                 : o.decades.mine === o.decades.theirs ? T.sameDecade(name)
                 : T.theirDecade(name, o.decades.theirs)}
             </span>
@@ -268,7 +288,7 @@ export default function TasteOverlapPage() {
   const location = useLocation();
   const { user, profile, openPanel } = useApp();
   const premium = isPremiumProfile(profile);
-  const { loading, error, target, overlap, sharedWatchlist, retry } = useTasteOverlap(username, { enabled: !!user && premium });
+  const { loading, error, target, overlap, sharedWatchlist, retry } = useTasteOverlap(username, { enabled: !!user && premium, viewerId: user?.id });
   const { genres } = useGenres();
   const genreName = useMemo(() => new Map(genres.map(g => [g.id, g.name])), [genres]);
 

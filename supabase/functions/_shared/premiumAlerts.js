@@ -24,38 +24,68 @@ function dateOnly(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
 }
 
-// ── Actor and director release alerts ─────────────────────────────────────────
+// ── Following people: the feed and its release-day alerts ────────────────────
+//
+// What counts (Savannah's round 2 decision): films a person is billed in the
+// top 12 of, or directed; series they are a regular in, or created, including
+// each new season (a whole drop or weekly). One update per title, or per
+// season. Playing yourself, talk shows, news and reality never count.
+//
+// packages/core/peopleFeed.js applies the same appearance rule on the client
+// (the Coming up strip on a person's page); apps/web/tests/unit/peopleRules.test.js
+// keeps the two in step.
 
-// How far back a release still counts as new. The job runs daily; three days
-// lets a missed run or two heal, and the dedupe key stops repeats.
+// How far back a release still counts as new for an alert. The job runs daily;
+// three days lets a missed run or two heal, and the dedupe key stops repeats.
 export const PEOPLE_LOOK_BACK_DAYS = 3;
-// Movies whose primary (earliest, often festival) date is older than this are
-// not checked for a regional release: a wide release rarely trails a premiere
-// by more than a few months, and the cap bounds release_dates calls.
-export const MOVIE_PREMIERE_HORIZON_DAYS = 180;
+// The feed's window: recent enough to be "out now", far enough ahead to show
+// what is dated. Films outside it are not looked up at all.
+export const FEED_PAST_DAYS = 45;
+export const FEED_FUTURE_DAYS = 730;
 // Billing order past which an acting credit is a bit part, not "their new film".
 export const MAX_CAST_ORDER = 12;
+// A series regular: this many episodes or more. A brand-new or announced
+// series counts on any episode count, because TMDB lists far fewer before it airs.
+export const REGULAR_MIN_EPISODES = 3;
+const NEW_SERIES_DAYS = 120;
+// Shows that started this long ago are not checked for new seasons: it bounds
+// the job's TMDB calls, at the cost of very long-running shows.
+const SHOW_HORIZON_YEARS = 15;
 // TMDB genres that are appearances rather than roles: News, Reality, Talk.
 const APPEARANCE_GENRES = new Set([10763, 10764, 10767]);
 const SELF_ROLE = /\b(self|himself|herself|themselves|themself)\b/i;
 
+/** Days between two YYYY-MM-DD dates (b - a). @param {string} a @param {string} b */
+function dayDiff(a, b) {
+  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
+}
+
+/** An appearance, not a role: playing yourself, or a talk, news or reality show. @param {any} credit */
+export function isAppearance(credit) {
+  if ((credit?.genre_ids ?? []).some((/** @type {number} */ g) => APPEARANCE_GENRES.has(g))) return true;
+  return SELF_ROLE.test(String(credit?.character ?? ''));
+}
+
 /**
- * Which part a followed person plays in a credit worth an alert, or null.
- * Movies: cast (billed within MAX_CAST_ORDER) or Director. TV: cast, or the
- * show's Creator. Playing yourself, talk shows, news and reality are skipped.
+ * Which part a followed person plays in a credit worth following, or null.
  *
  * @param {any} credit one entry from /person/{id}/combined_credits cast or crew
  * @param {'cast' | 'crew'} list which array it came from
+ * @param {string} [today] YYYY-MM-DD; lets a new series count before it has episodes
  * @returns {'cast' | 'director' | 'creator' | null}
  */
-export function creditRole(credit, list) {
+export function creditRole(credit, list, today) {
   if (!credit || typeof credit.id !== 'number') return null;
   if (credit.media_type !== 'movie' && credit.media_type !== 'tv') return null;
-  if ((credit.genre_ids ?? []).some((/** @type {number} */ g) => APPEARANCE_GENRES.has(g))) return null;
+  if (isAppearance(credit)) return null;
   if (list === 'cast') {
-    if (SELF_ROLE.test(String(credit.character ?? ''))) return null;
-    if (credit.media_type === 'movie' && typeof credit.order === 'number' && credit.order > MAX_CAST_ORDER) return null;
-    return 'cast';
+    if (credit.media_type === 'movie') {
+      return typeof credit.order === 'number' && credit.order > MAX_CAST_ORDER ? null : 'cast';
+    }
+    const episodes = typeof credit.episode_count === 'number' ? credit.episode_count : 0;
+    const first = dateOnly(credit.first_air_date);
+    const isNew = !first || (today ? dayDiff(first, today) <= NEW_SERIES_DAYS : false);
+    return episodes >= REGULAR_MIN_EPISODES || isNew ? 'cast' : null;
   }
   if (credit.media_type === 'movie' && credit.job === 'Director') return 'director';
   if (credit.media_type === 'tv' && credit.job === 'Creator') return 'creator';
@@ -65,58 +95,61 @@ export function creditRole(credit, list) {
 const ROLE_RANK = { director: 0, creator: 1, cast: 2 };
 
 /**
- * @typedef {object} ReleaseCandidate
+ * @typedef {object} CreditCandidate
  * @property {number} tmdbId
  * @property {'movie' | 'tv'} mediaType
- * @property {string | null} title
+ * @property {string} title
  * @property {string | null} posterPath
  * @property {'cast' | 'director' | 'creator'} role
- * @property {string} primaryDate  TMDB's release_date / first_air_date
+ * @property {string | null} character
+ * @property {string | null} primaryDate  release_date / first_air_date
  */
 
 /**
- * Titles in a person's credits that might have just come out. TV premieres are
- * final here (first_air_date inside the window). Movies are only candidates:
- * their primary date is often a festival premiere, so the job confirms a
- * release in each follower's own region with regionalMovieRelease().
- *
- * One entry per title; a director who also acts is reported as the director.
+ * The titles in a person's credits worth looking at closer. Films need a date
+ * inside the feed window. Shows need a qualifying role and are then checked
+ * season by season with showSeasons(), since a new season of an old show is
+ * exactly what this should catch. One entry per title; a director who also
+ * acts is reported as the director.
  *
  * @param {any} credits /person/{id}/combined_credits body
- * @param {{ today: string, since: string }} window YYYY-MM-DD, inclusive
- * @returns {ReleaseCandidate[]}
+ * @param {string} today YYYY-MM-DD
+ * @returns {{ films: CreditCandidate[], shows: CreditCandidate[] }}
  */
-export function releaseCandidates(credits, { today, since }) {
-  const horizon = isoDay(new Date(`${today}T00:00:00Z`), MOVIE_PREMIERE_HORIZON_DAYS);
-  const yesterday = isoDay(new Date(`${today}T00:00:00Z`), 1);
-  /** @type {Map<string, ReleaseCandidate>} */
+export function feedCandidates(credits, today) {
+  /** @type {Map<string, CreditCandidate>} */
   const byTitle = new Map();
+  const showHorizon = `${Number(today.slice(0, 4)) - SHOW_HORIZON_YEARS}${today.slice(4)}`;
   for (const [list, entries] of /** @type {const} */ ([['cast', credits?.cast], ['crew', credits?.crew]])) {
     for (const credit of entries ?? []) {
-      const role = creditRole(credit, list);
+      const role = creditRole(credit, list, today);
       if (!role) continue;
       const primaryDate = dateOnly(credit.media_type === 'movie' ? credit.release_date : credit.first_air_date);
-      if (!primaryDate) continue;
-      // A movie dated today is out today in its region. A TV premiere dated
-      // today may be a US evening broadcast that has not aired yet.
-      const inRange = credit.media_type === 'movie'
-        ? primaryDate >= horizon && primaryDate <= today
-        : primaryDate >= since && primaryDate <= yesterday;
-      if (!inRange) continue;
+      if (credit.media_type === 'movie') {
+        if (!primaryDate) continue;
+        const d = dayDiff(today, primaryDate);
+        if (d < -FEED_PAST_DAYS || d > FEED_FUTURE_DAYS) continue;
+      } else if (primaryDate && primaryDate < showHorizon) {
+        continue;
+      }
+      const title = credit.title ?? credit.name;
+      if (typeof title !== 'string' || !title) continue;
       const key = `${credit.media_type}:${credit.id}`;
       const existing = byTitle.get(key);
       if (existing && ROLE_RANK[existing.role] <= ROLE_RANK[role]) continue;
       byTitle.set(key, {
         tmdbId: credit.id,
         mediaType: credit.media_type,
-        title: typeof (credit.title ?? credit.name) === 'string' ? (credit.title ?? credit.name) : null,
+        title,
         posterPath: typeof credit.poster_path === 'string' ? credit.poster_path : null,
         role,
+        character: role === 'cast' && typeof credit.character === 'string' && credit.character ? credit.character : null,
         primaryDate,
       });
     }
   }
-  return [...byTitle.values()];
+  const all = [...byTitle.values()];
+  return { films: all.filter(c => c.mediaType === 'movie'), shows: all.filter(c => c.mediaType === 'tv') };
 }
 
 // TMDB release types: 1 premiere, 2 limited theatrical, 3 theatrical,
@@ -125,11 +158,31 @@ export function releaseCandidates(credits, { today, since }) {
 const RELEASE_KINDS = /** @type {Record<number, 'theatrical' | 'digital'>} */ ({ 3: 'theatrical', 4: 'digital' });
 
 /**
- * A movie's first general release in one region, if it falls in the window.
- * The first release is the one that counts: a theatrical release three weeks
- * ago means the digital release today is not "new" for this alert (one alert
- * per title per person, keyed without the kind).
+ * Each region's first general release (theatrical or digital) of a film. The
+ * first one is the one that counts: one alert per title, on the day it first
+ * becomes something you can go and see.
  *
+ * @param {any} releaseDates /movie/{id}/release_dates body
+ * @returns {Record<string, { kind: 'theatrical' | 'digital', date: string }>}
+ */
+export function regionalReleases(releaseDates) {
+  /** @type {Record<string, { kind: 'theatrical' | 'digital', date: string }>} */
+  const out = {};
+  for (const entry of releaseDates?.results ?? []) {
+    const region = entry?.iso_3166_1;
+    if (typeof region !== 'string' || !/^[A-Z]{2}$/.test(region)) continue;
+    for (const release of entry?.release_dates ?? []) {
+      const kind = RELEASE_KINDS[release?.type];
+      const date = dateOnly(release?.release_date);
+      if (!kind || !date) continue;
+      if (!out[region] || date < out[region].date) out[region] = { kind, date };
+    }
+  }
+  return out;
+}
+
+/**
+ * A film's first general release in one region, if it falls in the window.
  * No entry for the region means no alert: the primary date alone does not say
  * the film is out where the person lives.
  *
@@ -139,21 +192,73 @@ const RELEASE_KINDS = /** @type {Record<number, 'theatrical' | 'digital'>} */ ({
  * @returns {{ kind: 'theatrical' | 'digital', date: string } | null}
  */
 export function regionalMovieRelease(releaseDates, region, { today, since }) {
-  const entry = (releaseDates?.results ?? []).find((/** @type {any} */ r) => r?.iso_3166_1 === region);
-  /** @type {{ kind: 'theatrical' | 'digital', date: string } | null} */
-  let first = null;
-  for (const release of entry?.release_dates ?? []) {
-    const kind = RELEASE_KINDS[release?.type];
-    const date = dateOnly(release?.release_date);
-    if (!kind || !date) continue;
-    if (!first || date < first.date) first = { kind, date };
-  }
+  const first = regionalReleases(releaseDates)[region];
   if (!first || first.date < since || first.date > today) return null;
   return first;
 }
 
-/** @param {'movie' | 'tv'} mediaType @param {number} tmdbId */
-export const personReleaseKey = (mediaType, tmdbId) => `person_release:${mediaType}:${tmdbId}`;
+/**
+ * The seasons of a show worth putting in the feed: numbered seasons with an
+ * air date inside the feed window. Season 1 is the series itself.
+ *
+ * @param {any} details /tv/{id} body
+ * @param {string} today YYYY-MM-DD
+ * @returns {Array<{ season: number, kind: 'series' | 'season', date: string, episodeCount: number | null, network: string | null }>}
+ */
+export function showSeasons(details, today) {
+  const network = typeof details?.networks?.[0]?.name === 'string' ? details.networks[0].name : null;
+  const out = [];
+  for (const s of details?.seasons ?? []) {
+    const season = s?.season_number;
+    const date = dateOnly(s?.air_date);
+    if (typeof season !== 'number' || season < 1 || !date) continue;
+    const d = dayDiff(today, date);
+    if (d < -FEED_PAST_DAYS || d > FEED_FUTURE_DAYS) continue;
+    out.push({
+      season,
+      kind: /** @type {'series' | 'season'} */ (season === 1 ? 'series' : 'season'),
+      date,
+      episodeCount: typeof s.episode_count === 'number' ? s.episode_count : null,
+      network,
+    });
+  }
+  return out;
+}
+
+/**
+ * How many episodes came out on the premiere day: the whole season for a
+ * drop, 1 for a weekly release.
+ * @param {any} seasonBody /tv/{id}/season/{n} body
+ * @param {string} premiere YYYY-MM-DD
+ */
+export function premiereDrop(seasonBody, premiere) {
+  return (seasonBody?.episodes ?? []).filter((/** @type {any} */ e) => dateOnly(e?.air_date) === premiere).length || 1;
+}
+
+/**
+ * Feed row → the date and kind of release for one viewer, or null when there is
+ * nothing to say for their region. Films use the viewer's own regional release;
+ * a show's season dates are the same everywhere TMDB knows them.
+ *
+ * @param {{ media_type: string, kind: string, release_date?: string | null, regional_releases?: Record<string, { kind: string, date: string }> }} row
+ * @param {string} region
+ * @returns {{ kind: 'theatrical' | 'digital' | 'premiere' | 'season', date: string } | null}
+ */
+export function releaseForRegion(row, region) {
+  if (row.media_type === 'movie') {
+    const r = row.regional_releases?.[region];
+    return r && (r.kind === 'theatrical' || r.kind === 'digital') ? { kind: r.kind, date: r.date } : null;
+  }
+  if (!row.release_date) return null;
+  return { kind: row.kind === 'series' ? 'premiere' : 'season', date: row.release_date };
+}
+
+/**
+ * One alert per title (and per season of a show).
+ * @param {'movie' | 'tv'} mediaType @param {number} tmdbId @param {number} [season]
+ */
+export const personReleaseKey = (mediaType, tmdbId, season = 0) =>
+  season > 1 ? `person_release:${mediaType}:${tmdbId}:s${season}` : `person_release:${mediaType}:${tmdbId}`;
 
 // ── Whole-season-ready alerts ─────────────────────────────────────────────────
 

@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 
 /**
- * Premium alert opt-ins, shared by web and mobile: actor/director release
- * alerts (person_alerts) and whole-season-ready alerts (season_ready_alerts).
+ * Premium alert opt-ins, shared by web and mobile: whole-season-ready alerts
+ * (season_ready_alerts). Following people (person_alerts) has its own shared
+ * store in usePeopleFollows.js; both use alertWriteError below.
  *
  * The database is the authority. Adding an opt-in is an insert that RLS only
  * allows for Premium accounts (is_premium() in the policy), so a Free account,
@@ -38,8 +39,8 @@ export function alertWriteError(error) {
  */
 
 /**
- * @param {'person_alerts' | 'season_ready_alerts'} table
- * @param {'tmdb_person_id' | 'tmdb_id'} idColumn
+ * @param {'season_ready_alerts'} table
+ * @param {'tmdb_id'} idColumn
  * @param {string | null | undefined} userId
  * @param {number | null | undefined} subjectId
  * @param {() => Record<string, unknown>} cache display columns written on insert
@@ -83,20 +84,6 @@ function useAlertToggle(table, idColumn, userId, subjectId, cache) {
 }
 
 /**
- * Release alerts for one person (actor or director).
- * @param {string | null | undefined} userId
- * @param {{ id: number, name: string, profile_path?: string | null, known_for_department?: string | null } | null | undefined} person TMDB person details
- */
-export function usePersonAlert(userId, person) {
-  const cache = useCallback(() => ({
-    name: String(person?.name ?? '').slice(0, 200),
-    profile_path: person?.profile_path ?? null,
-    known_for: person?.known_for_department ? String(person.known_for_department).slice(0, 60) : null,
-  }), [person]);
-  return useAlertToggle('person_alerts', 'tmdb_person_id', userId, person?.name ? person.id : null, cache);
-}
-
-/**
  * Whole-season-ready alerts for one show.
  * @param {string | null | undefined} userId
  * @param {{ id: number, name?: string, poster_path?: string | null } | null | undefined} show TMDB TV details
@@ -110,34 +97,24 @@ export function useSeasonReadyAlert(userId, show) {
 }
 
 /**
- * Everything someone has opted into, for Settings. Removing works whatever the
- * plan: someone whose Premium lapsed can still tidy their list.
+ * The shows someone has whole-season alerts for, for Settings. Removing works
+ * whatever the plan: someone whose Premium lapsed can still tidy their list.
+ * People they follow are managed on the Your people page (usePeopleFollows).
  * @param {string | null | undefined} userId
  */
 export function useMyAlerts(userId) {
-  const [people, setPeople] = useState(/** @type {Array<{ tmdb_person_id: number, name: string, profile_path: string | null, known_for: string | null }>} */ ([]));
   const [shows, setShows] = useState(/** @type {Array<{ tmdb_id: number, title: string, poster_path: string | null }>} */ ([]));
   const [loadedFor, setLoadedFor] = useState(/** @type {string | null} */ (null));
 
   const refresh = useCallback(async () => {
     if (!userId) return;
-    const [p, s] = await Promise.all([
-      supabase.from('person_alerts').select('tmdb_person_id, name, profile_path, known_for').eq('user_id', userId).order('name'),
-      supabase.from('season_ready_alerts').select('tmdb_id, title, poster_path').eq('user_id', userId).order('title'),
-    ]);
-    setPeople(p.data ?? []);
-    setShows(s.data ?? []);
+    const { data } = await supabase.from('season_ready_alerts').select('tmdb_id, title, poster_path').eq('user_id', userId).order('title');
+    setShows(data ?? []);
     setLoadedFor(userId);
   }, [userId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- load the opt-ins when the signed-in user changes
   useEffect(() => { refresh(); }, [refresh]);
-
-  const removePerson = useCallback(async (/** @type {number} */ personId) => {
-    const { error } = await supabase.from('person_alerts').delete().eq('user_id', userId).eq('tmdb_person_id', personId);
-    if (!error) setPeople(list => list.filter(p => p.tmdb_person_id !== personId));
-    return !error;
-  }, [userId]);
 
   const removeShow = useCallback(async (/** @type {number} */ tmdbId) => {
     const { error } = await supabase.from('season_ready_alerts').delete().eq('user_id', userId).eq('tmdb_id', tmdbId);
@@ -145,5 +122,5 @@ export function useMyAlerts(userId) {
     return !error;
   }, [userId]);
 
-  return { people, shows, loading: !!userId && loadedFor !== userId, refresh, removePerson, removeShow };
+  return { shows, loading: !!userId && loadedFor !== userId, refresh, removeShow };
 }

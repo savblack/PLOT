@@ -123,3 +123,30 @@ export function monthLongName(year, month, todayYear) {
   const d = new Date(year, month, 1);
   return d.toLocaleDateString('en', year === todayYear ? { month: 'long' } : { month: 'long', year: 'numeric' });
 }
+
+/** YYYY-MM-DD → a local Date at midnight, or null. @param {string} value */
+function localDay(value) {
+  const [y, m, d] = String(value ?? '').slice(0, 10).split('-').map(Number);
+  return y && m && d ? new Date(y, m - 1, d) : null;
+}
+
+/**
+ * "16 Dec" this year, "16 Dec 2027" otherwise. Dates on the Your people
+ * shelf and page, and a person's Coming up strip.
+ * @param {string} value YYYY-MM-DD
+ * @param {number} [todayYear]
+ */
+export function shortDayMonth(value, todayYear = new Date().getFullYear()) {
+  const d = localDay(value);
+  if (!d) return '';
+  // Built by hand: en-GB now spells September "Sept", the boards say "Sep".
+  const dayMonth = `${d.getDate()} ${d.toLocaleDateString('en', { month: 'short' })}`;
+  return d.getFullYear() === todayYear ? dayMonth : `${dayMonth} ${d.getFullYear()}`;
+}
+
+/** "Thu 1 Oct": the date column on the Your people page. @param {string} value YYYY-MM-DD */
+export function weekdayDayMonth(value) {
+  const d = localDay(value);
+  if (!d) return '';
+  return `${d.toLocaleDateString('en', { weekday: 'short' })} ${d.getDate()} ${d.toLocaleDateString('en', { month: 'short' })}`;
+}

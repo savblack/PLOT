@@ -67,14 +67,16 @@ export const SETTINGS_VIEW = {
   region: {
     savingRegion: 'Saving region',
     saveRegion: 'Save region',
-    saveRegionLabel: 'Save Region',
     openRegionSettings: 'Open region settings',
     failedToSaveRegion: 'Failed to save your region.',
+    intro: 'Used to show content and streaming services available in your region.',
   },
   timezone: {
     savingTimezone: 'Saving timezone',
     saveTimezone: 'Save timezone',
     openTimezoneSettings: 'Open timezone settings',
+    searchPlaceholder: 'Search timezones…',
+    useDevice: (name) => `Use device timezone · ${name}`,
   },
   clearSelected: (count) => `Clear Selected (${count})`,
   selectListsToClear: 'Select lists to clear',
@@ -103,6 +105,7 @@ export const SETTINGS_VIEW = {
     notSaved: 'Your feedback was not saved. Please try again.',
     reportABug: 'Report a bug',
     leaveFeedback: 'Leave feedback',
+    panelTitle: 'Send feedback',
   },
 
   errors: {

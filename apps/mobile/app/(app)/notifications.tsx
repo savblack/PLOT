@@ -15,7 +15,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useNotifications } from '@plot/core/useNotifications.js';
-import { notificationPhrase, alertPhrase, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NEW_EPISODE_NOTIFICATION as EP } from '@plot/core/copy/notifications.js';
+import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NEW_EPISODE_NOTIFICATION as EP } from '@plot/core/copy/notifications.js';
 import { isAlertNotification, isTitleNotification } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
 import { Avatar } from '../../components/Avatar';
@@ -103,11 +103,11 @@ export default function NotificationsScreen() {
               const title = n.media_title || ALERT_NOTIFICATIONS.untitled;
               const phrase = alertPhrase(n) ?? '';
               return (
-                <View key={n.id} style={[styles.row, !n.read_at && styles.rowUnread]} accessibilityLabel={`${title} ${phrase}`}>
+                <View key={n.id} style={[styles.row, !n.read_at && styles.rowUnread]} accessibilityLabel={`${title}${phrase}`}>
                   <View style={styles.rowBody}>
-                    <Text style={styles.rowMuted}>{ALERT_NOTIFICATIONS.badges[n.type as keyof typeof ALERT_NOTIFICATIONS.badges]}</Text>
+                    <Text style={styles.rowMuted}>{alertBadge(n)}</Text>
                     <Text style={styles.rowText}>
-                      <Text style={styles.rowName}>{title}</Text>{' '}{phrase}
+                      <Text style={styles.rowName}>{title}</Text>{phrase}
                     </Text>
                     <Text style={styles.rowTime}>{relativeTime(n.created_at, undefined, profile?.region)}</Text>
                   </View>
