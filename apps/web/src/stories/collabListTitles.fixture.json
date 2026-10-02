@@ -1,0 +1,86 @@
+[
+  {
+    "tmdb_id": 666277,
+    "title": "Past Lives",
+    "media_type": "movie",
+    "poster_path": "/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg",
+    "release_date": "2023-06-02"
+  },
+  {
+    "tmdb_id": 976893,
+    "title": "Perfect Days",
+    "media_type": "movie",
+    "poster_path": "/tvUHVSTJV9ITON3oyHaWp7oaAc8.jpg",
+    "release_date": "2023-11-10"
+  },
+  {
+    "tmdb_id": 840430,
+    "title": "The Holdovers",
+    "media_type": "movie",
+    "poster_path": "/VHSzNBTwxV8vh7wylo7O9CLdac.jpg",
+    "release_date": "2023-10-27"
+  },
+  {
+    "tmdb_id": 915935,
+    "title": "Anatomy of a Fall",
+    "media_type": "movie",
+    "poster_path": "/kQs6keheMwCxJxrzV83VUwFtHkB.jpg",
+    "release_date": "2023-10-13"
+  },
+  {
+    "tmdb_id": 965150,
+    "title": "Aftersun",
+    "media_type": "movie",
+    "poster_path": "/evKz85EKouVbIr51zy5fOtpNRPg.jpg",
+    "release_date": "2022-10-21"
+  },
+  {
+    "tmdb_id": 823219,
+    "title": "Flow",
+    "media_type": "movie",
+    "poster_path": "/z2sG41PxfL1hnL1mHbxzSREUtOf.jpg",
+    "release_date": "2024-11-22"
+  },
+  {
+    "tmdb_id": 937287,
+    "title": "Challengers",
+    "media_type": "movie",
+    "poster_path": "/H6vke7zGiuLsz4v4RPeReb9rsv.jpg",
+    "release_date": "2024-04-26"
+  },
+  {
+    "tmdb_id": 516729,
+    "title": "Paddington in Peru",
+    "media_type": "movie",
+    "poster_path": "/1ffZAucqfvQu36x1C49XfOdjuOG.jpg",
+    "release_date": "2025-02-14"
+  },
+  {
+    "tmdb_id": 792307,
+    "title": "Poor Things",
+    "media_type": "movie",
+    "poster_path": "/kCGlIMHnOm8JPXq3rXM6c5wMxcT.jpg",
+    "release_date": "2023-12-08"
+  },
+  {
+    "tmdb_id": 974576,
+    "title": "Conclave",
+    "media_type": "movie",
+    "poster_path": "/m5x8D0bZ3eKqIVWZ5y7TnZ2oTVg.jpg",
+    "release_date": "2024-10-25"
+  },
+  {
+    "tmdb_id": 549509,
+    "title": "The Brutalist",
+    "media_type": "movie",
+    "poster_path": "/vP7Yd6couiAaw9jgMd5cjMRj3hQ.jpg",
+    "release_date": "2024-12-20"
+  },
+  {
+    "tmdb_id": 402431,
+    "title": "Wicked",
+    "media_type": "movie",
+    "poster_path": "/xDGbZ0JJ3mYaGKy4Nzd9Kph6M9L.jpg",
+    "release_date": "2024-10-16"
+  }
+]

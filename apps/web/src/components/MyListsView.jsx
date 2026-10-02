@@ -32,6 +32,11 @@ import { CardGrid, ListCard, TypeGenreFilter } from './ListCards.jsx';
 import {
   CreateListModal, HeaderIconButton, ListSection, TickIcon, TopFiveSection, TrashIcon, WatchingSection,
 } from './ListSections.jsx';
+import { ListCoverMenu, MemberStack, NewSharedListDialog, PlusSmallIcon } from './CollaborativeListParts.jsx';
+import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
+import { listOwner, splitListsBySharing } from '@plot/core/sharedLists.js';
+import { personName } from '@plot/core/watchTogether.js';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 
 /* My Lists on the Calendar/History shell: a narrow left column beside one wide
    stream. The column is the index — every list with its count, capped by a
@@ -96,6 +101,30 @@ function JumpToCard({ collections, counts, newCounts = {}, onOpen }) {
   );
 }
 
+/* B1's Shared group in the column: each shared list with its avatar stack,
+   and New shared list under them. */
+function SharedJumpCard({ collections, onOpen, onNew }) {
+  const S = COLLABORATIVE_LISTS.myLists;
+  return (
+    <div className="hist-card mylists-jump">
+      <div className="hist-card-head">
+        <span className="hist-card-title">{S.shared}</span>
+      </div>
+      <div>
+        {collections.map(c => (
+          <button key={c.key} type="button" className="cal-filter-row" onClick={onOpen(c.key)}>
+            <span className="cal-filter-name">{c.name}</span>
+            <MemberStack people={c.others} />
+          </button>
+        ))}
+        <button type="button" className="cal-filter-row mylists-jump-more" onClick={onNew}>
+          <span className="cal-filter-name"><PlusSmallIcon /> {S.newShared}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** @param {{ newCounts?: Record<string, number> | null }} props  newCounts: Storybook's "2 new" without a network */
 export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const { user, profile, topLists, favorites, customLists, watching, watchlist, openPanel } = useApp();
@@ -118,6 +147,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
   const [query, setQuery] = useState('');
+  const [creatingShared, setCreatingShared] = useState(false);
 
   const want = useMemo(() => wantToWatchItems(watchlist.items, watching.items, localDateStr()), [watchlist.items, watching.items]);
   const smartIds = useMemo(() => (customLists.smartLists || []).map(l => l.id), [customLists.smartLists]);
@@ -130,13 +160,21 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   }
 
   const { lists, smartLists = [], ownedCount, createList, createSmartList, deleteList } = customLists;
-  const ownLists = [...lists, ...smartLists];
+  // Collaborative lists (PLO-525, canvas B1): shared lists get their own
+  // section, split by who started them. Off with Watch together.
+  const split = SHOW_WATCH_TOGETHER
+    ? splitListsBySharing(lists, user.id)
+    : { own: lists, sharedByMe: [], sharedWithMe: [] };
+  // What Select can delete: lists you own, shared or not. A list you joined
+  // is left from its own menu.
+  const ownLists = [...lists.filter(l => l.role !== 'member'), ...smartLists];
+  const S = COLLABORATIVE_LISTS.myLists;
 
   // One index behind both the column and the covers, so the two can't drift.
   const collections = [
     { key: 'want',      name: 'Want to Watch', items: want,                empty: 'Nothing saved yet'  },
     { key: 'favorites', name: fw.plural,       items: favorites.favorites, empty: 'Nothing hearted yet' },
-    ...lists.map(list => ({
+    ...split.own.map(list => ({
       key: customListKey(list.id),
       name: list.name,
       // Newest first, the way a cover fans them.
@@ -155,6 +193,18 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
     })),
   ];
 
+  const sharedCollection = (list) => ({
+    key: customListKey(list.id),
+    name: list.name,
+    items: [...(list.items || [])].reverse(),
+    empty: 'Empty',
+    list,
+    others: (list.people || []).filter(p => p.user_id !== user.id),
+  });
+  const sharedByMe = split.sharedByMe.map(sharedCollection);
+  const sharedWithMe = split.sharedWithMe.map(sharedCollection);
+  const sharedCollections = [...sharedByMe, ...sharedWithMe];
+
   // The filters narrow the whole page. A cover keeps its place but shows how
   // much of it matches, and only the matching posters; a list with nothing
   // matching dims. Only Want to Watch stores genres today, so a genre pick
@@ -166,6 +216,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
     watching.items.map(item => ({ ...item, media_type: 'tv' })),
     ...Object.entries(topLists.lists).map(([type, items]) => items.filter(item => item.rank <= TOP_LIST_SIZE).map(item => ({ ...item, media_type: type === 'tv' ? 'tv' : 'movie' }))),
     ...collections.map(c => c.items),
+    ...sharedCollections.map(c => c.items),
   ].map(items => apply(items || [])), query) : [];
   const coverCount = (items, emptyLabel) => {
     if (!narrowed) return titleCount(items.length, emptyLabel);
@@ -223,6 +274,17 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
     if (created) setCreatingList(false);
     return created;
   };
+  // New shared list (canvas B2) is Premium: Free accounts get the upgrade
+  // sheet (S1) first, the same one Invite people opens.
+  const requestShared = () => {
+    if (!isPremiumProfile(profile)) {
+      track(EVENTS.PREMIUM_GATE_HIT, { feature: 'collaborative_lists' });
+      setUpgradeReason('collaborativeLists');
+      setShowCapNotice(true);
+      return;
+    }
+    setCreatingShared(true);
+  };
   const deleteSelected = async () => {
     for (const id of selection.selected) await deleteList(id);
     setConfirmDelete(false);
@@ -258,6 +320,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
       items={[
         { label: 'New list', onClick: requestCreate },
         { label: SMART_LISTS.newSmartList, onClick: requestSmartCreate },
+        ...(SHOW_WATCH_TOGETHER ? [{ label: S.newShared, onClick: requestShared }] : []),
         ...(ownLists.length > 0 ? [{ label: 'Select lists', onClick: selection.start }] : []),
       ]}
     />
@@ -265,6 +328,13 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
 
   const cover = (c) => {
     const visible = narrowed ? apply(c.items) : c.items;
+    const owner = c.others && c.list.role === 'member' ? listOwner(c.list) : null;
+    const byline = c.others && (
+      <>
+        <MemberStack people={c.others} />
+        <span>{owner ? S.from(personName(owner)) : S.withNames(c.others.map(personName))}</span>
+      </>
+    );
     return (
       <ListCover
         key={c.key}
@@ -274,21 +344,24 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
         posters={posters(visible)}
         dim={narrowed && visible.length === 0 && c.items.length > 0}
         badge={c.list && listVisibility(c.list) !== 'private' && <span className="mylists-public-badge">{PROFILE_PRIVACY.listVisibilityBadge[listVisibility(c.list)]}</span>}
+        byline={byline}
+        menu={c.list && !c.smart ? <ListCoverMenu list={c.list} /> : null}
         onOpen={open(c.key)}
         editMode={selection.editMode}
-        selectable={!!c.list}
+        selectable={!!c.list && c.list.role !== 'member'}
         selected={c.list ? selection.selected.has(c.list.id) : false}
         onToggleSelect={c.list ? () => selection.toggle(c.list.id) : undefined}
       />
     );
   };
 
-  const titles = collections.reduce((n, c) => n + c.items.length, 0);
+  const allCollections = [...collections, ...sharedCollections];
+  const titles = allCollections.reduce((n, c) => n + c.items.length, 0);
 
   return (
     <div className="hist-page mylists-page">
       <div className="hist-toolbar">
-        <span className="hist-toolbar-sub">{CUSTOM_LISTS.summary(collections.length, titles)}</span>
+        <span className="hist-toolbar-sub">{CUSTOM_LISTS.summary(allCollections.length, titles)}</span>
         <div className="hist-toolbar-controls">
           {/* At sidebar widths the column carries the filters; below it, the
               pill and its sheet are how a phone reaches them. */}
@@ -312,6 +385,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
       <div className="cal-body">
         <aside className="cal-side mylists-side">
           <JumpToCard collections={collections} counts={jumpCount} newCounts={newCounts} onOpen={jumpTo} />
+          {SHOW_WATCH_TOGETHER && <SharedJumpCard collections={sharedCollections} onOpen={jumpTo} onNew={requestShared} />}
           <SideFilters
             typeRows={TYPE_ROWS}
             typeFilters={typeFilters}
@@ -354,6 +428,38 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
                   )}
                 </div>
               </ListSection>
+
+              {SHOW_WATCH_TOGETHER && (
+                <ListSection
+                  title={S.shared}
+                  subtitle={S.sharedNote}
+                  headerRight={<button type="button" className="btn btn-secondary btn-sm" onClick={requestShared}><PlusSmallIcon />{S.newShared}</button>}
+                >
+                  <div className="mylists-shared-group">
+                    <h3 className="mylists-shared-label">{S.sharedByMe}</h3>
+                    <div className="list-covers">
+                      {sharedByMe.map(cover)}
+                      {!selection.editMode && (
+                        <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestShared} aria-label={S.newShared}>
+                          <span className="list-cover-art list-cover-art--dashed">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                          </span>
+                          <span className="list-cover-label">
+                            <span className="list-cover-name list-cover-name--muted">{S.newShared}</span>
+                            <span className="list-cover-count">{S.newSharedNote}</span>
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {sharedWithMe.length > 0 && (
+                    <div className="mylists-shared-group">
+                      <h3 className="mylists-shared-label">{S.sharedWithMe}</h3>
+                      <div className="list-covers">{sharedWithMe.map(cover)}</div>
+                    </div>
+                  )}
+                </ListSection>
+              )}
             </div>
           )}
         </div>
@@ -384,6 +490,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
           onLimit={() => { setCreatingSmart(false); setUpgradeReason('lists'); setShowCapNotice(true); }}
         />
       )}
+      {creatingShared && <NewSharedListDialog onClose={() => setCreatingShared(false)} />}
       {confirmDelete && (
         <ConfirmModal
           title={selectedLists.length === 1 ? `Delete "${selectedLists[0].name}"?` : `Delete ${selectedLists.length} lists?`}

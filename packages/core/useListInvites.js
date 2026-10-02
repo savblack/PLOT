@@ -80,6 +80,29 @@ export async function listInvitePreview(key) {
 }
 
 /**
+ * @typedef {object} ListInvitePeek  list_invite_peek() for one key: who else
+ *   is on the list and a few of its posters, for the list-led landing.
+ * @property {number} member_count  members besides the owner
+ * @property {{ display_name: string | null, avatar_url: string | null }[]} members  at most three
+ * @property {string[]} posters  poster paths, newest first, at most five
+ */
+
+/**
+ * Who else is on a list behind an invite link, and a peek at its posters.
+ * Works signed out. Null when the key is unknown or the read fails, and the
+ * landing then falls back to the person-led layout.
+ * @param {string} key
+ * @returns {Promise<ListInvitePeek | null>}
+ */
+export async function listInvitePeek(key) {
+  const { data, error } = await supabase.rpc('list_invite_peek', { p_key: key });
+  if (error) return null;
+  const row = (Array.isArray(data) ? data[0] : data) || null;
+  if (!row) return null;
+  return { member_count: row.member_count ?? 0, members: row.members || [], posters: row.posters || [] };
+}
+
+/**
  * Join a list from its invite link. Free accounts can join; the owner needs
  * Premium.
  * @param {string} key

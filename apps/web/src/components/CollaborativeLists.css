@@ -1,0 +1,140 @@
+/* Collaborative lists, the redesign (PLO-525). Flat and warm: the people
+   panel is a cream card like the column's other cards, rows are hairline
+   filter rows, and the accent marks only the selected Added by row. Tokens
+   only, so every Premium theme carries it. */
+
+.cl-icon { width: 15px; height: 15px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.btn .cl-icon { margin-right: 6px; }
+
+/* Avatar stacks: initials on the deeper cream with a hairline, overlapping. */
+.wt-avatar--xs { width: 24px; height: 24px; font-size: 0.66rem; font-family: var(--font-display); border: 1px solid var(--border-strong); }
+.cl-stack--xs .wt-avatar + .wt-avatar { margin-left: -6px; }
+.cl-stack--sm .wt-avatar { border: 1px solid var(--border-strong); font-family: var(--font-display); }
+.cl-stack--sm .wt-avatar + .wt-avatar { margin-left: -8px; }
+
+/* ── My Lists (B1, A1) ── */
+.list-cover-byline {
+  display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 4px;
+  font-size: 0.78rem; color: var(--text-muted);
+}
+.list-cover-byline > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-cover--menu .list-cover-label { padding-right: 36px; }
+.list-cover-menu { position: absolute; right: -6px; bottom: 0; }
+.list-cover-menu-btn { width: 32px; height: 32px; border-radius: var(--radius-pill); }
+.list-cover-menu-btn:hover,
+.list-cover-menu-btn[aria-expanded="true"] { background: var(--surface-sunken); color: var(--text-primary); }
+.list-cover-menu .kebab-menu-panel { min-width: 168px; }
+
+.mylists-shared-group + .mylists-shared-group { margin-top: 2.25rem; }
+.mylists-shared-label {
+  margin: 0 0 1rem; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.mylists-jump .cal-filter-row .wt-stack { flex-shrink: 0; }
+.mylists-jump-more .cal-filter-name { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ── A shared list's page (B5 + A5, A8) ── */
+.list-page-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.list-page-head-buttons { display: flex; align-items: center; gap: 8px; }
+.list-page-head-buttons .btn { display: inline-flex; align-items: center; white-space: nowrap; }
+.list-page-bar-back,
+.list-page-search-toggle { display: none; }
+.list-page-lead { display: none; }
+/* The toolbar's Add (A8) only where the header's Add a title is hidden. */
+.list-page-add { display: none; }
+@media (max-width: 1023px) { .list-page--shared .list-page-add { display: inline-flex; } }
+
+/* The people panel: A5's header line on top, then each person's count as the
+   Added by filter, then Invite people. */
+.cl-people { display: flex; flex-direction: column; gap: 12px; padding: 14px 12px 14px; }
+.cl-people-summary { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 0 8px; }
+.cl-people-names { min-width: 0; font-size: 0.82rem; line-height: 1.35; color: var(--text-secondary); }
+.cl-people-rows { display: flex; flex-direction: column; }
+.cl-people-kicker {
+  padding: 2px 8px 4px; font-size: 0.66rem; font-weight: 600; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.cl-people-row { min-height: 36px; }
+.cl-people-count { flex-shrink: 0; font-size: 12px; color: var(--text-muted); }
+.cl-people-row[aria-pressed="true"] .cal-filter-name,
+.cl-people-row[aria-pressed="true"] .cl-people-count { color: var(--accent-text); font-weight: 600; }
+.cl-people > div:last-child { display: flex; justify-content: flex-end; padding: 0 8px; }
+.cl-invite-btn { display: inline-flex; align-items: center; }
+
+/* "Added by Sam · 2d ago" under a row's kind (B5). */
+.cl-byline { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 0.73rem; color: var(--text-muted); }
+.cl-byline .wt-avatar--xs { width: 20px; height: 20px; font-size: 0.6rem; }
+
+/* The phone and tablet people line (A8). */
+.cl-lead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cl-lead-people {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 0;
+  border: 0; background: none; color: var(--text-secondary); font: inherit; font-size: 0.85rem; cursor: pointer;
+}
+.cl-lead-people:hover { color: var(--text-primary); }
+.cl-lead-people:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius-sm, 6px); }
+.cl-lead .btn { display: inline-flex; align-items: center; }
+/* The people sheet's two actions share the row equally (Savannah's call for
+   this bottom sheet; see docs/design/shared-design-system.md). */
+.cl-sheet-actions { width: 100%; }
+/* The sheet header already draws a hairline; the first person row's own
+   top border would make it two. */
+.cl-people-sheet > .wt-row:first-child { border-top: 0; padding-top: 0; }
+.cl-sheet-actions .btn { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; }
+
+@media (max-width: 1023px) {
+  .list-page--shared .list-page-head-buttons { display: none; }
+  .list-page--shared .list-page-lead { display: block; margin: -6px 0 14px; }
+}
+
+/* A phone: the header becomes a bar (back, title, search), and the search
+   field only opens from the search button (A8, with search in place of the
+   invite icon). */
+@media (max-width: 600px) {
+  .list-page--shared .list-page-back--mobile { display: none; }
+  .list-page--shared .list-page-head { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding-bottom: 14px; }
+  .list-page--shared .list-page-bar-back {
+    display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-left: -8px;
+    color: var(--text-primary);
+  }
+  .list-page--shared .list-page-bar-back svg { width: 20px; height: 20px; }
+  .list-page--shared .list-page-heading { flex: 1; min-width: 0; }
+  .list-page--shared .list-page-title { font-size: 1.35rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list-page--shared .list-page-sub { display: none; }
+  .list-page--shared .list-page-head-actions { display: contents; }
+  .list-page--shared .list-page-search-toggle { display: inline-flex; flex-shrink: 0; }
+  .list-page--shared .list-page-search { display: none; order: 10; width: 100%; margin-top: 8px; }
+  .list-page--shared.list-page--search-open .list-page-search { display: flex; }
+}
+
+/* ── New shared list (B2) ── */
+.cl-create-foot { align-items: center; justify-content: space-between; gap: 12px; }
+.cl-create-foot .wt-note { flex: 1; min-width: 0; }
+.cl-chip-btn { border: 0; cursor: pointer; font: inherit; }
+
+/* ── The invite landing (A3, A4, A7 and B3, B4, B7): centred ── */
+.cl-landing { align-items: center; text-align: center; margin-inline: auto; width: 100%; box-sizing: border-box; }
+.cl-landing .wt-top-actions { justify-content: center; }
+.cl-landing .wt-avatar--lg { align-self: center; }
+.cl-landing-kicker { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+.cl-landing--list .wt-title { margin-top: -0.6rem; }
+.cl-landing-people { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+.cl-landing-posters { display: flex; justify-content: center; gap: 10px; }
+.cl-landing-posters img {
+  width: 92px; aspect-ratio: 2/3; object-fit: cover; display: block;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--surface-sunken);
+}
+.cl-landing-fan { display: none; width: 220px; align-self: center; }
+@media (max-width: 600px) {
+  .cl-landing-fan { display: block; }
+  .cl-landing-posters { display: none; }
+  .cl-landing-posters img { width: 64px; }
+}
+
+/* The Watch together and list dialogs put .wt-accept straight into the
+   dialog's content, which has no padding of its own, so rows and fields ran
+   to the sheet's edge. Give it the footer's inset. Compared with and without
+   on 2 Oct 2026 (Accept, Add people, Start a list, Invite people, New shared
+   list, On this list): padded reads better on every one, desktop and phone,
+   so it stays unscoped. */
+.responsive-dialog-content > .wt-accept { padding: 1rem 1.5rem 1.25rem; }

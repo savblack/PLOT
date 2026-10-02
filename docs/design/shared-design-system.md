@@ -238,6 +238,11 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
 - The Plot loader stays centered and fades each letter in sequence.
 - Icons stay monochrome and lightweight until hover, focus, or active state.
 - Buttons are compact and sized to their label — never full-width.
+  - Exception, a bottom sheet's action row: when a sheet ends in a pair of
+    actions, they may share the row in equal widths inside the sheet's own
+    padding (approved by Savannah, 2 Oct 2026, for the shared list's people
+    sheet: Add a person and Watch together). It is a row of two, not one
+    stretched button, and it is for sheets only.
 
 ## Accessibility contract
 
