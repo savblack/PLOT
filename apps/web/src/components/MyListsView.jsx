@@ -63,7 +63,7 @@ const ChevronUp   = () => <svg viewBox="0 0 24 24"><polyline points="18,15 12,9 
 
 /* The index. One row per collection, name and count, in the same row style as
    the filters under it. */
-function JumpToCard({ collections, counts, newCounts = {}, onOpen }) {
+function JumpToCard({ collections, counts, onOpen }) {
   const [expanded, setExpanded] = useState(false);
   // Folding one row away would cost a row to save a row.
   const folds = collections.length > JUMP_CAP + 1;
@@ -77,10 +77,7 @@ function JumpToCard({ collections, counts, newCounts = {}, onOpen }) {
         {shown.map(c => (
           <button key={c.key} type="button" className="cal-filter-row" onClick={onOpen(c.key)}>
             <span className="cal-filter-name">{c.name}</span>
-            {/* A4: a smart list the weekly roll-up found titles for says how many. */}
-            {c.smart && newCounts[c.list.id]
-              ? <span className="mylists-jump-count smart-new-count">{SMART_LISTS.newCount(newCounts[c.list.id])}</span>
-              : <span className="mylists-jump-count">{c.smart ? SMART_LISTS.badge : counts(c.items)}</span>}
+            <span className="mylists-jump-count">{counts(c.items)}</span>
           </button>
         ))}
         {folds && (
@@ -96,6 +93,29 @@ function JumpToCard({ collections, counts, newCounts = {}, onOpen }) {
             <span className="cal-filter-chev">{expanded ? <ChevronUp /> : <ChevronDown />}</span>
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* The Smart lists group in the column: each smart list, with "2 new" when
+   the weekly roll-up found something (A4), and New smart list under them. */
+function SmartJumpCard({ collections, newCounts, onOpen, onNew }) {
+  return (
+    <div className="hist-card mylists-jump">
+      <div className="hist-card-head">
+        <span className="hist-card-title">{SMART_LISTS.section}</span>
+      </div>
+      <div>
+        {collections.map(c => (
+          <button key={c.key} type="button" className="cal-filter-row" onClick={onOpen(c.key)}>
+            <span className="cal-filter-name">{c.name}</span>
+            {newCounts[c.list.id] > 0 && <span className="mylists-jump-count smart-new-count">{SMART_LISTS.newCount(newCounts[c.list.id])}</span>}
+          </button>
+        ))}
+        <button type="button" className="cal-filter-row mylists-jump-more" onClick={onNew}>
+          <span className="cal-filter-name"><PlusSmallIcon /> {SMART_LISTS.newSmartList}</span>
+        </button>
       </div>
     </div>
   );
@@ -182,16 +202,17 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
       empty: 'Empty',
       list,
     })),
-    // Smart lists find their titles when opened, so their covers are bare.
-    ...smartLists.map(list => ({
-      key: customListKey(list.id),
-      name: list.name,
-      items: [],
-      empty: SMART_LISTS.coverCount,
-      list,
-      smart: true,
-    })),
   ];
+  // Smart lists find their titles when opened, so their covers are bare.
+  // Their own section and column group, after Lists and before Shared.
+  const smartCollections = smartLists.map(list => ({
+    key: customListKey(list.id),
+    name: list.name,
+    items: [],
+    empty: SMART_LISTS.coverCount,
+    list,
+    smart: true,
+  }));
 
   const sharedCollection = (list) => ({
     key: customListKey(list.id),
@@ -355,7 +376,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
     );
   };
 
-  const allCollections = [...collections, ...sharedCollections];
+  const allCollections = [...collections, ...smartCollections, ...sharedCollections];
   const titles = allCollections.reduce((n, c) => n + c.items.length, 0);
 
   return (
@@ -384,7 +405,8 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
 
       <div className="cal-body">
         <aside className="cal-side mylists-side">
-          <JumpToCard collections={collections} counts={jumpCount} newCounts={newCounts} onOpen={jumpTo} />
+          <JumpToCard collections={collections} counts={jumpCount} onOpen={jumpTo} />
+          <SmartJumpCard collections={smartCollections} newCounts={newCounts} onOpen={jumpTo} onNew={requestSmartCreate} />
           {SHOW_WATCH_TOGETHER && <SharedJumpCard collections={sharedCollections} onOpen={jumpTo} onNew={requestShared} />}
           <SideFilters
             typeRows={TYPE_ROWS}
@@ -424,6 +446,29 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                       </span>
                       <span className="list-cover-label"><span className="list-cover-name list-cover-name--muted">New list</span></span>
+                    </button>
+                  )}
+                </div>
+              </ListSection>
+
+              {/* Smart lists: everyone sees the section. Free viewers can build
+                  rules and see the count; Create opens the upgrade sheet (B5). */}
+              <ListSection
+                title={SMART_LISTS.section}
+                subtitle={SMART_LISTS.sectionNote}
+                headerRight={<button type="button" className="btn btn-secondary btn-sm" onClick={requestSmartCreate}><PlusSmallIcon />{SMART_LISTS.newSmartList}</button>}
+              >
+                <div className="list-covers">
+                  {smartCollections.map(cover)}
+                  {!selection.editMode && (
+                    <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestSmartCreate} aria-label={SMART_LISTS.newSmartList}>
+                      <span className="list-cover-art list-cover-art--dashed">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                      </span>
+                      <span className="list-cover-label">
+                        <span className="list-cover-name list-cover-name--muted">{SMART_LISTS.newSmartList}</span>
+                        <span className="list-cover-count">{SMART_LISTS.newTileNote}</span>
+                      </span>
                     </button>
                   )}
                 </div>

@@ -72,6 +72,12 @@ export const SMART_LISTS = Object.freeze({
   // Names written from the rules: "Thriller and mystery movies, under 2 hours, on my services".
   nameGenreJoin: ' and ',
 
+  // My Lists: smart lists have their own section, after Lists and before
+  // Shared, and their own group in the column.
+  section: 'Smart lists',
+  sectionNote: 'Lists that find their own titles',
+  newTileNote: 'Set a few rules',
+
   // B1: "New list" asks which kind.
   kinds: {
     list: { title: 'List', body: 'Add titles yourself, one at a time' },

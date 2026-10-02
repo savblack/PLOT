@@ -202,6 +202,41 @@ const listsApp = (premium = true) => app(premium, {
   },
 });
 
+// A shared list you started, with a fictional friend on it.
+const sectionsApp = () => {
+  const base = listsApp();
+  return {
+    ...base,
+    user: { id: 'me', email: 'story@example.com' },
+    customLists: {
+      ...base.customLists,
+      lists: [
+        ...base.customLists.lists,
+        { id: 'friday', name: 'Friday nights', role: 'owner', items: pick('Nightcrawler').map(t => ({ ...t, id: key(t) })),
+          people: [{ user_id: 'me', display_name: 'Me' }, { user_id: 'f1', display_name: 'Jess Hart', username: 'jess' }] },
+      ],
+    },
+  };
+};
+
+/** My Lists: Lists, then Smart lists, then Shared, in the page and the column. */
+export const MyListsSections = {
+  parameters: { app: sectionsApp(), route: '/my-lists' },
+  render: () => <MyListsView newCounts={{ [DISCOVER_THRILLERS.id]: 2 }} />,
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const headings = canvas.getAllByRole('heading', { level: 2 }).map(h => h.textContent);
+    const at = (name) => headings.indexOf(name);
+    await expect(at('Lists')).toBeGreaterThan(-1);
+    await expect(at(SMART_LISTS.section)).toBeGreaterThan(at('Lists'));
+    if (at('Shared') > -1) await expect(at('Shared')).toBeGreaterThan(at(SMART_LISTS.section));
+    // Smart lists no longer mix into Lists.
+    const smart = canvas.getByRole('heading', { level: 2, name: SMART_LISTS.section }).closest('section');
+    await expect(within(smart).getAllByText(DISCOVER_THRILLERS.name).length).toBeGreaterThan(0);
+  },
+};
+
 /** B1: New list asks which kind. */
 export const B1NewListChoice = {
   parameters: { app: listsApp(), route: '/my-lists' },
