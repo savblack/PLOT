@@ -5,7 +5,6 @@
 .alert-toggle--on { color: var(--accent-text); }
 .alert-toggle-error { margin: 0.4rem 0 0; font-size: 0.78rem; color: var(--text-secondary); }
 
-.talent-alert { margin-top: 0.75rem; }
 
 .alert-card { padding-top: 0.75rem; padding-bottom: 0.75rem; }
 .alert-card-row { display: flex; align-items: center; gap: 0.9rem; }

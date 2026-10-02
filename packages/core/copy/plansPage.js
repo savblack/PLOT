@@ -109,9 +109,9 @@ export const PLANS_PAGE = {
         also: ['together', 'lists'],
       },
       alerts: {
-        context: (_cap) => 'Alerts are a Premium feature',
-        title: 'Hear about it when it’s ready.',
-        body: 'Premium brings release alerts for the actors and directors you love, and a heads-up when every episode of a season is on your services.',
+        context: (_cap) => 'Following people is part of Premium',
+        title: 'Follow the people you love watching.',
+        body: 'Hear when they have something new.',
         also: ['pick', 'together'],
       },
     },

@@ -11,10 +11,11 @@ import { useWatchTogether } from '@plot/core/useWatchTogether.js';
 import { AcceptDialog } from './WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { COMMON } from '../copy/common.js';
-import { notificationPhrase, alertPhrase, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T, NEW_EPISODE_NOTIFICATION as EP } from '@plot/core/copy/notifications.js';
+import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T, NEW_EPISODE_NOTIFICATION as EP } from '@plot/core/copy/notifications.js';
 import { groupNotifications, notificationKind, actorName, rollupNames, isAlertNotification, isTitleNotification } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
-import { posterUrl } from '../utils/images.js';
+import { posterUrl, profileUrl } from '../utils/images.js';
+import { PEOPLE } from '@plot/core/copy/people.js';
 import { requestShareCard, CARD_IDS } from '@plot/core/shareCards.js';
 import { useMonthWrapMoment } from '../hooks/useMonthWrapMoment.js';
 import { SHARE_CARDS } from '../copy/shareCards.js';
@@ -34,6 +35,16 @@ function Poster({ path }) {
     : <span className="notif-poster" aria-hidden="true" />;
 }
 
+// A release-day row for someone you follow: their headshot sits on the poster's
+// corner (board R2-3).
+function PosterWithPerson({ path, personPath }) {
+  const face = profileUrl(personPath, 'w92');
+  return <span className="notif-poster-wrap">
+    <Poster path={path} />
+    {face && <img className="notif-poster-face" src={face} alt="" />}
+  </span>;
+}
+
 function Avatar({ url, name, small = false, kind }) {
   const cls = `notif-avatar${small ? ' notif-avatar--sm' : ''}`;
   return <span className="notif-avatar-wrap">
@@ -43,7 +54,7 @@ function Avatar({ url, name, small = false, kind }) {
 }
 
 /** Pure layout; data comes from the hooks in NotificationsView (and from a story). */
-export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onMarkAllRead, now, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
+export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onOpenPeople, onMarkAllRead, now, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
   const { rollup, groups } = useMemo(() => groupNotifications(list, now), [list, now]);
   const unread = list.filter(wasUnread).length;
   const requestTotal = requests.length + watchRequests.length;
@@ -125,10 +136,10 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
               {group.items.map(n => isAlertNotification(n)
                 ? <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpenTitle?.(n.tmdb_id, n.media_type)}>
                   <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
-                  <Poster path={n.media_poster_path} />
+                  <PosterWithPerson path={n.media_poster_path} personPath={n.person_profile_path} />
                   <span className="notif-row-text">
-                    <span className="notif-badge">{ALERT_NOTIFICATIONS.badges[n.type]}</span>
-                    <span className="notif-row-line"><strong>{n.media_title || ALERT_NOTIFICATIONS.untitled}</strong> {alertPhrase(n)}</span>
+                    <span className="notif-badge">{alertBadge(n)}</span>
+                    <span className="notif-row-line"><strong>{n.media_title || ALERT_NOTIFICATIONS.untitled}</strong>{alertPhrase(n)}</span>
                   </span>
                   <span className="hist-card-note notif-time">{relativeTime(n.created_at, now)}</span>
                 </button>
@@ -150,6 +161,12 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
               </button>)}
             </div>
           </div>)}
+          {list.some(n => n.type === 'person_release') && (
+            <button type="button" className="hist-card notif-people-footer interactive-surface" onClick={onOpenPeople}>
+              <span className="notif-people-footer-text">{PEOPLE.notificationsFooter.body}</span>
+              <span className="notif-people-footer-link">{PEOPLE.notificationsFooter.link}</span>
+            </button>
+          )}
         </section>}
         {!groups.length && !rollup && requestTotal > 0 && <p className="hist-card-note notif-status">{T.nothingElse}</p>}
       </div>}
@@ -193,7 +210,7 @@ export default function NotificationsView() {
       onApprove={approve} onDecline={decline} onOpen={(username, type) => { if (username) navigate(notificationPath(username, type)); }}
       onOpenTitle={(tmdbId, mediaType) => openPanel(tmdbId, mediaType === 'movie' ? 'movie' : 'tv', 'notification')}
       onReviewWatch={setReviewing} onDeclineWatch={r => watch.respond(r.other_id, false)}
-      onOpenTitle={(tmdbId, mediaType) => openPanel(tmdbId, mediaType === 'movie' ? 'movie' : 'tv', 'notification')}
+      onOpenPeople={() => navigate('/your-people')}
       onMarkAllRead={handleMarkAllRead}
       wasUnread={n => unreadIds?.has(n.id) ?? false}
       moment={moment}

@@ -49,10 +49,11 @@ export function FilterRow({ label, on, onToggle }) {
  * @param {{id: number, name: string}[]} props.genres
  * @param {{id: string, label: string}[]} [props.typeRows]  Defaults to TV, Movies, Cinema.
  * @param {import('react').ReactNode} [props.children]  Extra sections after Genre.
+ * @param {boolean} [props.showGenre]  false where items carry no genres (Your people).
  */
 export default function SideFilters({
   typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres,
-  typeRows = TYPE_ROWS, children,
+  typeRows = TYPE_ROWS, children, showGenre = true,
 }) {
   // A type can be switched off only while another stays on: with nothing
   // ticked the filter would read as "show nothing" but behave as "show all".
@@ -75,7 +76,7 @@ export default function SideFilters({
         </div>
       </div>
 
-      <div className="cal-filter">
+      {showGenre && <div className="cal-filter">
         <div className="cal-filter-label">{CALENDAR_VIEW.filter.genre}</div>
         <GroupedFilterMenu
           ariaLabel={CALENDAR_VIEW.filter.genre}
@@ -99,7 +100,7 @@ export default function SideFilters({
             </button>
           )}
         />
-      </div>
+      </div>}
 
       {children}
     </>

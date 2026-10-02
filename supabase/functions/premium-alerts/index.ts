@@ -14,12 +14,19 @@
  * opt-ins and simply stops receiving alerts.
  *
  * The rules themselves live in _shared/premiumAlerts.js, which is unit tested
- * (apps/web/tests/unit/premiumAlerts.test.js):
+ * (apps/web/tests/unit/premiumAlerts.test.js); the TMDB fetching for the
+ * feed is _shared/peopleFeedJob.ts:
  *
- *   people   a TV credit whose series premiered in the last three days, or a
- *            movie credit whose first general release (theatrical or digital)
- *            in the person's own region was in the last three days. Festival
- *            premieres and limited runs do not count.
+ *   people   refreshes people_feed for every followed person (films billed
+ *            top 12 or directed; series they are a regular in or created,
+ *            and each new season), then writes one release-day row per title
+ *            or season: a film on its first general release (theatrical or
+ *            digital) in the follower's own region, a series or new season on
+ *            its premiere. All within the last three days. Festival premieres,
+ *            limited runs, playing yourself, talk, news and reality do not
+ *            count. A show the follower already follows through a list or
+ *            watching is left to new-episode-notifications (#1032), so a
+ *            premiere is never announced twice.
  *   seasons  the show's latest season has finished (finale marker, ended or
  *            cancelled, or the next episode is in a later season), every
  *            episode TMDB lists for it has aired, the list is complete, and
@@ -37,7 +44,7 @@
  * Auth: the gateway verifies the bearer (verify_jwt = true); this handler then
  * requires the service role, as the other internal functions do. Runnable by
  * hand with the same bearer; {"only": "people", "dry_run": true} reports what
- * it would write and writes nothing.
+ * it would write and writes nothing (people_feed included).
  *
  * Secrets: TMDB_API_KEY (already set for tmdb-proxy and calendar-feed).
  */
@@ -47,21 +54,20 @@ import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import {
   alertRegion, finishedSeason, isoDay, PEOPLE_LOOK_BACK_DAYS, personReleaseKey, readyOnSelectedServices,
-  regionalMovieRelease, releaseCandidates, seasonFullyAired, seasonReadyKey, selectedProviderIds,
+  releaseForRegion, seasonFullyAired, seasonReadyKey, selectedProviderIds,
 } from '../_shared/premiumAlerts.js';
+import { mapWithConcurrency, refreshPeopleFeed, tmdbGet, TMDB_CONCURRENCY, type FeedRow } from '../_shared/peopleFeedJob.ts';
 
 type Db = SupabaseClient<Database>;
 type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
 type Recipient = { region: string; providerIds: number[] };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const TMDB_BASE = 'https://api.themoviedb.org/3';
 
 // Cost caps. One run scales with distinct followed people or shows, not with
 // accounts, but still needs a ceiling on TMDB calls and execution time.
 const PAGE_SIZE = 1000;
 const MAX_SUBJECTS_PER_RUN = 2500;
-const TMDB_CONCURRENCY = 6;
 const INSERT_CHUNK = 500;
 // PostgREST puts .in() lists in the URL, so keep each one short.
 const ID_CHUNK = 200;
@@ -71,26 +77,6 @@ const MAX_FAILURE_RATE = 0.5;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
-
-async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let next = 0;
-  async function worker() {
-    while (true) {
-      const index = next++;
-      if (index >= items.length) return;
-      results[index] = await fn(items[index]);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
-}
-
-async function tmdbGet(path: string, key: string): Promise<any> {
-  const res = await fetch(`${TMDB_BASE}${path}${path.includes('?') ? '&' : '?'}api_key=${encodeURIComponent(key)}&language=en-US`);
-  if (!res.ok) throw new Error(`TMDB ${path} failed (${res.status})`);
-  return await res.json();
-}
 
 /** Every row of an opt-in table, paged. */
 async function readAll<T>(db: Db, table: 'person_alerts' | 'season_ready_alerts', columns: string): Promise<T[]> {
@@ -141,85 +127,89 @@ function bySubject<T extends { user_id: string }>(rows: T[], subject: (row: T) =
 
 type Outcome = { rows: NotificationInsert[]; subjects: number; checked: number; capped: boolean; hits: number; failures: number; calls: number };
 
-async function peopleAlerts(db: Db, tmdbKey: string, now: Date): Promise<Outcome> {
-  const follows = await readAll<{ user_id: string; tmdb_person_id: number; name: string }>(db, 'person_alerts', 'user_id, tmdb_person_id, name');
+/** Which of these users follow which of these shows the #1032 way (a list or watching). */
+async function showFollowers(db: Db, userIds: string[], showIds: number[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (!userIds.length || !showIds.length) return out;
+  for (let i = 0; i < showIds.length; i += ID_CHUNK) {
+    const ids = showIds.slice(i, i + ID_CHUNK);
+    for (let u = 0; u < userIds.length; u += ID_CHUNK) {
+      const users = userIds.slice(u, u + ID_CHUNK);
+      const [lists, watching] = await Promise.all([
+        db.from('list_items').select('user_id, tmdb_id').eq('media_type', 'tv').in('tmdb_id', ids).in('user_id', users),
+        db.from('watching_progress').select('user_id, tmdb_id').in('tmdb_id', ids).in('user_id', users),
+      ]);
+      if (lists.error) throw new Error(`list_items read failed: ${lists.error.message}`);
+      if (watching.error) throw new Error(`watching_progress read failed: ${watching.error.message}`);
+      for (const r of [...(lists.data ?? []), ...(watching.data ?? [])]) out.add(`${r.user_id}:${r.tmdb_id}`);
+    }
+  }
+  return out;
+}
+
+/**
+ * Refresh the feed for every followed person, then write a release-day row for
+ * each follower whose film came out in their region, or whose series or new
+ * season premiered, in the last three days.
+ *
+ * A show that someone already follows through a list or watching gets its
+ * premiere from new-episode-notifications (#1032) instead, so the same
+ * premiere is never announced twice.
+ */
+async function peopleAlerts(db: Db, tmdbKey: string, now: Date, dryRun: boolean): Promise<Outcome> {
+  const follows = await readAll<{ user_id: string; tmdb_person_id: number; name: string; profile_path: string | null }>(
+    db, 'person_alerts', 'user_id, tmdb_person_id, name, profile_path');
   const recipients = await premiumRecipients(db, [...new Set(follows.map(f => f.user_id))]);
   const followers = bySubject(follows, f => f.tmdb_person_id, recipients);
-  const names = new Map(follows.map(f => [f.tmdb_person_id, f.name]));
+  const byPerson = new Map(follows.map(f => [f.tmdb_person_id, f]));
   const personIds = [...followers.keys()].slice(0, MAX_SUBJECTS_PER_RUN);
 
-  const today = isoDay(now);
-  const window = { today, since: isoDay(now, PEOPLE_LOOK_BACK_DAYS) };
-  let failures = 0;
-  let calls = 0;
+  const { rows: feed, stats } = await refreshPeopleFeed(
+    db, tmdbKey, personIds.map(id => ({ id, name: byPerson.get(id)!.name })), now, { write: !dryRun });
 
-  const credits = await mapWithConcurrency(personIds, TMDB_CONCURRENCY, async (personId) => {
-    calls++;
-    try {
-      const body = await tmdbGet(`/person/${personId}/combined_credits`, tmdbKey);
-      return { personId, name: typeof body?.name === 'string' ? body.name : names.get(personId) ?? '', candidates: releaseCandidates(body, window) };
-    } catch (err) {
-      failures++;
-      console.error(err);
-      return { personId, name: '', candidates: [] };
-    }
-  });
-
-  // One release_dates call per candidate movie, shared across people and followers.
-  const movieIds = [...new Set(credits.flatMap(c => c.candidates.filter(x => x.mediaType === 'movie').map(x => x.tmdbId)))];
-  const releaseDates = new Map<number, unknown>();
-  await mapWithConcurrency(movieIds, TMDB_CONCURRENCY, async (movieId) => {
-    calls++;
-    try {
-      releaseDates.set(movieId, await tmdbGet(`/movie/${movieId}/release_dates`, tmdbKey));
-    } catch (err) {
-      failures++;
-      console.error(err);
-    }
-  });
+  const window = { today: isoDay(now), since: isoDay(now, PEOPLE_LOOK_BACK_DAYS) };
+  const inWindow = (date: string) => date >= window.since && date <= window.today;
+  const tvIds = [...new Set(feed.filter(r => r.media_type === 'tv' && inWindow(r.release_date ?? '')).map(r => r.tmdb_id))];
+  const tvFollowed = await showFollowers(db, [...recipients.keys()], tvIds);
 
   const rows: NotificationInsert[] = [];
   const seen = new Set<string>();
-  let hits = 0;
-  for (const { personId, name, candidates } of credits) {
-    const personName = name || names.get(personId) || '';
-    if (!personName) continue;
-    for (const c of candidates) {
-      for (const userId of followers.get(personId) ?? []) {
-        let kind: 'theatrical' | 'digital' | 'premiere';
-        let date: string;
-        if (c.mediaType === 'tv') {
-          kind = 'premiere';
-          date = c.primaryDate;
-        } else {
-          const release = regionalMovieRelease(releaseDates.get(c.tmdbId), recipients.get(userId)!.region, window);
-          if (!release) continue;
-          kind = release.kind;
-          date = release.date;
-        }
-        const dedupeKey = personReleaseKey(c.mediaType, c.tmdbId);
-        // Two followed people in the same film: one alert, the first one found.
-        if (seen.has(`${userId}:${dedupeKey}`)) continue;
-        seen.add(`${userId}:${dedupeKey}`);
-        hits++;
-        rows.push({
-          user_id: userId,
-          type: 'person_release',
-          dedupe_key: dedupeKey,
-          tmdb_id: c.tmdbId,
-          media_type: c.mediaType,
-          media_title: c.title,
-          media_poster_path: c.posterPath,
-          air_date: date,
-          person_tmdb_id: personId,
-          person_name: personName,
-          person_role: c.role,
-          release_kind: kind,
-        });
-      }
+  for (const row of feed as Array<FeedRow & { regional_releases: Record<string, { kind: string; date: string }> }>) {
+    for (const userId of followers.get(row.tmdb_person_id) ?? []) {
+      const release = releaseForRegion(row, recipients.get(userId)!.region);
+      if (!release || !inWindow(release.date)) continue;
+      if (row.media_type === 'tv' && tvFollowed.has(`${userId}:${row.tmdb_id}`)) continue;
+      const season = row.season_number ?? 0;
+      const dedupeKey = personReleaseKey(row.media_type as 'movie' | 'tv', row.tmdb_id, season);
+      // Two followed people in the same title: one row, the first one found.
+      if (seen.has(`${userId}:${dedupeKey}`)) continue;
+      seen.add(`${userId}:${dedupeKey}`);
+      const person = byPerson.get(row.tmdb_person_id);
+      rows.push({
+        user_id: userId,
+        type: 'person_release',
+        dedupe_key: dedupeKey,
+        tmdb_id: row.tmdb_id,
+        media_type: row.media_type,
+        season_number: release.kind === 'season' ? season : null,
+        // Seasons: episodes out on day one (the whole season, or 1 for weekly).
+        episode_count: row.media_type === 'tv' ? (row.premiere_drop ?? 1) : 1,
+        media_title: row.title,
+        media_poster_path: row.poster_path ?? null,
+        air_date: release.date,
+        person_tmdb_id: row.tmdb_person_id,
+        person_name: row.person_name,
+        person_profile_path: person?.profile_path ?? null,
+        person_role: row.person_role,
+        release_kind: release.kind,
+        provider_name: row.media_type === 'tv' ? row.network ?? null : null,
+      });
     }
   }
-  return { rows, subjects: followers.size, checked: personIds.length, capped: followers.size > personIds.length, hits, failures, calls };
+  return {
+    rows, subjects: followers.size, checked: personIds.length, capped: followers.size > personIds.length,
+    hits: rows.length, failures: stats.failures, calls: stats.calls,
+  };
 }
 
 async function seasonAlerts(db: Db, tmdbKey: string, now: Date): Promise<Outcome> {
@@ -294,7 +284,7 @@ Deno.serve(async (req) => {
 
   let outcome: Outcome;
   try {
-    outcome = only === 'people' ? await peopleAlerts(db, tmdbKey, now) : await seasonAlerts(db, tmdbKey, now);
+    outcome = only === 'people' ? await peopleAlerts(db, tmdbKey, now, dryRun) : await seasonAlerts(db, tmdbKey, now);
   } catch (err) {
     // Details go to the function log, not the response.
     console.error(err);
