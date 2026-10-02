@@ -8,16 +8,17 @@
 -- not_blocked clause is present. Neither runs the RPC as a signed-in user, so
 -- neither can tell whether a Free viewer is refused, whether a private profile
 -- stays closed to someone it has not accepted, or whether an accepted follower
--- gets exactly what RLS gives them (history and, since unified profile
--- visibility, the watchlist).
+-- gets exactly what RLS gives them (history, and a watchlist count only when
+-- can_view_watchlist lets them see it). Nor whether Premium is read from the
+-- subscription rather than the badge.
 --
 -- The migration is applied INSIDE the transaction (\ir below), so this proves
 -- the branch's function without deploying it, and the rollback at the end
 -- removes the function along with every fixture row.
 --
 -- Accounts are the same three Staging fixtures the block test uses:
---   A  the viewer, made Premium here
---   B  a second viewer, left on Free
+--   A  the viewer, made Premium here with an active billing_customers row
+--   B  a second viewer, on Free but holding the cosmetic is_premium badge
 --   C  the person being compared with
 -- Their history uses titles already in Staging's history table, so every
 -- tmdb_id here came from TMDB (never a guessed id).
@@ -34,17 +35,22 @@ begin;
 -- protect_premium_flag() and pooled backends carrying ''.
 set local request.jwt.claims = '{"role":"service_role"}';
 
--- can_view_profile arrives with unified profile visibility; apply it first in
--- case Staging hasn't caught up with main. Both roll back with everything else.
-\ir ../supabase/migrations/20260926090000_unified_profile_visibility.sql
-\ir ../supabase/migrations/20260926093000_taste_overlap.sql
+-- The latest taste_overlap body. Staging already has can_view_profile
+-- (20260926090000) and can_view_watchlist (20260927160000); re-applying those
+-- here would put their older list_items policy back inside the transaction.
+\ir ../supabase/migrations/20261002100000_taste_overlap_entitlement.sql
 
 select username as c_name from public.profiles where id = :C
 \gset
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
-update public.profiles set is_premium = true  where id = :A;
-update public.profiles set is_premium = false where id = :B;
+-- Premium is is_premium(), which reads billing_customers (20261002100000).
+-- B gets the badge with no billing row: the legacy-supporter shape, which must
+-- not unlock the comparison.
+delete from public.billing_customers where user_id in (:A, :B);
+insert into public.billing_customers (user_id, stripe_customer_id, subscription_status, current_period_end)
+values (:A, 'cus_taste_overlap_test_a', 'active', now() + interval '30 days');
+update public.profiles set is_premium = true where id in (:A, :B);
 update public.profiles set is_public  = true  where id = :C;
 delete from public.follows where (follower_id, following_id) in ((:A, :C), (:C, :A), (:B, :C));
 delete from public.user_blocks where :A in (blocker_id, blocked_id) or :C in (blocker_id, blocked_id);
@@ -145,8 +151,8 @@ select pg_temp.overlap(:'c_name') as r
 \gset
 select case when (:'r'::jsonb) ? 'theirs' and jsonb_array_length(:'r'::jsonb->'theirs') = 2
             then 'PASS' else 'FAIL' end || '  an accepted follower can compare history';
-select case when (:'r'::jsonb->>'shared_watchlist')::int = 1
-            then 'PASS' else 'FAIL' end || '  private target: an accepted follower gets the watchlist count (RLS lets them read it)';
+select case when (:'r'::jsonb->'shared_watchlist') = 'null'::jsonb
+            then 'PASS' else 'FAIL' end || '  private target, default watchlist setting: no watchlist count (can_view_watchlist says only them)';
 
 \echo ''
 \echo '=== Free viewer B, C public ==='
@@ -156,7 +162,7 @@ update public.profiles set is_public = true where id = :C;
 set local role authenticated;
 set local request.jwt.claims = :B_CLAIMS;
 select case when pg_temp.overlap(:'c_name')->>'error' = 'premium_required'
-            then 'PASS' else 'FAIL' end || '  a Free viewer is refused server-side';
+            then 'PASS' else 'FAIL' end || '  a Free viewer is refused, even holding the is_premium badge';
 
 \echo ''
 \echo '=== C blocks A ==='
