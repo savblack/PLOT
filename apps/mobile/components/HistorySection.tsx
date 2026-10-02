@@ -11,14 +11,16 @@
  * is labelled.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 import CollapsibleSection from './CollapsibleSection';
 import HistoryInsights from './HistoryInsights';
 import HistoryRow from './HistoryRow';
 import { HistoryEntry } from '../hooks/useHistory';
 import { useTheme } from '../contexts/ThemeContext';
-import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
+import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { monthLabel } from '@plot/core/history.js';
+import { TASTE_OVERLAP } from '@plot/core/copy/tasteOverlap.js';
 
 export interface MonthGroup {
   key: string;
@@ -93,6 +95,7 @@ export default function HistorySection({
   return (
     <View>
       <HistoryInsights sharePreset={sharePreset} onSharePresetUsed={onSharePresetUsed} />
+      <HistoryComparePrompt />
       {groups.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>No matches</Text>
@@ -105,8 +108,50 @@ export default function HistorySection({
   );
 }
 
+function HistoryComparePrompt() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const router = useRouter();
+  return (
+    <View style={styles.prompt}>
+      <Text style={styles.promptTitle}>{TASTE_OVERLAP.historyPromptTitle}</Text>
+      <Text style={styles.promptBody}>{TASTE_OVERLAP.historyPromptBody}</Text>
+      <TouchableOpacity
+        style={styles.promptBtn}
+        accessibilityRole="button"
+        onPress={() => router.push('/(app)/compare' as Href)}
+      >
+        <Text style={styles.promptBtnText}>{TASTE_OVERLAP.compareTaste}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 const makeStyles = (colors: Palette) => StyleSheet.create({
   empty: { paddingVertical: spacing.xl * 2, paddingHorizontal: spacing.xl, alignItems: 'center' },
   emptyTitle: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  prompt: {
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    gap: spacing.sm,
+  },
+  promptTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
+  promptBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted },
+  promptBtn: {
+    alignSelf: 'flex-start',
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.textPrimary,
+  },
+  promptBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
 });
