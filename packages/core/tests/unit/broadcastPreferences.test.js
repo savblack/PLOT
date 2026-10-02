@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 import { configure } from '../../config.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
 import { loadBroadcastPreferences, saveBroadcastPreferences, validateBroadcastPreferences } from '../../broadcastPreferences.js';
-import { broadcastSnapshotUrl, validateGuideSnapshot } from '../../broadcastGuide.js';
+import { broadcastRegionLabel, broadcastSnapshotUrl, validateGuideSnapshot } from '../../broadcastGuide.js';
+
+test('a market named after its country is labeled once', () => {
+  assert.equal(broadcastRegionLabel('Sydney'), 'Sydney, Australia');
+  assert.equal(broadcastRegionLabel('NZ-national'), 'New Zealand');
+  assert.equal(broadcastRegionLabel(null), 'Choose a TV market');
+  assert.equal(broadcastRegionLabel('nope'), 'Choose a TV market');
+});
 
 test('new accounts have no guessed market and empty selections survive save/reload', async () => {
   const client = createInMemorySupabase({ unique: { broadcast_preferences: ['user_id'] } });

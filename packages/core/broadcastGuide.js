@@ -1,5 +1,6 @@
 // Broadcast schedules use absolute instants; timezone affects display and day selection only.
 import { getConfig } from './config.js';
+import { BROADCAST_GUIDE as BROADCAST_COPY } from './copy/broadcastGuide.js';
 import markets from './broadcastMarkets.json' with { type: 'json' };
 /** @typedef {{id: string, name: string, number?: number, network?: string, logo?: string}} BroadcastChannel */
 /** @typedef {{id: string, channelId: string, title: string, start: string, end: string, description?: string}} BroadcastProgramme */
@@ -10,6 +11,18 @@ export const GUIDE_COUNTRIES = ['AU', 'NZ', 'US', 'CA', 'GB'];
 /** @param {string} country */
 export function guideMarketsForCountry(country) {
   return GUIDE_REGIONS.filter(market => market.country === country);
+}
+
+/**
+ * Settings label for a saved TV market. A market named after its country
+ * is said once ("New Zealand", not "New Zealand, New Zealand").
+ * @param {string | null | undefined} marketId
+ */
+export function broadcastRegionLabel(marketId) {
+  const market = GUIDE_REGIONS.find(item => item.id === marketId);
+  const countryName = market && BROADCAST_COPY.countries[market.country];
+  if (!market || !countryName) return BROADCAST_COPY.notConfigured;
+  return market.name === countryName ? countryName : `${market.name}, ${countryName}`;
 }
 
 const dateFormatters = new Map();
