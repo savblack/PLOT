@@ -23,13 +23,16 @@
 -- ── 1. smart_list_seen ───────────────────────────────────────────────────────
 
 create table if not exists public.smart_list_seen (
-  list_id        uuid primary key references public.user_custom_lists (id) on delete cascade,
+  list_id        uuid not null references public.user_custom_lists (id) on delete cascade,
   user_id        uuid not null references auth.users (id) on delete cascade,
   seen_keys      text[] not null default '{}',
   pending_keys   text[] not null default '{}',
   last_opened_at timestamptz,
   last_checked_at timestamptz,
   updated_at     timestamptz not null default now(),
+  -- Table-level so scripts/check-db-write-paths.mjs sees the upserts' key.
+  -- Same constraint and name as an inline primary key would give.
+  constraint smart_list_seen_pkey primary key (list_id),
   -- Caps match packages/core/smartListSeen.js and _shared/smartListDigest.js.
   constraint smart_list_seen_seen_cap check (cardinality(seen_keys) <= 1000),
   constraint smart_list_seen_pending_cap check (cardinality(pending_keys) <= 200)
