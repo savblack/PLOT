@@ -356,8 +356,10 @@ export const SharedListAsMember = {
 export const PhoneSharedList = phone(listPage);
 
 /* Tapping the people opens who added what, with Add a person and Watch together. */
-export const PhonePeopleSheet = phone({
-  ...listPage,
+// Tags stay literal on the story object: the Vitest addon reads them
+// statically, and inside phone(...) it cannot, so the test would be skipped.
+export const PhonePeopleSheet = {
+  ...phone(listPage),
   tags: ['interaction-test'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -368,21 +370,21 @@ export const PhonePeopleSheet = phone({
     await expect(within(sheet).getByRole('button', { name: C.page.addPerson })).toBeInTheDocument();
     await expect(within(sheet).getByRole('button', { name: T.navLabel })).toBeInTheDocument();
   },
-});
+};
 
 /* The search button in the bar searches this list's titles. */
-export const PhoneInListSearch = phone({
-  ...listPage,
+export const PhoneInListSearch = {
+  ...phone(listPage),
   tags: ['interaction-test'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     fireEvent.click(canvas.getByRole('button', { name: C.page.searchOpen }));
-    const search = canvas.getByLabelText(CUSTOM_LISTS.searchThisList);
+    const search = canvas.getByLabelText(CUSTOM_LISTS.searchThisList, { selector: 'input' });
     await fireEvent.input(search, { target: { value: 'after' } });
     await waitFor(() => expect(canvas.queryAllByText('Perfect Days')).toHaveLength(0));
     await expect(canvas.queryAllByText('Aftersun').length).toBeGreaterThan(0);
   },
-});
+};
 
 /* ── Existing Watch together dialogs, for checking their padding ── */
 
