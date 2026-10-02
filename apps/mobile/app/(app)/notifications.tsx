@@ -8,7 +8,7 @@ import { useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -19,7 +19,8 @@ import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIF
 import { isAlertNotification, isTitleNotification, smartListDigest } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
 import { Avatar } from '../../components/Avatar';
-import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { posterUrl, profileUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { PEOPLE } from '@plot/core/copy/people.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 
 interface NotificationRow {
@@ -40,6 +41,7 @@ interface NotificationRow {
   episode_number?: number | null;
   episode_count?: number | null;
   person_name?: string | null;
+  person_profile_path?: string | null;
   person_role?: string | null;
   release_kind?: string | null;
   provider_name?: string | null;
@@ -63,7 +65,7 @@ export default function NotificationsScreen() {
   useEffect(() => { markAllRead(); }, [markAllRead]);
 
   const go = (n: NotificationRow) => {
-    if (isTitleNotification(n) && n.tmdb_id != null) openPanel(n.tmdb_id, n.media_type === 'movie' ? 'movie' : 'tv');
+    if ((isTitleNotification(n) || isAlertNotification(n)) && n.tmdb_id != null) openPanel(n.tmdb_id, n.media_type === 'movie' ? 'movie' : 'tv');
     else if (n.type === 'follow_request') router.push('/(app)/requests');
     // No feed surface on mobile yet (SHOW_SOCIAL_FEED is off on both
     // platforms), so post activity opens the actor instead of a dead route.
@@ -96,14 +98,10 @@ export default function NotificationsScreen() {
         ) : list.length === 0 ? (
           <Text style={styles.empty}>{NOTIFICATIONS_EMPTY.title}{'\n'}{NOTIFICATIONS_EMPTY.body}</Text>
         ) : (
-          list.map((n: NotificationRow) => {
-            // Premium alerts render read-only here for now: the opt-in toggles
-            // and opening the title from a row are web-only until the mobile
-            // parity issue ("Mobile parity: actor/director and season-ready
-            // alerts", issue 1093) lands. The wording is shared with web via core.
-            // The weekly smart lists roll-up renders read-only here: smart
-            // lists themselves are web-only until the mobile parity issue
-            // ("Mobile parity: smart lists", issue 1094) lands. The wording is
+          <>
+          {list.map((n: NotificationRow) => {
+            // The weekly smart lists roll-up stays read-only. Smart lists
+            // themselves are still web-only until issue 1094. The wording is
             // shared with web via core.
             const digest = smartListDigest(n);
             if (digest) {
@@ -121,16 +119,31 @@ export default function NotificationsScreen() {
             if (isAlertNotification(n)) {
               const title = n.media_title || ALERT_NOTIFICATIONS.untitled;
               const phrase = alertPhrase(n) ?? '';
+              const poster = posterUrl(n.media_poster_path, 'w92');
+              const face = profileUrl(n.person_profile_path, 'w92');
               return (
-                <View key={n.id} style={[styles.row, !n.read_at && styles.rowUnread]} accessibilityLabel={`${title}${phrase}`}>
+                <TouchableOpacity
+                  key={n.id}
+                  style={[styles.row, !n.read_at && styles.rowUnread]}
+                  onPress={() => go(n)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${title}${phrase}`}
+                >
+                  <View style={styles.posterWrap}>
+                    {poster
+                      ? <Image source={{ uri: poster }} style={styles.poster} />
+                      : <View style={styles.poster} />}
+                    {face ? <Image source={{ uri: face }} style={styles.posterFace} /> : null}
+                  </View>
                   <View style={styles.rowBody}>
-                    <Text style={styles.rowMuted}>{alertBadge(n)}</Text>
+                    <Text style={styles.rowBadge}>{alertBadge(n)}</Text>
                     <Text style={styles.rowText}>
                       <Text style={styles.rowName}>{title}</Text>{phrase}
                     </Text>
                     <Text style={styles.rowTime}>{relativeTime(n.created_at, undefined, profile?.region)}</Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             }
             if (isTitleNotification(n)) {
@@ -186,7 +199,18 @@ export default function NotificationsScreen() {
                 </View>
               </TouchableOpacity>
             );
-          })
+          })}
+          {list.some((n: NotificationRow) => n.type === 'person_release') && (
+            <TouchableOpacity
+              onPress={() => router.push('/(app)/your-people' as Href)}
+              accessibilityRole="button"
+              style={styles.peopleFooter}
+            >
+              <Text style={styles.peopleFooterBody}>{PEOPLE.notificationsFooter.body}</Text>
+              <Text style={styles.peopleFooterLink}>{PEOPLE.notificationsFooter.link}</Text>
+            </TouchableOpacity>
+          )}
+          </>
         )}
       </ScrollView>
     </View>
@@ -213,6 +237,17 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowReview: { color: colors.accent },
   // Title rows: the poster stands where the 44pt avatar would.
   poster: { width: 44, height: 66, borderRadius: radii.sm, backgroundColor: colors.surfaceSunken },
+  posterWrap: { width: 44, height: 66, overflow: 'visible' },
+  posterFace: {
+    position: 'absolute', right: -7, bottom: -5, width: 22, height: 22, borderRadius: 11,
+    borderWidth: 2, borderColor: colors.bg, backgroundColor: colors.surfaceSunken,
+  },
+  peopleFooter: {
+    marginTop: spacing.lg, padding: spacing.md, borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border, gap: spacing.xs,
+  },
+  peopleFooterBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
+  peopleFooterLink: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   rowBadge: { fontFamily: fontFamily.sansMedium, fontSize: 12, color: colors.textSecondary, marginBottom: 2 },
   rowTime: { fontFamily: fontFamily.sans, fontSize: 12, color: colors.textMuted, marginTop: 2 },
 });

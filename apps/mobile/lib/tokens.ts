@@ -77,3 +77,5 @@ export const backdropUrl = (path: string | null | undefined, size = 'w780') =>
   path ? `${TMDB_IMG}/${size}${path}` : null;
 export const logoUrl     = (path: string | null | undefined, size = 'w45') =>
   path ? `${TMDB_IMG}/${size}${path}` : null;
+export const profileUrl  = (path: string | null | undefined, size = 'w185') =>
+  path ? `${TMDB_IMG}/${size}${path}` : null;

@@ -1,6 +1,7 @@
 /**
- * Home screen — mirrors web DiscoverView.
- * Sections: Hero → Hot Right Now → Most Binged → Top 20 This Week
+ * Home screen. Mirrors web DiscoverView.
+ * Discover order: hero, Continue watching, Hot Right Now, Out Today,
+ * Top 20 This Week, Your people, Most Binged, then releases and platforms.
  */
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -32,6 +33,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
 import { MEDIA } from '@plot/core/copy/media.js';
+import { ContinueWatchingShelf, YourPeopleShelf } from '../../components/people/HomeShelves';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 
 // Enable LayoutAnimation on Android
@@ -781,6 +783,8 @@ export default function HomeScreen() {
           />
         )}
 
+        <ContinueWatchingShelf />
+
         {/* ── Hot Right Now ── */}
         {hotRail.length > 0 && (
           <View style={styles.section}>
@@ -825,6 +829,8 @@ export default function HomeScreen() {
             ))}
           </View>
         )}
+
+        <YourPeopleShelf />
 
         {/* ── Most Binged Shows ── */}
         {applyFilters(bingedShows).length > 0 && (
