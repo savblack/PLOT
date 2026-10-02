@@ -65,6 +65,15 @@
   gap: 0.5rem;
   min-height: 120px;
 }
+.scs-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
 .scs-preview {
   position: relative;
   flex: 0 0 auto;

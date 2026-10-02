@@ -226,3 +226,61 @@ export const ListPageSearchKeepsFocus = {
     await expect(search).toHaveValue('co');
   },
 };
+
+/* Smart lists (Premium). A watchlist rule set with only type and genre rules
+   needs no details calls, so the page renders from the stub watchlist alone.
+   Genre ids are TMDB's published genre list ids, not title ids. */
+const DRAMA = 18;
+const smartWatchlist = watchlistItems.map((item, i) => ({ ...item, genre_ids: i % 2 ? [DRAMA] : [35] }));
+const smartLists = [
+  { id: 's1', name: 'Dramas I saved', rules: { v: 1, source: 'watchlist', mediaType: 'any', genreIds: [DRAMA], era: 'any', minScore: null, maxRuntime: null, onlyServices: false, minMyRating: null, hideWatched: false } },
+  { id: 's2', name: 'New 2010s films', rules: { v: 1, source: 'discover', mediaType: 'movie', genreIds: [], era: '2010s', minScore: 7, maxRuntime: 120, onlyServices: false, minMyRating: null, hideWatched: true } },
+];
+const smartApp = (premium) => ({
+  ...app,
+  profile: { region: 'AU', is_premium: premium },
+  watchlist: { ...app.watchlist, items: smartWatchlist },
+  customLists: { ...app.customLists, smartLists, createSmartList: async (name) => ({ id: 's3', name }), updateSmartList: resolved },
+});
+
+export const WithSmartLists = { parameters: { app: smartApp(true) } };
+
+export const SmartListPage = {
+  ...listPage('/my-lists/list-s1'),
+  parameters: { route: '/my-lists/list-s1', app: smartApp(true) },
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Only the saved dramas: every other stub title is a comedy.
+    await waitFor(() => expect(canvas.getAllByText('Reacher').length).toBeGreaterThan(0));
+    await expect(canvas.queryAllByText('Parasomnia')).toHaveLength(0);
+  },
+};
+
+export const SmartListLocked = {
+  ...listPage('/my-lists/list-s1'),
+  parameters: { route: '/my-lists/list-s1', app: smartApp(false) },
+};
+
+export const NewSmartListFree = {
+  parameters: { app: smartApp(false) },
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+    fireEvent.click(canvas.getByRole('button', { name: 'Create new list' }));
+    fireEvent.click(await body.findByRole('button', { name: 'New smart list' }));
+    await expect(await body.findByRole('dialog', { name: PLANS_PAGE.upgradeSheet.reasons.smartLists.title })).toBeVisible();
+  },
+};
+
+export const NewSmartListPremium = {
+  parameters: { app: smartApp(true) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+    fireEvent.click(canvas.getByRole('button', { name: 'Create new list' }));
+    fireEvent.click(await body.findByRole('button', { name: 'New smart list' }));
+    await body.findByRole('dialog', { name: 'New smart list' });
+  },
+};

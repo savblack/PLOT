@@ -20,12 +20,20 @@ import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { CardGrid, ListCard, SelectCircle } from './ListCards.jsx';
 import { MEDIA } from '../copy/media.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
-import { privateNoteKey } from '@plot/core/privateNotes.js';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 import { personName } from '@plot/core/watchTogether.js';
 import { SharedListPeopleDialog } from './WatchTogetherParts.jsx';
+import { ListInviteDialog } from './CollaborativeListParts.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
+import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
+import { listInviteAction } from '@plot/core/listInvites.js';
+import { useListHostPremium } from '@plot/core/useListInvites.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
+import { EVENTS, track } from '../lib/analytics.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
+import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
+import { cardActions, cardState } from './listCardActions.js';
 
 /* The lists themselves: one component per list, each rendering into a
    `Frame` it is handed. On My Lists the frame is a section on the page (the
@@ -283,7 +291,8 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
 }
 
 /* ── Create list sheet ── */
-export function CreateListModal({ lists, onConfirm, onClose, onLimit }) {
+/* onSmart: offer a smart list instead (My Lists only). */
+export function CreateListModal({ lists, onConfirm, onClose, onLimit, onSmart }) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -341,7 +350,8 @@ export function CreateListModal({ lists, onConfirm, onClose, onLimit }) {
             {error}
           </div>
         )}
-        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+          {onSmart && <button type="button" className="btn btn-ghost btn-sm" style={{ marginRight: 'auto' }} disabled={isSubmitting} onClick={onSmart}>{SMART_LISTS.newSmartList}</button>}
           <button className="btn btn-ghost btn-sm" disabled={isSubmitting} onClick={onClose}>{COMMON.cancel}</button>
           <button className="btn btn-primary btn-sm" disabled={!name.trim() || isSubmitting} onClick={handleSubmit}>
             {isSubmitting ? 'Creating…' : 'Create list'}
@@ -524,32 +534,7 @@ function wantMeta(item) {
   return parts.join(' · ');
 }
 
-function cardState(item, historyEntries, privateNotes) {
-  const id = Number(item.tmdb_id);
-  const type = item.media_type || 'movie';
-  return {
-    hasPrivateNote: !!privateNotes?.rows?.[privateNoteKey(id, type)]?.note,
-    hasReview: historyEntries?.some(entry => entry.tmdb_id === id && entry.media_type === type && !!entry.note) || false,
-  };
-}
-
-function cardActions(item, favorites, watchlist, fw) {
-  const id = Number(item.tmdb_id);
-  const type = item.media_type || 'movie';
-  const normalized = { ...item, id, tmdb_id: id, media_type: type };
-  const isFavorite = favorites.isFavorite(id);
-  const isBookmarked = watchlist.isInList(id);
-  return {
-    isFavorite,
-    isBookmarked,
-    favoriteLabel: isFavorite ? `Remove ${item.title || item.name} from ${fw.pluralLower}` : `Add ${item.title || item.name} to ${fw.pluralLower}`,
-    bookmarkLabel: isBookmarked ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist,
-    onToggleFavorite: () => favorites.toggleFavorite(normalized),
-    onToggleBookmark: () => watchlist.toggle(normalized),
-  };
-}
-
-function ListPageRow({ item, title, meta, open, selection, note }) {
+export function ListPageRow({ item, title, meta, open, selection, note }) {
   return (
     <div className="list-page-row">
       <button type="button" className="list-page-row-poster" onClick={open} aria-label={title}>{item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />}</button>
@@ -737,7 +722,20 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   const shared = SHOW_WATCH_TOGETHER && (!isOwner || list.people?.length > 0);
   const others = (list.people || []).filter(p => p.user_id !== user?.id);
   const [addingPeople, setAddingPeople] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  // Collaborative lists (PLO-525): the owner needs Premium to invite anyone;
+  // members can add people only while the owner has it.
+  const hostPremium = useListHostPremium(list.id, { enabled: SHOW_WATCH_TOGETHER && !isOwner });
+  const invitePeople = () => {
+    const action = listInviteAction({ isOwner, viewerPremium: isPremiumProfile(profile), hostPremium });
+    if (action === 'upgrade') {
+      track(EVENTS.PREMIUM_GATE_HIT, { feature: 'collaborative_lists' });
+      setUpgrading(true);
+    } else if (action === 'invite') setInviting(true);
+    else setAddingPeople(true);
+  };
   const selection = useSelection();
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(list.name);
@@ -763,7 +761,8 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   // can change visibility or delete (docs/design/watch-together/README.md).
   const menuItems = [
     { label: 'Rename', onClick: () => { setRenameValue(list.name); setRenaming(true); } },
-    ...(shared ? [{ label: WATCH_TOGETHER.sharedList.addPeople, onClick: () => setAddingPeople(true) }] : []),
+    // Owners invite (any of their lists can become collaborative); members add people.
+    ...(SHOW_WATCH_TOGETHER ? [{ label: isOwner ? COLLABORATIVE_LISTS.invite : WATCH_TOGETHER.sharedList.addPeople, onClick: invitePeople }] : []),
     // Only the creator sets visibility, shares or deletes; members can leave.
     ...(isOwner ? LIST_VISIBILITIES.map(v => ({
       label: PROFILE_PRIVACY.listVisibility[v], hint: PROFILE_PRIVACY.listVisibilityHint[v],
@@ -865,7 +864,9 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
       {showAdd && (
         <AddToFavoritesModal title="Add to List" onAdd={(item) => addItem(list.id, item)} onClose={() => setShowAdd(false)} />
       )}
-      {addingPeople && <SharedListPeopleDialog list={list} onAdd={memberId => customLists.addMember(list.id, memberId)} onClose={() => setAddingPeople(false)} />}
+      {addingPeople && <SharedListPeopleDialog list={list} locked={hostPremium !== true} onAdd={memberId => customLists.addMember(list.id, memberId)} onClose={() => setAddingPeople(false)} />}
+      {inviting && <ListInviteDialog list={list} onClose={() => setInviting(false)} />}
+      {upgrading && <UpgradeSheet reason="collaborativeLists" onClose={() => setUpgrading(false)} />}
       {confirmLeave && (
         <ConfirmModal
           title={WATCH_TOGETHER.sharedList.leaveTitle(list.name)}

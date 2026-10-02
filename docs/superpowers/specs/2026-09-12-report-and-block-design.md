@@ -9,7 +9,7 @@ below. One decision remains open at the bottom.
 
 ## Why this is first
 
-It is the only remaining item that gets PLOT **rejected** rather than merely
+It is the only remaining item that gets Plot **rejected** rather than merely
 feeling unfinished. `docs/research/app-store-guideline-1-2.md` settled that 1.2
 applies with or without a feed: avatars, usernames and bios clear the
 user-generated-content threshold on their own. Nothing of it exists today — no
@@ -129,7 +129,7 @@ create table public.reports (
 );
 ```
 
-The five reason categories mirror Guideline 1.1 so PLOT's taxonomy and Apple's
+The five reason categories mirror Guideline 1.1 so Plot's taxonomy and Apple's
 line up, which is what the research asked for. `reporter_id` is
 `on delete set null` so a report survives the reporter deleting their account —
 the evidence should outlive the reporter.
@@ -165,7 +165,7 @@ using (
 ```
 
 Per-row function calls on a public table are the one performance question here.
-At PLOT's size, with the `blocked_id` index, it is not a concern; it would be at
+At Plot's size, with the `blocked_id` index, it is not a concern; it would be at
 a hundred times the scale.
 
 ### Operator route
@@ -207,7 +207,7 @@ From the same research, these are gates, not polish:
 2. **App Review notes** saying plainly where the controls are and that the
    activity feed is not enabled in this build.
 3. **Declare user-generated content** in the age rating questionnaire.
-4. **Published community standards.** 1.2 makes PLOT responsible for removing
+4. **Published community standards.** 1.2 makes Plot responsible for removing
    content that violates "your terms of service, or your community standards".
    Without them there is nothing to enforce against and nothing to show.
 5. Server-side limits on bio and display name, and an allowlist for profile

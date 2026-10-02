@@ -68,7 +68,7 @@ function json(body: unknown, origin: string | null, status = 200, extraHeaders: 
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const RESEND_API_URL = 'https://api.resend.com/emails';
-const CONFIRM_FROM = 'PLOT <hello@theplot.tv>';
+const CONFIRM_FROM = 'Plot <hello@theplot.tv>';
 
 async function sendConfirmationEmail(email: string, actionLink: string) {
   const resendKey = Deno.env.get('RESEND_API_KEY');
@@ -79,8 +79,8 @@ async function sendConfirmationEmail(email: string, actionLink: string) {
     body: JSON.stringify({
       from: CONFIRM_FROM,
       to: [email],
-      subject: 'Confirm your PLOT account',
-      text: `Confirm your PLOT account by opening this link:\n\n${actionLink}\n\nIf you did not request this, you can ignore this email.`,
+      subject: 'Confirm your Plot account',
+      text: `Confirm your Plot account by opening this link:\n\n${actionLink}\n\nIf you did not request this, you can ignore this email.`,
     }),
   });
   if (!res.ok) throw new Error(`Resend request failed (${res.status})`);

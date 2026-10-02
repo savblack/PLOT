@@ -8,14 +8,14 @@ export const SHARING = {
   previewKicker: (source) => (
     ['whats_on_article', 'whats_on_guide', 'chart', 'newsletter'].includes(source)
       ? 'PLOT RECOMMENDS'
-      : 'Shared with you on PLOT'
+      : 'Shared with you on Plot'
   ),
   signupToSave: 'Create free account to save',
   signInToSave: 'Sign in to save',
   createAccount: 'Create account',
   returningKicker: 'Welcome back',
-  returningBenefit: 'Sign in to save this recommendation to your PLOT.',
-  savePromptTitle: (title) => `Save ${title || 'this title'} to your PLOT`,
+  returningBenefit: 'Sign in to save this recommendation to your Plot.',
+  savePromptTitle: (title) => `Save ${title || 'this title'} to your Plot`,
   savePromptBody: 'Add it to your watchlist now, or choose another list.',
   chooseList: 'Choose a list',
   previewBenefit: 'Keep the recommendations worth watching, all in one place.',

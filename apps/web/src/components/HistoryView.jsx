@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useHistory } from '../hooks/useHistory.js';
@@ -24,7 +24,7 @@ import { HISTORY_VIEW as T } from '../copy/historyView.js';
 import { SHARE_CARDS } from '../copy/shareCards.js';
 import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
 import { useTopLists } from '../hooks/useTopLists.js';
-import { useSearchParams } from 'react-router-dom';
+import { useSharePreset } from '../hooks/useSharePreset.js';
 import { MEDIA } from '../copy/media.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 
@@ -34,8 +34,8 @@ import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
    turning up). The frame matches the Calendar's: 264px side column, 72px
    gap, 24px Gabarito month names on the stream.
 
-   Every number here comes from history rows plus the TMDB details PLOT
-   already fetches for the media panel. Nothing is compared with other PLOT
+   Every number here comes from history rows plus the TMDB details Plot
+   already fetches for the media panel. Nothing is compared with other Plot
    users. */
 
 const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -188,13 +188,13 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
   );
 }
 
-function CrowdCard({ entries, details, openPanel }) {
+function CrowdCard({ entries, details, openPanel, onShare, shareReady }) {
   const cmp = crowdComparison(entries, details);
   if (!cmp || cmp.compared < 3) return null;
   const sentence = crowdSentence(cmp);
   return (
     <div className="hist-card">
-      <span className="hist-card-label">{T.crowdHeading}</span>
+      <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.crowdHeading}</span><ShareIcon what={T.crowdHeading} ready={shareReady} onClick={onShare} /></div>
       <div className="hist-card-body">
         <span className="hist-card-lead">{sentence}</span>
         <div className="hist-crowd-row">
@@ -226,12 +226,12 @@ function CompareCard() {
   );
 }
 
-function PeopleCard({ entries, details, navigateTo }) {
+function PeopleCard({ entries, details, navigateTo, onShare, shareReady }) {
   const people = recurringPeople(entries, details);
   if (!people.length) return null;
   return (
     <div className="hist-card">
-      <span className="hist-card-label">{T.peopleHeading}</span>
+      <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.peopleHeading}</span><ShareIcon what={T.peopleHeading} ready={shareReady} onClick={onShare} /></div>
       <div className="hist-card-body">
         {people.map(p => {
           const img = profileUrl(p.profile_path, 'w185');
@@ -360,9 +360,9 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
     onSharePresetUsed?.();
   }, [sharePreset, onSharePresetUsed]);
   const shareCards = useMemo(
-    () => (profile ? buildShareCards({ entries: yearEntries, details, genreName, year: activeYear, now: today, topLists, profile }) : []),
+    () => (profile ? buildShareCards({ entries: yearEntries, allEntries: entries, details, genreName, year: activeYear, now: today, topLists, profile }) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- genreName reads genreList
-    [yearEntries, details, genreList, activeYear, today, topLists, profile],
+    [entries, yearEntries, details, genreList, activeYear, today, topLists, profile],
   );
   const cardReady = (id) => !!shareCards.find(c => c.id === id)?.available;
   const canShare = shareCards.length > 0;
@@ -475,8 +475,10 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
               shareReady={cardReady(CARD_IDS.STREAK)}
             />
           )}
-          <CrowdCard entries={yearEntries} details={details} openPanel={openPanel} />
-          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo} />
+          <CrowdCard entries={yearEntries} details={details} openPanel={openPanel}
+            onShare={canShare ? () => setShareCard(CARD_IDS.CROWD) : null} shareReady={cardReady(CARD_IDS.CROWD)} />
+          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo}
+            onShare={canShare ? () => setShareCard(CARD_IDS.PERSON) : null} shareReady={cardReady(CARD_IDS.PERSON)} />
           <CompareCard />
           <Filters
             types={types} setTypes={setTypes}
@@ -516,11 +518,7 @@ export default function HistoryView() {
   const { user, profile, openPanel, navigateTo } = useApp();
   const { lists: topLists } = useTopLists(user?.id);
   // ?share=<card> opens the sheet on that card once, then leaves the URL clean.
-  const [searchParams, setSearchParams] = useSearchParams();
-  const sharePreset = searchParams.get('share');
-  const clearSharePreset = useCallback(() => {
-    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('share'); return next; }, { replace: true });
-  }, [setSearchParams]);
+  const [sharePreset, clearSharePreset] = useSharePreset();
   const { entries, loading } = useHistory(user?.id);
   const { genres: genreList } = useGenres();
   const today = useMemo(() => new Date(), []);

@@ -1,0 +1,133 @@
+/* Smart list rules form and the smart list page. Flat: hairlines and surface
+   tokens only. A choice is selected by its border, as Pick for Me's tiles are. */
+
+.smart-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
+.smart-intro,
+.smart-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.smart-field { display: flex; flex-direction: column; gap: 0.45rem; }
+.smart-label { font-size: 0.8rem; font-weight: 600; }
+
+.smart-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+}
+.smart-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.smart-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.smart-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-badge);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.smart-choice.selected { border-color: var(--text-primary); }
+.smart-choice:focus-visible,
+.smart-genre:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.smart-choice-label { font-size: 0.85rem; font-weight: 600; }
+.smart-choice-hint { font-size: 0.72rem; color: var(--text-secondary); }
+
+.smart-genres { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.smart-genre {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.smart-genre.selected { border-color: var(--text-primary); color: var(--text-primary); }
+
+.smart-rows { display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+.smart-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.75rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.smart-row.disabled { cursor: default; color: var(--text-muted); }
+.smart-row > span { display: flex; flex-direction: column; }
+.smart-row-hint { font-size: 0.72rem; color: var(--text-muted); }
+.smart-row input[type="checkbox"] { accent-color: var(--accent); width: 1rem; height: 1rem; }
+
+.smart-select {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: right;
+  cursor: pointer;
+}
+.smart-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+.smart-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+}
+.smart-error { flex: 1 1 100%; margin: 0; color: var(--danger); font-size: 0.75rem; }
+
+@media (max-width: 520px) {
+  .smart-choices { grid-template-columns: 1fr; }
+}
+
+/* ── The list page ── */
+
+.smart-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.smart-more { display: flex; justify-content: center; margin-top: 1rem; }
+
+.smart-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--border);
+}
+.smart-locked-title { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.smart-locked-body { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }

@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { tmdb } from './tmdb.js';
-import { localDateStr } from './date.js';
 import { baseMediaRow, tmdbIdFromItem } from './media.js';
-import { logWatchedItem, revertEpisodeHistory } from './userMedia.js';
 import { getNextEpisodeProgress, isRewind } from './watchingProgress.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
@@ -117,8 +115,7 @@ export function useWatching(userId) {
 
   /* ── Mark current episode watched (advance) ── */
   // opts.undo offers the tick to the undo toast. Reverting moves the pointer
-  // back and returns the show's history row to exactly what it was (or
-  // removes it, if this tick created it).
+  // back.
   const markEpisodeWatched = useCallback(async (tmdbId, opts) => {
     const progress = items.find(i => i.tmdb_id === Number(tmdbId));
     if (!progress) {
@@ -172,32 +169,20 @@ export function useWatching(userId) {
       episode: progress.current_episode,
     });
 
-    // Only read when an undo was asked for: it is an extra round trip.
-    let historyBefore = null;
-    if (opts?.undo && userId) {
-      const { data: row } = await supabase.from('history').select('*')
-        .eq('user_id', userId).eq('tmdb_id', Number(tmdbId)).eq('media_type', 'tv').maybeSingle();
-      historyBefore = row ?? null;
-    }
-
-    // Log completed episode to history via shared helper, which validates the
-    // date and signals the change.
-    if (userId) {
-      await logWatchedItem({
-        userId,
-        item: { ...progress, media_type: 'tv' },
-        watchedAt: localDateStr(),
-      });
-    }
+    // No history write here. History is one row per title and means "watched",
+    // so logging it on the first tick would mark a half-watched show watched
+    // and short-circuit handleSeriesFinished on both apps. Finishing the series
+    // logs it. (This used to call logWatchedItem with the progress row as the
+    // item, whose uuid `id` resolved no title, so it never wrote anything.)
 
     registerUndo(opts?.undo, {
       action: UNDO_ACTIONS.WATCH_PROGRESS,
       title: progress.title,
       meta: { season: nextProgress.nextSeason, episode: nextProgress.nextEpisode },
-      revert: async () => {
-        await restorePointer(userId, progress);
-        await revertEpisodeHistory({ userId, tmdbId, before: historyBefore });
-      },
+      // Only the pointer: the tick writes nothing else, so there is nothing
+      // else to put back. Reverting history here used to delete or rewind a
+      // row made after the tick (finishing the series, rating it meanwhile).
+      revert: () => restorePointer(userId, progress),
     });
 
     return { ok: true, data };

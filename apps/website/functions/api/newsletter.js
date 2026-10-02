@@ -1,4 +1,4 @@
-// PLOT-owned entry point for newsletter signup and unsubscribe links. The
+// Plot-owned entry point for newsletter signup and unsubscribe links. The
 // Supabase function remains the private implementation detail; visitors only
 // ever interact with theplot.tv.
 import { SUPABASE_FN } from '../_lib/proxy.js';

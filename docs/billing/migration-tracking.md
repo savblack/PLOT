@@ -40,7 +40,7 @@ journey, or approve public rollout. Current evidence and open gates are in
 Individual watches use an additive private event store. Original provider event
 IDs, or SHA-256(file) plus original row position, make retries idempotent while
 retaining rewatches. Source ratings/reviews and external identifiers are retained.
-PLOT's existing title-level history key is unchanged and existing ratings/notes
+Plot's existing title-level history key is unchanged and existing ratings/notes
 are never overwritten. Potential overlaps between distinct source events require explicit
 review. Letterboxd files with the same source entry ID can combine complementary
 fields; conflicting values fail explicitly. Distinct watches are not merged or
@@ -69,7 +69,7 @@ Existing OAuth and AES-GCM encryption are reused. The worker processes paginated
 history followed by movie/show watchlists, checkpointing each page atomically with
 its writes. Individual episode plays and rewatches retain their source identity.
 Incremental history reads overlap the previous cursor by a day; weekly full reads
-reconcile backdated activity. Remote deletions never erase PLOT history or lists.
+reconcile backdated activity. Remote deletions never erase Plot history or lists.
 Imported membership provenance preserves subsequent local watchlist removals.
 
 One-time history/watchlist migration is free. Scheduled updates require the
@@ -154,9 +154,9 @@ exist. Applying migrations and deploying production code still require approval.
 ## Direct streaming
 
 The [Younify evaluation](younify-evaluation.md) contains a source-checked capability
-matrix, native compatibility gaps, cost sensitivities at both PLOT price points,
+matrix, native compatibility gaps, cost sensitivities at both Plot price points,
 implementation boundary and a concrete unsent provider enquiry. The public SDK
-advertises RN 0.81; PLOT uses RN 0.86.3. No Expo compatibility claim is made.
+advertises RN 0.81; Plot uses RN 0.86.3. No Expo compatibility claim is made.
 The documented refresh-request endpoint is user-interaction-only and must not be
 used as a scheduled force-refresh. AU coverage, partner keys, history behaviour,
 commercial terms and native compatibility need provider access and live proof.

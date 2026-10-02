@@ -7,7 +7,7 @@ import { ALLOWED_PATHS, fromPlotPage, upstreamQuery } from './discover.js';
 const ask = (headers) => new Request('https://theplot.tv/api/discover?path=movie/upcoming', { headers });
 const query = (search) => upstreamQuery(new URL(`https://theplot.tv/api/discover${search}`));
 
-test('a fetch from a PLOT page is admitted', () => {
+test('a fetch from a Plot page is admitted', () => {
   assert.equal(fromPlotPage(ask({ 'Sec-Fetch-Site': 'same-origin' })), true);
 });
 

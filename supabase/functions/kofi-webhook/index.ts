@@ -3,7 +3,7 @@
  *
  * Receives Ko-fi payment notifications for ko-fi.com/J7P123TYGK and records
  * them in kofi_supporters, flipping profiles.is_supporter when the donor's
- * email matches a PLOT account.
+ * email matches a Plot account.
  *
  * Recognition only. A Ko-fi tip grants no entitlement — that stays Stripe's
  * job (billing_customers / is_premium). Nothing here touches billing.
@@ -15,7 +15,7 @@
  * bearer secret — compare in constant time and never log the payload.
  *
  * Every newly-recorded tip (not a replay) also fires a `support_converted`
- * PostHog event — PLOT's second paid-conversion type alongside
+ * PostHog event — Plot's second paid-conversion type alongside
  * `premium_converted` (see packages/core/analyticsEvents.js). Ko-fi hosts its
  * own checkout, so there's no client-side redirect-back to hook the way
  * Premium does; this calls PostHog's HTTP capture API directly instead of

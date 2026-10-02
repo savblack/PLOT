@@ -126,7 +126,7 @@ const AUTH_WEB_CALLBACK = 'https://app.theplot.tv/auth/callback';
 // Redirect URLs, or signInWithOtp will reject it and fall back to erroring.
 const AUTH_APP_CALLBACK = Linking.createURL('/auth/callback');
 
-// Kind, PLOT-voiced auth errors (mirrors web AuthPage's friendlyError).
+// Kind, Plot-voiced auth errors (mirrors web AuthPage's friendlyError).
 function friendlyAuthError(msg?: string) {
   if (!msg) return COMMON.genericError;
   if (msg.includes('Invalid login credentials'))   return AUTH_PAGE.incorrectCredentials;

@@ -53,7 +53,7 @@ const DISPLAY = "'Gabarito', 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Ar
 const SERIF = "'Gabarito', 'DM Sans', Helvetica, Arial, sans-serif";
 const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
-// "Save to PLOT" deep link. Returns '' for anything that isn't a valid movie/tv
+// "Save to Plot" deep link. Returns '' for anything that isn't a valid movie/tv
 // title, so callers can drop it in unconditionally. The app opens that title so
 // the reader can choose their watchlist or a custom list. `src=newsletter` tags
 // the PostHog event.
@@ -90,7 +90,7 @@ const saveTextLink = (item, px = 13) => {
 // Filled pill button for the featured title.
 const saveButton = (item) => {
   const u = saveUrl(item);
-  return u ? `<a href="${u}" style="display:inline-block;background:${FILL};color:${ON_FILL};text-decoration:none;font-family:${SANS};font-size:14px;font-weight:500;padding:12px 28px;border-radius:9999px;">Save to your PLOT</a>` : '';
+  return u ? `<a href="${u}" style="display:inline-block;background:${FILL};color:${ON_FILL};text-decoration:none;font-family:${SANS};font-size:14px;font-weight:500;padding:12px 28px;border-radius:9999px;">Save to your Plot</a>` : '';
 };
 
 const moveChip = (m) => {

@@ -37,6 +37,7 @@ const ImportView  = lazy(() => import('./components/ImportView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
 const WatchTogetherView = lazy(() => import('./components/WatchTogetherView.jsx'));
 const WatchTogetherLinkPage = lazy(() => import('./components/WatchTogetherLinkPage.jsx'));
+const ListInvitePage = lazy(() => import('./components/ListInvitePage.jsx'));
 
 // Standalone pages
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
@@ -112,7 +113,7 @@ const router = createBrowserRouter([
   // App shell — layout route with child views
   {
     element: wrap(
-      <ProtectedRoute publicPrefixes={['/u/', '/watch-with/']}>
+      <ProtectedRoute publicPrefixes={['/u/', '/watch-with/', '/join-list/']}>
         <AppErrorBoundary><App /></AppErrorBoundary>
       </ProtectedRoute>
     ),
@@ -149,6 +150,8 @@ const router = createBrowserRouter([
         { path: 'together/session/:sessionId', element: wrap(<WatchTogetherView page="session" />) },
         { path: 'together/join/:username', element: wrap(<WatchTogetherView page="join" />) },
         { path: 'watch-with/:username/:key', element: wrap(<WatchTogetherLinkPage />) },
+        // Collaborative list invites (PLO-525): Premium host, friends join free.
+        { path: 'join-list/:key', element: wrap(<ListInvitePage />) },
       ] : []),
     ],
   },

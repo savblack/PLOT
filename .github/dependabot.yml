@@ -41,6 +41,28 @@ updates:
       - dependency-name: "@react-native-community/*"
 
     groups:
+      # vitest and its browser provider are one upgrade, so they ship as one PR
+      # even across a major. This group is FIRST because Dependabot puts a
+      # dependency in the first group it matches, and the catch-all below would
+      # otherwise take their minor/patch bumps and leave only the majors here.
+      #
+      # Majors are included on purpose, against the rule stated below it. In
+      # #1077 and #1078 Dependabot split vitest 4->5 from
+      # @vitest/browser-playwright 4->5 into two PRs, and neither could ever go
+      # green: each left the other half on the old major, and vitest died in
+      # @vitest/browser's createBrowserServer while resolving config. A major
+      # here is still held for human review, because dependabot-automerge.yml
+      # classifies from the body's "Updates `pkg` from X to Y" lines and does not
+      # treat this group as pre-cleared the way it does app-minor-patch.
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+        update-types:
+          - "minor"
+          - "patch"
+          - "major"
+
       # Minor + patch bundle into ONE PR -> one CI run -> one auto-merge.
       # Majors are deliberately left ungrouped so each arrives as its own PR
       # and gets held for human review by dependabot-automerge.yml.

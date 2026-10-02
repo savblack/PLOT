@@ -54,8 +54,9 @@
  *   Analytics seam — fired when a rating is set on a title (on watched-log or edit).
  * @property {(payload: { target_user_id: string, following: boolean }) => void} [onFollow]
  *   Analytics seam — fired on follow (following:true) / unfollow (following:false).
- * @property {(payload: { list_id: string, action: 'created' | 'deleted' }) => void} [onCustomListChange]
- *   Analytics seam — fired when a custom list is created or deleted.
+ * @property {(payload: { list_id: string, action: 'created' | 'deleted', smart?: { smart: true, source: string, media_type: string, genre_count: number, only_services: boolean } }) => void} [onCustomListChange]
+ *   Analytics seam — fired when a custom list is created or deleted. `smart` is
+ *   set when a smart list is created: the shape of its rules, no genre ids.
  * @property {(payload: { list_id: string, tmdb_id: number, media_type: string, action: 'added' | 'removed' }) => void} [onCustomListItemChange]
  *   Analytics seam — fired when a title is added to or removed from a custom list.
  * @property {(payload: { list_id: string, visibility: 'private' | 'followers' | 'public' | 'link', is_public: boolean }) => void} [onCustomListVisibility]
@@ -100,10 +101,11 @@
  *   spin or reroll; result_count 0 is an empty result), a pick opened, and
  *   saved searches. Picker settings are reported as shapes (counts, booleans),
  *   not the genre ids themselves.
- * @property {(payload: { action: 'invite_sent' | 'request_accepted' | 'link_shared' | 'link_accepted' | 'session_started' | 'match', method?: string, can_decide?: boolean, share_full?: boolean, deck_size?: number, card_number?: number }) => void} [onWatchTogether]
+ * @property {(payload: { action: 'invite_sent' | 'request_accepted' | 'link_shared' | 'link_accepted' | 'session_started' | 'match' | 'list_invite_shared' | 'list_joined', method?: string, can_decide?: boolean, share_full?: boolean, deck_size?: number, card_number?: number }) => void} [onWatchTogether]
  *   Analytics seam — Watch together, from useWatchTogether (and
- *   reportWatchTogether for the share button). Shapes only: never user ids,
- *   usernames or invite link keys.
+ *   reportWatchTogether for the share button), plus collaborative list
+ *   invites from useListInvites. Shapes only: never user ids, usernames,
+ *   list ids or invite link keys.
  * @property {(payload: { stage: 'started' | 'completed' | 'failed', source: string, count?: number, failed_count?: number, reason?: string }) => void} [onImport]
  *   Analytics seam — a history import's lifecycle, via reportImport in
  *   importPipeline.js. `reason` is an IMPORT_FAILURE_REASONS slug, never the

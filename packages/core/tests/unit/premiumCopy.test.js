@@ -109,3 +109,9 @@ test('free stays free and does not inherit the premium trial', () => {
   const free = PLANS_PAGE.faqs.find(item => item.q === 'What happens to Free?');
   assert.match(free.a, /stay available/);
 });
+
+test('smart lists are a Premium benefit that exists', () => {
+  const smart = PLANS_PAGE.premiumFeatures.find(item => item.id === 'smartLists');
+  assert.equal(smart.live, true);
+  assert.ok(PLANS_PAGE.upgradeSheet.reasons.smartLists);
+});

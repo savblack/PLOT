@@ -49,6 +49,7 @@
     "db:migration-test": "bash scripts/db-migration-test.sh",
     "db:function-diff": "bash scripts/db-function-diff.sh",
     "db:restore-drill": "bash scripts/db-restore-drill.sh",
+    "db:drift": "node scripts/check-migration-drift.mjs",
     "supabase:staging": "node scripts/supabase-staging.mjs",
     "staging:session": "node scripts/create-staging-test-session.mjs",
     "staging:private-notes-test": "bash scripts/staging-sql.sh scripts/staging-private-notes-test.sql",
@@ -66,6 +67,7 @@
     "staging:premium-badge-refresh-test": "bash scripts/staging-sql.sh scripts/staging-premium-badge-refresh-test.sql",
     "staging:taste-overlap-test": "bash scripts/staging-sql.sh scripts/staging-taste-overlap-test.sql",
     "staging:pgss-guard-test": "bash scripts/staging-sql.sh scripts/staging-pgss-guard-test.sql",
+    "staging:rls-bypass-views-test": "bash scripts/staging-sql.sh scripts/staging-rls-bypass-views-test.sql",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",
     "mkt:copy:pull": "node marketing/copy/pull.mjs",
@@ -86,16 +88,16 @@
   },
   "dependencies": {
     "@plot/core": "*",
-    "@supabase/supabase-js": "^2.116.0"
+    "@supabase/supabase-js": "^2.117.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "chromatic": "^18.9.4",
-    "eslint": "^10.10.0",
+    "eslint": "^10.11.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.6",
     "globals": "^17.12.0",
-    "typescript-eslint": "^8.70.0"
+    "typescript-eslint": "^8.70.1"
   },
   "packageManager": "pnpm@10.6.3"
 }

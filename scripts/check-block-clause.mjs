@@ -65,6 +65,7 @@ const BLOCK_FILTERED = [
   'add_shared_list_member', // checks the person exists before adding them
   'watch_together_link_owner', // who an invite link belongs to, signed out too
   'watch_together_link_status', // the visitor's side of an invite link
+  'list_invite_preview',   // who a collaborative list invite belongs to, signed out too
   'list_watchlist_viewer_candidates', // followers and partners you can share your watchlist with
 ];
 

@@ -73,7 +73,7 @@ export const EVENTS = Object.freeze({
   // and a stray call site stays a loud reference (see ACTIVATED).
   PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
-  // The Tonight picker, PLOT's "what should I watch" surface. Fired from
+  // The Tonight picker, Plot's "what should I watch" surface. Fired from
   // useTonightPicker via the onTonightPicker seam. A draw with result_count 0
   // is an empty result; a failed draw is load_failed (resource tonight_picks).
   // "Accepted a pick" is tonight_pick_opened, or watchlist_saved with
@@ -92,9 +92,13 @@ export const EVENTS = Object.freeze({
   WATCH_TOGETHER_LINK_ACCEPTED: 'watch_together_link_accepted',
   WATCH_TOGETHER_SESSION_STARTED: 'watch_together_session_started',
   WATCH_TOGETHER_MATCH: 'watch_together_match',
+  // Collaborative lists (Premium host, friends join free), on the same seam:
+  // an invite link shared or copied, and someone joining a list from one.
+  COLLAB_LIST_INVITE_SHARED: 'collab_list_invite_shared',
+  COLLAB_LIST_JOINED: 'collab_list_joined',
   WATCH_LINK_CLICKED: 'watch_link_clicked',
   TIP_JAR_CLICKED: 'tip_jar_clicked',
-  // PLOT's second paid-conversion type alongside premium_converted — a Ko-fi
+  // Plot's second paid-conversion type alongside premium_converted — a Ko-fi
   // tip (recognition-only, see kofi_supporters/is_supporter; grants no
   // entitlement). Fired server-side from supabase/functions/kofi-webhook via
   // PostHog's HTTP capture API, not posthog-js: Ko-fi hosts its own checkout,
