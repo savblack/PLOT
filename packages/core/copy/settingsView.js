@@ -105,6 +105,7 @@ export const SETTINGS_VIEW = {
     notSaved: 'Your feedback was not saved. Please try again.',
     reportABug: 'Report a bug',
     leaveFeedback: 'Leave feedback',
+    panelTitle: 'Send feedback',
   },
 
   errors: {

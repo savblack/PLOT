@@ -213,7 +213,7 @@ function ClearWatchlistModal({ savedCount, watchingCount, customLists = [], onCl
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        <SheetHeader title="Clear Lists" onClose={onClose} />
+        <SheetHeader title={SETTINGS_VIEW.dangerZone.clearListsLabel} onClose={onClose} />
         <div style={{ padding: '1rem 1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 0.25rem' }}>
             Select which lists to clear. This can't be undone.
@@ -529,7 +529,7 @@ function GenrePicker({ selected, onSave, onClose }) {
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
-          <SheetHeader title="Genres" onClose={onClose} />
+          <SheetHeader title={SETTINGS_VIEW.integrations.genresLabel} onClose={onClose} />
         </div>
         {/* Keyed off `loading`, not `allGenres.length` — an empty list used to
             be indistinguishable from "still fetching", so a failed load left
@@ -1002,7 +1002,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
-          <SheetHeader title="Send feedback" onClose={onClose} />
+          <SheetHeader title={SETTINGS_VIEW.feedback.panelTitle} onClose={onClose} />
         </div>
 
         {status === 'done' ? (

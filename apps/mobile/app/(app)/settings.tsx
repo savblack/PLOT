@@ -528,7 +528,7 @@ function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave:
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Genres</Text>
+          <Text style={styles.modalTitle}>{SETTINGS_VIEW.integrations.genresLabel}</Text>
           <TouchableOpacity onPress={onClose}><Text style={styles.modalCancel}>Done</Text></TouchableOpacity>
         </View>
         {loading ? (
@@ -1080,7 +1080,7 @@ export default function SettingsScreen() {
           <BroadcastSettings />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><Path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Svg>}
-            label="Genres"
+            label={SETTINGS_VIEW.integrations.genresLabel}
             value={genres.length > 0 ? `${genres.length} selected` : 'None'}
             onPress={() => setShowGenres(true)}
           />
