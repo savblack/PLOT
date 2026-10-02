@@ -5,7 +5,7 @@ import { PLANS_PAGE } from '../../copy/plansPage.js';
 import { SETTINGS_VIEW } from '../../copy/settingsView.js';
 import { TRACKING } from '../../copy/tracking.js';
 
-const TRIAL = '7-day free trial, card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.';
+const TRIAL = '7-day free trial. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.';
 
 test('premium price copy is US$3/month or US$24/year, taxes included', () => {
   assert.equal(PLANS_PAGE.premium.priceSummary, '$3/month or $24/year');
@@ -15,12 +15,12 @@ test('premium price copy is US$3/month or US$24/year, taxes included', () => {
   assert.equal(PLANS_PAGE.premium.price, '$3');
 });
 
-test('the trial note says the card is required and the charge is 7 days later', () => {
+test('the trial note says the charge is 7 days later', () => {
   assert.equal(PLANS_PAGE.premium.trialNote, TRIAL);
-  assert.match(PLANS_PAGE.fineprint, /7-day free trial with a card required/);
+  assert.match(PLANS_PAGE.fineprint, /7-day free trial/);
   assert.match(PLANS_PAGE.fineprint, /local currency/);
   for (const line of [
-    '7-day free trial, card required',
+    '7-day free trial',
     'You won’t be charged until 7 days after you start',
     'Cancel during the trial and you pay $0',
     'Everything free today stays free',
