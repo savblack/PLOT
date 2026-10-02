@@ -310,7 +310,8 @@ export const smartListTypes = (rules) => (rules.mediaType === 'any' ? ['movie', 
  *   providerIds?: number[], region?: string, hideKids?: boolean,
  *   seen?: Set<string>, client?: any,
  * }} opts
- * @returns {Promise<{ items: SmartListMatch[], hasMore: boolean }>}
+ * @returns {Promise<{ items: SmartListMatch[], hasMore: boolean, total: number }>}
+ *   total: what TMDB reports across the queried types (see previewSmartList).
  */
 export async function loadDiscoverMatches({
   rules, page = 1, watched, providerIds = [], region = 'US', hideKids = false, seen = new Set(), client = tmdb,
@@ -334,7 +335,7 @@ export async function loadDiscoverMatches({
       items.push(match);
     });
   }
-  return { items, hasMore: pages.some(p => page < p.totalPages) };
+  return { items, hasMore: pages.some(p => page < p.totalPages), total: pages.reduce((n, p) => n + (p.totalResults || 0), 0) };
 }
 
 /** Watched title ids per type, from history rows already loaded. @param {any[]} entries */
@@ -361,4 +362,286 @@ export function smartListSummary(rules, { genres = [] } = {}) {
   if (rules.minMyRating) parts.push(SMART_LISTS.myRating(rules.minMyRating));
   if (rules.onlyServices) parts.push(TONIGHT_PICKER.summary.services);
   return parts.join(' · ');
+}
+
+// ── Pick for Me answers as rules (A1) ───────────────────────────────────────
+
+/**
+ * Pick for Me's answers as smart list rules, so "Create smart list" saves the
+ * request rather than the five picks. Keyword-backed genres (a show's
+ * Thriller, Horror or Romance, negative ids in the picker) have no TMDB genre
+ * id to store, so they are left out; the TV format and language answers have
+ * no smart list rule either.
+ *
+ * @param {import('./tonightPicker.js').PickerOptions} options
+ * @param {{ hasServices?: boolean }} [ctx]
+ * @returns {SmartListRules}
+ */
+export function smartListRulesFromPicker(options, { hasServices = false } = {}) {
+  const tv = options?.mediaType === 'tv';
+  return /** @type {SmartListRules} */ (normalizeSmartListRules({
+    source: options?.onlyWatchlist ? 'watchlist' : 'discover',
+    mediaType: tv ? 'tv' : 'movie',
+    genreIds: (options?.genreIds ?? []).filter(id => id > 0),
+    era: options?.era,
+    minScore: options?.minScore ?? null,
+    maxRuntime: tv ? options?.maxEpisodeRuntime ?? null : options?.maxRuntime ?? null,
+    onlyServices: !!options?.onlyServices && hasServices,
+    hideWatched: true,
+  }));
+}
+
+// ── The rules as a sentence of chips (B3, A2, the phone save sheet) ─────────
+
+/** @typedef {'mediaType'|'source'|'genreIds'|'era'|'minScore'|'maxRuntime'|'minMyRating'|'onlyServices'} SmartListRuleKey */
+
+/**
+ * @typedef {{ kind: 'text', text: string } | { kind: 'chip', rule: SmartListRuleKey, text: string }} SmartListSentencePart
+ */
+
+/** Genre names for the rule's ids, in the order the rules list them. */
+function genreNames(rules, genres) {
+  return rules.genreIds.map(id => genres.find(g => g.id === id)?.name).filter(Boolean);
+}
+
+/** Wording of one filter chip, without punctuation. @returns {string|null} */
+function filterChipText(rule, rules, genres) {
+  const S = TONIGHT_PICKER.sentence;
+  switch (rule) {
+    case 'genreIds': {
+      const names = genreNames(rules, genres);
+      if (!names.length) return null;
+      return names.length > 3 ? SMART_LISTS.genreCount(names.length) : names.join(SMART_LISTS.genreJoin);
+    }
+    case 'era': return rules.era !== 'any' ? S.era[rules.era] ?? null : null;
+    case 'minScore': return rules.minScore ? S.rated(rules.minScore) : null;
+    case 'maxRuntime':
+      if (!rules.maxRuntime) return null;
+      return rules.mediaType === 'tv' ? S.episodes(rules.maxRuntime) : S.runtime(rules.maxRuntime) ?? null;
+    case 'minMyRating': return rules.minMyRating ? SMART_LISTS.sentence.myRating(rules.minMyRating) : null;
+    case 'onlyServices': return rules.onlyServices ? S.onServices : null;
+    default: return null;
+  }
+}
+
+/** Filter rules in the order the sentence reads them. */
+const FILTER_RULES = /** @type {SmartListRuleKey[]} */ (['genreIds', 'era', 'minScore', 'maxRuntime', 'minMyRating', 'onlyServices']);
+
+/**
+ * The rules as one sentence: "Find [shows] from [new discoveries] that are
+ * [Drama or Crime,] [rated 7+,] [on my services.]". Every chip is one rule the
+ * viewer can tap to change; type and source are always there, filters only
+ * when set. Each chip carries its own trailing comma or full stop, so a
+ * removed rule takes its punctuation with it.
+ *
+ * "Leave out what I've watched" is not a chip: it is a switch beside the
+ * sentence (A2), since it reads as a setting rather than a description.
+ *
+ * @param {SmartListRules} rules
+ * @param {{ genres?: Array<{id:number,name:string}>, hasServices?: boolean }} [ctx]
+ * @returns {SmartListSentencePart[]}
+ */
+export function smartListSentence(rules, { genres = [], hasServices = true } = {}) {
+  const S = SMART_LISTS.sentence;
+  /** @type {SmartListSentencePart[]} */
+  const parts = [
+    { kind: 'text', text: S.find },
+    { kind: 'chip', rule: 'mediaType', text: S.types[rules.mediaType] },
+    { kind: 'text', text: S.from },
+    { kind: 'chip', rule: 'source', text: S.sources[rules.source] },
+  ];
+  for (const rule of FILTER_RULES) {
+    if (rule === 'onlyServices' && !hasServices) continue;
+    const text = filterChipText(rule, rules, genres);
+    if (!text) continue;
+    if (rule === 'genreIds') parts.push({ kind: 'text', text: S.thatAre });
+    parts.push({ kind: 'chip', rule, text });
+  }
+  // Commas between the filters, a full stop on the last chip.
+  const chips = parts.filter(p => p.kind === 'chip');
+  chips.forEach((chip, i) => {
+    if (i === chips.length - 1) chip.text = `${chip.text}.`;
+    else if (i >= 2) chip.text = `${chip.text},`;
+  });
+  return parts;
+}
+
+/** Type and source are the sentence's frame: changed, never removed. @param {SmartListRuleKey} rule */
+export const isRemovableSmartListRule = (rule) => rule !== 'mediaType' && rule !== 'source';
+
+/**
+ * What a chip's menu offers. Genres are several at once (`multi`); every
+ * other rule is one choice. Services has no choices: it is on or removed.
+ *
+ * @param {SmartListRuleKey} rule
+ * @param {SmartListRules} rules
+ * @param {{ genres?: Array<{id:number,name:string}> }} [ctx] the genres offered for the rules' type
+ * @returns {{ label: string, multi: boolean, choices: Array<{ value: any, label: string, selected: boolean }> }}
+ */
+export function smartListRuleChoices(rule, rules, { genres = [] } = {}) {
+  const T = TONIGHT_PICKER;
+  const one = (label, values, labelFor, current) => ({
+    label, multi: false,
+    choices: values.map(value => ({ value, label: labelFor(value), selected: value === current })),
+  });
+  switch (rule) {
+    case 'mediaType': return one(SMART_LISTS.typeLabel, SMART_LIST_MEDIA_TYPES, v => SMART_LISTS.types[v], rules.mediaType);
+    case 'source': return one(SMART_LISTS.sourceLabel, SMART_LIST_SOURCES, v => SMART_LISTS.sources[v].label, rules.source);
+    case 'genreIds': return {
+      label: SMART_LISTS.genresLabel, multi: true,
+      choices: genres.map(g => ({ value: g.id, label: g.name, selected: rules.genreIds.includes(g.id) })),
+    };
+    case 'era': return one(T.eraLabel, SMART_LIST_ERAS.filter(e => e !== 'any'), v => T.eras[v], rules.era);
+    case 'minScore': return one(T.scoreLabel, SMART_LIST_MIN_SCORES.filter(Boolean), T.score, rules.minScore);
+    case 'maxRuntime': return rules.mediaType === 'tv'
+      ? one(T.episodeLabel, SMART_LIST_EPISODE_RUNTIMES.filter(Boolean), T.episodeRuntime, rules.maxRuntime)
+      : one(SMART_LISTS.lengthLabel, SMART_LIST_MOVIE_RUNTIMES.filter(Boolean), T.runtimes, rules.maxRuntime);
+    case 'minMyRating': return one(SMART_LISTS.myRatingLabel, SMART_LIST_MY_RATINGS.filter(Boolean), SMART_LISTS.myRating, rules.minMyRating);
+    case 'onlyServices': return { label: T.onlyServices, multi: false, choices: [] };
+    default: return { label: '', multi: false, choices: [] };
+  }
+}
+
+/**
+ * The rules with one changed. A genre value toggles that genre; anything
+ * else replaces the rule's value. Changing the type keeps only genres the new
+ * type offers when `offeredGenreIds` is given, and clears a length that only
+ * read for the old type.
+ *
+ * @param {SmartListRules} rules
+ * @param {SmartListRuleKey} rule
+ * @param {any} value
+ * @param {{ offeredGenreIds?: number[] }} [ctx]
+ * @returns {SmartListRules}
+ */
+export function setSmartListRule(rules, rule, value, { offeredGenreIds } = {}) {
+  if (rule === 'genreIds') {
+    const id = Number(value);
+    const genreIds = rules.genreIds.includes(id) ? rules.genreIds.filter(g => g !== id) : [...rules.genreIds, id];
+    return /** @type {SmartListRules} */ (normalizeSmartListRules({ ...rules, genreIds }));
+  }
+  if (rule === 'mediaType') {
+    const offered = offeredGenreIds ? new Set(offeredGenreIds) : null;
+    return /** @type {SmartListRules} */ (normalizeSmartListRules({
+      ...rules,
+      mediaType: value,
+      // Minutes per movie and minutes per episode are different scales.
+      maxRuntime: value === rules.mediaType ? rules.maxRuntime : null,
+      genreIds: offered ? rules.genreIds.filter(id => offered.has(id)) : rules.genreIds,
+    }));
+  }
+  return /** @type {SmartListRules} */ (normalizeSmartListRules({ ...rules, [rule]: value }));
+}
+
+/** @param {SmartListRules} rules @param {SmartListRuleKey} rule @returns {SmartListRules} */
+export function removeSmartListRule(rules, rule) {
+  const cleared = { genreIds: [], era: 'any', minScore: null, maxRuntime: null, minMyRating: null, onlyServices: false };
+  if (!(rule in cleared)) return rules;
+  return /** @type {SmartListRules} */ (normalizeSmartListRules({ ...rules, [rule]: cleared[rule] }));
+}
+
+/**
+ * Rules "Add a rule" offers: the filters not yet set that apply to this
+ * source and type. Services only with services saved; my rating only on history.
+ *
+ * @param {SmartListRules} rules
+ * @param {{ hasServices?: boolean }} [ctx]
+ * @returns {Array<{ rule: SmartListRuleKey, label: string }>}
+ */
+export function addableSmartListRules(rules, { hasServices = false } = {}) {
+  const T = TONIGHT_PICKER;
+  const out = [];
+  if (!rules.genreIds.length) out.push({ rule: 'genreIds', label: SMART_LISTS.genresLabel });
+  if (rules.era === 'any') out.push({ rule: 'era', label: T.eraLabel });
+  if (!rules.minScore) out.push({ rule: 'minScore', label: T.scoreLabel });
+  if (!rules.maxRuntime && rules.mediaType !== 'any') out.push({ rule: 'maxRuntime', label: rules.mediaType === 'tv' ? T.episodeLabel : SMART_LISTS.lengthLabel });
+  if (!rules.minMyRating && rules.source === 'history') out.push({ rule: 'minMyRating', label: SMART_LISTS.myRatingLabel });
+  if (!rules.onlyServices && hasServices) out.push({ rule: 'onlyServices', label: T.onlyServices });
+  return /** @type {Array<{ rule: SmartListRuleKey, label: string }>} */ (out);
+}
+
+/**
+ * A name written from the rules, so the naming step opens filled in:
+ * "Thriller and mystery movies, under 2 hours, on my services". The viewer
+ * can change it; nothing depends on it matching the rules later.
+ *
+ * @param {SmartListRules} rules
+ * @param {{ genres?: Array<{id:number,name:string}> }} [ctx]
+ * @returns {string}
+ */
+export function suggestSmartListName(rules, { genres = [] } = {}) {
+  const S = TONIGHT_PICKER.sentence;
+  const names = genreNames(rules, genres).slice(0, 2).map((n, i) => (i === 0 ? n : n.toLowerCase()));
+  const type = SMART_LISTS.sentence.types[rules.mediaType];
+  let head = names.length ? `${names.join(SMART_LISTS.nameGenreJoin)} ${type}` : type;
+  if (rules.source !== 'discover') head = `${head} ${SMART_LISTS.sentence.from} ${SMART_LISTS.sentence.sources[rules.source]}`;
+  const parts = [head.charAt(0).toUpperCase() + head.slice(1)];
+  const length = filterChipText('maxRuntime', rules, genres);
+  if (length) parts.push(length);
+  if (rules.era !== 'any' && S.era[rules.era]) parts.push(S.era[rules.era]);
+  if (rules.minScore) parts.push(TONIGHT_PICKER.score(rules.minScore));
+  if (rules.minMyRating) parts.push(SMART_LISTS.sentence.myRating(rules.minMyRating));
+  const name = parts.join(', ') + (rules.onlyServices ? ` ${S.onServices}` : '');
+  return name.length > 80 ? `${name.slice(0, 79).trimEnd()}…` : name;
+}
+
+// ── Live count (A2, B5) ──────────────────────────────────────────────────────
+
+/**
+ * How many titles the rules find right now, and the first few to show as
+ * posters. New discoveries count what TMDB reports for the query (before
+ * leaving out what you've watched, which is why the copy says "from
+ * everything on TMDB"); your own titles are counted exactly.
+ *
+ * @param {{
+ *   rules: SmartListRules,
+ *   watchlistItems?: any[], historyEntries?: any[],
+ *   providerIds?: number[], region?: string, hideKids?: boolean,
+ *   client?: any, previewSize?: number,
+ * }} opts
+ * @returns {Promise<{ count: number, items: SmartListMatch[], fromTmdb: boolean }>}
+ */
+export async function previewSmartList({
+  rules, watchlistItems = [], historyEntries = [], providerIds = [], region = 'US', hideKids = false,
+  client = tmdb, previewSize = 4,
+}) {
+  const watched = watchedIdsFromHistory(historyEntries);
+  if (rules.source === 'discover') {
+    const res = await loadDiscoverMatches({ rules, page: 1, watched, providerIds, region, hideKids, client });
+    return { count: res.total, items: res.items.slice(0, previewSize), fromTmdb: true };
+  }
+  const res = await loadLibraryMatches({ rules, watchlistItems, historyEntries, watched, providerIds, region, client, gapMs: 0 });
+  return { count: res.items.length, items: res.items.slice(0, previewSize), fromTmdb: false };
+}
+
+// ── Free: the rules are kept (B5) ────────────────────────────────────────────
+// A Free viewer can build rules and see the count; Create opens the upgrade
+// sheet. Their name and rules wait here so the builder opens with them after
+// upgrading. The storage is the platform's (web localStorage, mobile
+// AsyncStorage); the key and encoding live here so both read the same thing.
+
+export const SMART_LIST_DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** @param {string | null | undefined} userId */
+export const smartListDraftKey = (userId) => `plot.smartList.draft.${userId || 'anon'}`;
+
+/** @param {{ name: string, rules: SmartListRules }} draft @param {number} [now] */
+export function serialiseSmartListDraft({ name, rules }, now = Date.now()) {
+  return JSON.stringify({ v: 1, savedAt: now, name: String(name || '').slice(0, 80), rules });
+}
+
+/**
+ * @param {string | null | undefined} value
+ * @param {number} [now]
+ * @returns {{ name: string, rules: SmartListRules } | null} null when missing, stale or malformed
+ */
+export function parseSmartListDraft(value, now = Date.now()) {
+  if (typeof value !== 'string') return null;
+  let raw;
+  try { raw = JSON.parse(value); } catch { return null; }
+  if (!raw || raw.v !== 1 || typeof raw.savedAt !== 'number') return null;
+  if (now - raw.savedAt > SMART_LIST_DRAFT_TTL_MS || raw.savedAt > now + 60_000) return null;
+  const rules = normalizeSmartListRules(raw.rules);
+  if (!rules) return null;
+  return { name: typeof raw.name === 'string' ? raw.name.slice(0, 80) : '', rules };
 }

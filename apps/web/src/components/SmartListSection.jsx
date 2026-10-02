@@ -1,12 +1,17 @@
-// A smart list's own page (Premium): the rules in the subtitle, the matches
-// they find right now, and Rename / Edit rules / Delete. Finding matches is
-// @plot/core/useSmartList.js; mobile has no counterpart yet (see issue 1094,
-// Mobile parity: smart lists).
+// A smart list's own page (Premium): the rules as a sentence of chips that
+// stay editable on the page (B3), the matches they find right now with the
+// ones new since the last visit grouped first (A4), and Rename / Edit rules /
+// Delete. Finding matches is @plot/core/useSmartList.js and what counts as new
+// is @plot/core/useSmartListSeen.js; mobile has no counterpart yet (see issue
+// 1094, Mobile parity: smart lists).
 import { useMemo, useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
-import { useGenres } from '../hooks/useGenres.js';
+import { useGenreCatalog } from '../hooks/useGenres.js';
 import { useSmartList } from '@plot/core/useSmartList.js';
-import { normalizeSmartListRules, smartListSummary } from '@plot/core/smartLists.js';
+import { useSmartListSeen } from '@plot/core/useSmartListSeen.js';
+import { normalizeSmartListRules } from '@plot/core/smartLists.js';
+import { pickerProviderIds } from '@plot/core/tonightPicker.js';
+import { dateToLocalStr, shortDayMonth } from '@plot/core/date.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { isSmartListPremiumError } from '@plot/core/customListCreation.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
@@ -24,10 +29,14 @@ import { cardActions, cardState } from './listCardActions.js';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
 import SmartListDialog from './SmartListDialog.jsx';
+import SmartListRules from './SmartListRules.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import './SmartListDialog.css';
 
 const NOT_SELECTING = { editMode: false, selected: new Set() };
+
+/** "22 Sep" from a timestamp, in the viewer's own day. */
+const dayLabel = (iso) => (iso ? shortDayMonth(dateToLocalStr(new Date(iso))) : '');
 
 /**
  * @param {{
@@ -39,14 +48,20 @@ const NOT_SELECTING = { editMode: false, selected: new Set() };
  *   onDeleted?: () => void,
  *   Frame?: any,
  *   pageLayout?: boolean,
+ *   catalog?: { movie: any[], tv: any[] } | null,  Storybook: genres without a fetch
+ *   clients?: { tmdb?: any, db?: any } | null,  Storybook: TMDB and seen rows without a network
  * }} props
  */
-export function SmartListSection({ list, customLists, historyEntries, historyReady, refine = (i) => i, onDeleted, Frame = ListSection, pageLayout = false }) {
-  const { openPanel, favorites, watchlist, privateNotes, profile } = useApp();
-  const { genres } = useGenres();
+export function SmartListSection({ list, customLists, historyEntries, historyReady, refine = (i) => i, onDeleted, Frame = ListSection, pageLayout = false, catalog: seedCatalog = null, clients = null }) {
+  const { user, openPanel, favorites, watchlist, privateNotes, profile } = useApp();
+  const catalog = useGenreCatalog(seedCatalog);
   const fw = favoriteWords(profile?.region);
   const premium = isPremiumProfile(profile);
-  const rules = useMemo(() => normalizeSmartListRules(list.rules), [list.rules]);
+  const hasServices = pickerProviderIds(profile?.streaming_providers).length > 0;
+  // A chip change shows at once; the saved rules catch up, or it rolls back.
+  const [draftRules, setDraftRules] = useState(null);
+  const savedRules = useMemo(() => normalizeSmartListRules(list.rules), [list.rules]);
+  const rules = draftRules ?? savedRules;
   const [editing, setEditing] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(list.name);
@@ -62,8 +77,32 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
     streamingProviders: profile?.streaming_providers,
     region: profile?.region || DEFAULT_REGION,
     hideKids: !profile?.include_kids_content,
+    client: clients?.tmdb,
+  });
+  const seen = useSmartListSeen({
+    listId: list.id,
+    userId: user?.id,
+    items: smart.items,
+    ready: premium && !smart.loading && !smart.error,
+    client: clients?.db,
   });
   const visible = refine(smart.items);
+  const freshVisible = refine(seen.fresh);
+  const restVisible = refine(seen.rest);
+
+  // B3: a chip edits the saved rules in place.
+  const changeRules = async (next) => {
+    if (!premium) { openUpgrade(); return; }
+    setDraftRules(next);
+    try {
+      await customLists.updateSmartList(list.id, next);
+    } catch (failure) {
+      if (isSmartListPremiumError(failure)) openUpgrade();
+    } finally {
+      // Saved: list.rules now holds them. Not saved: back to what is stored.
+      setDraftRules(null);
+    }
+  };
 
   const openUpgrade = () => {
     track(EVENTS.PREMIUM_GATE_HIT, { feature: 'smart_lists' });
@@ -145,25 +184,50 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
       </>
     );
   } else {
+    const grid = (items, key) => (
+      <div className={pageLayout ? 'list-page-items' : ''} key={key}>
+        <CardGrid>{items.map(card)}</CardGrid>
+        {pageLayout && (
+          <div className="list-page-rows">
+            {items.map(item => (
+              <ListPageRow
+                key={`row:${item.id}`}
+                item={item}
+                title={item.title || MEDIA.unknown}
+                meta={meta(item)}
+                open={() => openPanel(item.tmdb_id, item.media_type)}
+                selection={NOT_SELECTING}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
     body = (
       <>
-        <div className={pageLayout ? 'list-page-items' : ''}>
-          <CardGrid>{visible.map(card)}</CardGrid>
-          {pageLayout && (
-            <div className="list-page-rows">
-              {visible.map(item => (
-                <ListPageRow
-                  key={`row:${item.id}`}
-                  item={item}
-                  title={item.title || MEDIA.unknown}
-                  meta={meta(item)}
-                  open={() => openPanel(item.tmdb_id, item.media_type)}
-                  selection={NOT_SELECTING}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        {/* A4: new matches since the last visit lead, then everything else. */}
+        {freshVisible.length > 0 ? (
+          <>
+            <section className="smart-group smart-group--new" aria-label={SMART_LISTS.newSince}>
+              <div className="smart-group-head">
+                <h2 className="smart-group-title">{SMART_LISTS.newSince}</h2>
+                <span className="smart-group-count">
+                  {freshVisible.length}{seen.since ? ` · ${SMART_LISTS.sinceDate(dayLabel(seen.since))}` : ''}
+                </span>
+              </div>
+              {grid(freshVisible, 'fresh')}
+            </section>
+            {restVisible.length > 0 && (
+              <section className="smart-group" aria-label={SMART_LISTS.everythingElse}>
+                <div className="smart-group-head">
+                  <h2 className="smart-group-title">{SMART_LISTS.everythingElse}</h2>
+                  <span className="smart-group-count">{restVisible.length}</span>
+                </div>
+                {grid(restVisible, 'rest')}
+              </section>
+            )}
+          </>
+        ) : grid(visible, 'all')}
         {smart.hasMore && (
           <div className="smart-more">
             <button type="button" className="btn btn-secondary btn-sm" disabled={smart.loadingMore} onClick={smart.loadMore}>
@@ -176,11 +240,28 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
     );
   }
 
+  // B3: the rules stay on the page as chips. Free viewers see them read-only.
+  const rulesLine = rules && (
+    <>
+      <SmartListRules
+        className="smart-page-rules"
+        variant="page"
+        rules={rules}
+        catalog={catalog}
+        hasServices={hasServices}
+        onChange={premium ? changeRules : undefined}
+      />
+      {premium && !smart.loading && !smart.error && (
+        <p className="smart-page-meta">{SMART_LISTS.matchCount(smart.items.length)} · {SMART_LISTS.tapHint}</p>
+      )}
+    </>
+  );
+
   return (
     <Frame
       title={list.name}
       count={premium ? smart.items.length : 0}
-      subtitle={rules ? smartListSummary(rules, { genres }) : SMART_LISTS.badge}
+      subtitle={seen.since ? SMART_LISTS.lastOpened(dayLabel(seen.since)) : SMART_LISTS.badge}
       headerRight={<KebabMenu ariaLabel={`Open options for ${list.name}`} items={menuItems} />}
     >
       {renaming && (
@@ -198,6 +279,7 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
         </div>
       )}
 
+      {rulesLine}
       {body}
 
       {editing && (

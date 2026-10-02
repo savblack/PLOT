@@ -29,7 +29,6 @@ export const COLLABORATIVE_LISTS = Object.freeze({
   // My Lists (B1), and the ⋯ menu on every list cover (A1).
   myLists: {
     shared: 'Shared',
-    sharedNote: 'Lists you and friends add to',
     sharedByMe: 'Shared by me',
     sharedWithMe: 'Shared with me',
     newShared: 'New shared list',

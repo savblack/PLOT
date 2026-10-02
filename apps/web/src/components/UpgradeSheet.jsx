@@ -22,18 +22,19 @@ const S = PLANS_PAGE.upgradeSheet;
  *   onClose: () => void,
  *   returnFocusRef?: { current: HTMLElement | null },
  *   family?: string,
+ *   kept?: boolean,
  * }} props  returnFocusRef: where focus goes on close when the element that had
  *   it is gone (e.g. the create-list dialog the sheet replaced). theme: for
  *   reason 'themes', the Premium family tapped, drawn light and dark (never applied).
  */
-export default function UpgradeSheet({ reason, onClose, returnFocusRef, family }) {
+export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, kept = false }) {
   const { profile } = useApp();
   const premium = usePremium(profile);
   const navigate = useNavigate();
   const location = useLocation();
   const sheetRef = useRef(null);
   const titleId = useId();
-  const content = upgradeSheetContent(reason, { family });
+  const content = upgradeSheetContent(reason, { family, kept });
   // Callers pass inline handlers; reading them through refs keeps the setup
   // below to one run per open, so focus and scroll lock aren't reset on render.
   const onCloseRef = useRef(onClose);
@@ -98,6 +99,7 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family }
           {content.preview && <>{content.preview.line} </>}
           {content.body}
         </p>
+        {content.kept && <p className="upgrade-sheet-kept">{content.kept}</p>}
 
         <div className="upgrade-sheet-offer">
           <div className="upgrade-sheet-offer-name">

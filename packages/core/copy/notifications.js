@@ -49,6 +49,19 @@ export const NOTIFICATIONS_EMPTY = Object.freeze({
 });
 
 /**
+ * The weekly smart lists roll-up (smart_list_digest, C4): one row a week,
+ * never one per title, and only when something is new. No actor; it reads as
+ * a sentence of its own.
+ */
+export const SMART_LIST_DIGEST = Object.freeze({
+  /** @param {number} n */
+  title: (n) => `Your smart lists found ${n} new ${n === 1 ? 'title' : 'titles'} this week.`,
+  /** @param {Array<{ name: string, count: number }>} lists */
+  lists: (lists) => lists.map(l => `${l.name} (${l.count})`).join(', '),
+  seeThem: 'See them',
+});
+
+/**
  * A new_episode row has no actor, so it doesn't fit NOTIFICATIONS' "<name> …"
  * shape: it reads "<show title> <phrase>". A drop of several episodes on the
  * same day is one row, starting at `episode_number`, covering `episode_count`.

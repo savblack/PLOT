@@ -17,6 +17,8 @@ import { isPremiumFamily } from './themes.js';
  * @property {string} title
  * @property {string} body
  * @property {Array<{icon: string, label: string, note?: string}>} also
+ * @property {string | null} kept  for 'smartLists' after a Free viewer pressed
+ *   Create: "Your rules are kept. Upgrade and the list is ready." (B5)
  * @property {{ family: string, line: string } | null} preview  for 'themes': the
  *   Premium family the viewer tapped, drawn light and dark with its line
  *   ("That’s Sage, in light and dark."). Only a picture: never applied.
@@ -24,10 +26,11 @@ import { isPremiumFamily } from './themes.js';
 
 /**
  * @param {UpgradeReason} reason
- * @param {{ family?: string }} [options]  family: for 'themes', the Premium family tapped
+ * @param {{ family?: string, kept?: boolean }} [options]  family: for 'themes', the Premium family tapped;
+ *   kept: the viewer's smart list rules were kept for after upgrading
  * @returns {UpgradeSheetContent | null} null for an unknown reason
  */
-export function upgradeSheetContent(reason, { family } = {}) {
+export function upgradeSheetContent(reason, { family, kept = false } = {}) {
   const copy = PLANS_PAGE.upgradeSheet.reasons[reason];
   if (!copy) return null;
   const cap = reason === 'lists' ? FREE_CUSTOM_LIST_CAP : 0;
@@ -36,6 +39,7 @@ export function upgradeSheetContent(reason, { family } = {}) {
     meter: cap,
     title: copy.title,
     body: copy.body,
+    kept: kept && copy.kept ? copy.kept : null,
     also: copy.also
       .map(icon => PLANS_PAGE.premiumCard.find(row => row.icon === icon))
       .filter(Boolean),

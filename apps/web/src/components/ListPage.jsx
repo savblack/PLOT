@@ -129,7 +129,8 @@ function Frame(props) {
   return <ListPageFrame {...page} {...props} />;
 }
 
-export default function ListPage() {
+/** @param {{ smartList?: { clients?: any, catalog?: any } | null }} props  smartList: Storybook's TMDB, seen rows and genres without a network */
+export default function ListPage({ smartList: smartSeams = null } = {}) {
   const { key } = useParams();
   const navigate = useNavigate();
   const { user, profile, topLists, favorites, customLists, watching, watchlist } = useApp();
@@ -239,6 +240,8 @@ export default function ListPage() {
         onDeleted={() => navigate('/my-lists')}
         Frame={Frame}
         pageLayout
+        clients={smartSeams?.clients ?? null}
+        catalog={smartSeams?.catalog ?? null}
       />
     );
   } else if (list) {

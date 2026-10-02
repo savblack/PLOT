@@ -18,8 +18,12 @@ import { TYPE_ROWS } from './sideFilterRows.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { canCreateCustomList, isPremiumProfile } from '@plot/core/premium.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
+import { parseSmartListDraft, serialiseSmartListDraft, smartListDraftKey } from '@plot/core/smartLists.js';
+import { useSmartListNewCounts } from '@plot/core/useSmartListSeen.js';
+import { readStorage, removeStorage, writeStorage } from '../utils/storage.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import SmartListDialog from './SmartListDialog.jsx';
+import NewListChoice from './NewListChoice.jsx';
 import { collectionPath, customListKey, titleCount, wantToWatchItems, searchCollectionTitles, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
 import { IconSearch } from './navIcons.jsx';
@@ -73,7 +77,7 @@ function JumpToCard({ collections, counts, onOpen }) {
         {shown.map(c => (
           <button key={c.key} type="button" className="cal-filter-row" onClick={onOpen(c.key)}>
             <span className="cal-filter-name">{c.name}</span>
-            <span className="mylists-jump-count">{c.smart ? SMART_LISTS.badge : counts(c.items)}</span>
+            <span className="mylists-jump-count">{counts(c.items)}</span>
           </button>
         ))}
         {folds && (
@@ -89,6 +93,29 @@ function JumpToCard({ collections, counts, onOpen }) {
             <span className="cal-filter-chev">{expanded ? <ChevronUp /> : <ChevronDown />}</span>
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* The Smart lists group in the column: each smart list, with "2 new" when
+   the weekly roll-up found something (A4), and New smart list under them. */
+function SmartJumpCard({ collections, newCounts, onOpen, onNew }) {
+  return (
+    <div className="hist-card mylists-jump">
+      <div className="hist-card-head">
+        <span className="hist-card-title">{SMART_LISTS.section}</span>
+      </div>
+      <div>
+        {collections.map(c => (
+          <button key={c.key} type="button" className="cal-filter-row" onClick={onOpen(c.key)}>
+            <span className="cal-filter-name">{c.name}</span>
+            {newCounts[c.list.id] > 0 && <span className="mylists-jump-count smart-new-count">{SMART_LISTS.newCount(newCounts[c.list.id])}</span>}
+          </button>
+        ))}
+        <button type="button" className="cal-filter-row mylists-jump-more" onClick={onNew}>
+          <span className="cal-filter-name"><PlusSmallIcon /> {SMART_LISTS.newSmartList}</span>
+        </button>
       </div>
     </div>
   );
@@ -118,7 +145,8 @@ function SharedJumpCard({ collections, onOpen, onNew }) {
   );
 }
 
-export default function MyListsView() {
+/** @param {{ newCounts?: Record<string, number> | null }} props  newCounts: Storybook's "2 new" without a network */
+export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const { user, profile, topLists, favorites, customLists, watching, watchlist, openPanel } = useApp();
   const fw = favoriteWords(profile?.region);
   const navigate = useNavigate();
@@ -131,6 +159,10 @@ export default function MyListsView() {
   // Which upgrade sheet is open: the Free list cap, or smart lists.
   const [upgradeReason, setUpgradeReason] = useState('lists');
   const [creatingSmart, setCreatingSmart] = useState(false);
+  // B1: "New list" asks which kind. B5: a Free viewer's rules, kept.
+  const [choosingKind, setChoosingKind] = useState(false);
+  const [smartDraft, setSmartDraft] = useState(null);
+  const [rulesKept, setRulesKept] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
@@ -138,6 +170,9 @@ export default function MyListsView() {
   const [creatingShared, setCreatingShared] = useState(false);
 
   const want = useMemo(() => wantToWatchItems(watchlist.items, watching.items, localDateStr()), [watchlist.items, watching.items]);
+  const smartIds = useMemo(() => (customLists.smartLists || []).map(l => l.id), [customLists.smartLists]);
+  const liveNewCounts = useSmartListNewCounts(smartIds, { enabled: !seedNewCounts && !!user && isPremiumProfile(profile) });
+  const newCounts = seedNewCounts ?? liveNewCounts;
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
@@ -167,16 +202,17 @@ export default function MyListsView() {
       empty: 'Empty',
       list,
     })),
-    // Smart lists find their titles when opened, so their covers are bare.
-    ...smartLists.map(list => ({
-      key: customListKey(list.id),
-      name: list.name,
-      items: [],
-      empty: SMART_LISTS.coverCount,
-      list,
-      smart: true,
-    })),
   ];
+  // Smart lists find their titles when opened, so their covers are bare.
+  // Their own section and column group, after Lists and before Shared.
+  const smartCollections = smartLists.map(list => ({
+    key: customListKey(list.id),
+    name: list.name,
+    items: [],
+    empty: SMART_LISTS.coverCount,
+    list,
+    smart: true,
+  }));
 
   const sharedCollection = (list) => ({
     key: customListKey(list.id),
@@ -222,24 +258,33 @@ export default function MyListsView() {
     setShowCapNotice(false);
     setCreatingList(true);
   };
-  // Smart lists are Premium. The database refuses rules from anyone else;
-  // this opens the sheet before the form rather than after it.
-  const openSmartGate = () => {
+  // Smart lists are Premium. The database refuses rules from anyone else.
+  // A Free viewer can still build rules and see the count (B5): Create keeps
+  // them and opens this sheet, saying so.
+  const openSmartGate = ({ kept = false } = {}) => {
     track(EVENTS.PREMIUM_GATE_HIT, { feature: 'smart_lists' });
     setCreatingList(false);
     setCreatingSmart(false);
+    setRulesKept(kept);
     setUpgradeReason('smartLists');
     setShowCapNotice(true);
   };
+  const draftKey = smartListDraftKey(user?.id);
   const requestSmartCreate = () => {
-    if (!isPremiumProfile(profile)) { openSmartGate(); return; }
     setCreatingList(false);
+    setChoosingKind(false);
     setShowCapNotice(false);
+    setSmartDraft(parseSmartListDraft(readStorage(draftKey)));
     setCreatingSmart(true);
+  };
+  const keepSmartDraft = (name, rules) => {
+    writeStorage(draftKey, serialiseSmartListDraft({ name, rules }));
+    openSmartGate({ kept: true });
   };
   const handleSmartCreate = async (name, rules) => {
     const created = await createSmartList(name, rules);
     if (created) {
+      removeStorage(draftKey);
       setCreatingSmart(false);
       navigate(collectionPath(customListKey(created.id)));
     }
@@ -331,7 +376,7 @@ export default function MyListsView() {
     );
   };
 
-  const allCollections = [...collections, ...sharedCollections];
+  const allCollections = [...collections, ...smartCollections, ...sharedCollections];
   const titles = allCollections.reduce((n, c) => n + c.items.length, 0);
 
   return (
@@ -361,6 +406,7 @@ export default function MyListsView() {
       <div className="cal-body">
         <aside className="cal-side mylists-side">
           <JumpToCard collections={collections} counts={jumpCount} onOpen={jumpTo} />
+          <SmartJumpCard collections={smartCollections} newCounts={newCounts} onOpen={jumpTo} onNew={requestSmartCreate} />
           {SHOW_WATCH_TOGETHER && <SharedJumpCard collections={sharedCollections} onOpen={jumpTo} onNew={requestShared} />}
           <SideFilters
             typeRows={TYPE_ROWS}
@@ -394,7 +440,8 @@ export default function MyListsView() {
                 <div className="list-covers">
                   {collections.map(cover)}
                   {!selection.editMode && (
-                    <button ref={newListRef} type="button" className="list-cover list-cover--new interactive-surface" onClick={requestCreate} aria-label="Create new list">
+                    <button ref={newListRef} type="button" className="list-cover list-cover--new interactive-surface"
+                      onClick={() => setChoosingKind(v => !v)} aria-label="Create new list" aria-haspopup="menu" aria-expanded={choosingKind}>
                       <span className="list-cover-art list-cover-art--dashed">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                       </span>
@@ -404,11 +451,30 @@ export default function MyListsView() {
                 </div>
               </ListSection>
 
+              {/* Smart lists: everyone sees the section. Free viewers can build
+                  rules and see the count; Create opens the upgrade sheet (B5). */}
+              <ListSection
+                title={SMART_LISTS.section}
+              >
+                <div className="list-covers">
+                  {smartCollections.map(cover)}
+                  {!selection.editMode && (
+                    <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestSmartCreate} aria-label={SMART_LISTS.newSmartList}>
+                      <span className="list-cover-art list-cover-art--dashed">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                      </span>
+                      <span className="list-cover-label">
+                        <span className="list-cover-name list-cover-name--muted">{SMART_LISTS.newSmartList}</span>
+                        <span className="list-cover-count">{SMART_LISTS.newTileNote}</span>
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </ListSection>
+
               {SHOW_WATCH_TOGETHER && (
                 <ListSection
                   title={S.shared}
-                  subtitle={S.sharedNote}
-                  headerRight={<button type="button" className="btn btn-secondary btn-sm" onClick={requestShared}><PlusSmallIcon />{S.newShared}</button>}
                 >
                   <div className="mylists-shared-group">
                     <h3 className="mylists-shared-label">{S.sharedByMe}</h3>
@@ -440,7 +506,13 @@ export default function MyListsView() {
         </div>
       </div>
 
-      {showCapNotice && <UpgradeSheet reason={upgradeReason} onClose={() => setShowCapNotice(false)} returnFocusRef={newListRef} />}
+      {choosingKind && (
+        <NewListChoice anchorRef={newListRef} onClose={() => setChoosingKind(false)}
+          onList={() => { setChoosingKind(false); requestCreate(); }}
+          onSmart={requestSmartCreate} />
+      )}
+      {showCapNotice && <UpgradeSheet reason={upgradeReason} kept={upgradeReason === 'smartLists' && rulesKept}
+        onClose={() => setShowCapNotice(false)} returnFocusRef={newListRef} />}
       {creatingList && (
         <CreateListModal lists={ownLists} onConfirm={handleCreate} onClose={() => setCreatingList(false)}
           onLimit={() => { setCreatingList(false); setUpgradeReason('lists'); setShowCapNotice(true); }}
@@ -449,9 +521,13 @@ export default function MyListsView() {
       {creatingSmart && (
         <SmartListDialog
           lists={ownLists}
+          initialRules={smartDraft?.rules ?? null}
+          initialName={smartDraft?.name ?? ''}
+          premium={isPremiumProfile(profile)}
           onConfirm={handleSmartCreate}
           onClose={() => setCreatingSmart(false)}
-          onPremium={openSmartGate}
+          onPremium={() => openSmartGate()}
+          onLocked={keepSmartDraft}
           onLimit={() => { setCreatingSmart(false); setUpgradeReason('lists'); setShowCapNotice(true); }}
         />
       )}

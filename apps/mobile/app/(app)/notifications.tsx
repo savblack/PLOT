@@ -15,8 +15,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useNotifications } from '@plot/core/useNotifications.js';
-import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NEW_EPISODE_NOTIFICATION as EP } from '@plot/core/copy/notifications.js';
-import { isAlertNotification, isTitleNotification } from '@plot/core/notificationGroups.js';
+import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NEW_EPISODE_NOTIFICATION as EP, SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
+import { isAlertNotification, isTitleNotification, smartListDigest } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
 import { Avatar } from '../../components/Avatar';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -43,6 +43,8 @@ interface NotificationRow {
   person_role?: string | null;
   release_kind?: string | null;
   provider_name?: string | null;
+  // The weekly smart lists roll-up (smart_list_digest): no actor, no title.
+  smart_list_digest?: unknown;
 }
 
 const POST_TYPES = new Set(['post_like', 'post_comment', 'comment_like']);
@@ -99,6 +101,23 @@ export default function NotificationsScreen() {
             // and opening the title from a row are web-only until the mobile
             // parity issue ("Mobile parity: actor/director and season-ready
             // alerts", issue 1093) lands. The wording is shared with web via core.
+            // The weekly smart lists roll-up renders read-only here: smart
+            // lists themselves are web-only until the mobile parity issue
+            // ("Mobile parity: smart lists", issue 1094) lands. The wording is
+            // shared with web via core.
+            const digest = smartListDigest(n);
+            if (digest) {
+              const title = SMART_LIST_DIGEST.title(digest.count);
+              return (
+                <View key={n.id} style={[styles.row, !n.read_at && styles.rowUnread]} accessibilityLabel={title}>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowText}><Text style={styles.rowName}>{title}</Text></Text>
+                    {digest.lists.length > 0 && <Text style={styles.rowMuted}>{SMART_LIST_DIGEST.lists(digest.lists)}</Text>}
+                    <Text style={styles.rowTime}>{relativeTime(n.created_at)}</Text>
+                  </View>
+                </View>
+              );
+            }
             if (isAlertNotification(n)) {
               const title = n.media_title || ALERT_NOTIFICATIONS.untitled;
               const phrase = alertPhrase(n) ?? '';

@@ -62,3 +62,33 @@ export function useGenres() {
 
   return { genres, loading, error, retry };
 }
+
+// Movie and TV genres kept apart, for smart list rules (a show's genres are
+// not a movie's). Cached like useGenres: once per session, and an empty answer
+// stays retryable.
+let _catalog = null;
+let _catalogPending = null;
+const EMPTY_CATALOG = Object.freeze({ movie: [], tv: [] });
+
+/**
+ * @param {{ movie: Array<{id:number,name:string}>, tv: Array<{id:number,name:string}> } | null} [seed]
+ *   a catalog to use instead of fetching (Storybook)
+ * @returns {{ movie: Array<{id:number,name:string}>, tv: Array<{id:number,name:string}> }}
+ */
+export function useGenreCatalog(seed = null) {
+  const [catalog, setCatalog] = useState(seed || _catalog || EMPTY_CATALOG);
+  useEffect(() => {
+    if (seed || _catalog) return;
+    let alive = true;
+    _catalogPending ??= tmdb.getGenreCatalog()
+      .then(c => {
+        if (c.movie.length || c.tv.length) _catalog = c;
+        _catalogPending = null;
+        return c;
+      })
+      .catch(() => { _catalogPending = null; return EMPTY_CATALOG; });
+    _catalogPending.then(c => { if (alive) setCatalog(c); });
+    return () => { alive = false; };
+  }, [seed]);
+  return seed || catalog;
+}

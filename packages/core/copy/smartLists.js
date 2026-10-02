@@ -26,7 +26,7 @@ export const SMART_LISTS = Object.freeze({
   myRatingLabel: 'My rating',
   myRating: (rating) => (rating ? `${rating / 2}+ stars` : 'Any'),
   hideWatched: 'Leave out what I’ve watched',
-  create: 'Create smart list',
+  create: TONIGHT_PICKER.createSmartList,
   creating: 'Creating…',
   couldNotSave: 'Could not save this smart list. Please try again.',
   badge: 'Smart',
@@ -40,4 +40,55 @@ export const SMART_LISTS = Object.freeze({
   lockedTitle: 'This smart list needs Premium',
   lockedBody: 'Your rules are saved. Upgrade to see what they find.',
   lockedAction: 'See Premium',
+
+  // The rules as one sentence of chips (B3, and the builder in A2 and the
+  // phone save sheet): "Find [shows] from [new discoveries] that are
+  // [Drama or Crime,] [rated 7+,] [on my services.]". Each chip is a rule;
+  // punctuation is added in code so a removed rule takes its comma with it.
+  sentence: {
+    find: 'Find',
+    from: 'from',
+    thatAre: 'that are',
+    types: { any: 'movies and shows', movie: 'movies', tv: 'shows' },
+    sources: { discover: 'new discoveries', watchlist: 'my watchlist', history: 'my history' },
+    myRating: (rating) => `I rated ${rating / 2}+ stars`,
+  },
+  addRule: 'Add a rule',
+  removeRule: 'Remove this rule',
+  ruleMenu: (label) => `Change ${label.toLowerCase()}`,
+  tapHint: 'Tap a rule to change it',
+  matchCount: (n) => `${n} ${n === 1 ? 'match' : 'matches'}`,
+
+  // A2: naming step. From Pick for Me the title is the button's own words
+  // the same as from My Lists: newSmartList.
+  fromAnswersIntro: 'Plot saves your answers, not these five picks. Each time you open the list it looks again, so new matches turn up on their own.',
+  rulesFromAnswers: 'Rules, from your answers',
+  rulesLabel: 'Rules',
+  liveCount: (n) => `${n} ${n === 1 ? 'match' : 'matches'} right now`,
+  liveCountSource: 'from everything on TMDB',
+  counting: 'Counting matches…',
+  countFailed: 'Could not count matches right now.',
+  created: 'Smart list created',
+  // Names written from the rules: "Thriller and mystery movies, under 2 hours, on my services".
+  nameGenreJoin: ' and ',
+
+  // My Lists: smart lists have their own section, after Lists and before
+  // Shared, and their own group in the column.
+  section: 'Smart lists',
+  newTileNote: 'Set a few rules',
+
+  // B1: "New list" asks which kind.
+  kinds: {
+    list: { title: 'List', body: 'Add titles yourself, one at a time' },
+    smart: { title: 'Smart list', body: 'Set a few rules. It finds the titles and keeps looking.' },
+  },
+
+  // A4: coming back. New matches since the list was last opened lead.
+  newSince: 'New since you last looked',
+  sinceDate: (date) => `since ${date}`,
+  // Same words as NOTIFICATIONS_PAGE.everythingElse, a different concept (the
+  // rest of one list's matches, not the rest of the feed): kept apart on purpose.
+  everythingElse: 'Everything else',
+  lastOpened: (date) => `Last opened ${date}`,
+  newCount: (n) => `${n} new`,
 });

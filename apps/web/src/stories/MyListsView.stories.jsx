@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { MEDIA } from '@plot/core/copy/media.js';
+import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
 import { AppContext } from '../hooks/useApp.js';
 import MyListsView from '../components/MyListsView.jsx';
 import ListPage from '../components/ListPage.jsx';
@@ -142,7 +143,9 @@ export const StaleListCount = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(document.body);
+    // B1: "New list" asks which kind first.
     fireEvent.click(canvas.getByRole('button', { name: 'Create new list' }));
+    fireEvent.click(await body.findByRole('menuitem', { name: new RegExp(`^${SMART_LISTS.kinds.list.title}`) }));
     fireEvent.change(await body.findByLabelText('List name'), { target: { value: 'Sixth' } });
     fireEvent.keyDown(body.getByLabelText('List name'), { key: 'Enter' });
     const sheet = await body.findByRole('dialog', { name: PLANS_PAGE.upgradeSheet.reasons.lists.title });
@@ -262,6 +265,8 @@ export const SmartListLocked = {
   parameters: { route: '/my-lists/list-s1', app: smartApp(false) },
 };
 
+/* B5: a Free viewer builds the rules and sees the count; Create opens the
+   upgrade sheet, which says the rules are kept. */
 export const NewSmartListFree = {
   parameters: { app: smartApp(false) },
   tags: ['interaction-test'],
@@ -269,8 +274,11 @@ export const NewSmartListFree = {
     const canvas = within(canvasElement);
     const body = within(document.body);
     fireEvent.click(canvas.getByRole('button', { name: 'Create new list' }));
-    fireEvent.click(await body.findByRole('button', { name: 'New smart list' }));
+    fireEvent.click(await body.findByRole('menuitem', { name: new RegExp(`^${SMART_LISTS.kinds.smart.title}`) }));
+    await body.findByRole('dialog', { name: SMART_LISTS.newSmartList });
+    fireEvent.click(body.getByRole('button', { name: SMART_LISTS.create }));
     await expect(await body.findByRole('dialog', { name: PLANS_PAGE.upgradeSheet.reasons.smartLists.title })).toBeVisible();
+    await expect(body.getByText(PLANS_PAGE.upgradeSheet.reasons.smartLists.kept)).toBeVisible();
   },
 };
 
@@ -280,7 +288,7 @@ export const NewSmartListPremium = {
     const canvas = within(canvasElement);
     const body = within(document.body);
     fireEvent.click(canvas.getByRole('button', { name: 'Create new list' }));
-    fireEvent.click(await body.findByRole('button', { name: 'New smart list' }));
-    await body.findByRole('dialog', { name: 'New smart list' });
+    fireEvent.click(await body.findByRole('menuitem', { name: new RegExp(`^${SMART_LISTS.kinds.smart.title}`) }));
+    await body.findByRole('dialog', { name: SMART_LISTS.newSmartList });
   },
 };
