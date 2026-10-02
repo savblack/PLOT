@@ -79,14 +79,28 @@ export function formatWatchedOn(value) {
 }
 
 /**
+ * The locale a date takes for the viewer's region: month first in the US
+ * ("May 5, 2026"), day first everywhere else Plot runs ("5 May 2026").
+ * No region means the US, as with spelling.
+ *
+ * @param {string | null | undefined} region  the viewer's own profile.region
+ * @returns {'en-US' | 'en-GB'}
+ */
+export function dateLocaleForRegion(region) {
+  return !region || String(region).toUpperCase() === 'US' ? 'en-US' : 'en-GB';
+}
+
+/**
  * Short relative time for feed/notification timestamps: "just now", "5m ago",
- * "3h ago", "2d ago", then an absolute date once it's a week old.
+ * "3h ago", "2d ago", then a written date once it's a week old, in the
+ * viewer's order (dateLocaleForRegion): "5 May 2026", or "May 5, 2026" in the US.
  *
  * @param {string} iso
  * @param {number} [now] epoch ms, injectable so this is testable
+ * @param {string | null} [region] the viewer's own profile.region
  * @returns {string}
  */
-export function relativeTime(iso, now = Date.now()) {
+export function relativeTime(iso, now = Date.now(), region = null) {
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return '';
   const s = Math.max(0, Math.floor((now - then) / 1000));
@@ -94,7 +108,7 @@ export function relativeTime(iso, now = Date.now()) {
   const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24); if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(dateLocaleForRegion(region), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 /** Today, spelt out in the viewer's own locale ("Tuesday 15 September"). The
@@ -108,4 +122,31 @@ export function todayLongLabel(now = new Date()) {
 export function monthLongName(year, month, todayYear) {
   const d = new Date(year, month, 1);
   return d.toLocaleDateString('en', year === todayYear ? { month: 'long' } : { month: 'long', year: 'numeric' });
+}
+
+/** YYYY-MM-DD → a local Date at midnight, or null. @param {string} value */
+function localDay(value) {
+  const [y, m, d] = String(value ?? '').slice(0, 10).split('-').map(Number);
+  return y && m && d ? new Date(y, m - 1, d) : null;
+}
+
+/**
+ * "16 Dec" this year, "16 Dec 2027" otherwise. Dates on the Your people
+ * shelf and page, and a person's Coming up strip.
+ * @param {string} value YYYY-MM-DD
+ * @param {number} [todayYear]
+ */
+export function shortDayMonth(value, todayYear = new Date().getFullYear()) {
+  const d = localDay(value);
+  if (!d) return '';
+  // Built by hand: en-GB now spells September "Sept", the boards say "Sep".
+  const dayMonth = `${d.getDate()} ${d.toLocaleDateString('en', { month: 'short' })}`;
+  return d.getFullYear() === todayYear ? dayMonth : `${dayMonth} ${d.getFullYear()}`;
+}
+
+/** "Thu 1 Oct": the date column on the Your people page. @param {string} value YYYY-MM-DD */
+export function weekdayDayMonth(value) {
+  const d = localDay(value);
+  if (!d) return '';
+  return `${d.toLocaleDateString('en', { weekday: 'short' })} ${d.getDate()} ${d.toLocaleDateString('en', { month: 'short' })}`;
 }

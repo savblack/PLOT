@@ -15,6 +15,17 @@
 .notif-caught-up-copy strong { font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: var(--font-display-tracking); color: var(--text-primary); }
 .notif-caught-up-copy span { font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
 
+/* Last month, wrapped: one card at the top in the first week of the month,
+   Share the card as the pink fill. */
+.notif-moment { flex-direction: row; align-items: center; gap: 14px; padding: 14px 16px; border-color: var(--accent-fill); }
+.notif-moment-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.notif-moment-text strong { font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: var(--font-display-tracking); color: var(--text-primary); }
+.notif-moment-actions { display: inline-flex; gap: 6px; flex-shrink: 0; }
+@media (max-width: 480px) {
+  .notif-moment { flex-wrap: wrap; }
+  .notif-moment-actions { width: 100%; }
+}
+
 /* Requests: cards, two across, Approve as the pink fill. */
 .notif-request-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .notif-request { flex-direction: row; align-items: center; gap: 12px; padding: 12px; }
@@ -37,17 +48,22 @@
 .notif-rollup-text { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.4; }
 .notif-rollup-text strong { font-weight: 600; }
 
-/* Everything else: day groups of hairline rows, a pink dot for unread. */
+/* Everything else: day groups of hairline rows. Unread rows carry a soft accent
+   tint rather than a dot, matching mobile (rowUnread in notifications.tsx). */
 .notif-group { display: flex; flex-direction: column; gap: 6px; }
 .notif-group-label { padding: 4px 4px 0; font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: var(--font-display-tracking); color: var(--text-primary); }
 .notif-rows { display: flex; flex-direction: column; }
-.notif-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 4px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.notif-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 10px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .notif-row:last-child { border-bottom: 0; }
 .notif-row:hover strong { color: var(--accent-text); }
 .notif-row-text { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.4; }
 .notif-row-text strong { font-weight: 600; }
 .notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 .notif-dot--read { background: transparent; }
+/* Title rows (Premium alerts and new_episode): a poster in the avatar's slot, a small label above the line. */
+.notif-poster { display: block; width: 44px; height: 66px; flex-shrink: 0; border-radius: var(--radius-badge); object-fit: cover; background: var(--surface-sunken); }
+.notif-badge { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.notif-row-line { display: block; }
 .notif-time { white-space: nowrap; flex-shrink: 0; }
 
 @media (max-width: 760px) {
@@ -60,3 +76,24 @@
   .notif-request-actions { width: 100%; padding-left: 56px; }
   .notif-rollup .notif-time { display: none; }
 }
+
+/* Release-day rows for people you follow (board R2-3): the person's headshot
+   on the poster's corner, ringed in the page colour. */
+.notif-poster-wrap { position: relative; flex-shrink: 0; }
+.notif-poster-face { position: absolute; right: -7px; bottom: -5px; width: 22px; height: 22px; border-radius: var(--radius-pill); object-fit: cover; object-position: center 22%; border: 2px solid var(--bg); }
+
+/* The footer under the rows: where dates and what is coming live. */
+.notif-people-footer { flex-direction: row; align-items: center; gap: 12px; width: 100%; margin-top: 4px; padding: 12px 14px; border: 1px solid var(--border); text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.notif-people-footer-text { flex: 1; min-width: 0; font-size: 0.84rem; color: var(--text-secondary); }
+.notif-people-footer-link { flex-shrink: 0; font-size: 0.82rem; font-weight: 600; }
+.notif-people-footer:hover .notif-people-footer-link { color: var(--accent-text); }
+
+/* Smart lists roll-up (C4): three posters fanned, then the sentence. */
+.notif-digest { cursor: default; align-items: center; }
+.notif-digest:hover strong { color: inherit; }
+.notif-digest-stack { display: inline-flex; flex-shrink: 0; }
+.notif-digest-poster { display: block; flex-shrink: 0; width: 36px; height: 54px; border-radius: 8px; object-fit: cover; background: var(--surface-sunken); border: 2px solid var(--bg); }
+.notif-digest-poster + .notif-digest-poster { margin-left: -12px; }
+.notif-digest-lists,
+.notif-digest-time { display: block; margin-top: 2px; }
+.notif-digest-action { flex-shrink: 0; }

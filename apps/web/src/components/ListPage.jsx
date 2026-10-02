@@ -2,40 +2,83 @@ import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { isListShareable, listVisibility } from '@plot/core/customLists.js';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useShare } from '../hooks/useShare.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { EVENTS } from '../lib/analytics.js';
-import { ALL_TYPES, filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
+import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { customListIdFromKey, customListKey, sortListItems, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { CustomListSection, FavoritesSection, WantToWatchSection } from './ListSections.jsx';
-import { IconSearch } from './navIcons.jsx';
+import { SmartListSection } from './SmartListSection.jsx';
+import { IconChevronLeft, IconSearch } from './navIcons.jsx';
+import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
+import { isSharedList } from '@plot/core/sharedLists.js';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import SideFilters from './SideFilters.jsx';
+import MobilePageControls from './MobilePageControls.jsx';
+import { TYPE_ROWS } from './sideFilterRows.js';
+import { MEDIA } from '../copy/media.js';
+
+// The Calendar's Show rows minus Cinema, as on History: every list here holds
+// saved rows, and a saved row never carries the `_cinema` flag that row
+// matches on, so on its own it could only ever show nothing.
+const LIST_TYPE_ROWS = TYPE_ROWS.filter(r => r.id !== 'cinema');
+const ALL_LIST_TYPES = LIST_TYPE_ROWS.map(r => r.id);
 import KebabMenu from './KebabMenu.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 
 const GridIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></svg>;
 const RowsIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="5.5" height="5.5" rx="1.5" /><rect x="3" y="13.5" width="5.5" height="5.5" rx="1.5" /><path d="M12 6.5h9M12 9.5h6M12 15h9M12 18h6" /></svg>;
+const PlusIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
 const SortIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M5 7l3-3 3 3M16 20V4M13 17l3 3 3-3" /></svg>;
 
-function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQuery, view, onView, onSort, children }) {
+const CloseIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>;
+
+/* A shared list (PLO-525) hands the frame four more things: `sidePanel`, the
+   people panel above the filters; `headerActions`, Watch together and Add a
+   title at the top right; `lead`, the phone and tablet people line (A8); and
+   `shared`, which on a phone turns the header into a bar with a search
+   button in place of the always-open field. */
+function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQuery, view, onView, onSort, sidePanel, headerActions, lead, onAdd, shared = false, children }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef(null);
+  useEffect(() => { if (searchOpen) searchRef.current?.focus(); }, [searchOpen]);
+  const side = sidePanel || filter;
+  const searching = searchOpen || query !== '';
   return (
-    <section className={`list-page list-page--${view}`}>
+    <section className={`list-page list-page--${view}${shared ? ' list-page--shared' : ''}${shared && searching ? ' list-page--search-open' : ''}`}>
       <Link className="list-page-back list-page-back--mobile" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>
       <header className="list-page-head">
+        {shared && <Link className="list-page-bar-back" to="/my-lists" aria-label={CUSTOM_LISTS.backToMyLists}><IconChevronLeft /></Link>}
         <div className="list-page-heading">
           <h1 className="list-page-title">{title}</h1>
           <span className="list-page-sub">{titleCount(count)}{subtitle ? ` · ${subtitle}` : ''}</span>
         </div>
-        <label className="hist-search list-page-search"><IconSearch /><input type="search" value={query} onChange={event => onQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchThisList} aria-label={CUSTOM_LISTS.searchThisList} /></label>
+        <div className="list-page-head-actions">
+          {shared && (
+            <button
+              type="button"
+              className="list-page-view list-page-search-toggle"
+              aria-label={searching ? COLLABORATIVE_LISTS.page.searchClose : COLLABORATIVE_LISTS.page.searchOpen}
+              aria-expanded={searching}
+              onClick={() => { if (searching) { setSearchOpen(false); onQuery(''); } else setSearchOpen(true); }}
+            >
+              {searching ? <CloseIcon /> : <IconSearch />}
+            </button>
+          )}
+          {/* Controls sit left of the search, as on Calendar and History. */}
+          {headerActions && <div className="list-page-head-buttons">{headerActions}</div>}
+          <label className="hist-search list-page-search"><IconSearch /><input type="search" value={query} onChange={event => onQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchThisList} aria-label={CUSTOM_LISTS.searchThisList} ref={searchRef} /></label>
+        </div>
       </header>
-      <div className={`list-page-body${filter ? '' : ' list-page-body--no-side'}`}>
-        {filter && <aside className="list-page-side">{filter}</aside>}
+      {lead && <div className="list-page-lead">{lead}</div>}
+      <div className={`list-page-body${side ? '' : ' list-page-body--no-side'}`}>
+        {side && <aside className="list-page-side">{sidePanel}{filter}</aside>}
         <div className="list-page-stream">
           <div className="list-page-toolbar">
             <div className="list-page-toolbar-actions">
@@ -51,6 +94,9 @@ function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQ
                   { label: CUSTOM_LISTS.titleDescending, onClick: () => onSort('title-desc') },
                 ]}
               />
+              {/* Below the sidebar width a shared list's Add is one more round
+                  control here, not a pink button (A8). */}
+              {onAdd && <button type="button" className="list-page-view list-page-add" aria-label={COLLABORATIVE_LISTS.page.addTitle} onClick={onAdd}><PlusIcon /></button>}
               <div className="list-page-actions">{headerRight}</div>
             </div>
           </div>
@@ -83,7 +129,8 @@ function Frame(props) {
   return <ListPageFrame {...page} {...props} />;
 }
 
-export default function ListPage() {
+/** @param {{ smartList?: { clients?: any, catalog?: any } | null }} props  smartList: Storybook's TMDB, seen rows and genres without a network */
+export default function ListPage({ smartList: smartSeams = null } = {}) {
   const { key } = useParams();
   const navigate = useNavigate();
   const { user, profile, topLists, favorites, customLists, watching, watchlist } = useApp();
@@ -91,7 +138,7 @@ export default function ListPage() {
   const { genres } = useGenres();
   const fw = favoriteWords(profile?.region);
   const { share, copied } = useShare();
-  const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
+  const [typeFilters,  setTypeFilters]  = useState(ALL_LIST_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
   const [query, setQuery] = useState('');
   const [view, setView] = useState('auto');
@@ -103,11 +150,10 @@ export default function ListPage() {
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
-  const resolvedView = view === 'auto' ? (narrow ? 'rows' : 'grid') : view;
 
   const shareList = useCallback((list) => share({
     url: isListShareable(listVisibility(list), profile?.is_public) ? buildListShareUrl({ listId: list.id }) : null,
-    title: `${list.name} · PLOT`,
+    title: `${list.name} · Plot`,
     text: SHARING.listText(list.name),
     event: EVENTS.LIST_SHARED,
     eventProps: { list_id: list.id },
@@ -117,6 +163,11 @@ export default function ListPage() {
 
   const customId = customListIdFromKey(key);
   const list = customId ? customLists.lists.find(l => l.id === customId) : null;
+  const smartList = customId && !list ? customLists.smartLists?.find(l => l.id === customId) : null;
+  // A shared list opens as a poster grid at every width (canvas A8); other
+  // lists open as rows on a narrow screen.
+  const sharedGrid = SHOW_WATCH_TOGETHER && isSharedList(list, user?.id);
+  const resolvedView = view === 'auto' ? (narrow && !sharedGrid ? 'rows' : 'grid') : view;
 
   const matchQuery = useCallback((items) => {
     const term = query.trim().toLowerCase();
@@ -125,20 +176,39 @@ export default function ListPage() {
 
   const sortItems = useCallback((items) => sortListItems(items, sort), [sort]);
 
-  const showFilter = key === 'want' || key === 'favorites';
+  // Not smart lists: their saved rules already pick a type and genres, and
+  // they load a page at a time, so a second filter here would contradict the
+  // rules and only narrow what has been fetched so far. Search still applies.
+  const showFilter = key === 'want' || key === 'favorites' || !!list;
+  // Only CustomListSection reads this on the page: it swaps an emptied grid for
+  // "No items match". Want to Watch and Favourites return null when narrowed,
+  // which here would take the header and filters with it.
+  const narrowed = typeFilters.length < ALL_LIST_TYPES.length || genreFilters.length > 0 || query.trim() !== '';
 
   // What the frame needs from the page. A fresh object per render is fine —
   // it re-renders the frame, which is the point; only a changing component
   // identity would remount it.
   const framePage = useMemo(() => ({
+    // The column is display:none below 1024px and the bottom bar is hidden
+    // above it, so each width gets one copy. The bar portals to the body, so
+    // sitting inside the hidden column does not hide it.
     filter: showFilter ? (
-      <SideFilters
-        typeFilters={typeFilters}
-        setTypeFilters={setTypeFilters}
-        genreFilters={genreFilters}
-        setGenreFilters={setGenreFilters}
-        genres={genres}
-      />
+      <>
+        <SideFilters
+          typeRows={LIST_TYPE_ROWS}
+          typeFilters={typeFilters}
+          setTypeFilters={setTypeFilters}
+          genreFilters={genreFilters}
+          setGenreFilters={setGenreFilters}
+          genres={genres}
+        />
+        <MobilePageControls
+          groups={[
+            { heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes, options: LIST_TYPE_ROWS, value: typeFilters, defaultValue: ALL_LIST_TYPES, onChange: setTypeFilters },
+            { heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres, columns: 2, options: genres.map(g => ({ id: g.id, label: g.name })), value: genreFilters, defaultValue: [], onChange: setGenreFilters },
+          ]}
+        />
+      </>
     ) : null,
     query,
     onQuery: setQuery,
@@ -158,17 +228,33 @@ export default function ListPage() {
     body = <WantToWatchSection items={items} count={want.length} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
   } else if (key === 'favorites') {
     body = <FavoritesSection favorites={favorites} visibleItems={sortItems(matchQuery(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters)))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
+  } else if (smartList) {
+    body = (
+      <SmartListSection
+        key={customListKey(smartList.id)}
+        list={smartList}
+        customLists={customLists}
+        historyEntries={history.entries}
+        historyReady={!history.loading}
+        refine={items => sortItems(matchQuery(items))}
+        onDeleted={() => navigate('/my-lists')}
+        Frame={Frame}
+        pageLayout
+        clients={smartSeams?.clients ?? null}
+        catalog={smartSeams?.catalog ?? null}
+      />
+    );
   } else if (list) {
     body = (
       <CustomListSection
         key={customListKey(list.id)}
         list={list}
-        visibleItems={sortItems(matchQuery(list.items || []))}
+        visibleItems={sortItems(matchQuery(filterByTypeAndGenre(list.items, typeFilters, genreFilters)))}
         count={(list.items || []).length}
         customLists={customLists}
-        typeFilters={ALL_TYPES}
-        genreFilters={[]}
-        narrowed={false}
+        typeFilters={typeFilters}
+        genreFilters={genreFilters}
+        narrowed={narrowed}
         share={shareList}
         shareCopied={copied}
         onDeleted={() => navigate('/my-lists')}

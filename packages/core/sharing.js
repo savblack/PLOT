@@ -57,3 +57,15 @@ export function buildWatchTogetherLinkUrl({ username = '', key = '', origin = SH
   if (!handle || !/^[a-z0-9]{6,32}$/i.test(k)) return null;
   return link(`/watch-with/${encodeURIComponent(handle)}/${encodeURIComponent(k)}`, '', origin)?.toString() || null;
 }
+
+/**
+ * A collaborative list invite link. The key is the whole link: it picks the
+ * list and is what lets someone join. Reusable until the list owner resets it.
+ * See supabase/migrations/20261001140000_collaborative_list_invites.sql.
+ * @param {{key?: string, origin?: string}} options
+ */
+export function buildListInviteUrl({ key = '', origin = SHARE_ORIGIN } = {}) {
+  const k = key.trim();
+  if (!/^[a-z0-9]{6,32}$/i.test(k)) return null;
+  return link(`/join-list/${encodeURIComponent(k)}`, '', origin)?.toString() || null;
+}

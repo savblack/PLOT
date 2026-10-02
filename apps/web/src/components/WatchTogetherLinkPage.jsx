@@ -117,7 +117,7 @@ export default function WatchTogetherLinkPage() {
       </div>
       <p className="wt-note">{info.can_decide ? L.acceptNote(name) : L.imInNote}</p>
       {reviewing && (
-        <AcceptDialog person={info} viewerIsPublic={!!profile?.is_public} busy={busy}
+        <AcceptDialog person={info} viewer={profile} busy={busy}
           onClose={() => setReviewing(false)}
           onDecline={() => setReviewing(false)}
           onAccept={accept} />

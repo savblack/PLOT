@@ -1,15 +1,6 @@
 {
   "entries": [
     {
-      "slug": "saltburn",
-      "tmdb_id": 930564,
-      "media_type": "movie",
-      "poster_path": "/zGTfMwG112BC66mpaveVxoWPOaB.jpg",
-      "title": "Saltburn",
-      "date_label": "Dec 2023",
-      "note": "\"Unhinged in all the right ways.\""
-    },
-    {
       "slug": "past-lives",
       "tmdb_id": 666277,
       "media_type": "movie",
@@ -94,7 +85,7 @@
       "slug": "project-hail-mary",
       "tmdb_id": 687163,
       "media_type": "movie",
-      "poster_path": "/yihdXomYb5kTeSivtFndMy5iDmf.jpg",
+      "poster_path": "/iOb2fjXLbpJgyQXe46n1WtGCnaa.jpg",
       "title": "Project Hail Mary",
       "date_label": "Mar 2026",
       "note": "\"Gosling in space.\""
@@ -134,15 +125,24 @@
       "title": "Mayday",
       "date_label": "Sep 2026",
       "note": ""
-    }
-  ],
-  "trending": {
-    "hero": {
+    },
+    {
       "slug": "resident-evil",
       "tmdb_id": 1423191,
       "media_type": "movie",
       "poster_path": "/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg",
       "title": "Resident Evil",
+      "date_label": "Sep 2026",
+      "note": ""
+    }
+  ],
+  "trending": {
+    "hero": {
+      "slug": "lanterns",
+      "tmdb_id": 95350,
+      "media_type": "tv",
+      "poster_path": "/gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
+      "title": "Lanterns",
       "year": "2026"
     }
   }

@@ -1,10 +1,10 @@
-/* Bottom-right, above the tab bar where there is one; on phones it spans the
-   width just above it, where a thumb already is. Above the title panel so an undo offered
+/* Bottom-right, above the phone filter bar where there is one; on phones it
+   spans the width just above it, where a thumb already is. Above the title panel so an undo offered
    from inside the panel is visible there. */
 .undo-toast {
   position: fixed;
   right: 1rem;
-  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 1rem);
+  bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px) + 1rem);
   z-index: 1200;
   display: flex;
   align-items: center;
@@ -56,11 +56,10 @@
     left: 0.75rem;
     right: 0.75rem;
     max-width: none;
-    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 0.75rem);
+    bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
 }
 
-/* No tab bar from here up (app.css hides it), though --tabbar-h keeps its value. */
 @media (min-width: 1024px) {
   .undo-toast { right: 1.25rem; bottom: 1.25rem; }
 }

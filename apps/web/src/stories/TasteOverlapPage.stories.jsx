@@ -53,6 +53,7 @@ export const Populated = {};
 export const PrivateFriend = { args: { target: privateTarget, sharedWatchlist: null } };
 export const NotEnoughRatings = { args: { overlap: tasteOverlap(rows(mineRatings).slice(0, 3), rows(theirRatings).slice(0, 3)) } };
 export const FreeViewer = { args: { premium: false } };
+export const Loading = { args: { loading: true, target: null, overlap: null } };
 export const NotVisible = { args: { error: 'not_visible', target: null, overlap: null } };
 
 export const ShareCard = {

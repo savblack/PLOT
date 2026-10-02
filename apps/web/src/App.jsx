@@ -28,6 +28,9 @@ import { useTopLists }     from './hooks/useTopLists.js';
 import { useFavorites }    from './hooks/useFavorites.js';
 import { useCustomLists }  from './hooks/useCustomLists.js';
 import UndoToast from './components/UndoToast.jsx';
+import StreakToast from './components/StreakToast.jsx';
+import { FollowToastHost } from './components/PeopleFollow.jsx';
+import ShareCardHost from './components/ShareCardHost.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
@@ -38,6 +41,7 @@ import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
 import { onPendingWatchQueued } from '@plot/core/engagementPrompt.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { loadPremiumEntitlement } from '@plot/core/billing.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
 import { AppContext, useApp } from './hooks/useApp.js';
 import { SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 
@@ -51,7 +55,7 @@ function TimezoneBanner({ deviceTz, onUpdate, onDismiss }) {
   return (
     <div style={{
       position: 'fixed',
-      bottom: 'calc(var(--tab-bar-height, 56px) + 0.75rem)',
+      bottom: 'calc(var(--bottom-inset, 0px) + env(safe-area-inset-bottom, 0px) + 0.75rem)',
       // --sidebar-w is 0 below the desktop breakpoint, so this clears the nav
       // rail when there is one and changes nothing when there isn't.
       left: 'calc(var(--sidebar-w, 0px) + 0.75rem)',
@@ -126,7 +130,6 @@ function SaveToast({ toast, onClose }) {
 export default function App() {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const { theme, setTheme } = useTheme();
 
   const [user,    setUser]    = useState(() => {
     const cached = readCachedSession();
@@ -134,6 +137,11 @@ export default function App() {
   });
   const [profile, setProfile] = useState(() => readCachedSession()?.profile ?? null);
   const [loading, setLoading] = useState(() => !readCachedSession());
+  // Premium palettes need a known entitlement: null while it loads (the
+  // stored theme keeps showing), false once signed out or not Premium.
+  const { mode: themeMode, family: themeFamily, setMode: setThemeMode, setFamily: setThemeFamily } = useTheme({
+    isPremium: user ? (profile ? isPremiumProfile(profile) : null) : (loading ? null : false),
+  });
 
   // Media panel state
   const [panelItem,    setPanelItem]    = useState(null);
@@ -164,12 +172,18 @@ export default function App() {
 
   /* ── Profile loader ── */
   const loadProfile = useCallback(async (userId) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
-      .eq('id', userId)
-      .maybeSingle();
-    if (data) data.is_premium = await loadPremiumEntitlement();
+    // Both reads go out together: the entitlement does not depend on the row,
+    // and awaiting them in turn held the startup loader for a second round
+    // trip to the database region (~0.4s from Australia, more from the US).
+    const [{ data }, entitled] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
+        .eq('id', userId)
+        .maybeSingle(),
+      loadPremiumEntitlement(),
+    ]);
+    if (data) data.is_premium = entitled;
     if (activeUserIdRef.current !== userId) return;
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
@@ -338,8 +352,10 @@ export default function App() {
     broadcastPreferences,
     user,
     profile,
-    theme,
-    setTheme,
+    themeMode,
+    themeFamily,
+    setThemeMode,
+    setThemeFamily,
     openPanel,
     closePanel,
     openSearch,
@@ -410,6 +426,9 @@ export default function App() {
       )}
 
       <UndoToast />
+      <StreakToast />
+      <FollowToastHost />
+      <ShareCardHost />
 
       {tzBanner && (
         <TimezoneBanner

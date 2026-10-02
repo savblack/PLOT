@@ -5,6 +5,7 @@ import { posterUrl } from '../utils/images.js';
 import { collectionPartYear } from '@plot/core/collections.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
+import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { MEDIA } from '../copy/media.js';
@@ -38,9 +39,12 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
       return;
     }
     setSaveState({ status: 'saving', message: '' });
+    // A new list offers Undo once every film is on it, so an undo cannot land
+    // between the adds. Adding to a list that already existed offers none.
+    const undo = existingList ? null : createUndoBatch({ action: UNDO_ACTIONS.LIST_CREATE });
     let list;
     try {
-      list = existingList || await customLists.createList(stub.name);
+      list = existingList || await customLists.createList(stub.name, { undo, onUndone: () => setSaveState({ status: 'idle', message: '' }) });
     } catch (error) {
       if (isCustomListLimitError(error)) { setSaveState({ status: 'idle', message: '' }); setShowUpgrade(true); return; }
       setSaveState({ status: 'error', message: customListCreationError(error, MEDIA_PANEL.couldNotSaveCollection) });
@@ -62,6 +66,7 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
       setSaveState({ status: 'error', message: MEDIA_PANEL.couldNotSaveCollection });
       return;
     }
+    undo?.offer({ meta: { listName: list.name } });
     track(EVENTS.COLLECTION_SAVED_AS_LIST, { collection_id: stub.id, parts: parts.length, reused_list: !!existingList });
     setSaveState({ status: 'saved', message: MEDIA_PANEL.collectionSaved });
   };

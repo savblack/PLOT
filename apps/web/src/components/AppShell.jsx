@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { preloadAppViews } from '../routeChunks.js';
 import { APP_NAV_ITEMS, isActiveView, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
@@ -10,8 +11,10 @@ import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { TONIGHT_PICKER } from '@plot/core/copy/tonightPicker.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import AppSidebar from './AppSidebar.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
+import { useApp } from '../hooks/useApp.js';
 import {
-  IconMenu, IconClose, IconSearch, IconArrowUp,
+  IconMenu, IconClose, IconSearch, IconArrowUp, IconBell, IconSettings, NAV_ICONS,
 } from './navIcons.jsx';
 
 /* ── SVG Icons ───────────────────────── */
@@ -34,6 +37,11 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const mainRef = useRef(null);
 
   const { unread, refreshCount } = useNotifications(user?.id);
+  const { themeMode, themeFamily, setThemeMode, setThemeFamily } = useApp() ?? {};
+  const [themeUpgrade, setThemeUpgrade] = useState(null); // Premium family a Free viewer tapped in the account menu
+
+  // Warm the other pages' chunks while idle so navigating doesn't wait on them.
+  useEffect(() => { preloadAppViews(); }, []);
 
   // Keep the bell badge fresh as the user navigates (e.g. after viewing the feed).
   useEffect(() => { refreshCount(); }, [currentView, refreshCount]);
@@ -95,18 +103,22 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   };
 
   const pageTitle = titleForView(currentView);
-  const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
   const isListDetail = currentView?.startsWith('my-lists/');
 
   // At sidebar widths there is no header at all — the brand, search and
   // notifications live in the sidebar, and the title moves into the content
   // column as .app-page-heading so it shares a left edge with the section
-  // headers below it. Home's VIEW_TITLES entry is the brand ("PLOT"), which the
+  // headers below it. Home's VIEW_TITLES entry is the brand ("Plot"), which the
   // sidebar already shows, so prefer the nav item's own label here and fall
   // back to the shared titles.
+  //
+  // Profile sub-pages (u/:username/compare, /history, ...) keep the handle as
+  // their title: the page under it names the section. Taking only the second
+  // segment stops the rest of the path leaking in as "@savannah/compare".
   const isProfileView = (currentView || '').startsWith('u/');
+  const profileHandle = isProfileView ? currentView.split('/')[1] : null;
   const desktopTitle = isProfileView
-    ? (isOwnProfile ? APP_SHELL.profile : `@${currentView.slice(2)}`)
+    ? (profile?.username && profileHandle === profile.username ? APP_SHELL.profile : `@${profileHandle}`)
     : (APP_NAV_ITEMS.find(item => item.id === currentView)?.label ?? pageTitle);
 
   const pageSubtitle = currentView === 'settings' ? SETTINGS_VIEW.page.subtitle
@@ -127,9 +139,16 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         collapsed={sidebarCollapsed}
         onToggleCollapsed={() => setSidebarCollapsed(collapsed => !collapsed)}
         onFeedback={() => user ? setFeedbackOpen(true) : navigate('/login')}
+        onSignOut={() => navigate('/logout')}
         onNavigate={go}
         onNavigateProfile={(username) => navigate(`/u/${username}`)}
+        themeMode={themeMode}
+        themeFamily={themeFamily}
+        onPickMode={setThemeMode}
+        onPickFamily={setThemeFamily}
+        onThemeLocked={setThemeUpgrade}
       />
+      {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
 
       {feedbackOpen && user && (
         <Suspense fallback={null}>
@@ -211,29 +230,39 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         </div>
 
         <nav className="nav-drawer-nav">
-          {DRAWER_NAV_ITEMS.map(({ id, label, premium }) => (
-            <button
-              key={id}
-              type="button"
-              className={`nav-drawer-item${isActiveView(currentView, id) ? ' active' : ''}`}
-              onClick={() => handleNav(id)}
-              aria-current={isActiveView(currentView, id) ? 'page' : undefined}
-            >
-              <span className="nav-drawer-label">{label}</span>
-              {premium && !isPremiumProfile(profile) && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
-            </button>
-          ))}
+          {DRAWER_NAV_ITEMS.map(({ id, label, premium }) => {
+            const Icon = NAV_ICONS[id];
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`nav-drawer-item${isActiveView(currentView, id) ? ' active' : ''}`}
+                onClick={() => handleNav(id)}
+                aria-current={isActiveView(currentView, id) ? 'page' : undefined}
+              >
+                {Icon && <Icon />}
+                <span className="nav-drawer-label">{label}</span>
+                {premium && !isPremiumProfile(profile) && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
+              </button>
+            );
+          })}
           {profile?.username && (
             <button
               type="button"
               className="nav-drawer-item"
               onClick={() => { closeDrawer(); navigate(`/u/${profile.username}`); }}
             >
+              {/* The avatar takes the icon column so this row hangs off the
+                  same left edge as the rest, the way the rail's profile row does. */}
+              {profile.avatar_url
+                ? <img className="nav-drawer-avatar" src={profile.avatar_url} alt="" />
+                : <span className="nav-drawer-avatar nav-drawer-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
               <span className="nav-drawer-label">Profile</span>
             </button>
           )}
           {user && !DRAWER_NAV_ITEMS.some(item => item.id === 'notifications') && (
             <button type="button" className={`nav-drawer-item${currentView === 'notifications' ? ' active' : ''}`} onClick={() => handleNav('notifications')}>
+              <IconBell />
               <span className="nav-drawer-label">{APP_SHELL.notifications}</span>
               {unread > 0 && <span className="mobile-notification-count">{unread}</span>}
             </button>
@@ -247,6 +276,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             onClick={() => handleNav('settings')}
             aria-current={currentView === 'settings' ? 'page' : undefined}
           >
+            <IconSettings />
             <span className="nav-drawer-label">Settings</span>
           </button>
         </div>

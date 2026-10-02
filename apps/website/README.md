@@ -17,7 +17,7 @@ Running `wrangler pages dev .` from this directory by hand works too — two not
 - The compatibility date is pinned in `wrangler.jsonc`, because `wrangler pages dev` otherwise defaults to *today's* date, which a slightly older `workerd` binary refuses to start on (`requires compatibility date "…", but the newest date supported by this server binary is "…"`). Pinning a past date is always safe; the runtime keeps supporting old dates. That file is local-dev-only and must stay that way: adding `pages_build_output_dir` to it would make it the source of truth for the whole Pages project and cut the dashboard configuration out of deploys. The file says so as well.
 - It runs from `apps/website` because both that config and the Pages Functions are discovered relative to the working directory. From the repo root, wrangler misses the pin and picks up the *web app's* root `functions/` instead, so this site's routes 404 — which looks identical to the static-server failure above.
 
-The repo `.env` is not loaded, so functions needing secrets (e.g. `/api/newsletter`) won't work locally. `/api/discover` needs none: it forwards to the public TMDB proxy Worker with the site's own public anon key. It does require evidence that the call came from a PLOT page, so a browser on localhost works and a bare `curl` gets a 403 (add `-H 'Sec-Fetch-Site: same-origin'` to test it by hand). See below.
+The repo `.env` is not loaded, so functions needing secrets (e.g. `/api/newsletter`) won't work locally. `/api/discover` needs none: it forwards to the public TMDB proxy Worker with the site's own public anon key. It does require evidence that the call came from a Plot page, so a browser on localhost works and a bare `curl` gets a 403 (add `-H 'Sec-Fetch-Site: same-origin'` to test it by hand). See below.
 
 ## The public API catalog
 
@@ -38,7 +38,7 @@ Three things keep it honest, and all three are easy to break by hand:
   `npm run test:website`, which CI runs) checks every anchor and every link
   against what is actually on disk or in `functions/`, and checks the `_headers`
   rules still match the types the catalog advertises.
-- Scope. The catalog describes what PLOT offers publicly, and the three
+- Scope. The catalog describes what Plot offers publicly, and the three
   `llms.txt`-style statements about that (`llms.txt` here, `apps/web/public/llms.txt`,
   and the homepage markdown in `functions/_lib/markdown.js`) have to keep
   agreeing with it. Adding an endpoint to the catalog means editing those too.
@@ -46,7 +46,7 @@ Three things keep it honest, and all three are easy to break by hand:
 ## What /api/discover is guarded by
 
 This function holds the upstream credentials, so without a guard it is a TMDB
-proxy anyone can spend PLOT's quota through: no key needed, from anywhere. Two
+proxy anyone can spend Plot's quota through: no key needed, from anywhere. Two
 things stop that, and they are worth different amounts.
 
 - **An allowlist and an edge cache** (`functions/api/discover.js`,
@@ -97,7 +97,7 @@ Beyond `llms.txt` and the API catalog above:
 - `.well-known/agent-skills/` holds SKILL.md files and a generated `index.json`
   (Agent Skills Discovery RFC v0.2.0). **Do not edit `index.json` by hand.** Each
   entry carries a SHA-256 of its SKILL.md, which is how a consumer checks it got
-  what PLOT published; a stale digest makes a careful client reject the skill
+  what Plot published; a stale digest makes a careful client reject the skill
   outright. Edit the SKILL.md, run `npm run skills`, commit both. CI runs
   `npm run skills:check`.
 

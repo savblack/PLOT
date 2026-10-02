@@ -52,6 +52,9 @@ export const EXPORT_STEPS = Object.freeze([
   { table: 'watch_together_votes', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['session_id', 'tmdb_id', 'media_type'] },
   { table: 'watch_together_links', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['user_id'] },
   { table: 'user_custom_list_members', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['list_id'] },
+  // Premium alert opt-ins (20260928120000). Optional for the same reason.
+  { table: 'person_alerts', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['tmdb_person_id'] },
+  { table: 'season_ready_alerts', match: { type: 'eq', column: 'user_id' }, optional: true, order: ['tmdb_id'] },
   { table: 'feedback', match: { type: 'eq', column: 'user_id' } },
 ]);
 

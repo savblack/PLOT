@@ -6,20 +6,20 @@ account connection has occurred. Direct streaming remains unadvertised.
 
 ## Evidence and unresolved questions
 
-| Requirement | Public evidence | PLOT decision / remaining proof |
+| Requirement | Public evidence | Plot decision / remaining proof |
 | --- | --- | --- |
-| Native compatibility | SDK 1.0.8 advertises React Native 0.81; PLOT currently installs Expo 57 / RN 0.86.3 | Requires a development build and real iOS/Android compile/link tests; Expo Go cannot establish compatibility with an unbundled native SDK |
+| Native compatibility | SDK 1.0.8 advertises React Native 0.81; Plot currently installs Expo 57 / RN 0.86.3 | Requires a development build and real iOS/Android compile/link tests; Expo Go cannot establish compatibility with an unbundled native SDK |
 | Installation | React Native instructions require CocoaPods and an Android Maven dependency repository | Prepare an Expo config plugin after SDK approval; do not hand-edit generated native projects |
 | Linking | Published SDK platforms are native; no browser SDK is listed | Browser linking is unverified. Only after provider confirmation should web offer a mobile-linking handoff |
 | Australian coverage | Product page names services but provides no region matrix | Confirm Australian Netflix, Prime Video, Disney+, Apple TV, Paramount+ and HBO Max accounts separately; ask about Stan, Binge and other local services |
 | Profile selection | Management schema exposes preferred_profile and history profile_id | Require explicit selection and reject records from other profiles; test multiple adults, children and PIN-protected profiles |
 | Identity | WatchHistory schema has content_id, tmdb_id and tmdb_series_id | Verify movie/episode semantics, season/episode lookup, event identity and rewatches with sanitised real payloads. Documentation examples are not verified TMDB fixtures |
 | Dates and history depth | Timestamp and percent_complete exist | Confirm timezone, unknown dates, partial-play threshold and maximum history depth per service |
-| Refresh | UserHistory POST is documented for user-triggered linking/refresh only | **Do not put this POST in scheduled jobs.** Confirm provider refresh SLA; scheduled PLOT jobs may read existing cached history only under agreed API terms |
+| Refresh | UserHistory POST is documented for user-triggered linking/refresh only | **Do not put this POST in scheduled jobs.** Confirm provider refresh SLA; scheduled Plot jobs may read existing cached history only under agreed API terms |
 | Backend access | Management OpenAPI 1.0.2 documents paginated history and updated/timestamp filters | Server owns API key; validate pagination, incremental corrections, rate limits and webhook authentication in a sandbox |
 | Tokens | SDK instructions require device-specific secure token storage | Native SecureStore, not shared cloud storage. Server key must never reach web/mobile bundles |
 | Consent | Provider requires a consent screen and its terms/privacy acceptance | Show before linking, retain consent version/time; obtain the applicable SDK commercial terms before implementation |
-| Disconnect / deletion | Separate unlink-service and delete-user endpoints | Disconnect unlinks and retains PLOT data; only an explicit data-deletion request calls delete-user |
+| Disconnect / deletion | Separate unlink-service and delete-user endpoints | Disconnect unlinks and retains Plot data; only an explicit data-deletion request calls delete-user |
 | Economics | No public per-user price/minimum in the reviewed docs | Obtain written pricing, AU coverage, SLA, limits, deletion terms and minimum commitment before deciding launch |
 
 Sources: [SDK overview](https://www.younify.tv/product/developer-sdk/),
@@ -72,7 +72,7 @@ streaming flag or placeholder UI can make an unverified provider appear enabled.
 
 ## Draft provider enquiry (not sent)
 
-PLOT is a movie and TV journal with web and Expo 57 / React Native 0.86.3 apps.
+Plot is a movie and TV journal with web and Expo 57 / React Native 0.86.3 apps.
 We are evaluating Younify Connect for incoming watch history, including individual
 episodes and rewatches, for Australian customers. Pricing is US$3/month or US$25/year.
 

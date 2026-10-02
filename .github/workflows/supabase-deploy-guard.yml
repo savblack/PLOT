@@ -36,6 +36,15 @@ name: Supabase deploy guard
 # visible through the integration's own verdict — which is why a `failure` there
 # alarms even when every migration is applied.
 #
+# The alarm stands itself down. A failure opens an issue; a later run that reads
+# the migrations back out of production closes it. Without that, a transient
+# bundling failure leaves an issue asserting "production is behind main" long
+# after a later deploy fixed it, and because a new failure comments on the open
+# issue rather than opening its own, a real outage then arrives looking like more
+# noise on something already learned to be stale. This happened on 2026-10-02:
+# #1136 sat open while the next two deploys went green. The stand-down reads
+# `schema_migrations`, never a green check, for the reason given above.
+#
 # It is deliberately an alarm and NOT a merge gate: the integration only runs
 # *after* the push, and on pull requests its check is `skipped` ("creating a new
 # preview branch per PR is disabled"), so there is no pre-merge signal to block
@@ -338,7 +347,9 @@ jobs:
               '' \
               "> ${DETAIL:-(no detail)}" \
               '' \
-              'Production is behind main, and every later merge stays behind until this clears.' \
+              'Production was behind main when this ran, and stays behind for every later' \
+              'merge until a deploy succeeds. The guard closes this issue once it reads the' \
+              'migrations back out of production, so an open issue means it has not yet.' \
               '' \
               '```' \
               'npx supabase migration list --db-url "postgresql://postgres:<url-encoded prod password>@db.mkegtssedjyqldysvzga.supabase.co:5432/postgres"' \
@@ -361,3 +372,35 @@ jobs:
               --label "$label" \
               --body "$body"
           fi
+
+      # Gated on `applied`, not on the job passing. `decide` also exits 0 when the
+      # integration says success and the database could not be reached, and closing
+      # an alarm on that would discard it on exactly the hearsay the guard refuses
+      # to raise one from. Only the database closes this.
+      - name: Stand the alarm down once production provably has the commit
+        if: success() && steps.applied.outputs.state == 'applied'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          label='supabase-deploy-failed'
+          existing=$(gh issue list --state open --label "$label" --limit 1 --json number --jq '.[0].number // ""')
+          [ -n "$existing" ] || exit 0
+
+          body=$(
+            printf '%s\n' \
+              "Recovered. Production has the migrations for [\`${SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$SHA)," \
+              'read back out of `supabase_migrations.schema_migrations` rather than taken from a' \
+              'green check.' \
+              '' \
+              'Closing so the next failure opens its own issue instead of commenting here. An' \
+              'alarm that cannot stand down teaches people to ignore it.' \
+              '' \
+              "Stood down by [Supabase deploy guard]($RUN_URL)."
+          )
+
+          gh issue comment "$existing" --body "$body"
+          gh issue close "$existing"

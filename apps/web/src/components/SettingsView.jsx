@@ -43,14 +43,19 @@ import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
+import SettingsThemeRows from './SettingsThemeRows.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
+import PremiumAlertsSettings from './PremiumAlertsSettings.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 import { WatchTogetherSettings } from './WatchTogetherParts.jsx';
+import WatchlistVisibilitySetting from './WatchlistVisibilitySetting.jsx';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -93,12 +98,12 @@ function RegionPicker({ current, onSave, onClose }) {
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        <SheetHeader title="Region" onClose={onClose} />
+        <SheetHeader title={SETTINGS_VIEW.page.regionLabel} onClose={onClose} />
         <div style={{ padding: '1rem', overflow: 'auto', flex: 1 }}>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
-            Used to show content and streaming services available in your region.
+            {SETTINGS_VIEW.region.intro}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
             {REGIONS.map(r => (
               <button
                 key={r.code}
@@ -120,15 +125,16 @@ function RegionPicker({ current, onSave, onClose }) {
               </button>
             ))}
           </div>
+        </div>
+        <div className="settings-picker-footer">
           <button
-            className="btn btn-primary"
-            style={{ width: '100%' }}
+            className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={saving || chosen === current}
             aria-busy={saving}
             aria-label={saving ? SETTINGS_VIEW.region.savingRegion : SETTINGS_VIEW.region.saveRegion}
           >
-            {saving ? <Spinner size="button" ariaHidden /> : SETTINGS_VIEW.region.saveRegionLabel}
+            {saving ? <Spinner size="button" ariaHidden /> : COMMON.save}
           </button>
         </div>
       </div>
@@ -207,7 +213,7 @@ function ClearWatchlistModal({ savedCount, watchingCount, customLists = [], onCl
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        <SheetHeader title="Clear Lists" onClose={onClose} />
+        <SheetHeader title={SETTINGS_VIEW.dangerZone.clearListsLabel} onClose={onClose} />
         <div style={{ padding: '1rem 1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 0.25rem' }}>
             Select which lists to clear. This can't be undone.
@@ -301,7 +307,7 @@ function TimezonePicker({ current, onSave, onClose }) {
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        <SheetHeader title="Timezone" onClose={onClose} />
+        <SheetHeader title={SETTINGS_VIEW.page.timezoneLabel} onClose={onClose} />
 
         <div style={{ padding: '0.75rem 1rem 0', position: 'relative' }}>
           <input
@@ -316,7 +322,7 @@ function TimezonePicker({ current, onSave, onClose }) {
               color: 'var(--text-primary)',
               outline: 'none',
             }}
-            placeholder="Search timezones…"
+            placeholder={SETTINGS_VIEW.timezone.searchPlaceholder}
             value={query}
             onChange={e => setQuery(e.target.value)}
             autoFocus
@@ -352,7 +358,7 @@ function TimezonePicker({ current, onSave, onClose }) {
               }}
               onClick={() => setChosen(deviceTz)}
             >
-              Use device timezone · {fmtTz(deviceTz)}
+              {SETTINGS_VIEW.timezone.useDevice(fmtTz(deviceTz))}
             </button>
           )}
 
@@ -378,10 +384,9 @@ function TimezonePicker({ current, onSave, onClose }) {
           ))}
         </div>
 
-        <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid var(--border)' }}>
+        <div className="settings-picker-footer">
           <button
-            className="btn btn-primary"
-            style={{ width: '100%' }}
+            className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={!chosen || saving}
             aria-busy={saving}
@@ -524,7 +529,7 @@ function GenrePicker({ selected, onSave, onClose }) {
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
-          <SheetHeader title="Genres" onClose={onClose} />
+          <SheetHeader title={SETTINGS_VIEW.integrations.genresLabel} onClose={onClose} />
         </div>
         {/* Keyed off `loading`, not `allGenres.length` — an empty list used to
             be indistinguishable from "still fetching", so a failed load left
@@ -997,7 +1002,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
-          <SheetHeader title="Send feedback" onClose={onClose} />
+          <SheetHeader title={SETTINGS_VIEW.feedback.panelTitle} onClose={onClose} />
         </div>
 
         {status === 'done' ? (
@@ -1130,7 +1135,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
    SettingsView
 ═══════════════════════════════════════ */
 export default function SettingsView() {
-  const { profile, user, theme, setTheme, refreshProfile, watchlist, watching, reminders, customLists } = useApp();
+  const { profile, user, themeMode, themeFamily, setThemeMode, setThemeFamily, refreshProfile, watchlist, watching, reminders, customLists } = useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = SETTINGS_SECTIONS.some(item => item.id === searchParams.get('section')) ? searchParams.get('section') : 'account';
@@ -1142,6 +1147,7 @@ export default function SettingsView() {
   const trakt = useTraktSync(user?.id);
   const simkl = useSimklSync(user?.id);
   const premium = usePremium(profile);
+  const [themeUpgrade, setThemeUpgrade] = useState(null); // Premium family a Free viewer tapped
   const { events: calEvents, loading: calLoading } = useCalendar(
     watchlist?.items ?? [],
     watching?.items ?? [],
@@ -1830,28 +1836,18 @@ export default function SettingsView() {
         </div>
 
         {/* Theme */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            </div>
-            <span className="settings-row-label">Appearance</span>
-          </div>
-          <div className="settings-theme-tabs" role="tablist" aria-label="Appearance options">
-            {['light','dark','system'].map(t => (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={theme === t}
-                className={`settings-theme-tab${theme === t ? ' is-active' : ''}`}
-                onClick={() => setTheme(t)}
-              >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <SettingsThemeRows
+          mode={themeMode}
+          family={themeFamily}
+          setMode={setThemeMode}
+          setFamily={setThemeFamily}
+          isPremium={isPremiumProfile(profile)}
+          onLocked={(id) => setThemeUpgrade(id)}
+          onPreview={() => navigate('/settings/themes')}
+          region={profile?.region}
+          premiumBadge={<PremiumBadge />}
+        />
+        {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
 
       </div>
       <div className="settings-group"><div className="settings-group-title">{SETTINGS_VIEW.page.emailPreferences}</div>
@@ -1906,6 +1902,7 @@ export default function SettingsView() {
         </div>
 
       </div>
+      <PremiumAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
         </>}
         {activeSection === 'connections' && <>
       <TrackingSettings userId={user?.id} connect={trakt.connect} connectPlex={sync.startPlexAuth} plexPolling={sync.polling} connectionError={trakt.error || sync.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : sync.disconnect()} />
@@ -2106,8 +2103,8 @@ export default function SettingsView() {
             {!premium.isPremium ? (
               <>
                 <SettingsTextAction onClick={() => showConfirm({
-                  title: SETTINGS_VIEW.billing.calendarComingSoon,
-                  message: SETTINGS_VIEW.billing.calendarComingSoonMessage,
+                  title: SETTINGS_VIEW.calendarFeed.needsPremium,
+                  message: SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
                   confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
                   onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
                 })}>
@@ -2191,6 +2188,11 @@ export default function SettingsView() {
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsSwitch label={SETTINGS_VIEW.page.privacyLabel} checked={isPublic} disabled={savingVisibility} onChange={handleTogglePublic} />
           </div>
+        </div>
+
+        {/* Who can see Want to Watch: its own setting, separate from the profile. */}
+        <div className="settings-row" style={{ cursor: 'default', display: 'block' }}>
+          <WatchlistVisibilitySetting />
         </div>
 
         {/* Shareable link — works for private profiles too (logged-in visitors

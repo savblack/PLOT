@@ -16,6 +16,9 @@ import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { SettingsSwitch } from './SettingsPage.jsx';
+import SmartListDialog from './SmartListDialog.jsx';
+import { smartListRulesFromPicker } from '@plot/core/smartLists.js';
+import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { MEDIA } from '../copy/media.js';
 import { favoriteWords } from '../utils/spelling.js';
 import './TonightView.css';
@@ -38,6 +41,11 @@ const IconMovie = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2" /><path d="m3 6 3-3M9 6l3-3M15 6l3-3M3 10h18" /></svg>
 );
 const IconTv = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="13" rx="2" /><path d="M8 21h8M12 18v3" /></svg>;
+
+// Two arrows round: a list that keeps looking (A1).
+const IconKeepFinding = () => (
+  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9" /><path d="M20 4v5h-5" /><path d="M20 12a8 8 0 0 1-14 5.3L4 15" /><path d="M4 20v-5h5" /></svg>
+);
 
 const IconLock = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>;
 const IconClose = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>;
@@ -120,7 +128,10 @@ function UnlockDialog({ picker, navigate }) {
         {T.gate.benefits.map(b => (
           <li key={b.title}>
             <IconTick />
-            <span><span className="tonight-unlock-benefit-title">{b.title}</span><span className="tonight-unlock-benefit-body">{b.body}</span></span>
+            <span>
+              <span className="tonight-unlock-benefit-title">{b.title}{b.isNew && <span className="tonight-unlock-new">{T.gate.newTag}</span>}</span>
+              <span className="tonight-unlock-benefit-body">{b.body}</span>
+            </span>
           </li>
         ))}
       </ul>
@@ -532,7 +543,7 @@ function PickCard({ item, index, onOpen, reveal, actions }) {
 /* `reveal`: straight after a pick, the "Finding…" sentence dissolves into the
    Top pick in the same spot, the heading and Save are simply there, and the
    cards dissolve in one by one. Reopened or restored picks skip this. */
-function Results({ picker, onOpen, reveal, actions }) {
+function Results({ picker, onOpen, reveal, actions, onKeepFinding }) {
   if (picker.phase !== 'results') {
     return (
       <div className="empty-state tonight-empty">
@@ -546,10 +557,19 @@ function Results({ picker, onOpen, reveal, actions }) {
     <section className="tonight-results" aria-live="polite">
       <div className="tonight-results-head">
         <h2 className="tonight-results-title">{T.heading[pickerTimeOfDay()]}</h2>
-        <button type="button" className={`btn btn-secondary btn-sm tonight-save${picker.isSaved ? ' saved' : ''}`}
-          aria-pressed={picker.isSaved} aria-label={picker.isSaved ? T.savedLabel : T.saveLabel} onClick={picker.toggleSaveSearch}>
-          <IconPin filled={picker.isSaved} />{picker.isSaved ? T.saved : T.save}
-        </button>
+        <div className="tonight-results-actions">
+          {/* A1: save the answers as a smart list, beside Save search (the snapshot). */}
+          {onKeepFinding && <span className="tonight-keep-hint">{T.createSmartListHint}</span>}
+          <button type="button" className={`btn btn-secondary btn-sm tonight-save${picker.isSaved ? ' saved' : ''}`}
+            aria-pressed={picker.isSaved} aria-label={picker.isSaved ? T.savedLabel : T.saveLabel} onClick={picker.toggleSaveSearch}>
+            <IconPin filled={picker.isSaved} />{picker.isSaved ? T.saved : T.save}
+          </button>
+          {onKeepFinding && (
+            <button type="button" className="btn btn-primary btn-sm tonight-keep" onClick={onKeepFinding}>
+              <IconKeepFinding />{T.createSmartList}
+            </button>
+          )}
+        </div>
       </div>
       <div className="tonight-results-list">
         {top && (
@@ -570,7 +590,13 @@ function Results({ picker, onOpen, reveal, actions }) {
 
 /* Presentational: every piece of state arrives as a prop so Storybook can
    render each state without an auth session or network. */
-export function TonightPage({ premium, picker, onOpen, navigate, actions }) {
+/**
+ * `smartList`: what "Create smart list" needs (the viewer's lists, how to
+ * create one, and in Storybook a genre catalog and a count). Absent, the
+ * button is not shown.
+ */
+export function TonightPage({ premium, picker, onOpen, navigate, actions, smartList = null }) {
+  const [keepFinding, setKeepFinding] = useState(false);
   const locked = picker.phase === 'locked';
   const inResults = picker.phase === 'results' || picker.phase === 'empty' || picker.phase === 'error';
   const spinning = picker.phase === 'spinning';
@@ -594,7 +620,8 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions }) {
               <UnlockDialog picker={picker} navigate={navigate} />
             </div>
           ) : spinning ? <Finding picker={picker} />
-            : inResults ? <Results picker={picker} onOpen={onOpen} reveal={reveal} actions={actions} />
+            : inResults ? <Results picker={picker} onOpen={onOpen} reveal={reveal} actions={actions}
+              onKeepFinding={smartList && premium && picker.phase === 'results' ? () => setKeepFinding(true) : null} />
             : (
               <>
                 <Question picker={picker} />
@@ -605,6 +632,32 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions }) {
             )}
         </div>
       </div>
+
+      {keepFinding && smartList && (
+        <SmartListDialog
+          origin="picker"
+          initialRules={smartListRulesFromPicker(picker.options, { hasServices: picker.hasServices })}
+          lists={smartList.lists}
+          onConfirm={async (name, rules) => {
+            // Undo in the toast deletes the list and comes back here.
+            let path = null;
+            const created = await smartList.create(name, rules, {
+              undo: true,
+              onUndone: () => { if (path && window.location.pathname === path) navigate?.(-1); },
+            });
+            if (created) {
+              setKeepFinding(false);
+              path = collectionPath(customListKey(created.id));
+              navigate?.(path);
+            }
+            return created;
+          }}
+          onClose={() => setKeepFinding(false)}
+          onPremium={() => setKeepFinding(false)}
+          catalog={smartList.catalog ?? null}
+          preview={smartList.preview ?? null}
+        />
+      )}
 
       {/* Phone only: the sentence and actions stay in reach above the tab bar. */}
       {!spinning && !locked && (
@@ -632,7 +685,7 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions }) {
 const PICKER_STORAGE = { getItem: (k) => readStorage(k), setItem: writeStorage, removeItem: removeStorage };
 
 export default function TonightView() {
-  const { user, profile, watchlist, favorites, openPanel } = useApp();
+  const { user, profile, watchlist, favorites, customLists, openPanel } = useApp();
   const navigate = useNavigate();
   const premium = isPremiumProfile(profile);
 
@@ -653,6 +706,10 @@ export default function TonightView() {
       onOpen={(item) => { picker.openPick(item); openPanel(item.id, item.media_type); }}
       navigate={navigate}
       actions={{ watchlist, favorites, favWords: favoriteWords(profile?.region) }}
+      smartList={customLists?.createSmartList ? {
+        lists: [...(customLists.lists || []), ...(customLists.smartLists || [])],
+        create: customLists.createSmartList,
+      } : null}
     />
   );
 }

@@ -2,6 +2,11 @@
 // a filters panel, and a sentence that fills in as the viewer answers. No
 // claims about playback or tailored recommendations: results are "the plot
 // lines you asked for", i.e. the viewer's own answers.
+
+// The shortlist's smart list button. Also the smart lists builder's Create
+// (copy/smartLists.js reads it from here, so the two never drift).
+const CREATE_SMART_LIST = 'Create smart list';
+
 export const TONIGHT_PICKER = {
   // Title comes from the nav label (Pick for Me); this is the page subline.
   subtitle: 'Less deciding. More watching.',
@@ -121,6 +126,11 @@ export const TONIGHT_PICKER = {
     fromWatchlist: 'from my watchlist',
   },
 
+  // Smart lists from the shortlist (A1): saves the answers, not the picks.
+  // Save search keeps the snapshot; this keeps looking.
+  createSmartList: CREATE_SMART_LIST,
+  createSmartListHint: 'Save the answers. The list finds new matches.',
+
   yourRequest: 'Your request',
   questionsTitle: 'Questions',
   surpriseMe: 'Surprise me',
@@ -131,7 +141,7 @@ export const TONIGHT_PICKER = {
   // Time of day in the viewer's local time: 3:30pm to midnight is night.
   heading: { night: 'Tonight, sorted', day: 'Your shortlist' },
   // Save the picks for a request, listed under the questions.
-  save: 'Save',
+  save: 'Save search',
   saved: 'Saved',
   saveLabel: 'Save these picks',
   savedLabel: 'Saved. Tap to remove from saved searches',
@@ -167,8 +177,11 @@ export const TONIGHT_PICKER = {
     benefits: [
       { title: 'A shortlist, every time you ask', body: 'Answer a few quick questions and get a shortlist that fits your mood.' },
       { title: 'Only what you can watch', body: 'Limit picks to your streaming services, your watchlist, or both.' },
+      // A5 (smart lists canvas): the one new line. `isNew` draws the New tag.
+      { title: 'Create smart lists that keep finding matches', body: 'Save your answers as a smart list. New matches turn up on their own.', isNew: true },
       { title: 'Can’t decide? Surprise me', body: 'One tap, one pick. Regenerate if it isn’t the one.' },
     ],
+    newTag: 'New',
     close: 'Close',
     locked: 'Premium feature',
   },

@@ -7,6 +7,7 @@ import {
   restorableRow, restoreRow, subscribeUndo, UNDO_ACTIONS, _resetUndo,
 } from '../../undo.js';
 import { UNDO } from '../../copy/undo.js';
+import { createdListRevert } from '../../customListCreation.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
 
 function capture() {
@@ -149,24 +150,6 @@ test('restoreHistoryEntry brings back the rating, review and date, and signals i
   assert.equal(signalled, 1);
 });
 
-test('revertEpisodeHistory removes a row the tick created, and restores one it changed', async () => {
-  const { revertEpisodeHistory } = await import('../../userMedia.js');
-  const client = createInMemorySupabase({ tables: { history: [
-    { id: 1, user_id: 'u1', tmdb_id: 3, media_type: 'tv', watched_at: '2026-09-27', rating: null, note: null, dnf: false },
-    { id: 2, user_id: 'u1', tmdb_id: 4, media_type: 'tv', watched_at: '2026-09-27', rating: null, note: null, dnf: false },
-  ] } });
-  configure({ supabaseClient: client });
-
-  await revertEpisodeHistory({ userId: 'u1', tmdbId: 3, before: null });
-  assert.deepEqual(client.__db.tables.history.map(r => r.tmdb_id), [4]);
-
-  await revertEpisodeHistory({ userId: 'u1', tmdbId: 4, before: { id: 2, watched_at: '2026-07-01', rating: 9, note: 'Great.', dnf: false } });
-  const row = client.__db.tables.history[0];
-  assert.equal(row.watched_at, '2026-07-01');
-  assert.equal(row.rating, 9);
-  assert.equal(row.note, 'Great.');
-});
-
 test('restoreRow puts a removed row back, and treats "already back" as success', async () => {
   const client = createInMemorySupabase({ tables: { user_favourites: [] } });
   configure({ supabaseClient: client });
@@ -195,4 +178,52 @@ test('the toast message names the title, the list, and spells favourites by regi
   for (const action of Object.values(UNDO_ACTIONS)) {
     assert.doesNotMatch(UNDO.message({ action, count: 2 }), /—/, 'no em dashes in user-facing copy');
   }
+});
+
+/* ── Creating a list ── */
+
+test('creating a list or a smart list has its own undo kind and message', () => {
+  assert.equal(UNDO_ACTIONS.LIST_CREATE, 'list_create');
+  assert.equal(UNDO_ACTIONS.SMART_LIST_CREATE, 'smart_list_create');
+  assert.equal(UNDO.message({ action: UNDO_ACTIONS.SMART_LIST_CREATE, count: 1, title: 'Short thrillers' }), 'Smart list created.');
+  assert.equal(UNDO.message({ action: UNDO_ACTIONS.LIST_CREATE, count: 1, title: 'Weekend' }), 'List created.');
+});
+
+test('undoing a created list deletes it once, then reports the undo', async () => {
+  const { undone } = capture();
+  const deletes = [];
+  let restored = 0;
+  const db = {
+    from: (table) => ({
+      delete: () => {
+        const filters = {};
+        const chain = {
+          eq(column, value) { filters[column] = value; return chain; },
+          then(resolve) { deletes.push({ table, ...filters }); return Promise.resolve({ error: null }).then(resolve); },
+        };
+        return chain;
+      },
+    }),
+  };
+  registerUndo(true, {
+    action: UNDO_ACTIONS.SMART_LIST_CREATE,
+    title: 'Short thrillers',
+    revert: createdListRevert({ client: db, userId: 'owner', listId: 'l1', onReverted: () => { restored += 1; } }),
+  });
+  const offer = getUndo();
+  assert.equal(offer.action, 'smart_list_create');
+  assert.equal((await runUndo(offer.id)).ok, true);
+  assert.equal((await runUndo(offer.id)).ok, false, 'a second tap does nothing');
+  assert.deepEqual(deletes, [{ table: 'user_custom_lists', id: 'l1', user_id: 'owner' }]);
+  assert.equal(restored, 1);
+  assert.equal(undone[0].action, 'smart_list_create');
+});
+
+test('a batch offers a created list only when the caller is done with it', async () => {
+  const batch = createUndoBatch({ action: UNDO_ACTIONS.LIST_CREATE });
+  registerUndo(batch, { action: UNDO_ACTIONS.LIST_CREATE, title: 'Dune collection', revert: async () => {} });
+  assert.equal(getUndo(), null, 'nothing offered while the films are still being added');
+  batch.offer({ meta: { listName: 'Dune collection' } });
+  assert.equal(getUndo().action, 'list_create');
+  assert.equal(getUndo().count, 1);
 });

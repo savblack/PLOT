@@ -4,7 +4,8 @@ import { useApp } from '../hooks/useApp.js';
 import { profileUrl } from '../utils/images.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
-import CreditsGrid from '../components/TalentCredits.jsx';
+import { TalentWork } from '../components/TalentCredits.jsx';
+import { PersonFollow } from '../components/PeopleFollow.jsx';
 import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';
 import './TalentPage.css';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
@@ -67,15 +68,13 @@ function TalentPageContent({ personId }) {
           <div className="talent-kicker">{knownFor}</div>
           <h1>{person.name}</h1>
           {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
+          <PersonFollow person={person} />
         </div>
       </header>
       {person.biography && (
         <p className="talent-biography">{biographyPreview}</p>
       )}
-      <section className="talent-section">
-        <CreditsGrid credits={actingCredits} openPanel={openPanel} />
-        {!actingCredits.length && <p className="talent-muted">No screen credits available.</p>}
-      </section>
+      <TalentWork credits={credits} actingCredits={actingCredits} openPanel={openPanel} emptyText="No screen credits available." />
     </main>
   );
 }

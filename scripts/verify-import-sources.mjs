@@ -103,7 +103,7 @@ try {
   console.log('PASS cross-account isolation for the complete source matrix');
   const after = await summaries();
   for (const row of before) assert.deepEqual(after.find(saved => saved.tmdb_id === row.tmdb_id && saved.media_type === row.media_type), row);
-  console.log('PASS existing PLOT summary dates, ratings and notes stay unchanged across all sources');
+  console.log('PASS existing Plot summary dates, ratings and notes stay unchanged across all sources');
 } finally {
   owner.auth.stopAutoRefresh();
   other.auth.stopAutoRefresh();

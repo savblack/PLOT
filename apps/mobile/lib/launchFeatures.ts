@@ -2,12 +2,12 @@
  * Launch kill-switches — the mobile mirror of apps/web/src/launchFeatures.js.
  *
  * Keep the two files in agreement: a feature held back on web should be held
- * back here too, or the apps disagree about what PLOT currently offers. The
+ * back here too, or the apps disagree about what Plot currently offers. The
  * values (not just the names) are what matter — see the web file for the
  * reasoning behind each.
  */
 
-// Visible in Settings; usable with PLOT Premium. Server-side enforcement lives
+// Visible in Settings; usable with Plot Premium. Server-side enforcement lives
 // in the media-sync / trakt-sync edge functions (403 premium_required on sync).
 // On so a Premium member can connect Plex and Trakt. Free accounts stay on the
 // upgrade path in Settings. Flip back to false to hide the connect rows.

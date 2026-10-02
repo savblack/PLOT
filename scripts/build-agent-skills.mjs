@@ -8,7 +8,7 @@
  * SHA-256 of the file as served. The index is generated from all of them.
  *
  * The digest is the reason this is a build step rather than a hand-written
- * file. It is how a consumer checks it received the skill PLOT published, so a
+ * file. It is how a consumer checks it received the skill Plot published, so a
  * digest that no longer matches its SKILL.md is worse than no digest at all:
  * a careful client rejects the skill, and a careless one is no better off than
  * if we had never published it. Editing a SKILL.md by hand and forgetting the

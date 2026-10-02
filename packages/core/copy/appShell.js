@@ -20,7 +20,9 @@ export const APP_SHELL = {
   // Marks a Premium nav destination for Free viewers.
   premium: 'Premium',
   viewYourProfile: 'View your profile',
-  helpBuild: 'Help build PLOT',
+  // Accessible name of the desktop sidebar's account menu (the profile row opens it).
+  accountMenu: 'Account',
+  helpBuild: 'Help build Plot',
   giveFeedback: 'Give feedback',
   opensNewTab: 'opens in a new tab',
 };

@@ -1,0 +1,41 @@
+/* Same place and shape as the undo toast (UndoToast.css): bottom-right,
+   above the phone filter bar where there is one. The one difference is the pink action. */
+.streak-toast {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px) + 1rem);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(calc(100vw - 2rem), 420px);
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  animation: streak-toast-in 180ms var(--ease) both;
+}
+.streak-toast-message { flex: 1; min-width: 0; font-size: 0.85rem; line-height: 1.4; color: var(--text-primary); }
+.streak-toast-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.streak-toast-close:hover { background: var(--surface-sunken); color: var(--text-primary); }
+@keyframes streak-toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .streak-toast { animation: none; } }
+@media (max-width: 640px) {
+  .streak-toast { left: 1rem; right: 1rem; max-width: none; }
+}
+@media (min-width: 1024px) {
+  .streak-toast { right: 1.25rem; bottom: 1.25rem; }
+}

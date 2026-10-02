@@ -61,7 +61,7 @@
   object-fit: cover; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--accent-secondary-fill);
-  color: var(--on-accent-fill);
+  color: var(--on-accent-secondary-fill);
   font-size: 0.8rem; font-weight: 700;
 }
 .to-avatar--lg { width: 44px; height: 44px; font-size: 1rem; }
@@ -87,7 +87,22 @@
 }
 .to-empty, .to-caption { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
 
-.to-loading { display: flex; justify-content: center; padding: 3rem 0; }
+.to-skeleton { display: flex; flex-direction: column; gap: 0.9rem; }
+.to-skel { position: relative; overflow: hidden; display: block; border-radius: 6px; background: var(--surface-sunken); }
+.to-skel::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--surface) 68%, transparent), transparent);
+  animation: to-shimmer 1.7s infinite;
+}
+.to-skel--kicker { width: 90px; height: 10px; }
+.to-skel--note { width: 60%; max-width: 260px; height: 12px; }
+.to-skel-venn { display: flex; justify-content: center; margin-top: 0.5rem; }
+.to-skel--circle { width: 130px; height: 130px; border-radius: 50%; }
+.to-skel--circle + .to-skel--circle { margin-left: -40px; }
+.to-skel--title { width: 80px; height: 16px; }
+.to-skel--bar { width: 100%; height: 8px; border-radius: var(--radius-pill); }
+@keyframes to-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .to-skel::after { animation: none; } }
 
 .to-state { align-items: flex-start; }
 /* Compact buttons on this page, whatever touch-target minimums apply globally. */
@@ -168,7 +183,7 @@
 .to-watchlist {
   display: flex; align-items: center; gap: 0.85rem;
   padding: 0.9rem 1rem; border-radius: var(--radius-lg);
-  background: var(--accent-secondary-fill); color: var(--on-accent-fill); text-decoration: none;
+  background: var(--accent-secondary-fill); color: var(--on-accent-secondary-fill); text-decoration: none;
 }
 .to-watchlist:hover { filter: brightness(0.97); }
 .to-watchlist-icon {

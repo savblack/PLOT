@@ -1,6 +1,6 @@
 # Marketing copy worker
 
-This is the production copy contract for PLOT marketing. The production runner
+This is the production copy contract for Plot marketing. The production runner
 is the **Claude Code CLI** (`marketing-weekly-batch.yml` runs
 `--copy-runner=claude`). Codex is the local/manual default and still fully
 supported; other runners are fallback/debug only. This contract is
@@ -36,7 +36,7 @@ model-agnostic; nothing here depends on which CLI is executing it.
   structure and post-type guidance.
 - Use only the facts supplied in the brief for social copy.
 - The website article can use the brief's research pack plus live web research.
-- Always paraphrase in PLOT's voice.
+- Always paraphrase in Plot's voice.
 - Never quote reviews verbatim.
 - Never copy Wikipedia or synopsis text.
 - List every outside source you actually used in `sources`.

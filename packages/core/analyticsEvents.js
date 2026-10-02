@@ -56,6 +56,12 @@ export const EVENTS = Object.freeze({
   TITLE_SHARED: 'title_shared',
   LIST_SHARED: 'list_shared',
   PROFILE_SHARED: 'profile_shared',
+  // Share cards (docs/design/share-cards.md). `opened` carries { source, card }
+  // so the dashboards can say which path earns the posts; `sent` carries
+  // { card, format, target } where target is copy | download | x | threads |
+  // instagram on web and share | save on mobile.
+  SHARE_CARD_OPENED: 'share_card_opened',
+  SHARE_CARD_SENT: 'share_card_sent',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_STARTED: 'premium_checkout_started',
@@ -67,7 +73,7 @@ export const EVENTS = Object.freeze({
   // and a stray call site stays a loud reference (see ACTIVATED).
   PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
-  // The Tonight picker, PLOT's "what should I watch" surface. Fired from
+  // The Tonight picker, Plot's "what should I watch" surface. Fired from
   // useTonightPicker via the onTonightPicker seam. A draw with result_count 0
   // is an empty result; a failed draw is load_failed (resource tonight_picks).
   // "Accepted a pick" is tonight_pick_opened, or watchlist_saved with
@@ -76,9 +82,23 @@ export const EVENTS = Object.freeze({
   TONIGHT_PICK_OPENED: 'tonight_pick_opened',
   TONIGHT_SEARCH_SAVED: 'tonight_search_saved',
   TONIGHT_SAVED_SEARCH_OPENED: 'tonight_saved_search_opened',
+  // Watch together (Premium, one of you needs it). Fired from
+  // useWatchTogether via the onWatchTogether seam, except link_shared, which
+  // the share button reports through reportWatchTogether. Props are shapes,
+  // never who: no user ids, usernames or link keys.
+  WATCH_TOGETHER_INVITE_SENT: 'watch_together_invite_sent',
+  WATCH_TOGETHER_REQUEST_ACCEPTED: 'watch_together_request_accepted',
+  WATCH_TOGETHER_LINK_SHARED: 'watch_together_link_shared',
+  WATCH_TOGETHER_LINK_ACCEPTED: 'watch_together_link_accepted',
+  WATCH_TOGETHER_SESSION_STARTED: 'watch_together_session_started',
+  WATCH_TOGETHER_MATCH: 'watch_together_match',
+  // Collaborative lists (Premium host, friends join free), on the same seam:
+  // an invite link shared or copied, and someone joining a list from one.
+  COLLAB_LIST_INVITE_SHARED: 'collab_list_invite_shared',
+  COLLAB_LIST_JOINED: 'collab_list_joined',
   WATCH_LINK_CLICKED: 'watch_link_clicked',
   TIP_JAR_CLICKED: 'tip_jar_clicked',
-  // PLOT's second paid-conversion type alongside premium_converted — a Ko-fi
+  // Plot's second paid-conversion type alongside premium_converted — a Ko-fi
   // tip (recognition-only, see kofi_supporters/is_supporter; grants no
   // entitlement). Fired server-side from supabase/functions/kofi-webhook via
   // PostHog's HTTP capture API, not posthog-js: Ko-fi hosts its own checkout,

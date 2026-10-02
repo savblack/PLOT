@@ -1,5 +1,5 @@
 /**
- * title-page — PLOT's public, indexable title pages at theplot.tv/movie|tv/<slug>.
+ * title-page — Plot's public, indexable title pages at theplot.tv/movie|tv/<slug>.
  *
  * The "where to watch X" SEO surface (think JustWatch/Reelgood): a server-rendered
  * page per movie / show with regional streaming availability, cast, related titles,
@@ -145,8 +145,15 @@ h1.title{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,2.9rem);font-we
 .card{background:var(--surface);border-radius:16px;padding:22px 26px;margin-top:28px;}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;}
 .card h2,.section h2{font-family:var(--display);font-size:1.3rem;font-weight:700;letter-spacing:-.01em;}
-.region{display:inline-flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--rule);color:var(--ink);font-family:inherit;font-size:.81rem;font-weight:600;padding:9px 14px;border-radius:999px;white-space:nowrap;}
-.region svg{width:11px;height:11px;display:block;}
+.region{position:relative;display:inline-block;}
+.region>summary{display:inline-flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--rule);color:var(--ink);font-family:inherit;font-size:.81rem;font-weight:600;padding:9px 14px;border-radius:999px;white-space:nowrap;cursor:pointer;list-style:none;}
+.region>summary::-webkit-details-marker{display:none;}
+.region[open]>summary svg{transform:rotate(180deg);}
+.region-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;background:var(--bg);border:1px solid var(--rule);border-radius:12px;padding:6px;min-width:190px;max-height:260px;overflow:auto;box-shadow:0 10px 24px rgba(41,41,36,.12);}
+.region-menu a{display:block;padding:8px 12px;border-radius:8px;font-size:.84rem;text-decoration:none;color:var(--ink);}
+.region-menu a:hover{background:var(--surface);}
+.region-menu a[aria-current]{font-weight:700;background:var(--surface);}
+.region svg{width:11px;height:11px;display:block;transition:transform .2s var(--ease);}
 .watch{display:flex;flex-direction:column;gap:14px;margin-top:18px;}
 .watch-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
 .watch-label{width:96px;flex-shrink:0;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);}
@@ -308,7 +315,7 @@ type SitemapTitle = {
   name?: string;
 };
 
-// Seed the sitemap from PLOT's tracked catalogue plus TMDB's current discovery
+// Seed the sitemap from Plot's tracked catalogue plus TMDB's current discovery
 // feeds. Fetching the live feeds here means newly popular and newly released
 // titles become crawlable within the sitemap's one-day cache window, without
 // hardcoding opaque TMDB IDs or creating thin duplicate pages.
@@ -434,7 +441,7 @@ Deno.serve(async (req) => {
   const poster = img(data.poster_path, 'w342');
   const backdrop = img(data.backdrop_path, 'w1280');
   const posterImage = img(data.poster_path, 'w780') || '';
-  // Link-preview image. This was the branded PLOT card at /api/og on the app
+  // Link-preview image. This was the branded Plot card at /api/og on the app
   // domain — a Vercel path that has not existed since the move to Cloudflare,
   // so it resolved to the SPA shell as text/html and every title page unfurled
   // with no image. Its Cloudflare replacement (the plot-og Worker) cannot
@@ -463,7 +470,17 @@ Deno.serve(async (req) => {
     inCinemas = days >= 0 && days <= 90 && streaming.length === 0 && rentBuy.length === 0;
   }
   const saveHref = `${APP}/save?media_type=${type}&tmdb_id=${id}&src=title_page`;
-  const regionPill = `<span class="region">${esc(regionName(region))}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></span>`;
+  // A real control now that the Pages proxy forwards ?r= (it used to build the
+  // region from Cloudflare geo alone, so this could only ever be a label).
+  // <details> so it works with no JavaScript; rel="nofollow" keeps a crawler out
+  // of eighteen near-duplicate variants of every title, and each one canonicalises
+  // back to the clean URL anyway.
+  const regionPill = `<details class="region">
+    <summary>${esc(regionName(region))}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+    <div class="region-menu">${Object.keys(REGION_NAMES).map((code) =>
+      `<a href="${esc(canonicalUrl)}?r=${code}" rel="nofollow"${code === region ? ' aria-current="true"' : ''}>${esc(regionName(code))}</a>`
+    ).join('')}</div>
+  </details>`;
 
   // The card answers the question the page was found for, so it comes first and
   // names the region in its own heading. Three shapes: availability, in cinemas,

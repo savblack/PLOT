@@ -1,4 +1,4 @@
-// Visible in Settings; usable with PLOT Premium. Server-side enforcement lives
+// Visible in Settings; usable with Plot Premium. Server-side enforcement lives
 // in the media-sync / trakt-sync edge functions (403 premium_required on sync).
 // On so a Premium member can connect Plex and Trakt. Free accounts stay on the
 // upgrade path in Settings. Flip back to false to hide the connect rows.
@@ -18,8 +18,9 @@ export const SHOW_APPLE_LOGIN = import.meta.env.VITE_SHOW_APPLE_LOGIN !== 'false
 // The plan preview is public; checkout remains closed in usePremium and stripe-billing.
 export const SHOW_PRICING_PAGE = true;
 
-// Watch together (Premium). Migrations 20260927100000 through 20260927140000
-// are live in production, and the web UI is ready, so this is on (PLO-515).
-// Flip back to false to hide /together and the related surfaces. Mobile has
-// no screen yet: apps/mobile/lib/launchFeatures.ts keeps the flag false.
+// Watch together (Premium), and the collaborative lists built on it. Their
+// migrations are live in production and the web UI is ready, so this is on
+// (PLO-515). Flip back to false to hide /together, shared lists and the related
+// surfaces. Mobile has no screen yet: apps/mobile/lib/launchFeatures.ts keeps
+// the flag false.
 export const SHOW_WATCH_TOGETHER = true;

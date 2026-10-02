@@ -18,6 +18,7 @@ import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { clampToSentences } from '@plot/core/sentences.js';
 import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
 import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -27,6 +28,15 @@ import { TYPE_ROWS } from './sideFilterRows.js';
 import { IconCalendar, IconChevronRight, IconSearch } from './navIcons.jsx';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { localDateStr } from '../utils/date.js';
+import { useHistory } from '../hooks/useHistory.js';
+import { usePremium } from '../hooks/usePremium.js';
+import { useContinueWatching, usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
+import { usePeopleFeed, usePeopleFollows } from '@plot/core/usePeopleFollows.js';
+import { feedItems } from '@plot/core/peopleFeed.js';
+import { DEFAULT_REGION } from '@plot/core/regions.js';
+import { PEOPLE } from '@plot/core/copy/people.js';
+import { ContinueCard, PeopleInvite, PeopleShelfCard } from './HomeShelves.jsx';
+import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 
 // Web-only: navigator connectivity events have no React Native equivalent.
 // State precedence and copy remain shared in core; mobile should render the
@@ -110,6 +120,8 @@ export function RailSection({ id, title, subtitle, sectionClassName = 'discover-
 
 const HOME_SECTION = {
   picks: { id: 'home-picks', label: "plot's Picks", navLabel: "Plot's Picks" },
+  continue: { id: 'home-continue', label: PEOPLE.continueWatching.title, navLabel: PEOPLE.continueWatching.title },
+  people: { id: 'home-people', label: PEOPLE.shelf.title, navLabel: PEOPLE.shelf.title },
   hot: { id: 'home-hot', label: 'Hot Right Now', navLabel: 'Hot Right Now' },
   weekly: { id: 'home-weekly', label: 'Top 20 This Week', navLabel: 'Top 20 This Week' },
   releases: { id: 'home-releases', label: 'New Releases', navLabel: 'New Releases' },
@@ -424,6 +436,8 @@ function BingeCard({ item, openPanel, watchlist }) {
 }
 
 /* ── Hero card (featured title) ── */
+// Budget for the featured synopsis; clampToSentences drops whole sentences to fit.
+const HERO_SYNOPSIS_MAX_CHARS = 200;
 function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
   const { favorites, profile } = useApp();
   const fw       = favoriteWords(profile?.region);
@@ -439,6 +453,7 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
     : archiveYear
       ? String(archiveYear)
     : (item.release_date || item.first_air_date || '').slice(0, 4);
+  const synopsis = clampToSentences(item.overview, HERO_SYNOPSIS_MAX_CHARS);
   const saved    = watchlist.isInList(item.id);
   const fav      = favorites.isFavorite(item.id);
   const openDetails = () => openPanel(item.id, type);
@@ -462,8 +477,27 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
               {year} · {type === 'tv' ? MEDIA.tvSeries : MEDIA.movie}{note ? ` · ${note}` : ''}
             </p>
           )}
+          {synopsis && <p className="discover-hero-synopsis">{synopsis}</p>}
         </div>
       </button>
+
+      {/* Real buttons, siblings of the hit area above (never nested in it).
+          Desktop single-card layout only; the card itself is the tap target
+          everywhere else. */}
+      <div className="discover-hero-actions">
+        <button type="button" className="discover-hero-action discover-hero-action-secondary" onClick={openDetails}>
+          View details
+        </button>
+        <button
+          type="button"
+          className="discover-hero-action discover-hero-action-primary"
+          onClick={() => watchlist.toggle({ ...item })}
+          disabled={watchlist.loading}
+          aria-pressed={saved}
+        >
+          {saved ? '✓ In watchlist' : '+ Watchlist'}
+        </button>
+      </div>
 
       {/* Corner action buttons. Each shows itself when its own state is
           active; the inactive one waits for hover, so an active favourite
@@ -694,8 +728,61 @@ function PlatformCharts({ id, platformList, openPanel, watchlist, typeFilters, g
   );
 }
 
+/* ── Your people (Premium) ── board R2-4b, or the 4c invite for someone who
+   follows nobody yet. Free accounts never see it. Placed after Top 20 This Week. */
+const byWatchedDesc = (a, b) => String(b.watched_at ?? '').localeCompare(String(a.watched_at ?? ''));
+
+function useYourPeopleShelf() {
+  const { user, profile } = useApp();
+  const premium = usePremium(profile);
+  const people = usePeopleFollows(premium.isPremium ? user?.id : null);
+  const history = useHistory(premium.isPremium && !people.loading && people.follows.length === 0 ? user?.id : null);
+  const today = localDateStr();
+  const ids = useMemo(() => people.follows.map(f => f.tmdb_person_id), [people.follows]);
+  const { rows } = usePeopleFeed(ids, { today, version: people.feedVersion });
+  const items = useMemo(() => feedItems(rows, { region: profile?.region || DEFAULT_REGION, today }).slice(0, 20), [rows, profile?.region, today]);
+  const logged = useMemo(() => [...history.entries].sort(byWatchedDesc), [history.entries]);
+  const followed = useMemo(() => new Set(ids), [ids]);
+  const { suggestions } = usePeopleSuggestions(logged, (type, id) => (type === 'tv' ? tmdb.getTVDetails(id) : tmdb.getMovieDetails(id)), {
+    enabled: premium.isPremium && !people.loading && people.follows.length === 0,
+    exclude: followed,
+  });
+  if (!premium.isPremium || people.loading) return { visible: false };
+  if (people.follows.length === 0) return { visible: suggestions.length > 0, invite: true, suggestions, today };
+  return { visible: true, invite: false, items, count: people.follows.length, today };
+}
+
+function YourPeopleSection({ shelf, openPanel }) {
+  const navigate = useNavigate();
+  const follow = useFollowPerson();
+  if (shelf.invite) {
+    return (
+      <section id={HOME_SECTION.people.id} className="discover-section">
+        <DiscoverSectionHeader title={HOME_SECTION.people.label} subtitle={PEOPLE.shelf.inviteSubtitle} />
+        <PeopleInvite suggestions={shelf.suggestions} isFollowing={follow.isFollowing} busyId={follow.busyId} onToggle={follow.toggle} onOpenPerson={id => navigate(`/person/${id}`)} />
+        {follow.sheet}
+      </section>
+    );
+  }
+  return (
+    <RailSection
+      id={HOME_SECTION.people.id}
+      title={HOME_SECTION.people.label}
+      subtitle={PEOPLE.shelf.subtitle(shelf.count)}
+      headerRight={<button type="button" className="discover-see-all" onClick={() => navigate('/your-people')}>{PEOPLE.shelf.seeAll}</button>}
+    >
+      {shelf.items.length === 0
+        ? <p className="discover-section-sub people-shelf-empty">{PEOPLE.shelf.empty}</p>
+        : shelf.items.map(item => (
+          <PeopleShelfCard key={item.key} item={item} today={shelf.today} onOpen={() => openPanel(item.tmdbId, item.mediaType, 'your_people')} />
+        ))}
+    </RailSection>
+  );
+}
+
 /* ── Home ── */
-function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr }) {
+function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr, continueItems = [] }) {
+  const peopleShelf = useYourPeopleShelf();
   const navigate = useNavigate();
   const { data, loading } = useDiscover();
   // Home only renders the recent rail. Loading every per-genre New Releases
@@ -721,8 +808,10 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
   const pageSections = [
     hero && genreFilters.length === 0 ? HOME_SECTION.picks : null,
+    continueItems.length > 0 ? HOME_SECTION.continue : null,
     hotRail.length > 0 ? HOME_SECTION.hot : null,
     weekly.length > 0 ? HOME_SECTION.weekly : null,
+    peopleShelf.visible ? HOME_SECTION.people : null,
     recent.length > 0 ? HOME_SECTION.releases : null,
     bingedShows.length > 0 ? HOME_SECTION.binged : null,
     cinemaMovies.length > 0 ? HOME_SECTION.cinema : null,
@@ -757,6 +846,14 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
         </section>
       )}
 
+      {continueItems.length > 0 && (
+        <RailSection id={HOME_SECTION.continue.id} title={HOME_SECTION.continue.label} subtitle={PEOPLE.continueWatching.subtitle}>
+          {continueItems.map(item => (
+            <ContinueCard key={item.tmdbId} item={item} onOpen={() => openPanel(item.tmdbId, 'tv', 'continue_watching')} />
+          ))}
+        </RailSection>
+      )}
+
       {hotRail.length > 0 && (
         <RailSection id={HOME_SECTION.hot.id} title={HOME_SECTION.hot.label} subtitle="Trending today" sectionClassName="discover-section discover-binge-section" binge>
           {hotRail.map(item => (
@@ -766,6 +863,8 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
       )}
 
       {weekly.length > 0 && <WeeklyChart id={HOME_SECTION.weekly.id} items={weekly} openPanel={openPanel} watchlist={watchlist} />}
+
+      {peopleShelf.visible && <YourPeopleSection shelf={peopleShelf} openPanel={openPanel} />}
 
       {recent.length > 0 && (
         <RailSection
@@ -814,6 +913,8 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   );
 }
 
+const getTVDetails = (id) => tmdb.getTVDetails(id);
+
 /* ═══════════════════════════════════════
    DiscoverView — Home
 ═══════════════════════════════════════ */
@@ -831,7 +932,10 @@ export default function DiscoverView() {
   useEffect(() => {
     if (online && listsReady) retryCalendar();
   }, [listsReady, online, retryCalendar]);
-  const upNext = useMemo(() => selectHomeUpNext(events, todayStr), [events, todayStr]);
+  // Continue watching is free for everyone; a show on it is left out of Up next.
+  const { items: continueItems } = useContinueWatching(watching.items, getTVDetails);
+  const continueIds = useMemo(() => new Set(continueItems.map(item => item.tmdbId)), [continueItems]);
+  const upNext = useMemo(() => selectHomeUpNext(events, todayStr, 3, continueIds), [events, todayStr, continueIds]);
   const personalState = homePersonalState({ offline: !online, loading: calendarLoading || !listsReady, error: calendarError, upNext, savedCount: watchlist.items.length, watchingCount: watching.items.length });
 
   return (
@@ -858,6 +962,7 @@ export default function DiscoverView() {
         retryPersonal={retryCalendar}
         upNext={upNext}
         todayStr={todayStr}
+        continueItems={continueItems}
       />
     </div>
   );

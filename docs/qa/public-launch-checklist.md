@@ -1,4 +1,4 @@
-# PLOT Public Launch Checklist
+# Plot Public Launch Checklist
 
 Last reviewed: 2026-08-09
 
@@ -54,10 +54,11 @@ Use this checklist for the signed-in launch pass. Run it on desktop and at a mob
 - Open History and move across months with and without entries.
 - Confirm same-day direct-to-streaming titles do not duplicate.
 - Leave the app open across a local date change if feasible, or simulate the date boundary, and confirm relative labels refresh.
-- On a non-Premium account, confirm the calendar Subscribe row shows "Request access" (Premium-gated) rather than a generate action, and that requesting access records feedback and flips the row to "Requested".
-- On a Premium account, generate a calendar link.
+- On a non-Premium account, the calendar Subscribe row offers Explore Premium, not Generate. Revoke still appears if an old link exists.
+- On a Premium account, generate a calendar link, copy it, and confirm a calendar app can subscribe.
 - Revoke the calendar link.
-- Download the `.ics` snapshot export (not Premium-gated — confirm it works on a non-Premium account too).
+- Download or share the one-time `.ics` snapshot on a non-Premium account.
+- A token whose owner is not Premium returns a valid empty calendar, not that account’s events.
 
 ## Settings and Support
 

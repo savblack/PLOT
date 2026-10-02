@@ -51,6 +51,11 @@
   --accent-fill: #FF88C8;
   --accent-fill-hover: #FF9FD3;
   --on-accent-fill: #292924;
+  --on-accent-secondary-fill: #292924;
+  --artwork-fill: #FF88C8;
+  --artwork-fill-hover: #FF9FD3;
+  --on-artwork-fill: #292924;
+  --highlight: #FF88C8;
   --danger: #B9384A;
   --danger-dim: rgba(185,56,74,0.1);
   --danger-border: rgba(185,56,74,0.22);
@@ -70,7 +75,7 @@
   --success: #047857;
   --success-dim: rgba(4,120,87,0.08);
   --success-border: rgba(4,120,87,0.3);
-  --rating: #B45309;
+  --rating: #B83558;
   --badge-premium: #1A8CD8;
   --badge-supporter: #E05578;
   --radius-md: 16px;
@@ -97,8 +102,10 @@
 
   /* Layout constants */
   --header-h:       56px;
-  --tabbar-h:       60px;
-  --tab-bar-height: var(--tabbar-h);
+  /* Height of whatever is fixed to the bottom edge, not counting the safe area.
+     Nothing is by default; the phone filter bar raises it (app.css). Anything
+     pinned near the bottom adds it rather than assuming a bar is or isn't there. */
+  --bottom-inset:   0px;
   --panel-w:        560px;
   --content-max:    680px;
   /* Content gutter. The desktop page title, the collapsible section headers and
@@ -148,12 +155,10 @@
 /* ── Desktop nav rail ─────────────────── */
 /* Raises --sidebar-w from its 0 default so every rule that offsets against the
    sidebar (app header, app main, the fixed overlays in App.jsx) needs no
-   breakpoint of its own. The tab bar is gone at this width, so anything
-   anchored above it sits against the viewport edge instead. */
+   breakpoint of its own. */
 @media (min-width: 1024px) {
   :root {
     --sidebar-w:      260px;
-    --tab-bar-height: 0px;
   }
 }
 
@@ -194,7 +199,7 @@
   --success: #4ade80;
   --success-dim: rgba(74,222,128,0.08);
   --success-border: rgba(74,222,128,0.35);
-  --rating: #F59E0B;
+  --rating: #F06A88;
   --badge-premium: #1D9BF0;
   --badge-supporter: #F06A88;
   /* @tokens:end */
@@ -204,3 +209,310 @@
 
   --shadow-overlay: 0 2px 8px rgba(0,0,0,0.5);
 }
+
+/* ── Premium theme families (PLO-523) ── */
+/* data-palette="<family>" is set alongside data-theme="<light|dark>" by
+   useTheme and the pre-paint script in index.html, so every
+   [data-theme="dark"] rule still applies. Each block overrides the ground,
+   ink, hairlines and the accent set for one variant; glass is derived from
+   that variant's own ground. Generated from themeFamilies in
+   packages/core/tokens.js: do not hand-edit; change values in tokens.js then
+   run `npm run tokens:build`. */
+/* @palettes:start */
+:root[data-palette="sage"][data-theme="light"] {
+  --bg: #E3EACA;
+  --surface: #EDF2DA;
+  --surface-raised: #F7F9EE;
+  --surface-sunken: #D8E1BA;
+  --text-primary: #20261A;
+  --text-secondary: #454F33;
+  --text-muted: #4B5638;
+  --border: rgba(32,38,26,0.1);
+  --border-strong: rgba(32,38,26,0.18);
+  --accent: #4F7A1A;
+  --accent-dim: rgba(79,122,26,0.12);
+  --accent-text: #3F6314;
+  --accent-fill: #BFDA5E;
+  --accent-fill-hover: #CBE276;
+  --on-accent-fill: #20261A;
+  --accent-secondary: #7A3D62;
+  --accent-secondary-dim: rgba(122,61,98,0.12);
+  --accent-secondary-fill: #EED3E2;
+  --on-accent-secondary-fill: #20261A;
+  --artwork-fill: #BFDA5E;
+  --artwork-fill-hover: #CBE276;
+  --on-artwork-fill: #20261A;
+  --highlight: #BFDA5E;
+  --danger: #932636;
+  --status-watching: #4640AE;
+  --status-watched: #035E45;
+  --success: #035E45;
+  --rating: #3F6314;
+  --glass-bg: rgba(227,234,202,0.86);
+  --glass-border: rgba(32,38,26,0.06);
+}
+:root[data-palette="sage"][data-theme="dark"] {
+  --bg: #0E1A11;
+  --surface: #152419;
+  --surface-raised: #1F3223;
+  --surface-sunken: #09120B;
+  --text-primary: #E8F0DE;
+  --text-secondary: #AFC1A2;
+  --text-muted: #97AB89;
+  --border: rgba(232,240,222,0.09);
+  --border-strong: rgba(232,240,222,0.17);
+  --accent: #B7D65A;
+  --accent-dim: rgba(183,214,90,0.16);
+  --accent-text: #B7D65A;
+  --accent-fill: #BFDA5E;
+  --accent-fill-hover: #CBE276;
+  --on-accent-fill: #18200F;
+  --accent-secondary: #E6AFCF;
+  --accent-secondary-dim: rgba(230,175,207,0.15);
+  --accent-secondary-fill: #EED3E2;
+  --on-accent-secondary-fill: #18200F;
+  --artwork-fill: #BFDA5E;
+  --artwork-fill-hover: #CBE276;
+  --on-artwork-fill: #18200F;
+  --highlight: #BFDA5E;
+  --rating: #B7D65A;
+  --glass-bg: rgba(21,36,25,0.85);
+  --glass-border: rgba(232,240,222,0.09);
+}
+:root[data-palette="mist"][data-theme="light"] {
+  --bg: #E1E8EE;
+  --surface: #EBF0F4;
+  --surface-raised: #F7FAFC;
+  --surface-sunken: #D5DEE6;
+  --text-primary: #1B232A;
+  --text-secondary: #414E59;
+  --text-muted: #475461;
+  --border: rgba(27,35,42,0.1);
+  --border-strong: rgba(27,35,42,0.18);
+  --accent: #2F6AA8;
+  --accent-dim: rgba(47,106,168,0.12);
+  --accent-text: #285C92;
+  --accent-fill: #A8CBEE;
+  --accent-fill-hover: #BAD6F2;
+  --on-accent-fill: #1B232A;
+  --accent-secondary: #8A4F14;
+  --accent-secondary-dim: rgba(138,79,20,0.12);
+  --accent-secondary-fill: #F3D9BB;
+  --on-accent-secondary-fill: #1B232A;
+  --artwork-fill: #A8CBEE;
+  --artwork-fill-hover: #BAD6F2;
+  --on-artwork-fill: #1B232A;
+  --highlight: #A8CBEE;
+  --danger: #932636;
+  --status-watching: #4640AE;
+  --status-watched: #035E45;
+  --success: #035E45;
+  --rating: #285C92;
+  --glass-bg: rgba(225,232,238,0.86);
+  --glass-border: rgba(27,35,42,0.06);
+}
+:root[data-palette="mist"][data-theme="dark"] {
+  --bg: #0D141C;
+  --surface: #15202B;
+  --surface-raised: #1F2C39;
+  --surface-sunken: #090E14;
+  --text-primary: #E5EDF4;
+  --text-secondary: #A6B4C2;
+  --text-muted: #8D9CAB;
+  --border: rgba(229,237,244,0.09);
+  --border-strong: rgba(229,237,244,0.17);
+  --accent: #7FB2EA;
+  --accent-dim: rgba(127,178,234,0.16);
+  --accent-text: #7FB2EA;
+  --accent-fill: #A8CBEE;
+  --accent-fill-hover: #BAD6F2;
+  --on-accent-fill: #0D141C;
+  --accent-secondary: #F2B97F;
+  --accent-secondary-dim: rgba(242,185,127,0.15);
+  --accent-secondary-fill: #F3D9BB;
+  --on-accent-secondary-fill: #0D141C;
+  --artwork-fill: #A8CBEE;
+  --artwork-fill-hover: #BAD6F2;
+  --on-artwork-fill: #0D141C;
+  --highlight: #A8CBEE;
+  --rating: #7FB2EA;
+  --glass-bg: rgba(21,32,43,0.85);
+  --glass-border: rgba(229,237,244,0.09);
+}
+:root[data-palette="blush"][data-theme="light"] {
+  --bg: #F6DCE3;
+  --surface: #FAE8ED;
+  --surface-raised: #FDF5F7;
+  --surface-sunken: #EDCBD5;
+  --text-primary: #2B1A20;
+  --text-secondary: #5A3D47;
+  --text-muted: #62444F;
+  --border: rgba(43,26,32,0.1);
+  --border-strong: rgba(43,26,32,0.18);
+  --accent: #1D7068;
+  --accent-dim: rgba(29,112,104,0.12);
+  --accent-text: #175E57;
+  --accent-fill: #8FD6CB;
+  --accent-fill-hover: #A5DFD6;
+  --on-accent-fill: #12302C;
+  --accent-secondary: #45561A;
+  --accent-secondary-dim: rgba(69,86,26,0.12);
+  --accent-secondary-fill: #DDE3B2;
+  --on-accent-secondary-fill: #2B1A20;
+  --artwork-fill: #8FD6CB;
+  --artwork-fill-hover: #A5DFD6;
+  --on-artwork-fill: #12302C;
+  --highlight: #8FD6CB;
+  --danger: #932636;
+  --status-watching: #4640AE;
+  --status-watched: #035E45;
+  --success: #035E45;
+  --rating: #175E57;
+  --glass-bg: rgba(246,220,227,0.86);
+  --glass-border: rgba(43,26,32,0.06);
+}
+:root[data-palette="blush"][data-theme="dark"] {
+  --bg: #240E17;
+  --surface: #311621;
+  --surface-raised: #401E2C;
+  --surface-sunken: #1A0910;
+  --text-primary: #F9E6EC;
+  --text-secondary: #D8B1BF;
+  --text-muted: #C497A7;
+  --border: rgba(249,230,236,0.09);
+  --border-strong: rgba(249,230,236,0.17);
+  --accent: #7FD6C8;
+  --accent-dim: rgba(127,214,200,0.16);
+  --accent-text: #7FD6C8;
+  --accent-fill: #8FD6CB;
+  --accent-fill-hover: #A5DFD6;
+  --on-accent-fill: #12302C;
+  --accent-secondary: #C9D48A;
+  --accent-secondary-dim: rgba(201,212,138,0.15);
+  --accent-secondary-fill: #DDE3B2;
+  --on-accent-secondary-fill: #12302C;
+  --artwork-fill: #8FD6CB;
+  --artwork-fill-hover: #A5DFD6;
+  --on-artwork-fill: #12302C;
+  --highlight: #8FD6CB;
+  --rating: #7FD6C8;
+  --glass-bg: rgba(49,22,33,0.85);
+  --glass-border: rgba(249,230,236,0.09);
+}
+:root[data-palette="plum"][data-theme="light"] {
+  --bg: #E7E0F2;
+  --surface: #F0EBF8;
+  --surface-raised: #FAF8FD;
+  --surface-sunken: #DBD2EC;
+  --text-primary: #221B2E;
+  --text-secondary: #4A3F5C;
+  --text-muted: #514563;
+  --border: rgba(34,27,46,0.1);
+  --border-strong: rgba(34,27,46,0.18);
+  --accent: #9A5A00;
+  --accent-dim: rgba(154,90,0,0.12);
+  --accent-text: #7D4800;
+  --accent-fill: #F2C04F;
+  --accent-fill-hover: #F5CD6D;
+  --on-accent-fill: #2A1F08;
+  --accent-secondary: #195A53;
+  --accent-secondary-dim: rgba(25,90,83,0.12);
+  --accent-secondary-fill: #CDE7E2;
+  --on-accent-secondary-fill: #221B2E;
+  --artwork-fill: #F2C04F;
+  --artwork-fill-hover: #F5CD6D;
+  --on-artwork-fill: #2A1F08;
+  --highlight: #F2C04F;
+  --danger: #932636;
+  --status-watching: #4640AE;
+  --status-watched: #035E45;
+  --success: #035E45;
+  --rating: #7D4800;
+  --glass-bg: rgba(231,224,242,0.86);
+  --glass-border: rgba(34,27,46,0.06);
+}
+:root[data-palette="plum"][data-theme="dark"] {
+  --bg: #16101F;
+  --surface: #211A2D;
+  --surface-raised: #2C233B;
+  --surface-sunken: #0F0A16;
+  --text-primary: #F0EAF8;
+  --text-secondary: #BDB0D0;
+  --text-muted: #A597BB;
+  --border: rgba(240,234,248,0.09);
+  --border-strong: rgba(240,234,248,0.17);
+  --accent: #F2C04F;
+  --accent-dim: rgba(242,192,79,0.16);
+  --accent-text: #F2C04F;
+  --accent-fill: #F2C04F;
+  --accent-fill-hover: #F5CD6D;
+  --on-accent-fill: #2A1F08;
+  --accent-secondary: #7FD0C4;
+  --accent-secondary-dim: rgba(127,208,196,0.15);
+  --accent-secondary-fill: #CDE7E2;
+  --on-accent-secondary-fill: #2A1F08;
+  --artwork-fill: #F2C04F;
+  --artwork-fill-hover: #F5CD6D;
+  --on-artwork-fill: #2A1F08;
+  --highlight: #F2C04F;
+  --rating: #F2C04F;
+  --glass-bg: rgba(33,26,45,0.85);
+  --glass-border: rgba(240,234,248,0.09);
+}
+:root[data-palette="ink"][data-theme="light"] {
+  --bg: #FAFAF8;
+  --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --surface-sunken: #EDEDE9;
+  --text-primary: #111111;
+  --text-secondary: #383836;
+  --text-muted: #474744;
+  --border: rgba(17,17,17,0.14);
+  --border-strong: rgba(17,17,17,0.3);
+  --accent: #C92A2A;
+  --accent-dim: rgba(201,42,42,0.12);
+  --accent-text: #B32424;
+  --accent-fill: #111111;
+  --accent-fill-hover: #2A2A2A;
+  --on-accent-fill: #FFFFFF;
+  --accent-secondary: #2D6A4B;
+  --accent-secondary-dim: rgba(45,106,75,0.12);
+  --accent-secondary-fill: #D3E8DB;
+  --on-accent-secondary-fill: #111111;
+  --artwork-fill: #FFFFFF;
+  --artwork-fill-hover: #EDEDE9;
+  --on-artwork-fill: #111111;
+  --highlight: #F2C9C9;
+  --rating: #B32424;
+  --glass-bg: rgba(250,250,248,0.86);
+  --glass-border: rgba(17,17,17,0.06);
+}
+:root[data-palette="ink"][data-theme="dark"] {
+  --bg: #080808;
+  --surface: #121212;
+  --surface-raised: #1C1C1C;
+  --surface-sunken: #000000;
+  --text-primary: #FFFFFF;
+  --text-secondary: #C8C8C4;
+  --text-muted: #A8A8A3;
+  --border: rgba(255,255,255,0.16);
+  --border-strong: rgba(255,255,255,0.32);
+  --accent: #FF5147;
+  --accent-dim: rgba(255,81,71,0.16);
+  --accent-text: #FF6A61;
+  --accent-fill: #FFFFFF;
+  --accent-fill-hover: #E8E8E4;
+  --on-accent-fill: #111111;
+  --accent-secondary: #6FD39E;
+  --accent-secondary-dim: rgba(111,211,158,0.15);
+  --accent-secondary-fill: #D3E8DB;
+  --on-accent-secondary-fill: #111111;
+  --artwork-fill: #FFFFFF;
+  --artwork-fill-hover: #E8E8E4;
+  --on-artwork-fill: #111111;
+  --highlight: #6B2A26;
+  --rating: #FF6A61;
+  --glass-bg: rgba(18,18,18,0.85);
+  --glass-border: rgba(255,255,255,0.16);
+}
+/* @palettes:end */

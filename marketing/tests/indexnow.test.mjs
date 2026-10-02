@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { submitIndexNow } from '../lib/indexnow.mjs';
 
-test('submitIndexNow sends unique canonical PLOT URLs', async () => {
+test('submitIndexNow sends unique canonical Plot URLs', async () => {
   let request;
   const result = await submitIndexNow([
     'https://theplot.tv/whats-on/a',

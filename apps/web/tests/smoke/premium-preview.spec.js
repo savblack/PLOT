@@ -13,7 +13,8 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('heading', { name: 'Less deciding. More watching.' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Compare every feature' })).toBeVisible();
     await expect(page.getByText('Premium features are coming soon.', { exact: true })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Episode release notifications.*Coming soon/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /New episode notifications.*In the app/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Movie release notifications/ })).toHaveCount(0);
     await expect(page.getByRole('row', { name: /Join shared lists and watch sessions.*Free with a Premium host/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Import history from your other apps/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Viewing stats.*Overview.*Deeper/ })).toBeVisible();
@@ -23,7 +24,7 @@ for (const width of [390, 1440]) {
 
     // Annual is the default: $2/month, billed $24 yearly; monthly shows $3.
     await expect(page.getByText('US$24 billed yearly · taxes included', { exact: true })).toBeVisible();
-    await expect(page.getByText('7-day free trial, card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.', { exact: true })).toBeVisible();
+    await expect(page.getByText('7-day free trial. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Monthly' }).click();
     await expect(page.getByText('US$3 billed monthly · taxes included', { exact: true })).toBeVisible();
 

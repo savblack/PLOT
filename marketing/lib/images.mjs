@@ -20,14 +20,14 @@ export const fetchImageDataUri = async (tmdbPath, size = POSTER_HERO) => {
   return `data:${type};base64,${buf.toString('base64')}`;
 };
 
-// Plain TMDB still, no PLOT branding — backdrop preferred, poster as a fallback.
+// Plain TMDB still, no Plot branding — backdrop preferred, poster as a fallback.
 const stillUrl = (title) => {
   if (!title?.backdrop_path && !title?.poster_path) return null;
   if (title.backdrop_path) return `${IMG_BASE}/${BACKDROP}${title.backdrop_path}`;
   return `${IMG_BASE}/${POSTER_HERO}${title.poster_path}`;
 };
 
-// Plain TMDB still for the What's On feed/article hero — no PLOT branding.
+// Plain TMDB still for the What's On feed/article hero — no Plot branding.
 // Trending charts return null so they keep their branded chart render; every
 // other post type leads with the title's backdrop (or poster as a fallback).
 // The branded card renders are still produced for the social channels.

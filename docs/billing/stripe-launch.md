@@ -1,4 +1,4 @@
-# PLOT Premium launch checklist
+# Plot Premium launch checklist
 
 Current release decision (26 September 2026): US$3/month or US$24/year,
 tax-inclusive Managed Payments with Adaptive Pricing and AUD settlement.
@@ -20,7 +20,7 @@ in the environment secret store. The Managed Payments implementation requires
 explicit inclusive price behavior; the old inferred default alone is insufficient.
 
 
-PLOT Premium is US$3 monthly or US$24 yearly. The web app uses Stripe Checkout
+Plot Premium is US$3 monthly or US$24 yearly. The web app uses Stripe Checkout
 for purchase and the Stripe Customer Portal for cancellation, payment-method
 updates, and switching between those two plans.
 
@@ -36,7 +36,7 @@ does not override it. Keep validating the underlying USD Price objects at 300
 and 2400 cents. Do not add manual `currency_options` for converted currencies.
 Tax registration and collection remain a separate launch prerequisite.
 
-USD settlement is enabled in the PLOT sandbox, alongside default AUD. Direct AUD
+USD settlement is enabled in the Plot sandbox, alongside default AUD. Direct AUD
 monthly and GBP annual checkout, GBP monthly and annual renewals, both portal
 plan-change directions and a full GBP refund have passed with the approved USD
 base prices. See the verification log for exact evidence and coverage limits.
@@ -62,13 +62,13 @@ This decision does not enable public checkout or authorize a production change.
 ## Before going live (reconcile historical setup against the current decision above)
 
 1. TMDB clearance is confirmed by Savannah. Complete the test-mode lifecycle
-   and engineering gates in the readiness document. After launch approval, in Stripe **live mode**, create a PLOT Premium product with two recurring
+   and engineering gates in the readiness document. After launch approval, in Stripe **live mode**, create a Plot Premium product with two recurring
    USD prices: US$3/month and US$24/year. Record the two live price IDs.
 2. Set the Stripe account's public business URL and support email. The Customer
-   Portal should also show the PLOT terms and privacy URLs.
+   Portal should also show the Plot terms and privacy URLs.
 3. In the live-mode Customer Portal, enable cancellation, payment-method
    updates, invoice history, and price switching. Its catalogue must contain
-   only the PLOT Premium product and both live prices. Schedule shorter-interval changes for
+   only the Plot Premium product and both live prices. Schedule shorter-interval changes for
    the end of the current period. The tested sandbox configuration resets the
    billing anchor to now and uses `always_invoice` for immediate prorated upgrades.
    Verify the invoice preview before copying this configuration into live mode.
@@ -81,7 +81,7 @@ This decision does not enable public checkout or authorize a production change.
    `STRIPE_WEBHOOK_SECRET`.
 6. Keep `STRIPE_CHECKOUT_ENABLED=false` until launch approval. Checkout validates
    that the selected price is an active USD recurring price for exactly US$3/month and
-   US$24/year. Verify Adaptive Pricing is enabled in the intended live PLOT
+   US$24/year. Verify Adaptive Pricing is enabled in the intended live Plot
    account before launch; use USD as the fallback. Confirm local-currency monthly
    and yearly checkout, renewal, plan switching and refund behavior in sandbox.
 7. Deploy `stripe-billing` and `stripe-webhook`. Keep public pricing flags closed
@@ -102,7 +102,7 @@ billing management after expiry. The export CORS fix also requires a staging
 `export-user-data` deployment. The migration and all three functions were deployed to PLOT Staging with approval on 2026-09-24. Production remains unchanged.
 
 Set `STRIPE_SETTINGS_URL` to the staging/QA Settings page and
-`STRIPE_PORTAL_CONFIGURATION` to the tested PLOT sandbox configuration. Keep
+`STRIPE_PORTAL_CONFIGURATION` to the tested Plot sandbox configuration. Keep
 sandbox keys and price IDs separate from production. A local QA return URL is
 only valid while that preview is running. See `stripe-test-verification.md` for
 completed sandbox purchases and the remaining signed-delivery/renewal checks.

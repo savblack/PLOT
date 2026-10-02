@@ -5,7 +5,7 @@ import { PLANS_PAGE } from '../../copy/plansPage.js';
 import { SETTINGS_VIEW } from '../../copy/settingsView.js';
 import { TRACKING } from '../../copy/tracking.js';
 
-const TRIAL = '7-day free trial, card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.';
+const TRIAL = '7-day free trial. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.';
 
 test('premium price copy is US$3/month or US$24/year, taxes included', () => {
   assert.equal(PLANS_PAGE.premium.priceSummary, '$3/month or $24/year');
@@ -15,12 +15,12 @@ test('premium price copy is US$3/month or US$24/year, taxes included', () => {
   assert.equal(PLANS_PAGE.premium.price, '$3');
 });
 
-test('the trial note says the card is required and the charge is 7 days later', () => {
+test('the trial note says the charge is 7 days later', () => {
   assert.equal(PLANS_PAGE.premium.trialNote, TRIAL);
-  assert.match(PLANS_PAGE.fineprint, /7-day free trial with a card required/);
+  assert.match(PLANS_PAGE.fineprint, /7-day free trial/);
   assert.match(PLANS_PAGE.fineprint, /local currency/);
   for (const line of [
-    '7-day free trial, card required',
+    '7-day free trial',
     'You won’t be charged until 7 days after you start',
     'Cancel during the trial and you pay $0',
     'Everything free today stays free',
@@ -92,9 +92,26 @@ test('public copy does not sell automatic Plex or Trakt sync as Premium', () => 
   }
 });
 
+test('live calendar subscription is a Premium benefit that exists', () => {
+  const alerts = PLANS_PAGE.faqs.find(item => item.q === 'Are these alerts available now?');
+  assert.match(alerts.a, /Live calendar subscription is available with plot Premium/);
+  assert.doesNotMatch(alerts.a, /planned Premium features/);
+  assert.equal(SETTINGS_VIEW.billing.calendarComingSoon, undefined);
+  assert.match(SETTINGS_VIEW.calendarFeed.needsPremiumMessage, /one-time snapshot/);
+  assert.doesNotMatch(SETTINGS_VIEW.calendarFeed.needsPremiumMessage, /coming soon|planned/i);
+  const calendar = PLANS_PAGE.premiumFeatures.find(item => item.id === 'calendarSubscription');
+  assert.equal(calendar.live, true);
+});
+
 test('free stays free and does not inherit the premium trial', () => {
   assert.equal(PLANS_PAGE.free.price, '$0');
   assert.equal(PLANS_PAGE.free.noCard, 'No card needed');
   const free = PLANS_PAGE.faqs.find(item => item.q === 'What happens to Free?');
   assert.match(free.a, /stay available/);
+});
+
+test('smart lists are a Premium benefit that exists', () => {
+  const smart = PLANS_PAGE.premiumFeatures.find(item => item.id === 'smartLists');
+  assert.equal(smart.live, true);
+  assert.ok(PLANS_PAGE.upgradeSheet.reasons.smartLists);
 });

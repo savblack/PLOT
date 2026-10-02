@@ -1,0 +1,12 @@
+/* Premium alert toggles. Compact buttons, never full width. The accent marks
+   an alert that is on (a status cue), nothing else. */
+.alert-toggle { display: inline-flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+.alert-toggle svg { flex-shrink: 0; }
+.alert-toggle--on { color: var(--accent-text); }
+.alert-toggle-error { margin: 0.4rem 0 0; font-size: 0.78rem; color: var(--text-secondary); }
+
+
+.alert-card { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.alert-card-row { display: flex; align-items: center; gap: 0.9rem; }
+.alert-card-copy { flex: 1; min-width: 0; }
+.alert-card-hint { margin: 0.2rem 0 0; font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); }

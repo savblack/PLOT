@@ -176,9 +176,26 @@ jobs:
       - run:
           name: Build Storybooks
           command: |
-            pnpm --filter @plot/web run build-storybook
+            # The web build emits --stats-json so the Chromatic step below can
+            # use TurboSnap and only snapshot the stories a change can reach.
+            pnpm --filter @plot/web run build-storybook:stats
             pnpm --filter @plot/website-storybook run build-storybook
             pnpm --filter @plot/mobile run build-storybook
+
+      - run:
+          name: Chromatic visual snapshots
+          command: |
+            # Visual regression for the web Storybook, reusing the build above.
+            # Runs with --exit-zero-on-changes on purpose: nearly every design PR
+            # here changes pixels deliberately, and a check that goes red on every
+            # intended redesign is one nobody reads. A genuine failure (a story
+            # that throws, a broken build) still fails this step. Review the diffs
+            # in Chromatic, not here.
+            if [ -z "${CHROMATIC_PROJECT_TOKEN:-}" ]; then
+              echo "CHROMATIC_PROJECT_TOKEN is not set; skipping visual snapshots."
+              exit 0
+            fi
+            pnpm --filter @plot/web run chromatic
 
       - run:
           name: Check mobile

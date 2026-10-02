@@ -10,7 +10,7 @@
 -- the real policies and security definer functions under a real auth.uid()
 -- against the real schema. This does.
 --
--- It applies 20260927100000 to 20260927140000 itself, inside the transaction,
+-- It applies 20260927100000 to 20260927160000 itself, inside the transaction,
 -- so it works whatever Staging's migration ledger says, and the final rollback
 -- removes the migrations, every fixture and the Premium row. Staging (and its
 -- ledger) is unchanged whether it passes or dies.
@@ -34,12 +34,20 @@ begin;
 -- production will; the rollback puts Staging's copies back.
 drop function if exists public.list_watch_together();
 drop function if exists public.suggest_watch_together();
+-- 20260927160000 drops the share-full columns in favour of watchlist_viewers,
+-- and phase 1's functions name them, so put them back for the replay. The
+-- replay of 20260927160000 below carries any flags over and drops them again.
+alter table if exists public.watch_together
+  add column if not exists requester_shares_full boolean not null default false,
+  add column if not exists recipient_shares_full boolean not null default false;
 
 \ir ../supabase/migrations/20260927100000_watch_together.sql
 \ir ../supabase/migrations/20260927110000_watch_together_sessions.sql
 \ir ../supabase/migrations/20260927120000_watch_together_shared_lists.sql
 \ir ../supabase/migrations/20260927130000_watch_together_free.sql
 \ir ../supabase/migrations/20260927140000_watch_together_visibility_and_stop.sql
+\ir ../supabase/migrations/20260927150000_watch_together_counts_for_followers.sql
+\ir ../supabase/migrations/20260927160000_watchlist_visibility.sql
 
 -- ── fixtures (as postgres) ───────────────────────────────────────────────────
 -- See staging-block-test.sql for why the claims must be valid even here.
@@ -302,11 +310,12 @@ select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  bystander pairin
   from public.list_watch_together() where other_id = :C and direction = 'paired';
 
 \echo ''
-\echo '=== Watchlist visibility agrees with the profile, and stopping leaves lists (20260927140000) ==='
--- 1. A partner who is also an accepted follower of a private profile can read
---    its watchlist through list_items (20260926090000), so Watch together must
---    say the same: can_see_full_watchlist is true for them even with "share my
---    full watchlist" off. Before 20260927140000 the two disagreed.
+\echo '=== Watchlist visibility: one rule for list_items and Watch together, and stopping leaves lists ==='
+-- 1. Watch together and list_items agree for a partner who also follows a
+--    private profile. Since 20260927160000 a private profile's watchlist is
+--    "only me" by default, so a follower no longer sees it; the per-partner
+--    switch adds them to the owner's selected list, and then both agree it's
+--    visible. (Before 20260927140000 the two disagreed.)
 reset role;
 set local request.jwt.claims = '{"role":"service_role"}';
 update public.profiles set is_public = false where id = :A;
@@ -319,8 +328,24 @@ select count(*) as c_rows from public.list_items where user_id = :A   -- not joi
 -- can_see_full_watchlist isn't callable by signed-in users, so ask it as the
 -- owner while keeping C's claims (auth.uid() is still C).
 reset role;
-select case when :c_rows > 0 and public.can_see_full_watchlist(:A) then 'PASS' else 'FAIL' end
-       || '  follower partner C: watchlist rows (' || :c_rows || ') and can_see_full_watchlist agree';
+select case when :c_rows = 0 and not public.can_see_full_watchlist(:A) then 'PASS' else 'FAIL' end
+       || '  follower partner C, share off: no watchlist rows (' || :c_rows || ') and can_see_full_watchlist agrees';
+set local role authenticated;
+set local request.jwt.claims = :A_CLAIMS;
+select public.set_watch_together_share_full(:C, true);
+select case when public.can_view_watchlist(:A) then 'PASS' else 'FAIL' end
+       || '  A''s own view is unchanged';
+reset role;
+select case when watchlist_visibility = 'selected' then 'PASS' else 'FAIL' end
+       || '  sharing with C moved A from only me to selected people'
+  from public.profiles where id = :A;
+set local role authenticated;
+set local request.jwt.claims = :C_CLAIMS;
+select count(*) as c_rows_on from public.list_items where user_id = :A
+\gset
+reset role;
+select case when :c_rows_on > 0 and public.can_see_full_watchlist(:A) then 'PASS' else 'FAIL' end
+       || '  follower partner C, share on: watchlist rows (' || :c_rows_on || ') and can_see_full_watchlist agree';
 set local role authenticated;
 
 -- 2. Stopping an accepted pairing takes each person off the other's shared

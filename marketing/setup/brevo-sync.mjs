@@ -1,4 +1,4 @@
-// One-time (re-runnable) backfill: syncs every PLOT app user into Brevo as a
+// One-time (re-runnable) backfill: syncs every Plot app user into Brevo as a
 // contact, segmented by existing newsletter opt-in (marketing_subscribers),
 // plus everyone on the launch waitlist (app_waitlist).
 // Keeping it live afterward is handled by supabase/functions/notify-signup,

@@ -1,6 +1,6 @@
-# App Store Guideline 1.2: what PLOT must ship for user-generated content
+# App Store Guideline 1.2: what Plot must ship for user-generated content
 
-Research note for issue #482. Written 2026-08-10, ahead of PLOT's first App Store submission.
+Research note for issue #482. Written 2026-08-10, ahead of Plot's first App Store submission.
 
 Every claim below is sourced to an Apple-owned page. Where a widely repeated piece of
 folklore could not be traced to a primary source, it is called out as unverified rather
@@ -9,17 +9,17 @@ developers reporting what a reviewer told them, not Apple publishing a rule.
 
 ## The short answer
 
-Yes, PLOT triggers Guideline 1.2 today, before the activity feed is ever switched on.
+Yes, Plot triggers Guideline 1.2 today, before the activity feed is ever switched on.
 Apple's threshold is not "does the app have a feed". The guideline opens with "apps with
-user-generated content **or social networking services**", and PLOT is both: users upload
+user-generated content **or social networking services**", and Plot is both: users upload
 avatar images, choose usernames and display names, write profile bios and social links,
 and follow each other, with public profiles exposing what they have watched and what they
 love. That content is created by users and broadcast to other users. It is user-generated
 content.
 
-To satisfy 1.2, PLOT must ship four things, all four of which Apple lists as mandatory:
+To satisfy 1.2, Plot must ship four things, all four of which Apple lists as mandatory:
 content filtering, a reporting mechanism with timely response, user blocking, and
-published contact information. PLOT has none of the first three in its codebase today.
+published contact information. Plot has none of the first three in its codebase today.
 
 Source: [App Review Guidelines, 1.2 User-Generated
 Content](https://developer.apple.com/app-store/review/guidelines/#1.2)
@@ -58,7 +58,7 @@ And separately:
 > within the app. May include: text, voice and/or video chat, direct and/or group
 > messaging, or public posting.
 
-Both are 4+ capabilities, meaning declaring them does not by itself raise PLOT's age
+Both are 4+ capabilities, meaning declaring them does not by itself raise Plot's age
 rating.
 
 Apple also defines a distinct, higher-rated capability:
@@ -74,9 +74,9 @@ Social Media triggers a **13+** rating.
 Source: [Age ratings values and
 definitions](https://developer.apple.com/help/app-store-connect/reference/app-information/age-ratings-values-and-definitions)
 
-### What that means for PLOT specifically
+### What that means for Plot specifically
 
-Photos and text created by users, distributed to other users, is exactly what a PLOT
+Photos and text created by users, distributed to other users, is exactly what a Plot
 public profile is. Avatars are user-uploaded photos. Usernames, display names, bios and
 social links are user-authored text. All of it renders on a page another user can open.
 Under Apple's own definition that is User-Generated Content, at 4+.
@@ -84,7 +84,7 @@ Under Apple's own definition that is User-Generated Content, at 4+.
 The useful nuance is the boundary with Social Media at 13+. Apple's Social Media
 definition turns on redistribution and amplification through "a social feed or similar
 discovery method that visibly spreads content to many users". Shipping without the
-activity feed is a real, defensible distinction on Apple's own wording: PLOT would have
+activity feed is a real, defensible distinction on Apple's own wording: Plot would have
 UGC without the amplification layer. Note the definition does say "or other sharing and
 discovery tools", so any user-search or user-discovery surface should be checked against
 it before declaring. But the important point is that avoiding Social Media at 13+ does not
@@ -134,8 +134,8 @@ Apple then states who owns enforcement, verbatim:
 > Developer Program.
 
 Two operational consequences. Apple expects a written remediation plan on demand, so
-PLOT should have community standards or terms of service that define what "objectionable"
-means for PLOT. And the escalation path ends at removal from the Developer Program, not
+Plot should have community standards or terms of service that define what "objectionable"
+means for Plot. And the escalation path ends at removal from the Developer Program, not
 just the app being pulled.
 
 There is also a hard content ceiling in the same guideline, verbatim:
@@ -146,13 +146,13 @@ There is also a hard content ceiling in the same guideline, verbatim:
 > bullying do not belong on the App Store and may be removed without notice.
 
 "Objectification of real people (e.g. 'hot-or-not' voting)" is worth flagging for a
-ratings-driven app. PLOT rates titles, not people, so this does not bite, but any future
+ratings-driven app. Plot rates titles, not people, so this does not bite, but any future
 feature that ranks or scores other users would.
 
 Source: [Guideline 1.2](https://developer.apple.com/app-store/review/guidelines/#1.2)
 
 Guideline 1.2.1 (Creator Content) covers apps built around a community of "creators" who
-author, share and monetize content as a structured programme. PLOT has no creator
+author, share and monetize content as a structured programme. Plot has no creator
 programme, so 1.2.1 does not apply, though it is worth knowing it exists because it
 reiterates that creator material "are treated as user-generated content by App Review".
 
@@ -172,7 +172,7 @@ enforce. Apple's framing, verbatim:
 The subsections most relevant to free-text bios, usernames and avatar images are 1.1.1
 (defamatory, discriminatory or mean-spirited content, "particularly if the app is likely
 to humiliate, intimidate, or harm a targeted individual or group") and 1.1.4 (overtly
-sexual or pornographic material). PLOT's community standards should map onto these
+sexual or pornographic material). Plot's community standards should map onto these
 categories so a reviewer can see the connection.
 
 Source: [Guideline 1.1](https://developer.apple.com/app-store/review/guidelines/#1.1)
@@ -219,7 +219,7 @@ disable an account is insufficient". The deletion entry point must be easy to fi
 typically in account settings, and "All users should be allowed to delete their accounts,
 regardless of where they're located."
 
-PLOT already satisfies this on iOS. `apps/mobile/app/(app)/settings.tsx` has a
+Plot already satisfies this on iOS. `apps/mobile/app/(app)/settings.tsx` has a
 `handleDeleteAccount` flow that calls the `delete-account` Supabase edge function, with
 the shared cleanup logic in `supabase/functions/delete-account/`.
 
@@ -236,7 +236,7 @@ shared with, and "Explain its data retention/deletion policies and describe how 
 revoke consent and/or request deletion of the user's data." A link is required both in App
 Store Connect metadata and inside the app "in an easily accessible manner".
 
-Avatar images, usernames, bios and the follow graph all need to appear in PLOT's policy.
+Avatar images, usernames, bios and the follow graph all need to appear in Plot's policy.
 
 Source: [Guideline
 5.1.1](https://developer.apple.com/app-store/review/guidelines/#5.1.1)
@@ -265,7 +265,7 @@ ships with `SHOW_APPLE_LOGIN = false` and Google sign-in behind
 third-party login service is in play and 4.8 does not require a second option. The moment
 Google sign-in is switched on for iOS, 4.8 requires an equivalent alternative, which in
 practice means Sign in with Apple, which in turn requires the Apple Developer Program
-membership PLOT is still waiting on. Keep Google off for the first submission unless Sign
+membership Plot is still waiting on. Keep Google off for the first submission unless Sign
 in with Apple ships alongside it.
 
 Source: [Guideline 4.8](https://developer.apple.com/app-store/review/guidelines/#4.8)
@@ -283,7 +283,7 @@ surreptitiously building user profiles from collected data.
 > these Guidelines (see Guideline 5.1 for more information) and prevent its unauthorized
 > use, disclosure, or access by third parties.
 
-For PLOT this points at the Supabase row-level security on the follow graph and on
+For Plot this points at the Supabase row-level security on the follow graph and on
 whatever new report and block tables get added. A blocked user must not be able to read
 the blocker's data through the API even if the UI hides it.
 
@@ -302,7 +302,7 @@ Verbatim, the part that matters for a first submission with gated social feature
 > you submit it, and include demo account info (and turn on your back-end service!) if
 > your app includes a login.
 
-PLOT requires a login, so a working demo account is mandatory. And because reporting and
+Plot requires a login, so a working demo account is mandatory. And because reporting and
 blocking only make sense between two accounts, the demo account needs a second account to
 interact with, or the reviewer cannot exercise the flows.
 
@@ -312,14 +312,14 @@ Source: [Guideline 2.1](https://developer.apple.com/app-store/review/guidelines/
 
 The age rating questionnaire in App Store Connect includes "a list of content descriptors,
 in-app controls, and capabilities that allow you to specify the frequency of each content
-type in your app". PLOT should declare User-Generated Content honestly. Under-declaring is
+type in your app". Plot should declare User-Generated Content honestly. Under-declaring is
 a metadata accuracy problem on top of a 1.2 problem.
 
 Apple's in-app controls definitions cover Parental Controls and Age Assurance, and Apple
 publishes a
 [Declared Age Range API](https://developer.apple.com/documentation/declaredagerange)
 referenced by the Social Media capability definition. Neither is required at 4+ with UGC
-alone. They become relevant if PLOT later enables the feed and takes on the Social Media
+alone. They become relevant if Plot later enables the feed and takes on the Social Media
 capability.
 
 Sources: [Set an app age
@@ -359,7 +359,7 @@ On demo accounts, verbatim:
 > an environment that is hard to replicate or require specific hardware, be prepared to
 > provide a demo video or the hardware.
 
-The practical reading for PLOT: the single largest documented rejection bucket is not
+The practical reading for Plot: the single largest documented rejection bucket is not
 about moderation at all, it is completeness. A reviewer who cannot sign in, cannot find a
 second user to report, or lands on a broken support link will produce a rejection before
 the 1.2 question is ever reached. Ship the demo account, the second seeded account, a
@@ -387,14 +387,14 @@ says only "timely responses to concerns". No Apple-published page stating a 24-h
 service level for UGC reports was located.
 
 Treat it as a prudent operating target rather than a quoted rule. Building to a 24-hour
-turnaround costs PLOT nothing at current scale and removes the argument entirely if a
+turnaround costs Plot nothing at current scale and removes the argument entirely if a
 reviewer raises it. Do not, however, write "as required by Apple, within 24 hours" into
-PLOT's public terms, because that sourcing cannot be substantiated.
+Plot's public terms, because that sourcing cannot be substantiated.
 
 **A mandated moderation API or vendor.** No Apple guideline or documentation page requires
 a particular filtering technology. 1.2 requires that a method exist.
 
-## 6. Minimum viable implementation for PLOT
+## 6. Minimum viable implementation for Plot
 
 Scope assumption: profiles, avatars, usernames, display names, bios, social links and a
 follow graph, with the activity feed staying disabled. Everything below maps to a specific
@@ -411,7 +411,7 @@ social link URLs. Minimum viable:
    web app writes to the same tables.
 2. Length and character constraints on the free-text fields. `USERNAME_RE` already
    constrains usernames; bio and display name need equivalent server-side limits.
-3. Avatar images screened before they become publicly readable. At PLOT's scale the
+3. Avatar images screened before they become publicly readable. At Plot's scale the
    cheapest compliant shape is server-side screening on upload plus a fast takedown path,
    rather than human pre-moderation of every upload.
 4. Social link URLs restricted to an allowlist of hosts, since an unconstrained URL field
@@ -422,14 +422,14 @@ social link URLs. Minimum viable:
 1. A report control on every surface that renders another user's content: the public
    profile, the follow-request list, and any user-search result row.
 2. A report reason picker whose categories mirror Guideline 1.1 (harassment or bullying,
-   hate or discrimination, sexual content, impersonation, spam), so PLOT's taxonomy and
+   hate or discrimination, sexual content, impersonation, spam), so Plot's taxonomy and
    Apple's standard line up.
 3. A `reports` table capturing reporter, reported user, surface, reason, free-text detail,
    and status, with row-level security so reporters cannot read each other's reports.
 4. A confirmation to the reporter that the report was received. "Timely responses to
    concerns" is a response obligation, and an acknowledgement is the floor.
-5. A route for PLOT to actually see reports. An email or notification to the operator on
-   new report insert is sufficient at PLOT's current size. A moderation queue can come later.
+5. A route for Plot to actually see reports. An email or notification to the operator on
+   new report insert is sufficient at Plot's current size. A moderation queue can come later.
 6. A documented internal turnaround. Target 24 hours, per section 5.
 
 ### Blocking, mapped to "the ability to block abusive users from the service"
@@ -452,9 +452,9 @@ social link URLs. Minimum viable:
 
 ### Terms and community standards
 
-1.2 makes PLOT responsible for removing content that violates "this guideline, your terms
+1.2 makes Plot responsible for removing content that violates "this guideline, your terms
 of service, or your community standards", and Apple asks for a compliance plan when it
-finds violating content. PLOT needs published community standards that define
+finds violating content. Plot needs published community standards that define
 objectionable content and state that accounts can be removed. Without them there is
 nothing to enforce against and nothing to show a reviewer.
 
@@ -470,8 +470,8 @@ nothing to enforce against and nothing to show a reviewer.
 ### Deliberately out of scope for the first submission
 
 Human pre-moderation of every upload, a moderation dashboard, appeals workflow, and the
-Declared Age Range API. None is required by the text of 1.2 for an app at PLOT's shape and
-scale. They become relevant when the activity feed turns on and PLOT takes on Apple's
+Declared Age Range API. None is required by the text of 1.2 for an app at Plot's shape and
+scale. They become relevant when the activity feed turns on and Plot takes on Apple's
 Social Media capability at 13+.
 
 ## Sources

@@ -26,6 +26,8 @@
 .upgrade-sheet-meter i { width: 14px; height: 6px; border-radius: 3px; background: var(--accent-fill); }
 .upgrade-sheet-title { margin: 0; font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; line-height: 1.1; letter-spacing: var(--font-display-tracking); text-wrap: balance; }
 .upgrade-sheet-body { margin: 0; font-size: 0.88rem; line-height: 1.6; color: var(--text-secondary); }
+/* Smart lists, B5: the Free viewer's rules wait for them. */
+.upgrade-sheet-kept { margin: 0; padding: 0.6rem 0.85rem; border: 1px solid var(--border); border-radius: 12px; font-size: 0.85rem; font-weight: 600; line-height: 1.45; color: var(--text-primary); }
 
 .upgrade-sheet-offer { width: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 1rem; padding: 0.9rem 1rem; border-radius: var(--radius-md); background: var(--surface-sunken); }
 .upgrade-sheet-offer-name { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
@@ -64,3 +66,4 @@
 @media (prefers-reduced-motion: reduce) {
   .upgrade-sheet, .upgrade-sheet-scrim { animation: none; }
 }
+.upgrade-sheet .upgrade-sheet-preview { max-width: 340px; }

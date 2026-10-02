@@ -6,8 +6,17 @@ import { genreIdsFromItem, mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
-import { createCustomListRecord, CUSTOM_LIST_LIMIT_CODE } from './customListCreation.js';
+import { createCustomListRecord, createdListRevert, deleteCustomListRecord, CUSTOM_LIST_LIMIT_CODE, SMART_LIST_PREMIUM_CODE } from './customListCreation.js';
 import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
+
+/**
+ * @typedef {Object} CreateListOptions
+ * @property {import('./undo.js').UndoOption} [undo] offer "List created · Undo"
+ *   (`true`), or add it to a batch the caller offers once its own steps are done.
+ *   Undo deletes the new list. Shared lists never offer it (customListCreation.js).
+ * @property {() => void} [onUndone] after an undo has deleted the list, e.g. to
+ *   leave the new list's page.
+ */
 
 /**
  * User-created custom lists, plus (with includeShared) the shared lists the
@@ -16,14 +25,25 @@ import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
  * list gains `role` ('owner' | 'member') and `people` (owner and members),
  * and members edit through RPCs because items stay owned by the list owner.
  *
+ * Smart lists (rows with `rules`, Premium) come back apart, as `smartLists`:
+ * they hold no titles, so every picker that adds a title reads `lists` and
+ * never offers one. `ownedCount` counts both, as the database's cap does.
+ * Rules are stored as given: callers clean them with smartLists.js
+ * normalizeSmartListRules, which stays out of this hook so the app shell does
+ * not load the smart list (and Pick for Me) code on every page.
+ *
  * @param {string|null|undefined} userId
  * @param {{ includeShared?: boolean }} [options]  Off until the shared lists
  *   migration is live; the web app passes its launch flag.
  * @returns {{
  *   lists: any[];
+ *   smartLists: any[];
  *   ownedCount: number;
  *   loading: boolean;
- *   createList: (name: string) => Promise<any>;
+ *   createList: (name: string, opts?: CreateListOptions) => Promise<any>;
+ *   createSmartList: (name: string, rules: import('./smartLists.js').SmartListRules, opts?: CreateListOptions) => Promise<any>;
+ *   updateSmartList: (listId: string, rules: import('./smartLists.js').SmartListRules) => Promise<any>;
+ *   setSmartListDigest: (listId: string, enabled: boolean) => Promise<boolean>;
  *   deleteList: (listId: string) => Promise<any>;
  *   renameList: (listId: string, name: string) => Promise<any>;
  *   setListVisibility: (listId: string, visibility: import('./customLists.js').ListVisibility) => Promise<any>;
@@ -38,17 +58,23 @@ import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
  */
 export function useCustomLists(userId, { includeShared = false } = {}) {
   const [lists,   setLists]   = useState([]);
+  const [smartLists, setSmartLists] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
     try {
       const data = [];
+      const smart = [];
       for (let offset = 0; ; offset += 1000) {
         const { data: page, error } = await supabase.from('user_custom_lists').select('*')
           .eq('user_id',userId).order('id').range(offset,offset + 999);
         if (error) throw error;
-        for (const list of page || []) data.push({ ...list, items: await readListItems({ userId, listId: list.id, custom: true }) });
+        for (const list of page || []) {
+          // A smart list is filled when it opens; it has no rows to read.
+          if (list.rules != null) { smart.push(list); continue; }
+          data.push({ ...list, items: await readListItems({ userId, listId: list.id, custom: true }) });
+        }
         if (!page || page.length < 1000) break;
       }
       data.sort((a,b) => String(a.created_at || '').localeCompare(String(b.created_at || '')));
@@ -57,6 +83,8 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
       let all = data.map(l => ({ ...l, role: 'owner', people: [] }));
       if (includeShared) all = await withSharedLists(userId, all);
       setLists(all);
+      smart.sort((a,b) => String(a.created_at || '').localeCompare(String(b.created_at || '')));
+      setSmartLists(smart.map(l => ({ ...l, role: 'owner', people: [] })));
     } catch (error) {
       // Retain the last complete collection on a failed page.
       reportLoadFailure(FAILED_LOADS.CUSTOM_LISTS, error);
@@ -68,7 +96,26 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
   useEffect(() => { load(); }, [load]);
   useEffect(() => on(LISTS_CHANGED_EVENT, load), [load]);
 
-  const createList = useCallback(async (name) => {
+  // Undo for a list this hook just created: delete it, drop it here, and let
+  // every other instance reload.
+  const offerCreatedUndo = useCallback((list, { smart = false, undo, onUndone } = {}) => {
+    registerUndo(undo, {
+      action: smart ? UNDO_ACTIONS.SMART_LIST_CREATE : UNDO_ACTIONS.LIST_CREATE,
+      title: list.name,
+      meta: { listName: list.name },
+      revert: createdListRevert({
+        client: supabase, userId, listId: list.id,
+        onReverted: () => {
+          setLists(prev => prev.filter(l => l.id !== list.id));
+          setSmartLists(prev => prev.filter(l => l.id !== list.id));
+          emit(LISTS_CHANGED_EVENT);
+          onUndone?.();
+        },
+      }),
+    });
+  }, [userId]);
+
+  const createList = useCallback(async (name, opts) => {
     if (!userId || !name?.trim()) return null;
     let data;
     try {
@@ -83,22 +130,82 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
     if (data) {
       setLists(prev => [...prev, { ...data, items: [] }]);
       getConfig().onCustomListChange?.({ list_id: data.id, action: 'created' });
+      offerCreatedUndo(data, { undo: opts?.undo, onUndone: opts?.onUndone });
     }
     return data;
+  }, [userId, offerCreatedUndo]);
+
+  const createSmartList = useCallback(async (name, rules, opts) => {
+    if (!userId || !name?.trim() || !rules) return null;
+    let data;
+    try {
+      data = await createCustomListRecord(supabase, userId, name, { rules });
+    } catch (error) {
+      // Gates, not failures: premium_gate_hit covers them.
+      if (error.code === CUSTOM_LIST_LIMIT_CODE || error.code === SMART_LIST_PREMIUM_CODE) throw error;
+      console.error('Failed to create smart list', error);
+      reportActionFailure(FAILED_ACTIONS.CUSTOM_LIST_CREATE, error);
+      return null;
+    }
+    if (data) {
+      setSmartLists(prev => [...prev, { ...data, role: 'owner', people: [] }]);
+      // Shapes of the rules only, never the genre ids themselves.
+      getConfig().onCustomListChange?.({ list_id: data.id, action: 'created', smart: {
+        smart: true, source: rules.source, media_type: rules.mediaType,
+        genre_count: rules.genreIds?.length ?? 0, only_services: !!rules.onlyServices,
+      } });
+      offerCreatedUndo(data, { smart: true, undo: opts?.undo, onUndone: opts?.onUndone });
+    }
+    return data;
+  }, [userId, offerCreatedUndo]);
+
+  const updateSmartList = useCallback(async (listId, rules) => {
+    if (!userId || !rules) return null;
+    const { data, error } = await supabase
+      .from('user_custom_lists')
+      .update({ rules })
+      .eq('id', listId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (error) {
+      if (error.message === SMART_LIST_PREMIUM_CODE) throw Object.assign(new Error(SMART_LIST_PREMIUM_CODE), { code: SMART_LIST_PREMIUM_CODE });
+      console.error('Failed to update smart list', error);
+      reportActionFailure(FAILED_ACTIONS.SMART_LIST_UPDATE, error, { list_id: listId });
+      return null;
+    }
+    if (data) setSmartLists(prev => prev.map(l => l.id === listId ? { ...l, rules: data.rules } : l));
+    return data;
+  }, [userId]);
+
+  /** Whether a smart list is in the weekly roll-up (smart-list-digest). */
+  const setSmartListDigest = useCallback(async (listId, enabled) => {
+    if (!userId) return false;
+    const { error } = await supabase
+      .from('user_custom_lists')
+      .update({ digest_enabled: !!enabled })
+      .eq('id', listId)
+      .eq('user_id', userId);
+    if (error) {
+      console.error('Failed to update smart list roll-up', error);
+      reportActionFailure(FAILED_ACTIONS.SMART_LIST_UPDATE, error, { list_id: listId });
+      return false;
+    }
+    setSmartLists(prev => prev.map(l => l.id === listId ? { ...l, digest_enabled: !!enabled } : l));
+    return true;
   }, [userId]);
 
   const deleteList = useCallback(async (listId) => {
     if (!userId) return false;
-    const { error } = await supabase.from('user_custom_lists')
-      .delete()
-      .eq('id', listId)
-      .eq('user_id', userId);
+    let error = null;
+    try { await deleteCustomListRecord(supabase, userId, listId); } catch (failure) { error = failure; }
     if (error) {
       console.error('Failed to delete custom list', error);
       reportActionFailure(FAILED_ACTIONS.CUSTOM_LIST_DELETE, error, { list_id: listId });
       return false;
     }
     setLists(prev => prev.filter(l => l.id !== listId));
+    setSmartLists(prev => prev.filter(l => l.id !== listId));
     getConfig().onCustomListChange?.({ list_id: listId, action: 'deleted' });
     return true;
   }, [userId]);
@@ -128,7 +235,10 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
       reportActionFailure(FAILED_ACTIONS.CUSTOM_LIST_RENAME, error, { list_id: listId });
       return null;
     }
-    if (data) setLists(prev => prev.map(l => l.id === listId ? { ...l, name: data.name } : l));
+    if (data) {
+      setLists(prev => prev.map(l => l.id === listId ? { ...l, name: data.name } : l));
+      setSmartLists(prev => prev.map(l => l.id === listId ? { ...l, name: data.name } : l));
+    }
     return data;
   }, [userId, isShared]);
 
@@ -274,9 +384,9 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
     return true;
   }, []);
 
-  const ownedCount = lists.filter(l => l.role !== 'member').length;
+  const ownedCount = lists.filter(l => l.role !== 'member').length + smartLists.length;
 
-  return { lists, ownedCount, loading, createList, deleteList, renameList, setListVisibility, addItem, removeItem, isInList, createSharedList, addMember, leaveList, refresh: load };
+  return { lists, smartLists, ownedCount, loading, createList, createSmartList, updateSmartList, setSmartListDigest, deleteList, renameList, setListVisibility, addItem, removeItem, isInList, createSharedList, addMember, leaveList, refresh: load };
 }
 
 /**

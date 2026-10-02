@@ -1,0 +1,64 @@
+/* Your people (board R2-5a), on the History/My Lists shell: hairline rows in
+   the stream, the follow list and the Show filter in the left column. */
+.people-toolbar { margin-bottom: 1.25rem; }
+.people-side { gap: 24px; }
+.people-muted { font-size: 0.75rem; color: var(--text-muted); }
+
+.people-following { gap: 6px; }
+.people-following-list { display: flex; flex-direction: column; }
+.people-follow-row { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 1px solid var(--border); }
+.people-follow-row:last-child { border-bottom: 0; }
+.people-follow-open { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.people-follow-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.people-follow-text b { font-size: 0.8rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people-follow-text span { font-size: 0.7rem; color: var(--text-muted); }
+.people-avatar {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: var(--radius-pill); object-fit: cover; object-position: center 22%;
+  background: var(--surface-sunken); color: var(--text-muted); font-size: 0.75rem; font-weight: 700;
+}
+/* Unfollow only shows on the row being pointed at (or focused). */
+.people-follow-row--manage { border-radius: var(--radius-badge); }
+.people-follow-row--manage:hover, .people-follow-row--manage:focus-within { background: var(--surface-sunken); border-bottom-color: transparent; }
+.people-follow-row--manage:hover .people-unfollow { background: var(--surface); }
+.people-unfollow { opacity: 0; }
+.people-follow-row--manage:hover .people-unfollow,
+.people-follow-row--manage:focus-within .people-unfollow { opacity: 1; }
+@media (hover: none) { .people-unfollow { opacity: 1; } }
+
+.people-search { margin-top: 6px; }
+.people-search-field { width: 100%; box-sizing: border-box; }
+.people-search-results { display: flex; flex-direction: column; margin-top: 6px; }
+
+/* ── The stream ── */
+.people-stream { gap: 26px; }
+.people-rows { display: flex; flex-direction: column; }
+.people-row { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--border); }
+.people-row:last-child { border-bottom: 0; }
+.people-row-open { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.people-row-open:hover .people-row-title { color: var(--accent-text); }
+.people-row-poster { display: block; flex-shrink: 0; width: 44px; height: 66px; border-radius: var(--radius-badge); object-fit: cover; background: var(--surface-sunken); }
+.people-row-text { display: flex; flex-direction: column; min-width: 0; }
+.people-row-who { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people-row-title { font-size: 0.9rem; font-weight: 600; line-height: 1.38; }
+.people-row-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.people-row-when { flex-shrink: 0; width: 140px; font-size: 0.78rem; color: var(--text-secondary); text-align: right; }
+.people-row-save { display: inline-flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
+.people-row-save svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linejoin: round; }
+.people-row-save--on { color: var(--accent-text); }
+.people-row-save--on svg { fill: currentColor; }
+
+@media (max-width: 767px) {
+  .people-toolbar { flex-wrap: wrap; }
+  .people-row-when { width: auto; max-width: 90px; font-size: 0.72rem; }
+  .people-row-save { padding-inline: 0.5rem; }
+}
+
+/* Below the sidebar breakpoint the column stacks above the stream rather than
+   hiding as it does on other pages: the follow list is how you manage people. */
+@media (max-width: 1023px) {
+  .people-page .cal-body { flex-direction: column; align-items: stretch; gap: 24px; }
+  .people-page .people-side { display: flex; position: static; width: auto; }
+  /* Phones hide page searches behind the bottom sheet; this one is how you add a person. */
+  .people-page .people-search .hist-search { display: flex; }
+}

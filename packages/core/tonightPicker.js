@@ -712,8 +712,9 @@ async function slimDetails(client, type, id) {
   }
 }
 
-/** Fetch details for `items` a few at a time, pacing only real network calls. */
-async function walkDetails(client, type, items, { gapMs, until }) {
+/** Fetch details for `items` a few at a time, pacing only real network calls.
+ * Smart lists reuse it for their own titles (smartLists.js). */
+export async function walkDetails(client, type, items, { gapMs, until }) {
   const out = [];
   for (let i = 0; i < items.length && !until(out); i += CONCURRENCY) {
     const batch = items.slice(i, i + CONCURRENCY);
@@ -779,7 +780,7 @@ export async function loadWatchlistPool({
 /**
  * One discover page for the options, minus watched titles. For season-count
  * formats, checks details for up to SEASON_CHECK_LIMIT results.
- * @returns {Promise<{ pool: PickerCandidate[], totalPages: number }>}
+ * @returns {Promise<{ pool: PickerCandidate[], totalPages: number, totalResults: number }>}
  */
 export async function loadDiscoverPage({
   options, providerIds, region, page = 1, excludeIds = new Set(), savedIds = new Set(),
@@ -838,7 +839,13 @@ export async function loadDiscoverPage({
       .map(d => ({ ...d.item, seasons: d.slim.seasons, runtime: d.slim.runtime, miniseries: d.slim.miniseries }))
       .filter(c => matchesOptions(c, options, providerIds, { checkServices: false }));
   }
-  return { pool, totalPages: Math.min(Math.max(1, ...pages.map(p => p.total_pages ?? 1)), 500) };
+  return {
+    pool,
+    totalPages: Math.min(Math.max(1, ...pages.map(p => p.total_pages ?? 1)), 500),
+    // What TMDB reports for the query, for smart lists' live count. Two merged
+    // queries (genres and keyword genres) can overlap, so this is an upper bound.
+    totalResults: pages.reduce((n, p) => n + (Number(p.total_results) || 0), 0),
+  };
 }
 
 /** Title ids the viewer has already watched, per type, so the picker does not suggest them. */

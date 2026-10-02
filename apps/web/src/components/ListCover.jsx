@@ -22,11 +22,13 @@ import { SelectCircle } from './ListCards.jsx';
  * @param {Function} [props.onToggleSelect]
  * @param {boolean}  [props.dim]          nothing in this list matches the page filter
  * @param {import('react').ReactNode} [props.badge]
+ * @param {import('react').ReactNode} [props.byline]  a line under the count (who a shared list is with)
+ * @param {import('react').ReactNode} [props.menu]    a ⋯ beside the name, outside the open button
  * @param {number}   [props.size]         fan width in px when not filling its grid cell
  */
 export default function ListCover({
   name, anchorId, count, posters = [], onOpen, labelled = true,
-  editMode = false, selectable = true, selected = false, onToggleSelect, dim = false, badge, size,
+  editMode = false, selectable = true, selected = false, onToggleSelect, dim = false, badge, byline, menu, size,
 }) {
   const paths = posters.filter(Boolean).slice(0, 3);
   // Slot order: back-left, back-right, front. The front is the newest.
@@ -38,6 +40,7 @@ export default function ListCover({
   const classes = ['list-cover'];
   if (editMode && !selectable) classes.push('list-cover--dim');
   if (dim) classes.push('list-cover--dim');
+  if (menu && !editMode) classes.push('list-cover--menu');
 
   return (
     <div id={anchorId} className={classes.join(' ')} style={size ? { width: size } : undefined}>
@@ -60,9 +63,11 @@ export default function ListCover({
           <div className="list-cover-label">
             <span className="list-cover-name">{name}{badge}</span>
             {count && <span className="list-cover-count">{count}</span>}
+            {byline && <span className="list-cover-byline">{byline}</span>}
           </div>
         )}
       </button>
+      {menu && !editMode && labelled && <div className="list-cover-menu">{menu}</div>}
       {editMode && selectable && (
         <SelectCircle variant="grid" selected={selected} onClick={(e) => { e.stopPropagation(); onToggleSelect(); }} label={label} />
       )}

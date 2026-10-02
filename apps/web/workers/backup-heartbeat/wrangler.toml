@@ -69,4 +69,4 @@ MIN_BYTES = "200000"
 #
 # ALERT_FROM stays on theplot.tv: Resend will only send from a verified domain.
 ALERT_EMAIL = "sav.black@outlook.com"
-ALERT_FROM = "PLOT <hello@theplot.tv>"
+ALERT_FROM = "Plot <hello@theplot.tv>"

@@ -1,5 +1,5 @@
 /**
- * marketing-feed — "What's On", PLOT's update feed at theplot.tv/whats-on.
+ * marketing-feed — "What's On", Plot's update feed at theplot.tv/whats-on.
  *
  * Every marketing post is originally published here; social posts link back.
  * Served via a Vercel rewrite from the static site:
@@ -140,11 +140,15 @@ type FeedPost = {
     trailer_url?: string | null;
     when_label?: string | null;
     title?: { title?: string | null; where?: string | null } | null;
+    // The week ahead stores its dated set here. It predates this type and was
+    // never declared; the rows read it so a title can carry its release date
+    // without a TMDB lookup.
+    titles?: { tmdb_id?: number; when_label?: string | null; release_kind?: string | null; poster_path?: string | null }[] | null;
   } | null;
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
-// Feed/article hero. Most posts use the plain TMDB still (no PLOT branding) set
+// Feed/article hero. Most posts use the plain TMDB still (no Plot branding) set
 // in copy.hero_image; the branded render (media[0]) is for social channels.
 // Trending charts have no hero_image, so they keep their branded chart render.
 const postImage = (p: FeedPost) => {
@@ -152,8 +156,8 @@ const postImage = (p: FeedPost) => {
   if (typeof hero === 'string' && /^https?:\/\//.test(hero)) return hero;
   return p.media?.[0]?.landscape_path ? mediaUrl(p.media[0].landscape_path) : null;
 };
-// Static branded 1200×630 fallback (PLOT wordmark + tagline) for pages with no
-// per-post image, so every shared PLOT link previews on-brand.
+// Static branded 1200×630 fallback (Plot wordmark + tagline) for pages with no
+// per-post image, so every shared Plot link previews on-brand.
 const OG_FALLBACK = `${SITE}/og-image.png`;
 // Link-preview image: prefer the branded per-post social render, then the plain
 // hero still, then the static brand image. (The on-page hero keeps using
@@ -286,7 +290,7 @@ const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?
       ${facts ? `<span class="sm-facts">${esc(facts)}</span>` : ''}
       ${status}
     </div>
-    <a class="sm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your PLOT</a>
+    <a class="sm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your Plot</a>
   </aside>`;
 };
 
@@ -334,7 +338,7 @@ const trailerModule = async (post: FeedPost, ref = post.tmdb_refs?.[0]) => {
       </div>
       <div class="tm-actions">
         <a class="tm-youtube" href="${youtubeUrl}" target="_blank" rel="noopener noreferrer">Open on YouTube</a>
-        <a class="tm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your PLOT</a>
+        <a class="tm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your Plot</a>
       </div>
     </div>
   </aside>`;
@@ -628,7 +632,10 @@ ${ARTICLE_TABLE_CSS}
   .gt-col .gt-row:last-child { border-bottom: none; }
   .gt-art { flex-shrink: 0; display: block; width: 40px; }
   .gt-art img, .gt-ph { width: 40px; height: 60px; object-fit: cover; border-radius: 6px; display: block; background: var(--bg); }
-  .gt-name { flex-grow: 1; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 0.94rem; letter-spacing: -0.015em; line-height: 1.2; text-decoration: none; color: var(--ink); }
+  .gt-text { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .gt-note { font-size: 0.76rem; color: var(--mut); }
+  .gt-chip { flex-shrink: 0; background: var(--sage); color: var(--ink); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .gt-name { min-width: 0; font-family: var(--display); font-weight: 700; font-size: 0.94rem; letter-spacing: -0.015em; line-height: 1.2; text-decoration: none; color: var(--ink); }
   .gt-name:hover { color: var(--accent); }
   .gt-add { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--fill); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
   .gt-add:hover { background: var(--fill-hover); }
@@ -1056,7 +1063,7 @@ const trendingTeaser = (items: ChartItem[], prior: ChartItem[] | null) => `<ol c
 }).join('')}</ol>`;
 
 // The release date is the point of a countdown post, so it's a badge on the
-// card rather than buried in a dek. Uses scheduled_for (when PLOT posted the
+// card rather than buried in a dek. Uses scheduled_for (when Plot posted the
 // update) — the only date FeedPost actually carries; not a claim about the
 // title's own release date, which this function has no source for.
 const comingSoonCards = (posts: FeedPost[]) => `<div class="datecards">${posts.map((p) => {
@@ -1434,13 +1441,36 @@ Deno.serve(async (req) => {
   // than a one-title article. No service is named here: where to watch is the
   // app's job, and naming one would cost a lookup per row.
   const shown = new Set<TmdbRef>();
+  // Date and release kind for the week ahead, already in payload, so a row costs
+  // no extra lookup. Keyed by tmdb_id because payload entries carry that name
+  // even where tmdb_refs do not. A `trending` post never gets here — every one
+  // of those slugs is served as the persistent chart page instead.
+  const rowContext = (r: TmdbRef): { note?: string; chip?: string; poster?: string } => {
+    const rid = refId(r);
+    if (!rid) return {};
+    if (typed.post_type === 'upcoming') {
+      const item = (typed.payload?.titles || []).find((i) => i.tmdb_id === rid);
+      const KIND: Record<string, string> = { cinema: 'In cinemas', streaming: 'Streaming', tv: 'On TV' };
+      return item
+        ? { note: item.when_label || '', chip: KIND[item.release_kind ?? ''] || '', poster: item.poster_path || '' }
+        : {};
+    }
+    return {};
+  };
+
   const restRows = (list: TmdbRef[]) => list.map((r) => {
     const rid = refId(r);
-    const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
+    const { note, chip, poster: fallback } = rowContext(r);
+    const posterPath = r.poster_path || fallback || '';
+    const poster = posterPath ? `https://image.tmdb.org/t/p/w185${esc(posterPath)}` : null;
     return `<div class="gt-row">
       <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-art">${poster ? `<img src="${poster}" alt="" loading="lazy">` : '<span class="gt-ph"></span>'}</a>
-      <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-name">${esc(r.title)}</a>
-      ${rid ? `<a class="gt-add" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&tmdb_id=${rid}&src=whats_on_guide" data-cta="guide_save" aria-label="Save ${esc(r.title)} to your PLOT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>` : ''}
+      <span class="gt-text">
+        <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-name">${esc(r.title)}</a>
+        ${note ? `<span class="gt-note">${esc(note)}</span>` : ''}
+      </span>
+      ${chip ? `<span class="gt-chip">${esc(chip)}</span>` : ''}
+      ${rid ? `<a class="gt-add" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&tmdb_id=${rid}&src=whats_on_guide" data-cta="guide_save" aria-label="Save ${esc(r.title)} to your Plot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>` : ''}
     </div>`;
   }).join('');
 
@@ -1475,11 +1505,16 @@ Deno.serve(async (req) => {
   if (storyHtml && lead) shown.add(lead.ref);
   if (runnerUpHtml && runnerUp) shown.add(runnerUp.ref);
   const rest = refs.filter((r) => !shown.has(r));
-  const titlesSection = typed.post_type === 'guide' && rest.length && !inlineTitles
+  const TAIL_HEAD: Record<string, string> = {
+    guide: 'Also in this guide',
+    upcoming: 'Everything landing this week',
+  };
+  const tailHead = TAIL_HEAD[typed.post_type];
+  const titlesSection = tailHead && rest.length && !inlineTitles
     ? `<section class="gt">
         <div class="gt-head">
-          <h2>Also in this guide</h2>
-          <span class="gt-count">${rest.length} more</span>
+          <h2>${esc(tailHead)}</h2>
+          <span class="gt-count">${rest.length}${typed.post_type === 'guide' ? ' more' : ' titles'}</span>
         </div>
         <div class="gt-card">
           <div class="gt-col">${restRows(rest.slice(0, Math.ceil(rest.length / 2)))}</div>

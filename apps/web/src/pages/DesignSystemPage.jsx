@@ -68,7 +68,7 @@ const motionRules = [
   ['Keep motion structural', 'Transitions should explain state changes, not decorate them.'],
   ['Use fast feedback first', 'Buttons, chips, and tabs should resolve within the fast transition token.'],
   ['Reserve bounce for delight', '--ease-bounce (cubic-bezier 0.34, 1.56, 0.64, 1) is for special arrivals like sheets and modals — never routine navigation.'],
-  ['Fade loaders sequentially', 'The PLOT loader should stay centered and animate letter-by-letter in order.'],
+  ['Fade loaders sequentially', 'The plot loader should stay centered and animate letter-by-letter in order.'],
 ];
 
 const motionTokens = [
@@ -82,7 +82,7 @@ const layoutTokens = [
   ['--content-max', '680px', 'Focused reading width for legal, settings, and forms.'],
   ['--panel-w', '560px', 'Fixed width of the right-side media reading panel.'],
   ['--header-h', '56px', 'Height of the fixed app header. Below 1024px only — at sidebar widths there is no header.'],
-  ['--tabbar-h', '58px', 'Height of the fixed bottom tab bar.'],
+  ['--bottom-inset', '0px', 'Height of whatever is fixed to the bottom edge, safe area excluded. 60px on phones while the filter bar is showing, otherwise 0. Toasts and banners pinned near the bottom add it.'],
   ['--gut', '1rem', 'Content gutter. The desktop page title, section headers, and rails all pad by this so they share one left edge.'],
 ];
 
@@ -258,7 +258,7 @@ export default function DesignSystemPage() {
 
         <h3 className="ds-subsection-title">Spending the accent</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          <code>--accent</code> (#E05578) is a signal, not a decorative palette colour. Everything else is black, white, and grey. Use it only where it earns its place:
+          <code>--accent</code> (#E05578 on Light; its hue is per theme under Premium themes) is a signal, not a decorative palette colour. Everything else is black, white, and grey. Use it only where it earns its place:
         </p>
         <div className="ds-utility-grid">
           {accentRules.map(([label, purpose]) => (
@@ -286,7 +286,7 @@ export default function DesignSystemPage() {
 
         <h3 className="ds-subsection-title">Profile badges</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          Two separate things, so two separate colors. Blue is a paid PLOT
+          Two separate things, so two separate colors. Blue is a paid Plot
           Premium subscription; pink is a Ko-fi supporter, which grants nothing
           and is purely a thank-you. They're independent, so a name can carry
           both. The glyphs differ as well as the colors, so the pair still reads
@@ -320,16 +320,6 @@ export default function DesignSystemPage() {
             <div className="ds-fake-header">
               <span className="app-page-title">plot</span>
               <button className="icon-btn" aria-label="Sample menu"><IconMenu /></button>
-            </div>
-          </div>
-
-          <div className="ds-bar-item">
-            <div className="ds-bar-copy"><strong>Primary tab bar</strong><p>Bottom navigation for the main destinations.</p></div>
-            <div className="ds-fake-tabbar">
-              <button className="tab-btn active">Home</button>
-              <button className="tab-btn">Calendar</button>
-              <button className="tab-btn">My Lists</button>
-              <button className="tab-btn">History</button>
             </div>
           </div>
 
@@ -1027,7 +1017,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="14" title="Error, Empty, and Loading States">
         <p className="ds-section-note">
-          All full-page error screens share one dark centered design — including the marketing site's 404, which shares this exact layout and copy. In-app empty states use a minimal inline pattern, and loading falls back to the animated PLOT mark.
+          All full-page error screens share one dark centered design — including the marketing site's 404, which shares this exact layout and copy. In-app empty states use a minimal inline pattern, and loading falls back to the animated Plot mark.
         </p>
 
         {/* Full-page error screens */}
@@ -1154,7 +1144,7 @@ export default function DesignSystemPage() {
         {/* Loading state */}
         <h3 className="ds-subsection-title">Loading state</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          While a route or panel resolves, the app shows the PLOT wordmark with its letters pulsing in sequence — centered on the surface, never a spinner.
+          While a route or panel resolves, the app shows the plot wordmark with its letters pulsing in sequence — centered on the surface, never a spinner.
         </p>
         <div className="ds-loader-grid">
           <div className="ds-loader-card">
@@ -1233,7 +1223,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="16" title="Share & Social Cards">
         <p className="ds-section-note">
-          When a PLOT link is shared, whether it is a title texted to a friend or a profile or list posted, the <code>og:image</code> is written by the Pages Function that serves the page. Titles point at their TMDB backdrop; profiles, lists and bare-domain links point at the static 1200×630 <code>og-image.png</code>. The branded cards below are the retired <code>plot-og</code> renderer's output, kept for reference in source only. Its deployment was deleted on 18 September 2026 because a Satori render costs ~25ms of CPU against the free plan's 10ms per-request ceiling, so it needs Workers Paid before anything can point at it again.
+          When a Plot link is shared, whether it is a title texted to a friend or a profile or list posted, the <code>og:image</code> is written by the Pages Function that serves the page. Titles point at their TMDB backdrop; profiles, lists and bare-domain links point at the static 1200×630 <code>og-image.png</code>. The branded cards below are the retired <code>plot-og</code> renderer's output, kept for reference in source only. Its deployment was deleted on 18 September 2026 because a Satori render costs ~25ms of CPU against the free plan's 10ms per-request ceiling, so it needs Workers Paid before anything can point at it again.
         </p>
 
         <div className="ds-share-grid">
@@ -1271,7 +1261,7 @@ export default function DesignSystemPage() {
           </RuleCard>
           <RuleCard label="Shared spec">
             <div className="ds-note-list">
-              <div className="ds-note-row"><strong>Canvas</strong><p>1200×630, brand dark, PLOT wordmark, accent eyebrow — <code>--accent</code> sourced from <code>core/tokens.js</code>.</p></div>
+              <div className="ds-note-row"><strong>Canvas</strong><p>1200×630, brand dark, plot wordmark, accent eyebrow — <code>--accent</code> sourced from <code>core/tokens.js</code>.</p></div>
               <div className="ds-note-row"><strong>Type</strong><p>Gabarito titles (fluid 58–106px by length), DM Sans meta + labels. The same two families as every other surface.</p></div>
               <div className="ds-note-row"><strong>Source</strong><p>Rendered from the retired <code>plot-og</code> Cloudflare Worker source (<code>apps/web/workers/og</code>). The Worker is not deployed and nothing currently points at it. These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
             </div>
@@ -1317,11 +1307,11 @@ export default function DesignSystemPage() {
         </p>
         <div className="ds-collateral-row">
           <figure className="ds-collateral-item ds-ci--wide">
-            <img src="/ds/collateral-x-header.jpg" alt="X header and brand cover — ink PLOT wordmark on cream" />
+            <img src="/ds/collateral-x-header.jpg" alt="X header and brand cover — ink plot wordmark on cream" />
             <figcaption><strong>X header &amp; brand cover · cream</strong>Centered Gabarito wordmark, ink on cream · 1500×500 · used for both</figcaption>
           </figure>
           <figure className="ds-collateral-item ds-ci--wide">
-            <img src="/ds/collateral-x-header-dark.jpg" alt="X header and brand cover — off-white PLOT wordmark on dark" />
+            <img src="/ds/collateral-x-header-dark.jpg" alt="X header and brand cover — off-white plot wordmark on dark" />
             <figcaption><strong>X header &amp; brand cover · dark</strong>Inverted — warm off-white on <code>#0C0C0E</code></figcaption>
           </figure>
           <figure className="ds-collateral-item ds-ci--square">
@@ -1345,7 +1335,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="18" title="Mobile (native app)">
         <p className="ds-section-note">
-          The PLOT mobile app (Expo / React Native, in <code>mobile/</code>) is a first-class surface of this system. It shares the foundation with web through the <code>@plot/core</code> workspace package (<code>packages/core/tokens.js</code>) — one source both apps import directly, so colors, radii, and the base-4 spacing scale are locked to web with no copy to drift. It now shares the type families too: Gabarito for display, DM Sans for UI.
+          The Plot mobile app (Expo / React Native, in <code>mobile/</code>) is a first-class surface of this system. It shares the foundation with web through the <code>@plot/core</code> workspace package (<code>packages/core/tokens.js</code>) — one source both apps import directly, so colors, radii, and the base-4 spacing scale are locked to web with no copy to drift. It now shares the type families too: Gabarito for display, DM Sans for UI.
         </p>
 
         <div className="ds-mobile-grid">
@@ -1472,7 +1462,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="20" title="Voice & Copy">
         <p className="ds-section-note">
-          How PLOT sounds is part of the system. The canonical source is <code>marketing/VOICE.md</code> — injected verbatim into every copy-generation call. This is the distilled version.
+          How Plot sounds is part of the system. The canonical source is <code>marketing/VOICE.md</code> — injected verbatim into every copy-generation call. This is the distilled version.
         </p>
 
         <div className="ds-utility-grid">
@@ -1490,14 +1480,14 @@ export default function DesignSystemPage() {
             <div className="ds-note-list">
               <div className="ds-note-row"><strong>Errors stay in-world</strong><p>"Looks like we've hit a plot hole." / "That scene didn't quite load." — movie language, warm, never blame-y.</p></div>
               <div className="ds-note-row"><strong>Empty states point forward</strong><p>"Nothing saved yet" + one concrete next step ("Browse the Guide or search for titles…"). Never a dead end.</p></div>
-              <div className="ds-note-row"><strong>CTAs are product verbs</strong><p>"Save to your watchlist" / "Add to your PLOT" — one soft CTA or none. Never "link in bio", never stacked CTAs.</p></div>
+              <div className="ds-note-row"><strong>CTAs are product verbs</strong><p>"Save to your watchlist" / "Add to your Plot" — one soft CTA or none. Never "link in bio", never stacked CTAs.</p></div>
             </div>
           </RuleCard>
           <RuleCard label="Never">
             <div className="ds-note-list">
               <div className="ds-note-row"><strong>Claims without data</strong><p>No hardcoded facts (dates, cast, platforms) not in the payload; ratings only from the provided IMDb/RT/Metacritic block — never TMDB scores.</p></div>
-              <div className="ds-note-row"><strong>Studio affiliation</strong><p>Never imply PLOT is affiliated with or endorsed by any studio, network, or streamer.</p></div>
-              <div className="ds-note-row"><strong>Superlatives about PLOT</strong><p>Never "the best app for…". The product speaks through what it does.</p></div>
+              <div className="ds-note-row"><strong>Studio affiliation</strong><p>Never imply Plot is affiliated with or endorsed by any studio, network, or streamer.</p></div>
+              <div className="ds-note-row"><strong>Superlatives about Plot</strong><p>Never "the best app for…". The product speaks through what it does.</p></div>
             </div>
           </RuleCard>
         </div>

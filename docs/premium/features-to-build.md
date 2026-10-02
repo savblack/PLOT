@@ -1,4 +1,4 @@
-# PLOT Premium: features to build (agent handoff)
+# Plot Premium: features to build (agent handoff)
 
 **Audience:** another agent picking up Premium product work.  
 **Status of this doc:** locked Free/Premium *positioning* as of 2026-09-23; build status updated 2026-09-28. **Pick for Me** (the tonight picker) is live on `main`. **Watch together** is live on web (`SHOW_WATCH_TOGETHER = true`, PLO-515). Mobile is not built yet. Most other Premium *product* features are not built yet. Checkout is hard-closed.  
@@ -30,14 +30,15 @@
 | Stripe plumbing | `stripe-billing`, `stripe-webhook`, `billing_customers`, `is_premium()`, portal + tip paths exist. |
 | Checkout | **Hard-closed:** `usePremium.startCheckout` stubs; `stripe-billing` returns 503 `premium_coming_soon` for `action=checkout`. |
 | Free list cap | Free: 5 custom lists (`FREE_CUSTOM_LIST_CAP`). Premium: unlimited via `can_create_custom_list()`. Enforced in DB. Sixth-list UX → Explore Premium. |
-| Live calendar feed | Backend `calendar-feed` + token exist. UI Premium-gates subscribe; free users get one-time `.ics` snapshot. |
+| Live calendar feed | Premium URL on web and mobile. Free gets a one-time `.ics`. `calendar-feed` returns an empty calendar when `is_premium()` is false. |
 | Plex / Trakt sync | Edge functions return `premium_required` for non-Premium `sync`. **UI flag on:** `SHOW_MEDIA_SYNC_INTEGRATIONS = true` (web + mobile). Premium Settings shows Connect and Import watch history. Public copy does not call it automatic or two-way sync. Free Settings shows the Premium gate. Live OAuth still needs a Premium account smoke. |
 | Marketing homepage previews | Illustrative Tonight / Together / Following storyboards only. Not live product. |
 | Pick for Me (tonight picker) | **Live on `main`** (PR #1029, merged 2026-09-25; follow-up #1045, 2026-09-26). See §5.2. |
 | Watch together (overlap + shared lists) | **Live on web.** `SHOW_WATCH_TOGETHER = true` in `apps/web/src/launchFeatures.js` (PLO-515). Production has migrations `20260927100000` through `20260927140000`. Mobile flag is `false` (no screen yet). Decisions in `docs/design/watch-together/README.md`. |
 | `/plans` rebuild | **In review:** PR #1031 (`agent/premium-plans-a2`), side-by-side plans at US$3/$24. |
 | One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free. Public copy does not list automatic sync as a Premium benefit. |
-| Stats, smart lists, people alerts, season-ready, customise | **Not built** as product features (copy only). |
+| Following people + season-ready | **Built on web (PLO-521, round 2 design).** Follow from the title panel's Cast and Directed by rows, a person's page, Home and the Your people page (`/your-people`); Premium checked in RLS. Daily `premium-alerts` run keeps `people_feed` current and writes release-day notifications; `people-feed-refresh` fills a new follow straight away. Home also gained Continue watching (free). Whole-season alerts stay as built, secondary. Mobile shows the rows read-only; the rest is issue #1093. See §5.9 and §5.10. |
+| Stats, smart lists, customise | **Not built** as product features (copy only). |
 
 ---
 
@@ -94,7 +95,7 @@ Lead stories (positioning priority, not a statistical ranking):
 4. Automatic Plex and Trakt syncing. **Do not list this in public copy.** Savannah may not ship it. Manual import stays Free.
 5. Deeper viewing stats
 6. Unlimited custom lists + smart lists
-7. Live calendar subscription
+7. Live calendar subscription. **Built (PLO-519).** Premium URL on web and mobile. Free keeps a one-time snapshot.
 8. Actor / director release alerts
 9. Whole-season-ready alerts (verified episode availability on selected services/region)
 10. Customise your plot (widgets, custom icons, custom profile pages, themes)
@@ -135,7 +136,7 @@ Suggested priority for “Less deciding. More watching.” (matches plans storie
 1. ~~Tonight’s movie picker~~ **Done: Pick for Me** (§5.2).
 2. **Watchlist overlap + host collaborative lists.** Live on web as Watch together (`/together`, flag on, PLO-515). Join stays Free. Mobile is not built.
 3. **Unlimited lists** — gated on both platforms. Hitting the 5-list cap (or a server-side cap rejection from a stale tab) opens the shared upgrade sheet on web and mobile (`UpgradeSheet`, content from `@plot/core/upgradeSheet.js`). When checkout opens, wire the sheet's Upgrade button to real checkout.
-4. **Live calendar subscription** — largely wired; polish Premium path and free “Request access” / snapshot.
+4. **Live calendar subscription** — shipped (PLO-519). Premium URL on web and mobile. Free keeps a one-time snapshot. The feed returns an empty calendar when `is_premium()` is false.
 5. **Deeper stats** — define what “additional” means beyond today’s Free overview.
 6. **Smart lists** — filter rules that auto-update, including discoveries beyond saved titles.
 7. **People alerts** + **whole-season-ready** — need notification infrastructure; season-ready needs verified episode-level availability.
@@ -266,11 +267,13 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 **Intent:** Auto-updating calendar URL in the user’s calendar app. One-time `.ics` snapshot stays Free.
 
-**Already built:**
-- `calendar_token`, `calendar-feed` edge function
-- Settings: Premium can generate/manage URL; non-Premium sees needs-Premium / Explore Premium; snapshot download not Premium-gated (`docs/qa/public-launch-checklist.md`)
+**Shipped (PLO-519):**
+- `calendar_token` on profiles, `calendar-feed` edge function (`verify_jwt = false`)
+- The feed calls `is_premium()` for the token owner. A non-Premium token gets a valid empty calendar, so the calendar app keeps the subscription and stops showing events. If that check errors, the feed still serves events, so a Premium subscriber is not blanked by an RPC failure.
+- Web Settings: Premium can generate, copy, and revoke the URL. Free sees Explore Premium. The one-time `.ics` download on the same page stays free.
+- Mobile Settings: same gate. Free and Premium can share a one-time `.ics`. iOS attaches the file. Android’s share sheet only sends text, so the calendar text goes in the message.
 
-**To finish:** Ensure path works end-to-end when Checkout is open; mobile parity; no secrets in exports (`export-user-data` already careful).
+**Left:** Checkout is PLO-493 and is separate. The feed works for any account whose `is_premium()` is true. `export-user-data` already omits `calendar_token`.
 
 ### 5.9 Actor / director release alerts — **Premium**
 
@@ -280,6 +283,12 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 **Acceptance sketch:** Follow person → store preference → fire on new credit/release with region sanity → respect mute/unsubscribe.
 
+**Built (PLO-521, web, round 2 design, boards R2-1a to R2-5b):** Follow from a + badge on each Cast headshot in the title panel (hover on desktop, always on phones), a Follow button on the Directed by / Created by row, Follow on a person's page (with a Coming up strip above All credits), the Your people invite on Home, and the search on the Your people page. Following is `person_alerts`; the insert policy calls `is_premium()`, and Free gets the upgrade sheet (alerts reason). A toast confirms the follow with how many dated titles are now in Your people.
+
+What counts (Savannah, round 2): films billed in the top 12 or directed; series the person is a regular in (3+ episodes, or any count on a new series) or created, including each new season, whole drop or weekly. One update per title, or per season. Playing yourself, talk, news and reality never count.
+
+How: the daily run (`only: people`, 21:00 UTC) refreshes `people_feed` (one row per person per title or season, with each film's first general release per region) and writes a `person_release` row on release day: a film on its first theatrical or digital release in the follower's region, a series or season on its premiere. A show the follower already follows through a list or watching is left to `new_episode` (#1032), so a premiere is never announced twice. `people-feed-refresh` fills the feed for a person the moment they are followed. Home's Your people shelf (after Top 20 This Week) and the Your people page read `people_feed`; chips are Out today, In cinemas, New season and Dated. Rules: `supabase/functions/_shared/premiumAlerts.js` (server) and `packages/core/peopleFeed.js` (client), tests in `apps/web/tests/unit/premiumAlerts.test.js`, `apps/web/tests/unit/peopleRules.test.js` and `packages/core/tests/unit/peopleFeed.test.js`.
+
 ### 5.10 Whole-season-ready alerts — **Premium**
 
 **Intent:** Notify when **every** episode is verified available on the user’s selected services in their region. Airing dates alone do **not** qualify.
@@ -287,6 +296,14 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 **Depends on:** episode-level availability data quality. Do not ship if evidence is only TMDB air dates.
 
 **Acceptance sketch:** Explicit verification rule documented; false positives worse than silence.
+
+**Built (PLO-521, web), with this verification rule.** The daily run (`only: seasons`, 21:30 UTC) alerts on a show's latest season only when all of these hold:
+
+1. TMDB says the season is finished: its last episode is marked `finale`, or the show is Ended/Canceled, or the next episode is in a later season. A mid-season break or an unannounced finale is not finished.
+2. Every episode TMDB lists for the season has an air date before today, and the list is complete (episodes 1 to `episode_count`, no gaps). The finale aired within the last 180 days.
+3. TMDB's **season-level** watch providers (JustWatch data) list the season under subscription, free or ad-supported for one of the person's selected services, in their region. Rent and buy do not count.
+
+Air dates alone never qualify: rule 3 is required. **Known limit:** TMDB has no per-episode provider data, so rule 3 is season-level availability after the whole season has aired, not an episode-by-episode check. A service that carries only part of a finished season would still pass. Closing that needs JustWatch partner season offers with an episode count, which this repo does not call yet.
 
 ### 5.11 Customise your plot — **Premium** (supporting, not lead)
 
@@ -332,7 +349,7 @@ From `docs/launch/app-store-launch-sprint.md` and billing docs:
 | --- | --- |
 | `packages/core/copy/plansPage.js` | Canonical Free/Premium matrix + pricing copy |
 | `packages/core/premium.js` | `FREE_CUSTOM_LIST_CAP`, `isPremiumProfile`, `canCreateCustomList`, friendly errors |
-| `packages/core/copy/settingsView.js` | Settings Premium, sync gate, and calendar coming-soon strings |
+| `packages/core/copy/settingsView.js` | Settings Premium and sync gate strings |
 | `apps/web/src/hooks/usePremium.js` | Checkout stub + portal/tip |
 | `apps/web/src/launchFeatures.js` | `SHOW_PRICING_PAGE`, `SHOW_MEDIA_SYNC_INTEGRATIONS`, `SHOW_WATCH_TOGETHER` (true) |
 | `apps/mobile/lib/launchFeatures.ts` | Mobile flags. Pricing page off. Watch together off (no screen yet). |

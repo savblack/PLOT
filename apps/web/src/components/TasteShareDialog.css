@@ -111,7 +111,7 @@
 .tsd-network:disabled { opacity: 0.5; cursor: progress; }
 .tsd-message {
   margin: 0; padding: 0.6rem 0.8rem; border-radius: var(--radius-md);
-  background: var(--accent-secondary-fill); color: var(--on-accent-fill);
+  background: var(--accent-secondary-fill); color: var(--on-accent-secondary-fill);
   font-size: 0.8rem; line-height: 1.4;
 }
 

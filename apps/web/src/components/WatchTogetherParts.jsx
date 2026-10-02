@@ -14,9 +14,13 @@ import { tileMode, tileShowsCount, personName, REQUESTS_FROM_OPTIONS } from '@pl
 import { useWatchTogether, useWatchTogetherStatus, useWatchTogetherLink } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
 import { useApp } from '../hooks/useApp.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import './WatchTogetherView.css';
+import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
+import UpgradeSheet from './UpgradeSheet.jsx';
+import { EVENTS, track } from '../lib/analytics.js';
 
 export function PersonAvatar({ person, size = 'md' }) {
   const name = personName(person);
@@ -37,9 +41,11 @@ function Cross() {
  * the private-profile opt-in to share the full watchlist.
  *
  * @param {{ person: { display_name?: string | null, username?: string | null, avatar_url?: string | null },
- *   viewerIsPublic: boolean, busy?: boolean, onAccept: (shareFull: boolean) => void, onDecline: () => void, onClose: () => void }} props
+ *   viewer: { id?: string, is_public?: boolean | null } | null | undefined, busy?: boolean, onAccept: (shareFull: boolean) => void, onDecline: () => void, onClose: () => void }} props
  */
-export function AcceptDialog({ person, viewerIsPublic, busy = false, onAccept, onDecline, onClose }) {
+export function AcceptDialog({ person, viewer, busy = false, onAccept, onDecline, onClose }) {
+  // Already visible to everyone: nothing to share, so the sheet doesn't offer it.
+  const viewerWatchlistOpen = useWatchlistVisibility(viewer?.id, !!viewer?.is_public).visibility === 'everyone';
   const [shareFull, setShareFull] = useState(false);
   const name = personName(person);
   return (
@@ -54,11 +60,11 @@ export function AcceptDialog({ person, viewerIsPublic, busy = false, onAccept, o
           <p className="wt-accept-line"><Check />{T.accept.seesOverlap}</p>
           <p className="wt-accept-line"><Check />{T.accept.seesPicks}</p>
           <p className="wt-accept-label">{T.accept.wontSee(name)}</p>
-          {!viewerIsPublic && <p className="wt-accept-line"><Cross />{T.accept.hidesRest}</p>}
+          {!viewerWatchlistOpen && <p className="wt-accept-line"><Cross />{T.accept.hidesRest}</p>}
           <p className="wt-accept-line"><Cross />{T.accept.hidesPrivateLists}</p>
           <p className="wt-accept-line"><Cross />{T.accept.hidesNotes}</p>
         </div>
-        {!viewerIsPublic && (
+        {!viewerWatchlistOpen && (
           <div className="wt-accept-card wt-accept-share">
             <span>
               <span className="wt-accept-share-title">{T.accept.shareFull}</span>
@@ -88,6 +94,10 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [reviewing, setReviewing] = useState(false);
+  // Collaborative lists, the way in from a friend (canvas C2): start a list
+  // with them, seeded from what you've both saved. Premium, like any list
+  // you host; the server checks it too.
+  const [startingList, setStartingList] = useState(false);
   if (!viewer || !person || !status) return null;
 
   const name = personName(person);
@@ -130,10 +140,20 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
         {mode === 'pending' && <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => run(() => cancel(person.id))}>{T.requests.cancel}</button>}
         {mode === 'incoming' && <button type="button" className="btn btn-primary" onClick={() => setReviewing(true)}>{T.tile.incomingAction}</button>}
         {mode === 'paired' && <button type="button" className="btn btn-primary" onClick={() => navigate(`/together/with/${encodeURIComponent(person.username)}`)}>{T.tile.pairedAction}</button>}
+        {mode === 'paired' && (
+          <button type="button" className="btn btn-secondary" onClick={() => {
+            if (!isPremiumProfile(viewerProfile)) track(EVENTS.PREMIUM_GATE_HIT, { feature: 'collaborative_lists' });
+            setStartingList(true);
+          }}>{COLLABORATIVE_LISTS.startWith.action(name)}</button>
+        )}
       </div>
+      {mode === 'paired' && <p className="wt-note">{COLLABORATIVE_LISTS.startWith.body(name)}</p>}
       {foot && <p className="wt-note">{foot}</p>}
+      {startingList && (isPremiumProfile(viewerProfile)
+        ? <ShareListDialog partner={{ ...person, other_id: person.id }} overlapCount={status.overlap_count ?? 0} title={COLLABORATIVE_LISTS.startWith.action(name)} onClose={() => setStartingList(false)} />
+        : <UpgradeSheet reason="collaborativeLists" onClose={() => setStartingList(false)} />)}
       {reviewing && (
-        <AcceptDialog person={person} viewerIsPublic={!!viewerProfile?.is_public} busy={busy}
+        <AcceptDialog person={person} viewer={viewerProfile} busy={busy}
           onClose={() => setReviewing(false)}
           onDecline={() => { setReviewing(false); run(() => respond(person.id, false)); }}
           onAccept={(shareFull) => { setReviewing(false); run(() => respond(person.id, true, shareFull)); }} />
@@ -152,6 +172,7 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
 export function WatchTogetherSettings({ user, profile }) {
   const userId = user?.id;
   const { partners, setShareFull, end } = useWatchTogether(userId);
+  const { visibility: watchlistVisibility, refresh: refreshWatchlistVisibility } = useWatchlistVisibility(userId, !!profile?.is_public);
   const { key, reset } = useWatchTogetherLink(userId);
   const [resetDone, setResetDone] = useState(false);
   const [from, setFrom] = useState(/** @type {string | null} */ (null));
@@ -199,10 +220,10 @@ export function WatchTogetherSettings({ user, profile }) {
               </span>
               <button type="button" className="btn btn-secondary btn-sm wt-stop" onClick={() => end(p.other_id)}>{T.settings.stop}</button>
             </div>
-            {!profile?.is_public && (
+            {watchlistVisibility !== 'everyone' && (
               <div className="wt-settings-share">
                 <span>{T.settings.shareFull}</span>
-                <SettingsSwitch label={`${T.settings.shareFull}: ${personName(p)}`} checked={p.i_share_full} onChange={() => setShareFull(p.other_id, !p.i_share_full)} />
+                <SettingsSwitch label={`${T.settings.shareFull}: ${personName(p)}`} checked={p.i_share_full} onChange={async () => { await setShareFull(p.other_id, !p.i_share_full); refreshWatchlistVisibility(); }} />
               </div>
             )}
           </div>
@@ -226,9 +247,10 @@ export function WatchTogetherSettings({ user, profile }) {
  * titles you've both saved (or empty), and who's on it (partners only).
  *
  * @param {{ partner: { other_id: string, username: string, display_name?: string | null },
- *   overlapCount: number, onClose: () => void }} props
+ *   overlapCount: number, title?: string, onClose: () => void }} props
+ *   `title` names the sheet for the way in; a friend's profile says "Start a list with Sam".
  */
-export function ShareListDialog({ partner, overlapCount, onClose }) {
+export function ShareListDialog({ partner, overlapCount, title, onClose }) {
   const navigate = useNavigate();
   const { user, profile, customLists } = useApp();
   const { partners } = useWatchTogether(user?.id);
@@ -249,7 +271,7 @@ export function ShareListDialog({ partner, overlapCount, onClose }) {
   };
 
   return (
-    <ResponsiveDialog title={L.sheetTitle} onClose={onClose}
+    <ResponsiveDialog title={title || L.sheetTitle} onClose={onClose}
       footer={<div className="wt-dialog-actions">
         <button type="button" className="btn btn-primary" onClick={create} disabled={busy || !name.trim()}>{L.create}</button>
       </div>}>
@@ -291,17 +313,26 @@ export function ShareListDialog({ partner, overlapCount, onClose }) {
 }
 
 /**
- * "Add people" on a shared list: partners who aren't on it yet.
+ * "Add people" on a shared list: partners who aren't on it yet. `locked`
+ * when the list's owner doesn't have Premium, so it can't take new people
+ * (supabase/migrations/20261001140000_collaborative_list_invites.sql).
  *
- * @param {{ list: { id: string, people?: { user_id: string }[] }, onAdd: (id: string) => Promise<boolean>, onClose: () => void }} props
+ * @param {{ list: { id: string, people?: { user_id: string }[] }, locked?: boolean, onAdd: (id: string) => Promise<boolean>, onClose: () => void }} props
  */
-export function SharedListPeopleDialog({ list, onAdd, onClose }) {
+export function SharedListPeopleDialog({ list, locked = false, onAdd, onClose }) {
   const { user } = useApp();
   const { partners } = useWatchTogether(user?.id);
   const onList = new Set((list.people || []).map(p => p.user_id));
   const [added, setAdded] = useState(() => new Set());
   const candidates = partners.filter(p => !onList.has(p.other_id));
   const L = T.sharedList;
+  if (locked) {
+    return (
+      <ResponsiveDialog title={L.addPeople} onClose={onClose}>
+        <div className="wt-accept"><p className="wt-note">{COLLABORATIVE_LISTS.hostNeedsPremium}</p></div>
+      </ResponsiveDialog>
+    );
+  }
   return (
     <ResponsiveDialog title={L.addPeople} onClose={onClose}>
       <div className="wt-accept">

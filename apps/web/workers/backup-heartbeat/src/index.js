@@ -69,7 +69,7 @@ async function sendAlert(env, verdict) {
     body: JSON.stringify({
       from: env.ALERT_FROM,
       to: [env.ALERT_EMAIL],
-      subject: 'PLOT: no fresh database backup in R2',
+      subject: 'Plot: no fresh database backup in R2',
       html:
         `<p><strong>${verdict.reason}</strong></p>${detail}` +
         '<p>The Supabase project is on the free plan, so there are no managed backups behind this. ' +

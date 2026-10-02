@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
+import { getConfig } from './config.js';
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey, trendingAsTitles, exampleTitlePool, DEMO_SIZE } from './watchTogether.js';
 import { tmdb } from './tmdb.js';
 
@@ -18,9 +20,26 @@ import { tmdb } from './tmdb.js';
  * @param {Record<string, unknown>} args
  * @returns {Promise<{ ok: true, data: any } | { ok: false, code: ReturnType<typeof watchTogetherErrorCode> }>}
  */
-async function call(fn, args) {
+/**
+ * Report a Watch together action to analytics. Best effort: a broken seam
+ * never breaks the feature. Exported for the share button, which lives in the
+ * apps.
+ * @param {'invite_sent' | 'request_accepted' | 'link_shared' | 'link_accepted' | 'session_started' | 'match' | 'list_invite_shared' | 'list_joined'} action
+ * @param {Record<string, unknown>} [props]
+ */
+export function reportWatchTogether(action, props = {}) {
+  try { getConfig().onWatchTogether?.({ action, ...props }); } catch { /* analytics is best-effort */ }
+}
+
+async function call(fn, args, failAction = null) {
   const { data, error } = await supabase.rpc(fn, args);
-  if (error) return { ok: false, code: watchTogetherErrorCode(error) };
+  if (error) {
+    const code = watchTogetherErrorCode(error);
+    // premium_required and not_allowed are the server's rules answering, not
+    // failures worth counting.
+    if (failAction && code === 'generic') reportActionFailure(failAction, error);
+    return { ok: false, code };
+  }
   return { ok: true, data };
 }
 
@@ -48,7 +67,8 @@ export function useWatchTogether(userId) {
 
   /** @param {string} otherId */
   const send = useCallback(async (otherId) => {
-    const result = await call('send_watch_together_request', { p_recipient: otherId });
+    const result = await call('send_watch_together_request', { p_recipient: otherId }, FAILED_ACTIONS.WATCH_TOGETHER_INVITE);
+    if (result.ok && result.data === 'pending') reportWatchTogether('invite_sent');
     if (result.ok) await refresh();
     return result;
   }, [refresh]);
@@ -62,7 +82,8 @@ export function useWatchTogether(userId) {
 
   /** @param {string} otherId @param {boolean} accept @param {boolean} [shareFull] */
   const respond = useCallback(async (otherId, accept, shareFull = false) => {
-    const result = await call('respond_watch_together_request', { p_requester: otherId, p_accept: accept, p_share_full: shareFull });
+    const result = await call('respond_watch_together_request', { p_requester: otherId, p_accept: accept, p_share_full: shareFull }, FAILED_ACTIONS.WATCH_TOGETHER_RESPOND);
+    if (result.ok && accept) reportWatchTogether('request_accepted', { share_full: !!shareFull });
     if (result.ok) await refresh();
     return result;
   }, [refresh]);
@@ -205,7 +226,9 @@ export async function watchTogetherLinkStatus(key) {
 
 /** Accept an invite link, pairing you with its owner. @param {string} key @param {boolean} [shareFull] */
 export async function acceptWatchTogetherLink(key, shareFull = false) {
-  return call('accept_watch_together_link', { p_key: key, p_share_full: shareFull });
+  const result = await call('accept_watch_together_link', { p_key: key, p_share_full: shareFull }, FAILED_ACTIONS.WATCH_TOGETHER_LINK_ACCEPT);
+  if (result.ok) reportWatchTogether('link_accepted', { share_full: !!shareFull });
+  return result;
 }
 
 /**
@@ -255,7 +278,8 @@ export function useWatchTogetherSession(sessionId, { pollMs = 5000 } = {}) {
     if (!sessionId) return { ok: false, matched: false };
     // Optimistic: record the answer so the next card shows straight away.
     setSession(s => s && { ...s, my_votes: [...s.my_votes.filter(v => titleKey(v) !== titleKey(card)), { tmdb_id: card.tmdb_id, media_type: card.media_type, yes }] });
-    const result = await call('vote_watch_together', { p_session: sessionId, p_tmdb_id: card.tmdb_id, p_media_type: card.media_type, p_yes: yes });
+    const result = await call('vote_watch_together', { p_session: sessionId, p_tmdb_id: card.tmdb_id, p_media_type: card.media_type, p_yes: yes }, FAILED_ACTIONS.WATCH_TOGETHER_VOTE);
+    if (result.ok && result.data) reportWatchTogether('match');
     ping();
     await refresh();
     return result.ok ? { ok: true, matched: !!result.data } : { ok: false, matched: false };
@@ -273,7 +297,9 @@ export function useWatchTogetherSession(sessionId, { pollMs = 5000 } = {}) {
 
 /** Start a session with a partner; resolves to the new session id or an error code. @param {string} otherId */
 export async function startWatchTogetherSession(otherId) {
-  return call('start_watch_together_session', { p_other: otherId });
+  const result = await call('start_watch_together_session', { p_other: otherId }, FAILED_ACTIONS.WATCH_TOGETHER_SESSION_START);
+  if (result.ok) reportWatchTogether('session_started');
+  return result;
 }
 
 /** The live session with a partner, if any. @param {string} otherId */

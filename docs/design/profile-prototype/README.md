@@ -1,4 +1,4 @@
-# PLOT profile prototype
+# Plot profile prototype
 
 Standalone design prototype, not connected to the app or live data.
 
@@ -10,7 +10,7 @@ python3 -m http.server 5289 --bind 127.0.0.1
 
 Open http://127.0.0.1:5289/docs/design/profile-prototype/ (use another port if occupied).
 
-The prototype reuses existing PLOT artwork and fonts. All identity, counts,
+The prototype reuses existing Plot artwork and fonts. All identity, counts,
 viewing dates and selections are fictional. Follow is a local toggle; sharing
 opens a preview; navigation buttons display explanatory messages.
 

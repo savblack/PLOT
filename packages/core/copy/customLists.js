@@ -3,6 +3,7 @@ import { FREE_CUSTOM_LIST_CAP } from '../premium.js';
 export const CUSTOM_LISTS = Object.freeze({
   searchPlaceholder: 'Search my lists',
   searchThisList: 'Search this list',
+  noMatch: 'No items match the current filter.',
   listOrder: 'List order',
   sortList: 'Sort list',
   titleAscending: 'Title A to Z',
@@ -21,5 +22,7 @@ export const CUSTOM_LISTS = Object.freeze({
   viewLess: 'View less',
   summary: (lists, titles) =>
     `${lists} ${lists === 1 ? 'list' : 'lists'} · ${titles} ${titles === 1 ? 'title' : 'titles'}`,
+  // The undo toast after creating a list (copy/undo.js adds the full stop).
+  created: 'List created',
   limitMessage: `You can create up to ${FREE_CUSTOM_LIST_CAP} custom lists for free. Unlimited custom lists are planned for plot Premium.`,
 });

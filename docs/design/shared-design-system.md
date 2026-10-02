@@ -96,8 +96,30 @@ Keep the accent for these approved interaction and hierarchy cues:
   profile and settings status, and other explicit account/integration state.
 - **Featured and chart hierarchy** — Discover hero badges and active actions, chart ranks,
   official labels, and equivalent featured-image hierarchy.
+- **Star ratings** — every drawn star and its score (the title panel, the review composer,
+  card ratings) takes `--rating`, which is the theme's `--accent-text` in every theme, the
+  default included (`#B83558` light, `#F06A88` dark). Never amber, never the fill. The one
+  exception is a rating chip sitting on artwork behind a scrim (History posters), which stays
+  white for legibility.
 
 Do not use it for decorative fills, large surfaces, generic branding, or inactive content.
+
+**Premium themes may change the accent hue.** Each Premium theme family on the web
+(`themeFamilies` in [`packages/core/tokens.js`](../../packages/core/tokens.js)) comes in
+light and dark, picked by the same Light / Dark / System control as the default, and each
+variant carries its own `--accent`, `--accent-text`, `--accent-fill`, `--accent-fill-hover`,
+`--on-accent-fill` and secondary set, so Blush's accent is a teal and Ink's light fill is
+black. Only the hue moves: the approved roles above stay exactly as listed, and the three
+jobs (type and line, fill behind its own text, the second voice) stay separate. So always
+reach for the token, never the pink's hex, and never let a fill colour type, an icon or a
+line: several family fills are about 1.3:1 against their own ground. A few tokens exist
+because one theme's fill cannot do every fill job: `--artwork-fill` / `--on-artwork-fill`
+for a fill chip or stamp over a poster or backdrop (Ink's black fill would vanish on a dark
+image), `--on-accent-secondary-fill` for text on the sage chip, `--highlight` for a marker
+stroke behind body text. Star ratings need no token of their own: `--rating` is
+`--accent-text` in every theme. The default family is exactly the base tokens. Every variant is held to 4.5:1 for text on each
+ground and on each fill, and 3:1 for the accent on its ground, by
+`packages/core/tests/unit/themes.test.js`.
 Outside the app, retain the established pink treatment in the marketing website, tabs,
 badges, hover/navigation copy, newsletter/templates, OG/share cards, transactional emails,
 and server-rendered public list/profile pages.
@@ -213,9 +235,14 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
 - Motion should explain state changes before it decorates them.
 - Fast interactions use `--transition-fast`; larger surface transitions use `--transition`.
 - The bounce easing token is reserved for special arrivals, not routine navigation.
-- The PLOT loader stays centered and fades each letter in sequence.
+- The Plot loader stays centered and fades each letter in sequence.
 - Icons stay monochrome and lightweight until hover, focus, or active state.
 - Buttons are compact and sized to their label — never full-width.
+  - Exception, a bottom sheet's action row: when a sheet ends in a pair of
+    actions, they may share the row in equal widths inside the sheet's own
+    padding (approved by Savannah, 2 Oct 2026, for the shared list's people
+    sheet: Add a person and Watch together). It is a row of two, not one
+    stretched button, and it is for sheets only.
 
 ## Accessibility contract
 
@@ -238,6 +265,35 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
 - Use `PlotLoader` for loading states rather than one-off spinners on branded surfaces.
 - Reuse the same button families, input treatments, chips, legal-page layouts, and quiet
   empty-state tone across both surfaces.
+
+### Three patterns the title panel established (Sept 2026)
+
+The title panel redesign (savblack/PLOT#976) introduced three reusable shapes. They are
+system patterns, not panel one-offs: reuse them rather than re-deriving a near-miss.
+
+- **The pinned foot bar** (`.panel-take`). A `position: sticky; bottom: 0` bar inside the
+  panel's own scroll container, on `--surface-sunken` with a single `--border` hairline on
+  top and no shadow. It stays visible at every scroll position so the one thing we most
+  want from the reader is never scrolled away, and it expands upward on click rather than
+  navigating. Collapsed it is one line: a label that changes with state, plus a truncated
+  preview of what is already written. The icon carries the affordance (plus when empty,
+  pencil when written) and there is no button copy. Use it for the panel's primary
+  contribution, not for navigation or for a second row of actions.
+- **Disclosure cards** (`.panel-card` + `.panel-disclosure`). A sunken 20px card whose
+  header is a bare `<button>` carrying `aria-expanded`, with the chevron as a direct child
+  (`.panel-disclosure > svg`, scoped so it does not recolour icons inside the row). When
+  collapsed the header keeps the answer visible in miniature (Where to watch shows
+  overlapped provider marks), so collapsing hides detail, never the fact. Prefer this to a
+  tab or a jump link when a section is long but its summary is one glance.
+- **The segmented run bar** (`.collection-run-seg`). Progress through a countable set of
+  things is one segment per item, not a continuous fill: 8px tall, pill radius,
+  `--status-watching` when done and a 12% `--text-primary` mix when not. It reads as
+  "three of seven films" without a label. A continuous bar is still right for progress
+  through one thing (an episode, an upload); the segmented bar is for a set whose members
+  are individually meaningful.
+
+All three follow the standing rules: flat, structure from hairlines and surface tokens,
+`--status-watching` for progress, and the accent reserved for interaction and hierarchy.
 
 ## Surface ownership
 

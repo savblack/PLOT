@@ -1,0 +1,54 @@
+/* Premium theme swatches (Settings > Profile & account). Each chip is a tiny
+   picture of the palette: its ground, a surface card and a line of its ink.
+   Flat, hairline-bordered; the accent only marks the selected and focused
+   swatch. */
+.settings-theme-row {
+  flex-wrap: wrap;
+}
+/* On a narrow screen the swatches drop under the label instead of squeezing
+   the hint into a column. */
+.settings-theme-row > .settings-row-left {
+  flex: 1 1 14rem;
+}
+.settings-theme-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.12rem;
+}
+.settings-theme-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.settings-theme-swatch {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.35rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.settings-theme-swatch:hover,
+.settings-theme-swatch.is-active {
+  color: var(--text-primary);
+}
+.settings-theme-swatch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.settings-theme-swatch-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+/* The Themes gallery link (Premium only) is Settings' own text action; this
+   only centres it beside the swatches. */
+.settings-theme-preview {
+  align-self: center;
+  margin-left: 0.25rem;
+}

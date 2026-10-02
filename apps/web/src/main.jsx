@@ -77,8 +77,8 @@ configure({
     track(EVENTS.RATING_SET, { tmdb_id, media_type, value }),
   onFollow: ({ target_user_id, following }) =>
     track(following ? EVENTS.USER_FOLLOWED : EVENTS.USER_UNFOLLOWED, { target_user_id }),
-  onCustomListChange: ({ list_id, action }) =>
-    track(action === 'created' ? EVENTS.CUSTOM_LIST_CREATED : EVENTS.CUSTOM_LIST_DELETED, { list_id }),
+  onCustomListChange: ({ list_id, action, smart }) =>
+    track(action === 'created' ? EVENTS.CUSTOM_LIST_CREATED : EVENTS.CUSTOM_LIST_DELETED, { list_id, ...smart }),
   onCustomListItemChange: ({ list_id, tmdb_id, media_type, action }) =>
     track(action === 'added' ? EVENTS.LIST_ITEM_ADDED : EVENTS.LIST_ITEM_REMOVED,
       { list_id, tmdb_id, media_type }),
@@ -123,6 +123,20 @@ configure({
       opened:              EVENTS.TONIGHT_PICK_OPENED,
       search_saved:        EVENTS.TONIGHT_SEARCH_SAVED,
       saved_search_opened: EVENTS.TONIGHT_SAVED_SEARCH_OPENED,
+    }[action];
+    if (name) track(name, props);
+  },
+  // Watch together: one seam, eight names (see analyticsEvents.js).
+  onWatchTogether: ({ action, ...props }) => {
+    const name = {
+      invite_sent:      EVENTS.WATCH_TOGETHER_INVITE_SENT,
+      request_accepted: EVENTS.WATCH_TOGETHER_REQUEST_ACCEPTED,
+      link_shared:      EVENTS.WATCH_TOGETHER_LINK_SHARED,
+      link_accepted:    EVENTS.WATCH_TOGETHER_LINK_ACCEPTED,
+      session_started:  EVENTS.WATCH_TOGETHER_SESSION_STARTED,
+      match:            EVENTS.WATCH_TOGETHER_MATCH,
+      list_invite_shared: EVENTS.COLLAB_LIST_INVITE_SHARED,
+      list_joined:      EVENTS.COLLAB_LIST_JOINED,
     }[action];
     if (name) track(name, props);
   },
@@ -300,6 +314,6 @@ Promise.all([
       window.location.reload();
       return;
     }
-    console.error('PLOT startup error:', error);
+    console.error('Plot startup error:', error);
     window.__plotShowStartupFallback?.();
   });

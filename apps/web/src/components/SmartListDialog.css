@@ -1,0 +1,270 @@
+/* Smart lists: the builder (A2 and the phone save sheet), the rule chips (B3),
+   coming back (A4) and the "New list" choice (B1). Flat: hairlines and surface
+   tokens only. Chips are sunken pills, as on the canvas; the accent appears
+   only on focus, the Create button and the "new" marker. */
+
+.smart-intro {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.smart-field { display: flex; flex-direction: column; gap: 0.45rem; }
+.smart-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+
+.smart-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 2.75rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.95rem;
+}
+.smart-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.smart-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+}
+.smart-error { flex: 1 1 100%; margin: 0; color: var(--danger); font-size: 0.75rem; }
+
+/* ── The builder ── */
+
+.smart-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
+.smart-builder-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.25rem 0 0.1rem;
+  font-size: 0.875rem;
+}
+
+.smart-builder-preview { display: flex; flex-direction: column; gap: 0.65rem; }
+.smart-builder-count { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; }
+.smart-builder-count-number {
+  font-family: var(--font-display);
+  letter-spacing: var(--font-display-tracking);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.smart-builder-count-source { font-size: 0.8rem; color: var(--text-muted); }
+
+.smart-builder-posters { display: flex; gap: 0.625rem; transition: opacity 0.2s ease; }
+.smart-builder-posters--stale { opacity: 0.5; }
+.smart-builder-poster {
+  width: 76px;
+  aspect-ratio: 2 / 3;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--surface-sunken);
+}
+.smart-builder-poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* The phone save sheet (attachment: chip sentence, count and posters, name,
+   then the buttons). The desktop dialog keeps A2's order: name first. */
+@media (max-width: 767px) {
+  .smart-builder-intro { order: 0; }
+  .smart-builder-rules { order: 1; }
+  .smart-builder-preview { order: 2; }
+  .smart-builder-name { order: 3; }
+  .smart-builder-dialog .smart-footer .btn { min-height: 44px; padding-inline: 1.1rem; }
+}
+
+/* ── The sentence of chips ── */
+
+.smart-rules--card {
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.smart-sentence {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 2.25;
+  color: var(--text-secondary);
+}
+.smart-rules--page .smart-sentence { font-size: 0.95rem; line-height: 2.2; }
+
+.smart-chip-wrap { position: relative; display: inline-block; }
+
+.smart-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 2rem;
+  padding: 0 0.65rem;
+  margin: 0 1px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: baseline;
+  cursor: pointer;
+}
+.smart-chip:hover { background: color-mix(in srgb, var(--surface-sunken) 85%, var(--text-primary) 15%); }
+.smart-chip:focus-visible,
+.smart-add-rule:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.smart-chip[aria-expanded="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
+.smart-chip--static { cursor: default; }
+.smart-chip--static:hover { background: var(--surface-sunken); }
+
+.smart-add-rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 2.25rem;
+  margin-top: 0.5rem;
+  padding: 0 0.875rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.smart-add-rule svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+.smart-chip-menu {
+  left: 0;
+  right: auto;
+  top: calc(100% + 4px);
+  min-width: 200px;
+  max-width: min(280px, calc(100vw - 2rem));
+  line-height: 1.3;
+  font-size: 0.85rem;
+}
+.smart-chip-menu-title {
+  padding: 0.6rem 0.8rem 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.smart-chip-menu-items { max-height: 260px; overflow-y: auto; }
+.smart-chip-menu-item { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-weight: 500; }
+.smart-chip-menu-check svg { width: 14px; height: 14px; stroke: var(--accent); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.smart-chip-menu-remove { border-top: 1px solid var(--border); color: var(--text-secondary); }
+
+/* ── The list page (B3, A4) ── */
+
+.smart-page-rules { margin: 0 0 0.25rem; }
+.smart-page-meta { margin: 0 0 1.25rem; font-size: 0.8rem; color: var(--text-muted); }
+
+.smart-group + .smart-group { margin-top: 1.75rem; }
+.smart-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 0.875rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.smart-group-title {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: var(--font-display-tracking);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.smart-group-count { font-size: 0.8rem; color: var(--text-muted); }
+.smart-group--new .smart-group-count { color: var(--accent-text); font-weight: 600; }
+
+.smart-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.smart-more { display: flex; justify-content: center; margin-top: 1rem; }
+
+.smart-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--border);
+}
+.smart-locked-title { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.smart-locked-body { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+
+/* ── My Lists: the "2 new" marker (A4) and "New list" asks which kind (B1) ── */
+
+.smart-new-count { color: var(--accent-text); font-weight: 600; }
+
+.smart-kind-menu {
+  position: absolute;
+  z-index: 100;
+  width: 300px;
+  max-width: calc(100vw - 2rem);
+  box-sizing: border-box;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+}
+.smart-kind {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.smart-kind:hover,
+.smart-kind:focus-visible { background: var(--surface-sunken); }
+.smart-kind:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.smart-kind-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--surface-sunken);
+}
+.smart-kind:hover .smart-kind-icon,
+.smart-kind:focus-visible .smart-kind-icon { background: var(--surface); }
+.smart-kind-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.smart-kind-text { display: flex; flex-direction: column; gap: 2px; }
+.smart-kind-title { font-size: 0.875rem; font-weight: 600; }
+.smart-kind-body { font-size: 0.78rem; line-height: 1.4; color: var(--text-secondary); }
+
+/* The weekly roll-up switch on a new-discoveries list's page: the builder's
+   switch row, under the rules, above the matches. */
+.smart-page-rollup {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.smart-page-rollup-text { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.smart-page-rollup-hint { font-size: 0.78rem; color: var(--text-muted); }
+.smart-page-rollup-hint--error { color: var(--danger); }

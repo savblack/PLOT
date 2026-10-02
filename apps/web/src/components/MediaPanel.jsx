@@ -21,11 +21,15 @@ import { privateNoteKey } from '@plot/core/privateNotes.js';
 import { formatWatchedOn } from '@plot/core/date.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS, captureException } from '../lib/analytics.js';
-import CreditsGrid from './TalentCredits.jsx';
+import { TalentWork } from './TalentCredits.jsx';
 import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
+import { SeasonReadyAlert } from './PremiumAlertButtons.jsx';
+import { CastFollowCard, CrewFollowRow, PersonFollow } from './PeopleFollow.jsx';
+import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
+import { PEOPLE } from '@plot/core/copy/people.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
@@ -66,6 +70,8 @@ import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { SavedByTooRow } from './WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import { isSharedList } from '@plot/core/sharedLists.js';
+import { MemberStack } from './CollaborativeListParts.jsx';
 import { clearUndo } from '@plot/core/undo.js';
 
 /* ── Close icon ── */
@@ -117,13 +123,11 @@ function TalentPanelView({ person, credits, error, onOpenTitle }) {
           <div className="talent-kicker">{knownFor}</div>
           <h1>{person.name}</h1>
           {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
+          <PersonFollow person={person} />
         </div>
       </header>
       {person.biography && <p className="talent-biography">{biographyPreview}</p>}
-      <section className="talent-section">
-        <CreditsGrid credits={actingCredits} openPanel={onOpenTitle} />
-        {!actingCredits.length && <p className="talent-muted">No screen credits available.</p>}
-      </section>
+      <TalentWork credits={credits} actingCredits={actingCredits} openPanel={onOpenTitle} emptyText="No screen credits available." />
     </div>
   );
 }
@@ -860,7 +864,7 @@ function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note,
 
 /* ── Add to custom list sheet ── */
 function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
-  const { customLists, topLists, profile } = useApp();
+  const { customLists, topLists, profile, user } = useApp();
   const { lists, ownedCount, createList, addItem, removeItem, isInList } = customLists;
   const [creatingName, setCreatingName] = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
@@ -899,7 +903,8 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     setIsCreating(true);
     setCreateError('');
     try {
-      const newList = await createList(creatingName);
+      // Undo deletes the list, and the title added to it with it.
+      const newList = await createList(creatingName, { undo: true });
       if (!newList) {
         setCreateError(MEDIA.couldNotCreateList);
         return;
@@ -1160,6 +1165,10 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                   <strong>{list.name}</strong>
                   <small>{(list.items || []).length} items</small>
                 </span>
+                {/* Shared lists sit among yours, marked by who is on them (canvas A6). */}
+                {SHOW_WATCH_TOGETHER && isSharedList(list, user?.id) && (
+                  <MemberStack people={(list.people || []).filter(p => p.user_id !== user?.id)} />
+                )}
                 <span className="add-list-check">
                   {checked && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 12, height: 12 }}><polyline points="20 6 9 17 4 12"/></svg>}
                 </span>
@@ -1175,6 +1184,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
 
 export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose }) {
   const { watchlist, watching, user, profile, favorites, customLists, openPanel } = useApp();
+  const followPerson = useFollowPerson();
   const [talentId, setTalentId] = useState(null);
   const [talentPerson, setTalentPerson] = useState(null);
   const [talentCredits, setTalentCredits] = useState(null);
@@ -1465,6 +1475,11 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const date    = details?.release_date || details?.first_air_date;
   const chip    = date ? countdownChip(date) : null;
   const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
+  // Directed by (a film) or Created by (a series), under the Cast strip. Ids
+  // come straight from the TMDB credits on this response.
+  const makers = isMovie
+    ? [...new Map((details?.credits?.crew || []).filter(c => c.job === 'Director').map(c => [c.id, c])).values()].slice(0, 3)
+    : (details?.created_by || []).slice(0, 3);
   const similar = recommendationsFromDetails(details);
 
   const audienceScore = audienceScoreFromDetails(details);
@@ -1545,9 +1560,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     }
 
     const result = await markMediaAsWatched({
+      // dnf is an option, not an item field: baseMediaRow drops anything on
+      // the item that isn't identity, so "Didn't finish" used to save as a
+      // plain watch. Rating and note are left out so the switch keeps them.
       logWatched: () => history.logWatched(
-        { ...details, id: itemId, media_type: itemType, dnf },
-        { watchedAt: defaultWatchedAt },
+        { ...details, id: itemId, media_type: itemType },
+        { dnf, watchedAt: defaultWatchedAt },
       ),
       clearWatching: () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
@@ -2040,6 +2058,11 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
               </section>
             )}
 
+            {/* Premium: a heads-up once every episode of a finished season is
+                on the viewer's services. Beside Where to watch, because it is
+                the same question asked of the future. */}
+            {!isMovie && details && <SeasonReadyAlert show={details} />}
+
             {/* ── What everyone else thought ──
                 The two numbers read as a pair, with a real audience review in
                 the space beside them rather than a consensus sentence on its
@@ -2080,30 +2103,41 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
               <section className="panel-cast-section" aria-labelledby="panel-cast-title">
                 <div className="panel-section-title" id="panel-cast-title">Cast</div>
                 <div className="panel-cast-rail">
-                  {cast.map(person => {
-                    const image = profileUrl(person.profile_path);
-                    return (
-                      <button
-                        type="button"
-                        className="panel-cast-card"
-                        key={person.id}
-                        onClick={() => goToTalent(person.id)}
-                        aria-label={`View ${person.name}`}
-                      >
-                        {image
-                          ? <img src={image} alt="" loading="lazy" />
-                          : <span className="panel-cast-fallback" aria-hidden="true">{person.name?.charAt(0)}</span>
-                        }
-                        <span className="panel-cast-name">{person.name}</span>
-                        {(person.character || person.roles?.[0]?.character) && (
-                          <span className="panel-cast-role">{person.character || person.roles[0].character}</span>
-                        )}
-                      </button>
-                    );
-                  })}
+                  {cast.map(person => (
+                    <CastFollowCard
+                      key={person.id}
+                      person={person}
+                      following={followPerson.isFollowing(person.id)}
+                      busy={followPerson.busyId === person.id}
+                      showFollow={followPerson.signedIn}
+                      onOpen={() => goToTalent(person.id)}
+                      onToggle={() => followPerson.toggle(person)}
+                    />
+                  ))}
                 </div>
               </section>
             )}
+
+            {makers.length > 0 && (
+              <section className="panel-cast-section" aria-labelledby="panel-makers-title">
+                <div className="panel-section-title" id="panel-makers-title">{isMovie ? PEOPLE.directedBy : PEOPLE.createdBy}</div>
+                <div className="crew-follow-list">
+                  {makers.map(person => (
+                    <CrewFollowRow
+                      key={person.id}
+                      person={person}
+                      roleLabel={isMovie ? PEOPLE.director : PEOPLE.creator}
+                      following={followPerson.isFollowing(person.id)}
+                      busy={followPerson.busyId === person.id}
+                      showFollow={followPerson.signedIn}
+                      onOpen={() => goToTalent(person.id)}
+                      onToggle={() => followPerson.toggle(person)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {followPerson.sheet}
 
             {/* Trailer */}
             {(() => {

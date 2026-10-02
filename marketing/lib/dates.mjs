@@ -56,7 +56,7 @@ export const formatWeekdayDayMonth = (dateStr, relativeTo = new Date()) => {
 // ('2026-06-15', '2026-06-21') -> '15 to 21 June' (or '28 June to 4 July')
 //
 // "to", not an en dash. This label is copied verbatim into the week's social
-// posts and printed on the slate card, and PLOT's copy rule bans en and em
+// posts and printed on the slate card, and Plot's copy rule bans en and em
 // dashes in anything a reader sees. Four published weekly posts carried
 // "1 – 7 June" because the dash came from here rather than from the writer.
 export const formatWeekRange = (fromStr, toStr) => {

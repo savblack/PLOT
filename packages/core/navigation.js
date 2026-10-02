@@ -1,4 +1,5 @@
 import { WATCH_TOGETHER } from './copy/watchTogether.js';
+import { PEOPLE } from './copy/people.js';
 
 export const APP_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: '/home', primary: true },
@@ -32,7 +33,12 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
     'design-system': 'Design System',
     requests: 'Follow requests',
     notifications: 'Notifications',
+    // No sidebar item yet (round 2 decision): reached from Home, the follow
+    // toast, Notifications, a person's page and Settings.
+    'your-people': PEOPLE.page.title,
     import: 'Import',
+    // The taste overlap picker. Without an entry it fell through to the brand.
+    compare: 'Compare',
     // Keyed on the first segment: viewFromPath returns `person/<id>`, and the
     // page shows the person's own name, so the chrome only needs to say where
     // you are.
@@ -45,7 +51,7 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
  * routes (`person/4110`) resolve, and to the brand for anything unknown.
  *
  * WHY: /person/:id and /import had no entry, so both fell through to the brand
- * and rendered a second "PLOT" wordmark in the content column, directly beside
+ * and rendered a second "Plot" wordmark in the content column, directly beside
  * the one the sidebar already shows.
  *
  * @param {string} view

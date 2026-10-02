@@ -184,8 +184,8 @@ function IconShare() {
 function StarRow({
   rating,
   onChange,
-  // Engagement prompt stars match the pink fill button; the take editor keeps
-  // the amber --rating colour used everywhere else in the panel.
+  // Every star is colors.rating (the theme's accentText), here and in the
+  // take editor; the override stays for a caller that genuinely needs one.
   color,
   // Wider tap targets for the sticky prompt (44px min). The take editor keeps
   // the tighter default so the review section stays compact.
@@ -298,11 +298,11 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
     }
     if (!watched) {
       /* Ticking the episode you're actually up to goes through
-         markEpisodeWatched, which logs a history row for the completed episode
-         and handles season rollover when the season's episode count isn't
-         known from `episodes`. Advancing progress directly (the branches
-         below) writes no history, so ticking episodes on mobile used to leave
-         no trace in your watch history at all. Mirrors web's MediaPanel. */
+         markEpisodeWatched, which handles season rollover when the season's
+         episode count isn't known from `episodes`. Neither it nor the
+         branches below write history: that row means the title is watched,
+         and finishSeriesIfComplete logs it once the series is done. Mirrors
+         web's MediaPanel. */
       if (selSeason === curSeason && ep.episode_number === curEp) {
         const result = await watching.markEpisodeWatched(tvId, { undo: true });
         if (!result?.ok) {
@@ -1563,7 +1563,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                 <View style={styles.engagementActions}>
                   <StarRow
                     rating={localRating}
-                    color={colors.accentFill}
                     largeHit
                     onChange={(r) => { void handlePromptRate(r); }}
                   />

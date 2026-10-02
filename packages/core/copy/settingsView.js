@@ -45,7 +45,7 @@ export const SETTINGS_VIEW = {
     intro: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch.',
     // Keep this list aligned with PLANS_PAGE.planSummary — SettingsBilling also
     // reads the plans catalog for price copy so the two surfaces cannot drift.
-    features: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
+    features: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Themes now, with widgets and app icons to come'],
     cycle: 'Choose your billing cycle',
     monthly: 'Monthly',
     yearly: 'Yearly',
@@ -62,21 +62,21 @@ export const SETTINGS_VIEW = {
     viewPremium: 'Explore Premium',
     syncComingSoon: 'Connections are not available',
     syncComingSoonMessage: 'Manual imports stay free.',
-    calendarComingSoon: 'Live calendar subscription is coming soon',
-    calendarComingSoonMessage: 'A live calendar feed is planned for plot Premium. You can still download a one-time calendar snapshot for free.',
     confirming: 'Confirming your subscription. This may take a moment.',
   },
   region: {
     savingRegion: 'Saving region',
     saveRegion: 'Save region',
-    saveRegionLabel: 'Save Region',
     openRegionSettings: 'Open region settings',
     failedToSaveRegion: 'Failed to save your region.',
+    intro: 'Used to show content and streaming services available in your region.',
   },
   timezone: {
     savingTimezone: 'Saving timezone',
     saveTimezone: 'Save timezone',
     openTimezoneSettings: 'Open timezone settings',
+    searchPlaceholder: 'Search timezones…',
+    useDevice: (name) => `Use device timezone · ${name}`,
   },
   clearSelected: (count) => `Clear Selected (${count})`,
   selectListsToClear: 'Select lists to clear',
@@ -105,6 +105,7 @@ export const SETTINGS_VIEW = {
     notSaved: 'Your feedback was not saved. Please try again.',
     reportABug: 'Report a bug',
     leaveFeedback: 'Leave feedback',
+    panelTitle: 'Send feedback',
   },
 
   errors: {
@@ -217,6 +218,52 @@ export const SETTINGS_VIEW = {
     offHint: 'The chart, what to watch this weekend, and what just landed on streaming.',
   },
 
+  // Theme picker (web only for now; mobile parity is a GitHub issue). Palette
+  // values and the Premium rule live in @plot/core/tokens.js + themes.js.
+  appearance: {
+    label: 'Appearance',
+    optionsLabel: 'Appearance options',
+    modes: { light: 'Light', dark: 'Dark', system: 'System' },
+    themesLabel: 'Themes',
+    themesOptionsLabel: 'Themes',
+    // `colour` is regionalWords('color', region).nounLower from @plot/core/spelling.js.
+    themesHint: (colour) => `Each theme comes in light and dark, with its own accent ${colour}.`,
+    themesLockedHint: 'Premium themes. The default look stays free in light, dark and system.',
+    // Keyed by family id (the default, then themeFamilies in
+    // @plot/core/tokens.js).
+    families: {
+      default: 'Default',
+      sage: 'Sage',
+      mist: 'Mist',
+      blush: 'Blush',
+      plum: 'Plum',
+      ink: 'Ink',
+    },
+    lockedTheme: (name) => `${name} (Premium)`,
+    // Opens the Themes gallery (/settings/themes) from the Settings row. Premium only.
+    preview: 'Preview',
+    previewLabel: 'Preview every theme',
+    // The Themes gallery page.
+    gallery: {
+      title: 'Themes',
+      back: '← Settings',
+      intro: 'How Plot looks on this browser. Every theme comes in light and dark and follows the Light, Dark and System setting. The default is free; Premium themes change the paper, the ink and the accent, never what anything means.',
+      free: 'Free',
+      premium: 'Premium',
+      inUse: 'In use',
+      applyLabel: (name) => `Use ${name}`,
+      lockedNote: 'Premium themes are part of Premium. You can look here, and the default stays free in light, dark and system.',
+    },
+    // The quick switcher inside the desktop sidebar's account menu.
+    switcher: {
+      thisBrowser: 'This browser',
+      mode: 'Mode',
+      current: (name, premium) => (premium ? `${name} · Premium` : name),
+    },
+    // The upgrade sheet when a Free viewer picks a Premium theme.
+    previewing: (name) => `That’s ${name}, in light and dark.`,
+  },
+
   premium: {
     groupTitle: 'plot Premium',
     youHavePremium: 'You have plot Premium',
@@ -226,9 +273,9 @@ export const SETTINGS_VIEW = {
     paymentNeedsAttention: 'Your payment needs attention. Manage your subscription to update your payment method.',
     subscriptionEnded: 'Your subscription is not active. Your lists and watch history are still available.',
     cancellationScheduled: 'Your subscription is set to end after the current paid period.',
-    thanksForTip: 'Thanks for supporting PLOT ♥',
+    thanksForTip: 'Thanks for supporting Plot ♥',
     activationPending: 'Your checkout is complete. We are waiting for payment confirmation. If Premium does not appear, refresh this page or contact support.',
-    activeThankYou: 'PLOT Premium is active. Thank you ♥',
+    activeThankYou: 'Plot Premium is active. Thank you ♥',
     upsellLabel: 'Go Premium',
     upsellBlurb: 'Find tonight’s movie, keep up with releases and choose together. Coming soon.',
     upgradeButton: 'Explore Premium',
@@ -238,6 +285,7 @@ export const SETTINGS_VIEW = {
     groupTitle: 'Calendar',
     subscribeLabel: 'Subscribe to Calendar',
     needsPremium: 'A live calendar feed needs plot Premium',
+    needsPremiumMessage: 'Live calendar subscription is included with plot Premium. The one-time snapshot on this page stays free.',
     liveFeedPrivate: 'Live feed of your watchlist',
     getUrlHint: 'Get a URL for Google or Apple Calendar',
     requestedCalendarSubscribeMessage: 'Requested access: Calendar subscribe',
@@ -248,6 +296,10 @@ export const SETTINGS_VIEW = {
     loadingEvents: 'Loading events…',
     eventCount: (n) => `${n} event${n !== 1 ? 's' : ''} · one-time snapshot`,
     downloadIcs: 'Download .ics',
+    shareIcs: 'Share .ics',
+    snapshotHint: 'One-time file of upcoming releases. It does not stay updated.',
+    emptySnapshot: 'Nothing upcoming to export yet.',
+    shareFailed: 'Could not share your calendar file. Please try again.',
   },
 
   export: {
@@ -260,8 +312,8 @@ export const SETTINGS_VIEW = {
 
   support: {
     groupTitle: 'Support',
-    supportPlot: 'Support PLOT',
-    kofiHint: 'Help keep PLOT ',
+    supportPlot: 'Support Plot',
+    kofiHint: 'Help keep Plot ',
     kofiHintContinued: 'subscription-free',
     reportABugAria: 'Report a bug',
     reportABugLabel: 'Report a Bug',

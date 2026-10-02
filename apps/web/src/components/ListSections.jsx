@@ -20,12 +20,19 @@ import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { CardGrid, ListCard, SelectCircle } from './ListCards.jsx';
 import { MEDIA } from '../copy/media.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
-import { privateNoteKey } from '@plot/core/privateNotes.js';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 import { personName } from '@plot/core/watchTogether.js';
-import { SharedListPeopleDialog } from './WatchTogetherParts.jsx';
+import { PersonAvatar } from './WatchTogetherParts.jsx';
+import { InvitePeopleFlow, ListPeopleLine, ListPeoplePanel, ListPeopleSheet, PlusSmallIcon, SofaIcon } from './CollaborativeListParts.jsx';
+import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
+import { addedById, filterByAddedBy, listMembers, listOwner, watchTogetherPathFor } from '@plot/core/sharedLists.js';
+import { relativeTime } from '@plot/core/date.js';
+import { useNavigate } from 'react-router-dom';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
+import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { cardActions, cardState } from './listCardActions.js';
 
 /* The lists themselves: one component per list, each rendering into a
    `Frame` it is handed. On My Lists the frame is a section on the page (the
@@ -283,7 +290,8 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
 }
 
 /* ── Create list sheet ── */
-export function CreateListModal({ lists, onConfirm, onClose, onLimit }) {
+/* onSmart: offer a smart list instead (My Lists only). */
+export function CreateListModal({ lists, onConfirm, onClose, onLimit, onSmart }) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -341,7 +349,8 @@ export function CreateListModal({ lists, onConfirm, onClose, onLimit }) {
             {error}
           </div>
         )}
-        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+          {onSmart && <button type="button" className="btn btn-ghost btn-sm" style={{ marginRight: 'auto' }} disabled={isSubmitting} onClick={onSmart}>{SMART_LISTS.newSmartList}</button>}
           <button className="btn btn-ghost btn-sm" disabled={isSubmitting} onClick={onClose}>{COMMON.cancel}</button>
           <button className="btn btn-primary btn-sm" disabled={!name.trim() || isSubmitting} onClick={handleSubmit}>
             {isSubmitting ? 'Creating…' : 'Create list'}
@@ -524,32 +533,7 @@ function wantMeta(item) {
   return parts.join(' · ');
 }
 
-function cardState(item, historyEntries, privateNotes) {
-  const id = Number(item.tmdb_id);
-  const type = item.media_type || 'movie';
-  return {
-    hasPrivateNote: !!privateNotes?.rows?.[privateNoteKey(id, type)]?.note,
-    hasReview: historyEntries?.some(entry => entry.tmdb_id === id && entry.media_type === type && !!entry.note) || false,
-  };
-}
-
-function cardActions(item, favorites, watchlist, fw) {
-  const id = Number(item.tmdb_id);
-  const type = item.media_type || 'movie';
-  const normalized = { ...item, id, tmdb_id: id, media_type: type };
-  const isFavorite = favorites.isFavorite(id);
-  const isBookmarked = watchlist.isInList(id);
-  return {
-    isFavorite,
-    isBookmarked,
-    favoriteLabel: isFavorite ? `Remove ${item.title || item.name} from ${fw.pluralLower}` : `Add ${item.title || item.name} to ${fw.pluralLower}`,
-    bookmarkLabel: isBookmarked ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist,
-    onToggleFavorite: () => favorites.toggleFavorite(normalized),
-    onToggleBookmark: () => watchlist.toggle(normalized),
-  };
-}
-
-function ListPageRow({ item, title, meta, open, selection, note }) {
+export function ListPageRow({ item, title, meta, open, selection, note }) {
   return (
     <div className="list-page-row">
       <button type="button" className="list-page-row-poster" onClick={open} aria-label={title}>{item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />}</button>
@@ -726,9 +710,14 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
 }
 
 
-/* ── One custom list, as a page: grid plus rename / public / share / delete ── */
+/* ── One custom list, as a page: grid plus rename / public / share / delete ──
+   A shared list (PLO-525, Savannah's picks of 2 Oct 2026) adds B5's layout:
+   the people panel with A5's header merged into it at the top of the left
+   column, an Added by line on every title, Watch together beside Add a title,
+   and on a phone A8's people line, which opens who added what. */
 export function CustomListSection({ list, visibleItems, count, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
   const { openPanel, favorites, watchlist, privateNotes, profile, user } = useApp();
+  const navigate = useNavigate();
   const fw = favoriteWords(profile?.region);
   const { renameList, setListVisibility, addItem, removeItem, deleteList, leaveList } = customLists;
   const visibility = listVisibility(list);
@@ -736,8 +725,10 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   const isOwner = list.role !== 'member';
   const shared = SHOW_WATCH_TOGETHER && (!isOwner || list.people?.length > 0);
   const others = (list.people || []).filter(p => p.user_id !== user?.id);
-  const [addingPeople, setAddingPeople] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [addedBy, setAddedBy] = useState(/** @type {string | null} */ (null));
+  const [peopleOpen, setPeopleOpen] = useState(false);
   const selection = useSelection();
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(list.name);
@@ -745,7 +736,12 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const allItems = list.items || [];
-  const visible  = visibleItems ?? filterByTypeAndGenre(allItems, typeFilters, genreFilters);
+  const members = shared ? listMembers(list, user?.id) : [];
+  const ownerId = list.user_id || listOwner(list)?.user_id;
+  const filtered = visibleItems ?? filterByTypeAndGenre(allItems, typeFilters, genreFilters);
+  const visible = shared ? filterByAddedBy(filtered, addedBy, ownerId) : filtered;
+  const watchTogetherPath = shared ? watchTogetherPathFor(members) : null;
+  const P = COLLABORATIVE_LISTS.page;
 
   const submitRename = async () => {
     if (!renameValue.trim()) return;
@@ -763,7 +759,8 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   // can change visibility or delete (docs/design/watch-together/README.md).
   const menuItems = [
     { label: 'Rename', onClick: () => { setRenameValue(list.name); setRenaming(true); } },
-    ...(shared ? [{ label: WATCH_TOGETHER.sharedList.addPeople, onClick: () => setAddingPeople(true) }] : []),
+    // Owners invite (any of their lists can become collaborative); members add people.
+    ...(SHOW_WATCH_TOGETHER ? [{ label: isOwner ? COLLABORATIVE_LISTS.invite : WATCH_TOGETHER.sharedList.addPeople, onClick: () => setInviting(true) }] : []),
     // Only the creator sets visibility, shares or deletes; members can leave.
     ...(isOwner ? LIST_VISIBILITIES.map(v => ({
       label: PROFILE_PRIVACY.listVisibility[v], hint: PROFILE_PRIVACY.listVisibilityHint[v],
@@ -776,33 +773,73 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   ];
   // On a shared list each title says who added it. added_by is null for titles
   // the owner added before the list was shared, so those fall back to the owner.
+  const adder = (item) => {
+    const by = addedById(item, ownerId);
+    return members.find(m => m.user_id === by) || (list.people || []).find(p => p.user_id === by) || null;
+  };
   const addedByLabel = (item) => {
     if (!shared) return null;
-    const by = item.added_by || list.user_id;
+    const by = addedById(item, ownerId);
     if (by === user?.id) return WATCH_TOGETHER.sharedList.addedByYou;
-    const person = (list.people || []).find(p => p.user_id === by);
+    const person = adder(item);
     return person ? WATCH_TOGETHER.sharedList.addedBy(personName(person)) : null;
   };
+  const kindOf = (item) => (item.media_type === 'tv' ? MEDIA.series : MEDIA.movie);
+  // The grid on a shared list reads like A5: title, then who added it.
   const cardMeta = (item) => {
-    const kind = item.media_type === 'tv' ? MEDIA.series : MEDIA.movie;
     const by = addedByLabel(item);
-    return by ? `${kind} · ${by}` : kind;
+    if (shared && by) return by;
+    return kindOf(item);
   };
-  const subtitle = shared && others.length
-    ? WATCH_TOGETHER.sharedList.sharedWith(others.map(personName).join(', '))
+  // The rows read like B5: kind, then a byline with the adder's avatar.
+  const rowByline = (item) => {
+    const by = addedByLabel(item);
+    if (!by) return null;
+    return (
+      <div className="cl-byline">
+        <PersonAvatar person={adder(item) || {}} size="xs" />
+        <span>{P.addedAgo(by, item.added_at ? relativeTime(item.added_at, undefined, profile?.region) : '')}</span>
+      </div>
+    );
+  };
+  const ownerPerson = listOwner(list);
+  const subtitle = shared
+    ? (isOwner ? P.sharedByYou : ownerPerson ? P.sharedBy(personName(ownerPerson)) : WATCH_TOGETHER.sharedList.sharedWith(others.map(personName).join(', ')))
     : visibility === 'private' ? undefined : PROFILE_PRIVACY.listVisibility[visibility];
+  const inviteLabel = isOwner ? COLLABORATIVE_LISTS.invite : WATCH_TOGETHER.sharedList.addPeople;
+  const goWatchTogether = watchTogetherPath ? () => navigate(watchTogetherPath) : null;
+  const filteredPerson = addedBy ? members.find(m => m.user_id === addedBy) : null;
+
+  const sharedProps = shared && pageLayout ? {
+    shared: true,
+    sidePanel: (
+      <ListPeoplePanel members={members} total={allItems.length} filter={addedBy} onFilter={setAddedBy}
+        onInvite={() => setInviting(true)} inviteLabel={inviteLabel} />
+    ),
+    headerActions: (
+      <>
+        {goWatchTogether && <button type="button" className="btn btn-secondary btn-sm" onClick={goWatchTogether}><SofaIcon />{WATCH_TOGETHER.navLabel}</button>}
+        <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowAdd(true)}><PlusSmallIcon />{P.addTitle}</button>
+      </>
+    ),
+    lead: <ListPeopleLine members={members} total={allItems.length} onOpen={() => setPeopleOpen(true)} />,
+    onAdd: () => setShowAdd(true),
+  } : {};
 
   return (
     <Frame
       title={list.name}
       count={count ?? allItems.length}
       subtitle={subtitle}
+      {...sharedProps}
       headerRight={
         <>
           {shareable && share && <button type="button" className="btn btn-ghost btn-sm" onClick={() => share(list)}>{shareCopied ? COMMON.copied : COMMON.share}</button>}
-          <HeaderIconButton label={`Add item to ${list.name}`} onClick={() => setShowAdd(true)}>
-            <PlusIcon />
-          </HeaderIconButton>
+          {!sharedProps.shared && (
+            <HeaderIconButton label={`Add item to ${list.name}`} onClick={() => setShowAdd(true)}>
+              <PlusIcon />
+            </HeaderIconButton>
+          )}
           <SelectControls
             selection={selection}
             hasItems={visible.length > 0}
@@ -831,8 +868,10 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
 
       {allItems.length === 0 ? (
         <Empty onAdd={() => setShowAdd(true)} addLabel={`Add item to ${list.name}`}>No items yet.</Empty>
-      ) : narrowed && visible.length === 0 ? (
-        <Empty>No items match the current filter.</Empty>
+      ) : filteredPerson && visible.length === 0 && filtered.length > 0 ? (
+        <Empty>{P.noneByPerson(filteredPerson.isYou ? P.you : personName(filteredPerson))}</Empty>
+      ) : (narrowed || addedBy) && visible.length === 0 ? (
+        <Empty>{CUSTOM_LISTS.noMatch}</Empty>
       ) : (
         <div className={pageLayout ? 'list-page-items' : ''}>
         <CardGrid>
@@ -857,7 +896,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
         {pageLayout && <div className="list-page-rows">{visible.map(item => {
           const title = item.title || MEDIA.unknown;
           const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, item.media_type);
-          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={cardMeta(item)} open={open} selection={selection} />;
+          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={shared ? kindOf(item) : cardMeta(item)} open={open} selection={selection} note={shared ? rowByline(item) : null} />;
         })}</div>}
         </div>
       )}
@@ -865,7 +904,15 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
       {showAdd && (
         <AddToFavoritesModal title="Add to List" onAdd={(item) => addItem(list.id, item)} onClose={() => setShowAdd(false)} />
       )}
-      {addingPeople && <SharedListPeopleDialog list={list} onAdd={memberId => customLists.addMember(list.id, memberId)} onClose={() => setAddingPeople(false)} />}
+      {inviting && <InvitePeopleFlow list={list} onClose={() => setInviting(false)} />}
+      {peopleOpen && (
+        <ListPeopleSheet
+          members={members}
+          onInvite={() => { setPeopleOpen(false); setInviting(true); }}
+          onWatchTogether={goWatchTogether}
+          onClose={() => setPeopleOpen(false)}
+        />
+      )}
       {confirmLeave && (
         <ConfirmModal
           title={WATCH_TOGETHER.sharedList.leaveTitle(list.name)}
