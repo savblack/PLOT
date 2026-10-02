@@ -82,7 +82,7 @@ const layoutTokens = [
   ['--content-max', '680px', 'Focused reading width for legal, settings, and forms.'],
   ['--panel-w', '560px', 'Fixed width of the right-side media reading panel.'],
   ['--header-h', '56px', 'Height of the fixed app header. Below 1024px only — at sidebar widths there is no header.'],
-  ['--tabbar-h', '58px', 'Height of the fixed bottom tab bar.'],
+  ['--bottom-inset', '0px', 'Height of whatever is fixed to the bottom edge, safe area excluded. 60px on phones while the filter bar is showing, otherwise 0. Toasts and banners pinned near the bottom add it.'],
   ['--gut', '1rem', 'Content gutter. The desktop page title, section headers, and rails all pad by this so they share one left edge.'],
 ];
 

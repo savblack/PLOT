@@ -102,8 +102,10 @@
 
   /* Layout constants */
   --header-h:       56px;
-  --tabbar-h:       60px;
-  --tab-bar-height: var(--tabbar-h);
+  /* Height of whatever is fixed to the bottom edge, not counting the safe area.
+     Nothing is by default; the phone filter bar raises it (app.css). Anything
+     pinned near the bottom adds it rather than assuming a bar is or isn't there. */
+  --bottom-inset:   0px;
   --panel-w:        560px;
   --content-max:    680px;
   /* Content gutter. The desktop page title, the collapsible section headers and
@@ -153,12 +155,10 @@
 /* ── Desktop nav rail ─────────────────── */
 /* Raises --sidebar-w from its 0 default so every rule that offsets against the
    sidebar (app header, app main, the fixed overlays in App.jsx) needs no
-   breakpoint of its own. The tab bar is gone at this width, so anything
-   anchored above it sits against the viewport edge instead. */
+   breakpoint of its own. */
 @media (min-width: 1024px) {
   :root {
     --sidebar-w:      260px;
-    --tab-bar-height: 0px;
   }
 }
 

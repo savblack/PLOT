@@ -8,7 +8,7 @@
 /* Phone: at least the visible scroll area tall, so the sticky bar below can sit on the bottom. */
 @media (max-width: 1023px) {
   .tonight-view {
-    min-height: calc(100dvh - var(--header-h) - var(--tabbar-h) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    min-height: calc(100dvh - var(--header-h) - var(--bottom-inset) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     padding-bottom: 0;
   }
   .tonight-view .tonight-layout { padding-bottom: 1.5rem; }
