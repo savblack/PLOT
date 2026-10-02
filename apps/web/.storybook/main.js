@@ -1,17 +1,7 @@
 import path from 'node:path';
-import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Watch together and collaborative lists sit behind SHOW_WATCH_TOGETHER, which
-// is on only for localhost and *.pages.dev preview hosts unless this env var
-// forces it. Chromatic serves the Storybook from *.chromatic.com, so without
-// this every collaborative-list story rendered with the feature off there
-// (no Invite, no shared summary, no people button) and their play functions
-// failed, while the same stories passed on localhost. Storybook documents the
-// feature as built, so force it on here; an explicit value still wins.
-process.env.VITE_SHOW_WATCH_TOGETHER ??= 'true';
 
 /** @type {import('@storybook/react-vite').StorybookConfig} */
 export default {

@@ -32,3 +32,9 @@ export const SHOW_APPLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_APPLE_LOGIN === 'tr
 // never takes a payment in the app (Apple's anti-steering rules keep
 // purchases on the web app).
 export const SHOW_PRICING_PAGE = false;
+
+// Watch together (PLO-515). Web turns this on in production
+// (SHOW_WATCH_TOGETHER in apps/web/src/launchFeatures.js). Mobile has no
+// /together screen in this change, so the flag stays false and the drawer
+// does not list it.
+export const SHOW_WATCH_TOGETHER = false;
