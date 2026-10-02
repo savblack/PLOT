@@ -1,6 +1,6 @@
 import {
   View, Text, TouchableOpacity, Animated, Dimensions,
-  StyleSheet, Pressable, Linking,
+  StyleSheet, Pressable, Linking, ScrollView,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useRef, useEffect, useMemo } from 'react';
@@ -15,15 +15,23 @@ import { useAppData } from '../contexts/AppDataContext';
 
 const DRAWER_W = Dimensions.get('window').width * 0.58;
 
+// Search leads, matching the desktop rail. Settings stays in the footer,
+// after Notifications, because the phone has no account menu. Guide, Top 5
+// and History are not destinations here: Guide is a Home sub-tab, Top 5 and
+// History live inside My Lists.
 const NAV_ITEMS = [
-  { id: 'index',    label: 'Home',     path: '/(app)/'         },
-  { id: 'search',   label: 'Search',   path: '/(app)/search'   },
-  { id: 'calendar', label: 'Calendar', path: '/(app)/calendar' },
-  { id: 'my-lists', label: 'My Lists', path: '/(app)/my-lists' },
-  { id: 'tonight',  label: titleForView('tonight'), path: '/(app)/tonight', premium: true },
-  // Guide, Top 5 and History used to sit here as destinations of their own.
-  // None is one on web: Guide is a sub-tab of Home, Top 5 a section of My
-  // Lists, History a tab of it. This list now matches APP_NAV_ITEMS.
+  { id: 'search',   label: APP_SHELL.search,         path: '/(app)/search'   },
+  { id: 'index',    label: 'Home',                    path: '/(app)/'         },
+  { id: 'calendar', label: 'Calendar',                path: '/(app)/calendar' },
+  { id: 'my-lists', label: 'My Lists',                path: '/(app)/my-lists' },
+  { id: 'tonight',  label: titleForView('tonight'),   path: '/(app)/tonight', premium: true },
+  { id: 'notifications', label: APP_SHELL.notifications, path: '/(app)/notifications' },
+];
+
+const FEEDBACK_ITEMS = [
+  { type: 'bug',     label: SETTINGS_VIEW.feedback.bugReportLabel },
+  { type: 'feature', label: SETTINGS_VIEW.feedback.featureRequestLabel },
+  { type: 'general', label: SETTINGS_VIEW.feedback.generalFeedbackLabel },
 ];
 
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
@@ -68,8 +76,8 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
     setTimeout(() => router.push(path as any), 50);
   };
 
-  const openFeedback = () =>
-    navigate(`/(app)/settings?feedback=general&t=${Date.now()}`);
+  const openFeedback = (type: string) =>
+    navigate(`/(app)/settings?feedback=${type}`);
 
   const openSupport = () => {
     onClose();
@@ -106,8 +114,12 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
         <BlurView intensity={72} tint={resolved} style={[StyleSheet.absoluteFill, styles.blurBackground]} />
 
         <View style={[styles.content, { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
-          <Text style={styles.wordmark}>plot</Text>
+          <View style={styles.brandRow}>
+            <Text style={styles.wordmark}>plot</Text>
+            <Text style={styles.beta} accessibilityLabel={APP_SHELL.beta}>{APP_SHELL.beta}</Text>
+          </View>
 
+          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Main nav */}
           <View style={styles.nav}>
             {NAV_ITEMS.map(item => {
@@ -118,6 +130,9 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                   style={[styles.navItem, active && styles.navItemActive]}
                   onPress={() => navigate(item.path)}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={item.label}
                 >
                   <Text style={[styles.navLabel, active && styles.navLabelActive]}>
                     {item.label}
@@ -130,27 +145,31 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
             })}
           </View>
 
-          {/* Spacer */}
-          <View style={{ flex: 1 }} />
-
           <View style={[styles.nav, styles.help]}>
             <Text style={styles.helpTitle}>{APP_SHELL.helpBuild}</Text>
-            <TouchableOpacity
-              style={styles.navItem}
-              onPress={openFeedback}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.navLabel}>{APP_SHELL.giveFeedback}</Text>
-            </TouchableOpacity>
+            {FEEDBACK_ITEMS.map(item => (
+              <TouchableOpacity
+                key={item.type}
+                style={styles.navItem}
+                onPress={() => openFeedback(item.type)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
+              >
+                <Text style={styles.navLabel}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
             <TouchableOpacity
               style={styles.navItem}
               onPress={openSupport}
               activeOpacity={0.7}
               accessibilityRole="link"
+              accessibilityLabel={SETTINGS_VIEW.support.supportPlot}
             >
               <Text style={styles.navLabel}>{SETTINGS_VIEW.support.supportPlot}</Text>
             </TouchableOpacity>
           </View>
+          </ScrollView>
 
           {/* Bottom-pinned nav */}
           <View style={[styles.nav, styles.navBottom]}>
@@ -159,8 +178,10 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                 style={styles.navItem}
                 onPress={() => navigate(`/(app)/u/${profile.username}`)}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={APP_SHELL.profile}
               >
-                <Text style={styles.navLabel}>My Profile</Text>
+                <Text style={styles.navLabel}>{APP_SHELL.profile}</Text>
               </TouchableOpacity>
             )}
             {BOTTOM_NAV_ITEMS.map(item => {
@@ -171,6 +192,9 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                   style={[styles.navItem, active && styles.navItemActive]}
                   onPress={() => navigate(item.path)}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={item.label}
                 >
                   <Text style={[styles.navLabel, active && styles.navLabelActive]}>
                     {item.label}
@@ -214,14 +238,32 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
   },
 
   content: { flex: 1 },
+  scroll: { flex: 1 },
 
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.xl,
+  },
   wordmark: {
     fontFamily: fontFamily.display,
     fontSize: 28,
     color: colors.textPrimary,
     letterSpacing: -1,
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.xl,
+  },
+  beta: {
+    overflow: 'hidden',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: colors.accentSecondaryFill,
+    color: colors.onAccentSecondaryFill,
+    fontFamily: fontFamily.sansBold,
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
 
   nav: {
