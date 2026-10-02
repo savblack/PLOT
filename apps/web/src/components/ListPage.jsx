@@ -2,7 +2,7 @@ import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { isListShareable, listVisibility } from '@plot/core/customLists.js';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useGenres } from '../hooks/useGenres.js';
@@ -15,7 +15,10 @@ import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { CustomListSection, FavoritesSection, WantToWatchSection } from './ListSections.jsx';
 import { SmartListSection } from './SmartListSection.jsx';
-import { IconSearch } from './navIcons.jsx';
+import { IconChevronLeft, IconSearch } from './navIcons.jsx';
+import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
+import { isSharedList } from '@plot/core/sharedLists.js';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import SideFilters from './SideFilters.jsx';
 import MobilePageControls from './MobilePageControls.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
@@ -33,19 +36,47 @@ const GridIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y
 const RowsIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="5.5" height="5.5" rx="1.5" /><rect x="3" y="13.5" width="5.5" height="5.5" rx="1.5" /><path d="M12 6.5h9M12 9.5h6M12 15h9M12 18h6" /></svg>;
 const SortIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M5 7l3-3 3 3M16 20V4M13 17l3 3 3-3" /></svg>;
 
-function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQuery, view, onView, onSort, children }) {
+const CloseIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>;
+
+/* A shared list (PLO-525) hands the frame four more things: `sidePanel`, the
+   people panel above the filters; `headerActions`, Watch together and Add a
+   title at the top right; `lead`, the phone and tablet people line (A8); and
+   `shared`, which on a phone turns the header into a bar with a search
+   button in place of the always-open field. */
+function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQuery, view, onView, onSort, sidePanel, headerActions, lead, shared = false, children }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef(null);
+  useEffect(() => { if (searchOpen) searchRef.current?.focus(); }, [searchOpen]);
+  const side = sidePanel || filter;
+  const searching = searchOpen || query !== '';
   return (
-    <section className={`list-page list-page--${view}`}>
+    <section className={`list-page list-page--${view}${shared ? ' list-page--shared' : ''}${shared && searching ? ' list-page--search-open' : ''}`}>
       <Link className="list-page-back list-page-back--mobile" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>
       <header className="list-page-head">
+        {shared && <Link className="list-page-bar-back" to="/my-lists" aria-label={CUSTOM_LISTS.backToMyLists}><IconChevronLeft /></Link>}
         <div className="list-page-heading">
           <h1 className="list-page-title">{title}</h1>
           <span className="list-page-sub">{titleCount(count)}{subtitle ? ` · ${subtitle}` : ''}</span>
         </div>
-        <label className="hist-search list-page-search"><IconSearch /><input type="search" value={query} onChange={event => onQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchThisList} aria-label={CUSTOM_LISTS.searchThisList} /></label>
+        <div className="list-page-head-actions">
+          {shared && (
+            <button
+              type="button"
+              className="list-page-view list-page-search-toggle"
+              aria-label={searching ? COLLABORATIVE_LISTS.page.searchClose : COLLABORATIVE_LISTS.page.searchOpen}
+              aria-expanded={searching}
+              onClick={() => { if (searching) { setSearchOpen(false); onQuery(''); } else setSearchOpen(true); }}
+            >
+              {searching ? <CloseIcon /> : <IconSearch />}
+            </button>
+          )}
+          <label className="hist-search list-page-search"><IconSearch /><input type="search" value={query} onChange={event => onQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchThisList} aria-label={CUSTOM_LISTS.searchThisList} ref={searchRef} /></label>
+          {headerActions && <div className="list-page-head-buttons">{headerActions}</div>}
+        </div>
       </header>
-      <div className={`list-page-body${filter ? '' : ' list-page-body--no-side'}`}>
-        {filter && <aside className="list-page-side">{filter}</aside>}
+      {lead && <div className="list-page-lead">{lead}</div>}
+      <div className={`list-page-body${side ? '' : ' list-page-body--no-side'}`}>
+        {side && <aside className="list-page-side">{sidePanel}{filter}</aside>}
         <div className="list-page-stream">
           <div className="list-page-toolbar">
             <div className="list-page-toolbar-actions">
@@ -113,7 +144,6 @@ export default function ListPage() {
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
-  const resolvedView = view === 'auto' ? (narrow ? 'rows' : 'grid') : view;
 
   const shareList = useCallback((list) => share({
     url: isListShareable(listVisibility(list), profile?.is_public) ? buildListShareUrl({ listId: list.id }) : null,
@@ -128,6 +158,10 @@ export default function ListPage() {
   const customId = customListIdFromKey(key);
   const list = customId ? customLists.lists.find(l => l.id === customId) : null;
   const smartList = customId && !list ? customLists.smartLists?.find(l => l.id === customId) : null;
+  // A shared list opens as a poster grid at every width (canvas A8); other
+  // lists open as rows on a narrow screen.
+  const sharedGrid = SHOW_WATCH_TOGETHER && isSharedList(list, user?.id);
+  const resolvedView = view === 'auto' ? (narrow && !sharedGrid ? 'rows' : 'grid') : view;
 
   const matchQuery = useCallback((items) => {
     const term = query.trim().toLowerCase();
