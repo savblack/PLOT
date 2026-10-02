@@ -5,7 +5,7 @@ import { PLANS_PAGE } from '../../copy/plansPage.js';
 import { SETTINGS_VIEW } from '../../copy/settingsView.js';
 import { TRACKING } from '../../copy/tracking.js';
 
-const TRIAL = '7-day free trial for first-time subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.';
+const TRIAL = '7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.';
 
 test('premium price copy is US$3/month or US$24/year, taxes included', () => {
   assert.equal(PLANS_PAGE.premium.priceSummary, '$3/month or $24/year');
@@ -20,7 +20,7 @@ test('the trial note says the charge is 7 days later', () => {
   assert.match(PLANS_PAGE.fineprint, /7-day free trial/);
   assert.match(PLANS_PAGE.fineprint, /local currency/);
   for (const line of [
-    '7-day free trial for first-time subscribers',
+    '7-day free trial for new subscribers',
     'You won’t be charged until 7 days after you start',
     'Cancel during the trial and you pay $0',
     'Everything free today stays free',
@@ -43,7 +43,7 @@ test('closed checkout still states the trial and does not deny it', () => {
 
   const upgrade = PLANS_PAGE.faqs.find(item => item.q === 'Can I upgrade now?');
   assert.match(upgrade.a, /Checkout is not open/);
-  assert.match(upgrade.a, /US\$3\/month or US\$24\/year, taxes included, with a 7-day free trial for first-time subscribers/);
+  assert.match(upgrade.a, /US\$3\/month or US\$24\/year, taxes included, with a 7-day free trial for new subscribers/);
   assert.doesNotMatch(upgrade.a, /does not start a payment or a trial/);
 });
 

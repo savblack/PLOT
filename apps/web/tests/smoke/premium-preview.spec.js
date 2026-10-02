@@ -24,7 +24,7 @@ for (const width of [390, 1440]) {
 
     // Annual is the default: $2/month, billed $24 yearly; monthly shows $3.
     await expect(page.getByText('US$24 billed yearly · taxes included', { exact: true })).toBeVisible();
-    await expect(page.getByText('7-day free trial for first-time subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.', { exact: true })).toBeVisible();
+    await expect(page.getByText('7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Monthly' }).click();
     await expect(page.getByText('US$3 billed monthly · taxes included', { exact: true })).toBeVisible();
 

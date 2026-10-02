@@ -5,7 +5,7 @@ tax-inclusive Managed Payments with Adaptive Pricing and AUD settlement.
 The launch package adds a 7-day free trial. The trial is requested by the
 `stripe-billing` checkout (`PREMIUM_TRIAL_DAYS` in `_shared/billingPolicy.ts`),
 not set on the Price, so any tax-inclusive US$3/US$24 Price gets it and a Price
-made without trial days cannot charge early. Only first-time subscribers get it;
+made without trial days cannot charge early. Only new subscribers get it;
 an account with a cancelled subscription pays from the start. The first charge
 is 7 days after the trial starts. Cancel during the trial and the charge is $0.
 Supabase secrets `STRIPE_PRICE_MONTHLY` and `STRIPE_PRICE_YEARLY` point at

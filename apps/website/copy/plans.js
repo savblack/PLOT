@@ -48,7 +48,7 @@ export const PLANS_PAGE = {
     per: '/mo',
     billed: 'US$24 billed yearly · taxes included',
     billedMonthly: 'US$3 billed monthly · taxes included',
-    trial: '7-day free trial for first-time subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
+    trial: '7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
     tagline: 'Everything in Free, plus:',
     features: [
       'Unlimited custom lists',
@@ -85,7 +85,7 @@ export const PLANS_PAGE = {
       },
       {
         q: 'Can I get Premium now?',
-        a: 'Not yet. Checkout is not open. When it opens, Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for first-time subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
+        a: 'Not yet. Checkout is not open. When it opens, Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
       },
       {
         q: 'Can I cancel anytime?',
@@ -98,5 +98,5 @@ export const PLANS_PAGE = {
     ],
   },
 
-  fineprint: 'Prices are in US dollars and include tax. Premium has a 7-day free trial for first-time subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? contact@theplot.tv',
+  fineprint: 'Prices are in US dollars and include tax. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? contact@theplot.tv',
 };
