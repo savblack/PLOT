@@ -76,11 +76,15 @@ test('production Guide saves empty channels and preserves a failed draft', async
 test('Settings saves an unsupported market without substituting listings', async ({ page }) => {
   const backend = await setup(page, null);
   await page.goto('/settings?section=viewing');
+  // The region is a settings row; its Edit opens the picker in a dialog.
+  await page.getByRole('button', { name: 'Edit Broadcast region' }).click();
   await page.getByLabel('Country', { exact: true }).selectOption('US');
   await page.getByLabel('TV market', { exact: true }).selectOption('US-other');
   await page.getByRole('button', { name: 'Save region', exact: true }).click();
   await expect.poll(() => backend.getPreferences()?.market_id).toBe('US-other');
-  await page.getByRole('link', { name: 'Back to Guide' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByText(', United States')).toBeVisible();
+  await page.goto('/guide');
   await expect(page.getByText('Listings are not available for this area yet. We will not substitute another area’s channels.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Show my guide' })).toBeDisabled();
 });
