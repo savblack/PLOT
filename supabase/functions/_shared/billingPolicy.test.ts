@@ -1,4 +1,4 @@
-import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutPlan, checkoutSubscriptionData, matchesPremiumPrice, PREMIUM_TRIAL_DAYS } from './billingPolicy.ts';
+import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutClosedToAll, checkoutPlan, checkoutSubscriptionData, matchesPremiumPrice, mayStartCheckout, publicCheckoutOpen, PREMIUM_TRIAL_DAYS } from './billingPolicy.ts';
 
 function equal(actual: unknown, expected: unknown) {
   if (actual !== expected) throw new Error(`Expected ${expected}, got ${actual}`);
@@ -63,4 +63,30 @@ Deno.test('first-time checkout always requests the trial; returning subscribers 
   equal(PREMIUM_TRIAL_DAYS, 7);
   equal(first.metadata.supabase_user_id, 'user');
   equal('trial_period_days' in checkoutSubscriptionData('user', true), false);
+});
+
+Deno.test('public checkout opens only on the exact value true', () => {
+  equal(publicCheckoutOpen('true'), true);
+  equal(publicCheckoutOpen(' true '), true);
+  for (const value of [undefined, '', ' ', 'false', 'TRUE', 'True', '1', 'yes', 'on', 'truee', 'true,false']) {
+    equal(publicCheckoutOpen(value), false);
+  }
+});
+
+Deno.test('with the switch off only the pilot list can check out, and no list means closed', () => {
+  equal(mayStartCheckout('pilot-user', 'false', 'pilot-user'), true);
+  equal(mayStartCheckout('other-user', 'false', 'pilot-user'), false);
+  equal(mayStartCheckout('other-user', undefined, undefined), false);
+  equal(mayStartCheckout(undefined, 'false', 'pilot-user'), false);
+  equal(checkoutClosedToAll('false', undefined), true);
+  equal(checkoutClosedToAll(undefined, ' , '), false);
+  equal(checkoutClosedToAll('false', 'pilot-user'), false);
+});
+
+Deno.test('with the switch on everyone can check out, with or without a pilot list', () => {
+  for (const ids of [undefined, '', 'pilot-user']) {
+    equal(mayStartCheckout('any-user', 'true', ids), true);
+    equal(checkoutClosedToAll('true', ids), false);
+  }
+  equal(mayStartCheckout(undefined, 'true', undefined), true);
 });

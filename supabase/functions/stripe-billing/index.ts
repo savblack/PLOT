@@ -18,7 +18,7 @@ import Stripe from 'npm:stripe@22.6.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { CheckoutPendingError, subscriptionCheckout } from '../_shared/checkout.ts';
-import { checkoutPlan, matchesPremiumPrice, billingSettingsUrl, isCheckoutPilot } from '../_shared/billingPolicy.ts';
+import { checkoutClosedToAll, checkoutPlan, matchesPremiumPrice, billingSettingsUrl, mayStartCheckout } from '../_shared/billingPolicy.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
@@ -98,14 +98,16 @@ Deno.serve(async (req) => {
 
   const action = new URL(req.url).searchParams.get('action');
   const pilotIds = Deno.env.get('STRIPE_CHECKOUT_PILOT_USER_IDS');
-  // Public checkout stays closed, even if the general launch switch is enabled.
-  if (action === 'checkout' && !pilotIds?.trim()) {
+  const checkoutEnabled = Deno.env.get('STRIPE_CHECKOUT_ENABLED');
+  // Checkout is open to everyone only when STRIPE_CHECKOUT_ENABLED is exactly "true".
+  // Otherwise only the private pilot allowlist can start one, and with no pilot it is closed.
+  if (action === 'checkout' && checkoutClosedToAll(checkoutEnabled, pilotIds)) {
     return json({ error: 'Plot Premium is coming soon.', code: 'premium_coming_soon' }, 503);
   }
 
   const { user } = await getAuthedUser(req);
   if (!user) return json({ error: 'Unauthorized' }, 401);
-  if (action === 'checkout' && !isCheckoutPilot(user.id, pilotIds)) {
+  if (action === 'checkout' && !mayStartCheckout(user.id, checkoutEnabled, pilotIds)) {
     return json({ error: 'Plot Premium is coming soon.', code: 'premium_coming_soon' }, 503);
   }
 
