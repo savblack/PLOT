@@ -12,7 +12,7 @@ import ListPage from '../components/ListPage.jsx';
 import ListInvitePage from '../components/ListInvitePage.jsx';
 import MediaPanel from '../components/MediaPanel.jsx';
 import { NewSharedListDialog } from '../components/CollaborativeListParts.jsx';
-import { WatchTogetherTile } from '../components/WatchTogetherParts.jsx';
+import { AcceptDialog, SharedListPeopleDialog, WatchTogetherTile } from '../components/WatchTogetherParts.jsx';
 import resolvedTitles from './collabListTitles.fixture.json';
 
 /* Collaborative lists, the redesign Savannah picked on 2 Oct 2026 from the
@@ -313,6 +313,13 @@ export const SharedListRows = {
 
 export const SharedListDark = { ...listPage, globals: DARK };
 
+/* Titles added over a week ago show a date in the viewer's own order:
+   day first for a UK viewer (the default app here), month first in the US. */
+export const SharedListRowsUS = {
+  ...SharedListRows,
+  parameters: { route: '/my-lists/list-friday', app: app({ profile: { ...premium, region: 'US' } }) },
+};
+
 /* The people rows are the Added by filter. */
 export const SharedListFilteredBySam = {
   ...listPage,
@@ -369,6 +376,15 @@ export const PhoneInListSearch = {
     await waitFor(() => expect(canvas.queryAllByText('Perfect Days')).toHaveLength(0));
     await expect(canvas.queryAllByText('Aftersun').length).toBeGreaterThan(0);
   },
+};
+
+/* ── Existing Watch together dialogs, for checking their padding ── */
+
+export const WatchTogetherAcceptDialog = {
+  render: () => <AcceptDialog person={{ display_name: 'Sam', username: 'samk' }} viewer={{ id: 'u-mia', is_public: false }} onAccept={noop} onDecline={noop} onClose={noop} />,
+};
+export const SharedListAddPeopleDialog = {
+  render: () => <SharedListPeopleDialog list={samAndMia} onAdd={resolved} onClose={noop} />,
 };
 
 /* ── Adding from a title (A6): shared lists among yours, with their people ── */

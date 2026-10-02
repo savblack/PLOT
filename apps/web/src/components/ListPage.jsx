@@ -34,6 +34,7 @@ import { useHistory } from '../hooks/useHistory.js';
 
 const GridIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></svg>;
 const RowsIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="5.5" height="5.5" rx="1.5" /><rect x="3" y="13.5" width="5.5" height="5.5" rx="1.5" /><path d="M12 6.5h9M12 9.5h6M12 15h9M12 18h6" /></svg>;
+const PlusIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
 const SortIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M5 7l3-3 3 3M16 20V4M13 17l3 3 3-3" /></svg>;
 
 const CloseIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>;
@@ -43,7 +44,7 @@ const CloseIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18
    title at the top right; `lead`, the phone and tablet people line (A8); and
    `shared`, which on a phone turns the header into a bar with a search
    button in place of the always-open field. */
-function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQuery, view, onView, onSort, sidePanel, headerActions, lead, shared = false, children }) {
+function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQuery, view, onView, onSort, sidePanel, headerActions, lead, onAdd, shared = false, children }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
   useEffect(() => { if (searchOpen) searchRef.current?.focus(); }, [searchOpen]);
@@ -70,8 +71,9 @@ function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQ
               {searching ? <CloseIcon /> : <IconSearch />}
             </button>
           )}
-          <label className="hist-search list-page-search"><IconSearch /><input type="search" value={query} onChange={event => onQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchThisList} aria-label={CUSTOM_LISTS.searchThisList} ref={searchRef} /></label>
+          {/* Controls sit left of the search, as on Calendar and History. */}
           {headerActions && <div className="list-page-head-buttons">{headerActions}</div>}
+          <label className="hist-search list-page-search"><IconSearch /><input type="search" value={query} onChange={event => onQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchThisList} aria-label={CUSTOM_LISTS.searchThisList} ref={searchRef} /></label>
         </div>
       </header>
       {lead && <div className="list-page-lead">{lead}</div>}
@@ -82,6 +84,9 @@ function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQ
             <div className="list-page-toolbar-actions">
               <button type="button" className="list-page-view" aria-label={CUSTOM_LISTS.gridView} aria-pressed={view === 'grid'} onClick={() => onView('grid')}><GridIcon /></button>
               <button type="button" className="list-page-view" aria-label={CUSTOM_LISTS.listView} aria-pressed={view === 'rows'} onClick={() => onView('rows')}><RowsIcon /></button>
+              {/* Below the sidebar width a shared list's Add is one more round
+                  control here, not a pink button (A8). */}
+              {onAdd && <button type="button" className="list-page-view list-page-add" aria-label={COLLABORATIVE_LISTS.page.addTitle} onClick={onAdd}><PlusIcon /></button>}
               <KebabMenu
                 ariaLabel={CUSTOM_LISTS.sortList}
                 buttonClassName="list-page-view"

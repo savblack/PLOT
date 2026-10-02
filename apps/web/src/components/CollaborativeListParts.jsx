@@ -375,18 +375,18 @@ export function ListPeoplePanel({ members, total, filter, onFilter, onInvite, in
 
 /**
  * The phone list's people line (A8): the avatar stack and "4 people · 12
- * titles", which opens the people sheet, beside Add.
+ * titles", which opens the people sheet. Add is a round control in the
+ * toolbar beside grid, list and sort.
  *
- * @param {{ members: import('@plot/core/sharedLists.js').ListMember[], total: number, onOpen: () => void, onAdd: () => void }} props
+ * @param {{ members: import('@plot/core/sharedLists.js').ListMember[], total: number, onOpen: () => void }} props
  */
-export function ListPeopleLine({ members, total, onOpen, onAdd }) {
+export function ListPeopleLine({ members, total, onOpen }) {
   return (
     <div className="cl-lead">
       <button type="button" className="cl-lead-people" onClick={onOpen} aria-label={P.peopleButton(members.length)} aria-haspopup="dialog">
         <MemberStack people={members} max={4} />
         <span>{P.countSummary(members.length, total)}</span>
       </button>
-      <button type="button" className="btn btn-primary btn-sm" onClick={onAdd}><PlusSmallIcon />{P.add}</button>
     </div>
   );
 }
@@ -400,7 +400,7 @@ export function ListPeopleLine({ members, total, onOpen, onAdd }) {
 export function ListPeopleSheet({ members, onInvite, onWatchTogether, onClose }) {
   return (
     <ResponsiveDialog title={P.onThisList} onClose={onClose}
-      footer={<div className="wt-dialog-actions">
+      footer={<div className="wt-dialog-actions cl-sheet-actions">
         <button type="button" className="btn btn-secondary" onClick={onInvite}><PeopleIcon />{P.addPerson}</button>
         {onWatchTogether && <button type="button" className="btn btn-primary" onClick={onWatchTogether}><SofaIcon />{T.navLabel}</button>}
       </div>}>

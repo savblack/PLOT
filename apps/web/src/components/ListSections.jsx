@@ -798,7 +798,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
     return (
       <div className="cl-byline">
         <PersonAvatar person={adder(item) || {}} size="xs" />
-        <span>{P.addedAgo(by, item.added_at ? relativeTime(item.added_at) : '')}</span>
+        <span>{P.addedAgo(by, item.added_at ? relativeTime(item.added_at, undefined, profile?.region) : '')}</span>
       </div>
     );
   };
@@ -822,7 +822,8 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
         <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowAdd(true)}><PlusSmallIcon />{P.addTitle}</button>
       </>
     ),
-    lead: <ListPeopleLine members={members} total={allItems.length} onOpen={() => setPeopleOpen(true)} onAdd={() => setShowAdd(true)} />,
+    lead: <ListPeopleLine members={members} total={allItems.length} onOpen={() => setPeopleOpen(true)} />,
+    onAdd: () => setShowAdd(true),
   } : {};
 
   return (

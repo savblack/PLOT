@@ -89,7 +89,7 @@ export default function ListInvitePage({ loadPreview = listInvitePreview, loadPe
   const screen = listInviteLanding(info, { signedIn: !!userId });
   if (screen === 'invalid') {
     return (
-      <div className="wt-page wt-landing">
+      <div className="wt-page wt-landing cl-landing">
         <h1 className="wt-title">{T.landing.invalidTitle}</h1>
         <p className="wt-card-body">{T.landing.invalidBody}</p>
       </div>
@@ -127,7 +127,7 @@ export default function ListInvitePage({ loadPreview = listInvitePreview, loadPe
 
   if (screen === 'owner' || screen === 'member') {
     return (
-      <div className="wt-page wt-landing">
+      <div className="wt-page wt-landing cl-landing">
         <h1 className="wt-title">{screen === 'owner' ? L.ownerTitle : L.memberTitle}</h1>
         <p className="wt-person-name">{summary}</p>
         {screen === 'owner' && <p className="wt-card-body">{L.ownerBody}</p>}
@@ -138,7 +138,7 @@ export default function ListInvitePage({ loadPreview = listInvitePreview, loadPe
 
   if (screen === 'inactive') {
     return (
-      <div className="wt-page wt-landing">
+      <div className="wt-page wt-landing cl-landing">
         <PersonAvatar person={info} size="lg" />
         <h1 className="wt-title">{L.inactiveTitle}</h1>
         <p className="wt-card-body">{L.inactiveBody(name)}</p>

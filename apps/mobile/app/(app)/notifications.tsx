@@ -52,7 +52,7 @@ export default function NotificationsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { userId } = useAppData();
+  const { userId, profile } = useAppData();
   const { list, loading, refreshList, markAllRead } = useNotifications(userId);
   const { open: openPanel } = useMediaPanel();
 
@@ -109,7 +109,7 @@ export default function NotificationsScreen() {
                     <Text style={styles.rowText}>
                       <Text style={styles.rowName}>{title}</Text>{' '}{phrase}
                     </Text>
-                    <Text style={styles.rowTime}>{relativeTime(n.created_at)}</Text>
+                    <Text style={styles.rowTime}>{relativeTime(n.created_at, undefined, profile?.region)}</Text>
                   </View>
                 </View>
               );
@@ -140,7 +140,7 @@ export default function NotificationsScreen() {
                       <Text style={styles.rowName}>{title}</Text>
                       {' '}{phrase}
                     </Text>
-                    <Text style={styles.rowTime}>{relativeTime(n.created_at)}</Text>
+                    <Text style={styles.rowTime}>{relativeTime(n.created_at, undefined, profile?.region)}</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -167,7 +167,7 @@ export default function NotificationsScreen() {
                       ? <Text style={styles.rowReview}> · review</Text>
                       : null}
                   </Text>
-                  <Text style={styles.rowTime}>{relativeTime(n.created_at)}</Text>
+                  <Text style={styles.rowTime}>{relativeTime(n.created_at, undefined, profile?.region)}</Text>
                 </View>
               </TouchableOpacity>
             );

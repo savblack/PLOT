@@ -40,6 +40,9 @@
 .list-page-bar-back,
 .list-page-search-toggle { display: none; }
 .list-page-lead { display: none; }
+/* The toolbar's Add (A8) only where the header's Add a title is hidden. */
+.list-page-add { display: none; }
+@media (max-width: 1023px) { .list-page--shared .list-page-add { display: inline-flex; } }
 
 /* The people panel: A5's header line on top, then each person's count as the
    Added by filter, then Invite people. */
@@ -71,6 +74,10 @@
 .cl-lead-people:hover { color: var(--text-primary); }
 .cl-lead-people:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius-sm, 6px); }
 .cl-lead .btn { display: inline-flex; align-items: center; }
+/* The people sheet's two actions share the row equally (Savannah's call for
+   this bottom sheet; see docs/design/shared-design-system.md). */
+.cl-sheet-actions { width: 100%; }
+.cl-sheet-actions .btn { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; }
 
 @media (max-width: 1023px) {
   .list-page--shared .list-page-head-buttons { display: none; }
@@ -102,18 +109,20 @@
 .cl-create-foot .wt-note { flex: 1; min-width: 0; }
 .cl-chip-btn { border: 0; cursor: pointer; font: inherit; }
 
-/* ── The list-led invite landing (B3, B4, B7) ── */
+/* ── The invite landing (A3, A4, A7 and B3, B4, B7): centred ── */
+.cl-landing { align-items: center; text-align: center; margin-inline: auto; width: 100%; box-sizing: border-box; }
+.cl-landing .wt-top-actions { justify-content: center; }
+.cl-landing .wt-avatar--lg { align-self: center; }
 .cl-landing-kicker { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
 .cl-landing--list .wt-title { margin-top: -0.6rem; }
-.cl-landing-people { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
-.cl-landing-posters { display: flex; gap: 10px; }
+.cl-landing-people { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+.cl-landing-posters { display: flex; justify-content: center; gap: 10px; }
 .cl-landing-posters img {
   width: 92px; aspect-ratio: 2/3; object-fit: cover; display: block;
   border-radius: 10px; border: 1px solid var(--border); background: var(--surface-sunken);
 }
 .cl-landing-fan { display: none; width: 220px; align-self: center; }
 @media (max-width: 600px) {
-  .cl-landing--list { align-items: stretch; }
   .cl-landing-fan { display: block; }
   .cl-landing-posters { display: none; }
   .cl-landing-posters img { width: 64px; }
@@ -121,5 +130,8 @@
 
 /* The Watch together and list dialogs put .wt-accept straight into the
    dialog's content, which has no padding of its own, so rows and fields ran
-   to the sheet's edge. Give it the footer's inset. */
+   to the sheet's edge. Give it the footer's inset. Compared with and without
+   on 2 Oct 2026 (Accept, Add people, Start a list, Invite people, New shared
+   list, On this list): padded reads better on every one, desktop and phone,
+   so it stays unscoped. */
 .responsive-dialog-content > .wt-accept { padding: 1rem 1.5rem 1.25rem; }

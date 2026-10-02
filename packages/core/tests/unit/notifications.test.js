@@ -50,3 +50,17 @@ test('NEW_EPISODE_NOTIFICATION words single episodes, premieres and same-day dro
   // A null count (older rows, or a caller that dropped it) reads as one episode.
   assert.equal(phrase({ season_number: 1, episode_number: 2, episode_count: null }), 'S1 E2 is out');
 });
+
+test('relativeTime puts an older date in the viewer\'s day and month order', async () => {
+  const { dateLocaleForRegion } = await import('../../date.js');
+  // Noon UTC, so the day is the same in any test machine's timezone.
+  const old = '2026-03-09T12:00:00Z';
+  assert.equal(relativeTime(old, NOW, 'US'), '3/9/2026');
+  assert.equal(relativeTime(old, NOW, 'GB'), '09/03/2026');
+  assert.equal(relativeTime(old, NOW, 'AU'), '09/03/2026');
+  // No region reads as the US, the default region.
+  assert.equal(relativeTime(old, NOW), '3/9/2026');
+  assert.equal(dateLocaleForRegion('gb'), 'en-GB');
+  // Recent times are unchanged by region.
+  assert.equal(relativeTime('2026-08-21T12:00:00Z', NOW, 'GB'), '2d ago');
+});

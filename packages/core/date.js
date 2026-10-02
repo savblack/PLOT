@@ -79,14 +79,28 @@ export function formatWatchedOn(value) {
 }
 
 /**
+ * The locale a numeric date takes for the viewer's region: month first in the
+ * US (12/09/2026 is 9 December there), day first everywhere else Plot runs.
+ * No region means the US, as with spelling.
+ *
+ * @param {string | null | undefined} region  the viewer's own profile.region
+ * @returns {'en-US' | 'en-GB'}
+ */
+export function dateLocaleForRegion(region) {
+  return !region || String(region).toUpperCase() === 'US' ? 'en-US' : 'en-GB';
+}
+
+/**
  * Short relative time for feed/notification timestamps: "just now", "5m ago",
- * "3h ago", "2d ago", then an absolute date once it's a week old.
+ * "3h ago", "2d ago", then an absolute date once it's a week old, in the
+ * viewer's day/month order (dateLocaleForRegion).
  *
  * @param {string} iso
  * @param {number} [now] epoch ms, injectable so this is testable
+ * @param {string | null} [region] the viewer's own profile.region
  * @returns {string}
  */
-export function relativeTime(iso, now = Date.now()) {
+export function relativeTime(iso, now = Date.now(), region = null) {
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return '';
   const s = Math.max(0, Math.floor((now - then) / 1000));
@@ -94,7 +108,7 @@ export function relativeTime(iso, now = Date.now()) {
   const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24); if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(dateLocaleForRegion(region));
 }
 
 /** Today, spelt out in the viewer's own locale ("Tuesday 15 September"). The
