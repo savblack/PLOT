@@ -4,6 +4,7 @@ import { themeAttributes } from '@plot/core/themes.js';
 import { FeedbackPanel } from '../components/SettingsView.jsx';
 import { MemoryRouter } from 'react-router-dom';
 import AppSidebar from '../components/AppSidebar.jsx';
+import { APP_NAV_ITEMS } from '../navigation.js';
 import UpgradeSheet from '../components/UpgradeSheet.jsx';
 import { AppContext } from '../hooks/useApp.js';
 import { APP_SHELL } from '../copy/appShell.js';
@@ -87,14 +88,29 @@ export const WithAvatar = {
   args: { ...signedIn, profile: { ...profile, avatar_url: AVATAR } },
 };
 
-// The rail without the Appearance row and the Help build Plot section: both
-// live in the account menu now (issue 1133), so the profile row is the whole foot.
+// The rail without Settings, the Appearance row and the Help build Plot
+// section: all three live in the account menu now (issue 1133), so the
+// profile row is the whole foot.
 export const RailClosed = { args: signedIn };
 export const RailCollapsed = { args: { ...signedIn, collapsed: true } };
 
 // Active rows have an accent label and a neutral selected surface.
 export const ActiveCalendar = { args: { ...signedIn, currentView: 'calendar' } };
-export const ActiveSettings = { args: { ...signedIn, currentView: 'settings' } };
+// Settings is no longer a rail item (it lives in the account menu), so on a
+// Settings page the profile row carries the selected state instead.
+export const ActiveSettings = {
+  args: { ...signedIn, currentView: 'settings' },
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const nav = canvasElement.querySelector('.app-sidebar-nav');
+    await expect(within(nav).queryByRole('button', { name: APP_NAV_ITEMS.find(item => item.id === 'settings').label })).toBeNull();
+    const row = canvas.getByRole('button', { name: new RegExp(profile.display_name) });
+    await expect(row).toHaveAttribute('aria-current', 'page');
+    await expect(row).toHaveClass('active');
+  },
+};
+export const ActiveSettingsSubpage = { args: { ...signedIn, currentView: 'settings/themes' } };
 export const ActiveNotifications = {
   args: { ...signedIn, unread: 3, currentView: 'notifications' },
 };

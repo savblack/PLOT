@@ -59,6 +59,7 @@ function IconSupport() {
  * @param {{
  *   profile: { username: string, display_name?: string | null, avatar_url?: string | null },
  *   active?: boolean,
+ *   current?: boolean,
  *   settingsLabel: string,
  *   onViewProfile: () => void,
  *   onSettings: () => void,
@@ -71,7 +72,9 @@ function IconSupport() {
  *   isPremium: boolean,
  *   onLocked?: (family: string) => void,
  *   defaultOpen?: boolean,
- * }} props  active: the viewer is on their own profile. The theme section only
+ * }} props  active: the row reads as selected (own profile, or a Settings
+ *   page now that Settings lives in this menu). current: also mark it
+ *   aria-current="page". The theme section only
  *   renders when onPickFamily is given. onPickFamily returns false for a family
  *   the viewer cannot use; onLocked then opens the upgrade sheet for it.
  *   defaultOpen is for Storybook.
@@ -79,6 +82,7 @@ function IconSupport() {
 export default function AccountMenu({
   profile,
   active = false,
+  current = false,
   settingsLabel,
   onViewProfile,
   onSettings,
@@ -270,6 +274,7 @@ export default function AccountMenu({
         className={`app-sidebar-item app-sidebar-profile interactive-surface${active || open ? ' active' : ''}`}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-current={current ? 'page' : undefined}
         aria-controls={open ? panelId : undefined}
         onClick={toggle}
       >

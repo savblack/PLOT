@@ -4,7 +4,7 @@ import PlotLogo from './PlotLogo.jsx';
 import AccountMenu from './AccountMenu.jsx';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { APP_SHELL } from '../copy/appShell.js';
-import { IconBell, IconSettings, NAV_ICONS } from './navIcons.jsx';
+import { IconBell, NAV_ICONS } from './navIcons.jsx';
 
 /* The desktop nav rail. Replaces the bottom tab bar and the nav drawer above
    1024px — the two of them listed the same destinations bar Settings.
@@ -14,7 +14,10 @@ import { IconBell, IconSettings, NAV_ICONS } from './navIcons.jsx';
    rendered in Storybook without an auth session. AppShell owns the routing and
    the notification count. */
 
-// Search leads the desktop list; Settings follows Notifications.
+// Search leads the desktop list. Settings is not in the rail: it lives in the
+// account menu the profile row opens (issue 1133). The list itself is shared
+// with mobile in @plot/core/navigation.js, so it is filtered here rather than
+// removed there; the phone drawer below 1024px keeps its own Settings row.
 const SIDEBAR_NAV_ITEMS = [
   APP_NAV_ITEMS.find(item => item.id === 'search'),
   ...APP_NAV_ITEMS.filter(item => item.id !== 'settings' && item.id !== 'search'),
@@ -60,6 +63,9 @@ export default function AppSidebar({
   defaultAccountMenuOpen = false,
 }) {
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
+  // With Settings gone from the rail, the profile row stands in for it so a
+  // Settings page (and /settings/*) still shows where the viewer is.
+  const isSettingsView = isActiveView(currentView, 'settings');
   // Free viewers see which destinations are Premium before they tap in.
   const showPremiumPill = !isPremiumProfile(profile);
 
@@ -123,17 +129,6 @@ export default function AppSidebar({
             </button>
           )}
 
-          {SETTINGS_NAV_ITEM && (
-            <button
-              type="button"
-              className={`app-sidebar-item interactive-surface${currentView === 'settings' ? ' active' : ''}`}
-              onClick={() => onNavigate('settings')}
-              aria-current={currentView === 'settings' ? 'page' : undefined}
-            >
-              <IconSettings />
-              <span className="app-sidebar-label">{SETTINGS_NAV_ITEM.label}</span>
-            </button>
-          )}
         </nav>
       </div>
       <div className="app-sidebar-foot">
@@ -142,7 +137,8 @@ export default function AppSidebar({
         {profile?.username && (
           <AccountMenu
             profile={profile}
-            active={isOwnProfile}
+            active={isOwnProfile || isSettingsView}
+            current={isOwnProfile || isSettingsView}
             settingsLabel={SETTINGS_NAV_ITEM?.label}
             onViewProfile={() => onNavigateProfile(profile.username)}
             onSettings={() => onNavigate('settings')}
