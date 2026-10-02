@@ -142,6 +142,12 @@ verify_jwt = false
 [functions.premium-alerts]
 verify_jwt = true
 
+# Weekly smart lists roll-up: called on Sundays by pg_cron via pg_net with the
+# Vault service-role bearer (run_smart_list_digest, 20261002180000), so
+# verify_jwt stays true and the handler also requires the service role.
+[functions.smart-list-digest]
+verify_jwt = true
+
 # Following people: refreshes people_feed for one person right after a Premium
 # member follows them. Called from the browser with the user's own bearer, so
 # verify_jwt stays true; the handler checks the follow and is_premium().

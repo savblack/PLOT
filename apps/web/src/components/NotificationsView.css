@@ -87,3 +87,13 @@
 .notif-people-footer-text { flex: 1; min-width: 0; font-size: 0.84rem; color: var(--text-secondary); }
 .notif-people-footer-link { flex-shrink: 0; font-size: 0.82rem; font-weight: 600; }
 .notif-people-footer:hover .notif-people-footer-link { color: var(--accent-text); }
+
+/* Smart lists roll-up (C4): three posters fanned, then the sentence. */
+.notif-digest { cursor: default; align-items: center; }
+.notif-digest:hover strong { color: inherit; }
+.notif-digest-stack { display: inline-flex; flex-shrink: 0; }
+.notif-digest-poster { display: block; flex-shrink: 0; width: 36px; height: 54px; border-radius: 8px; object-fit: cover; background: var(--surface-sunken); border: 2px solid var(--bg); }
+.notif-digest-poster + .notif-digest-poster { margin-left: -12px; }
+.notif-digest-lists,
+.notif-digest-time { display: block; margin-top: 2px; }
+.notif-digest-action { flex-shrink: 0; }

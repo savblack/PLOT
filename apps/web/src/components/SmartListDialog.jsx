@@ -1,134 +1,101 @@
-// Create or edit a smart list's rules (Premium). The rules and what they mean
-// live in @plot/core/smartLists.js; this is only the form. Mobile has no
-// counterpart yet: see issue 1094 (Mobile parity: smart lists).
-import { useEffect, useId, useState } from 'react';
-import { tmdb } from '@plot/core/tmdb.js';
+// Create or edit a smart list (A2 on the smart lists canvas, with the chip
+// sentence from the phone save sheet). The rules read as one sentence of
+// chips; a live count and a row of posters show what they find before
+// anything is saved; the name is written from the rules until the viewer
+// types their own.
+//
+// Opened three ways: "Create smart list" on Pick for Me (the answers become
+// the rules), "New list" then "Smart list" on My Lists (default rules), and
+// "Edit rules" on a smart list. Free viewers can build and count (B5); Create
+// hands their rules to `onLocked`, which keeps them and opens the upgrade sheet.
+//
+// The rules and what they mean live in @plot/core/smartLists.js; the count is
+// @plot/core/useSmartListPreview.js. Mobile has no counterpart yet: see issue
+// 1094 (Mobile parity: smart lists).
+import { useId, useMemo, useState } from 'react';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { isCustomListLimitError, isSmartListPremiumError } from '@plot/core/customListCreation.js';
-import {
-  SMART_LIST_ERAS, SMART_LIST_MEDIA_TYPES, SMART_LIST_MIN_SCORES, SMART_LIST_MOVIE_RUNTIMES,
-  SMART_LIST_EPISODE_RUNTIMES, SMART_LIST_MY_RATINGS, SMART_LIST_SOURCES,
-  defaultSmartListRules, normalizeSmartListRules, smartListGenres,
-} from '@plot/core/smartLists.js';
+import { defaultSmartListRules, normalizeSmartListRules, setSmartListRule, smartListGenres, suggestSmartListName } from '@plot/core/smartLists.js';
 import { pickerProviderIds } from '@plot/core/tonightPicker.js';
+import { useSmartListPreview } from '@plot/core/useSmartListPreview.js';
+import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
-import { TONIGHT_PICKER } from '@plot/core/copy/tonightPicker.js';
 import { COMMON } from '../copy/common.js';
 import { useApp } from '../hooks/useApp.js';
+import { useGenreCatalog } from '../hooks/useGenres.js';
+import { useHistory } from '../hooks/useHistory.js';
+import { posterUrl } from '../utils/images.js';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
+import SmartListRules from './SmartListRules.jsx';
+import { SettingsSwitch } from './SettingsPage.jsx';
 import './SmartListDialog.css';
 
-const T = TONIGHT_PICKER;
-
-// One catalog request per session; an empty answer stays retryable.
-let catalogPromise = null;
-function useGenreCatalog() {
-  const [catalog, setCatalog] = useState({ movie: [], tv: [] });
-  useEffect(() => {
-    let alive = true;
-    catalogPromise ??= tmdb.getGenreCatalog().catch(() => ({ movie: [], tv: [] }));
-    catalogPromise.then(c => {
-      if (!c.movie.length && !c.tv.length) catalogPromise = null;
-      if (alive) setCatalog(c);
-    });
-    return () => { alive = false; };
-  }, []);
-  return catalog;
-}
-
-function Choices({ label, options, value, onChange, labelFor, hintFor }) {
-  const id = useId();
-  return (
-    <div className="smart-field">
-      <div id={id} className="smart-label">{label}</div>
-      <div className="smart-choices" role="radiogroup" aria-labelledby={id}>
-        {options.map(option => (
-          <button
-            key={String(option)}
-            type="button"
-            role="radio"
-            aria-checked={value === option}
-            className={`smart-choice${value === option ? ' selected' : ''}`}
-            onClick={() => onChange(option)}
-          >
-            <span className="smart-choice-label">{labelFor(option)}</span>
-            {hintFor && <span className="smart-choice-hint">{hintFor(option)}</span>}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Select({ label, options, value, onChange, labelFor }) {
-  const id = useId();
-  return (
-    <label className="smart-row" htmlFor={id}>
-      <span className="smart-row-label">{label}</span>
-      <select id={id} className="smart-select" value={String(value ?? '')} onChange={e => {
-        const picked = options.find(o => String(o ?? '') === e.target.value);
-        onChange(picked ?? null);
-      }}>
-        {options.map(o => <option key={String(o ?? 'any')} value={String(o ?? '')}>{labelFor(o)}</option>)}
-      </select>
-    </label>
-  );
-}
-
-function Check({ label, checked, onChange, disabled, hint }) {
-  const id = useId();
-  return (
-    <label className={`smart-row${disabled ? ' disabled' : ''}`} htmlFor={id}>
-      <span>
-        <span className="smart-row-label">{label}</span>
-        {hint && <span className="smart-row-hint">{hint}</span>}
-      </span>
-      <input id={id} type="checkbox" checked={checked} disabled={disabled} onChange={e => onChange(e.target.checked)} />
-    </label>
-  );
-}
+const NONE = [];
 
 /**
  * @param {{
  *   list?: { id: string, name: string, rules: any } | null,  editing when set
+ *   initialRules?: import('@plot/core/smartLists.js').SmartListRules | null,  the answers, or a kept draft
+ *   initialName?: string,
+ *   origin?: 'picker' | 'lists',
  *   lists: any[],  every list the viewer owns, for the duplicate-name check
+ *   premium?: boolean,  false: Create hands the rules to onLocked (B5)
  *   onConfirm: (name: string, rules: import('@plot/core/smartLists.js').SmartListRules) => Promise<any>,
  *   onClose: () => void,
  *   onPremium: () => void,  the server said this account is not Premium
+ *   onLocked?: (name: string, rules: import('@plot/core/smartLists.js').SmartListRules) => void,
  *   onLimit?: () => void,
+ *   catalog?: { movie: any[], tv: any[] } | null,  Storybook: genres without a fetch
+ *   preview?: { count: number | null, items: any[], loading?: boolean, fromTmdb?: boolean } | null,  Storybook: a count without TMDB
  * }} props
  */
-export default function SmartListDialog({ list = null, lists, onConfirm, onClose, onPremium, onLimit }) {
-  const { profile } = useApp();
-  const catalog = useGenreCatalog();
-  const [name, setName] = useState(list?.name ?? '');
-  const [rules, setRules] = useState(() => normalizeSmartListRules(list?.rules) ?? defaultSmartListRules());
+export default function SmartListDialog({
+  list = null, initialRules = null, initialName = '', origin = 'lists', lists, premium = true,
+  onConfirm, onClose, onPremium, onLocked, onLimit, catalog: seedCatalog = null, preview: seedPreview = null,
+}) {
+  const { user, profile, watchlist } = useApp();
+  const history = useHistory(user?.id);
+  const catalog = useGenreCatalog(seedCatalog);
+  const editing = !!list;
+  const [rules, setRules] = useState(() => normalizeSmartListRules(list?.rules)
+    ?? normalizeSmartListRules(initialRules) ?? defaultSmartListRules());
+  const [name, setName] = useState(initialName);
+  const [nameTouched, setNameTouched] = useState(!!initialName);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const hasServices = pickerProviderIds(profile?.streaming_providers).length > 0;
-  const genres = smartListGenres(catalog, rules.mediaType);
   const nameId = useId();
 
-  // Normalizing on every change keeps the form to rules that apply: switching
-  // to "Movies and shows" clears length, leaving history clears "hide watched".
-  const set = (key, value) => setRules(prev => normalizeSmartListRules({ ...prev, [key]: value }));
-  const setType = (mediaType) => setRules(prev => {
-    const offered = new Set(smartListGenres(catalog, mediaType).map(g => g.id));
-    return normalizeSmartListRules({ ...prev, mediaType, genreIds: prev.genreIds.filter(id => offered.has(id)) });
+  // Until the viewer types a name, it follows the rules.
+  const suggested = useMemo(() => suggestSmartListName(rules, { genres: smartListGenres(catalog, rules.mediaType) }), [rules, catalog]);
+  const shownName = nameTouched ? name : suggested;
+
+  const live = useSmartListPreview({
+    rules,
+    enabled: !seedPreview,
+    watchlistItems: watchlist?.items ?? NONE,
+    historyEntries: history.entries ?? NONE,
+    streamingProviders: profile?.streaming_providers,
+    region: profile?.region || DEFAULT_REGION,
+    hideKids: !profile?.include_kids_content,
   });
-  const toggleGenre = (id) => set('genreIds', rules.genreIds.includes(id)
-    ? rules.genreIds.filter(g => g !== id)
-    : [...rules.genreIds, id]);
+  const count = seedPreview ? seedPreview.count : live.count;
+  const posters = (seedPreview ? seedPreview.items : live.items) ?? [];
+  const counting = seedPreview ? !!seedPreview.loading : live.loading;
+  const fromTmdb = seedPreview ? seedPreview.fromTmdb !== false : live.fromTmdb;
 
   const submit = async () => {
-    if (!name.trim() || submitting) return;
-    const duplicate = !list && findDuplicateCustomList(lists, name);
+    const finalName = shownName.trim();
+    if ((!editing && !finalName) || submitting) return;
+    // A services rule with no services saved would match nothing.
+    const saving = hasServices ? rules : { ...rules, onlyServices: false };
+    if (!premium && !editing) { onLocked?.(finalName, saving); return; }
+    const duplicate = !editing && findDuplicateCustomList(lists, finalName);
     if (duplicate) { setError(`"${duplicate.name}" already exists.`); return; }
     setSubmitting(true);
     setError('');
     try {
-      // A services rule with no services saved would match nothing.
-      const saved = await onConfirm(name, hasServices ? rules : { ...rules, onlyServices: false });
+      const saved = await onConfirm(editing ? list.name : finalName, saving);
       if (!saved) setError(SMART_LISTS.couldNotSave);
     } catch (failure) {
       if (isSmartListPremiumError(failure)) { onPremium(); return; }
@@ -139,105 +106,73 @@ export default function SmartListDialog({ list = null, lists, onConfirm, onClose
     }
   };
 
-  const runtimes = rules.mediaType === 'tv' ? SMART_LIST_EPISODE_RUNTIMES : SMART_LIST_MOVIE_RUNTIMES;
+  const title = editing ? SMART_LISTS.editRules : SMART_LISTS.newSmartList;
+  const intro = editing ? null : origin === 'picker' ? SMART_LISTS.fromAnswersIntro : SMART_LISTS.intro;
+  const action = editing ? COMMON.save : SMART_LISTS.create;
 
   return (
     <ResponsiveDialog
-      title={list ? SMART_LISTS.editRules : SMART_LISTS.newSmartList}
+      title={title}
       onClose={onClose}
       tall
+      surfaceClassName="smart-builder-dialog"
       footer={(
         <div className="smart-footer">
           {error && <p className="smart-error" role="alert">{error}</p>}
           <button type="button" className="btn btn-ghost btn-sm" disabled={submitting} onClick={onClose}>{COMMON.cancel}</button>
-          <button type="button" className="btn btn-primary btn-sm" disabled={!name.trim() || submitting} onClick={submit}>
-            {submitting ? (list ? COMMON.saving : SMART_LISTS.creating) : (list ? COMMON.save : SMART_LISTS.create)}
+          <button type="button" className="btn btn-primary btn-sm smart-footer-primary" disabled={(!editing && !shownName.trim()) || submitting} onClick={submit}>
+            {submitting ? (editing ? COMMON.saving : SMART_LISTS.creating) : action}
           </button>
         </div>
       )}
     >
-      <div className="smart-form">
-        {!list && (
-          <>
-            <p className="smart-intro">{SMART_LISTS.intro}</p>
-            <div className="smart-field">
-              <label htmlFor={nameId} className="smart-label">{SMART_LISTS.nameLabel}</label>
-              <input
-                id={nameId}
-                type="text"
-                className="smart-input"
-                placeholder={SMART_LISTS.namePlaceholder}
-                value={name}
-                disabled={submitting}
-                maxLength={80}
-                autoFocus
-                onChange={e => { setName(e.target.value); if (error) setError(''); }}
-              />
-            </div>
-          </>
-        )}
+      <div className="smart-builder">
+        {intro && <p className="smart-intro smart-builder-intro">{intro}</p>}
 
-        <Choices
-          label={SMART_LISTS.sourceLabel}
-          options={SMART_LIST_SOURCES}
-          value={rules.source}
-          onChange={v => set('source', v)}
-          labelFor={v => SMART_LISTS.sources[v].label}
-          hintFor={v => SMART_LISTS.sources[v].hint}
-        />
-        <Choices
-          label={SMART_LISTS.typeLabel}
-          options={SMART_LIST_MEDIA_TYPES}
-          value={rules.mediaType}
-          onChange={setType}
-          labelFor={v => SMART_LISTS.types[v]}
-        />
-
-        {/* Hidden rather than empty if TMDB's genre list did not load. */}
-        {genres.length > 0 && (
-        <div className="smart-field">
-          <div className="smart-label">{SMART_LISTS.genresLabel}</div>
-          <p className="smart-hint">{SMART_LISTS.genresHint}</p>
-          <div className="smart-genres" role="group" aria-label={SMART_LISTS.genresLabel}>
-            {genres.map(g => (
-              <button
-                key={g.id}
-                type="button"
-                aria-pressed={rules.genreIds.includes(g.id)}
-                className={`smart-genre${rules.genreIds.includes(g.id) ? ' selected' : ''}`}
-                onClick={() => toggleGenre(g.id)}
-              >
-                {g.name}
-              </button>
-            ))}
-          </div>
-        </div>
-        )}
-
-        <div className="smart-rows">
-          <Select label={T.eraLabel} options={SMART_LIST_ERAS} value={rules.era} onChange={v => set('era', v ?? 'any')} labelFor={v => T.eras[v]} />
-          <Select label={T.scoreLabel} options={SMART_LIST_MIN_SCORES} value={rules.minScore} onChange={v => set('minScore', v)} labelFor={T.score} />
-          {rules.mediaType !== 'any' && (
-            <Select
-              label={rules.mediaType === 'tv' ? T.episodeLabel : SMART_LISTS.lengthLabel}
-              options={runtimes}
-              value={rules.maxRuntime}
-              onChange={v => set('maxRuntime', v)}
-              labelFor={rules.mediaType === 'tv' ? T.episodeRuntime : T.runtimes}
+        {!editing && (
+          <div className="smart-field smart-builder-name">
+            <label htmlFor={nameId} className="smart-label">{SMART_LISTS.nameLabel}</label>
+            <input
+              id={nameId}
+              type="text"
+              className="smart-input"
+              placeholder={SMART_LISTS.namePlaceholder}
+              value={shownName}
+              disabled={submitting}
+              maxLength={80}
+              onChange={e => { setName(e.target.value); setNameTouched(true); if (error) setError(''); }}
+              onKeyDown={e => { if (e.key === 'Enter') submit(); }}
             />
-          )}
-          {rules.source === 'history' && (
-            <Select label={SMART_LISTS.myRatingLabel} options={SMART_LIST_MY_RATINGS} value={rules.minMyRating} onChange={v => set('minMyRating', v)} labelFor={SMART_LISTS.myRating} />
-          )}
-          <Check
-            label={T.onlyServices}
-            checked={rules.onlyServices && hasServices}
-            disabled={!hasServices}
-            hint={hasServices ? null : T.onlyServicesMissing}
-            onChange={v => set('onlyServices', v)}
-          />
+          </div>
+        )}
+
+        <div className="smart-field smart-builder-rules">
+          <span className="smart-label">{origin === 'picker' && !editing ? SMART_LISTS.rulesFromAnswers : SMART_LISTS.rulesLabel}</span>
+          <SmartListRules rules={rules} catalog={catalog} hasServices={hasServices} onChange={setRules} />
           {rules.source !== 'history' && (
-            <Check label={SMART_LISTS.hideWatched} checked={rules.hideWatched} onChange={v => set('hideWatched', v)} />
+            <div className="smart-builder-switch">
+              <span>{SMART_LISTS.hideWatched}</span>
+              <SettingsSwitch label={SMART_LISTS.hideWatched} checked={rules.hideWatched}
+                onChange={() => setRules(prev => setSmartListRule(prev, 'hideWatched', !prev.hideWatched))} />
+            </div>
+          )}
+        </div>
+
+        <div className="smart-builder-preview" aria-live="polite">
+          <div className="smart-builder-count">
+            <span className="smart-builder-count-number">
+              {count == null ? (counting ? SMART_LISTS.counting : SMART_LISTS.countFailed) : SMART_LISTS.liveCount(count)}
+            </span>
+            {count != null && fromTmdb && <span className="smart-builder-count-source">{SMART_LISTS.liveCountSource}</span>}
+          </div>
+          {posters.length > 0 && (
+            <div className={`smart-builder-posters${counting ? ' smart-builder-posters--stale' : ''}`}>
+              {posters.slice(0, 4).map(item => (
+                <span key={item.id} className="smart-builder-poster">
+                  {item.poster_path ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title} loading="lazy" /> : null}
+                </span>
+              ))}
+            </div>
           )}
         </div>
       </div>

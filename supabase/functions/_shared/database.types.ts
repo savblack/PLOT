@@ -1315,6 +1315,7 @@ export type Database = {
           read_at: string | null
           release_kind: string | null
           season_number: number | null
+          smart_list_digest: Json | null
           tmdb_id: number | null
           type: string
           user_id: string
@@ -1339,6 +1340,7 @@ export type Database = {
           read_at?: string | null
           release_kind?: string | null
           season_number?: number | null
+          smart_list_digest?: Json | null
           tmdb_id?: number | null
           type: string
           user_id: string
@@ -1363,6 +1365,7 @@ export type Database = {
           read_at?: string | null
           release_kind?: string | null
           season_number?: number | null
+          smart_list_digest?: Json | null
           tmdb_id?: number | null
           type?: string
           user_id?: string
@@ -2073,6 +2076,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      smart_list_seen: {
+        Row: {
+          last_checked_at: string | null
+          last_opened_at: string | null
+          list_id: string
+          pending_keys: string[]
+          seen_keys: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_checked_at?: string | null
+          last_opened_at?: string | null
+          list_id: string
+          pending_keys?: string[]
+          seen_keys?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_checked_at?: string | null
+          last_opened_at?: string | null
+          list_id?: string
+          pending_keys?: string[]
+          seen_keys?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_list_seen_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: true
+            referencedRelation: "user_custom_lists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stripe_events: {
         Row: {
@@ -3099,6 +3140,7 @@ export type Database = {
           read_at: string
           release_kind: string
           season_number: number
+          smart_list_digest: Json
           tmdb_id: number
           type: string
         }[]
@@ -3189,6 +3231,7 @@ export type Database = {
       run_marketing_linear_mirror: { Args: never; Returns: undefined }
       run_new_episode_notifications: { Args: never; Returns: undefined }
       run_premium_alerts: { Args: { p_only: string }; Returns: undefined }
+      run_smart_list_digest: { Args: never; Returns: undefined }
       save_private_title_note: {
         Args: {
           p_expected_revision: number

@@ -99,6 +99,8 @@ export const PLANS_PAGE = {
         context: () => 'Smart lists come with Premium',
         title: 'Lists that fill themselves.',
         body: 'Save a few rules, like comedies from the 2010s on your services, and the list keeps finding matches, including new discoveries.',
+        // B5: shown when a Free viewer built rules and pressed Create.
+        kept: 'Your rules are kept. Upgrade and the list is ready.',
         also: ['pick', 'together'],
       },
       // A Free list owner choosing Invite people. Only the host needs Premium.

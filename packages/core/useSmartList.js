@@ -20,6 +20,7 @@ const NONE = Object.freeze([]);
  *   streamingProviders?: any[] | null,
  *   region?: string,
  *   hideKids?: boolean,
+ *   client?: any,  a TMDB client other than the app's (Storybook, tests)
  * }} opts
  * @returns {{
  *   items: import('./smartLists.js').SmartListMatch[],
@@ -34,8 +35,9 @@ const NONE = Object.freeze([]);
  */
 export function useSmartList({
   rules, enabled, watchlistItems = NONE, historyEntries = NONE, ready = true,
-  streamingProviders = NONE, region = 'US', hideKids = false,
+  streamingProviders = NONE, region = 'US', hideKids = false, client,
 }) {
+  const via = client ? { client } : {};
   const [items, setItems] = useState(/** @type {import('./smartLists.js').SmartListMatch[]} */ ([]));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -72,13 +74,13 @@ export function useSmartList({
         if (rules.source === 'discover') {
           pageRef.current = 1;
           seenRef.current = new Set();
-          const res = await loadDiscoverMatches({ rules, page: 1, watched: watchedRef.current, providerIds, region, hideKids, seen: seenRef.current });
+          const res = await loadDiscoverMatches({ rules, page: 1, watched: watchedRef.current, providerIds, region, hideKids, seen: seenRef.current, ...via });
           if (cancelled) return;
           setItems(res.items);
           setHasMore(res.hasMore);
           setUnchecked(0);
         } else {
-          const res = await loadLibraryMatches({ rules, watchlistItems, historyEntries, watched, providerIds, region });
+          const res = await loadLibraryMatches({ rules, watchlistItems, historyEntries, watched, providerIds, region, ...via });
           if (cancelled) return;
           setItems(res.items);
           setHasMore(false);
@@ -101,7 +103,7 @@ export function useSmartList({
     setLoadingMore(true);
     try {
       const page = pageRef.current + 1;
-      const res = await loadDiscoverMatches({ rules, page, watched: watchedRef.current, providerIds, region, hideKids, seen: seenRef.current });
+      const res = await loadDiscoverMatches({ rules, page, watched: watchedRef.current, providerIds, region, hideKids, seen: seenRef.current, ...via });
       pageRef.current = page;
       setItems(prev => [...prev, ...res.items]);
       setHasMore(res.hasMore);
@@ -110,7 +112,7 @@ export function useSmartList({
     } finally {
       setLoadingMore(false);
     }
-  }, [enabled, rules, hasMore, loadingMore, providerIds, region, hideKids]);
+  }, [enabled, rules, hasMore, loadingMore, providerIds, region, hideKids, client]);
 
   const retry = useCallback(() => setAttempt(n => n + 1), []);
 

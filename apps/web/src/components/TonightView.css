@@ -497,6 +497,12 @@
 .tonight-save { flex-shrink: 0; gap: 6px; }
 .tonight-save svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tonight-save svg.filled { fill: currentColor; }
+/* A1: "Create smart list" beside Save search. The hint shows where there is room. */
+.tonight-results-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.tonight-keep-hint { display: none; font-size: 0.8rem; color: var(--text-muted); }
+.tonight-keep { flex-shrink: 0; gap: 6px; }
+.tonight-keep svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (min-width: 1280px) { .tonight-keep-hint { display: inline; } }
 .tonight-results-head + .tonight-results-list { margin-top: 1rem; }
 
 /* ── Saved searches ── */
@@ -634,6 +640,8 @@
 .tonight-unlock-benefits svg { flex-shrink: 0; width: 18px; height: 18px; margin-top: 2px; fill: none; stroke: var(--text-primary); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .tonight-unlock-benefits li > span { display: flex; flex-direction: column; gap: 2px; }
 .tonight-unlock-benefit-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+/* A5: the one new benefit line. */
+.tonight-unlock-new { display: inline-flex; align-items: center; height: 18px; margin-left: 8px; padding: 0 7px; border-radius: var(--radius-pill); background: var(--accent-dim); color: var(--accent-text); font-size: 0.7rem; font-weight: 600; vertical-align: 2px; }
 .tonight-unlock-benefit-body { font-size: 0.875rem; line-height: 1.5; color: var(--text-secondary); }
 .tonight-unlock-cta { width: 100%; min-height: 48px; margin-top: 4px; font-size: 1rem; }
 .tonight-unlock-price { margin: -6px 0 0; text-align: center; font-size: 0.8rem; color: var(--text-secondary); }

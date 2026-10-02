@@ -43,3 +43,32 @@ test('watch together requests leave the stream; accepted ones stay', () => {
   assert.deepEqual(groups.map(g => g.items.map(n => n.id)), [[2]]);
   assert.equal(notificationKind('watch_together_request'), 'request');
 });
+
+test('the smart lists roll-up is read from its payload, and a malformed one is ignored', async () => {
+  const { smartListDigest } = await import('../../notificationGroups.js');
+  const row = {
+    id: 'n1', type: 'smart_list_digest', created_at: '2026-10-04T21:00:00Z',
+    smart_list_digest: { count: 5, lists: [{ id: 'a', name: 'New films worth it', count: 3 }, { id: 'b', name: 'Short thrillers', count: 2 }, { id: 'c' }], posters: ['/a.jpg', '/b.jpg', '/c.jpg', '/d.jpg'] },
+  };
+  assert.deepEqual(smartListDigest(row), {
+    count: 5,
+    lists: [{ id: 'a', name: 'New films worth it', count: 3 }, { id: 'b', name: 'Short thrillers', count: 2 }],
+    posters: ['/a.jpg', '/b.jpg', '/c.jpg'],
+  });
+  assert.equal(smartListDigest({ ...row, smart_list_digest: { count: 0 } }), null);
+  assert.equal(smartListDigest({ ...row, type: 'new_follower' }), null);
+});
+
+test('the roll-up reads as one sentence and names its lists', async () => {
+  const { SMART_LIST_DIGEST } = await import('../../copy/notifications.js');
+  assert.equal(SMART_LIST_DIGEST.title(5), 'Your smart lists found 5 new titles this week.');
+  assert.equal(SMART_LIST_DIGEST.title(1), 'Your smart lists found 1 new title this week.');
+  assert.equal(SMART_LIST_DIGEST.lists([{ name: 'A', count: 3 }, { name: 'B', count: 2 }]), 'A (3), B (2)');
+});
+
+test('the smart lists upgrade sheet says the rules are kept only when they were', async () => {
+  const { upgradeSheetContent } = await import('../../upgradeSheet.js');
+  assert.equal(upgradeSheetContent('smartLists').kept, null);
+  assert.equal(upgradeSheetContent('smartLists', { kept: true }).kept, 'Your rules are kept. Upgrade and the list is ready.');
+  assert.equal(upgradeSheetContent('lists', { kept: true }).kept, null);
+});

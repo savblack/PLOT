@@ -32,6 +32,29 @@ export function isTitleNotification(n) {
   return n.type === 'new_episode' && n.tmdb_id != null;
 }
 
+/**
+ * @typedef {{ count: number, lists: Array<{ id: string, name: string, count: number }>, posters: string[] }} SmartListDigest
+ */
+
+/**
+ * The weekly smart lists roll-up (smart_list_digest), with its payload
+ * cleaned, or null for any other row. No actor: it reads as its own sentence.
+ * @param {NotificationRow & { smart_list_digest?: any }} n
+ * @returns {SmartListDigest | null}
+ */
+export function smartListDigest(n) {
+  if (n?.type !== 'smart_list_digest') return null;
+  const d = n.smart_list_digest;
+  if (!d || typeof d !== 'object') return null;
+  const count = Number(d.count);
+  if (!Number.isInteger(count) || count < 1) return null;
+  const lists = (Array.isArray(d.lists) ? d.lists : [])
+    .filter(l => l && typeof l.id === 'string' && typeof l.name === 'string' && Number(l.count) > 0)
+    .map(l => ({ id: l.id, name: l.name, count: Number(l.count) }));
+  const posters = (Array.isArray(d.posters) ? d.posters : []).filter(p => typeof p === 'string').slice(0, 3);
+  return { count, lists, posters };
+}
+
 /** @param {NotificationRow} n */
 export function actorName(n) {
   return n.actor_display_name || n.actor_username || '?';

@@ -11,8 +11,9 @@ import { useWatchTogether } from '@plot/core/useWatchTogether.js';
 import { AcceptDialog } from './WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { COMMON } from '../copy/common.js';
-import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T, NEW_EPISODE_NOTIFICATION as EP } from '@plot/core/copy/notifications.js';
-import { groupNotifications, notificationKind, actorName, rollupNames, isAlertNotification, isTitleNotification } from '@plot/core/notificationGroups.js';
+import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T, NEW_EPISODE_NOTIFICATION as EP, SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
+import { groupNotifications, notificationKind, actorName, rollupNames, isAlertNotification, isTitleNotification, smartListDigest } from '@plot/core/notificationGroups.js';
+import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { relativeTime } from '@plot/core/date.js';
 import { posterUrl, profileUrl } from '../utils/images.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -45,6 +46,23 @@ function PosterWithPerson({ path, personPath }) {
   </span>;
 }
 
+// The weekly smart lists roll-up (C4): three posters fanned where an avatar
+// would be, one sentence, the lists it came from, and See them.
+function DigestRow({ n, digest, unread, now, onOpenSmartLists }) {
+  return <div className="notif-row notif-digest">
+    <span className={`notif-dot${unread ? '' : ' notif-dot--read'}`} aria-hidden="true" />
+    <span className="notif-digest-stack" aria-hidden="true">
+      {digest.posters.map(path => <img key={path} className="notif-digest-poster" src={posterUrl(path, 'w92')} alt="" />)}
+    </span>
+    <span className="notif-row-text">
+      <span className="notif-row-line"><strong>{SMART_LIST_DIGEST.title(digest.count)}</strong></span>
+      {digest.lists.length > 0 && <span className="hist-card-note notif-digest-lists">{SMART_LIST_DIGEST.lists(digest.lists)}</span>}
+      <span className="hist-card-note notif-digest-time">{relativeTime(n.created_at, now)}</span>
+    </span>
+    <button type="button" className="btn btn-secondary btn-xs notif-digest-action" onClick={() => onOpenSmartLists?.(digest)}>{SMART_LIST_DIGEST.seeThem}</button>
+  </div>;
+}
+
 function Avatar({ url, name, small = false, kind }) {
   const cls = `notif-avatar${small ? ' notif-avatar--sm' : ''}`;
   return <span className="notif-avatar-wrap">
@@ -54,7 +72,7 @@ function Avatar({ url, name, small = false, kind }) {
 }
 
 /** Pure layout; data comes from the hooks in NotificationsView (and from a story). */
-export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onOpenPeople, onMarkAllRead, now, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
+export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onOpenPeople, onOpenSmartLists, onMarkAllRead, now, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
   const { rollup, groups } = useMemo(() => groupNotifications(list, now), [list, now]);
   const unread = list.filter(wasUnread).length;
   const requestTotal = requests.length + watchRequests.length;
@@ -133,7 +151,9 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
           {groups.map(group => <div className="notif-group" key={group.key}>
             <div className="notif-group-label">{labels[group.key]}</div>
             <div className="notif-rows">
-              {group.items.map(n => isAlertNotification(n)
+              {group.items.map(n => smartListDigest(n)
+                ? <DigestRow key={n.id} n={n} digest={smartListDigest(n)} unread={wasUnread(n)} now={now} onOpenSmartLists={onOpenSmartLists} />
+                : isAlertNotification(n)
                 ? <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpenTitle?.(n.tmdb_id, n.media_type)}>
                   <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
                   <PosterWithPerson path={n.media_poster_path} personPath={n.person_profile_path} />
@@ -211,6 +231,8 @@ export default function NotificationsView() {
       onOpenTitle={(tmdbId, mediaType) => openPanel(tmdbId, mediaType === 'movie' ? 'movie' : 'tv', 'notification')}
       onReviewWatch={setReviewing} onDeclineWatch={r => watch.respond(r.other_id, false)}
       onOpenPeople={() => navigate('/your-people')}
+      /* One list: open it. Several: My Lists, where each says how many are new. */
+      onOpenSmartLists={digest => navigate(digest.lists.length === 1 ? collectionPath(customListKey(digest.lists[0].id)) : '/my-lists')}
       onMarkAllRead={handleMarkAllRead}
       wasUnread={n => unreadIds?.has(n.id) ?? false}
       moment={moment}
