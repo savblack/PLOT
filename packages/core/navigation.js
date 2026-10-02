@@ -1,4 +1,5 @@
 import { WATCH_TOGETHER } from './copy/watchTogether.js';
+import { PEOPLE } from './copy/people.js';
 
 export const APP_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: '/home', primary: true },
@@ -32,6 +33,9 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
     'design-system': 'Design System',
     requests: 'Follow requests',
     notifications: 'Notifications',
+    // No sidebar item yet (round 2 decision): reached from Home, the follow
+    // toast, Notifications, a person's page and Settings.
+    'your-people': PEOPLE.page.title,
     import: 'Import',
     // Keyed on the first segment: viewFromPath returns `person/<id>`, and the
     // page shows the person's own name, so the chrome only needs to say where

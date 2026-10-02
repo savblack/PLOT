@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { alertPhrase, ALERT_NOTIFICATIONS, notificationPhrase } from '../../copy/notifications.js';
+import { alertPhrase, alertBadge, ALERT_NOTIFICATIONS, notificationPhrase } from '../../copy/notifications.js';
 import { isAlertNotification, notificationKind, groupNotifications } from '../../notificationGroups.js';
 import { alertWriteError } from '../../usePremiumAlerts.js';
 import { upgradeSheetContent } from '../../upgradeSheet.js';
@@ -10,15 +10,27 @@ import { PLANS_PAGE } from '../../copy/plansPage.js';
 const release = (extra = {}) => ({ id: 'a', type: 'person_release', created_at: '2026-09-28T08:00:00Z', tmdb_id: 0, media_type: 'movie', media_title: 'Harbour Lights', person_name: 'Ada Quill', person_role: 'cast', release_kind: 'theatrical', ...extra });
 const season = (extra = {}) => ({ id: 'b', type: 'season_ready', created_at: '2026-09-28T08:00:00Z', tmdb_id: 0, media_type: 'tv', media_title: 'The Night Desk', season_number: 2, provider_name: 'Service One', ...extra });
 
-test('alert rows read "<title> <phrase>" for each role and release kind', () => {
-  assert.equal(alertPhrase(release()), 'with Ada Quill is in cinemas');
-  assert.equal(alertPhrase(release({ person_role: 'director', release_kind: 'digital' })), 'from director Ada Quill is out to watch at home');
-  assert.equal(alertPhrase(release({ media_type: 'tv', person_role: 'creator', release_kind: 'premiere' })), 'from creator Ada Quill has premiered');
-  assert.equal(alertPhrase(season()), 'season 2 is ready: every episode is on Service One');
+test('alert rows read "<title><tail>" as on the round 2 Notifications board', () => {
+  const line = (n) => `${n.media_title}${alertPhrase(n)}`;
+  assert.equal(line(release()), 'Harbour Lights with Ada Quill is in cinemas today');
+  assert.equal(line(release({ person_role: 'director' })), 'Harbour Lights, directed by Ada Quill, is in cinemas today');
+  assert.equal(line(release({ release_kind: 'digital' })), 'Harbour Lights with Ada Quill is out to watch at home today');
+  assert.equal(line(release({ media_type: 'tv', media_title: 'East Pier', release_kind: 'premiere', provider_name: 'Service One' })), 'East Pier with Ada Quill is on Service One today');
+  assert.equal(line(release({ media_type: 'tv', media_title: 'East Pier', release_kind: 'premiere', person_role: 'creator' })), 'East Pier, created by Ada Quill, premieres today');
+  assert.equal(line(release({ media_type: 'tv', media_title: 'Slow Lane', release_kind: 'season', season_number: 6, provider_name: 'Service Two', episode_count: 1 })),
+    'Slow Lane season 6 with Ada Quill starts today on Service Two. New episodes weekly.');
+  assert.equal(line(release({ media_type: 'tv', media_title: 'Slow Lane', release_kind: 'season', season_number: 4, provider_name: 'Service Two', episode_count: 8 })),
+    'Slow Lane season 4 with Ada Quill starts today on Service Two. All 8 episodes are out.');
+  assert.equal(line(season()), 'The Night Desk season 2 is ready: every episode is on Service One');
   assert.equal(alertPhrase(season({ provider_name: null })), null);
   assert.equal(alertPhrase({ type: 'new_follower' }), null);
-  assert.equal(ALERT_NOTIFICATIONS.badges.person_release, 'New release');
-  assert.equal(ALERT_NOTIFICATIONS.badges.season_ready, 'Whole season ready');
+});
+
+test('alert badges name the kind of release and the person', () => {
+  assert.equal(alertBadge(release()), 'New film · Ada Quill');
+  assert.equal(alertBadge(release({ release_kind: 'premiere' })), 'New series · Ada Quill');
+  assert.equal(alertBadge(release({ release_kind: 'season' })), 'New season · Ada Quill');
+  assert.equal(alertBadge(season()), 'Whole season ready');
 });
 
 test('no alert copy uses an em dash', () => {
@@ -52,8 +64,10 @@ test('an RLS refusal on an opt-in insert means Premium is required', () => {
 test('the alerts upgrade sheet leads with alerts and has no Free cap meter', () => {
   const content = upgradeSheetContent('alerts');
   assert.equal(content.meter, 0);
-  assert.equal(content.context, 'Alerts are a Premium feature');
-  assert.match(content.body, /actors and directors/);
+  assert.equal(content.context, 'Following people is part of Premium');
+  assert.equal(content.title, 'Follow the people you love watching.');
+  assert.equal(content.body, 'Hear when they have something new.');
+  assert.doesNotMatch(content.body + content.title, /season/i);
   assert.deepEqual(content.also.map(r => r.label), ['Pick for Me', 'Find something you both want']);
 });
 

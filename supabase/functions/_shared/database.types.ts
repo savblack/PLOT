@@ -1307,6 +1307,7 @@ export type Database = {
           media_title: string | null
           media_type: string | null
           person_name: string | null
+          person_profile_path: string | null
           person_role: string | null
           person_tmdb_id: number | null
           post_id: string | null
@@ -1330,6 +1331,7 @@ export type Database = {
           media_title?: string | null
           media_type?: string | null
           person_name?: string | null
+          person_profile_path?: string | null
           person_role?: string | null
           person_tmdb_id?: number | null
           post_id?: string | null
@@ -1353,6 +1355,7 @@ export type Database = {
           media_title?: string | null
           media_type?: string | null
           person_name?: string | null
+          person_profile_path?: string | null
           person_role?: string | null
           person_tmdb_id?: number | null
           post_id?: string | null
@@ -1719,6 +1722,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      people_feed: {
+        Row: {
+          character: string | null
+          episode_count: number | null
+          kind: string
+          media_type: string
+          network: string | null
+          person_name: string
+          person_role: string
+          poster_path: string | null
+          premiere_drop: number | null
+          regional_releases: Json
+          release_date: string | null
+          season_number: number
+          title: string
+          tmdb_id: number
+          tmdb_person_id: number
+          updated_at: string
+        }
+        Insert: {
+          character?: string | null
+          episode_count?: number | null
+          kind: string
+          media_type: string
+          network?: string | null
+          person_name: string
+          person_role: string
+          poster_path?: string | null
+          premiere_drop?: number | null
+          regional_releases?: Json
+          release_date?: string | null
+          season_number?: number
+          title: string
+          tmdb_id: number
+          tmdb_person_id: number
+          updated_at?: string
+        }
+        Update: {
+          character?: string | null
+          episode_count?: number | null
+          kind?: string
+          media_type?: string
+          network?: string | null
+          person_name?: string
+          person_role?: string
+          poster_path?: string | null
+          premiere_drop?: number | null
+          regional_releases?: Json
+          release_date?: string | null
+          season_number?: number
+          title?: string
+          tmdb_id?: number
+          tmdb_person_id?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       person_alerts: {
         Row: {
@@ -3029,6 +3089,7 @@ export type Database = {
           media_title: string
           media_type: string
           person_name: string
+          person_profile_path: string
           person_role: string
           person_tmdb_id: number
           post_id: string

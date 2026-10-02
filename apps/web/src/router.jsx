@@ -40,6 +40,7 @@ const SettingsView= lazy(loadSettingsView);
 const ThemesGallery = lazy(() => import('./components/ThemesGallery.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
+const YourPeopleView = lazy(() => import('./components/YourPeopleView.jsx'));
 const WatchTogetherView = lazy(() => import('./components/WatchTogetherView.jsx'));
 const WatchTogetherLinkPage = lazy(() => import('./components/WatchTogetherLinkPage.jsx'));
 const ListInvitePage = lazy(() => import('./components/ListInvitePage.jsx'));
@@ -147,6 +148,7 @@ const router = createBrowserRouter([
       // Follow requests live on the Notifications page now (17 Sep 2026).
       { path: 'requests', element: <Navigate to="/notifications" replace /> },
       { path: 'notifications', element: wrap(<NotificationsView />) },
+      { path: 'your-people', element: wrap(<YourPeopleView />) },
       { path: 'import',   element: wrap(<ImportView />) },
       ...(SHOW_WATCH_TOGETHER ? [
         { path: 'together', element: wrap(<WatchTogetherView />) },

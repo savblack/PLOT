@@ -141,3 +141,9 @@ verify_jwt = false
 # without an entry here can be silently skipped by the deploy integration.
 [functions.premium-alerts]
 verify_jwt = true
+
+# Following people: refreshes people_feed for one person right after a Premium
+# member follows them. Called from the browser with the user's own bearer, so
+# verify_jwt stays true; the handler checks the follow and is_premium().
+[functions.people-feed-refresh]
+verify_jwt = true

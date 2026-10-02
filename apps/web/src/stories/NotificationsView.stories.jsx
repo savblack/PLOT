@@ -14,6 +14,9 @@ const episode = (season_number, episode_number, episode_count, media_title) => (
 });
 const list = [
   { id: 'a1', created_at: at(1), read_at: null, ...alert('person_release', 'Harbour Lights', { media_type: 'movie', person_name: 'Ada Quill', person_role: 'cast', release_kind: 'theatrical' }) },
+  { id: 'a3', created_at: at(1), read_at: null, ...alert('person_release', 'East Pier', { media_type: 'tv', person_name: 'Ada Quill', person_role: 'cast', release_kind: 'premiere', provider_name: 'Service One' }) },
+  { id: 'a4', created_at: at(1), read_at: null, ...alert('person_release', 'Digger Bay', { media_type: 'movie', person_name: 'Ben Arlo', person_role: 'director', release_kind: 'theatrical' }) },
+  { id: 'a5', created_at: at(30), read_at: at(20), ...alert('person_release', 'Slow Lane', { media_type: 'tv', person_name: 'Cy Moss', person_role: 'cast', release_kind: 'season', season_number: 6, episode_count: 1, provider_name: 'Service Two' }) },
   { id: 'e1', created_at: at(2), read_at: null, ...episode(5, 1, 1, 'Quiet Hours') },
   { id: 'a2', created_at: at(3), read_at: null, ...alert('season_ready', 'The Night Desk', { media_type: 'tv', season_number: 2, provider_name: 'Service One' }) },
   { id: 'e2', created_at: at(4), read_at: null, ...episode(2, 1, 8, 'Low Tide') },
@@ -32,7 +35,7 @@ const requests = [
 ];
 export default {
   title: 'Pages/Notifications', component: NotificationsPage, parameters: { layout: 'fullscreen' },
-  args: { list, requests, loading: false, now, onApprove: () => {}, onDecline: () => {}, onOpen: () => {}, onOpenTitle: () => {}, onMarkAllRead: () => {}, wasUnread: n => !n.read_at },
+  args: { list, requests, loading: false, now, onApprove: () => {}, onDecline: () => {}, onOpen: () => {}, onOpenTitle: () => {}, onOpenPeople: () => {}, onMarkAllRead: () => {}, wasUnread: n => !n.read_at },
   decorators: [(Story) => <MemoryRouter><Story /></MemoryRouter>],
 };
 export const Full = {};
