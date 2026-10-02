@@ -11,16 +11,18 @@ const NONE = Object.freeze([]);
  * caller (and by the database when rules are written): pass enabled false and
  * nothing is fetched.
  *
+ * Pass ready false while the watchlist or history is still loading.
+ * client is a TMDB client other than the app's, for Storybook and tests.
  * @param {{
  *   rules: import('./smartLists.js').SmartListRules | null,
  *   enabled: boolean,
  *   watchlistItems?: any[],
  *   historyEntries?: any[],
- *   ready?: boolean,  false while the watchlist or history is still loading
+ *   ready?: boolean,
  *   streamingProviders?: any[] | null,
  *   region?: string,
  *   hideKids?: boolean,
- *   client?: any,  a TMDB client other than the app's (Storybook, tests)
+ *   client?: any,
  * }} opts
  * @returns {{
  *   items: import('./smartLists.js').SmartListMatch[],

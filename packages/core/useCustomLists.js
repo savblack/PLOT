@@ -8,6 +8,7 @@ import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } 
 import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
 import { createCustomListRecord, createdListRevert, deleteCustomListRecord, CUSTOM_LIST_LIMIT_CODE, SMART_LIST_PREMIUM_CODE } from './customListCreation.js';
 import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
+import { isSmartList } from './smartLists.js';
 
 /**
  * @typedef {Object} CreateListOptions
@@ -267,6 +268,9 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
 
   const addItem = useCallback(async (listId, item) => {
     if (!userId) return null;
+    // A smart list stores rules, not titles. The insert is refused with
+    // smart_list_has_no_items, so do not send it.
+    if (smartLists.some(l => l.id === listId) || isSmartList(lists.find(l => l.id === listId))) return null;
     const tmdbId = tmdbIdFromItem(item);
     if (!tmdbId) return null;
     const row = mediaIdentityRow(item);
@@ -296,6 +300,7 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
       .select()
       .single();
     if (error) {
+      if (error.message === 'smart_list_has_no_items') return null;
       console.error('Failed to add custom list item', error);
       reportActionFailure(FAILED_ACTIONS.LIST_ITEM_ADD, error, {
         list_id: listId, tmdb_id: tmdbId, media_type: row.media_type,
@@ -313,7 +318,7 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
       });
     }
     return data ?? null;
-  }, [userId, isShared]);
+  }, [userId, isShared, lists, smartLists]);
 
   // opts.undo: see useWatchlist.removeFromList.
   const removeItem = useCallback(async (listId, tmdbId, opts) => {

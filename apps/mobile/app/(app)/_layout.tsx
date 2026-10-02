@@ -151,6 +151,7 @@ function TabsLayout() {
       <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="tonight" options={{ href: null }} />
       <Tabs.Screen name="themes" options={{ href: null }} />
+      <Tabs.Screen name="smart-list/[id]" options={{ href: null }} />
       <Tabs.Screen name="profile-section" options={{ href: null }} />
       <Tabs.Screen name="person/[personId]" options={{ href: null }} />
       <Tabs.Screen name="your-people" options={{ href: null }} />
