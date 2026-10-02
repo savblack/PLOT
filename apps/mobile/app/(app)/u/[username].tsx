@@ -103,7 +103,7 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
 
   const share = () => { void shareLink({
     url: buildProfileShareUrl({ username: profile?.username }),
-    title: `${name} on PLOT`,
+    title: `${name} on Plot`,
     text: SHARING.profileText(name),
     event: EVENTS.PROFILE_SHARED,
     eventProps: { profile_id: profile?.id },

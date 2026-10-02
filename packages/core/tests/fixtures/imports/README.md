@@ -46,7 +46,7 @@ rejected rather than silently being treated as watched history.
 [history fixture](https://github.com/FuzzyGrim/Yamtrack/blob/acd13841485ccebda2169b01c0b285d5f95a4b1d/src/integrations/tests/mock_data/trakt_export/watched-history.json).
 Only event identity, media identity and episode ordinals retained; dates cleared
 to null and TMDB/Plex identifiers removed. This is a third-party importer fixture,
-not independently verified native account-export evidence. PLOT resolves IMDb
+not independently verified native account-export evidence. Plot resolves IMDb
 identifiers at runtime. No third-party implementation code was copied.
 
 `tmdb-trakt-matches.json`: TMDB `/find` responses for the two IMDb identities
@@ -110,7 +110,7 @@ positions were renumbered. IMDb identifiers and catalogue fields were retained.
 This establishes this saved CSV layout, not all current IMDb export versions.
 
 `tmdb-imdb-watchlist-matches.json`: live TMDB find-by-IMDb responses for those
-four minimised records, captured through PLOT's staging Worker on 23 September
+four minimised records, captured through Plot's staging Worker on 23 September
 2026. No catalogue IDs were guessed or taken from third-party generated data.
 
 `imdb-tv-ratings.csv`: one tvSeries and one tvMiniSeries record from

@@ -1,4 +1,4 @@
-# PLOT Public Launch Checklist
+# Plot Public Launch Checklist
 
 Last reviewed: 2026-08-09
 

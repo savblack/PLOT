@@ -30,11 +30,11 @@ function serves(pathname) {
   return existsSync(site + relative) || existsSync(`${site}functions/${relative}.js`);
 }
 
-test('the catalog is a non-empty linkset of PLOT anchors', () => {
+test('the catalog is a non-empty linkset of Plot anchors', () => {
   assert.ok(Array.isArray(catalog.linkset), 'linkset must be an array');
   assert.ok(catalog.linkset.length > 0, 'an empty catalog tells a client nothing');
   for (const entry of catalog.linkset) {
-    assert.ok(entry.anchor?.startsWith(`${ORIGIN}/`), `anchor must be an absolute PLOT URL: ${entry.anchor}`);
+    assert.ok(entry.anchor?.startsWith(`${ORIGIN}/`), `anchor must be an absolute Plot URL: ${entry.anchor}`);
     assert.ok(serves(new URL(entry.anchor).pathname), `catalog anchors an endpoint the site does not serve: ${entry.anchor}`);
   }
 });

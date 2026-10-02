@@ -24,7 +24,7 @@ import { tmdb } from './tmdb.js';
  * Report a Watch together action to analytics. Best effort: a broken seam
  * never breaks the feature. Exported for the share button, which lives in the
  * apps.
- * @param {'invite_sent' | 'request_accepted' | 'link_shared' | 'link_accepted' | 'session_started' | 'match'} action
+ * @param {'invite_sent' | 'request_accepted' | 'link_shared' | 'link_accepted' | 'session_started' | 'match' | 'list_invite_shared' | 'list_joined'} action
  * @param {Record<string, unknown>} [props]
  */
 export function reportWatchTogether(action, props = {}) {

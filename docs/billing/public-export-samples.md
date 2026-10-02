@@ -1,6 +1,6 @@
 # Public export samples
 
-Inspected 17 September 2026. These are source references, not a claim that PLOT
+Inspected 17 September 2026. These are source references, not a claim that Plot
 supports their formats. No account access or provider contact was required.
 No third-party implementation code was copied. Two minimised Trakt metadata
 records were subsequently retained as a parser fixture; see the fixture README
@@ -70,7 +70,7 @@ ratings do not establish episode completion or watch dates.
 23 September 2026, publishes a first-hand watchlist response with null movie
 IMDb/TMDB IDs and year. The sanitised fixture removes rank and clears the
 personal listed date. It establishes nullable catalogue metadata, not a complete
-export envelope. PLOT now allows these records into manual title review rather
+export envelope. Plot now allows these records into manual title review rather
 than rejecting a whole file solely for missing metadata.
 
 [Yamtrack export fixtures](https://github.com/FuzzyGrim/Yamtrack/tree/acd13841485ccebda2169b01c0b285d5f95a4b1d/src/integrations/tests/mock_data/trakt_export)
@@ -86,7 +86,7 @@ or assume every fixture ID is verified against TMDB.
 [Consumer tests](https://github.com/FuzzyGrim/Yamtrack/blob/acd13841485ccebda2169b01c0b285d5f95a4b1d/src/integrations/tests/imports/test_trakt.py)
 provide useful context for archive handling. Before reuse, review the project
 licence, minimise personal data and verify selected external media identities.
-Do not copy user-profile.json into PLOT fixtures.
+Do not copy user-profile.json into Plot fixtures.
 
 [traktexport README](https://github.com/purarue/traktexport/blob/84e3735b9c2cbbe9e5f56e77474bec612511e02f/README.md)
 also contains logged movie and episode API records from an actual export run.
@@ -104,7 +104,7 @@ fixtures, not proof of a complete genuine GDPR archive.
 
 The project's [format plan](https://github.com/korkje/stubs.tv/blob/5239ff6a772f2c45d0177116d45372a845b95098/docs/plans/tvtime-import.md)
 explicitly retains a real redacted export as a pre-launch validation requirement.
-Its fixtures therefore cannot remove the same requirement for PLOT.
+Its fixtures therefore cannot remove the same requirement for Plot.
 
 [OpenTV Time fixtures](https://github.com/kodelio/opentv-time/tree/c705b136ca47be5569566c326d546f85c2765b4e/tests/fixtures/gdpr)
 provide another CSV example set. Inspected v2: demo titles and constructed IDs
@@ -116,7 +116,7 @@ came from their recent export. It is a partial JSON excerpt with ellipses, not
 a parseable full file, and represents the browser-extension format rather than
 the official GDPR CSV archive. Remove the UUID if deriving a minimal example.
 
-## Consequence for PLOT
+## Consequence for Plot
 
 The earlier statement that no public samples were available was too broad.
 Public fixture sets and authentic excerpts exist and can guide development.

@@ -1,8 +1,8 @@
-# PLOT analytics
+# Plot analytics
 
 What the numbers mean, where they are defined, and what not to trust.
 
-PostHog project **PLOT** (`471234`, US cloud). One project serves the web app,
+PostHog project **Plot** (`471234`, US cloud). One project serves the web app,
 the marketing site, mobile, and four server-rendered surfaces.
 
 ## What counts as an active user
@@ -106,7 +106,7 @@ Encoded here once so nobody rediscovers them.
 - **`premium_activated` is `premium_converted` before 2026-08-07.** Renamed in
   #452; the two are the same conversion. Union them for any history longer
   than that.
-- **`supporter_gate_hit` is not a PLOT event.** It fired once, on 2026-07-08,
+- **`supporter_gate_hit` is not a Plot event.** It fired once, on 2026-07-08,
   from `localhost:5177/preview-monetization`: uncommitted local work, before the
   host allowlist existed. The `$host` test filter already excludes it. It is
   deliberately not in the catalog; do not build on it.
@@ -338,7 +338,7 @@ throws on load.
 
 ## Tonight picker
 
-The "what should I watch" half of PLOT. Fired from `useTonightPicker` in core
+The "what should I watch" half of Plot. Fired from `useTonightPicker` in core
 through the `onTonightPicker` seam, so both apps report identically:
 
 | Event | When | Props |
@@ -352,6 +352,17 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 (the save buttons on web's result cards). Genres are reported as a count, not
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
+
+## Smart lists
+
+A smart list (Premium) is a custom list that stores rules and fills itself when
+it opens. Creating one fires the usual `custom_list_created`, with extra props
+so the two kinds can be told apart: `smart: true`, `source` (`discover` /
+`watchlist` / `history`), `media_type` (`any` / `movie` / `tv`),
+`genre_count` and `only_services`. Genres are a count, never ids, as with Pick
+for Me. Free viewers who try to make one fire `premium_gate_hit` with
+`feature: smart_lists`. Titles saved from a smart list are ordinary
+`watchlist_saved` / `favourite_added` events.
 
 ## Watch together
 
@@ -368,11 +379,19 @@ Props are shapes only, never user ids, usernames or invite link keys.
 | `watch_together_link_accepted` | Someone accepted an invite link (pairs straight away) | `share_full` |
 | `watch_together_session_started` | A two-person yes-or-no session started | none |
 | `watch_together_match` | A vote made a match (both said yes) | none |
+| `collab_list_invite_shared` | A collaborative list's invite link was shared or copied | `method` (`share` / `copy`) |
+| `collab_list_joined` | Someone joined a collaborative list from its invite link | none |
 
 Pairing is free; deciding needs Premium on one side. When nobody in a pairing
 or group has it, the overlap page fires `premium_gate_hit` with
 `feature: watch_together`. Read it next to `premium_checkout_started` to see
 whether Watch together drives upgrades.
+
+Collaborative lists need a Premium host; people joining can be on Free. A
+Free owner choosing Invite people on a list fires `premium_gate_hit` with
+`feature: collaborative_lists` and opens the upgrade sheet. The list invite
+events ride the same `onWatchTogether` seam (`list_invite_shared`,
+`list_joined`) and never carry list ids or keys.
 
 ## Reviews
 
@@ -399,7 +418,7 @@ covered once. Properties:
 
 | Prop | Meaning |
 |---|---|
-| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote` (unexpected errors only, never the server's Premium or permission answers). Canonical list: `FAILED_ACTIONS`. |
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `smart_list_update`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, and `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers). Canonical list: `FAILED_ACTIONS`. |
 | `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
 | `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
 | `http_status` | When present. |
@@ -421,7 +440,7 @@ follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
 ### `load_failed`
 
 A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
-`watching`, `favourites`) fires `load_failed` via `reportLoadFailure()`, with
+`watching`, `favourites`, `smart_list`) fires `load_failed` via `reportLoadFailure()`, with
 the same `error_kind` / `error_code` / `http_status` props. It is a separate
 event on purpose: a page that fails to load is not a failed user action, and
 counting it as `action_failed` would skew every failed-write rate.

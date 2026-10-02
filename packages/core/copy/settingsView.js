@@ -271,9 +271,9 @@ export const SETTINGS_VIEW = {
     paymentNeedsAttention: 'Your payment needs attention. Manage your subscription to update your payment method.',
     subscriptionEnded: 'Your subscription is not active. Your lists and watch history are still available.',
     cancellationScheduled: 'Your subscription is set to end after the current paid period.',
-    thanksForTip: 'Thanks for supporting PLOT ♥',
+    thanksForTip: 'Thanks for supporting Plot ♥',
     activationPending: 'Your checkout is complete. We are waiting for payment confirmation. If Premium does not appear, refresh this page or contact support.',
-    activeThankYou: 'PLOT Premium is active. Thank you ♥',
+    activeThankYou: 'Plot Premium is active. Thank you ♥',
     upsellLabel: 'Go Premium',
     upsellBlurb: 'Find tonight’s movie, keep up with releases and choose together. Coming soon.',
     upgradeButton: 'Explore Premium',
@@ -310,8 +310,8 @@ export const SETTINGS_VIEW = {
 
   support: {
     groupTitle: 'Support',
-    supportPlot: 'Support PLOT',
-    kofiHint: 'Help keep PLOT ',
+    supportPlot: 'Support Plot',
+    kofiHint: 'Help keep Plot ',
     kofiHintContinued: 'subscription-free',
     reportABugAria: 'Report a bug',
     reportABugLabel: 'Report a Bug',

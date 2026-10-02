@@ -87,11 +87,9 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family }
       <section ref={sheetRef} className="upgrade-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         <span className="upgrade-sheet-grab" aria-hidden="true" />
         <p className="upgrade-sheet-context">
-          {content.meter > 0 && (
-            <span className="upgrade-sheet-meter" aria-hidden="true">
-              {Array.from({ length: content.meter }, (_, i) => <i key={i} />)}
-            </span>
-          )}
+          {content.meter > 0 && <span className="upgrade-sheet-meter" aria-hidden="true">
+            {Array.from({ length: content.meter }, (_, i) => <i key={i} />)}
+          </span>}
           {content.context}
         </p>
         {content.preview && <ThemeMiniaturePair family={content.preview.family} className="upgrade-sheet-preview" />}

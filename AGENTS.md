@@ -1,6 +1,6 @@
-# AGENTS.md — PLOT
+# AGENTS.md — Plot
 
-PLOT is a movie & TV tracking app that should feel like a warm, aesthetic journal: built
+Plot is a movie & TV tracking app that should feel like a warm, aesthetic journal: built
 around what you've watched, what you thought, and how it made you feel — and your first
 stop for deciding what to watch instead of searching every streaming service one by one.
 
@@ -10,7 +10,7 @@ follow it without being re-told. Tickets say only *what* to build.
 
 ## Settled external approvals
 
-- **TMDB licence:** TMDB clearance is confirmed by Savannah. PLOT has TMDB's approval
+- **TMDB licence:** TMDB clearance is confirmed by Savannah. Plot has TMDB's approval
   to use its API without a contract. This is not a launch blocker. Historical quotes
   are not current cost assumptions. Do not ask Savannah to reconfirm this unless new
   evidence from TMDB directly contradicts it.
@@ -31,9 +31,11 @@ follow it without being re-told. Tickets say only *what* to build.
 - **Never commit secrets.** Browser-safe values are `VITE_*` only. Service-role keys,
   `TMDB_API_KEY`, `RESEND_API_KEY`, etc. stay server/script-side and
   out of tracked files. Document new required vars (web `VITE_*` in the README's
-  local-setup list; mobile in `apps/mobile/.env.example`). There is no root
-  `.env.example`.
-- **Never touch real user data in Supabase** without asking — PLOT has live end users.
+  local-setup list; mobile in `apps/mobile/.env.example`). **There is no root
+  `.env.example`** and `.gitignore` no longer lets one be committed. It was deleted on
+  2026-09-18, restored by #1046 on 2026-09-26 with nobody noticing, and deleted again on
+  2026-09-29. It duplicated the README and carried a live publishable key.
+- **Never touch real user data in Supabase** without asking — Plot has live end users.
   No auth-admin writes, password changes, or destructive migrations unprompted.
 - **Never import bare `@plot/core`** — the barrel is intentionally empty. Import subpaths
   (`@plot/core/useWatchlist.js`) so a stray import doesn't pull side-effecting modules.
@@ -67,7 +69,10 @@ See `docs/ops/package-manager.md`.
 
 ## Commands
 
-Run from repo root unless noted. Use **npm** (workspaces), never yarn/pnpm.
+Run from repo root unless noted. Use **pnpm**, never npm or yarn — an npm lockfile
+resolves a second, unhoisted dependency graph that Metro and
+`check-expo-sdk-deps.mjs` cannot read. `package-lock.json` and `yarn.lock` are
+gitignored so a stray one cannot be committed, but delete it rather than leave it.
 
 - `pnpm run dev` — web dev server (Vite, port 5177)
 - `pnpm run dev:website` — marketing site + its Pages Functions (wrangler, port 5202)
@@ -76,6 +81,12 @@ Run from repo root unless noted. Use **npm** (workspaces), never yarn/pnpm.
 - `pnpm run test:unit` — `node --test` unit tests (`apps/web/tests/unit/`)
 - `pnpm run test:smoke` — Playwright smoke (`vite build` + chromium; run
   `npx playwright install chromium` once on a fresh machine)
+- `pnpm run chromatic` — Chromatic visual snapshots of the web Storybook. Needs
+  `CHROMATIC_PROJECT_TOKEN` (see the README's Local Setup); `check` runs it in CI and skips itself
+  when the token is absent. Visual diffs deliberately do **not** fail the build — approve
+  or reject them in Chromatic. Builds on `main` auto-accept, so `main` always records the
+  baseline and a PR shows only what that PR changed; review happens on the PR, not after
+  merge. Never put the token in a `package.json` script.
 - `pnpm --filter @plot/mobile` run typecheck — **required when touching mobile**; `pnpm run lint` covers it too
 - `pnpm run edge:check` — **required when touching `supabase/functions/`**; type-checks every
   edge function with `deno check` against the generated DB types. Nothing else compiles them,
@@ -122,7 +133,7 @@ CI on Node 22.
 
 ## Region-aware spelling (US/UK)
 
-PLOT spells words that differ between US and UK English (favorite/favourite, color/colour,
+Plot spells words that differ between US and UK English (favorite/favourite, color/colour,
 organize/organise, etc.) according to the viewer's own `profile.region`, via
 **`packages/core/spelling.js`** — one shared dictionary for both apps. (`apps/web/src/utils/spelling.js`
 and `apps/mobile/lib/spelling.ts` are re-export shims kept so existing import sites still
@@ -145,7 +156,7 @@ of these words:
 ## Web → mobile parity
 
 Drift between the apps has historically been one-directional: web ships a feature, mobile
-doesn't, and a few months later the two apps disagree about what PLOT is. `packages/core` is
+doesn't, and a few months later the two apps disagree about what Plot is. `packages/core` is
 the mechanism that prevents it, but only if you use it deliberately.
 
 When you add or change a feature in `apps/web`:
@@ -209,7 +220,7 @@ just added does not — both pass silently. A `tsconfig` `paths` mapping does
 back to the same walk). This blind spot is how #446 deleted `core/onboarding.js`
 with a live importer still on `main`.
 
-**PLOT convention (source of truth):** agent worktrees are a **sibling** of this
+**Plot convention (source of truth):** agent worktrees are a **sibling** of this
 repo, never nested inside it:
 
 ```
@@ -230,7 +241,7 @@ opens a nested worktree anyway, that is a **fallback only**: stop, tell the user
 and recreate under `../PLOT-worktrees/` before writing code. Do not keep working
 nested and "just run `core:check`" unless the user explicitly insists, and never
 for changes under `packages/core`. Procedure: `.agents/skills/plot-worktree/SKILL.md`
-(PLOT-owned; not overwritten by `npx skills update`). This section wins if
+(Plot-owned; not overwritten by `npx skills update`). This section wins if
 anything else disagrees.
 
 ## Copy lives in `packages/core/copy` — never retype a shared string
@@ -249,7 +260,7 @@ to prevent. The catalog being *shared* is necessary but not sufficient — it ha
   about a title (watch status, list actions). Those two are the designated cross-surface
   modules and may be imported from anywhere.
 - **Never define the same string in two catalog modules.** That reintroduces the drift one
-  level up. `onboardingFlow.startWatchingArrow` ("begin using PLOT") and
+  level up. `onboardingFlow.startWatchingArrow` ("begin using Plot") and
   `media.startWatching` (the watch toggle) are deliberately different concepts that happen
   to share words — that's the one shape worth duplicating, and it's commented as such.
 - Genuinely per-platform wording (mobile's compact labels, say) stays in the app file, but
@@ -318,6 +329,15 @@ So:
 - **`pnpm run db:restore-drill`** proves the nightly backup still restores. `pg_restore`
   exits 0 even when tables fail, so run this after any migration adding an extension type,
   and compare the table count against production. See `docs/ops/db-restore.md`.
+- **`pnpm run db:drift`** (nightly via `.github/workflows/migration-drift.yml`) compares
+  production's and Staging's `schema_migrations` with `supabase/migrations`, then Staging's
+  schema with production's. Read-only. It exists because Staging drifted 18 migrations
+  behind `main` in September 2026 without anyone noticing, and because a ledger row is not
+  proof: two branches shared version `20260926160000`, so Staging recorded main's
+  `refresh_premium_badges` as applied and never ran it. Run it on your branch before merging
+  a migration: a version already taken on Staging by another branch fails it. After
+  applying or hand-repairing anything on Staging, record it in `schema_migrations` in the
+  same transaction.
 
 **Supabase `config.toml` pins `verify_jwt` per function.** Public functions set
 `verify_jwt = false`; forgetting it on redeploy makes the gateway reject requests before the
@@ -330,6 +350,9 @@ file, not the `--no-verify-jwt` flag.
 - Run `pnpm run check` and any test suite touching your change before calling it done.
 - Mobile has no test runner — `tsc --noEmit` plus ESLint are the safety net; run both for
   mobile changes.
+- Styling change to a shared shell class (`.cal-side`, `.hist-card`, `.cal-body`, anything
+  in `app.css`)? Storybook's interaction tests assert behaviour and will not notice that a
+  different page's spacing moved. Chromatic will — check its diffs before merging.
 - Mobile lint is ratcheted: `no-explicit-any` (~127) and `react-hooks/refs` (~34) are `warn`,
   not `error`, because of a pre-existing backlog. Don't add new ones, and don't "fix" a
   warning count by widening the rule — burn them down instead. Everything else is an error
@@ -417,7 +440,7 @@ for copy, and **confirm before anything posts publicly.**
 
 Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills`
 (via `skills-lock.json`), minus `code-structure` and minus upstream
-`new-feature` (PLOT replaces isolate with a local skill). Typical flow:
+`new-feature` (Plot replaces isolate with a local skill). Typical flow:
 
 1. **Isolate** — `/plot-worktree`: sibling worktree at
    `../PLOT-worktrees/<task>` (never nest under this checkout; nested harness

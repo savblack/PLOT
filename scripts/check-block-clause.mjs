@@ -65,6 +65,8 @@ const BLOCK_FILTERED = [
   'add_shared_list_member', // checks the person exists before adding them
   'watch_together_link_owner', // who an invite link belongs to, signed out too
   'watch_together_link_status', // the visitor's side of an invite link
+  'list_invite_preview',   // who a collaborative list invite belongs to, signed out too
+  'list_watchlist_viewer_candidates', // followers and partners you can share your watchlist with
 ];
 
 // Must NOT carry it, each for a reason that has to survive review.
@@ -82,6 +84,9 @@ const BLOCK_EXEMPT = {
     + 'on the unique index anyway.',
   generate_username:
     'Same as username_available: it must see every username to avoid collisions.',
+  watchlist_visibility_of:
+    'Like is_profile_public: a primitive that reads one setting and returns no '
+    + 'identity. Its only caller, can_view_watchlist, applies not_blocked itself.',
   is_profile_public:
     'A primitive used INSIDE policies that already conjoin not_blocked separately '
     + '(see 20260912130000). Folding the block in here would double-apply it and '

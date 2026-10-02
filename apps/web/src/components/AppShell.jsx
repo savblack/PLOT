@@ -13,7 +13,7 @@ import AppSidebar from './AppSidebar.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import { useApp } from '../hooks/useApp.js';
 import {
-  IconMenu, IconClose, IconSearch, IconArrowUp,
+  IconMenu, IconClose, IconSearch, IconArrowUp, IconBell, IconSettings, NAV_ICONS,
 } from './navIcons.jsx';
 
 /* ── SVG Icons ───────────────────────── */
@@ -105,7 +105,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   // At sidebar widths there is no header at all — the brand, search and
   // notifications live in the sidebar, and the title moves into the content
   // column as .app-page-heading so it shares a left edge with the section
-  // headers below it. Home's VIEW_TITLES entry is the brand ("PLOT"), which the
+  // headers below it. Home's VIEW_TITLES entry is the brand ("Plot"), which the
   // sidebar already shows, so prefer the nav item's own label here and fall
   // back to the shared titles.
   const isProfileView = (currentView || '').startsWith('u/');
@@ -221,29 +221,39 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         </div>
 
         <nav className="nav-drawer-nav">
-          {DRAWER_NAV_ITEMS.map(({ id, label, premium }) => (
-            <button
-              key={id}
-              type="button"
-              className={`nav-drawer-item${isActiveView(currentView, id) ? ' active' : ''}`}
-              onClick={() => handleNav(id)}
-              aria-current={isActiveView(currentView, id) ? 'page' : undefined}
-            >
-              <span className="nav-drawer-label">{label}</span>
-              {premium && !isPremiumProfile(profile) && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
-            </button>
-          ))}
+          {DRAWER_NAV_ITEMS.map(({ id, label, premium }) => {
+            const Icon = NAV_ICONS[id];
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`nav-drawer-item${isActiveView(currentView, id) ? ' active' : ''}`}
+                onClick={() => handleNav(id)}
+                aria-current={isActiveView(currentView, id) ? 'page' : undefined}
+              >
+                {Icon && <Icon />}
+                <span className="nav-drawer-label">{label}</span>
+                {premium && !isPremiumProfile(profile) && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
+              </button>
+            );
+          })}
           {profile?.username && (
             <button
               type="button"
               className="nav-drawer-item"
               onClick={() => { closeDrawer(); navigate(`/u/${profile.username}`); }}
             >
+              {/* The avatar takes the icon column so this row hangs off the
+                  same left edge as the rest, the way the rail's profile row does. */}
+              {profile.avatar_url
+                ? <img className="nav-drawer-avatar" src={profile.avatar_url} alt="" />
+                : <span className="nav-drawer-avatar nav-drawer-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
               <span className="nav-drawer-label">Profile</span>
             </button>
           )}
           {user && !DRAWER_NAV_ITEMS.some(item => item.id === 'notifications') && (
             <button type="button" className={`nav-drawer-item${currentView === 'notifications' ? ' active' : ''}`} onClick={() => handleNav('notifications')}>
+              <IconBell />
               <span className="nav-drawer-label">{APP_SHELL.notifications}</span>
               {unread > 0 && <span className="mobile-notification-count">{unread}</span>}
             </button>
@@ -257,6 +267,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             onClick={() => handleNav('settings')}
             aria-current={currentView === 'settings' ? 'page' : undefined}
           >
+            <IconSettings />
             <span className="nav-drawer-label">Settings</span>
           </button>
         </div>

@@ -1,4 +1,4 @@
-/* Homepage-only DOM presentation for PLOT's planned Premium benefits. */
+/* Homepage-only DOM presentation for Plot's planned Premium benefits. */
 (function () {
   const panel = document.getElementById('premium');
   if (!panel) return;

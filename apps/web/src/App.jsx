@@ -28,6 +28,8 @@ import { useTopLists }     from './hooks/useTopLists.js';
 import { useFavorites }    from './hooks/useFavorites.js';
 import { useCustomLists }  from './hooks/useCustomLists.js';
 import UndoToast from './components/UndoToast.jsx';
+import StreakToast from './components/StreakToast.jsx';
+import ShareCardHost from './components/ShareCardHost.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
@@ -417,6 +419,8 @@ export default function App() {
       )}
 
       <UndoToast />
+      <StreakToast />
+      <ShareCardHost />
 
       {tzBanner && (
         <TimezoneBanner

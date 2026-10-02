@@ -64,8 +64,8 @@ export function tileMode({ viewerPremium, targetPublic, state }) {
 /**
  * Whether the tile may show an overlap count. The server decides: it returns
  * a count only once you're partners or when you can already see their
- * watchlist (public, or a private profile you follow), so any number it sends
- * is safe to show, whatever the tile's state.
+ * watchlist (can_view_watchlist), so any number it sends is safe to show,
+ * whatever the tile's state.
  *
  * @param {TileMode} _mode
  * @param {number | null | undefined} count

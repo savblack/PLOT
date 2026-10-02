@@ -30,6 +30,7 @@
     "storybook:website": "pnpm --filter @plot/website-storybook run storybook",
     "storybook:web": "pnpm --filter @plot/web run storybook",
     "test-storybook:web": "pnpm --filter @plot/web run test-storybook",
+    "chromatic": "pnpm --filter @plot/web run build-storybook:stats && pnpm --filter @plot/web run chromatic",
     "storybook:mobile": "pnpm --filter @plot/mobile run storybook",
     "storybook:mobile:web": "pnpm --filter @plot/mobile run storybook:web",
     "storybook:web:deploy": "bash scripts/deploy-storybook.sh apps/web plot-storybook-web-app",
@@ -48,12 +49,14 @@
     "db:migration-test": "bash scripts/db-migration-test.sh",
     "db:function-diff": "bash scripts/db-function-diff.sh",
     "db:restore-drill": "bash scripts/db-restore-drill.sh",
+    "db:drift": "node scripts/check-migration-drift.mjs",
     "supabase:staging": "node scripts/supabase-staging.mjs",
     "staging:session": "node scripts/create-staging-test-session.mjs",
     "staging:private-notes-test": "bash scripts/staging-sql.sh scripts/staging-private-notes-test.sql",
     "staging:block-test": "bash scripts/staging-sql.sh scripts/staging-block-test.sql",
     "staging:visibility-test": "bash scripts/staging-sql.sh scripts/staging-visibility-test.sql",
     "staging:watch-together-test": "bash scripts/staging-sql.sh scripts/staging-watch-together-test.sql",
+    "staging:watchlist-visibility-test": "bash scripts/staging-sql.sh scripts/staging-watchlist-visibility-test.sql",
     "staging:import-annotations-test": "bash scripts/staging-sql.sh scripts/staging-import-annotations-test.sql",
     "staging:saved-lists-test": "bash scripts/staging-sql.sh scripts/staging-saved-lists-test.sql",
     "staging:tracking-jobs-test": "bash scripts/staging-sql.sh scripts/staging-tracking-jobs-test.sql",
@@ -64,6 +67,7 @@
     "staging:premium-badge-refresh-test": "bash scripts/staging-sql.sh scripts/staging-premium-badge-refresh-test.sql",
     "staging:taste-overlap-test": "bash scripts/staging-sql.sh scripts/staging-taste-overlap-test.sql",
     "staging:pgss-guard-test": "bash scripts/staging-sql.sh scripts/staging-pgss-guard-test.sql",
+    "staging:rls-bypass-views-test": "bash scripts/staging-sql.sh scripts/staging-rls-bypass-views-test.sql",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",
     "mkt:copy:pull": "node marketing/copy/pull.mjs",
@@ -84,15 +88,16 @@
   },
   "dependencies": {
     "@plot/core": "*",
-    "@supabase/supabase-js": "^2.116.0"
+    "@supabase/supabase-js": "^2.117.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.10.0",
+    "chromatic": "^18.9.4",
+    "eslint": "^10.11.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.6",
     "globals": "^17.12.0",
-    "typescript-eslint": "^8.70.0"
+    "typescript-eslint": "^8.70.1"
   },
   "packageManager": "pnpm@10.6.3"
 }

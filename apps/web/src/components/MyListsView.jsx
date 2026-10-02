@@ -16,8 +16,10 @@ import ListCover from './ListCover.jsx';
 import SideFilters from './SideFilters.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { EVENTS, track } from '../lib/analytics.js';
-import { canCreateCustomList } from '@plot/core/premium.js';
+import { canCreateCustomList, isPremiumProfile } from '@plot/core/premium.js';
+import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
+import SmartListDialog from './SmartListDialog.jsx';
 import { collectionPath, customListKey, titleCount, wantToWatchItems, searchCollectionTitles, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
 import { IconSearch } from './navIcons.jsx';
@@ -66,7 +68,7 @@ function JumpToCard({ collections, counts, onOpen }) {
         {shown.map(c => (
           <button key={c.key} type="button" className="cal-filter-row" onClick={onOpen(c.key)}>
             <span className="cal-filter-name">{c.name}</span>
-            <span className="mylists-jump-count">{counts(c.items)}</span>
+            <span className="mylists-jump-count">{c.smart ? SMART_LISTS.badge : counts(c.items)}</span>
           </button>
         ))}
         {folds && (
@@ -97,6 +99,9 @@ export default function MyListsView() {
   const selection = useSelection();
   const [creatingList,  setCreatingList]  = useState(false);
   const [showCapNotice, setShowCapNotice] = useState(false);
+  // Which upgrade sheet is open: the Free list cap, or smart lists.
+  const [upgradeReason, setUpgradeReason] = useState('lists');
+  const [creatingSmart, setCreatingSmart] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
@@ -109,7 +114,8 @@ export default function MyListsView() {
     return <LoadingSpinner />;
   }
 
-  const { lists, ownedCount, createList, deleteList } = customLists;
+  const { lists, smartLists = [], ownedCount, createList, createSmartList, deleteList } = customLists;
+  const ownLists = [...lists, ...smartLists];
 
   // One index behind both the column and the covers, so the two can't drift.
   const collections = [
@@ -122,6 +128,15 @@ export default function MyListsView() {
       items: [...(list.items || [])].reverse(),
       empty: 'Empty',
       list,
+    })),
+    // Smart lists find their titles when opened, so their covers are bare.
+    ...smartLists.map(list => ({
+      key: customListKey(list.id),
+      name: list.name,
+      items: [],
+      empty: SMART_LISTS.coverCount,
+      list,
+      smart: true,
     })),
   ];
 
@@ -149,11 +164,35 @@ export default function MyListsView() {
   const requestCreate = () => {
     if (!canCreateCustomList(ownedCount ?? lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
+      setUpgradeReason('lists');
       setShowCapNotice(true);
       return;
     }
     setShowCapNotice(false);
     setCreatingList(true);
+  };
+  // Smart lists are Premium. The database refuses rules from anyone else;
+  // this opens the sheet before the form rather than after it.
+  const openSmartGate = () => {
+    track(EVENTS.PREMIUM_GATE_HIT, { feature: 'smart_lists' });
+    setCreatingList(false);
+    setCreatingSmart(false);
+    setUpgradeReason('smartLists');
+    setShowCapNotice(true);
+  };
+  const requestSmartCreate = () => {
+    if (!isPremiumProfile(profile)) { openSmartGate(); return; }
+    setCreatingList(false);
+    setShowCapNotice(false);
+    setCreatingSmart(true);
+  };
+  const handleSmartCreate = async (name, rules) => {
+    const created = await createSmartList(name, rules);
+    if (created) {
+      setCreatingSmart(false);
+      navigate(collectionPath(customListKey(created.id)));
+    }
+    return created;
   };
   const handleCreate = async (name) => {
     const created = await createList(name);
@@ -175,7 +214,7 @@ export default function MyListsView() {
     target.querySelector('button')?.focus({ preventScroll: true });
   };
 
-  const selectedLists = lists.filter(l => selection.selected.has(l.id));
+  const selectedLists = ownLists.filter(l => selection.selected.has(l.id));
   const selectedTitles = selectedLists.reduce((n, l) => n + (l.items || []).length, 0);
 
   const listActions = selection.editMode ? (
@@ -194,7 +233,8 @@ export default function MyListsView() {
       ariaLabel="Lists options"
       items={[
         { label: 'New list', onClick: requestCreate },
-        ...(lists.length > 0 ? [{ label: 'Select lists', onClick: selection.start }] : []),
+        { label: SMART_LISTS.newSmartList, onClick: requestSmartCreate },
+        ...(ownLists.length > 0 ? [{ label: 'Select lists', onClick: selection.start }] : []),
       ]}
     />
   );
@@ -206,7 +246,7 @@ export default function MyListsView() {
         key={c.key}
         anchorId={`collection-${c.key}`}
         name={c.name}
-        count={coverCount(c.items, c.empty)}
+        count={c.smart ? c.empty : coverCount(c.items, c.empty)}
         posters={posters(visible)}
         dim={narrowed && visible.length === 0 && c.items.length > 0}
         badge={c.list && listVisibility(c.list) !== 'private' && <span className="mylists-public-badge">{PROFILE_PRIVACY.listVisibilityBadge[listVisibility(c.list)]}</span>}
@@ -294,10 +334,20 @@ export default function MyListsView() {
         </div>
       </div>
 
-      {showCapNotice && <UpgradeSheet reason="lists" onClose={() => setShowCapNotice(false)} returnFocusRef={newListRef} />}
+      {showCapNotice && <UpgradeSheet reason={upgradeReason} onClose={() => setShowCapNotice(false)} returnFocusRef={newListRef} />}
       {creatingList && (
-        <CreateListModal lists={lists} onConfirm={handleCreate} onClose={() => setCreatingList(false)}
-          onLimit={() => { setCreatingList(false); setShowCapNotice(true); }} />
+        <CreateListModal lists={ownLists} onConfirm={handleCreate} onClose={() => setCreatingList(false)}
+          onLimit={() => { setCreatingList(false); setUpgradeReason('lists'); setShowCapNotice(true); }}
+          onSmart={requestSmartCreate} />
+      )}
+      {creatingSmart && (
+        <SmartListDialog
+          lists={ownLists}
+          onConfirm={handleSmartCreate}
+          onClose={() => setCreatingSmart(false)}
+          onPremium={openSmartGate}
+          onLimit={() => { setCreatingSmart(false); setUpgradeReason('lists'); setShowCapNotice(true); }}
+        />
       )}
       {confirmDelete && (
         <ConfirmModal

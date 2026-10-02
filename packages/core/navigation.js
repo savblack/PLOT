@@ -45,7 +45,7 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
  * routes (`person/4110`) resolve, and to the brand for anything unknown.
  *
  * WHY: /person/:id and /import had no entry, so both fell through to the brand
- * and rendered a second "PLOT" wordmark in the content column, directly beside
+ * and rendered a second "Plot" wordmark in the content column, directly beside
  * the one the sidebar already shows.
  *
  * @param {string} view

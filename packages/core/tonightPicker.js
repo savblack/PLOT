@@ -712,8 +712,9 @@ async function slimDetails(client, type, id) {
   }
 }
 
-/** Fetch details for `items` a few at a time, pacing only real network calls. */
-async function walkDetails(client, type, items, { gapMs, until }) {
+/** Fetch details for `items` a few at a time, pacing only real network calls.
+ * Smart lists reuse it for their own titles (smartLists.js). */
+export async function walkDetails(client, type, items, { gapMs, until }) {
   const out = [];
   for (let i = 0; i < items.length && !until(out); i += CONCURRENCY) {
     const batch = items.slice(i, i + CONCURRENCY);

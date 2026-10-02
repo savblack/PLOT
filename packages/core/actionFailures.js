@@ -40,6 +40,7 @@ export const FAILED_ACTIONS = Object.freeze({
   CUSTOM_LIST_RENAME:      'custom_list_rename',
   CUSTOM_LIST_DELETE:      'custom_list_delete',
   CUSTOM_LIST_VISIBILITY:  'custom_list_visibility',
+  SMART_LIST_UPDATE:       'smart_list_update',
   LIST_ITEM_ADD:           'list_item_add',
   LIST_ITEM_REMOVE:        'list_item_remove',
   WATCH_PROGRESS:          'watch_progress',
@@ -47,6 +48,7 @@ export const FAILED_ACTIONS = Object.freeze({
   FOLLOW:                  'follow',
   UNFOLLOW:                'unfollow',
   FOLLOW_REQUEST_DECISION: 'follow_request_decision',
+  WATCHLIST_SHARE:         'watchlist_share',
   BLOCK:                   'block',
   UNBLOCK:                 'unblock',
   REPORT:                  'report',
@@ -59,6 +61,8 @@ export const FAILED_ACTIONS = Object.freeze({
   WATCH_TOGETHER_LINK_ACCEPT:   'watch_together_link_accept',
   WATCH_TOGETHER_SESSION_START: 'watch_together_session_start',
   WATCH_TOGETHER_VOTE:          'watch_together_vote',
+  // Joining a collaborative list from its invite link (useListInvites.js).
+  LIST_INVITE_ACCEPT:           'list_invite_accept',
 });
 
 /**
@@ -74,6 +78,7 @@ export const FAILED_LOADS = Object.freeze({
   WATCHING:     'watching',
   FAVOURITES:   'favourites',
   TONIGHT_PICKS: 'tonight_picks',
+  SMART_LIST:   'smart_list',
 });
 
 /**

@@ -47,7 +47,7 @@ export async function subscriptionCheckout(admin: Admin, stripe: Stripe, userId:
       await update({ operation_id: attempt.operation_id, price_id: price, settings_url: settingsUrl, session_id: null, managed_payments: true, started_at: attempt.started_at });
     }
     // Never replay an uncertain creation beyond Stripe's 24-hour idempotency window.
-    if (Date.now() - Date.parse(attempt.started_at) > 23 * 3600000) throw new CheckoutPendingError('Checkout needs review before another payment can be started. Please contact PLOT support.');
+    if (Date.now() - Date.parse(attempt.started_at) > 23 * 3600000) throw new CheckoutPendingError('Checkout needs review before another payment can be started. Please contact Plot support.');
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription', customer,
       // Omit new parameters when recovering a pre-migration idempotency key.

@@ -36,3 +36,12 @@ test('the themes sheet previews the Premium family tapped, and only a Premium on
   assert.equal(upgradeSheetContent('themes').preview, null);
   assert.equal(upgradeSheetContent('lists', { family: 'sage' }).preview, null);
 });
+
+test('the smart lists sheet has no limit meter and sells the rules', () => {
+  const content = upgradeSheetContent('smartLists');
+  assert.equal(content.meter, 0);
+  assert.ok(content.context.length > 0);
+  assert.match(content.body, /keeps finding matches/);
+  assert.doesNotMatch(`${content.context} ${content.title} ${content.body}`, /—/);
+  assert.deepEqual(content.also.map(row => row.label), ['Pick for Me', 'Find something you both want']);
+});

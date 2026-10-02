@@ -1,4 +1,4 @@
-# PLOT billing production preparation
+# Plot billing production preparation
 
 Read-only audit: 2026-09-24. This document is a review plan, not approval to
 deploy, alter production billing or open checkout. Prices remain US$3/month
@@ -8,10 +8,10 @@ and US$25/year with Adaptive Pricing for eligible sessions.
 
 | Area | Evidence | Required next step |
 | --- | --- | --- |
-| Account | PLOT live account `acct_1TquJrIke4XlO34A`, AU; charges and payouts enabled; no currently due or past-due account requirements | Preserve the separate sandbox account |
-| Catalogue | Active PLOT Premium product already has USD 300/month and USD 2500/year recurring prices | Reuse these prices; tax behavior is currently unspecified |
+| Account | Plot live account `acct_1TquJrIke4XlO34A`, AU; charges and payouts enabled; no currently due or past-due account requirements | Preserve the separate sandbox account |
+| Catalogue | Active Plot Premium product already has USD 300/month and USD 2500/year recurring prices | Reuse these prices; tax behavior is currently unspecified |
 | Settlement | Live Dashboard lists AUD only, default, free | Review USD settlement and payout arrangement before enabling it; no bank changes made |
-| Portal | Live PLOT Premium portal created and API-verified; Dashboard confirms both approved USD prices | Set its configuration ID in production during approved backend rollout |
+| Portal | Live Plot Premium portal created and API-verified; Dashboard confirms both approved USD prices | Set its configuration ID in production during approved backend rollout |
 | Webhook | Existing enabled production endpoint subscribes to Checkout completion and subscription update/deletion; API version 2026-06-24.dahlia | Reuse endpoint; review upgrade to the sandbox-tested 2026-08-26.dahlia alongside handler deployment |
 | Functions | Production `stripe-billing` version 567 and `stripe-webhook` version 560 are ACTIVE | Downloaded source confirms older implementation; checkout unconditionally returns 503, webhook lacks tested atomic update and snapshot safeguards |
 | Secrets | Production lists the two Stripe price secrets, API secret and webhook secret; no checkout gate, portal configuration or settings-return secret | Values were not read. Configure the reviewed values through the secrets store; explicitly keep checkout disabled |
@@ -63,7 +63,7 @@ The Tax Codes API returned these relevant candidates, not yet applied:
 - `txcd_10103100`: SaaS, electronic download, personal use. Reassess for a future downloaded app or bundled access.
 
 Classification requires confirmation; do not select a code merely to obtain a
-nonzero result. PLOT currently uses the broad electronically supplied services
+nonzero result. Plot currently uses the broad electronically supplied services
 code. See [Stripe's tax codes](https://docs.stripe.com/tax/tax-codes).
 
 After the registration and classification decisions:
@@ -79,8 +79,8 @@ does not file all returns. See [Stripe Tax setup](https://docs.stripe.com/tax/se
 ## Prepared production changes for later approval
 
 - Reuse the live product and prices. Set confirmed tax behavior rather than leaving currency-dependent inference implicit.
-- Create one named PLOT Premium portal with invoice history, payment-method updates, period-end cancellation and only the two existing Premium prices. Shorter-interval changes take effect at period end; immediate upgrades reset the anchor and invoice prorations, as tested.
-- Set its return URL to `https://app.theplot.tv/settings` and legal links to the current PLOT website pages, after verifying the public links.
+- Create one named Plot Premium portal with invoice history, payment-method updates, period-end cancellation and only the two existing Premium prices. Shorter-interval changes take effect at period end; immediate upgrades reset the anchor and invoice prorations, as tested.
+- Set its return URL to `https://app.theplot.tv/settings` and legal links to the current Plot website pages, after verifying the public links.
 - Review live USD settlement and Adaptive Pricing. Public Australian settlement pricing lists 1%; sandbox displays 0.91%. Confirm applicable live fee before changing settlement. A matching bank account is needed for USD payouts; no bank details are requested in chat.
 - Verify pending production migrations against the live schema, run restore/function-diff checks on the final patch, deploy the approved billing changes and configure production secrets with checkout explicitly false.
 - Validate the closed production deployment, then obtain a separate explicit launch decision before enabling checkout/public flags or making a real purchase.
@@ -113,15 +113,15 @@ request to approve public launch yet.
 ### Approved and completed: portal configuration only
 
 Savannah approved creation on 2026-09-24. Created live configuration
-`bpc_1UJCj1Ike4XlO34ASn26OsJA` in PLOT account `acct_1TquJrIke4XlO34A`.
+`bpc_1UJCj1Ike4XlO34ASn26OsJA` in Plot account `acct_1TquJrIke4XlO34A`.
 A subsequent API read confirms one active, default configuration named
-PLOT Premium, with the settings below and hosted login disabled. The create
+Plot Premium, with the settings below and hosted login disabled. The create
 request included only the two existing USD prices. Dashboard catalogue
 read-back verified both prices on 2026-09-25.
 No live customer sessions, subscription changes or charges were created.
 No backend secrets, deployment, checkout gate, price or tax settings changed.
 
-Create one live PLOT Premium portal configuration for invoice history, payment
+Create one live Plot Premium portal configuration for invoice history, payment
 method updates, period-end cancellation, and switching between US$3/month and
 US$25/year. Annual-to-monthly changes take effect at period end; monthly-to-annual
 changes invoice prorations immediately. Return users to app settings and show
@@ -165,7 +165,7 @@ real payments. The restricted production key still needs its own secure handoff.
 Australian GST non-registration does not establish that worldwide subscription
 sales can begin without registrations elsewhere. HMRC states that non-established
 suppliers making taxable UK supplies, including digital services, have no
-registration threshold. Confirm PLOT's classification and intended launch
+registration threshold. Confirm Plot's classification and intended launch
 countries with a tax adviser before opening international checkout. No overseas
 registration has been added and automatic tax has not been enabled.
 
@@ -209,7 +209,7 @@ and Adaptive Pricing verification, and separate public-launch approval.
 
 ## Live credential handoff and signed-in UI check, 2026-09-25
 
-Prepared (not submitted) live Stripe key form named `PLOT production billing`.
+Prepared (not submitted) live Stripe key form named `Plot production billing`.
 Verified exactly these selected permissions: Customers write, Products read,
 Prices read, Subscriptions read, Customer Portal write, Checkout Sessions write.
 All other permissions remain None. Prepared the production Supabase secrets
@@ -227,7 +227,7 @@ closure remains untested through the UI because this account exposes only Manage
 subscription. Production checkout flag remains false from verified rollout.
 
 Credential handoff follow-up: Savannah reports completing creation and saving.
-Stripe live Dashboard now lists `PLOT Production Billing`, created 25 September.
+Stripe live Dashboard now lists `Plot Production Billing`, created 25 September.
 Production `STRIPE_SECRET_KEY` metadata shows an update at
 2026-09-25T01:24:57.838Z. The `STRIPE_CHECKOUT_ENABLED` digest still matches
 `false`. No credential value was displayed or copied by the agent. This verifies
@@ -259,7 +259,7 @@ preview verified zero management buttons for no-subscription/no-relationship
 states, one for expired subscribers, and one for active subscribers. USD price
 copy verified after restarting Vite to refresh cached shared modules. The preview
 uses explicit fixture states, not a production account or Stripe request.
-Observed console errors belong to a browser extension's DataDog loader, not PLOT.
+Observed console errors belong to a browser extension's DataDog loader, not Plot.
 
 The new live restricted key is still not independently authenticated by these
 checks. Supabase secrets metadata provides a digest, not a retrievable credential;

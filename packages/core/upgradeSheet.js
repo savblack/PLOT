@@ -8,12 +8,12 @@ import { SETTINGS_VIEW } from './copy/settingsView.js';
 import { FREE_CUSTOM_LIST_CAP } from './premium.js';
 import { isPremiumFamily } from './themes.js';
 
-/** @typedef {'lists' | 'themes'} UpgradeReason */
+/** @typedef {'lists' | 'themes' | 'smartLists' | 'collaborativeLists' | 'alerts'} UpgradeReason */
 
 /**
  * @typedef {object} UpgradeSheetContent
  * @property {string} context  what just happened, e.g. "You've used all 5 free lists"
- * @property {number} meter    how many filled segments the limit meter shows
+ * @property {number} meter    how many filled segments the limit meter shows (0: no meter)
  * @property {string} title
  * @property {string} body
  * @property {Array<{icon: string, label: string, note?: string}>} also

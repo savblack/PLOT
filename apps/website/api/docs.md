@@ -1,6 +1,6 @@
-# PLOT public API
+# Plot public API
 
-PLOT is a film and television companion for tracking what you watch. Almost all of
+Plot is a film and television companion for tracking what you watch. Almost all of
 it lives behind a member's own account. This page covers the small part that
 theplot.tv serves to anyone, with no account and no key.
 
@@ -12,7 +12,7 @@ Machine-readable description: [/api/openapi.json](https://theplot.tv/api/openapi
 
 There is no public API for member data. Watch history, watchlists, ratings,
 private notes, custom lists and account details are reachable only through an
-authenticated session in the PLOT app. No endpoint below returns any of it, and
+authenticated session in the Plot app. No endpoint below returns any of it, and
 no agent should imply it has access to a member's account without that member's
 explicit, authenticated permission.
 
@@ -20,7 +20,7 @@ explicit, authenticated permission.
 
 ### POST /api/newsletter
 
-Subscribes an email address to the weekly PLOT digest.
+Subscribes an email address to the weekly Plot digest.
 
 ```
 POST https://theplot.tv/api/newsletter
@@ -42,7 +42,7 @@ whose owner asked you to subscribe it.
 
 ### GET or POST /api/newsletter?action=unsubscribe&token=...
 
-Ends a subscription. The token comes from the unsubscribe link in a PLOT email,
+Ends a subscription. The token comes from the unsubscribe link in a Plot email,
 so there is no way to unsubscribe an address you do not have a link for. `GET`
 returns a confirmation page; `POST` performs the unsubscribe, which is also how
 one-click unsubscribe from an email client works.
@@ -50,7 +50,7 @@ one-click unsubscribe from an email client works.
 ### GET /api/health
 
 ```
-{"status": "pass", "description": "PLOT public API"}
+{"status": "pass", "description": "Plot public API"}
 ```
 
 Served as `application/health+json`. It reports whether theplot.tv is serving

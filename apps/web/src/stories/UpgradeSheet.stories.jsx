@@ -45,6 +45,10 @@ export const UpgradeShowsComingSoon = {
   play: async () => {
     const body = within(document.body);
     fireEvent.click(body.getByRole('button', { name: PLANS_PAGE.upgradeAction }));
-    await expect(body.getByRole('status')).toHaveTextContent('Checkout is not open yet');
+    // startCheckout is async, so the note appears a microtask after the click.
+    // getByRole does not retry and won the race only in the vitest run.
+    await expect(await body.findByRole('status')).toHaveTextContent('Checkout is not open yet');
   },
 };
+
+export const SmartLists = { args: { reason: 'smartLists' } };

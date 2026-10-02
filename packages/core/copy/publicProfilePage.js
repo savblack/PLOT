@@ -53,4 +53,7 @@ export const PUBLIC_PROFILE_PAGE = {
   namePlaceholder: 'Your name',
   bioPlaceholder: 'A little about you',
   shareProfile: 'Share profile',
+  // The owner's version is a menu: the link, or a share card.
+  share: 'Share',
+  copyProfileLink: 'Copy profile link',
 };
