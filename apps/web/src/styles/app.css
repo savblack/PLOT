@@ -6256,6 +6256,8 @@ a.provider-chip--link:hover {
    spacing twice over. */
 .discover-featured-section .discover-hero-row {
   margin-top: 0.25rem;
+  /* The divider's own padding-top already separates the next section. */
+  margin-bottom: 0;
 }
 .discover-hero-row.has-two {
   display: grid;
@@ -6268,6 +6270,19 @@ a.provider-chip--link:hover {
 @media (max-width: 640px) {
   .discover-hero-row.has-two {
     grid-template-columns: 1fr;
+  }
+}
+/* A lone hero spans the full column, so 3:2 makes it ~2/3 as tall as it is
+   wide and pushes the next row off-screen. On desktop it becomes a fixed
+   banner that also carries a synopsis and a "View details" cue. */
+@media (min-width: 900px) {
+  .discover-hero-row:not(.has-two) .discover-hero {
+    aspect-ratio: auto;
+    height: 20.5rem;
+  }
+  .discover-hero-row:not(.has-two) .discover-hero-synopsis,
+  .discover-hero-row:not(.has-two) .discover-hero-cta {
+    display: block;
   }
 }
 
@@ -6338,6 +6353,31 @@ a.provider-chip--link:hover {
   color: #fff;
   line-height: 1.05;
   margin-bottom: 0.25rem;
+}
+
+.discover-hero-synopsis {
+  display: none;
+  max-width: 34rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgba(255,255,255,0.72);
+  /* No line-clamp: the text is already trimmed to whole sentences, and a clamp
+     would cut one mid-sentence. */
+}
+
+.discover-hero-cta {
+  display: none;
+  width: fit-content;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.discover-hero:hover .discover-hero-cta {
+  background: var(--accent-fill-hover);
 }
 
 .discover-hero-meta {
