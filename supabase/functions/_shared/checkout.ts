@@ -34,7 +34,7 @@ export async function subscriptionCheckout(admin: Admin, stripe: Stripe, userId:
     // A cancelled subscription means they have already had the trial; incomplete_expired never started.
     let hadSubscription = false;
     for await (const sub of stripe.subscriptions.list({ customer, status: 'all', limit: 100 })) {
-      if (!['canceled', 'incomplete_expired'].includes(sub.status)) return await portal(customer);
+      if (!['canceled', 'incomplete_expired'].includes(sub.status)) return { url: await portal(customer), destination: 'portal' as const };
       if (sub.status === 'canceled') hadSubscription = true;
     }
     if (attempt.session_id) {
@@ -44,7 +44,7 @@ export async function subscriptionCheckout(admin: Admin, stripe: Stripe, userId:
         const sub = id ? await stripe.subscriptions.retrieve(id) : null;
         if (!sub || !['canceled', 'incomplete_expired'].includes(sub.status)) throw new CheckoutPendingError('Your previous payment is being confirmed. Please try again shortly.');
       }
-      if (session.status === 'open' && attempt.price_id === price && attempt.managed_payments && session.managed_payments?.enabled) return session.url!;
+      if (session.status === 'open' && attempt.price_id === price && attempt.managed_payments && session.managed_payments?.enabled) return { url: session.url!, destination: 'checkout' as const };
       if (session.status === 'open') await stripe.checkout.sessions.expire(session.id);
       // Stripe confirmed the old session cannot complete. Only now start a new operation.
       attempt = { ...attempt, operation_id: crypto.randomUUID(), price_id: price, settings_url: settingsUrl, session_id: null, managed_payments: true, started_at: new Date().toISOString() };
@@ -65,7 +65,7 @@ export async function subscriptionCheckout(admin: Admin, stripe: Stripe, userId:
     await update({ session_id: session.id });
     if (!attempt.managed_payments) throw new CheckoutPendingError('Your checkout was updated. Please choose your plan again.');
     if (attempt.price_id !== price) throw new CheckoutPendingError('A previous plan checkout was recovered. Please choose your plan again.');
-    return session.url!;
+    return { url: session.url!, destination: 'checkout' as const };
   } finally {
     // A stale worker cannot release a newer worker's lease.
     await admin.from('billing_checkout_attempts').update({ lease_until: null, lease_token: null }).eq('user_id', userId).eq('lease_token', attempt.lease_token);

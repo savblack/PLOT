@@ -57,11 +57,13 @@ Deno.test('simultaneous first checkouts cannot create two sessions', async () =>
   assert(results.filter(r => r.status === 'fulfilled').length === 1, 'one claim must win');
   assert(results.some(r => r.status === 'rejected' && r.reason instanceof CheckoutPendingError), 'losing claim has a safe retry message');
   assert(f.creates() === 1, 'one Stripe session');
-  assert(await f.call() === 'https://checkout.example.invalid/1', 'retry returns same session');
+  const retried = await f.call();
+  assert(retried.url === 'https://checkout.example.invalid/1' && retried.destination === 'checkout', 'retry returns the same checkout session');
 });
 Deno.test('lost session persistence replays the same idempotent creation', async () => {
   const f = fixture(); f.loseResponse(); await f.call().catch(() => {});
-  assert(await f.call() === 'https://checkout.example.invalid/1' && f.creates() === 1, 'no duplicate after uncertain write');
+  const recovered = await f.call();
+  assert(recovered.url === 'https://checkout.example.invalid/1' && recovered.destination === 'checkout' && f.creates() === 1, 'no duplicate after uncertain write');
 });
 Deno.test('plan change expires the old payment link before replacing it', async () => {
   const f = fixture(); await f.call(); await f.call('yearly');
@@ -75,7 +77,8 @@ Deno.test('unconfirmed creation beyond idempotency retention fails closed', asyn
 Deno.test('incomplete and paused subscriptions cannot create another subscription', async () => {
   for (const status of ['active', 'past_due', 'incomplete', 'paused', 'unpaid']) {
     const f = fixture(); f.subs.push({ status });
-    assert(await f.call() === 'portal' && f.creates() === 0, status);
+    const result = await f.call();
+    assert(result.url === 'portal' && result.destination === 'portal' && f.creates() === 0, status);
   }
 });
 Deno.test('a terminal subscription permits a fresh checkout', async () => {
