@@ -467,9 +467,26 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
             </p>
           )}
           {synopsis && <p className="discover-hero-synopsis">{synopsis}</p>}
-          <span className="discover-hero-cta" aria-hidden="true">View details</span>
         </div>
       </button>
+
+      {/* Real buttons, siblings of the hit area above (never nested in it).
+          Desktop single-card layout only; the card itself is the tap target
+          everywhere else. */}
+      <div className="discover-hero-actions">
+        <button type="button" className="discover-hero-action discover-hero-action-secondary" onClick={openDetails}>
+          View details
+        </button>
+        <button
+          type="button"
+          className="discover-hero-action discover-hero-action-primary"
+          onClick={() => watchlist.toggle({ ...item })}
+          disabled={watchlist.loading}
+          aria-pressed={saved}
+        >
+          {saved ? '✓ In watchlist' : '+ Watchlist'}
+        </button>
+      </div>
 
       {/* Corner action buttons. Each shows itself when its own state is
           active; the inactive one waits for hover, so an active favourite
