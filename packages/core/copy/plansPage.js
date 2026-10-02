@@ -65,7 +65,7 @@ export const PLANS_PAGE = {
     { icon: 'together', label: 'Find something you both want', note: 'The overlap in your watchlists' },
     { icon: 'lists', label: 'Unlimited and smart lists', note: 'Rules that keep finding matches' },
     { icon: 'stats', label: 'Deeper viewing stats', note: 'Beyond the Free overview' },
-    { icon: 'customise', label: 'Customise your plot', note: 'Themes on the web now. Widgets and app icons are coming.' },
+    { icon: 'customise', label: 'Customise your plot', note: 'Themes now. Widgets and app icons are coming.' },
   ],
   assurances: [
     '7-day free trial for new subscribers',
@@ -88,11 +88,11 @@ export const PLANS_PAGE = {
         body: 'Premium brings unlimited custom lists, plus smart lists that keep finding matches. The lists you have now stay exactly as they are.',
         also: ['pick', 'together'],
       },
-      // Opened from the Settings theme picker (web only for now).
+      // Opened from the Settings theme picker. A picture of the family, never applied.
       themes: {
         context: () => 'Themes are part of Premium',
         title: 'Give plot a new look.',
-        body: 'Premium adds themes to Plot on the web, each in light and dark with its own accent. The default look stays free in light, dark and system.',
+        body: 'Premium adds themes, each in light and dark with its own accent. The default look stays free in light, dark and system.',
         also: ['pick', 'together'],
       },
       smartLists: {
@@ -166,7 +166,7 @@ export const PLANS_PAGE = {
         { label: 'Whole-season-ready alerts', free: false, premium: true },
       ] },
       { title: 'Make it yours', rows: [
-        { label: 'Themes', free: 'Default, light and dark', premium: 'Every theme', tag: 'On the web' },
+        { label: 'Themes', free: 'Default, light and dark', premium: 'Every theme' },
         { label: 'Widgets and app icons', free: false, premium: true, tag: 'Coming soon' },
       ] },
     ],
@@ -212,7 +212,7 @@ export const PLANS_PAGE = {
     { id: 'seasonReady', label: 'Whole-season-ready alerts', live: true,
       description: 'Know when every episode is verified available on your selected services in your region. Airing dates alone do not qualify.' },
     { id: 'themes', label: 'Themes', live: true,
-      description: 'Themes for Plot on the web, each in light and dark with its own accent. The default look stays free in light, dark and system.' },
+      description: 'Themes, each in light and dark with its own accent. The default look stays free in light, dark and system.' },
     { id: 'customize', label: 'Customise your plot', highlight: true,
       description: 'Make plot feel like yours: Home Screen widgets, custom app icons and custom profile pages.' },
   ],
@@ -232,7 +232,7 @@ export const PLANS_PAGE = {
     { q: 'Can my friends join without Premium?', a: 'Yes. To find something you both want to watch, only one of you needs Premium, so the other person joins for free. Anyone can send an invite. Collaborative lists work the same way: only the person who makes the list needs Premium.' },
     { q: 'How many lists are included in Free?', a: 'Free includes up to five custom lists.' },
     { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
-    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Premium themes are available on the web. Deeper stats, widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service.' },
+    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Premium themes are available. Deeper stats, widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service.' },
   ],
   fineprint: 'Prices in US dollars, taxes included. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
   terms: 'Terms',
