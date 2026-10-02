@@ -4,6 +4,23 @@ export function checkoutPlan(body: unknown): 'monthly' | 'yearly' | null {
   return plan === 'monthly' || plan === 'yearly' ? plan : null;
 }
 
+/** The free trial lives here, not on the Stripe Price: a Price made without trial days would otherwise charge at once. */
+export const PREMIUM_TRIAL_DAYS = 7;
+
+/**
+ * Subscription settings for a new Checkout session. First-time subscribers get the trial;
+ * anyone who has already had a subscription pays from the start. Throws if a first-time
+ * session would be built without the trial, so checkout fails closed instead of charging early.
+ */
+export function checkoutSubscriptionData(userId: string, hadSubscription: boolean) {
+  const data = {
+    metadata: { supabase_user_id: userId },
+    ...(hadSubscription ? {} : { trial_period_days: PREMIUM_TRIAL_DAYS }),
+  };
+  if (!hadSubscription && data.trial_period_days !== PREMIUM_TRIAL_DAYS) throw new Error('First checkout must include the trial');
+  return data;
+}
+
 export function matchesPremiumPrice(price: {
   active: boolean;
   tax_behavior?: string | null;

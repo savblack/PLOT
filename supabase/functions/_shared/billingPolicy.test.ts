@@ -1,4 +1,4 @@
-import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutPlan, matchesPremiumPrice } from './billingPolicy.ts';
+import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutPlan, checkoutSubscriptionData, matchesPremiumPrice, PREMIUM_TRIAL_DAYS } from './billingPolicy.ts';
 
 function equal(actual: unknown, expected: unknown) {
   if (actual !== expected) throw new Error(`Expected ${expected}, got ${actual}`);
@@ -55,4 +55,12 @@ Deno.test('private checkout requires an exact authenticated user ID in the serve
   equal(isCheckoutPilot(undefined, 'pilot-user'), false);
   equal(isCheckoutPilot('', ','), false);
   equal(isCheckoutPilot('other-user', 'pilot-user'), false);
+});
+
+Deno.test('first-time checkout always requests the trial; returning subscribers do not', () => {
+  const first = checkoutSubscriptionData('user', false);
+  equal(first.trial_period_days, PREMIUM_TRIAL_DAYS);
+  equal(PREMIUM_TRIAL_DAYS, 7);
+  equal(first.metadata.supabase_user_id, 'user');
+  equal('trial_period_days' in checkoutSubscriptionData('user', true), false);
 });

@@ -7,7 +7,7 @@ function fixture(managed = true) {
   let customer: string | null = null;
   let failPersist = false;
   let creates = 0;
-  const sessions = new Map<string, { id: string; status: string; url: string; subscription?: string; managed_payments?: { enabled: boolean } }>();
+  const sessions = new Map<string, { id: string; status: string; url: string; subscription?: string; managed_payments?: { enabled: boolean }; trial_period_days?: number }>();
   const subs: { status: string }[] = [];
   const admin = {
     rpc: () => {
@@ -40,8 +40,8 @@ function fixture(managed = true) {
     customers: { create: async () => ({ id: 'cus_test' }) },
     subscriptions: { list: async function* () { yield* subs; }, retrieve: async () => ({ status: 'canceled' }) },
     checkout: { sessions: {
-      create: async (params: { managed_payments?: { enabled: boolean } }, options: { idempotencyKey: string }) => {
-        if (!sessions.has(options.idempotencyKey)) { creates++; sessions.set(options.idempotencyKey, { managed_payments: params.managed_payments, id: `cs_${creates}`, status: 'open', url: `https://checkout.example.invalid/${creates}` }); }
+      create: async (params: { managed_payments?: { enabled: boolean }; subscription_data?: { trial_period_days?: number } }, options: { idempotencyKey: string }) => {
+        if (!sessions.has(options.idempotencyKey)) { creates++; sessions.set(options.idempotencyKey, { managed_payments: params.managed_payments, trial_period_days: params.subscription_data?.trial_period_days, id: `cs_${creates}`, status: 'open', url: `https://checkout.example.invalid/${creates}` }); }
         return sessions.get(options.idempotencyKey)!;
       },
       retrieve: async (id: string) => [...sessions.values()].find(s => s.id === id)!,
@@ -96,4 +96,16 @@ Deno.test('legacy uncertain attempts recover without returning an unmanaged paym
 Deno.test('new sessions use Managed Payments', async () => {
   const f = fixture(); await f.call();
   assert([...f.sessions.values()][0].managed_payments?.enabled, 'managed checkout required');
+});
+Deno.test('first checkout carries the 7-day trial', async () => {
+  const f = fixture(); await f.call();
+  assert([...f.sessions.values()][0].trial_period_days === 7, 'trial requested on the session, not the Price');
+});
+Deno.test('returning subscribers get no second trial', async () => {
+  const f = fixture(); f.subs.push({ status: 'canceled' }); await f.call();
+  assert([...f.sessions.values()][0].trial_period_days === undefined, 'no repeat trial');
+});
+Deno.test('a subscription that never started still gets the trial', async () => {
+  const f = fixture(); f.subs.push({ status: 'incomplete_expired' }); await f.call();
+  assert([...f.sessions.values()][0].trial_period_days === 7, 'incomplete_expired is not a prior subscription');
 });
