@@ -218,8 +218,8 @@ export const SETTINGS_VIEW = {
     offHint: 'The chart, what to watch this weekend, and what just landed on streaming.',
   },
 
-  // Theme picker (web only for now; mobile parity is a GitHub issue). Palette
-  // values and the Premium rule live in @plot/core/tokens.js + themes.js.
+  // Theme picker. Palette values and the Premium rule live in
+  // @plot/core/tokens.js + themes.js. Mobile and web both read them.
   appearance: {
     label: 'Appearance',
     optionsLabel: 'Appearance options',

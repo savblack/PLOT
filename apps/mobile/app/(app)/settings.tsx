@@ -5,7 +5,11 @@ import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
-import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { APP_SHELL } from '@plot/core/copy/appShell.js';
+import { FREE_CUSTOM_LIST_CAP, isPremiumProfile } from '@plot/core/premium.js';
+import { SETTINGS_SECTIONS, searchSettingsSections, settingsSelectionSummary } from '@plot/core/settings.js';
+import { regionalWords } from '@plot/core/spelling.js';
+import { THEME_FAMILIES, THEME_MODES, isPremiumFamily, type ThemeFamily } from '@plot/core/themes.js';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
@@ -14,7 +18,7 @@ import {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line, Polygon } from 'react-native-svg';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
@@ -60,9 +64,14 @@ function generateCalendarToken(): string {
 }
 import { useTheme } from '../../contexts/ThemeContext';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
+import ThemeChip from '../../components/ThemeChip';
+import UpgradeSheet from '../../components/UpgradeSheet';
+
+const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
+const A = SETTINGS_VIEW.appearance;
 
 const FEEDBACK_TYPES = [
-  { id: 'bug',     label: 'Bug report' },
+  { id: 'bug',     label: SETTINGS_VIEW.feedback.bugReportLabel },
   { id: 'feature', label: SETTINGS_VIEW.feedback.featureRequestLabel },
   { id: 'general', label: SETTINGS_VIEW.feedback.generalFeedbackLabel },
 ];
@@ -83,7 +92,7 @@ function Chevron() {
 
 // ── Settings row ──────────────────────────────────────────────────────
 function SettingsRow({
-  icon, label, description, value, onPress, danger = false, trailing,
+  icon, label, description, value, onPress, danger = false, trailing, edit = false,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -92,28 +101,30 @@ function SettingsRow({
   onPress?: () => void;
   danger?: boolean;
   trailing?: React.ReactNode;
+  /** Preference row: the saved value sits under the label, and the action is Edit. */
+  edit?: boolean;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const valueBelow = !!edit && !!value;
   return (
     <TouchableOpacity
       style={styles.row}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
       disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={edit ? SETTINGS_VIEW.page.editSetting(label) : label}
     >
-      <View style={[styles.rowIcon, danger && styles.rowIconDanger]}>{icon}</View>
-      {description ? (
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
-          <Text style={styles.rowDescription}>{description}</Text>
-        </View>
-      ) : (
+      {icon ? <View style={[styles.rowIcon, danger && styles.rowIconDanger]}>{icon}</View> : null}
+      <View style={{ flex: 1 }}>
         <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
-      )}
+        {description ? <Text style={styles.rowDescription}>{description}</Text> : null}
+        {valueBelow ? <Text style={styles.rowValueBelow}>{value}</Text> : null}
+      </View>
       <View style={styles.rowRight}>
-        {value ? <Text style={styles.rowValue} numberOfLines={1}>{value}</Text> : null}
-        {trailing ?? (onPress ? <Chevron /> : null)}
+        {!valueBelow && value ? <Text style={styles.rowValue} numberOfLines={1}>{value}</Text> : null}
+        {edit ? <Text style={styles.editAction}>{COMMON.edit}</Text> : (trailing ?? (onPress ? <Chevron /> : null))}
       </View>
     </TouchableOpacity>
   );
@@ -658,7 +669,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
 
 // ── Main screen ───────────────────────────────────────────────────────
 export default function SettingsScreen() {
-  const { colors, resolved, preference, setPreference } = useTheme();
+  const { colors, resolved, mode, family, setMode, setFamily } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -669,9 +680,12 @@ export default function SettingsScreen() {
   const [showName,       setShowName]       = useState(false);
   const [showRegion,     setShowRegion]     = useState(false);
   const [showTimezone,   setShowTimezone]   = useState(false);
-  const { feedback: feedbackParam, premium: premiumParam } = useLocalSearchParams<{ feedback?: string; premium?: string }>();
+  const { feedback: feedbackParam, premium: premiumParam, section: sectionParam } = useLocalSearchParams<{ feedback?: string; premium?: string; section?: string }>();
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
   const [premiumExpanded, setPremiumExpanded] = useState(premiumParam === '1');
+  const [section, setSection] = useState(() => SETTINGS_SECTIONS.some(item => item.id === sectionParam) ? sectionParam! : 'account');
+  const [query, setQuery] = useState('');
+  const [themeUpgrade, setThemeUpgrade] = useState<string | null>(null);
   const [showImport,     setShowImport]     = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [clearingHist,   setClearingHist]   = useState(false);
@@ -688,8 +702,17 @@ export default function SettingsScreen() {
     if (premiumParam !== '1') return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPremiumExpanded(true);
+    setSection('billing');
     router.setParams({ premium: undefined });
   }, [premiumParam, router]);
+
+  useEffect(() => {
+    if (!sectionParam || !SETTINGS_SECTIONS.some(item => item.id === sectionParam)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSection(sectionParam);
+    setQuery('');
+    router.setParams({ section: undefined });
+  }, [sectionParam, router]);
 
   const providers     = profile?.streaming_providers || [];
   const genres        = profile?.genres || [];
@@ -896,10 +919,22 @@ export default function SettingsScreen() {
     setShowTimezone(false);
   };
 
+  const marketingEmails = !!profile?.marketing_emails;
+  const toggleMarketingEmails = async () => {
+    if (!userId) return;
+    const { error } = await updateProfile({ userId, patch: { marketing_emails: !marketingEmails } });
+    if (error) { Alert.alert(SETTINGS_VIEW.errors.failedToUpdateMarketingEmails); return; }
+    refreshProfile();
+  };
+
+  const pickTheme = (id: ThemeFamily) => {
+    if (!setFamily(id)) setThemeUpgrade(id);
+  };
+
   const handleSignOut = () => {
-    Alert.alert('Sign out?', 'Sign out of your plot account?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: async () => {
+    Alert.alert(SETTINGS_VIEW.page.signOutTitle, SETTINGS_VIEW.page.signOutMessage, [
+      { text: COMMON.cancel, style: 'cancel' },
+      { text: SETTINGS_VIEW.signOut, style: 'destructive', onPress: async () => {
         // Capture before the reset, or the event lands on the fresh anonymous
         // profile instead of the person who actually signed out.
         track(EVENTS.USER_SIGNED_OUT, {});
@@ -966,6 +1001,12 @@ export default function SettingsScreen() {
   };
 
   const HEADER_H = insets.top + 56;
+  const premium = isPremiumProfile(profile);
+  const matches = searchSettingsSections(query);
+  const searching = !!query.trim();
+  const active = SETTINGS_SECTIONS.find(item => item.id === section) ?? SETTINGS_SECTIONS[0];
+  const accountInitial = (displayName || username || '?').trim().charAt(0).toUpperCase();
+  const colour = regionalWords('color', region).nounLower;
 
   return (
     <View style={styles.screen}>
@@ -975,58 +1016,146 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
 
-        {/* Account */}
-        <SettingsGroup title="Account">
+        <View style={styles.accountCard}>
+          <View style={styles.accountIdentity}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.accountAvatar} />
+            ) : (
+              <View style={styles.accountAvatar}><Text style={styles.accountInitial}>{accountInitial}</Text></View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.accountName}>{displayName || SETTINGS_VIEW.page.noName}</Text>
+              {username ? <Text style={styles.accountHandle}>@{username}</Text> : null}
+            </View>
+          </View>
+          <View style={styles.accountFoot}>
+            <Text style={styles.accountPlan}>{premium ? SETTINGS_VIEW.page.planPremium : SETTINGS_VIEW.page.planFree}</Text>
+            {username ? (
+              <TouchableOpacity onPress={() => router.push(`/(app)/u/${username}` as Href)} accessibilityRole="button">
+                <Text style={styles.editAction}>{SETTINGS_VIEW.page.viewProfile}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={styles.searchWrap}>
+          <TextInput
+            style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
+            placeholder={SETTINGS_VIEW.page.search}
+            placeholderTextColor={colors.textMuted}
+            accessibilityLabel={SETTINGS_VIEW.page.search}
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+          />
+        </View>
+
+        {searching ? (
+          <View style={styles.searchResults}>
+            {matches.length === 0 ? <Text style={styles.searchEmpty}>{SETTINGS_VIEW.page.noResults}</Text> : matches.map(item => (
+              <TouchableOpacity key={item.id} style={styles.searchHit} onPress={() => { setQuery(''); setSection(item.id); }} accessibilityRole="button">
+                <Text style={styles.searchHitTitle}>{item.title}</Text>
+                <Text style={styles.rowDescription}>{item.description}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+        <>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityLabel={SETTINGS_VIEW.page.navigation}>
+          {SETTINGS_SECTIONS.map(item => {
+            const selected = item.id === active.id;
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => setSection(item.id)}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{item.title}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+        <Text style={styles.sectionTitle} accessibilityRole="header">{active.title}</Text>
+        <Text style={styles.sectionDescription}>{active.description}</Text>
+
+        {active.id === 'account' && <>
+        <SettingsGroup title={SETTINGS_VIEW.page.sections.account.title}>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx={12} cy={7} r={4}/></Svg>}
             label={displayName || SETTINGS_VIEW.addYourName}
+            edit
             onPress={() => setShowName(true)}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx={12} cy={7} r={4}/></Svg>}
-            label={user?.email ?? 'Account'}
+            label={user?.email ?? SETTINGS_VIEW.page.noName}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={4}/><Path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></Svg>}
-            label="Appearance"
+            label={A.label}
             trailing={
-              <View style={styles.themeTabs}>
-                {(['light', 'dark', 'system'] as const).map(t => (
+              <View style={styles.themeTabs} accessibilityRole="tablist">
+                {THEME_MODES.map(t => (
                   <TouchableOpacity
                     key={t}
-                    style={[styles.themeTab, preference === t && styles.themeTabActive]}
-                    onPress={() => setPreference(t)}
+                    style={[styles.themeTab, mode === t && styles.themeTabActive]}
+                    onPress={() => setMode(t)}
                     activeOpacity={0.7}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: mode === t }}
                   >
-                    <Text style={[styles.themeTabText, preference === t && styles.themeTabTextActive]}>
-                      {t.charAt(0).toUpperCase() + t.slice(1)}
-                    </Text>
+                    <Text style={[styles.themeTabText, mode === t && styles.themeTabTextActive]}>{A.modes[t]}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             }
           />
+          <View style={styles.themeFamily}>
+            <Text style={styles.rowLabel}>{A.themesLabel}{premium ? '' : ` · ${APP_SHELL.premium}`}</Text>
+            <Text style={styles.rowDescription}>{premium ? A.themesHint(colour) : A.themesLockedHint}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.swatches} accessibilityRole="radiogroup" accessibilityLabel={A.themesOptionsLabel}>
+              {THEME_FAMILIES.map(id => {
+                const name = A.families[id as keyof typeof A.families];
+                const locked = isPremiumFamily(id) && !premium;
+                const selected = family === id;
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    style={styles.swatch}
+                    onPress={() => pickTheme(id)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={locked ? A.lockedTheme(name) : name}
+                  >
+                    <ThemeChip family={id} selected={selected} />
+                    <Text style={[styles.swatchName, selected && styles.swatchNameSelected]}>{name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            {premium && (
+              <TouchableOpacity onPress={() => router.push('/(app)/themes' as Href)} accessibilityRole="button" accessibilityLabel={A.previewLabel}>
+                <Text style={styles.editAction}>{A.preview}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </SettingsGroup>
+        <SettingsGroup title={SETTINGS_VIEW.page.emailPreferences}>
           <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
-            label="Region"
-            value={regionLabel}
-            onPress={() => setShowRegion(true)}
-          />
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Polyline points="12,6 12,12 16,14"/></Svg>}
-            label="Timezone"
-            value={timezone ? fmtTz(timezone) : SETTINGS_VIEW.integrations.notConnected}
-            onPress={() => setShowTimezone(true)}
-          />
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><Polyline points="16,17 21,12 16,7"/><Line x1={21} y1={12} x2={9} y2={12}/></Svg>}
-            label="Sign out"
-            onPress={handleSignOut}
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={2} y={4} width={20} height={16} rx={2}/><Path d="m2 7 10 6 10-6"/></Svg>}
+            label={SETTINGS_VIEW.marketingEmails.label}
+            description={marketingEmails ? SETTINGS_VIEW.marketingEmails.onHint : SETTINGS_VIEW.marketingEmails.offHint}
+            trailing={<Switch value={marketingEmails} onValueChange={toggleMarketingEmails} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.marketingEmails.label} />}
           />
         </SettingsGroup>
+        </>}
 
-        {/* Social */}
-        <SettingsGroup title="Public profile">
+        {active.id === 'privacy' && <>
+        <SettingsGroup title={SETTINGS_VIEW.page.privacyLabel}>
           {username && <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2}><Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M19 8v6M16 11h6"/><Circle cx={9} cy={7} r={4}/></Svg>}
             label={PUBLIC_PROFILE_PAGE.shareProfile}
@@ -1042,7 +1171,7 @@ export default function SettingsScreen() {
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx={12} cy={7} r={4}/></Svg>}
             label="My profile"
             value={username ? `@${username}` : undefined}
-            onPress={username ? () => router.push(`/(app)/u/${username}` as any) : undefined}
+            onPress={username ? () => router.push(`/(app)/u/${username}` as Href) : undefined}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
@@ -1060,32 +1189,54 @@ export default function SettingsScreen() {
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><Circle cx={9} cy={7} r={4}/><Path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></Svg>}
             label="Follow requests"
             value={requestCount > 0 ? String(requestCount) : undefined}
-            onPress={() => router.push('/(app)/requests' as any)}
+            onPress={() => router.push('/(app)/requests' as Href)}
           />
         </SettingsGroup>
+        </>}
 
-        {/* Viewing */}
-        <SettingsGroup title="Viewing">
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Circle cx={8.5} cy={10} r={1}/><Circle cx={15.5} cy={10} r={1}/><Path d="M8 15s1.5 2 4 2 4-2 4-2"/></Svg>}
-            label={SETTINGS_VIEW.kidsContent.label}
-            trailing={<Switch value={includeKidsContent} onValueChange={toggleKidsContent} trackColor={{ true: colors.accent }} />}
-          />
+        {active.id === 'viewing' && <>
+        <SettingsGroup title={SETTINGS_VIEW.page.whereYouWatch}>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={2} y={3} width={20} height={14} rx={2}/><Path d="M8 21h8M12 17v4"/></Svg>}
             label={SETTINGS_VIEW.integrations.streamingPlatformsLabel}
-            value={providers.length > 0 ? `${providers.length} selected` : 'None'}
+            value={settingsSelectionSummary(providers)}
+            edit
             onPress={() => setShowProviders(true)}
           />
           <BroadcastSettings />
           <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><Path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Svg>}
-            label={SETTINGS_VIEW.integrations.genresLabel}
-            value={genres.length > 0 ? `${genres.length} selected` : 'None'}
-            onPress={() => setShowGenres(true)}
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
+            label={SETTINGS_VIEW.page.regionLabel}
+            value={regionLabel}
+            edit
+            onPress={() => setShowRegion(true)}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Polyline points="12,6 12,12 16,14"/></Svg>}
+            label={SETTINGS_VIEW.page.timezoneLabel}
+            value={timezone ? fmtTz(timezone) : COMMON.notSet}
+            edit
+            onPress={() => setShowTimezone(true)}
           />
         </SettingsGroup>
+        <SettingsGroup title={SETTINGS_VIEW.page.whatYouWatch}>
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><Path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Svg>}
+            label={SETTINGS_VIEW.integrations.genresLabel}
+            value={genres.length ? SETTINGS_VIEW.integrations.selectedCount(genres.length) : SETTINGS_VIEW.page.noneSelected}
+            edit
+            onPress={() => setShowGenres(true)}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Circle cx={8.5} cy={10} r={1}/><Circle cx={15.5} cy={10} r={1}/><Path d="M8 15s1.5 2 4 2 4-2 4-2"/></Svg>}
+            label={SETTINGS_VIEW.kidsContent.label}
+            description={includeKidsContent ? SETTINGS_VIEW.kidsContent.onHint : SETTINGS_VIEW.kidsContent.offHint}
+            trailing={<Switch value={includeKidsContent} onValueChange={toggleKidsContent} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.kidsContent.label} />}
+          />
+        </SettingsGroup>
+        </>}
 
+        {active.id === 'connections' && <>
         {/* Calendar */}
         <SettingsGroup title={SETTINGS_VIEW.calendarFeed.groupTitle}>
           {profile?.is_premium ? (
@@ -1093,7 +1244,6 @@ export default function SettingsScreen() {
               icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={18} rx={2} ry={2}/><Line x1={16} y1={2} x2={16} y2={6}/><Line x1={8} y1={2} x2={8} y2={6}/><Line x1={3} y1={10} x2={21} y2={10}/></Svg>}
               label={SETTINGS_VIEW.calendarFeed.subscribeLabel}
               description={calendarToken ? SETTINGS_VIEW.calendarFeed.liveFeedPrivate : SETTINGS_VIEW.calendarFeed.getUrlHint}
-              value={calendarToken ? 'On' : undefined}
               onPress={calendarToken ? openCalendarMenu : handleGenerateCalToken}
               trailing={calendarToken
                 ? undefined
@@ -1121,26 +1271,13 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
-        {/* Plot Premium — status only; purchases and subscription management
-            stay on the web app (Apple IAP rules: no external purchase links). */}
-        {profile?.is_premium && (
-          <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
-            <SettingsRow
-              icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill={colors.accent} stroke="none"><Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></Svg>}
-              label={SETTINGS_VIEW.premium.youHavePremium}
-              value="Thank you"
-            />
-          </SettingsGroup>
-        )}
-
-        {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
-
-        {/* Plex and Trakt are Premium. Simkl is a free, manual connection. */}
-        <SettingsGroup title="Integrations">
+        {/* Plex and Trakt are Premium. Simkl is a free, manual connection.
+            Checkout stays closed. Nothing here starts a payment. */}
+        <SettingsGroup title={SETTINGS_VIEW.integrations.groupTitle}>
           {SHOW_MEDIA_SYNC_INTEGRATIONS && profile?.is_premium && (<>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={SETTINGS_VIEW.integrations.plexName}
+            label={`${SETTINGS_VIEW.integrations.plexName} · ${APP_SHELL.premium}`}
             value={plex.isConnected ? SETTINGS_VIEW.integrations.connected : (plex.polling ? 'Waiting for approval…' : undefined)}
             onPress={plex.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.plexName, plex, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => plex.startPlexAuth()}
             trailing={plex.isConnected ? undefined
@@ -1148,7 +1285,7 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={SETTINGS_VIEW.integrations.traktName}
+            label={`${SETTINGS_VIEW.integrations.traktName} · ${APP_SHELL.premium}`}
             value={trakt.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.connectTraktToSync}
             onPress={trakt.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.traktName, trakt, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => trakt.connect()}
             trailing={trakt.isConnected ? undefined
@@ -1158,14 +1295,14 @@ export default function SettingsScreen() {
           {SHOW_MEDIA_SYNC_INTEGRATIONS && !profile?.is_premium && (<>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={SETTINGS_VIEW.integrations.plexName}
+            label={`${SETTINGS_VIEW.integrations.plexName} · ${APP_SHELL.premium}`}
             value={plex.isConnected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : SETTINGS_VIEW.integrations.plexBlurb}
             onPress={() => openPremiumSyncGate(plex.isConnected, () => { void plex.disconnect(); })}
             trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={SETTINGS_VIEW.integrations.traktName}
+            label={`${SETTINGS_VIEW.integrations.traktName} · ${APP_SHELL.premium}`}
             value={trakt.isConnected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : SETTINGS_VIEW.integrations.traktBlurb}
             onPress={() => openPremiumSyncGate(trakt.isConnected, () => { void trakt.disconnect(); })}
             trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
@@ -1182,14 +1319,39 @@ export default function SettingsScreen() {
         </SettingsGroup>
 
         <TrackingSettings userId={userId} connect={trakt.connect} connectPlex={plex.startPlexAuth} plexPolling={plex.polling} connectionError={trakt.error || plex.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : plex.disconnect()} />
-
-        {/* Support */}
-        <SettingsGroup title="Support">
+        <SettingsGroup title={SETTINGS_VIEW.integrations.importWatchHistoryLabel}>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><Polyline points="16,17 21,12 16,7"/><Line x1={21} y1={12} x2={9} y2={12}/></Svg>}
             label={SETTINGS_VIEW.integrations.importWatchHistory}
+            description={SETTINGS_VIEW.integrations.importWatchHistoryHint}
             onPress={() => setShowImport(true)}
           />
+        </SettingsGroup>
+        </>}
+
+        {active.id === 'billing' && <>
+        {profile?.is_premium && (
+          <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
+            <SettingsRow
+              icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill={colors.accent} stroke="none"><Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></Svg>}
+              label={SETTINGS_VIEW.premium.youHavePremium}
+              description={SETTINGS_VIEW.premium.thankYou}
+            />
+          </SettingsGroup>
+        )}
+        {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
+        <SettingsGroup title={SETTINGS_VIEW.billing.supportTitle}>
+          <SettingsRow
+            icon={null}
+            label={SETTINGS_VIEW.billing.supportAction}
+            description={`${SETTINGS_VIEW.billing.supportHint} ${SETTINGS_VIEW.billing.supportNote}`}
+            onPress={() => { void Linking.openURL(KOFI_URL).catch(() => {}); }}
+          />
+        </SettingsGroup>
+        </>}
+
+        {active.id === 'help' && <>
+        <SettingsGroup title={SETTINGS_VIEW.support.groupTitle}>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 9v4"/><Path d="M12 17h.01"/><Path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0z"/></Svg>}
             label={SETTINGS_VIEW.feedback.reportABug}
@@ -1219,12 +1381,6 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
-        {/* Credits — TMDB's API terms ask for the notice on an About/Credits
-            surface, not only in the legal pages. Read-only, so these are plain
-            rows rather than SettingsRow (no icon, no chevron, not pressable).
-            TMDB also asks for their approved logo here; see the web equivalent. */}
-        <BlockedAccounts viewerId={userId} />
-
         <SettingsGroup title={SETTINGS_VIEW.credits.groupTitle}>
           <View style={styles.credits}>
             <Text style={styles.creditsIntro}>{SETTINGS_VIEW.credits.intro}</Text>
@@ -1240,18 +1396,20 @@ export default function SettingsScreen() {
             ))}
           </View>
         </SettingsGroup>
+        </>}
 
-        {/* Danger zone */}
-        <SettingsGroup title="Danger Zone">
+        {active.id === 'privacy' && <>
+        <BlockedAccounts viewerId={userId} />
+        <SettingsGroup title={SETTINGS_VIEW.page.resetData}>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><Path d="M3 3v5h5"/><Path d="M12 7v5l4 2"/></Svg>}
-            label={clearingHist ? 'Clearing…' : SETTINGS_VIEW.dangerZone.clearWatchHistoryLabel}
+            label={clearingHist ? SETTINGS_VIEW.clearing : SETTINGS_VIEW.dangerZone.clearWatchHistoryLabel}
             onPress={clearingHist ? undefined : handleClearHistory}
             danger
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M9 11l3 3L22 4"/><Path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></Svg>}
-            label={clearingList ? 'Clearing…' : 'Clear Watchlist'}
+            label={clearingList ? SETTINGS_VIEW.clearing : SETTINGS_VIEW.dangerZone.clearListsLabel}
             onPress={clearingList ? undefined : handleClearWatchlist}
             danger
           />
@@ -1262,8 +1420,22 @@ export default function SettingsScreen() {
             danger
           />
         </SettingsGroup>
+        </>}
+
+        <TouchableOpacity style={styles.signOut} onPress={handleSignOut} accessibilityRole="button">
+          <Text style={styles.signOutText}>{SETTINGS_VIEW.signOut}</Text>
+        </TouchableOpacity>
+        </>)}
 
       </ScrollView>
+
+      <UpgradeSheet
+        visible={!!themeUpgrade}
+        reason="themes"
+        family={themeUpgrade ?? undefined}
+        onClose={() => setThemeUpgrade(null)}
+        onCompare={() => { setSection('billing'); setPremiumExpanded(true); }}
+      />
 
       {/* Fixed blurred header */}
       <BlurView
@@ -1339,6 +1511,68 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderColor: colors.border,
     overflow: 'hidden',
   },
+  accountCard: {
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.md,
+    padding: spacing.lg,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  accountIdentity: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  accountAvatar: {
+    width: 44, height: 44, borderRadius: 22, overflow: 'hidden',
+    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSunken,
+  },
+  accountInitial: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary },
+  accountName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
+  accountHandle: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  accountFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  accountPlan: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  searchWrap: { marginHorizontal: spacing.xl, marginTop: spacing.md },
+  searchInput: {
+    minHeight: 44,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+  searchResults: { marginHorizontal: spacing.xl, marginTop: spacing.md, gap: spacing.sm },
+  searchEmpty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  searchHit: {
+    padding: spacing.lg, borderRadius: radii.md, backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 2,
+  },
+  searchHitTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
+  chips: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md, gap: spacing.sm },
+  chip: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 999,
+    backgroundColor: colors.surfaceSunken,
+  },
+  chipSelected: { backgroundColor: colors.accentFill },
+  chipText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
+  chipTextSelected: { color: colors.onAccentFill },
+  sectionTitle: {
+    fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.6,
+    color: colors.textPrimary, paddingHorizontal: spacing.xl,
+  },
+  sectionDescription: {
+    fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary,
+    paddingHorizontal: spacing.xl, marginTop: 2,
+  },
+  themeFamily: { paddingHorizontal: spacing.lg, paddingVertical: 14, gap: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  swatches: { gap: spacing.md, paddingVertical: spacing.xs },
+  swatch: { alignItems: 'center', gap: 4, width: 56 },
+  swatchName: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary },
+  swatchNameSelected: { color: colors.accentText, fontFamily: fontFamily.sansBold },
+  signOut: { marginHorizontal: spacing.xl, marginTop: spacing.xl, marginBottom: spacing.md, minHeight: 44, justifyContent: 'center' },
+  signOutText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.danger },
 
   credits: { paddingHorizontal: spacing.lg, paddingTop: 12, paddingBottom: 4 },
   creditsIntro: {
@@ -1370,7 +1604,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     flexShrink: 0,
   },
   rowIconDanger: { borderColor: colors.dangerBorder },
-  rowLabel: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
+  rowLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
+  rowValueBelow: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
+  editAction: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accentText },
   rowLabelDanger: { color: colors.danger },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowDescription: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },

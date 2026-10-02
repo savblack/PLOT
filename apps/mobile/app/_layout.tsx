@@ -17,7 +17,7 @@ import { hydrateSectionOpenState } from '../lib/sectionOpenState';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { consumeSimklState, exchangeSimklCode } from '../hooks/useSimklSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
-import { AppDataProvider } from '../contexts/AppDataContext';
+import { AppDataProvider, useAppData } from '../contexts/AppDataContext';
 import { OnboardingRefreshContext } from '../contexts/OnboardingContext';
 import { DrawerProvider, useDrawer } from '../contexts/DrawerContext';
 import { MediaPanelProvider, useMediaPanel } from '../contexts/MediaPanelContext';
@@ -63,6 +63,21 @@ function RootMediaPanel() {
   if (!state.itemId || !state.itemType) return null;
   if (state.itemType === 'collection') return <CollectionPanel collectionId={state.itemId} onClose={close} />;
   return <MediaPanel itemId={state.itemId} itemType={state.itemType} onClose={close} />;
+}
+
+function ThemeEntitlement({ signedIn }: { signedIn: boolean }) {
+  const { profile } = useAppData();
+  const { setEntitlement } = useTheme();
+  const known = profile != null;
+  const premium = profile?.is_premium === true;
+  useEffect(() => {
+    // Unknown while the signed-in profile is still loading, including a failed
+    // read. effectiveFamily keeps a stored Premium family, and nothing here
+    // writes the preference back.
+    if (!signedIn) setEntitlement(false);
+    else setEntitlement(known ? premium : null);
+  }, [signedIn, known, premium, setEntitlement]);
+  return null;
 }
 
 function ThemedStatusBar() {
@@ -211,6 +226,7 @@ function RootInner() {
     <SafeAreaProvider>
       {/* Shared user data — loads once after login; screens navigate instantly */}
       <AppDataProvider key={session?.user.id ?? 'signed-out'}>
+        <ThemeEntitlement signedIn={!!session?.user} />
         <DrawerProvider>
           <MediaPanelProvider>
             <ThemedStatusBar />
