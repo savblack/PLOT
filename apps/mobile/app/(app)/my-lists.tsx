@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Polyline, Line } from 'react-native-svg';
+import Svg, { Circle, Path, Polyline, Line } from 'react-native-svg';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
@@ -28,6 +28,9 @@ import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
+import { myListsSearchSources, searchCollectionTitles, wantToWatchItems } from '@plot/core/listCollections.js';
+import { localDateStr } from '@plot/core/date.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { EVENTS, track } from '../../lib/analytics';
 import { useRouter } from 'expo-router';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
@@ -62,6 +65,19 @@ const TYPE_OPTIONS = [
   { id: 'tv',     label: 'TV'     },
   { id: 'cinema', label: 'Cinema' },
 ];
+
+// A title the My Lists search can open. History is not one of these:
+// on web it left this page and keeps its own search.
+type ListedTitle = {
+  tmdb_id?: number | string;
+  id?: number | string;
+  media_type?: string;
+  title?: string;
+  name?: string;
+  poster_path?: string | null;
+  rank?: number;
+  _cinema?: boolean;
+};
 
 // Tab list comes from the shared nav definition so web and mobile can't
 // diverge on which tabs exist or their order. Favourites is region-spelled
@@ -258,7 +274,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
       : (onPress ? () => onPress(item) : undefined);
 
     return (
-      <View key={item.id || item.tmdb_id} style={{ width: POSTER_W }}>
+      <View key={`${item.media_type || 'movie'}:${item.tmdb_id ?? item.id}`} style={{ width: POSTER_W }}>
         <TouchableOpacity
           style={styles.posterCard}
           onPress={handlePress}
@@ -431,21 +447,34 @@ export default function MyListsScreen() {
     setShowCreateList(true);
   };
   const [showAddToList,  setShowAddToList]  = useState<string | null>(null);
+  const [listQuery, setListQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
 
-  const isLoading = watchlist.loading || watching.loading || favorites.loading || customLists.loading;
+  const isLoading = watchlist.loading || watching.loading || favorites.loading || customLists.loading || topLists.loading;
   if (isLoading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
 
-  const todayStr = (() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  })();
+  const want = wantToWatchItems(watchlist.items, watching.items, localDateStr());
+  const sortedSaved = byType(want);
 
-  const watchingIds = new Set(watching.items.map((i: any) => i.tmdb_id));
-  const savedItems  = watchlist.items.filter((i: any) => !watchingIds.has(Number(i.tmdb_id)));
-  const comingSoon  = savedItems.filter((i: any) => i.release_date && i.release_date > todayStr)
-    .sort((a: any, b: any) => a.release_date.localeCompare(b.release_date));
-  const available   = savedItems.filter((i: any) => !i.release_date || i.release_date <= todayStr);
-  const sortedSaved = byType([...comingSoon, ...available]);
+  // While the field has text, the sections below are replaced by one result
+  // grid. The type filter still narrows it. A blank field (including spaces)
+  // leaves the page as it was.
+  const searching = listQuery.trim().length > 0;
+  const searchResults: ListedTitle[] = searching
+    ? searchCollectionTitles(
+        myListsSearchSources({
+          watching: watching.items,
+          topMovies: topLists.lists.movies,
+          topTv: topLists.lists.tv,
+          collections: [
+            want,
+            favorites.favorites,
+            ...(customLists.lists as { items?: ListedTitle[] }[]).map(list => [...(list.items || [])].reverse()),
+          ],
+        }).map(items => (filterByType(items, typeFilters) ?? []) as ListedTitle[]),
+        listQuery,
+      )
+    : [];
 
   // Watching items are always TV (episode progress); type them so the Movies filter excludes them.
   const watchingList = byType(watching.items.map((i: any) => ({ ...i, media_type: 'tv' })));
@@ -504,7 +533,7 @@ export default function MyListsScreen() {
     relevantSectionIds.forEach(id => setSectionOpen(id, next));
   };
 
-  const HEADER_H = insets.top + 106;
+  const HEADER_H = insets.top + 150;
 
   return (
     <View style={styles.screen}>
@@ -512,8 +541,26 @@ export default function MyListsScreen() {
         style={styles.screen}
         contentContainerStyle={{ paddingTop: HEADER_H + 8, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
 
+        {searching ? (
+          <View>
+            <Text style={styles.searchHeading}>{CUSTOM_LISTS.searchResults}</Text>
+            <Text accessibilityLiveRegion="polite" style={styles.searchStatus}>
+              {searchResults.length ? CUSTOM_LISTS.searchCount(searchResults.length) : CUSTOM_LISTS.noSearchResults}
+            </Text>
+            <PosterGrid
+              items={searchResults}
+              onPress={(item) => {
+                const id = Number(item.tmdb_id ?? item.id);
+                if (!Number.isFinite(id)) return;
+                openPanel(id, item.media_type === 'tv' ? 'tv' : 'movie');
+              }}
+            />
+          </View>
+        ) : (
+        <>
         {/* ── Watching ── */}
         {showWatching && watchingList.length > 0 && (
           <CollapsibleSection
@@ -733,6 +780,8 @@ export default function MyListsScreen() {
             )}
           </CollapsibleSection>
         )}
+        </>
+        )}
       </ScrollView>
 
       {/* Fixed blurred header */}
@@ -760,7 +809,7 @@ export default function MyListsScreen() {
           <View style={styles.tabsRowActions}>
             {/* ‹ Mar 2026 › — jumps to the adjacent month that actually has
                 entries, so empty months are never a dead step. */}
-            {isHistory && historyGroups.length > 0 && (
+            {isHistory && !searching && historyGroups.length > 0 && (
               <View style={styles.monthNav}>
                 <TouchableOpacity
                   onPress={() => jumpTo(historyIndex === -1 ? historyGroups[0] : historyGroups[historyIndex + 1])}
@@ -796,7 +845,7 @@ export default function MyListsScreen() {
                 onChange: setTypeFilters,
               }]}
             />
-            {(relevantSectionIds.length > 0 || (isHistory && historyGroups.length > 0)) && (
+            {!searching && (relevantSectionIds.length > 0 || (isHistory && historyGroups.length > 0)) && (
               <TouchableOpacity
                 onPress={toggleSectionsForView}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -811,6 +860,35 @@ export default function MyListsScreen() {
               </TouchableOpacity>
             )}
           </View>
+        </View>
+        <View style={[styles.listSearch, searchFocused && { borderColor: colors.accent }]}>
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Circle cx={11} cy={11} r={7} />
+            <Line x1={16.5} y1={16.5} x2={21} y2={21} />
+          </Svg>
+          <TextInput
+            style={styles.listSearchInput}
+            value={listQuery}
+            onChangeText={setListQuery}
+            placeholder={CUSTOM_LISTS.searchPlaceholder}
+            placeholderTextColor={colors.textMuted}
+            accessibilityLabel={CUSTOM_LISTS.searchPlaceholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+          />
+          {listQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setListQuery('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={COMMON.clearSearch}
+            >
+              <Text style={styles.listSearchClear}>✕</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </BlurView>
 
@@ -1001,6 +1079,43 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // clipped descenders on "Watching"/"Want to Watch".
   subTabsScroll: { flex: 1, height: 44 },
   subTabsRow: { paddingHorizontal: spacing.xl, alignItems: 'center' },
+  listSearch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    height: 36,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  listSearchInput: {
+    flex: 1,
+    paddingVertical: 0,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    color: colors.textPrimary,
+  },
+  listSearchClear: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  searchHeading: {
+    fontFamily: fontFamily.display,
+    fontSize: fontSize.xl,
+    letterSpacing: -0.6,
+    lineHeight: 23,
+    color: colors.textPrimary,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+  },
+  searchStatus: {
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xs,
+  },
 
   fixedHeader: {
     position: 'absolute',

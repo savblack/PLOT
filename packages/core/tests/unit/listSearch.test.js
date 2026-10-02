@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isTopListRank, searchCollectionTitles, TOP_LIST_SIZE } from '../../listCollections.js';
-import { filterByTypeAndGenre } from '../../mediaFilters.js';
+import { isTopListRank, myListsSearchSources, searchCollectionTitles, TOP_LIST_SIZE } from '../../listCollections.js';
+import { filterByType, filterByTypeAndGenre } from '../../mediaFilters.js';
 
 // Symbolic identifiers are local fixtures, never TMDB lookup IDs.
 const film = { tmdb_id: 'fixture-film', media_type: 'movie', title: 'The Quiet Night', genre_ids: [18] };
@@ -34,3 +34,24 @@ test('search combines with type and genre filters', () => {
 test('empty collections and missing titles are safe', () => {
   assert.deepEqual(searchCollectionTitles([[], [{ tmdb_id: 'untitled' }]], 'quiet'), []);
 });
+
+test('My Lists search sources type watching and Top 5, and drop ranks past 5', () => {
+  const watching = { tmdb_id: 'fixture-show', title: 'Quiet Days' };
+  const movie = { tmdb_id: 'fixture-film', title: 'The Quiet Night', rank: 5 };
+  const past = { tmdb_id: 'fixture-extra', title: 'Quiet Extra', rank: 6 };
+  const sources = myListsSearchSources({
+    watching: [watching],
+    topMovies: [movie, past],
+    topTv: [{ tmdb_id: 'fixture-film', name: 'Quiet Days', rank: 1 }],
+    collections: [[{ tmdb_id: 'fixture-film', media_type: 'movie', title: 'The Quiet Night' }]],
+  });
+  const found = searchCollectionTitles(sources, 'quiet');
+  assert.deepEqual(found.map(item => `${item.media_type}:${item.tmdb_id}`), [
+    'tv:fixture-show',
+    'movie:fixture-film',
+    'tv:fixture-film',
+  ]);
+  const moviesOnly = searchCollectionTitles(sources.map(items => filterByType(items, ['movie'])), 'quiet');
+  assert.deepEqual(moviesOnly.map(item => item.tmdb_id), ['fixture-film']);
+});
+
