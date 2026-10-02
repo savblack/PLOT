@@ -89,11 +89,21 @@ gitignored so a stray one cannot be committed, but delete it rather than leave i
   merge. Never put the token in a `package.json` script.
 - `pnpm --filter @plot/mobile` run typecheck — **required when touching mobile**; `pnpm run lint` covers it too
 - `pnpm run edge:check` — **required when touching `supabase/functions/`**; type-checks every
-  edge function with `deno check` against the generated DB types. Nothing else compiles them,
-  so this is the only gate. Needs `deno` on PATH. If it reports columns that do exist, the
-  types are stale: `pnpm run gen:db-types` regenerates
+  edge function with `deno check` against the generated DB types. Nothing else type-checks
+  them, so this is the only gate for that. Needs `deno` on PATH. If it reports columns that
+  do exist, the types are stale: `pnpm run gen:db-types` regenerates
   `supabase/functions/_shared/database.types.ts` from production's schema (read-only, needs
   `SUPABASE_ACCESS_TOKEN`), and it should be committed with the migration that moved the schema.
+
+  **Green here does not mean it will deploy.** The check resolves against the committed
+  `deno.lock` with `--node-modules-dir=none`; the deployed function resolves its own versions
+  in Supabase's runtime, and the integration *bundles* rather than type-checks. A bundling
+  failure is invisible to this gate by construction. On 2026-10-02 the integration returned
+  `failed to bundle function: exit status 1` for a web-only commit while `edge:check` was
+  green on `main` (issue #1136; it recovered on its own two deploys later). The only signal
+  for that class is the integration's own verdict, which `.github/workflows/supabase-deploy-guard.yml`
+  watches and raises an issue for. So run `edge:check` before merging, and watch the guard
+  after.
 - Deploy: web app and marketing site both auto-deploy via Cloudflare Pages on merge to `main`;
   Supabase functions via `supabase functions deploy <name>`; Worker via
   `cd apps/web/workers/tmdb-proxy && npx wrangler deploy`.
