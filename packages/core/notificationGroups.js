@@ -7,7 +7,7 @@
 export function notificationKind(type) {
   if (type === 'follow_request' || type === 'watch_together_request') return 'request';
   if (type === 'new_follower' || type === 'follow_accepted') return 'follow';
-  if (type === 'new_episode') return 'episode';
+  if (type === 'new_episode' || type === 'movie_release') return 'episode';
   return 'activity';
 }
 
@@ -24,12 +24,13 @@ export function isAlertNotification(n) {
 }
 
 /**
- * True for rows about a title rather than a person. These have no actor, so
- * they render a poster instead of an avatar and open the title, not a profile.
+ * True for rows about a title rather than a person: a new episode, or a movie
+ * on your list coming out. These have no actor, so they render a poster instead
+ * of an avatar and open the title, not a profile.
  * @param {NotificationRow} n
  */
 export function isTitleNotification(n) {
-  return n.type === 'new_episode' && n.tmdb_id != null;
+  return (n.type === 'new_episode' || n.type === 'movie_release') && n.tmdb_id != null;
 }
 
 /**

@@ -85,6 +85,60 @@ export const NEW_EPISODE_NOTIFICATION = Object.freeze({
 });
 
 /**
+ * A movie_release row (a film on one of your lists has come out in your region)
+ * has no actor either. It reads "<title> <phrase>" under a small badge, like a
+ * new_episode row. "now", not "today": the daily job looks back a few days, so
+ * a row can land after the release day.
+ */
+export const NEW_MOVIE_NOTIFICATION = Object.freeze({
+  badge: 'New movie',
+  untitled: 'A movie on your list',
+  kinds: Object.freeze({
+    theatrical: 'is in cinemas now',
+    digital: 'is out to watch at home now',
+  }),
+});
+
+/**
+ * @typedef {{ type: string, release_kind?: string | null, season_number?: number | null, episode_number?: number | null, episode_count?: number | null }} TitleRow
+ */
+
+/**
+ * The small label above a title row (new_episode or movie_release).
+ * @param {TitleRow} n
+ * @returns {string}
+ */
+export function titleBadge(n) {
+  if (n.type === 'movie_release') return NEW_MOVIE_NOTIFICATION.badge;
+  return (n.episode_count ?? 1) > 1 ? NEW_EPISODE_NOTIFICATION.badgePlural : NEW_EPISODE_NOTIFICATION.badge;
+}
+
+/**
+ * The title shown when a title row has none saved.
+ * @param {TitleRow} n
+ * @returns {string}
+ */
+export function titleFallback(n) {
+  return n.type === 'movie_release' ? NEW_MOVIE_NOTIFICATION.untitled : NEW_EPISODE_NOTIFICATION.untitled;
+}
+
+/**
+ * Everything after the title on a title row, with no leading space.
+ * @param {TitleRow} n
+ * @returns {string}
+ */
+export function titlePhrase(n) {
+  if (n.type === 'movie_release') {
+    return n.release_kind === 'digital' ? NEW_MOVIE_NOTIFICATION.kinds.digital : NEW_MOVIE_NOTIFICATION.kinds.theatrical;
+  }
+  return NEW_EPISODE_NOTIFICATION.phrase({
+    season_number: n.season_number ?? 0,
+    episode_number: n.episode_number ?? 0,
+    episode_count: n.episode_count,
+  });
+}
+
+/**
  * Premium alert rows (person_release, season_ready) have no actor, so they
  * don't fit NOTIFICATIONS' "<name> …" shape. They read "<title><tail>" under a
  * small badge, as on the round 2 Notifications board:

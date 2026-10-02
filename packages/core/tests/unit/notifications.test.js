@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { relativeTime } from '../../date.js';
-import { notificationPhrase, NOTIFICATIONS, NEW_EPISODE_NOTIFICATION } from '../../copy/notifications.js';
+import { notificationPhrase, NOTIFICATIONS, NEW_EPISODE_NOTIFICATION, NEW_MOVIE_NOTIFICATION, titleBadge, titleFallback, titlePhrase } from '../../copy/notifications.js';
 
 const NOW = Date.parse('2026-08-23T12:00:00Z');
 
@@ -63,4 +63,22 @@ test('relativeTime writes an older date out in the viewer\'s order', async () =>
   assert.equal(dateLocaleForRegion('gb'), 'en-GB');
   // Recent times are unchanged by region.
   assert.equal(relativeTime('2026-08-21T12:00:00Z', NOW, 'GB'), '2d ago');
+});
+
+test('title rows: a movie_release reads like a new_episode row, worded for a film', () => {
+  assert.equal(titleBadge({ type: 'movie_release' }), 'New movie');
+  assert.equal(titleFallback({ type: 'movie_release' }), NEW_MOVIE_NOTIFICATION.untitled);
+  // "now", not "today": the daily job looks back a few days.
+  assert.equal(titlePhrase({ type: 'movie_release', release_kind: 'theatrical' }), 'is in cinemas now');
+  assert.equal(titlePhrase({ type: 'movie_release', release_kind: 'digital' }), 'is out to watch at home now');
+  // An unrecognised kind never claims it is streaming.
+  assert.equal(titlePhrase({ type: 'movie_release', release_kind: null }), 'is in cinemas now');
+});
+
+test('title rows: new_episode wording is unchanged through the shared helpers', () => {
+  assert.equal(titleBadge({ type: 'new_episode', episode_count: 1 }), NEW_EPISODE_NOTIFICATION.badge);
+  assert.equal(titleBadge({ type: 'new_episode', episode_count: 8 }), NEW_EPISODE_NOTIFICATION.badgePlural);
+  assert.equal(titleFallback({ type: 'new_episode' }), NEW_EPISODE_NOTIFICATION.untitled);
+  assert.equal(titlePhrase({ type: 'new_episode', season_number: 5, episode_number: 1, episode_count: 1 }), 'season 5 premiere is out');
+  assert.equal(titlePhrase({ type: 'new_episode', season_number: 2, episode_number: 1, episode_count: 8 }), 'season 2 is out, 8 episodes');
 });

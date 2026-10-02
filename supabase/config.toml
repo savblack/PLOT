@@ -128,6 +128,14 @@ verify_jwt = true
 [functions.new-episode-notifications]
 verify_jwt = true
 
+# Movie release notifications: called daily by pg_cron via pg_net with the Vault
+# service-role bearer (run_movie_release_notifications, 20261003090000), so
+# verify_jwt stays true and the handler also requires the service role.
+# Declared because a new function without an entry here can be silently skipped
+# by the deploy integration (see marketing-linear-mirror).
+[functions.movie-release-notifications]
+verify_jwt = true
+
 # Private worker also verifies the exact service credential in its handler.
 # Private worker authenticates the exact service secret in its handler.
 # Rotated sb_secret keys are not user JWTs.
