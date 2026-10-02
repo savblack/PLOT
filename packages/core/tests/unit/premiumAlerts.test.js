@@ -57,11 +57,12 @@ test('the alerts upgrade sheet leads with alerts and has no Free cap meter', () 
   assert.deepEqual(content.also.map(r => r.label), ['Pick for Me', 'Find something you both want']);
 });
 
-test('people and season-ready alerts are live Premium features; episode alerts stay planned for Free', () => {
+test('people and season-ready alerts are live Premium features; episode alerts are live on Free', () => {
   for (const id of ['peopleAlerts', 'seasonReady']) {
     assert.equal(PLANS_PAGE.premiumFeatures.find(f => f.id === id).live, true, id);
   }
-  assert.equal(PLANS_PAGE.freeFeatures.find(f => f.id === 'releaseAlerts').planned, true);
+  assert.equal(PLANS_PAGE.freeFeatures.find(f => f.id === 'episodeAlerts').planned, undefined);
+  assert.equal(PLANS_PAGE.freeFeatures.find(f => f.id === 'releaseAlerts'), undefined);
   const faq = PLANS_PAGE.faqs.find(item => item.q === 'Are these alerts available now?').a;
   // The alerts answer covers what is live; Free's plans are in 'What happens to Free?'.
   assert.doesNotMatch(faq, /planned for Free and are not available yet/);

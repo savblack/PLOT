@@ -3,7 +3,7 @@
  * list in Settings. Notification rows are worded in ./notifications.js.
  *
  * Episode release notifications are a separate, Free feature (see
- * plansPage.js freeFeatures.releaseAlerts); nothing here is about episodes.
+ * plansPage.js freeFeatures.episodeAlerts); nothing here is about episodes.
  */
 export const PREMIUM_ALERTS = Object.freeze({
   person: Object.freeze({
