@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { preloadAppViews } from '../routeChunks.js';
 import { APP_NAV_ITEMS, isActiveView, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
@@ -34,6 +35,9 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const mainRef = useRef(null);
 
   const { unread, refreshCount } = useNotifications(user?.id);
+
+  // Warm the other pages' chunks while idle so navigating doesn't wait on them.
+  useEffect(() => { preloadAppViews(); }, []);
 
   // Keep the bell badge fresh as the user navigates (e.g. after viewing the feed).
   useEffect(() => { refreshCount(); }, [currentView, refreshCount]);

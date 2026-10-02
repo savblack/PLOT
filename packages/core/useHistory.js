@@ -12,6 +12,14 @@ import { registerUndo, UNDO_ACTIONS } from './undo.js';
 // keep resolving.
 export { HISTORY_CHANGED_EVENT };
 
+// Last loaded rows per user, shared by every useHistory() instance. A page that
+// mounts later paints from here at once and refreshes behind it, so moving
+// between pages doesn't re-show a spinner for data we already have.
+const entriesCache = new Map();
+
+/** Test seam, and for sign-out. */
+export const _resetHistoryCache = () => entriesCache.clear();
+
 function notifyHistoryChanged() {
   emit(HISTORY_CHANGED_EVENT);
 }
@@ -65,8 +73,11 @@ function reportReview(args) {
  * }}
  */
 export function useHistory(userId) {
-  const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [entries, setEntries] = useState(() => (userId && entriesCache.get(userId)) || []);
+  const [loading, setLoading] = useState(() => !(userId && entriesCache.has(userId)));
+  // Whose rows `entries` holds. It lags userId for a render when the user
+  // changes, and must not be cached under the new id.
+  const ownerRef = useRef(userId && entriesCache.has(userId) ? userId : null);
   const [loadError, setLoadError] = useState(false);
   // A ref, not state: callers read this synchronously right after an await
   // resolves (same tick), before any re-render — state would still hold the
@@ -78,11 +89,17 @@ export function useHistory(userId) {
   // making logWatched's identity depend on every history change.
   const entriesRef = useRef(entries);
   useEffect(() => { entriesRef.current = entries; }, [entries]);
+  // Local edits (log, rate, remove) reach the cache too.
+  useEffect(() => {
+    if (userId && ownerRef.current === userId) entriesCache.set(userId, entries);
+  }, [userId, entries]);
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
     setLoadError(false);
-    setLoading(true);
+    // Rows we already have stay on screen while the refresh runs.
+    const cached = entriesCache.get(userId);
+    if (cached) { ownerRef.current = userId; setEntries(cached); setLoading(false); } else { setLoading(true); }
     try {
       // Fetch all entries — no cap, so isWatched() is always accurate
       const PAGE_SIZE = 1000;
@@ -102,6 +119,8 @@ export function useHistory(userId) {
         if (data) all = [...all, ...data];
         page++;
       }
+      entriesCache.set(userId, all);
+      ownerRef.current = userId;
       setEntries(all);
     } catch (e) {
       console.error('[useHistory] load failed', e);
