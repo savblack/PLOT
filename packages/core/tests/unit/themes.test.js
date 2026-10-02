@@ -20,16 +20,16 @@ import {
 import { SETTINGS_VIEW } from '../../copy/settingsView.js';
 import { PLANS_PAGE } from '../../copy/plansPage.js';
 
-test('the default family is free; Sage, Mist, Blush, Ink and Plum are the Premium ones', () => {
+test('the default family is free; Sage, Mist, Blush, Plum and Ink are the Premium ones', () => {
   assert.deepEqual([...THEME_MODES], ['light', 'dark', 'system']);
-  assert.deepEqual([...PREMIUM_FAMILIES], ['sage', 'mist', 'blush', 'ink', 'plum']);
-  assert.deepEqual([...THEME_FAMILIES], ['default', 'sage', 'mist', 'blush', 'ink', 'plum']);
+  assert.deepEqual([...PREMIUM_FAMILIES], ['sage', 'mist', 'blush', 'plum', 'ink']);
+  assert.deepEqual([...THEME_FAMILIES], ['default', 'sage', 'mist', 'blush', 'plum', 'ink']);
   assert.equal(isPremiumFamily(DEFAULT_FAMILY), false);
   for (const isPremium of [true, false, null, undefined]) assert.equal(canUseFamily('default', isPremium), true);
 });
 
 test('every family in the data ships (no hidden candidates right now)', () => {
-  assert.deepEqual(Object.keys(themeFamilyVariants), Object.keys(themeFamilies));
+  assert.deepEqual(Object.keys(themeFamilyVariants).sort(), Object.keys(themeFamilies).sort());
   assert.equal(isPremiumFamily('ocean'), false);
 });
 
@@ -92,6 +92,10 @@ test('families only override tokens the base defines', () => {
       for (const key of Object.keys(family[mode])) assert.ok(key in colors.light, `${id}.${mode}.${key}`);
     }
   }
+});
+
+test('the copy lists the families in picker order', () => {
+  assert.deepEqual(Object.keys(SETTINGS_VIEW.appearance.families), [...THEME_FAMILIES]);
 });
 
 test('every shipped family has a name and a light/dark swatch', () => {

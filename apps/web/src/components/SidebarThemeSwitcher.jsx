@@ -1,24 +1,16 @@
 // Desktop sidebar: a compact theme switcher above the profile row. The Light /
-// Dark / System control for everyone, then a dot per theme family (each shows
-// its light and dark halves). A Premium family applies at once for Premium
+// Dark / System control for everyone, then a ThemeChip per theme family. A Premium family applies at once for Premium
 // viewers and shows a lock for Free ones, where a tap opens the upgrade sheet
 // instead (it never applies or trials the family). DOM-only popover; mobile
 // parity is https://github.com/savblack/PLOT/issues/1090.
 import { useEffect, useId, useRef, useState } from 'react';
-import { THEME_FAMILIES, THEME_MODES, familySwatch, isPremiumFamily } from '@plot/core/themes.js';
+import { THEME_FAMILIES, THEME_MODES, isPremiumFamily } from '@plot/core/themes.js';
+import ThemeChip from './ThemeChip.jsx';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import './SidebarThemeSwitcher.css';
 
 const A = SETTINGS_VIEW.appearance;
 const S = A.switcher;
-
-// A plain circle split diagonally: the family's light ground and dark ground.
-function FamilyDot({ family, className = 'theme-switch-dot' }) {
-  const { light, dark } = familySwatch(family);
-  return (
-    <span className={className} aria-hidden="true" style={{ background: `linear-gradient(135deg, ${light.bg} 50%, ${dark.bg} 50%)`, borderColor: light.border }} />
-  );
-}
 
 function LockIcon() {
   return (
@@ -101,7 +93,7 @@ export default function SidebarThemeSwitcher({ mode, family, onPickMode, onPickF
                   className={`theme-switch-swatch${family === id ? ' is-active' : ''}`}
                   onClick={() => pickFamily(id)}
                 >
-                  <FamilyDot family={id} />
+                  <ThemeChip family={id} selected={family === id} />
                   {locked && <LockIcon />}
                 </button>
               );
@@ -118,7 +110,7 @@ export default function SidebarThemeSwitcher({ mode, family, onPickMode, onPickF
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen(o => !o)}
       >
-        <FamilyDot family={family} className="theme-switch-dot theme-switch-dot--toggle" />
+        <ThemeChip family={family} size="sm" />
         <span className="app-sidebar-label">{S.toggle}</span>
         <span className="theme-switch-toggle-name app-sidebar-label">{currentName}</span>
       </button>

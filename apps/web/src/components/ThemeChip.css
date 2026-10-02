@@ -1,0 +1,30 @@
+/* Theme family chip: see ThemeChip.jsx. 36px footprint (28px face, 2px gap,
+   2px selection ring), transparent ring when unselected so nothing shifts. */
+.theme-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+}
+.theme-chip.is-selected { border-color: var(--accent); }
+.theme-chip-face {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--chip-ground);
+}
+.theme-chip-face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--chip-ring);
+  border-radius: 50%;
+}
+.theme-chip--sm .theme-chip-face { width: 18px; height: 18px; }
+.theme-chip--sm .theme-chip-face::after { border-width: 2px; }
+.theme-chip--sm { padding: 0; border: 0; }

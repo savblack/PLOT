@@ -1,32 +1,17 @@
 // Settings > Profile & account: the Appearance row (Light / Dark / System,
-// always free) and the Themes row (a swatch per family, each showing its light
-// and dark halves; the default is free, the rest are Premium). Web only for
+// always free) and the Themes row (a ThemeChip per family; the default is
+// free, the rest are Premium). Web only for
 // now: mobile parity is tracked in https://github.com/savblack/PLOT/issues/1090.
 // Which families exist and who may pick them come from @plot/core/themes.js;
 // this file only renders.
-import { THEME_FAMILIES, THEME_MODES, familySwatch, isPremiumFamily } from '@plot/core/themes.js';
+import { THEME_FAMILIES, THEME_MODES, isPremiumFamily } from '@plot/core/themes.js';
+import ThemeChip from './ThemeChip.jsx';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { regionalWords } from '../utils/spelling.js';
 import { SettingsTextAction } from './SettingsPage.jsx';
 import './SettingsThemeRows.css';
 
 const A = SETTINGS_VIEW.appearance;
-
-/** A family's chip: its light half and its dark half, each the ground with one surface card and an accent pill. */
-export function FamilyChip({ family, className = 'settings-theme-swatch-chip' }) {
-  const { light, dark } = familySwatch(family);
-  return (
-    <span className={className} aria-hidden="true">
-      {[light, dark].map((half, i) => (
-        <span key={i} className="family-chip-half" style={{ background: half.bg, borderColor: half.border }}>
-          <span className="family-chip-card" style={{ background: half.surface }}>
-            <span className="family-chip-fill" style={{ background: half.fill }} />
-          </span>
-        </span>
-      ))}
-    </span>
-  );
-}
 
 /**
  * @param {{
@@ -98,7 +83,7 @@ export default function SettingsThemeRows({ mode, family, setMode, setFamily, is
                 className={`settings-theme-swatch${selected ? ' is-active' : ''}`}
                 onClick={() => pickFamily(id)}
               >
-                <FamilyChip family={id} />
+                <ThemeChip family={id} selected={selected} />
                 <span className="settings-theme-swatch-name" aria-hidden="true">{name}</span>
               </button>
             );

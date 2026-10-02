@@ -460,7 +460,7 @@ export const themeFamilyVariants = {
 // The families that ship, in picker order. A family in themeFamilyVariants but
 // not listed here is wired (named in the copy catalog, held to the contrast bar
 // by themes.test.js) but hidden from every picker.
-const SHIPPED_FAMILIES = ['sage', 'mist', 'blush', 'ink', 'plum'];
+const SHIPPED_FAMILIES = ['sage', 'mist', 'blush', 'plum', 'ink'];
 
 // Star ratings take each variant's accentText, as on the free themes, so a
 // family never carries its own rating value.

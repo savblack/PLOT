@@ -233,8 +233,8 @@ export const SETTINGS_VIEW = {
       sage: 'Sage',
       mist: 'Mist',
       blush: 'Blush',
-      ink: 'Ink',
       plum: 'Plum',
+      ink: 'Ink',
     },
     lockedTheme: (name) => `${name} (Premium)`,
     // Opens the Themes gallery (/settings/themes) from the Settings row. Premium only.
