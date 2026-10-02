@@ -622,7 +622,7 @@ svg { stroke-width: 1.5; }
   border: 1px solid var(--accent-secondary-fill);
   border-radius: var(--radius-pill);
   background: var(--accent-secondary-fill);
-  color: var(--on-accent-fill);
+  color: var(--on-accent-secondary-fill);
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2724,7 +2724,7 @@ svg { stroke-width: 1.5; }
   text-overflow: ellipsis;
 }
 .mylists-card-rating {
-  color: #f59e0b;
+  color: var(--rating);
   font-weight: 600;
 }
 /* Permanent "you wrote a review" signal; never toggled, so a card's height
@@ -3378,7 +3378,7 @@ svg { stroke-width: 1.5; }
   padding: 0;
   border: 0;
   background: none;
-  color: var(--text-primary);
+  color: var(--rating);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3644,7 +3644,9 @@ svg { stroke-width: 1.5; }
   line-height: 1;
 }
 .half-star-empty {
-  color: #d4d4d4;
+  /* The empty track: a hairline-strength tint of the ink, so it stays quiet
+     on dark grounds too (was a fixed #d4d4d4, bright on dark themes). */
+  color: var(--border-strong);
 }
 .half-star-empty .half-star-svg {
   stroke: none;
@@ -3652,7 +3654,8 @@ svg { stroke-width: 1.5; }
 .half-star-fill {
   position: absolute;
   inset: 0 auto 0 0;
-  color: var(--text-primary);
+  /* Every drawn star rating is the theme's accentText (--rating). */
+  color: var(--rating);
   overflow: hidden;
   white-space: nowrap;
   pointer-events: none;
@@ -4147,7 +4150,7 @@ svg { stroke-width: 1.5; }
   padding: 0.15rem 0.55rem;
   border-radius: var(--radius-badge);
   background: var(--accent-secondary-fill);
-  color: var(--on-accent-fill);
+  color: var(--on-accent-secondary-fill);
   font-size: 0.7rem;
   font-weight: 600;
 }
@@ -4457,17 +4460,16 @@ svg { stroke-width: 1.5; }
 .panel-engagement-stars {
   display: flex;
   gap: 1px;
-  /* Match the Write a review / Mark as watched fill pink, not the darker
-     --accent used for type and icon accents elsewhere. */
-  color: var(--accent-fill);
+  /* Stars are the rating colour (the theme's accentText) everywhere. */
+  color: var(--rating);
   flex-shrink: 0;
 }
 .panel-engagement-stars .half-star-empty {
-  color: var(--accent-fill);
+  color: var(--rating);
   opacity: 0.4;
 }
 .panel-engagement-stars .half-star-fill {
-  color: var(--accent-fill);
+  color: var(--rating);
 }
 .panel-engagement-star {
   display: inline-flex;
@@ -4526,7 +4528,7 @@ svg { stroke-width: 1.5; }
   padding: 0 1.25rem;
 }
 .panel-take-head { padding: 0.85rem 0; }
-.panel-take-stars { display: flex; gap: 1px; flex-shrink: 0; color: var(--accent); }
+.panel-take-stars { display: flex; gap: 1px; flex-shrink: 0; color: var(--rating); }
 .panel-take-stars svg { width: 17px; height: 17px; }
 .panel-take-summary { flex: 1; min-width: 0; }
 .panel-take-summary b { display: block; font-size: 0.85rem; font-weight: 600; }

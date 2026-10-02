@@ -4,9 +4,11 @@
  * Premium feature that lifts it, then a few other Premium rows.
  */
 import { PLANS_PAGE } from './copy/plansPage.js';
+import { SETTINGS_VIEW } from './copy/settingsView.js';
 import { FREE_CUSTOM_LIST_CAP } from './premium.js';
+import { isPremiumFamily } from './themes.js';
 
-/** @typedef {'lists' | 'smartLists' | 'collaborativeLists' | 'alerts'} UpgradeReason */
+/** @typedef {'lists' | 'themes' | 'smartLists' | 'collaborativeLists' | 'alerts'} UpgradeReason */
 
 /**
  * @typedef {object} UpgradeSheetContent
@@ -15,13 +17,17 @@ import { FREE_CUSTOM_LIST_CAP } from './premium.js';
  * @property {string} title
  * @property {string} body
  * @property {Array<{icon: string, label: string, note?: string}>} also
+ * @property {{ family: string, line: string } | null} preview  for 'themes': the
+ *   Premium family the viewer tapped, drawn light and dark with its line
+ *   ("That’s Sage, in light and dark."). Only a picture: never applied.
  */
 
 /**
  * @param {UpgradeReason} reason
+ * @param {{ family?: string }} [options]  family: for 'themes', the Premium family tapped
  * @returns {UpgradeSheetContent | null} null for an unknown reason
  */
-export function upgradeSheetContent(reason) {
+export function upgradeSheetContent(reason, { family } = {}) {
   const copy = PLANS_PAGE.upgradeSheet.reasons[reason];
   if (!copy) return null;
   const cap = reason === 'lists' ? FREE_CUSTOM_LIST_CAP : 0;
@@ -33,5 +39,8 @@ export function upgradeSheetContent(reason) {
     also: copy.also
       .map(icon => PLANS_PAGE.premiumCard.find(row => row.icon === icon))
       .filter(Boolean),
+    preview: reason === 'themes' && isPremiumFamily(family)
+      ? { family, line: SETTINGS_VIEW.appearance.previewing(SETTINGS_VIEW.appearance.families[family]) }
+      : null,
   };
 }

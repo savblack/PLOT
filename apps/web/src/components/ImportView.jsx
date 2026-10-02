@@ -42,7 +42,7 @@ function PlatformIcon({ id, logoPath, size = 32 }) {
     );
   }
   // Fallback: colored square while loading
-  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054', imdb: 'var(--rating)', plex: 'var(--rating)', trakt: 'var(--danger)', simkl: '#1F80E0' };
+  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054', imdb: '#F5C518', plex: '#E5A00D', trakt: 'var(--danger)', simkl: '#1F80E0' };
   return <div style={{ width: size, height: size, borderRadius: 8, background: colors[id] || '#333', flexShrink: 0 }} />;
 }
 

@@ -382,8 +382,9 @@ When you finish, report in this shape:
 
 Quality bar: it builds, `pnpm run check` passes, no new lint errors, no console noise, no
 secrets added, no unrelated diffs. Design intent holds — flat monochrome (black/white/grey),
-structure from hairlines and surface tokens, compact buttons never full-width. The `#E05578`
-accent is reserved for approved interaction and hierarchy cues: Save, favourite, delete,
+structure from hairlines and surface tokens, compact buttons never full-width. The accent
+(`#E05578` on Light and Dark; its hue is per theme under Premium themes, the roles are
+unchanged) is reserved for approved interaction and hierarchy cues: Save, favourite, delete,
 logout, active tabs/indicators, focus and hover states, selected filters/providers,
 progress/completion, calendar selection/today, list/profile/settings status, and featured or
 chart hierarchy. It is not decorative. Image overlays may use a scrim for readability;

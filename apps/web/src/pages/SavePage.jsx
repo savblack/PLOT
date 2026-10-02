@@ -195,7 +195,7 @@ const styles = `
     font-size: 0.82rem; color: var(--text-secondary); letter-spacing: 0.01em;
     margin: 0 0 1.15rem;
   }
-  .save-meta .save-star { color: var(--text-primary); }
+  .save-meta .save-star { color: var(--rating); }
   .save-overview {
     max-width: 44ch; margin: 0 auto 1.5rem;
     font-size: 0.95rem; line-height: 1.6; color: var(--text-secondary);

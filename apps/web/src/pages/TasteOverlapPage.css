@@ -61,7 +61,7 @@
   object-fit: cover; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--accent-secondary-fill);
-  color: var(--on-accent-fill);
+  color: var(--on-accent-secondary-fill);
   font-size: 0.8rem; font-weight: 700;
 }
 .to-avatar--lg { width: 44px; height: 44px; font-size: 1rem; }
@@ -168,7 +168,7 @@
 .to-watchlist {
   display: flex; align-items: center; gap: 0.85rem;
   padding: 0.9rem 1rem; border-radius: var(--radius-lg);
-  background: var(--accent-secondary-fill); color: var(--on-accent-fill); text-decoration: none;
+  background: var(--accent-secondary-fill); color: var(--on-accent-secondary-fill); text-decoration: none;
 }
 .to-watchlist:hover { filter: brightness(0.97); }
 .to-watchlist-icon {

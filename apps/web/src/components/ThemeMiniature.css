@@ -1,0 +1,46 @@
+/* A flat, hairline-drawn miniature of one theme variant: the ground, one
+   surface card and a single accent pill, in that variant's own colours (set as
+   --m-* on the scene). Deliberately plain: the swatch says "this paper, this
+   accent", not "this layout". */
+.theme-mini {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  box-sizing: border-box;
+}
+.theme-mini-scene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--m-bg);
+}
+.theme-mini-card {
+  display: flex;
+  align-items: flex-end;
+  width: 58%;
+  height: 52%;
+  padding: 7%;
+  box-sizing: border-box;
+  border: 1px solid var(--m-border);
+  border-radius: 8px;
+  background: var(--m-surface);
+}
+.theme-mini-fill {
+  width: 46%;
+  height: 22%;
+  min-height: 6px;
+  border-radius: 999px;
+  background: var(--m-fill);
+}
+.theme-mini-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+}

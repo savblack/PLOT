@@ -45,7 +45,7 @@ export const SETTINGS_VIEW = {
     intro: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch.',
     // Keep this list aligned with PLANS_PAGE.planSummary — SettingsBilling also
     // reads the plans catalog for price copy so the two surfaces cannot drift.
-    features: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
+    features: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Themes now, with widgets and app icons to come'],
     cycle: 'Choose your billing cycle',
     monthly: 'Monthly',
     yearly: 'Yearly',
@@ -213,6 +213,53 @@ export const SETTINGS_VIEW = {
     label: 'Email digest',
     onHint: "You'll get the plot digest by email. Unsubscribe any time.",
     offHint: 'The chart, what to watch this weekend, and what just landed on streaming.',
+  },
+
+  // Theme picker (web only for now; mobile parity is a GitHub issue). Palette
+  // values and the Premium rule live in @plot/core/tokens.js + themes.js.
+  appearance: {
+    label: 'Appearance',
+    optionsLabel: 'Appearance options',
+    modes: { light: 'Light', dark: 'Dark', system: 'System' },
+    themesLabel: 'Themes',
+    themesOptionsLabel: 'Themes',
+    // `colour` is regionalWords('color', region).nounLower from @plot/core/spelling.js.
+    themesHint: (colour) => `Each theme comes in light and dark, with its own accent ${colour}.`,
+    themesLockedHint: 'Premium themes. The default look stays free in light, dark and system.',
+    // Keyed by family id (the default, then themeFamilies in
+    // @plot/core/tokens.js).
+    families: {
+      default: 'Default',
+      sage: 'Sage',
+      mist: 'Mist',
+      blush: 'Blush',
+      plum: 'Plum',
+      ink: 'Ink',
+    },
+    lockedTheme: (name) => `${name} (Premium)`,
+    // Opens the Themes gallery (/settings/themes) from the Settings row. Premium only.
+    preview: 'Preview',
+    previewLabel: 'Preview every theme',
+    // The Themes gallery page.
+    gallery: {
+      title: 'Themes',
+      back: '← Settings',
+      intro: 'How Plot looks on this browser. Every theme comes in light and dark and follows the Light, Dark and System setting. The default is free; Premium themes change the paper, the ink and the accent, never what anything means.',
+      free: 'Free',
+      premium: 'Premium',
+      inUse: 'In use',
+      applyLabel: (name) => `Use ${name}`,
+      lockedNote: 'Premium themes are part of Premium. You can look here, and the default stays free in light, dark and system.',
+    },
+    // The quick switcher in the desktop sidebar.
+    switcher: {
+      toggle: 'Appearance',
+      thisBrowser: 'This browser',
+      mode: 'Mode',
+      current: (name, premium) => (premium ? `${name} · Premium` : name),
+    },
+    // The upgrade sheet when a Free viewer picks a Premium theme.
+    previewing: (name) => `That’s ${name}, in light and dark.`,
   },
 
   premium: {

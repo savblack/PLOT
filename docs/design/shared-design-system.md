@@ -96,8 +96,30 @@ Keep the accent for these approved interaction and hierarchy cues:
   profile and settings status, and other explicit account/integration state.
 - **Featured and chart hierarchy** — Discover hero badges and active actions, chart ranks,
   official labels, and equivalent featured-image hierarchy.
+- **Star ratings** — every drawn star and its score (the title panel, the review composer,
+  card ratings) takes `--rating`, which is the theme's `--accent-text` in every theme, the
+  default included (`#B83558` light, `#F06A88` dark). Never amber, never the fill. The one
+  exception is a rating chip sitting on artwork behind a scrim (History posters), which stays
+  white for legibility.
 
 Do not use it for decorative fills, large surfaces, generic branding, or inactive content.
+
+**Premium themes may change the accent hue.** Each Premium theme family on the web
+(`themeFamilies` in [`packages/core/tokens.js`](../../packages/core/tokens.js)) comes in
+light and dark, picked by the same Light / Dark / System control as the default, and each
+variant carries its own `--accent`, `--accent-text`, `--accent-fill`, `--accent-fill-hover`,
+`--on-accent-fill` and secondary set, so Blush's accent is a teal and Ink's light fill is
+black. Only the hue moves: the approved roles above stay exactly as listed, and the three
+jobs (type and line, fill behind its own text, the second voice) stay separate. So always
+reach for the token, never the pink's hex, and never let a fill colour type, an icon or a
+line: several family fills are about 1.3:1 against their own ground. A few tokens exist
+because one theme's fill cannot do every fill job: `--artwork-fill` / `--on-artwork-fill`
+for a fill chip or stamp over a poster or backdrop (Ink's black fill would vanish on a dark
+image), `--on-accent-secondary-fill` for text on the sage chip, `--highlight` for a marker
+stroke behind body text. Star ratings need no token of their own: `--rating` is
+`--accent-text` in every theme. The default family is exactly the base tokens. Every variant is held to 4.5:1 for text on each
+ground and on each fill, and 3:1 for the accent on its ground, by
+`packages/core/tests/unit/themes.test.js`.
 Outside the app, retain the established pink treatment in the marketing website, tabs,
 badges, hover/navigation copy, newsletter/templates, OG/share cards, transactional emails,
 and server-rendered public list/profile pages.

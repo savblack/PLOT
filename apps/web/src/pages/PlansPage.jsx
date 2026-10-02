@@ -58,7 +58,6 @@ function Cell({ value, premium }) {
 }
 
 export default function PlansPage() {
-  useTheme(); // apply the saved/system theme on this standalone route
   const [searchParams] = useSearchParams();
   const backTo = safeAppReturnPath(searchParams.get('from'), '/');
   const backLabel = backTo === '/' ? PLANS_PAGE.back : PLANS_PAGE.backToApp;
@@ -69,6 +68,13 @@ export default function PlansPage() {
   const [annual, setAnnual] = useState((searchParams.get('billing') ?? searchParams.get('plan')) !== 'monthly');
   const [premiumOnly, setPremiumOnly] = useState(false);
   const premium = usePremium(profile);
+  // Apply the saved/system theme on this standalone route. A Premium palette
+  // holds while auth loads and falls back to its base for anyone without it.
+  useTheme({
+    isPremium: authState === 'anon' ? false
+      : authState === 'loading' || premium.billing == null ? null
+      : premium.isPremium,
+  });
 
   useEffect(() => {
     let alive = true;

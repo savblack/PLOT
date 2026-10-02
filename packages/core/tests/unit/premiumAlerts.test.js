@@ -63,7 +63,8 @@ test('people and season-ready alerts are live Premium features; episode alerts s
   }
   assert.equal(PLANS_PAGE.freeFeatures.find(f => f.id === 'releaseAlerts').planned, true);
   const faq = PLANS_PAGE.faqs.find(item => item.q === 'Are these alerts available now?').a;
-  assert.match(faq, /Movie and episode release notifications are planned for Free/);
+  // The alerts answer covers what is live; Free's plans are in 'What happens to Free?'.
+  assert.doesNotMatch(faq, /planned for Free and are not available yet/);
   assert.match(faq, /whole-season-ready alerts are available with plot Premium/);
   assert.doesNotMatch(faq, /People alerts.*still planned/);
 });

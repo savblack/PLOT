@@ -37,6 +37,7 @@ const ListPage      = lazy(loadListPage);
 const SearchView  = lazy(loadSearchView);
 const TonightView = lazy(loadTonightView);
 const SettingsView= lazy(loadSettingsView);
+const ThemesGallery = lazy(() => import('./components/ThemesGallery.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
 const WatchTogetherView = lazy(() => import('./components/WatchTogetherView.jsx'));
@@ -142,6 +143,7 @@ const router = createBrowserRouter([
       { path: 'search',   element: wrap(<SearchView />) },
       { path: 'person/:personId', element: wrap(<TalentPage />) },
       { path: 'settings', element: wrap(<SettingsView />) },
+      { path: 'settings/themes', element: wrap(<ThemesGallery />) },
       // Follow requests live on the Notifications page now (17 Sep 2026).
       { path: 'requests', element: <Navigate to="/notifications" replace /> },
       { path: 'notifications', element: wrap(<NotificationsView />) },

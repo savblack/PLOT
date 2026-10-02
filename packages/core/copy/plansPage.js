@@ -66,7 +66,7 @@ export const PLANS_PAGE = {
     { icon: 'together', label: 'Find something you both want', note: 'The overlap in your watchlists' },
     { icon: 'lists', label: 'Unlimited and smart lists', note: 'Rules that keep finding matches' },
     { icon: 'stats', label: 'Deeper viewing stats', note: 'Beyond the Free overview' },
-    { icon: 'customise', label: 'Customise your plot', note: 'Widgets, app icons and themes' },
+    { icon: 'customise', label: 'Customise your plot', note: 'Themes on the web now. Widgets and app icons are coming.' },
   ],
   assurances: [
     '7-day free trial, card required',
@@ -87,6 +87,13 @@ export const PLANS_PAGE = {
         context: (cap) => `You’ve used all ${cap} free lists`,
         title: 'Make a list for every kind of night.',
         body: 'Premium brings unlimited custom lists, plus smart lists that keep finding matches. The lists you have now stay exactly as they are.',
+        also: ['pick', 'together'],
+      },
+      // Opened from the Settings theme picker (web only for now).
+      themes: {
+        context: () => 'Themes are part of Premium',
+        title: 'Give plot a new look.',
+        body: 'Premium adds themes to Plot on the web, each in light and dark with its own accent. The default look stays free in light, dark and system.',
         also: ['pick', 'together'],
       },
       smartLists: {
@@ -158,7 +165,8 @@ export const PLANS_PAGE = {
         { label: 'Whole-season-ready alerts', free: false, premium: true },
       ] },
       { title: 'Make it yours', rows: [
-        { label: 'Widgets, app icons and themes', free: false, premium: true },
+        { label: 'Themes', free: 'Default, light and dark', premium: 'Every theme', tag: 'On the web' },
+        { label: 'Widgets and app icons', free: false, premium: true, tag: 'Coming soon' },
       ] },
     ],
   },
@@ -202,10 +210,12 @@ export const PLANS_PAGE = {
       description: 'Follow the people you love watching and hear about their new releases.' },
     { id: 'seasonReady', label: 'Whole-season-ready alerts', live: true,
       description: 'Know when every episode is verified available on your selected services in your region. Airing dates alone do not qualify.' },
+    { id: 'themes', label: 'Themes', live: true,
+      description: 'Themes for Plot on the web, each in light and dark with its own accent. The default look stays free in light, dark and system.' },
     { id: 'customize', label: 'Customise your plot', highlight: true,
-      description: 'Make plot feel like yours: Home Screen widgets, custom app icons, custom profile pages and themes.' },
+      description: 'Make plot feel like yours: Home Screen widgets, custom app icons and custom profile pages.' },
   ],
-  planSummary: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Customise widgets, icons and themes'],
+  planSummary: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Themes now, with widgets and app icons to come'],
   requests: {
     title: 'What would make Premium worth it for you?',
     description: 'Tell us what you’d love to see included.',
@@ -216,12 +226,12 @@ export const PLANS_PAGE = {
   faqTitle: 'Before you ask',
   faqs: [
     { q: 'Can I upgrade now?', a: 'Not yet. Checkout is not open. When it opens, Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial. A card is required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.' },
-    { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Movie and episode release notifications are planned for Free. Free does not include personally tailored recommendations.' },
+    { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Free does not include personally tailored recommendations.' },
     { q: 'What does Pick for Me actually do?', a: 'It asks four quick questions: movie or show, how long you’ve got, what kind of story, and how new or how good. You get a shortlist of up to five, and you can limit it to your streaming services or your watchlist. Can’t decide? Surprise me gives you one pick.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. To find something you both want to watch, only one of you needs Premium, so the other person joins for free. Anyone can send an invite. Collaborative lists work the same way: only the person who makes the list needs Premium.' },
     { q: 'How many lists are included in Free?', a: 'Free includes up to five custom lists.' },
     { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
-    { q: 'Are these alerts available now?', a: 'Movie and episode release notifications are planned for Free and are not available yet. Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Deeper stats and customisation are still planned. Whole-season alerts need verified availability for every episode on your selected service.' },
+    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Premium themes are available on the web. Deeper stats, widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service.' },
   ],
   fineprint: 'Prices in US dollars, taxes included. Premium is a 7-day free trial with a card required. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
   terms: 'Terms',

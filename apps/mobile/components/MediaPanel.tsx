@@ -184,8 +184,8 @@ function IconShare() {
 function StarRow({
   rating,
   onChange,
-  // Engagement prompt stars match the pink fill button; the take editor keeps
-  // the amber --rating colour used everywhere else in the panel.
+  // Every star is colors.rating (the theme's accentText), here and in the
+  // take editor; the override stays for a caller that genuinely needs one.
   color,
   // Wider tap targets for the sticky prompt (44px min). The take editor keeps
   // the tighter default so the review section stays compact.
@@ -1563,7 +1563,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                 <View style={styles.engagementActions}>
                   <StarRow
                     rating={localRating}
-                    color={colors.accentFill}
                     largeHit
                     onChange={(r) => { void handlePromptRate(r); }}
                   />
