@@ -70,6 +70,8 @@ import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { SavedByTooRow } from './WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import { isSharedList } from '@plot/core/sharedLists.js';
+import { MemberStack } from './CollaborativeListParts.jsx';
 import { clearUndo } from '@plot/core/undo.js';
 
 /* ── Close icon ── */
@@ -862,7 +864,7 @@ function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note,
 
 /* ── Add to custom list sheet ── */
 function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
-  const { customLists, topLists, profile } = useApp();
+  const { customLists, topLists, profile, user } = useApp();
   const { lists, ownedCount, createList, addItem, removeItem, isInList } = customLists;
   const [creatingName, setCreatingName] = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
@@ -1162,6 +1164,10 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                   <strong>{list.name}</strong>
                   <small>{(list.items || []).length} items</small>
                 </span>
+                {/* Shared lists sit among yours, marked by who is on them (canvas A6). */}
+                {SHOW_WATCH_TOGETHER && isSharedList(list, user?.id) && (
+                  <MemberStack people={(list.people || []).filter(p => p.user_id !== user?.id)} />
+                )}
                 <span className="add-list-check">
                   {checked && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 12, height: 12 }}><polyline points="20 6 9 17 4 12"/></svg>}
                 </span>

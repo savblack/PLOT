@@ -54,7 +54,7 @@ function Avatar({ url, name, small = false, kind }) {
 }
 
 /** Pure layout; data comes from the hooks in NotificationsView (and from a story). */
-export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onOpenPeople, onMarkAllRead, now, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
+export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onOpenPeople, onMarkAllRead, now, region = null, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
   const { rollup, groups } = useMemo(() => groupNotifications(list, now), [list, now]);
   const unread = list.filter(wasUnread).length;
   const requestTotal = requests.length + watchRequests.length;
@@ -141,7 +141,7 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
                     <span className="notif-badge">{alertBadge(n)}</span>
                     <span className="notif-row-line"><strong>{n.media_title || ALERT_NOTIFICATIONS.untitled}</strong>{alertPhrase(n)}</span>
                   </span>
-                  <span className="hist-card-note notif-time">{relativeTime(n.created_at, now)}</span>
+                  <span className="hist-card-note notif-time">{relativeTime(n.created_at, now, region)}</span>
                 </button>
                 : isTitleNotification(n)
                 ? <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpenTitle?.(n.tmdb_id, n.media_type)}>
@@ -151,13 +151,13 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
                     <span className="notif-badge">{(n.episode_count ?? 1) > 1 ? EP.badgePlural : EP.badge}</span>
                     <span className="notif-row-line"><strong>{n.media_title || EP.untitled}</strong> {EP.phrase(n)}</span>
                   </span>
-                  <span className="hist-card-note notif-time">{relativeTime(n.created_at, now)}</span>
+                  <span className="hist-card-note notif-time">{relativeTime(n.created_at, now, region)}</span>
                 </button>
                 : <button type="button" className="notif-row interactive-surface" key={n.id} onClick={() => onOpen?.(n.actor_username, n.type)}>
                 <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
                 <Avatar url={n.actor_avatar_url} name={actorName(n)} kind={notificationKind(n.type)} />
                 <span className="notif-row-text"><strong>{actorName(n)}</strong> {notificationPhrase(n.type)}{n.post_title && <span className="hist-card-note"> · {n.post_title}</span>}</span>
-                <span className="hist-card-note notif-time">{relativeTime(n.created_at, now)}</span>
+                <span className="hist-card-note notif-time">{relativeTime(n.created_at, now, region)}</span>
               </button>)}
             </div>
           </div>)}
@@ -206,7 +206,7 @@ export default function NotificationsView() {
     setUnreadIds(new Set());
   };
   return <>
-    <NotificationsPage list={list} requests={requests} watchRequests={watch.incoming} loading={loading || requestsLoading} now={now}
+    <NotificationsPage list={list} requests={requests} watchRequests={watch.incoming} loading={loading || requestsLoading} now={now} region={profile?.region}
       onApprove={approve} onDecline={decline} onOpen={(username, type) => { if (username) navigate(notificationPath(username, type)); }}
       onOpenTitle={(tmdbId, mediaType) => openPanel(tmdbId, mediaType === 'movie' ? 'movie' : 'tv', 'notification')}
       onReviewWatch={setReviewing} onDeclineWatch={r => watch.respond(r.other_id, false)}
