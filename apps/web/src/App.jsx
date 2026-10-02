@@ -171,12 +171,18 @@ export default function App() {
 
   /* ── Profile loader ── */
   const loadProfile = useCallback(async (userId) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
-      .eq('id', userId)
-      .maybeSingle();
-    if (data) data.is_premium = await loadPremiumEntitlement();
+    // Both reads go out together: the entitlement does not depend on the row,
+    // and awaiting them in turn held the startup loader for a second round
+    // trip to the database region (~0.4s from Australia, more from the US).
+    const [{ data }, entitled] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
+        .eq('id', userId)
+        .maybeSingle(),
+      loadPremiumEntitlement(),
+    ]);
+    if (data) data.is_premium = entitled;
     if (activeUserIdRef.current !== userId) return;
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
