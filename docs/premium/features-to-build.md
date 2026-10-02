@@ -144,7 +144,9 @@ Suggested priority for “Less deciding. More watching.” (matches plans storie
 
 ### Phase C — Related Free work (not Premium, but promised)
 
-- Movie / episode **release notifications** (planned Free). High delight; do not ship Premium as alerts-only.
+- Movie / episode **release notifications** (Free). High delight; do not ship Premium as alerts-only.
+  - **Episodes: built** (`new-episode-notifications`, #1032).
+  - **Movies: built** (`movie-release-notifications`, `20261003090000_movie_release_notifications.sql`). In-app only; push is not wired for any notification yet. A film on one of your lists notifies on its first general theatrical or digital release in your region (`profiles.region`, the app's default when unset), read from TMDB `release_dates`, within a three-day look-back. Nobody is told who has already watched it, or who saved it on or after the release date. The dedupe key is shared with the actor/director alerts (`person_release:movie:<id>`), so a film that is both on your list and by someone you follow is announced once; the job runs at 21:45 UTC, after the people run, so the richer "with <person>" row wins. No per-title mute or global switch yet, the same as new episodes.
 - Join collaborative lists / watch sessions as Free participant.
 
 ---

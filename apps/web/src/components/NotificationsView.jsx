@@ -11,7 +11,7 @@ import { useWatchTogether } from '@plot/core/useWatchTogether.js';
 import { AcceptDialog } from './WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { COMMON } from '../copy/common.js';
-import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T, NEW_EPISODE_NOTIFICATION as EP, SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
+import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T, titleBadge, titleFallback, titlePhrase, SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
 import { groupNotifications, notificationKind, actorName, rollupNames, isAlertNotification, isTitleNotification, smartListDigest } from '@plot/core/notificationGroups.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { relativeTime } from '@plot/core/date.js';
@@ -28,7 +28,7 @@ const KindIcon = ({ kind }) => kind === 'request'
     ? <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
     : <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z" /></svg>;
 
-// Title rows (Premium alerts and new_episode) have no actor: the poster stands
+// Title rows (Premium alerts, new_episode and movie_release) have no actor: the poster stands
 // where the avatar would.
 function Poster({ path }) {
   return path
@@ -168,8 +168,8 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
                   <span className={`notif-dot${wasUnread(n) ? '' : ' notif-dot--read'}`} aria-hidden="true" />
                   <Poster path={n.media_poster_path} />
                   <span className="notif-row-text">
-                    <span className="notif-badge">{(n.episode_count ?? 1) > 1 ? EP.badgePlural : EP.badge}</span>
-                    <span className="notif-row-line"><strong>{n.media_title || EP.untitled}</strong> {EP.phrase(n)}</span>
+                    <span className="notif-badge">{titleBadge(n)}</span>
+                    <span className="notif-row-line"><strong>{n.media_title || titleFallback(n)}</strong> {titlePhrase(n)}</span>
                   </span>
                   <span className="hist-card-note notif-time">{relativeTime(n.created_at, now, region)}</span>
                 </button>

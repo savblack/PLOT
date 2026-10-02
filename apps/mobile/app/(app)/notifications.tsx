@@ -15,7 +15,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useNotifications } from '@plot/core/useNotifications.js';
-import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NEW_EPISODE_NOTIFICATION as EP, SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
+import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, titleBadge, titleFallback, titlePhrase, SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
 import { isAlertNotification, isTitleNotification, smartListDigest } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
 import { Avatar } from '../../components/Avatar';
@@ -31,7 +31,7 @@ interface NotificationRow {
   actor_display_name?: string;
   actor_avatar_url?: string | null;
   post_title?: string;
-  // Title rows (Premium alerts and new_episode): no actor, a title instead.
+  // Title rows (Premium alerts, new_episode and movie_release): no actor, a title instead.
   tmdb_id?: number | null;
   media_type?: string | null;
   media_title?: string | null;
@@ -134,12 +134,8 @@ export default function NotificationsScreen() {
               );
             }
             if (isTitleNotification(n)) {
-              const title = n.media_title || EP.untitled;
-              const phrase = EP.phrase({
-                season_number: n.season_number ?? 0,
-                episode_number: n.episode_number ?? 0,
-                episode_count: n.episode_count,
-              });
+              const title = n.media_title || titleFallback(n);
+              const phrase = titlePhrase(n);
               const poster = posterUrl(n.media_poster_path, 'w92');
               return (
                 <TouchableOpacity
@@ -154,7 +150,7 @@ export default function NotificationsScreen() {
                     ? <Image source={{ uri: poster }} style={styles.poster} />
                     : <View style={styles.poster} />}
                   <View style={styles.rowBody}>
-                    <Text style={styles.rowBadge}>{(n.episode_count ?? 1) > 1 ? EP.badgePlural : EP.badge}</Text>
+                    <Text style={styles.rowBadge}>{titleBadge(n)}</Text>
                     <Text style={styles.rowText}>
                       <Text style={styles.rowName}>{title}</Text>
                       {' '}{phrase}
