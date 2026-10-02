@@ -1,0 +1,44 @@
+/* Broadcast region picker in Settings > Viewing. Same field shape as the smart
+   list dialog: label over control, hairline border, surface tokens only. */
+
+.broadcast-region-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  min-width: 0;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: 0;
+}
+
+.broadcast-region-hint {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.broadcast-region-field { display: flex; flex-direction: column; gap: 0.45rem; }
+.broadcast-region-field label { font-size: 0.8rem; font-weight: 600; }
+
+.broadcast-region-field select {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.broadcast-region-field select:disabled { color: var(--text-muted); cursor: default; }
+.broadcast-region-field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.broadcast-region-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+}
+.broadcast-region-error { flex: 1 1 100%; color: var(--danger); font-size: 0.75rem; }
