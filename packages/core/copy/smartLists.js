@@ -91,4 +91,11 @@ export const SMART_LISTS = Object.freeze({
   everythingElse: 'Everything else',
   lastOpened: (date) => `Last opened ${date}`,
   newCount: (n) => `${n} new`,
+
+  // The per-list switch for the weekly roll-up, on a new-discoveries smart
+  // list's own page. Owner and Premium only.
+  rollUp: 'Include in weekly roll-up',
+  rollUpOn: 'Once a week, a notification says what this list found.',
+  rollUpOff: 'Left out of the weekly notification.',
+  rollUpFailed: 'Could not change this. Please try again.',
 });

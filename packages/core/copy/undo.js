@@ -1,5 +1,7 @@
 /* The undo toast (web UndoToast.jsx, mobile UndoToast.tsx). */
 import { favoriteWords } from '../spelling.js';
+import { SMART_LISTS } from './smartLists.js';
+import { CUSTOM_LISTS } from './customLists.js';
 
 export const UNDO = {
   button: 'Undo',
@@ -34,6 +36,10 @@ export const UNDO = {
         return meta.season && meta.episode
           ? `${title || 'Progress'} is now on S${meta.season} E${meta.episode}.`
           : `Updated your progress on ${title || 'this show'}.`;
+      case 'list_create':
+        return `${CUSTOM_LISTS.created}.`;
+      case 'smart_list_create':
+        return `${SMART_LISTS.created}.`;
       default:
         return 'Change saved.';
     }

@@ -10,8 +10,10 @@
 // rules, so the server and the app cannot drift apart unnoticed.
 //
 // What the job does with a list, once a week:
-//   - discover lists only. A watchlist or history list changes when its owner
-//     saves or watches something, which they already know about.
+//   - discover lists only (inDigest). A watchlist or history list changes when
+//     its owner saves or watches something, which they already know about. A
+//     list its owner switched out of the roll-up (digest_enabled false) is
+//     skipped too, with no TMDB call.
 //   - one page of TMDB discover per media type, the same first page the app
 //     opens the list on, minus watched titles when the rules say so.
 //   - a title is new when it is in neither seen_keys (shown at the last open)
@@ -76,6 +78,17 @@ export function cleanRules(raw) {
     minMyRating: source === 'history' ? pick(raw.minMyRating ?? null, [null, 6, 8, 10], null) : null,
     hideWatched: source === 'history' ? false : raw.hideWatched !== false,
   };
+}
+
+/**
+ * Whether the roll-up includes this list: rules whose source is new
+ * discoveries, and not switched off by its owner (digest_enabled false).
+ * Mirrors smartListInRollUp in packages/core/smartLists.js. Someone whose
+ * lists are all switched off has none included, so gets no notification.
+ * @param {{ rules?: any, digest_enabled?: boolean | null }} list
+ */
+export function inDigest(list) {
+  return cleanRules(list?.rules)?.source === 'discover' && list?.digest_enabled !== false;
 }
 
 /** @param {{ mediaType: string }} rules @returns {Array<'movie'|'tv'>} */

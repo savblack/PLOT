@@ -1,7 +1,7 @@
 /* Undo for the last library change.
  *
  * One slot, not a history: the toast offers to reverse the most recent
- * removal, and a newer one replaces it. Both apps render the same slot
+ * removal (or the list just created), and a newer one replaces it. Both apps render the same slot
  * (web's UndoToast.jsx, mobile's UndoToast.tsx) through useUndo().
  *
  * Undo is opt-in per call. A removal is often one step of a bigger action:
@@ -36,6 +36,10 @@ export const UNDO_ACTIONS = Object.freeze({
   HISTORY_REMOVE:   'history_remove',
   WATCHING_STOP:    'watching_stop',
   WATCH_PROGRESS:   'watch_progress',
+  // Creating a list is undone by deleting it (customListCreation.js
+  // createdListRevert). Not offered for shared lists: see there.
+  LIST_CREATE:       'list_create',
+  SMART_LIST_CREATE: 'smart_list_create',
 });
 
 /**

@@ -292,6 +292,10 @@ export function NewSharedListDialog({ onClose, partners: givenPartners }) {
     if (!name.trim() || busy) return;
     setBusy(true); setError(null);
     try {
+      // No Undo here, unlike New list. With people picked, create_shared_list
+      // has notified each of them before it returns, and an undo would leave
+      // those notifications pointing at a deleted list. Without, the next step
+      // is the invite link, which can be copied before a toast could expire.
       const id = picked.size
         ? await customLists.createSharedList(name, [...picked])
         : (await customLists.createList(name))?.id;

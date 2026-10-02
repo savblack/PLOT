@@ -8,6 +8,7 @@ import { smartListRulesFromPicker, normalizeSmartListRules, defaultSmartListRule
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
 import { GENRE_MOODS, TONIGHT_PICKER } from '@plot/core/copy/tonightPicker.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
 import { AppContext } from '../hooks/useApp.js';
 import { TonightPage } from '../components/TonightView.jsx';
 import SmartListDialog from '../components/SmartListDialog.jsx';
@@ -366,5 +367,119 @@ export const B5FreeRulesKept = {
   tags: ['interaction-test'],
   play: async () => {
     await expect(within(document.body).getByText(PLANS_PAGE.upgradeSheet.reasons.smartLists.kept)).toBeVisible();
+  },
+};
+
+/* ── Weekly roll-up switch (PLO-513 extras) ──
+   A new-discoveries list's page carries "Include in weekly roll-up", on by
+   default. The weekly job (smart-list-digest) skips a list switched off.
+   Lists of your own titles are never in the roll-up, so they have no switch. */
+
+const OWN_SAVED = {
+  id: 'saved-comedies', name: 'Comedies I saved',
+  rules: normalizeSmartListRules({ source: 'watchlist', mediaType: 'any' }),
+};
+const ROLLUP_PHONE = { viewport: { value: 'mobile2', isRotated: false } };
+const ROLLUP_DARK = { backgrounds: { value: '#0c0c0c' } };
+
+// The page with a customLists that remembers the switch, as the hook does.
+function RollUpPage({ list, client, failing = false }) {
+  const base = listsApp();
+  const [smartLists, setSmartLists] = useState([list]);
+  const value = {
+    ...base,
+    customLists: {
+      ...base.customLists,
+      smartLists,
+      setSmartListDigest: async (id, enabled) => {
+        if (failing) return false;
+        setSmartLists(prev => prev.map(l => (l.id === id ? { ...l, digest_enabled: enabled } : l)));
+        return true;
+      },
+    },
+  };
+  return (
+    <AppContext.Provider value={value}>
+      <Routes>
+        <Route path="/my-lists/:key" element={<ListPage smartList={{ clients: { tmdb: client, db: seenClient(null) }, catalog: GENRE_CATALOG }} />} />
+      </Routes>
+    </AppContext.Provider>
+  );
+}
+const rollUpStory = (list, { client = tmdbClient([], DRAMA_SHOWS), failing = false } = {}) => ({
+  parameters: { route: `/my-lists/list-${list.id}` },
+  render: () => <RollUpPage list={list} client={client} failing={failing} />,
+});
+
+/** The switch, on by default; switching it off says the list is left out. */
+export const RollUpSwitch = {
+  ...rollUpStory(DISCOVER_DRAMA),
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const toggle = await canvas.findByRole('switch', { name: SMART_LISTS.rollUp });
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
+    await expect(canvas.getByText(SMART_LISTS.rollUpOn)).toBeVisible();
+    fireEvent.click(toggle);
+    await waitFor(() => expect(canvas.getByRole('switch', { name: SMART_LISTS.rollUp })).toHaveAttribute('aria-checked', 'false'));
+    await expect(canvas.getByText(SMART_LISTS.rollUpOff)).toBeVisible();
+  },
+};
+
+/** Already switched off, in Dark. */
+export const RollUpSwitchOffDark = {
+  ...rollUpStory({ ...DISCOVER_DRAMA, digest_enabled: false }),
+  globals: ROLLUP_DARK,
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const toggle = await within(canvasElement).findByRole('switch', { name: SMART_LISTS.rollUp });
+    await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  },
+};
+
+/** On a phone. Chromatic ignores the viewport global, so the width is named for it too. */
+export const RollUpSwitchPhone = {
+  ...rollUpStory(DISCOVER_DRAMA),
+  globals: ROLLUP_PHONE,
+  parameters: { route: `/my-lists/list-${DISCOVER_DRAMA.id}`, chromatic: { viewports: [414] } },
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    await expect(await within(canvasElement).findByRole('switch', { name: SMART_LISTS.rollUp })).toBeVisible();
+  },
+};
+
+/** A save that fails puts the switch back and says so. */
+export const RollUpSwitchFails = {
+  ...rollUpStory(DISCOVER_DRAMA, { failing: true }),
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    fireEvent.click(await canvas.findByRole('switch', { name: SMART_LISTS.rollUp }));
+    await expect(await canvas.findByRole('alert')).toHaveTextContent(SMART_LISTS.rollUpFailed);
+    await expect(canvas.getByRole('switch', { name: SMART_LISTS.rollUp })).toHaveAttribute('aria-checked', 'true');
+  },
+};
+
+/** Your own titles are never in the roll-up: no switch. */
+export const RollUpHiddenForOwnTitles = {
+  ...rollUpStory(OWN_SAVED),
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole('button', { name: /my watchlist/ });
+    await expect(canvas.queryByRole('switch', { name: SMART_LISTS.rollUp })).toBeNull();
+  },
+};
+
+/** C4 with its quiet footer: where to switch a list out. */
+export const C4WeeklyRollUpManage = {
+  render: () => <NotificationsPage list={[DIGEST, ...social]} requests={[]} loading={false} now={now}
+    onApprove={noop} onDecline={noop} onOpen={noop} onOpenTitle={noop} onOpenPeople={noop} onOpenSmartLists={noop}
+    onManageSmartLists={noop} onMarkAllRead={noop} wasUnread={n => !n.read_at} />,
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(SMART_LIST_DIGEST.manageBody)).toBeVisible();
+    await expect(canvas.getByRole('button', { name: new RegExp(SMART_LIST_DIGEST.manageLink) })).toBeVisible();
   },
 };

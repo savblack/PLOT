@@ -256,3 +256,15 @@
 .smart-kind-text { display: flex; flex-direction: column; gap: 2px; }
 .smart-kind-title { font-size: 0.875rem; font-weight: 600; }
 .smart-kind-body { font-size: 0.78rem; line-height: 1.4; color: var(--text-secondary); }
+
+/* The weekly roll-up switch on a new-discoveries list's page: the builder's
+   switch row, under the rules, above the matches. */
+.smart-page-rollup {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.smart-page-rollup-text { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.smart-page-rollup-hint { font-size: 0.78rem; color: var(--text-muted); }
+.smart-page-rollup-hint--error { color: var(--danger); }

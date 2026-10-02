@@ -903,7 +903,8 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     setIsCreating(true);
     setCreateError('');
     try {
-      const newList = await createList(creatingName);
+      // Undo deletes the list, and the title added to it with it.
+      const newList = await createList(creatingName, { undo: true });
       if (!newList) {
         setCreateError(MEDIA.couldNotCreateList);
         return;

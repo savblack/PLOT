@@ -639,10 +639,16 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions, smartL
           initialRules={smartListRulesFromPicker(picker.options, { hasServices: picker.hasServices })}
           lists={smartList.lists}
           onConfirm={async (name, rules) => {
-            const created = await smartList.create(name, rules);
+            // Undo in the toast deletes the list and comes back here.
+            let path = null;
+            const created = await smartList.create(name, rules, {
+              undo: true,
+              onUndone: () => { if (path && window.location.pathname === path) navigate?.(-1); },
+            });
             if (created) {
               setKeepFinding(false);
-              navigate?.(collectionPath(customListKey(created.id)));
+              path = collectionPath(customListKey(created.id));
+              navigate?.(path);
             }
             return created;
           }}
