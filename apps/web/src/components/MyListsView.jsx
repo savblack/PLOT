@@ -455,8 +455,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
                   rules and see the count; Create opens the upgrade sheet (B5). */}
               <ListSection
                 title={SMART_LISTS.section}
-                subtitle={SMART_LISTS.sectionNote}
-                headerRight={<button type="button" className="btn btn-secondary btn-sm" onClick={requestSmartCreate}><PlusSmallIcon />{SMART_LISTS.newSmartList}</button>}
               >
                 <div className="list-covers">
                   {smartCollections.map(cover)}
@@ -477,8 +475,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
               {SHOW_WATCH_TOGETHER && (
                 <ListSection
                   title={S.shared}
-                  subtitle={S.sharedNote}
-                  headerRight={<button type="button" className="btn btn-secondary btn-sm" onClick={requestShared}><PlusSmallIcon />{S.newShared}</button>}
                 >
                   <div className="mylists-shared-group">
                     <h3 className="mylists-shared-label">{S.sharedByMe}</h3>
