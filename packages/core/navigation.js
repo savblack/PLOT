@@ -33,6 +33,8 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
     requests: 'Follow requests',
     notifications: 'Notifications',
     import: 'Import',
+    // The taste overlap picker. Without an entry it fell through to the brand.
+    compare: 'Compare',
     // Keyed on the first segment: viewFromPath returns `person/<id>`, and the
     // page shows the person's own name, so the chrome only needs to say where
     // you are.

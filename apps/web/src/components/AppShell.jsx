@@ -95,7 +95,6 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   };
 
   const pageTitle = titleForView(currentView);
-  const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
   const isListDetail = currentView?.startsWith('my-lists/');
 
   // At sidebar widths there is no header at all — the brand, search and
@@ -104,9 +103,14 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   // headers below it. Home's VIEW_TITLES entry is the brand ("Plot"), which the
   // sidebar already shows, so prefer the nav item's own label here and fall
   // back to the shared titles.
+  //
+  // Profile sub-pages (u/:username/compare, /history, ...) keep the handle as
+  // their title: the page under it names the section. Taking only the second
+  // segment stops the rest of the path leaking in as "@savannah/compare".
   const isProfileView = (currentView || '').startsWith('u/');
+  const profileHandle = isProfileView ? currentView.split('/')[1] : null;
   const desktopTitle = isProfileView
-    ? (isOwnProfile ? APP_SHELL.profile : `@${currentView.slice(2)}`)
+    ? (profile?.username && profileHandle === profile.username ? APP_SHELL.profile : `@${profileHandle}`)
     : (APP_NAV_ITEMS.find(item => item.id === currentView)?.label ?? pageTitle);
 
   const pageSubtitle = currentView === 'settings' ? SETTINGS_VIEW.page.subtitle
