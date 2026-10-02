@@ -58,21 +58,24 @@
 }
 .family-chip-half:first-child { border-right: 0; border-radius: 8px 0 0 8px; }
 .family-chip-half:last-child { border-left: 0; border-radius: 0 8px 8px 0; }
-.family-chip-ink {
-  position: absolute;
-  left: 5px;
-  top: 7px;
-  width: 11px;
-  height: 3px;
-  border-radius: 2px;
+.family-chip-half {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.family-chip-dot {
-  position: absolute;
-  left: 5px;
-  bottom: 6px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+.family-chip-card {
+  display: flex;
+  align-items: flex-end;
+  width: 62%;
+  height: 50%;
+  padding: 2px;
+  box-sizing: border-box;
+  border-radius: 3px;
+}
+.family-chip-fill {
+  width: 60%;
+  height: 4px;
+  border-radius: 999px;
 }
 .settings-theme-swatch.is-active .settings-theme-swatch-chip {
   outline: 2px solid var(--accent);
@@ -82,19 +85,9 @@
   font-size: 0.72rem;
   font-weight: 600;
 }
-/* Compact text button to the Themes gallery (Premium only). */
+/* The Themes gallery link (Premium only) is Settings' own text action; this
+   only centres it beside the swatches. */
 .settings-theme-preview {
   align-self: center;
   margin-left: 0.25rem;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
 }
-.settings-theme-preview:hover { background: var(--surface-raised); }
-.settings-theme-preview:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

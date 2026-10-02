@@ -165,16 +165,17 @@ export function themeColors(family, mode) {
 }
 
 /**
- * A family's swatch: its light and dark halves, each a ground, a line of ink,
- * a hairline and the type-and-line accent (a light variant's fill is too pale
- * against its own ground to read as a dot).
+ * A family's swatch: its light and dark halves, each a ground, a surface, a
+ * line of ink, a hairline, the type-and-line accent and the accent fill (a
+ * light variant's fill is pale against its ground, so pickers draw it on the
+ * surface card, never as a line).
  *
  * @param {ThemeFamily} family
  */
 export function familySwatch(family) {
   const half = (mode) => {
     const c = themeColors(family, mode);
-    return { bg: c.bg, surface: c.surface, text: c.textPrimary, border: c.borderStrong, accent: c.accent };
+    return { bg: c.bg, surface: c.surface, text: c.textPrimary, border: c.borderStrong, accent: c.accent, fill: c.accentFill };
   };
   return { light: half('light'), dark: half('dark') };
 }

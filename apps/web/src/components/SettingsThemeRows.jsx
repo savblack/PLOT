@@ -7,19 +7,21 @@
 import { THEME_FAMILIES, THEME_MODES, familySwatch, isPremiumFamily } from '@plot/core/themes.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { regionalWords } from '../utils/spelling.js';
+import { SettingsTextAction } from './SettingsPage.jsx';
 import './SettingsThemeRows.css';
 
 const A = SETTINGS_VIEW.appearance;
 
-/** A family's chip: its light half and its dark half, each with a line of ink and an accent dot. */
+/** A family's chip: its light half and its dark half, each the ground with one surface card and an accent pill. */
 export function FamilyChip({ family, className = 'settings-theme-swatch-chip' }) {
   const { light, dark } = familySwatch(family);
   return (
     <span className={className} aria-hidden="true">
       {[light, dark].map((half, i) => (
         <span key={i} className="family-chip-half" style={{ background: half.bg, borderColor: half.border }}>
-          <span className="family-chip-ink" style={{ background: half.text }} />
-          <span className="family-chip-dot" style={{ background: half.accent }} />
+          <span className="family-chip-card" style={{ background: half.surface }}>
+            <span className="family-chip-fill" style={{ background: half.fill }} />
+          </span>
         </span>
       ))}
     </span>
@@ -102,9 +104,9 @@ export default function SettingsThemeRows({ mode, family, setMode, setFamily, is
             );
           })}
           {isPremium && (
-            <button type="button" className="settings-theme-preview" onClick={onPreview} aria-label={A.previewLabel}>
-              {A.preview}
-            </button>
+            <span className="settings-theme-preview">
+              <SettingsTextAction onClick={onPreview} label={A.previewLabel}>{A.preview}</SettingsTextAction>
+            </span>
           )}
         </div>
       </div>

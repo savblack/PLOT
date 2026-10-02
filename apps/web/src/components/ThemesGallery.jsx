@@ -64,9 +64,11 @@ export default function ThemesGallery() {
                 <ThemeMiniaturePair family={id} />
                 <span className="themes-card-foot">
                   <span className="themes-card-name">{name}</span>
-                  <span className={`themes-card-tag${inUse ? ' is-active' : ''}`}>
-                    {inUse ? G.inUse : premium ? G.premium : G.free}
-                  </span>
+                  {(inUse || !isPremium) && (
+                    <span className={`themes-card-tag${inUse ? ' is-active' : ''}`}>
+                      {inUse ? G.inUse : premium ? G.premium : G.free}
+                    </span>
+                  )}
                 </span>
               </button>
             </li>

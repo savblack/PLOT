@@ -9,30 +9,6 @@
   font-weight: 500;
   color: var(--text-muted);
 }
-.theme-switch-dot {
-  position: relative;
-  display: inline-block;
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  border: 1px solid;
-  border-radius: 50%;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-/* Light half top left, dark half bottom right, each with its accent dot. */
-.theme-switch-dot span {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-.theme-switch-dot span:first-child { left: 4px; top: 4px; }
-.theme-switch-dot span:last-child { right: 4px; bottom: 4px; }
-.theme-switch-dot--toggle { width: 18px; height: 18px; }
-.theme-switch-dot--toggle span { width: 5px; height: 5px; }
-.theme-switch-dot--toggle span:first-child { left: 3px; top: 3px; }
-.theme-switch-dot--toggle span:last-child { right: 3px; bottom: 3px; }
 .theme-switch-panel {
   position: absolute;
   left: 0;
@@ -76,22 +52,6 @@
 }
 .theme-switch-modes button:hover { color: var(--text-primary); }
 .theme-switch-modes button.is-active { background: var(--surface); color: var(--text-primary); }
-.theme-switch-swatches { display: flex; flex-wrap: wrap; gap: 4px; }
-.theme-switch-swatch {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: 50%;
-  background: transparent;
-  cursor: pointer;
-}
-.theme-switch-swatch.is-active { border-color: var(--accent); }
-.theme-switch-swatch:focus-visible,
 .theme-switch-modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .theme-switch-lock {
   position: absolute;
@@ -107,3 +67,38 @@
   stroke-width: 2.2;
   stroke-linecap: round;
 }
+
+/* ── Family chip (one block, so the chip design can be swapped in one place).
+   A plain circle split diagonally into the family's light and dark grounds
+   (the gradient is set inline from core); selected and focused get a 2px
+   accent ring with a 2px gap. */
+.theme-switch-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.theme-switch-swatch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.theme-switch-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.theme-switch-dot--toggle { width: 18px; height: 18px; }
+.theme-switch-swatch.is-active .theme-switch-dot,
+.theme-switch-swatch:focus-visible .theme-switch-dot {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.theme-switch-swatch:focus-visible { outline: none; }

@@ -12,13 +12,11 @@ import './SidebarThemeSwitcher.css';
 const A = SETTINGS_VIEW.appearance;
 const S = A.switcher;
 
+// A plain circle split diagonally: the family's light ground and dark ground.
 function FamilyDot({ family, className = 'theme-switch-dot' }) {
   const { light, dark } = familySwatch(family);
   return (
-    <span className={className} aria-hidden="true" style={{ background: `linear-gradient(135deg, ${light.bg} 50%, ${dark.bg} 50%)`, borderColor: light.border }}>
-      <span style={{ background: light.accent }} />
-      <span style={{ background: dark.accent }} />
-    </span>
+    <span className={className} aria-hidden="true" style={{ background: `linear-gradient(135deg, ${light.bg} 50%, ${dark.bg} 50%)`, borderColor: light.border }} />
   );
 }
 

@@ -3644,7 +3644,9 @@ svg { stroke-width: 1.5; }
   line-height: 1;
 }
 .half-star-empty {
-  color: #d4d4d4;
+  /* The empty track: a hairline-strength tint of the ink, so it stays quiet
+     on dark grounds too (was a fixed #d4d4d4, bright on dark themes). */
+  color: var(--border-strong);
 }
 .half-star-empty .half-star-svg {
   stroke: none;
