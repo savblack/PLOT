@@ -2,7 +2,8 @@
 // Pricing is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers.
 // The first charge is 7 days after the trial starts. Cancel during the trial and the charge is $0.
 // Stripe Adaptive Pricing shows the price in local currency at checkout. $24/year is exactly
-// four months free against monthly. The Upgrade button opens checkout once startCheckout is wired (PLO-493).
+// four months free against monthly. On web the Upgrade button starts Stripe checkout; mobile still shows
+// mobileCheckoutMessage because the native purchase approach is unresolved (PLO-493).
 // The 7-day trial is requested by the stripe-billing checkout, not set on the Stripe Price. It is for
 // new subscribers only. Do not put Stripe price IDs in this file.
 export const PLANS_PAGE = {
@@ -17,7 +18,10 @@ export const PLANS_PAGE = {
   previewAction: 'Explore Premium',
   tryTasteOverlap: 'Try taste overlap',
   upgradeAction: 'Upgrade to Premium',
-  checkoutMessage: 'Checkout is not open yet. When Premium opens, it is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
+  // Shown on web when checkout could not start (the server also keeps it closed until launch).
+  checkoutMessage: 'We couldn’t start checkout. Please try again in a moment.',
+  // Mobile never takes a payment in the app, so it keeps the closed-checkout wording.
+  mobileCheckoutMessage: 'Checkout is not open yet. When Premium opens, it is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
   free: {
     name: 'Free',
     price: '$0',

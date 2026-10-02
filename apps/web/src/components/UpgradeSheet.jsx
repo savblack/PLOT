@@ -104,7 +104,6 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
         <div className="upgrade-sheet-offer">
           <div className="upgrade-sheet-offer-name">
             <span>{PLANS_PAGE.premium.name}</span>
-            <span className="upgrade-sheet-pill">{PLANS_PAGE.comingSoon}</span>
           </div>
           <div className="upgrade-sheet-price">
             <span className="upgrade-sheet-amount">{PLANS_PAGE.premium.price}</span>
@@ -114,10 +113,10 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
           <p className="upgrade-sheet-trial">{PLANS_PAGE.premium.trialNote}</p>
         </div>
 
-        <button type="button" className="btn btn-primary" onClick={() => premium.startCheckout()}>
-          {PLANS_PAGE.upgradeAction}
+        <button type="button" className="btn btn-primary" onClick={() => premium.startCheckout('monthly')} disabled={premium.busy}>
+          {premium.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.upgradeAction}
         </button>
-        {premium.comingSoon && <p className="upgrade-sheet-note" role="status">{PLANS_PAGE.checkoutMessage}</p>}
+        {premium.error && <p className="upgrade-sheet-note" role="alert">{premium.error}</p>}
 
         <p className="upgrade-sheet-also">{S.alsoIn}</p>
         <ul className="upgrade-sheet-rows">

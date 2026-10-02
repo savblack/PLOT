@@ -73,7 +73,7 @@ export default function UpgradeSheet({
             <TouchableOpacity style={styles.primary} onPress={() => setComingSoon(true)} accessibilityRole="button">
               <Text style={styles.primaryText}>{PLANS_PAGE.upgradeAction}</Text>
             </TouchableOpacity>
-            {comingSoon && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.checkoutMessage}</Text>}
+            {comingSoon && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
 
             <Text style={styles.also}>{S.alsoIn}</Text>
             {content.also.map(row => (

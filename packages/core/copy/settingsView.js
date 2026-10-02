@@ -52,7 +52,7 @@ export const SETTINGS_VIEW = {
     checkout: 'Explore Premium',
     comingSoon: 'plot Premium',
     // Same closed-checkout wording as the plans page, so Settings cannot deny the trial.
-    comingSoonMessage: PLANS_PAGE.checkoutMessage,
+    comingSoonMessage: PLANS_PAGE.mobileCheckoutMessage,
     exploreHint: 'New subscribers get a 7-day free trial. You won’t be charged until 7 days after you start.',
     portalHint: 'Update payment details, view invoices or cancel your subscription.',
     supportTitle: 'A little support goes a long way.',

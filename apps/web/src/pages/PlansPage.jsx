@@ -154,7 +154,6 @@ export default function PlansPage() {
           <article className="plan-card plan-card--premium">
             <div className="plan-card-top">
               <h2 className="plan-name">{PLANS_PAGE.premium.name}</h2>
-              <span className="plan-pill plan-pill--soon">{PLANS_PAGE.comingSoon}</span>
             </div>
             <div>
               <div className="plan-price">
@@ -172,11 +171,10 @@ export default function PlansPage() {
             ) : isPremium ? (
               <span className="plan-current">{PLANS_PAGE.free.yourCurrentPlan}</span>
             ) : (
-              <button className="btn btn-primary" onClick={() => premium.startCheckout()} disabled={authState === 'loading'}>
-                {PLANS_PAGE.upgradeAction}
+              <button className="btn btn-primary" onClick={() => premium.startCheckout(annual ? 'yearly' : 'monthly')} disabled={authState === 'loading' || premium.busy}>
+                {premium.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.upgradeAction}
               </button>
             )}
-            {premium.comingSoon && <p className="plans-note" role="status">{PLANS_PAGE.checkoutMessage}</p>}
             {premium.error && <p className="plans-note plans-note--err" role="alert">{premium.error}</p>}
             <p className="plan-intro">{PLANS_PAGE.premiumIntro}</p>
             <FeatureRows items={PLANS_PAGE.premiumCard} className="plan-rows--two" />

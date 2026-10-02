@@ -30,13 +30,15 @@ test('the trial note says the charge is 7 days later', () => {
   assert.equal(PLANS_PAGE.assurances.includes('Nothing to pay today'), false);
 });
 
-test('closed checkout still states the trial and does not deny it', () => {
-  assert.match(PLANS_PAGE.checkoutMessage, /Checkout is not open yet/);
-  assert.match(PLANS_PAGE.checkoutMessage, /7-day free trial/);
-  assert.match(PLANS_PAGE.checkoutMessage, /won’t be charged until 7 days after you start/);
-  assert.doesNotMatch(PLANS_PAGE.checkoutMessage, /nothing to pay today/i);
-  assert.doesNotMatch(PLANS_PAGE.checkoutMessage, /does not start a payment/i);
-  assert.equal(SETTINGS_VIEW.billing.comingSoonMessage, PLANS_PAGE.checkoutMessage);
+test('a failed web checkout says so plainly, and mobile keeps the closed-checkout wording with the trial', () => {
+  assert.match(PLANS_PAGE.checkoutMessage, /couldn’t start checkout/);
+  assert.doesNotMatch(PLANS_PAGE.checkoutMessage, /not open yet|coming soon/i);
+  assert.match(PLANS_PAGE.mobileCheckoutMessage, /Checkout is not open yet/);
+  assert.match(PLANS_PAGE.mobileCheckoutMessage, /7-day free trial/);
+  assert.match(PLANS_PAGE.mobileCheckoutMessage, /won’t be charged until 7 days after you start/);
+  assert.doesNotMatch(PLANS_PAGE.mobileCheckoutMessage, /nothing to pay today/i);
+  assert.doesNotMatch(PLANS_PAGE.mobileCheckoutMessage, /does not start a payment/i);
+  assert.equal(SETTINGS_VIEW.billing.comingSoonMessage, PLANS_PAGE.mobileCheckoutMessage);
   assert.match(SETTINGS_VIEW.billing.exploreHint, /7-day free trial/);
   assert.doesNotMatch(SETTINGS_VIEW.billing.exploreHint, /not open yet|needs a card/);
   assert.doesNotMatch(SETTINGS_VIEW.billing.exploreHint, /nothing to pay today/i);
