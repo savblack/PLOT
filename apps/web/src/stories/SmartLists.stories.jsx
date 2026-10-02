@@ -380,7 +380,7 @@ const OWN_SAVED = {
   rules: normalizeSmartListRules({ source: 'watchlist', mediaType: 'any' }),
 };
 const ROLLUP_PHONE = { viewport: { value: 'mobile2', isRotated: false } };
-const ROLLUP_DARK = { backgrounds: { value: '#0c0c0c' } };
+const ROLLUP_DARK = { backgrounds: { value: 'dark' } };
 
 // The page with a customLists that remembers the switch, as the hook does.
 function RollUpPage({ list, client, failing = false }) {

@@ -68,7 +68,7 @@ const createdPlay = (message) => async ({ canvasElement }) => {
   await expect(within(toast).getByRole('button', { name: 'Undo' })).toBeVisible();
 };
 const PHONE = { viewport: { value: 'mobile2', isRotated: false } };
-const DARK = { backgrounds: { value: '#0c0c0c' } };
+const DARK = { backgrounds: { value: 'dark' } };
 
 export const SmartListCreated = {
   render: () => <Harness region="GB" autoOffer="Create a smart list" />,
