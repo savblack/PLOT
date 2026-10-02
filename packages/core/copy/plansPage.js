@@ -13,7 +13,6 @@ export const PLANS_PAGE = {
   lede: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch. Make more of the time you set aside for it.',
   comingSoon: 'Coming soon',
   pendingValidation: 'Pending validation',
-  plannedFree: 'Free, coming soon',
   limited: 'Limited',
   previewAction: 'Explore Premium',
   tryTasteOverlap: 'Try taste overlap',

@@ -143,7 +143,7 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
         <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.lede}</Text>
         <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansMedium }}>{PLANS_PAGE.free.name}</Text>
         {PLANS_PAGE.freeFeatures.map(feature => <Text key={feature.id} style={{ color: colors.textSecondary }}>
-          {feature.label}{feature.planned ? ` (${PLANS_PAGE.plannedFree})` : ''}
+          {feature.label}
         </Text>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.customLists(FREE_CUSTOM_LIST_CAP)}</Text>
         <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansMedium }}>{PLANS_PAGE.premium.name}</Text>
