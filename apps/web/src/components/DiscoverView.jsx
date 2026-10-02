@@ -18,6 +18,7 @@ import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { clampToSentences } from '@plot/core/sentences.js';
 import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
 import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -424,6 +425,8 @@ function BingeCard({ item, openPanel, watchlist }) {
 }
 
 /* ── Hero card (featured title) ── */
+// Budget for the featured synopsis; clampToSentences drops whole sentences to fit.
+const HERO_SYNOPSIS_MAX_CHARS = 200;
 function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
   const { favorites, profile } = useApp();
   const fw       = favoriteWords(profile?.region);
@@ -439,6 +442,7 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
     : archiveYear
       ? String(archiveYear)
     : (item.release_date || item.first_air_date || '').slice(0, 4);
+  const synopsis = clampToSentences(item.overview, HERO_SYNOPSIS_MAX_CHARS);
   const saved    = watchlist.isInList(item.id);
   const fav      = favorites.isFavorite(item.id);
   const openDetails = () => openPanel(item.id, type);
@@ -462,6 +466,8 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
               {year} · {type === 'tv' ? MEDIA.tvSeries : MEDIA.movie}{note ? ` · ${note}` : ''}
             </p>
           )}
+          {synopsis && <p className="discover-hero-synopsis">{synopsis}</p>}
+          <span className="discover-hero-cta" aria-hidden="true">View details</span>
         </div>
       </button>
 
