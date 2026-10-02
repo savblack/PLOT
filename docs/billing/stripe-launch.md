@@ -93,9 +93,12 @@ This decision does not enable public checkout or authorize a production change.
    and `STRIPE_CHECKOUT_ENABLED=false`. Use the private pilot allowlist below
    for an explicitly approved low-value purchase. Confirm checkout, cancellation,
    webhook processing, refund and loss of Premium access.
-8. Public launch requires a separately approved code change to the server gate
-   and client checkout controls. Setting `STRIPE_CHECKOUT_ENABLED=true` alone
-   does not open subscriptions. Verify the deployed behavior before announcing launch.
+8. Public launch is the single secret `STRIPE_CHECKOUT_ENABLED=true`, after the
+   deployed `stripe-billing` includes the server gate (`publicCheckoutOpen` in
+   `_shared/billingPolicy.ts`) and the web checkout controls are live. Only the exact
+   value `true` opens checkout; anything else, including `TRUE`, `1` or a typo, leaves
+   it closed. Verify the deployed behavior before announcing launch. To close it again,
+   set the secret back to `false`; the pilot allowlist keeps working.
 
 Never put Stripe secret keys or price IDs in browser variables or tracked files.
 
@@ -138,10 +141,11 @@ Public checkout remains closed in the server and client. The server-only
 Auth identity before reading billing records or making Stripe calls. Do not put
 emails, client-supplied IDs, or this setting into frontend configuration.
 
-Keep `STRIPE_CHECKOUT_ENABLED=false`. The pilot does not use that global switch,
-and setting it to true alone does not open public checkout. Remove the pilot
-setting to close new pilot sessions; existing Stripe sessions must be expired
-separately. Portal access and existing subscriptions are unaffected.
+Keep `STRIPE_CHECKOUT_ENABLED=false` until launch. The pilot does not use that
+global switch: the allowlist works whether it is on or off, and with the switch off
+and no allowlist checkout is closed. Remove the pilot setting to close new pilot
+sessions; existing Stripe sessions must be expired separately. Portal access and
+existing subscriptions are unaffected.
 
 Use an authenticated pilot session to request checkout. Stop before payment
 unless the real charge has been explicitly approved. Verify another account is
