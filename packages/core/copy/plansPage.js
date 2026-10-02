@@ -1,10 +1,10 @@
 // Shared plan preview for web and mobile. Planned features are never shown as live entitlements.
-// Pricing is US$3/month or US$24/year, taxes included, with a 7-day card-required free trial.
+// Pricing is US$3/month or US$24/year, taxes included, with a 7-day free trial for first-time subscribers.
 // The first charge is 7 days after the trial starts. Cancel during the trial and the charge is $0.
 // Stripe Adaptive Pricing shows the price in local currency at checkout. $24/year is exactly
 // four months free against monthly. Checkout stays closed until it is restored (PLO-493).
-// The 7-day trial lives on the Stripe Price objects behind STRIPE_PRICE_MONTHLY and
-// STRIPE_PRICE_YEARLY. Do not put those price IDs in this file.
+// The 7-day trial is requested by the stripe-billing checkout, not set on the Stripe Price. It is for
+// first-time subscribers only. Do not put Stripe price IDs in this file.
 export const PLANS_PAGE = {
   back: '← Back',
   backToApp: '← Back to plot',
@@ -17,7 +17,7 @@ export const PLANS_PAGE = {
   previewAction: 'Explore Premium',
   tryTasteOverlap: 'Try taste overlap',
   upgradeAction: 'Upgrade to Premium',
-  checkoutMessage: 'Checkout is not open yet. When Premium opens, it is US$3/month or US$24/year, taxes included, with a 7-day free trial. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
+  checkoutMessage: 'Checkout is not open yet. When Premium opens, it is US$3/month or US$24/year, taxes included, with a 7-day free trial for first-time subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
   free: {
     name: 'Free',
     price: '$0',
@@ -37,7 +37,7 @@ export const PLANS_PAGE = {
     // Compact label. Watch together reads this and is left on the shorter form.
     priceSummary: '$3/month or $24/year',
     priceTerms: 'US$3/month or US$24/year, taxes included',
-    trialNote: '7-day free trial. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
+    trialNote: '7-day free trial for first-time subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
     monthlyBilled: 'US$3 billed monthly · taxes included',
     annualBilled: 'US$24 billed yearly · taxes included',
     availability: 'Premium is in the works. These features are a preview of what’s coming.',
@@ -68,7 +68,7 @@ export const PLANS_PAGE = {
     { icon: 'customise', label: 'Customise your plot', note: 'Themes on the web now. Widgets and app icons are coming.' },
   ],
   assurances: [
-    '7-day free trial',
+    '7-day free trial for first-time subscribers',
     'You won’t be charged until 7 days after you start',
     'Cancel during the trial and you pay $0',
     'Everything free today stays free',
@@ -226,7 +226,7 @@ export const PLANS_PAGE = {
   },
   faqTitle: 'Before you ask',
   faqs: [
-    { q: 'Can I upgrade now?', a: 'Not yet. Checkout is not open. When it opens, Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.' },
+    { q: 'Can I upgrade now?', a: 'Not yet. Checkout is not open. When it opens, Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for first-time subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.' },
     { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Free does not include personally tailored recommendations.' },
     { q: 'What does Pick for Me actually do?', a: 'It asks four quick questions: movie or show, how long you’ve got, what kind of story, and how new or how good. You get a shortlist of up to five, and you can limit it to your streaming services or your watchlist. Can’t decide? Surprise me gives you one pick.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. To find something you both want to watch, only one of you needs Premium, so the other person joins for free. Anyone can send an invite. Collaborative lists work the same way: only the person who makes the list needs Premium.' },
@@ -234,7 +234,7 @@ export const PLANS_PAGE = {
     { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
     { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Premium themes are available on the web. Deeper stats, widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service.' },
   ],
-  fineprint: 'Prices in US dollars, taxes included. Premium is a 7-day free trial. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
+  fineprint: 'Prices in US dollars, taxes included. Premium has a 7-day free trial for first-time subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
   terms: 'Terms',
   privacy: 'Privacy',
 };
