@@ -219,7 +219,7 @@ function RegionModal({ current, onSave, onClose }: { current: string; onSave: (c
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Region</Text>
+          <Text style={styles.modalTitle}>{SETTINGS_VIEW.page.regionLabel}</Text>
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.modalCancel}>Cancel</Text>
           </TouchableOpacity>
@@ -267,14 +267,14 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Timezone</Text>
+          <Text style={styles.modalTitle}>{SETTINGS_VIEW.page.timezoneLabel}</Text>
           <TouchableOpacity onPress={onClose}><Text style={styles.modalCancel}>Cancel</Text></TouchableOpacity>
         </View>
         <View style={styles.modalSearchWrap}>
           <View style={styles.modalSearchInner}>
             <TextInput
               style={styles.modalSearchInput}
-              placeholder="Search timezones…"
+              placeholder={SETTINGS_VIEW.timezone.searchPlaceholder}
               placeholderTextColor={colors.textMuted}
               value={query}
               onChangeText={setQuery}
@@ -290,7 +290,7 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
         <ScrollView style={{ flex: 1 }}>
           {!query && deviceTz && deviceTz !== chosen && (
             <TouchableOpacity style={[styles.tzRow, styles.tzRowDevice]} onPress={() => setChosen(deviceTz)}>
-              <Text style={styles.tzRowDeviceText}>Use device timezone · {fmtTz(deviceTz)}</Text>
+              <Text style={styles.tzRowDeviceText}>{SETTINGS_VIEW.timezone.useDevice(fmtTz(deviceTz))}</Text>
             </TouchableOpacity>
           )}
           {filtered.map(tz => (
@@ -311,7 +311,7 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
             disabled={!chosen || saving}
             activeOpacity={0.8}
           >
-            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
+            <Text style={styles.saveBtnText}>{saving ? COMMON.saving : COMMON.save}</Text>
           </TouchableOpacity>
         </View>
       </View>

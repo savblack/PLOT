@@ -98,12 +98,12 @@ function RegionPicker({ current, onSave, onClose }) {
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        <SheetHeader title="Region" onClose={onClose} />
+        <SheetHeader title={SETTINGS_VIEW.page.regionLabel} onClose={onClose} />
         <div style={{ padding: '1rem', overflow: 'auto', flex: 1 }}>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
-            Used to show content and streaming services available in your region.
+            {SETTINGS_VIEW.region.intro}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
             {REGIONS.map(r => (
               <button
                 key={r.code}
@@ -125,15 +125,16 @@ function RegionPicker({ current, onSave, onClose }) {
               </button>
             ))}
           </div>
+        </div>
+        <div className="settings-picker-footer">
           <button
-            className="btn btn-primary"
-            style={{ width: '100%' }}
+            className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={saving || chosen === current}
             aria-busy={saving}
             aria-label={saving ? SETTINGS_VIEW.region.savingRegion : SETTINGS_VIEW.region.saveRegion}
           >
-            {saving ? <Spinner size="button" ariaHidden /> : SETTINGS_VIEW.region.saveRegionLabel}
+            {saving ? <Spinner size="button" ariaHidden /> : COMMON.save}
           </button>
         </div>
       </div>
@@ -306,7 +307,7 @@ function TimezonePicker({ current, onSave, onClose }) {
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        <SheetHeader title="Timezone" onClose={onClose} />
+        <SheetHeader title={SETTINGS_VIEW.page.timezoneLabel} onClose={onClose} />
 
         <div style={{ padding: '0.75rem 1rem 0', position: 'relative' }}>
           <input
@@ -321,7 +322,7 @@ function TimezonePicker({ current, onSave, onClose }) {
               color: 'var(--text-primary)',
               outline: 'none',
             }}
-            placeholder="Search timezones…"
+            placeholder={SETTINGS_VIEW.timezone.searchPlaceholder}
             value={query}
             onChange={e => setQuery(e.target.value)}
             autoFocus
@@ -357,7 +358,7 @@ function TimezonePicker({ current, onSave, onClose }) {
               }}
               onClick={() => setChosen(deviceTz)}
             >
-              Use device timezone · {fmtTz(deviceTz)}
+              {SETTINGS_VIEW.timezone.useDevice(fmtTz(deviceTz))}
             </button>
           )}
 
@@ -383,10 +384,9 @@ function TimezonePicker({ current, onSave, onClose }) {
           ))}
         </div>
 
-        <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid var(--border)' }}>
+        <div className="settings-picker-footer">
           <button
-            className="btn btn-primary"
-            style={{ width: '100%' }}
+            className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={!chosen || saving}
             aria-busy={saving}
