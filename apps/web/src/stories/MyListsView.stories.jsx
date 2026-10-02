@@ -2,6 +2,7 @@ import { expect, fireEvent, waitFor, within } from 'storybook/test';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { MEDIA } from '@plot/core/copy/media.js';
 import { AppContext } from '../hooks/useApp.js';
 import MyListsView from '../components/MyListsView.jsx';
 import ListPage from '../components/ListPage.jsx';
@@ -162,6 +163,37 @@ const listPage = (route) => ({
 });
 
 export const CustomListPage  = listPage('/my-lists/list-l1');
+
+/* A custom list takes the same Show and Genre filters as Want to Watch and
+   Favourites. It used to render no filter column at all, and ListPage handed
+   the section ALL_TYPES and no genres, so there was nothing to narrow. A
+   filter or search that empties the list says so rather than leaving a blank
+   grid. */
+const mixedApp = {
+  ...app,
+  customLists: {
+    ...app.customLists,
+    lists: [{ id: 'mixed', name: 'Mixed', is_public: false, items: [title(310, 'Paddington 2'), title(311, 'Bluey', 'tv')] }],
+  },
+};
+export const CustomListPageFilters = {
+  ...listPage('/my-lists/list-mixed'),
+  parameters: { route: '/my-lists/list-mixed', app: mixedApp },
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryAllByText('Bluey').length).toBeGreaterThan(0);
+
+    // The filter column is display:none below 1024px, so look past that: this
+    // asserts the filter drives the list, not the breakpoint.
+    await fireEvent.click(canvas.getByRole('checkbox', { name: MEDIA.tv, hidden: true }));
+    await waitFor(() => expect(canvas.queryAllByText('Bluey')).toHaveLength(0));
+    await expect(canvas.queryAllByText('Paddington 2').length).toBeGreaterThan(0);
+
+    await fireEvent.input(canvas.getByLabelText(CUSTOM_LISTS.searchThisList), { target: { value: 'bluey' } });
+    await expect(await canvas.findByText(/No items match/)).toBeInTheDocument();
+  },
+};
 export const WantToWatchPage = listPage('/my-lists/want');
 export const FavoritesPage   = listPage('/my-lists/favorites');
 

@@ -11,6 +11,7 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import { isSmartListPremiumError } from '@plot/core/customListCreation.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
@@ -128,6 +129,21 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
     );
   } else if (smart.items.length === 0) {
     body = <Empty>{SMART_LISTS.empty}</Empty>;
+  } else if (visible.length === 0) {
+    // The page's search emptied it. Load more stays reachable below, since
+    // the search only sees the pages fetched so far.
+    body = (
+      <>
+        <Empty>{CUSTOM_LISTS.noMatch}</Empty>
+        {smart.hasMore && (
+          <div className="smart-more">
+            <button type="button" className="btn btn-secondary btn-sm" disabled={smart.loadingMore} onClick={smart.loadMore}>
+              {smart.loadingMore ? <PlotLoader size="sm" /> : SMART_LISTS.loadMore}
+            </button>
+          </div>
+        )}
+      </>
+    );
   } else {
     body = (
       <>

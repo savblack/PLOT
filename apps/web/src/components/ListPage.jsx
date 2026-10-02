@@ -9,7 +9,7 @@ import { useGenres } from '../hooks/useGenres.js';
 import { useShare } from '../hooks/useShare.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { EVENTS } from '../lib/analytics.js';
-import { ALL_TYPES, filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
+import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { customListIdFromKey, customListKey, sortListItems, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -17,6 +17,15 @@ import { CustomListSection, FavoritesSection, WantToWatchSection } from './ListS
 import { SmartListSection } from './SmartListSection.jsx';
 import { IconSearch } from './navIcons.jsx';
 import SideFilters from './SideFilters.jsx';
+import MobilePageControls from './MobilePageControls.jsx';
+import { TYPE_ROWS } from './sideFilterRows.js';
+import { MEDIA } from '../copy/media.js';
+
+// The Calendar's Show rows minus Cinema, as on History: every list here holds
+// saved rows, and a saved row never carries the `_cinema` flag that row
+// matches on, so on its own it could only ever show nothing.
+const LIST_TYPE_ROWS = TYPE_ROWS.filter(r => r.id !== 'cinema');
+const ALL_LIST_TYPES = LIST_TYPE_ROWS.map(r => r.id);
 import KebabMenu from './KebabMenu.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 
@@ -92,7 +101,7 @@ export default function ListPage() {
   const { genres } = useGenres();
   const fw = favoriteWords(profile?.region);
   const { share, copied } = useShare();
-  const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
+  const [typeFilters,  setTypeFilters]  = useState(ALL_LIST_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
   const [query, setQuery] = useState('');
   const [view, setView] = useState('auto');
@@ -127,20 +136,39 @@ export default function ListPage() {
 
   const sortItems = useCallback((items) => sortListItems(items, sort), [sort]);
 
-  const showFilter = key === 'want' || key === 'favorites';
+  // Not smart lists: their saved rules already pick a type and genres, and
+  // they load a page at a time, so a second filter here would contradict the
+  // rules and only narrow what has been fetched so far. Search still applies.
+  const showFilter = key === 'want' || key === 'favorites' || !!list;
+  // Only CustomListSection reads this on the page: it swaps an emptied grid for
+  // "No items match". Want to Watch and Favourites return null when narrowed,
+  // which here would take the header and filters with it.
+  const narrowed = typeFilters.length < ALL_LIST_TYPES.length || genreFilters.length > 0 || query.trim() !== '';
 
   // What the frame needs from the page. A fresh object per render is fine —
   // it re-renders the frame, which is the point; only a changing component
   // identity would remount it.
   const framePage = useMemo(() => ({
+    // The column is display:none below 1024px and the bottom bar is hidden
+    // above it, so each width gets one copy. The bar portals to the body, so
+    // sitting inside the hidden column does not hide it.
     filter: showFilter ? (
-      <SideFilters
-        typeFilters={typeFilters}
-        setTypeFilters={setTypeFilters}
-        genreFilters={genreFilters}
-        setGenreFilters={setGenreFilters}
-        genres={genres}
-      />
+      <>
+        <SideFilters
+          typeRows={LIST_TYPE_ROWS}
+          typeFilters={typeFilters}
+          setTypeFilters={setTypeFilters}
+          genreFilters={genreFilters}
+          setGenreFilters={setGenreFilters}
+          genres={genres}
+        />
+        <MobilePageControls
+          groups={[
+            { heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes, options: LIST_TYPE_ROWS, value: typeFilters, defaultValue: ALL_LIST_TYPES, onChange: setTypeFilters },
+            { heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres, columns: 2, options: genres.map(g => ({ id: g.id, label: g.name })), value: genreFilters, defaultValue: [], onChange: setGenreFilters },
+          ]}
+        />
+      </>
     ) : null,
     query,
     onQuery: setQuery,
@@ -179,12 +207,12 @@ export default function ListPage() {
       <CustomListSection
         key={customListKey(list.id)}
         list={list}
-        visibleItems={sortItems(matchQuery(list.items || []))}
+        visibleItems={sortItems(matchQuery(filterByTypeAndGenre(list.items, typeFilters, genreFilters)))}
         count={(list.items || []).length}
         customLists={customLists}
-        typeFilters={ALL_TYPES}
-        genreFilters={[]}
-        narrowed={false}
+        typeFilters={typeFilters}
+        genreFilters={genreFilters}
+        narrowed={narrowed}
         share={shareList}
         shareCopied={copied}
         onDeleted={() => navigate('/my-lists')}
