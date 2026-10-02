@@ -15,7 +15,8 @@
  *
  * Storage (web): 'plot-theme' holds the mode, as it always has, and
  * 'plot-theme-family' the family. An older 'plot-theme' that holds a retired
- * single theme id ('sage', 'midnight', 'espresso'…) migrates via LEGACY_THEMES.
+ * single theme id ('sage', 'midnight', 'espresso'…) migrates via LEGACY_THEMES,
+ * and a renamed family id in 'plot-theme-family' via FAMILY_ALIASES.
  *
  * Web applies a preference as data-theme="<light|dark>" (so every existing
  * [data-theme="dark"] rule keeps working) plus data-palette="<family>" (absent
@@ -60,7 +61,16 @@ export const LEGACY_THEMES = Object.freeze({
   espresso: { family: 'default', mode: 'dark' },
   clay: { family: 'default', mode: 'dark' },
   burgundy: { family: 'default', mode: 'dark' },
+  rose: { family: 'blush', mode: 'light' },
 });
+
+/**
+ * Renamed family ids and what a stored 'plot-theme-family' becomes. Rose was
+ * renamed Blush before it shipped (2 Oct 2026); kept so a preview build's
+ * saved choice still lands.
+ * @type {Readonly<Record<string, ThemeFamily>>}
+ */
+export const FAMILY_ALIASES = Object.freeze({ rose: 'blush' });
 
 const has = (obj, key) => typeof key === 'string' && Object.prototype.hasOwnProperty.call(obj, key);
 
@@ -91,10 +101,12 @@ export function isThemeMode(mode) {
  */
 export function readThemePreference(storedMode, storedFamily) {
   if (has(LEGACY_THEMES, storedMode)) return { ...LEGACY_THEMES[/** @type {string} */ (storedMode)], migrated: true };
+  const aliased = has(FAMILY_ALIASES, storedFamily);
+  const family = aliased ? FAMILY_ALIASES[/** @type {string} */ (storedFamily)] : storedFamily;
   return {
-    family: isKnownFamily(storedFamily) ? /** @type {ThemeFamily} */ (storedFamily) : DEFAULT_FAMILY,
+    family: isKnownFamily(family) ? /** @type {ThemeFamily} */ (family) : DEFAULT_FAMILY,
     mode: isThemeMode(storedMode) ? /** @type {ThemeMode} */ (storedMode) : 'light',
-    migrated: false,
+    migrated: aliased,
   };
 }
 

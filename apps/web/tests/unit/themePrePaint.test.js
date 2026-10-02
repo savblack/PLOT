@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import vm from 'node:vm';
 import { themeFamilies } from '@plot/core/tokens.js';
-import { LEGACY_THEMES, THEME_FAMILIES, THEME_MODES, readThemePreference, themeAttributes } from '@plot/core/themes.js';
+import { FAMILY_ALIASES, LEGACY_THEMES, THEME_FAMILIES, THEME_MODES, readThemePreference, themeAttributes } from '@plot/core/themes.js';
 
 // The pre-paint script in index.html runs before any module loads, so it
 // carries a generated copy of the family list and the retired theme ids. These
@@ -49,7 +49,13 @@ test('the pre-paint script paints every family and mode the way useTheme will', 
 
 test('a retired theme id paints as the family and mode it became', () => {
   for (const id of Object.keys(LEGACY_THEMES)) {
-    assert.deepEqual(prePaint(id, 'rose'), expected(id, 'rose', false), id);
+    assert.deepEqual(prePaint(id, 'blush'), expected(id, 'blush', false), id);
+  }
+});
+
+test('a renamed family paints as its new id', () => {
+  for (const [from, to] of Object.entries(FAMILY_ALIASES)) {
+    assert.deepEqual(prePaint('dark', from), { 'data-theme': 'dark', 'data-palette': to }, from);
   }
 });
 

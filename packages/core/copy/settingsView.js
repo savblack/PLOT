@@ -232,7 +232,7 @@ export const SETTINGS_VIEW = {
       default: 'Default',
       sage: 'Sage',
       mist: 'Mist',
-      rose: 'Rose',
+      blush: 'Blush',
       ink: 'Ink',
       plum: 'Plum',
     },

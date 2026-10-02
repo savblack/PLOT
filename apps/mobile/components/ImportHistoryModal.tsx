@@ -37,7 +37,8 @@ const PLATFORMS: PlatformConfig[] = [
   {
     id: 'plex',
     name: 'Plex',
-    color: 'rating',
+    // Brand colour: 'rating' is the theme accent now, which would turn it pink.
+    color: '#E5A00D',
     hint: IMPORT_VIEW.connectionImportHint,
     kind: 'connection',
   },
@@ -65,7 +66,7 @@ const PLATFORMS: PlatformConfig[] = [
   {
     id: 'imdb',
     name: IMPORT_VIEW.imdbName,
-    color: 'rating',
+    color: '#F5C518',
     hint: IMPORT_VIEW.imdbHint,
     accept: ['text/csv', 'application/csv', 'text/plain', 'public.comma-separated-values-text'],
   },

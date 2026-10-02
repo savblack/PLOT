@@ -8,6 +8,11 @@
 // `light` is the full set (web :root). `dark` holds only the values the web
 // [data-theme="dark"] block overrides; anything absent inherits from `light`.
 
+// The type-and-line accent's text shade, named once because star ratings use
+// it too (rating below, decision 2 Oct 2026).
+const LIGHT_ACCENT_TEXT = '#B83558';
+const DARK_ACCENT_TEXT = '#F06A88';
+
 export const colors = {
   light: {
     // Warm neutrals (Sept 2026 brand pass). Cream ground, near-white warm
@@ -37,7 +42,7 @@ export const colors = {
     // on --bg and 4.53:1 on the sunken cream. accentText is a step darker for
     // the smallest labels. Green replaced the pink accent on 16 Sep 2026; the
     // pink lives on as the fill below.
-    accentText: '#B83558',
+    accentText: LIGHT_ACCENT_TEXT,
     // The SECONDARY accent is a soft green (the deep end of Marshmallow's
     // sage): availability, "now at home", a second voice next to the pink.
     // 4.91:1 on --bg, 4.53:1 on the sunken cream. accentSecondaryFill is the
@@ -64,10 +69,6 @@ export const colors = {
     // A marker stroke behind body text (Pick for Me's finding sentence). The
     // accent fill, except where that fill is too dark to read text over.
     highlight: '#FF88C8',
-    // The Write a review / rate stars on the title panel: the fill pink here,
-    // matching the review button beside them. A Premium family uses its
-    // type-and-line accent, since its fill is too pale to read as a line.
-    reviewStar: '#FF88C8',
     danger: '#B9384A',
     dangerDim: 'rgba(185,56,74,0.1)',
     dangerBorder: 'rgba(185,56,74,0.22)',
@@ -103,11 +104,12 @@ export const colors = {
     // paid Premium (entitlement), pink = Ko-fi supporter (recognition). Pink
     // tracks the accent ladder; blue is its own hue so the two never read as
     // shades of one badge.
-    // The star rating, shared by both apps. Was #F59E0B hardcoded in five
-    // places; that amber reads 2.06:1 on white, which fails even the 3:1 bar
-    // for the icon, let alone 4.5:1 for the score beside it. Dark keeps the
-    // original, which was already comfortable at 7.23.
-    rating: '#B45309',
+    // The star rating, shared by both apps: every star and score is the
+    // theme's accentText (decision 2 Oct 2026), an approved accent use. It
+    // replaced an amber that no longer belonged to any theme. 4.73:1 on the
+    // sunken cream, the lowest of the four grounds. Premium families get the
+    // same rule below, so rating is never set per family.
+    rating: LIGHT_ACCENT_TEXT,
     badgePremium: '#1A8CD8',
     badgeSupporter: '#E05578',
   },
@@ -126,7 +128,7 @@ export const colors = {
     borderStrong: 'rgba(240,239,232,0.16)',
     accent: '#F06A88',
     accentDim: 'rgba(240,106,136,0.15)',
-    accentText: '#F06A88',
+    accentText: DARK_ACCENT_TEXT,
     // The green lightened for the dark ground (12.4:1).
     accentSecondary: '#C9D48A',
     accentSecondaryDim: 'rgba(201,212,138,0.15)',
@@ -150,7 +152,7 @@ export const colors = {
     success: '#4ade80',
     successDim: 'rgba(74,222,128,0.08)',
     successBorder: 'rgba(74,222,128,0.35)',
-    rating: '#F59E0B',
+    rating: DARK_ACCENT_TEXT,
     badgePremium: '#1D9BF0',
     badgeSupporter: '#F06A88',
   },
@@ -202,8 +204,6 @@ export const themeFamilyVariants = {
       artworkFillHover: '#CBE276',
       onArtworkFill: '#20261A',
       highlight: '#BFDA5E',
-      reviewStar: '#4F7A1A',
-      rating: '#8F3F06',
       danger: '#932636',
       statusWatching: '#4640AE',
       statusWatched: '#035E45',
@@ -233,8 +233,6 @@ export const themeFamilyVariants = {
       artworkFillHover: '#CBE276',
       onArtworkFill: '#18200F',
       highlight: '#BFDA5E',
-      reviewStar: '#B7D65A',
-      rating: '#F59E0B',
     },
   },
   mist: {
@@ -262,8 +260,6 @@ export const themeFamilyVariants = {
       artworkFillHover: '#BAD6F2',
       onArtworkFill: '#1B232A',
       highlight: '#A8CBEE',
-      reviewStar: '#2F6AA8',
-      rating: '#8F3F06',
       danger: '#932636',
       statusWatching: '#4640AE',
       statusWatched: '#035E45',
@@ -293,11 +289,9 @@ export const themeFamilyVariants = {
       artworkFillHover: '#BAD6F2',
       onArtworkFill: '#0D141C',
       highlight: '#A8CBEE',
-      reviewStar: '#7FB2EA',
-      rating: '#F59E0B',
     },
   },
-  rose: {
+  blush: {
     light: {
       bg: '#F6DCE3',
       surface: '#FAE8ED',
@@ -322,8 +316,6 @@ export const themeFamilyVariants = {
       artworkFillHover: '#A5DFD6',
       onArtworkFill: '#12302C',
       highlight: '#8FD6CB',
-      reviewStar: '#1D7068',
-      rating: '#8A3A05',
       danger: '#932636',
       statusWatching: '#4640AE',
       statusWatched: '#035E45',
@@ -353,8 +345,6 @@ export const themeFamilyVariants = {
       artworkFillHover: '#A5DFD6',
       onArtworkFill: '#12302C',
       highlight: '#8FD6CB',
-      reviewStar: '#7FD6C8',
-      rating: '#F5B342',
     },
   },
   ink: {
@@ -382,8 +372,6 @@ export const themeFamilyVariants = {
       artworkFillHover: '#EDEDE9',
       onArtworkFill: '#111111',
       highlight: '#F2C9C9',
-      reviewStar: '#C92A2A',
-      rating: '#9A4507',
     },
     dark: {
       bg: '#080808',
@@ -409,8 +397,6 @@ export const themeFamilyVariants = {
       artworkFillHover: '#E8E8E4',
       onArtworkFill: '#111111',
       highlight: '#6B2A26',
-      reviewStar: '#FF5147',
-      rating: '#F5B342',
     },
   },
   plum: {
@@ -438,8 +424,6 @@ export const themeFamilyVariants = {
       artworkFillHover: '#F5CD6D',
       onArtworkFill: '#2A1F08',
       highlight: '#F2C04F',
-      reviewStar: '#9A5A00',
-      rating: '#8A3A05',
       danger: '#932636',
       statusWatching: '#4640AE',
       statusWatched: '#035E45',
@@ -469,8 +453,6 @@ export const themeFamilyVariants = {
       artworkFillHover: '#F5CD6D',
       onArtworkFill: '#2A1F08',
       highlight: '#F2C04F',
-      reviewStar: '#F2C04F',
-      rating: '#F5B342',
     },
   },
 };
@@ -478,7 +460,13 @@ export const themeFamilyVariants = {
 // The families that ship, in picker order. A family in themeFamilyVariants but
 // not listed here is wired (named in the copy catalog, held to the contrast bar
 // by themes.test.js) but hidden from every picker.
-const SHIPPED_FAMILIES = ['sage', 'mist', 'rose', 'ink', 'plum'];
+const SHIPPED_FAMILIES = ['sage', 'mist', 'blush', 'ink', 'plum'];
+
+// Star ratings take each variant's accentText, as on the free themes, so a
+// family never carries its own rating value.
+for (const family of Object.values(themeFamilyVariants)) {
+  for (const variant of [family.light, family.dark]) variant.rating = variant.accentText;
+}
 
 /** @type {Record<string, { light: Record<string, string>, dark: Record<string, string> }>} */
 export const themeFamilies = Object.fromEntries(SHIPPED_FAMILIES.map(id => [id, themeFamilyVariants[id]]));

@@ -19,7 +19,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { colors, themeFamilies, radii, cssVarName } from '@plot/core/tokens.js';
-import { LEGACY_THEMES } from '@plot/core/themes.js';
+import { FAMILY_ALIASES, LEGACY_THEMES } from '@plot/core/themes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CSS_PATH = resolve(__dirname, '..', 'apps', 'web', 'src', 'styles', 'tokens.css');
@@ -93,6 +93,7 @@ const legacyList = Object.entries(LEGACY_THEMES).map(([id, p]) => `${q(id)}: [${
 let htmlNext = replaceBetween(htmlCurrent, '// @palettes:start', '// @palettes:end', [
   `          var families = { ${familyList} };`,
   `          var legacy = { ${legacyList} };`,
+  `          var familyAliases = { ${Object.entries(FAMILY_ALIASES).map(([from, to]) => `${q(from)}: ${q(to)}`).join(', ')} };`,
 ].join('\n'), 'index.html');
 htmlNext = replaceBetween(htmlNext, '/* @palettes:start', '/* @palettes:end */', Object.entries(themeFamilies).flatMap(([id, family]) => ['light', 'dark'].map((mode) => {
   const c = family[mode];

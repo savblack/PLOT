@@ -2724,7 +2724,7 @@ svg { stroke-width: 1.5; }
   text-overflow: ellipsis;
 }
 .mylists-card-rating {
-  color: #f59e0b;
+  color: var(--rating);
   font-weight: 600;
 }
 /* Permanent "you wrote a review" signal; never toggled, so a card's height
@@ -3378,7 +3378,7 @@ svg { stroke-width: 1.5; }
   padding: 0;
   border: 0;
   background: none;
-  color: var(--text-primary);
+  color: var(--rating);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3652,7 +3652,8 @@ svg { stroke-width: 1.5; }
 .half-star-fill {
   position: absolute;
   inset: 0 auto 0 0;
-  color: var(--text-primary);
+  /* Every drawn star rating is the theme's accentText (--rating). */
+  color: var(--rating);
   overflow: hidden;
   white-space: nowrap;
   pointer-events: none;
@@ -4457,18 +4458,16 @@ svg { stroke-width: 1.5; }
 .panel-engagement-stars {
   display: flex;
   gap: 1px;
-  /* --review-star: the fill pink on the free themes (matching the Write a
-     review / Mark as watched fill); a Premium family's accent, since its fill
-     is too pale against its ground to read as a line. */
-  color: var(--review-star);
+  /* Stars are the rating colour (the theme's accentText) everywhere. */
+  color: var(--rating);
   flex-shrink: 0;
 }
 .panel-engagement-stars .half-star-empty {
-  color: var(--review-star);
+  color: var(--rating);
   opacity: 0.4;
 }
 .panel-engagement-stars .half-star-fill {
-  color: var(--review-star);
+  color: var(--rating);
 }
 .panel-engagement-star {
   display: inline-flex;
@@ -4527,7 +4526,7 @@ svg { stroke-width: 1.5; }
   padding: 0 1.25rem;
 }
 .panel-take-head { padding: 0.85rem 0; }
-.panel-take-stars { display: flex; gap: 1px; flex-shrink: 0; color: var(--accent); }
+.panel-take-stars { display: flex; gap: 1px; flex-shrink: 0; color: var(--rating); }
 .panel-take-stars svg { width: 17px; height: 17px; }
 .panel-take-summary { flex: 1; min-width: 0; }
 .panel-take-summary b { display: block; font-size: 0.85rem; font-weight: 600; }

@@ -4,6 +4,7 @@ import test from 'node:test';
 import { colors, themeFamilies, themeFamilyVariants } from '../../tokens.js';
 import {
   DEFAULT_FAMILY,
+  FAMILY_ALIASES,
   LEGACY_THEMES,
   PREMIUM_FAMILIES,
   THEME_FAMILIES,
@@ -19,10 +20,10 @@ import {
 import { SETTINGS_VIEW } from '../../copy/settingsView.js';
 import { PLANS_PAGE } from '../../copy/plansPage.js';
 
-test('the default family is free; Sage, Mist, Rose, Ink and Plum are the Premium ones', () => {
+test('the default family is free; Sage, Mist, Blush, Ink and Plum are the Premium ones', () => {
   assert.deepEqual([...THEME_MODES], ['light', 'dark', 'system']);
-  assert.deepEqual([...PREMIUM_FAMILIES], ['sage', 'mist', 'rose', 'ink', 'plum']);
-  assert.deepEqual([...THEME_FAMILIES], ['default', 'sage', 'mist', 'rose', 'ink', 'plum']);
+  assert.deepEqual([...PREMIUM_FAMILIES], ['sage', 'mist', 'blush', 'ink', 'plum']);
+  assert.deepEqual([...THEME_FAMILIES], ['default', 'sage', 'mist', 'blush', 'ink', 'plum']);
   assert.equal(isPremiumFamily(DEFAULT_FAMILY), false);
   for (const isPremium of [true, false, null, undefined]) assert.equal(canUseFamily('default', isPremium), true);
 });
@@ -64,12 +65,18 @@ test('retired single theme ids migrate to a family and mode', () => {
   const cases = {
     sage: ['sage', 'light'], cinema: ['sage', 'dark'], mist: ['mist', 'light'], midnight: ['mist', 'dark'],
     ink: ['ink', 'light'], linen: ['default', 'light'], espresso: ['default', 'dark'], clay: ['default', 'dark'],
-    burgundy: ['default', 'dark'],
+    burgundy: ['default', 'dark'], rose: ['blush', 'light'],
   };
   for (const [stored, [family, mode]] of Object.entries(cases)) {
-    assert.deepEqual(readThemePreference(stored, 'rose'), { family, mode, migrated: true }, stored);
+    assert.deepEqual(readThemePreference(stored, 'blush'), { family, mode, migrated: true }, stored);
   }
   for (const { family } of Object.values(LEGACY_THEMES)) assert.ok(family === 'default' || isPremiumFamily(family), family);
+});
+
+test('a stored Rose family, renamed Blush before it shipped, reads as Blush', () => {
+  assert.equal(FAMILY_ALIASES.rose, 'blush');
+  assert.deepEqual(readThemePreference('dark', 'rose'), { family: 'blush', mode: 'dark', migrated: true });
+  assert.equal(isPremiumFamily('rose'), false);
 });
 
 test('themeAttributes resolves system live and omits the palette for the default', () => {
@@ -169,6 +176,23 @@ test('every variant carries its own accent set and rating', () => {
     const c = themeFamilyVariants[id][mode];
     for (const key of ['accent', 'accentDim', 'accentText', 'accentFill', 'accentFillHover', 'onAccentFill', 'artworkFill', 'onArtworkFill', 'rating', 'border', 'borderStrong']) {
       assert.equal(typeof c[key], 'string', `${id}.${mode}.${key}`);
+    }
+  }
+});
+
+test('star ratings are the accentText in every theme, the default included', () => {
+  for (const mode of ['light', 'dark']) assert.equal(themeColors('default', mode).rating, themeColors('default', mode).accentText);
+  assert.equal(colors.light.rating, '#B83558');
+  assert.equal(themeColors('default', 'dark').rating, '#F06A88');
+  for (const [id, mode] of VARIANTS) assert.equal(variant(id, mode).rating, variant(id, mode).accentText, `${id} ${mode}`);
+});
+
+test('the rating clears 4.5:1 on every ground in the default theme too', () => {
+  for (const mode of ['light', 'dark']) {
+    const set = themeColors('default', mode);
+    for (const ground of GROUNDS) {
+      const ratio = contrast(set.rating, set[ground]);
+      assert.ok(ratio >= 4.5, `default ${mode}: rating on ${ground} is ${ratio.toFixed(2)}:1`);
     }
   }
 });
