@@ -5164,6 +5164,18 @@ a.provider-chip--link:hover {
     display: block;
   }
 }
+/* Region and Timezone pickers: Save sits compact at the bottom right, under a
+   hairline, rather than stretching across the panel. Sticky, because on a
+   phone the panel scrolls and the list would otherwise push Save off screen. */
+.settings-picker-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
 .settings-text-action {
   display: inline-flex;
   align-items: center;
