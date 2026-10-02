@@ -7,6 +7,7 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 export const TASTE_OVERLAP = {
   title: 'Taste overlap',
+  loading: 'Comparing your taste',
   premiumChip: 'Deeper stats · Premium',
   /** @param {string} name */
   youAnd: (name) => `You and ${name}`,
@@ -33,7 +34,7 @@ export const TASTE_OVERLAP = {
   theirDecade: (name, decade) => `${name}’s is the ${decade}s`,
   /** @param {string} name */
   sameDecade: (name) => `${name}’s too`,
-  noDecade: 'Not enough release dates yet',
+  noDecade: 'Not enough titles saved yet',
   tougherCritic: 'Tougher critic',
   even: 'Even',
   /** @param {string} tougherAvg @param {string} otherAvg */

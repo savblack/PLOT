@@ -10,12 +10,25 @@ import { tasteOverlap } from './tasteOverlap.js';
 const KNOWN_ERRORS = new Set(['premium_required', 'not_found', 'not_visible', 'not_authenticated']);
 
 /**
+ * The last answer per viewer and handle, for this tab only. Going back to a
+ * comparison shows it at once and refreshes underneath, instead of a second
+ * wait for a round trip to the production region. Memory only, never storage:
+ * it holds another person's history, and it must not outlive the session.
+ * @type {Map<string, { target: any, overlap: any, sharedWatchlist: number | null }>}
+ */
+const lastResult = new Map();
+const MAX_CACHED = 20;
+
+const cacheKey = (viewerId, handle) => (viewerId && handle ? `${viewerId}:${handle.toLowerCase()}` : null);
+
+/**
  * Taste overlap between the signed-in viewer and `username`.
  *
  * The `taste_overlap` RPC is the gate: it refuses non-Premium viewers, blocked
  * or missing handles, and private profiles the viewer does not follow. Pass
  * `enabled: false` to skip the call (a Free viewer the client already knows
- * will be refused).
+ * will be refused). Pass `viewerId` to reuse the last answer for this viewer
+ * while a fresh one loads.
  *
  * `sharedWatchlist` is the count of titles on both watchlists. The RPC
  * returns it for anyone whose profile you can read (can_view_profile), which
@@ -23,33 +36,54 @@ const KNOWN_ERRORS = new Set(['premium_required', 'not_found', 'not_visible', 'n
  * profiles.
  *
  * @param {string | null | undefined} username
- * @param {{ enabled?: boolean }} [opts]
+ * @param {{ enabled?: boolean, viewerId?: string | null }} [opts]
  */
-export function useTasteOverlap(username, { enabled = true } = {}) {
-  const [loading, setLoading] = useState(enabled && !!username);
+export function useTasteOverlap(username, { enabled = true, viewerId = null } = {}) {
+  const handle = (username || '').replace(/^@/, '').trim();
+  const key = cacheKey(viewerId, handle);
+  const cached = enabled && key ? lastResult.get(key) : undefined;
+  const [loading, setLoading] = useState(enabled && !!handle && !cached);
   /** @type {[TasteOverlapError | null, Function]} */
   const [error, setError] = useState(null);
-  const [target, setTarget] = useState(null);
-  const [overlap, setOverlap] = useState(null);
-  const [sharedWatchlist, setSharedWatchlist] = useState(null);
+  const [target, setTarget] = useState(cached?.target ?? null);
+  const [overlap, setOverlap] = useState(cached?.overlap ?? null);
+  const [sharedWatchlist, setSharedWatchlist] = useState(cached?.sharedWatchlist ?? null);
 
   const load = useCallback(async () => {
-    const handle = (username || '').replace(/^@/, '').trim();
     if (!enabled || !handle) { setLoading(false); return; }
-    setLoading(true);
+    const hit = key ? lastResult.get(key) : undefined;
     setError(null);
+    if (hit) {
+      setTarget(hit.target); setOverlap(hit.overlap); setSharedWatchlist(hit.sharedWatchlist);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     const { data, error: rpcError } = await supabase.rpc('taste_overlap', { p_username: handle });
     if (rpcError || !data) {
       const reason = rpcError?.message;
-      setError(KNOWN_ERRORS.has(reason) ? reason : 'failed');
-      setTarget(null); setOverlap(null); setSharedWatchlist(null);
+      // A refusal (blocked, gone private, Premium lapsed) replaces a cached
+      // answer; a plain network failure keeps showing it.
+      if (key && KNOWN_ERRORS.has(reason)) lastResult.delete(key);
+      if (!hit || KNOWN_ERRORS.has(reason)) {
+        setError(KNOWN_ERRORS.has(reason) ? reason : 'failed');
+        setTarget(null); setOverlap(null); setSharedWatchlist(null);
+      }
     } else {
-      setTarget(data.target);
-      setOverlap(tasteOverlap(data.mine || [], data.theirs || []));
-      setSharedWatchlist(typeof data.shared_watchlist === 'number' ? data.shared_watchlist : null);
+      const next = {
+        target: data.target,
+        overlap: tasteOverlap(data.mine || [], data.theirs || []),
+        sharedWatchlist: typeof data.shared_watchlist === 'number' ? data.shared_watchlist : null,
+      };
+      if (key) {
+        lastResult.delete(key);
+        lastResult.set(key, next);
+        if (lastResult.size > MAX_CACHED) lastResult.delete(lastResult.keys().next().value);
+      }
+      setTarget(next.target); setOverlap(next.overlap); setSharedWatchlist(next.sharedWatchlist);
     }
     setLoading(false);
-  }, [username, enabled]);
+  }, [handle, key, enabled]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- load when the handle or gate changes
