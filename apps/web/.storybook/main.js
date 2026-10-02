@@ -3,6 +3,15 @@ import { fileURLToPath } from 'node:url';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Watch together (and the collaborative lists built on it) is gated by
+// SHOW_WATCH_TOGETHER, which is on only for localhost and Cloudflare preview
+// hosts unless VITE_SHOW_WATCH_TOGETHER says otherwise. Chromatic serves
+// stories from *.chromatic.com, so without this the gated UI vanished there
+// and every story exercising it failed, while the same stories passed
+// locally. Storybook documents the feature, so switch it on for every build.
+// Vite reads VITE_* values from process.env ahead of .env files.
+process.env.VITE_SHOW_WATCH_TOGETHER ??= 'true';
+
 /** @type {import('@storybook/react-vite').StorybookConfig} */
 export default {
   stories: ['../src/stories/**/*.stories.jsx'],
