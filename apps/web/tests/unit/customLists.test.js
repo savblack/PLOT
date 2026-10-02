@@ -37,4 +37,6 @@ test('custom list rows filter by type and genre like Favourites', async () => {
   assert.deepEqual(filterByTypeAndGenre(rows, ['tv'], []).map(r => r.id), ['row-1']);
   assert.deepEqual(filterByTypeAndGenre(rows, ['tv', 'movie', 'cinema'], [2]).map(r => r.id), ['row-2', 'row-3']);
   assert.deepEqual(filterByTypeAndGenre(undefined, ['tv'], []), []);
+  // List pages offer TV and Movies only (no Cinema row), so that pair is "everything".
+  assert.deepEqual(filterByTypeAndGenre(rows, ['tv', 'movie'], []).map(r => r.id), ['row-1', 'row-2', 'row-3']);
 });

@@ -33,6 +33,7 @@ import { EVENTS, track } from '../lib/analytics.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { cardActions, cardState } from './listCardActions.js';
 
 /* The lists themselves: one component per list, each rendering into a
@@ -831,7 +832,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
       {allItems.length === 0 ? (
         <Empty onAdd={() => setShowAdd(true)} addLabel={`Add item to ${list.name}`}>No items yet.</Empty>
       ) : narrowed && visible.length === 0 ? (
-        <Empty>No items match the current filter.</Empty>
+        <Empty>{CUSTOM_LISTS.noMatch}</Empty>
       ) : (
         <div className={pageLayout ? 'list-page-items' : ''}>
         <CardGrid>
