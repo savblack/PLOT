@@ -14,7 +14,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('heading', { name: 'Compare every feature' })).toBeVisible();
     await expect(page.getByText('Premium features are coming soon.', { exact: true })).toBeVisible();
     await expect(page.getByRole('row', { name: /New episode notifications.*In the app/ })).toBeVisible();
-    await expect(page.getByRole('row', { name: /Movie release notifications.*Coming soon/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Movie release notifications/ })).toHaveCount(0);
     await expect(page.getByRole('row', { name: /Join shared lists and watch sessions.*Free with a Premium host/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Import history from your other apps/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Viewing stats.*Overview.*Deeper/ })).toBeVisible();

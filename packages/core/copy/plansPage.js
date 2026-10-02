@@ -160,7 +160,6 @@ export const PLANS_PAGE = {
       { title: 'Staying up to date', rows: [
         { label: 'Release calendar', free: true, premium: true },
         { label: 'New episode notifications', free: true, premium: true, tag: 'In the app' },
-        { label: 'Movie release notifications', free: true, premium: true, tag: 'Coming soon' },
         { label: 'Live calendar subscription', free: false, premium: true },
         { label: 'Actor and director alerts', free: false, premium: true },
         { label: 'Whole-season-ready alerts', free: false, premium: true },
@@ -186,8 +185,6 @@ export const PLANS_PAGE = {
     { id: 'social', label: 'Follow friends and share profiles' },
     { id: 'episodeAlerts', label: 'New episode notifications',
       description: 'See a notification in the app when a new episode of a show you follow comes out.' },
-    { id: 'releaseAlerts', label: 'Movie release notifications', planned: true,
-      description: 'Get a notification when movies you follow are released. Planned for Free.' },
     { id: 'participation', label: 'Join collaborative lists and shared watch sessions',
       description: 'Join for free. For watching together, only one of you needs Premium; for a collaborative list, only the person who made it does.' },
     { id: 'imports', label: 'Manual imports and data exports',
