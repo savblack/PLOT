@@ -2,11 +2,16 @@
 
 Current release decision (26 September 2026): US$3/month or US$24/year,
 tax-inclusive Managed Payments with Adaptive Pricing and AUD settlement.
-The launch package adds a 7-day card-required free trial on those Price
-objects (`trial_period_days` = 7). The first charge is 7 days after the
-trial starts. Cancel during the trial and the charge is $0. Supabase
-secrets `STRIPE_PRICE_MONTHLY` and `STRIPE_PRICE_YEARLY` point at those
-prices outside this repo. Do not copy the price IDs into tracked files.
+The launch package adds a 7-day free trial. The trial is requested by the
+`stripe-billing` checkout (`PREMIUM_TRIAL_DAYS` in `_shared/billingPolicy.ts`),
+not set on the Price, so any tax-inclusive US$3/US$24 Price gets it and a Price
+made without trial days cannot charge early. Only new subscribers get it;
+an account with a cancelled subscription pays from the start. The first charge
+is 7 days after the trial starts. Cancel during the trial and the charge is $0.
+Supabase secrets `STRIPE_PRICE_MONTHLY` and `STRIPE_PRICE_YEARLY` point at
+tax-inclusive prices outside this repo. Stripe cannot change tax behavior after a
+Price is created, so a Price created as exclusive must be replaced. Do not copy the
+price IDs into tracked files.
 Bangladesh is accepted with owner-managed registration, filing and remittance;
 configuration is deferred by the owner until the first sale, not verified or
 completed. No Radar purchase or Bangladesh exclusion. Historical audit entries

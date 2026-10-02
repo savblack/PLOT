@@ -1,5 +1,6 @@
 import Stripe from 'npm:stripe@22.6.0';
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import { checkoutSubscriptionData } from './billingPolicy.ts';
 
 type Admin = SupabaseClient;
 type Attempt = { operation_id: string; price_id: string; settings_url: string; session_id: string | null; started_at: string; lease_token: string; managed_payments: boolean };
@@ -30,8 +31,11 @@ export async function subscriptionCheckout(admin: Admin, stripe: Stripe, userId:
       if (readError || !saved) throw readError || new Error('Customer mapping unavailable');
       customer = saved.stripe_customer_id;
     }
+    // A cancelled subscription means they have already had the trial; incomplete_expired never started.
+    let hadSubscription = false;
     for await (const sub of stripe.subscriptions.list({ customer, status: 'all', limit: 100 })) {
       if (!['canceled', 'incomplete_expired'].includes(sub.status)) return await portal(customer);
+      if (sub.status === 'canceled') hadSubscription = true;
     }
     if (attempt.session_id) {
       const session = await stripe.checkout.sessions.retrieve(attempt.session_id);
@@ -54,7 +58,7 @@ export async function subscriptionCheckout(admin: Admin, stripe: Stripe, userId:
       ...(attempt.managed_payments ? { managed_payments: { enabled: true }, integration_identifier: 'plot_managed_qvtnzark' } : {}),
       line_items: [{ price: attempt.price_id, quantity: 1 }],
       client_reference_id: userId, metadata: { supabase_user_id: userId },
-      subscription_data: { metadata: { supabase_user_id: userId } },
+      subscription_data: checkoutSubscriptionData(userId, hadSubscription),
       success_url: `${attempt.settings_url}?checkout=success`, cancel_url: `${attempt.settings_url}?checkout=cancelled`,
       allow_promotion_codes: true,
     }, { idempotencyKey: `plot-checkout-${attempt.operation_id}` });
