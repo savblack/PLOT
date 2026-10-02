@@ -7,7 +7,7 @@ const ENDPOINT = 'https://api.indexnow.org/IndexNow';
 const MAX_URLS_PER_REQUEST = 10_000;
 
 /**
- * Tell IndexNow about newly added, changed, or removed public PLOT URLs.
+ * Tell IndexNow about newly added, changed, or removed public Plot URLs.
  * IndexNow shares accepted submissions with participating search engines.
  *
  * @param {string[]} urls Absolute canonical URLs on https://theplot.tv.

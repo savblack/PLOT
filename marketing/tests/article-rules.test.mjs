@@ -78,7 +78,7 @@ test('caps ratings and refuses a ratings closer', () => {
 
 test('rejects research seams the reader should never see', () => {
   for (const t of [
-    'PLOT could not verify a second season order.',
+    'Plot could not verify a second season order.',
     'We were unable to confirm the release date.',
     'Nothing in our records ties the two together.',
   ]) {
@@ -164,7 +164,7 @@ test('a rental is never called a store, but a real shop is left alone', () => {
   // A shop inside the film is not the jargon.
   assert.deepEqual(articleErrors(body('Its Texas is full of boarded up storefronts.')), []);
   assert.deepEqual(articleErrors(body('She meets her on smoke breaks behind the store.')), []);
-  // And the phrasing PLOT should use instead.
+  // And the phrasing Plot should use instead.
   assert.deepEqual(articleErrors(body('It arrives on digital, to rent or buy on Prime Video and Apple TV.')), []);
   assert.match(socialErrors({ x: 'Out now on digital stores.' })[0], /calls a rental a store/);
 });

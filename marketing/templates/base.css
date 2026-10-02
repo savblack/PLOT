@@ -81,7 +81,7 @@ body::before {
   filter: saturate(1.08) contrast(1.04) brightness(0.98);
 }
 /* Layered scrim: (1) vignette for focus + edge falloff, (2) a top wash so the
-   PLOT mark always reads, (3) a deep bottom grade anchoring the type block. */
+   plot mark always reads, (3) a deep bottom grade anchoring the type block. */
 .scrim {
   position: absolute;
   inset: 0;
@@ -148,7 +148,7 @@ body::before {
   color: var(--text-dim);
 }
 
-/* ── Brand mark: big PLOT wordmark, top-left of every card ── */
+/* ── Brand mark: big plot wordmark, top-left of every card ── */
 .plot-mark {
   position: absolute;
   top: calc(var(--pad) - 16px);

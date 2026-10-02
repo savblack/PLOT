@@ -76,6 +76,6 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW_NAME: storage-backup
-          ALERT_SUBJECT: 'PLOT: nightly STORAGE BACKUP failed'
+          ALERT_SUBJECT: 'Plot: nightly STORAGE BACKUP failed'
           FAILURE_NOTE: 'Avatar and marketing files were not mirrored to R2. The database dump does not contain object bytes, so these files are unrecoverable without this job.'
         run: bash .github/scripts/marketing-alert.sh

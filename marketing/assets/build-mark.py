@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the PLOT mark (the five-dot lowercase p) and the X covers that carry it.
+"""Build the plot mark (the five-dot lowercase p) and the X covers that carry it.
 
 Chosen 28 Sep 2026 on the logo canvas: five circles as a lowercase p, three down
 the stem and two across the top, the bowl's inner dot in the fill pink. The group

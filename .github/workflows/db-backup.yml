@@ -137,6 +137,6 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW_NAME: db-backup
-          ALERT_SUBJECT: 'PLOT: nightly DATABASE BACKUP failed'
+          ALERT_SUBJECT: 'Plot: nightly DATABASE BACKUP failed'
           FAILURE_NOTE: 'No new dump reached R2 tonight. The Supabase project is on the free plan, so there are no managed backups behind this.'
         run: bash .github/scripts/marketing-alert.sh

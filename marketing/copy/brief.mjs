@@ -141,7 +141,7 @@ ${JSON.stringify(post.payload, null, 2)}
 ${titleList}
 
 ## How to write it
-- A finished editorial guide in PLOT's voice — never narrate your sources or research.
+- A finished editorial guide in Plot's voice — never narrate your sources or research.
 - \`page_body\` MUST have exactly ${refs.length + 2} paragraphs, in this exact
   shape: [1] an intro that frames the list, then [2..${refs.length + 1}] ONE
   paragraph per title above, in the SAME order, one-to-one — never combine two
@@ -203,12 +203,12 @@ ${sourceList(research)}
 
 ## How to write the article (page_body)
 Write a short blog post (3-5 developed paragraphs) for theplot.tv/whats-on.
-- Write a FINISHED editorial article in PLOT's own voice — NEVER narrate your
+- Write a FINISHED editorial article in Plot's own voice — NEVER narrate your
   sources or research. Banned phrasings (do not write these or anything like
   them): "the research pack", "pre-fetched ratings", "the ratings block", "in
   wider reporting", "recent coverage", "sources say", "reports suggest",
   "according to", "it's been reported", "the data shows". State facts directly as
-  PLOT's own knowledge and weave them in naturally — e.g. write "Obsession holds a
+  Plot's own knowledge and weave them in naturally — e.g. write "Obsession holds a
   95% on Rotten Tomatoes and an 8.2 on IMDb" NOT "the pre-fetched ratings are
   strong: 95% on Rotten Tomatoes". The reader must never sense a research pack
   existed. Make it a confident editorial take, not a recap of what the sources say.
@@ -225,11 +225,11 @@ Write a short blog post (3-5 developed paragraphs) for theplot.tv/whats-on.
   not the story; a pre-release IMDb average is not evidence of anything. Never
   cite TMDB scores or vote counts (tmdb.vote_average / vote_count are an
   internal signal only), and never describe how many people voted.
-- Always paraphrase in PLOT's voice. Never quote reviews or interviews
+- Always paraphrase in Plot's voice. Never quote reviews or interviews
   verbatim, never wrap your own paraphrase in quotation marks (it reads as an
   uncredited quote), never copy Wikipedia sentences, never reproduce a
   synopsis word-for-word. Do not summarise reception ("critics kept coming
-  back to", "reviews landed mixed"); say what PLOT thinks. No spoilers: no
+  back to", "reviews landed mixed"); say what Plot thinks. No spoilers: no
   endings, twists, structural reveals or character fates, even for classics.
 - Name at most two or three people per paragraph and never list a cast.
 - Every date claim must be true on the publish day (\`scheduled_for\`): a title
