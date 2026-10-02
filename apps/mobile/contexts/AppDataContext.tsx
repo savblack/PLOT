@@ -14,6 +14,7 @@ import { useFavorites } from '../hooks/useFavorites';
 import { useCustomLists } from '../hooks/useCustomLists';
 import { useTopLists } from '../hooks/useTopLists';
 import { useHistory } from '../hooks/useHistory';
+import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 
 interface AppData {
   broadcastPreferences: ReturnType<typeof useBroadcastPreferences>;
@@ -39,7 +40,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const privateNotes = usePrivateNotes(userId);
   const watching    = useWatching(userId);
   const favorites   = useFavorites(userId, { watching, watchlist });
-  const customLists = useCustomLists(userId);
+  const customLists = useCustomLists(userId, { includeShared: SHOW_WATCH_TOGETHER });
   const topLists    = useTopLists(userId);
   const history     = useHistory(userId);
 

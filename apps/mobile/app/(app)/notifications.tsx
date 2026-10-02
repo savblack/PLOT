@@ -4,7 +4,7 @@
  * new episodes of followed shows (title rows: a poster instead of an avatar,
  * and they open the title rather than a profile).
  */
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
 } from 'react-native';
@@ -15,13 +15,18 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useNotifications } from '@plot/core/useNotifications.js';
-import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, titleBadge, titleFallback, titlePhrase, SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
+import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, titleBadge, titleFallback, titlePhrase, NOTIFICATIONS_PAGE, SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
+import { personName } from '@plot/core/watchTogether.js';
 import { isAlertNotification, isTitleNotification, smartListDigest } from '@plot/core/notificationGroups.js';
 import { relativeTime } from '@plot/core/date.js';
 import { Avatar } from '../../components/Avatar';
 import { posterUrl, profileUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
+import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
+import { AcceptSheet } from '../../components/watch/AcceptSheet';
+import { PrimaryButton, SecondaryButton } from '../../components/watch/WatchChrome';
+import { useTogether, type WtPerson } from '../../components/watch/watchModel';
 
 interface NotificationRow {
   id: string;
@@ -59,13 +64,18 @@ export default function NotificationsScreen() {
   const { userId, profile } = useAppData();
   const { list, loading, refreshList, markAllRead } = useNotifications(userId);
   const { open: openPanel } = useMediaPanel();
+  const together = useTogether(SHOW_WATCH_TOGETHER ? userId : null);
+  const [reviewing, setReviewing] = useState<WtPerson | null>(null);
 
   // Load the feed and clear the unread badge on open — same as web.
   useEffect(() => { refreshList(); }, [refreshList]);
   useEffect(() => { markAllRead(); }, [markAllRead]);
 
   const go = (n: NotificationRow) => {
-    if ((isTitleNotification(n) || isAlertNotification(n)) && n.tmdb_id != null) openPanel(n.tmdb_id, n.media_type === 'movie' ? 'movie' : 'tv');
+    if (SHOW_WATCH_TOGETHER && n.type === 'watch_together_session' && n.actor_username) router.push(`/(app)/together/join/${encodeURIComponent(n.actor_username)}`);
+    else if (SHOW_WATCH_TOGETHER && n.type === 'watch_together_accepted' && n.actor_username) router.push(`/(app)/together/with/${encodeURIComponent(n.actor_username)}`);
+    else if (SHOW_WATCH_TOGETHER && n.type === 'watch_together_list') router.push('/(app)/my-lists');
+    else if ((isTitleNotification(n) || isAlertNotification(n)) && n.tmdb_id != null) openPanel(n.tmdb_id, n.media_type === 'movie' ? 'movie' : 'tv');
     else if (n.type === 'follow_request') router.push('/(app)/requests');
     // No feed surface on mobile yet (SHOW_SOCIAL_FEED is off on both
     // platforms), so post activity opens the actor instead of a dead route.
@@ -93,9 +103,27 @@ export default function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
       >
+        {together.incoming.length > 0 && (
+          <View style={{ paddingTop: spacing.md, gap: spacing.sm }}>
+            <Text style={styles.rowBadge}>{NOTIFICATIONS_PAGE.requests}</Text>
+            {together.incoming.map(person => (
+              <View key={person.id} style={styles.row}>
+                <Avatar url={person.avatar_url} name={personName(person)} size={44} colors={colors} />
+                <View style={styles.rowBody}>
+                  <Text style={styles.rowText}><Text style={styles.rowName}>{personName(person)}</Text></Text>
+                  <Text style={styles.rowMuted}>@{person.username} · {NOTIFICATIONS_PAGE.wantsToWatchTogether}</Text>
+                  <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+                    <SecondaryButton label={NOTIFICATIONS_PAGE.decline} onPress={() => { void together.respond(person.id, false); }} />
+                    <PrimaryButton label={NOTIFICATIONS_PAGE.review} onPress={() => setReviewing(person)} />
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
         {loading ? (
           <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xxl }} />
-        ) : list.length === 0 ? (
+        ) : list.length === 0 && together.incoming.length === 0 ? (
           <Text style={styles.empty}>{NOTIFICATIONS_EMPTY.title}{'\n'}{NOTIFICATIONS_EMPTY.body}</Text>
         ) : (
           <>
@@ -213,6 +241,14 @@ export default function NotificationsScreen() {
           </>
         )}
       </ScrollView>
+      {reviewing && (
+        <AcceptSheet
+          person={reviewing}
+          onClose={() => setReviewing(null)}
+          onDecline={() => { const person = reviewing; setReviewing(null); void together.respond(person.id, false); }}
+          onAccept={(shareFull) => { const person = reviewing; setReviewing(null); void together.respond(person.id, true, shareFull); }}
+        />
+      )}
     </View>
   );
 }
