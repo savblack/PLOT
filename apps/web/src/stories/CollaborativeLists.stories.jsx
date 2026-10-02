@@ -137,7 +137,7 @@ const phone = (story) => ({
   globals: PHONE,
   parameters: { ...story.parameters, chromatic: { ...story.parameters?.chromatic, viewports: [414] } },
 });
-const DARK = { backgrounds: { value: '#0c0c0c' } };
+const DARK = { backgrounds: { value: 'dark' } };
 
 export default {
   title: 'Views/CollaborativeLists',
