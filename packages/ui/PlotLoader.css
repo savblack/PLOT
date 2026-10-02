@@ -1,5 +1,5 @@
 .page-loader {
-  min-height: calc(100dvh - var(--header-h) - var(--tabbar-h) - 4.5rem);
+  min-height: calc(100dvh - var(--header-h) - var(--bottom-inset) - 4.5rem);
   display: grid;
   place-items: center;
 }

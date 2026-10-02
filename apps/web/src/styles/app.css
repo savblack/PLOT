@@ -133,7 +133,7 @@ svg { stroke-width: 1.5; }
   top: calc(var(--header-h) + env(safe-area-inset-top, 0px));
   left: var(--sidebar-w);
   right: 0;
-  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  bottom: 0;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -205,7 +205,7 @@ svg { stroke-width: 1.5; }
 .scroll-top-btn {
   position: fixed;
   right: 1rem;
-  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 1rem);
+  bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px) + 1rem);
   z-index: 150;
   width: 42px;
   height: 42px;
@@ -458,10 +458,6 @@ svg { stroke-width: 1.5; }
   .app-page-breadcrumb span { font-size: 1.25rem; line-height: 1; }
   .app-page-breadcrumb + .app-page-heading { padding-top: .75rem; }
   .app-page-breadcrumb + .list-page { padding-top: .75rem; }
-
-  .scroll-top-btn {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
-  }
 }
 
 .app-sidebar-brand {
@@ -8165,10 +8161,10 @@ a.provider-chip--link:hover {
   .app-header .icon-btn { position: relative; width: 44px; height: 44px; }
   .app-header .app-page-title { position: static; transform: none; max-width: none; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .app-main-inner { padding-top: 16px; }
-  .app-main { bottom: 0; }
-  .app-shell:has(.mobile-controls-anchor) .app-main { bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
-  .scroll-top-btn { bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
-  .app-shell:has(.mobile-controls-anchor) .scroll-top-btn { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  /* The filter bar below is 60px plus the safe area. Set on :root, not .app-shell,
+     because the toasts and the timezone banner are portalled outside the shell. */
+  :root:has(.mobile-controls-anchor) { --bottom-inset: 60px; }
+  .app-shell:has(.mobile-controls-anchor) .app-main { bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px)); }
   .desktop-page-filter, .cal-toolbar .cal-scope { display: none; }
   .page-toolbar-date { display: none; }
   .page-toolbar, .page-toolbar.cal-toolbar { padding: 0; height: 0; margin: 0; }

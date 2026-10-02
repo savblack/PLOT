@@ -54,7 +54,7 @@ function TimezoneBanner({ deviceTz, onUpdate, onDismiss }) {
   return (
     <div style={{
       position: 'fixed',
-      bottom: 'calc(var(--tab-bar-height, 56px) + 0.75rem)',
+      bottom: 'calc(var(--bottom-inset, 0px) + env(safe-area-inset-bottom, 0px) + 0.75rem)',
       // --sidebar-w is 0 below the desktop breakpoint, so this clears the nav
       // rail when there is one and changes nothing when there isn't.
       left: 'calc(var(--sidebar-w, 0px) + 0.75rem)',
