@@ -1,10 +1,8 @@
 // Desktop web layout: the fixed rail and scroll regions use DOM/CSS. Mobile parity: https://github.com/savblack/PLOT/issues/920.
-import { useState } from 'react';
 import { APP_NAV_ITEMS, isActiveView } from '../navigation.js';
 import PlotLogo from './PlotLogo.jsx';
-import SidebarThemeSwitcher from './SidebarThemeSwitcher.jsx';
+import AccountMenu from './AccountMenu.jsx';
 import { isPremiumProfile } from '@plot/core/premium.js';
-import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { IconBell, IconSettings, NAV_ICONS } from './navIcons.jsx';
 
@@ -34,15 +32,14 @@ const SETTINGS_NAV_ITEM = APP_NAV_ITEMS.find(item => item.id === 'settings');
  * @param {Function} props.onNavigate        Called with a view id.
  * @param {Function} props.onFeedback        Opens the existing feedback composer.
  * @param {Function} props.onNavigateProfile Called with a username.
+ * @param {Function} [props.onSignOut]       Starts the existing /logout flow.
  * @param {string}   [props.themeMode]       useTheme().mode (light | dark | system).
  * @param {string}   [props.themeFamily]     useTheme().family showing.
  * @param {Function} [props.onPickMode]      useTheme().setMode.
  * @param {Function} [props.onPickFamily]    useTheme().setFamily; false for a locked family.
  * @param {Function} [props.onThemeLocked]   Called with a Premium family a Free viewer tapped.
- * @param {boolean}  [props.defaultThemeOpen] Seeds the theme switcher, for Storybook.
- * @param {boolean}  [props.defaultHelpOpen] Seeds the help disclosure. Only so
- *   Storybook can render the open state; the app leaves it closed and lets the
- *   viewer decide.
+ * @param {boolean}  [props.defaultAccountMenuOpen] Seeds the account menu open.
+ *   Only so Storybook can render the open state.
  */
 export default function AppSidebar({
   currentView,
@@ -54,16 +51,15 @@ export default function AppSidebar({
   onNavigate,
   onNavigateProfile,
   onFeedback,
+  onSignOut,
   themeMode,
   themeFamily,
   onPickMode,
   onPickFamily,
   onThemeLocked,
-  defaultThemeOpen = false,
-  defaultHelpOpen = false,
+  defaultAccountMenuOpen = false,
 }) {
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
-  const [helpOpen, setHelpOpen] = useState(defaultHelpOpen);
   // Free viewers see which destinations are Premium before they tap in.
   const showPremiumPill = !isPremiumProfile(profile);
 
@@ -141,66 +137,25 @@ export default function AppSidebar({
         </nav>
       </div>
       <div className="app-sidebar-foot">
-        <button
-          type="button"
-          className="app-sidebar-item app-sidebar-help-toggle interactive-surface"
-          onClick={() => setHelpOpen(open => !open)}
-          aria-expanded={helpOpen}
-          aria-controls="app-sidebar-help"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="10,6 16,12 10,18" />
-          </svg>
-          <span className="app-sidebar-label">{APP_SHELL.helpBuild}</span>
-        </button>
-        {helpOpen && (
-          <div id="app-sidebar-help" className="app-sidebar-help" aria-label={APP_SHELL.helpBuild}>
-            <button type="button" className="app-sidebar-item interactive-surface" onClick={onFeedback}>
-              <svg viewBox="0 0 24 24" aria-hidden="true" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 14a3 3 0 0 1-3 3H8l-5 4V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z" />
-                <path d="M12 7.5v6M9 10.5h6" />
-              </svg>
-              <span className="app-sidebar-label">{APP_SHELL.giveFeedback}</span>
-            </button>
-            <a
-              className="app-sidebar-item interactive-surface"
-              href="https://ko-fi.com/J7P123TYGK"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`${SETTINGS_VIEW.support.supportPlot} (${APP_SHELL.opensNewTab})`}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.8 5.6a5.4 5.4 0 0 0-7.7 0L12 6.7l-1.1-1.1a5.4 5.4 0 1 0-7.7 7.7l8.8 8.7 8.8-8.7a5.4 5.4 0 0 0 0-7.7Z" />
-              </svg>
-              <span className="app-sidebar-label">{SETTINGS_VIEW.support.supportPlot}</span>
-            </a>
-          </div>
-        )}
-        {profile?.username && onPickFamily && (
-          <SidebarThemeSwitcher
+        {/* The profile row opens the account menu: theme, account links,
+            Help build Plot and Sign out all live there (issue 1133). */}
+        {profile?.username && (
+          <AccountMenu
+            profile={profile}
+            active={isOwnProfile}
+            settingsLabel={SETTINGS_NAV_ITEM?.label}
+            onViewProfile={() => onNavigateProfile(profile.username)}
+            onSettings={() => onNavigate('settings')}
+            onFeedback={onFeedback}
+            onSignOut={onSignOut}
             mode={themeMode}
             family={themeFamily}
             onPickMode={onPickMode}
             onPickFamily={onPickFamily}
             isPremium={isPremiumProfile(profile)}
             onLocked={onThemeLocked}
-            defaultOpen={defaultThemeOpen}
+            defaultOpen={defaultAccountMenuOpen}
           />
-        )}
-        {profile?.username && (
-          <div className="app-sidebar-foot-profile">
-            <button
-              type="button"
-              className={`app-sidebar-item app-sidebar-profile interactive-surface${isOwnProfile ? ' active' : ''}`}
-              onClick={() => onNavigateProfile(profile.username)}
-              aria-current={isOwnProfile ? 'page' : undefined}
-            >
-              {profile.avatar_url
-                ? <img className="app-sidebar-avatar" src={profile.avatar_url} alt="" />
-                : <span className="app-sidebar-avatar app-sidebar-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
-              <span className="app-sidebar-profile-copy"><span className="app-sidebar-label">{profile.display_name || profile.username}</span><small>{APP_SHELL.viewYourProfile}</small></span>
-            </button>
-          </div>
         )}
       </div>
     </aside>

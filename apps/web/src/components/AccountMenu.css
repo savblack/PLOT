@@ -1,0 +1,139 @@
+/* Sidebar account menu: the profile row and a hairline panel that opens above
+   it (beside the rail when collapsed). Flat; the shadow is only there to lift
+   the panel off the navigation and page it overlaps (--shadow-overlay). */
+.account-menu { position: relative; }
+
+/* The panel is wider than the rail's content column, so the rail stops
+   clipping while it is open (the collapsed rail already lets it out). */
+.app-sidebar:has(.account-menu-panel) { overflow: visible; }
+
+.account-menu-panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 5;
+  width: 280px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-overlay);
+  font-family: var(--font-sans);
+}
+
+.account-menu-appearance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 8px 8px 12px;
+}
+.account-menu-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.account-menu-title { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+.account-menu-note { font-size: 0.7rem; color: var(--text-muted); }
+.account-menu-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 0.35rem;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+}
+.account-menu-modes button {
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.account-menu-modes button:hover { color: var(--text-primary); }
+.account-menu-modes button.is-active { background: var(--surface); color: var(--text-primary); }
+
+/* The chip itself is ThemeChip (its own CSS); the button only lays it out. */
+.account-menu-swatches { display: flex; justify-content: space-between; }
+.account-menu-swatch {
+  position: relative;
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.account-menu-lock {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
+  padding: 1px;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.account-menu-section {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+}
+.account-menu-panel > .account-menu-section:first-child { border-top: 0; }
+.account-menu-caption {
+  padding: 6px 8px 2px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.account-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 0;
+  /* Concentric with the panel corner across its 6px padding. */
+  border-radius: calc(var(--radius-md) - 6px);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.account-menu-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  color: var(--text-secondary);
+}
+.account-menu-item:hover { background: var(--surface-sunken); }
+/* Sign out is the menu's one accent: logout is an approved accent action. */
+.account-menu-signout { color: var(--accent-text); }
+
+.account-menu-panel :is(button, a):focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+@media (min-width: 1024px) {
+  /* Collapsed rail: open beside it, bottom-aligned with the profile row. */
+  .sidebar-collapsed .account-menu-panel {
+    left: calc(100% + 20px);
+    bottom: 0;
+  }
+}

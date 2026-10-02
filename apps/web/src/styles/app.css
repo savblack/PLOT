@@ -610,7 +610,7 @@ svg { stroke-width: 1.5; }
 }
 
 
-/* Desktop sidebar: navigation/help scroll together; the profile stays pinned. */
+/* Desktop sidebar: navigation scrolls; the profile row (and its account menu) stays pinned. */
 .app-sidebar { overflow: hidden; }
 .app-sidebar-brand { gap: 12px; min-height: 80px; height: 80px; border-bottom: 0; }
 .app-sidebar-beta {
@@ -648,19 +648,6 @@ svg { stroke-width: 1.5; }
 .app-sidebar-item.active { font-weight: 600; }
 .app-sidebar-label { font-size: 0.9rem; font-weight: 550; }
 .app-sidebar-item svg { stroke-width: 1.7; }
-.app-sidebar-help { display: flex; flex-direction: column; }
-.app-sidebar-help .app-sidebar-item { text-decoration: none; }
-.app-sidebar-help-toggle { width: 100%; }
-.app-sidebar-help-toggle svg { transition: transform 0.15s ease; }
-.app-sidebar-help-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
-@media (prefers-reduced-motion: reduce) {
-  .app-sidebar-help-toggle svg { transition: none; }
-}
-.app-sidebar-foot-profile {
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
 .app-sidebar :is(button, a):focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .app-sidebar-foot { margin-top: 0; flex-shrink: 0; padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px)); }
 .app-sidebar-foot:empty { display: none; }
