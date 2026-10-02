@@ -254,9 +254,8 @@ export const SETTINGS_VIEW = {
       applyLabel: (name) => `Use ${name}`,
       lockedNote: 'Premium themes are part of Premium. You can look here, and the default stays free in light, dark and system.',
     },
-    // The quick switcher in the desktop sidebar.
+    // The quick switcher inside the desktop sidebar's account menu.
     switcher: {
-      toggle: 'Appearance',
       thisBrowser: 'This browser',
       mode: 'Mode',
       current: (name, premium) => (premium ? `${name} · Premium` : name),

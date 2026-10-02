@@ -129,6 +129,14 @@ const app = (overrides = {}) => ({
 });
 
 const PHONE = { viewport: { value: 'mobile2', isRotated: false } };
+// Chromatic ignores the viewport global and renders every story at its own
+// default width (1200px), so phone stories also name their width for it.
+// 'mobile2' is Storybook's 414 x 896 large phone.
+const phone = (story) => ({
+  ...story,
+  globals: PHONE,
+  parameters: { ...story.parameters, chromatic: { ...story.parameters?.chromatic, viewports: [414] } },
+});
 const DARK = { backgrounds: { value: '#0c0c0c' } };
 
 export default {
@@ -282,8 +290,8 @@ export const LandingTitlesSignedIn = {
     await expect(canvas.getByText(C.landing.whereNote('Mia'))).toBeVisible();
   },
 };
-export const PhoneLandingEmpty  = { ...landing({ signedIn: false, items: false }), globals: PHONE };
-export const PhoneLandingTitles = { ...landing({ signedIn: false, items: true }), globals: PHONE };
+export const PhoneLandingEmpty  = phone(landing({ signedIn: false, items: false }));
+export const PhoneLandingTitles = phone(landing({ signedIn: false, items: true }));
 
 /* ── The shared list page (B5 + A5) ── */
 
@@ -345,12 +353,13 @@ export const SharedListAsMember = {
 
 /* ── The phone list (A8) ── */
 
-export const PhoneSharedList = { ...listPage, globals: PHONE };
+export const PhoneSharedList = phone(listPage);
 
 /* Tapping the people opens who added what, with Add a person and Watch together. */
+// Tags stay literal on the story object: the Vitest addon reads them
+// statically, and inside phone(...) it cannot, so the test would be skipped.
 export const PhonePeopleSheet = {
-  ...listPage,
-  globals: PHONE,
+  ...phone(listPage),
   tags: ['interaction-test'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -365,13 +374,12 @@ export const PhonePeopleSheet = {
 
 /* The search button in the bar searches this list's titles. */
 export const PhoneInListSearch = {
-  ...listPage,
-  globals: PHONE,
+  ...phone(listPage),
   tags: ['interaction-test'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     fireEvent.click(canvas.getByRole('button', { name: C.page.searchOpen }));
-    const search = canvas.getByLabelText(CUSTOM_LISTS.searchThisList);
+    const search = canvas.getByLabelText(CUSTOM_LISTS.searchThisList, { selector: 'input' });
     await fireEvent.input(search, { target: { value: 'after' } });
     await waitFor(() => expect(canvas.queryAllByText('Perfect Days')).toHaveLength(0));
     await expect(canvas.queryAllByText('Aftersun').length).toBeGreaterThan(0);
