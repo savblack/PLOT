@@ -12,20 +12,21 @@ import { titleForView } from '@plot/core/navigation.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
+import { Avatar } from './Avatar';
+import NavGlyph, { NavIconName } from './NavIcons';
 
-const DRAWER_W = Dimensions.get('window').width * 0.58;
+// Web's drawer is min(300px, 85vw). The old 58% width was sized for bare labels.
+const DRAWER_W = Math.min(300, Dimensions.get('window').width * 0.85);
 
-// Search leads, matching the desktop rail. Settings stays in the footer,
-// after Notifications, because the phone has no account menu. Guide, Top 5
-// and History are not destinations here: Guide is a Home sub-tab, Top 5 and
-// History live inside My Lists.
-const NAV_ITEMS = [
-  { id: 'search',   label: APP_SHELL.search,         path: '/(app)/search'   },
-  { id: 'index',    label: 'Home',                    path: '/(app)/'         },
-  { id: 'calendar', label: 'Calendar',                path: '/(app)/calendar' },
-  { id: 'my-lists', label: 'My Lists',                path: '/(app)/my-lists' },
-  { id: 'tonight',  label: titleForView('tonight'),   path: '/(app)/tonight', premium: true },
-  { id: 'notifications', label: APP_SHELL.notifications, path: '/(app)/notifications' },
+// Search leads. Settings stays in the footer, after Notifications. Guide,
+// Top 5 and History are not destinations here.
+const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; premium?: boolean }[] = [
+  { id: 'search',   label: APP_SHELL.search,            path: '/(app)/search',        icon: 'search' },
+  { id: 'index',    label: 'Home',                       path: '/(app)/',              icon: 'home' },
+  { id: 'calendar', label: 'Calendar',                   path: '/(app)/calendar',      icon: 'calendar' },
+  { id: 'my-lists', label: 'My Lists',                   path: '/(app)/my-lists',      icon: 'lists' },
+  { id: 'tonight',  label: titleForView('tonight'),      path: '/(app)/tonight',       icon: 'tonight', premium: true },
+  { id: 'notifications', label: APP_SHELL.notifications, path: '/(app)/notifications', icon: 'notifications' },
 ];
 
 const FEEDBACK_ITEMS = [
@@ -36,9 +37,9 @@ const FEEDBACK_ITEMS = [
 
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 
-const BOTTOM_NAV_ITEMS = [
-  { id: 'requests', label: 'Follow Requests', path: '/(app)/requests' },
-  { id: 'settings', label: 'Settings',        path: '/(app)/settings' },
+const BOTTOM_NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName }[] = [
+  { id: 'requests', label: titleForView('requests'), path: '/(app)/requests', icon: 'requests' },
+  { id: 'settings', label: 'Settings',               path: '/(app)/settings', icon: 'settings' },
 ];
 
 interface DrawerMenuProps {
@@ -124,6 +125,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
           <View style={styles.nav}>
             {NAV_ITEMS.map(item => {
               const active = activeId === item.id;
+              const color = active ? colors.accent : colors.textSecondary;
               return (
                 <TouchableOpacity
                   key={item.id}
@@ -134,10 +136,11 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                   accessibilityState={{ selected: active }}
                   accessibilityLabel={item.label}
                 >
-                  <Text style={[styles.navLabel, active && styles.navLabelActive]}>
+                  <NavGlyph name={item.icon} color={color} />
+                  <Text style={[styles.navLabel, { color }]} numberOfLines={1}>
                     {item.label}
                   </Text>
-                  {'premium' in item && item.premium && !profile?.is_premium && (
+                  {item.premium && !profile?.is_premium && (
                     <Text style={styles.premiumPill}>{APP_SHELL.premium}</Text>
                   )}
                 </TouchableOpacity>
@@ -156,6 +159,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                 accessibilityRole="button"
                 accessibilityLabel={item.label}
               >
+                <NavGlyph name="feedback" color={colors.textSecondary} />
                 <Text style={styles.navLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
@@ -166,6 +170,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
               accessibilityRole="link"
               accessibilityLabel={SETTINGS_VIEW.support.supportPlot}
             >
+              <NavGlyph name="support" color={colors.textSecondary} />
               <Text style={styles.navLabel}>{SETTINGS_VIEW.support.supportPlot}</Text>
             </TouchableOpacity>
           </View>
@@ -181,11 +186,18 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                 accessibilityRole="button"
                 accessibilityLabel={APP_SHELL.profile}
               >
+                <Avatar
+                  url={profile.avatar_url}
+                  name={profile.display_name || profile.username}
+                  size={18}
+                  colors={colors}
+                />
                 <Text style={styles.navLabel}>{APP_SHELL.profile}</Text>
               </TouchableOpacity>
             )}
             {BOTTOM_NAV_ITEMS.map(item => {
               const active = activeId === item.id;
+              const color = active ? colors.accent : colors.textSecondary;
               return (
                 <TouchableOpacity
                   key={item.id}
@@ -196,7 +208,8 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                   accessibilityState={{ selected: active }}
                   accessibilityLabel={item.label}
                 >
-                  <Text style={[styles.navLabel, active && styles.navLabelActive]}>
+                  <NavGlyph name={item.icon} color={color} />
+                  <Text style={[styles.navLabel, { color }]} numberOfLines={1}>
                     {item.label}
                   </Text>
                 </TouchableOpacity>
@@ -297,11 +310,11 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
     borderRadius: radii.md,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
+    gap: 14,
   },
   // Premium marker for Free viewers: the Beta pill's shape in the pink fill.
   premiumPill: {
+    marginLeft: 'auto',
     overflow: 'hidden',
     borderRadius: 999,
     paddingHorizontal: 7,
@@ -318,12 +331,9 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
   },
 
   navLabel: {
+    flexShrink: 1,
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.md,
     color: colors.textSecondary,
-  },
-  navLabelActive: {
-    color: colors.accent,
-
   },
 });

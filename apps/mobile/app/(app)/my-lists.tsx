@@ -398,6 +398,7 @@ export default function MyListsScreen() {
   const fw = favoriteWords(profile?.region);
 
   const [tab,          setTab]          = useState('all');
+  const [topDragging, setTopDragging]  = useState(false);
   const [typeFilters,  setTypeFilters]  = useState<string[]>([]);
   const today = useMemo(() => new Date(), []);
   const [historyYear,  setHistoryYear]  = useState(today.getFullYear());
@@ -542,6 +543,7 @@ export default function MyListsScreen() {
         contentContainerStyle={{ paddingTop: HEADER_H + 8, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={!topDragging}
       >
 
         {searching ? (
@@ -669,8 +671,8 @@ export default function MyListsScreen() {
             open={sectionsOpen.top10}
             onOpenChange={(next) => setSectionOpenFor('top10', next)}
           >
-            <TopTenSection listType="movies" title="Movies"   topLists={topLists} history={history.entries} />
-            <TopTenSection listType="tv"     title="TV Shows" topLists={topLists} history={history.entries} />
+            <TopTenSection listType="movies" title="Movies"   topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />
+            <TopTenSection listType="tv"     title="TV Shows" topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />
           </CollapsibleSection>
         )}
 

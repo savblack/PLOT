@@ -272,14 +272,16 @@ function HeroCard({ item, onPress, saved, onSave }: {
   );
 }
 
-// ── Section header ────────────────────────────────────────────────────
-function SectionHeader({ kicker, title }: { kicker: string; title: string }) {
+// Matches web DiscoverSectionHeader: display title, then an optional
+// subtitle. The subtitle is only there when the title does not already
+// say where the shelf comes from.
+function SectionHeader({ kicker, title }: { kicker?: string; title: string }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionKicker}>{kicker}</Text>
       <Text style={styles.sectionTitle}>{title}</Text>
+      {kicker ? <Text style={styles.sectionKicker}>{kicker}</Text> : null}
     </View>
   );
 }
@@ -1057,21 +1059,20 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   // ── Sections ──
   section: { marginTop: spacing.xl, marginBottom: 0 },
-  sectionHeader: { paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
-  sectionKicker: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
-    marginBottom: 2,
-  },
+  sectionHeader: { paddingHorizontal: spacing.xl, marginBottom: spacing.md },
   sectionTitle: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.sm,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    fontFamily: fontFamily.display,
+    fontSize: fontSize.xl,
+    letterSpacing: -0.6,
+    lineHeight: 23,
     color: colors.textPrimary,
+  },
+  sectionKicker: {
+    fontFamily: fontFamily.sans,
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
 
   // ── Poster cards ──

@@ -20,7 +20,7 @@ Lists) and copy.
 | Core hoist (spelling, history, mediaFilters, importDedup, timezones, importParsing, dates) | done |
 | Mobile launch flags + PostHog analytics | done |
 | Shared copy catalog (`packages/core/copy/`) | done |
-| My Lists section system, multi-select, Top 10 folded in | done |
+| My Lists section system, multi-select, Top 5 folded in | done |
 | Date-watched editing in the media panel | done |
 | Discover hooks in core (`useDiscover`, `useNewReleases`, `usePlatformCharts`, `useGenres`, `useUpcoming`) | done |
 | Mobile Discover sub-tabs: Discover · New Releases · Upcoming · Guide | done |
@@ -39,19 +39,22 @@ now run through `pickOutNow` / `groupFuture` in `packages/core/useUpcoming.js`.
 These are interactive/visual mobile work. None should ship without running
 the app — see the blocker below.
 
-1. **4d — drag-to-reorder Top 10.** Web uses raw pointer events in
-   `MyListsView.jsx`. On RN use `react-native-gesture-handler` Pan +
-   `react-native-reanimated` (both already dependencies). Keep the existing
-   ↑/↓ buttons. Port web's semantics: edit-mode only,
-   `steps = Math.round(dragOffset / rowHeight)`, clamp to `[1, maxRank]`, then
-   walk `topLists.moveUp` / `moveDown` one step at a time.
-2. **The drawer's rows carry no icons.** Web's rail puts an icon on every row,
-   including the two "Help build Plot" links; the drawer is text-only
-   throughout, so its flat section follows its neighbours. If the drawer gains
-   icons, port the whole set via `react-native-svg`, not only these two rows.
-3. **6f — Discover section headers.** Apply web's `DiscoverSectionHeader`
-   treatment (uppercase accent kicker over uppercase title) plus the
-   expand/collapse-all control, using the Phase 4a primitives.
+Top 5 drag-to-reorder is in the mobile working tree, not on main, and has not
+been opened on a device. Edit mode keeps the ↑/↓ buttons. A vertical drag
+lands on the slot under the finger (`moveToRank`, same as the web drop),
+clamped to ranks 1 through 5. Down stops at the last filled rank.
+`react-native-gesture-handler` and `reanimated` are not installed, so this
+uses `PanResponder` and does not need a native rebuild.
+
+Discover section headers and drawer icons are in the mobile working tree, not
+on main. Headers follow live `DiscoverSectionHeader`: a display title with an
+optional subtitle under it. That treatment was seen on the iPhone 17 Pro
+simulator (Hot Right Now / Trending today, Out Today / New releases). The
+drawer icons have not been opened on a device yet.
+The old "uppercase kicker over uppercase title" note was stale, and web's
+expand-all button is unused CSS, so mobile does not add it. Drawer rows use
+the web nav strokes at 18px, including feedback, Support Plot, and an 18px
+profile avatar. The drawer width matches web `min(300px, 85vw)`.
 
 Also open, from the original plan's out-of-scope list: mobile Settings lacks
 avatar upload, username availability checking, invite-friends share and data

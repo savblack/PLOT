@@ -5,9 +5,13 @@
  * Lives in components/ rather than its own screen because web renders Top 5 as
  * a section of My Lists, not a destination. Mobile's /top10 route is gone; this
  * is rendered twice inside the `top10` CollapsibleSection.
+ *
+ * Drag follows the web drop: edit mode only, the row under the finger is the
+ * target, and one moveToRank swaps with that slot (or moves into it when empty).
+ * The up and down buttons stay, and down stops at the last filled rank.
  */
 import { useState, useMemo } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder } from 'react-native';
 import Svg, { Path, Polyline } from 'react-native-svg';
 import SearchPickModal from './SearchPickModal';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../lib/tokens';
@@ -16,10 +20,17 @@ import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 
 export type ListType = 'movies' | 'tv';
 
-function RankRow({ rank, item, editMode, onRemove, onMoveUp, onMoveDown, canMoveUp = true, canMoveDown = true }: {
+function RankRow({ rank, item, editMode, dragging, highlighted, dragDy, onRowLayout, onDragStart, onDragMove, onDragEnd, onRemove, onMoveUp, onMoveDown, canMoveUp = true, canMoveDown = true }: {
   rank: number;
   item: any | null;
   editMode: boolean;
+  dragging?: boolean;
+  highlighted?: boolean;
+  dragDy?: number;
+  onRowLayout?: (height: number) => void;
+  onDragStart?: (rank: number) => void;
+  onDragMove?: (rank: number, dy: number) => void;
+  onDragEnd?: (rank: number, dy: number) => void;
   onRemove?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -30,9 +41,26 @@ function RankRow({ rank, item, editMode, onRemove, onMoveUp, onMoveDown, canMove
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const rankColor = rank === 1 ? colors.accent : rank <= 3 ? colors.textSecondary : colors.textMuted;
   const img = item ? posterUrl(item.poster_path, 'w92') : null;
+  const pan = PanResponder.create({
+    onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dy) > 8 && Math.abs(g.dy) > Math.abs(g.dx),
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderGrant: () => onDragStart?.(rank),
+    onPanResponderMove: (_, g) => onDragMove?.(rank, g.dy),
+    onPanResponderRelease: (_, g) => onDragEnd?.(rank, g.dy),
+    onPanResponderTerminate: () => onDragEnd?.(rank, 0),
+  });
 
   return (
-    <View style={styles.rankRow}>
+    <View
+      style={[
+        styles.rankRow,
+        highlighted && styles.rankRowTarget,
+        dragging && { transform: [{ translateY: dragDy || 0 }], zIndex: 2, backgroundColor: colors.surface },
+      ]}
+      onLayout={event => onRowLayout?.(event.nativeEvent.layout.height)}
+      accessibilityLabel={editMode && item ? `Reorder ${item.title}` : undefined}
+      {...(editMode && item ? pan.panHandlers : {})}
+    >
       <Text style={[styles.rankNum, { color: rankColor }]}>{rank}</Text>
       {item ? (
         <>
@@ -91,19 +119,33 @@ function RankRow({ rank, item, editMode, onRemove, onMoveUp, onMoveDown, canMove
   );
 }
 
-export function TopTenSection({ listType, title, topLists, history }: {
+export function TopTenSection({ listType, title, topLists, history, onDraggingChange }: {
   listType: ListType;
   title: string;
   topLists: any;
   history: any[];
+  onDraggingChange?: (dragging: boolean) => void;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [editMode,   setEditMode]   = useState(false);
   const [addingRank, setAddingRank] = useState<number | null>(null);
+  const [drag, setDrag] = useState<{ from: number; dy: number } | null>(null);
+  const [rowH, setRowH] = useState(70);
 
   const items = topLists.lists[listType] || [];
+  const maxRank = items.reduce((max: number, item: { rank?: number }) => Math.max(max, item.rank || 0), 0);
   const slots = Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1);
+  const dragTarget = drag
+    ? Math.min(TOP_LIST_SIZE, Math.max(1, drag.from + Math.round(drag.dy / rowH)))
+    : null;
+
+  const finishDrag = (rank: number, dy: number) => {
+    const target = Math.min(TOP_LIST_SIZE, Math.max(1, rank + Math.round(dy / rowH)));
+    setDrag(null);
+    onDraggingChange?.(false);
+    if (target !== rank) topLists.moveToRank(listType, rank, target);
+  };
 
   return (
     <View>
@@ -119,23 +161,30 @@ export function TopTenSection({ listType, title, topLists, history }: {
       </View>
 
       {slots.map(rank => {
-        const item = items.find((i: any) => i.rank === rank);
+        const item = items.find((i: { rank?: number }) => i.rank === rank);
+        const row = (
+          <RankRow
+            rank={rank}
+            item={item || null}
+            editMode={editMode}
+            dragging={drag?.from === rank}
+            highlighted={dragTarget === rank && drag?.from !== rank}
+            dragDy={drag?.from === rank ? drag.dy : 0}
+            onRowLayout={height => { if (height > 0) setRowH(prev => (prev === height ? prev : height)); }}
+            onDragStart={from => { onDraggingChange?.(true); setDrag({ from, dy: 0 }); }}
+            onDragMove={(from, dy) => setDrag({ from, dy })}
+            onDragEnd={finishDrag}
+            canMoveUp={rank !== 1}
+            canMoveDown={rank < maxRank}
+            onRemove={() => item && topLists.removeSlot(listType, item.tmdb_id)}
+            onMoveUp={() => topLists.moveUp(listType, rank)}
+            onMoveDown={() => topLists.moveDown(listType, rank)}
+          />
+        );
+        if (item) return <View key={rank}>{row}</View>;
         return (
-          <TouchableOpacity
-            key={rank}
-            onPress={() => !item && setAddingRank(rank)}
-            activeOpacity={item ? 1 : 0.7}
-          >
-            <RankRow
-              rank={rank}
-              item={item || null}
-              editMode={editMode}
-              canMoveUp={rank !== 1}
-              canMoveDown={rank !== TOP_LIST_SIZE}
-              onRemove={() => item && topLists.removeSlot(listType, item.tmdb_id)}
-              onMoveUp={() => topLists.moveUp(listType, rank)}
-              onMoveDown={() => topLists.moveDown(listType, rank)}
-            />
+          <TouchableOpacity key={rank} onPress={() => setAddingRank(rank)} activeOpacity={0.7}>
+            {row}
           </TouchableOpacity>
         );
       })}
@@ -194,6 +243,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
     gap: spacing.md,
+    backgroundColor: colors.bg,
+  },
+  rankRowTarget: {
+    backgroundColor: colors.accentDim,
   },
   rankTitle: {
     flex: 1,
