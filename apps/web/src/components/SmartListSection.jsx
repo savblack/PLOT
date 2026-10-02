@@ -1,7 +1,8 @@
 // A smart list's own page (Premium): the rules as a sentence of chips that
 // stay editable on the page (B3), the matches they find right now with the
 // ones new since the last visit grouped first (A4), and Rename / Edit rules /
-// Delete. Finding matches is @plot/core/useSmartList.js and what counts as new
+// Delete, and on a new-discoveries list a switch for the weekly roll-up.
+// Finding matches is @plot/core/useSmartList.js and what counts as new
 // is @plot/core/useSmartListSeen.js; mobile has no counterpart yet (see issue
 // 1094, Mobile parity: smart lists).
 import { useMemo, useState } from 'react';
@@ -9,7 +10,7 @@ import { useApp } from '../hooks/useApp.js';
 import { useGenreCatalog } from '../hooks/useGenres.js';
 import { useSmartList } from '@plot/core/useSmartList.js';
 import { useSmartListSeen } from '@plot/core/useSmartListSeen.js';
-import { normalizeSmartListRules } from '@plot/core/smartLists.js';
+import { normalizeSmartListRules, smartListInRollUp, smartListRollUpEligible } from '@plot/core/smartLists.js';
 import { pickerProviderIds } from '@plot/core/tonightPicker.js';
 import { dateToLocalStr, shortDayMonth } from '@plot/core/date.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -30,6 +31,7 @@ import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
 import SmartListDialog from './SmartListDialog.jsx';
 import SmartListRules from './SmartListRules.jsx';
+import { SettingsSwitch } from './SettingsPage.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import './SmartListDialog.css';
 
@@ -67,6 +69,9 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
   const [renameValue, setRenameValue] = useState(list.name);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [upgrade, setUpgrade] = useState(false);
+  // The roll-up switch shows the new value at once and rolls back if not saved.
+  const [rollUpDraft, setRollUpDraft] = useState(/** @type {boolean | null} */ (null));
+  const [rollUpError, setRollUpError] = useState(false);
 
   const smart = useSmartList({
     rules,
@@ -102,6 +107,20 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
       // Saved: list.rules now holds them. Not saved: back to what is stored.
       setDraftRules(null);
     }
+  };
+
+  // Only lists of new discoveries are in the roll-up, and only their owner
+  // (smart lists are never shared) on Premium can change it.
+  const rollUpShown = premium && smartListRollUpEligible(rules) && (!list.user_id || list.user_id === user?.id);
+  const inRollUp = rollUpDraft ?? smartListInRollUp(list);
+  const toggleRollUp = async () => {
+    if (rollUpDraft !== null) return;
+    const next = !inRollUp;
+    setRollUpDraft(next);
+    setRollUpError(false);
+    const ok = await customLists.setSmartListDigest(list.id, next);
+    if (!ok) setRollUpError(true);
+    setRollUpDraft(null);
   };
 
   const openUpgrade = () => {
@@ -253,6 +272,17 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
       />
       {premium && !smart.loading && !smart.error && (
         <p className="smart-page-meta">{SMART_LISTS.matchCount(smart.items.length)} · {SMART_LISTS.tapHint}</p>
+      )}
+      {rollUpShown && (
+        <div className="smart-builder-switch smart-page-rollup">
+          <span className="smart-page-rollup-text">
+            <span>{SMART_LISTS.rollUp}</span>
+            <span className={`smart-page-rollup-hint${rollUpError ? ' smart-page-rollup-hint--error' : ''}`} role={rollUpError ? 'alert' : undefined}>
+              {rollUpError ? SMART_LISTS.rollUpFailed : inRollUp ? SMART_LISTS.rollUpOn : SMART_LISTS.rollUpOff}
+            </span>
+          </span>
+          <SettingsSwitch label={SMART_LISTS.rollUp} checked={inRollUp} disabled={rollUpDraft !== null} onChange={toggleRollUp} />
+        </div>
       )}
     </>
   );

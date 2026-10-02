@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { expect, waitFor, within } from 'storybook/test';
 import { offerUndo, createUndoBatch, clearUndo, UNDO_ACTIONS } from '@plot/core/undo.js';
 import { AppContext } from '../hooks/useApp.js';
 import UndoToast from '../components/UndoToast.jsx';
@@ -23,6 +24,9 @@ const OFFERS = {
     for (let i = 0; i < 5; i++) batch.add({ revert: ok });
     batch.offer();
   },
+  // Undo after creating a list deletes it (customListCreation.js createdListRevert).
+  'Create a smart list': () => offerUndo({ action: UNDO_ACTIONS.SMART_LIST_CREATE, title: 'Short thrillers on my services', revert: ok }),
+  'Create a list': () => offerUndo({ action: UNDO_ACTIONS.LIST_CREATE, title: 'Weekend', revert: ok }),
   'Undo that fails': () => offerUndo({ action: UNDO_ACTIONS.WATCHLIST_REMOVE, title: 'Dune: Part Two', revert: fail }),
 };
 
@@ -54,3 +58,39 @@ export const Playground = { render: () => <Harness region="GB" autoOffer="Remove
 export const USSpelling = { render: () => <Harness region="US" autoOffer="Unfavourite" /> };
 export const Batch = { render: () => <Harness region="GB" autoOffer="Remove 5 selected" /> };
 export const Episode = { render: () => <Harness region="GB" autoOffer="Un-tick an episode" /> };
+
+/* Creating a list (PLO-513): every create flow that is the viewer's alone
+   offers this. Shared lists do not: their members are already notified. */
+const createdPlay = (message) => async ({ canvasElement }) => {
+  const toast = await within(canvasElement).findByRole('status');
+  // The toast fades in, so wait for it to settle before asking if it shows.
+  await waitFor(() => expect(within(toast).getByText(message)).toBeVisible());
+  await expect(within(toast).getByRole('button', { name: 'Undo' })).toBeVisible();
+};
+const PHONE = { viewport: { value: 'mobile2', isRotated: false } };
+const DARK = { backgrounds: { value: '#0c0c0c' } };
+
+export const SmartListCreated = {
+  render: () => <Harness region="GB" autoOffer="Create a smart list" />,
+  tags: ['interaction-test'],
+  play: createdPlay('Smart list created.'),
+};
+export const SmartListCreatedDark = {
+  render: () => <Harness region="GB" autoOffer="Create a smart list" />,
+  globals: DARK,
+  tags: ['interaction-test'],
+  play: createdPlay('Smart list created.'),
+};
+// Chromatic ignores the viewport global, so the phone width is named for it too.
+export const SmartListCreatedPhone = {
+  render: () => <Harness region="GB" autoOffer="Create a smart list" />,
+  globals: PHONE,
+  parameters: { chromatic: { viewports: [414] } },
+  tags: ['interaction-test'],
+  play: createdPlay('Smart list created.'),
+};
+export const ListCreated = {
+  render: () => <Harness region="GB" autoOffer="Create a list" />,
+  tags: ['interaction-test'],
+  play: createdPlay('List created.'),
+};

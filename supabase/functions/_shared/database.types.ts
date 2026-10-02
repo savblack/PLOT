@@ -2449,6 +2449,7 @@ export type Database = {
       user_custom_lists: {
         Row: {
           created_at: string | null
+          digest_enabled: boolean
           id: string
           is_public: boolean
           name: string
@@ -2458,6 +2459,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          digest_enabled?: boolean
           id?: string
           is_public?: boolean
           name: string
@@ -2467,6 +2469,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          digest_enabled?: boolean
           id?: string
           is_public?: boolean
           name?: string

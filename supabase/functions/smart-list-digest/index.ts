@@ -19,7 +19,10 @@
  *   - a list never opened gets its first page recorded and counts nothing
  *
  * Watchlist and history lists are skipped: they change when their owner saves
- * or watches something, which needs no notification.
+ * or watches something, which needs no notification. So is any list its owner
+ * switched out of the roll-up (user_custom_lists.digest_enabled false,
+ * 20261002204500_smart_list_digest_switch.sql); someone with every list
+ * switched off gets nothing. The filter is _shared inDigest().
  *
  * Idempotent: the row's dedupe_key is smart_list_digest:<ISO week>, upserted
  * on notifications_dedupe_once (user_id, dedupe_key) with ignoreDuplicates,
@@ -41,7 +44,7 @@ import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { alertRegion } from '../_shared/premiumAlerts.js';
 import { mapWithConcurrency, tmdbGet, TMDB_CONCURRENCY } from '../_shared/peopleFeedJob.ts';
 import {
-  buildDigest, cleanRules, digestDedupeKey, discoverQuery, isoWeek, listRun, matchKey, pageMatches,
+  buildDigest, cleanRules, digestDedupeKey, discoverQuery, inDigest, isoWeek, listRun, matchKey, pageMatches,
   providerIdsOf, rulesTypes,
 } from '../_shared/smartListDigest.js';
 
@@ -49,7 +52,7 @@ type Db = SupabaseClient<Database>;
 type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
 type SeenRow = Database['public']['Tables']['smart_list_seen']['Row'];
 type Person = { region: string; providerIds: number[]; hideKids: boolean };
-type ListRow = { id: string; user_id: string; name: string; rules: Json | null };
+type ListRow = { id: string; user_id: string; name: string; rules: Json | null; digest_enabled: boolean };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 
@@ -68,12 +71,13 @@ const json = (body: unknown, status = 200) =>
 const chunks = <T>(items: T[], size: number) =>
   Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, (i + 1) * size));
 
-/** Every smart list, paged. Manual lists have rules = null. */
+/** Every smart list still in the roll-up, paged. Manual lists have rules = null. */
 async function readSmartLists(db: Db, onlyUser: string | null): Promise<ListRow[]> {
   const rows: ListRow[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    let query = db.from('user_custom_lists').select('id, user_id, name, rules')
+    let query = db.from('user_custom_lists').select('id, user_id, name, rules, digest_enabled')
       .not('rules', 'is', null)
+      .eq('digest_enabled', true)
       .order('created_at').order('id')
       .range(from, from + PAGE_SIZE - 1);
     if (onlyUser) query = query.eq('user_id', onlyUser);
@@ -182,7 +186,7 @@ Deno.serve(async (req) => {
     const sent = await alreadySent(db, [...people.keys()], dedupeKey);
     const lists = all
       .map(l => ({ ...l, clean: cleanRules(l.rules) }))
-      .filter(l => l.clean?.source === 'discover' && people.has(l.user_id) && !sent.has(l.user_id));
+      .filter(l => inDigest(l) && people.has(l.user_id) && !sent.has(l.user_id));
     capped = lists.length > MAX_LISTS_PER_RUN;
     const work = lists.slice(0, MAX_LISTS_PER_RUN);
     listsChecked = work.length;

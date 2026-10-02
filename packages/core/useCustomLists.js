@@ -6,8 +6,17 @@ import { genreIdsFromItem, mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
-import { createCustomListRecord, CUSTOM_LIST_LIMIT_CODE, SMART_LIST_PREMIUM_CODE } from './customListCreation.js';
+import { createCustomListRecord, createdListRevert, deleteCustomListRecord, CUSTOM_LIST_LIMIT_CODE, SMART_LIST_PREMIUM_CODE } from './customListCreation.js';
 import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
+
+/**
+ * @typedef {Object} CreateListOptions
+ * @property {import('./undo.js').UndoOption} [undo] offer "List created · Undo"
+ *   (`true`), or add it to a batch the caller offers once its own steps are done.
+ *   Undo deletes the new list. Shared lists never offer it (customListCreation.js).
+ * @property {() => void} [onUndone] after an undo has deleted the list, e.g. to
+ *   leave the new list's page.
+ */
 
 /**
  * User-created custom lists, plus (with includeShared) the shared lists the
@@ -31,9 +40,10 @@ import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
  *   smartLists: any[];
  *   ownedCount: number;
  *   loading: boolean;
- *   createList: (name: string) => Promise<any>;
- *   createSmartList: (name: string, rules: import('./smartLists.js').SmartListRules) => Promise<any>;
+ *   createList: (name: string, opts?: CreateListOptions) => Promise<any>;
+ *   createSmartList: (name: string, rules: import('./smartLists.js').SmartListRules, opts?: CreateListOptions) => Promise<any>;
  *   updateSmartList: (listId: string, rules: import('./smartLists.js').SmartListRules) => Promise<any>;
+ *   setSmartListDigest: (listId: string, enabled: boolean) => Promise<boolean>;
  *   deleteList: (listId: string) => Promise<any>;
  *   renameList: (listId: string, name: string) => Promise<any>;
  *   setListVisibility: (listId: string, visibility: import('./customLists.js').ListVisibility) => Promise<any>;
@@ -86,7 +96,26 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
   useEffect(() => { load(); }, [load]);
   useEffect(() => on(LISTS_CHANGED_EVENT, load), [load]);
 
-  const createList = useCallback(async (name) => {
+  // Undo for a list this hook just created: delete it, drop it here, and let
+  // every other instance reload.
+  const offerCreatedUndo = useCallback((list, { smart = false, undo, onUndone } = {}) => {
+    registerUndo(undo, {
+      action: smart ? UNDO_ACTIONS.SMART_LIST_CREATE : UNDO_ACTIONS.LIST_CREATE,
+      title: list.name,
+      meta: { listName: list.name },
+      revert: createdListRevert({
+        client: supabase, userId, listId: list.id,
+        onReverted: () => {
+          setLists(prev => prev.filter(l => l.id !== list.id));
+          setSmartLists(prev => prev.filter(l => l.id !== list.id));
+          emit(LISTS_CHANGED_EVENT);
+          onUndone?.();
+        },
+      }),
+    });
+  }, [userId]);
+
+  const createList = useCallback(async (name, opts) => {
     if (!userId || !name?.trim()) return null;
     let data;
     try {
@@ -101,11 +130,12 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
     if (data) {
       setLists(prev => [...prev, { ...data, items: [] }]);
       getConfig().onCustomListChange?.({ list_id: data.id, action: 'created' });
+      offerCreatedUndo(data, { undo: opts?.undo, onUndone: opts?.onUndone });
     }
     return data;
-  }, [userId]);
+  }, [userId, offerCreatedUndo]);
 
-  const createSmartList = useCallback(async (name, rules) => {
+  const createSmartList = useCallback(async (name, rules, opts) => {
     if (!userId || !name?.trim() || !rules) return null;
     let data;
     try {
@@ -124,9 +154,10 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
         smart: true, source: rules.source, media_type: rules.mediaType,
         genre_count: rules.genreIds?.length ?? 0, only_services: !!rules.onlyServices,
       } });
+      offerCreatedUndo(data, { smart: true, undo: opts?.undo, onUndone: opts?.onUndone });
     }
     return data;
-  }, [userId]);
+  }, [userId, offerCreatedUndo]);
 
   const updateSmartList = useCallback(async (listId, rules) => {
     if (!userId || !rules) return null;
@@ -147,12 +178,27 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
     return data;
   }, [userId]);
 
-  const deleteList = useCallback(async (listId) => {
+  /** Whether a smart list is in the weekly roll-up (smart-list-digest). */
+  const setSmartListDigest = useCallback(async (listId, enabled) => {
     if (!userId) return false;
-    const { error } = await supabase.from('user_custom_lists')
-      .delete()
+    const { error } = await supabase
+      .from('user_custom_lists')
+      .update({ digest_enabled: !!enabled })
       .eq('id', listId)
       .eq('user_id', userId);
+    if (error) {
+      console.error('Failed to update smart list roll-up', error);
+      reportActionFailure(FAILED_ACTIONS.SMART_LIST_UPDATE, error, { list_id: listId });
+      return false;
+    }
+    setSmartLists(prev => prev.map(l => l.id === listId ? { ...l, digest_enabled: !!enabled } : l));
+    return true;
+  }, [userId]);
+
+  const deleteList = useCallback(async (listId) => {
+    if (!userId) return false;
+    let error = null;
+    try { await deleteCustomListRecord(supabase, userId, listId); } catch (failure) { error = failure; }
     if (error) {
       console.error('Failed to delete custom list', error);
       reportActionFailure(FAILED_ACTIONS.CUSTOM_LIST_DELETE, error, { list_id: listId });
@@ -340,7 +386,7 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
 
   const ownedCount = lists.filter(l => l.role !== 'member').length + smartLists.length;
 
-  return { lists, smartLists, ownedCount, loading, createList, createSmartList, updateSmartList, deleteList, renameList, setListVisibility, addItem, removeItem, isInList, createSharedList, addMember, leaveList, refresh: load };
+  return { lists, smartLists, ownedCount, loading, createList, createSmartList, updateSmartList, setSmartListDigest, deleteList, renameList, setListVisibility, addItem, removeItem, isInList, createSharedList, addMember, leaveList, refresh: load };
 }
 
 /**

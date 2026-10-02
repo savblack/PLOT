@@ -46,3 +46,37 @@ export async function createCustomListRecord(client, userId, name, { rules = nul
   if (atLimit) throw Object.assign(new Error(CUSTOM_LISTS.limitMessage), { code: CUSTOM_LIST_LIMIT_CODE });
   throw error;
 }
+
+/** Delete one of the viewer's own lists, through the same table delete (and so
+ * the same RLS and cascades) as "Delete list". Deleting a list that is already
+ * gone is not an error.
+ * @param {any} client Supabase client, injected for isolated tests.
+ * @param {string} userId
+ * @param {string} listId
+ */
+export async function deleteCustomListRecord(client, userId, listId) {
+  const { error } = await client.from('user_custom_lists')
+    .delete()
+    .eq('id', listId)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+/**
+ * Undo for "create a list": delete the list that was just made, then let the
+ * caller put its screen back (drop the row, leave the new list's page).
+ *
+ * Offered for lists only their owner can see yet: a plain list and a smart
+ * list. Never for a shared list: create_shared_list has already sent each
+ * member a notification by the time it returns, and deleting the list would
+ * leave those pointing at nothing.
+ *
+ * @param {{ client: any, userId: string, listId: string, onReverted?: () => void }} args
+ * @returns {() => Promise<void>}
+ */
+export function createdListRevert({ client, userId, listId, onReverted }) {
+  return async () => {
+    await deleteCustomListRecord(client, userId, listId);
+    onReverted?.();
+  };
+}

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  cleanRules, discoverQuery, pageMatches, listRun, buildDigest, isoWeek, digestDedupeKey, providerIdsOf, rulesTypes,
+  cleanRules, discoverQuery, inDigest, pageMatches, listRun, buildDigest, isoWeek, digestDedupeKey, providerIdsOf, rulesTypes,
   SEEN_CAP, PENDING_CAP,
 } from '../../../../supabase/functions/_shared/smartListDigest.js';
-import { normalizeSmartListRules, smartListPickerOptions } from '@plot/core/smartLists.js';
+import { normalizeSmartListRules, smartListInRollUp, smartListPickerOptions } from '@plot/core/smartLists.js';
 import { discoverParams, pickerProviderIds } from '@plot/core/tonightPicker.js';
 
 // The weekly smart lists roll-up. The job cannot import @plot/core, so these
@@ -104,4 +104,26 @@ test('one roll-up per ISO week: the dedupe key is the week', () => {
   assert.equal(isoWeek(new Date('2026-09-28T00:00:00Z')), '2026-W40');
   assert.equal(isoWeek(new Date('2027-01-01T12:00:00Z')), '2026-W53');
   assert.equal(digestDedupeKey('2026-W40'), 'smart_list_digest:2026-W40');
+});
+
+test('the job skips exactly the lists the app shows as out of the roll-up', () => {
+  for (const raw of [...RULE_SETS, null, []]) {
+    for (const digest_enabled of [undefined, null, true, false]) {
+      const list = { rules: raw, digest_enabled };
+      assert.equal(inDigest(list), smartListInRollUp(list), `${JSON.stringify(raw)} digest_enabled=${digest_enabled}`);
+    }
+  }
+  assert.equal(inDigest({ rules: { source: 'discover' }, digest_enabled: false }), false);
+  assert.equal(inDigest({ rules: { source: 'discover' }, digest_enabled: true }), true);
+});
+
+test('someone with every list switched off is sent nothing', () => {
+  const lists = [
+    { id: 'a', rules: { source: 'discover' }, digest_enabled: false },
+    { id: 'b', rules: { source: 'discover', mediaType: 'tv' }, digest_enabled: false },
+    { id: 'c', rules: { source: 'watchlist' }, digest_enabled: true },
+  ];
+  const included = lists.filter(inDigest);
+  assert.deepEqual(included, []);
+  assert.equal(buildDigest(included.map(l => ({ id: l.id, name: l.id, newKeys: ['movie:1'], posters: {} }))), null);
 });

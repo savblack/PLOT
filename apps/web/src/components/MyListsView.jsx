@@ -281,17 +281,24 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
     writeStorage(draftKey, serialiseSmartListDraft({ name, rules }));
     openSmartGate({ kept: true });
   };
+  // Both creates offer Undo in the toast. Undoing a smart list also leaves
+  // its page, if that is still where the viewer is.
   const handleSmartCreate = async (name, rules) => {
-    const created = await createSmartList(name, rules);
+    let path = null;
+    const created = await createSmartList(name, rules, {
+      undo: true,
+      onUndone: () => { if (path && window.location.pathname === path) navigate(-1); },
+    });
     if (created) {
       removeStorage(draftKey);
       setCreatingSmart(false);
-      navigate(collectionPath(customListKey(created.id)));
+      path = collectionPath(customListKey(created.id));
+      navigate(path);
     }
     return created;
   };
   const handleCreate = async (name) => {
-    const created = await createList(name);
+    const created = await createList(name, { undo: true });
     if (created) setCreatingList(false);
     return created;
   };

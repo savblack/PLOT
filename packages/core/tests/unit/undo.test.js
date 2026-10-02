@@ -7,6 +7,7 @@ import {
   restorableRow, restoreRow, subscribeUndo, UNDO_ACTIONS, _resetUndo,
 } from '../../undo.js';
 import { UNDO } from '../../copy/undo.js';
+import { createdListRevert } from '../../customListCreation.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
 
 function capture() {
@@ -177,4 +178,52 @@ test('the toast message names the title, the list, and spells favourites by regi
   for (const action of Object.values(UNDO_ACTIONS)) {
     assert.doesNotMatch(UNDO.message({ action, count: 2 }), /—/, 'no em dashes in user-facing copy');
   }
+});
+
+/* ── Creating a list ── */
+
+test('creating a list or a smart list has its own undo kind and message', () => {
+  assert.equal(UNDO_ACTIONS.LIST_CREATE, 'list_create');
+  assert.equal(UNDO_ACTIONS.SMART_LIST_CREATE, 'smart_list_create');
+  assert.equal(UNDO.message({ action: UNDO_ACTIONS.SMART_LIST_CREATE, count: 1, title: 'Short thrillers' }), 'Smart list created.');
+  assert.equal(UNDO.message({ action: UNDO_ACTIONS.LIST_CREATE, count: 1, title: 'Weekend' }), 'List created.');
+});
+
+test('undoing a created list deletes it once, then reports the undo', async () => {
+  const { undone } = capture();
+  const deletes = [];
+  let restored = 0;
+  const db = {
+    from: (table) => ({
+      delete: () => {
+        const filters = {};
+        const chain = {
+          eq(column, value) { filters[column] = value; return chain; },
+          then(resolve) { deletes.push({ table, ...filters }); return Promise.resolve({ error: null }).then(resolve); },
+        };
+        return chain;
+      },
+    }),
+  };
+  registerUndo(true, {
+    action: UNDO_ACTIONS.SMART_LIST_CREATE,
+    title: 'Short thrillers',
+    revert: createdListRevert({ client: db, userId: 'owner', listId: 'l1', onReverted: () => { restored += 1; } }),
+  });
+  const offer = getUndo();
+  assert.equal(offer.action, 'smart_list_create');
+  assert.equal((await runUndo(offer.id)).ok, true);
+  assert.equal((await runUndo(offer.id)).ok, false, 'a second tap does nothing');
+  assert.deepEqual(deletes, [{ table: 'user_custom_lists', id: 'l1', user_id: 'owner' }]);
+  assert.equal(restored, 1);
+  assert.equal(undone[0].action, 'smart_list_create');
+});
+
+test('a batch offers a created list only when the caller is done with it', async () => {
+  const batch = createUndoBatch({ action: UNDO_ACTIONS.LIST_CREATE });
+  registerUndo(batch, { action: UNDO_ACTIONS.LIST_CREATE, title: 'Dune collection', revert: async () => {} });
+  assert.equal(getUndo(), null, 'nothing offered while the films are still being added');
+  batch.offer({ meta: { listName: 'Dune collection' } });
+  assert.equal(getUndo().action, 'list_create');
+  assert.equal(getUndo().count, 1);
 });

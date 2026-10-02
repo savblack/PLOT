@@ -13,6 +13,8 @@ import {
   loadDiscoverMatches,
   watchedIdsFromHistory,
   SMART_LIST_DETAIL_LIMIT,
+  smartListInRollUp,
+  smartListRollUpEligible,
 } from '../../smartLists.js';
 import { _resetPickerCache } from '../../tonightPicker.js';
 
@@ -181,4 +183,17 @@ test('discover matches interleave both types, skip watched and never repeat', as
   const again = await loadDiscoverMatches({ rules: r, client, watched, providerIds: [NETFLIX], region: 'AU', seen, page: 2 });
   assert.equal(again.items.length, 0, 'a title already shown is not shown twice');
   assert.equal(again.hasMore, false);
+});
+
+test('the weekly roll-up includes new-discoveries lists unless switched off', () => {
+  const discover = { rules: { source: 'discover', mediaType: 'movie' } };
+  assert.equal(smartListInRollUp(discover), true, 'on by default, before the column is read');
+  assert.equal(smartListInRollUp({ ...discover, digest_enabled: true }), true);
+  assert.equal(smartListInRollUp({ ...discover, digest_enabled: false }), false);
+  assert.equal(smartListInRollUp({ rules: { source: 'watchlist' } }), false, 'own titles are never in it');
+  assert.equal(smartListInRollUp({ rules: { source: 'history' }, digest_enabled: true }), false);
+  assert.equal(smartListInRollUp({ rules: null }), false, 'a manual list');
+  assert.equal(smartListInRollUp(null), false);
+  assert.equal(smartListRollUpEligible(normalizeSmartListRules({ source: 'discover' })), true);
+  assert.equal(smartListRollUpEligible(null), false);
 });

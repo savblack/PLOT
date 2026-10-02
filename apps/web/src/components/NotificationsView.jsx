@@ -72,7 +72,7 @@ function Avatar({ url, name, small = false, kind }) {
 }
 
 /** Pure layout; data comes from the hooks in NotificationsView (and from a story). */
-export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onOpenPeople, onOpenSmartLists, onMarkAllRead, now, region = null, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
+export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onOpenPeople, onOpenSmartLists, onManageSmartLists, onMarkAllRead, now, region = null, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
   const { rollup, groups } = useMemo(() => groupNotifications(list, now), [list, now]);
   const unread = list.filter(wasUnread).length;
   const requestTotal = requests.length + watchRequests.length;
@@ -187,6 +187,12 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
               <span className="notif-people-footer-link">{PEOPLE.notificationsFooter.link}</span>
             </button>
           )}
+          {onManageSmartLists && list.some(n => smartListDigest(n)) && (
+            <button type="button" className="hist-card notif-people-footer notif-digest-footer interactive-surface" onClick={onManageSmartLists}>
+              <span className="notif-people-footer-text">{SMART_LIST_DIGEST.manageBody}</span>
+              <span className="notif-people-footer-link">{SMART_LIST_DIGEST.manageLink}</span>
+            </button>
+          )}
         </section>}
         {!groups.length && !rollup && requestTotal > 0 && <p className="hist-card-note notif-status">{T.nothingElse}</p>}
       </div>}
@@ -233,6 +239,7 @@ export default function NotificationsView() {
       onOpenPeople={() => navigate('/your-people')}
       /* One list: open it. Several: My Lists, where each says how many are new. */
       onOpenSmartLists={digest => navigate(digest.lists.length === 1 ? collectionPath(customListKey(digest.lists[0].id)) : '/my-lists')}
+      onManageSmartLists={() => navigate('/my-lists')}
       onMarkAllRead={handleMarkAllRead}
       wasUnread={n => unreadIds?.has(n.id) ?? false}
       moment={moment}

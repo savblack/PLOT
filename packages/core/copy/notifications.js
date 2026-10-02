@@ -59,6 +59,10 @@ export const SMART_LIST_DIGEST = Object.freeze({
   /** @param {Array<{ name: string, count: number }>} lists */
   lists: (lists) => lists.map(l => `${l.name} (${l.count})`).join(', '),
   seeThem: 'See them',
+  // A quiet footer under the roll-up, like PEOPLE.notificationsFooter: each
+  // smart list has its own switch, on its page.
+  manageBody: 'Each smart list has its own switch for the weekly roll-up, on its page.',
+  manageLink: 'Smart lists',
 });
 
 /**

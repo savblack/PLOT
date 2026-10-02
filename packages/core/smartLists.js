@@ -119,6 +119,25 @@ export function isSmartList(list) {
   return normalizeSmartListRules(list?.rules) !== null;
 }
 
+// ── The weekly roll-up (C4) ──────────────────────────────────────────────────
+// supabase/functions/smart-list-digest checks new discoveries once a week. A
+// watchlist or history list changes when its owner saves or watches
+// something, so only new-discoveries lists are in it, and each can be taken
+// out with user_custom_lists.digest_enabled (on unless switched off).
+// _shared/smartListDigest.js inDigest() restates this for the job; the parity
+// test (apps/web/tests/unit/smartListDigest.test.js) holds the two together.
+
+/** Whether the roll-up can include a list with these rules. @param {SmartListRules | null} rules */
+export const smartListRollUpEligible = (rules) => rules?.source === 'discover';
+
+/**
+ * Whether the weekly roll-up includes this list.
+ * @param {{ rules?: any, digest_enabled?: boolean | null } | null | undefined} list
+ */
+export function smartListInRollUp(list) {
+  return smartListRollUpEligible(normalizeSmartListRules(list?.rules)) && list?.digest_enabled !== false;
+}
+
 /**
  * Genres to offer for the chosen type: that type's catalog, or both for
  * "movies and shows", alphabetical.
