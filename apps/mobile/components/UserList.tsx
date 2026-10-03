@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { followUser, unfollowUser } from '@plot/core/useFollows.js';
+import { canCompare } from '@plot/core/tasteOverlap.js';
+import { TASTE_OVERLAP } from '@plot/core/copy/tasteOverlap.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { Avatar, ProfileBadges } from './Avatar';
@@ -76,19 +78,20 @@ export function FollowButton({
 }
 
 export function UserRow({
-  user, viewerId, onNavigate, surface = 'search_result', blocks,
+  user, viewerId, onNavigate, surface = 'search_result', blocks, showCompare = false,
 }: {
   user: SocialUser; viewerId?: string | null; onNavigate?: () => void;
-  surface?: string; blocks?: BlocksApi;
+  surface?: string; blocks?: BlocksApi; showCompare?: boolean;
 }) {
   const { colors } = useTheme();
   const styles2 = makeStyles(colors);
   const router = useRouter();
   const name = user.display_name || user.username;
+  const comparable = showCompare && !!viewerId && user.id !== viewerId && canCompare(user);
 
   const goProfile = () => {
     onNavigate?.();
-    router.push(`/(app)/u/${user.username}` as any);
+    router.push(`/(app)/u/${user.username}` as Href);
   };
 
   return (
@@ -103,6 +106,20 @@ export function UserRow({
           <Text style={styles2.handle} numberOfLines={1}>@{user.username}</Text>
         </View>
       </TouchableOpacity>
+      {comparable && (
+        <TouchableOpacity
+          onPress={() => {
+            onNavigate?.();
+            router.push(`/(app)/u/${user.username}/compare` as Href);
+          }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`${TASTE_OVERLAP.compareTaste}: ${name}`}
+          style={[styles.followBtn, { backgroundColor: colors.accentSecondaryFill, borderColor: 'transparent' }]}
+        >
+          <Text style={[styles.followText, { color: colors.onAccentSecondaryFill }]}>{TASTE_OVERLAP.compare}</Text>
+        </TouchableOpacity>
+      )}
       <FollowButton
         targetId={user.id}
         isPublic={user.is_public}
@@ -130,10 +147,10 @@ export function UserRow({
  * would fire one RPC per result.
  */
 export function UserList({
-  users, viewerId, onNavigate, empty = 'No one here yet.', surface = 'search_result',
+  users, viewerId, onNavigate, empty = 'No one here yet.', surface = 'search_result', showCompare = false,
 }: {
   users: SocialUser[]; viewerId?: string | null; onNavigate?: () => void;
-  empty?: string; surface?: string;
+  empty?: string; surface?: string; showCompare?: boolean;
 }) {
   const { colors } = useTheme();
   const blocks = useBlocks(viewerId);
@@ -147,7 +164,7 @@ export function UserList({
   return (
     <View>
       {users.map(u => (
-        <UserRow key={u.id} user={u} viewerId={viewerId} onNavigate={onNavigate} surface={surface} blocks={blocks} />
+        <UserRow key={u.id} user={u} viewerId={viewerId} onNavigate={onNavigate} surface={surface} blocks={blocks} showCompare={showCompare} />
       ))}
     </View>
   );

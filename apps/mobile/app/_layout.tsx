@@ -1,7 +1,8 @@
 import '../lib/configureCore'; // MUST be first: injects Expo env into shared core before any data call
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Slot, usePathname, useRouter, useSegments, type Href } from 'expo-router';
+import { consumeCompareHandoff, rememberCompareReturn, resetCompareHandoff } from '../lib/authReturn';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -33,6 +34,7 @@ function AuthGuard({ session, onboardingComplete }: {
   onboardingComplete: boolean | null;
 }) {
   const segments = useSegments();
+  const pathname = usePathname();
   const router   = useRouter();
 
   useEffect(() => {
@@ -40,16 +42,22 @@ function AuthGuard({ session, onboardingComplete }: {
     const inOnboarding = segments[0] === 'onboarding';
 
     if (!session) {
-      // Not logged in → send to auth
-      if (!inAuth) router.replace('/(auth)');
+      resetCompareHandoff();
+      // Not logged in → send to auth. A compare link is restored after sign-in.
+      if (!inAuth) {
+        rememberCompareReturn(pathname);
+        router.replace('/(auth)');
+      }
     } else if (onboardingComplete === false) {
       // Logged in but onboarding not done
       if (!inOnboarding) router.replace('/onboarding/name');
-    } else if (onboardingComplete === true) {
-      // Fully onboarded
-      if (inAuth || inOnboarding) router.replace('/(app)');
+    } else if (onboardingComplete === true && !inAuth && !inOnboarding) {
+      resetCompareHandoff();
+    } else if (onboardingComplete === true && (inAuth || inOnboarding)) {
+      const handoff = consumeCompareHandoff();
+      if (handoff.go) router.replace((handoff.path ?? '/(app)') as Href);
     }
-  }, [session, onboardingComplete, segments]);
+  }, [session, onboardingComplete, segments, pathname]);
 
   return <Slot />;
 }

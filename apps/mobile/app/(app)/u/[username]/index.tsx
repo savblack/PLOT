@@ -1,7 +1,7 @@
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
-import { shareLink } from '../../../lib/share';
-import { EVENTS } from '../../../lib/analytics';
+import { shareLink } from '../../../../lib/share';
+import { EVENTS } from '../../../../lib/analytics';
 /**
  * Public profile — /u/:username (mirrors web PublicProfilePage on a phone).
  * Compact identity, a locked state for private profiles the viewer doesn't
@@ -16,31 +16,32 @@ import {
   ActivityIndicator, Modal,
 } from 'react-native';
 import { Linking } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import EditProfileModal from '../../../components/EditProfileModal';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import EditProfileModal from '../../../../components/EditProfileModal';
 import { SOCIAL_LINKS } from '@plot/core/profileFields.js';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { supabase } from '../../../lib/supabase';
-import { useTheme } from '../../../contexts/ThemeContext';
-import { useMediaPanel } from '../../../contexts/MediaPanelContext';
-import { useAppData } from '../../../contexts/AppDataContext';
-import { usePublicProfile } from '../../../hooks/usePublicProfile';
-import { favoriteWords } from '../../../lib/spelling';
-import { useFollows } from '../../../hooks/useFollows';
+import { supabase } from '../../../../lib/supabase';
+import { useTheme } from '../../../../contexts/ThemeContext';
+import { useMediaPanel } from '../../../../contexts/MediaPanelContext';
+import { useAppData } from '../../../../contexts/AppDataContext';
+import { usePublicProfile } from '../../../../hooks/usePublicProfile';
+import { favoriteWords } from '../../../../lib/spelling';
+import { useFollows } from '../../../../hooks/useFollows';
 import { useBlocks } from '@plot/core/useBlocks.js';
-import UserModerationMenu from '../../../components/UserModerationMenu';
-import { Avatar, ProfileBadges } from '../../../components/Avatar';
-import { UserList, SocialUser } from '../../../components/UserList';
-import { Palette, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
-import { TAB_BAR_CLEARANCE } from '../../../lib/tabBar';
+import UserModerationMenu from '../../../../components/UserModerationMenu';
+import { Avatar, ProfileBadges } from '../../../../components/Avatar';
+import { UserList, SocialUser } from '../../../../components/UserList';
+import { Palette, fontFamily, fontSize, spacing, radii } from '../../../../lib/tokens';
+import { TAB_BAR_CLEARANCE } from '../../../../lib/tabBar';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
+import { TASTE_OVERLAP } from '@plot/core/copy/tasteOverlap.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { publicProfileLayout } from '@plot/core/publicProfileLayout.js';
 import { MEDIA } from '@plot/core/copy/media.js';
 import {
   ShelfItem, ShelfList, PosterGrid, TopFiveGrid, PosterRail, ListCovers, HistoryRows, ShelfHeading, ShelfButton, ShelfSwitch,
-} from '../../../components/ProfileShelves';
+} from '../../../../components/ProfileShelves';
 
 /**
  * `usernameOverride` lets the profile tab reuse this screen for the signed-in
@@ -174,6 +175,15 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
               <TouchableOpacity style={styles.btnSecondary} accessibilityRole="button" onPress={share}>
                 <Text style={styles.btnSecondaryText}>{PUBLIC_PROFILE_PAGE.shareProfile}</Text>
               </TouchableOpacity>
+              {!!viewerId && !isOwn && !locked && (
+                <TouchableOpacity
+                  style={styles.btnSecondary}
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/(app)/u/${profile!.username}/compare` as Href)}
+                >
+                  <Text style={styles.btnSecondaryText}>{TASTE_OVERLAP.compareTaste}</Text>
+                </TouchableOpacity>
+              )}
               {/* Report / block. Guideline 1.2 wants both wherever another
                   account's content is rendered. Renders nothing for your own
                   profile or when signed out. */}
@@ -365,7 +375,7 @@ function FollowListModal({
         <ScrollView showsVerticalScrollIndicator={false}>
           {users === null
             ? <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xl }} />
-            : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
+            : <UserList users={users} viewerId={viewerId} onNavigate={onClose} showCompare empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
         </ScrollView>
       </View>
     </View>
