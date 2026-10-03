@@ -11,6 +11,7 @@
   "apps/mobile/lib/sectionOpenState.ts": 1,
   "apps/web/src/components/ConfirmModal.jsx": 1,
   "apps/web/src/components/ErrorBoundary.jsx": 8,
+  "apps/web/src/components/ImportSourceIcon.jsx": 4,
   "apps/web/src/components/ImportView.jsx": 24,
   "apps/web/src/components/ReportDialog.jsx": 2,
   "apps/web/src/components/ShareCard.css": 35,
@@ -19,7 +20,6 @@
   "apps/web/src/pages/AuthPage.css": 8,
   "apps/web/src/pages/AuthPage.jsx": 4,
   "apps/web/src/pages/LegalPage.css": 12,
-  "apps/web/src/pages/OnboardingFlow.css": 69,
   "apps/web/src/pages/PublicProfilePage.jsx": 1,
   "apps/web/src/pages/TraktCallbackPage.jsx": 3,
   "apps/web/src/styles/app.css": 13

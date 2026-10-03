@@ -111,7 +111,7 @@ configure({
   },
   onReview: (payload) => track(EVENTS.REVIEW_WRITTEN, payload),
   onImport: ({ stage, ...props }) => {
-    const name = { started: EVENTS.IMPORT_STARTED, completed: EVENTS.IMPORT_COMPLETED, failed: EVENTS.IMPORT_FAILED }[stage];
+    const name = { selected: EVENTS.IMPORT_SOURCE_SELECTED, started: EVENTS.IMPORT_STARTED, completed: EVENTS.IMPORT_COMPLETED, failed: EVENTS.IMPORT_FAILED }[stage];
     if (name) track(name, props);
   },
   // The undo toast reversed a removal. Never a committed action.

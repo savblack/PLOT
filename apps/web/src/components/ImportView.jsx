@@ -6,12 +6,13 @@ import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
+import { markImportDone } from '../utils/finishingTouchesState.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
 import { planHistoryImport } from '@plot/core/importPlan.js';
 import {
   resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, resolveImportMatch, reviewImportDuplicates,
-  reportImport, reportImportOutcome, IMPORT_FAILURE_REASONS,
+  createImportReporter, importEntryFromParam, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { MEDIA } from '../copy/media.js';
@@ -221,10 +222,16 @@ function AccountImportView() {
   const loadPlexIntegration = plex.loadIntegration;
   const loadTraktIntegration = trakt.loadIntegration;
   const loadSimklIntegration = simkl.loadIntegration;
-  const initialConnection = availablePlatforms.find(item => item.id === searchParams.get('source') && item.kind === 'connection') || null;
+  // ?source= opens straight on that platform's source step. Onboarding's
+  // switching-apps branch sends file sources (letterboxd, netflix) as well as
+  // connections, so any available platform id is accepted.
+  const initialPlatform = availablePlatforms.find(item => item.id === searchParams.get('source')) || null;
+  // Where this import began (onboarding, the Finishing touches card, or here),
+  // carried on every import event along with how long it took.
+  const importReport = useMemo(() => createImportReporter({ entry: importEntryFromParam(searchParams.get('from')) }), [searchParams]);
 
-  const [step, setStep] = useState(initialConnection ? 2 : 1); // 1=platform 2=source 3=resolving 4=preview 5=done
-  const [platform, setPlatform] = useState(initialConnection);
+  const [step, setStep] = useState(initialPlatform ? 2 : 1); // 1=platform 2=source 3=resolving 4=preview 5=done
+  const [platform, setPlatform] = useState(initialPlatform);
   const [previewPage, setPreviewPage] = useState(0);
   const [parseError, setParseError] = useState('');
   const [listResult, setListResult] = useState('');
@@ -277,15 +284,16 @@ function AccountImportView() {
     if (!connection || !platform) return;
     const source = platform.id;
     setConnectionResult(null);
-    reportImport('started', { source });
+    importReport.report('started', { source });
     const result = await connection.importHistory();
     if (result) {
       setConnectionResult(result);
-      reportImport('completed', { source, count: result.importedCount || 0 });
+      importReport.report('completed', { source, count: result.importedCount || 0 });
+      markImportDone(user?.id);
     } else {
-      reportImport('failed', { source, reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
+      importReport.report('failed', { source, reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
     }
-  }, [connection, platform]);
+  }, [connection, platform, user, importReport]);
 
   /* Step 2 → 3 → 4 */
   const handleFile = useCallback(async (files) => {
@@ -300,22 +308,22 @@ function AccountImportView() {
       if (!parsed.length && (document.warnings.length || document.notImported.length)) { setResults([]); setStep(4); return; }
     } catch (e) {
       setParseError(`Couldn't parse this file. Make sure you selected the right platform and the file is unmodified. (${e.message})`);
-      reportImport('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.UNREADABLE_FILE });
+      importReport.report('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.UNREADABLE_FILE });
       return;
     }
     if (parsed.some(row => row.destination) && !getConfig().importEventsEnabled) {
       setParseError(IMPORT_VIEW.listNotImported('not_available'));
-      reportImport('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.LISTS_UNAVAILABLE });
+      importReport.report('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.LISTS_UNAVAILABLE });
       return;
     }
     if (!parsed.length) {
       setParseError("No watch history found in this file. Check you exported from the right platform.");
-      reportImport('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.EMPTY_FILE });
+      importReport.report('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.EMPTY_FILE });
       return;
     }
 
     const deduped = parsed;
-    reportImport('started', { source: platform.id, count: deduped.length });
+    importReport.report('started', { source: platform.id, count: deduped.length });
 
     setStep(3);
     setResolveProgress({ done: 0, total: deduped.length });
@@ -338,7 +346,7 @@ function AccountImportView() {
     // new, and the write would overwrite their rating and note. Stop instead.
     if (existingError) {
       setImportError(IMPORT_VIEW.couldNotReadHistory);
-      reportImport('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
+      importReport.report('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
       setStep(2);
       return;
     }
@@ -346,14 +354,14 @@ function AccountImportView() {
     const review = await reviewImportDuplicates({ userId: user.id, resolved });
     if (review.error) {
       setImportError(IMPORT_VIEW.couldNotReadHistory);
-      reportImport('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
+      importReport.report('failed', { source: platform.id, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
       setStep(2);
       return;
     }
     setExistingRows(resolved[0]?.destination ? [] : existing);
     setResults(review.resolved);
     setStep(4);
-  }, [platform, user]);
+  }, [platform, user, importReport]);
 
   /* One plan, used for both the preview and the write, so what the preview
      promises is exactly what gets imported. */
@@ -388,6 +396,7 @@ function AccountImportView() {
   const handleImport = useCallback(async () => {
     if (resolvingMatch || results.some(needsDuplicateReview)) return;
     setImporting(true);
+    importReport.writing();
     setImportError('');
 
     // writeImportRows batches, counts failures rather than swallowing them, and
@@ -395,13 +404,14 @@ function AccountImportView() {
     const outcome = await writeImportDocument({ userId: user.id, resolved: results, summaryRows: plan.rows });
     const { inserted, failed, duplicates } = outcome;
     setListResult(importListResultMessage(outcome));
-    reportImportOutcome(platform?.id, outcome);
+    importReport.outcome(platform?.id, outcome);
     setImportedCount(inserted);
     setImportResult({ duplicates, failed });
     if (failed) setImportError(IMPORT_VIEW.partialFailure(failed));
+    if (inserted > 0) markImportDone(user.id);
     setImporting(false);
     setStep(5);
-  }, [plan, platform, user, results, resolvingMatch]);
+  }, [plan, platform, user, results, resolvingMatch, importReport]);
 
   const newCount       = getConfig().importEventsEnabled ? results.filter(r => r.status === 'matched' && r.listSelected !== false && !alreadyImportedEvent(r)).length : plan.rows.length;
   const alreadyCount   = results[0]?.destination ? 0 : getConfig().importEventsEnabled ? results.filter(alreadyImportedEvent).length : plan.alreadyInHistory;
@@ -450,7 +460,7 @@ function AccountImportView() {
             {availablePlatforms.map(p => (
               <button
                 key={p.id}
-                onClick={() => { setPlatform(p); setStep(2); }}
+                onClick={() => { importReport.selected(p.id); setPlatform(p); setStep(2); }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
                   padding: '0.85rem 1rem', borderRadius: 'var(--radius-lg)',

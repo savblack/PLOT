@@ -8,7 +8,6 @@ import {
   loadDiscoverView, loadTonightView, loadGuideView, loadCalendarView, loadMyListsView,
   loadHistoryView, loadListPage, loadSearchView, loadSettingsView,
 } from './routeChunks.js';
-import { isPreviewDeployment } from './utils/previewDeployment.js';
 
 // The auth entry/exit points must never fail, so they're bundled eagerly (not
 // lazy): navigating to /login, /signup or /logout is almost always a
@@ -66,7 +65,6 @@ const TasteOverlapPage  = lazy(() => import('./pages/TasteOverlapPage.jsx'));
 const ComparePickerPage = lazy(() => import('./pages/ComparePickerPage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
-const isPreview = isPreviewDeployment();
 
 function AppErrorBoundary({ children }) {
   const location = useLocation();
@@ -106,10 +104,12 @@ const router = createBrowserRouter([
   { path: '/auth/simkl',     element: wrap(<SimklCallbackPage />) },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
-  // Onboarding (protected, skip onboarding check)
+  // Onboarding (protected, skip onboarding check). Previews never send anyone
+  // here (ProtectedRoute skips the check there), but visiting it directly still
+  // opens it, so a branch's onboarding can be tested before it merges.
   {
     path: '/onboarding',
-    element: isPreview ? <Navigate to="/home" replace /> : wrap(
+    element: wrap(
       <ProtectedRoute skipOnboardingCheck>
         <ErrorBoundary><OnboardingFlow /></ErrorBoundary>
       </ProtectedRoute>

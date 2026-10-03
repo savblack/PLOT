@@ -35,6 +35,47 @@ export const ONBOARDING_FLOW = {
     add: 'Add',
     remove: 'Remove',
   },
+  // ── Web onboarding, redesigned (Oct 2026): save a few (with a switching-apps
+  // branch), where do you watch, then a short building moment into Home. The
+  // name now comes from the sign-in provider, so nothing here asks for it.
+  // Mobile still runs step1 + step2 above until it catches up.
+  seed: {
+    // Reads as a question with or without a name.
+    title: (name) => (name ? `What do you want to watch, ${name}?` : 'What do you want to watch?'),
+    subtitle: 'Pick a few of this week’s trending titles to start your watchlist. You can always add more or change these later.',
+    switchingLead: 'Switching apps?',
+    switchingBody: 'Bring your history and watchlist over instead.',
+    continueWith: (n) => `Continue with ${n} ${n === 1 ? 'title' : 'titles'} →`,
+    tapAFew: 'Pick at least one to continue',
+  },
+  importSources: {
+    title: 'Where’s your history now?',
+    subtitle: 'Your ratings, watch dates and lists come with it.',
+    sourcesLabel: 'Import sources',
+    letterboxd: 'Upload your export file',
+    trakt: 'Connect your account',
+    netflix: 'Upload your viewing activity',
+    plex: 'Connect your server',
+    note: 'We’ll finish setting up first, then open the import. One entry per title, so nothing doubles up.',
+  },
+  services: {
+    title: 'Where do you watch?',
+    subtitle: 'We’ll show what’s on your services first. You can change this in Settings.',
+    // Region names don't all take "the" (the United States, but not Australia), so no sentence wraps them.
+    regionLine: (regionName) => `Your region: ${regionName}.`,
+    changeRegion: 'Change',
+    regionLabel: 'Region',
+    loadError: 'We couldn’t load services right now. You can set them later in Settings.',
+  },
+  building: {
+    // "Building your" then the wordmark, set in Gabarito.
+    heading: 'Building your',
+    lines: ['Checking your platforms…', 'Reading the reviews…', 'Popping the popcorn…', 'Raising the curtain…'],
+    // Line one when they skipped services.
+    noServicesFirstLine: 'Checking every platform…',
+    status: 'Building your Plot',
+  },
+  skip: 'Skip',
   stepLabel: (step, total) => `Step ${step} of ${total}`,
   clearSearch: 'Clear search',
   goBack: 'Go back',
