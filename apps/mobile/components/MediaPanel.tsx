@@ -1,13 +1,15 @@
 import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import { getEpisodeGuideState } from '@plot/core/episodeProgress.js';
 import PrivateNote from './PrivateNote';
+import { privateNoteKey } from '@plot/core/privateNotes.js';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../lib/share';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 /**
  * MediaPanel — slide-up detail sheet, mobile port of web MediaPanel.jsx.
- * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
+ * Sections: cover band with overlapping poster, compact action row, up next,
+ * where to watch, scores, then episodes. Your take stays pinned under the scroll.
  */
 import { STAR_COUNT, ratingToStars, starsToRating } from '@plot/core/ratings.js';
 import { localDateStr } from '@plot/core/date.js';
@@ -18,7 +20,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
   StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Linking, Alert,
-  Platform,
+  Platform, KeyboardAvoidingView,
 } from 'react-native';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -92,7 +94,7 @@ function IconX() {
 function IconHeart({ filled }: { filled: boolean }) {
   const { colors } = useTheme();
   return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill={filled ? colors.accent : 'none'} stroke={filled ? colors.accent : colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <Svg width={17} height={17} viewBox="0 0 24 24" fill={filled ? colors.accent : 'none'} stroke={filled ? colors.accent : colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </Svg>
   );
@@ -105,26 +107,10 @@ function IconCheck({ color }: { color?: string }) {
     </Svg>
   );
 }
-function IconPlay() {
-  const { colors } = useTheme();
-  return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinejoin="round">
-      <Polygon points="5,3 19,12 5,21" />
-    </Svg>
-  );
-}
 function IconPlayTrailer() {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="#fff" stroke="#fff" strokeWidth={1} strokeLinejoin="round">
       <Polygon points="8,4 21,12 8,20" />
-    </Svg>
-  );
-}
-function IconStop() {
-  const { colors } = useTheme();
-  return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinejoin="round">
-      <Rect x={4} y={4} width={16} height={16} rx={2} />
     </Svg>
   );
 }
@@ -149,7 +135,7 @@ function IconCircleCheck({ filled }: { filled: boolean }) {
   const { colors } = useTheme();
   return filled ? (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={10} fill={colors.chipEpisode} stroke={colors.chipEpisode} strokeWidth={1.5} />
+      <Circle cx={12} cy={12} r={10} fill={colors.accent} stroke={colors.accent} strokeWidth={1.5} />
       <Polyline points="9 12 11 14 15 10" stroke="#fff" strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   ) : (
@@ -162,7 +148,7 @@ function IconList({ active }: { active?: boolean }) {
   const { colors } = useTheme();
   const c = active ? colors.accent : colors.textSecondary;
   return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <Svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <Line x1={8} y1={6} x2={21} y2={6} /><Line x1={8} y1={12} x2={21} y2={12} /><Line x1={8} y1={18} x2={21} y2={18} />
       <Line x1={3} y1={6} x2={3.01} y2={6} /><Line x1={3} y1={12} x2={3.01} y2={12} /><Line x1={3} y1={18} x2={3.01} y2={18} />
     </Svg>
@@ -171,9 +157,27 @@ function IconList({ active }: { active?: boolean }) {
 function IconShare() {
   const { colors } = useTheme();
   return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <Svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <Circle cx={18} cy={5} r={3} /><Circle cx={6} cy={12} r={3} /><Circle cx={18} cy={19} r={3} />
       <Line x1={8.59} y1={13.51} x2={15.42} y2={17.49} /><Line x1={15.41} y1={6.51} x2={8.59} y2={10.49} />
+    </Svg>
+  );
+}
+function IconBookmark({ saved }: { saved: boolean }) {
+  const { colors } = useTheme();
+  const ink = saved ? colors.statusWatched : colors.onAccentFill;
+  return (
+    <Svg width={15} height={15} viewBox="0 0 24 24" fill={saved ? ink : 'none'} stroke={ink} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </Svg>
+  );
+}
+function IconLock() {
+  const { colors } = useTheme();
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={4} y={11} width={16} height={10} rx={2} />
+      <Path d="M8 11V7a4 4 0 0 1 8 0v4" />
     </Svg>
   );
 }
@@ -245,6 +249,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
   const [toggling,  setToggling]  = useState<number | null>(null);
   const [actionError, setActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
+  const [seasonMenuOpen, setSeasonMenuOpen] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -369,46 +374,51 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
 
   return (
     <View>
-      {/* Season selector */}
-      {seasons.length > 1 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.md }}
-        >
-          {seasons.map((s: any) => (
+      {/* Season pill and the bulk action share one line. The chip strip it
+          replaces grew a row for every season. */}
+      <View style={styles.seasonRow}>
+        {seasons.length > 1 ? (
+          <View>
             <TouchableOpacity
-              key={s.season_number}
-              style={[styles.seasonBtn, selSeason === s.season_number && styles.seasonBtnActive]}
-              onPress={() => setSelSeason(s.season_number)}
+              style={styles.seasonPill}
+              onPress={() => setSeasonMenuOpen(v => !v)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: seasonMenuOpen }}
+              accessibilityLabel={MEDIA_PANEL.chooseSeason}
             >
-              <Text style={[styles.seasonBtnText, selSeason === s.season_number && styles.seasonBtnTextActive]}>
-                S{String(s.season_number).padStart(2, '0')}
-              </Text>
+              <Text style={styles.seasonPillText}>{MEDIA_PANEL.seasonLabel(selSeason)}</Text>
+              <IconChevron dir={seasonMenuOpen ? 'up' : 'down'} />
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-
-      {isTracking && episodes.length > 0 && (
-        <View style={styles.seasonBulk}>
-          <View style={styles.seasonBulkInfo}>
-            <Text style={styles.seasonBulkTitle}>{MEDIA_PANEL.seasonLabel(selSeason)}</Text>
-            <Text style={styles.seasonBulkCount}>
-              {MEDIA_PANEL.seasonWatchedCount(seasonState.watchedCount, seasonState.episodeCount)}
-            </Text>
+            {seasonMenuOpen && (
+              <View style={styles.seasonMenu}>
+                {seasons.map((s: any) => (
+                  <TouchableOpacity
+                    key={s.season_number}
+                    style={styles.seasonMenuItem}
+                    onPress={() => { setSelSeason(s.season_number); setSeasonMenuOpen(false); }}
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.seasonMenuText, s.season_number === selSeason && { color: colors.accentText }]}>
+                      {MEDIA_PANEL.seasonLabel(s.season_number)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
+        ) : (
+          <View style={styles.seasonPill}>
+            <Text style={styles.seasonPillText}>{MEDIA_PANEL.seasonLabel(selSeason)}</Text>
+          </View>
+        )}
+        {isTracking && episodes.length > 0 && (
           <TouchableOpacity
-            style={styles.seasonBulkBtn}
             onPress={handleToggleSeason}
             disabled={seasonPending || progressBlocked || toggling !== null}
             accessibilityRole="button"
             accessibilityState={{ disabled: seasonPending || progressBlocked || toggling !== null }}
-            accessibilityLabel={
-              seasonState.isComplete
-                ? `${MEDIA_PANEL.unmarkSeasonWatched} ${selSeason}`
-                : `${MEDIA_PANEL.markSeasonWatched} ${selSeason}`
-            }
           >
-            <Text style={[styles.seasonBulkBtnText, seasonPending && styles.seasonBulkBtnTextPending]}>
+            <Text style={styles.seasonBulkLink}>
               {seasonPending
                 ? MEDIA_PANEL.updating
                 : seasonState.isComplete
@@ -416,8 +426,8 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
                   : MEDIA_PANEL.markSeasonWatched}
             </Text>
           </TouchableOpacity>
-        </View>
-      )}
+        )}
+      </View>
 
       {sparse.hasEpisodes && <Text style={styles.seasonBulkCount}>{MEDIA_PANEL.sparseEpisodeProgress}</Text>}
       {sparse.error && (
@@ -438,18 +448,13 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
           const isToggling = toggling === ep.episode_number;
           const epCode = `S${String(selSeason).padStart(2,'0')}E${String(ep.episode_number).padStart(2,'0')}`;
           return (
-            <View key={ep.id} style={[styles.epRow, current && styles.epRowCurrent]}>
+            <View key={ep.id} style={[styles.epRow, current && styles.epRowCurrent, watched && styles.epRowWatched]}>
+              <Text style={[styles.epCode, current && styles.epCodeCurrent]}>
+                E{String(ep.episode_number).padStart(2, '0')}
+              </Text>
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 2 }}>
-                  <Text style={[styles.epCode, current && styles.epCodeCurrent]}>{epCode}</Text>
-                  {ep.air_date && <Text style={styles.epAirDate}>{ep.air_date}</Text>}
-                  {current && (
-                    <View style={styles.upNextPill}>
-                      <Text style={styles.upNextText}>UP NEXT</Text>
-                    </View>
-                  )}
-                </View>
                 <Text style={[styles.epTitle, watched && styles.epTitleWatched, current && styles.epTitleCurrent]} numberOfLines={2}>{ep.name}</Text>
+                {ep.air_date ? <Text style={styles.epAirDate}>{ep.air_date}</Text> : null}
               </View>
               {isTracking && (
                 isToggling ? (
@@ -470,6 +475,98 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
           );
         })
       )}
+    </View>
+  );
+}
+
+// Mid-watch summary. Same pointer as the episode guide, advanced through
+// markEpisodeWatched, so the card and the list can't disagree.
+type UpNextEpisode = { episode_number: number; name?: string; still_path?: string | null; runtime?: number | null };
+type UpNextOffer = { provider_name?: string };
+
+function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }: {
+  tvId: number;
+  details: { status?: string };
+  progress?: { current_season?: number; current_episode?: number } | null;
+  whereToWatch: { streaming: UpNextOffer[]; rentBuy: UpNextOffer[] };
+  onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { watching } = useAppData();
+  const [episodes, setEpisodes] = useState<UpNextEpisode[]>([]);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const season = progress?.current_season || 0;
+  const episodeNumber = progress?.current_episode || 0;
+
+  useEffect(() => {
+    if (!season) return undefined;
+    let cancelled = false;
+    tmdb.getSeason(tvId, season).then((data: { episodes?: UpNextEpisode[] } | null) => {
+      if (!cancelled) setEpisodes(data?.episodes || []);
+    });
+    return () => { cancelled = true; };
+  }, [tvId, season]);
+
+  const episode = episodes.find(e => e.episode_number === episodeNumber);
+  if (!season || !episodeNumber) return null;
+
+  const watchedInSeason = Math.max(0, episodeNumber - 1);
+  const seasonTotal = episodes.length;
+  const offer = whereToWatch.streaming[0] || whereToWatch.rentBuy[0] || null;
+  const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
+  const runtime = episode?.runtime ? MEDIA_PANEL.episodeRuntime(episode.runtime) : '';
+  const where = [offer?.provider_name, runtime].filter(Boolean).join(' · ');
+
+  const markWatched = async () => {
+    if (pending) return;
+    setPending(true);
+    setError('');
+    const result = await watching.markEpisodeWatched(tvId, { undo: true });
+    if (!result?.ok) {
+      setError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    } else if (isSeriesComplete({
+      lastSeason: getLastSeasonNumber(details),
+      nextSeason: result.data?.current_season,
+      status: details?.status,
+    })) {
+      track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: getLastSeasonNumber(details) });
+      clearUndo();
+      const finished = await onSeriesFinished?.();
+      if (finished && !finished.ok) setError(finished.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    }
+    setPending(false);
+  };
+
+  return (
+    <View style={styles.upNextCard}>
+      <Text style={styles.upNextTitle}>{MEDIA_PANEL.upNext}</Text>
+      <View style={styles.upNextRow}>
+        <View style={styles.upNextStill}>
+          {still ? <Image source={{ uri: still }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.upNextKicker}>{MEDIA_PANEL.seasonEpisode(season, episodeNumber)}</Text>
+          <Text style={styles.upNextName} numberOfLines={2}>{episode?.name || MEDIA_PANEL.seasonEpisode(season, episodeNumber)}</Text>
+          {!!where && <Text style={styles.upNextWhere} numberOfLines={1}>{where}</Text>}
+        </View>
+        <TouchableOpacity style={styles.upNextBtn} onPress={markWatched} disabled={pending} accessibilityRole="button">
+          <IconCheck color={colors.onAccentFill} />
+          <Text style={styles.upNextBtnText}>{pending ? MEDIA_PANEL.updating : MEDIA.markWatched}</Text>
+        </TouchableOpacity>
+      </View>
+      {seasonTotal > 0 && (
+        <View
+          style={styles.upNextTrack}
+          accessibilityRole="progressbar"
+          accessibilityValue={{ min: 0, max: seasonTotal, now: watchedInSeason }}
+          accessibilityLabel={MEDIA_PANEL.seasonWatchedCount(watchedInSeason, seasonTotal)}
+        >
+          <View style={[styles.upNextFill, { width: `${Math.round((watchedInSeason / seasonTotal) * 100)}%` }]} />
+        </View>
+      )}
+      {!!error && <Text style={styles.epActionError}>{error}</Text>}
     </View>
   );
 }
@@ -516,6 +613,7 @@ interface TMDBDetails {
   vote_average?: number;
   vote_count?: number;
   genres?: TMDBGenre[];
+  runtime?: number;
   number_of_seasons?: number;
   seasons?: TMDBSeason[];
   next_episode_to_air?: TMDBNextEpisode | null;
@@ -739,7 +837,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { profile, watchlist, watching, favorites, history, customLists, topLists } = useAppData();
+  const { profile, watchlist, watching, favorites, history, customLists, topLists, privateNotes } = useAppData();
   const { open: openTitle } = useMediaPanel();
   const router = useRouter();
   const followPerson = useFollowPerson();
@@ -754,6 +852,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const [audienceQuote, setAudienceQuote] = useState<{ text: string; author: string } | null>(null);
   const [retryKey,  setRetryKey]  = useState(0);
   const [trailerPlaying, setTrailerPlaying] = useState(false);
+  const [watchOpen, setWatchOpen] = useState(false);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [statusPending, setStatusPending] = useState('');
+  const [takeOpen, setTakeOpen] = useState(false);
 
   const [localRating, setLocalRating] = useState(0);
   const [localReview, setLocalReview] = useState('');
@@ -768,7 +870,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
   const slideY = useRef(new Animated.Value(PANEL_H)).current;
   const scrollRef = useRef<ScrollView>(null);
-  const reviewSectionY = useRef(0);
   const reviewInputRef = useRef<TextInput>(null);
 
   const isMovie    = itemType === 'movie';
@@ -793,11 +894,19 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   // state can't be left behind. Shared by the Watched button and by the
   // episode guide, which calls it when the final episode of an ended series
   // is ticked.
-  const markWatchedNow = async () => {
+  const markWatchedNow = async (dnf = false) => {
+    const sameState = watched && (!!watchedEntry?.dnf === dnf);
+    if (sameState) {
+      const removed = await history.removeEntry(itemId, itemType, { undo: true });
+      if (removed) setEngagementPrompt(null);
+      return removed
+        ? { ok: true }
+        : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
+    }
     const result = await markMediaAsWatched({
       logWatched: () => history.logWatched(
         { ...details, id: itemId, media_type: itemType },
-        { watchedAt: defaultWatchedAt },
+        { dnf, watchedAt: defaultWatchedAt },
       ),
       clearWatching:   () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
@@ -931,11 +1040,21 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   };
 
   const scrollToReviewAndFocus = () => {
+    setTakeOpen(true);
     setFocusReviewAfterPrompt(true);
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ y: Math.max(0, reviewSectionY.current - 24), animated: true });
-      setTimeout(() => reviewInputRef.current?.focus(), 280);
-    });
+    setTimeout(() => reviewInputRef.current?.focus(), 280);
+  };
+
+  const runStatusAction = async (action: () => Promise<{ ok: boolean; error?: string }>) => {
+    if (statusPending) return;
+    setStatusPending(MEDIA_PANEL.updating);
+    try {
+      const result = await action();
+      if (!result?.ok) Alert.alert('Could not update', result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    } finally {
+      setStatusPending('');
+      setStatusMenuOpen(false);
+    }
   };
 
   const handlePromptRate = async (rating: number) => {
@@ -992,6 +1111,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     setEngagementPrompt(null);
     setEngagementBusy(false);
     setFocusReviewAfterPrompt(false);
+    setWatchOpen(false);
+    setStatusMenuOpen(false);
+    setTakeOpen(false);
   }, [itemId, itemType]);
 
   // Out-of-panel save left a pending watch prompt for this title.
@@ -1115,7 +1237,22 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       });
     }
   };
-  const year   = (details?.release_date || details?.first_air_date || '').slice(0, 4);
+  const releaseDate = details?.release_date || details?.first_air_date || '';
+  const year = releaseDate ? String(new Date(releaseDate).getFullYear()) : '';
+  const runtimeText = isMovie
+    ? (details?.runtime
+        ? (details.runtime >= 60
+            ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m`
+            : `${details.runtime}m`)
+        : '')
+    : (details?.number_of_seasons
+        ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
+        : '');
+  const factLine = [year, runtimeText].filter(Boolean).join(' · ');
+  const author = isMovie
+    ? details?.credits?.crew?.find(person => person.job === 'Director')?.name
+    : details?.created_by?.[0]?.name;
+  const genreChips = (details?.genres || []).slice(0, 2);
   const castPeople = (details?.credits?.cast || details?.aggregate_credits?.cast || [])
     .filter((person): person is CreditPerson => !!person?.id && !!person?.name)
     .slice(0, 12);
@@ -1131,12 +1268,26 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     onClose();
     router.push(`/(app)/person/${id}` as Href);
   };
-  const rating = details?.vote_average ? `${details.vote_average.toFixed(1)} ★` : '';
-  const genres = (details?.genres || []).slice(0, 3).map((g: any) => g.name).join(' · ');
   const audienceScore = audienceScoreFromDetails(details);
   const hasWatchOffers = whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas;
   const watchNetworks = isMovie ? [] : networksFromDetails(details);
   const watchRegionName = regionDisplayName(whereToWatch.region);
+  const stackProviders = (hasWatchOffers
+    ? [...whereToWatch.streaming, ...whereToWatch.rentBuy].map(p => ({ id: `${p.provider_id}-${p.offerType}`, logo: p.logo_path }))
+    : watchNetworks.map((network) => ({ id: String(network.providerId), logo: network.logoPath }))
+  );
+  const stackShown = stackProviders.slice(0, 3);
+  const stackExtra = stackProviders.length - stackShown.length;
+  const noteRow = (privateNotes.rows as Record<string, { note?: string } | undefined>)[privateNoteKey(itemId, itemType)];
+  const hasPrivateNote = !!noteRow?.note;
+  const savedRating = watchedEntry?.rating || 0;
+  const savedReviewText = watchedEntry?.note || '';
+  const hasTake = !!(savedRating || savedReviewText.trim() || watchedEntry?.dnf);
+  const statusLabel = statusPending
+    || (isWatching ? MEDIA_PANEL.watching
+      : watched && watchedEntry?.dnf ? MEDIA_PANEL.didntFinish
+      : watched ? MEDIA.watched
+      : MEDIA_PANEL.status);
   const consensusLine = criticScore
     ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
     : null;
@@ -1150,6 +1301,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
   const hasSavedReview = !!(watchedEntry?.rating || watchedEntry?.note?.trim() || watchedEntry?.dnf);
   const savedWatchedAt = String(watchedEntry?.watched_at || defaultWatchedAt).slice(0, 10);
+  const takePreview = hasTake
+    ? (savedReviewText.trim() || MEDIA_PANEL.watchedOnDate(formatWatchedOn(savedWatchedAt)))
+    : MEDIA_PANEL.takeHint;
   const reviewDirty    = !!watchedEntry && (
     localRating !== (watchedEntry.rating || 0) ||
     localReview.trim() !== (watchedEntry.note || '').trim() ||
@@ -1169,7 +1323,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           <View style={styles.handle} />
         </View>
 
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          style={{ flex: 1 }}
           ref={scrollRef}
           showsVerticalScrollIndicator={false}
           bounces={false}
@@ -1203,31 +1359,259 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
               </View>
             ) : (
               <>
-                {/* Title */}
-                <Text style={styles.title}>{title}</Text>
-
-                {/* Meta row */}
-                <View style={styles.metaRow}>
-                  {year ? <Text style={styles.metaYear}>{year}</Text> : null}
-                  <Text style={styles.metaType}>
-                    {isMovie ? 'Movie' : `Series${details?.number_of_seasons ? ` · ${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}` : ''}`}
-                  </Text>
-                  {rating ? <Text style={styles.metaRating}>{rating}</Text> : null}
+                {/* Head: poster over the cover band, facts beside it. */}
+                <View style={styles.head}>
+                  {details?.poster_path
+                    ? <Image source={{ uri: posterUrl(details.poster_path, 'w342') ?? '' }} style={styles.poster} />
+                    : <View style={styles.poster} />}
+                  <View style={styles.headText}>
+                    <Text style={styles.kicker}>{isMovie ? MEDIA.movie : MEDIA.series}</Text>
+                    <Text style={styles.title}>{title}</Text>
+                    {!!factLine && (
+                      <Text style={styles.facts}>
+                        {factLine}
+                        {author ? `\n${author}` : ''}
+                      </Text>
+                    )}
+                    {genreChips.length > 0 && (
+                      <View style={styles.genreRow}>
+                        {genreChips.map(genre => (
+                          <View key={genre.id} style={styles.genreChip}>
+                            <Text style={styles.genreChipText}>{genre.name}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
                 </View>
 
-                {genres ? <Text style={styles.genres}>{genres}</Text> : null}
+                <View style={styles.actionsRow}>
+                  <TouchableOpacity
+                    style={[styles.pill, inList ? styles.pillSaved : styles.pillPrimary]}
+                    onPress={handleSaveFromPanel}
+                    accessibilityRole="button"
+                  >
+                    {inList ? <IconCheck color={colors.statusWatched} /> : <IconBookmark saved={false} />}
+                    <Text style={[styles.pillText, inList ? { color: colors.statusWatched } : { color: colors.onAccentFill }]} numberOfLines={1}>
+                      {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
+                    </Text>
+                  </TouchableOpacity>
 
-                {/* Critic / audience scores */}
-                {(criticScore || Number.isFinite(audienceScore)) && (
-                  <Text style={styles.scoresRow}>
-                    {criticScore && <Text style={styles.scoreCritics}>{criticScore.criticScore}% Critics</Text>}
-                    {criticScore && Number.isFinite(audienceScore) && <Text style={styles.scoreDivider}> · </Text>}
-                    {Number.isFinite(audienceScore) && <Text style={styles.scoreAudience}>{audienceScore}% Audience</Text>}
-                  </Text>
+                  <View>
+                    <TouchableOpacity
+                      style={[styles.pill, isWatching && styles.pillWatching, watched && !isWatching && styles.pillSaved]}
+                      onPress={() => setStatusMenuOpen(open => !open)}
+                      disabled={!!statusPending}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: statusMenuOpen, disabled: !!statusPending }}
+                    >
+                      <Text
+                        style={[styles.pillText, isWatching && { color: colors.statusWatching }, watched && !isWatching && { color: colors.statusWatched }]}
+                        numberOfLines={1}
+                      >
+                        {statusLabel}
+                      </Text>
+                    </TouchableOpacity>
+                    {statusMenuOpen && (
+                      <View style={styles.statusMenu}>
+                        {!isMovie && (
+                          <TouchableOpacity
+                            style={styles.statusOption}
+                            onPress={() => runStatusAction(async () => {
+                              if (isWatching) {
+                                const stopped = await watching.stopWatching(itemId, { undo: true });
+                                return stopped ? { ok: true } : { ok: false, error: MEDIA_PANEL.couldNotUpdateWatchStatus };
+                              }
+                              return moveSavedShowToWatching({
+                                startWatching: () => watching.startWatching({ ...details, id: itemId, media_type: 'tv' }),
+                                removeFromSaved: () => inList ? watchlist.removeFromList(itemId) : Promise.resolve(true),
+                                rollbackWatching: () => watching.stopWatching(itemId),
+                              });
+                            })}
+                          >
+                            <Text style={styles.statusOptionText}>{MEDIA_PANEL.watching}</Text>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity style={styles.statusOption} onPress={() => runStatusAction(() => markWatchedNow(false))}>
+                          <Text style={styles.statusOptionText}>{MEDIA.watched}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.statusOption} onPress={() => runStatusAction(() => markWatchedNow(true))}>
+                          <Text style={styles.statusOptionText}>{MEDIA_PANEL.didntFinish}</Text>
+                        </TouchableOpacity>
+                        {(isWatching || watched) && (
+                          <TouchableOpacity
+                            style={styles.statusOption}
+                            onPress={() => runStatusAction(async () => {
+                              if (isWatching) {
+                                const stopped = await watching.stopWatching(itemId, { undo: true });
+                                return stopped ? { ok: true } : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
+                              }
+                              const removed = await history.removeEntry(itemId, itemType, { undo: true });
+                              if (removed) setEngagementPrompt(null);
+                              return removed ? { ok: true } : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
+                            })}
+                          >
+                            <Text style={[styles.statusOptionText, { color: colors.textMuted }]}>{MEDIA_PANEL.clearStatus}</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.iconGroup}>
+                    <TouchableOpacity
+                      style={[styles.iconBtn, isFav && styles.iconBtnFav]}
+                      onPress={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
+                      accessibilityRole="button"
+                      accessibilityLabel={isFav ? fw.pastTitle : fw.noun}
+                      accessibilityState={{ selected: isFav }}
+                    >
+                      <IconHeart filled={isFav} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.iconBtn, isInAnyList && styles.iconBtnOn]}
+                      onPress={() => setShowListSheet(true)}
+                      accessibilityRole="button"
+                      accessibilityLabel={isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
+                    >
+                      <IconList active={isInAnyList} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.iconBtn} onPress={handleShare} accessibilityRole="button" accessibilityLabel={COMMON.share}>
+                      <IconShare />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {!isMovie && isWatching && details && (
+                  <UpNextCard
+                    tvId={itemId}
+                    details={details}
+                    progress={progress}
+                    whereToWatch={whereToWatch}
+                    onSeriesFinished={handleSeriesFinished}
+                  />
                 )}
-                {consensusLine ? <Text style={styles.consensusLine}>{consensusLine}</Text> : null}
 
-                {/* Overview */}
+                {details && (
+                  <View style={styles.watchCard}>
+                    <TouchableOpacity
+                      style={styles.watchHead}
+                      onPress={() => setWatchOpen(open => !open)}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: watchOpen }}
+                    >
+                      <Text style={styles.watchTitle}>{MEDIA_PANEL.whereToWatch}</Text>
+                      {!watchOpen && stackShown.length > 0 && (
+                        <View style={styles.logoStack}>
+                          {stackShown.map((provider, index) => (
+                            <Image
+                              key={provider.id}
+                              source={{ uri: provider.logo?.startsWith('http') ? provider.logo : (logoUrl(provider.logo, 'w45') ?? '') }}
+                              style={[styles.logoMark, index > 0 && { marginLeft: -10 }]}
+                              resizeMode="contain"
+                            />
+                          ))}
+                          {stackExtra > 0 && (
+                            <View style={[styles.logoMore, { marginLeft: -10 }]}>
+                              <Text style={styles.logoMoreText}>{MEDIA_PANEL.moreProviders(stackExtra)}</Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                      <IconChevron dir={watchOpen ? 'up' : 'down'} />
+                    </TouchableOpacity>
+                    {watchOpen && (
+                      <View>
+                        {hasWatchOffers && !!watchRegionName && (
+                          <Text style={styles.watchRegion}>{MEDIA_PANEL.offersIn(watchRegionName)}</Text>
+                        )}
+                        {whereToWatch.inCinemas && (
+                          <View style={[styles.providerChip, styles.providerChipCinema]}>
+                            <Text style={[styles.providerName, { color: colors.accent, maxWidth: undefined }]}>In Cinemas</Text>
+                          </View>
+                        )}
+                        {whereToWatch.streaming.length > 0 && (
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.md }}>
+                            {whereToWatch.streaming.map(p => (
+                              <TouchableOpacity key={`${p.provider_id}-${p.offerType}`} style={styles.providerChip} activeOpacity={0.7} onPress={() => openWatchLink(p)}>
+                                {p.logo_path && <Image source={{ uri: p.logo_path.startsWith('http') ? p.logo_path : (logoUrl(p.logo_path, 'w45') ?? '') }} style={styles.providerLogo} resizeMode="contain" />}
+                                <Text style={styles.providerName} numberOfLines={1}>{p.provider_name}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        )}
+                        {whereToWatch.rentBuy.length > 0 && (
+                          <>
+                            {whereToWatch.streaming.length > 0 && <Text style={styles.providerSublabel}>Rent or Buy</Text>}
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.md }}>
+                              {whereToWatch.rentBuy.map(p => (
+                                <TouchableOpacity key={`${p.provider_id}-${p.offerType}`} style={[styles.providerChip, styles.providerChipRentBuy]} activeOpacity={0.7} onPress={() => openWatchLink(p)}>
+                                  {p.logo_path && <Image source={{ uri: p.logo_path.startsWith('http') ? p.logo_path : (logoUrl(p.logo_path, 'w45') ?? '') }} style={styles.providerLogo} resizeMode="contain" />}
+                                  <Text style={styles.providerName} numberOfLines={1}>{p.provider_name}</Text>
+                                </TouchableOpacity>
+                              ))}
+                            </ScrollView>
+                          </>
+                        )}
+                        {!hasWatchOffers && (
+                          <>
+                            {watchNetworks.length > 0 && (
+                              <View style={styles.networkRow}>
+                                {watchNetworks.map((network) => (
+                                  <Image
+                                    key={network.providerId}
+                                    source={{ uri: network.logoPath?.startsWith('http') ? network.logoPath : (logoUrl(network.logoPath, 'w45') ?? '') }}
+                                    style={styles.networkLogo}
+                                    resizeMode="contain"
+                                    accessibilityLabel={network.providerName}
+                                  />
+                                ))}
+                              </View>
+                            )}
+                            <Text style={styles.providersEmpty}>
+                              {watchRegionName ? `Not streaming in ${watchRegionName} yet.` : 'Not streaming anywhere yet.'}
+                            </Text>
+                          </>
+                        )}
+                        {hasWatchOffers && (
+                          <Text style={styles.providersAttribution}>
+                            Streaming availability by JustWatch.
+                            {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some(p =>
+                              buildWatchLink({ providerUrl: p.providerUrl, justwatchLink: whereToWatch.justwatchLink })?.kind === 'provider'
+                            ) ? ' Links open the verified title offer.' : ''}
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {(criticScore || Number.isFinite(audienceScore)) && (
+                  <View style={styles.scoresRow}>
+                    {criticScore && (
+                      <View>
+                        <Text style={styles.scoreValue}>{criticScore.criticScore}%</Text>
+                        <Text style={styles.scoreLabel}>{MEDIA_PANEL.critics}</Text>
+                      </View>
+                    )}
+                    {criticScore && Number.isFinite(audienceScore) && <View style={styles.scoreRule} />}
+                    {Number.isFinite(audienceScore) && (
+                      <View>
+                        <Text style={styles.scoreValue}>{audienceScore}%</Text>
+                        <Text style={styles.scoreLabel}>{MEDIA_PANEL.audience}</Text>
+                      </View>
+                    )}
+                    {audienceQuote ? (
+                      <View style={styles.audienceQuote}>
+                        <Text style={styles.audienceQuoteText} numberOfLines={3}>&ldquo;{audienceQuote.text}&rdquo;</Text>
+                        <Text style={styles.audienceQuoteAttr}>{audienceQuote.author || 'A TMDB audience review'}</Text>
+                      </View>
+                    ) : consensusLine ? (
+                      <Text style={styles.consensusLine}>{consensusLine}</Text>
+                    ) : null}
+                  </View>
+                )}
+
                 {details?.overview ? <Text style={styles.overview}>{details.overview}</Text> : null}
 
                 {castPeople.length > 0 && (
@@ -1269,16 +1653,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </View>
                 )}
 
-                {audienceQuote && (
-                  <View style={styles.audienceQuote}>
-                    <Text style={styles.audienceQuoteText}>&ldquo;{audienceQuote.text}&rdquo;</Text>
-                    <Text style={styles.audienceQuoteAttr}>
-                      {audienceQuote.author || 'A TMDB audience review'}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Trailer — plays inline, inside the app */}
                 {trailerKey && (
                   trailerPlaying ? (
                     <View style={styles.trailerPlayer}>
@@ -1300,195 +1674,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   )
                 )}
 
-                {/* ── Action buttons ── */}
-                <View style={styles.actionsCol}>
-                  {/* Status row: watchlist and watch state are the two answers to
-                      "where is this for me", so they sit side by side rather than
-                      stacked either side of the secondary actions. */}
-                  <View style={styles.actionsRow}>
-                    {!isWatching && (
-                      <TouchableOpacity
-                        style={[styles.btnPrimary, styles.btnHalf, inList && styles.btnSaved]}
-                        onPress={handleSaveFromPanel}
-                      >
-                        {inList && <IconCheck color={colors.statusWatched} />}
-                        <Text style={[styles.btnPrimaryText, inList && { color: colors.statusWatched }]}>
-                          {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    {watched ? (
-                      <TouchableOpacity
-                        style={[styles.btnPrimary, styles.btnHalf, styles.btnSaved]}
-                        onPress={() => history.removeEntry(itemId, itemType, { undo: true })}
-                      >
-                        <IconCheck color={colors.statusWatched} />
-                        <Text style={[styles.btnPrimaryText, { color: colors.statusWatched }]}>Watched</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        style={styles.btnSecondary}
-                        onPress={async () => {
-                          const result = await markWatchedNow();
-                          if (!result.ok) {
-                            const detail = history.getLastError();
-                            if (detail) captureException(new Error(detail), { surface: 'media_panel', action: 'watched_status' });
-                            Alert.alert('Could not update', result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
-                          }
-                        }}
-                      >
-                        <IconCheck />
-                        <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA.markWatched : MEDIA.markAllWatched}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  {/* Secondary row */}
-                  <View style={styles.actionsRow}>
-                    <TouchableOpacity
-                      style={[styles.btnSecondary, isFav && styles.btnSecondaryActive]}
-                      onPress={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
-                    >
-                      <IconHeart filled={isFav} />
-                      <Text style={[styles.btnSecondaryText, isFav && { color: colors.accent }]}>
-                        {isFav ? fw.pastTitle : fw.noun}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.btnSecondary, isInAnyList && styles.btnSecondaryActive]}
-                      onPress={() => setShowListSheet(true)}
-                    >
-                      <IconList active={isInAnyList} />
-                      <Text style={[styles.btnSecondaryText, isInAnyList && { color: colors.accent }]}>
-                        {isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.btnSecondary} onPress={handleShare}>
-                      <IconShare />
-                      <Text style={styles.btnSecondaryText}>{COMMON.share}</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* TV only: start/stop watching sits on its own line, since it
-                    is a third state rather than a peer of the two above. */}
-                {!watched && !isMovie && (
-                  <TouchableOpacity
-                    style={[styles.btnSecondary, styles.btnStandalone, isWatching && styles.btnWatching]}
-                    onPress={async () => {
-                      if (isWatching) {
-                        await watching.stopWatching(itemId, { undo: true });
-                      } else {
-                        /* Two writes with no rollback left a show in both
-                           Watching and Saved permanently if the second failed.
-                           core sequences them and undoes the first. */
-                        const result = await moveSavedShowToWatching({
-                          startWatching:   () => watching.startWatching({ ...details, id: itemId, media_type: 'tv' }),
-                          removeFromSaved: () => inList ? watchlist.removeFromList(itemId) : Promise.resolve(true),
-                          rollbackWatching: () => watching.stopWatching(itemId),
-                        });
-                        if (!result.ok) Alert.alert('Could not update', result.error);
-                      }
-                    }}
-                  >
-                    {isWatching ? <IconStop /> : <IconPlay />}
-                    <Text style={[styles.btnSecondaryText, isWatching && { color: colors.statusWatching }]}>
-                      {isWatching ? MEDIA.stopWatching : MEDIA.startWatching}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                <PrivateNote id={itemId} type={itemType} title={title} />
-
-                {watched && (
-                  <View
-                    style={{ marginBottom: spacing.lg }}
-                    onLayout={(e) => { reviewSectionY.current = e.nativeEvent.layout.y; }}
-                  >
-                    {/* Date watched — mirrors web's "Watched on" row. Capped at
-                        today: a future watch date would sort into a month group
-                        that hasn't happened. */}
-                    <View style={styles.watchedOnRow}>
-                      <Text style={styles.watchedOnLabel}>Watched on</Text>
-                      <TouchableOpacity
-                        style={styles.watchedOnBtn}
-                        onPress={() => setPickingDate(true)}
-                        accessibilityRole="button"
-                        accessibilityLabel="Date watched"
-                      >
-                        <Text style={styles.watchedOnValue}>
-                          {formatWatchedOn(localWatchedAt || defaultWatchedAt)}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                    {pickingDate && (
-                      // The inline picker sizes itself to its content, so it needs
-                      // centring rather than stretching — left-aligned it sat off to
-                      // one side of the sheet with dead space beside it.
-                      <View style={styles.datePickerWrap}>
-                        <DateTimePicker
-                          value={new Date(`${localWatchedAt || defaultWatchedAt}T12:00:00`)}
-                          mode="date"
-                          maximumDate={new Date()}
-                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                          style={styles.datePicker}
-                          onChange={(event, date) => {
-                            // Android fires once and dismisses itself; iOS keeps the
-                            // inline picker open until it's closed explicitly.
-                            if (Platform.OS !== 'ios') setPickingDate(false);
-                            if (event.type === 'dismissed' || !date) return;
-                            setLocalWatchedAt(ymd(date));
-                          }}
-                        />
-                        {Platform.OS === 'ios' && (
-                          <TouchableOpacity style={styles.watchedOnDone} onPress={() => setPickingDate(false)}>
-                            <Text style={styles.watchedOnDoneText}>{COMMON.done}</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    )}
-
-                    {/* Review section */}
-                    <Text style={styles.sectionTitle}>Your Review</Text>
-                    <View style={styles.reviewHeader}>
-                      <StarRow rating={localRating} onChange={setLocalRating} />
-                      <TouchableOpacity
-                        style={[styles.dnfChip, localDnf && styles.dnfChipActive]}
-                        onPress={() => setLocalDnf(d => !d)}
-                      >
-                        {localDnf && <IconCheck color="#fb923c" />}
-                        <Text style={[styles.dnfText, localDnf && { color: '#fb923c' }]}>{MEDIA_PANEL.didntFinish}</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <TextInput
-                      ref={reviewInputRef}
-                      style={[styles.reviewInput, focusReviewAfterPrompt && styles.reviewInputFocused]}
-                      value={localReview}
-                      onChangeText={t => { if (t.length <= 280) setLocalReview(t); }}
-                      onBlur={() => setFocusReviewAfterPrompt(false)}
-                      placeholder="Write a quick review…"
-                      placeholderTextColor={colors.textMuted}
-                      multiline
-                      numberOfLines={3}
-                      maxLength={280}
-                    />
-                    {/* Also when only the date moved — see web. */}
-                    {(hasSavedReview || localRating > 0 || localReview.trim() || localDnf || localWatchedAt !== savedWatchedAt) && (
-                      <TouchableOpacity
-                        style={[styles.btnPrimary, { marginTop: spacing.sm }]}
-                        disabled={savingReview}
-                        onPress={async () => {
-                          setSavingReview(true);
-                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watched_at: localWatchedAt || defaultWatchedAt }, itemType);
-                          setSavingReview(false);
-                        }}
-                      >
-                        <Text style={styles.btnPrimaryText}>{savingReview ? COMMON.saving : reviewDirty ? MEDIA_PANEL.saveChanges : hasSavedReview ? MEDIA_PANEL.editReview : MEDIA_PANEL.saveReview}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-
                 {/* Episode guide */}
                 {!isMovie && details && (
                   <>
@@ -1500,72 +1685,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       watching={watching}
                       onSeriesFinished={handleSeriesFinished}
                     />
-                  </>
-                )}
-
-                {/* Where to watch — always present once details load, matching web:
-                    an unknown answer is stated rather than the section vanishing. */}
-                {details && (
-                  <>
-                    <Text style={styles.sectionTitle}>Where to Watch</Text>
-
-                    {whereToWatch.inCinemas && (
-                      <View style={[styles.providerChip, styles.providerChipCinema]}>
-                        <Text style={[styles.providerName, { color: colors.accent, maxWidth: undefined }]}>In Cinemas</Text>
-                      </View>
-                    )}
-
-                    {whereToWatch.streaming.length > 0 && (
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.md }}>
-                        {whereToWatch.streaming.map((p: any) => (
-                          <TouchableOpacity key={p.provider_id} style={styles.providerChip} activeOpacity={0.7} onPress={() => openWatchLink(p)}>
-                            {p.logo_path && <Image source={{ uri: logoUrl(p.logo_path, 'w45') ?? '' }} style={styles.providerLogo} />}
-                            <Text style={styles.providerName} numberOfLines={1}>{p.provider_name}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    )}
-
-                    {whereToWatch.rentBuy.length > 0 && (
-                      <>
-                        {whereToWatch.streaming.length > 0 && <Text style={styles.providerSublabel}>Rent or Buy</Text>}
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.md }}>
-                          {whereToWatch.rentBuy.map((p: any) => (
-                            <TouchableOpacity key={p.provider_id} style={[styles.providerChip, styles.providerChipRentBuy]} activeOpacity={0.7} onPress={() => openWatchLink(p)}>
-                              {p.logo_path && <Image source={{ uri: logoUrl(p.logo_path, 'w45') ?? '' }} style={styles.providerLogo} />}
-                              <Text style={styles.providerName} numberOfLines={1}>{p.provider_name}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </ScrollView>
-                      </>
-                    )}
-
-                    {!hasWatchOffers && (
-                      <>
-                        {watchNetworks.length > 0 && (
-                          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.md }}>
-                            {watchNetworks.map((network) => (
-                              <View key={network.providerId} style={styles.providerChip}>
-                                {network.logoPath && <Image source={{ uri: logoUrl(network.logoPath, 'w45') ?? '' }} style={styles.providerLogo} />}
-                                <Text style={styles.providerName} numberOfLines={1}>{network.providerName}</Text>
-                                <Text style={styles.providerOffer}>Network</Text>
-                              </View>
-                            ))}
-                          </ScrollView>
-                        )}
-                        <Text style={styles.providersEmpty}>
-                          {watchRegionName ? `Not streaming in ${watchRegionName} yet.` : 'Not streaming anywhere yet.'}
-                        </Text>
-                      </>
-                    )}
-                    {hasWatchOffers && (
-                      <Text style={styles.providersAttribution}>
-                        Streaming availability by JustWatch.
-                        {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some((p: any) =>
-                          buildWatchLink({ providerUrl: p.providerUrl, justwatchLink: whereToWatch.justwatchLink })?.kind === 'provider'
-                        ) ? ' Links open the verified title offer.' : ''}
-                      </Text>
-                    )}
                   </>
                 )}
 
@@ -1656,6 +1775,114 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
             )}
           </View>
         )}
+        {!engagementPrompt && !loading && !error && details && (
+          <View style={styles.takeBar}>
+            <TouchableOpacity
+              style={styles.takeHead}
+              onPress={() => setTakeOpen(open => !open)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: takeOpen }}
+            >
+              <View style={styles.takeStars}>
+                {Array.from({ length: STAR_COUNT }, (_, index) => index + 1).map(n => (
+                  <Svg key={n} width={14} height={14} viewBox="0 0 24 24">
+                    <Polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                      fill={n <= ratingToStars(savedRating) ? colors.rating : 'none'}
+                      stroke={colors.rating}
+                      strokeWidth={1.5}
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                ))}
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.takeTitle}>{hasTake ? MEDIA_PANEL.yourTake : MEDIA_PANEL.leaveNoteOrReview}</Text>
+                <Text style={styles.takePreview} numberOfLines={1}>{takePreview}</Text>
+              </View>
+              {hasPrivateNote && <IconLock />}
+              <IconChevron dir={takeOpen ? 'up' : 'down'} />
+            </TouchableOpacity>
+            {takeOpen && (
+              <ScrollView style={styles.takeBody} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+                {watched ? (
+                  <>
+                    <View style={styles.watchedOnRow}>
+                      <Text style={styles.watchedOnLabel}>{MEDIA_PANEL.watchedOn}</Text>
+                      <TouchableOpacity
+                        style={styles.watchedOnBtn}
+                        onPress={() => setPickingDate(true)}
+                        accessibilityRole="button"
+                        accessibilityLabel={MEDIA_PANEL.watchedOn}
+                      >
+                        <Text style={styles.watchedOnValue}>{formatWatchedOn(localWatchedAt || defaultWatchedAt)}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {pickingDate && (
+                      <View style={styles.datePickerWrap}>
+                        <DateTimePicker
+                          value={new Date(`${localWatchedAt || defaultWatchedAt}T12:00:00`)}
+                          mode="date"
+                          maximumDate={new Date()}
+                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                          style={styles.datePicker}
+                          onChange={(event, date) => {
+                            if (Platform.OS !== 'ios') setPickingDate(false);
+                            if (event.type === 'dismissed' || !date) return;
+                            setLocalWatchedAt(ymd(date));
+                          }}
+                        />
+                        {Platform.OS === 'ios' && (
+                          <TouchableOpacity style={styles.watchedOnDone} onPress={() => setPickingDate(false)}>
+                            <Text style={styles.watchedOnDoneText}>{COMMON.done}</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
+                    <View style={styles.reviewHeader}>
+                      <StarRow rating={localRating} onChange={setLocalRating} />
+                      <TouchableOpacity style={[styles.dnfChip, localDnf && styles.dnfChipActive]} onPress={() => setLocalDnf(d => !d)}>
+                        {localDnf && <IconCheck color="#fb923c" />}
+                        <Text style={[styles.dnfText, localDnf && { color: '#fb923c' }]}>{MEDIA_PANEL.didntFinish}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <TextInput
+                      ref={reviewInputRef}
+                      style={[styles.reviewInput, focusReviewAfterPrompt && styles.reviewInputFocused]}
+                      value={localReview}
+                      onChangeText={t => { if (t.length <= 280) setLocalReview(t); }}
+                      onBlur={() => setFocusReviewAfterPrompt(false)}
+                      placeholder="Write a quick review…"
+                      placeholderTextColor={colors.textMuted}
+                      multiline
+                      maxLength={280}
+                    />
+                    {(hasSavedReview || localRating > 0 || localReview.trim() || localDnf || localWatchedAt !== savedWatchedAt) && (
+                      <TouchableOpacity
+                        style={[styles.pill, styles.pillPrimary, { alignSelf: 'flex-start', marginTop: spacing.sm }]}
+                        disabled={savingReview}
+                        onPress={async () => {
+                          setSavingReview(true);
+                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watched_at: localWatchedAt || defaultWatchedAt }, itemType);
+                          setSavingReview(false);
+                        }}
+                      >
+                        <Text style={[styles.pillText, { color: colors.onAccentFill }]}>
+                          {savingReview ? COMMON.saving : reviewDirty ? MEDIA_PANEL.saveChanges : hasSavedReview ? MEDIA_PANEL.editReview : MEDIA_PANEL.saveReview}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                ) : (
+                  <Text style={styles.takeNeeds}>{MEDIA_PANEL.takeNeedsWatch}</Text>
+                )}
+                <PrivateNote id={itemId} type={itemType} title={title} />
+              </ScrollView>
+            )}
+          </View>
+        )}
+
+        </KeyboardAvoidingView>
       </Animated.View>
       <UndoToast placement="panel" />
     </Modal>
@@ -1690,7 +1917,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   handleOverlay: { position: 'absolute', top: spacing.md, left: 0, right: 0, alignItems: 'center', zIndex: 20 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.7)' },
 
-  backdropWrap: { height: 200, position: 'relative' },
+  backdropWrap: { height: 148, position: 'relative' },
   backdropGradient: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.25)' },
   closeBtn: {
     position: 'absolute', top: spacing.lg, right: spacing.lg,
@@ -1699,7 +1926,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
 
-  body: { padding: spacing.xl },
+  body: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl },
 
   engagementBar: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -1751,19 +1978,30 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   engagementDisabled: { opacity: 0.55 },
 
-  title:    { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, marginBottom: spacing.sm },
-  metaRow:  { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm, flexWrap: 'wrap' },
-  metaYear: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
-  metaType: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  metaRating: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.rating },
-  genres:   { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.md },
-  scoresRow: { fontSize: fontSize.md, marginBottom: 4 },
-  scoreCritics: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
-  scoreAudience: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.accent },
-  scoreDivider: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textMuted },
-  consensusLine: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 17 },
+  head: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg, marginBottom: spacing.lg },
+  poster: {
+    width: 112, height: 168, marginTop: -36, borderRadius: radii.md,
+    backgroundColor: colors.surfaceSunken, zIndex: 1,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6,
+  },
+  headText: { flex: 1, minWidth: 0, paddingTop: spacing.md },
+  kicker: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.accent, marginBottom: 4 },
+  title: { fontFamily: fontFamily.display, fontSize: 24, letterSpacing: -0.6, color: colors.textPrimary, lineHeight: 26, marginBottom: 4 },
+  facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
+  genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
+  genreChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.badge, backgroundColor: colors.accentSecondaryFill },
+  genreChipText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.onAccentSecondaryFill },
+  scoresRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    paddingBottom: spacing.lg, marginBottom: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
+  },
+  scoreValue: { fontFamily: fontFamily.display, fontSize: 22, color: colors.textPrimary, lineHeight: 24 },
+  scoreLabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginTop: 2 },
+  scoreRule: { width: StyleSheet.hairlineWidth, height: 30, backgroundColor: colors.border },
+  consensusLine: { flex: 1, minWidth: 0, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, lineHeight: 17 },
   overview: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginBottom: spacing.lg },
-  audienceQuote: { borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: spacing.md, marginBottom: spacing.md },
+  audienceQuote: { flex: 1, minWidth: 0, borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: spacing.md },
   audienceQuoteText: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 21 },
   audienceQuoteAttr: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.textMuted, marginTop: 4, letterSpacing: 0.3 },
 
@@ -1771,8 +2009,71 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // Save↔row1 and its marginBottom handles row1↔watching-row. Rows carry no
   // margin of their own, so nothing can stack into an uneven gap. The section
   // below spaces itself (sectionTitle marginTop).
-  actionsCol: { gap: spacing.sm, marginBottom: spacing.sm },
-  actionsRow: { flexDirection: 'row', gap: spacing.sm },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
+  pill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    minHeight: 38, paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill, backgroundColor: colors.surfaceSunken,
+  },
+  pillPrimary: { backgroundColor: colors.accentFill },
+  pillSaved: { backgroundColor: colors.statusWatchedDim },
+  pillWatching: { backgroundColor: colors.statusWatchingDim },
+  pillText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary, maxWidth: 128 },
+  iconGroup: { flexDirection: 'row', gap: spacing.sm, marginLeft: 'auto' },
+  iconBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSunken,
+  },
+  iconBtnFav: { backgroundColor: colors.accentDim },
+  iconBtnOn: { backgroundColor: colors.statusWatchingDim },
+  statusMenu: {
+    position: 'absolute', top: 44, left: 0, zIndex: 5, minWidth: 160,
+    backgroundColor: colors.surface, borderRadius: radii.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 8,
+  },
+  statusOption: { paddingVertical: 12, paddingHorizontal: spacing.lg },
+  statusOptionText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
+  upNextCard: { backgroundColor: colors.surfaceSunken, borderRadius: radii.lg, padding: spacing.lg, marginBottom: spacing.lg },
+  upNextTitle: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary, marginBottom: spacing.md },
+  upNextRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  upNextStill: { width: 96, height: 56, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surface },
+  upNextKicker: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginBottom: 2 },
+  upNextName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
+  upNextWhere: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  upNextBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    minHeight: 34, paddingHorizontal: spacing.md, borderRadius: radii.pill, backgroundColor: colors.accentFill,
+  },
+  upNextBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.onAccentFill },
+  upNextTrack: { height: 5, borderRadius: radii.pill, backgroundColor: colors.border, marginTop: spacing.md, overflow: 'hidden' },
+  upNextFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.statusWatching },
+  watchCard: { marginBottom: spacing.lg },
+  watchHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },
+  watchTitle: { flex: 1, fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary },
+  logoStack: { flexDirection: 'row', alignItems: 'center' },
+  logoMark: {
+    width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: colors.surfaceSunken,
+    backgroundColor: colors.surfaceRaised,
+  },
+  logoMore: {
+    width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: colors.surfaceSunken,
+    backgroundColor: colors.surfaceSunken, alignItems: 'center', justifyContent: 'center',
+  },
+  logoMoreText: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.textSecondary },
+  watchRegion: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted, marginBottom: spacing.sm },
+  networkRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  networkLogo: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surfaceRaised },
+  takeBar: {
+    backgroundColor: colors.surfaceSunken,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
+    paddingHorizontal: spacing.xl,
+  },
+  takeHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
+  takeStars: { flexDirection: 'row', gap: 1 },
+  takeTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
+  takePreview: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  takeBody: { maxHeight: 320, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingBottom: spacing.md },
+  takeNeeds: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, paddingVertical: spacing.md },
   // btnSecondary is flex:1 for row use; btnPrimary is not, so it needs this to
   // share a row evenly. btnStandalone undoes the flex when one sits alone in a
   // column, where flex:1 would stretch it to the container's height.
@@ -1860,6 +2161,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   epRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingLeft: spacing.sm, paddingRight: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
   epRowCurrent: { backgroundColor: colors.accentDim },
+  epRowWatched: { opacity: 0.45 },
   epActionError: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger, marginBottom: spacing.sm },
   epCode:        { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.chipEpisode, letterSpacing: 0.4 },
   epCodeCurrent: { color: colors.accent },
@@ -1870,10 +2172,19 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   epTitleCurrent: { fontFamily: fontFamily.sansBold, color: colors.textPrimary },
   epTitleWatched: { color: colors.textMuted },
 
-  seasonBtn: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  seasonBtnActive: { borderColor: colors.accent, backgroundColor: colors.accentDim },
-  seasonBtnText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textMuted },
-  seasonBtnTextActive: { color: colors.accent },
+  seasonRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, marginBottom: spacing.md },
+  seasonPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    minHeight: 34, paddingHorizontal: spacing.md, borderRadius: radii.pill, backgroundColor: colors.surfaceSunken,
+  },
+  seasonPillText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
+  seasonMenu: {
+    position: 'absolute', top: 40, left: 0, zIndex: 4, minWidth: 160, maxHeight: 240,
+    backgroundColor: colors.surface, borderRadius: radii.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
+  },
+  seasonMenuItem: { paddingVertical: 10, paddingHorizontal: spacing.md },
+  seasonMenuText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
+  seasonBulkLink: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accentText },
 
   seasonBulk: {
     flexDirection: 'row',

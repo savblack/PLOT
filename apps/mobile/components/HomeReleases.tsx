@@ -238,8 +238,8 @@ function Rail({ kicker, title, items, providerLogos, wide }: {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionKicker}>{kicker}</Text>
         <Text style={styles.sectionTitle}>{title}</Text>
+        {kicker ? <Text style={styles.sectionKicker}>{kicker}</Text> : null}
       </View>
       <FlatList
         horizontal
@@ -318,23 +318,22 @@ export default function HomeReleases({ rails }: { rails: ReleaseRail[] }) {
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  // Section chrome — matches the home feed exactly
+  // Section chrome — same display title and subtitle as the home feed.
   section: { marginTop: spacing.xl, marginBottom: 0 },
-  sectionHeader: { paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
-  sectionKicker: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
-    marginBottom: 2,
-  },
+  sectionHeader: { paddingHorizontal: spacing.xl, marginBottom: spacing.md },
   sectionTitle: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.sm,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    fontFamily: fontFamily.display,
+    fontSize: fontSize.xl,
+    letterSpacing: -0.6,
+    lineHeight: 23,
     color: colors.textPrimary,
+  },
+  sectionKicker: {
+    fontFamily: fontFamily.sans,
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
 
   // Wide landscape card — mirrors the home bingeCard styling

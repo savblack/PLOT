@@ -12,7 +12,7 @@ import { collectionStubFromDetails, orderedCollectionParts } from '@plot/core/co
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
-import CollectionFilms, { CollectionProgressBar, useCollectionProgress } from './CollectionFilms';
+import CollectionFilms, { CollectionRun, useCollectionProgress } from './CollectionFilms';
 
 export default function CollectionCard({ details, itemId }: { details: any; itemId: number }) {
   const { colors } = useTheme();
@@ -35,10 +35,11 @@ export default function CollectionCard({ details, itemId }: { details: any; item
   }, [collectionId]);
 
   const parts = orderedCollectionParts(collection);
-  const { items, watched, total, fraction } = useCollectionProgress(parts, itemId);
+  const { items, watched, total } = useCollectionProgress(parts, itemId);
 
   if (!stub || !collection || parts.length < 2) return null;
   const stack = items.slice(0, 4);
+  const nextUp = items.find((item: any) => !item.watched);
 
   return (
     <>
@@ -54,7 +55,10 @@ export default function CollectionCard({ details, itemId }: { details: any; item
           </View>
           <View style={styles.titles}>
             <Text style={styles.name} numberOfLines={1}>{stub.name}</Text>
-            <Text style={styles.count}>{MEDIA_PANEL.collectionProgress(watched, total)}</Text>
+            <Text style={styles.count} numberOfLines={1}>
+              {MEDIA_PANEL.collectionProgress(watched, total)}
+              {nextUp ? ` · ${MEDIA_PANEL.collectionNextUp(nextUp.title)}` : ''}
+            </Text>
           </View>
           <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
             <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -62,7 +66,7 @@ export default function CollectionCard({ details, itemId }: { details: any; item
             </Svg>
           </View>
         </TouchableOpacity>
-        <CollectionProgressBar fraction={fraction} />
+        <CollectionRun items={items} watched={watched} total={total} compact />
         {open && <CollectionFilms stub={stub} parts={parts} items={items} />}
       </View>
     </>
