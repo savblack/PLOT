@@ -33,7 +33,7 @@ export const SHOW_APPLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_APPLE_LOGIN === 'tr
 export const SHOW_PRICING_PAGE = false;
 
 // Watch together (PLO-515). Web turns this on in production
-// (SHOW_WATCH_TOGETHER in apps/web/src/launchFeatures.js). Mobile has no
-// /together screen in this change, so the flag stays false and the drawer
-// does not list it.
+// (SHOW_WATCH_TOGETHER in apps/web/src/launchFeatures.js). The mobile screens
+// exist, and this flag stays off until they have been checked with two
+// accounts. Entry points stay hidden while it is false.
 export const SHOW_WATCH_TOGETHER = false;

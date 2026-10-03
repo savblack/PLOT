@@ -15,7 +15,8 @@ export type NavIconName =
   | 'feedback'
   | 'support'
   | 'requests'
-  | 'notifications';
+  | 'notifications'
+  | 'together';
 
 function Glyph({ color, children }: { color: string; children: ReactNode }) {
   return (
@@ -105,6 +106,15 @@ export default function NavGlyph({ name, color }: { name: NavIconName; color: st
         <Glyph color={color}>
           <Path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
           <Path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </Glyph>
+      );
+    case 'together':
+      return (
+        <Glyph color={color}>
+          <Path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3" />
+          <Path d="M3 13a2 2 0 0 1 4 0v1h10v-1a2 2 0 0 1 4 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <Path d="M6 19v2" />
+          <Path d="M18 19v2" />
         </Glyph>
       );
   }

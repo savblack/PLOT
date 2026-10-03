@@ -51,6 +51,15 @@ import { upgradeSheetContent } from '@plot/core/upgradeSheet.js';
 import { readStorage, removeStorage, writeStorage } from '../../lib/storage';
 import SmartListDialog from '../../components/smart/SmartListDialog';
 import { asDraft, asNamedLists, asSmartRow, type SmartRules } from '../../lib/smartListModel';
+import { addedById, isSharedList, joinNames } from '@plot/core/sharedLists.js';
+import { personName } from '@plot/core/watchTogether.js';
+import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
+import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
+import { useListHostPremium } from '@plot/core/useListInvites.js';
+import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
+import { AddPeopleSheet } from '../../components/watch/ShareListSheet';
+import { ListInviteSheet } from '../../components/watch/ListInviteSheet';
+import { openPremium } from '../../components/watch/WatchChrome';
 import { createUndoBatch, UNDO_ACTIONS, type UndoOption } from '@plot/core/undo.js';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -260,7 +269,7 @@ function ListRow({ item, trailing, onPress, sel }: {
 }
 
 // ── Poster grid ───────────────────────────────────────────────────────
-function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel }: {
+function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel, caption }: {
   items: any[];
   onRemove?: (tmdbId: number) => void;
   horizontal?: boolean;
@@ -268,6 +277,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
   onPress?: (item: any) => void;
   /** Present when the grid's section supports multi-select. */
   sel?: Selection;
+  caption?: (item: { added_by?: string | null }) => string | null;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -277,6 +287,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
     const img   = posterUrl(item.poster_path, 'w185');
     const title = item.title || item.name || '';
     const isSelected = !!sel?.selected.has(item.tmdb_id);
+    const byline = caption?.(item);
     const handlePress = editing
       ? () => sel!.toggle(item.tmdb_id)
       : (onPress ? () => onPress(item) : undefined);
@@ -322,6 +333,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
           )}
         </TouchableOpacity>
         <Text style={styles.posterTitle} numberOfLines={1}>{title}</Text>
+        {!!byline && <Text style={styles.posterCaption} numberOfLines={2}>{byline}</Text>}
       </View>
     );
   };
@@ -1076,19 +1088,62 @@ function CustomListCard({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { open: openPanel } = useMediaPanel();
-  const { profile } = useAppData();
+  const { profile, userId, customLists } = useAppData();
+  const router = useRouter();
   const [open,     setOpen]     = useState(true);
   const [renaming, setRenaming] = useState(false);
   const [name,     setName]     = useState(list.name);
+  const [peopleOpen, setPeopleOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteUpgrade, setInviteUpgrade] = useState(false);
   const sel = useSelection();
+  const shared = SHOW_WATCH_TOGETHER && isSharedList(list, userId);
+  const member = shared && list.role === 'member';
+  const hostPremium = useListHostPremium(list.id, { enabled: shared });
+  const people = Array.isArray(list.people) ? list.people : [];
+  const otherNames = people
+    .filter((person: { user_id?: string }) => !!person.user_id && person.user_id !== userId)
+    .map((person: { display_name?: string | null; username?: string | null }) => personName(person));
+  const sharedLine = shared && otherNames.length ? WATCH_TOGETHER.sharedList.sharedWith(joinNames(otherNames)) : '';
+  const ownerId = typeof list.user_id === 'string' ? list.user_id : null;
+  const addedCaption = shared
+    ? (item: { added_by?: string | null }) => {
+        const by = addedById(item, ownerId);
+        if (!by) return null;
+        if (by === userId) return WATCH_TOGETHER.sharedList.addedByYou;
+        const who = people.find((person: { user_id?: string; display_name?: string | null; username?: string | null }) => person.user_id === by);
+        return who ? WATCH_TOGETHER.sharedList.addedBy(personName(who)) : null;
+      }
+    : undefined;
 
   const items = (filterByType(list.items || [], typeFilters) ?? []) as any[];
   const visibility = listVisibility(list);
   const shareable = isListShareable(visibility, profile?.is_public);
+  const confirmLeave = () => {
+    Alert.alert(WATCH_TOGETHER.sharedList.leaveTitle(list.name), WATCH_TOGETHER.sharedList.leaveBody, [
+      { text: COMMON.cancel, style: 'cancel' },
+      { text: WATCH_TOGETHER.sharedList.leave, style: 'destructive', onPress: () => { void customLists.leaveList(list.id); } },
+    ]);
+  };
+
+  const openInvite = () => {
+    if (!isPremiumProfile(profile)) {
+      track(EVENTS.PREMIUM_GATE_HIT, { feature: 'collaborative_lists' });
+      setInviteUpgrade(true);
+      return;
+    }
+    setInviteOpen(true);
+  };
 
   // Same item order as web's list kebab: Select, Rename, visibility, Share,
-  // Delete. Deleting the list itself still goes through onDelete's confirm.
-  const menuItems: KebabMenuItem[] = [
+  // Delete. Invite people sits with Share while Watch together is on.
+  // A member adds people or leaves instead of deleting.
+  const menuItems: KebabMenuItem[] = member ? [
+    ...((list.items || []).length > 0 ? [{ label: COMMON.select, onPress: sel.enter }] : []),
+    { label: COLLABORATIVE_LISTS.myLists.rename, onPress: () => setRenaming(true) },
+    { label: WATCH_TOGETHER.sharedList.addPeople, onPress: () => setPeopleOpen(true) },
+    { label: WATCH_TOGETHER.sharedList.leave, onPress: confirmLeave, danger: true },
+  ] : [
     ...((list.items || []).length > 0 ? [{ label: COMMON.select, onPress: sel.enter }] : []),
     { label: 'Rename', onPress: () => setRenaming(true) },
     ...LIST_VISIBILITIES.map((v) => ({
@@ -1096,6 +1151,7 @@ function CustomListCard({
       onPress: () => { if (v !== visibility) onSetVisibility(v); },
     })),
     ...(shareable ? [{ label: 'Share link', onPress: onShare }] : []),
+    ...(SHOW_WATCH_TOGETHER ? [{ label: COLLABORATIVE_LISTS.invite, onPress: openInvite }] : []),
     { label: COMMON.delete, onPress: onDelete, danger: true },
   ];
 
@@ -1107,31 +1163,37 @@ function CustomListCard({
         >
           <Polyline points="9,18 15,12 9,6" />
         </Svg>
-        {renaming ? (
-          <TextInput
-            style={styles.renameInput}
-            value={name}
-            onChangeText={setName}
-            autoFocus
-            onBlur={() => {
-              const next = name.trim();
-              if (next && next !== list.name) onRename(next);
-              else setName(list.name);
-              setRenaming(false);
-            }}
-            onSubmitEditing={() => {
-              const next = name.trim();
-              if (next && next !== list.name) onRename(next);
-              else setName(list.name);
-              setRenaming(false);
-            }}
-            returnKeyType="done"
-          />
-        ) : (
-          <Text style={styles.customListName} numberOfLines={1}>{list.name}</Text>
-        )}
-        {visibility !== 'private' && (
+        <View style={{ flex: 1, minWidth: 0 }}>
+          {renaming ? (
+            <TextInput
+              style={styles.renameInput}
+              value={name}
+              onChangeText={setName}
+              autoFocus
+              onBlur={() => {
+                const next = name.trim();
+                if (next && next !== list.name) onRename(next);
+                else setName(list.name);
+                setRenaming(false);
+              }}
+              onSubmitEditing={() => {
+                const next = name.trim();
+                if (next && next !== list.name) onRename(next);
+                else setName(list.name);
+                setRenaming(false);
+              }}
+              returnKeyType="done"
+            />
+          ) : (
+            <Text style={[styles.customListName, { flex: 0 }]} numberOfLines={1}>{list.name}</Text>
+          )}
+          {!!sharedLine && <Text style={styles.sharedLine} numberOfLines={1}>{sharedLine}</Text>}
+        </View>
+        {!member && visibility !== 'private' && (
           <View style={styles.publicBadge}><Text style={styles.publicBadgeText}>{PROFILE_PRIVACY.listVisibilityBadge[visibility]}</Text></View>
+        )}
+        {shared && (
+          <View style={styles.publicBadge}><Text style={styles.publicBadgeText}>{WATCH_TOGETHER.sharedList.shared}</Text></View>
         )}
         <Text style={styles.customListCount}>{list.items?.length || 0}</Text>
         {sel.editMode ? (
@@ -1165,7 +1227,7 @@ function CustomListCard({
           </>
         ) : (
           <>
-            {shareable && <TouchableOpacity onPress={(event) => { event.stopPropagation(); onShare(); }} accessibilityRole="button" accessibilityLabel={COMMON.share} style={{ marginRight: spacing.sm }}>
+            {shareable && !member && <TouchableOpacity onPress={(event) => { event.stopPropagation(); onShare(); }} accessibilityRole="button" accessibilityLabel={COMMON.share} style={{ marginRight: spacing.sm }}>
               <Text style={styles.sectionActionText}>{COMMON.share}</Text>
             </TouchableOpacity>}
             <TouchableOpacity onPress={onAddItem} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Add item to list" accessibilityRole="button">
@@ -1185,12 +1247,25 @@ function CustomListCard({
           <PosterGrid
             items={items}
             sel={sel}
+            caption={addedCaption}
             onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
             onRemove={(tmdbId: number) => onRemoveItem(tmdbId, { undo: true })}
             removeLabel={MEDIA.removeFromList}
           />
         )
       )}
+      {peopleOpen && (
+        <AddPeopleSheet listId={list.id} people={people} locked={hostPremium === false} onClose={() => setPeopleOpen(false)} />
+      )}
+      {inviteOpen && (
+        <ListInviteSheet listId={list.id} listName={list.name} people={people} onClose={() => setInviteOpen(false)} />
+      )}
+      <UpgradeSheet
+        visible={inviteUpgrade}
+        reason="collaborativeLists"
+        onClose={() => setInviteUpgrade(false)}
+        onCompare={() => openPremium(router)}
+      />
     </View>
   );
 }
@@ -1341,6 +1416,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterCard: { height: POSTER_H, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken, marginBottom: spacing.xs },
   removeBtn: { position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   posterTitle: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
+  posterCaption: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
+  sharedLine: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
 
   empty: { padding: spacing.xl, alignItems: 'center' },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },

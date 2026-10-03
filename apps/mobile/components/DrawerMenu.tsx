@@ -14,18 +14,21 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { Avatar } from './Avatar';
 import NavGlyph, { NavIconName } from './NavIcons';
+import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 
 // Web's drawer is min(300px, 85vw). The old 58% width was sized for bare labels.
 const DRAWER_W = Math.min(300, Dimensions.get('window').width * 0.85);
 
 // Search leads. Settings stays in the footer, after Notifications. Guide,
-// Top 5 and History are not destinations here.
+// Top 5 and History are not destinations here. Watch together stays out
+// until the launch flag is on.
 const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; premium?: boolean }[] = [
   { id: 'search',   label: APP_SHELL.search,            path: '/(app)/search',        icon: 'search' },
   { id: 'index',    label: 'Home',                       path: '/(app)/',              icon: 'home' },
   { id: 'calendar', label: 'Calendar',                   path: '/(app)/calendar',      icon: 'calendar' },
   { id: 'my-lists', label: 'My Lists',                   path: '/(app)/my-lists',      icon: 'lists' },
   { id: 'tonight',  label: titleForView('tonight'),      path: '/(app)/tonight',       icon: 'tonight', premium: true },
+  ...(SHOW_WATCH_TOGETHER ? [{ id: 'together', label: titleForView('together'), path: '/(app)/together', icon: 'together' as const, premium: true }] : []),
   { id: 'notifications', label: APP_SHELL.notifications, path: '/(app)/notifications', icon: 'notifications' },
 ];
 
@@ -124,7 +127,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
           {/* Main nav */}
           <View style={styles.nav}>
             {NAV_ITEMS.map(item => {
-              const active = activeId === item.id;
+              const active = item.id === 'together' ? pathname.startsWith('/together') : activeId === item.id;
               const color = active ? colors.accent : colors.textSecondary;
               return (
                 <TouchableOpacity

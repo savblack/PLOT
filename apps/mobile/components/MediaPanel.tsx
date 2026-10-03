@@ -49,6 +49,8 @@ import { PEOPLE } from '@plot/core/copy/people.js';
 import { CastFollowCard, CrewFollowRow } from './people/FollowControls';
 import { useFollowPerson } from './people/useFollowPerson';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
+import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
+import { SavedByToo } from './watch/SavedByToo';
 import {
   ENGAGEMENT_SNOOZE_KEY,
   ENGAGEMENT_PENDING_KEY,
@@ -1686,6 +1688,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       onSeriesFinished={handleSeriesFinished}
                     />
                   </>
+                )}
+
+                {SHOW_WATCH_TOGETHER && (
+                  <SavedByToo tmdbId={itemId} mediaType={isMovie ? 'movie' : 'tv'} />
                 )}
 
                 {/* Recommendations and the franchise card close the panel, matching

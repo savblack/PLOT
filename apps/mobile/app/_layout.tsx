@@ -28,6 +28,13 @@ import CollectionPanel from '../components/CollectionPanel';
 import type { Session } from '@supabase/supabase-js';
 import UndoToast from '../components/UndoToast';
 import { FollowToastHost } from '../components/people/FollowControls';
+import {
+  clearWatchTogetherReturn,
+  consumeWatchTogetherReturn,
+  rememberWatchTogetherReturn,
+  resetWatchTogetherHandoff,
+  watchTogetherHandedOff,
+} from '../lib/watchTogetherReturn';
 
 function AuthGuard({ session, onboardingComplete }: {
   session: Session | null;
@@ -40,22 +47,40 @@ function AuthGuard({ session, onboardingComplete }: {
   useEffect(() => {
     const inAuth = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding';
+    const onInviteLink = segments[0] === 'watch-with' || segments[0] === 'join-list';
 
     if (!session) {
       resetCompareHandoff();
-      // Not logged in → send to auth. A compare link is restored after sign-in.
-      if (!inAuth) {
-        rememberCompareReturn(pathname);
-        router.replace('/(auth)');
+      // A signed-out visitor can read an invite link. Remember it so sign-in
+      // brings them back. A compare link is restored the same way. Anywhere
+      // else still goes to auth.
+      if (onInviteLink) {
+        rememberWatchTogetherReturn(pathname);
+        resetWatchTogetherHandoff();
+      } else {
+        resetWatchTogetherHandoff();
+        if (!inAuth) {
+          rememberCompareReturn(pathname);
+          router.replace('/(auth)');
+        }
       }
     } else if (onboardingComplete === false) {
       // Logged in but onboarding not done
       if (!inOnboarding) router.replace('/onboarding/name');
-    } else if (onboardingComplete === true && !inAuth && !inOnboarding) {
-      resetCompareHandoff();
-    } else if (onboardingComplete === true && (inAuth || inOnboarding)) {
-      const handoff = consumeCompareHandoff();
-      if (handoff.go) router.replace((handoff.path ?? '/(app)') as Href);
+    } else if (onboardingComplete === true) {
+      if (onInviteLink) {
+        clearWatchTogetherReturn();
+        resetCompareHandoff();
+      } else if (inAuth || inOnboarding) {
+        const back = consumeWatchTogetherReturn();
+        if (back) router.replace(back as Href);
+        else if (!watchTogetherHandedOff()) {
+          const handoff = consumeCompareHandoff();
+          if (handoff.go) router.replace((handoff.path ?? '/(app)') as Href);
+        }
+      } else {
+        resetCompareHandoff();
+      }
     }
   }, [session, onboardingComplete, segments, pathname]);
 

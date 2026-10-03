@@ -42,6 +42,8 @@ import { MEDIA } from '@plot/core/copy/media.js';
 import {
   ShelfItem, ShelfList, PosterGrid, TopFiveGrid, PosterRail, ListCovers, HistoryRows, ShelfHeading, ShelfButton, ShelfSwitch,
 } from '../../../../components/ProfileShelves';
+import { SHOW_WATCH_TOGETHER } from '../../../../lib/launchFeatures';
+import { WatchTogetherTile } from '../../../../components/watch/WatchTogetherTile';
 
 /**
  * `usernameOverride` lets the profile tab reuse this screen for the signed-in
@@ -202,6 +204,18 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
                 />
               )}
             </View>
+
+            {SHOW_WATCH_TOGETHER && !isOwn && !!viewerId && !!profile?.id && (
+              <WatchTogetherTile
+                person={{
+                  id: profile.id,
+                  username: profile.username,
+                  display_name: profile.display_name,
+                  avatar_url: profile.avatar_url,
+                  is_public: profile.is_public,
+                }}
+              />
+            )}
 
             {!!profile!.bio && <Text style={styles.bio}>{profile!.bio}</Text>}
 
