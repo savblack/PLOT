@@ -73,8 +73,6 @@ export const fontSize = {
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
 export const posterUrl   = (path: string | null | undefined, size = 'w342') =>
   path ? `${TMDB_IMG}/${size}${path}` : null;
-export const profileUrl  = (path: string | null | undefined, size = 'w185') =>
-  path ? `${TMDB_IMG}/${size}${path}` : null;
 export const backdropUrl = (path: string | null | undefined, size = 'w780') =>
   path ? `${TMDB_IMG}/${size}${path}` : null;
 export const logoUrl     = (path: string | null | undefined, size = 'w45') =>
