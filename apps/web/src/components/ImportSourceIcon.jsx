@@ -1,8 +1,9 @@
 // Icons for the import sources (onboarding's switching-apps step and the
 // Finishing touches import sheet). Netflix and Plex use their real logos from
 // TMDB's watch-provider list, found by name at runtime (never a hard-coded id).
-// Letterboxd and Trakt aren't streaming providers, so they are simple marks in
-// their brand colours; the colour literals are brand colours, not theme colours.
+// Trakt's logo is a file in public/import-logos. Letterboxd isn't a streaming
+// provider either, so it is a simple mark in its brand colours; those colour
+// literals are brand colours, not theme colours.
 import { useEffect, useState } from 'react';
 import { tmdb } from '@plot/core/tmdb.js';
 import { logoUrl } from '../utils/images.js';
@@ -48,22 +49,12 @@ function LetterboxdMark({ size }) {
   );
 }
 
-function TraktMark({ size }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 36 36" aria-hidden="true">
-      <rect width="36" height="36" rx="8" fill="#ED1C24" />
-      <circle cx="18" cy="18" r="10" fill="none" stroke="#FFFFFF" strokeWidth="2.4" />
-      <path d="M13.5 18.2l3.2 3.2 6-6.4" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 /** @param {{ id: 'letterboxd' | 'trakt' | 'netflix' | 'plex', name: string, size?: number }} props */
 export default function ImportSourceIcon({ id, name, size = 36 }) {
   const logo = useProviderLogo(id);
   const radius = Math.round(size * 0.22);
   if (id === 'letterboxd') return <LetterboxdMark size={size} />;
-  if (id === 'trakt') return <TraktMark size={size} />;
+  if (id === 'trakt') return <img src="/import-logos/trakt.png" alt="" width={size} height={size} style={{ width: size, height: size, borderRadius: radius, flexShrink: 0, display: 'block' }} />;
   if (logo) {
     return <img src={logoUrl(logo, 'w92')} alt="" width={size} height={size} style={{ width: size, height: size, borderRadius: radius, objectFit: 'cover', flexShrink: 0, display: 'block' }} />;
   }

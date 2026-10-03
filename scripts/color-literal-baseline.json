@@ -10,7 +10,7 @@
   "apps/mobile/lib/sectionOpenState.ts": 1,
   "apps/web/src/components/ConfirmModal.jsx": 1,
   "apps/web/src/components/ErrorBoundary.jsx": 8,
-  "apps/web/src/components/ImportSourceIcon.jsx": 5,
+  "apps/web/src/components/ImportSourceIcon.jsx": 4,
   "apps/web/src/components/ImportView.jsx": 24,
   "apps/web/src/components/ReportDialog.jsx": 2,
   "apps/web/src/components/ShareCard.css": 35,
