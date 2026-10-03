@@ -42,11 +42,11 @@ export const ONBOARDING_FLOW = {
   seed: {
     // Reads as a question with or without a name.
     title: (name) => (name ? `What do you want to watch, ${name}?` : 'What do you want to watch?'),
-    subtitle: 'Tap a few of this week’s trending titles to start your watchlist. You can always add more later.',
+    subtitle: 'Pick a few of this week’s trending titles to start your watchlist. You can always add more or change these later.',
     switchingLead: 'Switching apps?',
     switchingBody: 'Bring your history and watchlist over instead.',
     continueWith: (n) => `Continue with ${n} ${n === 1 ? 'title' : 'titles'} →`,
-    tapAFew: 'Tap a few to continue',
+    tapAFew: 'Pick at least one to continue',
   },
   importSources: {
     title: 'Where’s your history now?',
@@ -65,8 +65,6 @@ export const ONBOARDING_FLOW = {
     regionLine: (regionName) => `Your region: ${regionName}.`,
     changeRegion: 'Change',
     regionLabel: 'Region',
-    matchLine: (n, total) => `${n} of your ${total} ${total === 1 ? 'pick is' : 'picks are'} on these services.`,
-    noneSelected: 'Pick any you use, or skip and we’ll look across every platform.',
     loadError: 'We couldn’t load services right now. You can set them later in Settings.',
   },
   building: {

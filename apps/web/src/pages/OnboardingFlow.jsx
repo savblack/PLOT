@@ -15,8 +15,7 @@ import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
 import { upsertProfile } from '@plot/core/profile.js';
 import {
-  ONBOARDING_PROGRESS, buildingLines, firstNameFromAuthUser,
-  picksOnServices, streamingProviderIds, topRegionServices,
+  ONBOARDING_PROGRESS, buildingFan, buildingLines, firstNameFromAuthUser, topRegionServices,
 } from '@plot/core/onboardingSetup.js';
 import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { finishingTouchesKey, serialiseFinishingTouches, startFinishingTouches } from '@plot/core/finishingTouches.js';
@@ -67,7 +66,6 @@ export default function OnboardingFlow() {
   const [services, setServices] = useState([]);
   const [servicesError, setServicesError] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
-  const [pickProviders, setPickProviders] = useState({});
 
   // Building
   const [lineIndex, setLineIndex] = useState(0);
@@ -161,21 +159,6 @@ export default function OnboardingFlow() {
     }).catch(() => { if (alive) setServicesError(true); });
     return () => { alive = false; };
   }, [step, region]);
-
-  /* ── Where each pick streams, for the match line ── */
-  useEffect(() => {
-    if (step !== 'services' || seedSelected.length === 0) return;
-    let alive = true;
-    Promise.all(seedSelected.map(item =>
-      tmdb.getWatchProviders(item.id, item.media_type).then(data => [item.id, data]).catch(() => [item.id, null]),
-    )).then(entries => { if (alive) setPickProviders(Object.fromEntries(entries)); });
-    return () => { alive = false; };
-  }, [step, seedSelected]);
-
-  const matchCount = useMemo(
-    () => picksOnServices(seedSelected.map(item => streamingProviderIds(pickProviders[item.id], region)), selectedServiceIds),
-    [seedSelected, pickProviders, region, selectedServiceIds],
-  );
 
   /* ── Save and finish. Runs behind the building moment, or straight away on Skip. ── */
   const save = async ({ seeds, providers }) => {
@@ -281,7 +264,6 @@ export default function OnboardingFlow() {
   if (!user) return null;
 
   const n = seedSelected.length;
-  const matchLine = selectedServiceIds.length && n ? F.services.matchLine(matchCount, n) : F.services.noneSelected;
 
   return (
     <OnboardingScreen
@@ -318,12 +300,11 @@ export default function OnboardingFlow() {
         onEditRegion: () => setEditingRegion(true),
         onRegion: (code) => { setRegion(code); setRegionTouched(true); setEditingRegion(false); },
         onRegionDone: () => setEditingRegion(false),
-        matchLine,
         onContinue: () => startBuilding(),
       }}
       building={{
         leaving,
-        fan: (seedSelected.length ? seedSelected : trending).slice(0, 3),
+        fan: buildingFan(seedSelected, trending),
         lines: buildingLines(selectedServiceIds.length > 0),
         lineIndex,
       }}

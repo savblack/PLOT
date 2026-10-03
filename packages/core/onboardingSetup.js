@@ -71,28 +71,22 @@ export function topRegionServices(results, limit = ONBOARDING_SERVICE_COUNT) {
 }
 
 /**
- * Provider ids a title streams on (subscription only) in one region, from a
- * TMDB /watch/providers response.
+ * The building moment's three fanned posters, back left, back right, then the
+ * one in front. Their first pick goes in front; other picks, then trending
+ * titles they didn't pick, fill the two behind, so one or two picks still
+ * make a full fan.
  *
- * @param {{ results?: Record<string, { flatrate?: Array<{ provider_id: number }> }> } | null | undefined} data
- * @param {string} region
- * @returns {number[]}
+ * @template {{ id: number }} T
+ * @param {T[]} picks
+ * @param {T[]} trending
+ * @returns {T[]} up to three, front last
  */
-export function streamingProviderIds(data, region) {
-  const flatrate = data?.results?.[region]?.flatrate || [];
-  return flatrate.map(p => p.provider_id).filter(id => typeof id === 'number');
-}
-
-/**
- * How many of the saved picks stream on at least one selected service.
- *
- * @param {number[][]} providerIdsByPick
- * @param {number[]} selectedIds
- * @returns {number}
- */
-export function picksOnServices(providerIdsByPick, selectedIds) {
-  const selected = new Set(selectedIds);
-  return providerIdsByPick.filter(ids => ids.some(id => selected.has(id))).length;
+export function buildingFan(picks, trending) {
+  const picked = new Set(picks.map(p => p.id));
+  const [front, ...rest] = picks.length ? picks : trending;
+  if (!front) return [];
+  const behind = [...rest, ...trending.filter(t => !picked.has(t.id) && t.id !== front.id)].slice(0, 2);
+  return [...behind, front];
 }
 
 /**

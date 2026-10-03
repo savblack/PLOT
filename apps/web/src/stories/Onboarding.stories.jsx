@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import OnboardingScreen from '../pages/OnboardingScreen.jsx';
-import { buildingLines } from '@plot/core/onboardingSetup.js';
-import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
+import { buildingFan, buildingLines } from '@plot/core/onboardingSetup.js';
 
 // Fictional titles and services, no images. Ids are negative on purpose: they
 // are not TMDB ids (AGENTS.md: never guess one).
@@ -11,8 +10,14 @@ const services = ['Service One', 'Service Two', 'Service Three', 'Service Four',
   .map((name, i) => ({ id: -(i + 100), name, logo_path: null }));
 const noop = () => {};
 
-function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', lineIndex = 1 }) {
+function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', lineIndex = 1, ticking = false }) {
   const [sel, setSel] = useState(selected);
+  const [line, setLine] = useState(lineIndex);
+  useEffect(() => {
+    if (!ticking) return undefined;
+    const id = setInterval(() => setLine(i => (i + 1) % 4), 1500);
+    return () => clearInterval(id);
+  }, [ticking]);
   const [svc, setSvc] = useState(picked);
   return (
     <OnboardingScreen
@@ -33,10 +38,9 @@ function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 
         list: services, error: false, selectedIds: svc,
         onToggle: (id) => setSvc(s => (s.includes(id) ? s.filter(x => x !== id) : [...s, id])),
         region: 'US', editingRegion: false, onEditRegion: noop, onRegion: noop, onRegionDone: noop,
-        matchLine: svc.length ? ONBOARDING_FLOW.services.matchLine(1, sel.length || 2) : ONBOARDING_FLOW.services.noneSelected,
         onContinue: noop,
       }}
-      building={{ leaving: false, fan: titles.slice(0, 3), lines: buildingLines(svc.length > 0), lineIndex }}
+      building={{ leaving: false, fan: buildingFan(titles.filter(t => sel.includes(t.id)), titles), lines: buildingLines(svc.length > 0), lineIndex: line }}
     />
   );
 }
@@ -54,7 +58,9 @@ export const SaveAFewNoName = { render: () => <Screen step="seed" firstName="" s
 export const SwitchingApps = { render: () => <Screen step="import" /> };
 /** 2 · Where do you watch. */
 export const WhereDoYouWatch = { render: () => <Screen step="services" /> };
-/** 2 · Nothing picked: the line explains that skipping looks across every platform. */
+/** 2 · Nothing picked yet. */
 export const WhereDoYouWatchNonePicked = { render: () => <Screen step="services" picked={[]} /> };
-/** 3 · Building your Plot (the lines rotate in the app; this shows line two). */
-export const Building = { render: () => <Screen step="building" /> };
+/** 3 · Building your Plot: the cards deal in, then shuffle with each line. */
+export const Building = { render: () => <Screen step="building" ticking /> };
+/** 3 · Only one title picked: trending titles fill the fan. */
+export const BuildingOnePick = { render: () => <Screen step="building" selected={[-5]} ticking /> };

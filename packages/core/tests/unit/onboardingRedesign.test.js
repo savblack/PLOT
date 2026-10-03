@@ -6,7 +6,7 @@ import {
 } from '../../finishingTouches.js';
 import { greetingFor, partOfDay } from '../../greeting.js';
 import {
-  buildingLines, firstNameFromAuthUser, picksOnServices, streamingProviderIds, topRegionServices,
+  buildingFan, buildingLines, firstNameFromAuthUser, topRegionServices,
 } from '../../onboardingSetup.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -65,20 +65,28 @@ test('first name comes from the sign-in provider when it has one', () => {
   assert.equal(firstNameFromAuthUser(null), '');
 });
 
-test('services: most popular first, and the match line counts picks on any selected one', () => {
+test('services: most popular first', () => {
   const services = topRegionServices([
     { provider_id: -2, provider_name: 'B', display_priority: 5 },
     { provider_id: -1, provider_name: 'A', display_priority: 1, logo_path: '/a.png' },
     { provider_id: -3, provider_name: 'C' },
   ], 2);
   assert.deepEqual(services, [{ id: -1, name: 'A', logo_path: '/a.png' }, { id: -2, name: 'B', logo_path: null }]);
-  const ids = streamingProviderIds({ results: { US: { flatrate: [{ provider_id: -1 }] }, GB: { flatrate: [{ provider_id: -9 }] } } }, 'US');
-  assert.deepEqual(ids, [-1]);
-  assert.equal(picksOnServices([[-1], [-9], []], [-1, -2]), 1);
 });
 
 test('building lines swap the first line when no services were picked', () => {
   assert.match(buildingLines(true)[0], /your platforms/);
   assert.match(buildingLines(false)[0], /every platform/);
   assert.equal(buildingLines(true).length, 4);
+});
+
+test('the building fan is always full: first pick in front, trending fills the gaps', () => {
+  const t = (id) => ({ id });
+  const trending = [t(-1), t(-2), t(-3), t(-4)];
+  assert.deepEqual(buildingFan([t(-2)], trending).map(x => x.id), [-1, -3, -2]);
+  assert.deepEqual(buildingFan([t(-9), t(-8)], trending).map(x => x.id), [-8, -1, -9]);
+  assert.deepEqual(buildingFan([t(-9), t(-8), t(-7), t(-6)], trending).map(x => x.id), [-8, -7, -9]);
+  assert.deepEqual(buildingFan([], trending).map(x => x.id), [-2, -3, -1]);
+  assert.deepEqual(buildingFan([t(-9)], []).map(x => x.id), [-9]);
+  assert.deepEqual(buildingFan([], []), []);
 });

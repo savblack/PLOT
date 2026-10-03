@@ -24,6 +24,7 @@ import { profileUrl } from '../utils/images.js';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import FinishingTouchesCard from './FinishingTouchesCard.jsx';
 import { FollowPill } from './PeopleFollow.jsx';
+import ImportSourceIcon from './ImportSourceIcon.jsx';
 import './FinishingTouches.css';
 
 const wideScreen = () => typeof window !== 'undefined' && window.matchMedia?.('(min-width: 1024px)').matches;
@@ -94,7 +95,7 @@ export default function FinishingTouches() {
                 createImportReporter({ entry: IMPORT_ENTRY_POINTS.FINISHING_TOUCHES }).selected(src.id);
                 navigate(`/import?source=${src.id}&from=${IMPORT_ENTRY_POINTS.FINISHING_TOUCHES}`);
               }}>
-                <span className="ft-source-mark" aria-hidden="true">{src.name[0]}</span>
+                <ImportSourceIcon id={src.id} name={src.name} />
                 <span className="ft-source-text"><b>{src.name}</b><span>{src.hint}</span></span>
               </button>
             ))}

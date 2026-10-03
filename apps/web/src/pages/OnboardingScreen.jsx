@@ -4,7 +4,9 @@
 import { posterUrl, logoUrl } from '../utils/images.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import PlotLogo from '../components/PlotLogo.jsx';
+import ImportSourceIcon from '../components/ImportSourceIcon.jsx';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
+import { COMMON } from '../copy/common.js';
 import { REGIONS } from '@plot/core/regions.js';
 import { IMPORT_SOURCES, ONBOARDING_PROGRESS, ONBOARDING_PROGRESS_TOTAL } from '@plot/core/onboardingSetup.js';
 import './OnboardingFlow.css';
@@ -45,7 +47,7 @@ function Progress({ step }) {
  *   services: { list: Array<{ id: number, name: string, logo_path: string | null }> | null, error: boolean,
  *               selectedIds: number[], onToggle: (id: number) => void, region: string, editingRegion: boolean,
  *               onEditRegion: () => void, onRegion: (code: string) => void, onRegionDone: () => void,
- *               matchLine: string, onContinue: () => void },
+ *               onContinue: () => void },
  *   building: { leaving: boolean, fan: any[], lines: string[], lineIndex: number },
  * }} props
  */
@@ -56,14 +58,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
   return (
     <div className="ob-page">
       <div className="ob-topbar">
-        <div className="ob-topbar-logo">
-          {canGoBack && (
-            <button type="button" className="onboarding-back" onClick={onBack} aria-label={F.goBack}>
-              <Chevron left className="" />
-            </button>
-          )}
-          <PlotLogo />
-        </div>
+        <div className="ob-topbar-logo"><PlotLogo /></div>
         {step !== 'building' && (
           <button type="button" className="ob-skip" disabled={saving} onClick={onSkip}>{F.skip}</button>
         )}
@@ -71,16 +66,21 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
 
       <div className={columnClass}>
         <Progress step={step} />
+        {canGoBack && (
+          <button type="button" className="ob-back" onClick={onBack} aria-label={F.goBack}>
+            <Chevron left className="ob-back-icon" />{COMMON.back}
+          </button>
+        )}
 
         {/* ── 1 · Save a few, or switch ── */}
         {step === 'seed' && (
           <>
-            <div className="ob-head ob-head--wide">
+            <div className="ob-head ob-head--center ob-head--wide">
               <h1 className="ob-title">{F.seed.title(firstName)}</h1>
               <p className="ob-sub">{F.seed.subtitle}</p>
             </div>
             <button type="button" className="ob-switch" onClick={seed.onSwitch}>
-              <span className="ob-switch-marks" aria-hidden="true"><span>L</span><span>T</span><span>N</span></span>
+              <span className="ob-switch-marks" aria-hidden="true">{IMPORT_SOURCES.slice(0, 3).map(src => <span key={src.id}><ImportSourceIcon id={src.id} name={src.name} size={26} /></span>)}</span>
               <span className="ob-switch-text"><strong>{F.seed.switchingLead}</strong> {F.seed.switchingBody}</span>
               <Chevron />
             </button>
@@ -117,7 +117,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
                     {on && (
                       <>
                         <span className="ob-poster-tint" />
-                        <span className="ob-poster-mark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z" /></svg></span>
+                        <span className="ob-poster-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z" fill="currentColor" /></svg></span>
                       </>
                     )}
                   </button>
@@ -143,7 +143,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
             <nav className="ob-sources" aria-label={F.importSources.sourcesLabel}>
               {IMPORT_SOURCES.map(src => (
                 <button key={src.id} type="button" className="ob-source" onClick={() => onPickImport(src.id)}>
-                  <span className="ob-source-mark" aria-hidden="true">{src.name[0]}</span>
+                  <ImportSourceIcon id={src.id} name={src.name} />
                   <span className="ob-source-text">
                     <span className="ob-source-name">{src.name}</span>
                     <span className="ob-source-hint">{src.hint}</span>
@@ -199,7 +199,6 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
                 <>{F.services.regionLine(regionName)} <button type="button" onClick={services.onEditRegion}>{F.services.changeRegion}</button></>
               )}
             </div>
-            <div className="ob-match" aria-live="polite"><Check /><span>{services.matchLine}</span></div>
             <div className="ob-foot ob-foot--plain">
               {saveError && <p className="ob-error">{saveError}</p>}
               <button type="button" className="onboarding-cta" onClick={services.onContinue} disabled={saving}>{F.continueArrow}</button>
@@ -211,9 +210,14 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
         {step === 'building' && (
           <div className={`ob-building${building.leaving ? ' is-leaving' : ''}`}>
             <div className="ob-fan" aria-hidden="true">
-              {building.fan.map(item => (
-                <div key={item.id} className="ob-fan-card">{item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" />}</div>
-              ))}
+              {building.fan.map((item, i) => {
+                // A full fan shuffles: each new line brings the next poster to the front.
+                const slots = ['left', 'right', 'front'].slice(-building.fan.length);
+                const slot = building.fan.length === 3 ? slots[(i + building.lineIndex) % 3] : slots[i];
+                return (
+                <div key={item.id} className={`ob-fan-card is-${slot}`} style={{ animationDelay: `${i * 140}ms` }}>{item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" />}</div>
+                );
+              })}
             </div>
             <h1 className="ob-building-title">{F.building.heading} <PlotLogo style={{ fontSize: 30 }} /></h1>
             <div className="ob-lines" role="status">
