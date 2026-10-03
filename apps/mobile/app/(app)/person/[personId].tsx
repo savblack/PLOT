@@ -11,6 +11,13 @@ import { TAB_BAR_CLEARANCE } from '../../../lib/tabBar';
 import { PEOPLE as P } from '@plot/core/copy/people.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { comingUpFromCredits } from '@plot/core/peopleFeed.js';
+import {
+  creditTitle,
+  mediaType,
+  creditMeta,
+  shortBiography,
+  dedupedActingCredits,
+} from '@plot/core/talentCredits.js';
 import { localDateStr, shortDayMonth } from '@plot/core/date.js';
 import { FollowPill, PeopleChip } from '../../../components/people/FollowControls';
 import { useFollowPerson, type FollowTarget } from '../../../components/people/useFollowPerson';
@@ -34,47 +41,6 @@ interface Credit {
 interface PersonDetails extends FollowTarget {
   biography?: string;
   birthday?: string | null;
-}
-
-function creditTitle(credit: Credit) {
-  return credit.title || credit.name || 'Untitled';
-}
-
-function mediaType(credit: Credit) {
-  return credit.media_type === 'tv' ? 'tv' : 'movie';
-}
-
-function creditMeta(credit: Credit, type: string) {
-  const year = (credit.release_date || credit.first_air_date || '').slice(0, 4);
-  return [year, type === 'tv' ? 'TV' : 'Movie'].filter(Boolean).join(' · ');
-}
-
-function creditDate(credit: Credit) {
-  return credit.release_date || credit.first_air_date || '';
-}
-
-function shortBiography(biography: string | null | undefined) {
-  if (!biography) return '';
-  const cleanedBiography = biography.replace(
-    /^([^\n(]{1,160})\s+\((?=[^)]*\b(?:born|née)\b)[^)]*\)\s*/i,
-    '$1 ',
-  ).trim();
-  const sentences = cleanedBiography.match(/[^.!?]+[.!?]+(?:\s|$)/g) || [];
-  const preview = sentences.slice(0, 3).join('').trim();
-  return preview || cleanedBiography;
-}
-
-function dedupedActingCredits(cast: Credit[] | undefined) {
-  const seen = new Set<string>();
-  return (cast || [])
-    .filter(credit => credit.id && (credit.media_type === 'movie' || credit.media_type === 'tv'))
-    .sort((a, b) => creditDate(b).localeCompare(creditDate(a)) || (b.popularity || 0) - (a.popularity || 0))
-    .filter(credit => {
-      const key = `${credit.media_type}-${credit.id}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
 }
 
 function PersonFollow({ person }: { person: PersonDetails }) {
@@ -243,7 +209,7 @@ function PersonBody({ personId }: { personId: string }) {
         )}
         {actingCredits.length > 0 ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
-            {actingCredits.map(credit => {
+            {actingCredits.map((credit: Credit) => {
               const type = mediaType(credit);
               const title = creditTitle(credit);
               const role = credit.character || credit.roles?.[0]?.character;

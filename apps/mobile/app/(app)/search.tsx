@@ -1,81 +1,142 @@
-import { useState, useMemo, useRef } from 'react';
-import { useMediaPanel } from '../../contexts/MediaPanelContext';
+// Phone shape of the web search palette: one field, every kind of result,
+// no key hints. Fetching and merging stay in useUnifiedSearch.
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, TextInput, FlatList, Image, TouchableOpacity,
+  View, Text, TextInput, FlatList, Image, Pressable, ScrollView,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { tmdb } from '../../lib/tmdb';
-import { supabase } from '../../lib/supabase';
-import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
+import { useUnifiedSearch } from '@plot/core/useUnifiedSearch.js';
+import { describeSearchResult, pushRecentSearch } from '@plot/core/search.js';
+import { useGenres } from '@plot/core/useGenres.js';
+import { SEARCH_PALETTE } from '@plot/core/copy/searchPalette.js';
+import { MEDIA } from '@plot/core/copy/media.js';
+import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { COMMON } from '@plot/core/copy/common.js';
+import { posterUrl, profileUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
-import { favoriteWords } from '../../lib/spelling';
-import { UserRow, SocialUser } from '../../components/UserList';
-import { useBlocks } from '@plot/core/useBlocks.js';
-import { classifySearchResults } from '@plot/core/search.js';
-import { collectionSearchHits } from '@plot/core/collections.js';
-import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
-import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
+import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { track, EVENTS } from '../../lib/analytics';
-import { MEDIA } from '@plot/core/copy/media.js';
 
-type Mode = 'titles' | 'people';
+const RECENT_KEY = 'plot_recent_searches';
 
-interface SearchResult {
-  id: number;
+type HitData = {
+  id?: number;
+  tmdb_id?: number;
   title?: string;
   name?: string;
   poster_path?: string | null;
+  profile_path?: string | null;
+  avatar_url?: string | null;
   media_type?: string;
-  release_date?: string;
-  first_air_date?: string;
-}
-
-type CollectionHit = { id: number; name: string; poster_path: string | null };
-
-type MediaHooks = {
-  watchlist: any;
-  favorites: any;
-  history:   any;
-  // Only the two members the watched toggle needs, typed rather than `any`
-  // so this doesn't add to the no-explicit-any backlog.
-  watching:  {
-    isWatching:   (tmdbId: number) => boolean;
-    stopWatching: (tmdbId: number) => Promise<unknown>;
-  };
+  username?: string;
+  display_name?: string;
+  status?: string;
+  known_for_department?: string;
+  known_for?: { title?: string; name?: string }[];
 };
 
-function BookmarkIcon({ size = 15, color = '#fff', filled = false }: { size?: number; color?: string; filled?: boolean }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </Svg>
-  );
-}
-function HeartIcon({ size = 15, color = '#fff', filled = false }: { size?: number; color?: string; filled?: boolean }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
-    </Svg>
-  );
-}
-function CheckIcon({ size = 15, color = '#fff' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M20 6L9 17l-5-5" />
-    </Svg>
-  );
+type Hit = { kind: string; key: string; data: HitData };
+
+const STATUS_LABEL: Record<string, string> = {
+  watching: MEDIA_PANEL.watching,
+  saved: SEARCH_PALETTE.status.saved,
+  watched: MEDIA.watched,
+};
+
+type LibrarySource = {
+  tmdb_id?: number;
+  media_type?: string;
+  title?: string;
+  poster_path?: string | null;
+};
+
+function libraryRows(
+  value: unknown,
+  status: 'watching' | 'saved' | 'watched',
+  forceTv = false,
+) {
+  if (!Array.isArray(value)) return [];
+  return (value as LibrarySource[]).flatMap(row => {
+    if (typeof row?.tmdb_id !== 'number') return [];
+    return [{
+      ...row,
+      tmdb_id: row.tmdb_id,
+      media_type: forceTv ? (row.media_type || 'tv') : row.media_type,
+      status,
+    }];
+  });
 }
 
-function todayStr() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
+function readRecent(raw: string | null): string[] {
+  try {
+    const parsed = JSON.parse(raw || '[]');
+    return Array.isArray(parsed) ? parsed.filter(item => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function rowFacts(item: Hit, genres: { id: number; name: string }[]) {
+  const { kind, data } = item;
+  if (kind === 'library') {
+    return {
+      title: data.title || MEDIA.unknown,
+      meta: '',
+      kindLabel: (data.status && STATUS_LABEL[data.status]) || (data.media_type === 'tv' ? SEARCH_PALETTE.kind.tv : SEARCH_PALETTE.kind.movie),
+      thumb: posterUrl(data.poster_path, 'w92'),
+      round: false,
+      own: true,
+    };
+  }
+  if (kind === 'title') {
+    const described = describeSearchResult(data, genres);
+    const bits = [described.year, ...described.genres].filter(Boolean);
+    let meta = bits.join(' · ');
+    if (described.rating) meta = `${meta}${meta ? ' · ' : ''}${described.rating} ★`;
+    return {
+      title: data.title || data.name || MEDIA.unknown,
+      meta,
+      kindLabel: data.media_type === 'tv' ? SEARCH_PALETTE.kind.tv : SEARCH_PALETTE.kind.movie,
+      thumb: posterUrl(data.poster_path, 'w92'),
+      round: false,
+      own: false,
+    };
+  }
+  if (kind === 'collection') {
+    return {
+      title: data.name || '',
+      meta: '',
+      kindLabel: SEARCH_PALETTE.kind.collection,
+      thumb: posterUrl(data.poster_path, 'w92'),
+      round: false,
+      own: false,
+    };
+  }
+  if (kind === 'person') {
+    const knownFor = (data.known_for || []).map(credit => credit.title || credit.name).filter(Boolean).slice(0, 2).join(', ');
+    return {
+      title: data.name || '',
+      meta: [data.known_for_department, knownFor].filter(Boolean).join(' · '),
+      kindLabel: SEARCH_PALETTE.kind.person,
+      thumb: profileUrl(data.profile_path, 'w185'),
+      round: true,
+      own: false,
+    };
+  }
+  return {
+    title: data.display_name || data.username || '',
+    meta: data.username ? `@${data.username}` : '',
+    kindLabel: SEARCH_PALETTE.kind.friend,
+    thumb: data.avatar_url || null,
+    round: true,
+    own: false,
+  };
 }
 
 export default function SearchScreen() {
@@ -83,374 +144,316 @@ export default function SearchScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { userId, watchlist, favorites, history, watching } = useAppData();
-  const hooks: MediaHooks = { watchlist, favorites, history, watching };
-  const [mode,    setMode]    = useState<Mode>('titles');
-  const [query,   setQuery]   = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [collections, setCollections] = useState<CollectionHit[]>([]);
-  const [users,   setUsers]   = useState<SocialUser[]>([]);
-  // One block list for the whole result set, not one per row.
-  const blocks = useBlocks(userId);
-  const [loading, setLoading] = useState(false);
-  // 'none' | 'title-guidance' | 'generic' — see @plot/core/search.js.
-  // 'title-guidance' means only people matched, so nudge toward a title.
-  const [emptyMode, setEmptyMode] = useState('none');
+  const { open: openPanel } = useMediaPanel();
+  const { userId, watchlist, history, watching } = useAppData();
+  const { genres } = useGenres();
+  const inputRef = useRef<TextInput>(null);
+  const [query, setQuery] = useState('');
+  const [recent, setRecent] = useState<string[]>([]);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reqRef = useRef(0);
+  useEffect(() => {
+    AsyncStorage.getItem(RECENT_KEY).then(raw => setRecent(readRecent(raw))).catch(() => {});
+  }, []);
 
-  const runSearch = async (q: string, searchMode: Mode) => {
-    if (q.length < 2) { setResults([]); setUsers([]); setCollections([]); setLoading(false); return; }
-    const reqId = ++reqRef.current; // guard against out-of-order responses
-    setLoading(true);
-    if (searchMode === 'people') {
-      const { data } = await supabase.rpc('search_users', { p_query: q.trim() });
-      if (reqId !== reqRef.current) return;
-      setUsers((data ?? []) as SocialUser[]);
+  const library = useMemo(() => [
+    ...libraryRows(watching.items, 'watching', true),
+    ...libraryRows(watchlist.items, 'saved'),
+    ...libraryRows(history.entries, 'watched'),
+  ], [watching.items, watchlist.items, history.entries]);
+
+  const onSearched = useCallback(({ scope, term, resultCount }: { scope: string; term: string; resultCount: number }) => {
+    track(EVENTS.SEARCH_PERFORMED, { mode: scope, query_length: term.length, result_count: resultCount });
+  }, []);
+
+  const { items, loading, searched, emptyMode, scope, term } = useUnifiedSearch(query, {
+    signedIn: !!userId,
+    library,
+    onSearched,
+  });
+  const hits = items as Hit[];
+
+  const remember = useCallback(async (value: string) => {
+    const stored = readRecent(await AsyncStorage.getItem(RECENT_KEY).catch(() => null));
+    const next = pushRecentSearch(stored, value);
+    setRecent(next);
+    AsyncStorage.setItem(RECENT_KEY, JSON.stringify(next)).catch(() => {});
+  }, []);
+
+  const forgetRecent = () => {
+    setRecent([]);
+    AsyncStorage.setItem(RECENT_KEY, '[]').catch(() => {});
+  };
+
+  const select = (item: Hit) => {
+    const { kind, data } = item;
+    if (kind === 'title') {
+      const id = Number(data.id);
+      if (!Number.isFinite(id)) return;
+      openPanel(id, data.media_type === 'tv' ? 'tv' : 'movie');
+    } else if (kind === 'library') {
+      const id = Number(data.tmdb_id);
+      if (!Number.isFinite(id)) return;
+      openPanel(id, data.media_type === 'tv' ? 'tv' : 'movie');
+    } else if (kind === 'collection') {
+      const id = Number(data.id);
+      if (!Number.isFinite(id)) return;
+      openPanel(id, 'collection');
+    } else if (kind === 'person') {
+      if (data.id == null) return;
+      router.push(`/(app)/person/${data.id}`);
+    } else if (kind === 'friend' && data.username) {
+      router.push(`/(app)/u/${data.username}`);
     } else {
-      // searchTitles, not search: it reads "7 up tv series" / "dune movie"
-      // as intent rather than sending the whole phrase to TMDB verbatim.
-      // Franchise hits ride alongside, as on web: TMDB's collection search
-      // is a separate endpoint.
-      const [data, collectionData] = await Promise.all([tmdb.searchTitles(q), tmdb.searchCollections(q)]);
-      if (reqId !== reqRef.current) return;
-      const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results ?? []);
-      const hits = collectionSearchHits(collectionData);
-      setResults(filtered.slice(0, 20) as SearchResult[]);
-      setCollections(hits);
-      setEmptyMode(hits.length && nextEmptyMode === 'generic' ? 'none' : nextEmptyMode);
-      // Query text is deliberately not captured — only that a search ran and
-      // whether it found anything, which is what the funnel needs.
-      track(EVENTS.SEARCH_PERFORMED, { mode: 'titles', result_count: filtered.length + hits.length });
+      return;
     }
-    setLoading(false);
+    void remember(query);
   };
 
-  // Debounce keystrokes (350ms) like web, so we don't fire a request per character.
-  const search = (q: string) => {
-    setQuery(q);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (q.length < 2) { reqRef.current++; setResults([]); setUsers([]); setCollections([]); setLoading(false); return; }
-    debounceRef.current = setTimeout(() => runSearch(q, mode), 350);
-  };
+  const emptyCopy = useMemo(() => {
+    if (!searched || loading || hits.length) return null;
+    if (scope === 'friends') return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noFriends };
+    if (scope === 'people') return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noPeople };
+    if (emptyMode === 'title-guidance') return { title: MEDIA.searchByTitle, body: MEDIA.searchByTitleBody };
+    return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noResultsBody };
+  }, [searched, loading, hits.length, scope, emptyMode]);
 
-  const switchMode = (m: Mode) => {
-    if (m === mode) return;
-    setMode(m);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    runSearch(query, m);
-  };
+  const showHint = term.length < 2;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity
+      <View style={styles.head}>
+        <Pressable
           onPress={() => router.canGoBack() ? router.back() : router.replace('/(app)')}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={styles.backBtn}
+          hitSlop={8}
+          style={styles.back}
           accessibilityLabel="Go back"
           accessibilityRole="button"
         >
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <Path d="M15 18l-6-6 6-6" />
           </Svg>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.searchBar}>
-        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: spacing.sm }}>
+        </Pressable>
+        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <Circle cx={11} cy={11} r={7} />
           <Line x1={16.5} y1={16.5} x2={21} y2={21} />
         </Svg>
         <TextInput
+          ref={inputRef}
           style={styles.input}
-          placeholder={mode === 'people' ? 'Search by name or @username…' : MEDIA.searchPlaceholder}
-          placeholderTextColor={colors.textMuted}
           value={query}
-          onChangeText={search}
-          returnKeyType="search"
+          onChangeText={setQuery}
+          placeholder={SEARCH_PALETTE.placeholder}
+          placeholderTextColor={colors.textMuted}
+          accessibilityLabel={SEARCH_PALETTE.label}
+          autoFocus
           autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="off"
+          returnKeyType="search"
+          selectionColor={colors.accent}
+          onSubmitEditing={() => { if (hits[0]) select(hits[0]); }}
         />
-        {loading
-          ? <ActivityIndicator color={colors.accent} style={{ marginRight: spacing.md }} />
-          : query.length > 0 && (
-            <TouchableOpacity onPress={() => { setQuery(''); setResults([]); setUsers([]); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ marginRight: spacing.md }}>
-              <Text style={styles.clearBtn}>✕</Text>
-            </TouchableOpacity>
-          )
-        }
+        {loading ? (
+          <ActivityIndicator color={colors.textMuted} accessibilityLabel={SEARCH_PALETTE.loading} />
+        ) : query.length > 0 ? (
+          <Pressable
+            onPress={() => { setQuery(''); inputRef.current?.focus(); }}
+            hitSlop={8}
+            style={styles.clear}
+            accessibilityRole="button"
+            accessibilityLabel={COMMON.clearSearch}
+          >
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
+              <Line x1={18} y1={6} x2={6} y2={18} />
+              <Line x1={6} y1={6} x2={18} y2={18} />
+            </Svg>
+          </Pressable>
+        ) : null}
       </View>
 
-      <View style={styles.tabs}>
-        {(['titles', 'people'] as Mode[]).map(m => (
-          <TouchableOpacity key={m} style={styles.tab} onPress={() => switchMode(m)} activeOpacity={0.7}>
-            <Text style={[styles.tabText, mode === m && styles.tabTextActive]}>
-              {m === 'titles' ? 'Titles' : 'People'}
-            </Text>
-            {mode === m && <View style={styles.tabUnderline} />}
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {mode === 'people' ? (
-        query.length < 2 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Find people</Text>
-            <Text style={styles.emptyBody}>Search by username or name to follow other movie & TV fans.</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={loading ? [] : users}
-            keyExtractor={u => u.id}
-            renderItem={({ item }) => <UserRow user={item} viewerId={userId} surface="search_result" blocks={blocks} />}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
-            ListEmptyComponent={loading ? undefined : (
-              <View style={styles.empty}><Text style={styles.emptyBody}>No people found. Try a different name.</Text></View>
-            )}
-          />
-        )
-      ) : results.length === 0 && query.length < 2 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>Search for anything</Text>
-          <Text style={styles.emptyBody}>Movies, TV shows, documentaries…</Text>
-        </View>
-      ) : (
+      {hits.length > 0 ? (
         <FlatList
-          data={results}
-          keyExtractor={item => String(item.id)}
-          renderItem={({ item }) => <SearchRow item={item} hooks={hooks} signedIn={!!userId} />}
-          ListHeaderComponent={collections.length > 0 ? (
-            <View>
-              <Text style={styles.groupLabel}>{MEDIA_PANEL.collectionsHeading}</Text>
-              {collections.map(c => <CollectionRow key={c.id} collection={c} />)}
-              {results.length > 0 && <Text style={styles.groupLabel}>Titles</Text>}
-            </View>
-          ) : null}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
-          ListEmptyComponent={loading || collections.length > 0 ? undefined : emptyMode === 'title-guidance' ? (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>{MEDIA.searchByTitle}</Text>
-              <Text style={styles.emptyBody}>{MEDIA.searchByTitleBody}</Text>
-            </View>
-          ) : (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>{MEDIA.searchNoResults}</Text>
-              <Text style={styles.emptyBody}>{MEDIA.searchNoResultsBody}</Text>
+          data={hits}
+          keyExtractor={item => item.key}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ padding: spacing.sm, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+          renderItem={({ item }) => {
+            const facts = rowFacts(item, genres || []);
+            const mediaType = item.data.media_type === 'tv' ? 'tv' : 'movie';
+            const titleId = Number(item.data.id);
+            const inList = item.kind === 'title' && Number.isFinite(titleId) && watchlist.isInList(titleId);
+            const watched = item.kind === 'title' && Number.isFinite(titleId) && history.isWatched(titleId, mediaType);
+            return (
+              <Pressable
+                onPress={() => select(item)}
+                accessibilityRole="button"
+                accessibilityLabel={`${facts.title}, ${facts.kindLabel}`}
+                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+              >
+                <View style={[styles.thumb, facts.round && styles.thumbRound]}>
+                  {facts.thumb
+                    ? <Image source={{ uri: facts.thumb }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                    : <Text style={styles.initial}>{(facts.title || '?').charAt(0).toUpperCase()}</Text>}
+                </View>
+                <View style={styles.info}>
+                  <Text style={styles.title} numberOfLines={1}>{facts.title}</Text>
+                  {!!facts.meta && <Text style={styles.meta} numberOfLines={1}>{facts.meta}</Text>}
+                </View>
+                {watched && (
+                  <View style={styles.watched}>
+                    <Text style={styles.watchedText}>{MEDIA.watched}</Text>
+                  </View>
+                )}
+                {inList && (
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill={colors.accent} stroke={colors.accent} strokeWidth={1.5} accessibilityLabel={MEDIA.saveToWatchlist}>
+                    <Path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z" />
+                  </Svg>
+                )}
+                <Text style={[styles.kind, facts.own && styles.kindOwn]}>{facts.kindLabel}</Text>
+              </Pressable>
+            );
+          }}
+        />
+      ) : (
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}>
+          {showHint && recent.length > 0 && (
+            <View style={styles.recent}>
+              <View style={styles.recentHead}>
+                <Text style={styles.recentLabel}>{SEARCH_PALETTE.recent}</Text>
+                <Pressable onPress={forgetRecent} accessibilityRole="button" hitSlop={8}>
+                  <Text style={styles.recentClear}>{SEARCH_PALETTE.clearRecent}</Text>
+                </Pressable>
+              </View>
+              <View style={styles.chips}>
+                {recent.map(termText => (
+                  <Pressable
+                    key={termText}
+                    style={styles.chip}
+                    onPress={() => { setQuery(termText); inputRef.current?.focus(); }}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.chipText} numberOfLines={1}>{termText}</Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
           )}
-        />
+          {showHint && (
+            <View style={[styles.empty, recent.length > 0 && styles.emptyCompact]}>
+              {recent.length === 0 && <Text style={styles.emptyTitle}>{SEARCH_PALETTE.hintTitle}</Text>}
+              <Text style={styles.emptyBody}>{SEARCH_PALETTE.hintBody}</Text>
+            </View>
+          )}
+          {emptyCopy && (
+            <View style={styles.empty} accessibilityLiveRegion="polite">
+              <Text style={styles.emptyTitle}>{emptyCopy.title}</Text>
+              <Text style={styles.emptyBody}>{emptyCopy.body}</Text>
+            </View>
+          )}
+        </ScrollView>
       )}
     </View>
   );
 }
 
-function CollectionRow({ collection }: { collection: CollectionHit }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { open: openPanel } = useMediaPanel();
-  const img = posterUrl(collection.poster_path, 'w92');
-  return (
-    <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => openPanel(collection.id, 'collection')} accessibilityRole="button">
-      <View style={styles.rowPoster}>
-        {img
-          ? <Image source={{ uri: img }} style={styles.rowImg} resizeMode="cover" />
-          : <View style={[styles.rowImg, { backgroundColor: colors.surfaceSunken }]} />}
-      </View>
-      <View style={styles.rowInfo}>
-        <Text style={styles.rowTitle} numberOfLines={2}>{collection.name}</Text>
-        <Text style={styles.rowMeta}>{MEDIA_PANEL.collectionResultMeta}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: MediaHooks; signedIn: boolean }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { open: openPanel } = useMediaPanel();
-  const { profile } = useAppData();
-  const fw = favoriteWords(profile?.region);
-  const { watchlist, favorites, history, watching } = hooks;
-
-  const title = item.title || item.name || '';
-  const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
-  const type  = item.media_type === 'tv' ? 'TV' : 'Movie';
-  const mediaType = item.media_type === 'tv' ? 'tv' : 'movie';
-  const img   = posterUrl(item.poster_path, 'w92');
-  const releaseDate = item.release_date || item.first_air_date || '';
-
-  const inList  = watchlist.isInList(item.id);
-  const isFav   = favorites.isFavorite(item.id);
-  const watched = history.isWatched(item.id, mediaType);
-  const comingSoon = !!releaseDate && releaseDate > todayStr();
-
-  // Shape passed to the shared hooks — same as web ResultRow.
-  const payload = {
-    ...item,
-    id: item.id,
-    tmdb_id: item.id,
-    media_type: mediaType,
-    title,
-    poster_path: item.poster_path ?? null,
-    release_date: releaseDate || null,
-  };
-
-  return (
-    <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => item.id && openPanel(item.id, mediaType)}>
-      <View style={styles.rowPoster}>
-        {img
-          ? <Image source={{ uri: img }} style={styles.rowImg} resizeMode="cover" />
-          : <View style={[styles.rowImg, { backgroundColor: colors.surfaceSunken }]} />
-        }
-      </View>
-      <View style={styles.rowInfo}>
-        <Text style={styles.rowTitle} numberOfLines={2}>{title}</Text>
-        <Text style={styles.rowMeta}>{type}{year ? ` • ${year}` : ''}</Text>
-        {(watched || comingSoon) && (
-          <View style={styles.chipRow}>
-            {watched && (
-              <View style={[styles.chip, { backgroundColor: colors.chipEpisode + '1F', borderColor: colors.chipEpisode + '55' }]}>
-                <Text style={[styles.chipText, { color: colors.chipEpisode }]}>Watched</Text>
-              </View>
-            )}
-            {comingSoon && (
-              <View style={[styles.chip, { backgroundColor: colors.chipSoon + '1F', borderColor: colors.chipSoon + '55' }]}>
-                <Text style={[styles.chipText, { color: colors.chipSoon }]}>Coming Soon</Text>
-              </View>
-            )}
-          </View>
-        )}
-      </View>
-
-      {signedIn && (
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.actionBtn, inList && styles.actionBtnActive]}
-            onPress={() => watchlist.toggle(payload)}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            accessibilityLabel={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
-          >
-            <BookmarkIcon size={15} color={inList ? colors.accent : colors.textMuted} filled={inList} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionBtn, isFav && styles.actionBtnActive]}
-            onPress={() => favorites.toggleFavorite(payload)}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
-          >
-            <HeartIcon size={15} color={isFav ? colors.accent : colors.textMuted} filled={isFav} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionBtn, watched && styles.actionBtnActive]}
-            onPress={() => watched
-              ? history.removeEntry(item.id, mediaType, { undo: true })
-              /* Straight to logWatched left the title in Saved and in
-                 Watching. Marking watched here makes the same transition it
-                 does anywhere else. */
-              : markMediaAsWatched({
-                  logWatched:      () => history.logWatched(payload),
-                  clearWatching:   () => watching.stopWatching(item.id),
-                  removeFromSaved: () => watchlist.removeFromList(item.id),
-                  rollbackHistory: () => history.removeEntry(item.id, mediaType),
-                  mediaType,
-                  isWatching: watching.isWatching(item.id),
-                  inList,
-                })}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            accessibilityLabel={watched ? MEDIA.markUnwatched : MEDIA.markWatched}
-          >
-            <CheckIcon size={15} color={watched ? colors.chipStreaming : colors.textMuted} />
-          </TouchableOpacity>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-}
-
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  topBar: {
+  screen: { flex: 1, backgroundColor: colors.surface },
+  head: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-  },
-  backBtn: { padding: 4 },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    margin: spacing.xl,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 12,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.md,
-    color: colors.textPrimary,
-  },
-  clearBtn: {
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-  tabs: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.xl,
-    marginBottom: spacing.sm,
-  },
-  tab: { alignItems: 'center', paddingBottom: 6 },
-  tabText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textMuted },
-  tabTextActive: { color: colors.textPrimary },
-  tabUnderline: {
-    height: 2,
-    alignSelf: 'stretch',
-    marginTop: 5,
-    borderRadius: 1,
-    backgroundColor: colors.accent,
-  },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
-  emptyBody:  { fontFamily: fontFamily.sans,  fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+    gap: spacing.md,
     paddingVertical: spacing.md,
+    paddingRight: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  rowPoster: { marginRight: spacing.md },
-  rowImg: { width: 44, height: 66, borderRadius: radii.sm },
-  rowInfo: { flex: 1 },
-  groupLabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted, paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.sm },
-  rowTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary, marginBottom: 4 },
-  rowMeta:  { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
-  chipRow:  { flexDirection: 'row', gap: 4, marginTop: 6 },
-  chip: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: radii.badge,
-    borderWidth: StyleSheet.hairlineWidth,
+  back: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginLeft: spacing.xs },
+  input: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 0,
+    fontFamily: fontFamily.sans,
+    fontSize: 18,
+    color: colors.textPrimary,
   },
-  chipText: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.4 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginLeft: spacing.sm },
-  actionBtn: {
-    width: iconButtonSize.lg,
-    height: iconButtonSize.lg,
-    borderRadius: radii.sm,
+  clear: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
+  },
+  rowPressed: { backgroundColor: colors.surfaceSunken },
+  thumb: {
+    width: 30,
+    height: 45,
+    borderRadius: 5,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceSunken,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  actionBtnActive: { backgroundColor: colors.accentDim, borderColor: colors.accent + '55' },
+  thumbRound: { width: 36, height: 36, borderRadius: 18 },
+  initial: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textMuted },
+  info: { flex: 1, minWidth: 0 },
+  title: { fontFamily: fontFamily.sansMedium, fontSize: 14, color: colors.textPrimary },
+  meta: { marginTop: 2, fontFamily: fontFamily.sans, fontSize: 12, color: colors.textSecondary },
+  watched: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.badge,
+    backgroundColor: colors.chipEpisode + '1F',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.chipEpisode + '55',
+  },
+  watchedText: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.chipEpisode, letterSpacing: 0.4 },
+  kind: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted },
+  kindOwn: { fontFamily: fontFamily.sansMedium, color: colors.accentText },
+  recent: { paddingHorizontal: 18, paddingTop: spacing.lg },
+  recentHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 },
+  recentLabel: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colors.textSecondary,
+  },
+  recentClear: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: {
+    height: 32,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    maxWidth: '100%',
+  },
+  chipText: { fontFamily: fontFamily.sansMedium, fontSize: 13, color: colors.textPrimary },
+  empty: { alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: 40, paddingBottom: 44, gap: spacing.sm },
+  emptyCompact: { paddingTop: 20, paddingBottom: 24, gap: 6 },
+  emptyTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: 22,
+    letterSpacing: -0.6,
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  emptyBody: {
+    fontFamily: fontFamily.sans,
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    maxWidth: 300,
+  },
 });
