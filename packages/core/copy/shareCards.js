@@ -18,6 +18,9 @@ export const SHARE_CARDS = {
   shareToThreads: 'Share to Threads',
   instagramStory: 'Instagram Story',
   share: 'Share',
+  // The phone sheet has two controls. Web keeps the per-network bar above.
+  shareAction: 'Share…',
+  saveToPhotos: 'Save to Photos',
   working: 'Making the image',
   copied: 'Image copied. Paste it into your post.',
   copiedOnly: 'Image copied.',

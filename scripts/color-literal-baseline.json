@@ -7,6 +7,7 @@
   "apps/mobile/components/DrawerMenu.tsx": 3,
   "apps/mobile/components/ImportHistoryModal.tsx": 8,
   "apps/mobile/components/MediaPanel.tsx": 5,
+  "apps/mobile/components/share/ShareCardView.tsx": 23,
   "apps/mobile/lib/sectionOpenState.ts": 1,
   "apps/web/src/components/ConfirmModal.jsx": 1,
   "apps/web/src/components/ErrorBoundary.jsx": 8,

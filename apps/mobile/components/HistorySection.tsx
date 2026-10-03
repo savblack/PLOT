@@ -13,6 +13,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import CollapsibleSection from './CollapsibleSection';
+import HistoryInsights from './HistoryInsights';
 import HistoryRow from './HistoryRow';
 import { HistoryEntry } from '../hooks/useHistory';
 import { useTheme } from '../contexts/ThemeContext';
@@ -64,11 +65,14 @@ function HistoryMonthGroup({
 }
 
 export default function HistorySection({
-  groups, hasAnyEntries, expandSignal,
+  groups, hasAnyEntries, expandSignal, sharePreset = null, onSharePresetUsed,
 }: {
   groups: MonthGroup[];
   hasAnyEntries: boolean;
   expandSignal: { token: number; open: boolean } | null;
+  /** Card id from `?share=`, when a link opened this screen on a card. */
+  sharePreset?: string | null;
+  onSharePresetUsed?: () => void;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -86,18 +90,15 @@ export default function HistorySection({
     );
   }
 
-  if (groups.length === 0) {
-    return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>No matches</Text>
-        <Text style={styles.emptyBody}>No history matches the current filters.</Text>
-      </View>
-    );
-  }
-
   return (
     <View>
-      {groups.map(g => (
+      <HistoryInsights sharePreset={sharePreset} onSharePresetUsed={onSharePresetUsed} />
+      {groups.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>No matches</Text>
+          <Text style={styles.emptyBody}>No history matches the current filters.</Text>
+        </View>
+      ) : groups.map(g => (
         <HistoryMonthGroup key={g.key} group={g} expandSignal={expandSignal} />
       ))}
     </View>
