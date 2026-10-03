@@ -1,5 +1,5 @@
 import TrackingSettings from '../../components/TrackingSettings';
-import BroadcastSettings from '../../components/BroadcastSettings';
+import { BroadcastRegionSheet } from '../../components/BroadcastSettings';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
@@ -47,6 +47,8 @@ import { useMyAlerts } from '@plot/core/usePremiumAlerts.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
+import { broadcastRegionLabel } from '@plot/core/broadcastGuide.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
 import { favoriteWords } from '../../lib/spelling';
@@ -85,6 +87,16 @@ function fmtTz(tz: string) {
 }
 
 // ── Chevron icon ──────────────────────────────────────────────────────
+function BroadcastIcon() {
+  const { colors } = useTheme();
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={2} y={7} width={20} height={15} rx={2} />
+      <Polyline points="17,2 12,7 7,2" />
+    </Svg>
+  );
+}
+
 function Chevron() {
   const { colors } = useTheme();
   return (
@@ -96,7 +108,7 @@ function Chevron() {
 
 // ── Settings row ──────────────────────────────────────────────────────
 function SettingsRow({
-  icon, label, description, value, onPress, danger = false, trailing, edit = false,
+  icon, label, description, value, onPress, danger = false, trailing, edit = false, accessibilityLabel,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -107,6 +119,7 @@ function SettingsRow({
   trailing?: React.ReactNode;
   /** Preference row: the saved value sits under the label, and the action is Edit. */
   edit?: boolean;
+  accessibilityLabel?: string;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -118,7 +131,7 @@ function SettingsRow({
       activeOpacity={onPress ? 0.7 : 1}
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={edit ? SETTINGS_VIEW.page.editSetting(label) : label}
+      accessibilityLabel={accessibilityLabel ?? (edit ? SETTINGS_VIEW.page.editSetting(label) : label)}
     >
       {icon ? <View style={[styles.rowIcon, danger && styles.rowIconDanger]}>{icon}</View> : null}
       <View style={{ flex: 1 }}>
@@ -725,12 +738,13 @@ export default function SettingsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { userId, user, profile, refreshProfile, watchlist, watching } = useAppData();
+  const { userId, user, profile, refreshProfile, watchlist, watching, broadcastPreferences } = useAppData();
 
   const [showProviders,  setShowProviders]  = useState(false);
   const [showGenres,     setShowGenres]     = useState(false);
   const [showName,       setShowName]       = useState(false);
   const [showRegion,     setShowRegion]     = useState(false);
+  const [showBroadcast, setShowBroadcast]   = useState(false);
   const [showTimezone,   setShowTimezone]   = useState(false);
   const { feedback: feedbackParam, premium: premiumParam, section: sectionParam } = useLocalSearchParams<{ feedback?: string; premium?: string; section?: string }>();
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
@@ -1255,7 +1269,31 @@ export default function SettingsScreen() {
             edit
             onPress={() => setShowProviders(true)}
           />
-          <BroadcastSettings />
+          {broadcastPreferences.loading ? (
+            <SettingsRow
+              icon={<BroadcastIcon />}
+              label={BROADCAST_GUIDE.region}
+              value={COMMON.loading}
+            />
+          ) : broadcastPreferences.error ? (
+            <SettingsRow
+              icon={<BroadcastIcon />}
+              label={BROADCAST_GUIDE.region}
+              description={BROADCAST_GUIDE.preferencesError}
+              onPress={() => { void broadcastPreferences.retry(); }}
+              trailing={<Text style={{ color: colors.accentText, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{BROADCAST_GUIDE.retry}</Text>}
+              accessibilityLabel={`${BROADCAST_GUIDE.region}. ${BROADCAST_GUIDE.retry}`}
+            />
+          ) : (
+            <SettingsRow
+              icon={<BroadcastIcon />}
+              label={BROADCAST_GUIDE.region}
+              value={broadcastRegionLabel(broadcastPreferences.value.market_id)}
+              onPress={() => setShowBroadcast(true)}
+              trailing={<Text style={{ color: colors.accentText, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{COMMON.edit}</Text>}
+              accessibilityLabel={SETTINGS_VIEW.page.editSetting(BROADCAST_GUIDE.region)}
+            />
+          )}
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
             label={SETTINGS_VIEW.page.regionLabel}
@@ -1519,6 +1557,7 @@ export default function SettingsScreen() {
       {showRegion && (
         <RegionModal current={region} onSave={saveRegion} onClose={() => setShowRegion(false)} />
       )}
+      {showBroadcast && <BroadcastRegionSheet onClose={() => setShowBroadcast(false)} />}
       {showTimezone && (
         <TimezoneModal current={timezone} onSave={saveTimezone} onClose={() => setShowTimezone(false)} />
       )}

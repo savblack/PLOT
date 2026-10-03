@@ -1,7 +1,7 @@
 // DOM form; the account provider owns shared persistence for web and native.
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
-import { GUIDE_REGIONS, GUIDE_COUNTRIES, guideMarketsForCountry } from '@plot/core/broadcastGuide.js';
+import { GUIDE_REGIONS, GUIDE_COUNTRIES, guideMarketsForCountry, broadcastRegionLabel } from '@plot/core/broadcastGuide.js';
 import { BROADCAST_GUIDE as COPY } from '@plot/core/copy/broadcastGuide.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
@@ -25,15 +25,10 @@ export default function BroadcastAccountSettings() {
       </div>
     );
   }
-  const market = GUIDE_REGIONS.find(m => m.id === preferences.value.market_id);
-  const countryName = market && COPY.countries[market.country];
-  // New Zealand is one nationwide market named after the country; say it once.
-  const value = !market ? COPY.notConfigured
-    : market.name === countryName ? countryName : `${market.name}, ${countryName}`;
   return <>
     <SettingsPreferenceRow
       label={COPY.region}
-      value={value}
+      value={broadcastRegionLabel(preferences.value.market_id)}
       onEdit={() => setEditing(true)}
     />
     {editing && <RegionDialog preferences={preferences} onClose={() => setEditing(false)} />}
