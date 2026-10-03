@@ -67,14 +67,79 @@ export const IMPORT_FAILURE_REASONS = Object.freeze({
   CONNECTION_FAILED:   'connection_failed',
 });
 
+/** Which surface an import began from. Read from the import page's ?from= param. */
+export const IMPORT_ENTRY_POINTS = Object.freeze({
+  ONBOARDING:        'onboarding',
+  FINISHING_TOUCHES: 'finishing_touches',
+  IMPORT_PAGE:       'import_page',
+});
+
+/**
+ * @param {string | null | undefined} value
+ * @returns {string} a known entry point; anything else is the import page itself
+ */
+export function importEntryFromParam(value) {
+  return Object.values(IMPORT_ENTRY_POINTS).includes(/** @type {any} */ (value)) ? /** @type {string} */ (value) : IMPORT_ENTRY_POINTS.IMPORT_PAGE;
+}
+
+/**
+ * One import's reporter: every event carries the entry point, and the end of
+ * the import carries how long it took.
+ *
+ * - `duration_ms`: from import_started to the end (for a file import this
+ *   includes the time spent reviewing the preview).
+ * - `write_ms`: from the confirm tap to the end of the write (file imports).
+ *
+ * Durations are whole milliseconds and never negative. Never throws.
+ *
+ * @param {{ entry?: string, now?: () => number }} [opts]
+ */
+export function createImportReporter({ entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, now = Date.now } = {}) {
+  /** @type {number | null} */ let startedAt = null;
+  /** @type {number | null} */ let writeAt = null;
+  const since = (t) => (t == null ? undefined : Math.max(0, Math.round(now() - t)));
+  const timing = () => {
+    /** @type {{ duration_ms?: number, write_ms?: number }} */
+    const out = {};
+    const duration = since(startedAt);
+    const write = since(writeAt);
+    if (duration !== undefined) out.duration_ms = duration;
+    if (write !== undefined) out.write_ms = write;
+    return out;
+  };
+  return {
+    entry,
+    /** @param {string} source */
+    selected(source) {
+      reportImport('selected', { source, entry });
+    },
+    /** @param {'started' | 'completed' | 'failed'} stage @param {{ source: string, count?: number, failed_count?: number, reason?: string }} props */
+    report(stage, props) {
+      if (stage === 'started') { startedAt = now(); writeAt = null; reportImport('started', { ...props, entry }); return; }
+      reportImport(stage, { ...props, entry, ...timing() });
+      startedAt = null;
+      writeAt = null;
+    },
+    /** The confirm tap: the write starts now. */
+    writing() { writeAt = now(); },
+    /** @param {string} source @param {{ inserted: number, failed: number }} outcome */
+    outcome(source, outcome) {
+      const extra = { entry, ...timing() };
+      reportImportOutcome(source, outcome, extra);
+      startedAt = null;
+      writeAt = null;
+    },
+  };
+}
+
 /**
  * Report an import's lifecycle through the onImport seam. Both apps call this
  * at the same three moments (the file parsed or the account import began; the
  * write finished; the import stopped), so import_started / import_completed /
  * import_failed mean the same thing on web and mobile. Never throws.
  *
- * @param {'started' | 'completed' | 'failed'} stage
- * @param {{ source: string, count?: number, failed_count?: number, reason?: string }} props
+ * @param {'selected' | 'started' | 'completed' | 'failed'} stage
+ * @param {{ source: string, count?: number, failed_count?: number, reason?: string, entry?: string, duration_ms?: number, write_ms?: number }} props
  */
 export function reportImport(stage, props) {
   try { getConfig().onImport?.({ stage, ...props }); } catch { /* analytics is best-effort */ }
@@ -87,12 +152,13 @@ export function reportImport(stage, props) {
  *
  * @param {string} source
  * @param {{ inserted: number, failed: number }} outcome
+ * @param {{ entry?: string, duration_ms?: number, write_ms?: number }} [extra] added to the event
  */
-export function reportImportOutcome(source, { inserted, failed }) {
+export function reportImportOutcome(source, { inserted, failed }, extra = {}) {
   if (!inserted && failed) {
-    reportImport('failed', { source, reason: IMPORT_FAILURE_REASONS.WRITE_FAILED, failed_count: failed });
+    reportImport('failed', { source, reason: IMPORT_FAILURE_REASONS.WRITE_FAILED, failed_count: failed, ...extra });
   } else {
-    reportImport('completed', { source, count: inserted, failed_count: failed });
+    reportImport('completed', { source, count: inserted, failed_count: failed, ...extra });
   }
 }
 

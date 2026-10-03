@@ -353,6 +353,31 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
 
+## Imports and onboarding
+
+Every import event goes through `createImportReporter()` in
+`packages/core/importPipeline.js` (the `onImport` seam), so it carries where the
+import began and how long it took. `entry` is `onboarding` (the switching-apps
+step), `finishing_touches` (Home's first-run card) or `import_page`, read from
+the import page's `?from=` param.
+
+| Event | When | Props |
+|---|---|---|
+| `import_source_selected` | A source was tapped, before any file or account | `source`, `entry` |
+| `import_started` | The file parsed, or the account import began | `source`, `entry`, `count` (file rows) |
+| `import_completed` | The write finished and saved something | `source`, `entry`, `count`, `failed_count`, `duration_ms`, `write_ms` (file imports) |
+| `import_failed` | The import stopped, or saved nothing | `source`, `entry`, `reason` (an `IMPORT_FAILURE_REASONS` slug), `failed_count`, `duration_ms` once it had started |
+| `onboarding_completed` | Setup saved | `region`, `seed_titles_added`, `services_added`, `import_source` (null unless they took the switching-apps step), `skipped` |
+| `finishing_touch_opened` | A Finishing touches step's action was opened | `step` (`friends` / `import` / `people`) |
+| `finishing_touches_hidden` | "Hide for now" | `done_count` |
+
+`duration_ms` runs from `import_started` to the end, so for a file import it
+includes the time spent reviewing the preview; `write_ms` is just the write,
+from the confirm tap. Picked-but-never-uploaded is `import_source_selected`
+without a later `import_started` for the same person and source. An import
+picked in onboarding opens after setup, so its `import_source_selected` comes
+before `onboarding_completed` and its `import_started` after.
+
 ## Smart lists
 
 A smart list (Premium) is a custom list that stores rules and fills itself when

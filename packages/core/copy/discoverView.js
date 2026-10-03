@@ -15,4 +15,12 @@ export const DISCOVER_VIEW = {
   retry: 'Try again',
   onThisDay: 'On this day',
   releasedThisDay: (year) => `Released this day in ${year}.`,
+  // Home's time-of-day greeting (greeting.js picks the part of day). Reads
+  // without a name for accounts that never gave one.
+  greeting: {
+    morning: 'Good morning',
+    afternoon: 'Good afternoon',
+    evening: 'Good evening',
+    late: 'Up late',
+  },
 };

@@ -1,0 +1,98 @@
+/* Finishing touches: Home's first-run card. A white card with a hairline,
+   a one-line header (title, run bar, count, hide, chevron) and, open, the four
+   tiles: one row on desktop, a 2x2 grid on phones. Progress and ticks use the
+   accent (approved for this card, Oct 2026). */
+
+.ft-card {
+  margin: 16px var(--gut) 0;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.ft-head { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 14px; flex-wrap: wrap; }
+.ft-title { margin: 0; font-family: var(--font-display); font-size: 16px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; color: var(--text-primary); }
+.ft-bar { display: flex; gap: 4px; width: 160px; }
+.ft-bar span { flex: 1; height: 6px; border-radius: var(--radius-pill); background: color-mix(in srgb, var(--text-primary) 12%, transparent); }
+.ft-bar span.is-on { background: var(--accent); }
+.ft-count { font-size: 12.5px; color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ft-spacer { flex: 1; }
+.ft-hide { height: 32px; padding: 0 4px; border: none; background: none; color: var(--text-secondary); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.ft-hide:hover { color: var(--text-primary); }
+.ft-toggle { width: 32px; height: 32px; border: none; border-radius: var(--radius-pill); background: none; color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.ft-toggle svg { width: 16px; height: 16px; transition: transform 0.2s ease; }
+
+/* Phones: the bar drops to its own line under the header row. */
+@media (max-width: 1023px) {
+  .ft-head { gap: 6px; padding: 6px 4px 12px 14px; }
+  .ft-spacer { order: 1; }
+  .ft-hide { order: 4; }
+  .ft-count { order: 5; margin-left: 4px; }
+  .ft-toggle { order: 6; }
+  .ft-bar { order: 10; flex-basis: 100%; width: auto; margin-right: 10px; }
+}
+.ft-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0 10px 10px; }
+@media (min-width: 1024px) { .ft-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ft-tile { min-width: 0; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; background: var(--surface-sunken); display: flex; flex-direction: column; gap: 4px; }
+.ft-tile--friends { background: var(--accent-secondary-dim); }
+.ft-tile--people { background: var(--accent-dim); }
+.ft-tile.is-done { background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.ft-tile-head { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.ft-tile-title { font-size: 13.5px; font-weight: 700; line-height: 1.25; padding-top: 1px; color: var(--text-primary); }
+.ft-tile.is-done .ft-tile-title { color: var(--text-muted); }
+.ft-tile-sub { font-size: 12px; line-height: 1.35; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (min-width: 1024px) { .ft-tile-sub, .ft-tile-cta { margin-left: 28px; } }
+.ft-tile-cta { align-self: flex-end; margin-top: auto; display: inline-flex; align-items: center; gap: 4px; padding: 2px 0 0; border: none; background: none; color: var(--accent-text); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.ft-tile-cta svg { width: 12px; height: 12px; }
+.ft-tile-cta:hover { text-decoration: underline; }
+
+.ft-tick { width: 20px; height: 20px; flex-shrink: 0; box-sizing: border-box; border-radius: var(--radius-pill); border: 1.5px solid color-mix(in srgb, var(--text-primary) 28%, transparent); display: flex; align-items: center; justify-content: center; color: transparent; }
+.ft-tick svg { width: 12px; height: 12px; }
+.ft-tick.is-done { border: none; background: var(--accent); color: var(--surface-raised); animation: ft-pop 0.5s cubic-bezier(.2,.9,.3,1.3) both; }
+@keyframes ft-pop { 0% { transform: scale(.5); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
+
+.ft-ready { margin: 16px var(--gut) 0; max-width: 560px; padding: 14px 16px; border-radius: var(--radius-md); background: var(--accent-dim); display: flex; align-items: center; gap: 14px; }
+.ft-ready-mark { width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--radius-pill); background: var(--accent); color: var(--surface-raised); display: flex; align-items: center; justify-content: center; animation: ft-pop 0.5s cubic-bezier(.2,.9,.3,1.3) 0.1s both; }
+.ft-ready-mark svg { width: 22px; height: 22px; }
+.ft-ready-text { flex: 1; min-width: 0; }
+.ft-ready-text h2 { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+.ft-ready-text p { margin: 2px 0 0; font-size: 13px; color: var(--text-secondary); }
+
+/* Sheets */
+.ft-sheet-sub { margin: 0 0 14px; font-size: 14px; line-height: 1.45; color: var(--text-secondary); }
+.ft-sheet-empty { margin: 8px 0; font-size: 14px; color: var(--text-secondary); }
+.ft-sheet-h { margin: 0 0 2px; font-size: 15px; font-weight: 700; }
+.ft-sheet-link { margin-top: 12px; padding: 4px 0; border: none; background: none; color: var(--accent-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.ft-people { list-style: none; margin: 0; padding: 0; }
+.ft-people li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.ft-people li:last-child { border-bottom: none; }
+.ft-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--radius-pill); overflow: hidden; background: var(--surface-sunken); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.ft-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ft-person { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ft-person b { font-size: 15px; font-weight: 600; }
+.ft-person span { font-size: 13px; color: var(--text-muted); }
+.ft-sources { display: flex; flex-direction: column; border-radius: var(--radius-md); border: 1px solid var(--border); overflow: hidden; }
+.ft-source { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 14px; border: none; border-bottom: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font: inherit; text-align: left; cursor: pointer; }
+.ft-source:last-child { border-bottom: none; }
+.ft-source:hover { background: var(--surface-sunken); }
+.ft-source-mark { width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; background: var(--surface-sunken); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); }
+.ft-source-text { display: flex; flex-direction: column; }
+.ft-source-text b { font-size: 15px; }
+.ft-source-text span { font-size: 13px; color: var(--text-secondary); }
+.ft-preview { margin-bottom: 18px; padding: 14px; border-radius: var(--radius-md); background: var(--surface-sunken); }
+.ft-preview-head { display: flex; align-items: baseline; justify-content: space-between; }
+.ft-preview-head b { font-family: var(--font-display); font-size: 17px; font-weight: 400; }
+.ft-preview-head span { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.ft-preview-cards { display: flex; gap: 10px; margin-top: 10px; }
+.ft-preview-card { flex: 1; min-width: 0; display: flex; gap: 10px; padding: 8px; border-radius: 12px; background: var(--surface); }
+.ft-preview-card i { width: 40px; height: 60px; flex-shrink: 0; border-radius: 6px; background: var(--surface-sunken); }
+.ft-preview-card > span { min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); }
+.ft-preview-card b { align-self: flex-start; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--accent-dim); color: var(--accent-text); font-size: 11px; }
+
+/* Home greeting (all accounts) and the first-run Saved to watch shelf */
+.home-greeting { margin: 0; padding: 14px var(--gut) 0; font-family: var(--font-display); font-size: 28px; font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; color: var(--text-primary); }
+@media (min-width: 1024px) { .home-greeting { font-size: 34px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ft-tick.is-done, .ft-ready-mark { animation: none; }
+  .ft-toggle svg { transition: none; }
+}

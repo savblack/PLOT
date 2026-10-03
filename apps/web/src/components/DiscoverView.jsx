@@ -35,6 +35,10 @@ import { usePeopleFeed, usePeopleFollows } from '@plot/core/usePeopleFollows.js'
 import { feedItems } from '@plot/core/peopleFeed.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
+import { greetingFor } from '@plot/core/greeting.js';
+import { FINISHING_TOUCHES } from '../copy/finishingTouches.js';
+import FinishingTouches from './FinishingTouches.jsx';
+import { useFirstRun } from '../hooks/useFirstRun.js';
 import { ContinueCard, PeopleInvite, PeopleShelfCard } from './HomeShelves.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 
@@ -119,6 +123,8 @@ export function RailSection({ id, title, subtitle, sectionClassName = 'discover-
 }
 
 const HOME_SECTION = {
+  // First-run only: the titles they just saved in onboarding, ahead of everything else.
+  saved: { id: 'home-saved', label: FINISHING_TOUCHES.savedToWatch, navLabel: FINISHING_TOUCHES.savedToWatch },
   picks: { id: 'home-picks', label: "plot's Picks", navLabel: "Plot's Picks" },
   continue: { id: 'home-continue', label: PEOPLE.continueWatching.title, navLabel: PEOPLE.continueWatching.title },
   people: { id: 'home-people', label: PEOPLE.shelf.title, navLabel: PEOPLE.shelf.title },
@@ -781,7 +787,7 @@ function YourPeopleSection({ shelf, openPanel }) {
 }
 
 /* ── Home ── */
-function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr, continueItems = [] }) {
+function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr, continueItems = [], firstRun = false }) {
   const peopleShelf = useYourPeopleShelf();
   const navigate = useNavigate();
   const { data, loading } = useDiscover();
@@ -806,7 +812,9 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
   const recent            = applyFilters(releases.recent);
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
+  const savedItems = firstRun ? (watchlist?.items ?? []).slice(0, 20).map(row => ({ id: row.tmdb_id, media_type: row.media_type, title: row.title, poster_path: row.poster_path })) : [];
   const pageSections = [
+    savedItems.length > 0 ? HOME_SECTION.saved : null,
     hero && genreFilters.length === 0 ? HOME_SECTION.picks : null,
     continueItems.length > 0 ? HOME_SECTION.continue : null,
     hotRail.length > 0 ? HOME_SECTION.hot : null,
@@ -837,6 +845,14 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
         <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
       </aside>
       <div className="discover-sections home-stream">
+      {savedItems.length > 0 && (
+        <RailSection id={HOME_SECTION.saved.id} title={HOME_SECTION.saved.label}>
+          {savedItems.map(item => (
+            <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} showMeta={false} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </RailSection>
+      )}
+
       {hero && genreFilters.length === 0 && (
         <section id={HOME_SECTION.picks.id} className="discover-section discover-featured-section">
           <DiscoverSectionHeader title={HOME_SECTION.picks.label} />
@@ -924,7 +940,8 @@ export default function DiscoverView() {
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
-  const { openPanel, openSearch, watchlist, watching, reminders } = app;
+  const { openPanel, openSearch, watchlist, watching, reminders, profile } = app;
+  const firstRun = useFirstRun();
   const online = useOnlineStatus();
   const todayStr = localDateStr();
   const listsReady = !watchlist.loading && !watching.loading && !reminders.loading;
@@ -948,6 +965,8 @@ export default function DiscoverView() {
         genres={genres}
         onOpenSearch={openSearch}
       />
+      <h1 className="home-greeting">{greetingFor({ name: profile?.first_name })}</h1>
+      <FinishingTouches />
       <DiscoverContent
         openPanel={openPanel}
         openSearch={openSearch}
@@ -963,6 +982,7 @@ export default function DiscoverView() {
         upNext={upNext}
         todayStr={todayStr}
         continueItems={continueItems}
+        firstRun={firstRun}
       />
     </div>
   );

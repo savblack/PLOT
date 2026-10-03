@@ -175,10 +175,19 @@ export const EVENTS = Object.freeze({
   // Imports: fired on both apps via reportImport (importPipeline.js). Before
   // 2026-09-27 mobile fired none of these, and Trakt/Simkl account imports
   // never fired import_completed on either app.
+  // A source was picked (onboarding's switching-apps step, the Finishing
+  // touches import sheet, or the import page's platform list), before any
+  // file or account. `entry` says which surface; the funnel to import_started
+  // shows who picked a source and never got as far as uploading.
+  IMPORT_SOURCE_SELECTED: 'import_source_selected',
   IMPORT_STARTED: 'import_started',
   IMPORT_COMPLETED: 'import_completed',
   // Carries `reason`, an IMPORT_FAILURE_REASONS slug, never a parser message.
   IMPORT_FAILED: 'import_failed',
+  // Home's first-run Finishing touches card: a step's action was opened
+  // (`step`: friends | import | people), or the card was hidden for now.
+  FINISHING_TOUCH_OPENED: 'finishing_touch_opened',
+  FINISHING_TOUCHES_HIDDEN: 'finishing_touches_hidden',
   // Marketing email consent. `source` distinguishes the Settings toggle from the
   // in-app prompt so we can tell which surface actually earns opt-ins.
   MARKETING_EMAILS_OPTED_IN: 'marketing_emails_opted_in',
