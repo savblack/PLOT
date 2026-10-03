@@ -40,6 +40,10 @@ import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens'
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../../lib/launchFeatures';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { PEOPLE } from '@plot/core/copy/people.js';
+import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
+import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
+import { useMyAlerts } from '@plot/core/usePremiumAlerts.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -131,14 +135,62 @@ function SettingsRow({
 }
 
 // ── Settings group ────────────────────────────────────────────────────
-function SettingsGroup({ title, children }: { title: string; children: React.ReactNode }) {
+function SettingsGroup({ title, children }: { title?: string; children: React.ReactNode }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.group}>
-      <Text style={styles.groupTitle}>{title}</Text>
+      {title ? <Text style={styles.groupTitle}>{title}</Text> : null}
       <View style={styles.groupCard}>{children}</View>
     </View>
+  );
+}
+
+function PeopleFollowSettings({ userId, isPremium }: { userId: string | null; isPremium: boolean }) {
+  const { colors } = useTheme();
+  const router = useRouter();
+  const people = usePeopleFollows(userId);
+  const alerts = useMyAlerts(userId);
+  const [busy, setBusy] = useState(false);
+  if (!userId || alerts.loading || people.loading) return null;
+  const showPeople = isPremium || people.follows.length > 0;
+  if (!showPeople && alerts.shows.length === 0) return null;
+  const action = (word: string) => (
+    <Text style={{ color: colors.accentText, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm }}>{word}</Text>
+  );
+  const remove = async (id: number) => {
+    setBusy(true);
+    await alerts.removeShow(id);
+    setBusy(false);
+  };
+  return (
+    <>
+      {showPeople && (
+        <SettingsGroup>
+          <SettingsRow
+            icon={null}
+            label={PEOPLE.settings.label}
+            description={PEOPLE.settings.count(people.follows.length)}
+            trailing={action(PEOPLE.settings.manage)}
+            onPress={() => router.push('/(app)/your-people' as Href)}
+          />
+        </SettingsGroup>
+      )}
+      {alerts.shows.length > 0 && (
+        <SettingsGroup title={PREMIUM_ALERTS.settings.shows}>
+          {!isPremium && <SettingsRow icon={null} label={PREMIUM_ALERTS.settings.lapsed} />}
+          {alerts.shows.map(show => (
+            <SettingsRow
+              key={show.tmdb_id}
+              icon={null}
+              label={show.title}
+              trailing={action(PREMIUM_ALERTS.settings.remove)}
+              onPress={busy ? undefined : () => { void remove(show.tmdb_id); }}
+            />
+          ))}
+        </SettingsGroup>
+      )}
+    </>
   );
 }
 
@@ -1234,6 +1286,7 @@ export default function SettingsScreen() {
             trailing={<Switch value={includeKidsContent} onValueChange={toggleKidsContent} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.kidsContent.label} />}
           />
         </SettingsGroup>
+        <PeopleFollowSettings userId={userId} isPremium={!!profile?.is_premium} />
         </>}
 
         {active.id === 'connections' && <>

@@ -42,7 +42,10 @@ import { ENGAGEMENT_PROMPT } from '@plot/core/copy/engagementPrompt.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import UpgradeSheet from './UpgradeSheet';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
+import { PEOPLE } from '@plot/core/copy/people.js';
+import { CastFollowCard, CrewFollowRow } from './people/FollowControls';
+import { useFollowPerson } from './people/useFollowPerson';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import {
   ENGAGEMENT_SNOOZE_KEY,
@@ -489,11 +492,23 @@ interface TMDBGenre {
   name: string;
 }
 
+interface CreditPerson {
+  id: number;
+  name: string;
+  profile_path?: string | null;
+  character?: string;
+  job?: string;
+  roles?: { character?: string }[];
+}
+
 interface TMDBDetails {
   id: number;
   title?: string;
   name?: string;
   overview?: string;
+  credits?: { cast?: CreditPerson[]; crew?: CreditPerson[] };
+  aggregate_credits?: { cast?: CreditPerson[] };
+  created_by?: CreditPerson[];
   release_date?: string;
   first_air_date?: string;
   backdrop_path?: string | null;
@@ -726,6 +741,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { profile, watchlist, watching, favorites, history, customLists, topLists } = useAppData();
   const { open: openTitle } = useMediaPanel();
+  const router = useRouter();
+  const followPerson = useFollowPerson();
   const fw = favoriteWords(profile?.region);
 
   const [showListSheet, setShowListSheet] = useState(false);
@@ -1099,6 +1116,21 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     }
   };
   const year   = (details?.release_date || details?.first_air_date || '').slice(0, 4);
+  const castPeople = (details?.credits?.cast || details?.aggregate_credits?.cast || [])
+    .filter((person): person is CreditPerson => !!person?.id && !!person?.name)
+    .slice(0, 12);
+  const makerPeople = (isMovie
+    ? [...new Map(
+      (details?.credits?.crew || [])
+        .filter((person): person is CreditPerson => person?.job === 'Director' && !!person.id && !!person.name)
+        .map(person => [person.id, person] as const),
+    ).values()]
+    : (details?.created_by || []).filter((person): person is CreditPerson => !!person?.id && !!person?.name)
+  ).slice(0, 3);
+  const openPerson = (id: number) => {
+    onClose();
+    router.push(`/(app)/person/${id}` as Href);
+  };
   const rating = details?.vote_average ? `${details.vote_average.toFixed(1)} ★` : '';
   const genres = (details?.genres || []).slice(0, 3).map((g: any) => g.name).join(' · ');
   const audienceScore = audienceScoreFromDetails(details);
@@ -1197,6 +1229,45 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 {/* Overview */}
                 {details?.overview ? <Text style={styles.overview}>{details.overview}</Text> : null}
+
+                {castPeople.length > 0 && (
+                  <View>
+                    <Text style={styles.sectionTitle}>Cast</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
+                      {castPeople.map(person => (
+                        <CastFollowCard
+                          key={person.id}
+                          person={person}
+                          following={followPerson.isFollowing(person.id)}
+                          busy={followPerson.busyId === person.id}
+                          showFollow={followPerson.signedIn}
+                          onOpen={() => openPerson(person.id)}
+                          onToggle={() => followPerson.toggle(person)}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {makerPeople.length > 0 && (
+                  <View>
+                    <Text style={styles.sectionTitle}>{isMovie ? PEOPLE.directedBy : PEOPLE.createdBy}</Text>
+                    <View style={{ gap: spacing.md }}>
+                      {makerPeople.map(person => (
+                        <CrewFollowRow
+                          key={person.id}
+                          person={person}
+                          roleLabel={isMovie ? PEOPLE.director : PEOPLE.creator}
+                          following={followPerson.isFollowing(person.id)}
+                          busy={followPerson.busyId === person.id}
+                          showFollow={followPerson.signedIn}
+                          onOpen={() => openPerson(person.id)}
+                          onToggle={() => followPerson.toggle(person)}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                )}
 
                 {audienceQuote && (
                   <View style={styles.audienceQuote}>
@@ -1597,6 +1668,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         onClose={() => setShowListSheet(false)}
       />
     )}
+    {followPerson.sheet}
     </>
   );
 }

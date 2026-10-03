@@ -26,6 +26,7 @@ import MediaPanel from '../components/MediaPanel';
 import CollectionPanel from '../components/CollectionPanel';
 import type { Session } from '@supabase/supabase-js';
 import UndoToast from '../components/UndoToast';
+import { FollowToastHost } from '../components/people/FollowControls';
 
 function AuthGuard({ session, onboardingComplete }: {
   session: Session | null;
@@ -237,6 +238,7 @@ function RootInner() {
             </OnboardingRefreshContext.Provider>
             {/* After the navigator so it draws on top. The panel has its own. */}
             <UndoToast />
+            <FollowToastHost />
           </MediaPanelProvider>
         </DrawerProvider>
       </AppDataProvider>
