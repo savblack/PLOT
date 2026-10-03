@@ -3,7 +3,7 @@ import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
   Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, LayoutAnimation,
@@ -16,7 +16,7 @@ import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
-import { canCreateCustomList } from '@plot/core/premium.js';
+import { canCreateCustomList, isPremiumProfile } from '@plot/core/premium.js';
 import { favoriteWords } from '../../lib/spelling';
 import CollapsibleSection from '../../components/CollapsibleSection';
 import SectionToggleIcon from '../../components/SectionToggleIcon';
@@ -32,7 +32,7 @@ import { myListsSearchSources, searchCollectionTitles, wantToWatchItems } from '
 import { localDateStr } from '@plot/core/date.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { EVENTS, track } from '../../lib/analytics';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter, type Href } from 'expo-router';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import HistorySection from '../../components/HistorySection';
@@ -44,6 +44,13 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { COMMON } from '@plot/core/copy/common.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { LIST_VISIBILITIES, listVisibility, isListShareable, type ListVisibility } from '@plot/core/customLists.js';
+import { isSmartList, serialiseSmartListDraft, smartListDraftKey } from '@plot/core/smartLists.js';
+import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
+import { useSmartListNewCounts } from '@plot/core/useSmartListSeen.js';
+import { upgradeSheetContent } from '@plot/core/upgradeSheet.js';
+import { readStorage, removeStorage, writeStorage } from '../../lib/storage';
+import SmartListDialog from '../../components/smart/SmartListDialog';
+import { asDraft, asNamedLists, asSmartRow, type SmartRules } from '../../lib/smartListModel';
 import { createUndoBatch, UNDO_ACTIONS, type UndoOption } from '@plot/core/undo.js';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -56,6 +63,7 @@ const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collaps
 // ids 1:1, which is what lets the expand/collapse-all control scope itself to
 // whichever tab is active.
 const LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
+const SMART_SECTION_ID = 'smart';
 
 // Type filter options match web's, and the filtering itself runs through
 // core's filterByType so `cinema` (a client-side flag, not a TMDB
@@ -394,7 +402,7 @@ export default function MyListsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const { open: openPanel } = useMediaPanel();
-  const { watchlist, watching, favorites, customLists, topLists, history, profile } = useAppData();
+  const { userId, watchlist, watching, favorites, customLists, topLists, history, profile } = useAppData();
   const fw = favoriteWords(profile?.region);
 
   const shareRaw = useLocalSearchParams<{ share?: string | string[] }>().share;
@@ -427,7 +435,7 @@ export default function MyListsScreen() {
   // thing on both platforms and shares the `plot.section.<id>` storage key.
   // Seeded synchronously from the cache hydrated at app start.
   const [sectionsOpen, setSectionsOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(LIST_SECTION_IDS.map(id => [id, getSectionOpen(id, true)])));
+    Object.fromEntries([...LIST_SECTION_IDS, SMART_SECTION_ID].map(id => [id, getSectionOpen(id, true)])));
   const setSectionOpenFor = (id: string, open: boolean) =>
     setSectionsOpen(prev => ({ ...prev, [id]: open }));
 
@@ -440,21 +448,72 @@ export default function MyListsScreen() {
   const [showAddFav,     setShowAddFav]     = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
   const [showUpgrade,    setShowUpgrade]    = useState(false);
+  const [upgradeReason,  setUpgradeReason]  = useState<'lists' | 'smartLists'>('lists');
+  const [showSmart,      setShowSmart]      = useState(false);
+  const [smartDraft,     setSmartDraft]     = useState<{ name: string; rules: SmartRules } | null>(null);
+  const [rulesKept,     setRulesKept]      = useState(false);
+  const [showAddToList,  setShowAddToList]  = useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const pathRef = useRef(pathname);
+  useEffect(() => { pathRef.current = pathname; }, [pathname]);
+  const premium = isPremiumProfile(profile);
+  const smartRows = ((customLists.smartLists || []) as unknown[]).flatMap((row) => {
+    const smart = asSmartRow(row);
+    return smart ? [smart] : [];
+  });
+  const newCounts = useSmartListNewCounts(smartRows.map((row) => row.id), {
+    enabled: premium && smartRows.length > 0,
+  }) as Record<string, number>;
 
-  // Free accounts get FREE_CUSTOM_LIST_CAP lists; Premium unlimited. The DB
-  // (RLS insert policy) is the authority — this is just friendlier UX.
+  // Free accounts get FREE_CUSTOM_LIST_CAP lists. Smart lists count toward
+  // that cap, the same way the database counts them.
+  const ownedCount = typeof customLists.ownedCount === 'number' ? customLists.ownedCount : customLists.lists.length;
   const requestCreateList = () => {
-    if (!canCreateCustomList(customLists.lists.length, profile)) {
+    if (!canCreateCustomList(ownedCount, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
+      setUpgradeReason('lists');
       setShowUpgrade(true);
       return;
     }
     setShowCreateList(true);
   };
-  const [showAddToList,  setShowAddToList]  = useState<string | null>(null);
   const [listQuery, setListQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const requestSmartCreate = async () => {
+    setRulesKept(false);
+    const stored = await readStorage(smartListDraftKey(userId));
+    setSmartDraft(asDraft(stored));
+    setShowSmart(true);
+  };
+  const keepSmartDraft = async (name: string, rules: SmartRules) => {
+    await writeStorage(smartListDraftKey(userId), serialiseSmartListDraft({ name, rules }));
+    track(EVENTS.PREMIUM_GATE_HIT, { feature: 'smart_lists' });
+    setRulesKept(true);
+    setShowSmart(false);
+    setUpgradeReason('smartLists');
+    setShowUpgrade(true);
+  };
+  const handleSmartCreate = async (name: string, rules: SmartRules) => {
+    let createdId = '';
+    const created = await customLists.createSmartList(name, rules, {
+      undo: true,
+      onUndone: () => {
+        if (!createdId || !pathRef.current.endsWith(`/smart-list/${createdId}`)) return;
+        if (router.canGoBack()) router.back();
+        else router.replace('/(app)/my-lists' as Href);
+      },
+    });
+    const createdRow = created && typeof created === 'object' ? created as { id?: unknown } : null;
+    const id = typeof createdRow?.id === 'string' ? createdRow.id : '';
+    if (!id) return null;
+    createdId = id;
+    setRulesKept(false);
+    await removeStorage(smartListDraftKey(userId));
+    setShowSmart(false);
+    router.push(`/(app)/smart-list/${id}` as Href);
+    return created;
+  };
 
   const isLoading = watchlist.loading || watching.loading || favorites.loading || customLists.loading || topLists.loading;
   if (isLoading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
@@ -518,7 +577,13 @@ export default function MyListsScreen() {
   // Expand/collapse-all scopes itself to the active tab, exactly as web does:
   // every section on "All", or just the one section the current tab shows
   // (tab ids match section ids 1:1). Web: MyListsView's relevantSectionIds.
-  const relevantSectionIds = isAll ? LIST_SECTION_IDS : LIST_SECTION_IDS.filter(id => id === tab);
+  const relevantSectionIds = isAll
+    ? [...LIST_SECTION_IDS, SMART_SECTION_ID]
+    : tab === 'lists'
+      ? ['lists', SMART_SECTION_ID]
+      : LIST_SECTION_IDS.filter(id => id === tab);
+  const manualLists = customLists.lists.filter((list: { rules?: unknown }) => !isSmartList(list));
+  const keptNote = rulesKept ? upgradeSheetContent('smartLists', { kept: true })?.kept ?? null : null;
   const sectionsOpenForView = isHistory
     ? historyOpen
     : relevantSectionIds.length > 0 && relevantSectionIds.every(id => sectionsOpen[id]);
@@ -752,7 +817,7 @@ export default function MyListsScreen() {
           <CollapsibleSection
             id="lists"
             label="My Lists"
-            count={customLists.lists.length}
+            count={manualLists.length}
             open={sectionsOpen.lists}
             onOpenChange={(next) => setSectionOpenFor('lists', next)}
             headerRight={<SectionAddButton onPress={requestCreateList} label="Create list" />}
@@ -764,7 +829,7 @@ export default function MyListsScreen() {
                     <Text style={styles.newListText}>+ New list</Text>
                   </TouchableOpacity>
                 )}
-                {customLists.lists.length === 0 && (
+                {manualLists.length === 0 && (
                   <View style={styles.empty}>
                     <Text style={styles.emptyBody}>Create your first custom list.</Text>
                     <TouchableOpacity style={styles.emptyAddBtn} onPress={requestCreateList} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Create list" accessibilityRole="button">
@@ -772,7 +837,7 @@ export default function MyListsScreen() {
                     </TouchableOpacity>
                   </View>
                 )}
-                {customLists.lists.map((list: any) => (
+                {manualLists.map((list: any) => (
                   <CustomListCard
                     key={list.id}
                     list={list}
@@ -790,6 +855,45 @@ export default function MyListsScreen() {
                 ))}
               </>
             )}
+          </CollapsibleSection>
+        )}
+
+        {showLists && (
+          <CollapsibleSection
+            id={SMART_SECTION_ID}
+            label={SMART_LISTS.section}
+            count={smartRows.length}
+            open={sectionsOpen.smart}
+            onOpenChange={(next) => setSectionOpenFor(SMART_SECTION_ID, next)}
+            headerRight={<SectionAddButton onPress={requestSmartCreate} label={SMART_LISTS.newSmartList} />}
+          >
+            <TouchableOpacity style={styles.smartNewRow} onPress={requestSmartCreate} accessibilityRole="button">
+              <Text style={styles.newListText}>+ {SMART_LISTS.newSmartList}</Text>
+              <Text style={styles.smartNote}>{SMART_LISTS.newTileNote}</Text>
+            </TouchableOpacity>
+            {!!keptNote && <Text style={styles.smartKept} accessibilityLiveRegion="polite">{keptNote}</Text>}
+            {smartRows.map((row) => {
+              const fresh = newCounts[row.id];
+              return (
+                <TouchableOpacity
+                  key={row.id}
+                  style={styles.smartRow}
+                  onPress={() => router.push(`/(app)/smart-list/${row.id}` as Href)}
+                  accessibilityRole="button"
+                >
+                  <View style={styles.smartRowText}>
+                    <Text style={styles.smartRowTitle} numberOfLines={1}>{row.name}</Text>
+                    <Text style={styles.smartRowMeta}>{SMART_LISTS.coverCount}</Text>
+                  </View>
+                  {typeof fresh === 'number' && fresh > 0 && (
+                    <Text style={styles.smartNew}>{SMART_LISTS.newCount(fresh)}</Text>
+                  )}
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <Polyline points="9,18 15,12 9,6" />
+                  </Svg>
+                </TouchableOpacity>
+              );
+            })}
           </CollapsibleSection>
         )}
         </>
@@ -921,19 +1025,39 @@ export default function MyListsScreen() {
           onClose={() => setShowAddFav(false)}
         />
       )}
-      <UpgradeSheet visible={showUpgrade} reason="lists" onClose={() => setShowUpgrade(false)} onCompare={() => router.push(PREMIUM_SETTINGS_PATH as any)} />
+      <UpgradeSheet visible={showUpgrade} reason={upgradeReason} onClose={() => setShowUpgrade(false)} onCompare={() => router.push(PREMIUM_SETTINGS_PATH as Href)} />
       {showCreateList && (
         <CreateListModal
           onConfirm={(name) => customLists.createList(name)}
           onClose={() => setShowCreateList(false)}
-          onLimit={() => { setShowCreateList(false); setShowUpgrade(true); }}
+          onLimit={() => { setShowCreateList(false); setUpgradeReason('lists'); setShowUpgrade(true); }}
+        />
+      )}
+      {showSmart && (
+        <SmartListDialog
+          initial={smartDraft}
+          lists={asNamedLists([...(customLists.lists || []), ...(customLists.smartLists || [])])}
+          premium={premium}
+          onConfirm={handleSmartCreate}
+          onClose={() => setShowSmart(false)}
+          onPremium={() => { setShowSmart(false); setUpgradeReason('smartLists'); setShowUpgrade(true); }}
+          onLocked={keepSmartDraft}
+          onLimit={() => { setShowSmart(false); setUpgradeReason('lists'); setShowUpgrade(true); }}
         />
       )}
       {showAddToList && (
         <SearchPickModal
           title="Add to List"
           historyEntries={history.entries}
-          onSelect={(item) => customLists.addItem(showAddToList, item)}
+          onSelect={(item) => {
+            const blocked = smartRows.some((row) => row.id === showAddToList)
+              || customLists.lists.some((list: { id?: string; rules?: unknown }) => list.id === showAddToList && isSmartList(list));
+            if (blocked) {
+              Alert.alert(SMART_LISTS.badge, SMART_LISTS.kinds.smart.body);
+              return;
+            }
+            customLists.addItem(showAddToList, item);
+          }}
           onClose={() => setShowAddToList(null)}
         />
       )}
@@ -1225,6 +1349,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   newListRow: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   newListText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
+  smartNewRow: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: 2 },
+  smartNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
+  smartKept: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm },
+  smartRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.sm },
+  smartRowText: { flex: 1 },
+  smartRowTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
+  smartRowMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  smartNew: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accentText },
 
   customList: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   customListHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, gap: spacing.sm },
