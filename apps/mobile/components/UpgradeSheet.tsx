@@ -9,6 +9,8 @@ import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { familySwatch, type ThemeFamily } from '@plot/core/themes.js';
 import { upgradeSheetContent, type UpgradeReason } from '@plot/core/upgradeSheet.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
@@ -17,10 +19,12 @@ import PremiumIcon from './PremiumIcon';
 const S = PLANS_PAGE.upgradeSheet;
 
 export default function UpgradeSheet({
-  visible, reason, onClose, onCompare,
+  visible, reason, family, onClose, onCompare,
 }: {
   visible: boolean;
   reason: UpgradeReason;
+  /** Premium family a Free viewer tapped. Drawn as a picture only. */
+  family?: string;
   onClose: () => void;
   /** Opens the full comparison; the sheet closes itself first. */
   onCompare: () => void;
@@ -29,7 +33,7 @@ export default function UpgradeSheet({
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const [comingSoon, setComingSoon] = useState(false);
-  const content = upgradeSheetContent(reason);
+  const content = upgradeSheetContent(reason, { family });
   if (!content) return null;
 
   const close = () => { setComingSoon(false); onClose(); };
@@ -50,6 +54,7 @@ export default function UpgradeSheet({
             </View>
             <Text style={styles.title} accessibilityRole="header">{content.title}</Text>
             <Text style={styles.body}>{content.body}</Text>
+            {content.preview && <ThemePreview family={content.preview.family} line={content.preview.line} />}
 
             <View style={styles.offer}>
               <View style={styles.offerTop}>
@@ -93,6 +98,28 @@ export default function UpgradeSheet({
         </View>
       </View>
     </Modal>
+  );
+}
+
+function ThemePreview({ family, line }: { family: string; line: string }) {
+  const { colors } = useTheme();
+  const swatch = familySwatch(family as ThemeFamily);
+  const name = SETTINGS_VIEW.appearance.families[family as keyof typeof SETTINGS_VIEW.appearance.families] ?? family;
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        {(['light', 'dark'] as const).map(mode => {
+          const half = swatch[mode];
+          return (
+            <View key={mode} style={{ flex: 1, gap: spacing.sm, padding: spacing.md, borderRadius: radii.md, backgroundColor: half.bg }}>
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: half.fill }} />
+              <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: half.text }}>{name}</Text>
+            </View>
+          );
+        })}
+      </View>
+      <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>{line}</Text>
+    </View>
   );
 }
 

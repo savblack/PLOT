@@ -58,6 +58,24 @@ export function billingSettingsUrl(value?: string): string {
   return url.href;
 }
 
+/**
+ * The public launch switch. Only the exact value `true` (ignoring surrounding spaces) opens
+ * checkout to everyone; unset, empty, `TRUE`, `1`, `yes` and typos all leave it closed.
+ */
+export function publicCheckoutOpen(enabled?: string): boolean {
+  return enabled?.trim() === 'true';
+}
+
+/** True when nobody can start checkout, so the request is refused before it is authenticated. */
+export function checkoutClosedToAll(enabled?: string, configuredIds?: string): boolean {
+  return !publicCheckoutOpen(enabled) && !configuredIds?.trim();
+}
+
+/** Once the switch is on everyone may check out; until then only the private pilot can. */
+export function mayStartCheckout(userId: string | undefined, enabled?: string, configuredIds?: string): boolean {
+  return publicCheckoutOpen(enabled) || isCheckoutPilot(userId, configuredIds);
+}
+
 /** Private launch pilot: compare only the server-verified Auth user ID. */
 export function isCheckoutPilot(userId: string | undefined, configuredIds?: string): boolean {
   return Boolean(userId && configuredIds?.split(',').map(id => id.trim()).filter(Boolean).includes(userId));
