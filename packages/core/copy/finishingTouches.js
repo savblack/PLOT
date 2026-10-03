@@ -70,5 +70,4 @@ export const FINISHING_TOUCHES = {
   ready: 'Your Plot is ready',
   readyBody: 'All done. Enjoy the show.',
   nice: 'Nice',
-  savedToWatch: 'Saved to watch',
 };

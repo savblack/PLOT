@@ -33,6 +33,7 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
+import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -874,7 +875,7 @@ export default function HomeScreen() {
         {/* ── Watchlist rail ── */}
         {watchlistItems.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader kicker="Your list" title="Saved to watch" />
+            <SectionHeader kicker="Your list" title={DISCOVER_VIEW.savedToWatch} />
             <FlatList
               horizontal
               data={watchlistItems}

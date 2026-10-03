@@ -36,7 +36,6 @@ import { feedItems } from '@plot/core/peopleFeed.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { greetingFor } from '@plot/core/greeting.js';
-import { FINISHING_TOUCHES } from '../copy/finishingTouches.js';
 import FinishingTouches from './FinishingTouches.jsx';
 import { useFirstRun } from '../hooks/useFirstRun.js';
 import { ContinueCard, PeopleInvite, PeopleShelfCard } from './HomeShelves.jsx';
@@ -124,7 +123,7 @@ export function RailSection({ id, title, subtitle, sectionClassName = 'discover-
 
 const HOME_SECTION = {
   // First-run only: the titles they just saved in onboarding, ahead of everything else.
-  saved: { id: 'home-saved', label: FINISHING_TOUCHES.savedToWatch, navLabel: FINISHING_TOUCHES.savedToWatch },
+  saved: { id: 'home-saved', label: DISCOVER_VIEW.savedToWatch, navLabel: DISCOVER_VIEW.savedToWatch },
   picks: { id: 'home-picks', label: "plot's Picks", navLabel: "Plot's Picks" },
   continue: { id: 'home-continue', label: PEOPLE.continueWatching.title, navLabel: PEOPLE.continueWatching.title },
   people: { id: 'home-people', label: PEOPLE.shelf.title, navLabel: PEOPLE.shelf.title },
