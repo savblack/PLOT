@@ -89,3 +89,29 @@ export function searchCollectionTitles(collections, query) {
     return true;
   });
 }
+
+/**
+ * The lists My Lists search walks, in the order the web page walks them.
+ * Watching is always TV. A Top 5 row past the last slot is left out.
+ * History is its own page and is not a source. Filter each array before
+ * searchCollectionTitles so a richer copy of a title can win the dedupe.
+ *
+ * @param {{
+ *   watching?: object[],
+ *   topMovies?: object[],
+ *   topTv?: object[],
+ *   collections?: object[][],
+ * }} sources
+ * @returns {object[][]}
+ */
+export function myListsSearchSources({ watching, topMovies, topTv, collections } = {}) {
+  const ranked = (items, mediaType) => (items || [])
+    .filter(item => item.rank <= TOP_LIST_SIZE)
+    .map(item => ({ ...item, media_type: mediaType }));
+  return [
+    (watching || []).map(item => ({ ...item, media_type: 'tv' })),
+    ranked(topMovies, 'movie'),
+    ranked(topTv, 'tv'),
+    ...(collections || []),
+  ];
+}
