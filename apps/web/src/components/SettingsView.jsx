@@ -13,6 +13,8 @@ import { logoUrl } from '../utils/images.js';
 import { tmdb, setTmdbRegion } from '@plot/core/tmdb.js';
 import { supabase } from '@plot/core/supabase.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
+import { usePlexSource } from '@plot/core/usePlexSource.js';
+import { TRACKING } from '@plot/core/copy/tracking.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useSimklSync } from '../hooks/useSimklSync.js';
@@ -1144,6 +1146,7 @@ export default function SettingsView() {
     setSearchParams(previous => { const next = new URLSearchParams(previous); next.set('section', section); return next; });
   };
   const sync  = useMediaSync(user?.id);
+  const plexSource = usePlexSource(user?.id);
   const trakt = useTraktSync(user?.id);
   const simkl = useSimklSync(user?.id);
   const premium = usePremium(profile);
@@ -1923,7 +1926,7 @@ export default function SettingsView() {
               <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
                 {sync.isConnected ? (
                   <>
-                    <SettingsTextAction onClick={sync.sync} disabled={sync.syncing}>
+                    <SettingsTextAction onClick={sync.importHistory} disabled={sync.syncing || !(plexSource.selected || sync.integration?.selected_server?.accountID)}>
                       {sync.syncing ? SETTINGS_VIEW.integrations.importing : SETTINGS_VIEW.integrations.importWatchHistory}
                     </SettingsTextAction>
                     <SettingsTextAction onClick={sync.disconnect} tone="danger">
@@ -1937,6 +1940,19 @@ export default function SettingsView() {
                 )}
               </div>
             </div>
+            {sync.isConnected && (
+              <div style={{ padding: '0.25rem 1rem 0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                <SettingsTextAction disabled={plexSource.busy} onClick={() => plexSource.choose()}>{TRACKING.chooseSource}</SettingsTextAction>
+                {(plexSource.servers || []).map(server => (
+                  <SettingsTextAction key={server.clientIdentifier} disabled={plexSource.busy} onClick={() => plexSource.choose(server.clientIdentifier)}>{server.name}</SettingsTextAction>
+                ))}
+                {(plexSource.profiles || []).map(profile => (
+                  <SettingsTextAction key={profile.accountID} disabled={plexSource.busy} onClick={() => plexSource.choose(plexSource.serverId, profile.accountID)}>{profile.name}</SettingsTextAction>
+                ))}
+                {plexSource.selected && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{TRACKING.sourceSelected}</span>}
+                {plexSource.error && <span role="alert" style={{ fontSize: '0.75rem', color: 'var(--danger)' }}>{plexSource.error}</span>}
+              </div>
+            )}
             {sync.error && (
               <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
                 {sync.error}
@@ -1958,7 +1974,7 @@ export default function SettingsView() {
               <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
                 {trakt.isConnected ? (
                   <>
-                    <SettingsTextAction onClick={trakt.sync} disabled={trakt.syncing}>
+                    <SettingsTextAction onClick={trakt.importHistory} disabled={trakt.syncing}>
                       {trakt.syncing ? SETTINGS_VIEW.integrations.importing : SETTINGS_VIEW.integrations.importWatchHistory}
                     </SettingsTextAction>
                     <SettingsTextAction onClick={trakt.disconnect} tone="danger">
