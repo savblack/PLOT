@@ -10,6 +10,8 @@ export type NavIconName =
   | 'search'
   | 'calendar'
   | 'lists'
+  | 'history'
+  | 'guide'
   | 'tonight'
   | 'settings'
   | 'feedback'
@@ -64,6 +66,20 @@ export default function NavGlyph({ name, color }: { name: NavIconName; color: st
       return (
         <Glyph color={color}>
           <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+        </Glyph>
+      );
+    case 'history':
+      return (
+        <Glyph color={color}>
+          <Circle cx={12} cy={12} r={9} />
+          <Polyline points="12,7 12,12 15,14" />
+        </Glyph>
+      );
+    case 'guide':
+      return (
+        <Glyph color={color}>
+          <Rect x={2} y={7} width={20} height={14} rx={2} ry={2} />
+          <Polyline points="17 2 12 7 7 2" />
         </Glyph>
       );
     case 'tonight':

@@ -6,13 +6,11 @@ export const APP_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: '/home', primary: true },
   { id: 'calendar', label: 'Calendar', path: '/calendar', primary: true },
   { id: 'my-lists', label: 'My Lists', path: '/my-lists', primary: true },
-  // Web only for now: on web History is its own page (poster shelf plus an
-  // insights panel); mobile still shows history as a My Lists tab, which is
-  // why MY_LISTS_TABS below keeps its 'history' entry.
+  // Own page on web. Mobile keeps the My Lists tab and also opens this from
+  // the drawer and the tab bar. MY_LISTS_TABS below keeps its 'history' entry.
   { id: 'history', label: 'History', path: '/history', primary: true },
-  // Web only in practice: mobile keeps Guide as a Home sub-tab (DISCOVER_TABS)
-  // and its drawer hardcodes its own list. Not primary, so it stays out of the
-  // web bottom tab bar; the sidebar and drawer render it.
+  // Own nav item on web. Mobile keeps the Home sub-tab (DISCOVER_TABS) and
+  // also lists it in the drawer. Not primary, so it stays out of the tab bar.
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   // Pick for Me, the tonight picker (Premium). Free viewers land on the Premium gate,
   // never on fake results. Mobile lists it in its drawer (DrawerMenu.tsx).
