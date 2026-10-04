@@ -95,6 +95,7 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
   const navigate = useNavigate();
   const { status, refresh } = useWatchTogetherStatus(person?.id, viewer?.id);
   const { send, cancel, respond } = useWatchTogether(viewer?.id);
+  const mutual = useMutualFollow(viewer?.id, person?.id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [reviewing, setReviewing] = useState(false);
@@ -138,6 +139,7 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
         ? <p className="wt-tile-count"><strong>{status.overlap_count}</strong><span>{T.tile.onBoth}</span></p>
         : (mode === 'private' || mode === 'pending') && <p className="wt-tile-lock">{mode === 'pending' ? T.tile.waitingTitle(name) : T.tile.privateTitle(name)}</p>}
       <p className="wt-tile-body">{body}</p>
+      {mutual && ['free', 'public', 'private', 'pending'].includes(mode) && <p className="wt-note">{T.tile.mutualShare(name)}</p>}
       {error && <p className="wt-error" role="alert">{error}</p>}
       <div className="wt-tile-actions">
         {(mode === 'free' || mode === 'public' || mode === 'private') && <button type="button" className="btn btn-primary" disabled={busy} onClick={() => run(() => send(person.id))}>{T.tile.inviteAction(name)}</button>}

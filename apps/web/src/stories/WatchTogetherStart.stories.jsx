@@ -4,7 +4,7 @@ import { configure, getConfig } from '@plot/core/config.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { AppContext } from '../hooks/useApp.js';
 import WatchTogetherStart from '../components/WatchTogetherStart.jsx';
-import { AcceptDialog } from '../components/WatchTogetherParts.jsx';
+import { AcceptDialog, WatchTogetherTile } from '../components/WatchTogetherParts.jsx';
 
 /* The Watch together start page for someone with nobody to watch with yet:
    one card with an example pairing, friend search, suggested people (when
@@ -35,7 +35,7 @@ const queryOf = (data) => {
   return chain;
 };
 const stubClient = {
-  rpc: async (name) => ({ data: name === 'search_users' ? people : null, error: null }),
+  rpc: async (name) => ({ data: name === 'search_users' ? people : name === 'watch_together_status' ? [{ state: 'none' }] : null, error: null }),
   // Mia and Sam follow each other, so the accept sheet shares by default.
   from: (table) => queryOf(table === 'follows' ? [{ follower_id: 'u-mia' }, { follower_id: 'u-sam' }] : []),
   channel: () => ({ on() { return this; }, subscribe() { return this; } }),
@@ -101,4 +101,9 @@ export const AcceptMutualFollow = {
     const dialog = within(document.body);
     await waitFor(() => expect(dialog.getByRole('switch', { name: T.accept.shareFull })).toBeChecked());
   },
+};
+
+/* A friend's profile when you follow each other: the tile says what the invite shares. */
+export const ProfileTileMutualFollow = {
+  render: () => <WatchTogetherTile person={{ id: 'u-sam', username: 'samk', display_name: 'Sam', is_public: false }} viewer={{ id: 'u-mia' }} viewerProfile={{ is_premium: true }} />,
 };

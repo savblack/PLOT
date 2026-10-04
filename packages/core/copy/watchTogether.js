@@ -150,6 +150,7 @@ export const WATCH_TOGETHER = Object.freeze({
     freeFoot: 'One of you needs Premium to decide together.',
     publicBody: (name) => `${name} gets a request to accept. Once they do, you can choose from what you’ve both saved.`,
     privateBody: (name) => `Send a request. If ${name} accepts, you’ll see the titles you’ve both saved.`,
+    mutualShare: (name) => `You follow each other, so you’ll each see the other’s full watchlist once ${name} accepts. You can change this in Settings.`,
     inviteAction: (name) => `Invite ${name} to watch together`,
     joinFree: (name) => `${name} can join for free.`,
     pendingBody: (name) => `Watch together request sent. ${name} needs to accept before you can choose together.`,
