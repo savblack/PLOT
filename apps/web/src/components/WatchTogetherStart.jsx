@@ -4,7 +4,7 @@
 // people who were invited. Free members see the Premium prompt; everyone can
 // invite. Design: the "Watch together on Free" row of the canvas linked from
 // docs/design/watch-together/README.md. Rules: @plot/core watchTogether.js.
-// Mobile parity: not built yet; tracked in the Watch together PR.
+// Mobile parity: mobile still has the old start layout; tracked in the parity issue linked from the Watch together PR.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
@@ -299,7 +299,7 @@ export default function WatchTogetherStart({ premium, suggested, onInvite }) {
       <div className="wt-start-seeit">
         <div className="wt-person-text">
           <h2 className="wt-card-title">{S.seeItTitle}</h2>
-          <span className="wt-note">{premium ? S.premiumSeeItBody : S.seeItBody}</span>
+          <span className="wt-note">{premium ? S.premiumSeeItBody : S.seeItDemoBody}</span>
         </div>
         <Demo key={titles.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={titles} />
       </div>
