@@ -7,7 +7,8 @@ import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
 import { createCustomListRecord, createdListRevert, deleteCustomListRecord, CUSTOM_LIST_LIMIT_CODE, SMART_LIST_PREMIUM_CODE } from './customListCreation.js';
-import { LIST_VISIBILITIES, listVisibility } from './customLists.js';
+import { LIST_VISIBILITIES, listVisibility, findDuplicateCustomList } from './customLists.js';
+import { curatedListRows } from './curatedLists.js';
 import { isSmartList } from './smartLists.js';
 
 /**
@@ -45,6 +46,7 @@ import { isSmartList } from './smartLists.js';
  *   createSmartList: (name: string, rules: import('./smartLists.js').SmartListRules, opts?: CreateListOptions) => Promise<any>;
  *   updateSmartList: (listId: string, rules: import('./smartLists.js').SmartListRules) => Promise<any>;
  *   setSmartListDigest: (listId: string, enabled: boolean) => Promise<boolean>;
+ *   copyCuratedList: (curated: import('./curatedLists.js').CuratedList, opts?: CreateListOptions) => Promise<{ list: any, existing: boolean } | null>;
  *   deleteList: (listId: string) => Promise<any>;
  *   renameList: (listId: string, name: string) => Promise<any>;
  *   setListVisibility: (listId: string, visibility: import('./customLists.js').ListVisibility) => Promise<any>;
@@ -135,6 +137,37 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
     }
     return data;
   }, [userId, offerCreatedUndo]);
+
+  /**
+   * Save a list Plot curated as the viewer's own: a new custom list named for
+   * it, filled in one write. A list the viewer already has under that name
+   * gets the missing titles instead of a second copy. Throws the Free cap's
+   * error (createList) so the caller can open the upgrade sheet.
+   */
+  const copyCuratedList = useCallback(async (curated, opts) => {
+    if (!userId) return null;
+    const existing = findDuplicateCustomList(lists, curated.title);
+    const list = existing || await createList(curated.title, opts);
+    if (!list) return null;
+    const rows = curatedListRows(curated, list.id, userId);
+    const { data, error } = await supabase.from('user_custom_list_items')
+      .upsert(rows, { onConflict: 'list_id,tmdb_id', ignoreDuplicates: !!existing }).select();
+    if (error) {
+      console.error('Failed to save curated list', error);
+      reportActionFailure(FAILED_ACTIONS.LIST_ITEM_ADD, error, { list_id: list.id, curated_list: curated.id });
+      // A half-filled copy is worse than none: take back the list we just made.
+      if (!existing) await deleteCustomListRecord(supabase, userId, list.id).catch(() => {});
+      emit(LISTS_CHANGED_EVENT);
+      return null;
+    }
+    setLists(prev => prev.map(l => {
+      if (l.id !== list.id) return l;
+      const kept = (l.items || []).filter(i => !data.some(d => d.tmdb_id === i.tmdb_id));
+      return { ...l, items: [...data, ...kept] };
+    }));
+    getConfig().onCustomListItemChange?.({ list_id: list.id, action: 'added', count: data.length });
+    return { list, existing: !!existing };
+  }, [userId, lists, createList]);
 
   const createSmartList = useCallback(async (name, rules, opts) => {
     if (!userId || !name?.trim() || !rules) return null;
@@ -391,7 +424,7 @@ export function useCustomLists(userId, { includeShared = false } = {}) {
 
   const ownedCount = lists.filter(l => l.role !== 'member').length + smartLists.length;
 
-  return { lists, smartLists, ownedCount, loading, createList, createSmartList, updateSmartList, setSmartListDigest, deleteList, renameList, setListVisibility, addItem, removeItem, isInList, createSharedList, addMember, leaveList, refresh: load };
+  return { lists, smartLists, ownedCount, loading, createList, createSmartList, copyCuratedList, updateSmartList, setSmartListDigest, deleteList, renameList, setListVisibility, addItem, removeItem, isInList, createSharedList, addMember, leaveList, refresh: load };
 }
 
 /**
