@@ -9,7 +9,35 @@ const FALLBACK = '<!doctype html><meta charset="utf-8">'
   + '<title>plot</title>'
   + '<p style="font-family:sans-serif;padding:40px">This page is briefly unavailable. Please try again in a moment.</p>';
 
-export async function titlePage(request, type, slug) {
+/**
+ * Whether a response is worth keeping. The Edge Function says how long a page
+ * may be shared (s-maxage) and only sends it on pages and canonical redirects,
+ * so that is the whole rule: a 404, a 5xx, the 502 fallback below, or anything
+ * the function did not mark shareable is never stored. Caching a blip would hold
+ * a good page broken for a day.
+ *
+ * @param {number} status
+ * @param {string | null} cacheControl
+ */
+export function cacheable(status, cacheControl) {
+  return (status === 200 || status === 301) && /(^|[\s,])s-maxage=[1-9]\d*/i.test(cacheControl || '');
+}
+
+/** A copy of a response with an X-Plot-Cache header, so a hit is visible. */
+function tagged(response, state) {
+  const headers = new Headers(response.headers);
+  headers.set('X-Plot-Cache', state);
+  return new Response(response.body, { status: response.status, headers });
+}
+
+/**
+ * @param {Request} request
+ * @param {'movie' | 'tv'} type
+ * @param {string} slug
+ * @param {(promise: Promise<unknown>) => void} [waitUntil] Pages Functions' context.waitUntil,
+ *   so storing a page never delays the reader. Without it the store is awaited.
+ */
+export async function titlePage(request, type, slug, waitUntil) {
   const rawType = type === 'tv' ? 'tv' : 'movie';
   // Geo is the default, not the verdict. A reader abroad, or one checking
   // another country, can ask for a region with ?r=XX; this used to be built
@@ -21,6 +49,26 @@ export async function titlePage(request, type, slug) {
   const params = new URLSearchParams({ type: rawType, slug: slug || '' });
   if (country) params.set('r', country);
 
+  // The page is the same for everyone in a region, so one copy per title and
+  // region serves them all. The key is built from what the page actually
+  // depends on and nothing else: the region is part of it (an Australian reader
+  // must never be shown a US page), and tracking parameters, query order and
+  // casing are not, so they all land on one entry. Cloudflare does not cache
+  // Pages Function responses by itself (cf-cache-status: DYNAMIC), and every
+  // uncached request is a Supabase invocation, a TMDB lookup and about 14 KB of
+  // egress. The Cache API is per data centre, so each one fetches a page once
+  // per s-maxage rather than once overall. Absent outside Cloudflare (local
+  // node tests), where this simply does not cache.
+  const method = request.method === 'HEAD' ? 'HEAD' : 'GET';
+  const cache = globalThis.caches && globalThis.caches.default;
+  const cacheKey = new Request(`${new URL(request.url).origin}/${rawType}/${encodeURIComponent(slug || '')}?r=${country || ''}`, { method: 'GET' });
+  if (cache) {
+    try {
+      const hit = await cache.match(cacheKey);
+      if (hit) return tagged(hit, 'hit');
+    } catch { /* a cache fault falls through to the Edge Function */ }
+  }
+
   let upstream;
   try {
     upstream = await fetch(`${UPSTREAM}?${params.toString()}`, {
@@ -31,25 +79,32 @@ export async function titlePage(request, type, slug) {
     return htmlError(502, FALLBACK);
   }
 
+  let response;
   // Canonical redirect from the function (decorative slug mismatch).
   const location = upstream.headers.get('location');
   if (upstream.status >= 300 && upstream.status < 400 && location) {
-    return new Response(null, {
+    response = new Response(null, {
       status: upstream.status,
       headers: {
         Location: location,
         'Cache-Control': upstream.headers.get('cache-control') || 'public, s-maxage=86400',
       },
     });
+  } else {
+    const body = await upstream.text();
+    // Serve as HTML; drop Supabase's text/plain + sandbox CSP.
+    response = new Response(body, {
+      status: upstream.status,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': upstream.headers.get('cache-control') || 'public, s-maxage=86400, stale-while-revalidate=604800',
+      },
+    });
   }
 
-  const body = await upstream.text();
-  // Serve as HTML; drop Supabase's text/plain + sandbox CSP.
-  return new Response(body, {
-    status: upstream.status,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': upstream.headers.get('cache-control') || 'public, s-maxage=86400, stale-while-revalidate=604800',
-    },
-  });
+  if (cache && method === 'GET' && cacheable(response.status, response.headers.get('cache-control'))) {
+    const stored = cache.put(cacheKey, response.clone()).catch(() => {});
+    if (waitUntil) waitUntil(stored); else await stored;
+  }
+  return tagged(response, 'miss');
 }
