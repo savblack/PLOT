@@ -22,6 +22,9 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { clampToSentences } from '@plot/core/sentences.js';
 import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
 import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
+import { CURATED_LISTS } from '@plot/core/curatedLists.js';
+import { CURATED_LISTS as CURATED_COPY } from '@plot/core/copy/curatedLists.js';
+import { CuratedListCover, CuratedListDialog } from './CuratedLists.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SideFilters from './SideFilters.jsx';
@@ -126,6 +129,7 @@ const HOME_SECTION = {
   // First-run only: the titles they just saved in onboarding, ahead of everything else.
   saved: { id: 'home-saved', label: DISCOVER_VIEW.savedToWatch, navLabel: DISCOVER_VIEW.savedToWatch },
   picks: { id: 'home-picks', label: "plot's Picks", navLabel: "Plot's Picks" },
+  curated: { id: 'home-curated', label: CURATED_COPY.shelfTitle, navLabel: CURATED_COPY.shelfTitle },
   continue: { id: 'home-continue', label: PEOPLE.continueWatching.title, navLabel: PEOPLE.continueWatching.title },
   people: { id: 'home-people', label: PEOPLE.shelf.title, navLabel: PEOPLE.shelf.title },
   hot: { id: 'home-hot', label: 'Hot Right Now', navLabel: 'Hot Right Now' },
@@ -796,6 +800,7 @@ function YourPeopleSection({ shelf, openPanel }) {
 /* ── Home ── */
 function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr, continueItems = [], firstRun = false }) {
   const peopleShelf = useYourPeopleShelf();
+  const [openCurated, setOpenCurated] = useState(null);
   const navigate = useNavigate();
   const { data, loading } = useDiscover();
   // Home only renders the recent rail. Loading every per-genre New Releases
@@ -823,6 +828,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   const pageSections = [
     savedItems.length > 0 ? HOME_SECTION.saved : null,
     hero && genreFilters.length === 0 ? HOME_SECTION.picks : null,
+    CURATED_LISTS.length > 0 ? HOME_SECTION.curated : null,
     continueItems.length > 0 ? HOME_SECTION.continue : null,
     hotRail.length > 0 ? HOME_SECTION.hot : null,
     weekly.length > 0 ? HOME_SECTION.weekly : null,
@@ -867,6 +873,14 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
             <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
           </div>
         </section>
+      )}
+
+      {CURATED_LISTS.length > 0 && (
+        <RailSection id={HOME_SECTION.curated.id} title={HOME_SECTION.curated.label} subtitle={CURATED_COPY.shelfSubtitle}>
+          {CURATED_LISTS.map(curated => (
+            <CuratedListCover key={curated.id} curated={curated} onOpen={() => setOpenCurated(curated)} />
+          ))}
+        </RailSection>
       )}
 
       {continueItems.length > 0 && (
@@ -932,6 +946,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
 
       {platformList.length > 0 && <PlatformCharts id={HOME_SECTION.platforms.id} platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />}
       </div>
+      {openCurated && <CuratedListDialog curated={openCurated} onClose={() => setOpenCurated(null)} onOpenTitle={openPanel} />}
     </div>
   );
 }
