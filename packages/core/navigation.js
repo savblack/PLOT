@@ -1,5 +1,6 @@
 import { WATCH_TOGETHER } from './copy/watchTogether.js';
 import { PEOPLE } from './copy/people.js';
+import { FAVOURITES_ENABLED } from './features.js';
 
 export const APP_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: '/home', primary: true },
@@ -108,4 +109,4 @@ export const MY_LISTS_TABS = [
   { id: 'favorites', label: null            }, // region-spelled at the call site
   { id: 'lists',     label: 'Lists'         },
   { id: 'history',   label: 'History'       },
-];
+].filter(tab => FAVOURITES_ENABLED || tab.id !== 'favorites');

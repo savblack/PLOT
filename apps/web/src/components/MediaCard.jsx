@@ -1,6 +1,7 @@
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl, logoUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '../copy/media.js';
 
 /* The poster card used by the release rails (Calendar's "All releases"; it
@@ -28,6 +29,7 @@ function FavBtn({ item }) {
   const fw   = favoriteWords(profile?.region);
   const type = item.media_type || 'movie';
   const fav  = favorites.isFavorite(item.id);
+  if (!FAVOURITES_ENABLED) return null;
   return (
     <button
       className={`card-fav-btn${fav ? ' faved' : ''}`}

@@ -18,6 +18,7 @@ import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { canCreateCustomList, isPremiumProfile } from '@plot/core/premium.js';
 import { favoriteWords } from '../../lib/spelling';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import CollapsibleSection from '../../components/CollapsibleSection';
 import SectionToggleIcon from '../../components/SectionToggleIcon';
 import SelectCircle from '../../components/SelectCircle';
@@ -569,7 +570,7 @@ export default function MyListsScreen() {
   const showWatching  = isAll || viewTab === 'watching';
   const showWant      = isAll || viewTab === 'want';
   const showTop10     = isAll || viewTab === 'top10';
-  const showFavs      = isAll || viewTab === 'favorites';
+  const showFavs      = FAVOURITES_ENABLED && (isAll || viewTab === 'favorites');
   const showLists     = isAll || viewTab === 'lists';
   // History is the one tab that isn't part of "All" — web scopes it the
   // same way, since a full watch history would bury every other section.

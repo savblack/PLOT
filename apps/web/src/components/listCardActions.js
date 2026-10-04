@@ -4,6 +4,7 @@
 // components (fast refresh).
 import { privateNoteKey } from '@plot/core/privateNotes.js';
 import { MEDIA } from '../copy/media.js';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 
 export function cardState(item, historyEntries, privateNotes) {
   const id = Number(item.tmdb_id);
@@ -20,12 +21,16 @@ export function cardActions(item, favorites, watchlist, fw) {
   const normalized = { ...item, id, tmdb_id: id, media_type: type };
   const isFavorite = favorites.isFavorite(id);
   const isBookmarked = watchlist.isInList(id);
-  return {
+  // No onToggleFavorite means ListCard draws no heart.
+  const favourite = FAVOURITES_ENABLED ? {
     isFavorite,
-    isBookmarked,
     favoriteLabel: isFavorite ? `Remove ${item.title || item.name} from ${fw.pluralLower}` : `Add ${item.title || item.name} to ${fw.pluralLower}`,
-    bookmarkLabel: isBookmarked ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist,
     onToggleFavorite: () => favorites.toggleFavorite(normalized),
+  } : {};
+  return {
+    ...favourite,
+    isBookmarked,
+    bookmarkLabel: isBookmarked ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist,
     onToggleBookmark: () => watchlist.toggle(normalized),
   };
 }
