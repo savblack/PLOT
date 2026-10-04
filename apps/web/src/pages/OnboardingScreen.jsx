@@ -56,7 +56,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
   const columnClass = step === 'seed' ? 'ob-column ob-column--wide' : step === 'services' ? 'ob-column ob-column--services' : 'ob-column';
 
   return (
-    <div className="ob-page">
+    <div className={`ob-page${step === 'seed' ? ' ob-page--fixed' : ''}`}>
       <div className="ob-topbar">
         <div className="ob-topbar-logo"><PlotLogo /></div>
         {step !== 'building' && (
@@ -100,6 +100,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
               )}
             </div>
             {seed.searching && <div className="loading-state" style={{ minHeight: 60 }}><PlotLoader size="sm" /></div>}
+            <div className="ob-grid-scroll">
             <div className="ob-grid">
               {seed.items.map(item => {
                 const on = seed.selectedIds.has(item.id);
@@ -123,6 +124,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
                   </button>
                 );
               })}
+            </div>
             </div>
             <div className="ob-foot ob-foot--end">
               {saveError && <p className="ob-error">{saveError}</p>}

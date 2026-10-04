@@ -30,6 +30,8 @@ const F = ONBOARDING_FLOW;
 // The building moment: each line holds this long, then Home fades in.
 const LINE_MS = 1500;
 const FADE_MS = 600;
+// Step 1's grid: 8 full rows on desktop (6 across), 16 on phones (3 across).
+const TRENDING_COUNT = 48;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -118,9 +120,13 @@ export default function OnboardingFlow() {
     let alive = true;
     tmdb.getTrending('all', 'week').then(data => {
       if (!alive) return;
+      // getTrending already fetches three pages (up to 60); a title can land on
+      // two of them, so keep the first of each.
+      const seen = new Set();
       setTrending((data?.results || [])
         .filter(r => (r.media_type === 'tv' || r.media_type === 'movie') && r.poster_path)
-        .slice(0, 24));
+        .filter(r => { const k = `${r.media_type}-${r.id}`; if (seen.has(k)) return false; seen.add(k); return true; })
+        .slice(0, TRENDING_COUNT));
     });
     return () => { alive = false; };
   }, [step, trending.length]);
