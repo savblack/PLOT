@@ -25,13 +25,20 @@
 }
 
 
-.premium-switcher { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 1.4rem; }
+.premium-switcher { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 8px; margin-top: 1.6rem; max-width: 400px; }
 .premium-switcher[hidden] { display: none; }
-.premium-switcher > span { color: var(--text-secondary); font-size: 0.8rem; }
-.premium-switcher button { padding: 0; min-height: 44px; border: 0; background: transparent; color: var(--text-secondary); font: 500 0.8rem var(--sans); cursor: pointer; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; transition: color 0.25s var(--ease), text-decoration-color 0.25s var(--ease); }
-.premium-switcher button[aria-pressed="true"] { color: var(--text); text-decoration-color: var(--text); }
-.premium-switcher button:hover { color: var(--text); }
-.premium-switcher button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 2px; }
+.premium-step { display: grid; gap: 10px; align-content: start; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--text-secondary); font: 500 0.8rem var(--sans); text-align: left; cursor: pointer; transition: color 0.25s var(--ease); }
+.premium-bar { position: relative; display: block; height: 3px; border-radius: 3px; background: var(--rule); overflow: hidden; }
+.premium-bar::after { content: ""; position: absolute; inset: 0; width: 0; background: var(--ink); }
+.premium-step.is-done .premium-bar::after { width: 100%; }
+.premium-step[aria-pressed="true"] { color: var(--text); font-weight: 600; }
+/* No timer (reduced motion, paused, or hovered): the active segment is simply full. */
+.premium-step[aria-pressed="true"] .premium-bar::after { width: 100%; }
+#premium.is-timing .premium-step[aria-pressed="true"] .premium-bar::after { width: 0; animation: premium-step-timer 7s linear forwards; }
+@keyframes premium-step-timer { to { width: 100%; } }
+.premium-step:hover { color: var(--text); }
+.premium-step:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; border-radius: 2px; }
+.premium-count { grid-column: 1 / -1; display: flex; justify-content: space-between; margin: 0; font-size: 0.7rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 
 
 /* ── Storyboards ────────────────────────────────────────────────

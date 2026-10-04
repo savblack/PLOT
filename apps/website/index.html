@@ -54,7 +54,7 @@
   </script>
   <!-- End Google Tag Manager -->
   <title>Plot | Movie &amp; TV Tracker</title>
-  <meta name="description" content="plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
+  <meta name="description" content="Plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <link rel="canonical" href="https://theplot.tv/" />
   <meta name="theme-color" content="#f8f2ea" />
 
@@ -69,20 +69,20 @@
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="plot" />
+  <meta property="og:site_name" content="Plot" />
   <meta property="og:title" content="Plot | Movie &amp; TV Tracker" />
-  <meta property="og:description" content="plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
+  <meta property="og:description" content="Plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="plot — your movie &amp; TV companion" />
+  <meta property="og:image:alt" content="Plot — your movie &amp; TV companion" />
   <meta property="og:url" content="https://theplot.tv/" />
 
   <!-- Twitter / X card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Plot | Movie &amp; TV Tracker" />
-  <meta name="twitter:description" content="plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
+  <meta name="twitter:description" content="Plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <meta name="twitter:image" content="https://theplot.tv/og-image.png" />
 
   <!-- Structured data -->
@@ -93,7 +93,7 @@
       {
         "@type": "Organization",
         "@id": "https://theplot.tv/#organization",
-        "name": "plot",
+        "name": "Plot",
         "url": "https://theplot.tv/",
         "logo": "https://theplot.tv/og-image.png"
       },
@@ -101,8 +101,8 @@
         "@type": "WebSite",
         "@id": "https://theplot.tv/#website",
         "url": "https://theplot.tv/",
-        "name": "plot",
-        "description": "plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
+        "name": "Plot",
+        "description": "Plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
         "publisher": { "@id": "https://theplot.tv/#organization" }
       }
     ]
@@ -112,8 +112,8 @@
   <link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=b8c172e8" />
-  <link rel="stylesheet" href="/nav.css?v=769c4fe1" />
+  <link rel="stylesheet" href="/ui.css?v=42e748b7" />
+  <link rel="stylesheet" href="/nav.css?v=7c3320cc" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -345,7 +345,7 @@
     }
     #plotDoes .manifesto-wordmark {
       font-weight: 700;
-      letter-spacing: -0.045em;
+      letter-spacing: -0.1em;
     }
     #plotDoes em { font-style: italic; }
     .manifesto-line.no-fade.passed {
@@ -367,12 +367,12 @@
 
     #plotDoes {
       margin-top: 20rem;
-      margin-bottom: 14rem;
+      margin-bottom: 10rem;
     }
 
     /* ── Timeline ───────────────────────────────────────────── */
     #timeline-section {
-      padding: 8rem 0 6rem;
+      padding: 5rem 0 6rem;
       background: var(--bg);
     }
 
@@ -408,7 +408,6 @@
     }
     .timeline-header::after { content: none; }
     .tl-head-copy { display: flex; flex-direction: column; gap: 1.25rem; align-items: flex-start; }
-    .section-eyebrow.tl-eyebrow { background: var(--sage); }
     .timeline-headline {
       font-size: clamp(2.5rem, 5.5vw, 4.5rem);
       line-height: 0.86;
@@ -1194,10 +1193,11 @@
     .demo-tab-item.tab-active-l .demo-tab-label { color: #1a1a1a; }
 
     /* Guide screen */
-    #guide-demo { background: var(--dark); padding: 10rem 2rem; }
+    #guide-demo { background: var(--dark); padding: 8rem 2rem 7rem; }
 
     /* Mobile app — coming soon (reuses the phone frame + Discover screen) */
     #app-soon { background: var(--dark); padding: 10rem 2rem; }
+    #app-soon .demo-headline { letter-spacing: -0.055em; }
 
     /* Origin — built by one person */
     #origin { background: var(--bg); padding: 10rem 2rem; }
@@ -1296,7 +1296,6 @@
       margin: 0;
       line-height: 1.55;
     }
-    .cal-eyebrow { background: #dbe1b0; }
     .cal-hdr {
       display: flex;
       align-items: center;
@@ -1494,6 +1493,10 @@
     /* Release cells are poster-only. Their true poster ratio shows the full
        artwork without a gradient, date, title or platform overlay. */
     .cal-cell-int.has-poster {
+      /* Narrower than the column, so the row is shorter and the poster
+         shrinks in proportion (2:3 is kept, nothing is cropped). */
+      width: 72%;
+      justify-self: center;
       aspect-ratio: 2 / 3;
       min-height: 0;
       padding: 0;
@@ -1586,7 +1589,7 @@
   <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg">
   <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/gRMalasZEzsZi4w2VFuYusfSfqf.jpg">
   <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg">
-  <link rel="stylesheet" href="/premium-home.css?v=16">
+  <link rel="stylesheet" href="/premium-home.css?v=18">
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -1618,7 +1621,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p class="hero-sub reveal reveal-delay-2">Track what you've seen, save what's coming, and keep the notes that make it yours.</p>
       <div class="hero-actions reveal reveal-delay-3">
         <a href="/whats-on" class="btn btn-outline btn-large" data-cta="hero-whats-on">See what's on</a>
-        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="hero">Start your plot</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="hero">Start your Plot</a>
       </div>
     </div>
     <div class="hero-peek" aria-hidden="true">
@@ -1655,7 +1658,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="demo-copy reveal">
         <h2 class="demo-headline">Everything.<br><em>In one place.</em></h2>
         <p class="demo-body">
-          Always know what's worth watching. plot tracks what's trending
+          Always know what's worth watching. Plot tracks what's trending
           worldwide, pulls the top 10 across the major platforms and every
           release on the way into a single feed. <em>Your</em> feed.
         </p>
@@ -1726,7 +1729,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
      <div class="tl-sticky">
       <div class="timeline-header reveal">
         <div class="tl-head-copy">
-          <span class="section-eyebrow tl-eyebrow">Your watch history</span>
           <h2 class="timeline-headline">A timeline as rich <br class="tl-mbreak">as your taste</h2>
         </div>
         <p class="timeline-intro">Your watch history tells a story and every story needs a plot.</p>
@@ -1747,12 +1749,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="tl-note">"Quietly devastating."</div>
         </div>
 
-        <div class="tl-card">
-          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/7MXg0BxuSRWz2yKc03M40du2mrc.jpg'></div>
-          <div class="tl-date">Jun 2024</div>
-          <div class="tl-title">Presumed Innocent</div>
-          <div class="tl-note">"Did not trust a single character. I was right."</div>
-        </div>
 
         <div class="tl-card">
           <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/lqoMzCcZYEFK729d6qzt349fB4o.jpg'></div>
@@ -1761,12 +1757,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="tl-note">"Nothing prepares you."</div>
         </div>
 
-        <div class="tl-card">
-          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/ilwO6elz3mLV9CToT7C8pjVeKX0.jpg'></div>
-          <div class="tl-date">Dec 2024</div>
-          <div class="tl-title">Babygirl</div>
-          <div class="tl-note">"Nicole Kidman."</div>
-        </div>
 
         <div class="tl-year">
           <span class="tl-year-label">2025</span>
@@ -1794,12 +1784,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="tl-note">"Ryan Coogler does it again."</div>
         </div>
 
-        <div class="tl-card">
-          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/n0YuM4f5lvGAP6MAW2kBIzugXnc.jpg'></div>
-          <div class="tl-date">May 2025</div>
-          <div class="tl-title">Top Gun: Maverick</div>
-          <div class="tl-note">"Still the best sequel ever made."</div>
-        </div>
 
         <div class="tl-year">
           <span class="tl-year-label">2026</span>
@@ -1840,17 +1824,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="tl-title">Spider-Man: Brand New Day</div>
         </div>
 
-        <div class="tl-card">
-          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/hVXjX1jLZ1ljFSNGXpjJfbTUOa7.jpg'></div>
-          <div class="tl-date">Sep 2026</div>
-          <div class="tl-title">Mayday</div>
-        </div>
 
-        <div class="tl-card">
-          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg'></div>
-          <div class="tl-date">Sep 2026</div>
-          <div class="tl-title">Resident Evil</div>
-        </div>
         <!-- timeline:end -->
 
       </div>
@@ -1862,13 +1836,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="calendar-demo">
     <div class="cal-split">
      <div class="cal-copy reveal">
-      <span class="section-eyebrow cal-eyebrow">Your release calendar</span>
       <h2 class="cal-headline">Never miss <em>a drop.</em></h2>
       <p class="cal-sub">
         Save that new show, movie or cinema release. Whatever you're
         excited for, let your calendar do the remembering.
       </p>
-      <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="calendar-signup">Start your plot</a>
+      <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="calendar-signup">Start your Plot</a>
      </div>
 
       <!-- Right: Interactive calendar -->
@@ -1905,41 +1878,29 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <p class="demo-body" style="color:var(--text-secondary)">
           Organise by decade, director, or whatever mood you're in. Create and share movie and TV collections that are unmistakably yours.
         </p>
-        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="demo-create">Start curating</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="demo-create">Start creating</a>
       </div>
     </div>
   </section>
 
   <!-- Plot Premium feature preview -->
-  <section id="premium" aria-label="plot Premium benefits" aria-roledescription="carousel">
+  <section id="premium" aria-label="Plot Premium benefits" aria-roledescription="carousel">
     <div class="premium-layout">
       <div>
-        <div class="premium-kicker">plot Premium <span>Coming soon</span></div>
+        <div class="premium-kicker">Plot Premium <span>Coming soon</span></div>
         <h2 class="premium-headline">Less deciding.<br><em>More watching.</em></h2>
-        <div class="premium-copy-stage"><div class="premium-copy-slide is-active"><h3>Find tonight’s movie</h3><p>A little time to spare and too much to choose from? Find a movie that fits your evening, on the services you use.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Choose something together</h3><p>You’ve both got a watchlist. Find the overlap, make a list together and get movie night started. Friends can join for free.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Follow the people behind your favourites</h3><p>Love an actor? Always make time for a certain director? Follow them and get a heads-up when their next movie or show is on the way.</p></div></div>
+        <div class="premium-copy-stage"><div class="premium-copy-slide is-active"><h3>Choose something together</h3><p>You’ve both got a watchlist. Find the overlap, make a list together and get movie night started. Friends can join for free.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Find tonight’s movie</h3><p>A little time to spare and too much to choose from? Find a movie that fits your evening, on the services you use.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Follow the people behind your favourites</h3><p>Love an actor? Always make time for a certain director? Follow them and get a heads-up when their next movie or show is on the way.</p></div></div>
         <p class="premium-note">Your everyday watching stays free.</p>
         <a href="https://app.theplot.tv/plans" class="btn btn-primary btn-large">Explore Premium</a>
         <div class="premium-switcher" role="group" aria-label="Premium benefits" hidden>
-          <button type="button" aria-pressed="true">Tonight</button><span aria-hidden="true">·</span>
-          <button type="button" aria-pressed="false">Together</button><span aria-hidden="true">·</span>
-          <button type="button" aria-pressed="false">Following</button>
+          <button type="button" class="premium-step" aria-pressed="true"><span class="premium-bar" aria-hidden="true"></span><span class="premium-step-label">Together</span></button>
+          <button type="button" class="premium-step" aria-pressed="false"><span class="premium-bar" aria-hidden="true"></span><span class="premium-step-label">Tonight</span></button>
+          <button type="button" class="premium-step" aria-pressed="false"><span class="premium-bar" aria-hidden="true"></span><span class="premium-step-label">Following</span></button>
+          <p class="premium-count" aria-hidden="true"><span class="premium-pos">1 of 3</span><span class="premium-nextup">Tonight next</span></p>
         </div>
       </div>
       <div class="premium-visual-stage" aria-live="off">
-        <div class="premium-visual-slide is-active" role="group" aria-label="1 of 3: Find tonight’s movie">
-          <div class="premium-shared">
-            <div class="premium-mini">Movie picker</div>
-            <h3>What fits tonight?</h3>
-            <div class="premium-story premium-picker" role="img" aria-label="Australian example verified 17 September 2026: choose 120 minutes, Disney+ and Comedy. The Grand Budapest Hotel matches at 100 minutes on Disney+.">
-              <div><span class="premium-q-label">How much time?</span><div class="premium-seg premium-time"><span class="premium-ind"></span><span class="premium-o premium-o1"><b class="premium-k">30 min</b><b class="premium-w">30 min</b></span><span class="premium-o premium-o2"><b class="premium-k">60 min</b><b class="premium-w">60 min</b></span><span class="premium-o premium-o3"><b class="premium-k">90 min</b><b class="premium-w">90 min</b></span><span class="premium-on"><b class="premium-k">120 min</b><b class="premium-w">120 min</b></span></div></div>
-              <div><span class="premium-q-label">Where do you watch?</span><div class="premium-seg premium-svc"><span class="premium-o">Netflix</span><span class="premium-on"><b class="premium-k">Disney+</b><b class="premium-w">Disney+</b></span><span class="premium-o">Prime Video</span><span class="premium-o">Apple TV+</span></div></div>
-              <div><span class="premium-q-label">In the mood for?</span><div class="premium-seg premium-mood"><span class="premium-o">Drama</span><span class="premium-on"><b class="premium-k">Comedy</b><b class="premium-w">Comedy</b></span><span class="premium-o">Thriller</span><span class="premium-o">Romance</span></div></div>
-              <div class="premium-pick"><div class="premium-shuffle"><img class="premium-c1" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c2" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c3" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c4" src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c5" src="https://image.tmdb.org/t/p/w185/s8Sr5BRjEzOnD6sxBvxUI4qrkrs.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c6" src="https://image.tmdb.org/t/p/w185/rUDuOKpkKBHxx41BScqKej72iT3.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c7" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c8" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-final" data-premium-art src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="The Grand Budapest Hotel poster" loading="lazy" decoding="async" width="185" height="278"></div>
-                <div class="premium-pick-info"><span class="premium-mini">Tonight’s pick</span><strong>The Grand Budapest Hotel</strong><span class="premium-meta">Comedy · 100 min · Disney+</span><span class="premium-pill-cta"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg>Play on Disney+</span></div></div>
-            </div>
-          </div>
-        </div>
-        <div class="premium-visual-slide" aria-hidden="true" inert role="group" aria-label="2 of 3: Choose something together">
+        <div class="premium-visual-slide is-active" role="group" aria-label="1 of 3: Choose something together">
           <div class="premium-shared">
             <div class="premium-mini">A list for the two of you</div>
             <h3>Friday night, sorted.</h3>
@@ -1953,6 +1914,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <div class="premium-both"><span class="premium-av premium-av-you">Y</span><span class="premium-av premium-av-them">P</span></div>
               </div>
               <div class="premium-outcome-bar"><div><strong>You both want to watch this.</strong><span class="premium-meta">Widow’s Bay · in both watchlists</span></div><span class="premium-pill-cta">Start movie night</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="premium-visual-slide" aria-hidden="true" inert role="group" aria-label="2 of 3: Find tonight’s movie">
+          <div class="premium-shared">
+            <div class="premium-mini">Movie picker</div>
+            <h3>What fits tonight?</h3>
+            <div class="premium-story premium-picker" role="img" aria-label="Australian example verified 17 September 2026: choose 120 minutes, Disney+ and Comedy. The Grand Budapest Hotel matches at 100 minutes on Disney+.">
+              <div><span class="premium-q-label">How much time?</span><div class="premium-seg premium-time"><span class="premium-ind"></span><span class="premium-o premium-o1"><b class="premium-k">30 min</b><b class="premium-w">30 min</b></span><span class="premium-o premium-o2"><b class="premium-k">60 min</b><b class="premium-w">60 min</b></span><span class="premium-o premium-o3"><b class="premium-k">90 min</b><b class="premium-w">90 min</b></span><span class="premium-on"><b class="premium-k">120 min</b><b class="premium-w">120 min</b></span></div></div>
+              <div><span class="premium-q-label">Where do you watch?</span><div class="premium-seg premium-svc"><span class="premium-o">Netflix</span><span class="premium-on"><b class="premium-k">Disney+</b><b class="premium-w">Disney+</b></span><span class="premium-o">Prime Video</span><span class="premium-o">Apple TV+</span></div></div>
+              <div><span class="premium-q-label">In the mood for?</span><div class="premium-seg premium-mood"><span class="premium-o">Drama</span><span class="premium-on"><b class="premium-k">Comedy</b><b class="premium-w">Comedy</b></span><span class="premium-o">Thriller</span><span class="premium-o">Romance</span></div></div>
+              <div class="premium-pick"><div class="premium-shuffle"><img class="premium-c1" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c2" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c3" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c4" src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c5" src="https://image.tmdb.org/t/p/w185/s8Sr5BRjEzOnD6sxBvxUI4qrkrs.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c6" src="https://image.tmdb.org/t/p/w185/rUDuOKpkKBHxx41BScqKej72iT3.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c7" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-c8" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="premium-final" data-premium-art src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="The Grand Budapest Hotel poster" loading="lazy" decoding="async" width="185" height="278"></div>
+                <div class="premium-pick-info"><span class="premium-mini">Tonight’s pick</span><strong>The Grand Budapest Hotel</strong><span class="premium-meta">Comedy · 100 min · Disney+</span><span class="premium-pill-cta"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg>Play on Disney+</span></div></div>
             </div>
           </div>
         </div>
@@ -1981,9 +1955,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="app-soon">
     <div class="demo-split">
       <div class="demo-copy reveal">
-        <div class="app-kicker">PLOT MOBILE <span>Coming soon</span></div>
+        <div class="app-kicker">Plot Mobile <span>Coming soon</span></div>
         <h2 class="demo-headline">plot, in<br><em>your pocket.</em></h2>
-        <p class="demo-body">Everything you love about plot: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.</p>
+        <p class="demo-body">Everything you love about Plot: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.</p>
         <div class="woc-sub-wrap app-notify">
           <form class="woc-form" id="appNotifyForm">
             <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
@@ -2050,7 +2024,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <p class="demo-body origin-body" style="color:var(--text-secondary)">Plot is built by one person, around a full-time job. There’s no team, no investors and no corporate roadmap to follow. It’s shaped by feedback from the people who actually use it.</p>
         <p class="demo-body origin-body" style="color:var(--text-secondary)">Your support helps keep Plot independent and worth coming back to. Your movies, your shows, your Plot.</p>
         <div class="origin-actions">
-          <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-primary btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support plot on Ko-fi</a>
+          <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-primary btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support Plot on Ko-fi</a>
           <a href="/about" class="demo-link dark-link" data-cta="origin-about">Read the story</a>
         </div>
       </div>
@@ -2095,7 +2069,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="footer-intro">
           <p class="footer-lede">Everything you've watched.<br>Everything you want to watch.</p>
           <div class="footer-actions">
-            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start your plot</a>
+            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start your Plot</a>
             <a class="footer-login" href="https://app.theplot.tv/login" data-cta="footer">Log in</a>
           </div>
         </div>
@@ -2126,25 +2100,25 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
       <div class="footer-bottom">
-        <div class="footer-copy">&copy; 2026 plot</div>
+        <div class="footer-copy">&copy; 2026 Plot</div>
         <div class="footer-social">
-          <a href="https://www.instagram.com/theplottv" target="_blank" rel="noopener" aria-label="plot on Instagram" data-cta="footer-social">
+          <a href="https://www.instagram.com/theplottv" target="_blank" rel="noopener" aria-label="Plot on Instagram" data-cta="footer-social">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>
           </a>
-          <a href="https://www.threads.net/@theplottv" target="_blank" rel="noopener" aria-label="plot on Threads" data-cta="footer-social">
+          <a href="https://www.threads.net/@theplottv" target="_blank" rel="noopener" aria-label="Plot on Threads" data-cta="footer-social">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.05 11.18c-.09-.04-.18-.08-.27-.12-.16-2.93-1.76-4.6-4.45-4.62h-.04c-1.61 0-2.95.69-3.77 1.94l1.48 1.02c.61-.93 1.57-1.13 2.29-1.13h.03c.9.01 1.57.27 2 .78.31.37.52.88.63 1.52-.81-.14-1.69-.18-2.63-.13-2.64.15-4.34 1.69-4.22 3.83.06 1.08.6 2.02 1.51 2.64.77.52 1.77.78 2.8.72 1.37-.07 2.44-.59 3.19-1.53.57-.72.93-1.65 1.09-2.83.66.4 1.15.92 1.42 1.55.46 1.07.49 2.83-.95 4.26-1.26 1.26-2.78 1.8-5.07 1.82-2.54-.02-4.46-.83-5.71-2.41-1.17-1.48-1.78-3.62-1.8-6.36.02-2.74.63-4.88 1.8-6.36C6.94 3.83 8.86 3.02 11.4 3h.02c2.55.02 4.5.83 5.8 2.42.64.78 1.12 1.76 1.44 2.9l1.74-.46c-.38-1.4-.99-2.62-1.81-3.62C16.92 2.22 14.47 1.18 11.42 1.16h-.03C8.34 1.18 5.92 2.22 4.2 4.27 2.67 6.1 1.88 8.65 1.85 11.84v.02c.03 3.19.82 5.74 2.35 7.57 1.72 2.05 4.14 3.09 7.19 3.11h.03c2.71-.02 4.62-.73 6.19-2.3 2.06-2.05 2-4.63 1.32-6.21-.49-1.13-1.42-2.05-2.7-2.65zm-4.55 5.27c-1.14.06-2.32-.45-2.38-1.55-.04-.81.58-1.72 2.45-1.83.21-.01.42-.02.63-.02.68 0 1.31.07 1.89.19-.22 2.7-1.48 3.16-2.59 3.21z"/></svg>
           </a>
-          <a href="https://x.com/theplottv" target="_blank" rel="noopener" aria-label="plot on X" data-cta="footer-social">
+          <a href="https://x.com/theplottv" target="_blank" rel="noopener" aria-label="Plot on X" data-cta="footer-social">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817-5.967 6.817H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z"/></svg>
           </a>
         </div>
       </div>
     </div>
     <!-- The wordmark: plot in Gabarito Bold outlines (as favicon.svg), each letter
-         tracked 20 units tighter, sized to the footer's width so it bleeds off both
+         tracked 55 units tighter (-0.1em overall, matching the nav logo), sized to the footer's width so it bleeds off both
          sides and sinks below the bottom edge. -->
     <a class="footer-wordmark" href="/" aria-label="plot home" data-cta="footer">
-      <svg viewBox="52 -681 1508 871" aria-hidden="true" focusable="false"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/><path transform="translate(-20,0)" d="M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723.0 -156 736.5 -145.5Q750.0 -135 771.0 -135V0Q761.0 2 744.5 3.5Q728.0 5 715.0 5Z"/><path transform="translate(-40,0)" d="M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z"/><path transform="translate(-60,0)" d="M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg>
+      <svg viewBox="52 -681 1403 871" aria-hidden="true" focusable="false"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/><path transform="translate(-55,0)" d="M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723.0 -156 736.5 -145.5Q750.0 -135 771.0 -135V0Q761.0 2 744.5 3.5Q728.0 5 715.0 5Z"/><path transform="translate(-110,0)" d="M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z"/><path transform="translate(-165,0)" d="M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg>
     </a>
   </footer>
   <!-- footer:end -->
@@ -3254,6 +3228,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     })();
   </script>
   <script src="js/nav.js"></script>
-  <script src="/js/premium-home.js?v=3"></script>
+  <script src="/js/premium-home.js?v=5"></script>
 </body>
 </html>
