@@ -7,6 +7,7 @@ import { cardToPng, canCopyImages, copyImage, downloadBlob, xIntentUrl, threadsI
 import { SHARE_CARDS as T } from '../copy/shareCards.js';
 import { IconChevronLeft, IconChevronRight, IconClose } from './navIcons.jsx';
 import ShareCard from './ShareCard.jsx';
+import { useApp } from '../hooks/useApp.js';
 import Spinner from './Spinner.jsx';
 import './ShareCardSheet.css';
 
@@ -81,10 +82,15 @@ function unlockLine(card) {
  *   profile: object,            the owner (username for the caption)
  *   source: string,             where it was opened from, for analytics
  *   loading?: boolean,          cards still on their way (the profile loads them on open)
+ *   family?: string,            theme family to draw the cards in; defaults to the viewer's own
  *   onClose: () => void,
  * }} props
  */
-export default function ShareCardSheet({ cards, preset, profile, source, loading = false, onClose }) {
+export default function ShareCardSheet({ cards, preset, profile, source, loading = false, family, onClose }) {
+  // The card takes the viewer's own theme family (already Premium-gated by
+  // useTheme), so the image they share matches the app they see.
+  const app = useApp();
+  const cardFamily = family ?? app?.themeFamily;
   const [index, setIndex] = useState(() => presetIndex(cards, preset));
   // When the cards arrive after the sheet opened, land on the preset then.
   const presetApplied = useRef(cards.length > 0);
@@ -225,7 +231,7 @@ export default function ShareCardSheet({ cards, preset, profile, source, loading
           )}
           {card && <div className={`scs-preview${card.available ? '' : ' scs-preview--locked'}`} style={previewStyle} aria-label={T.cardOf(index + 1, cards.length)}>
             <div className="scs-scaler" style={{ transform: `scale(${scale})` }}>
-              <ShareCard card={card} format={format} nodeRef={cardRef} />
+              <ShareCard card={card} format={format} family={cardFamily} nodeRef={cardRef} />
             </div>
             {!card.available && (
               <div className="scs-lock">

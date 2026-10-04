@@ -4,10 +4,11 @@ import test from 'node:test';
 import {
   CARD_IDS, CARD_FORMATS, THRESHOLDS,
   highlightsCard, streakCard, top5Card, buildShareCards, presetIndex, shareCaption, cardFilename, leadWithTop5, monthWrapCard,
-  activityCard, crowdCard, genresCard, personCard,
+  activityCard, shareCardPalette, crowdCard, genresCard, personCard,
 } from '../../shareCards.js';
 import { detailsKey } from '../../historyStats.js';
 import { SHARE_CARDS } from '../../copy/shareCards.js';
+import { themeFamilyVariants } from '../../tokens.js';
 
 let nextId = 1;
 const row = (watched_at, extra = {}) => ({
@@ -129,19 +130,49 @@ test('month wrap card: last month only, best night, five stars, dnf', () => {
   assert.match(shareCaption(c, { username: 'sav' }, SHARE_CARDS.captions), /^August, wrapped: 6 titles, 2 five-star\. https:/);
 });
 
-test('activity card: 22 Monday-first columns ending this week, levels and the best day', () => {
-  const es = [row('2026-09-19'), row('2026-09-19'), row('2026-09-19'), row('2026-09-18'), row('2026-09-01'), row('2026-01-01')];
+test('activity card: the year to date for a post, the last quarter for a story', () => {
+  const es = [row('2026-09-19'), row('2026-09-19'), row('2026-09-19'), row('2026-09-18'), row('2026-09-01'), row('2026-01-01'), row('2025-12-31')];
   const c = activityCard({ entries: es, now: NOW });
-  assert.equal(c.weeks.length, 22);
-  assert.equal(c.weeks[21].length, 7);
-  const sat = c.weeks[21][5]; // 19 Sep 2026 is a Saturday
+  // 1 Jan 2026 is a Thursday; the week of Mon 29 Dec to the week of Mon 14 Sep is 38 columns.
+  assert.equal(c.weeks.length, 38);
+  assert.equal(c.weeks[0][0].before, true, 'Mon 29 Dec is before the year');
+  assert.equal(c.weeks[0][3].before, false, 'Thu 1 Jan is the first day');
+  assert.equal(c.weeks[0][3].count, 1);
+  assert.equal(c.weeks[0][2].count, 0, 'last year is not counted');
+  const last = c.weeks[37];
+  const sat = last[5]; // 19 Sep 2026 is a Saturday
   assert.equal(sat.count, 3); assert.equal(sat.level, 3); assert.equal(sat.best, true);
-  assert.equal(c.weeks[21][6].today, true, 'Sunday 20 Sep is today');
-  assert.equal(c.weeks[21][4].level, 1);
+  assert.equal(last[6].today, true, 'Sunday 20 Sep is today');
+  assert.equal(last[4].level, 1);
   assert.deepEqual(c.best, { label: 'Sat 19 Sep', count: 3 });
-  assert.equal(c.watchDays, 3, 'January is outside the window');
+  assert.equal(c.watchDays, 4, 'Dec 2025 is out, 1 Jan is in');
   assert.equal(c.need.met, false);
-  assert.ok(c.months.length >= 5);
+  assert.equal(c.months[0].label, 'Jan');
+  assert.ok(c.months.length >= 9);
+
+  assert.equal(c.quarter.weeks.length, 13);
+  assert.equal(c.quarter.weeks[12][5].best, true);
+  assert.deepEqual(c.quarter.best, { label: 'Sat 19 Sep', count: 3 });
+  assert.equal(c.quarter.watchDays, 3, 'the quarter starts in late June, so January is out');
+  assert.ok(c.quarter.months.length >= 3 && c.quarter.months.length <= 4);
+});
+
+test('activity card: early in the year the grid is only a few columns', () => {
+  const c = activityCard({ entries: [row('2026-01-05')], now: new Date(2026, 0, 9) });
+  assert.equal(c.weeks.length, 2);
+  assert.equal(c.watchDays, 1);
+});
+
+test('share card palette: a family maps onto the card roles, the default stays literal', () => {
+  assert.equal(shareCardPalette('default'), null);
+  assert.equal(shareCardPalette(undefined), null);
+  const p = shareCardPalette('mist');
+  assert.equal(p['--sc-accent'], themeFamilyVariants.mist.light.accentFill);
+  assert.equal(p['--sc-char'], themeFamilyVariants.mist.dark.surface);
+  for (const f of Object.keys(themeFamilyVariants)) {
+    const pal = shareCardPalette(f);
+    assert.ok(pal && Object.values(pal).every(v => typeof v === 'string' && v.length), `${f} defines every role`);
+  }
 });
 
 test('crowd card: gauge, delta glyph and the split sentence', () => {
