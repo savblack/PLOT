@@ -32,6 +32,7 @@ import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, 
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { ContinueWatchingShelf, YourPeopleShelf } from '../../components/people/HomeShelves';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
@@ -144,15 +145,17 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
         }
         {/* Heart — favourite (top left, in the former type-chip slot) */}
-        <TouchableOpacity
-          style={[styles.cardActionBtn, styles.cardActionBtnLeft]}
-          onPress={onFavorite}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
-          accessibilityRole="button"
-        >
-          <HeartIcon color={isFav ? colors.accent : '#fff'} filled={isFav} />
-        </TouchableOpacity>
+        {FAVOURITES_ENABLED && (
+          <TouchableOpacity
+            style={[styles.cardActionBtn, styles.cardActionBtnLeft]}
+            onPress={onFavorite}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
+            accessibilityRole="button"
+          >
+            <HeartIcon color={isFav ? colors.accent : '#fff'} filled={isFav} />
+          </TouchableOpacity>
+        )}
         {/* Bookmark — watchlist (top right) */}
         <TouchableOpacity
           style={styles.cardActionBtn}
@@ -420,15 +423,17 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
         {/* Rank number — bottom left, no circle (matches web) */}
         <Text style={styles.rankBadgeText}>{rank}</Text>
         {/* Heart — favourite (top left, in the former type-chip slot) */}
-        <TouchableOpacity
-          style={[styles.cardActionBtn, styles.cardActionBtnLeft]}
-          onPress={onFavorite}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
-          accessibilityRole="button"
-        >
-          <HeartIcon color={isFav ? colors.accent : '#fff'} filled={isFav} />
-        </TouchableOpacity>
+        {FAVOURITES_ENABLED && (
+          <TouchableOpacity
+            style={[styles.cardActionBtn, styles.cardActionBtnLeft]}
+            onPress={onFavorite}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
+            accessibilityRole="button"
+          >
+            <HeartIcon color={isFav ? colors.accent : '#fff'} filled={isFav} />
+          </TouchableOpacity>
+        )}
         {/* Bookmark — watchlist (top right) */}
         <TouchableOpacity
           style={styles.cardActionBtn}

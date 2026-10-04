@@ -6,6 +6,7 @@ import { useGenres } from '../hooks/useGenres.js';
 import { useSelection } from '../hooks/useSelection.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { COMMON } from '../copy/common.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { listVisibility } from '@plot/core/customLists.js';
@@ -193,7 +194,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   // One index behind both the column and the covers, so the two can't drift.
   const collections = [
     { key: 'want',      name: 'Want to Watch', items: want,                empty: 'Nothing saved yet'  },
-    { key: 'favorites', name: fw.plural,       items: favorites.favorites, empty: 'Nothing hearted yet' },
+    ...(FAVOURITES_ENABLED ? [{ key: 'favorites', name: fw.plural, items: favorites.favorites, empty: 'Nothing hearted yet' }] : []),
     ...split.own.map(list => ({
       key: customListKey(list.id),
       name: list.name,

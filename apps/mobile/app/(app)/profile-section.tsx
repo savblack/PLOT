@@ -19,6 +19,7 @@ import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { usePublicProfile } from '../../hooks/usePublicProfile';
 import { favoriteWords } from '../../lib/spelling';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { Palette, fontFamily, fontSize, spacing } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { profileHistoryPage, profileFavouritesPage } from '@plot/core/publicProfileLayout.js';
@@ -78,7 +79,7 @@ export default function ProfileSectionScreen() {
   const busy = loading || (!!profile && !locked && fetching);
   // Section toggles are layout, not access (RLS already scoped the rows), but
   // "View all" on a shelf the owner hid shouldn't bring it back either.
-  const hidden = paged && !isSectionEnabled(profile?.profile_sections, section === 'favourites' ? 'favourites' : 'recent');
+  const hidden = paged && (!isSectionEnabled(profile?.profile_sections, section === 'favourites' ? 'favourites' : 'recent') || (section === 'favourites' && !FAVOURITES_ENABLED));
   const empty = hidden || (section === 'lists' ? lists.length === 0 : result.items.length === 0);
 
   let body: React.ReactNode;

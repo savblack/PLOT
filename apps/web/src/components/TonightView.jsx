@@ -21,6 +21,7 @@ import { smartListRulesFromPicker } from '@plot/core/smartLists.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { MEDIA } from '../copy/media.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import './TonightView.css';
 
 /* Pick for Me. Phone: one column, a Filters panel that folds away, and a
@@ -486,7 +487,7 @@ function FavSave({ item, actions, variant }) {
   if (variant === 'hero') {
     return (
       <div className="discover-hero-corner-btns">
-        <button type="button" className={`discover-hero-corner-btn${fav ? ' active' : ''}`} style={{ top: 10, left: 10 }} onClick={toggleFav} aria-label={fav ? favWords.un : favWords.noun}>{icon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', fav)}</button>
+        {FAVOURITES_ENABLED && <button type="button" className={`discover-hero-corner-btn${fav ? ' active' : ''}`} style={{ top: 10, left: 10 }} onClick={toggleFav} aria-label={fav ? favWords.un : favWords.noun}>{icon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', fav)}</button>}
         <button type="button" className={`discover-hero-corner-btn${saved ? ' active' : ''}`} style={{ top: 10, right: 10 }} onClick={toggleSave} disabled={watchlist.loading} aria-label={saved ? MEDIA.removeFromList : MEDIA.addToList}>{icon('M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z', saved)}</button>
       </div>
     );
@@ -494,10 +495,12 @@ function FavSave({ item, actions, variant }) {
   // Cards: Home's chart-row buttons on the right, revealed on hover.
   return (
     <span className="tonight-card-actions search-row-actions">
-      <button type="button" className={`search-action-btn search-action-btn--heart${fav ? ' active' : ''}`} onClick={toggleFav}
-        data-tip={fav ? `Remove ${favWords.nounLower}` : favWords.noun} aria-label={fav ? `Remove ${item.title} from ${favWords.pluralLower}` : `Add ${item.title} to ${favWords.pluralLower}`}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" fill={fav ? 'currentColor' : 'none'} /></svg>
-      </button>
+      {FAVOURITES_ENABLED && (
+        <button type="button" className={`search-action-btn search-action-btn--heart${fav ? ' active' : ''}`} onClick={toggleFav}
+          data-tip={fav ? `Remove ${favWords.nounLower}` : favWords.noun} aria-label={fav ? `Remove ${item.title} from ${favWords.pluralLower}` : `Add ${item.title} to ${favWords.pluralLower}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" fill={fav ? 'currentColor' : 'none'} /></svg>
+        </button>
+      )}
       <button type="button" className={`search-action-btn${saved ? ' active' : ''}`} onClick={toggleSave} disabled={watchlist.loading}
         data-tip={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist} aria-label={saved ? `Remove ${item.title} from list` : `Add ${item.title} to list`}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z" fill={saved ? 'currentColor' : 'none'} /></svg>

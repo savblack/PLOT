@@ -1,5 +1,6 @@
 import { isSectionEnabled } from './profileFields.js';
 import { TOP_LIST_SIZE } from './listCollections.js';
+import { FAVOURITES_ENABLED } from './features.js';
 
 /** Most custom lists a profile shows: two rows of three. Owners pick which are public. */
 export const PUBLIC_LIST_LIMIT = 6;
@@ -11,7 +12,7 @@ export function publicProfileLayout(data = {}) {
   const visible = (key, items) => !data.locked && isSectionEnabled(data.sections, key) ? (items || []) : [];
   const topMovies = visible('topMovies', data.topMovies).slice(0, TOP_LIST_SIZE);
   const topTv = visible('topTv', data.topTv).slice(0, TOP_LIST_SIZE);
-  const favourites = visible('favourites', data.favourites);
+  const favourites = FAVOURITES_ENABLED ? visible('favourites', data.favourites) : [];
   const recent = visible('recent', data.recent);
   const watching = visible('watching', data.watching);
   const wantToWatch = visible('want', data.wantToWatch);

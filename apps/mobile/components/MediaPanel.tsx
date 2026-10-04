@@ -29,6 +29,7 @@ import { backdropUrl, posterUrl, logoUrl, Palette, fontFamily, fontSize, spacing
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { mediaTypeFromItem, recommendationsFromDetails, releaseDateFromItem, titleFromItem } from '@plot/core/media.js';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
@@ -1461,15 +1462,17 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </View>
 
                   <View style={styles.iconGroup}>
-                    <TouchableOpacity
-                      style={[styles.iconBtn, isFav && styles.iconBtnFav]}
-                      onPress={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
-                      accessibilityRole="button"
-                      accessibilityLabel={isFav ? fw.pastTitle : fw.noun}
-                      accessibilityState={{ selected: isFav }}
-                    >
-                      <IconHeart filled={isFav} />
-                    </TouchableOpacity>
+                    {FAVOURITES_ENABLED && (
+                      <TouchableOpacity
+                        style={[styles.iconBtn, isFav && styles.iconBtnFav]}
+                        onPress={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
+                        accessibilityRole="button"
+                        accessibilityLabel={isFav ? fw.pastTitle : fw.noun}
+                        accessibilityState={{ selected: isFav }}
+                      >
+                        <IconHeart filled={isFav} />
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                       style={[styles.iconBtn, isInAnyList && styles.iconBtnOn]}
                       onPress={() => setShowListSheet(true)}

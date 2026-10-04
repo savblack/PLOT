@@ -5,6 +5,7 @@ import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { todayLongLabel } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import ScrollRail from './ScrollRail.jsx';
 import RailArrows from './RailArrows.jsx';
 import { useRailScroll } from '../hooks/useRailScroll.js';
@@ -312,6 +313,7 @@ function FavBtn({ item }) {
   const fw   = favoriteWords(profile?.region);
   const type = item.media_type || 'movie';
   const fav  = favorites.isFavorite(item.id);
+  if (!FAVOURITES_ENABLED) return null;
   return (
     <button
       className={`card-fav-btn${fav ? ' faved' : ''}`}
@@ -414,16 +416,18 @@ function BingeCard({ item, openPanel, watchlist }) {
           active; the inactive one waits for hover, so an active favourite
           doesn't display an empty bookmark next to it. */}
       <div className={`discover-hero-corner-btns${hovered ? ' visible' : ''}`}>
-        <button
-          className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
-          style={{ position: 'absolute', top: 10, left: 10 }}
-          onClick={() => favorites.toggleFavorite({ ...item, media_type: type })}
-          aria-label={fav ? fw.un : fw.noun}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-        </button>
+        {FAVOURITES_ENABLED && (
+          <button
+            className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
+            style={{ position: 'absolute', top: 10, left: 10 }}
+            onClick={() => favorites.toggleFavorite({ ...item, media_type: type })}
+            aria-label={fav ? fw.un : fw.noun}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </button>
+        )}
         <button
           className={`discover-hero-corner-btn${saved ? ' active' : ''}`}
           style={{ position: 'absolute', top: 10, right: 10 }}
@@ -509,16 +513,18 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
           doesn't display an empty bookmark next to it. */}
       <div className={`discover-hero-corner-btns${hovered ? ' visible' : ''}`}>
         {/* Top-left: Favourite */}
-        <button
-          className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
-          style={{ position: 'absolute', top: 10, left: 10 }}
-          onClick={() => favorites.toggleFavorite({ ...item, media_type: type })}
-          aria-label={fav ? fw.un : fw.noun}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-        </button>
+        {FAVOURITES_ENABLED && (
+          <button
+            className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
+            style={{ position: 'absolute', top: 10, left: 10 }}
+            onClick={() => favorites.toggleFavorite({ ...item, media_type: type })}
+            aria-label={fav ? fw.un : fw.noun}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </button>
+        )}
 
         {/* Top-right: Bookmark */}
         <button
@@ -590,15 +596,17 @@ function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
         </div>
       </button>
       <div className="discover-chart-actions search-row-actions">
-        <button
-          type="button"
-          className={`search-action-btn search-action-btn--heart${isFav ? ' active' : ''}`}
-          onClick={async e => { e.stopPropagation(); await favorites.toggleFavorite({ ...item, id, tmdb_id: id, media_type: type }); }}
-          data-tip={isFav ? `Remove ${fw.nounLower}` : fw.noun}
-          aria-label={isFav ? `Remove ${title} from ${fw.pluralLower}` : `Add ${title} to ${fw.pluralLower}`}
-        >
-          <HeartIcon filled={isFav} />
-        </button>
+        {FAVOURITES_ENABLED && (
+          <button
+            type="button"
+            className={`search-action-btn search-action-btn--heart${isFav ? ' active' : ''}`}
+            onClick={async e => { e.stopPropagation(); await favorites.toggleFavorite({ ...item, id, tmdb_id: id, media_type: type }); }}
+            data-tip={isFav ? `Remove ${fw.nounLower}` : fw.noun}
+            aria-label={isFav ? `Remove ${title} from ${fw.pluralLower}` : `Add ${title} to ${fw.pluralLower}`}
+          >
+            <HeartIcon filled={isFav} />
+          </button>
+        )}
         <button
           type="button"
           className={`search-action-btn${inList ? ' active' : ''}`}
