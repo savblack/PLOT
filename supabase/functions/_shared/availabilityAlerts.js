@@ -1,5 +1,5 @@
-// Rules for the Premium "now streaming / now free" film alerts
-// (supabase/functions/streaming-arrival-alerts).
+// Rules for the "now streaming / now free" alerts on watchlist films
+// (supabase/functions/streaming-arrival-alerts). Free, in-app, automatic.
 //
 // Pure functions, so the rules that decide whether someone is told are tested
 // with node --test (apps/web/tests/unit/availabilityAlerts.test.js) without
@@ -194,22 +194,22 @@ export const alertKind = (bucket) => (bucket === 'flatrate' ? 'streaming' : 'fre
 export const arrivalKey = (tmdbId, region, kind) => `streaming_arrival:movie:${tmdbId}:${region}:${kind}`;
 
 /**
- * Why a person who opted in is not told about an event, or null if they are.
+ * Why a person with the film on their watchlist is not told about an event, or null if they are.
  *
  *   stale          the event was confirmed more than ALERT_LOOK_BACK_DAYS ago.
- *   before_opt_in  the provider was already showing when they turned the alert
- *                  on, so "now" would be an echo of what they could see.
+ *   before_saved  the provider was already showing when they added the film to
+ *                  their watchlist, so "now" would be an echo of what they could see.
  *   watched        they have already logged watching it.
  *
- * @param {{ optedInAt: string | null, watched: boolean }} person
+ * @param {{ savedAt: string | null, watched: boolean }} person
  * @param {ArrivalEvent} event
  * @param {string} nowIso
- * @returns {'stale' | 'before_opt_in' | 'watched' | null}
+ * @returns {'stale' | 'before_saved' | 'watched' | null}
  */
-export function skipReason({ optedInAt, watched }, event, nowIso) {
+export function skipReason({ savedAt, watched }, event, nowIso) {
   if (Date.parse(nowIso) - Date.parse(event.confirmedAt) > ALERT_LOOK_BACK_DAYS * 86400000) return 'stale';
-  // A missing opt-in time means "unknown, so assume it was long ago": never silently drop.
-  if (optedInAt && Date.parse(event.firstSeenAt) < Date.parse(optedInAt)) return 'before_opt_in';
+  // A missing saved-at time means "unknown, so assume it was long ago": never silently drop.
+  if (savedAt && Date.parse(event.firstSeenAt) < Date.parse(savedAt)) return 'before_saved';
   if (watched) return 'watched';
   return null;
 }
@@ -225,14 +225,14 @@ export function skipReason({ optedInAt, watched }, event, nowIso) {
  * the free one is possible. The named provider is the lowest id among the
  * matches, so the same data always names the same service.
  *
- * @param {{ serviceIds: number[], optedInAt: string | null, watched: boolean }} person
+ * @param {{ serviceIds: number[], savedAt: string | null, watched: boolean }} person
  * @param {ArrivalEvent[]} events confirmed events for this film and region
  * @param {string} nowIso
- * @returns {{ alerts: { kind: 'streaming' | 'free', providerName: string, date: string }[], skipped: { stale: number, before_opt_in: number, watched: number } }}
+ * @returns {{ alerts: { kind: 'streaming' | 'free', providerName: string, date: string }[], skipped: { stale: number, before_saved: number, watched: number } }}
  */
 export function alertsFor(person, events, nowIso) {
   const mine = new Set(person.serviceIds);
-  const skipped = { stale: 0, before_opt_in: 0, watched: 0 };
+  const skipped = { stale: 0, before_saved: 0, watched: 0 };
   /** @type {Map<'streaming' | 'free', ArrivalEvent>} */
   const best = new Map();
   for (const event of events) {

@@ -6,7 +6,7 @@ import {
 } from '../../../../supabase/functions/_shared/availabilityAlerts.js';
 import { personReleaseKey } from '../../../../supabase/functions/_shared/premiumAlerts.js';
 
-// The rules behind Premium "now streaming / now free" film alerts. The bar is
+// The rules behind "now streaming / now free" alerts on watchlist films. The bar is
 // that a false alert is worse than a late one, so most of these pin down what
 // stays silent.
 //
@@ -201,19 +201,19 @@ test('arrivalKey is its own namespace, never the Free movie_release key', () => 
 });
 
 const event = (over = {}) => ({ bucket: 'flatrate', providerId: 9001, name: 'Service A', firstSeenAt: DAY2, confirmedAt: DAY3, ...over });
-const person = (over = {}) => ({ serviceIds: [9001], optedInAt: '2026-10-01T00:00:00.000Z', watched: false, ...over });
+const person = (over = {}) => ({ serviceIds: [9001], savedAt: '2026-10-01T00:00:00.000Z', watched: false, ...over });
 
-test('skipReason: watched, opted in after it showed up, and stale are silent', () => {
+test('skipReason: watched, saved after it showed up, and stale are silent', () => {
   assert.equal(skipReason(person(), event(), DAY3), null);
   assert.equal(skipReason(person({ watched: true }), event(), DAY3), 'watched');
-  // Provider was already showing when they turned the alert on.
-  assert.equal(skipReason(person({ optedInAt: '2026-10-05T23:00:00.000Z' }), event(), DAY3), 'before_opt_in');
-  // Opted in between first sighting and confirmation is still after first sighting: not an echo.
-  assert.equal(skipReason(person({ optedInAt: DAY2 }), event(), DAY3), null);
+  // Provider was already showing when they added the film.
+  assert.equal(skipReason(person({ savedAt: '2026-10-05T23:00:00.000Z' }), event(), DAY3), 'before_saved');
+  // Added between first sighting and confirmation is still after first sighting: not an echo.
+  assert.equal(skipReason(person({ savedAt: DAY2 }), event(), DAY3), null);
   assert.equal(skipReason(person(), event({ confirmedAt: '2026-09-27T00:00:00.000Z' }), '2026-10-06T00:00:00.000Z'), 'stale');
   assert.equal(ALERT_LOOK_BACK_DAYS, 7);
-  // An unknown opt-in time never silently drops the alert.
-  assert.equal(skipReason(person({ optedInAt: null }), event(), DAY3), null);
+  // An unknown saved-at time never silently drops the alert.
+  assert.equal(skipReason(person({ savedAt: null }), event(), DAY3), null);
 });
 
 test('alertsFor: a subscription arrival only counts on one of their own services', () => {
@@ -246,7 +246,7 @@ test('alertsFor: several providers arriving together collapse to one alert per k
 test('alertsFor counts why it stayed silent, and watched people get nothing', () => {
   const { alerts, skipped } = alertsFor(person({ watched: true }), [event(), event({ bucket: 'free', providerId: 9003, name: 'Free Service' })], DAY3);
   assert.deepEqual(alerts, []);
-  assert.deepEqual(skipped, { stale: 0, before_opt_in: 0, watched: 2 });
+  assert.deepEqual(skipped, { stale: 0, before_saved: 0, watched: 2 });
 });
 
 test('end to end: baseline, glitch, then a real arrival confirmed on the next run', () => {

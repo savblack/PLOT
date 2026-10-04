@@ -1351,26 +1351,41 @@ export type Database = {
         }
         Relationships: []
       }
-      movie_streaming_alerts: {
+      movie_streaming_alert_mutes: {
         Row: {
           created_at: string
-          poster_path: string | null
           title: string
           tmdb_id: number
           user_id: string
         }
         Insert: {
           created_at?: string
-          poster_path?: string | null
           title: string
           tmdb_id: number
           user_id: string
         }
         Update: {
           created_at?: string
-          poster_path?: string | null
           title?: string
           tmdb_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          streaming_alerts: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          streaming_alerts?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          streaming_alerts?: boolean
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

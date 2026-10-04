@@ -45,7 +45,7 @@ const requests = [
 ];
 export default {
   title: 'Pages/Notifications', component: NotificationsPage, parameters: { layout: 'fullscreen' },
-  args: { list, requests, loading: false, now, onApprove: () => {}, onDecline: () => {}, onOpen: () => {}, onOpenTitle: () => {}, onOpenPeople: () => {}, onMarkAllRead: () => {}, wasUnread: n => !n.read_at },
+  args: { list, requests, loading: false, now, onApprove: () => {}, onDecline: () => {}, onOpen: () => {}, onOpenTitle: () => {}, onOpenPeople: () => {}, onManageAlerts: () => {}, onMarkAllRead: () => {}, wasUnread: n => !n.read_at },
   decorators: [(Story) => <MemoryRouter><Story /></MemoryRouter>],
 };
 export const Full = {};

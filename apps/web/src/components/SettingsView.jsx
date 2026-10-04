@@ -50,6 +50,7 @@ import SettingsBilling from './SettingsBilling.jsx';
 import SettingsThemeRows from './SettingsThemeRows.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import PremiumAlertsSettings from './PremiumAlertsSettings.jsx';
+import StreamingAlertsSettings from './StreamingAlertsSettings.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -1902,6 +1903,7 @@ export default function SettingsView() {
         </div>
 
       </div>
+      <StreamingAlertsSettings userId={user?.id} />
       <PremiumAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
         </>}
         {activeSection === 'connections' && <>

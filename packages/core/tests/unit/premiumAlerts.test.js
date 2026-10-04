@@ -84,13 +84,19 @@ test('people and season-ready alerts are live Premium features; episode alerts a
   assert.doesNotMatch(faq, /People alerts.*still planned/);
 });
 
-test('streaming alerts are listed as Premium but not live yet, and are scoped to films you pick', () => {
-  const feature = PLANS_PAGE.premiumFeatures.find(f => f.id === 'streamingAlerts');
+test('streaming alerts on the watchlist are Free and pending validation; push and email are Premium and coming soon', () => {
+  const rows = PLANS_PAGE.comparison.groups.flatMap(g => g.rows);
+  const inApp = rows.find(r => r.label === 'Streaming alerts for your watchlist');
+  assert.deepEqual([inApp.free, inApp.premium, inApp.tag], [true, true, 'Pending validation']);
+  const push = rows.find(r => r.label === 'Push and email alerts');
+  assert.deepEqual([push.free, push.premium, push.tag], [false, true, 'Coming soon']);
+  // Push and email are not built: never listed as live.
+  const feature = PLANS_PAGE.premiumFeatures.find(f => f.id === 'pushAlerts');
   assert.ok(feature);
   assert.notEqual(feature.live, true);
-  const row = PLANS_PAGE.comparison.groups.flatMap(g => g.rows).find(r => r.label === 'Streaming alerts for films you pick');
-  assert.deepEqual([row.free, row.premium, row.tag], [false, true, 'Pending validation']);
-  // Never "every new arrival": the positioning doc says not to claim general streaming alerts.
-  assert.match(feature.label, /films you pick/);
-  assert.doesNotMatch(feature.description, /every|any film|all films/i);
+  // Not claimed on Free's feature list (mobile Settings prints every label) until it is live.
+  assert.equal(PLANS_PAGE.freeFeatures.find(f => f.id === 'streamingAlerts'), undefined);
+  // The old Premium-only framing is gone.
+  assert.equal(PLANS_PAGE.premiumFeatures.find(f => f.id === 'streamingAlerts'), undefined);
+  assert.equal(rows.some(r => r.label === 'Streaming alerts for films you pick'), false);
 });

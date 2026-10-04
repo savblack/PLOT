@@ -1,17 +1,22 @@
 /**
  * streaming-arrival-alerts — daily sweep that writes a `streaming_arrival`
- * notification when a film someone turned the bell on for:
+ * notification when a film on someone's watchlist ("My List"):
  *   - gains a subscription offer on one of their own services, or
  *   - becomes free or free-with-ads on any service,
- * in their region. Premium, in-app only. The Free "it is out to rent or watch
- * at home" row is movie-release-notifications and is not repeated here.
+ * in their region. Free for everyone, in-app only, automatic: the watchlist is
+ * the opt-in. They can mute a film (movie_streaming_alert_mutes) or turn the
+ * whole thing off (notification_preferences). Push, email and phone
+ * notifications are a later, Premium option and are not built. The "it is out
+ * to rent or watch at home" row is movie-release-notifications and is not
+ * repeated here.
  *
  * Rules live in _shared/availabilityAlerts.js and are unit-tested
  * (apps/web/tests/unit/availabilityAlerts.test.js). The short version: TMDB's
  * watch/providers has no history and flaps, so this keeps a snapshot per film
  * and region (title_availability) and only believes a new provider once it has
  * still been there at least 20 hours later. The first snapshot of a film is a
- * baseline and tells nobody.
+ * baseline and tells nobody, so switching this on for existing watchlists does
+ * not flood anyone.
  *
  * What makes it safe to run unattended:
  *   - a failed or unreadable TMDB response changes nothing for that film;
@@ -26,13 +31,20 @@
  *     stalest films first, so nothing starves and nothing hangs the run;
  *   - one row per run lands in alert_job_runs.
  *
- * Who is told: a Premium person with the bell on for the film, who has not
- * logged watching it, and who did not turn the bell on after the provider was
- * already showing. A lapsed subscriber keeps their bells and gets nothing until
- * they return, the same as the other Premium alerts.
+ * Delivery is off unless the STREAMING_ARRIVAL_DELIVER secret is "true". With it
+ * off the job still runs for real: snapshots and the ledger fill up, so
+ * precision can be judged on real data before anyone is told anything, and no
+ * notification is written. Turning it on delivers the last 7 days of confirmed
+ * events. `dry_run` is different: it writes nothing at all, state included.
  *
- * Cost: one TMDB call per distinct opted-in film (all regions come back in one
- * response), capped per run, never one per person.
+ * Who is told: anyone with the film on their watchlist who has not muted it,
+ * has not switched streaming alerts off, has not logged watching it, and did
+ * not add it after the provider was already showing. Free and Premium alike.
+ *
+ * Cost: one TMDB call per distinct watchlist film (all regions come back in one
+ * response), never one per person, capped per run. Past the cap a film's check
+ * slips past a day (the stalest go first), so an alert arrives later, never
+ * wrongly. If the distinct-film count nears the cap, shard the run by tmdb_id.
  *
  * Auth: called by pg_cron via pg_net with the Vault service-role bearer
  * (run_streaming_arrival_alerts, 20261004090000). Also runnable by hand with
@@ -42,7 +54,7 @@
  *                            dry run has shown the change is real. It never
  *                            overrides the failure-rate breaker.
  *
- * Secrets: TMDB_API_KEY.
+ * Secrets: TMDB_API_KEY; STREAMING_ARRIVAL_DELIVER (optional, see above).
  */
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database, Json } from '../_shared/database.types.ts';
@@ -64,6 +76,8 @@ type ArrivalEvent = Step['events'][number];
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 
 const JOB = 'streaming-arrival-alerts';
+// The default watchlist's name (getOrCreateMyListId, and the Watch Together migrations).
+const WATCHLIST_NAME = 'My List';
 const PAGE_SIZE = 1000;
 const INSERT_CHUNK = 500;
 // PostgREST puts .in() lists in the URL, so keep each one short.
@@ -72,12 +86,13 @@ const ID_CHUNK = 200;
 // 50 films per read of per-region rows can never be cut off.
 const FILM_CHUNK = 50;
 // A ceiling on TMDB calls per run. Anything over it is the stalest-first
-// carry-over, same as hitting the deadline.
+// carry-over, same as hitting the deadline: a film's check slips past a day, so
+// an alert is later, never wrong.
 const MAX_FILMS_PER_RUN = 3000;
 // pg_net times out at 150s (run_streaming_arrival_alerts). Stop fetching well
 // before that so the writes still finish.
 const FETCH_DEADLINE_MS = 100_000;
-// A film nobody has a bell on stops being checked; its state is dropped after
+// A film nobody has on a watchlist stops being checked; its state is dropped after
 // this long so the table does not grow forever.
 const PRUNE_AFTER_DAYS = 60;
 
@@ -88,32 +103,65 @@ const unique = <T>(items: T[]) => [...new Set(items)];
 const chunks = <T>(items: T[], size: number) =>
   Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, (i + 1) * size));
 
-type OptIn = { userId: string; tmdbId: number; title: string; posterPath: string | null; createdAt: string };
+type Saved = { userId: string; tmdbId: number; title: string | null; posterPath: string | null; savedAt: string | null };
 type Person = { region: string; serviceIds: number[] };
 
-async function readOptIns(db: Db): Promise<OptIn[]> {
-  const out: OptIn[] = [];
+/**
+ * Every film on someone's watchlist ("My List"), one entry per person and film.
+ * The earliest save wins, and a missing timestamp means "unknown, so assume long
+ * ago" and has to stick, so an old row is never mistaken for a recent save.
+ */
+async function readWatchlist(db: Db): Promise<Saved[]> {
+  const byPair = new Map<string, Saved>();
   for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await db.from('movie_streaming_alerts')
-      .select('user_id, tmdb_id, title, poster_path, created_at')
+    const { data, error } = await db.from('list_items')
+      .select('user_id, tmdb_id, title, poster_path, created_at, lists!inner(name)')
+      .eq('media_type', 'movie')
+      .eq('lists.name', WATCHLIST_NAME)
+      .order('id')
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`list_items read failed: ${error.message}`);
+    for (const r of data ?? []) {
+      const key = `${r.user_id}:${r.tmdb_id}`;
+      const existing = byPair.get(key);
+      if (!existing) {
+        byPair.set(key, { userId: r.user_id, tmdbId: r.tmdb_id, title: r.title || null, posterPath: r.poster_path || null, savedAt: r.created_at });
+      } else if (existing.savedAt !== null) {
+        existing.savedAt = r.created_at === null || r.created_at < existing.savedAt ? r.created_at : existing.savedAt;
+      }
+    }
+    if (!data || data.length < PAGE_SIZE) break;
+  }
+  return [...byPair.values()];
+}
+
+/** `${userId}:${tmdbId}` for every film someone has muted. */
+async function readMutes(db: Db): Promise<Set<string>> {
+  const out = new Set<string>();
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await db.from('movie_streaming_alert_mutes')
+      .select('user_id, tmdb_id')
       .order('user_id').order('tmdb_id')
       .range(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(`movie_streaming_alerts read failed: ${error.message}`);
-    for (const r of data ?? []) {
-      out.push({ userId: r.user_id, tmdbId: r.tmdb_id, title: r.title, posterPath: r.poster_path, createdAt: r.created_at });
-    }
+    if (error) throw new Error(`movie_streaming_alert_mutes read failed: ${error.message}`);
+    for (const r of data ?? []) out.add(`${r.user_id}:${r.tmdb_id}`);
     if (!data || data.length < PAGE_SIZE) break;
   }
   return out;
 }
 
-/** Users whose Premium is current. A lapsed subscriber keeps their bells but is skipped. */
-async function premiumSet(db: Db, userIds: string[]): Promise<Set<string>> {
+/** People who switched streaming alerts off. No row means on. */
+async function readSwitchedOff(db: Db): Promise<Set<string>> {
   const out = new Set<string>();
-  for (const ids of chunks(userIds, ID_CHUNK)) {
-    const { data, error } = await db.rpc('premium_user_ids', { p_users: ids });
-    if (error) throw new Error(`premium_user_ids failed: ${error.message}`);
-    for (const id of data ?? []) out.add(id);
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await db.from('notification_preferences')
+      .select('user_id')
+      .eq('streaming_alerts', false)
+      .order('user_id')
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`notification_preferences read failed: ${error.message}`);
+    for (const r of data ?? []) out.add(r.user_id);
+    if (!data || data.length < PAGE_SIZE) break;
   }
   return out;
 }
@@ -214,6 +262,7 @@ Deno.serve(async (req) => {
   const tmdbKey = Deno.env.get('TMDB_API_KEY');
   if (!tmdbKey) return json({ ok: false, error: 'TMDB_API_KEY is not set' }, 500);
 
+  const deliver = Deno.env.get('STREAMING_ARRIVAL_DELIVER') === 'true';
   let dryRun = false;
   let forceBreaker = false;
   try {
@@ -248,16 +297,19 @@ Deno.serve(async (req) => {
 
   let stage = 'start';
   try {
-    stage = 'opt-ins';
-    const optIns = await readOptIns(db);
-    stage = 'premium';
-    const premium = await premiumSet(db, unique(optIns.map(o => o.userId)));
+    stage = 'watchlists';
+    const saved = await readWatchlist(db);
+    stage = 'choices';
+    const [mutes, switchedOff] = await Promise.all([readMutes(db), readSwitchedOff(db)]);
+    // A muted film, or someone who switched it all off, is not looked up for
+    // them (another person's watchlist may still need the film checked).
+    const wanted = saved.filter(s => !switchedOff.has(s.userId) && !mutes.has(`${s.userId}:${s.tmdbId}`));
     stage = 'profiles';
-    const people = await peopleFor(db, unique(optIns.filter(o => premium.has(o.userId)).map(o => o.userId)));
-    const active = optIns.filter(o => people.has(o.userId));
+    const people = await peopleFor(db, unique(wanted.map(s => s.userId)));
+    const active = wanted.filter(s => people.has(s.userId));
 
-    // Which regions each film must be checked in: where an opted-in Premium
-    // person lives. One TMDB call covers all of them.
+    // Which regions each film must be checked in: where someone who wants its
+    // alerts lives. One TMDB call covers all of them.
     const demand = new Map<number, Set<string>>();
     for (const o of active) {
       const region = people.get(o.userId)!.region;
@@ -300,8 +352,9 @@ Deno.serve(async (req) => {
     const suspects = pairs.filter(p => p.step.suspect).length;
     const stats = {
       dry_run: dryRun,
-      opt_ins: optIns.length,
-      opt_ins_premium: active.length,
+      watchlist_rows: saved.length,
+      watchlist_active: active.length,
+      delivery: deliver,
       films_demanded: demand.size,
       films_checked: checked.length,
       films_deferred: queue.length - checked.length,
@@ -370,12 +423,12 @@ Deno.serve(async (req) => {
     stage = 'history';
     const watched = await watchedPairs(db, unique(withEvents.map(o => o.tmdbId)), unique(withEvents.map(o => o.userId)));
 
-    const skipped = { stale: 0, before_opt_in: 0, watched: 0 };
+    const skipped = { stale: 0, before_saved: 0, watched: 0 };
     const rows: NotificationInsert[] = [];
     for (const o of withEvents) {
       const person = people.get(o.userId)!;
       const result = alertsFor(
-        { serviceIds: person.serviceIds, optedInAt: o.createdAt, watched: watched.has(`${o.userId}:${o.tmdbId}`) },
+        { serviceIds: person.serviceIds, savedAt: o.savedAt, watched: watched.has(`${o.userId}:${o.tmdbId}`) },
         recent.get(`${o.tmdbId}:${person.region}`)!,
         nowIso,
       );
@@ -398,8 +451,10 @@ Deno.serve(async (req) => {
 
     let written = 0;
     if (!dryRun) {
+      // With delivery off the snapshots and ledger above still fill up, so
+      // precision can be judged on real data; only the notifications wait.
       stage = 'notifications';
-      for (const batch of chunks(rows, INSERT_CHUNK)) {
+      for (const batch of deliver ? chunks(rows, INSERT_CHUNK) : []) {
         const { data, error } = await db.from('notifications')
           .upsert(batch, { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true })
           .select('id');

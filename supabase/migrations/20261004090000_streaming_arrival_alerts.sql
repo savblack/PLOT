@@ -1,18 +1,22 @@
--- Premium "now streaming / now free" film alerts.
+-- Streaming alerts for films on your watchlist ("now streaming / now free").
 --
--- Someone turns the bell on for a film (movie_streaming_alerts, like
--- season_ready_alerts is for a show). Each day the streaming-arrival-alerts Edge
--- Function looks at TMDB's watch/providers for those films, keeps its own
--- snapshot, and tells them when the film:
+-- Free, in-app, automatic. Everyone with a film on their watchlist ("My List",
+-- list_items) is told when it:
 --   * gains a subscription offer on one of their own services
 --     (profiles.streaming_providers), or
 --   * becomes free or free-with-ads on any service,
--- in their region (profiles.region). A film coming out to rent or buy after
--- cinemas is the Free movie_release alert (20261003090000) and is not repeated.
+-- in their region (profiles.region). There is nothing to switch on: the
+-- watchlist is the opt-in. They can mute one film, or turn the whole thing off
+-- (notification_preferences). Push, email and phone notifications are a later,
+-- Premium option and are not built; nothing here sends any of them.
 --
--- TMDB has no history and its provider data lags and flaps, so the function
--- diffs against state it keeps here and only believes a change once it has held
--- across two daily snapshots. The rules are in
+-- A film coming out to rent or buy after cinemas is the separate movie_release
+-- alert (20261003090000) and is not repeated.
+--
+-- Each day the streaming-arrival-alerts Edge Function looks at TMDB's
+-- watch/providers for the films on watchlists, keeps its own snapshot, and only
+-- believes a change once it has held across two daily snapshots (TMDB has no
+-- history and its provider data lags and flaps). The rules are in
 -- supabase/functions/_shared/availabilityAlerts.js and are unit-tested.
 --
 -- Tables written only by the function (service role, no client policies):
@@ -22,6 +26,10 @@
 --                       and tells nobody
 --   alert_job_runs      one row per run, so failures and anomalies are visible
 --
+-- Tables written by the person, for themselves:
+--   movie_streaming_alert_mutes  films they do not want these alerts for
+--   notification_preferences     the global switch (more channels land here later)
+--
 -- It reuses notification columns that already exist (tmdb_id, media_type,
 -- media_title, media_poster_path, air_date, release_kind, provider_name,
 -- dedupe_key), so list_notifications() is unchanged and returns these rows as it
@@ -30,44 +38,65 @@
 -- Additive only: new tables, a wider type check and a wider shape check that
 -- every existing row already satisfies, and one scheduled job.
 
--- ── 1. The bell ─────────────────────────────────────────────────────────────
+-- ── 1. Their choices ────────────────────────────────────────────────────────
 
--- Films someone wants a streaming alert for. tmdb_id comes from the title
--- panel's TMDB details; title and poster are a display cache.
-create table if not exists public.movie_streaming_alerts (
-  user_id     uuid    not null references auth.users (id) on delete cascade,
-  tmdb_id     integer not null check (tmdb_id > 0),
-  title       text    not null check (char_length(title) between 1 and 300),
-  poster_path text    check (poster_path is null or char_length(poster_path) <= 200),
-  created_at  timestamptz not null default now(),
+-- Films someone has muted. Absence of a row means "alert me", so a new watchlist
+-- entry needs no write at all. tmdb_id comes from the title panel's TMDB details;
+-- title is a display cache for the list in Settings.
+create table if not exists public.movie_streaming_alert_mutes (
+  user_id    uuid    not null references auth.users (id) on delete cascade,
+  tmdb_id    integer not null check (tmdb_id > 0),
+  title      text    not null check (char_length(title) between 1 and 300),
+  created_at timestamptz not null default now(),
   primary key (user_id, tmdb_id)
 );
-create index if not exists movie_streaming_alerts_film_idx on public.movie_streaming_alerts (tmdb_id);
 
-alter table public.movie_streaming_alerts enable row level security;
+alter table public.movie_streaming_alert_mutes enable row level security;
 
--- Same shape as season_ready_alerts (20260928120000): read and remove your own;
--- adding one needs Premium and stays under a cap that bounds what one account
--- can make the daily job fetch from TMDB. No update policy: an opt-in is added
--- or removed, never edited. created_at matters: it is when the person asked, and
--- a provider already showing then is not "new" to them.
-drop policy if exists "own streaming alerts readable" on public.movie_streaming_alerts;
-create policy "own streaming alerts readable" on public.movie_streaming_alerts
+-- Read, add and remove your own, under a cap that keeps one account from
+-- growing the table without bound. No update policy: a mute is added or
+-- removed, never edited. Free and Premium alike.
+drop policy if exists "own streaming mutes readable" on public.movie_streaming_alert_mutes;
+create policy "own streaming mutes readable" on public.movie_streaming_alert_mutes
   for select to authenticated using (auth.uid() = user_id);
-drop policy if exists "own streaming alerts deletable" on public.movie_streaming_alerts;
-create policy "own streaming alerts deletable" on public.movie_streaming_alerts
+drop policy if exists "own streaming mutes deletable" on public.movie_streaming_alert_mutes;
+create policy "own streaming mutes deletable" on public.movie_streaming_alert_mutes
   for delete to authenticated using (auth.uid() = user_id);
-drop policy if exists "premium streaming alerts insertable" on public.movie_streaming_alerts;
-create policy "premium streaming alerts insertable" on public.movie_streaming_alerts
+drop policy if exists "own streaming mutes insertable" on public.movie_streaming_alert_mutes;
+create policy "own streaming mutes insertable" on public.movie_streaming_alert_mutes
   for insert to authenticated
   with check (
     auth.uid() = user_id
-    and public.is_premium()
-    and (select count(*) from public.movie_streaming_alerts a where a.user_id = auth.uid()) < 500
+    and (select count(*) from public.movie_streaming_alert_mutes m where m.user_id = auth.uid()) < 2000
   );
 
-revoke all on public.movie_streaming_alerts from anon;
-grant select, insert, delete on public.movie_streaming_alerts to authenticated;
+revoke all on public.movie_streaming_alert_mutes from anon;
+grant select, insert, delete on public.movie_streaming_alert_mutes to authenticated;
+
+-- The global switch. A missing row means on, so nobody needs a row until they
+-- turn something off. Its own table, not a profiles column, so it can grow a
+-- column per channel (push, email) without touching profiles' triggers, views
+-- and column grants.
+create table if not exists public.notification_preferences (
+  user_id         uuid    primary key references auth.users (id) on delete cascade,
+  streaming_alerts boolean not null default true,
+  updated_at      timestamptz not null default now()
+);
+
+alter table public.notification_preferences enable row level security;
+
+drop policy if exists "own notification preferences readable" on public.notification_preferences;
+create policy "own notification preferences readable" on public.notification_preferences
+  for select to authenticated using (auth.uid() = user_id);
+drop policy if exists "own notification preferences insertable" on public.notification_preferences;
+create policy "own notification preferences insertable" on public.notification_preferences
+  for insert to authenticated with check (auth.uid() = user_id);
+drop policy if exists "own notification preferences updatable" on public.notification_preferences;
+create policy "own notification preferences updatable" on public.notification_preferences
+  for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+revoke all on public.notification_preferences from anon;
+grant select, insert, update on public.notification_preferences to authenticated;
 
 -- ── 2. The job's own state ──────────────────────────────────────────────────
 

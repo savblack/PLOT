@@ -3,16 +3,15 @@ import { supabase } from './supabase.js';
 
 /**
  * Premium alert opt-ins, shared by web and mobile: whole-season-ready alerts
- * (season_ready_alerts) and streaming alerts for a film (movie_streaming_alerts).
- * Following people (person_alerts) has its own shared store in
- * usePeopleFollows.js; all use alertWriteError below.
+ * (season_ready_alerts). Following people (person_alerts) has its own shared
+ * store in usePeopleFollows.js; both use alertWriteError below. Streaming alerts
+ * on watchlist films are Free and automatic, so they live in useStreamingAlerts.js.
  *
  * The database is the authority. Adding an opt-in is an insert that RLS only
  * allows for Premium accounts (is_premium() in the policy), so a Free account,
  * or one whose subscription lapsed, gets `premium_required` back rather than a
  * row. Callers open the upgrade sheet on that. Detection and delivery happen
- * server-side (the premium-alerts and streaming-arrival-alerts Edge Functions);
- * nothing here fires alerts.
+ * server-side in the premium-alerts Edge Function; nothing here fires alerts.
  *
  * Ids passed in must come from a TMDB response (the person or title being
  * shown). The name and image are only a display cache for Settings.
@@ -41,14 +40,16 @@ export function alertWriteError(error) {
  */
 
 /**
- * @param {'season_ready_alerts' | 'movie_streaming_alerts'} table
+ * A row that exists or does not, for one person and one title: the shape of an
+ * opt-in (season_ready_alerts) and of a mute (movie_streaming_alert_mutes).
+ * @param {'season_ready_alerts' | 'movie_streaming_alert_mutes'} table
  * @param {'tmdb_id'} idColumn
  * @param {string | null | undefined} userId
  * @param {number | null | undefined} subjectId
  * @param {() => Record<string, unknown>} cache display columns written on insert
  * @returns {AlertToggle}
  */
-function useAlertToggle(table, idColumn, userId, subjectId, cache) {
+export function useAlertToggle(table, idColumn, userId, subjectId, cache) {
   const key = userId && subjectId ? `${userId}:${subjectId}` : null;
   const [state, setState] = useState(/** @type {{ key: string | null, on: boolean }} */ ({ key: null, on: false }));
   const [busy, setBusy] = useState(false);
@@ -99,55 +100,31 @@ export function useSeasonReadyAlert(userId, show) {
 }
 
 /**
- * Streaming alerts ("now on your service", "now free") for one film. The row's
- * created_at is when they asked: a provider already showing then is not news.
- * @param {string | null | undefined} userId
- * @param {{ id: number, title?: string, poster_path?: string | null } | null | undefined} movie TMDB movie details
- */
-export function useStreamingArrivalAlert(userId, movie) {
-  const cache = useCallback(() => ({
-    title: String(movie?.title ?? '').slice(0, 300),
-    poster_path: movie?.poster_path ?? null,
-  }), [movie]);
-  return useAlertToggle('movie_streaming_alerts', 'tmdb_id', userId, movie?.title ? movie.id : null, cache);
-}
-
-/**
- * The shows and films someone has alerts for, for Settings. Removing works
+ * The shows someone has whole-season alerts for, for Settings. Removing works
  * whatever the plan: someone whose Premium lapsed can still tidy their list.
  * People they follow are managed on the Your people page (usePeopleFollows).
+ * Muted films are managed in useStreamingAlerts.js.
  * @param {string | null | undefined} userId
  */
 export function useMyAlerts(userId) {
-  /** @typedef {{ tmdb_id: number, title: string, poster_path: string | null }} AlertTitle */
-  const [shows, setShows] = useState(/** @type {AlertTitle[]} */ ([]));
-  const [films, setFilms] = useState(/** @type {AlertTitle[]} */ ([]));
+  const [shows, setShows] = useState(/** @type {Array<{ tmdb_id: number, title: string, poster_path: string | null }>} */ ([]));
   const [loadedFor, setLoadedFor] = useState(/** @type {string | null} */ (null));
 
   const refresh = useCallback(async () => {
     if (!userId) return;
-    const read = (/** @type {'season_ready_alerts' | 'movie_streaming_alerts'} */ table) =>
-      supabase.from(table).select('tmdb_id, title, poster_path').eq('user_id', userId).order('title');
-    const [seasons, movies] = await Promise.all([read('season_ready_alerts'), read('movie_streaming_alerts')]);
-    setShows(seasons.data ?? []);
-    setFilms(movies.data ?? []);
+    const { data } = await supabase.from('season_ready_alerts').select('tmdb_id, title, poster_path').eq('user_id', userId).order('title');
+    setShows(data ?? []);
     setLoadedFor(userId);
   }, [userId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- load the opt-ins when the signed-in user changes
   useEffect(() => { refresh(); }, [refresh]);
 
-  const remove = useCallback(async (
-    /** @type {'season_ready_alerts' | 'movie_streaming_alerts'} */ table,
-    /** @type {typeof setShows} */ set,
-    /** @type {number} */ tmdbId,
-  ) => {
-    const { error } = await supabase.from(table).delete().eq('user_id', userId).eq('tmdb_id', tmdbId);
-    if (!error) set(list => list.filter(s => s.tmdb_id !== tmdbId));
+  const removeShow = useCallback(async (/** @type {number} */ tmdbId) => {
+    const { error } = await supabase.from('season_ready_alerts').delete().eq('user_id', userId).eq('tmdb_id', tmdbId);
+    if (!error) setShows(list => list.filter(s => s.tmdb_id !== tmdbId));
     return !error;
   }, [userId]);
-  const removeShow = useCallback((/** @type {number} */ id) => remove('season_ready_alerts', setShows, id), [remove]);
-  const removeFilm = useCallback((/** @type {number} */ id) => remove('movie_streaming_alerts', setFilms, id), [remove]);
 
-  return { shows, films, loading: !!userId && loadedFor !== userId, refresh, removeShow, removeFilm };
+  return { shows, loading: !!userId && loadedFor !== userId, refresh, removeShow };
 }
