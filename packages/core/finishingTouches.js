@@ -7,7 +7,7 @@
 // The card's own state (when it started, whether it is hidden, whether an
 // import has finished) is per account and per device. The storage mechanism
 // differs per platform, so like sectionOpenState.js this module owns only the
-// key and the encoding; web reads localStorage, mobile will read AsyncStorage.
+// key and the encoding; web reads localStorage, mobile reads AsyncStorage.
 
 /** @typedef {'watchlist' | 'friends' | 'import' | 'people'} FinishingTouchId */
 

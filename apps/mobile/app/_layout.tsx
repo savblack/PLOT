@@ -66,7 +66,7 @@ function AuthGuard({ session, onboardingComplete }: {
       }
     } else if (onboardingComplete === false) {
       // Logged in but onboarding not done
-      if (!inOnboarding) router.replace('/onboarding/name');
+      if (!inOnboarding) router.replace('/onboarding/seed');
     } else if (onboardingComplete === true) {
       if (onInviteLink) {
         clearWatchTogetherReturn();
