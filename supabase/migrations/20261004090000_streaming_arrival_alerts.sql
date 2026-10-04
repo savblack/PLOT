@@ -78,9 +78,13 @@ grant select, insert, delete on public.movie_streaming_alert_mutes to authentica
 -- column per channel (push, email) without touching profiles' triggers, views
 -- and column grants.
 create table if not exists public.notification_preferences (
-  user_id         uuid    primary key references auth.users (id) on delete cascade,
+  user_id          uuid    not null references auth.users (id) on delete cascade,
   streaming_alerts boolean not null default true,
-  updated_at      timestamptz not null default now()
+  updated_at       timestamptz not null default now(),
+  -- A table-level key, not an inline one: scripts/check-db-write-paths.mjs only
+  -- recognises this shape when it folds a not-yet-applied migration into the
+  -- schema it checks upserts against.
+  primary key (user_id)
 );
 
 alter table public.notification_preferences enable row level security;
