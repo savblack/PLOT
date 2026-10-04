@@ -8,6 +8,7 @@ import { useApp } from '../hooks/useApp.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useShare } from '../hooks/useShare.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { EVENTS } from '../lib/analytics.js';
 import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { customListIdFromKey, customListKey, sortListItems, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
@@ -226,7 +227,7 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
   if (key === 'want') {
     const items = sortItems(matchQuery(filterByTypeAndGenre(want, typeFilters, genreFilters)));
     body = <WantToWatchSection items={items} count={want.length} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
-  } else if (key === 'favorites') {
+  } else if (FAVOURITES_ENABLED && key === 'favorites') {
     body = <FavoritesSection favorites={favorites} visibleItems={sortItems(matchQuery(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters)))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
   } else if (smartList) {
     body = (
@@ -267,7 +268,7 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
     body = (
       <div className="empty-state" style={{ marginTop: '1rem' }}>
         <div className="empty-title">List not found</div>
-        <div className="empty-body">{fw.plural}, Want to Watch, your Top 5s and your own lists live on My Lists.</div>
+        <div className="empty-body">{FAVOURITES_ENABLED ? `${fw.plural}, ` : ''}Want to Watch, your Top 5s and your own lists live on My Lists.</div>
         <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/my-lists')}>Back to My Lists</button>
       </div>
     );

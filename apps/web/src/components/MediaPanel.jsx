@@ -16,6 +16,7 @@ import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { nextSheetSnap } from '../utils/mobileSheets.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { privateNoteKey } from '@plot/core/privateNotes.js';
 import { formatWatchedOn } from '@plot/core/date.js';
@@ -1894,14 +1895,16 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
               </div>
 
               <div className="panel-icon-group">
-              <button
-                className={`panel-icon-btn${isFav ? ' panel-icon-btn--fav' : ''}`}
-                onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
-                aria-label={isFav ? fw.pastTitle : fw.noun}
-                aria-pressed={isFav}
-              >
-                <HeartIcon filled={isFav} size={17} />
-              </button>
+              {FAVOURITES_ENABLED && (
+                <button
+                  className={`panel-icon-btn${isFav ? ' panel-icon-btn--fav' : ''}`}
+                  onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
+                  aria-label={isFav ? fw.pastTitle : fw.noun}
+                  aria-pressed={isFav}
+                >
+                  <HeartIcon filled={isFav} size={17} />
+                </button>
+              )}
               <button
                 className={`panel-icon-btn${isInAnyList ? ' panel-icon-btn--on' : ''}`}
                 onClick={() => setShowListSheet(true)}

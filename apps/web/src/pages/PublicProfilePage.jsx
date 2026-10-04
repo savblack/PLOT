@@ -22,6 +22,7 @@ import ShareCardSheet from '../components/ShareCardSheet.jsx';
 import { SHARE_CARDS } from '../copy/shareCards.js';
 import { useCustomLists } from '@plot/core/useCustomLists.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import UserList from '../components/UserList.jsx';
 import ProfileBadges from '../components/ProfileBadges.jsx';
@@ -193,6 +194,7 @@ function FavBtn({ item }) {
   const fw   = favoriteWords(profile?.region);
   const type = item.media_type || 'movie';
   const fav  = favorites.isFavorite(item.id || item.tmdb_id);
+  if (!FAVOURITES_ENABLED) return null;
   return (
     <button
       className={`card-fav-btn${fav ? ' faved' : ''}`}
@@ -824,7 +826,7 @@ export function ProfileSectionPage({ section }) {
   const busy = loading || (profile && !locked && fetching);
   // Section toggles are layout, not access (RLS already scoped the rows), but
   // "View all" on a rail the owner hid shouldn't bring it back either.
-  const hidden = paged && !isSectionEnabled(profile?.profile_sections, section === 'favourites' ? 'favourites' : 'recent');
+  const hidden = paged && (!isSectionEnabled(profile?.profile_sections, section === 'favourites' ? 'favourites' : 'recent') || (section === 'favourites' && !FAVOURITES_ENABLED));
   const empty = hidden || (section === 'lists' ? lists.length === 0 : result.items.length === 0);
   return <>
     <style>{profileStyles}</style>

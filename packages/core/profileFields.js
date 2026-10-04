@@ -1,4 +1,5 @@
 import { PUBLIC_PROFILE_PAGE } from './copy/publicProfilePage.js';
+import { FAVOURITES_ENABLED } from './features.js';
 
 // The editable shape of a Plot profile: which social links exist, and which
 // content rails a user can show or hide.
@@ -35,7 +36,7 @@ export const SOCIAL_LINKS = [
  *
  * @type {{ key: string, label: string }[]}
  */
-export const PROFILE_SECTIONS = [
+const SECTIONS = [
   { key: 'recent',     label: PUBLIC_PROFILE_PAGE.watchHistory },
   { key: 'watching',   label: 'Watching' },
   { key: 'want',       label: 'Want to Watch' },
@@ -44,8 +45,15 @@ export const PROFILE_SECTIONS = [
   { key: 'favourites', label: 'Favorites' },
 ];
 
+/**
+ * The toggles the edit-profile screens list. Favourites is hidden with the
+ * feature, but its key stays in ALL_SECTION_KEYS so saving the form keeps a
+ * stored `favourites` choice and bringing the feature back loses nothing.
+ */
+export const PROFILE_SECTIONS = SECTIONS.filter((s) => FAVOURITES_ENABLED || s.key !== 'favourites');
+
 /** Every section key, in display order. */
-export const ALL_SECTION_KEYS = PROFILE_SECTIONS.map((s) => s.key);
+export const ALL_SECTION_KEYS = SECTIONS.map((s) => s.key);
 
 /**
  * Is a rail visible, given the profile's stored selection? Null/undefined means
