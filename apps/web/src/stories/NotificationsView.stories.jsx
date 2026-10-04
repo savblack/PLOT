@@ -15,6 +15,9 @@ const episode = (season_number, episode_number, episode_count, media_title) => (
 const movie = (media_title, release_kind) => ({
   type: 'movie_release', actor_id: null, tmdb_id: 0, media_type: 'movie', release_kind, media_title, media_poster_path: null,
 });
+const arrival = (media_title, release_kind, provider_name) => ({
+  type: 'streaming_arrival', actor_id: null, tmdb_id: 0, media_type: 'movie', release_kind, provider_name, media_title, media_poster_path: null,
+});
 const list = [
   { id: 'a1', created_at: at(1), read_at: null, ...alert('person_release', 'Harbour Lights', { media_type: 'movie', person_name: 'Ada Quill', person_role: 'cast', release_kind: 'theatrical' }) },
   { id: 'a3', created_at: at(1), read_at: null, ...alert('person_release', 'East Pier', { media_type: 'tv', person_name: 'Ada Quill', person_role: 'cast', release_kind: 'premiere', provider_name: 'Service One' }) },
@@ -25,6 +28,8 @@ const list = [
   { id: 'e2', created_at: at(4), read_at: null, ...episode(2, 1, 8, 'Low Tide') },
   { id: 'm1', created_at: at(3), read_at: null, ...movie('Salt Lake Drive', 'theatrical') },
   { id: 'm2', created_at: at(5), read_at: null, ...movie('The Long Way Round', 'digital') },
+  { id: 's1', created_at: at(3), read_at: null, ...arrival('Harbour Lights', 'streaming', 'Service One') },
+  { id: 's2', created_at: at(6), read_at: null, ...arrival('Salt Lake Drive', 'free', 'Service Two') },
   { id: 'e3', created_at: at(26), read_at: at(20), ...episode(3, 4, 1, 'Small Mercies') },
   { id: '1', type: 'follow_request', created_at: at(2), read_at: null, ...person('Priya Nair', 'priya') },
   { id: '2', type: 'new_follower', created_at: at(4), read_at: null, ...person('Tom Reilly', 'tomr') },

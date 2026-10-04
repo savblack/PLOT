@@ -164,6 +164,7 @@ export const PLANS_PAGE = {
         { label: 'Live calendar subscription', free: false, premium: true },
         { label: 'Actor and director alerts', free: false, premium: true },
         { label: 'Whole-season-ready alerts', free: false, premium: true },
+        { label: 'Streaming alerts for films you pick', free: false, premium: true, tag: 'Pending validation' },
       ] },
       { title: 'Make it yours', rows: [
         { label: 'Themes', free: 'Default, light and dark', premium: 'Every theme' },
@@ -211,6 +212,12 @@ export const PLANS_PAGE = {
       description: 'Follow the people you love watching and hear about their new releases.' },
     { id: 'seasonReady', label: 'Whole-season-ready alerts', live: true,
       description: 'Know when every episode is verified available on your selected services in your region. Airing dates alone do not qualify.' },
+    // Not live: the job is being checked against real data first (see
+    // docs/premium/features-to-build.md). Flip to live: true, drop the
+    // comparison tag and update the FAQ once delivery is on. Scope is films a
+    // person picks, never "every new arrival" (premium-positioning-2026-09-16).
+    { id: 'streamingAlerts', label: 'Streaming alerts for films you pick',
+      description: 'Turn on the bell for a film and hear when it reaches one of your services, or becomes free to watch, in your region.' },
     { id: 'themes', label: 'Themes', live: true,
       description: 'Themes, each in light and dark with its own accent. The default look stays free in light, dark and system.' },
     { id: 'customize', label: 'Customise your plot', highlight: true,

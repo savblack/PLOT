@@ -26,7 +26,7 @@ import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
-import { SeasonReadyAlert } from './PremiumAlertButtons.jsx';
+import { SeasonReadyAlert, StreamingAlert } from './PremiumAlertButtons.jsx';
 import { CastFollowCard, CrewFollowRow, PersonFollow } from './PeopleFollow.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -2062,6 +2062,9 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 on the viewer's services. Beside Where to watch, because it is
                 the same question asked of the future. */}
             {!isMovie && details && <SeasonReadyAlert show={details} />}
+            {/* Premium: the film equivalent. A heads-up when it lands on one of
+                the viewer's services, or becomes free to watch. */}
+            {isMovie && details && <StreamingAlert movie={details} />}
 
             {/* ── What everyone else thought ──
                 The two numbers read as a pair, with a real audience review in

@@ -1,4 +1,5 @@
-// Premium whole-season-ready alert on a show (title panel). Following people
+// Premium alerts toggled on a title (title panel): whole-season-ready on a show,
+// and streaming ("now on your service", "now free") on a film. Following people
 // has its own controls in PeopleFollow.jsx. The opt-in logic lives in
 // @plot/core/usePremiumAlerts.js and the database is the
 // authority on Premium; a Free account gets the upgrade sheet, either up front
@@ -6,11 +7,13 @@
 // premium_required.
 //
 // Mobile parity: not shipped on mobile yet. Tracked in the GitHub issue
-// "Mobile parity: actor/director and season-ready alerts" (issue 1093).
+// "Mobile parity: actor/director and season-ready alerts" (issue 1093); the
+// streaming alert bell is covered by the same gap. Mobile already renders the
+// streaming_arrival notification row.
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { usePremium } from '../hooks/usePremium.js';
-import { useSeasonReadyAlert } from '@plot/core/usePremiumAlerts.js';
+import { useSeasonReadyAlert, useStreamingArrivalAlert } from '@plot/core/usePremiumAlerts.js';
 import { PREMIUM_ALERTS as A } from '@plot/core/copy/premiumAlerts.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import './PremiumAlertButtons.css';
@@ -65,6 +68,38 @@ export function SeasonReadyAlert({ show }) {
         >
           <BellIcon on={alert.on} />
           {alert.on ? A.season.on : A.season.off}
+        </button>
+      </div>
+      {gate.failed && <p className="alert-toggle-error" role="alert">{A.error}</p>}
+      {gate.sheetOpen && <UpgradeSheet reason="alerts" onClose={gate.closeSheet} />}
+    </section>
+  );
+}
+
+/** Streaming alert card for a film. `movie` is TMDB movie details. */
+export function StreamingAlert({ movie }) {
+  const { user, profile } = useApp();
+  const alert = useStreamingArrivalAlert(user?.id, movie);
+  const gate = useGatedToggle(alert);
+  if (!user || !movie?.id || !movie?.title) return null;
+  const hasServices = (profile?.streaming_providers?.length ?? 0) > 0;
+  return (
+    <section className="panel-card alert-card">
+      <div className="alert-card-row">
+        <div className="alert-card-copy">
+          <h3 className="panel-card-title">{A.streaming.title}</h3>
+          <p className="alert-card-hint">{hasServices ? A.streaming.hint : A.streaming.needsServices}</p>
+        </div>
+        <button
+          type="button"
+          className={`btn btn-secondary btn-xs alert-toggle${alert.on ? ' alert-toggle--on' : ''}`}
+          onClick={gate.onClick}
+          disabled={alert.loading || alert.busy}
+          aria-pressed={alert.on}
+          aria-label={alert.on ? A.streaming.onLabel : A.streaming.offLabel}
+        >
+          <BellIcon on={alert.on} />
+          {alert.on ? A.streaming.on : A.streaming.off}
         </button>
       </div>
       {gate.failed && <p className="alert-toggle-error" role="alert">{A.error}</p>}

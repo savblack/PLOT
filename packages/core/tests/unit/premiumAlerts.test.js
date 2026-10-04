@@ -83,3 +83,14 @@ test('people and season-ready alerts are live Premium features; episode alerts a
   assert.match(faq, /whole-season-ready alerts are available with plot Premium/);
   assert.doesNotMatch(faq, /People alerts.*still planned/);
 });
+
+test('streaming alerts are listed as Premium but not live yet, and are scoped to films you pick', () => {
+  const feature = PLANS_PAGE.premiumFeatures.find(f => f.id === 'streamingAlerts');
+  assert.ok(feature);
+  assert.notEqual(feature.live, true);
+  const row = PLANS_PAGE.comparison.groups.flatMap(g => g.rows).find(r => r.label === 'Streaming alerts for films you pick');
+  assert.deepEqual([row.free, row.premium, row.tag], [false, true, 'Pending validation']);
+  // Never "every new arrival": the positioning doc says not to claim general streaming alerts.
+  assert.match(feature.label, /films you pick/);
+  assert.doesNotMatch(feature.description, /every|any film|all films/i);
+});
