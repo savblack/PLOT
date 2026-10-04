@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { configure } from '@plot/core/config.js';
 import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
+import { PREMIUM_FAMILIES } from '@plot/core/themes.js';
+import { AppContext } from '../hooks/useApp.js';
 import ShareCardSheet from '../components/ShareCardSheet.jsx';
 import ShareCard from '../components/ShareCard.jsx';
 import { useFixtureTopLists, FIXTURE_PROFILE } from './shareCardFixtures.js';
@@ -71,7 +73,7 @@ function Harness({ preset, thin }) {
   );
 }
 
-function Gallery({ format }) {
+function Gallery({ format, family }) {
   const cards = useCards();
   const scale = format === 'story' ? 0.22 : 0.36;
   return (
@@ -79,9 +81,22 @@ function Gallery({ format }) {
       {cards.map(card => (
         <div key={card.id} style={{ width: (format === 'story' ? 1080 : 1200) * scale, height: (format === 'story' ? 1920 : 800) * scale, overflow: 'hidden', borderRadius: 12, boxShadow: '0 8px 28px rgba(41,41,36,.14)' }}>
           <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-            <ShareCard card={card} format={format} />
+            <ShareCard card={card} format={format} family={family} />
           </div>
         </div>
+      ))}
+    </div>
+  );
+}
+
+function Themes({ format }) {
+  return (
+    <div>
+      {['default', ...PREMIUM_FAMILIES].map(family => (
+        <section key={family}>
+          <h3 style={{ margin: '1.5rem 1.5rem 0', textTransform: 'capitalize' }}>{family}</h3>
+          <Gallery format={format} family={family} />
+        </section>
       ))}
     </div>
   );
@@ -100,11 +115,23 @@ export const Highlights = { render: () => <Harness preset={CARD_IDS.HIGHLIGHTS} 
 export const Streak = { render: () => <Harness preset={CARD_IDS.STREAK} /> };
 /** Opened from the profile: Top 5 movies first. */
 export const Top5 = { render: () => <Harness preset={CARD_IDS.TOP5_MOVIES} /> };
+/** The sheet draws the cards in the viewer's own theme family (here Plum). */
+export const ViewerTheme = {
+  render: () => (
+    <AppContext.Provider value={{ themeFamily: 'plum' }}>
+      <Harness preset={CARD_IDS.ACTIVITY} />
+    </AppContext.Provider>
+  ),
+};
 /** Thin data: every card locked with its unlock line. */
 export const Locked = { render: () => <Harness preset={CARD_IDS.HIGHLIGHTS} thin /> };
 /** Opened from the profile before the cards have loaded. */
 export const Loading = { render: () => <ShareCardSheet cards={[]} loading preset={CARD_IDS.TOP5_MOVIES} profile={FIXTURE_PROFILE} source="story" onClose={() => {}} /> };
 /** Every card at post size. */
 export const PostGallery = { render: () => <Gallery format="post" /> };
+/** Every card at post size, in each Premium theme family's colours. */
+export const PostThemes = { render: () => <Themes format="post" /> };
+/** Every card at story size, in each Premium theme family's colours. */
+export const StoryThemes = { render: () => <Themes format="story" /> };
 /** Every card at story size. */
 export const StoryGallery = { render: () => <Gallery format="story" /> };
