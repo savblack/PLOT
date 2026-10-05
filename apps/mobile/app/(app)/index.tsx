@@ -3,7 +3,7 @@
  * Discover order: hero, Continue watching, Hot Right Now, Out Today,
  * Top 20 This Week, Your people, Most Binged, then releases and platforms.
  */
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
 import HomeReleases, { formatDayLabel } from '../../components/HomeReleases';
@@ -42,6 +42,7 @@ import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import { track } from '../../lib/analytics';
 import { featuredCuratedList } from '@plot/core/curatedLists.js';
 import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists';
+import PicksCarousel from '../../components/PicksCarousel';
 import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
@@ -251,13 +252,15 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
 }
 
 // ── Hero card (top result) ───────────────────────────────────────────
-function HeroCard({ item, onPress, saved, onSave, cardStyle }: {
+function HeroCard({ item, onPress, saved, onSave, cardStyle, badge = 'TRENDING #1' }: {
   item: MediaItem;
   onPress: () => void;
   saved: boolean;
   onSave: () => void;
   /** Overrides for when the hero shares the Picks row with the plot list card. */
   cardStyle?: object;
+  /** The badge over the title; the trending hero's by default. */
+  badge?: string;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -281,7 +284,7 @@ function HeroCard({ item, onPress, saved, onSave, cardStyle }: {
       </TouchableOpacity>
       <View style={styles.heroContent}>
         <View style={styles.trendingBadge}>
-          <Text style={styles.trendingBadgeText}>TRENDING #1</Text>
+          <Text style={styles.trendingBadgeText}>{badge}</Text>
         </View>
         <Text style={styles.heroTitle}>{title}</Text>
       </View>
@@ -644,6 +647,9 @@ export default function HomeScreen() {
   const [typeFilters,  setTypeFilters]  = useState<string[]>(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState<number[]>([]);
   const [openCurated, setOpenCurated] = useState<ReturnType<typeof featuredCuratedList> | null>(null);
+  // Whether the Picks row is still on screen, so its rotation can stop once it is scrolled away.
+  const [picksInView, setPicksInView] = useState(true);
+  const picksBottom = useRef(Infinity);
   const { genres } = useGenres();
 
   /* Home reads the same watchlist every other surface does. It used to keep
@@ -759,6 +765,23 @@ export default function HomeScreen() {
   const featuredList = featuredCuratedList();
   const curated = genreFilters.length === 0 && featuredList && filterByType(featuredList.entries, typeFilters)?.length ? featuredList : null;
   const hotRail  = applyFilters(trending.slice(1, 10));
+  // Picks takes turns, as on web: the trending hero, the plot list, then the
+  // trending TV and movie leaders when they are not the hero. Both come from
+  // data Home already loads. "In cinemas" is not here: mobile Home has no
+  // now-playing feed (issue 1210).
+  const seenPicks = new Set<string>(hero ? [`${hero.media_type}-${hero.id}`] : []);
+  const otherPicks = genreFilters.length === 0
+    ? ([
+        { item: bingedShows[0], badge: DISCOVER_VIEW.picks.trendingTv, type: 'tv' },
+        { item: trending.find((t: MediaItem) => t.media_type === 'movie'), badge: DISCOVER_VIEW.picks.trendingMovie, type: 'movie' },
+      ] as { item?: MediaItem; badge: string; type: string }[]).filter(({ item }) => {
+        if (!item || !filterByType([item], typeFilters)?.length) return false;
+        const key = `${item.media_type}-${item.id}`;
+        if (seenPicks.has(key)) return false;
+        seenPicks.add(key);
+        return true;
+      }) as { item: MediaItem; badge: string }[]
+    : [];
 
   const savedRail = watchlistItems.length > 0 ? (
     <View style={styles.section}>
@@ -828,6 +851,11 @@ export default function HomeScreen() {
         style={styles.screen}
         contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
+          scrollEventThrottle={100}
+          onScroll={e => {
+            const inView = e.nativeEvent.contentOffset.y < picksBottom.current;
+            setPicksInView(prev => (prev === inView ? prev : inView));
+          }}
       >
 
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
@@ -846,25 +874,33 @@ export default function HomeScreen() {
 
         {/* ── plot's Picks: the hero, and the plot list card beside it ── */}
         {(hero || curated) && (
-          <View>
+          <View onLayout={e => { picksBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}>
             <SectionHeader title={DISCOVER_VIEW.picks.cardsLabel} />
-            {hero && curated ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                snapToInterval={PICKS_CARD_W + spacing.md}
-                decelerationRate="fast"
-                contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-              >
-                <HeroCard
-                  item={hero}
-                  cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
-                  onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
-                  saved={savedIds.has(hero.id ?? 0)}
-                  onSave={() => handleSave(hero)}
-                />
-                <CuratedListCard curated={curated} width={PICKS_CARD_W} height={HERO_H} onPress={() => setOpenCurated(curated)} />
-              </ScrollView>
+            {(hero && curated) || otherPicks.length > 0 ? (
+              <PicksCarousel cardWidth={PICKS_CARD_W} inView={picksInView}>
+                {hero && (
+                  <HeroCard
+                    key="hero"
+                    item={hero}
+                    cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
+                    onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
+                    saved={savedIds.has(hero.id ?? 0)}
+                    onSave={() => handleSave(hero)}
+                  />
+                )}
+                {curated && <CuratedListCard key={curated.id} curated={curated} width={PICKS_CARD_W} height={HERO_H} onPress={() => setOpenCurated(curated)} />}
+                {otherPicks.map(({ item, badge }) => (
+                  <HeroCard
+                    key={`${item.media_type}-${item.id}`}
+                    item={item}
+                    badge={badge.toUpperCase()}
+                    cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
+                    onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                    saved={savedIds.has(item.id ?? 0)}
+                    onSave={() => handleSave(item)}
+                  />
+                ))}
+              </PicksCarousel>
             ) : hero ? (
               <HeroCard
                 item={hero}
