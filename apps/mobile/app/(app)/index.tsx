@@ -43,6 +43,8 @@ import { track } from '../../lib/analytics';
 import { featuredCuratedList } from '@plot/core/curatedLists.js';
 import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists';
 import PicksCarousel from '../../components/PicksCarousel';
+import { currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.js';
+import { localDateStr } from '@plot/core/date.js';
 import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
@@ -629,6 +631,8 @@ export default function HomeScreen() {
   const [trending,     setTrending]     = useState<MediaItem[]>([]);
   const [weekly,       setWeekly]       = useState<MediaItem[]>([]);
   const [bingedShows,  setBingedShows]  = useState<MediaItem[]>([]);
+  // The trending movie that is in cinemas now, for plot's Picks (shared with web: useDiscover.js).
+  const [cinemaHero,    setCinemaHero]    = useState<MediaItem | null>(null);
   // Official published charts from platform_charts — a fixed platform list,
   // identical for everyone, rather than TMDB popularity filtered to whatever
   // the user happens to subscribe to.
@@ -700,15 +704,20 @@ export default function HomeScreen() {
 
         // The watchlist is no longer fetched here — useWatchlist (via
         // useAppData) owns loading it, for every surface at once.
-        const [trendingDay, trendingWeek, trendingTV] = await Promise.all([
+        const [trendingDay, trendingWeek, trendingTV, nowPlaying] = await Promise.all([
           tmdb.getTrending('all', 'day'),
           tmdb.getTrending('all', 'week'),
           tmdb.getTrending('tv',  'day'),
+          // Only feeds the Picks card; a failure must not take Home down.
+          tmdb.getNowPlaying().catch(() => null),
         ]);
 
         if (cancelled) return;
 
         if (trendingDay?.results)  setTrending(excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingDay.results), hideKids).slice(0, 20));
+        const inCinemas = currentCinemaMovies(nowPlaying?.results, { today: localDateStr(), hideKids });
+        const trendingMovies = excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingDay?.results ?? []), hideKids).filter((t: MediaItem) => t.media_type === 'movie');
+        setCinemaHero(trendingCinemaHero(trendingMovies, inCinemas));
         if (trendingWeek?.results) setWeekly(excludeKidsContent(trendingWeek.results, hideKids).slice(0, 20));
         if (trendingTV?.results)   setBingedShows(excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingTV.results), hideKids).slice(0, 10).map((s: MediaItem) => ({ ...s, media_type: 'tv' })));
       } catch (e) {
@@ -766,14 +775,14 @@ export default function HomeScreen() {
   const curated = genreFilters.length === 0 && featuredList && filterByType(featuredList.entries, typeFilters)?.length ? featuredList : null;
   const hotRail  = applyFilters(trending.slice(1, 10));
   // Picks takes turns, as on web: the trending hero, the plot list, then the
-  // trending TV and movie leaders when they are not the hero. Both come from
-  // data Home already loads. "In cinemas" is not here: mobile Home has no
-  // now-playing feed (issue 1210).
+  // trending TV and movie leaders and the one in cinemas now, when they are
+  // not already shown, as on web.
   const seenPicks = new Set<string>(hero ? [`${hero.media_type}-${hero.id}`] : []);
   const otherPicks = genreFilters.length === 0
     ? ([
         { item: bingedShows[0], badge: DISCOVER_VIEW.picks.trendingTv, type: 'tv' },
         { item: trending.find((t: MediaItem) => t.media_type === 'movie'), badge: DISCOVER_VIEW.picks.trendingMovie, type: 'movie' },
+        { item: cinemaHero ?? undefined, badge: MEDIA.inCinemas, type: 'movie' },
       ] as { item?: MediaItem; badge: string; type: string }[]).filter(({ item }) => {
         if (!item || !filterByType([item], typeFilters)?.length) return false;
         const key = `${item.media_type}-${item.id}`;
