@@ -1168,32 +1168,32 @@ const aboutCard = (placement: string, compact = false) => {
 
 const SUBSCRIBE_CSS = `
   /* Plot intro card: cream, one headline, two ways in. */
-  .about.card, .about { padding: 28px; }
+  /* Charcoal, so the intro leads and the newsletter card below reads as the cream one. */
+  .about.card, .about { padding: 28px; background: var(--ink); color: var(--bg); }
   .about-logo { display: block; margin-bottom: 14px; font-family: var(--display); font-size: 1.5rem; font-weight: 700; letter-spacing: -0.1em; line-height: 1; }
   .about-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.4rem; line-height: 1.1; margin: 0 0 8px; }
-  .about-sub { color: var(--mut); font-size: 0.92rem; line-height: 1.55; margin: 0; max-width: 56ch; }
+  .about-sub { color: rgba(248,242,234,0.7); font-size: 0.92rem; line-height: 1.55; margin: 0; max-width: 56ch; }
   .about-actions { display: flex; align-items: center; justify-content: flex-end; gap: 20px; margin-top: 20px; }
   .about-wordmark { font-weight: 700; letter-spacing: -0.1em; }
   .about-compact { display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; padding: 16px 20px; }
   .about-compact .about-title { font-size: 1.05rem; margin: 0; }
   .about-compact .about-sub { font-size: 0.82rem; }
   .about-compact .about-actions { margin-top: 0; margin-left: auto; }
-  .about-login { color: var(--ink); font-size: 0.9rem; font-weight: 500; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--hair); padding: 12px 0; transition: text-decoration-color 0.2s; }
-  .about-login:hover { text-decoration-color: var(--ink); }
+  .about-login { color: var(--bg); font-size: 0.9rem; font-weight: 500; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(248,242,234,0.35); padding: 12px 0; transition: text-decoration-color 0.2s; }
+  .about-login:hover { text-decoration-color: var(--bg); }
   /* On an article the cards line up with the text column, not the page. */
   .post-cards { max-width: 680px; margin: 44px auto 0; display: grid; gap: 16px; }
   .post-cards > .nlsub, .post-cards > .about { margin-top: 0; }
   .wrap > .about, .post-foot > .about { margin-top: 44px; }
 
-  /* Charcoal card. scroll-margin clears the fixed topnav: the /newsletter
+  /* Cream card. scroll-margin clears the fixed topnav: the /newsletter
      redirects land on #newsletter, and without it the heading lands under it. */
-  /* .nlsub.card outranks the later .card rule in the main stylesheet, which
-     otherwise paints this cream and leaves cream text unreadable on it. */
-  .nlsub.card, .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }
-  .nlsub .nlsub-title, .nlsub .nlsub-copy { color: var(--bg); }
+  /* .nlsub.card outranks the later .card rule in the main stylesheet. */
+  .nlsub.card, .nlsub { background: var(--paper); color: var(--ink); padding: 24px 28px; scroll-margin-top: 88px; }
+  .nlsub .nlsub-title, .nlsub .nlsub-copy { color: var(--ink); }
   .nlsub-copy { display: flex; flex-direction: column; gap: 6px; }
   .nlsub-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.4rem; line-height: 1; }
-  .nlsub-sub { color: rgba(248,242,234,0.7); font-size: 0.92rem; }
+  .nlsub-sub { color: var(--mut); font-size: 0.92rem; }
   .nlsub-form { display: flex; gap: 6px; margin-top: 16px; align-items: center; background: var(--bg); border-radius: 9999px; padding: 5px 5px 5px 16px; }
   .nlsub-form input[type=email] { flex: 1 1 120px; min-width: 0; padding: 8px 0; border: 0; font: inherit; font-size: 0.9rem; color: var(--ink); background: transparent; }
   .nlsub-form input[type=email]:focus { outline: none; }
@@ -1201,7 +1201,7 @@ const SUBSCRIBE_CSS = `
   .nlsub-form button:hover { background: var(--fill-hover); }
   .nlsub-form button:disabled { opacity: 0.5; cursor: default; }
   .nlsub-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-  .nlsub-msg { margin-top: 10px; color: rgba(248,242,234,0.7); font-size: 0.86rem; min-height: 1.2em; }
+  .nlsub-msg { margin-top: 10px; color: var(--mut); font-size: 0.86rem; min-height: 1.2em; }
   /* on list and article pages the card stands alone below the content */
   .wrap > .nlsub, .post-foot > .nlsub { margin-top: 44px; }
 `;
@@ -1595,9 +1595,11 @@ Deno.serve(async (req) => {
     </article>
     <div class="post-cards">
       ${aboutCard('whats_on_article')}
-      ${subscribeForm('whats_on_article')}
     </div>
     ${more}
     <div class="post-foot"><a class="back sc" href="${FEED_PATH}">&larr; All updates</a></div>
+    <div class="post-cards">
+      ${subscribeForm('whats_on_article')}
+    </div>
   `);
 });
