@@ -3,6 +3,7 @@ import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import { useGenres } from '../hooks/useGenres.js';
 import { posterUrl } from '../utils/images.js';
 import { historyRatingLabel } from '../utils/history.js';
+import { isFinishedStatus } from '@plot/core/listWatchStatus.js';
 import { MEDIA } from '../copy/media.js';
 import { HISTORY_VIEW } from '../copy/historyView.js';
 
@@ -89,8 +90,16 @@ function ReviewIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z" /></svg>;
 }
 
+/* Where the viewer stands with a title: Watching, Watched or Didn't finish.
+   Null (never watched) draws nothing. The chip sits over the poster but outside
+   the greyed layer, so the status stays at full strength. */
+export function WatchStatusChip({ status }) {
+  if (!status) return null;
+  return <span className={`watch-chip watch-chip--${status}`}>{MEDIA.watchStatus[status]}</span>;
+}
+
 export function ListCard({
-  title, img, meta, progress, onOpen, editMode = false, selected = false,
+  title, img, meta, progress, watchStatus = null, onOpen, editMode = false, selected = false,
   onToggleSelect, hasPrivateNote = false, hasReview = false,
   isFavorite = false, onToggleFavorite, isBookmarked = false, onToggleBookmark,
   favoriteLabel = 'Favorite', bookmarkLabel = MEDIA.saveToWatchlist,
@@ -100,7 +109,7 @@ export function ListCard({
     ? (selected ? `Deselect ${title}` : `Select ${title}`)
     : `View details for ${title}`;
   return (
-    <div className="mylists-card">
+    <div className={`mylists-card${isFinishedStatus(watchStatus) ? ' mylists-card--finished' : ''}`}>
       <button
         type="button"
         className="mylists-card-hit interactive-surface"
@@ -112,6 +121,7 @@ export function ListCard({
           {img
             ? <img src={img} alt="" loading="lazy" />
             : <span className="mylists-card-placeholder">{title}</span>}
+          <WatchStatusChip status={watchStatus} />
         </div>
         <div className="mylists-card-title">{title}</div>
         {meta ? <div className="mylists-card-meta">{meta}</div> : null}
