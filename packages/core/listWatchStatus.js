@@ -43,3 +43,41 @@ export function listWatchStatus(item, historyEntries = [], watchingItems = []) {
   }
   return sawDnf ? LIST_WATCH_STATUS.DNF : null;
 }
+
+/** The Status filter's choices, in display order. `none` is "Not watched". */
+export const LIST_STATUS_FILTER_IDS = Object.freeze(['none', 'watching', 'watched', 'dnf']);
+
+/**
+ * Keep the titles whose status is among `selected`. Nothing selected means no
+ * filter, as with the type and genre filters.
+ *
+ * @template {{ tmdb_id: number | string, media_type?: string }} T
+ * @param {T[]} items
+ * @param {string[]} selected  Any of LIST_STATUS_FILTER_IDS.
+ * @param {Parameters<typeof listWatchStatus>[1]} [historyEntries]
+ * @param {Parameters<typeof listWatchStatus>[2]} [watchingItems]
+ * @returns {T[]}
+ */
+export function filterByWatchStatus(items, selected, historyEntries = [], watchingItems = []) {
+  if (!selected?.length) return items;
+  return items.filter(item => selected.includes(listWatchStatus(item, historyEntries, watchingItems) ?? 'none'));
+}
+
+/**
+ * How far through a list the viewer is. `watched` counts finished watches only:
+ * a title left unfinished or still in progress is not "watched" yet.
+ *
+ * @param {Array<{ tmdb_id: number | string, media_type?: string }>} items
+ * @param {Parameters<typeof listWatchStatus>[1]} [historyEntries]
+ * @param {Parameters<typeof listWatchStatus>[2]} [watchingItems]
+ * @returns {{ total: number, watched: number, watching: number, dnf: number, percent: number }}
+ */
+export function listProgress(items, historyEntries = [], watchingItems = []) {
+  const counts = { watched: 0, watching: 0, dnf: 0 };
+  for (const item of items || []) {
+    const status = listWatchStatus(item, historyEntries, watchingItems);
+    if (status) counts[status] += 1;
+  }
+  const total = (items || []).length;
+  return { total, ...counts, percent: total ? Math.round((counts.watched / total) * 100) : 0 };
+}

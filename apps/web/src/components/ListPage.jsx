@@ -11,6 +11,7 @@ import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { EVENTS } from '../lib/analytics.js';
 import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
+import { filterByWatchStatus, LIST_STATUS_FILTER_IDS } from '@plot/core/listWatchStatus.js';
 import { customListIdFromKey, customListKey, sortListItems, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -20,7 +21,7 @@ import { IconChevronLeft, IconSearch } from './navIcons.jsx';
 import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
 import { isSharedList } from '@plot/core/sharedLists.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
-import SideFilters from './SideFilters.jsx';
+import SideFilters, { FilterRow } from './SideFilters.jsx';
 import MobilePageControls from './MobilePageControls.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { MEDIA } from '../copy/media.js';
@@ -30,6 +31,7 @@ import { MEDIA } from '../copy/media.js';
 // matches on, so on its own it could only ever show nothing.
 const LIST_TYPE_ROWS = TYPE_ROWS.filter(r => r.id !== 'cinema');
 const ALL_LIST_TYPES = LIST_TYPE_ROWS.map(r => r.id);
+const STATUS_OPTIONS = LIST_STATUS_FILTER_IDS.map(id => ({ id, label: MEDIA.watchStatus[id] }));
 import KebabMenu from './KebabMenu.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 
@@ -45,7 +47,7 @@ const CloseIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18
    title at the top right; `lead`, the phone and tablet people line (A8); and
    `shared`, which on a phone turns the header into a bar with a search
    button in place of the always-open field. */
-function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQuery, view, onView, onSort, sidePanel, headerActions, lead, onAdd, shared = false, children }) {
+function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, query, onQuery, view, onView, onSort, sidePanel, headerActions, lead, onAdd, shared = false, children }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
   useEffect(() => { if (searchOpen) searchRef.current?.focus(); }, [searchOpen]);
@@ -59,6 +61,14 @@ function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQ
         <div className="list-page-heading">
           <h1 className="list-page-title">{title}</h1>
           <span className="list-page-sub">{titleCount(count)}{subtitle ? ` · ${subtitle}` : ''}</span>
+          {progress?.total > 0 && (
+            <div className="list-page-progress">
+              <div className="list-page-progress-bar" role="progressbar" aria-label={MEDIA.listProgress(progress.watched, progress.total)} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.percent}>
+                <span style={{ width: `${progress.percent}%` }} />
+              </div>
+              <span className="list-page-progress-label">{MEDIA.listProgress(progress.watched, progress.total)}</span>
+            </div>
+          )}
         </div>
         <div className="list-page-head-actions">
           {shared && (
@@ -141,6 +151,7 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
   const { share, copied } = useShare();
   const [typeFilters,  setTypeFilters]  = useState(ALL_LIST_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
+  const [statusFilters, setStatusFilters] = useState([]);
   const [query, setQuery] = useState('');
   const [view, setView] = useState('auto');
   const [sort, setSort] = useState('list');
@@ -180,11 +191,14 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
   // Not smart lists: their saved rules already pick a type and genres, and
   // they load a page at a time, so a second filter here would contradict the
   // rules and only narrow what has been fetched so far. Search still applies.
+  // The Status filter and the progress bar are for the viewer's own lists:
+  // Want to Watch is unwatched by definition and a smart list loads a page at a time.
+  const showStatus = !!list;
   const showFilter = key === 'want' || key === 'favorites' || !!list;
   // Only CustomListSection reads this on the page: it swaps an emptied grid for
   // "No items match". Want to Watch and Favourites return null when narrowed,
   // which here would take the header and filters with it.
-  const narrowed = typeFilters.length < ALL_LIST_TYPES.length || genreFilters.length > 0 || query.trim() !== '';
+  const narrowed = typeFilters.length < ALL_LIST_TYPES.length || genreFilters.length > 0 || statusFilters.length > 0 || query.trim() !== '';
 
   // What the frame needs from the page. A fresh object per render is fine —
   // it re-renders the frame, which is the point; only a changing component
@@ -202,11 +216,23 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
           genreFilters={genreFilters}
           setGenreFilters={setGenreFilters}
           genres={genres}
-        />
+        >
+          {showStatus && (
+            <div className="cal-filter">
+              <div className="cal-filter-label">{MEDIA.statusHeading}</div>
+              <div>
+                {STATUS_OPTIONS.map(({ id, label }) => (
+                  <FilterRow key={id} label={label} on={statusFilters.includes(id)} onToggle={() => setStatusFilters(statusFilters.includes(id) ? statusFilters.filter(v => v !== id) : [...statusFilters, id])} />
+                ))}
+              </div>
+            </div>
+          )}
+        </SideFilters>
         <MobilePageControls
           groups={[
             { heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes, options: LIST_TYPE_ROWS, value: typeFilters, defaultValue: ALL_LIST_TYPES, onChange: setTypeFilters },
             { heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres, columns: 2, options: genres.map(g => ({ id: g.id, label: g.name })), value: genreFilters, defaultValue: [], onChange: setGenreFilters },
+            ...(showStatus ? [{ heading: MEDIA.statusHeading, allLabel: MEDIA.allStatuses, options: STATUS_OPTIONS, value: statusFilters, defaultValue: [], onChange: setStatusFilters }] : []),
           ]}
         />
       </>
@@ -216,7 +242,7 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
     view: resolvedView,
     onView: setView,
     onSort: setSort,
-  }), [showFilter, typeFilters, genreFilters, genres, query, resolvedView]);
+  }), [showFilter, showStatus, typeFilters, genreFilters, statusFilters, genres, query, resolvedView]);
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
@@ -250,7 +276,7 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
       <CustomListSection
         key={customListKey(list.id)}
         list={list}
-        visibleItems={sortItems(matchQuery(filterByTypeAndGenre(list.items, typeFilters, genreFilters)))}
+        visibleItems={sortItems(matchQuery(filterByWatchStatus(filterByTypeAndGenre(list.items, typeFilters, genreFilters), statusFilters, history.entries, watching.items)))}
         count={(list.items || []).length}
         customLists={customLists}
         typeFilters={typeFilters}
