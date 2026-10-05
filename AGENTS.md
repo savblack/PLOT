@@ -329,6 +329,14 @@ So:
   The block test asserts from four viewpoints — blocker, blocked, an unrelated bystander,
   and an anonymous reader. The last two are not padding: they are the only thing that
   catches a visibility clause that is too *broad*.
+- **A trigger or function that names a column is not checked when it is created.** plpgsql
+  resolves `NEW.col`, `OLD.col` and column names in its SQL only when the line runs, so
+  `migrations:check` and `db:migration-test` both pass. `20261004100000` set
+  `watch_together.requester_shares_full`, which `20260927160000` had already dropped, and
+  every mutual-follow acceptance then raised in production until `20261005100000`. Before
+  relying on a column in a trigger or function, grep later migrations for
+  `drop column` on it, and write a `staging:*-test` that runs the trigger's real path under
+  an `auth.uid()`: its first line should reproduce the failure without the fix.
 - **`pnpm run db:block-clause` (CI)** requires every function reading `profiles` to be in
   exactly one of `BLOCK_FILTERED` or `BLOCK_EXEMPT` in `scripts/check-block-clause.mjs`.
   Blocking hides identity through seven security definer RPCs, because `profiles` has one
