@@ -100,15 +100,34 @@ export const NEW_MOVIE_NOTIFICATION = Object.freeze({
 });
 
 /**
- * @typedef {{ type: string, release_kind?: string | null, season_number?: number | null, episode_number?: number | null, episode_count?: number | null }} TitleRow
+ * A streaming_arrival row (Premium: a film you turned the bell on for reached
+ * a service) has no actor, so it reads "<title> <phrase>" under a small badge.
+ * release_kind says which: 'streaming' (a subscription on one of your services)
+ * or 'free' (free or free with ads, on any service). provider_name is the
+ * service. "now", not "today", for the same reason as NEW_MOVIE_NOTIFICATION.
+ */
+export const STREAMING_ARRIVAL_NOTIFICATION = Object.freeze({
+  badges: Object.freeze({ streaming: 'Now streaming', free: 'Now free' }),
+  untitled: 'A film you are tracking',
+  /** @param {string | null | undefined} provider */
+  streaming: (provider) => (provider ? `is on ${provider} now` : 'is streaming now'),
+  /** @param {string | null | undefined} provider */
+  free: (provider) => (provider ? `is free to watch on ${provider} now` : 'is free to watch now'),
+});
+
+/**
+ * @typedef {{ type: string, release_kind?: string | null, provider_name?: string | null, season_number?: number | null, episode_number?: number | null, episode_count?: number | null }} TitleRow
  */
 
 /**
- * The small label above a title row (new_episode or movie_release).
+ * The small label above a title row (new_episode, movie_release or streaming_arrival).
  * @param {TitleRow} n
  * @returns {string}
  */
 export function titleBadge(n) {
+  if (n.type === 'streaming_arrival') {
+    return n.release_kind === 'free' ? STREAMING_ARRIVAL_NOTIFICATION.badges.free : STREAMING_ARRIVAL_NOTIFICATION.badges.streaming;
+  }
   if (n.type === 'movie_release') return NEW_MOVIE_NOTIFICATION.badge;
   return (n.episode_count ?? 1) > 1 ? NEW_EPISODE_NOTIFICATION.badgePlural : NEW_EPISODE_NOTIFICATION.badge;
 }
@@ -119,6 +138,7 @@ export function titleBadge(n) {
  * @returns {string}
  */
 export function titleFallback(n) {
+  if (n.type === 'streaming_arrival') return STREAMING_ARRIVAL_NOTIFICATION.untitled;
   return n.type === 'movie_release' ? NEW_MOVIE_NOTIFICATION.untitled : NEW_EPISODE_NOTIFICATION.untitled;
 }
 
@@ -128,6 +148,11 @@ export function titleFallback(n) {
  * @returns {string}
  */
 export function titlePhrase(n) {
+  if (n.type === 'streaming_arrival') {
+    return n.release_kind === 'free'
+      ? STREAMING_ARRIVAL_NOTIFICATION.free(n.provider_name)
+      : STREAMING_ARRIVAL_NOTIFICATION.streaming(n.provider_name);
+  }
   if (n.type === 'movie_release') {
     return n.release_kind === 'digital' ? NEW_MOVIE_NOTIFICATION.kinds.digital : NEW_MOVIE_NOTIFICATION.kinds.theatrical;
   }

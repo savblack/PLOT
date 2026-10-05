@@ -1,7 +1,13 @@
 import { posterUrl, profileUrl } from '../utils/images.js';
-import { CARD_IDS, CARD_FORMATS } from '@plot/core/shareCards.js';
+import { CARD_IDS, CARD_FORMATS, shareCardPalette } from '@plot/core/shareCards.js';
 import { SHARE_CARDS as T } from '../copy/shareCards.js';
 import './ShareCard.css';
+
+// TMDB only sends CORS headers when a request carries an Origin, and sends no
+// Vary. A poster already cached from a plain <img> elsewhere in the app is
+// reused for this crossOrigin request and rejected, so the card's images get
+// their own cache key.
+const corsSafe = (url) => (url ? `${url}?sc=1` : url);
 
 /* A share card at its native pixel size (1200x800 for a post, 1080x1920 for
    a story). Every measurement in ShareCard.css is a multiple of --u, one
@@ -17,9 +23,11 @@ const RING = {
   // The rank numeral's ring must match what it sits on. Where a numeral
   // crosses the ghost wordmark it takes the ghost's blended colour instead of
   // the card's; on the landscape Top 5 that is every numeral but the fourth.
-  cream: { card: '#F8F2EA', ghost: '#ECE6DE' },
-  sage: { card: '#DBE1B0', ghost: '#CBD0A3' },
-  pink: { card: '#FF88C8', ghost: '#F07EBC' },
+  // The vars are set by a theme family's palette (shareCardPalette); the
+  // literals are the default look.
+  cream: { card: 'var(--sc-r-cream)', ghost: 'var(--sc-r-cream-g)' },
+  sage: { card: 'var(--sc-r-sage)', ghost: 'var(--sc-r-sage-g)' },
+  pink: { card: 'var(--sc-r-pink)', ghost: 'var(--sc-r-pink-g)' },
 };
 
 function Ghost() {
@@ -67,7 +75,7 @@ function Streak({ card, story }) {
 }
 
 function Poster({ item, ring }) {
-  const img = posterUrl(item.poster_path, 'w342');
+  const img = corsSafe(posterUrl(item.poster_path, 'w342'));
   return (
     <div className="rank-cut-frame sc-frame" style={{ '--bg': ring }}>
       <div className="sc-post">{img && <img src={img} alt="" crossOrigin="anonymous" />}</div>
@@ -78,10 +86,14 @@ function Poster({ item, ring }) {
 
 function Top5({ card, story }) {
   const rings = RING[card.ground] || RING.cream;
+  // A full name ("Savannah Black's Top 5") plus the chip is wider than the
+  // card at the usual title size, which wraps the chip and pushes the footer
+  // off the bottom.
+  const titleCls = `sc-title sc-title--nowrap${(card.owner || '').length > 9 ? ' sc-title--long' : ''}`;
   if (story) {
     return (
       <>
-        <div className="sc-title sc-title--nowrap">
+        <div className={titleCls}>
           {T.top5Short(card.owner)}
           <span className="sc-kind">{card.kind === 'tv' ? T.kindTv : T.kindMovies}</span>
         </div>
@@ -101,7 +113,7 @@ function Top5({ card, story }) {
   // on the post card too, the same as the story.
   return (
     <>
-      <div className="sc-title sc-title--nowrap">
+      <div className={titleCls}>
         {T.top5Short(card.owner)}
         <span className="sc-kind">{card.kind === 'tv' ? T.kindTv : T.kindMovies}</span>
       </div>
@@ -118,33 +130,38 @@ function Top5({ card, story }) {
   );
 }
 
-const DAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-function Activity({ card }) {
-  const cols = card.weeks.length;
+function Activity({ card, story }) {
+  // The post shows the year to date; a story is too narrow for that many
+  // columns, so it shows the last quarter.
+  const { weeks, months, best } = story ? card.quarter : card;
+  const cols = weeks.length;
   return (
     <>
       <div className="sc-title">{T.activityTitle}</div>
       <div className="sc-panel sc-act">
-        <div className="sc-hm" style={{ gridTemplateColumns: `auto repeat(${cols}, 1fr)` }}>
+        {/* Cells fill the panel but stop growing at a size that looks right, so
+            a young year (a few columns) is a small grid, not a few huge squares. */}
+        <div className="sc-hm" style={{ gridTemplateColumns: `auto repeat(${cols}, minmax(0, 1fr))`, maxWidth: `calc(var(--u) * ${cols * (story ? 6 : 2.7) + (story ? 7 : 4)})` }}>
           <span style={{ gridRow: 1, gridColumn: 1 }} />
-          {card.months.map(m => <span key={`${m.label}-${m.col}`} className="sc-hm-m" style={{ gridRow: 1, gridColumn: m.col + 2 }}>{m.label}</span>)}
+          {months.map(m => <span key={`${m.label}-${m.col}`} className="sc-hm-m" style={{ gridRow: 1, gridColumn: m.col + 2 }}>{m.label}</span>)}
           {/* Every cell is placed by hand: with the month labels sitting in
               row 1 by column, auto-placement would pour the cells into the
               gaps beside them. */}
           {[0, 1, 2, 3, 4, 5, 6].map(d => (
             <div key={d} className="sc-hm-r" style={{ display: 'contents' }}>
               <span className="sc-hm-d" style={{ gridRow: d + 2, gridColumn: 1 }}>{DAY_LABELS[d]}</span>
-              {card.weeks.map((w, wi) => {
+              {weeks.map((w, wi) => {
                 const c = w[d];
-                const cls = ['sc-hm-c', c.best ? 'sc-hm-c--best' : c.level ? `sc-hm-c--l${c.level}` : '', c.future ? 'sc-hm-c--future' : '', c.today ? 'sc-hm-c--today' : ''].filter(Boolean).join(' ');
+                const cls = ['sc-hm-c', c.best ? 'sc-hm-c--best' : c.level ? `sc-hm-c--l${c.level}` : '', c.future || c.before ? 'sc-hm-c--off' : '', c.today ? 'sc-hm-c--today' : ''].filter(Boolean).join(' ');
                 return <i key={wi} className={cls} style={{ gridRow: d + 2, gridColumn: wi + 2 }} />;
               })}
             </div>
           ))}
         </div>
-        {card.best && (
-          <div className="sc-hm-legend"><i className="sc-hm-c sc-hm-c--best" /><span>{T.bestDay(card.best.label, card.best.count)}</span></div>
+        {best && (
+          <div className="sc-hm-legend"><i className="sc-hm-c sc-hm-c--best" /><span>{T.bestDay(best.label, best.count)}</span></div>
         )}
       </div>
       <Foot />
@@ -165,10 +182,10 @@ function Crowd({ card, story }) {
       <div className={`sc-panel sc-crowd${story ? ' sc-crowd--story' : ''}`}>
         <div className="sc-arc">
           <svg viewBox="0 0 100 60">
-            <path d="M8 54 A42 42 0 0 1 92 54" fill="none" stroke="#F1E9DC" strokeWidth="9" strokeLinecap="round" />
-            {card.gauge > 0.02 && <path d={`M8 54 A42 42 0 ${large} 1 ${ex.toFixed(1)} ${ey.toFixed(1)}`} fill="none" stroke="#FF88C8" strokeWidth="9" strokeLinecap="round" />}
-            <text x="50" y="44" textAnchor="middle" fontFamily="Gabarito" fontWeight="700" fontSize="17" fill="#292924">{card.delta}</text>
-            <text x="50" y="56" textAnchor="middle" fontFamily="DM Sans" fontWeight="600" fontSize="6" fill="#5F5A52" letterSpacing=".8">{T.crowdWord[card.word]}</text>
+            <path d="M8 54 A42 42 0 0 1 92 54" fill="none" style={{ stroke: 'var(--sc-empty)' }} strokeWidth="9" strokeLinecap="round" />
+            {card.gauge > 0.02 && <path d={`M8 54 A42 42 0 ${large} 1 ${ex.toFixed(1)} ${ey.toFixed(1)}`} fill="none" style={{ stroke: 'var(--sc-accent)' }} strokeWidth="9" strokeLinecap="round" />}
+            <text x="50" y="44" textAnchor="middle" fontFamily="Gabarito" fontWeight="700" fontSize="17" style={{ fill: 'var(--sc-ink)' }}>{card.delta}</text>
+            <text x="50" y="56" textAnchor="middle" fontFamily="DM Sans" fontWeight="600" fontSize="6" style={{ fill: 'var(--sc-soft)' }} letterSpacing=".8">{T.crowdWord[card.word]}</text>
           </svg>
         </div>
         <div className="sc-crowd-text">
@@ -201,7 +218,7 @@ function Genres({ card }) {
 }
 
 function Person({ card, story }) {
-  const img = profileUrl(card.profile_path, 'w185');
+  const img = corsSafe(profileUrl(card.profile_path, 'w185'));
   return (
     <>
       <div className="sc-title">{T.personTitle}</div>
@@ -239,9 +256,12 @@ function MonthWrap({ card }) {
 }
 
 /**
- * @param {{ card: object, format?: 'post'|'story', nodeRef?: import('react').Ref<HTMLDivElement> }} props
+ * `family` is a Premium theme family id ('sage', 'mist', 'blush', 'plum',
+ * 'ink') to draw the card in that family's colours; leave it out for the
+ * default look.
+ * @param {{ card: object, format?: 'post'|'story', family?: string, nodeRef?: import('react').Ref<HTMLDivElement> }} props
  */
-export default function ShareCard({ card, format = 'post', nodeRef }) {
+export default function ShareCard({ card, format = 'post', family, nodeRef }) {
   const f = CARD_FORMATS[format] || CARD_FORMATS.post;
   const story = f.id === 'story';
   const Body = card.id === CARD_IDS.HIGHLIGHTS ? Highlights
@@ -256,7 +276,7 @@ export default function ShareCard({ card, format = 'post', nodeRef }) {
     <div
       ref={nodeRef}
       className={`sc sc--${card.ground} sc--${card.id}${story ? ' sc--story' : ''}`}
-      style={{ width: f.width, height: f.height, '--u': `${f.width / 100}px` }}
+      style={{ width: f.width, height: f.height, '--u': `${f.width / 100}px`, ...shareCardPalette(family) }}
     >
       <Ghost />
       {story && card.handle && <span className="sc-handle" aria-hidden="true">{card.handle}</span>}

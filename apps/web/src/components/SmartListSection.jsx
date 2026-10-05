@@ -25,6 +25,7 @@ import { favoriteWords } from '../utils/spelling.js';
 import { posterUrl } from '../utils/images.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { CardGrid, ListCard } from './ListCards.jsx';
+import { listWatchStatus } from '@plot/core/listWatchStatus.js';
 import { Empty, ListPageRow, ListSection } from './ListSections.jsx';
 import { cardActions, cardState } from './listCardActions.js';
 import ConfirmModal from './ConfirmModal.jsx';
@@ -55,7 +56,7 @@ const dayLabel = (iso) => (iso ? shortDayMonth(dateToLocalStr(new Date(iso))) : 
  * }} props
  */
 export function SmartListSection({ list, customLists, historyEntries, historyReady, refine = (i) => i, onDeleted, Frame = ListSection, pageLayout = false, catalog: seedCatalog = null, clients = null }) {
-  const { user, openPanel, favorites, watchlist, privateNotes, profile } = useApp();
+  const { user, openPanel, favorites, watchlist, watching, privateNotes, profile } = useApp();
   const catalog = useGenreCatalog(seedCatalog);
   const fw = favoriteWords(profile?.region);
   const premium = isPremiumProfile(profile);
@@ -158,7 +159,7 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
         title={title}
         img={posterUrl(item.poster_path, 'w185')}
         meta={meta(item)}
-        {...(pageLayout ? cardState(item, historyEntries, privateNotes) : {})}
+        {...(pageLayout ? cardState(item, historyEntries, privateNotes, watching?.items) : {})}
         {...(pageLayout ? cardActions(item, favorites, watchlist, fw) : {})}
         onOpen={() => openPanel(item.tmdb_id, item.media_type)}
       />
@@ -216,6 +217,7 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
                 meta={meta(item)}
                 open={() => openPanel(item.tmdb_id, item.media_type)}
                 selection={NOT_SELECTING}
+                watchStatus={listWatchStatus(item, historyEntries, watching?.items)}
               />
             ))}
           </div>

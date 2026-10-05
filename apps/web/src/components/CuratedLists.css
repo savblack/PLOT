@@ -1,0 +1,34 @@
+/* The Picks card: a tilted wall of the list's posters under the hero's scrim.
+   Oversized and rotated so the tiles bleed past every edge. */
+.curated-hero-wall {
+  position: absolute; inset: -18% -12%;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; align-content: start;
+  transform: rotate(-7deg); transform-origin: center;
+  transition: transform 0.5s var(--ease);
+}
+.curated-hero-wall img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 3px; background: var(--surface-sunken); display: block; }
+.curated-hero:hover .curated-hero-wall { transform: rotate(-7deg) scale(1.045); }
+.curated-hero .discover-hero-title { font-size: 1.5rem; }
+
+.curated-body { padding: 4px 20px 16px; }
+.curated-blurb { margin: 0 0 6px; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.45; }
+.curated-source { display: inline-block; margin-bottom: 12px; font-size: 0.78rem; color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; }
+.curated-source:hover, .curated-source:focus-visible { color: var(--text-primary); }
+.curated-rows { margin: 0; padding: 0; list-style: none; }
+.curated-rows li + li { border-top: 1px solid var(--border); }
+.curated-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 0;
+  border: 0; background: none; color: inherit; text-align: left; cursor: pointer;
+}
+.curated-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.curated-rank { flex: 0 0 2ch; min-width: 2.4ch; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.75rem; color: var(--text-muted); }
+.curated-footer { display: flex; align-items: center; justify-content: flex-end; gap: 12px; width: 100%; }
+.curated-status { margin-right: auto; font-size: 0.8rem; color: var(--text-muted); }
+.curated-status--error { color: var(--danger); }
+.curated-poster-fallback { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: var(--surface-sunken); color: var(--text-muted); font-weight: 700; }
+/* Posters are busier than a backdrop: a deeper scrim, and a badge with its own
+   dark backing so the accent stays legible over them. */
+.curated-hero .discover-hero-overlay {
+  background: linear-gradient(to top, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.8) 36%, rgba(0,0,0,0.3) 68%, rgba(0,0,0,0.1) 100%);
+}
+.curated-hero .discover-hero-badge { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }

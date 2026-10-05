@@ -13,6 +13,7 @@ import { lastMonth } from './shareMoments.js';
 import { emit, SHARE_CARD_REQUESTED_EVENT } from './events.js';
 import { TOP_LIST_SIZE } from './listCollections.js';
 import { buildProfileShareUrl } from './sharing.js';
+import { themeFamilyVariants } from './tokens.js';
 
 export const CARD_IDS = Object.freeze({
   HIGHLIGHTS: 'highlights',
@@ -152,57 +153,114 @@ export function monthWrapCard({ entries = [], now = new Date() }) {
   };
 }
 
+/**
+ * Share cards in a Premium theme family's colours. The default look (pink
+ * accent, sage second voice) is literal in the card styles; a family swaps
+ * the roles, not the layout: its accent fill takes the pink's jobs, its
+ * secondary fill the sage's, its light ground the cream's, and the charcoal
+ * card takes the family's dark surface. Returns CSS custom properties for the
+ * card's root element, or null for the default family.
+ * @param {string | null | undefined} family
+ * @returns {Record<string, string> | null}
+ */
+export function shareCardPalette(family) {
+  const v = family && themeFamilyVariants[family];
+  if (!v) return null;
+  const { light: l, dark: d } = v;
+  const mix = (a, pct, b) => `color-mix(in srgb, ${a} ${pct}%, ${b})`;
+  return {
+    '--sc-bg': l.bg,
+    '--sc-panel': l.surfaceRaised,
+    '--sc-ink': l.textPrimary,
+    '--sc-soft': l.textSecondary,
+    '--sc-accent': l.accentFill,
+    '--sc-on-accent': l.onAccentFill,
+    '--sc-second': l.accentSecondaryFill,
+    '--sc-second-ink': l.accentSecondary,
+    '--sc-on-second': mix(l.accentSecondary, 60, l.textPrimary),
+    '--sc-empty': mix(l.textPrimary, 7, l.surfaceRaised),
+    '--sc-char': d.surface,
+    '--sc-char-ink': d.textPrimary,
+    '--sc-char-accent': d.accentFill,
+    // The numeral ring on the Top 5 must match what it sits on, and where it
+    // crosses the ghost wordmark it takes the ghost's blend (6% on the light
+    // ground, 9% on the coloured ones).
+    '--sc-r-cream': l.bg,
+    '--sc-r-cream-g': mix(l.textPrimary, 6, l.bg),
+    '--sc-r-sage': l.accentSecondaryFill,
+    '--sc-r-sage-g': mix(l.textPrimary, 9, l.accentSecondaryFill),
+    '--sc-r-pink': l.accentFill,
+    '--sc-r-pink-g': mix(l.onAccentFill, 9, l.accentFill),
+  };
+}
+
 const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dayNum = (y, m, d) => Date.UTC(y, m, d) / 86400000;
 
 /**
- * The watch-activity grid: `weeks` columns of seven days ending in the
- * current week, one level per day, the busiest day marked. Rows run Monday
- * to Sunday; a week is a column.
- * @param {{ entries?: any[], now?: Date, weeks?: number }} a
+ * The watch-activity grid: columns of seven days ending in the current week,
+ * one level per day, the busiest day marked. Rows run Monday to Sunday; a
+ * week is a column. The post card shows the year to date (`weeks`: from the
+ * week holding 1 January to this one, with the days before 1 January left
+ * blank); the story is too narrow for that, so it gets the last quarter
+ * (`quarter`, 13 columns) with its own months and its own best day.
+ * @param {{ entries?: any[], now?: Date }} a
  */
-export function activityCard({ entries = [], now = new Date(), weeks = 22 }) {
+export function activityCard({ entries = [], now = new Date() }) {
   const today = dayNum(now.getFullYear(), now.getMonth(), now.getDate());
   const todayMonIdx = (new Date(today * 86400000).getUTCDay() + 6) % 7; // 0 = Monday
-  const start = today - todayMonIdx - (weeks - 1) * 7;
+  const monday = today - todayMonIdx;
+  const jan1 = dayNum(now.getFullYear(), 0, 1);
   const counts = new Map();
   for (const e of entries) {
     const p = calendarParts(e.watched_at);
     if (!p) continue;
     const n = dayNum(p.year, p.month, p.day);
-    if (n >= start && n <= today) counts.set(n, (counts.get(n) || 0) + 1);
+    if (n <= today) counts.set(n, (counts.get(n) || 0) + 1);
   }
-  let best = null;
-  for (const [n, c] of counts) if (!best || c > best.count || (c === best.count && n > best.n)) best = { n, count: c };
-  const cols = [];
-  const months = [];
-  let lastMonth = -1;
-  for (let w = 0; w < weeks; w++) {
-    const col = [];
-    for (let d = 0; d < 7; d++) {
-      const n = start + w * 7 + d;
-      const date = new Date(n * 86400000);
-      if (d === 0 && date.getUTCMonth() !== lastMonth) { lastMonth = date.getUTCMonth(); if (w > 0 || date.getUTCDate() <= 7) months.push({ col: w, label: MON3[lastMonth] }); }
-      const count = counts.get(n) || 0;
-      col.push({
-        count,
-        level: count >= 3 ? 3 : count,
-        best: !!best && n === best.n,
-        future: n > today,
-        today: n === today,
-      });
+  // `from` is the first day that counts; the grid starts on the Monday of its week.
+  const window = (weeks, from) => {
+    const start = monday - (weeks - 1) * 7;
+    let best = null;
+    let days = 0;
+    for (const [n, c] of counts) {
+      if (n < from) continue;
+      days++;
+      if (!best || c > best.count || (c === best.count && n > best.n)) best = { n, count: c };
     }
-    cols.push(col);
-  }
-  const bestLabel = best ? (() => { const d = new Date(best.n * 86400000); return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MON3[d.getUTCMonth()]}`; })() : null;
+    const cols = [];
+    const months = [];
+    let lastMonth = -1;
+    for (let w = 0; w < weeks; w++) {
+      const col = [];
+      for (let d = 0; d < 7; d++) {
+        const n = start + w * 7 + d;
+        const date = new Date(n * 86400000);
+        if (d === 0 && date.getUTCMonth() !== lastMonth) { lastMonth = date.getUTCMonth(); if (w > 0 || date.getUTCDate() <= 7) months.push({ col: w, label: MON3[lastMonth] }); }
+        const count = n >= from ? (counts.get(n) || 0) : 0;
+        col.push({
+          count,
+          level: count >= 3 ? 3 : count,
+          best: !!best && n === best.n,
+          future: n > today,
+          before: n < from,
+          today: n === today,
+        });
+      }
+      cols.push(col);
+    }
+    const label = best ? (() => { const d = new Date(best.n * 86400000); return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MON3[d.getUTCMonth()]}`; })() : null;
+    return { weeks: cols, months, best: best ? { label, count: best.count } : null, watchDays: days };
+  };
+  const ytdWeeks = (monday - (jan1 - ((new Date(jan1 * 86400000).getUTCDay() + 6) % 7))) / 7 + 1;
+  const ytd = window(ytdWeeks, jan1);
+  const quarter = window(13, monday - 12 * 7);
   return {
     id: CARD_IDS.ACTIVITY,
     ground: 'cream',
-    weeks: cols,
-    months,
-    best: best ? { label: bestLabel, count: best.count } : null,
-    watchDays: counts.size,
-    need: need(counts.size, THRESHOLDS.activityDays),
+    ...ytd,
+    quarter,
+    need: need(ytd.watchDays, THRESHOLDS.activityDays),
   };
 }
 

@@ -22,6 +22,9 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { clampToSentences } from '@plot/core/sentences.js';
 import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
 import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
+import { featuredCuratedList } from '@plot/core/curatedLists.js';
+import { CuratedListCard, CuratedListDialog } from './CuratedLists.jsx';
+import PicksCarousel from './PicksCarousel.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SideFilters from './SideFilters.jsx';
@@ -796,6 +799,7 @@ function YourPeopleSection({ shelf, openPanel }) {
 /* ── Home ── */
 function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr, continueItems = [], firstRun = false }) {
   const peopleShelf = useYourPeopleShelf();
+  const [openCurated, setOpenCurated] = useState(null);
   const navigate = useNavigate();
   const { data, loading } = useDiscover();
   // Home only renders the recent rail. Loading every per-genre New Releases
@@ -818,11 +822,26 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   const cinemaMovies      = applyFilters(data.cinemaMovies);
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
   const recent            = applyFilters(releases.recent);
+  // The list card follows the type filter like the hero does: a TV-only list has nothing to show under Movies.
+  const featuredList = featuredCuratedList();
+  const curated = featuredList && filterByType(featuredList.entries, typeFilters).length > 0 ? featuredList : null;
+  const showPicks = (hero || curated) && genreFilters.length === 0;
+  // Picks takes turns: the trending hero, the plot list, then the other
+  // trending leaders the hero is not already. Only the hero shows its own badge copy.
+  const picksBadges = { tv: DISCOVER_VIEW.picks.trendingTv, movie: DISCOVER_VIEW.picks.trendingMovie, cinema: MEDIA.inCinemas };
+  const seenPicks = new Set(hero ? [`${hero.media_type}-${hero.id}`] : []);
+  const otherHeroes = ['tv', 'movie', 'cinema'].map(type => ({ type, item: filterByType([data.heroByType?.[type]].filter(Boolean), typeFilters)[0] }))
+    .filter(({ item }) => item && !seenPicks.has(`${item.media_type}-${item.id}`) && seenPicks.add(`${item.media_type}-${item.id}`));
+  const pickSlides = [
+    hero && <HeroCard key="hero" item={hero} openPanel={openPanel} watchlist={watchlist} />,
+    curated && <CuratedListCard key={curated.id} curated={curated} onOpen={() => setOpenCurated(curated)} />,
+    ...otherHeroes.map(({ type, item }) => <HeroCard key={`${type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} badge={picksBadges[type]} />),
+  ].filter(Boolean);
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
   const savedItems = firstRun ? (watchlist?.items ?? []).slice(0, 20).map(row => ({ id: row.tmdb_id, media_type: row.media_type, title: row.title, poster_path: row.poster_path })) : [];
   const pageSections = [
     savedItems.length > 0 ? HOME_SECTION.saved : null,
-    hero && genreFilters.length === 0 ? HOME_SECTION.picks : null,
+    showPicks ? HOME_SECTION.picks : null,
     continueItems.length > 0 ? HOME_SECTION.continue : null,
     hotRail.length > 0 ? HOME_SECTION.hot : null,
     weekly.length > 0 ? HOME_SECTION.weekly : null,
@@ -860,12 +879,12 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
         </RailSection>
       )}
 
-      {hero && genreFilters.length === 0 && (
+      {showPicks && (
         <section id={HOME_SECTION.picks.id} className="discover-section discover-featured-section">
           <DiscoverSectionHeader title={HOME_SECTION.picks.label} />
-          <div className="discover-hero-row">
-            <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
-          </div>
+          {pickSlides.length > 1
+            ? <PicksCarousel>{pickSlides}</PicksCarousel>
+            : <div className="discover-hero-row">{pickSlides}</div>}
         </section>
       )}
 
@@ -932,6 +951,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
 
       {platformList.length > 0 && <PlatformCharts id={HOME_SECTION.platforms.id} platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />}
       </div>
+      {openCurated && <CuratedListDialog curated={openCurated} onClose={() => setOpenCurated(null)} onOpenTitle={openPanel} />}
     </div>
   );
 }

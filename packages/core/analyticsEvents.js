@@ -148,6 +148,7 @@ export const EVENTS = Object.freeze({
   CUSTOM_LIST_CREATED: 'custom_list_created',
   CUSTOM_LIST_DELETED: 'custom_list_deleted',
   COLLECTION_SAVED_AS_LIST: 'collection_saved_as_list',
+  CURATED_LIST_SAVED: 'curated_list_saved',
   COLLECTION_VIEWED: 'collection_viewed',
   // Putting a title *in* a list is a separate action from making the list, and
   // it's the one that actually indicates the feature is being used.
@@ -201,6 +202,11 @@ export const EVENTS = Object.freeze({
   ACCOUNT_DELETED: 'account_deleted',
   DATA_EXPORTED: 'data_exported',
   CALENDAR_FEED_GENERATED: 'calendar_feed_generated',
+  // The title panel's Episode alerts switch for one show (`on`: the new state).
+  EPISODE_ALERTS_TOGGLED: 'episode_alerts_toggled',
+  // Add to calendar from the title panel: `action` is subscribe (link copied),
+  // subscribe_setup (sent to Settings), upgrade (Free) or download (.ics).
+  TITLE_CALENDAR_ACTION: 'title_calendar_action',
   WATCHLIST_CLEARED: 'watchlist_cleared',
   HISTORY_CLEARED: 'history_cleared',
   PROFILE_VISIBILITY_CHANGED: 'profile_visibility_changed',

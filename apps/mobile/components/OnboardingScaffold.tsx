@@ -1,5 +1,5 @@
 /**
- * Shared chrome for the three onboarding steps — the mobile counterpart of the
+ * Shared chrome for the onboarding steps — the mobile counterpart of the
  * web app's single OnboardingFlow page (apps/web/src/pages/OnboardingFlow.jsx).
  * Mobile splits the flow across expo-router screens, so the header (wordmark,
  * progress bar, step label, back chevron) and the sticky footer (outline CTA,
@@ -12,24 +12,29 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
+import { ONBOARDING_PROGRESS_TOTAL } from '@plot/core/onboardingSetup.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
-export const TOTAL_STEPS = 2;
+// Three parts: save a few (with the switching-apps branch), where do you watch,
+// then the building moment, same as web.
+export const TOTAL_STEPS = ONBOARDING_PROGRESS_TOTAL;
 
 interface Props {
   step: number;
   title: string;
   subtitle: string;
-  /** Omitted on step 1, which has nowhere to go back to. */
+  /** Omitted on the first screen, which has nowhere to go back to. */
   onBack?: () => void;
   ctaLabel: string;
   onContinue: () => void;
   ctaDisabled?: boolean;
+  /** Passed instead of a CTA on a screen whose rows are themselves the action. */
+  hideCta?: boolean;
   saving?: boolean;
-  /** Steps 2 and 3 only, matching web. */
+  /** Every step but the building moment, matching web. */
   onSkip?: () => void;
-  /** Defaults to "Skip this step"; step 3's intro leaves for the app instead. */
+  /** Defaults to "Skip", as web's top-bar link. */
   skipLabel?: string;
   error?: string | null;
   children: ReactNode;
@@ -37,8 +42,8 @@ interface Props {
 
 export default function OnboardingScaffold({
   step, title, subtitle, onBack, ctaLabel, onContinue,
-  ctaDisabled = false, saving = false, onSkip,
-  skipLabel = ONBOARDING_FLOW.skipThisStep, error, children,
+  ctaDisabled = false, hideCta = false, saving = false, onSkip,
+  skipLabel = ONBOARDING_FLOW.skip, error, children,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -88,7 +93,7 @@ export default function OnboardingScaffold({
       {/* Footer */}
       <View style={styles.footer}>
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <TouchableOpacity
+        {!hideCta && <TouchableOpacity
           style={[styles.cta, (saving || ctaDisabled) && styles.ctaDisabled]}
           onPress={onContinue}
           disabled={saving || ctaDisabled}
@@ -100,7 +105,7 @@ export default function OnboardingScaffold({
             ? <ActivityIndicator color={colors.textPrimary} />
             : <Text style={[styles.ctaText, ctaDisabled && styles.ctaTextDisabled]}>{ctaLabel}</Text>
           }
-        </TouchableOpacity>
+        </TouchableOpacity>}
         {onSkip && !saving ? (
           <TouchableOpacity style={styles.skipBtn} onPress={onSkip} accessibilityRole="button">
             <Text style={styles.skipText}>{skipLabel}</Text>

@@ -33,7 +33,7 @@ import { ARTICLE_TABLE_CSS, articleExcerpt, isArticleTable, renderArticleBlock }
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
 const FEED_TITLE = "What's On";
-const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – plot";
+const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – Plot";
 const FEED_PATH = '/whats-on';
 const PAGE_SIZE = 30;
 
@@ -350,14 +350,13 @@ const trailerModule = async (post: FeedPost, ref = post.tmdb_refs?.[0]) => {
 // for streaming. Older posts without the field keep the type label.
 const HOME_KIND_LABEL: Record<string, string> = { streaming: 'Now streaming', rental: 'Now at home' };
 
-// Kicker chips: cream by default, pink on the lead story. The per-type tone
-// colours in TYPE_META still drive the chart page; here every chip is one
-// neutral fill so the feed reads as one system.
-const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, lead = false) => {
+// Kicker chips: sage everywhere except the featured (lead) story, which is
+// pink. The per-type tone colours in TYPE_META are not used for chips.
+const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false) => {
   const m = TYPE_META[p.post_type];
   if (!m) return '';
   const label = (p.post_type === 'now_streaming' && HOME_KIND_LABEL[p.payload?.home_kind ?? '']) || m.label;
-  return `<span class="kick${lead ? ' pink' : ''}"${lead ? ' style="background:var(--fill)"' : ''}>${esc(label)}</span>`;
+  return `<span class="kick${featured ? ' featured' : ''}">${esc(label)}</span>`;
 };
 
 // PostHog snippet for the server-rendered /whats-on pages. Same project token
@@ -446,7 +445,7 @@ ${head}
   .sc { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
   .hl { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
   .card { background: var(--paper); border-radius: 20px; }
-  .chip { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 9999px; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.02em; background: var(--bg); color: var(--ink); }
+  .chip { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 9999px; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.02em; background: var(--sage); color: var(--ink); }
   .chip.pink { background: var(--fill); } .chip.sage { background: var(--sage); }
   @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
   .r1, .r2, .r3, .r4 { animation: rise 0.7s var(--ease) both; }
@@ -462,7 +461,7 @@ ${head}
     transition: background 0.3s var(--ease), backdrop-filter 0.3s var(--ease);
   }
   nav.topnav.scrolled { background: rgba(248,242,234,0.86); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-  .nav-logo { text-decoration: none; display: flex; align-items: center; font-family: var(--display); font-size: 1.65rem; font-weight: 700; letter-spacing: -0.045em; color: var(--ink); line-height: 1; user-select: none; }
+  .nav-logo { text-decoration: none; display: flex; align-items: center; font-family: var(--display); font-size: 1.65rem; font-weight: 700; letter-spacing: -0.1em; color: var(--ink); line-height: 1; user-select: none; }
   .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
   .nav-links li { display: flex; }
   /* Small tracked capitals: the same values as apps/website/nav.css. */
@@ -537,7 +536,8 @@ ${head}
   .sec-rule { flex: 1; }
   .view-all { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); text-decoration: none; white-space: nowrap; }
   .view-all:hover { color: var(--mut); }
-  .kick { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 9999px; background: var(--bg); font-size: 0.62rem; font-weight: 500; letter-spacing: 0.04em; text-transform: none; color: var(--ink); align-self: flex-start; }
+  .kick.featured { background: var(--fill); }
+  .kick { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 9999px; background: var(--sage); font-size: 0.62rem; font-weight: 500; letter-spacing: 0.04em; text-transform: none; color: var(--ink); align-self: flex-start; }
 
   /* New at home: poster shelf */
   .shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 18px; }
@@ -556,7 +556,7 @@ ${head}
   .trend-t { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1rem; line-height: 1.2; transition: color 0.25s var(--ease); min-width: 0; }
   .trend-row:hover .trend-t { color: var(--mut); }
   .ch-move { font-size: 0.64rem; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap; }
-  .mv-new { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 9999px; background: var(--fill); color: var(--ink); }
+  .mv-new { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 9999px; background: var(--sage); color: var(--ink); }
   .mv-up { color: #0F6E56; } .mv-down { color: #B03A5E; } .mv-same { color: var(--faint); }
 
   /* Coming soon: date block + thumb + title, sidebar */
@@ -754,7 +754,7 @@ ${FOOTER_CSS}
 <body>
 ${GTM_NOSCRIPT}
 <nav class="topnav" id="topnav">
-  <a href="${SITE}" class="nav-logo" aria-label="plot">plot</a>
+  <a href="${SITE}" class="nav-logo" aria-label="Plot">plot</a>
   <ul class="nav-links" id="navLinks">
     <li><a href="${FEED_PATH}"${nav === 'whats-on' ? ' class="current"' : ''}>What's On</a></li>
     <li><a href="${APP}/login?src=whats_on_nav" data-cta="nav">Log in</a></li>
@@ -931,9 +931,9 @@ const renderChart = async (supabase: Db) => {
   const pageUrl = `${SITE}${FEED_PATH}/chart`;
 
   const head = `<style>${CHART_CSS}</style>
-<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by plot.">
+<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by Plot.">
 <link rel="canonical" href="${pageUrl}">
-<meta property="og:title" content="The chart · plot">
+<meta property="og:title" content="The chart · Plot">
 <meta property="og:description" content="The twenty titles the world is watching this week, ranked.">
 <meta property="og:url" content="${pageUrl}">
 <meta property="og:image" content="${OG_FALLBACK}">
@@ -951,7 +951,7 @@ const renderChart = async (supabase: Db) => {
     </aside>`;
 
   if (!latest) {
-    return page('The chart · plot', head, `
+    return page('The chart · Plot', head, `
       <div class="head r2"><div class="head-row">
         <h1 class="feed-title">The <em>chart</em></h1>
       </div></div>
@@ -980,7 +980,7 @@ const renderChart = async (supabase: Db) => {
     </div></li>`;
   }).join('');
 
-  return page('The chart · plot', head, `
+  return page('The chart · Plot', head, `
     <div class="head r2">
       <div class="head-row">
         <h1 class="feed-title">The <em>chart</em></h1>
@@ -1138,16 +1138,62 @@ const subscribeForm = (placement: string) => `
   })();
 </script>`;
 
+// A short introduction to Plot with the two ways in. The full card sits above
+// the newsletter card on every list and article page. `compact` is a single
+// strip for tighter spots; nothing renders it yet. Actions are right-aligned
+// with Log in to the left of Sign up.
+const aboutCard = (placement: string, compact = false) => {
+  const actions = `<div class="about-actions">
+    <a class="about-login" href="${APP}/login?src=${esc(placement)}" data-cta="${esc(placement)}_about_login">Log in</a>
+    <a class="cta" href="${APP}/signup?src=${esc(placement)}" data-cta="${esc(placement)}_about_signup">Sign up</a>
+  </div>`;
+  if (compact) {
+    return `
+<aside class="about about-compact card r4" aria-label="About Plot">
+  <div class="about-compact-copy">
+    <p class="about-title">New to <span class="about-wordmark">plot</span>?</p>
+    <p class="about-sub">Track what you watch and know what's coming next.</p>
+  </div>
+  ${actions}
+</aside>`;
+  }
+  return `
+<aside class="about card r4" aria-label="About Plot">
+  <span class="about-logo" aria-hidden="true">plot</span>
+  <p class="about-title">Everything you've watched. Everything you want to watch.</p>
+  <p class="about-sub">Plot is your personal movie and TV companion. Track what you've seen, save what's next and know what's streaming, trending and landing soon, all in one place.</p>
+  ${actions}
+</aside>`;
+};
+
 const SUBSCRIBE_CSS = `
-  /* Charcoal card. scroll-margin clears the fixed topnav: the /newsletter
+  /* Plot intro card: cream, one headline, two ways in. */
+  /* Charcoal, so the intro leads and the newsletter card below reads as the cream one. */
+  .about.card, .about { padding: 28px; background: var(--ink); color: var(--bg); }
+  .about-logo { display: block; margin-bottom: 14px; font-family: var(--display); font-size: 1.5rem; font-weight: 700; letter-spacing: -0.1em; line-height: 1; }
+  .about-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.4rem; line-height: 1.1; margin: 0 0 8px; }
+  .about-sub { color: rgba(248,242,234,0.7); font-size: 0.92rem; line-height: 1.55; margin: 0; max-width: 56ch; }
+  .about-actions { display: flex; align-items: center; justify-content: flex-end; gap: 20px; margin-top: 20px; }
+  .about-wordmark { font-weight: 700; letter-spacing: -0.1em; }
+  .about-compact { display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; padding: 16px 20px; }
+  .about-compact .about-title { font-size: 1.05rem; margin: 0; }
+  .about-compact .about-sub { font-size: 0.82rem; }
+  .about-compact .about-actions { margin-top: 0; margin-left: auto; }
+  .about-login { color: var(--bg); font-size: 0.9rem; font-weight: 500; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(248,242,234,0.35); padding: 12px 0; transition: text-decoration-color 0.2s; }
+  .about-login:hover { text-decoration-color: var(--bg); }
+  /* On an article the cards line up with the text column, not the page. */
+  .post-cards { max-width: 680px; margin: 44px auto 0; display: grid; gap: 16px; }
+  .post-cards > .nlsub, .post-cards > .about { margin-top: 0; }
+  .wrap > .about, .post-foot > .about { margin-top: 44px; }
+
+  /* Cream card. scroll-margin clears the fixed topnav: the /newsletter
      redirects land on #newsletter, and without it the heading lands under it. */
-  /* .nlsub.card outranks the later .card rule in the main stylesheet, which
-     otherwise paints this cream and leaves cream text unreadable on it. */
-  .nlsub.card, .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }
-  .nlsub .nlsub-title, .nlsub .nlsub-copy { color: var(--bg); }
+  /* .nlsub.card outranks the later .card rule in the main stylesheet. */
+  .nlsub.card, .nlsub { background: var(--paper); color: var(--ink); padding: 24px 28px; scroll-margin-top: 88px; }
+  .nlsub .nlsub-title, .nlsub .nlsub-copy { color: var(--ink); }
   .nlsub-copy { display: flex; flex-direction: column; gap: 6px; }
   .nlsub-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.4rem; line-height: 1; }
-  .nlsub-sub { color: rgba(248,242,234,0.7); font-size: 0.92rem; }
+  .nlsub-sub { color: var(--mut); font-size: 0.92rem; }
   .nlsub-form { display: flex; gap: 6px; margin-top: 16px; align-items: center; background: var(--bg); border-radius: 9999px; padding: 5px 5px 5px 16px; }
   .nlsub-form input[type=email] { flex: 1 1 120px; min-width: 0; padding: 8px 0; border: 0; font: inherit; font-size: 0.9rem; color: var(--ink); background: transparent; }
   .nlsub-form input[type=email]:focus { outline: none; }
@@ -1155,7 +1201,7 @@ const SUBSCRIBE_CSS = `
   .nlsub-form button:hover { background: var(--fill-hover); }
   .nlsub-form button:disabled { opacity: 0.5; cursor: default; }
   .nlsub-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-  .nlsub-msg { margin-top: 10px; color: rgba(248,242,234,0.7); font-size: 0.86rem; min-height: 1.2em; }
+  .nlsub-msg { margin-top: 10px; color: var(--mut); font-size: 0.86rem; min-height: 1.2em; }
   /* on list and article pages the card stands alone below the content */
   .wrap > .nlsub, .post-foot > .nlsub { margin-top: 44px; }
 `;
@@ -1227,10 +1273,10 @@ Deno.serve(async (req) => {
     });
 
     const head = `${SUBSCRIBE_HEAD}
-<meta name="description" content="What’s On is plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
+<meta name="description" content="What’s On is Plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <link rel="canonical" href="${SITE}${FEED_PATH}">
 <meta property="og:title" content="${FEED_SEO_TITLE}">
-<meta property="og:description" content="What’s On is plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
+<meta property="og:description" content="What’s On is Plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <meta property="og:url" content="${SITE}${FEED_PATH}">
 <meta property="og:image" content="${OG_FALLBACK}">
 <meta property="og:image:width" content="1200">
@@ -1269,7 +1315,7 @@ Deno.serve(async (req) => {
       const batch = (batchData || []) as FeedPost[];
 
       if (!batch.length) {
-        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>${subscribeForm('whats_on')}`);
+        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>${aboutCard('whats_on')}${subscribeForm('whats_on')}`);
       }
 
       // The lead plus a scan-list rail come straight off the top of the same
@@ -1309,6 +1355,7 @@ Deno.serve(async (req) => {
       const side = [
         chartItems.length ? sectionCard('Trending', `${FEED_PATH}/chart`, trendingTeaser(chartItems, chartPrior), true) : '',
         countdown.length ? sectionCard('Coming soon', `${FEED_PATH}?type=countdown`, comingSoonCards(countdown), true) : '',
+        aboutCard('whats_on'),
         subscribeForm('whats_on'),
       ].join('');
 
@@ -1348,6 +1395,7 @@ Deno.serve(async (req) => {
       ${dailyWire(visible)}
       ${empty}
       ${older}
+      ${aboutCard('whats_on')}
       ${subscribeForm('whats_on')}
     `);
   }
@@ -1364,7 +1412,7 @@ Deno.serve(async (req) => {
       .eq('post_type', 'trending')
       .maybeSingle();
     if (legacyChart) return await renderChart(supabase);
-    return page('Not found · plot', '', `
+    return page('Not found · Plot', '', `
       <article class="post r2">
         <header class="post-head"><h1>Nothing here yet</h1></header>
         <div class="post-body"><p>This update does not exist or has not been published.</p></div>
@@ -1377,7 +1425,7 @@ Deno.serve(async (req) => {
   const shareImg = postShareImage(typed);
   const title = postTitle(typed);
   const body = postBody(typed);
-  const description = articleExcerpt(body, 160) || `Film & TV updates from plot.`;
+  const description = articleExcerpt(body, 160) || `Film & TV updates from Plot.`;
   const pageUrl = entryUrl(typed);
 
   const { data: others } = await baseQuery()
@@ -1399,7 +1447,7 @@ Deno.serve(async (req) => {
     datePublished: typed.scheduled_for,
     ...(hero ? { image: [hero] } : {}),
     url: pageUrl,
-    publisher: { '@type': 'Organization', name: 'plot', url: SITE },
+    publisher: { '@type': 'Organization', name: 'Plot', url: SITE },
   }).replace(/</g, '\\u003c');
 
   const head = `${SUBSCRIBE_HEAD}
@@ -1524,7 +1572,7 @@ Deno.serve(async (req) => {
     : '';
 
 
-  return page(`${title} · plot`, head, `
+  return page(`${title} · Plot`, head, `
     <nav class="crumbs" aria-label="Breadcrumb">
       <a href="${SITE}">Home</a><span class="sep2">/</span><a href="${FEED_PATH}">What's On</a>${k ? `<span class="sep2">/</span><span>${esc(TYPE_META[typed.post_type]?.label ?? 'Update')}</span>` : ''}
     </nav>
@@ -1545,8 +1593,13 @@ Deno.serve(async (req) => {
       </div>
       ${titlesSection}
     </article>
-    ${subscribeForm('whats_on_article')}
+    <div class="post-cards">
+      ${aboutCard('whats_on_article')}
+    </div>
     ${more}
     <div class="post-foot"><a class="back sc" href="${FEED_PATH}">&larr; All updates</a></div>
+    <div class="post-cards">
+      ${subscribeForm('whats_on_article')}
+    </div>
   `);
 });

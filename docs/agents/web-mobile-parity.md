@@ -29,6 +29,8 @@ Lists) and copy.
 | Notifications screen + header bell | done |
 | "Help build Plot" drawer section (feedback + Ko-fi), flat mobile variant | done |
 | Premium upgrade sheet at the Free list cap (My Lists, title panel, collections; content from `@plot/core/upgradeSheet.js`). "Compare every feature" opens Settings' Premium section, since mobile has no /plans | done |
+| New onboarding (#1167): save a few with the Switching apps? branch, where do you watch, the building moment; name from the sign-in provider (`app/onboarding/*`, state in `contexts/OnboardingFlowContext.tsx`) | **static only**: not run on a device |
+| Home greeting, first-run Saved to watch rail, and the Finishing touches card with its friends, import and people sheets (`components/FinishingTouches.tsx`, storage in `lib/finishingTouches.ts`) | **static only**: not run on a device |
 
 The upcoming feed had **three** independent implementations (web's
 `UpcomingContent`, mobile's Upcoming tab, mobile's `HomeReleases`). All three
@@ -55,6 +57,18 @@ The old "uppercase kicker over uppercase title" note was stale, and web's
 expand-all button is unused CSS, so mobile does not add it. Drawer rows use
 the web nav strokes at 18px, including feedback, Support Plot, and an 18px
 profile avatar. The drawer width matches web `min(300px, 85vw)`.
+
+The onboarding and Finishing touches rows above passed `tsc`, ESLint,
+`copy:check` and `mobile:tabs`, and have **not been opened on a device**: it
+needs a fresh account to reach `/onboarding/seed`. Drive it once with a new
+sign-up: the seed grid, the Switching apps? row into import and services, the
+building fan and fade into Home, then the card (tiles tick from real data;
+Import opens the existing import modal on the chosen source).
+Differences from web that are deliberate: the card starts collapsed (web opens
+it on wide screens only), the grid loads 24 trending titles rather than 48,
+Following a person still hits the Free-tier upgrade sheet through
+`useFollowPerson`, and there is no saved-title shortcut or checkout intent
+(neither exists on mobile).
 
 Settings gaps, rechecked against the code:
 

@@ -264,6 +264,7 @@ function Invite({ wt }) {
       <Link to="/together" className="wt-back">{COMMON.back}</Link>
       <h1 className="wt-title">{T.invite.title}</h1>
       <p className="wt-card-body">{T.invite.body}</p>
+      <p className="wt-note">{T.invite.mutualNote}</p>
       <label className="wt-sr" htmlFor="wt-invite-search">{T.invite.search}</label>
       <input id="wt-invite-search" type="search" className="wt-search" placeholder={T.invite.search} value={query} onChange={e => setQuery(e.target.value)} />
       {error && <p className="wt-error" role="alert">{error}</p>}
@@ -278,7 +279,7 @@ function Invite({ wt }) {
             : <button type="button" className="btn btn-primary btn-sm" onClick={() => invite(p)}>{T.invite.invite}</button>}
         </div>
       ))}
-      <InviteLinkCard compact />
+      <InviteLinkCard />
     </div>
   );
 }

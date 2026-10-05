@@ -271,14 +271,18 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
 The title panel redesign (savblack/PLOT#976) introduced three reusable shapes. They are
 system patterns, not panel one-offs: reuse them rather than re-deriving a near-miss.
 
-- **The pinned foot bar** (`.panel-take`). A `position: sticky; bottom: 0` bar inside the
-  panel's own scroll container, on `--surface-sunken` with a single `--border` hairline on
-  top and no shadow. It stays visible at every scroll position so the one thing we most
-  want from the reader is never scrolled away, and it expands upward on click rather than
-  navigating. Collapsed it is one line: a label that changes with state, plus a truncated
-  preview of what is already written. The icon carries the affordance (plus when empty,
-  pencil when written) and there is no button copy. Use it for the panel's primary
-  contribution, not for navigation or for a second row of actions.
+- **The pinned foot bar** (`.foot-bar`, `TitleFootBar.jsx`). A `position: sticky; bottom: 0`
+  bar inside the panel's own scroll container, on `--surface-sunken` with a single `--border`
+  hairline on top. It stays visible at every scroll position so the one thing we most want
+  from the reader is never scrolled away. One grid in every state: a head line (Watched it?
+  or Thoughts?, with the watch chip on the right), the stars with the one next action beside
+  them, then a Review box and a Private note box once the title is watched. The icon carries
+  the affordance on the boxes (plus when empty, pencil when written); the only button copy is
+  the single next action while unwatched. Editing replaces the stars and boxes with one
+  editor that grows upward on a panel and is a bottom sheet on a touch device. The Review box
+  is solid and accented; the Private note box is outlined and muted, so the two never read as
+  the same kind of thing. Use it for the panel's primary contribution, not for navigation or
+  for a second row of actions.
 - **Disclosure cards** (`.panel-card` + `.panel-disclosure`). A sunken 20px card whose
   header is a bare `<button>` carrying `aria-expanded`, with the chevron as a direct child
   (`.panel-disclosure > svg`, scoped so it does not recolour icons inside the row). When

@@ -13,15 +13,22 @@ function fixture({ reducedMotion = false } = {}) {
     removeAttribute(name) { delete this.attrs[name]; },
     addEventListener(name, callback) { this.listeners[name] = callback; },
     animate() {},
+    textContent: '',
   });
   const copies = Array.from({ length: 3 }, element);
   const visuals = Array.from({ length: 3 }, element);
   const buttons = Array.from({ length: 3 }, element);
-  const switcher = { hidden: true, querySelectorAll: () => buttons };
+  ['Together', 'Tonight', 'Following'].forEach((label, i) => { buttons[i].textContent = label; });
+  const readout = { pos: element(), nextUp: element() };
+  const switcher = {
+    hidden: true,
+    querySelectorAll: () => buttons,
+    querySelector: selector => (selector.includes('pos') ? readout.pos : readout.nextUp),
+  };
   const panel = Object.assign(element(), {
     hovered: false,
     querySelectorAll: selector => selector.startsWith('img') ? [] : selector.includes('copy') ? copies : visuals,
-    querySelector: () => switcher,
+    querySelector: selector => (selector.includes('switcher') ? switcher : null),
     matches() { return this.hovered; },
     contains: el => buttons.includes(el),
   });
@@ -42,8 +49,16 @@ function fixture({ reducedMotion = false } = {}) {
       observe() {}
     },
   });
-  return { buttons, copies, visuals, panel, document, media, switcher, timers,
-    visible(value) { intersection([{ isIntersecting: value }]); },
+  return { readout, buttons, copies, visuals, panel, document, media, switcher, timers,
+    // The card only plays once it is fully on screen (ratio) or fills the viewport.
+    visible(value, ratio = value ? 1 : 0) {
+      intersection([{
+        isIntersecting: value || ratio > 0,
+        intersectionRatio: ratio,
+        intersectionRect: { height: ratio * 800 },
+        rootBounds: { height: 800 },
+      }]);
+    },
     tick() { const [id, callback] = timers.entries().next().value; timers.delete(id); callback(); },
   };
 }
@@ -61,6 +76,23 @@ test('Premium rotation synchronizes copy, visual, selection and wraps', () => {
     assert.equal(f.copies[(index + 2) % 3].attrs['aria-hidden'], 'true');
     assert.equal(f.timers.size, 1);
   }
+});
+
+test('Premium progress readout follows the active segment', () => {
+  const f = fixture();
+  assert.equal(f.readout.nextUp.textContent, 'Tonight next');
+  f.visible(true);
+  f.tick();
+  assert.equal(f.readout.pos.textContent, '2 of 3');
+  assert.equal(f.readout.nextUp.textContent, 'Following next');
+});
+
+test('Premium animation waits until the card is fully in view', () => {
+  const f = fixture();
+  f.visible(true, 0.5);
+  assert.equal(f.timers.size, 0);
+  f.visible(true, 1);
+  assert.equal(f.timers.size, 1);
 });
 
 test('Hover, keyboard focus, hidden tab and offscreen stop rotation', () => {

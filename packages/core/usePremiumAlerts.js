@@ -4,7 +4,8 @@ import { supabase } from './supabase.js';
 /**
  * Premium alert opt-ins, shared by web and mobile: whole-season-ready alerts
  * (season_ready_alerts). Following people (person_alerts) has its own shared
- * store in usePeopleFollows.js; both use alertWriteError below.
+ * store in usePeopleFollows.js; both use alertWriteError below. Streaming alerts
+ * on watchlist films are Free and automatic, so they live in useStreamingAlerts.js.
  *
  * The database is the authority. Adding an opt-in is an insert that RLS only
  * allows for Premium accounts (is_premium() in the policy), so a Free account,
@@ -39,14 +40,16 @@ export function alertWriteError(error) {
  */
 
 /**
- * @param {'season_ready_alerts'} table
+ * A row that exists or does not, for one person and one title: the shape of an
+ * opt-in (season_ready_alerts) and of a mute (movie_streaming_alert_mutes).
+ * @param {'season_ready_alerts' | 'movie_streaming_alert_mutes'} table
  * @param {'tmdb_id'} idColumn
  * @param {string | null | undefined} userId
  * @param {number | null | undefined} subjectId
  * @param {() => Record<string, unknown>} cache display columns written on insert
  * @returns {AlertToggle}
  */
-function useAlertToggle(table, idColumn, userId, subjectId, cache) {
+export function useAlertToggle(table, idColumn, userId, subjectId, cache) {
   const key = userId && subjectId ? `${userId}:${subjectId}` : null;
   const [state, setState] = useState(/** @type {{ key: string | null, on: boolean }} */ ({ key: null, on: false }));
   const [busy, setBusy] = useState(false);
@@ -100,6 +103,7 @@ export function useSeasonReadyAlert(userId, show) {
  * The shows someone has whole-season alerts for, for Settings. Removing works
  * whatever the plan: someone whose Premium lapsed can still tidy their list.
  * People they follow are managed on the Your people page (usePeopleFollows).
+ * Muted films are managed in useStreamingAlerts.js.
  * @param {string | null | undefined} userId
  */
 export function useMyAlerts(userId) {

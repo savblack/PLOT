@@ -5,11 +5,6 @@
 // every string in one place.
 
 export const ONBOARDING_FLOW = {
-  step1: {
-    title: "What's your name?",
-    subtitle: 'So we can make plot yours.',
-    placeholder: 'First name',
-  },
   savedTitle: {
     eyebrow: 'Your first pick',
     title: 'Start with this one.',
@@ -38,7 +33,8 @@ export const ONBOARDING_FLOW = {
   // ── Web onboarding, redesigned (Oct 2026): save a few (with a switching-apps
   // branch), where do you watch, then a short building moment into Home. The
   // name now comes from the sign-in provider, so nothing here asks for it.
-  // Mobile still runs step1 + step2 above until it catches up.
+  // Mobile runs the same flow (app/onboarding/*); only `step2`'s search and
+  // add/remove strings above are still read, by both apps.
   seed: {
     // Reads as a question with or without a name.
     title: (name) => (name ? `What do you want to watch, ${name}?` : 'What do you want to watch?'),
@@ -82,8 +78,5 @@ export const ONBOARDING_FLOW = {
   untitled: 'title',
   saveError: 'Something went wrong saving your setup. Please try again.',
   settingUpAccount: 'Setting up account',
-  startWatching: 'Start watching',
-  startWatchingArrow: 'Start watching →',
   continueArrow: 'Continue →',
-  skipThisStep: 'Skip this step',
 };

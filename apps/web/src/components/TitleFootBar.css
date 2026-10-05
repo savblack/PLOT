@@ -1,0 +1,291 @@
+/* The foot bar pinned to the bottom of the title panel (TitleFootBar.jsx).
+   Sticky inside the panel's own scroll, on --surface-sunken with one hairline
+   on top, so rating and writing are reachable from any scroll position.
+   One grid in every state: head, main (stars + the next action), then the
+   Review and Private note boxes. Editing replaces main and boxes in place. */
+
+.foot-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  padding: 0 1.25rem 0.9rem;
+}
+.foot-bar-surface { position: relative; }
+
+.foot-bar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding-top: 0.4rem;
+}
+.foot-bar-title { font-size: 0.88rem; font-weight: 700; }
+.foot-bar-hint { font-size: 0.75rem; color: var(--text-muted); }
+.foot-bar-head-end { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
+
+.foot-bar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 28px;
+  padding: 0 0.6rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--status-watched-dim);
+  color: var(--status-watched);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.foot-bar-chip svg:last-child { opacity: 0.7; }
+.foot-bar-chip:hover svg:last-child { opacity: 1; }
+.foot-bar-chip:disabled { cursor: default; opacity: 0.6; }
+.foot-bar-undo { border-color: transparent; }
+
+/* Stars left, next action right; the action wraps under on a narrow panel. */
+.foot-bar-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+}
+.foot-bar-rate { display: inline-flex; align-items: center; gap: 0.5rem; }
+.foot-bar-actions { display: inline-flex; align-items: center; gap: 0.4rem; margin-left: auto; }
+.foot-bar-score { font-size: 0.8rem; font-weight: 700; color: var(--rating); }
+
+.foot-bar-stars { display: flex; margin-left: -4px; }
+.foot-bar-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 34x36 keeps half-star picks usable on a coarse pointer. */
+  width: 34px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--rating);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.foot-bar-star:disabled { opacity: 0.55; cursor: default; }
+.foot-bar-star .half-star-glyph--svg,
+.foot-bar-star .half-star-svg,
+.foot-bar-star .half-star-fill--svg { width: 26px; height: 26px; }
+.foot-bar-star .half-star-fill--svg { width: auto; }
+.foot-bar-star .half-star-fill--svg .half-star-svg { width: 26px; }
+.foot-bar-stars--ghost .half-star-empty { opacity: 0.7; }
+
+.foot-bar-error { margin: 0.35rem 0 0; font-size: 0.75rem; color: var(--danger); }
+
+/* ── the Review and Private note boxes ── */
+
+.foot-bar-boxes { display: grid; gap: 0.5rem; margin-top: 0.6rem; }
+.foot-bar-box {
+  position: relative;
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.65rem 2.75rem 0.65rem 0.75rem;
+  border: none;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.foot-bar-box:hover { box-shadow: inset 0 0 0 1px var(--border-strong); }
+.foot-bar-box-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+.foot-bar-box-draft {
+  margin-left: 0.25rem;
+  padding: 0 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-dim);
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+.foot-bar-box--private .foot-bar-box-draft { background: var(--border); }
+.foot-bar-box-text {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.foot-bar-box-edit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+.foot-bar-box:hover .foot-bar-box-edit { color: var(--text-primary); }
+
+/* Private reads as a different kind of thing: no fill, a muted outline. */
+.foot-bar-box--private { background: transparent; box-shadow: inset 0 0 0 1px var(--border-strong); }
+.foot-bar-box--private:hover { box-shadow: inset 0 0 0 1px var(--text-muted); }
+.foot-bar-box--private .foot-bar-box-label,
+.foot-bar-box--private .foot-bar-box-text { color: var(--text-muted); }
+.foot-bar-box--private .foot-bar-box-edit { background: transparent; }
+
+/* Empty: the same box with a dashed edge and a plus instead of a pencil. */
+.foot-bar-box--empty,
+.foot-bar-box--empty.foot-bar-box--private {
+  background: transparent;
+  box-shadow: none;
+  border: 1px dashed var(--border-strong);
+  padding: calc(0.65rem - 1px) calc(2.75rem - 1px) calc(0.65rem - 1px) calc(0.75rem - 1px);
+}
+.foot-bar-box--empty:hover { border-color: var(--text-muted); }
+.foot-bar-box--empty .foot-bar-box-text { color: var(--text-muted); }
+.foot-bar-box--empty .foot-bar-box-edit { background: var(--surface); }
+
+/* ── the editor ── */
+
+.foot-bar-editor { display: grid; gap: 0.85rem; padding-top: 0.25rem; }
+.foot-bar-editor-rating { display: flex; align-items: center; justify-content: space-between; }
+.foot-bar-label,
+.foot-bar-date label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.foot-bar-field { padding: 0.75rem; border-radius: 16px; }
+.foot-bar-field label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.foot-bar-tag { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 700; }
+.foot-bar-audience { font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 0.72rem; text-align: right; }
+.foot-bar-field textarea,
+.foot-bar-date input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: 0.6rem 0.75rem;
+  resize: none;
+}
+.foot-bar-field textarea { min-height: 84px; }
+.foot-bar-field textarea:focus-visible,
+.foot-bar-date input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.foot-bar-field--review { background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); }
+.foot-bar-field--review .foot-bar-tag { color: var(--accent-text); }
+.foot-bar-field--review textarea { border: none; background: var(--surface-sunken); }
+/* Private: outlined and see-through, so it never looks like the review above it. */
+.foot-bar-field--private { background: transparent; box-shadow: inset 0 0 0 1px var(--border-strong); }
+.foot-bar-field--private textarea { border: 1px dashed var(--border-strong); background: transparent; }
+
+.foot-bar-count { margin-top: 0.25rem; text-align: right; font-size: 0.7rem; color: var(--text-muted); }
+.foot-bar-count--near { color: var(--accent-text); }
+
+.foot-bar-editor-actions { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem; }
+.foot-bar-date { display: grid; gap: 0.35rem; }
+.foot-bar-date input { width: 150px; padding: 0.4rem 0.6rem; border-radius: 10px; }
+
+/* The six seconds Undo is on offer, drawn as a line draining along the bottom. */
+.foot-bar-drain {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.9rem;
+  height: 2px;
+  background: var(--status-watched);
+  transform-origin: left;
+  animation: footBarDrain 6s linear forwards;
+}
+@keyframes footBarDrain { to { transform: scaleX(0); } }
+
+.foot-bar-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.foot-bar-scrim { display: none; }
+
+/* Touch: the editor lifts the bar into a bottom sheet over a scrim. */
+@media (hover: none), (pointer: coarse) {
+  .foot-bar--sheet { position: static; background: transparent; border-top: 0; padding: 0; }
+  .foot-bar--sheet .foot-bar-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    width: 100%;
+    border: 0;
+    background: rgba(0, 0, 0, 0.42);
+  }
+  .foot-bar--sheet .foot-bar-surface {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 21;
+    max-height: 80dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 1.25rem calc(0.9rem + env(safe-area-inset-bottom));
+    border-radius: 18px 18px 0 0;
+    background: var(--surface);
+    box-shadow: var(--shadow-overlay);
+    animation: footBarSheetIn 0.28s var(--ease);
+  }
+  .foot-bar-handle { position: absolute; top: 8px; left: 50%; width: 32px; height: 3px; margin-left: -16px; border-radius: 3px; background: var(--border-strong); }
+  .foot-bar--sheet .foot-bar-head { padding-top: 1.1rem; }
+  .foot-bar--sheet .foot-bar-editor-actions {
+    position: sticky;
+    bottom: 0;
+    margin: 0 -1.25rem calc(-0.9rem - env(safe-area-inset-bottom));
+    padding: 0.6rem 1.25rem calc(0.6rem + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  @keyframes footBarSheetIn { from { transform: translateY(100%); } to { transform: none; } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foot-bar-drain { animation: none; }
+  .foot-bar--sheet .foot-bar-surface { animation: none; }
+}

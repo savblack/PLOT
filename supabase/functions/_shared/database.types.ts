@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_job_runs: {
+        Row: {
+          finished_at: string | null
+          id: number
+          job: string
+          ok: boolean | null
+          started_at: string
+          stats: Json
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: never
+          job: string
+          ok?: boolean | null
+          started_at?: string
+          stats?: Json
+        }
+        Update: {
+          finished_at?: string | null
+          id?: never
+          job?: string
+          ok?: boolean | null
+          started_at?: string
+          stats?: Json
+        }
+        Relationships: []
+      }
       app_waitlist: {
         Row: {
           created_at: string
@@ -56,6 +83,36 @@ export type Database = {
           ip?: string
           scope?: string
           window_start?: string
+        }
+        Relationships: []
+      }
+      availability_events: {
+        Row: {
+          bucket: string
+          confirmed_at: string
+          first_seen_at: string
+          provider_id: number
+          provider_name: string
+          region: string
+          tmdb_id: number
+        }
+        Insert: {
+          bucket: string
+          confirmed_at?: string
+          first_seen_at: string
+          provider_id: number
+          provider_name: string
+          region: string
+          tmdb_id: number
+        }
+        Update: {
+          bucket?: string
+          confirmed_at?: string
+          first_seen_at?: string
+          provider_id?: number
+          provider_name?: string
+          region?: string
+          tmdb_id?: number
         }
         Relationships: []
       }
@@ -191,6 +248,24 @@ export type Database = {
           fetched_at?: string
           imdb_id?: string
           source?: string | null
+        }
+        Relationships: []
+      }
+      episode_alert_mutes: {
+        Row: {
+          created_at: string
+          tmdb_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          tmdb_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          tmdb_id?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -1294,6 +1369,45 @@ export type Database = {
         }
         Relationships: []
       }
+      movie_streaming_alert_mutes: {
+        Row: {
+          created_at: string
+          title: string
+          tmdb_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          title: string
+          tmdb_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          title?: string
+          tmdb_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          streaming_alerts: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          streaming_alerts?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          streaming_alerts?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           actor_id: string | null
@@ -2130,6 +2244,39 @@ export type Database = {
           id?: string
           received_at?: string
           type?: string
+        }
+        Relationships: []
+      }
+      title_availability: {
+        Row: {
+          baselined_at: string
+          confirmed: Json
+          last_checked_at: string
+          missing: Json
+          pending: Json
+          region: string
+          tmdb_id: number
+          updated_at: string
+        }
+        Insert: {
+          baselined_at?: string
+          confirmed?: Json
+          last_checked_at?: string
+          missing?: Json
+          pending?: Json
+          region: string
+          tmdb_id: number
+          updated_at?: string
+        }
+        Update: {
+          baselined_at?: string
+          confirmed?: Json
+          last_checked_at?: string
+          missing?: Json
+          pending?: Json
+          region?: string
+          tmdb_id?: number
+          updated_at?: string
         }
         Relationships: []
       }

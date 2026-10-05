@@ -17,9 +17,7 @@ import { nextSheetSnap } from '../utils/mobileSheets.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
-import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
-import { privateNoteKey } from '@plot/core/privateNotes.js';
-import { formatWatchedOn } from '@plot/core/date.js';
+import { STAR_COUNT } from '../utils/ratings.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS, captureException } from '../lib/analytics.js';
 import { TalentWork } from './TalentCredits.jsx';
@@ -28,6 +26,8 @@ import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiograph
 import { canCreateCustomList } from '@plot/core/premium.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import { SeasonReadyAlert } from './PremiumAlertButtons.jsx';
+import EpisodeAlertsCard from './EpisodeAlertsCard.jsx';
+import StreamingAlertsCard from './StreamingAlertsCard.jsx';
 import { CastFollowCard, CrewFollowRow, PersonFollow } from './PeopleFollow.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -45,27 +45,10 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
-import TitleReview from './TitleReview.jsx';
 import StarIcon from './StarIcon.jsx';
 import KebabMenu from './KebabMenu.jsx';
 import PanelCloseRail from './PanelCloseRail.jsx';
-import {
-  ENGAGEMENT_SNOOZE_KEY,
-  ENGAGEMENT_PENDING_KEY,
-  WATCH_PROMPT_SNOOZE_MS,
-  RATE_PROMPT_SNOOZE_MS,
-  engagementTitleKey,
-  parseEngagementSnooze,
-  serialiseEngagementSnooze,
-  isEngagementSnoozed,
-  snoozeEngagement,
-  canShowWatchPrompt,
-  canShowRatePrompt,
-  parseEngagementPending,
-  pendingWatchMatches,
-} from '@plot/core/engagementPrompt.js';
-import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
-import EngagementPromptBar from './EngagementPromptBar.jsx';
+import TitleFootBar from './TitleFootBar.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
@@ -701,7 +684,7 @@ function StopSmallIcon() {
 
 /* ── Where-to-watch provider chip ── */
 // Clickable only for a verified provider offer or the region-specific title page.
-function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink, onWatchLinkClick }) {
+function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink }) {
   const link = buildWatchLink({
     providerUrl: provider.providerUrl,
     justwatchLink,
@@ -734,7 +717,6 @@ function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink, onWa
           link_kind: link.kind,
           region,
         });
-        onWatchLinkClick?.();
       }}
     >
       {inner}
@@ -757,110 +739,6 @@ function pillButtonStyle(variant) {
     background: variant === 'solid' ? 'var(--accent)' : 'var(--surface-raised)',
     color: variant === 'solid' ? '#fff' : 'var(--text-primary)',
   };
-}
-
-/* ── Your take: the bar pinned to the foot of the panel ──
-   Present whether or not anything has been written, so your rating, your review
-   and your private note are one tap from any scroll position rather than a
-   section to scroll for. Collapsed it summarises; open it holds the same review
-   slip and note editor as before.
-
-   A separate component for the same reason TitleReview is one: reading
-   `watchedEntry`-derived values in the panel's own render body makes the React
-   Compiler bail out of the manual memoization on its watch-status callbacks. ── */
-function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note, dnf, watchedAt, onSave, onClear, user, defaultOpen = false }) {
-  const { privateNotes } = useApp();
-  const [open, setOpen] = useState(defaultOpen);
-  const actionSheet = useRef(null);
-  const hasPrivateNote = !!privateNotes?.rows?.[privateNoteKey(itemId, itemType)]?.note;
-  const hasTake = !!(rating || note.trim() || dnf);
-  const preview = hasTake
-    ? (note.trim() || MEDIA_PANEL.watchedOnDate(formatWatchedOn(watchedAt)))
-    : MEDIA_PANEL.takeHint;
-
-  useEffect(() => {
-    if (!open || !window.matchMedia('(hover: none), (pointer: coarse)').matches) return undefined;
-    const sheet = actionSheet.current;
-    const opener = document.activeElement;
-    const focusable = () => [...sheet.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')];
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        setOpen(false);
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const elements = focusable();
-      if (!elements.length) return;
-      const first = elements[0];
-      const last = elements[elements.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    sheet.addEventListener('keydown', onKeyDown);
-    focusable()[0]?.focus();
-    return () => {
-      sheet.removeEventListener('keydown', onKeyDown);
-      opener?.focus?.();
-    };
-  }, [open]);
-
-  return (
-    <div className={`panel-take${open ? ' panel-take--open' : ''}`}>
-      <button
-        type="button"
-        className="panel-disclosure panel-take-head"
-        aria-expanded={open}
-        onClick={() => setOpen(v => !v)}
-      >
-        <span className="panel-take-stars" aria-hidden="true">
-          {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
-            <StarIcon key={n} fillPercent={starFillPercent(rating, n)} />
-          ))}
-        </span>
-        <span className="panel-take-summary">
-          <b>{hasTake ? MEDIA_PANEL.yourTake : MEDIA_PANEL.leaveNoteOrReview}</b>
-          <span>{preview}</span>
-        </span>
-        {hasPrivateNote && <LockIcon />}
-        <ChevronIcon />
-      </button>
-
-      {open && (
-        <div className="panel-action-layer">
-          <button type="button" className="panel-action-scrim" aria-label={COMMON.close} onClick={() => setOpen(false)} />
-          <section ref={actionSheet} className="panel-action-sheet" role="dialog" aria-modal="true" aria-label={MEDIA_PANEL.leaveNoteOrReview}>
-            <div className="panel-action-handle" aria-hidden="true" />
-            <div className="panel-action-heading">
-              <h3>{MEDIA_PANEL.leaveNoteOrReview}</h3>
-              <button type="button" className="panel-action-close" onClick={() => setOpen(false)} aria-label={COMMON.close}><CloseIcon /></button>
-            </div>
-            <div className="panel-take-body">
-              {watched ? (
-                <TitleReview
-                  entry={watchedEntry}
-                  rating={rating}
-                  note={note}
-                  dnf={dnf}
-                  watchedAt={watchedAt}
-                  onSave={onSave}
-                  onClear={onClear}
-                />
-              ) : (
-                <p className="panel-take-note">{MEDIA_PANEL.takeNeedsWatch}</p>
-              )}
-              {user && <PrivateNote id={itemId} type={itemType} title={title} />}
-            </div>
-          </section>
-        </div>
-      )}
-    </div>
-  );
 }
 
 /* ── Add to custom list sheet ── */
@@ -1261,16 +1139,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const [showListSheet,     setShowListSheet]     = useState(initialListOpen);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   // Where to watch opens closed — its logos say enough at a glance. The foot
-  // bar owns its own open state, inside TakeBar.
+  // bar owns its own open state, inside TitleFootBar.
   const [watchOpen, setWatchOpen] = useState(false);
   const [statusActionPending, setStatusActionPending] = useState('');
   const [statusActionError, setStatusActionError] = useState('');
-  // PLO-473 / PLO-474: compact post-save watch prompt → post–mark-watched rate.
-  // 'watch' | 'rate' | null. Cleared when the open title changes.
-  const [engagementPrompt, setEngagementPrompt] = useState(null);
-  const [engagementBusy, setEngagementBusy] = useState(false);
-  // When "Write a review" is chosen from the rate prompt, TakeBar mounts open.
-  const [takeBarDefaultOpen, setTakeBarDefaultOpen] = useState(false);
+  // True while a watched / watching change started from the foot bar is in flight.
+  const [footBusy, setFootBusy] = useState(false);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -1312,12 +1186,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     return !!written;
   };
 
-  /* Clears the rating and note but keeps the history row: you still watched it,
-     you just don't want the write-up any more. Deleting the row is the Watched
-     toggle's job, not this menu's. */
-  const clearReview = async () =>
-    !!await history.updateEntry(itemId, { rating: null, note: null }, itemType);
-
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key !== 'Escape') return;
@@ -1351,30 +1219,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const dragStateRef = useRef({ active: false, startY: 0, startTime: 0, snap: 'collapsed' });
 
   useEffect(() => { setSheetSnap('collapsed'); }, [itemId]); // eslint-disable-line react-hooks/set-state-in-effect -- each newly opened title starts at the preview snap
-  /* eslint-disable react-hooks/set-state-in-effect -- reset / consume engagement when the open title changes */
-  useEffect(() => {
-    setEngagementPrompt(null);
-    setEngagementBusy(false);
-    setTakeBarDefaultOpen(false);
-  }, [itemId, itemType]);
-
-  // Out-of-panel save left a pending watch prompt for this title: offer it once
-  // the panel opens, then clear the queue so it does not reappear on reopen.
-  useEffect(() => {
-    if (watched) return;
-    const pending = parseEngagementPending(readStorage(ENGAGEMENT_PENDING_KEY, null));
-    if (!pendingWatchMatches(pending, itemId, itemType)) return;
-    removeStorage(ENGAGEMENT_PENDING_KEY);
-    const snoozed = isEngagementSnoozed(
-      parseEngagementSnooze(readStorage(ENGAGEMENT_SNOOZE_KEY, '{}')),
-      engagementTitleKey(itemId, itemType),
-      'watch',
-    );
-    if (!canShowWatchPrompt({ watched: false, snoozed })) return;
-    setEngagementPrompt('watch');
-  }, [itemId, itemType, watched]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
   const isBottomSheet = () =>
     typeof window !== 'undefined' && window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
@@ -1550,11 +1394,13 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     });
   }, [details, inList, isWatching, itemId, watchlist, watching]);
 
-  const handleWatchedStatus = useCallback(async (dnf) => {
+  // `rating` lets the foot bar log a title as watched and rated in one write, so a
+  // star tap on an unwatched title goes through the same save-side effects as
+  // the status menu (leaves Want to Watch, stops Watching) instead of around them.
+  const handleWatchedStatus = useCallback(async (dnf, { rating } = {}) => {
     const isSameWatchedState = watched && (!!watchedEntry?.dnf === dnf);
     if (isSameWatchedState) {
       const removed = await history.removeEntry(itemId, itemType, { undo: true });
-      if (removed) setEngagementPrompt(null);
       return removed
         ? { ok: true }
         : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
@@ -1566,7 +1412,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
       // plain watch. Rating and note are left out so the switch keeps them.
       logWatched: () => history.logWatched(
         { ...details, id: itemId, media_type: itemType },
-        { dnf, watchedAt: defaultWatchedAt },
+        { dnf, rating, watchedAt: defaultWatchedAt },
       ),
       clearWatching: () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
@@ -1584,22 +1430,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     if (realError) {
       captureException(new Error(realError), { surface: 'media_panel', action: 'watched_status' });
     }
-    // PLO-474: same chrome as the watch prompt, offered after any successful
-    // mark-watched (status menu, episode finish, or the watch prompt itself).
-    if (result.ok) {
-      const snoozed = isEngagementSnoozed(
-        parseEngagementSnooze(readStorage(ENGAGEMENT_SNOOZE_KEY, '{}')),
-        engagementTitleKey(itemId, itemType),
-        'rate',
-      );
-      if (canShowRatePrompt({ watched: true, hasRating: !!watchedEntry?.rating, snoozed })) {
-        setEngagementPrompt('rate');
-      } else {
-        setEngagementPrompt(null);
-      }
-    }
     return result;
-  }, [defaultWatchedAt, details, history, inList, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchedEntry?.rating, watchlist, watching]);
+  }, [defaultWatchedAt, details, history, inList, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
 
   /* Watching the final episode of a finished series completes it. Reuses the
      same transition as the Watched status action, so a show finished by
@@ -1627,124 +1459,51 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     return { ok: true };
   }, [history, isWatching, itemId, itemType, watched, watching]);
 
-  const titleSnoozeKey = engagementTitleKey(itemId, itemType);
-
-  const readSnoozeMap = useCallback(
-    () => parseEngagementSnooze(readStorage(ENGAGEMENT_SNOOZE_KEY, '{}')),
-    [],
-  );
-
-  const writeSnoozeMap = useCallback((map) => {
-    writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(map));
-  }, []);
-
-  const offerWatchPrompt = useCallback(() => {
-    const snoozed = isEngagementSnoozed(readSnoozeMap(), titleSnoozeKey, 'watch');
-    if (!canShowWatchPrompt({ watched, snoozed })) return;
-    removeStorage(ENGAGEMENT_PENDING_KEY);
-    setEngagementPrompt('watch');
-  }, [readSnoozeMap, titleSnoozeKey, watched]);
-
-  // Fire shown once per prompt mount (watch or rate), not on every re-render.
-  useEffect(() => {
-    if (!engagementPrompt) return;
-    track(EVENTS.ENGAGEMENT_PROMPT_SHOWN, {
-      kind: engagementPrompt,
-      tmdb_id: Number(itemId),
-      media_type: itemType,
-    });
-  }, [engagementPrompt, itemId, itemType]);
-
-  const dismissWatchPrompt = useCallback(() => {
-    writeSnoozeMap(snoozeEngagement(readSnoozeMap(), titleSnoozeKey, 'watch', WATCH_PROMPT_SNOOZE_MS));
-    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
-      kind: 'watch',
-      action: 'not_yet',
-      tmdb_id: Number(itemId),
-      media_type: itemType,
-    });
-    setEngagementPrompt(null);
-  }, [itemId, itemType, readSnoozeMap, titleSnoozeKey, writeSnoozeMap]);
-
-  const skipRatePrompt = useCallback(() => {
-    writeSnoozeMap(snoozeEngagement(readSnoozeMap(), titleSnoozeKey, 'rate', RATE_PROMPT_SNOOZE_MS));
-    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
-      kind: 'rate',
-      action: 'skip',
-      tmdb_id: Number(itemId),
-      media_type: itemType,
-    });
-    setEngagementPrompt(null);
-  }, [itemId, itemType, readSnoozeMap, titleSnoozeKey, writeSnoozeMap]);
-
   const handleSaveFromPanel = useCallback(async () => {
     if (!details) return;
     if (inList) {
       await watchlist.removeFromList(itemId, { undo: true });
       return;
     }
-    const saved = await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
-    if (saved) offerWatchPrompt();
-  }, [details, inList, itemId, itemType, offerWatchPrompt, watchlist]);
+    await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
+  }, [details, inList, itemId, itemType, watchlist]);
 
-  const handleWatchLinkPrompt = useCallback(() => {
-    // Second trigger: outbound watch link when the title is already on the list
-    // and not yet marked watched.
-    if (!inList || watched) return;
-    offerWatchPrompt();
-  }, [inList, offerWatchPrompt, watched]);
-
-  const handlePromptMarkWatched = useCallback(async () => {
-    if (engagementBusy) return;
-    setEngagementBusy(true);
+  /* The foot bar's writes. Each resolves to what the bar needs to know: whether
+     it worked. A failed status change surfaces in the panel's own banner. */
+  const footMarkWatched = useCallback(async (opts) => {
+    if (footBusy) return { ok: false };
+    setFootBusy(true);
     try {
-      const result = await handleWatchedStatus(false);
+      const result = await handleWatchedStatus(false, opts);
       if (!result?.ok && result?.error) setStatusActionError(result.error);
+      return result;
     } finally {
-      setEngagementBusy(false);
+      setFootBusy(false);
     }
-  }, [engagementBusy, handleWatchedStatus]);
+  }, [footBusy, handleWatchedStatus]);
 
-  const handlePromptStartWatching = useCallback(async () => {
-    if (engagementBusy || isMovie) return;
-    setEngagementBusy(true);
+  const footStartWatching = useCallback(async () => {
+    if (footBusy || isMovie) return;
+    setFootBusy(true);
     try {
       const result = await handleWatchingStatus();
-      if (result?.ok) setEngagementPrompt(null);
-      else if (result?.error) setStatusActionError(result.error);
+      if (!result?.ok && result?.error) setStatusActionError(result.error);
     } finally {
-      setEngagementBusy(false);
+      setFootBusy(false);
     }
-  }, [engagementBusy, handleWatchingStatus, isMovie]);
+  }, [footBusy, handleWatchingStatus, isMovie]);
 
-  const handlePromptRate = useCallback(async (rating) => {
-    if (!rating) return;
-    const ok = await saveReview({
-      rating,
-      note: savedReview || null,
-      dnf: savedDnf,
-      watchedAt: savedWatchedAt,
-    });
-    if (ok) {
-      // Star tap saves the score, then hand off into TakeBar so a written
-      // review is one more step, not a dead end.
-      setTakeBarDefaultOpen(true);
-      setEngagementPrompt(null);
+  // The bar's own Undo, inside its six seconds: a plain removal. The status
+  // menu's removal offers the app's undo toast; this would be a second one.
+  const footUndoWatched = useCallback(async () => {
+    if (footBusy) return false;
+    setFootBusy(true);
+    try {
+      return !!await history.removeEntry(itemId, itemType);
+    } finally {
+      setFootBusy(false);
     }
-  }, [saveReview, savedDnf, savedReview, savedWatchedAt]);
-
-  // Leave the rate prompt without snoozing: the user is going into the take
-  // editor, which is the written-review path the prompt is advertising.
-  const handlePromptWriteReview = useCallback(() => {
-    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
-      kind: 'rate',
-      action: 'write_review',
-      tmdb_id: Number(itemId),
-      media_type: itemType,
-    });
-    setTakeBarDefaultOpen(true);
-    setEngagementPrompt(null);
-  }, [itemId, itemType]);
+  }, [footBusy, history, itemId, itemType]);
 
   return (
     <>
@@ -1926,6 +1685,11 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
               <div className="panel-status-error" role="alert">{statusActionError}</div>
             )}
 
+            {/* Episode alerts: the show's new-episode notifications, and while
+                they're on, the next episode with Add to calendar. Only for a
+                show they follow (saved or watching), since that is who gets them. */}
+            {!isMovie && details && (inList || isWatching) && <EpisodeAlertsCard show={details} />}
+
             {!isMovie && isWatching && details && (
               <UpNextCard
                 tvId={itemId}
@@ -1992,7 +1756,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                             tmdbId={itemId}
                             region={whereToWatch.region}
                             justwatchLink={whereToWatch.justwatchLink}
-                            onWatchLinkClick={handleWatchLinkPrompt}
                           />
                         ))}
                       </div>
@@ -2011,8 +1774,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                               tmdbId={itemId}
                               region={whereToWatch.region}
                               justwatchLink={whereToWatch.justwatchLink}
-                              onWatchLinkClick={handleWatchLinkPrompt}
-                            />
+                              />
                           ))}
                         </div>
                       </>
@@ -2065,6 +1827,9 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 on the viewer's services. Beside Where to watch, because it is
                 the same question asked of the future. */}
             {!isMovie && details && <SeasonReadyAlert show={details} />}
+            {/* Free: the film equivalent, for a film on the watchlist. The watchlist
+                is the opt-in, so this is only a way to mute it. */}
+            {isMovie && details && inList && <StreamingAlertsCard movie={details} />}
 
             {/* ── What everyone else thought ──
                 The two numbers read as a pair, with a real audience review in
@@ -2211,37 +1976,27 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
         )}
 
         {!talentId && !loading && !detailsError && details && (
-          engagementPrompt ? (
-            <EngagementPromptBar
-              mode={engagementPrompt}
-              isTv={!isMovie}
-              showWatchingCta={!isMovie && !isWatching}
-              busy={engagementBusy || !!statusActionPending}
-              onMarkWatched={handlePromptMarkWatched}
-              onStartWatching={handlePromptStartWatching}
-              onDismissWatch={dismissWatchPrompt}
-              onRate={handlePromptRate}
-              onWriteReview={handlePromptWriteReview}
-              onSkipRate={skipRatePrompt}
-            />
-          ) : (
-            <TakeBar
-              key={`${itemType}:${itemId}:${takeBarDefaultOpen ? 'open' : 'closed'}`}
-              itemId={itemId}
-              itemType={itemType}
-              title={title}
-              watched={watched}
-              watchedEntry={watchedEntry}
-              rating={savedRating}
-              note={savedReview}
-              dnf={savedDnf}
-              watchedAt={savedWatchedAt}
-              onSave={saveReview}
-              onClear={clearReview}
-              user={user}
-              defaultOpen={takeBarDefaultOpen}
-            />
-          )
+          <TitleFootBar
+            key={`${itemType}:${itemId}`}
+            itemId={itemId}
+            itemType={itemType}
+            title={title}
+            watched={watched}
+            dnf={savedDnf}
+            rating={savedRating}
+            review={savedReview}
+            watchedAt={savedWatchedAt}
+            isTv={!isMovie}
+            isWatching={isWatching}
+            busy={footBusy || !!statusActionPending}
+            isPublicProfile={!!profile?.is_public}
+            hasUser={!!user}
+            onMarkWatched={footMarkWatched}
+            onStartWatching={footStartWatching}
+            onUndoWatched={footUndoWatched}
+            onRate={(value) => saveReview({ rating: value || null, note: savedReview || null, dnf: savedDnf, watchedAt: savedWatchedAt })}
+            onSaveReview={({ note, watchedAt }) => saveReview({ rating: savedRating || null, note, dnf: savedDnf, watchedAt })}
+          />
         )}
       </div>
     </>

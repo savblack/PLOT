@@ -1,0 +1,611 @@
+{
+  "id": "nyt-best-tv-21st-century",
+  "title": "The 100 Best TV Shows of the 21st Century",
+  "blurb": "The New York Times' ranking of the best television since 2000, from Breaking Bad to Scandal.",
+  "source": {
+    "name": "The New York Times",
+    "url": "https://www.nytimes.com/interactive/2026/arts/television/best-tv-shows-21st-century.html"
+  },
+  "entries": [
+    {
+      "rank": 1,
+      "query": "Breaking Bad",
+      "year": 2008,
+      "media_type": "tv"
+    },
+    {
+      "rank": 2,
+      "query": "The Wire",
+      "year": 2002,
+      "media_type": "tv"
+    },
+    {
+      "rank": 3,
+      "query": "Mad Men",
+      "year": 2007,
+      "media_type": "tv"
+    },
+    {
+      "rank": 4,
+      "query": "Succession",
+      "year": 2018,
+      "media_type": "tv"
+    },
+    {
+      "rank": 5,
+      "query": "Fleabag",
+      "year": 2016,
+      "media_type": "tv"
+    },
+    {
+      "rank": 6,
+      "query": "Game of Thrones",
+      "year": 2011,
+      "media_type": "tv"
+    },
+    {
+      "rank": 7,
+      "query": "Veep",
+      "year": 2012,
+      "media_type": "tv"
+    },
+    {
+      "rank": 8,
+      "query": "30 Rock",
+      "year": 2006,
+      "media_type": "tv"
+    },
+    {
+      "rank": 9,
+      "query": "Curb Your Enthusiasm",
+      "year": 2000,
+      "media_type": "tv"
+    },
+    {
+      "rank": 10,
+      "query": "Atlanta",
+      "year": 2016,
+      "media_type": "tv"
+    },
+    {
+      "rank": 11,
+      "query": "The Office",
+      "year": 2005,
+      "media_type": "tv"
+    },
+    {
+      "rank": 12,
+      "query": "Arrested Development",
+      "year": 2003,
+      "media_type": "tv"
+    },
+    {
+      "rank": 13,
+      "query": "Girls",
+      "year": 2012,
+      "media_type": "tv"
+    },
+    {
+      "rank": 14,
+      "query": "Friday Night Lights",
+      "year": 2006,
+      "media_type": "tv"
+    },
+    {
+      "rank": 15,
+      "query": "Six Feet Under",
+      "year": 2001,
+      "media_type": "tv"
+    },
+    {
+      "rank": 16,
+      "query": "The Office",
+      "year": 2001,
+      "media_type": "tv"
+    },
+    {
+      "rank": 17,
+      "query": "The Americans",
+      "year": 2013,
+      "media_type": "tv"
+    },
+    {
+      "rank": 18,
+      "query": "I May Destroy You",
+      "year": 2020,
+      "media_type": "tv"
+    },
+    {
+      "rank": 19,
+      "query": "Chernobyl",
+      "year": 2019,
+      "media_type": "tv"
+    },
+    {
+      "rank": 20,
+      "query": "The Crown",
+      "year": 2016,
+      "media_type": "tv"
+    },
+    {
+      "rank": 21,
+      "query": "The White Lotus",
+      "year": 2021,
+      "media_type": "tv"
+    },
+    {
+      "rank": 22,
+      "query": "Lost",
+      "year": 2004,
+      "media_type": "tv"
+    },
+    {
+      "rank": 23,
+      "query": "The Comeback",
+      "year": 2005,
+      "media_type": "tv"
+    },
+    {
+      "rank": 24,
+      "query": "Deadwood",
+      "year": 2004,
+      "media_type": "tv"
+    },
+    {
+      "rank": 25,
+      "query": "The Leftovers",
+      "year": 2014,
+      "media_type": "tv"
+    },
+    {
+      "rank": 26,
+      "query": "Black Mirror",
+      "year": 2011,
+      "media_type": "tv"
+    },
+    {
+      "rank": 27,
+      "query": "Better Call Saul",
+      "year": 2015,
+      "media_type": "tv"
+    },
+    {
+      "rank": 28,
+      "query": "Band of Brothers",
+      "year": 2001,
+      "media_type": "tv"
+    },
+    {
+      "rank": 29,
+      "query": "Key & Peele",
+      "year": 2012,
+      "media_type": "tv"
+    },
+    {
+      "rank": 30,
+      "query": "Severance",
+      "year": 2022,
+      "media_type": "tv"
+    },
+    {
+      "rank": 31,
+      "query": "Survivor",
+      "year": 2000,
+      "media_type": "tv"
+    },
+    {
+      "rank": 32,
+      "query": "Andor",
+      "year": 2022,
+      "media_type": "tv"
+    },
+    {
+      "rank": 33,
+      "query": "Enlightened",
+      "year": 2011,
+      "media_type": "tv"
+    },
+    {
+      "rank": 34,
+      "query": "Schitt's Creek",
+      "year": 2015,
+      "media_type": "tv"
+    },
+    {
+      "rank": 35,
+      "query": "True Detective",
+      "year": 2014,
+      "media_type": "tv"
+    },
+    {
+      "rank": 36,
+      "query": "The Pitt",
+      "year": 2025,
+      "media_type": "tv"
+    },
+    {
+      "rank": 37,
+      "query": "Battlestar Galactica",
+      "year": 2005,
+      "media_type": "tv"
+    },
+    {
+      "rank": 38,
+      "query": "Homeland",
+      "year": 2011,
+      "media_type": "tv"
+    },
+    {
+      "rank": 39,
+      "query": "Watchmen",
+      "year": 2019,
+      "media_type": "tv"
+    },
+    {
+      "rank": 40,
+      "query": "Adolescence",
+      "year": 2025,
+      "media_type": "tv"
+    },
+    {
+      "rank": 41,
+      "query": "Louie",
+      "year": 2010,
+      "media_type": "tv"
+    },
+    {
+      "rank": 42,
+      "query": "Hacks",
+      "year": 2021,
+      "media_type": "tv"
+    },
+    {
+      "rank": 43,
+      "query": "Peaky Blinders",
+      "year": 2013,
+      "media_type": "tv"
+    },
+    {
+      "rank": 44,
+      "query": "BoJack Horseman",
+      "year": 2014,
+      "media_type": "tv"
+    },
+    {
+      "rank": 45,
+      "query": "Happy Valley",
+      "year": 2014,
+      "media_type": "tv"
+    },
+    {
+      "rank": 46,
+      "query": "Broad City",
+      "year": 2014,
+      "media_type": "tv"
+    },
+    {
+      "rank": 47,
+      "query": "Twin Peaks",
+      "year": 2017,
+      "media_type": "tv"
+    },
+    {
+      "rank": 48,
+      "query": "House of Cards",
+      "year": 2013,
+      "media_type": "tv"
+    },
+    {
+      "rank": 49,
+      "query": "Normal People",
+      "year": 2020,
+      "media_type": "tv"
+    },
+    {
+      "rank": 50,
+      "query": "Parks and Recreation",
+      "year": 2009,
+      "media_type": "tv"
+    },
+    {
+      "rank": 51,
+      "query": "The Good Place",
+      "year": 2016,
+      "media_type": "tv"
+    },
+    {
+      "rank": 52,
+      "query": "Downton Abbey",
+      "year": 2010,
+      "media_type": "tv"
+    },
+    {
+      "rank": 53,
+      "query": "Stranger Things",
+      "year": 2016,
+      "media_type": "tv"
+    },
+    {
+      "rank": 54,
+      "query": "The Bureau",
+      "year": 2015,
+      "media_type": "tv"
+    },
+    {
+      "rank": 55,
+      "query": "Insecure",
+      "year": 2016,
+      "media_type": "tv"
+    },
+    {
+      "rank": 56,
+      "query": "Nathan for You",
+      "year": 2013,
+      "media_type": "tv"
+    },
+    {
+      "rank": 57,
+      "query": "I Think You Should Leave with Tim Robinson",
+      "year": 2019,
+      "media_type": "tv"
+    },
+    {
+      "rank": 58,
+      "query": "Chappelle's Show",
+      "year": 2003,
+      "media_type": "tv"
+    },
+    {
+      "rank": 59,
+      "query": "PEN15",
+      "year": 2019,
+      "media_type": "tv"
+    },
+    {
+      "rank": 60,
+      "query": "Peep Show",
+      "year": 2003,
+      "media_type": "tv"
+    },
+    {
+      "rank": 61,
+      "query": "RuPaul's Drag Race",
+      "year": 2009,
+      "media_type": "tv"
+    },
+    {
+      "rank": 62,
+      "query": "Slow Horses",
+      "year": 2022,
+      "media_type": "tv"
+    },
+    {
+      "rank": 63,
+      "query": "The Thick of It",
+      "year": 2005,
+      "media_type": "tv"
+    },
+    {
+      "rank": 64,
+      "query": "Anthony Bourdain: Parts Unknown",
+      "year": 2013,
+      "media_type": "tv"
+    },
+    {
+      "rank": 65,
+      "query": "Mare of Easttown",
+      "year": 2021,
+      "media_type": "tv"
+    },
+    {
+      "rank": 66,
+      "query": "The Rehearsal",
+      "year": 2022,
+      "media_type": "tv"
+    },
+    {
+      "rank": 67,
+      "query": "The Handmaid's Tale",
+      "year": 2017,
+      "media_type": "tv"
+    },
+    {
+      "rank": 68,
+      "query": "Ozark",
+      "year": 2017,
+      "media_type": "tv"
+    },
+    {
+      "rank": 69,
+      "query": "Anthony Bourdain: No Reservations",
+      "year": 2005,
+      "media_type": "tv"
+    },
+    {
+      "rank": 70,
+      "query": "The Shield",
+      "year": 2002,
+      "media_type": "tv"
+    },
+    {
+      "rank": 71,
+      "query": "Beef",
+      "year": 2023,
+      "media_type": "tv"
+    },
+    {
+      "rank": 72,
+      "query": "Squid Game",
+      "year": 2021,
+      "media_type": "tv"
+    },
+    {
+      "rank": 73,
+      "query": "Barry",
+      "year": 2018,
+      "media_type": "tv"
+    },
+    {
+      "rank": 74,
+      "query": "The Bear",
+      "year": 2022,
+      "media_type": "tv"
+    },
+    {
+      "rank": 75,
+      "query": "Ted Lasso",
+      "year": 2020,
+      "media_type": "tv"
+    },
+    {
+      "rank": 76,
+      "query": "Somebody Somewhere",
+      "year": 2022,
+      "media_type": "tv"
+    },
+    {
+      "rank": 77,
+      "query": "Modern Family",
+      "year": 2009,
+      "media_type": "tv"
+    },
+    {
+      "rank": 78,
+      "query": "It's Always Sunny in Philadelphia",
+      "year": 2005,
+      "media_type": "tv"
+    },
+    {
+      "rank": 79,
+      "query": "The Good Wife",
+      "year": 2009,
+      "media_type": "tv"
+    },
+    {
+      "rank": 80,
+      "query": "How To with John Wilson",
+      "year": 2020,
+      "media_type": "tv"
+    },
+    {
+      "rank": 81,
+      "query": "The Queen's Gambit",
+      "year": 2020,
+      "media_type": "tv"
+    },
+    {
+      "rank": 82,
+      "query": "Better Things",
+      "year": 2016,
+      "media_type": "tv"
+    },
+    {
+      "rank": 83,
+      "query": "Justified",
+      "year": 2010,
+      "media_type": "tv"
+    },
+    {
+      "rank": 84,
+      "query": "Planet Earth",
+      "year": 2006,
+      "media_type": "tv"
+    },
+    {
+      "rank": 85,
+      "query": "The Great British Baking Show",
+      "year": 2010,
+      "media_type": "tv"
+    },
+    {
+      "rank": 86,
+      "query": "Shōgun",
+      "year": 2024,
+      "media_type": "tv"
+    },
+    {
+      "rank": 87,
+      "query": "Reservation Dogs",
+      "year": 2021,
+      "media_type": "tv"
+    },
+    {
+      "rank": 88,
+      "query": "Dexter",
+      "year": 2006,
+      "media_type": "tv"
+    },
+    {
+      "rank": 89,
+      "query": "Baby Reindeer",
+      "year": 2024,
+      "media_type": "tv"
+    },
+    {
+      "rank": 90,
+      "query": "Eastbound & Down",
+      "year": 2009,
+      "media_type": "tv"
+    },
+    {
+      "rank": 91,
+      "query": "Catastrophe",
+      "year": 2015,
+      "media_type": "tv"
+    },
+    {
+      "rank": 92,
+      "query": "The Night Of",
+      "year": 2016,
+      "media_type": "tv"
+    },
+    {
+      "rank": 93,
+      "query": "Station Eleven",
+      "year": 2021,
+      "media_type": "tv"
+    },
+    {
+      "rank": 94,
+      "query": "The Diplomat",
+      "year": 2023,
+      "media_type": "tv"
+    },
+    {
+      "rank": 95,
+      "query": "House",
+      "year": 2004,
+      "media_type": "tv"
+    },
+    {
+      "rank": 96,
+      "query": "Halt and Catch Fire",
+      "year": 2014,
+      "media_type": "tv"
+    },
+    {
+      "rank": 97,
+      "query": "Community",
+      "year": 2009,
+      "media_type": "tv"
+    },
+    {
+      "rank": 98,
+      "query": "The OA",
+      "year": 2016,
+      "media_type": "tv"
+    },
+    {
+      "rank": 99,
+      "query": "Gilmore Girls",
+      "year": 2000,
+      "media_type": "tv"
+    },
+    {
+      "rank": 100,
+      "query": "Scandal",
+      "year": 2012,
+      "media_type": "tv"
+    }
+  ]
+}

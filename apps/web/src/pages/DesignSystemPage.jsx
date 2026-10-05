@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import './DesignSystemPage.css';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import ProfileBadges from '../components/ProfileBadges.jsx';
-import TitleReview from '../components/TitleReview.jsx';
+import TitleFootBar from '../components/TitleFootBar.jsx';
 
 const colorTokens = [
   ['--bg', 'App background', 'The quiet canvas behind every primary view.'],
@@ -834,34 +834,56 @@ export default function DesignSystemPage() {
             </div>
             <div className="ds-form-note">Full-width, icon-leading. Font size ≥16px prevents iOS auto-zoom on focus.</div>
           </div>
-          {/* The real component, not an imitation of it: this card is how the
-              media panel renders a title review, so the inventory cannot drift
-              from the app. Click the kebab to reach the editing state. */}
+          {/* The real component, not an imitation of it: this is the bar the media
+              panel pins to its foot, so the inventory cannot drift from the app.
+              The handlers are stubs; nothing here writes. */}
           <div className="ds-form-card">
-            <span className="ds-example-label">Title review — saved</span>
-            <TitleReview
-              entry={{ id: 'ds-saved' }}
-              rating={7}
-              note="Lost its way seasons 2, 3 and 4 but they really brought home with season 5. Bookended the show with what made it great in the first place."
+            <span className="ds-example-label">Title foot bar: not watched</span>
+            <TitleFootBar
+              itemId={0}
+              itemType="movie"
+              title="Sample"
+              watched={false}
               dnf={false}
+              rating={0}
+              review=""
               watchedAt="2026-08-21"
-              onSave={async () => true}
-              onClear={async () => true}
+              isTv={false}
+              isWatching={false}
+              busy={false}
+              isPublicProfile
+              hasUser={false}
+              onMarkWatched={async () => ({ ok: true })}
+              onStartWatching={async () => {}}
+              onUndoWatched={async () => true}
+              onRate={async () => true}
+              onSaveReview={async () => true}
             />
-            <div className="ds-form-note">Saved is prose, not a form: hairlines, Gabarito review text, 44px numeral over 9px stars, house kebab for Edit and Remove.</div>
+            <div className="ds-form-note">One question, ghost stars and the single next action. A star tap logs the title as watched and rates it in one go.</div>
           </div>
           <div className="ds-form-card">
-            <span className="ds-example-label">Title review — watched, nothing written</span>
-            <TitleReview
-              entry={{ id: 'ds-empty' }}
-              rating={0}
-              note=""
+            <span className="ds-example-label">Title foot bar: rated and reviewed</span>
+            <TitleFootBar
+              itemId={0}
+              itemType="movie"
+              title="Sample"
+              watched
               dnf={false}
+              rating={7}
+              review="Lost its way seasons 2, 3 and 4 but they really brought home with season 5. Bookended the show with what made it great in the first place."
               watchedAt="2026-08-21"
-              onSave={async () => true}
-              onClear={async () => true}
+              isTv={false}
+              isWatching={false}
+              busy={false}
+              isPublicProfile
+              hasUser={false}
+              onMarkWatched={async () => ({ ok: true })}
+              onStartWatching={async () => {}}
+              onUndoWatched={async () => true}
+              onRate={async () => true}
+              onSaveReview={async () => true}
             />
-            <div className="ds-form-note">An invitation. Tapping any star opens the editor with that rating already set; the pencil opens it unrated.</div>
+            <div className="ds-form-note">Stars are live in the bar. The Review box is solid and accented, the Private note box (signed in) is outlined and muted; a pencil means written, a plus means empty.</div>
           </div>
         </div>
       </Section>

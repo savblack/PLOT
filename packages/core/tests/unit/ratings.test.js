@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { MAX_RATING, STAR_COUNT, normalizeRating, ratingToStars, starsToRating, starFillPercent, ratingFromPointer } from '../../ratings.js';
+import { MAX_RATING, STAR_COUNT, REVIEW_MAX, normalizeRating, nextRating, ratingToStars, starsToRating, starFillPercent, ratingFromPointer } from '../../ratings.js';
 
 test('MAX_RATING and STAR_COUNT are the expected constants', () => {
   assert.equal(MAX_RATING, 10);
@@ -82,4 +82,16 @@ test('ratingFromPointer returns the full-star value when the pointer is in the r
 
 test('ratingFromPointer treats the exact midpoint as the right half', () => {
   assert.equal(ratingFromPointer(pointerEvent(110), 3), 6);
+});
+
+test('nextRating sets a new score and clears it when the same score is tapped again', () => {
+  assert.equal(nextRating(0, 7), 7, 'no rating yet: the tap sets it');
+  assert.equal(nextRating(7, 8), 8, 'a different score replaces it');
+  assert.equal(nextRating(7, 7), 0, 'the same score again clears it');
+  assert.equal(nextRating(null, 3), 3);
+  assert.equal(nextRating(7, 7.4), 0, 'compared on the stored scale, so a rounded tap still matches');
+});
+
+test('REVIEW_MAX is the written review cap the foot bar enforces', () => {
+  assert.equal(REVIEW_MAX, 280);
 });

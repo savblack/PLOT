@@ -48,6 +48,16 @@ test('movie_release rows are title rows that wear the same kind as new_episode',
   assert.deepEqual(groups.map(g => [g.key, g.items.map(n => n.id)]), [['today', [10, 11]]]);
 });
 
+test('streaming_arrival rows are title rows, with the same kind and day bucketing as movie_release', () => {
+  const arrival = row(12, 'streaming_arrival', 1, { actor_display_name: null, tmdb_id: 0, media_type: 'movie', release_kind: 'streaming', provider_name: 'Service A' });
+  assert.equal(notificationKind('streaming_arrival'), 'episode');
+  assert.equal(isTitleNotification(arrival), true);
+  assert.equal(isTitleNotification({ ...arrival, tmdb_id: null }), false);
+  const { rollup, groups } = groupNotifications([arrival, row(13, 'new_follower', 2)], now);
+  assert.equal(rollup, null);
+  assert.deepEqual(groups.map(g => [g.key, g.items.map(n => n.id)]), [['today', [12, 13]]]);
+});
+
 test('watch together requests leave the stream; accepted ones stay', () => {
   const { groups } = groupNotifications([row(1, 'watch_together_request', 1), row(2, 'watch_together_accepted', 2)], now);
   assert.deepEqual(groups.map(g => g.items.map(n => n.id)), [[2]]);

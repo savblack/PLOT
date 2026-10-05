@@ -49,3 +49,10 @@ all four of its states.
   stack right-aligned beside the episode copy instead of sitting in a row beneath it.
   Both are drawn on the canvas.
 - Mobile (`apps/mobile/components/MediaPanel.tsx`) has not been considered here.
+
+## Foot bar proposal
+
+`foot-bar.html` is an interactive study of the foot bar on its own (switch between the
+watched states, film and series, panel and phone, public and private profile). It was built
+in `apps/web/src/components/TitleFootBar.jsx`, which replaced the Watched it? and How was
+it? prompt bars and the Your take bar. This page stays as the design reference.

@@ -58,3 +58,10 @@ Deno.test('earliest picks the earlier timestamp and tolerates nulls', () => {
   assertEquals(earliest('2026-01-02T00:00:00Z', null), '2026-01-02T00:00:00Z');
   assertEquals(earliest('2026-01-02T00:00:00Z', '2026-01-01T00:00:00Z'), '2026-01-01T00:00:00Z');
 });
+
+Deno.test('someone who turned Episode alerts off for the show is never notified', () => {
+  assertEquals(skipReason(follower({ muted: true }), ep), 'muted');
+  // Their choice wins over every other rule.
+  assertEquals(skipReason(follower({ muted: true, dnf: true }), ep), 'muted');
+  assertEquals(skipReason(follower({ muted: false }), ep), null);
+});
