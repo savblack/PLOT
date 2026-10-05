@@ -2,7 +2,7 @@
 // the action is really done (titles saved, someone followed, an import
 // finished, an actor or director followed). The rules and the stored state's
 // shape live in @plot/core/finishingTouches.js; this file is the web render.
-// Mobile parity: the card is not on mobile yet (see the PR's parity issue).
+// Mobile: apps/mobile/components/FinishingTouches.tsx, on the same core rules.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';

@@ -17,7 +17,7 @@ import { importReportMessages, importListSelections, importListResultMessage } f
 import { planHistoryImport } from '@plot/core/importPlan.js';
 import {
   resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, chooseImportMatch, reviewImportDuplicates,
-  reportImport, reportImportOutcome, IMPORT_FAILURE_REASONS,
+  createImportReporter, IMPORT_ENTRY_POINTS, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
@@ -164,6 +164,12 @@ type Step = 'pick-platform' | 'pick-file' | 'connection' | 'resolving' | 'previe
 interface Props {
   userId: string;
   onClose: () => void;
+  /** Where the import began, carried on every import event. Defaults to the Settings entry. */
+  entry?: string;
+  /** Open straight on this platform's source step (onboarding's switching-apps pick). */
+  initialPlatform?: Platform;
+  /** An import finished and wrote at least one title, so the first-run card can tick. */
+  onImported?: () => void;
 }
 
 export default function ImportHistoryModal(props: Props) {
@@ -171,7 +177,8 @@ export default function ImportHistoryModal(props: Props) {
   return <AccountImportHistoryModal key={props.userId} {...props} />;
 }
 
-function AccountImportHistoryModal({ userId, onClose }: Props) {
+function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, initialPlatform, onImported }: Props) {
+  const importReport = useMemo(() => createImportReporter({ entry }), [entry]);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -189,8 +196,10 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
   );
 
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
-  const [step,         setStep]         = useState<Step>('pick-platform');
-  const [platform,     setPlatform]     = useState<Platform | null>(null);
+  // onboarding's switching-apps pick opens straight on that source's step.
+  const startPlatform = availablePlatforms.find(item => item.id === initialPlatform) ?? null;
+  const [step,         setStep]         = useState<Step>(startPlatform ? (startPlatform.kind === 'connection' ? 'connection' : 'pick-file') : 'pick-platform');
+  const [platform,     setPlatform]     = useState<Platform | null>(startPlatform?.id ?? null);
   const [rawResolved, setResolved] = useState<ResolvedEntry[]>([]);
   const resolved: ResolvedEntry[] = useMemo(() => reviewPendingWatchSummaries(rawResolved), [rawResolved]);
   const [existingRows, setExistingRows] = useState<{ tmdb_id: number; media_type: string }[]>([]);
@@ -232,16 +241,16 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
       if (!raw.length && (document.warnings.length || document.notImported.length)) { setResolved([]); setStep('preview'); return; }
       if (raw.some(row => row.destination) && !getConfig().importEventsEnabled) {
         Alert.alert(IMPORT_VIEW.incomplete, IMPORT_VIEW.listNotImported('not_available'));
-        reportImport('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.LISTS_UNAVAILABLE });
+        importReport.report('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.LISTS_UNAVAILABLE });
         return;
       }
       if (raw.length === 0) {
         Alert.alert('No entries found', 'The file could not be parsed or contains no viewing history. Make sure you selected the right platform and file.');
-        reportImport('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.EMPTY_FILE });
+        importReport.report('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.EMPTY_FILE });
         return;
       }
       const deduped = raw;
-      reportImport('started', { source: platform, count: deduped.length });
+      importReport.report('started', { source: platform, count: deduped.length });
       started = true;
       setResolveTotal(deduped.length);
       setResolveDone(0);
@@ -269,7 +278,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
       // Planning against a partial history is the data-loss path. Stop.
       if (error) {
         Alert.alert('Import stopped', IMPORT_VIEW.couldNotReadHistory);
-        reportImport('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
+        importReport.report('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
         setStep('pick-file');
         return;
       }
@@ -277,7 +286,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
       const review = await reviewImportDuplicates({ userId, resolved: results });
       if (review.error) {
         Alert.alert('Import stopped', IMPORT_VIEW.couldNotReadHistory);
-        reportImport('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
+        importReport.report('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
         setStep('pick-file');
         return;
       }
@@ -287,13 +296,13 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
     } catch (error) {
       Alert.alert(IMPORT_VIEW.incomplete, error instanceof Error ? error.message : IMPORT_VIEW.fileReadFailed);
       // Past `started`, the file read fine and matching titles is what threw.
-      reportImport('failed', {
+      importReport.report('failed', {
         source: platform,
         reason: started ? IMPORT_FAILURE_REASONS.MATCH_FAILED : IMPORT_FAILURE_REASONS.UNREADABLE_FILE,
       });
       setStep('pick-file');
     }
-  }, [platform, userId]);
+  }, [platform, userId, importReport]);
 
   /* One plan drives both the preview and the write. Nothing here deletes: the
      old version cleared every history row for the titles in the file before
@@ -341,6 +350,7 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
     setImportDone(0);
     setStep('importing');
 
+    importReport.writing();
     // Batches, counts failures rather than swallowing them, and signals the
     // history change so a mounted useHistory reloads — mobile never did.
     const outcome = await writeImportDocument({ userId, resolved, summaryRows: rows }, {
@@ -348,34 +358,36 @@ function AccountImportHistoryModal({ userId, onClose }: Props) {
     });
 
     const { inserted, failed, duplicates } = outcome;
-    if (platform) reportImportOutcome(platform, outcome);
+    if (platform) importReport.outcome(platform, outcome);
     setListResult(importListResultMessage(outcome));
     setImportedCount(inserted);
     setImportResult({ duplicates, failed });
     if (failed) {
       Alert.alert(IMPORT_VIEW.partialFailureHeading, IMPORT_VIEW.partialFailure(failed));
     }
+    if (inserted > 0) onImported?.();
     setStep('done');
-  }, [plan, resolved, userId, platform]);
+  }, [plan, resolved, userId, platform, importReport, onImported]);
 
   const connection = platform === 'plex' ? plex : platform === 'trakt' ? trakt : platform === 'simkl' ? simkl : null;
   const connectionName = platform === 'plex' ? 'Plex' : platform === 'trakt' ? 'Trakt' : 'Simkl';
 
   const handleConnectionImport = useCallback(async () => {
     if (!connection || !platform) return;
-    reportImport('started', { source: platform });
+    importReport.report('started', { source: platform });
     const result = await connection.importHistory();
     if (!result) {
       Alert.alert('Import stopped', connection.error || IMPORT_VIEW.importFailed);
-      reportImport('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
+      importReport.report('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
       return;
     }
-    reportImport('completed', { source: platform, count: result.importedCount || 0 });
+    importReport.report('completed', { source: platform, count: result.importedCount || 0 });
     setImportedCount(result.importedCount || 0);
     setAlreadyCount(result.alreadyCount || 0);
     setPushedCount(result.pushedCount || 0);
+    onImported?.();
     setStep('done');
-  }, [connection, platform]);
+  }, [connection, platform, importReport, onImported]);
 
   const reset = () => {
     setStep('pick-platform');

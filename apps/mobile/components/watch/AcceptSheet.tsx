@@ -4,13 +4,14 @@ import Svg, { Path } from 'react-native-svg';
 import { personName } from '@plot/core/watchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
+import { useMutualFollow } from '@plot/core/useWatchTogether.js';
 import { fontFamily, fontSize, spacing } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ButtonRow, Note, PrimaryButton, SecondaryButton, SectionLabel, Sheet } from './WatchChrome';
 
 export function AcceptSheet({ person, busy = false, onAccept, onDecline, onClose }: {
-  person: { display_name?: string | null; username?: string | null };
+  person: { id?: string; other_id?: string; display_name?: string | null; username?: string | null };
   busy?: boolean;
   onAccept: (shareFull: boolean) => void;
   onDecline: () => void;
@@ -19,7 +20,10 @@ export function AcceptSheet({ person, busy = false, onAccept, onDecline, onClose
   const { colors } = useTheme();
   const { userId, profile } = useAppData();
   const openToEveryone = useWatchlistVisibility(userId, !!profile?.is_public).visibility === 'everyone';
-  const [shareFull, setShareFull] = useState(false);
+  // On by default when you follow each other, still one tap to turn off.
+  const mutual = useMutualFollow(userId, person.id ?? person.other_id);
+  const [chosen, setChosen] = useState<boolean | null>(null);
+  const shareFull = chosen ?? mutual;
   const name = personName(person);
   return (
     <Sheet
@@ -37,8 +41,9 @@ export function AcceptSheet({ person, busy = false, onAccept, onDecline, onClose
         <SectionLabel>{T.accept.willSee(name)}</SectionLabel>
         <Line ok text={T.accept.seesOverlap} />
         <Line ok text={T.accept.seesPicks} />
+        {!openToEveryone && shareFull && <Line ok text={T.accept.seesFullWatchlist} />}
         <SectionLabel>{T.accept.wontSee(name)}</SectionLabel>
-        {!openToEveryone && <Line text={T.accept.hidesRest} />}
+        {!openToEveryone && !shareFull && <Line text={T.accept.hidesRest} />}
         <Line text={T.accept.hidesPrivateLists} />
         <Line text={T.accept.hidesNotes} />
       </View>
@@ -46,11 +51,11 @@ export function AcceptSheet({ person, busy = false, onAccept, onDecline, onClose
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
           <View style={{ flex: 1, gap: spacing.xs }}>
             <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary }}>{T.accept.shareFull}</Text>
-            <Note>{T.accept.shareFullBody(name)}</Note>
+            <Note>{`${T.accept.shareFullBody(name)}${mutual && shareFull ? ` ${T.accept.shareFullMutual}` : ''}`}</Note>
           </View>
           <Switch
             value={shareFull}
-            onValueChange={setShareFull}
+            onValueChange={setChosen}
             trackColor={{ true: colors.accent, false: colors.surfaceSunken }}
             accessibilityLabel={T.accept.shareFull}
           />

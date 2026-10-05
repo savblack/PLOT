@@ -1,12 +1,11 @@
 /**
- * Onboarding step 2 — Seed the watchlist via a poster grid (mirrors web).
- * Opens on an intro that says what picking titles is for (the grid on its own
- * reads as a question about viewing history), then prefills a "trending this
- * week" poster grid before the user searches; the accent border plus tint
- * overlay on a poster is the only selection indicator. Seeds a "My List"
- * custom list via idempotent upserts.
+ * Onboarding step 1: save a few titles (mirrors web's "seed" step).
+ * A "trending this week" poster grid, prefilled before the user searches, with
+ * a "Switching apps?" row that branches to the import-source picker. Picks are
+ * held in the flow context and saved to the watchlist once, behind the
+ * building moment, so backing out of a later step costs nothing.
  */
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, Image,
   StyleSheet, ActivityIndicator, Dimensions,
@@ -14,29 +13,24 @@ import {
 import { useRouter } from 'expo-router';
 import Svg, { Line } from 'react-native-svg';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
-import { supabase } from '../../lib/supabase';
-import { tmdb, setTmdbRegion } from '../../lib/tmdb';
-import { track, EVENTS } from '../../lib/analytics';
+import { tmdb } from '../../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useAppData } from '../../contexts/AppDataContext';
-import { useOnboardingRefresh } from '../../contexts/OnboardingContext';
-import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
-import { updateProfile } from '@plot/core/profile.js';
+import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
+import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
+import ImportSourceIcon from '../../components/ImportSourceIcon';
 
 // Four columns, same as web — the flow is capped at the web card width (420),
 // so the poster size matches between platforms on a phone-width screen.
 const COLUMNS = 4;
+// Web shows 48 trending titles; the grid scrolls, so this is just how deep it goes.
+const TRENDING_COUNT = 24;
 const CONTENT_W = Math.min(Dimensions.get('window').width, 420) - spacing.xl * 2;
 const CARD_W = (CONTENT_W - spacing.sm * (COLUMNS - 1)) / COLUMNS;
 
 // Web caps the poster grid at 42vh so the footer stays hugged to the content.
 const GRID_MAX_H = Math.round(Dimensions.get('window').height * 0.42);
-
-// Web detects region against its own /api/region Pages Function; mobile has no
-// origin of its own, so it hits the deployed one.
-const REGION_API = 'https://app.theplot.tv/api/region';
 
 // Web tints the selected poster with the light-theme accent at 30% in both
 // themes and stamps a white tick, so the same literal is used here.
@@ -58,42 +52,34 @@ export default function Seed() {
   const router  = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { watchlist } = useAppData();
-  const refreshOnboarding = useOnboardingRefresh();
+  const flow = useOnboardingFlow();
 
-  // Region is detected, not asked: the region step it used to come from is gone.
-  const region = useRef(guessRegionFromTimezone());
   const [query,    setQuery]    = useState('');
   const [results,  setResults]  = useState<SearchResult[]>([]);
   const [trending, setTrending] = useState<SearchResult[]>([]);
-  const [selected, setSelected] = useState<SearchResult[]>([]);
-  const [saving,   setSaving]   = useState(false);
   const [searching,setSearching]= useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [trendingFailed, setTrendingFailed] = useState(false);
-
-  // Refine the timezone guess with IP geolocation while the user picks titles,
-  // so the completing write below has the better value. Also sets the TMDB region
-  // for this session, which the deleted region screen used to do.
-  useEffect(() => {
-    let cancelled = false;
-    detectRegion({ endpoint: REGION_API }).then(detected => {
-      if (cancelled) return;
-      region.current = detected;
-      setTmdbRegion(detected);
-    });
-    return () => { cancelled = true; };
-  }, []);
+  const selected = flow.seeds;
+  const setFlowTrending = flow.setTrending;
 
   // Trending prefill (shown until the user searches)
   useEffect(() => {
     tmdb.getTrending('all', 'week').then((data: any) => {
-      setTrending((data?.results ?? []).filter(keep).slice(0, 24));
+      // getTrending fetches several pages and a title can land on two of them.
+      const seen = new Set<string>();
+      const list = (data?.results ?? []).filter(keep).filter((r: SearchResult) => {
+        const k = `${r.media_type}-${r.id}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      }).slice(0, TRENDING_COUNT);
+      setTrending(list);
+      setFlowTrending(list);
     }).catch((e: unknown) => {
       console.warn('[onboarding seed] trending prefill failed', e);
       setTrendingFailed(true);
     });
-  }, []);
+  }, [setFlowTrending]);
 
   // Debounced search
   useEffect(() => {
@@ -109,74 +95,16 @@ export default function Seed() {
   }, [query]);
 
   const gridItems = query.trim() ? results : trending;
-
-  const toggle = (item: SearchResult) => {
-    setSelected(prev =>
-      prev.some(i => i.id === item.id) ? prev.filter(i => i.id !== item.id) : [...prev, item]
-    );
-  };
+  const toggle = flow.toggleSeed;
   const isSelected = (item: SearchResult) => selected.some(i => i.id === item.id);
+  const count = selected.length;
 
-  // Skipping completes onboarding without seeding anything, even if posters
-  // are still selected — that's what skipping the step means.
-  const finish = async (skipSeeds: boolean) => {
-    const seeds = skipSeeds ? [] : selected;
-    setSaving(true);
-    setSaveError(null);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      // Flip onboarding_complete first: on failure the user stays here rather
-      // than landing in the app with the auth guard bouncing them back. Region
-      // and timezone ride along, since this is the only step that writes them
-      // and _layout reads profiles.region at boot to set the TMDB region.
-      const { error } = await updateProfile({
-        userId: session.user.id,
-        patch: {
-          onboarding_complete: true,
-          region: region.current,
-          timezone: detectTimezone(),
-        },
-      });
-
-      if (error) {
-        console.warn('[onboarding seed] completing onboarding failed', error);
-        setSaving(false);
-        setSaveError(ONBOARDING_FLOW.saveError);
-        return;
-      }
-
-      // useAppData's watchlist is already bootstrapped by the time onboarding
-      // reaches this step (AppDataProvider wraps the whole app), so Save
-      // works immediately even if the user selects nothing here. Selected
-      // titles go through the same addToList every other bookmark tap
-      // elsewhere in the app uses — provider ids, Trakt sync, and the
-      // analytics seam all match. Sequential, not Promise.all: addToList's
-      // duplicate check reads state closed over at call time, which only
-      // advances between awaited turns.
-      for (const item of seeds) {
-        await watchlist.addToList(item, { source: 'onboarding' });
-      }
-
-      // Step 2 reports here because this screen has no goNext: it is the final
-      // step, so it goes straight to finish(). Without this the funnel showed a
-      // false 100% drop-off after step 1. Emitted after the profile write has
-      // landed (the early return above), so a failed save is not a completed step.
-      track(EVENTS.ONBOARDING_STEP_COMPLETED, {
-        step: 2, step_name: 'seed', skipped: skipSeeds,
-      });
-      track(EVENTS.ONBOARDING_COMPLETED, {
-        region: region.current,
-        seed_titles_added: seeds.length,
-        skipped: skipSeeds,
-      });
-    }
-    setSaving(false);
-    // Await before navigating: the root layout caches onboarding_complete and
-    // only re-reads it on session changes, so without this AuthGuard still sees
-    // false and bounces straight back here. That loop was inescapable for every
-    // new account. See contexts/OnboardingContext.tsx.
-    await refreshOnboarding();
-    router.replace('/(app)');
+  // Skip saves nothing and goes straight to Home, even with posters picked:
+  // that is what skipping means. It needs no building moment, so it saves here.
+  const skip = async () => {
+    flow.completeStep('seed', { skipped: true });
+    const ok = await flow.save({ skipSeeds: true, skipServices: true });
+    if (ok) router.replace('/(app)');
   };
 
   // One screen, as web renders it. Mobile used to open step 2 on an intro that
@@ -185,16 +113,29 @@ export default function Seed() {
   // and it made a two-of-two flow feel like three screens.
   return (
     <OnboardingScaffold
-      step={2}
-      title={ONBOARDING_FLOW.step2.title}
-      subtitle={ONBOARDING_FLOW.step2.subtitle}
-      onBack={() => router.back()}
-      ctaLabel={ONBOARDING_FLOW.startWatchingArrow}
-      onContinue={() => finish(false)}
-      saving={saving}
-      onSkip={() => finish(true)}
-      error={saveError}
+      step={1}
+      title={ONBOARDING_FLOW.seed.title(flow.firstName)}
+      subtitle={ONBOARDING_FLOW.seed.subtitle}
+      ctaLabel={count === 0 ? ONBOARDING_FLOW.seed.tapAFew : ONBOARDING_FLOW.seed.continueWith(count)}
+      ctaDisabled={count === 0}
+      onContinue={() => { flow.completeStep('seed'); router.push('/onboarding/services'); }}
+      saving={flow.saving}
+      onSkip={skip}
+      error={flow.saveError}
     >
+      <TouchableOpacity
+        style={styles.switchRow}
+        onPress={() => { flow.completeStep('seed'); router.push('/onboarding/import'); }}
+        accessibilityRole="button"
+      >
+        <View style={styles.switchMarks}>
+          {IMPORT_SOURCES.slice(0, 3).map(src => <ImportSourceIcon key={src.id} id={src.id} size={26} />)}
+        </View>
+        <Text style={styles.switchText}>
+          <Text style={styles.switchLead}>{ONBOARDING_FLOW.seed.switchingLead}</Text> {ONBOARDING_FLOW.seed.switchingBody}
+        </Text>
+      </TouchableOpacity>
+
       {/* Search */}
       <View style={styles.searchBar}>
         <TextInput
@@ -286,6 +227,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: 14, color: colors.textPrimary },
   searchTrailing: { marginLeft: spacing.sm },
+  switchRow:   { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, marginBottom: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  switchMarks: { flexDirection: 'row', gap: 4 },
+  switchText:  { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  switchLead:  { fontFamily: fontFamily.sansBold, color: colors.textPrimary },
   gridLabel:   { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.7, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: spacing.sm },
   grid:        { maxHeight: GRID_MAX_H, marginBottom: spacing.md },
   row:         { gap: spacing.sm, marginBottom: spacing.sm },

@@ -1,7 +1,7 @@
 // "Finishing touches": the first-run card on Home after onboarding (Oct 2026
-// redesign). Shared with mobile so both apps say the same thing once mobile
-// renders it. Words that differ by region (favourite) are passed in from
-// spelling.js by the caller, never hardcoded here.
+// redesign). Shared with mobile so both apps say the same thing. Words that
+// differ by region (favourite) are passed in from spelling.js by the caller,
+// never hardcoded here.
 
 export const FINISHING_TOUCHES = {
   title: 'Finishing touches',

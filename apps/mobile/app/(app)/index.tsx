@@ -41,6 +41,12 @@ import { useRouter, type Href } from 'expo-router';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import { featuredCuratedList } from '@plot/core/curatedLists.js';
 import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists';
+import { greetingFor } from '@plot/core/greeting.js';
+import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
+import ImportHistoryModal from '../../components/ImportHistoryModal';
+import { markImportDone } from '../../lib/finishingTouches';
+import { takePendingImportSource } from '../../lib/pendingImport';
+import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -646,8 +652,14 @@ export default function HomeScreen() {
      ACTIVATED analytics, and left the shared store stale until app restart:
      save on Home, open the title's panel, and it still offered "Add to
      Watchlist". */
-  const { favorites, watchlist, user, profile: appProfile, customLists } = useAppData();
+  const { favorites, watchlist, userId, profile, user, customLists } = useAppData();
   const router = useRouter();
+  // First run: the titles just saved in onboarding lead Home, under the greeting
+  // and the Finishing touches card. Everyone else keeps the rail at the bottom.
+  const ft = useFinishingTouchesState(userId);
+  const firstRun = ft.visible;
+  // Onboarding's "Switching apps?" pick: setup finished first, so the import opens now.
+  const [importSource, setImportSource] = useState<string | null>(takePendingImportSource);
   const watchlistItems: MediaItem[] = watchlist.items;
   const savedIds = new Set<number>(watchlistItems.map((i: MediaItem) => i.tmdb_id ?? i.id ?? 0));
   const toggleFav = useCallback((item: MediaItem) => {
@@ -747,6 +759,30 @@ export default function HomeScreen() {
   const curated = genreFilters.length === 0 && featuredList && filterByType(featuredList.entries, typeFilters)?.length ? featuredList : null;
   const hotRail  = applyFilters(trending.slice(1, 10));
 
+  const savedRail = watchlistItems.length > 0 ? (
+    <View style={styles.section}>
+      <SectionHeader kicker="Your list" title={DISCOVER_VIEW.savedToWatch} />
+      <FlatList
+        horizontal
+        data={firstRun ? watchlistItems.slice(0, 20) : watchlistItems}
+        keyExtractor={item => String(item.tmdb_id ?? item.id)}
+        renderItem={({ item }) => (
+          <PosterCard
+            item={{ ...item, id: item.tmdb_id ?? 0 }}
+            onPress={() => item.tmdb_id && openPanel(item.tmdb_id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+            saved={true}
+            onSave={() => handleSave({ ...item, id: item.tmdb_id ?? 0 })}
+            isFav={favorites.isFavorite(item.tmdb_id ?? item.id ?? 0)}
+            onFavorite={() => toggleFav({ ...item, id: item.tmdb_id ?? item.id ?? 0 })}
+          />
+        )}
+        showsHorizontalScrollIndicator={false}
+        nestedScrollEnabled
+        contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+      />
+    </View>
+  ) : null;
+
   return (
     <View style={styles.screen}>
       {tab === 'guide' ? (
@@ -792,6 +828,20 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
       >
+
+        <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
+        <FinishingTouches state={ft.state} onState={ft.setState} />
+
+        {firstRun && savedRail}
+        {importSource && userId && (
+          <ImportHistoryModal
+            userId={userId}
+            entry={IMPORT_ENTRY_POINTS.ONBOARDING}
+            initialPlatform={importSource as never}
+            onImported={async () => ft.setState(await markImportDone(userId))}
+            onClose={() => setImportSource(null)}
+          />
+        )}
 
         {/* ── plot's Picks: the hero, and the plot list card beside it ── */}
         {(hero || curated) && (
@@ -923,30 +973,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ── Watchlist rail ── */}
-        {watchlistItems.length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Your list" title={DISCOVER_VIEW.savedToWatch} />
-            <FlatList
-              horizontal
-              data={watchlistItems}
-              keyExtractor={item => String(item.tmdb_id ?? item.id)}
-              renderItem={({ item }) => (
-                <PosterCard
-                  item={{ ...item, id: item.tmdb_id ?? 0 }}
-                  onPress={() => item.tmdb_id && openPanel(item.tmdb_id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
-                  saved={true}
-                  onSave={() => handleSave({ ...item, id: item.tmdb_id ?? 0 })}
-                  isFav={favorites.isFavorite(item.tmdb_id ?? item.id ?? 0)}
-                  onFavorite={() => toggleFav({ ...item, id: item.tmdb_id ?? item.id ?? 0 })}
-                />
-              )}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-            />
-          </View>
-        )}
+        {!firstRun && savedRail}
 
         {watchlistItems.length === 0 && !loading && (
           <View style={styles.emptyWatchlist}>
@@ -962,7 +989,7 @@ export default function HomeScreen() {
         <CuratedListPanel
           curated={openCurated}
           user={user}
-          profile={appProfile}
+          profile={profile}
           customLists={customLists}
           onClose={() => setOpenCurated(null)}
           onOpenTitle={(id, type) => openPanel(id, type)}
@@ -1337,6 +1364,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
 
   // ── Empty ──
+  greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.lg, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
   emptyWatchlist: {
     marginHorizontal: spacing.xl,
     padding: spacing.xl,
