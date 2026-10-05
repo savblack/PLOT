@@ -1,15 +1,6 @@
 {
   "entries": [
     {
-      "slug": "past-lives",
-      "tmdb_id": 666277,
-      "media_type": "movie",
-      "poster_path": "/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg",
-      "title": "Past Lives",
-      "date_label": "Feb 2024",
-      "note": "\"Quietly devastating.\""
-    },
-    {
       "slug": "presumed-innocent",
       "tmdb_id": 156933,
       "media_type": "tv",
@@ -121,7 +112,7 @@
       "slug": "mayday",
       "tmdb_id": 1137844,
       "media_type": "movie",
-      "poster_path": "/hVXjX1jLZ1ljFSNGXpjJfbTUOa7.jpg",
+      "poster_path": "/sKIO6oO1GRCVt9Ag2iIBAdCjUj.jpg",
       "title": "Mayday",
       "date_label": "Sep 2026",
       "note": ""
@@ -134,15 +125,24 @@
       "title": "Resident Evil",
       "date_label": "Sep 2026",
       "note": ""
+    },
+    {
+      "slug": "runner",
+      "tmdb_id": 1377237,
+      "media_type": "movie",
+      "poster_path": "/yBKMAIj7clP42UkFejhGDBBoTpb.jpg",
+      "title": "Runner",
+      "date_label": "Sep 2026",
+      "note": ""
     }
   ],
   "trending": {
     "hero": {
-      "slug": "lanterns",
-      "tmdb_id": 95350,
-      "media_type": "tv",
-      "poster_path": "/gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
-      "title": "Lanterns",
+      "slug": "spider-man-brand-new-day",
+      "tmdb_id": 969681,
+      "media_type": "movie",
+      "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+      "title": "Spider-Man: Brand New Day",
       "year": "2026"
     }
   }
