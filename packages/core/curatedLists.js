@@ -49,3 +49,15 @@ export function curatedListRows(curated, listId, userId, now = Date.now()) {
     added_at: new Date(now - (entry.rank - 1) * 1000).toISOString(),
   }));
 }
+
+/**
+ * The list Home features in plot's Picks today. Lists take turns by day so a
+ * second one does not sit unseen behind the first.
+ * @param {Date} [date]
+ * @returns {CuratedList | undefined}
+ */
+export function featuredCuratedList(date = new Date()) {
+  if (!CURATED_LISTS.length) return undefined;
+  const day = Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
+  return CURATED_LISTS[day % CURATED_LISTS.length];
+}
