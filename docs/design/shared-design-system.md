@@ -121,8 +121,10 @@ stroke behind body text. Star ratings need no token of their own: `--rating` is
 ground and on each fill, and 3:1 for the accent on its ground, by
 `packages/core/tests/unit/themes.test.js`.
 Outside the app, retain the established pink treatment in the marketing website, tabs,
-badges, hover/navigation copy, newsletter/templates, OG/share cards, transactional emails,
-and server-rendered public list/profile pages.
+badges, hover/navigation copy, newsletter/templates, OG images, transactional emails,
+and server-rendered public list/profile pages. The one exception is the share cards the
+owner makes from the share sheet: they are drawn in the viewer's own theme family
+(`docs/design/share-cards.md`, Themes), and keep the pink treatment on the default family.
 
 ### Shadows — flat with hairlines; shadow only as a legibility rescue
 

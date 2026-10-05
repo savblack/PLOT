@@ -29,7 +29,10 @@ const RING: Record<string, { card: string; ghost: string }> = {
   pink: { card: '#FF88C8', ghost: '#F07EBC' },
 };
 
-const DAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const EMPTY = '#F1E9DC';
+
+type ActivityCell = { level: number; best: boolean; future: boolean; before?: boolean; today: boolean };
 
 export type ShareCardModel = {
   id: string;
@@ -44,9 +47,11 @@ export type ShareCardModel = {
   kind?: string;
   owner?: string;
   items?: { rank: number; title: string; poster_path?: string | null }[];
-  weeks?: { level: number; best: boolean; future: boolean; today: boolean }[][];
+  weeks?: ActivityCell[][];
   months?: { col: number; label: string }[];
   best?: { label: string; count: number } | null;
+  // Activity: `weeks` is the year to date (a post), `quarter` the last 13 weeks (a story).
+  quarter?: { weeks: ActivityCell[][]; months: { col: number; label: string }[]; best: { label: string; count: number } | null };
   gauge?: number;
   delta?: string;
   word?: 'kinder' | 'harsher' | 'inStep';
@@ -231,56 +236,75 @@ function Top5({ card, story, px }: { card: ShareCardModel; story: boolean; px: U
 }
 
 function Activity({ card, story, px }: { card: ShareCardModel; story: boolean; px: Unit }) {
-  const weeks = card.weeks || [];
-  const months = card.months || [];
-  const cellH = story ? px(3.4) : px(2.2);
-  const labelSize = story ? px(2.8) : px(2.2);
-  const fill = (cell: { level: number; best: boolean; future: boolean }) => {
-    if (cell.future) return 'transparent';
+  // The post shows the year to date; a story is too narrow for that many
+  // columns, so it shows the last quarter (same split as the web card).
+  const { weeks, months, best } = story && card.quarter
+    ? card.quarter
+    : { weeks: card.weeks || [], months: card.months || [], best: card.best };
+  const labelSize = story ? px(3.4) : px(1.5);
+  const monthSize = story ? px(3.4) : px(2.5);
+  const gap = story ? px(1) : px(0.5);
+  const labelW = story ? px(6) : px(3);
+  // Cells fill the panel but stop growing at a size that looks right, so a
+  // young year (a few columns) is a small grid, not a few huge squares.
+  const maxWidth = px(weeks.length * (story ? 6 : 2.7) + (story ? 7 : 4));
+  const fill = (cell: ActivityCell) => {
     if (cell.best) return PINK;
     if (cell.level >= 3) return '#5F7030';
     if (cell.level === 2) return '#B9C482';
     if (cell.level === 1) return SAGE;
-    return '#F1E9DC';
+    return EMPTY;
   };
   return (
-    <Panel px={px} style={{ paddingVertical: story ? px(5) : px(3), paddingHorizontal: story ? px(5) : px(4.4) }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: px(1), marginBottom: px(0.6) }}>
-        <View style={{ width: px(6) }} />
-        {weeks.map((_, index) => {
-          const mark = months.find(month => month.col === index);
-          return (
-            <View key={index} style={{ flex: 1 }}>
-              <Text style={{ fontSize: labelSize, color: MUTED }} numberOfLines={1}>{mark?.label || ''}</Text>
-            </View>
-          );
-        })}
-      </View>
-      {DAY_LABELS.map((label, day) => (
-        <View key={label || `d${day}`} style={{ flexDirection: 'row', alignItems: 'center', gap: px(1), marginTop: story ? px(0.9) : px(0.6) }}>
-          <Text style={{ width: px(6), fontSize: labelSize, color: MUTED }}>{label}</Text>
-          {weeks.map((week, index) => {
-            const cell = week[day];
+    <Panel px={px} style={{ paddingVertical: story ? px(5) : px(3), paddingHorizontal: story ? px(5) : px(3.6) }}>
+      <View style={{ width: '100%', maxWidth, alignSelf: 'center' }}>
+        {/* A month label is wider than its one column, so it is positioned
+            over the columns that follow rather than clipped to its own. */}
+        <View style={{ flexDirection: 'row', gap, height: monthSize * 1.3, marginBottom: story ? px(1.2) : px(0.6) }}>
+          <View style={{ width: labelW }} />
+          {weeks.map((_, index) => {
+            const mark = months.find(month => month.col === index);
             return (
-              <View
-                key={index}
-                style={{
-                  flex: 1,
-                  height: cellH,
-                  borderRadius: px(0.5),
-                  backgroundColor: cell ? fill(cell) : 'transparent',
-                  borderWidth: cell?.today ? Math.max(px(0.4), StyleSheet.hairlineWidth) : 0,
-                  borderColor: INK,
-                }}
-              />
+              <View key={index} style={{ flex: 1, overflow: 'visible' }}>
+                {mark && (
+                  <Text style={{ position: 'absolute', left: 0, bottom: 0, width: px(12), fontSize: monthSize, color: MUTED }}>{mark.label}</Text>
+                )}
+              </View>
             );
           })}
         </View>
-      ))}
-      {card.best && (
+        {DAY_LABELS.map((label, day) => (
+          <View key={day} style={{ flexDirection: 'row', alignItems: 'center', gap, marginTop: gap }}>
+            <View style={{ width: labelW, alignItems: 'center' }}>
+              <Text style={{ fontSize: labelSize, color: MUTED }}>{label}</Text>
+            </View>
+            {weeks.map((week, index) => {
+              const cell = week[day];
+              // Days outside the range keep the grid a rectangle without
+              // reading as days that were watched or missed.
+              const off = !cell || cell.future || cell.before;
+              return (
+                <View
+                  key={index}
+                  style={{
+                    flex: 1,
+                    aspectRatio: 1,
+                    borderRadius: px(0.5),
+                    backgroundColor: cell ? fill(cell) : EMPTY,
+                    opacity: off ? 0.4 : 1,
+                    borderWidth: cell?.today ? Math.max(px(0.4), StyleSheet.hairlineWidth) : 0,
+                    borderColor: INK,
+                  }}
+                />
+              );
+            })}
+          </View>
+        ))}
+      </View>
+      {best && (
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: px(1), marginTop: story ? px(4) : px(2.4) }}>
-          <View style={{ width: px(2.4), height: px(2.4), borderRadius: px(0.5), backgroundColor: PINK }} />
-          <Text style={{ fontSize: story ? px(3.2) : px(2.4), color: MUTED }}>{T.bestDay(card.best.label, card.best.count)}</Text>
+          <View style={{ width: story ? px(3.6) : px(2.4), height: story ? px(3.6) : px(2.4), borderRadius: px(0.5), backgroundColor: PINK }} />
+          <Text style={{ fontSize: story ? px(3.6) : px(2.4), color: MUTED }}>{T.bestDay(best.label, best.count)}</Text>
         </View>
       )}
     </Panel>
