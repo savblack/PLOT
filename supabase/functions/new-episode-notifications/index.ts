@@ -13,9 +13,9 @@
  * media_type 'tv') or in watching_progress. Followers are then filtered by
  * _shared/newEpisodeRecipients.ts: skipped if they followed on or after the air
  * date, have already watched the start of the drop, or last marked the show
- * did-not-finish. There is no per-show mute or global opt-out yet; both are
- * follow-ups, and when they land this is where they are enforced, server-side,
- * rather than hidden in the UI.
+ * did-not-finish, or turned Episode alerts off for the show (episode_alert_mutes,
+ * enforced here, server-side, rather than hidden in the UI). There is no global
+ * opt-out yet.
  *
  * One TMDB details call per followed show (deduplicated across people), plus a
  * season call only for shows that actually aired, to find where a same-day drop
@@ -133,6 +133,26 @@ async function followersByShow(db: Db): Promise<Map<number, Map<string, Follower
   }
 
   return byShow;
+}
+
+/** Marks followers who turned Episode alerts off for an aired show. */
+async function markMuted(db: Db, byShow: Map<number, Map<string, Follower>>, showIds: number[]) {
+  for (let i = 0; i < showIds.length; i += ID_CHUNK) {
+    const ids = showIds.slice(i, i + ID_CHUNK);
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data, error } = await db.from('episode_alert_mutes')
+        .select('user_id, tmdb_id')
+        .in('tmdb_id', ids)
+        .order('user_id')
+        .range(from, from + PAGE_SIZE - 1);
+      if (error) throw new Error(`episode_alert_mutes read failed: ${error.message}`);
+      for (const row of data ?? []) {
+        const f = byShow.get(row.tmdb_id)?.get(row.user_id);
+        if (f) f.muted = true;
+      }
+      if (!data || data.length < PAGE_SIZE) break;
+    }
+  }
 }
 
 /** Marks followers whose latest history row for an aired show is did-not-finish. */
@@ -266,8 +286,14 @@ Deno.serve(async (req) => {
     console.error(err);
     return json({ ok: false, error: 'Could not read watch history' }, 500);
   }
+  try {
+    await markMuted(db, byShow, aired.map(a => a.tmdbId));
+  } catch (err) {
+    console.error(err);
+    return json({ ok: false, error: 'Could not read episode alert settings' }, 500);
+  }
 
-  const skipped: Record<SkipReason, number> = { followed_after: 0, watched: 0, dnf: 0 };
+  const skipped: Record<SkipReason, number> = { muted: 0, followed_after: 0, watched: 0, dnf: 0 };
   const rows: NotificationInsert[] = aired.flatMap(show => [...(byShow.get(show.tmdbId)?.values() ?? [])].filter(f => {
     const reason = skipReason(f, { airDate: show.airDate, season: show.season, firstEpisode: show.firstEpisode });
     if (reason) skipped[reason]++;

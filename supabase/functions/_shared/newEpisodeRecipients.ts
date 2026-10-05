@@ -15,6 +15,8 @@
 //     packages/core/calendar.js), so they have seen episode e of season s when
 //     they are on a later season, or on season s with current_episode > e. For a
 //     multi-episode drop, having started it is enough: they know it is out.
+//   muted — they turned Episode alerts off for this show (episode_alert_mutes).
+//     Checked first: it is their explicit choice, whatever else is true.
 //   dnf — the latest history row for the show is marked did-not-finish. A show
 //     can stay on a list after someone gives up on it; a later non-dnf row (a
 //     second try) means they are back and are notified again.
@@ -26,14 +28,16 @@ export type Follower = {
   followedAt: string | null;
   progress: Progress | null;
   dnf: boolean;
+  muted?: boolean;
 };
 
 export type AiredEpisode = { airDate: string; season: number; firstEpisode: number };
 
-export type SkipReason = 'followed_after' | 'watched' | 'dnf';
+export type SkipReason = 'muted' | 'followed_after' | 'watched' | 'dnf';
 
 /** Why this follower should NOT be notified, or null to notify them. */
 export function skipReason(f: Follower, ep: AiredEpisode): SkipReason | null {
+  if (f.muted) return 'muted';
   if (f.dnf) return 'dnf';
   // Calendar-date comparison: a follow any time on the air date counts as after.
   if (f.followedAt && f.followedAt.slice(0, 10) >= ep.airDate) return 'followed_after';

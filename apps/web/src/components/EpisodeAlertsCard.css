@@ -1,0 +1,40 @@
+/* The title panel's Episode alerts card: a sunken panel card with the switch
+   row and, while alerts are on, the next-episode row with Add to calendar. */
+.ep-alerts { padding: 0.35rem 1rem; }
+.ep-alerts-row { display: flex; align-items: center; gap: 0.9rem; padding: 0.6rem 0; }
+.ep-alerts-row--next { border-top: 1px solid var(--border-strong); }
+.ep-alerts-icon { width: 22px; height: 22px; flex-shrink: 0; color: var(--text-primary); display: flex; }
+.ep-alerts-icon svg { width: 22px; height: 22px; }
+.ep-alerts-icon--bell { color: var(--accent-text); }
+.ep-alerts-copy { flex: 1; min-width: 0; }
+.ep-alerts-title { margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+.ep-alerts-hint { margin: 0.15rem 0 0; font-size: 0.82rem; line-height: 1.4; color: var(--text-secondary); }
+.ep-alerts-error { margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--accent-text); }
+.ep-alerts-next { flex: 1; min-width: 0; margin: 0; font-size: 0.88rem; line-height: 1.4; color: var(--text-secondary); }
+.ep-alerts-next b { color: var(--text-primary); font-weight: 700; }
+.ep-alerts-menu-wrap { position: relative; flex-shrink: 0; }
+.ep-alerts-add {
+  display: inline-flex; align-items: center; gap: 0.35rem; height: 34px; padding: 0 0.85rem;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-pill); background: var(--surface);
+  color: var(--text-primary); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.ep-alerts-add:hover { border-color: var(--text-muted); }
+.ep-alerts-add svg { width: 14px; height: 14px; }
+.ep-alerts-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 300px; max-width: calc(100vw - 2rem);
+  padding: 6px; border-radius: var(--radius-md); background: var(--surface-raised);
+  border: 1px solid var(--border-strong); box-shadow: var(--shadow-overlay);
+}
+.ep-alerts-option {
+  width: 100%; display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.65rem 0.6rem; border: none;
+  border-radius: 12px; background: none; color: var(--text-primary); font: inherit; text-align: left; cursor: pointer;
+}
+.ep-alerts-option:hover, .ep-alerts-option:focus-visible { background: var(--surface-sunken); }
+.ep-alerts-option > svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; }
+.ep-alerts-option > span { display: flex; flex-direction: column; gap: 2px; }
+.ep-alerts-option b { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; font-weight: 700; }
+.ep-alerts-option > span > span { font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); }
+.ep-alerts-premium {
+  font-style: normal; padding: 1px 7px; border-radius: var(--radius-pill); background: var(--accent-fill);
+  color: var(--on-accent-fill); font-size: 0.68rem; font-weight: 700;
+}

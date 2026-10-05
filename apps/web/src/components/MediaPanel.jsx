@@ -26,6 +26,7 @@ import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiograph
 import { canCreateCustomList } from '@plot/core/premium.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import { SeasonReadyAlert } from './PremiumAlertButtons.jsx';
+import EpisodeAlertsCard from './EpisodeAlertsCard.jsx';
 import StreamingAlertsCard from './StreamingAlertsCard.jsx';
 import { CastFollowCard, CrewFollowRow, PersonFollow } from './PeopleFollow.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
@@ -1683,6 +1684,11 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
             {statusActionError && (
               <div className="panel-status-error" role="alert">{statusActionError}</div>
             )}
+
+            {/* Episode alerts: the show's new-episode notifications, and while
+                they're on, the next episode with Add to calendar. Only for a
+                show they follow (saved or watching), since that is who gets them. */}
+            {!isMovie && details && (inList || isWatching) && <EpisodeAlertsCard show={details} />}
 
             {!isMovie && isWatching && details && (
               <UpNextCard

@@ -251,6 +251,24 @@ export type Database = {
         }
         Relationships: []
       }
+      episode_alert_mutes: {
+        Row: {
+          created_at: string
+          tmdb_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          tmdb_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          tmdb_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       episode_watch_overrides: {
         Row: {
           episode_number: number

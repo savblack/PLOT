@@ -19,6 +19,8 @@ export const SHARE_CARD_REQUESTED_EVENT = 'plot:share-card-requested';
 /* Someone was just followed: { name, profilePath, upcoming }. Each app has one
    host that listens and draws the follow toast. */
 export const PERSON_FOLLOWED_EVENT = 'plot:person-followed';
+// A short confirmation for the shared notice toast: { message }.
+export const NOTICE_EVENT = 'plot:notice';
 
 const listeners = new Map(); // event name -> Set<fn>
 
