@@ -4,7 +4,7 @@
 // people who were invited. Free members see the Premium prompt; everyone can
 // invite. Design: the "Watch together on Free" row of the canvas linked from
 // docs/design/watch-together/README.md. Rules: @plot/core watchTogether.js.
-// Mobile parity: mobile still has the old start layout; tracked in the parity issue linked from the Watch together PR.
+// Mobile parity: apps/mobile/components/watch/WatchTogetherStart.tsx.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';

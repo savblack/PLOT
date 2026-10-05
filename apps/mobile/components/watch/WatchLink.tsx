@@ -79,7 +79,7 @@ export function WatchLink({ username, linkKey }: { username: string; linkKey: st
       <WatchPage hideBack>
         <PageTitle>{L.selfTitle}</PageTitle>
         <Note>{L.selfBody}</Note>
-        <InviteLinkCard compact />
+        <InviteLinkCard />
       </WatchPage>
     );
   }
