@@ -37,6 +37,11 @@ import { MEDIA } from '@plot/core/copy/media.js';
 import { ContinueWatchingShelf, YourPeopleShelf } from '../../components/people/HomeShelves';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
+import { useRouter, type Href } from 'expo-router';
+import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
+import { track } from '../../lib/analytics';
+import { featuredCuratedList } from '@plot/core/curatedLists.js';
+import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists';
 import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
@@ -246,11 +251,13 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
 }
 
 // ── Hero card (top result) ───────────────────────────────────────────
-function HeroCard({ item, onPress, saved, onSave }: {
+function HeroCard({ item, onPress, saved, onSave, cardStyle }: {
   item: MediaItem;
   onPress: () => void;
   saved: boolean;
   onSave: () => void;
+  /** Overrides for when the hero shares the Picks row with the plot list card. */
+  cardStyle?: object;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -258,7 +265,7 @@ function HeroCard({ item, onPress, saved, onSave }: {
   const backdrop = backdropUrl(item.backdrop_path) || posterUrl(item.poster_path, 'w780');
 
   return (
-    <TouchableOpacity style={styles.hero} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity style={[styles.hero, cardStyle]} onPress={onPress} activeOpacity={0.9}>
       {backdrop && (
         <Image source={{ uri: backdrop }} style={StyleSheet.absoluteFill} resizeMode="cover" />
       )}
@@ -636,6 +643,7 @@ export default function HomeScreen() {
   // filterByType/filterByGenre so the semantics match web exactly.
   const [typeFilters,  setTypeFilters]  = useState<string[]>(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState<number[]>([]);
+  const [openCurated, setOpenCurated] = useState<ReturnType<typeof featuredCuratedList> | null>(null);
   const { genres } = useGenres();
 
   /* Home reads the same watchlist every other surface does. It used to keep
@@ -645,7 +653,8 @@ export default function HomeScreen() {
      ACTIVATED analytics, and left the shared store stale until app restart:
      save on Home, open the title's panel, and it still offered "Add to
      Watchlist". */
-  const { favorites, watchlist, userId, profile } = useAppData();
+  const { favorites, watchlist, userId, profile, user, customLists } = useAppData();
+  const router = useRouter();
   // First run: the titles just saved in onboarding lead Home, under the greeting
   // and the Finishing touches card. Everyone else keeps the rail at the bottom.
   const ft = useFinishingTouchesState(userId);
@@ -745,6 +754,10 @@ export default function HomeScreen() {
   // Web hides the hero whenever a genre filter is on rather than testing the
   // single hero title against it — one card is not a rail.
   const hero     = genreFilters.length === 0 ? trending[0] : undefined;
+  // The plot list card sits beside the hero in plot's Picks, like web. It
+  // follows the type filter and hides under a genre filter, as the hero does.
+  const featuredList = featuredCuratedList();
+  const curated = genreFilters.length === 0 && featuredList && filterByType(featuredList.entries, typeFilters)?.length ? featuredList : null;
   const hotRail  = applyFilters(trending.slice(1, 10));
 
   const savedRail = watchlistItems.length > 0 ? (
@@ -831,14 +844,40 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* ── Hero ── */}
-        {hero && (
-          <HeroCard
-            item={hero}
-            onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
-            saved={savedIds.has(hero.id ?? 0)}
-            onSave={() => handleSave(hero)}
-          />
+        {/* ── plot's Picks: the hero, and the plot list card beside it ── */}
+        {(hero || curated) && (
+          <View>
+            <SectionHeader title={DISCOVER_VIEW.picks.cardsLabel} />
+            {hero && curated ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={PICKS_CARD_W + spacing.md}
+                decelerationRate="fast"
+                contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+              >
+                <HeroCard
+                  item={hero}
+                  cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
+                  onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
+                  saved={savedIds.has(hero.id ?? 0)}
+                  onSave={() => handleSave(hero)}
+                />
+                <CuratedListCard curated={curated} width={PICKS_CARD_W} height={HERO_H} onPress={() => setOpenCurated(curated)} />
+              </ScrollView>
+            ) : hero ? (
+              <HeroCard
+                item={hero}
+                onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
+                saved={savedIds.has(hero.id ?? 0)}
+                onSave={() => handleSave(hero)}
+              />
+            ) : curated && (
+              <View style={{ paddingHorizontal: spacing.xl }}>
+                <CuratedListCard curated={curated} width={SCREEN_W - spacing.xl * 2} height={HERO_H} onPress={() => setOpenCurated(curated)} />
+              </View>
+            )}
+          </View>
         )}
 
         <ContinueWatchingShelf />
@@ -947,6 +986,20 @@ export default function HomeScreen() {
       </ScrollView>
       )}
 
+      {openCurated && (
+        <CuratedListPanel
+          curated={openCurated}
+          user={user}
+          profile={profile}
+          customLists={customLists}
+          track={track}
+          onClose={() => setOpenCurated(null)}
+          onOpenTitle={(id, type) => openPanel(id, type)}
+          onOpenMyLists={() => router.push('/(app)/my-lists' as Href)}
+          onCompare={() => router.push(PREMIUM_SETTINGS_PATH as Href)}
+        />
+      )}
+
       {/* ── Fixed blurred header ── */}
       <BlurView
         intensity={80}
@@ -1008,6 +1061,8 @@ export default function HomeScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────
 const HERO_H = SCREEN_W * 0.5;
+// With the plot list card beside it the hero narrows so the next card peeks in.
+const PICKS_CARD_W = SCREEN_W - spacing.xl * 2 - 24;
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
