@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildExportCsv, fetchUserDataExport, parseExportError, exportFilename } from '../../src/utils/exportData.js';
+import { buildExportCsv, fetchUserDataExport, parseExportError, exportFilename } from '../../exportData.js';
 
 function createSupabase({ session = { access_token: 'token-123' } } = {}) {
   return {

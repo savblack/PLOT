@@ -38,6 +38,9 @@ import { updateProfile } from '@plot/core/profile.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
+import { fetchUserDataExport } from '@plot/core/exportData.js';
+import { shareDataExport, type ExportFormat } from '../../lib/shareDataExport';
+import { pickAndUploadAvatar, removeAvatar } from '../../lib/avatar';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../../lib/launchFeatures';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -47,6 +50,7 @@ import { useMyAlerts } from '@plot/core/usePremiumAlerts.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { AVATAR_MAX_MB } from '@plot/core/profileFields.js';
 import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
 import { broadcastRegionLabel } from '@plot/core/broadcastGuide.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
@@ -1066,6 +1070,39 @@ export default function SettingsScreen() {
     return result;
   };
 
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const handleAvatar = async (remove: boolean) => {
+    if (!userId || avatarBusy) return;
+    setAvatarBusy(true);
+    const result = remove ? await removeAvatar(userId) : await pickAndUploadAvatar(userId);
+    setAvatarBusy(false);
+    if (result.error) Alert.alert(SETTINGS_VIEW.avatar.profilePhoto, result.error);
+    else if (result.changed) refreshProfile();
+  };
+
+  const [exportingData, setExportingData] = useState<ExportFormat | null>(null);
+  const handleExportData = async (format: ExportFormat) => {
+    if (exportingData) return;
+    setExportingData(format);
+    try {
+      const result = await fetchUserDataExport({
+        supabase,
+        fetchImpl: fetch,
+        exportUrl: edgeFunctionUrl('export-user-data'),
+      });
+      if (!result.ok) {
+        Alert.alert(SETTINGS_VIEW.export.label, result.error);
+        return;
+      }
+      // Only count it once the person actually sent it somewhere.
+      if (await shareDataExport(result.payload, format)) track(EVENTS.DATA_EXPORTED, { format });
+    } catch (err) {
+      Alert.alert(SETTINGS_VIEW.export.label, err instanceof Error && err.message ? err.message : SETTINGS_VIEW.errors.failedToExportData);
+    } finally {
+      setExportingData(null);
+    }
+  };
+
   const HEADER_H = insets.top + 56;
   const premium = isPremiumProfile(profile);
   const matches = searchSettingsSections(query);
@@ -1150,6 +1187,21 @@ export default function SettingsScreen() {
 
         {active.id === 'account' && <>
         <SettingsGroup title={SETTINGS_VIEW.page.sections.account.title}>
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><Circle cx={12} cy={13} r={4}/></Svg>}
+            label={SETTINGS_VIEW.avatar.profilePhoto}
+            description={avatarBusy ? COMMON.saving : profile?.avatar_url ? SETTINGS_VIEW.avatar.shownOnProfile : SETTINGS_VIEW.avatar.sizeHint(AVATAR_MAX_MB)}
+            onPress={avatarBusy ? undefined : () => handleAvatar(false)}
+            trailing={<Text style={{ color: avatarBusy ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{profile?.avatar_url ? SETTINGS_VIEW.avatar.change : SETTINGS_VIEW.avatar.addPhoto}</Text>}
+          />
+          {profile?.avatar_url ? (
+            <SettingsRow
+              icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><Circle cx={12} cy={13} r={4}/></Svg>}
+              label={COMMON.remove}
+              onPress={avatarBusy ? undefined : () => handleAvatar(true)}
+              danger
+            />
+          ) : null}
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx={12} cy={7} r={4}/></Svg>}
             label={displayName || SETTINGS_VIEW.addYourName}
@@ -1491,6 +1543,19 @@ export default function SettingsScreen() {
 
         {active.id === 'privacy' && <>
         <BlockedAccounts viewerId={userId} />
+        <SettingsGroup title={SETTINGS_VIEW.export.label}>
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><Polyline points="7 10 12 15 17 10"/><Line x1={12} y1={15} x2={12} y2={3}/></Svg>}
+            label={exportingData === 'json' ? SETTINGS_VIEW.export.preparing : SETTINGS_VIEW.export.downloadJson}
+            description={SETTINGS_VIEW.export.hint}
+            onPress={exportingData ? undefined : () => handleExportData('json')}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><Polyline points="7 10 12 15 17 10"/><Line x1={12} y1={15} x2={12} y2={3}/></Svg>}
+            label={exportingData === 'csv' ? SETTINGS_VIEW.export.preparing : SETTINGS_VIEW.export.downloadCsv}
+            onPress={exportingData ? undefined : () => handleExportData('csv')}
+          />
+        </SettingsGroup>
         <SettingsGroup title={SETTINGS_VIEW.page.resetData}>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><Path d="M3 3v5h5"/><Path d="M12 7v5l4 2"/></Svg>}

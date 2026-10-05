@@ -56,9 +56,26 @@ expand-all button is unused CSS, so mobile does not add it. Drawer rows use
 the web nav strokes at 18px, including feedback, Support Plot, and an 18px
 profile avatar. The drawer width matches web `min(300px, 85vw)`.
 
-Also open, from the original plan's out-of-scope list: mobile Settings lacks
-avatar upload, username availability checking, invite-friends share and data
-export.
+Settings gaps, rechecked against the code:
+
+- **Username availability checking** was already on mobile, in
+  `EditProfileModal` (the `username_available` RPC). The old note was stale.
+- **Invite friends** has no web counterpart: web Settings has no such row, only
+  an unused `inviteText` string in the shared copy. Mobile's Settings has the
+  same profile share row web does. Nothing to match.
+- **Data export** is on mobile (Privacy section: JSON and CSV through the share
+  sheet). The fetch, file names and CSV flattening moved to
+  `@plot/core/exportData.js`; web keeps only the browser download. Static
+  checks only, not run on a device. On Android the share sheet carries the file
+  contents as text, like the calendar snapshot, so a very large export may not
+  fit there.
+- **Avatar upload** is on mobile (Settings, Account: Add or Change photo, and
+  Remove), via `expo-image-picker` with the system square crop, to the same
+  `avatars/<user>/avatar.jpg` path as web. It adds a **native module**, so it
+  only works in a **new binary**: an update delivered to an existing install
+  without it would crash, the same reason `expo-sharing` is not used (see
+  `lib/shareCalendarFile.ts`). Do not ship this branch over the air to old
+  builds. Static checks only, not run on a device.
 
 ### Ko-fi on iOS is an unresolved App Review question
 

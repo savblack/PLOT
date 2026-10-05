@@ -1,0 +1,118 @@
+// "Export your data": fetching the payload from the export-user-data edge
+// function, the file names, and the CSV flattening. Shared by web (a browser
+// download) and mobile (the share sheet); only that last step differs, so it
+// stays in each app.
+export async function parseExportError(response) {
+  const fallback = 'Failed to export your data.';
+
+  try {
+    const payload = await response.json();
+    if (payload?.error) return payload.error;
+  } catch {
+    // Fall through to raw text if the response body is not JSON.
+  }
+
+  try {
+    const text = await response.text();
+    if (text) return text;
+  } catch {
+    // Keep the default message when the response body cannot be read.
+  }
+
+  return fallback;
+}
+
+export async function fetchUserDataExport({
+  supabase,
+  fetchImpl,
+  exportUrl,
+}) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    return {
+      ok: false,
+      error: 'Your session has expired. Please sign in again before exporting your data.',
+    };
+  }
+
+  if (!exportUrl) {
+    return {
+      ok: false,
+      error: 'Data export is not configured in this environment.',
+    };
+  }
+
+  const response = await fetchImpl(exportUrl, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+
+  if (!response.ok) {
+    return { ok: false, error: await parseExportError(response) };
+  }
+
+  const payload = await response.json();
+  return { ok: true, payload };
+}
+
+export function exportFilename(date = new Date()) {
+  const stamp = date.toISOString().slice(0, 10);
+  return `plot-data-export-${stamp}.json`;
+}
+
+export function exportCsvFilename(date = new Date()) {
+  const stamp = date.toISOString().slice(0, 10);
+  return `plot-data-export-${stamp}.csv`;
+}
+
+// The export payload is a bag of tables with different shapes. For CSV we
+// flatten the title-bearing collections into one row-per-item sheet, keyed by
+// the media columns every one of them shares (tmdb_id / media_type / title).
+// Anything without those columns (raw settings, follows, integration rows) stays
+// in the JSON export only — a single flat CSV can't represent it faithfully.
+const CSV_SECTIONS = [
+  { table: 'private_title_notes', section: 'Private note', date: (r) => r.updated_at },
+  { table: 'list_items',             section: 'Watchlist',   date: (r) => r.created_at || r.added_at },
+  { table: 'history',                section: 'History',     date: (r) => r.watched_at },
+  { table: 'watching_progress',      section: 'Watching',    date: (r) => r.updated_at || r.started_at },
+  { table: 'user_favourites',        section: 'Favourites',  date: (r) => r.added_at || r.created_at },
+  { table: 'user_top_lists',         section: 'Top list',    date: (r) => r.added_at || r.created_at },
+  { table: 'user_custom_list_items', section: 'Custom list', date: (r) => r.added_at || r.created_at },
+];
+
+const CSV_HEADERS = ['Section', 'Title', 'Type', 'TMDB ID', 'Rating', 'Watched on', 'Season', 'Episode', 'Date', 'Note'];
+
+function csvCell(value) {
+  if (value === null || value === undefined) return '';
+  let s = String(value);
+  // Spreadsheet apps can evaluate cells after leading whitespace/control
+  // characters. Prefix every formula-shaped string so imported reviews and
+  // saved public titles remain plain text when the CSV is opened.
+  let firstContent = 0;
+  while (firstContent < s.length
+    && (s.charCodeAt(firstContent) <= 0x20 || s[firstContent] === '\u00a0')) firstContent += 1;
+  if ('=+-@'.includes(s[firstContent])) s = `'${s}`;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+export function buildExportCsv(payload) {
+  const data = payload?.data ?? {};
+  const rows = [CSV_HEADERS];
+  for (const { table, section, date } of CSV_SECTIONS) {
+    for (const r of data[table] ?? []) {
+      rows.push([
+        section,
+        r.title,
+        r.media_type,
+        r.tmdb_id,
+        r.rating,
+        r.watched_at,
+        r.current_season,
+        r.current_episode,
+        date(r),
+        r.note,
+      ]);
+    }
+  }
+  return rows.map((cols) => cols.map(csvCell).join(',')).join('\r\n');
+}

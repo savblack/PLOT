@@ -72,6 +72,12 @@
       "expo-apple-authentication",
       "@react-native-community/datetimepicker",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Plot to choose a profile photo from your library."
+        }
+      ],
+      [
         "expo-media-library",
         {
           "photosPermission": "Allow Plot to save share cards to your photos.",
