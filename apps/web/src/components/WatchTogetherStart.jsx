@@ -168,19 +168,14 @@ function PairPreview({ titles }) {
   );
 }
 
-/** Pick someone to pair up with: search, suggestions, or your invite link. */
+/** Pick someone to pair up with: search or suggestions. */
 function FindCard({ titles, people, premium, sent, onInvite }) {
-  const { url, copied, share } = useInviteShare();
   return (
     <section className="wt-card" aria-labelledby="wt-start-title">
       <PairPreview titles={titles} />
       <h2 className="wt-card-title" id="wt-start-title">{S.pitchTitle}</h2>
       <p className="wt-card-body">{S.pitchBody}</p>
       <FriendSearch people={people} sent={sent} onInvite={onInvite} />
-      <div className="wt-find-link">
-        <span className="wt-note">{S.shareNote}</span>
-        <button type="button" className="btn btn-secondary btn-sm" onClick={share} disabled={!url}>{copied ? T.link.copied : T.link.share}</button>
-      </div>
       {!premium && <PremiumPrompt label={S.getPremium} />}
     </section>
   );
@@ -296,13 +291,21 @@ export default function WatchTogetherStart({ premium, suggested, onInvite }) {
       <div className="wt-start-top">
         <FindCard titles={titles} people={suggested} premium={premium} sent={sent} onInvite={invite} />
       </div>
-      <div className="wt-start-seeit">
-        <div className="wt-person-text">
-          <h2 className="wt-card-title">{S.seeItTitle}</h2>
-          <span className="wt-note">{premium ? S.premiumSeeItBody : S.seeItDemoBody}</span>
+      <div className="wt-start-side">
+        <InviteLinkCard />
+        <div className="wt-start-seeit">
+          <div className="wt-person-text">
+            <h2 className="wt-card-title">{S.seeItTitle}</h2>
+            <span className="wt-note">{premium ? S.premiumSeeItBody : S.seeItDemoBody}</span>
+          </div>
+          <Demo key={titles.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={titles} />
         </div>
-        <Demo key={titles.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={titles} />
       </div>
+      <ol className="wt-start-steps">
+        {S.steps.map((step, i) => (
+          <li key={step} className="wt-start-step"><span className="wt-step-n" aria-hidden="true">{i + 1}</span>{step}</li>
+        ))}
+      </ol>
       {!premium && (
         <div className="wt-start-note">
           <div className="wt-banner wt-banner--plain">

@@ -41,6 +41,7 @@ export const WATCH_TOGETHER = Object.freeze({
     pitchTitle: 'Find something you both want to watch',
     pitchBody: 'Pair up with a friend and Plot shows what’s on both your watchlists. Swipe through them together until you both say yes.',
     shareNote: 'Not on Plot yet? They can join for free from your link.',
+    steps: ['They get a request and join for free', 'See what you’ve both saved', 'Swipe until you match'],
     findLabel: 'Find a friend to invite',
     findNone: 'No one found. Try a name or @username, or send your invite link below.',
     getPremium: 'Get Premium',

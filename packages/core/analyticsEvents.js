@@ -120,12 +120,6 @@ export const EVENTS = Object.freeze({
   // has_rating, length ('short'|'medium'|'long'), edited. Never the text.
   REVIEW_WRITTEN: 'review_written',
   MARKED_WATCHED: 'marked_watched',
-  // In-flow watch/rate prompts (PLO-473 / PLO-474). Not Tier 2 — they measure
-  // prompt exposure and dismissals so the save→watch guardrail is readable.
-  // Props: kind ('watch'|'rate'), tmdb_id, media_type; dismissals also carry
-  // action ('not_yet'|'skip'|'write_review').
-  ENGAGEMENT_PROMPT_SHOWN: 'engagement_prompt_shown',
-  ENGAGEMENT_PROMPT_DISMISSED: 'engagement_prompt_dismissed',
   // Series progress. marked_watched covers "logged a title as watched"; these
   // cover the episode-by-episode path through a show, which is where the repeat
   // engagement actually lives. season_watched and series_completed are the
