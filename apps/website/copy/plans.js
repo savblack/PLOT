@@ -8,14 +8,14 @@
 export const PLANS_PAGE = {
   meta: {
     title: 'Plans & Pricing — plot',
-    description: 'plot is free to use, forever. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial. Checkout is not open yet.',
-    ogDescription: 'Free to use, forever. Premium is US$3/month or US$24/year with a 7-day free trial. Checkout is not open yet.',
+    description: 'plot is free to use, forever. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers.',
+    ogDescription: 'Free to use, forever. Premium is US$3/month or US$24/year with a 7-day free trial for new subscribers.',
   },
 
   hero: {
     pageLabel: 'Plans',
     h1: 'Do more with everything you watch',
-    lede: 'Start free and keep every movie and show in one place. Premium is coming soon: US$3/month or US$24/year, taxes included, with a 7-day free trial. It adds unlimited lists, a live release calendar in your calendar app and Pick for Me.',
+    lede: 'Start free and keep every movie and show in one place. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial. It adds unlimited lists, a live release calendar in your calendar app and Pick for Me.',
   },
 
   billingToggle: {
@@ -40,7 +40,6 @@ export const PLANS_PAGE = {
   },
 
   premiumPlan: {
-    flag: 'Coming soon',
     name: 'Premium',
     // Amount/billed line are recalculated by JS when the billing toggle
     // changes; these are the initial (annual) values rendered in the HTML.
@@ -60,7 +59,7 @@ export const PLANS_PAGE = {
 
   comparison: {
     title: 'Compare plans',
-    note: 'Premium features are coming soon.',
+    note: 'Features marked Coming soon are still on the way.',
     columns: { feature: 'Feature', free: 'Free', premium: 'Premium' },
     rows: [
       { feature: 'Track movies & TV', free: true, premium: true },
@@ -85,11 +84,11 @@ export const PLANS_PAGE = {
       },
       {
         q: 'Can I get Premium now?',
-        a: 'Not yet. Checkout is not open. When it opens, Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
+        a: 'Yes. Choose Monthly or Yearly and start your free trial in plot. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
       },
       {
         q: 'Can I cancel anytime?',
-        a: 'Yes, once Premium opens. Cancel during the 7-day trial and you pay $0. After the trial, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.',
+        a: 'Yes. Cancel during the 7-day trial and you pay $0. After the trial, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.',
       },
       {
         q: 'What happens to my lists if I downgrade?',

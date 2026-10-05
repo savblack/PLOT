@@ -40,14 +40,15 @@ export const ReverseTabStaysInside = {
   },
 };
 
-export const UpgradeShowsComingSoon = {
+// Premium is live, so the offer is not labelled "Coming soon" and Upgrade is a real button.
+// (Clicking it starts Stripe checkout or sends a signed-out visitor to sign up, which
+// would navigate the story frame, so this only checks what the sheet offers.)
+export const UpgradeOffersPremium = {
   tags: ['interaction-test'],
   play: async () => {
     const body = within(document.body);
-    fireEvent.click(body.getByRole('button', { name: PLANS_PAGE.upgradeAction }));
-    // startCheckout is async, so the note appears a microtask after the click.
-    // getByRole does not retry and won the race only in the vitest run.
-    await expect(await body.findByRole('status')).toHaveTextContent('Checkout is not open yet');
+    await expect(body.getByRole('button', { name: PLANS_PAGE.upgradeAction })).toBeEnabled();
+    await expect(body.queryByText(PLANS_PAGE.comingSoon)).toBeNull();
   },
 };
 

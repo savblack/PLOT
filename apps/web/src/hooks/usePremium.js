@@ -4,6 +4,8 @@ import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useBillingStatus } from '@plot/core/useBillingStatus.js';
 import { billingAccess } from '@plot/core/billing.js';
+import { PLANS_PAGE } from '../copy/plansPage.js';
+import { checkoutErrorMessage, checkoutPlan, signupPathForPlan } from '../utils/premiumCheckout.js';
 
 /**
  * Plot Premium billing actions (web only — redirects to Stripe).
@@ -26,21 +28,33 @@ async function callBilling(action, body = {}) {
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data?.url) throw new Error(data?.error || 'Billing request failed');
+  if (!res.ok || !data?.url) throw Object.assign(new Error(data?.error || 'Billing request failed'), { status: res.status });
   return data.url;
 }
 
 export function usePremium(profile) {
   const billing = useBillingStatus(profile?.id);
-  const [comingSoon, setComingSoon] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  // Preview only: all callers, including legacy signup intents, stop before billing.
-  const startCheckout = useCallback(async () => {
-    setComingSoon(true);
-    return false;
-  }, []);
+  // Resolves true once the browser is on its way to Stripe (or to sign-up for a
+  // signed-out visitor), false when checkout could not start. The server decides
+  // whether checkout is open; a closed or failed start shows the generic message.
+  const startCheckout = useCallback(async (plan) => {
+    if (busy) return false;
+    const chosen = checkoutPlan(plan);
+    setBusy(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      window.location.assign(session ? await callBilling('checkout', { plan: chosen }) : signupPathForPlan(chosen));
+      return true;
+    } catch (e) {
+      setError(checkoutErrorMessage(e.status, e.message, PLANS_PAGE.checkoutMessage));
+      setBusy(false);
+      return false;
+    }
+  }, [busy]);
 
   const openPortal = useCallback(async () => {
     if (busy) return;
@@ -71,7 +85,6 @@ export function usePremium(profile) {
     ...billingAccess(billing),
     billing,
     startCheckout,
-    comingSoon,
     startTipCheckout,
     openPortal,
     busy,
