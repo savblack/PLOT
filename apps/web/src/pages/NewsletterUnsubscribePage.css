@@ -1,0 +1,7 @@
+/* The page opened from the weekly digest's Unsubscribe link: one small centred card. */
+.news-unsub { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: var(--bg); }
+.news-unsub-card { width: 100%; max-width: 420px; padding: 32px 28px; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
+.news-unsub-title { margin: 0 0 10px; font-size: 1.25rem; color: var(--text-primary); }
+.news-unsub-body { margin: 0 0 18px; font-size: 0.95rem; line-height: 1.5; color: var(--text-secondary); }
+.news-unsub-link { margin: 16px 0 0; font-size: 0.9rem; }
+.news-unsub-link a { color: var(--accent-text); }
