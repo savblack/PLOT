@@ -164,11 +164,7 @@ export const PLANS_PAGE = {
         { label: 'Live calendar subscription', free: false, premium: true },
         { label: 'Actor and director alerts', free: false, premium: true },
         { label: 'Whole-season-ready alerts', free: false, premium: true },
-        // Built, not live: delivery is off until the job has been checked against
-        // real data (docs/premium/features-to-build.md 5.10a). Then add
-        // freeFeatures.streamingAlerts (mobile Settings lists every Free label,
-        // so adding it earlier would claim it), and change this tag to 'In the app'.
-        { label: 'Streaming alerts for your watchlist', free: true, premium: true, tag: 'Pending validation' },
+        { label: 'Streaming alerts for your watchlist', free: true, premium: true, tag: 'In the app' },
         { label: 'Push and email alerts', free: false, premium: true, tag: 'Coming soon' },
       ] },
       { title: 'Make it yours', rows: [
@@ -192,6 +188,8 @@ export const PLANS_PAGE = {
     { id: 'social', label: 'Follow friends and share profiles' },
     { id: 'episodeAlerts', label: 'New episode notifications',
       description: 'See a notification in the app when a new episode of a show you follow comes out.' },
+    { id: 'streamingAlerts', label: 'Streaming alerts for your watchlist',
+      description: 'See a notification in the app when a film on your watchlist lands on one of your services, or becomes free to watch. Mute a film, or turn them all off, any time.' },
     { id: 'participation', label: 'Join collaborative lists and shared watch sessions',
       description: 'Join for free. For watching together, only one of you needs Premium; for a collaborative list, only the person who made it does.' },
     { id: 'imports', label: 'Manual imports and data exports',
@@ -245,7 +243,7 @@ export const PLANS_PAGE = {
     { q: 'Can my friends join without Premium?', a: 'Yes. To find something you both want to watch, only one of you needs Premium, so the other person joins for free. Anyone can send an invite. Collaborative lists work the same way: only the person who makes the list needs Premium.' },
     { q: 'How many lists are included in Free?', a: 'Free includes up to five custom lists.' },
     { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
-    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Premium themes are available. Deeper stats, widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service.' },
+    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Premium themes are available. Deeper stats, widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service. Streaming alerts for films on your watchlist are free and arrive in the app; getting them as push or email is planned for Premium.' },
   ],
   fineprint: 'Prices in US dollars, taxes included. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments will be processed securely by Stripe. Need a hand? contact@theplot.tv',
   terms: 'Terms',
