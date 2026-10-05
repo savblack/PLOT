@@ -1595,9 +1595,11 @@ Deno.serve(async (req) => {
     </article>
     <div class="post-cards">
       ${aboutCard('whats_on_article')}
-      ${subscribeForm('whats_on_article')}
     </div>
     ${more}
     <div class="post-foot"><a class="back sc" href="${FEED_PATH}">&larr; All updates</a></div>
+    <div class="post-cards">
+      ${subscribeForm('whats_on_article')}
+    </div>
   `);
 });
