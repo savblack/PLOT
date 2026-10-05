@@ -46,6 +46,8 @@
  * LINEAR_MARKETING_PROJECT_ID (default "Content Automation"),
  * LINEAR_REVIEW_STATE (default "Review"), LINEAR_SCHEDULED_STATE ("Scheduled"),
  * LINEAR_REJECTED_STATE ("Canceled"), LINEAR_PUBLISHED_STATE ("Published").
+ * MARKETING_LINEAR_ENABLED turns article cards off (0, false, off, no). Unset
+ * keeps them on. The weekly website-refresh PR card ignores that flag.
  */
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
@@ -56,6 +58,7 @@ import {
 } from '../_shared/linearIssue.js';
 import { articleLink } from '../_shared/postSummary.js';
 import { BOT_MARKER } from '../_shared/linearCommands.js';
+import { linearArticlesEnabled } from '../_shared/reviewActions.js';
 
 type Db = SupabaseClient<Database>;
 // deno-lint-ignore no-explicit-any
@@ -847,9 +850,14 @@ Deno.serve(async (req) => {
 
   try {
     const ctx = await loadContext();
-    const created = await createMissing(supabase, ctx, dryRun);
-    const refreshed = await refreshChanged(supabase, dryRun);
-    const { moved, reported } = await reconcileStates(supabase, ctx, dryRun);
+    // Article cards only. The website-refresh PR pass below stays on, so
+    // turning this off does not strand Monday's pull request.
+    const articlesOn = linearArticlesEnabled(Deno.env.get('MARKETING_LINEAR_ENABLED'));
+    const created = articlesOn ? await createMissing(supabase, ctx, dryRun) : 0;
+    const refreshed = articlesOn ? await refreshChanged(supabase, dryRun) : 0;
+    const { moved, reported } = articlesOn
+      ? await reconcileStates(supabase, ctx, dryRun)
+      : { moved: 0, reported: 0 };
     const prs = await mirrorPullRequests(ctx, dryRun);
 
     // A state we could not resolve does not fail the sweep — cards just stay put
@@ -868,6 +876,7 @@ Deno.serve(async (req) => {
       ...(prs.error ? { pr_mirror_error: prs.error } : {}),
       ...(unresolved.length ? { unresolved } : {}),
       ...(dispatchToken ? { dispatch_token: dispatchToken } : {}),
+      ...(articlesOn ? {} : { linear_articles: 'off' }),
     };
     if (dryRun) {
       console.log(`Linear mirror DRY RUN: would create ${created}, refresh ${refreshed}, move ${moved}.`);

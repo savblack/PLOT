@@ -10,10 +10,11 @@
  *   • an ISSUE STATE CHANGE — dragging the issue on the board is the same
  *     decision as commenting /approve or /reject.
  *
- * Every action mirrors the web desk's exact effects (admin-review/index.ts),
- * which is the part that matters: approving is not just a status write, it also
- * re-queues the publication rows, and the publisher only ever sends 'queued'
- * rows. A status change without the re-queue silently does nothing.
+ * Every action mirrors the web desk's exact effects, which is the part that
+ * matters: approving sets marketing_posts.status and nothing else. It does not
+ * touch publication rows. Those are Buffer's, and re-queueing them would push
+ * a second copy of a post that is already scheduled. The writes live in
+ * _shared/reviewActions.js so the Notion sweep cannot drift from this one.
  *
  * The database stays the source of truth. Linear never gates publishing — if
  * this function is down, or Linear is, the desk still works and the publisher
@@ -31,18 +32,27 @@
  *                            /regenerate kick their workflow (Actions: write)
  *   GH_DISPATCH_TOKEN_WEBSITE - optional; lets a website-refresh card be merged
  *                            or closed (Pull requests: write)
+ *   MARKETING_LINEAR_ENABLED - optional. Unset or anything other than
+ *                            0/false/off/no keeps article cards live. Set it
+ *                            to off once Notion is the review surface. PR cards
+ *                            ignore it.
  */
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
-import type { Database, Json } from '../_shared/database.types.ts';
+import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { parseCommand, BOT_MARKER, HELP_TEXT, WEEK_SCOPED, looksLikeAttempt } from '../_shared/linearCommands.js';
 import { prNumberFromAttachments, prScopeRefusal } from '../_shared/linearIssue.js';
-import { validateCopy, validateGuide, validateConversation } from '../_shared/copySchema.js';
-import { rescheduledSlug } from '../_shared/postSlug.js';
+import {
+  applyArticleAction, applyWeekAction, commandForStatusName, guardIncomingStatus, linearArticlesEnabled,
+} from '../_shared/reviewActions.js';
 
 type Db = SupabaseClient<Database>;
 // deno-lint-ignore no-explicit-any
 type Row = Record<string, any>;
+
+// Article cards follow this. Weekly website-refresh PR cards do not: turning
+// Linear article review off must not stop a Monday refresh from being merged.
+const articlesOn = () => linearArticlesEnabled(Deno.env.get('MARKETING_LINEAR_ENABLED'));
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const WEBHOOK_SECRET = Deno.env.get('LINEAR_WEBHOOK_SECRET') ?? '';
@@ -60,27 +70,9 @@ const LEGACY_GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
 const GH_CONTENT_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_CONTENT') || LEGACY_GH_TOKEN;
 const GH_WEBSITE_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_WEBSITE') || LEGACY_GH_TOKEN;
 
-// Which workflow states mean what, when an issue is dragged on the board.
-// 'Done' is deliberately absent: publishing is something the publisher reports,
-// not something a human asserts by moving a card. Moving one to Done records
-// nothing, so the board can never claim a post went out when it did not.
-// Dragging a card is the same decision as the matching comment. Previous column
-// names are kept alongside the current ones so a rename in Linear cannot quietly
-// stop the board from working — an unrecognised state is ignored in silence,
-// which is the worst way for this to fail.
-//
-// 'Published' is deliberately absent: publishing is something the publisher
-// reports, not something a human asserts by moving a card.
-const STATE_ACTIONS: Record<string, 'approve' | 'reject' | 'unapprove'> = {
-  scheduled: 'approve',
-  approved: 'approve',        // previous name for Scheduled
-  canceled: 'reject',
-  cancelled: 'reject',
-  review: 'unapprove',
-  'in review': 'unapprove',   // previous name for Review
-};
-
-const now = () => new Date().toISOString();
+// Dragged-card names live in commandForStatusName (reviewActions.js), shared
+// with the Notion Status property. Published is not a command: the sweep
+// reports that the article is live, a drag does not.
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -160,199 +152,7 @@ const dispatchWorkflow = async (workflow: string): Promise<{ ok: boolean; reason
   }
 };
 
-// Append-only audit trail, same table the desk writes. actor 'linear' so the
-// trail says which surface a decision came from.
-const logEvent = async (
-  supabase: Db,
-  entry: { postId?: string | null; action: string; before?: Json; after?: Json },
-) => {
-  try {
-    await supabase.from('marketing_review_events').insert({
-      post_id: entry.postId ?? null,
-      actor: 'linear',
-      action: entry.action,
-      before: entry.before ?? null,
-      after: entry.after ?? null,
-    });
-  } catch (err) {
-    console.error('Audit log failed:', err);
-  }
-};
-
-// Re-arm a post's publication rows so the publisher will actually send them.
-// Rejecting sets rows to 'skipped'; approving must reset them to 'queued'.
-// ── Copy edits ───────────────────────────────────────────────────────────────
-
-/**
- * Merge a comment's fields into the post's copy and validate the result.
- *
- * Unlike the web desk — which writes what you type, because its editor has a
- * live character counter to warn you — a comment has no counter, so the
- * contract is enforced here instead. A rejected edit writes nothing and is
- * reported back on the issue; better a refusal you can see than an X post
- * silently truncated at 280 characters on the way out.
- */
-const applyEdit = async (supabase: Db, post: Row, fields: Record<string, unknown>) => {
-  const before = (post.copy ?? {}) as Record<string, unknown>;
-  const merged = { ...before, ...fields };
-
-  const result = post.post_type === 'guide'
-    ? validateGuide(merged, Array.isArray(post.tmdb_refs) ? post.tmdb_refs.length : null)
-    : post.post_type === 'question'
-      ? validateConversation({ question: merged.x ?? merged.threads })
-      : validateCopy(merged, {
-        days_until: post.payload?.days_until,
-        when_label: post.payload?.when_label,
-        post_type: post.post_type,
-        home_kind: post.payload?.home_kind,
-      });
-
-  if (!result.valid) return { ok: false as const, errors: result.errors };
-
-  // validateGuide and validateConversation rebuild the whole copy object from
-  // the article/question fields alone, so anything they do not know about would
-  // be dropped. Spread the merge back over the result to keep it.
-  const copy = { ...merged, ...result.copy } as Json;
-
-  const { error } = await supabase.from('marketing_posts')
-    .update({ copy, updated_at: now() }).eq('id', post.id);
-  if (error) return { ok: false as const, errors: [error.message] };
-
-  await logEvent(supabase, {
-    postId: post.id,
-    action: 'edit',
-    before: before as Json,
-    after: { changed: Object.keys(fields) } as Json,
-  });
-  return { ok: true as const, changed: Object.keys(fields) };
-};
-
-// ── Commands ─────────────────────────────────────────────────────────────────
-
-const runCommand = async (
-  supabase: Db,
-  post: Row,
-  intent: { command: string; fields?: Record<string, unknown>; date?: string },
-): Promise<string> => {
-  const id = post.id as string;
-
-  switch (intent.command) {
-    case 'edit': {
-      const res = await applyEdit(supabase, post, intent.fields ?? {});
-      if (!res.ok) {
-        return `I did not change anything — the edit fails the copy contract:\n\n${res.errors.map((e) => `- ${e}`).join('\n')}`;
-      }
-      // marketing-linear-mirror rewrites the description from the row on its
-      // next sweep, so the body still shows the old text for a few minutes. Say
-      // so rather than let it look like nothing happened.
-      return `Updated **${res.changed.join(', ')}**. The database has your text now; the issue body above catches up within five minutes.`;
-    }
-
-    case 'approve': {
-      // The article, and nothing else. This used to re-queue the publication
-      // rows as well; with the posts already scheduled in Buffer that would push
-      // a second copy of each on the next scheduling run — duplicate tweets as a
-      // side effect of approving a piece of writing.
-      await supabase.from('marketing_posts').update({ status: 'approved', updated_at: now() }).eq('id', id);
-      await logEvent(supabase, { postId: id, action: 'approve' });
-      const day = new Date(post.scheduled_for).toLocaleDateString('en-AU', { weekday: 'long', timeZone: 'Australia/Sydney' });
-      return `Approved — the article goes live on theplot.tv on ${day}. (The social posts are scheduled in Buffer either way.)`;
-    }
-
-    case 'reject': {
-      // The article, and nothing else. The publication rows are not touched at
-      // all — not even the queued ones. Whether those posts go out is Buffer's
-      // question, and a board that answered it here would be deciding something
-      // it does not show you.
-      await supabase.from('marketing_posts').update({ status: 'vetoed', updated_at: now() }).eq('id', id);
-      await logEvent(supabase, { postId: id, action: 'reject' });
-      return 'Rejected — the article will not go live.';
-    }
-
-    case 'unapprove': {
-      await supabase.from('marketing_posts').update({ status: 'needs_review', updated_at: now() }).eq('id', id);
-      await logEvent(supabase, { postId: id, action: 'unapprove' });
-      return 'Back in review — it will not publish until approved again.';
-    }
-
-    case 'reschedule': {
-      // Noon UTC renders as that calendar date in AEST and is before the publish
-      // run, so the post goes out on the day you named. The slug's date suffix
-      // moves with it while the post is unpublished (same as the desk); once it
-      // has published, social posts link to the URL and it stays put.
-      const slug = rescheduledSlug(post.slug, post.status, intent.date);
-      await supabase.from('marketing_posts')
-        .update({ scheduled_for: `${intent.date}T12:00:00.000Z`, slug, updated_at: now() }).eq('id', id);
-      await logEvent(supabase, { postId: id, action: 'reschedule', after: { scheduled_date: intent.date, slug } as Json });
-      return slug !== post.slug
-        ? `Rescheduled to ${intent.date}. The article URL now ends in that date; re-read the copy for anything written for the old day.`
-        : `Rescheduled to ${intent.date}. Re-read the copy for anything written for the old day.`;
-    }
-
-    case 'publish_now': {
-      // The article, and only the article. /whats-on shows approved posts whose
-      // day has arrived (VISIBLE_STATUSES in marketing-feed), so approving and
-      // moving the date to now IS publishing it — there is no run to kick, which
-      // is why this no longer dispatches a workflow. The social posts keep their
-      // own time in Buffer; bringing those forward is a drag in Buffer's calendar.
-      await supabase.from('marketing_posts')
-        .update({ status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
-      await logEvent(supabase, { postId: id, action: 'publish_now' });
-      return 'The article is live on theplot.tv now. The social posts keep their scheduled time in Buffer — move them there if you want them sooner.';
-    }
-
-    case 'regenerate': {
-      await supabase.from('marketing_posts')
-        .update({ status: 'planned', copy: null, updated_at: now() }).eq('id', id);
-      const kicked = await dispatchWorkflow('marketing-weekly-batch.yml');
-      await logEvent(supabase, { postId: id, action: 'regenerate', after: { triggered: kicked.ok, reason: kicked.reason ?? null } as Json });
-      return kicked.ok
-        ? 'Regenerating — the copy worker will rewrite this post. Give it a few minutes.'
-        : `Marked for regeneration — it rebuilds on the next weekly batch (instant trigger did not fire: ${kicked.reason}).`;
-    }
-
-    default:
-      return HELP_TEXT;
-  }
-};
-
-/**
- * Commands that act on the whole pipeline rather than one post. Deliberately
- * takes no post: the card they are typed on is just somewhere to type, and
- * /generate is for exactly the moment when the board is empty.
- */
-const runWeekCommand = async (
-  supabase: Db,
-  intent: { command: string },
-): Promise<string> => {
-  switch (intent.command) {
-    case 'generate': {
-      // Kick the weekly batch off-schedule. Not destructive and safely
-      // repeatable: the workflow's own concurrency group queues a second run
-      // rather than racing it, and the pipeline only fills posts that still
-      // need copy.
-      const kicked = await dispatchWorkflow('marketing-weekly-batch.yml');
-      await logEvent(supabase, { action: 'generate', after: { triggered: kicked.ok, reason: kicked.reason ?? null } as Json });
-      return kicked.ok
-        ? 'Building the week now. Planning, copy and rendering take a few minutes; the cards appear here within five minutes of that finishing.'
-        : `Could not start the run — ${kicked.reason}. The batch still runs on its Sunday schedule.`;
-    }
-
-    case 'pause':
-    case 'resume': {
-      const paused = intent.command === 'pause';
-      await supabase.from('marketing_settings')
-        .update({ publishing_paused: paused, updated_at: now() }).eq('id', 1);
-      await logEvent(supabase, { action: intent.command });
-      return paused
-        ? '**Publishing paused for every post**, not just this one. Nothing is sent until you comment `/resume`.'
-        : 'Publishing resumed.';
-    }
-
-    default:
-      return HELP_TEXT;
-  }
-};
+const linearActionOpts = { actor: 'linear' as const, surface: 'linear' as const, dispatchWorkflow };
 
 // ── Pull-request cards ───────────────────────────────────────────────────────
 //
@@ -531,7 +331,7 @@ Deno.serve(async (req) => {
 
     if (WEEK_SCOPED.has(intent.command)) {
       try {
-        await reply(issueId, await runWeekCommand(supabase, intent));
+        await reply(issueId, (await applyWeekAction(supabase, intent, linearActionOpts)).reply);
       } catch (err) {
         console.error('Week command failed:', err);
         await reply(issueId, `That failed on our side and nothing changed: ${String((err as Error).message).slice(0, 200)}`);
@@ -557,13 +357,19 @@ Deno.serve(async (req) => {
       return json({ ok: true, ignored: true });
     }
 
+    if (!articlesOn()) {
+      await reply(issueId, 'Article review in Linear is turned off. This card no longer changes the post. Notion does.');
+      return json({ ok: true, ignored: 'linear articles disabled' });
+    }
+
     if (intent.errors?.length) {
       await reply(issueId, `${intent.errors.map((e: string) => `- ${e}`).join('\n')}\n\n${HELP_TEXT}`);
       return json({ ok: true, rejected: true });
     }
 
     try {
-      await reply(issueId, await runCommand(supabase, post, intent));
+      const result = await applyArticleAction(supabase, post, intent, linearActionOpts);
+      await reply(issueId, result.reply);
     } catch (err) {
       console.error('Command failed:', err);
       await reply(issueId, `That failed on our side and nothing changed: ${String((err as Error).message).slice(0, 200)}`);
@@ -573,6 +379,7 @@ Deno.serve(async (req) => {
 
   // An issue dragged to another workflow state.
   if (payload.type === 'Issue' && payload.action === 'update') {
+    if (!articlesOn()) return json({ ok: true, ignored: 'linear articles disabled' });
     const issueId = payload.data?.id;
 
     // ONLY act when the state changed in THIS event.
@@ -596,24 +403,27 @@ Deno.serve(async (req) => {
     const stateChanged = Object.prototype.hasOwnProperty.call(payload.updatedFrom ?? {}, 'stateId');
     if (!stateChanged) return json({ ok: true, ignored: 'no state change in this update' });
 
-    const stateName = String(payload.data?.state?.name ?? '').toLowerCase();
-    const command = STATE_ACTIONS[stateName];
+    const stateName = String(payload.data?.state?.name ?? '');
+    const command = commandForStatusName(stateName);
     if (!issueId || !command) return json({ ok: true, ignored: true });
 
     const post = await findPost(supabase, issueId);
     if (!post) return json({ ok: true, ignored: true });
 
-    // Second line of defence: never re-assert a status the row already holds.
-    const target = command === 'approve' ? 'approved' : command === 'reject' ? 'vetoed' : 'needs_review';
-    if (post.status === target) return json({ ok: true, ignored: true });
-
-    // And never walk a post backwards out of a terminal state. A card sitting in
-    // In Review while the row says published is stale, not a decision.
-    if (post.status === 'published' || post.status === 'partially_published') {
-      return json({ ok: true, ignored: 'post has already published' });
+    const decision = guardIncomingStatus({
+      currentStatus: post.status,
+      command,
+      stateChanged: true,
+    });
+    if (!decision.apply) {
+      if (decision.reason === 'post has already published') {
+        return json({ ok: true, ignored: 'post has already published' });
+      }
+      return json({ ok: true, ignored: true });
     }
 
-    await reply(issueId, await runCommand(supabase, post, { command }));
+    const result = await applyArticleAction(supabase, post, { command }, linearActionOpts);
+    await reply(issueId, result.reply);
     return json({ ok: true });
   }
 
