@@ -31,6 +31,7 @@ Lists) and copy.
 | Premium upgrade sheet at the Free list cap (My Lists, title panel, collections; content from `@plot/core/upgradeSheet.js`). "Compare every feature" opens Settings' Premium section, since mobile has no /plans | done |
 | New onboarding (#1167): save a few with the Switching apps? branch, where do you watch, the building moment; name from the sign-in provider (`app/onboarding/*`, state in `contexts/OnboardingFlowContext.tsx`) | **static only**: not run on a device |
 | Home greeting, first-run Saved to watch rail, and the Finishing touches card with its friends, import and people sheets (`components/FinishingTouches.tsx`, storage in `lib/finishingTouches.ts`) | **static only**: not run on a device |
+| Title panel foot bar (Watched it? / Thoughts?, half stars, Review and Private note boxes, one editor sheet): same state in `@plot/core/useTitleFootBar.js`, drawn in `components/TitleFootBar.tsx` | **static only**: not run on a device |
 
 The upcoming feed had **three** independent implementations (web's
 `UpcomingContent`, mobile's Upcoming tab, mobile's `HomeReleases`). All three

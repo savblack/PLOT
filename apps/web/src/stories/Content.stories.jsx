@@ -9,7 +9,6 @@ import { HISTORY_VIEW } from '../copy/historyView.js';
 import { IMPORT_VIEW } from '../copy/importView.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
-import { ENGAGEMENT_PROMPT } from '../copy/engagementPrompt.js';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
@@ -28,7 +27,6 @@ const MODULES = {
   authCallbackPage: AUTH_CALLBACK_PAGE,
   calendarView: CALENDAR_VIEW,
   confirmModal: CONFIRM_MODAL,
-  engagementPrompt: ENGAGEMENT_PROMPT,
   historyView: HISTORY_VIEW,
   importView: IMPORT_VIEW,
   mediaPanel: MEDIA_PANEL,

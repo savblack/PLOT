@@ -39,7 +39,7 @@ import { readCachedSession, writeCachedSession, clearCachedSession } from './uti
 import { markKnownAccountBrowser } from './utils/accountRecognition.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
-import { onPendingWatchQueued } from '@plot/core/engagementPrompt.js';
+import { onPendingWatchQueued } from '@plot/core/watchQueued.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { loadPremiumEntitlement } from '@plot/core/billing.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
