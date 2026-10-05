@@ -25,9 +25,9 @@ const RING = {
   // the card's; on the landscape Top 5 that is every numeral but the fourth.
   // The vars are set by a theme family's palette (shareCardPalette); the
   // literals are the default look.
-  cream: { card: 'var(--sc-r-cream, #F8F2EA)', ghost: 'var(--sc-r-cream-g, #ECE6DE)' },
-  sage: { card: 'var(--sc-r-sage, #DBE1B0)', ghost: 'var(--sc-r-sage-g, #CBD0A3)' },
-  pink: { card: 'var(--sc-r-pink, #FF88C8)', ghost: 'var(--sc-r-pink-g, #F07EBC)' },
+  cream: { card: 'var(--sc-r-cream)', ghost: 'var(--sc-r-cream-g)' },
+  sage: { card: 'var(--sc-r-sage)', ghost: 'var(--sc-r-sage-g)' },
+  pink: { card: 'var(--sc-r-pink)', ghost: 'var(--sc-r-pink-g)' },
 };
 
 function Ghost() {
@@ -182,10 +182,10 @@ function Crowd({ card, story }) {
       <div className={`sc-panel sc-crowd${story ? ' sc-crowd--story' : ''}`}>
         <div className="sc-arc">
           <svg viewBox="0 0 100 60">
-            <path d="M8 54 A42 42 0 0 1 92 54" fill="none" style={{ stroke: 'var(--sc-empty, #F1E9DC)' }} strokeWidth="9" strokeLinecap="round" />
-            {card.gauge > 0.02 && <path d={`M8 54 A42 42 0 ${large} 1 ${ex.toFixed(1)} ${ey.toFixed(1)}`} fill="none" style={{ stroke: 'var(--sc-accent, #FF88C8)' }} strokeWidth="9" strokeLinecap="round" />}
-            <text x="50" y="44" textAnchor="middle" fontFamily="Gabarito" fontWeight="700" fontSize="17" style={{ fill: 'var(--sc-ink, #292924)' }}>{card.delta}</text>
-            <text x="50" y="56" textAnchor="middle" fontFamily="DM Sans" fontWeight="600" fontSize="6" style={{ fill: 'var(--sc-soft, #5F5A52)' }} letterSpacing=".8">{T.crowdWord[card.word]}</text>
+            <path d="M8 54 A42 42 0 0 1 92 54" fill="none" style={{ stroke: 'var(--sc-empty)' }} strokeWidth="9" strokeLinecap="round" />
+            {card.gauge > 0.02 && <path d={`M8 54 A42 42 0 ${large} 1 ${ex.toFixed(1)} ${ey.toFixed(1)}`} fill="none" style={{ stroke: 'var(--sc-accent)' }} strokeWidth="9" strokeLinecap="round" />}
+            <text x="50" y="44" textAnchor="middle" fontFamily="Gabarito" fontWeight="700" fontSize="17" style={{ fill: 'var(--sc-ink)' }}>{card.delta}</text>
+            <text x="50" y="56" textAnchor="middle" fontFamily="DM Sans" fontWeight="600" fontSize="6" style={{ fill: 'var(--sc-soft)' }} letterSpacing=".8">{T.crowdWord[card.word]}</text>
           </svg>
         </div>
         <div className="sc-crowd-text">
