@@ -3211,6 +3211,10 @@ svg { stroke-width: 1.5; }
   letter-spacing: var(--font-display-tracking); line-height: 1; color: var(--text-primary);
 }
 .list-page-sub { font-size: 0.85rem; color: var(--text-muted); }
+.list-page-progress { display: flex; align-items: center; gap: 10px; margin-top: 8px; max-width: 320px; }
+.list-page-progress-bar { flex: 1; height: 5px; border-radius: var(--radius-pill); background: var(--surface-sunken); overflow: hidden; }
+.list-page-progress-bar span { display: block; height: 100%; border-radius: inherit; background: var(--accent-secondary); }
+.list-page-progress-label { font-size: .78rem; color: var(--text-muted); white-space: nowrap; }
 .list-page-search { width: 220px; flex-shrink: 0; }
 .list-page-body { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 72px; align-items: start; }
 .list-page-body--no-side { display: block; }
