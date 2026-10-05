@@ -10,9 +10,8 @@
  * link/section definitions from @plot/core/profileFields.js so a platform can't
  * quietly grow a field the other doesn't know about.
  *
- * NOT included: changing the avatar photo. That needs expo-image-picker, a
- * native module, so it cannot land without rebuilding the dev client — see the
- * note where the avatar renders.
+ * NOT included: changing the avatar photo. That lives in Settings' Account
+ * group (lib/avatar.ts), as it does on web, not in this sheet.
  */
 import { useState, useEffect, useMemo } from 'react';
 import {
