@@ -5,7 +5,6 @@
 // mobile yet: rotation of the Picks row (issue 1190).
 import { useMemo, useState } from 'react';
 import { View, Text, Image, FlatList, Modal, Linking, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CURATED_LISTS as COPY } from '@plot/core/copy/curatedLists.js';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
@@ -15,13 +14,27 @@ import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
 import type { CuratedList } from '@plot/core/curatedLists.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
-import { track, EVENTS } from '../lib/analytics';
+import { EVENTS } from '@plot/core/analyticsEvents.js';
 import UpgradeSheet from './UpgradeSheet';
 
 /** The poster wall: six across, three down, as on web. */
 const WALL_POSTERS = 18;
 const WALL_COLS = 6;
 const WALL_GAP = 3;
+/**
+ * The dark scrim as stacked strips, top to bottom, tracing the web card's
+ * gradient (0.1 at the top, 0.3 a third down, 0.8 two thirds, 0.94 at the
+ * foot). Strips rather than expo-linear-gradient, which cannot load in the web
+ * Storybook the mobile Storybook deploys from.
+ */
+const SCRIM = Array.from({ length: 24 }, (_, i) => {
+  const t = (i + 0.5) / 24;
+  const stops: [number, number][] = [[0, 0.1], [0.32, 0.3], [0.64, 0.8], [1, 0.94]];
+  const j = stops.findIndex(([at]) => at >= t);
+  const [t0, a0] = stops[j - 1];
+  const [t1, a1] = stops[j];
+  return Math.round((a0 + ((a1 - a0) * (t - t0)) / (t1 - t0)) * 1000) / 1000;
+});
 const PANEL_H = Dimensions.get('window').height * 0.92;
 
 /**
@@ -63,12 +76,11 @@ export function CuratedListCard({ curated, width, height, onPress }: {
           />
         ))}
       </View>
-      <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.8)', 'rgba(0,0,0,0.94)']}
-        locations={[0, 0.32, 0.64, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {SCRIM.map((alpha, i) => (
+          <View key={i} style={{ position: 'absolute', left: 0, right: 0, top: (height * i) / SCRIM.length, height: height / SCRIM.length + 1, backgroundColor: `rgba(0,0,0,${alpha})` }} />
+        ))}
+      </View>
       <View style={styles.content} pointerEvents="none">
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{COPY.cardBadge.toUpperCase()}</Text>
@@ -93,12 +105,14 @@ type CustomListsApi = {
 type SaveState = { status: 'idle' | 'saving' | 'saved' | 'error'; message: string; listId: string | null };
 
 /** The list in full, ranked, with "Save to my lists". */
-export function CuratedListPanel({ curated, user, profile, customLists, onClose, onOpenTitle, onOpenMyLists, onCompare }: {
+export function CuratedListPanel({ curated, user, profile, customLists, track, onClose, onOpenTitle, onOpenMyLists, onCompare }: {
   curated: CuratedList;
   /** The viewer's account, from useAppData(); props rather than the context so the sheet renders in Storybook. */
   user: unknown;
   profile: unknown;
   customLists: CustomListsApi;
+  /** lib/analytics track, passed in so the sheet does not load PostHog in Storybook. */
+  track: (event: string, props?: Record<string, string | number | boolean>) => void;
   onClose: () => void;
   onOpenTitle: (id: number, type: 'movie' | 'tv') => void;
   onOpenMyLists: () => void;

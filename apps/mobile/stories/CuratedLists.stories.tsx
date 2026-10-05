@@ -42,7 +42,7 @@ export function Sheet() {
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1, minHeight: 844 }}>
-        <CuratedListPanel curated={curated} {...account} onClose={() => {}} onOpenTitle={() => {}} onOpenMyLists={() => {}} onCompare={() => {}} />
+        <CuratedListPanel curated={curated} {...account} track={() => {}} onClose={() => {}} onOpenTitle={() => {}} onOpenMyLists={() => {}} onCompare={() => {}} />
       </View>
     </SafeAreaProvider>
   );

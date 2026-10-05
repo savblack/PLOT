@@ -39,6 +39,7 @@ import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { useRouter, type Href } from 'expo-router';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
+import { track } from '../../lib/analytics';
 import { featuredCuratedList } from '@plot/core/curatedLists.js';
 import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists';
 import { greetingFor } from '@plot/core/greeting.js';
@@ -991,6 +992,7 @@ export default function HomeScreen() {
           user={user}
           profile={profile}
           customLists={customLists}
+          track={track}
           onClose={() => setOpenCurated(null)}
           onOpenTitle={(id, type) => openPanel(id, type)}
           onOpenMyLists={() => router.push('/(app)/my-lists' as Href)}
