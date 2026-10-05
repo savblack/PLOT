@@ -2,12 +2,11 @@
 // 3.5s. Mirrors apps/web/src/components/PicksCarousel.jsx. It stops while the
 // app is backgrounded, while the row is off-screen (`inView`, from Home's
 // scroll), while a finger is on it, and for people who ask for reduced motion
-// (it then starts paused; Play still works). Dots and a Pause/Play control
-// are always there for more than one card.
+// (it then never runs). Dots to tap through are there for more than one card.
 import { Children, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, AppState, ScrollView, StyleSheet, Text, TouchableOpacity, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { AccessibilityInfo, AppState, ScrollView, StyleSheet, TouchableOpacity, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
-import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
+import { Palette, spacing } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
 export const ADVANCE_MS = 3500;
@@ -32,18 +31,18 @@ export default function PicksCarousel({ children, cardWidth, inView = true }: {
   const [index, setIndex] = useState(0);
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   const [dragging, setDragging] = useState(false);
-  const [userPaused, setUserPaused] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', state => setAppActive(state === 'active'));
     return () => sub.remove();
   }, []);
 
-  // Reduce motion: never autoplay. The row starts paused and follows the setting.
+  // Reduce motion: never autoplay. The dots still work.
   useEffect(() => {
     let alive = true;
-    AccessibilityInfo.isReduceMotionEnabled().then(on => { if (alive && on) setUserPaused(true); });
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', on => { if (on) setUserPaused(true); });
+    AccessibilityInfo.isReduceMotionEnabled().then(on => { if (alive) setReduceMotion(on); });
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', on => setReduceMotion(on));
     return () => { alive = false; sub.remove(); };
   }, []);
 
@@ -52,7 +51,7 @@ export default function PicksCarousel({ children, cardWidth, inView = true }: {
     setIndex(next);
   }, [step]);
 
-  const rotating = slides.length > 1 && appActive && inView && !dragging && !userPaused;
+  const rotating = slides.length > 1 && appActive && inView && !dragging && !reduceMotion;
   useEffect(() => {
     if (!rotating) return undefined;
     const timer = setInterval(() => goTo(index >= slides.length - 1 ? 0 : index + 1), ADVANCE_MS);
@@ -95,9 +94,6 @@ export default function PicksCarousel({ children, cardWidth, inView = true }: {
               </TouchableOpacity>
             ))}
           </View>
-          <TouchableOpacity onPress={() => setUserPaused(p => !p)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button">
-            <Text style={styles.pause}>{userPaused ? COPY.play : COPY.pause}</Text>
-          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -105,9 +101,8 @@ export default function PicksCarousel({ children, cardWidth, inView = true }: {
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, marginTop: spacing.sm },
+  controls: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.sm },
   dots: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.borderStrong },
   dotActive: { width: 18, backgroundColor: colors.accent },
-  pause: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
 });

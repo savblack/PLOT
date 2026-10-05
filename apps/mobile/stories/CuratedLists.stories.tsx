@@ -55,7 +55,7 @@ const standIn = (label: string) => (
   </View>
 );
 
-// The Picks row as it ships: cards take turns every 3.5s, with dots and Pause.
+// The Picks row as it ships: cards take turns every 3.5s, with dots to tap through.
 export function Rotating() {
   return (
     <SafeAreaProvider>

@@ -15,37 +15,6 @@ export default {
   decorators: [(Story) => <MemoryRouter><div className="home-page" style={{ background: 'var(--bg)', padding: '1.5rem 0', maxWidth: 980 }}><div className="discover-sections home-stream"><Story /></div></div></MemoryRouter>],
 };
 
-/** Beside the trending hero, the default Picks row. */
-export const BesideTheHero = {
-  render: () => (
-    <section className="discover-section discover-featured-section">
-      <DiscoverSectionHeader title="plot's Picks" />
-      <div className="discover-hero-row has-two">
-        <div className="discover-hero">
-          <div className="discover-hero-overlay">
-            <span className="discover-hero-badge">Trending #1</span>
-            <h2 className="discover-hero-title">Slow Lane</h2>
-            <p className="discover-hero-meta">2026 · TV Series</p>
-          </div>
-        </div>
-        <CuratedListCard curated={curated} onOpen={() => {}} />
-      </div>
-    </section>
-  ),
-};
-
-/** Alone, when the hero has nothing to show. */
-export const Alone = {
-  render: () => (
-    <section className="discover-section discover-featured-section">
-      <DiscoverSectionHeader title="plot's Picks" />
-      <div className="discover-hero-row">
-        <CuratedListCard curated={curated} onOpen={() => {}} />
-      </div>
-    </section>
-  ),
-};
-
 const standIn = (badge, title) => (
   <div className="discover-hero">
     <div className="discover-hero-overlay">
@@ -55,7 +24,7 @@ const standIn = (badge, title) => (
   </div>
 );
 
-/** The Picks row as it ships: cards take turns, two across on desktop. Pauses on hover. */
+/** The Picks row as it ships: one full-width card at a time, taking turns; swipe or use the dots. Stops while hovered. */
 export const Rotating = {
   render: () => (
     <section className="discover-section discover-featured-section">
