@@ -7,7 +7,7 @@ import { Children, useCallback, useEffect, useRef, useState } from 'react';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import './PicksCarousel.css';
 
-const ADVANCE_MS = 6500;
+const ADVANCE_MS = 3500;
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 /** @param {{ children: import('react').ReactNode }} props  Each child is one card. */
