@@ -45,3 +45,14 @@ test('the upgrade sheet for email leads with Premium, keeps in-app alerts free, 
 test('the email option is a boolean switch, so it can be hidden until delivery is on', () => {
   assert.equal(typeof ALERT_EMAIL_ENABLED, 'boolean');
 });
+
+test('the unsubscribe page has a state for every outcome, says alerts stay in the app, and never gates leaving', () => {
+  const U = ALERT_EMAIL.unsubscribe;
+  for (const key of ['title', 'body', 'button', 'working', 'doneTitle', 'doneBody', 'invalidTitle', 'invalidBody', 'errorTitle', 'errorBody', 'settings']) {
+    assert.ok(U[key], key);
+  }
+  assert.match(U.body, /alerts in the app/i);
+  assert.match(U.doneBody, /Alerts still arrive in the app/);
+  // Leaving is never an upsell.
+  for (const text of strings(U)) assert.doesNotMatch(text, /premium|upgrade/i, text);
+});

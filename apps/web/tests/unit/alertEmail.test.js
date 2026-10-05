@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ALERT_EMAIL_TEXT, APP_ORIGIN, MANAGE_URL, NOTIFICATIONS_URL, REGISTERED_ADDRESS,
-  buildAlertEmail, emailSubject, escapeHtml, itemBadge, itemPhrase,
+  ALERT_EMAIL_TEXT, APP_ORIGIN, MANAGE_URL, NOTIFICATIONS_URL, REGISTERED_ADDRESS, UNSUBSCRIBE_PAGE_PATH,
+  alertLinks, buildAlertEmail, emailSubject, escapeHtml, itemBadge, itemPhrase,
 } from '../../../../supabase/functions/_shared/alertEmail.js';
 import { titleBadge, titlePhrase } from '../../../../packages/core/copy/notifications.js';
 
@@ -104,4 +104,37 @@ test('the plain-text version lists every film with its badge', () => {
   const { text } = buildAlertEmail([streaming, free], links);
   assert.match(text, /Now streaming: Harbour Lights is on Service One now/);
   assert.match(text, /Now free: Salt Lake Drive is free to watch on Service Two now/);
+});
+
+test('alertLinks puts all three links on the app origin, with the visible Unsubscribe link on the web page', () => {
+  const links = alertLinks('https://app.theplot.tv', 'abc.def.ghi');
+  assert.deepEqual(links, {
+    unsubscribeUrl: 'https://app.theplot.tv/email/unsubscribe?token=abc.def.ghi',
+    manageUrl: 'https://app.theplot.tv/settings?section=viewing',
+    appUrl: 'https://app.theplot.tv/notifications',
+  });
+  assert.equal(UNSUBSCRIBE_PAGE_PATH, '/email/unsubscribe');
+  // The default links agree with the exported constants, so they cannot drift.
+  assert.equal(alertLinks(APP_ORIGIN, 't').manageUrl, MANAGE_URL);
+  assert.equal(alertLinks(APP_ORIGIN, 't').appUrl, NOTIFICATIONS_URL);
+});
+
+test('alertLinks uses only the origin (a stray path or query is dropped), encodes the token, and allows a preview origin', () => {
+  const links = alertLinks('https://feat-example.plot-5wr.pages.dev/some/path?x=1', 'a b&c');
+  assert.equal(links.unsubscribeUrl, 'https://feat-example.plot-5wr.pages.dev/email/unsubscribe?token=a%20b%26c');
+  assert.ok(links.manageUrl.startsWith('https://feat-example.plot-5wr.pages.dev/settings'));
+});
+
+test('alertLinks refuses an origin that is not http(s) or not a URL', () => {
+  for (const bad of ['javascript:alert(1)', 'ftp://example.com', 'not a url', '', undefined]) {
+    assert.throws(() => alertLinks(bad, 't'), /appOrigin/);
+  }
+});
+
+test('an email built from alertLinks sends the visible Unsubscribe link to the web page, not a function URL', () => {
+  const { html, text } = buildAlertEmail([streaming], alertLinks(APP_ORIGIN, 'abc.def.ghi'));
+  for (const body of [html, text]) {
+    assert.ok(body.includes('https://app.theplot.tv/email/unsubscribe?token=abc.def.ghi'));
+    assert.ok(!body.includes('/functions/v1/'), 'no raw function URL in the body');
+  }
 });

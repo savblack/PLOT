@@ -39,7 +39,9 @@
  *
  * Secrets: RESEND_API_KEY, ALERT_EMAIL_UNSUBSCRIBE_SECRET (16+ characters;
  * rotating it invalidates every unsubscribe link already sent, so don't, unless
- * a leak demands it), ALERT_EMAIL_DELIVER (optional), ALERT_EMAIL_FROM (optional).
+ * a leak demands it), ALERT_EMAIL_DELIVER (optional), ALERT_EMAIL_FROM (optional),
+ * ALERT_EMAIL_APP_ORIGIN (optional; the app the links point at, default
+ * https://app.theplot.tv; set only to test against a preview or staging app).
  */
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database, Json } from '../_shared/database.types.ts';
@@ -50,7 +52,7 @@ import {
   EMAIL_CHANNEL, EMAIL_LOOK_BACK_DAYS, MAX_EMAILS_PER_RUN, emailBlocker, parseBatchResponse, planEmail,
   sendRunFailed, signUnsubscribeToken, unsubscribeUrl,
 } from '../_shared/alertDelivery.js';
-import { ALERT_EMAIL_FROM, buildAlertEmail } from '../_shared/alertEmail.js';
+import { ALERT_EMAIL_FROM, APP_ORIGIN, alertLinks, buildAlertEmail } from '../_shared/alertEmail.js';
 
 type Db = SupabaseClient<Database>;
 type NotificationRow = Pick<
@@ -234,6 +236,8 @@ Deno.serve(async (req) => {
   if (!resendKey) return json({ ok: false, error: 'RESEND_API_KEY is not set' }, 500);
   if (!secret || secret.length < 16) return json({ ok: false, error: 'ALERT_EMAIL_UNSUBSCRIBE_SECRET is not set or too short' }, 500);
   const from = Deno.env.get('ALERT_EMAIL_FROM') || ALERT_EMAIL_FROM;
+  // Where the email's links point. Only overridden to test against a preview or staging app.
+  const appOrigin = Deno.env.get('ALERT_EMAIL_APP_ORIGIN') || APP_ORIGIN;
   const deliver = Deno.env.get('ALERT_EMAIL_DELIVER') === 'true';
 
   let dryRun = false;
@@ -337,7 +341,9 @@ Deno.serve(async (req) => {
         alertsLostToAnotherRun += g.selected.length - items.length;
         if (!items.length) continue;
         const token = await signUnsubscribeToken(secret, g.userId);
-        const email = buildAlertEmail(items, { unsubscribeUrl: unsubscribeUrl(SUPABASE_URL, token) });
+        // The visible link is a real web page (a function URL is served as plain
+        // text); the one-click header below still goes straight to the function.
+        const email = buildAlertEmail(items, alertLinks(appOrigin, token));
         messages.push({
           userId: g.userId,
           ids: items.map(n => n.id),

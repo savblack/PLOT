@@ -18,6 +18,31 @@ export const APP_ORIGIN = 'https://app.theplot.tv';
 /** Real routes in apps/web/src/router.jsx. */
 export const NOTIFICATIONS_URL = `${APP_ORIGIN}/notifications`;
 export const MANAGE_URL = `${APP_ORIGIN}/settings?section=viewing`;
+/** The page a person lands on from the email's Unsubscribe link: a real web page that POSTs to the function. */
+export const UNSUBSCRIBE_PAGE_PATH = '/email/unsubscribe';
+
+/**
+ * The three links in an email, all on the same app origin (a preview or staging
+ * origin for testing, via ALERT_EMAIL_APP_ORIGIN). The visible Unsubscribe link
+ * goes to a page on the web app because Supabase serves function responses as
+ * plain text; the one-click header still goes straight to the function.
+ *
+ * @param {string} appOrigin e.g. https://app.theplot.tv
+ * @param {string} token a signed unsubscribe token
+ * @returns {{ unsubscribeUrl: string, manageUrl: string, appUrl: string }}
+ */
+export function alertLinks(appOrigin, token) {
+  let origin;
+  try { origin = new URL(appOrigin); } catch { throw new Error('appOrigin is not a valid URL'); }
+  if (origin.protocol !== 'https:' && origin.protocol !== 'http:') throw new Error('appOrigin must be http(s)');
+  const base = origin.origin;
+  return {
+    unsubscribeUrl: `${base}${UNSUBSCRIBE_PAGE_PATH}?token=${encodeURIComponent(token)}`,
+    manageUrl: `${base}/settings?section=viewing`,
+    appUrl: `${base}/notifications`,
+  };
+}
+
 /** Same sender identity as the digest footer (marketing/newsletter/send-digest.mjs). */
 export const REGISTERED_ADDRESS = 'SUSUMU HOUSE, Level 1, 63-73 Ann Street, Surry Hills, NSW 2010';
 

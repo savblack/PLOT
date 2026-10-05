@@ -17,6 +17,13 @@
  * It works whatever the person's plan, and with delivery off. Withdrawing
  * consent is never gated.
  *
+ * Supabase serves anything from a *.supabase.co function as text/plain with a
+ * sandbox policy, so the pages below are only fully readable by a machine (a
+ * one-click POST, or a script). The link a PERSON clicks in the email therefore
+ * goes to a real page on the web app (/email/unsubscribe), which POSTs here;
+ * this endpoint answers it with CORS and plain statuses. The same flaw exists on
+ * the weekly digest's unsubscribe link (newsletter-subscribe).
+ *
  * Deploy with verify_jwt = false (supabase/config.toml): the link is opened from
  * an email client, with no session. Nothing is read from or reflected back out of
  * the request except the verified person id, so there is nothing to inject.
@@ -30,6 +37,14 @@ import { verifyUnsubscribeToken } from '../_shared/alertDelivery.js';
 import { MANAGE_URL } from '../_shared/alertEmail.js';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+
+// The page on the web app calls this with fetch(), so its response must be
+// readable cross-origin. Safe to allow any origin: no cookies or credentials are
+// involved, and the signed token is the only authority.
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+};
 
 // Fixed pages: no request data is ever written into them.
 const page = (body: string, status = 200) =>
@@ -50,6 +65,7 @@ const page = (body: string, status = 200) =>
     {
       status,
       headers: {
+        ...CORS,
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-store',
         'X-Content-Type-Options': 'nosniff',
@@ -64,6 +80,7 @@ const done = () => page(`<h1>Unsubscribed</h1>
   <p>You will not get streaming alert emails from plot. Alerts still arrive in the app, and you can turn emails back on any time in <a href="${MANAGE_URL}">Settings</a>.</p>`);
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   const secret = Deno.env.get('ALERT_EMAIL_UNSUBSCRIBE_SECRET');
   if (!secret) return page('<h1>Something went wrong</h1><p>Please try again later.</p>', 500);
 
