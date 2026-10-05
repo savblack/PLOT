@@ -70,6 +70,12 @@ export const ALERT_EMAIL_TEXT = Object.freeze({
 // Palette mirrors the digest (packages/core/tokens.js, light).
 const PAPER = '#F8F2EA', CARD = '#FFFCF7', INK = '#292924', FAINT = '#6B655D', PINK = '#B83558', HAIR = '#e6dfd3';
 const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+// The wordmark is the plain lowercase word in Gabarito 700, tracked -0.045em, as
+// text and never a raster (docs/design/shared-design-system.md). Same stack and
+// web-font link as the weekly digest (marketing/newsletter/send-digest.mjs).
+// Clients that do not load web fonts fall back to the next face, as in the digest.
+const DISPLAY = "'Gabarito', 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+const FONT_LINK = 'https://fonts.googleapis.com/css2?family=Gabarito:wght@600;700&display=swap';
 
 /** @param {unknown} value */
 export function escapeHtml(value) {
@@ -144,6 +150,7 @@ export function buildAlertEmail(items, { unsubscribeUrl, manageUrl = MANAGE_URL,
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light only">
+<link href="${FONT_LINK}" rel="stylesheet">
 <title>${escapeHtml(emailSubject(items))}</title>
 </head>
 <body style="margin:0;padding:0;background:${PAPER};">
@@ -151,7 +158,7 @@ export function buildAlertEmail(items, { unsubscribeUrl, manageUrl = MANAGE_URL,
   <tr><td align="center" style="padding:30px 12px;">
     <table role="presentation" width="520" cellpadding="0" cellspacing="0" border="0" style="width:520px;max-width:520px;background:${CARD};border:1px solid ${HAIR};border-radius:16px;">
       <tr><td style="padding:30px 30px 8px;">
-        <div style="font-family:${SANS};font-size:30px;font-weight:700;letter-spacing:-0.04em;color:${INK};">plot</div>
+        <div style="font-family:${DISPLAY};font-size:34px;font-weight:700;line-height:0.9;letter-spacing:-0.045em;color:${INK};">plot</div>
         <div style="font-family:${SANS};font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:${FAINT};margin-top:10px;">${escapeHtml(T.kicker)}</div>
       </td></tr>
       <tr><td style="padding:6px 30px 0;">

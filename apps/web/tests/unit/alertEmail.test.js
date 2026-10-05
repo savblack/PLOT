@@ -138,3 +138,13 @@ test('an email built from alertLinks sends the visible Unsubscribe link to the w
     assert.ok(!body.includes('/functions/v1/'), 'no raw function URL in the body');
   }
 });
+
+test('the wordmark is the plain lowercase word in Gabarito 700, tracked -0.045em, as text and never an image', () => {
+  // docs/design/shared-design-system.md: render it as text in the display face; never a raster.
+  const { html, text } = buildAlertEmail([{ ...streaming, media_poster_path: null }], links);
+  assert.match(html, /font-family:'Gabarito'[^"]*;font-size:34px;font-weight:700;line-height:0\.9;letter-spacing:-0\.045em;[^"]*">plot<\/div>/);
+  assert.match(html, /<link href="https:\/\/fonts\.googleapis\.com\/css2\?family=Gabarito:wght@600;700&display=swap" rel="stylesheet">/);
+  assert.doesNotMatch(html, /<img /, 'no logo image (and no poster was given)');
+  assert.doesNotMatch(html, /logo\.(png|svg|jpe?g)/i);
+});
+
