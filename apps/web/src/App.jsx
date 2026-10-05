@@ -28,6 +28,7 @@ import { useTopLists }     from './hooks/useTopLists.js';
 import { useFavorites }    from './hooks/useFavorites.js';
 import { useCustomLists }  from './hooks/useCustomLists.js';
 import UndoToast from './components/UndoToast.jsx';
+import NoticeToast from './components/NoticeToast.jsx';
 import StreakToast from './components/StreakToast.jsx';
 import { FollowToastHost } from './components/PeopleFollow.jsx';
 import ShareCardHost from './components/ShareCardHost.jsx';
@@ -426,6 +427,7 @@ export default function App() {
       )}
 
       <UndoToast />
+      <NoticeToast />
       <StreakToast />
       <FollowToastHost />
       <ShareCardHost />
