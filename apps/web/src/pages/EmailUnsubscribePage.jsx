@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { ALERT_EMAIL } from '@plot/core/copy/alertEmail.js';
+// A public page opened straight from an email: it does not go through the app
+// shell, so it loads the shared button styles itself (as PlansPage does).
+import '../styles/app.css';
 import './EmailUnsubscribePage.css';
 
 /**
