@@ -11,7 +11,7 @@ import { supabase } from '@plot/core/supabase.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { tileMode, tileShowsCount, personName, REQUESTS_FROM_OPTIONS } from '@plot/core/watchTogether.js';
-import { useWatchTogether, useWatchTogetherStatus, useWatchTogetherLink } from '@plot/core/useWatchTogether.js';
+import { useWatchTogether, useWatchTogetherStatus, useWatchTogetherLink, useMutualFollow } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
@@ -40,13 +40,16 @@ function Cross() {
  * "Watch together with Jess?" What the other person will and won't see, with
  * the private-profile opt-in to share the full watchlist.
  *
- * @param {{ person: { display_name?: string | null, username?: string | null, avatar_url?: string | null },
+ * @param {{ person: { id?: string, other_id?: string, display_name?: string | null, username?: string | null, avatar_url?: string | null },
  *   viewer: { id?: string, is_public?: boolean | null } | null | undefined, busy?: boolean, onAccept: (shareFull: boolean) => void, onDecline: () => void, onClose: () => void }} props
  */
 export function AcceptDialog({ person, viewer, busy = false, onAccept, onDecline, onClose }) {
   // Already visible to everyone: nothing to share, so the sheet doesn't offer it.
   const viewerWatchlistOpen = useWatchlistVisibility(viewer?.id, !!viewer?.is_public).visibility === 'everyone';
-  const [shareFull, setShareFull] = useState(false);
+  // On by default when you follow each other, still one tap to turn off.
+  const mutual = useMutualFollow(viewer?.id, person.id ?? person.other_id);
+  const [chosen, setChosen] = useState(/** @type {boolean | null} */ (null));
+  const shareFull = chosen ?? mutual;
   const name = personName(person);
   return (
     <ResponsiveDialog title={T.accept.title(name)} onClose={onClose}
@@ -59,8 +62,9 @@ export function AcceptDialog({ person, viewer, busy = false, onAccept, onDecline
           <p className="wt-accept-label">{T.accept.willSee(name)}</p>
           <p className="wt-accept-line"><Check />{T.accept.seesOverlap}</p>
           <p className="wt-accept-line"><Check />{T.accept.seesPicks}</p>
+          {!viewerWatchlistOpen && shareFull && <p className="wt-accept-line"><Check />{T.accept.seesFullWatchlist}</p>}
           <p className="wt-accept-label">{T.accept.wontSee(name)}</p>
-          {!viewerWatchlistOpen && <p className="wt-accept-line"><Cross />{T.accept.hidesRest}</p>}
+          {!viewerWatchlistOpen && !shareFull && <p className="wt-accept-line"><Cross />{T.accept.hidesRest}</p>}
           <p className="wt-accept-line"><Cross />{T.accept.hidesPrivateLists}</p>
           <p className="wt-accept-line"><Cross />{T.accept.hidesNotes}</p>
         </div>
@@ -68,9 +72,9 @@ export function AcceptDialog({ person, viewer, busy = false, onAccept, onDecline
           <div className="wt-accept-card wt-accept-share">
             <span>
               <span className="wt-accept-share-title">{T.accept.shareFull}</span>
-              <span className="wt-note">{T.accept.shareFullBody(name)}</span>
+              <span className="wt-note">{T.accept.shareFullBody(name)}{mutual && shareFull && ` ${T.accept.shareFullMutual}`}</span>
             </span>
-            <SettingsSwitch label={T.accept.shareFull} checked={shareFull} onChange={() => setShareFull(v => !v)} />
+            <SettingsSwitch label={T.accept.shareFull} checked={shareFull} onChange={() => setChosen(!shareFull)} />
           </div>
         )}
         <p className="wt-note wt-center">{T.accept.foot(name)}</p>
@@ -91,6 +95,7 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
   const navigate = useNavigate();
   const { status, refresh } = useWatchTogetherStatus(person?.id, viewer?.id);
   const { send, cancel, respond } = useWatchTogether(viewer?.id);
+  const mutual = useMutualFollow(viewer?.id, person?.id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [reviewing, setReviewing] = useState(false);
@@ -134,6 +139,7 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
         ? <p className="wt-tile-count"><strong>{status.overlap_count}</strong><span>{T.tile.onBoth}</span></p>
         : (mode === 'private' || mode === 'pending') && <p className="wt-tile-lock">{mode === 'pending' ? T.tile.waitingTitle(name) : T.tile.privateTitle(name)}</p>}
       <p className="wt-tile-body">{body}</p>
+      {mutual && ['free', 'public', 'private', 'pending'].includes(mode) && <p className="wt-note">{T.tile.mutualShare(name)}</p>}
       {error && <p className="wt-error" role="alert">{error}</p>}
       <div className="wt-tile-actions">
         {(mode === 'free' || mode === 'public' || mode === 'private') && <button type="button" className="btn btn-primary" disabled={busy} onClick={() => run(() => send(person.id))}>{T.tile.inviteAction(name)}</button>}

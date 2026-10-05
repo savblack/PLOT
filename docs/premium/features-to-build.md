@@ -307,6 +307,32 @@ How: the daily run (`only: people`, 21:00 UTC) refreshes `people_feed` (one row 
 
 Air dates alone never qualify: rule 3 is required. **Known limit:** TMDB has no per-episode provider data, so rule 3 is season-level availability after the whole season has aired, not an episode-by-episode check. A service that carries only part of a finished season would still pass. Closing that needs JustWatch partner season offers with an episode count, which this repo does not call yet.
 
+### 5.10a Streaming alerts for your watchlist — **Free, in the app** (built, pending validation); push and email — **Premium**, not built
+
+**Intent:** Everyone with a film on their watchlist ("My List") is told, in the app, when it gains a **subscription** offer on one of their own services (`profiles.streaming_providers`), or becomes **free or free-with-ads on any service**, in their region (`profiles.region`). The watchlist is the opt-in: nothing to switch on. A person can mute one film (the card on the film's page) or turn the whole thing off (Settings > Viewing > Streaming alerts; a "Manage alerts" link sits on the Notifications page). A film coming out to rent or buy after cinemas is the separate `movie_release` row and is not repeated. Leaving-soon stays out of scope (see Pending validation).
+
+**Premium, later:** getting the same alerts as push, email and phone notifications. **Not built:** nothing sends push yet (no device tokens, see `docs/research/expo-push-notifications.md`), and email needs an unsubscribe link and a registered address first (`docs/launch/app-store-launch-sprint.md`). The plans page lists it as "Push and email alerts, Coming soon". `notification_preferences` is where per-channel switches will go. Nothing in the app may promise push or email until then (`streamingAlertsCopy.test.js` pins that).
+
+**Why it needs its own state.** TMDB `watch/providers` (JustWatch data) is a snapshot with no history, lags, and flaps. The daily job (`streaming-arrival-alerts`, 22:15 UTC) keeps a snapshot per film and region (`title_availability`) and only believes a change once it has held:
+
+1. **Baseline never alerts.** The first snapshot of a film and region records what is there and tells nobody, so switching this on for existing watchlists does not flood anyone. A provider already showing when a film was added to the watchlist does not count either (`first_seen_at` before the watchlist row's `created_at`).
+2. **Two-snapshot confirmation.** A new provider is *pending* until a later snapshot, at least 20 hours on, still shows it.
+3. **Ledger.** A confirmed provider is inserted once into `availability_events` (unique per film, region, provider and bucket) before anything else. A provider that drops out and returns finds its row and tells nobody. A confirmed provider is only dropped after two consecutive absences.
+4. **Bad data changes nothing.** A failed or non-providers response leaves the film alone. A film that had providers and now shows none anywhere is "suspect": left as it was, retried first tomorrow.
+5. **Circuit breaker.** Over 50% failed TMDB calls, or over 10% of films (25 or more checked) showing new providers or a wipe-out, and the run writes nothing and reports `ok:false`. After a `dry_run` shows the change is real, re-run with `{"force_breaker": true}`. A failure-rate trip is never forced.
+6. **Heals itself.** Who is told is derived from the last 7 days of the ledger, not from "what changed this run", so a failed write is retried on the next run. One notification per person, film, region and kind (`streaming_arrival:movie:<id>:<region>:<streaming|free>`).
+7. **Bounded.** 6 concurrent calls, retry with backoff on 429/5xx (`tmdbRetry.ts`), stops fetching at about 100s and carries the rest to the next run, stalest films first. Each run is a row in `alert_job_runs`.
+
+Rules are pure and unit-tested: `supabase/functions/_shared/availabilityAlerts.js`, `apps/web/tests/unit/availabilityAlerts.test.js`.
+
+**Scale.** One TMDB call per *distinct* watchlist film across everyone, capped at 3000 a run. Past the cap a film's check slips beyond a day (stalest first), so alerts arrive later, never wrongly. If the distinct-film count nears the cap, shard the run by `tmdb_id` across several cron slots.
+
+**Delivery switch.** The job only writes notifications when the `STREAMING_ARRIVAL_DELIVER` function secret is `true`. With it off (the default) the job still runs for real: snapshots and the ledger fill up, so precision can be judged on real data before anyone is told anything. `dry_run` is different: it writes nothing, state included, so it cannot validate anything over time.
+
+**Known limits.** A film's first snapshot happens on the first run after it is added, so a provider that arrives in that window is absorbed into the baseline and not announced. Provider variants (Amazon Channels, "with Ads" tiers) are not collapsed. In-app only. The card and Settings controls are web only (issue 1093); mobile renders the notification row.
+
+**Before it is "live".** Merge with delivery off, let production collect state for about two weeks, then read `alert_job_runs`, `availability_events` and the would-be notifications (a `dry_run`, or the ledger itself) for precision, and check flatrate coverage in AU and US. Then set `STREAMING_ARRIVAL_DELIVER=true`, add `freeFeatures.streamingAlerts` and change the comparison tag from "Pending validation" to "In the app" in `plansPage.js`, and update the FAQ. Until then the card and Settings controls are visible but nothing is delivered, so decide before merging whether to hold the merge until Staging validation instead.
+
 ### 5.11 Customise your plot — **Premium** (supporting, not lead)
 
 **Intent:** Home Screen widgets, custom app icons, custom profile pages, themes. Make Plot feel like the user’s journal.

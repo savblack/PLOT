@@ -179,6 +179,26 @@ export function useWatchTogetherSuggestions(userId) {
 }
 
 /**
+ * Whether the signed-in person and `otherId` follow each other (both follows
+ * accepted). Accepted follows are readable by anyone, so this is one read.
+ *
+ * @param {string | null | undefined} viewerId
+ * @param {string | null | undefined} otherId
+ */
+export function useMutualFollow(viewerId, otherId) {
+  const [mutual, setMutual] = useState(false);
+  useEffect(() => {
+    if (!viewerId || !otherId) return undefined;
+    let live = true;
+    supabase.from('follows').select('follower_id').eq('status', 'accepted')
+      .or(`and(follower_id.eq.${viewerId},following_id.eq.${otherId}),and(follower_id.eq.${otherId},following_id.eq.${viewerId})`)
+      .then(({ data }) => { if (live) setMutual((data || []).length === 2); }, () => {});
+    return () => { live = false; };
+  }, [viewerId, otherId]);
+  return !!viewerId && !!otherId && mutual;
+}
+
+/**
  * The signed-in person's reusable invite link key, made on first use, and a
  * way to reset it (links shared before stop working).
  *

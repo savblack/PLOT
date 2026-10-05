@@ -12,6 +12,7 @@ import { AcceptDialog } from './WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { COMMON } from '../copy/common.js';
 import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T, titleBadge, titleFallback, titlePhrase, SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
+import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
 import { groupNotifications, notificationKind, actorName, rollupNames, isAlertNotification, isTitleNotification, smartListDigest } from '@plot/core/notificationGroups.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { relativeTime } from '@plot/core/date.js';
@@ -72,7 +73,7 @@ function Avatar({ url, name, small = false, kind }) {
 }
 
 /** Pure layout; data comes from the hooks in NotificationsView (and from a story). */
-export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onOpenPeople, onOpenSmartLists, onManageSmartLists, onMarkAllRead, now, region = null, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
+export function NotificationsPage({ list, requests, watchRequests = [], loading, onApprove, onDecline, onReviewWatch, onDeclineWatch, onOpen, onOpenTitle, onOpenPeople, onOpenSmartLists, onManageSmartLists, onManageAlerts, onMarkAllRead, now, region = null, wasUnread = () => false, moment = null, onShareMoment, onDismissMoment }) {
   const { rollup, groups } = useMemo(() => groupNotifications(list, now), [list, now]);
   const unread = list.filter(wasUnread).length;
   const requestTotal = requests.length + watchRequests.length;
@@ -187,6 +188,12 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
               <span className="notif-people-footer-link">{PEOPLE.notificationsFooter.link}</span>
             </button>
           )}
+          {onManageAlerts && list.some(n => n.type === 'streaming_arrival') && (
+            <button type="button" className="hist-card notif-people-footer interactive-surface" onClick={onManageAlerts}>
+              <span className="notif-people-footer-text">{STREAMING_ALERTS.notificationsFooter.body}</span>
+              <span className="notif-people-footer-link">{STREAMING_ALERTS.notificationsFooter.link}</span>
+            </button>
+          )}
           {onManageSmartLists && list.some(n => smartListDigest(n)) && (
             <button type="button" className="hist-card notif-people-footer notif-digest-footer interactive-surface" onClick={onManageSmartLists}>
               <span className="notif-people-footer-text">{SMART_LIST_DIGEST.manageBody}</span>
@@ -240,6 +247,7 @@ export default function NotificationsView() {
       /* One list: open it. Several: My Lists, where each says how many are new. */
       onOpenSmartLists={digest => navigate(digest.lists.length === 1 ? collectionPath(customListKey(digest.lists[0].id)) : '/my-lists')}
       onManageSmartLists={() => navigate('/my-lists')}
+      onManageAlerts={() => navigate('/settings?section=viewing')}
       onMarkAllRead={handleMarkAllRead}
       wasUnread={n => unreadIds?.has(n.id) ?? false}
       moment={moment}

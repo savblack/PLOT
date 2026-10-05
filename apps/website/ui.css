@@ -223,22 +223,22 @@
 
 /* The wordmark bleeds off both sides and sinks below the bottom edge. The
    SVG is 108% of the footer's width, pulled 4% left; the strip is cropped
-   13.9% (of that width) above the letters' baseline, so the edge cuts the
+   14.9% (of that width) above the letters' baseline, so the edge cuts the
    lower part of p, o and t at every screen size. vw first for browsers
    without container units. */
 .footer-wordmark {
   display: block;
   margin-top: 4rem;
   overflow: hidden;
-  height: calc(108vw * 681 / 1508 - 13.9vw);
-  height: calc(108cqw * 681 / 1508 - 13.9cqw);
+  height: calc(108vw * 681 / 1403 - 14.9vw);
+  height: calc(108cqw * 681 / 1403 - 14.9cqw);
 }
 .footer-wordmark svg {
   display: block;
   width: 108vw;
   width: 108cqw;
   height: auto;
-  aspect-ratio: 1508 / 871;
+  aspect-ratio: 1403 / 871;
   margin-left: -4vw;
   margin-left: -4cqw;
   fill: var(--surface, #f1e9dc);

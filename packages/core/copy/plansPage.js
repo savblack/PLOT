@@ -164,6 +164,12 @@ export const PLANS_PAGE = {
         { label: 'Live calendar subscription', free: false, premium: true },
         { label: 'Actor and director alerts', free: false, premium: true },
         { label: 'Whole-season-ready alerts', free: false, premium: true },
+        // Built, not live: delivery is off until the job has been checked against
+        // real data (docs/premium/features-to-build.md 5.10a). Then add
+        // freeFeatures.streamingAlerts (mobile Settings lists every Free label,
+        // so adding it earlier would claim it), and change this tag to 'In the app'.
+        { label: 'Streaming alerts for your watchlist', free: true, premium: true, tag: 'Pending validation' },
+        { label: 'Push and email alerts', free: false, premium: true, tag: 'Coming soon' },
       ] },
       { title: 'Make it yours', rows: [
         { label: 'Themes', free: 'Default, light and dark', premium: 'Every theme' },
@@ -211,6 +217,13 @@ export const PLANS_PAGE = {
       description: 'Follow the people you love watching and hear about their new releases.' },
     { id: 'seasonReady', label: 'Whole-season-ready alerts', live: true,
       description: 'Know when every episode is verified available on your selected services in your region. Airing dates alone do not qualify.' },
+    // Not built: nothing sends push or email yet (no device tokens, and email
+    // needs an unsubscribe link and a registered address first; see
+    // docs/launch/app-store-launch-sprint.md). In-app streaming alerts are Free
+    // (see the comparison row); this is the Premium way to get them
+    // outside the app.
+    { id: 'pushAlerts', label: 'Push and email alerts',
+      description: 'Get your watchlist alerts on your phone and in your inbox, as well as in the app.' },
     { id: 'themes', label: 'Themes', live: true,
       description: 'Themes, each in light and dark with its own accent. The default look stays free in light, dark and system.' },
     { id: 'customize', label: 'Customise your plot', highlight: true,

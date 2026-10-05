@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { relativeTime } from '../../date.js';
-import { notificationPhrase, NOTIFICATIONS, NEW_EPISODE_NOTIFICATION, NEW_MOVIE_NOTIFICATION, titleBadge, titleFallback, titlePhrase } from '../../copy/notifications.js';
+import { notificationPhrase, NOTIFICATIONS, NEW_EPISODE_NOTIFICATION, NEW_MOVIE_NOTIFICATION, STREAMING_ARRIVAL_NOTIFICATION, titleBadge, titleFallback, titlePhrase } from '../../copy/notifications.js';
 
 const NOW = Date.parse('2026-08-23T12:00:00Z');
 
@@ -81,4 +81,19 @@ test('title rows: new_episode wording is unchanged through the shared helpers', 
   assert.equal(titleFallback({ type: 'new_episode' }), NEW_EPISODE_NOTIFICATION.untitled);
   assert.equal(titlePhrase({ type: 'new_episode', season_number: 5, episode_number: 1, episode_count: 1 }), 'season 5 premiere is out');
   assert.equal(titlePhrase({ type: 'new_episode', season_number: 2, episode_number: 1, episode_count: 8 }), 'season 2 is out, 8 episodes');
+});
+
+test('title rows: a streaming_arrival names the service, and free reads differently from a subscription', () => {
+  const streaming = { type: 'streaming_arrival', release_kind: 'streaming', provider_name: 'Service A' };
+  const free = { type: 'streaming_arrival', release_kind: 'free', provider_name: 'Free Service' };
+  assert.equal(titleBadge(streaming), 'Now streaming');
+  assert.equal(titleBadge(free), 'Now free');
+  assert.equal(titleFallback(streaming), STREAMING_ARRIVAL_NOTIFICATION.untitled);
+  assert.equal(titlePhrase(streaming), 'is on Service A now');
+  assert.equal(titlePhrase(free), 'is free to watch on Free Service now');
+  // A row with no provider still reads as a sentence.
+  assert.equal(titlePhrase({ ...streaming, provider_name: null }), 'is streaming now');
+  assert.equal(titlePhrase({ ...free, provider_name: undefined }), 'is free to watch now');
+  // An unrecognised kind is treated as the subscription wording, never as free.
+  assert.equal(titleBadge({ type: 'streaming_arrival', release_kind: null }), 'Now streaming');
 });
