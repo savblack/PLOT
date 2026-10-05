@@ -2,6 +2,8 @@
 // same stories, rendered through react-native-web instead of Metro/RN. Kept
 // deliberately separate from the app's own metro/babel config, same reason
 // apps/web's .storybook/main.js doesn't extend apps/web/vite.config.js.
+import { fileURLToPath } from 'node:url';
+
 /** @type {import('@storybook/react-vite').StorybookConfig} */
 export default {
   stories: ['../stories/**/*.stories.?(ts|tsx|js|jsx)'],
@@ -12,6 +14,7 @@ export default {
     config.resolve.alias = {
       ...config.resolve.alias,
       'react-native': 'react-native-web',
+      '@react-native-community/datetimepicker': fileURLToPath(new URL('./datetimepicker.stub.js', import.meta.url)),
     };
     // apps/mobile pins its own react/react-dom (nested locally since they
     // differ from the root-hoisted versions apps/web uses); without this,
