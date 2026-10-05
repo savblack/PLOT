@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
-import { usePrivateNoteEditor } from '@plot/core/usePrivateNoteEditor.js';
+import { useTitleFootBar } from '@plot/core/useTitleFootBar.js';
 import { PRIVATE_NOTE_LIMIT, noteLength } from '@plot/core/privateNotes.js';
 import { PRIVATE_NOTES } from '@plot/core/copy/privateNotes.js';
-import { REVIEW_MAX, STAR_COUNT, nextRating, ratingFromPointer, ratingToStars, starFillPercent } from '../utils/ratings.js';
+import { REVIEW_MAX, STAR_COUNT, ratingFromPointer, ratingToStars, starFillPercent } from '../utils/ratings.js';
 import { formatWatchedOn, localDateStr } from '@plot/core/date.js';
 import { COMMON } from '../copy/common.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
@@ -11,8 +11,6 @@ import StarIcon from './StarIcon.jsx';
 import './TitleFootBar.css';
 
 const FOOT = MEDIA_PANEL.foot;
-/** How long Undo stays offered after marking watched, and how long the drain bar runs. */
-const UNDO_MS = 6000;
 
 const TickIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>;
 const PencilIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>;
@@ -119,54 +117,23 @@ export default function TitleFootBar({
   onSaveReview,
 }) {
   const { privateNotes } = useApp();
-  const noteEditor = usePrivateNoteEditor(privateNotes ?? { rows: {} }, itemId, itemType, title);
-  const showNote = hasUser && !!privateNotes;
-  const savedNote = noteEditor.note;
+  const bar = useTitleFootBar({
+    itemId, itemType, title, watched, rating, review, watchedAt, privateNotes, hasUser,
+    onMarkWatched, onUndoWatched, onRate, onSaveReview,
+  });
+  const {
+    editing, fresh, saving, error, status, focusField, showNote, noteEditor, savedNote,
+    reviewText, dateValue, noteDraft, reviewIsDraft, reviewShown, noteIsDraft, noteShown,
+    remaining, reviewDirty, noteDirty, noteTooLong,
+  } = bar;
 
-  const [editing, setEditing] = useState(false);
-  const [fresh, setFresh] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [status, setStatus] = useState('');
-  // Drafts outlive closing the editor; only Cancel, Save or Delete drop them.
-  const [reviewDraft, setReviewDraft] = useState(null);
-  const [dateDraft, setDateDraft] = useState(null);
-  const focusField = useRef('review');
   const root = useRef(null);
   const [touch, setTouch] = useState(false);
 
-  // A fresh mark settles back to the normal bar when the Undo window ends.
-  useEffect(() => {
-    if (!fresh) return undefined;
-    const timer = setTimeout(() => setFresh(false), UNDO_MS);
-    return () => clearTimeout(timer);
-  }, [fresh]);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- watched flipped off elsewhere (status menu): nothing left to undo
-    if (!watched) setFresh(false);
-  }, [watched]);
-
-  const openEditor = useCallback((field) => {
-    focusField.current = field;
-    setReviewDraft((d) => d ?? review);
-    setDateDraft((d) => d ?? watchedAt);
-    if (showNote) noteEditor.begin();
-    setError('');
+  // Whether the editor is a bottom sheet is decided when it opens.
+  const openEditor = (field) => {
     setTouch(window.matchMedia('(hover: none), (pointer: coarse)').matches);
-    setEditing(true);
-    setFresh(false);
-  // noteEditor.begin is recreated each render; the draft it seeds is guarded inside it.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [review, watchedAt, showNote]);
-
-  const closeEditor = () => setEditing(false);
-
-  const discardDrafts = () => {
-    setReviewDraft(null);
-    setDateDraft(null);
-    noteEditor.cancel();
-    setError('');
-    setEditing(false);
+    bar.openEditor(field);
   };
 
   // Focus the field the user came from, and on a touch device trap focus and
@@ -175,7 +142,7 @@ export default function TitleFootBar({
     if (!editing) return undefined;
     const el = root.current;
     const opener = document.activeElement;
-    const target = el?.querySelector(`[data-field="${focusField.current}"]`);
+    const target = el?.querySelector(`[data-field="${focusField}"]`);
     target?.focus({ preventScroll: true });
     // Writing continues from the end of what is already there, not the start.
     if (target instanceof HTMLTextAreaElement) target.setSelectionRange(target.value.length, target.value.length);
@@ -183,7 +150,7 @@ export default function TitleFootBar({
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
-        setEditing(false);
+        bar.closeEditor();
         return;
       }
       if (!touch || event.key !== 'Tab') return;
@@ -199,98 +166,14 @@ export default function TitleFootBar({
       el?.removeEventListener('keydown', onKeyDown);
       if (opener instanceof HTMLElement && document.contains(opener)) opener.focus({ preventScroll: true });
     };
-  }, [editing, touch]);
-
-  const mark = async (picked) => {
-    const result = await onMarkWatched(picked ? { rating: picked } : undefined);
-    if (!result?.ok) return;
-    if (picked) {
-      setStatus(FOOT.watchedAndRated(ratingToStars(picked)));
-    } else {
-      setFresh(true);
-    }
-  };
-
-  const rate = async (picked) => {
-    setError('');
-    const value = nextRating(rating, picked);
-    if (!watched) { await mark(picked); return; }
-    const ok = await onRate(value);
-    if (!ok) setError(MEDIA_PANEL.couldNotSaveReview);
-  };
-
-  const undo = async () => {
-    setFresh(false);
-    if (await onUndoWatched()) setStatus(FOOT.watchedRemoved);
-  };
-
-  const noteDraft = noteEditor.draft;
-  const reviewText = reviewDraft ?? review;
-  const reviewDirty = reviewText.trim() !== review.trim() || (dateDraft ?? watchedAt) !== watchedAt;
-  // The hook's `editing` stays true from begin() until the draft is saved or cancelled,
-  // which is exactly "a draft exists"; its draft reads as '' before that.
-  const noteDirty = showNote && noteEditor.editing && noteDraft.trim() !== savedNote.trim();
-  const noteTooLong = noteLength(noteDraft) > PRIVATE_NOTE_LIMIT;
-
-  const save = async () => {
-    if (saving || noteTooLong) return;
-    setSaving(true);
-    setError('');
-    try {
-      if (reviewDirty) {
-        const ok = await onSaveReview({ note: reviewText.trim() || null, watchedAt: dateDraft || watchedAt });
-        if (!ok) { setError(MEDIA_PANEL.couldNotSaveReview); return; }
-      }
-      if (noteDirty) {
-        // An emptied note is a delete, the way the private note editor treats it.
-        const ok = await noteEditor.save(!noteDraft.trim());
-        if (!ok) return; // the editor holds the note's own error and keeps the draft
-      }
-      setReviewDraft(null);
-      setDateDraft(null);
-      if (!noteDirty) noteEditor.cancel();
-      setStatus(FOOT.saved);
-      setEditing(false);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const remove = async () => {
-    if (saving) return;
-    setSaving(true);
-    setError('');
-    try {
-      if (review) {
-        const ok = await onSaveReview({ note: null, watchedAt: dateDraft || watchedAt });
-        if (!ok) { setError(MEDIA_PANEL.couldNotSaveReview); return; }
-      }
-      if (savedNote) {
-        const ok = await noteEditor.save(true);
-        if (!ok) return;
-      }
-      setReviewDraft(null);
-      setDateDraft(null);
-      noteEditor.cancel();
-      setStatus(FOOT.deleted);
-      setEditing(false);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // A draft left behind by closing the editor shows in its box, tagged, so it is
-  // never mistaken for lost. Once it matches what is saved it is just the text.
-  const reviewIsDraft = reviewDraft !== null && reviewDraft.trim() !== review.trim();
-  const reviewShown = reviewIsDraft ? reviewDraft.trim() : review;
-  const noteIsDraft = showNote && noteDirty;
-  const noteShown = noteIsDraft ? noteDraft.trim() : savedNote;
+  // bar.closeEditor is stable; the rest are the editor's open state.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, touch, focusField]);
 
   const disabled = busy || saving;
   const score = rating ? ratingToStars(rating) : 0;
   const dateLabel = formatWatchedOn(watchedAt);
   const chipLabel = fresh ? FOOT.watchedJustNow : dnf ? MEDIA_PANEL.didntFinish : FOOT.watchedOn(dateLabel);
-  const remaining = REVIEW_MAX - reviewText.length;
   const audience = isPublicProfile ? FOOT.reviewAudiencePublic : FOOT.reviewAudiencePrivate;
   const noteBusy = noteEditor.busy;
 
@@ -302,7 +185,7 @@ export default function TitleFootBar({
       aria-modal={editing && touch ? 'true' : undefined}
       aria-label={editing ? FOOT.editorTitle : undefined}
     >
-      {editing && touch && <button type="button" className="foot-bar-scrim" aria-label={COMMON.close} onClick={closeEditor} />}
+      {editing && touch && <button type="button" className="foot-bar-scrim" aria-label={COMMON.close} onClick={bar.closeEditor} />}
 
       <div className="foot-bar-surface">
         {editing && touch && <div className="foot-bar-handle" aria-hidden="true" />}
@@ -315,7 +198,7 @@ export default function TitleFootBar({
           {watched && !editing && (
             <span className="foot-bar-head-end">
               {fresh && (
-                <button type="button" className="btn btn-ghost btn-sm foot-bar-undo" disabled={disabled} onClick={undo}>
+                <button type="button" className="btn btn-ghost btn-sm foot-bar-undo" disabled={disabled} onClick={bar.undo}>
                   {FOOT.undo}
                 </button>
               )}
@@ -343,7 +226,7 @@ export default function TitleFootBar({
                   ghost={!watched}
                   disabled={disabled}
                   label={MEDIA_PANEL.yourRating}
-                  onPick={rate}
+                  onPick={bar.rate}
                 />
                 {score > 0 && <span className="foot-bar-score">{score}</span>}
               </span>
@@ -354,7 +237,7 @@ export default function TitleFootBar({
                       {FOOT.imWatching}
                     </button>
                   )}
-                  <button type="button" className="btn btn-primary btn-sm" disabled={disabled} onClick={() => mark()}>
+                  <button type="button" className="btn btn-primary btn-sm" disabled={disabled} onClick={() => bar.mark()}>
                     {FOOT.iveWatched}
                   </button>
                 </span>
@@ -398,7 +281,7 @@ export default function TitleFootBar({
             <div className="foot-bar-editor-rating">
               <span className="foot-bar-label">{FOOT.rating}</span>
               <span className="foot-bar-rate">
-                <Stars value={rating} disabled={disabled} label={MEDIA_PANEL.yourRating} onPick={rate} />
+                <Stars value={rating} disabled={disabled} label={MEDIA_PANEL.yourRating} onPick={bar.rate} />
                 {score > 0 && <span className="foot-bar-score">{score}</span>}
               </span>
             </div>
@@ -415,7 +298,7 @@ export default function TitleFootBar({
                 maxLength={REVIEW_MAX}
                 placeholder={FOOT.reviewPlaceholder}
                 disabled={saving}
-                onChange={(e) => setReviewDraft(e.target.value)}
+                onChange={(e) => bar.setReviewText(e.target.value)}
               />
               <div className={`foot-bar-count${remaining <= 40 ? ' foot-bar-count--near' : ''}`}>{remaining}</div>
             </section>
@@ -432,7 +315,7 @@ export default function TitleFootBar({
                   value={noteDraft}
                   placeholder={FOOT.noteEmpty}
                   disabled={saving || noteBusy}
-                  onChange={(e) => noteEditor.setDraft(e.target.value)}
+                  onChange={(e) => bar.setNoteText(e.target.value)}
                 />
                 {noteTooLong && <p className="foot-bar-error" role="alert">{noteLength(noteDraft)}/{PRIVATE_NOTE_LIMIT}</p>}
                 {noteEditor.error && <p className="foot-bar-error" role="alert">{noteEditor.error}</p>}
@@ -453,19 +336,19 @@ export default function TitleFootBar({
                   id="foot-bar-date"
                   data-field="date"
                   type="date"
-                  value={dateDraft ?? watchedAt}
+                  value={dateValue}
                   max={localDateStr()}
                   disabled={saving}
-                  onChange={(e) => setDateDraft(e.target.value || watchedAt)}
+                  onChange={(e) => bar.setDateValue(e.target.value)}
                 />
               </div>
               <span className="foot-bar-actions">
                 {(review || savedNote) && (
-                  <button type="button" className="btn btn-ghost btn-sm" disabled={saving || noteBusy} onClick={remove}>
+                  <button type="button" className="btn btn-ghost btn-sm" disabled={saving || noteBusy} onClick={bar.remove}>
                     {COMMON.delete}
                   </button>
                 )}
-                <button type="button" className="btn btn-ghost btn-sm" disabled={saving} onClick={discardDrafts}>
+                <button type="button" className="btn btn-ghost btn-sm" disabled={saving} onClick={bar.discardDrafts}>
                   {COMMON.cancel}
                 </button>
                 <button
@@ -473,7 +356,7 @@ export default function TitleFootBar({
                   className="btn btn-primary btn-sm"
                   disabled={saving || noteBusy || noteTooLong || (!reviewDirty && !noteDirty)}
                   aria-busy={saving}
-                  onClick={save}
+                  onClick={bar.save}
                 >
                   {saving ? COMMON.saving : COMMON.save}
                 </button>

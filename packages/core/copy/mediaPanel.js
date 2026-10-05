@@ -70,13 +70,6 @@ export const MEDIA_PANEL = {
   // The two scores read as a pair, with the audience review beside them.
   critics: 'Critics',
   audience: 'Audience',
-  // The bar pinned to the foot of the panel. It is present whether or not
-  // anything has been written: the heading is the invitation until there is
-  // something to summarise.
-  yourTake: 'Your take',
-  leaveNoteOrReview: 'Leave a note or review',
-  takeHint: 'Rate it, write a review, or keep a private note',
-  takeNeedsWatch: 'Mark this watched to rate it and write a review.',
   watching: 'Watching',
   didntFinish: "Didn't finish",
   status: 'Status',
@@ -87,31 +80,14 @@ export const MEDIA_PANEL = {
   addToWatchlist: 'Add to watchlist',
   onList: 'On list',
   list: 'List',
-  noRating: 'No rating',
-  savingReview: 'Saving review',
-  saveChanges: 'Save changes',
-  editReview: 'Edit review',
-  saveReview: 'Save review',
-  // A saved review is a record, not a form: the panel shows it as prose with an
-  // overflow menu, and only the edit state renders inputs. These strings cover
-  // all three states (saved / editing / nothing written yet) on both platforms.
-  yourReview: 'Your review',
   yourRating: 'Your rating',
   watchedOn: 'Watched on',
-  watchedOnDate: (date) => `Watched ${date}`,
-  outOfFive: (rating) => `${rating} out of 5`,
-  rateAndReview: 'Rate and review',
-  writeReview: 'Write a review',
-  editingYourReview: 'Editing your review',
-  reviewOptions: 'Review options',
-  removeReview: 'Remove review',
   couldNotSaveReview: 'Could not save your review. Please try again.',
-  charactersLeft: (count) => `${count} left`,
 
   // The foot bar pinned to the bottom of the title panel. One shape in every
   // state: a head line, the stars, then a Review box and a Private note box
-  // once the title is watched. The older yourTake / takeHint strings above are
-  // still read by mobile until it adopts this bar.
+  // once the title is watched. Web and mobile draw it from the same state, in
+  // @plot/core/useTitleFootBar.js.
   foot: {
     unwatchedHead: 'Watched it?',
     unwatchedHint: 'Tap a star to rate it',
@@ -142,6 +118,8 @@ export const MEDIA_PANEL = {
     saved: 'Saved',
     reviewPlaceholder: 'What did you think?',
     ratingStars: (stars) => `Rate ${stars - 0.5} or ${stars} stars`,
+    // One half-star target on a touch screen, where each half is its own button.
+    rateStars: (stars) => `Rate ${stars} ${stars === 1 ? 'star' : 'stars'}`,
     watchedAndRated: (stars) => `Watched and rated ${stars} ${stars === 1 ? 'star' : 'stars'}`,
     watchedRemoved: 'Watched removed',
     deleted: 'Deleted',

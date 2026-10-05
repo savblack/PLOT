@@ -1,7 +1,6 @@
 import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import { getEpisodeGuideState } from '@plot/core/episodeProgress.js';
-import PrivateNote from './PrivateNote';
-import { privateNoteKey } from '@plot/core/privateNotes.js';
+import TitleFootBar from './TitleFootBar';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../lib/share';
@@ -11,11 +10,8 @@ import { customListCreationError, isCustomListLimitError } from '@plot/core/cust
  * Sections: cover band with overlapping poster, compact action row, up next,
  * where to watch, scores, then episodes. Your take stays pinned under the scroll.
  */
-import { STAR_COUNT, ratingToStars, starsToRating } from '@plot/core/ratings.js';
 import { localDateStr } from '@plot/core/date.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaStatus.js';
-import { formatWatchedOn } from '@plot/core/date.js';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
@@ -41,7 +37,6 @@ import {
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
-import { ENGAGEMENT_PROMPT } from '@plot/core/copy/engagementPrompt.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import UpgradeSheet from './UpgradeSheet';
@@ -52,22 +47,6 @@ import { useFollowPerson } from './people/useFollowPerson';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 import { SavedByToo } from './watch/SavedByToo';
-import {
-  ENGAGEMENT_SNOOZE_KEY,
-  ENGAGEMENT_PENDING_KEY,
-  WATCH_PROMPT_SNOOZE_MS,
-  RATE_PROMPT_SNOOZE_MS,
-  engagementTitleKey,
-  parseEngagementSnooze,
-  serialiseEngagementSnooze,
-  isEngagementSnoozed,
-  snoozeEngagement,
-  canShowWatchPrompt,
-  canShowRatePrompt,
-  parseEngagementPending,
-  pendingWatchMatches,
-} from '@plot/core/engagementPrompt.js';
-import { readStorage, writeStorage, removeStorage } from '../lib/storage';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
@@ -175,68 +154,6 @@ function IconBookmark({ saved }: { saved: boolean }) {
     </Svg>
   );
 }
-function IconLock() {
-  const { colors } = useTheme();
-  return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <Rect x={4} y={11} width={16} height={10} rx={2} />
-      <Path d="M8 11V7a4 4 0 0 1 8 0v4" />
-    </Svg>
-  );
-}
-
-// ── Star rating ───────────────────────────────────────────────────────
-// `rating`/`onChange` stay on the shared 1-10 scale (packages/core/ratings.js)
-// — the same contract localRating/watchedEntry.rating use everywhere else in
-// this file. This picker is whole-star-only (no half-star touch target), so
-// it converts at its own boundary: ratingToStars for what to display,
-// starsToRating for what a tap writes back.
-function StarRow({
-  rating,
-  onChange,
-  // Every star is colors.rating (the theme's accentText), here and in the
-  // take editor; the override stays for a caller that genuinely needs one.
-  color,
-  // Wider tap targets for the sticky prompt (44px min). The take editor keeps
-  // the tighter default so the review section stays compact.
-  largeHit = false,
-}: {
-  rating: number;
-  onChange: (r: number) => void;
-  color?: string;
-  largeHit?: boolean;
-}) {
-  const { colors } = useTheme();
-  const starColor = color ?? colors.rating;
-  const displayStars = ratingToStars(rating);
-  return (
-    <View style={{ flexDirection: 'row', gap: largeHit ? 2 : 4 }}>
-      {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
-        <TouchableOpacity
-          key={n}
-          onPress={() => onChange(starsToRating(displayStars === n ? 0 : n))}
-          hitSlop={largeHit
-            ? { top: 10, bottom: 10, left: 8, right: 8 }
-            : { top: 6, bottom: 6, left: 4, right: 4 }}
-          style={largeHit ? { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' } : undefined}
-          accessibilityLabel={displayStars === n ? 'Clear rating' : `Rate ${n} star${n > 1 ? 's' : ''}`}
-          accessibilityRole="button"
-        >
-          <Svg width={24} height={24} viewBox="0 0 24 24">
-            <Polygon
-              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-              fill={n <= displayStars ? starColor : 'none'}
-              stroke={starColor}
-              strokeWidth={1.5}
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
-
 // ── Episode guide ─────────────────────────────────────────────────────
 function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }> }) {
   const { colors } = useTheme();
@@ -824,23 +741,11 @@ interface MediaPanelProps {
   onClose: () => void;
 }
 
-/**
- * "YYYY-MM-DD" from a Date, read in local time. The picker returns the calendar
- * day the user tapped, so formatting via toISOString would shift it a day for
- * anyone behind UTC. Core's localDateStr can't be used here: it takes a day
- * offset from today, not a Date.
- */
-function ymd(date: Date): string {
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${m}-${d}`;
-}
-
 export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { profile, watchlist, watching, favorites, history, customLists, topLists, privateNotes } = useAppData();
+  const { userId, profile, watchlist, watching, favorites, history, customLists, topLists, privateNotes } = useAppData();
   const { open: openTitle } = useMediaPanel();
   const router = useRouter();
   const followPerson = useFollowPerson();
@@ -858,22 +763,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const [watchOpen, setWatchOpen] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [statusPending, setStatusPending] = useState('');
-  const [takeOpen, setTakeOpen] = useState(false);
-
-  const [localRating, setLocalRating] = useState(0);
-  const [localReview, setLocalReview] = useState('');
-  const [localWatchedAt, setLocalWatchedAt] = useState('');
-  const [pickingDate, setPickingDate] = useState(false);
-  const [localDnf,    setLocalDnf]    = useState(false);
-  const [savingReview, setSavingReview] = useState(false);
-  // PLO-473 / PLO-474: compact post-save watch → post–mark-watched rate prompts.
-  const [engagementPrompt, setEngagementPrompt] = useState<'watch' | 'rate' | null>(null);
-  const [engagementBusy, setEngagementBusy] = useState(false);
-  const [focusReviewAfterPrompt, setFocusReviewAfterPrompt] = useState(false);
+  // True while a watched or watching change started from the foot bar is in flight.
+  const [footBusy, setFootBusy] = useState(false);
 
   const slideY = useRef(new Animated.Value(PANEL_H)).current;
   const scrollRef = useRef<ScrollView>(null);
-  const reviewInputRef = useRef<TextInput>(null);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -897,11 +791,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   // state can't be left behind. Shared by the Watched button and by the
   // episode guide, which calls it when the final episode of an ended series
   // is ticked.
-  const markWatchedNow = async (dnf = false) => {
+  // `rating` lets the foot bar log a title as watched and rated in one write, through
+  // the same save-side effects as the status menu.
+  const markWatchedNow = async (dnf = false, rating?: number) => {
     const sameState = watched && (!!watchedEntry?.dnf === dnf);
     if (sameState) {
       const removed = await history.removeEntry(itemId, itemType, { undo: true });
-      if (removed) setEngagementPrompt(null);
       return removed
         ? { ok: true }
         : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
@@ -909,7 +804,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     const result = await markMediaAsWatched({
       logWatched: () => history.logWatched(
         { ...details, id: itemId, media_type: itemType },
-        { dnf, watchedAt: defaultWatchedAt },
+        { dnf, rating, watchedAt: defaultWatchedAt },
       ),
       clearWatching:   () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
@@ -918,19 +813,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       isWatching,
       inList,
     });
-    if (result.ok) {
-      const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
-      const snoozed = isEngagementSnoozed(
-        parseEngagementSnooze(raw),
-        engagementTitleKey(itemId, itemType),
-        'rate',
-      );
-      if (canShowRatePrompt({ watched: true, hasRating: !!(watchedEntry?.rating), snoozed })) {
-        setEngagementPrompt('rate');
-      } else {
-        setEngagementPrompt(null);
-      }
-    }
     return result;
   };
 
@@ -947,105 +829,58 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     return result;
   };
 
-  const offerWatchPrompt = async () => {
-    if (watched) return;
-    const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
-    const snoozed = isEngagementSnoozed(
-      parseEngagementSnooze(raw),
-      engagementTitleKey(itemId, itemType),
-      'watch',
-    );
-    if (!canShowWatchPrompt({ watched, snoozed })) return;
-    await removeStorage(ENGAGEMENT_PENDING_KEY);
-    setEngagementPrompt('watch');
-  };
-
-  const dismissWatchPrompt = async () => {
-    const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
-    const next = snoozeEngagement(
-      parseEngagementSnooze(raw),
-      engagementTitleKey(itemId, itemType),
-      'watch',
-      WATCH_PROMPT_SNOOZE_MS,
-    );
-    await writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(next));
-    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
-      kind: 'watch',
-      action: 'not_yet',
-      tmdb_id: itemId,
-      media_type: itemType,
-    });
-    setEngagementPrompt(null);
-  };
-
-  const skipRatePrompt = async () => {
-    const raw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
-    const next = snoozeEngagement(
-      parseEngagementSnooze(raw),
-      engagementTitleKey(itemId, itemType),
-      'rate',
-      RATE_PROMPT_SNOOZE_MS,
-    );
-    await writeStorage(ENGAGEMENT_SNOOZE_KEY, serialiseEngagementSnooze(next));
-    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
-      kind: 'rate',
-      action: 'skip',
-      tmdb_id: itemId,
-      media_type: itemType,
-    });
-    setEngagementPrompt(null);
-  };
-
   const handleSaveFromPanel = async () => {
     if (!details) return;
     if (inList) {
       await watchlist.removeFromList(itemId, { undo: true });
       return;
     }
-    const saved = await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
-    if (saved) await offerWatchPrompt();
+    await watchlist.addToList({ ...details, id: itemId, media_type: itemType });
   };
 
-  const handlePromptMarkWatched = async () => {
-    if (engagementBusy) return;
-    setEngagementBusy(true);
+  /* The foot bar's writes. Each resolves to what the bar needs to know: whether it
+     worked. A failed status change surfaces in an alert, as the status menu does. */
+  const footMarkWatched = async (opts?: { rating?: number }) => {
+    if (footBusy) return { ok: false };
+    setFootBusy(true);
     try {
-      const result = await markWatchedNow();
+      const result = await markWatchedNow(false, opts?.rating);
       if (!result.ok) {
         const detail = history.getLastError();
         if (detail) captureException(new Error(detail), { surface: 'media_panel', action: 'watched_status' });
         Alert.alert('Could not update', result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
       }
+      return result;
     } finally {
-      setEngagementBusy(false);
+      setFootBusy(false);
     }
   };
 
-  const handlePromptStartWatching = async () => {
-    if (engagementBusy || isMovie) return;
-    setEngagementBusy(true);
+  const footStartWatching = async () => {
+    if (footBusy || isMovie) return;
+    setFootBusy(true);
     try {
-      if (isWatching) {
-        await watching.stopWatching(itemId, { undo: true });
-        setEngagementPrompt(null);
-        return;
-      }
       const result = await moveSavedShowToWatching({
         startWatching: () => watching.startWatching({ ...details, id: itemId, media_type: 'tv' }),
         removeFromSaved: () => inList ? watchlist.removeFromList(itemId) : Promise.resolve(true),
         rollbackWatching: () => watching.stopWatching(itemId),
       });
-      if (result.ok) setEngagementPrompt(null);
-      else Alert.alert('Could not update', result.error);
+      if (!result.ok) Alert.alert('Could not update', result.error);
     } finally {
-      setEngagementBusy(false);
+      setFootBusy(false);
     }
   };
 
-  const scrollToReviewAndFocus = () => {
-    setTakeOpen(true);
-    setFocusReviewAfterPrompt(true);
-    setTimeout(() => reviewInputRef.current?.focus(), 280);
+  // The bar's own Undo, inside its six seconds: a plain removal. The status menu's
+  // removal offers the app's undo toast; this would be a second one.
+  const footUndoWatched = async () => {
+    if (footBusy) return false;
+    setFootBusy(true);
+    try {
+      return !!await history.removeEntry(itemId, itemType);
+    } finally {
+      setFootBusy(false);
+    }
   };
 
   const runStatusAction = async (action: () => Promise<{ ok: boolean; error?: string }>) => {
@@ -1060,37 +895,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     }
   };
 
-  const handlePromptRate = async (rating: number) => {
-    if (!rating) return;
-    setEngagementBusy(true);
-    try {
-      const ok = await history.updateEntry(
-        itemId,
-        { rating, note: localReview.trim() || null, dnf: localDnf, watched_at: localWatchedAt || defaultWatchedAt },
-        itemType,
-      );
-      if (ok) {
-        setLocalRating(rating);
-        setEngagementPrompt(null);
-        scrollToReviewAndFocus();
-      }
-    } finally {
-      setEngagementBusy(false);
-    }
-  };
-
-  // Leave the rate prompt without snoozing and land on the written-review fields.
-  const handlePromptWriteReview = () => {
-    track(EVENTS.ENGAGEMENT_PROMPT_DISMISSED, {
-      kind: 'rate',
-      action: 'write_review',
-      tmdb_id: itemId,
-      media_type: itemType,
-    });
-    setEngagementPrompt(null);
-    scrollToReviewAndFocus();
-  };
-
   const handleShare = () => shareLink({
     url: buildTitleShareUrl({ tmdbId: itemId, mediaType: itemType, source: 'panel' }),
     title: details?.title || details?.name,
@@ -1099,57 +903,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     eventProps: { tmdb_id: itemId, media_type: itemType, source: 'panel' },
   });
 
-  // Sync review state
+  // Reset panel chrome when the open title changes.
   useEffect(() => {
-    if (watchedEntry) {
-      setLocalRating(watchedEntry.rating || 0);
-      setLocalReview(watchedEntry.note   || '');
-      setLocalDnf(watchedEntry.dnf       || false);
-      setLocalWatchedAt(String(watchedEntry.watched_at || defaultWatchedAt).slice(0, 10));
-    }
-  }, [watchedEntry?.id]);
-
-  // Clear the engagement prompt when the open title changes.
-  useEffect(() => {
-    setEngagementPrompt(null);
-    setEngagementBusy(false);
-    setFocusReviewAfterPrompt(false);
     setWatchOpen(false);
     setStatusMenuOpen(false);
-    setTakeOpen(false);
   }, [itemId, itemType]);
-
-  // Out-of-panel save left a pending watch prompt for this title.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (watched) return;
-      const raw = await readStorage(ENGAGEMENT_PENDING_KEY, null);
-      if (cancelled) return;
-      const pending = parseEngagementPending(raw);
-      if (!pendingWatchMatches(pending, itemId, itemType)) return;
-      await removeStorage(ENGAGEMENT_PENDING_KEY);
-      const snoozeRaw = await readStorage(ENGAGEMENT_SNOOZE_KEY, '{}');
-      if (cancelled) return;
-      const snoozed = isEngagementSnoozed(
-        parseEngagementSnooze(snoozeRaw),
-        engagementTitleKey(itemId, itemType),
-        'watch',
-      );
-      if (!canShowWatchPrompt({ watched: false, snoozed })) return;
-      setEngagementPrompt('watch');
-    })();
-    return () => { cancelled = true; };
-  }, [itemId, itemType, watched]);
-
-  useEffect(() => {
-    if (!engagementPrompt) return;
-    track(EVENTS.ENGAGEMENT_PROMPT_SHOWN, {
-      kind: engagementPrompt,
-      tmdb_id: itemId,
-      media_type: itemType,
-    });
-  }, [engagementPrompt, itemId, itemType]);
 
   // Slide in on mount
   useEffect(() => {
@@ -1231,9 +989,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         tmdb_id: itemId, media_type: itemType,
         provider: p.provider_name ?? null, link_kind: link.kind ?? null,
       });
-      if (inList && !watched) {
-        void offerWatchPrompt();
-      }
       Linking.openURL(link.url).catch((e) => {
         console.warn('[MediaPanel] failed to open watch link', e);
         Alert.alert("Couldn't open link", 'Please try again in a moment.');
@@ -1281,11 +1036,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   );
   const stackShown = stackProviders.slice(0, 3);
   const stackExtra = stackProviders.length - stackShown.length;
-  const noteRow = (privateNotes.rows as Record<string, { note?: string } | undefined>)[privateNoteKey(itemId, itemType)];
-  const hasPrivateNote = !!noteRow?.note;
   const savedRating = watchedEntry?.rating || 0;
   const savedReviewText = watchedEntry?.note || '';
-  const hasTake = !!(savedRating || savedReviewText.trim() || watchedEntry?.dnf);
   const statusLabel = statusPending
     || (isWatching ? MEDIA_PANEL.watching
       : watched && watchedEntry?.dnf ? MEDIA_PANEL.didntFinish
@@ -1302,17 +1054,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     || vids.find(v => v.site === 'YouTube');
   const trailerKey = trailer?.key || null;
 
-  const hasSavedReview = !!(watchedEntry?.rating || watchedEntry?.note?.trim() || watchedEntry?.dnf);
   const savedWatchedAt = String(watchedEntry?.watched_at || defaultWatchedAt).slice(0, 10);
-  const takePreview = hasTake
-    ? (savedReviewText.trim() || MEDIA_PANEL.watchedOnDate(formatWatchedOn(savedWatchedAt)))
-    : MEDIA_PANEL.takeHint;
-  const reviewDirty    = !!watchedEntry && (
-    localRating !== (watchedEntry.rating || 0) ||
-    localReview.trim() !== (watchedEntry.note || '').trim() ||
-    localDnf !== !!watchedEntry.dnf ||
-    localWatchedAt !== savedWatchedAt
-  );
 
   return (
     <>
@@ -1450,7 +1192,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                                 return stopped ? { ok: true } : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
                               }
                               const removed = await history.removeEntry(itemId, itemType, { undo: true });
-                              if (removed) setEngagementPrompt(null);
                               return removed ? { ok: true } : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
                             })}
                           >
@@ -1725,170 +1466,29 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           </View>
         </ScrollView>
 
-        {engagementPrompt && !loading && !error && details && (
-          <View style={styles.engagementBar} accessibilityRole="summary">
-            {engagementPrompt === 'watch' ? (
-              <View style={styles.engagementRow}>
-                <Text style={styles.engagementTitle}>{ENGAGEMENT_PROMPT.watchedIt}</Text>
-                <View style={styles.engagementActions}>
-                  <TouchableOpacity
-                    style={[styles.engagementPrimary, engagementBusy && styles.engagementDisabled]}
-                    disabled={engagementBusy}
-                    onPress={handlePromptMarkWatched}
-                  >
-                    <Text style={styles.engagementPrimaryText}>{ENGAGEMENT_PROMPT.markAsWatched}</Text>
-                  </TouchableOpacity>
-                  {!isMovie && !isWatching && (
-                    <TouchableOpacity
-                      style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
-                      disabled={engagementBusy}
-                      onPress={handlePromptStartWatching}
-                    >
-                      <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.imWatching}</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
-                    disabled={engagementBusy}
-                    onPress={dismissWatchPrompt}
-                  >
-                    <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.notYet}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.engagementRow}>
-                <Text style={styles.engagementTitle}>{ENGAGEMENT_PROMPT.howWasIt}</Text>
-                <View style={styles.engagementActions}>
-                  <StarRow
-                    rating={localRating}
-                    largeHit
-                    onChange={(r) => { void handlePromptRate(r); }}
-                  />
-                  <TouchableOpacity
-                    style={[styles.engagementPrimary, engagementBusy && styles.engagementDisabled]}
-                    disabled={engagementBusy}
-                    onPress={handlePromptWriteReview}
-                  >
-                    <Text style={styles.engagementPrimaryText}>{MEDIA_PANEL.writeReview}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.engagementGhost, engagementBusy && styles.engagementDisabled]}
-                    disabled={engagementBusy}
-                    onPress={skipRatePrompt}
-                  >
-                    <Text style={styles.engagementGhostText}>{ENGAGEMENT_PROMPT.skipForNow}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-          </View>
-        )}
-        {!engagementPrompt && !loading && !error && details && (
-          <View style={styles.takeBar}>
-            <TouchableOpacity
-              style={styles.takeHead}
-              onPress={() => setTakeOpen(open => !open)}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: takeOpen }}
-            >
-              <View style={styles.takeStars}>
-                {Array.from({ length: STAR_COUNT }, (_, index) => index + 1).map(n => (
-                  <Svg key={n} width={14} height={14} viewBox="0 0 24 24">
-                    <Polygon
-                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                      fill={n <= ratingToStars(savedRating) ? colors.rating : 'none'}
-                      stroke={colors.rating}
-                      strokeWidth={1.5}
-                      strokeLinejoin="round"
-                    />
-                  </Svg>
-                ))}
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.takeTitle}>{hasTake ? MEDIA_PANEL.yourTake : MEDIA_PANEL.leaveNoteOrReview}</Text>
-                <Text style={styles.takePreview} numberOfLines={1}>{takePreview}</Text>
-              </View>
-              {hasPrivateNote && <IconLock />}
-              <IconChevron dir={takeOpen ? 'up' : 'down'} />
-            </TouchableOpacity>
-            {takeOpen && (
-              <ScrollView style={styles.takeBody} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-                {watched ? (
-                  <>
-                    <View style={styles.watchedOnRow}>
-                      <Text style={styles.watchedOnLabel}>{MEDIA_PANEL.watchedOn}</Text>
-                      <TouchableOpacity
-                        style={styles.watchedOnBtn}
-                        onPress={() => setPickingDate(true)}
-                        accessibilityRole="button"
-                        accessibilityLabel={MEDIA_PANEL.watchedOn}
-                      >
-                        <Text style={styles.watchedOnValue}>{formatWatchedOn(localWatchedAt || defaultWatchedAt)}</Text>
-                      </TouchableOpacity>
-                    </View>
-                    {pickingDate && (
-                      <View style={styles.datePickerWrap}>
-                        <DateTimePicker
-                          value={new Date(`${localWatchedAt || defaultWatchedAt}T12:00:00`)}
-                          mode="date"
-                          maximumDate={new Date()}
-                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                          style={styles.datePicker}
-                          onChange={(event, date) => {
-                            if (Platform.OS !== 'ios') setPickingDate(false);
-                            if (event.type === 'dismissed' || !date) return;
-                            setLocalWatchedAt(ymd(date));
-                          }}
-                        />
-                        {Platform.OS === 'ios' && (
-                          <TouchableOpacity style={styles.watchedOnDone} onPress={() => setPickingDate(false)}>
-                            <Text style={styles.watchedOnDoneText}>{COMMON.done}</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    )}
-                    <View style={styles.reviewHeader}>
-                      <StarRow rating={localRating} onChange={setLocalRating} />
-                      <TouchableOpacity style={[styles.dnfChip, localDnf && styles.dnfChipActive]} onPress={() => setLocalDnf(d => !d)}>
-                        {localDnf && <IconCheck color="#fb923c" />}
-                        <Text style={[styles.dnfText, localDnf && { color: '#fb923c' }]}>{MEDIA_PANEL.didntFinish}</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <TextInput
-                      ref={reviewInputRef}
-                      style={[styles.reviewInput, focusReviewAfterPrompt && styles.reviewInputFocused]}
-                      value={localReview}
-                      onChangeText={t => { if (t.length <= 280) setLocalReview(t); }}
-                      onBlur={() => setFocusReviewAfterPrompt(false)}
-                      placeholder="Write a quick review…"
-                      placeholderTextColor={colors.textMuted}
-                      multiline
-                      maxLength={280}
-                    />
-                    {(hasSavedReview || localRating > 0 || localReview.trim() || localDnf || localWatchedAt !== savedWatchedAt) && (
-                      <TouchableOpacity
-                        style={[styles.pill, styles.pillPrimary, { alignSelf: 'flex-start', marginTop: spacing.sm }]}
-                        disabled={savingReview}
-                        onPress={async () => {
-                          setSavingReview(true);
-                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watched_at: localWatchedAt || defaultWatchedAt }, itemType);
-                          setSavingReview(false);
-                        }}
-                      >
-                        <Text style={[styles.pillText, { color: colors.onAccentFill }]}>
-                          {savingReview ? COMMON.saving : reviewDirty ? MEDIA_PANEL.saveChanges : hasSavedReview ? MEDIA_PANEL.editReview : MEDIA_PANEL.saveReview}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </>
-                ) : (
-                  <Text style={styles.takeNeeds}>{MEDIA_PANEL.takeNeedsWatch}</Text>
-                )}
-                <PrivateNote id={itemId} type={itemType} title={title} />
-              </ScrollView>
-            )}
-          </View>
+        {!loading && !error && details && (
+          <TitleFootBar
+            key={`${itemType}:${itemId}`}
+            itemId={itemId}
+            itemType={itemType}
+            title={title}
+            watched={watched}
+            dnf={!!watchedEntry?.dnf}
+            rating={savedRating}
+            review={savedReviewText}
+            watchedAt={savedWatchedAt}
+            isTv={!isMovie}
+            isWatching={isWatching}
+            busy={footBusy || !!statusPending}
+            isPublicProfile={!!profile?.is_public}
+            hasUser={!!userId}
+            privateNotes={privateNotes}
+            onMarkWatched={footMarkWatched}
+            onStartWatching={footStartWatching}
+            onUndoWatched={footUndoWatched}
+            onRate={async (value) => !!await history.updateEntry(itemId, { rating: value || null, note: savedReviewText || null, dnf: !!watchedEntry?.dnf, watched_at: savedWatchedAt }, itemType)}
+            onSaveReview={async ({ note, watchedAt }) => !!await history.updateEntry(itemId, { rating: savedRating || null, note, dnf: !!watchedEntry?.dnf, watched_at: watchedAt }, itemType)}
+          />
         )}
 
         </KeyboardAvoidingView>
@@ -1937,55 +1537,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   body: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl },
 
-  engagementBar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surfaceSunken,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  engagementRow: {
-    // Label on its own line, CTAs below. Phone width cannot fit "How was it?"
-    // + five stars + two buttons on one row without an ugly mid-CTA wrap.
-    flexDirection: 'column',
-    alignItems: 'stretch',
-    gap: spacing.sm,
-  },
-  engagementTitle: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.sm,
-    color: colors.textPrimary,
-  },
-  engagementActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  engagementPrimary: {
-    backgroundColor: colors.accentFill,
-    borderRadius: radii.md,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.md,
-  },
-  engagementPrimaryText: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.sm,
-    color: colors.onAccentFill,
-  },
-  engagementGhost: {
-    borderRadius: radii.md,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.sm,
-  },
-  engagementGhostText: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  engagementDisabled: { opacity: 0.55 },
 
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg, marginBottom: spacing.lg },
   poster: {
@@ -2072,17 +1623,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   watchRegion: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted, marginBottom: spacing.sm },
   networkRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   networkLogo: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surfaceRaised },
-  takeBar: {
-    backgroundColor: colors.surfaceSunken,
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
-    paddingHorizontal: spacing.xl,
-  },
-  takeHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
-  takeStars: { flexDirection: 'row', gap: 1 },
-  takeTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
-  takePreview: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted, marginTop: 1 },
-  takeBody: { maxHeight: 320, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingBottom: spacing.md },
-  takeNeeds: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, paddingVertical: spacing.md },
   // btnSecondary is flex:1 for row use; btnPrimary is not, so it needs this to
   // share a row evenly. btnStandalone undoes the flex when one sits alone in a
   // column, where flex:1 would stretch it to the container's height.
@@ -2112,45 +1652,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   sectionTitle: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.md },
 
-  reviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
-  dnfChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radii.pill, borderWidth: 1.5, borderColor: colors.border },
-  dnfChipActive: { borderColor: 'rgba(251,146,60,0.5)', backgroundColor: 'rgba(251,146,60,0.12)' },
-  dnfText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted },
-  watchedOnRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    // The Watched button above is a filled block, so the row needs real
-    // separation from it — butted up against the button they read as one
-    // control. Larger above than below, since the review block follows.
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  watchedOnLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
   // Same pill as the Didn't finish chip beside it: pill radius, 1.5 border,
   // small bold uppercase-ish label. They sit in the same block, so matching
   // them stops the review area reading as two different control languages.
-  watchedOnBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 5,
-    borderRadius: radii.pill,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  watchedOnValue: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted },
-  datePickerWrap: { alignItems: 'center', marginBottom: spacing.md },
   // The inline picker reports no intrinsic width to flexbox, so it needs one
   // to centre against; 320 is the widest the iOS calendar grid draws.
-  datePicker: { width: 320, alignSelf: 'center' },
-  watchedOnDone: { alignSelf: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
-  watchedOnDoneText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
 
-  reviewInput: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: radii.md,
-    padding: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary,
-    minHeight: 72, textAlignVertical: 'top', backgroundColor: colors.surface,
-  },
-  reviewInputFocused: {
-    borderColor: colors.accentFill,
-  },
 
   providerChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border },
   providerChipCinema: { alignSelf: 'flex-start', backgroundColor: colors.accentDim, borderColor: colors.accent + '66', marginBottom: spacing.md },

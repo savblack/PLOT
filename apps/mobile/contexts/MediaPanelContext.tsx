@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
-import { onPendingWatchQueued } from '@plot/core/engagementPrompt.js';
+import { onPendingWatchQueued } from '@plot/core/watchQueued.js';
 
 export type PanelItemType = 'movie' | 'tv' | 'collection';
 
