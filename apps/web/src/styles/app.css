@@ -3252,6 +3252,21 @@ svg { stroke-width: 1.5; }
 .mylists-card-indicator--review { right: 7px; }
 .mylists-card-indicator svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 @media (hover: none) { .mylists-card-action { opacity: 1; } }
+/* Status chip on a list title (Watching / Watched / Didn't finish). Sits over
+   the poster in the grid and at the end of the row in the list. */
+.watch-chip { display: inline-flex; align-items: center; flex-shrink: 0; padding: 2px 8px; border-radius: var(--radius-pill); font-size: .68rem; font-weight: 600; line-height: 1.5; white-space: nowrap; }
+.watch-chip--watched { background: var(--accent-secondary-fill); color: var(--on-accent-secondary-fill); }
+.watch-chip--watching { background: var(--accent-fill); color: var(--on-accent-fill); }
+.watch-chip--dnf { background: color-mix(in srgb, var(--chip-tomorrow) 28%, var(--surface-raised)); color: var(--text-primary); }
+.mylists-card-img .watch-chip { position: absolute; top: 7px; left: 7px; }
+/* Finished titles (watched, didn't finish) grey out. Only the artwork and the
+   title fade; the chip stays at full strength so the status still reads. */
+.mylists-card--finished .mylists-card-img > img,
+.mylists-card--finished .mylists-card-placeholder,
+.list-page-row--finished .list-page-row-poster { filter: saturate(.2); opacity: .5; }
+.mylists-card--finished .mylists-card-title,
+.list-page-row--finished .list-page-row-title { color: var(--text-muted); }
+.list-page-row .watch-chip { align-self: flex-start; margin-top: 2px; }
 .list-page-row { position: relative; display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
 .list-page-row-poster { width: 54px; aspect-ratio: 2/3; flex-shrink: 0; overflow: hidden; border: 0; border-radius: 8px; background: var(--surface-sunken); padding: 0; cursor: pointer; }
 .list-page-row-poster img { width: 100%; height: 100%; display: block; object-fit: cover; }

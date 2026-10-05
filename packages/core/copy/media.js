@@ -32,6 +32,8 @@ export const MEDIA = {
   searchByTitle: 'Try searching by title',
   searchByTitleBody: 'Search works best with a movie or TV title rather than a director, cast member, or creator name.',
   saveToWatchlist: 'Add to watchlist',
+  // The status chip on a list title.
+  watchStatus: { watching: 'Watching', watched: 'Watched', dnf: "Didn't finish" },
   removeFromWatchlist: 'Remove from watchlist',
   today: 'Today',
   tomorrow: 'Tomorrow',

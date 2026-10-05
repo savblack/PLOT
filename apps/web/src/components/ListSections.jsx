@@ -17,7 +17,8 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import { DiscoverSectionHeader } from './DiscoverView.jsx';
 import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
-import { CardGrid, ListCard, SelectCircle } from './ListCards.jsx';
+import { CardGrid, ListCard, SelectCircle, WatchStatusChip } from './ListCards.jsx';
+import { isFinishedStatus, listWatchStatus } from '@plot/core/listWatchStatus.js';
 import { MEDIA } from '../copy/media.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
@@ -533,22 +534,23 @@ function wantMeta(item) {
   return parts.join(' · ');
 }
 
-export function ListPageRow({ item, title, meta, open, selection, note }) {
+export function ListPageRow({ item, title, meta, open, selection, note, watchStatus = null }) {
   return (
-    <div className="list-page-row">
+    <div className={`list-page-row${isFinishedStatus(watchStatus) ? ' list-page-row--finished' : ''}`}>
       <button type="button" className="list-page-row-poster" onClick={open} aria-label={title}>{item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />}</button>
       <div className="list-page-row-copy">
         <button type="button" className="list-page-row-title" onClick={open}>{title}</button>
         <div className="list-page-row-meta">{meta}</div>
         {note}
       </div>
+      <WatchStatusChip status={watchStatus} />
       {selection.editMode && <SelectCircle variant="row" selected={selection.selected.has(item.tmdb_id)} onClick={open} label={`Select ${title}`} />}
     </div>
   );
 }
 
 export function WantToWatchSection({ items, count = items.length, narrowed, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
-  const { openPanel, watchlist, privateNotes, favorites, profile } = useApp();
+  const { openPanel, watchlist, watching, privateNotes, favorites, profile } = useApp();
   const fw = favoriteWords(profile?.region);
   const selection = useSelection();
   const [showAdd, setShowAdd] = useState(false);
@@ -591,7 +593,7 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
           {pageLayout && <CardGrid>{items.map(item => {
             const title = item.title || item.name || MEDIA.unknown;
             const type = item.media_type || 'movie';
-            return <ListCard key={`${type}:${item.tmdb_id}`} title={title} img={posterUrl(item.poster_path, 'w185')} meta={wantMeta(item)} {...cardState(item, historyEntries, privateNotes)} {...cardActions(item, favorites, watchlist, fw)} onOpen={() => openPanel(item.tmdb_id, type)} editMode={selection.editMode} selected={selection.selected.has(item.tmdb_id)} onToggleSelect={() => selection.toggle(item.tmdb_id)} />;
+            return <ListCard key={`${type}:${item.tmdb_id}`} title={title} img={posterUrl(item.poster_path, 'w185')} meta={wantMeta(item)} {...cardState(item, historyEntries, privateNotes, watching?.items)} {...cardActions(item, favorites, watchlist, fw)} onOpen={() => openPanel(item.tmdb_id, type)} editMode={selection.editMode} selected={selection.selected.has(item.tmdb_id)} onToggleSelect={() => selection.toggle(item.tmdb_id)} />;
           })}</CardGrid>}
           <div className="private-watchlist">
             {items.map(item => {
@@ -599,7 +601,7 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
             const type = item.media_type || 'movie';
             const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, type);
             return pageLayout ? (
-              <ListPageRow key={`${type}:${item.tmdb_id}`} item={item} title={title} meta={wantMeta(item)} open={open} selection={selection} note={!selection.editMode && <PrivateNote id={item.tmdb_id} type={type} title={title} />} />
+              <ListPageRow key={`${type}:${item.tmdb_id}`} item={item} title={title} meta={wantMeta(item)} open={open} selection={selection} watchStatus={listWatchStatus(item, historyEntries, watching?.items)} note={!selection.editMode && <PrivateNote id={item.tmdb_id} type={type} title={title} />} />
             ) : (
               <div className="private-watchlist-row" key={`${type}:${item.tmdb_id}`}>
                 <button type="button" className="private-watchlist-poster" onClick={open} aria-label={title}>
@@ -626,7 +628,7 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
 
 /* ── Favourites ── */
 export function FavoritesSection({ favorites: favsHook, visibleItems, count, typeFilters, genreFilters = [], narrowed, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
-  const { openPanel, profile, watchlist, privateNotes } = useApp();
+  const { openPanel, profile, watchlist, watching, privateNotes } = useApp();
   const fw = favoriteWords(profile?.region);
   const [showAdd, setShowAdd] = useState(false);
   const selection = useSelection();
@@ -678,7 +680,7 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
                 title={title}
                 img={posterUrl(item.poster_path, 'w185')}
                 meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}
-                {...(pageLayout ? cardState(item, historyEntries, privateNotes) : {})}
+                {...(pageLayout ? cardState(item, historyEntries, privateNotes, watching?.items) : {})}
                 {...(pageLayout ? cardActions(item, favsHook, watchlist, fw) : {})}
                 onOpen={() => openPanel(item.tmdb_id, item.media_type)}
                 editMode={selection.editMode}
@@ -691,7 +693,7 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
         {pageLayout && <div className="list-page-rows">{visible.map(item => {
           const title = item.title || MEDIA.unknown;
           const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, item.media_type);
-          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie} open={open} selection={selection} />;
+          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie} open={open} selection={selection} watchStatus={listWatchStatus(item, historyEntries, watching?.items)} />;
         })}</div>}
         </div>
       )}
@@ -716,7 +718,7 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
    column, an Added by line on every title, Watch together beside Add a title,
    and on a phone A8's people line, which opens who added what. */
 export function CustomListSection({ list, visibleItems, count, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
-  const { openPanel, favorites, watchlist, privateNotes, profile, user } = useApp();
+  const { openPanel, favorites, watchlist, watching, privateNotes, profile, user } = useApp();
   const navigate = useNavigate();
   const fw = favoriteWords(profile?.region);
   const { renameList, setListVisibility, addItem, removeItem, deleteList, leaveList } = customLists;
@@ -883,7 +885,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
                 title={title}
                 img={posterUrl(item.poster_path, 'w185')}
                 meta={cardMeta(item)}
-                {...(pageLayout ? cardState(item, historyEntries, privateNotes) : {})}
+                {...(pageLayout ? cardState(item, historyEntries, privateNotes, watching?.items) : {})}
                 {...(pageLayout ? cardActions(item, favorites, watchlist, fw) : {})}
                 onOpen={() => openPanel(item.tmdb_id, item.media_type)}
                 editMode={selection.editMode}
@@ -896,7 +898,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
         {pageLayout && <div className="list-page-rows">{visible.map(item => {
           const title = item.title || MEDIA.unknown;
           const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, item.media_type);
-          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={shared ? kindOf(item) : cardMeta(item)} open={open} selection={selection} note={shared ? rowByline(item) : null} />;
+          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={shared ? kindOf(item) : cardMeta(item)} open={open} selection={selection} watchStatus={listWatchStatus(item, historyEntries, watching?.items)} note={shared ? rowByline(item) : null} />;
         })}</div>}
         </div>
       )}
