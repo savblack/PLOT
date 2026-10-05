@@ -100,7 +100,7 @@ export const NEW_MOVIE_NOTIFICATION = Object.freeze({
 });
 
 /**
- * A streaming_arrival row (Premium: a film you turned the bell on for reached
+ * A streaming_arrival row (Free, automatic: a film on your watchlist reached
  * a service) has no actor, so it reads "<title> <phrase>" under a small badge.
  * release_kind says which: 'streaming' (a subscription on one of your services)
  * or 'free' (free or free with ads, on any service). provider_name is the

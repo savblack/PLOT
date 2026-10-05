@@ -22,6 +22,7 @@ import { relativeTime } from '@plot/core/date.js';
 import { Avatar } from '../../components/Avatar';
 import { posterUrl, profileUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { PEOPLE } from '@plot/core/copy/people.js';
+import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
 import { AcceptSheet } from '../../components/watch/AcceptSheet';
@@ -236,6 +237,16 @@ export default function NotificationsScreen() {
             >
               <Text style={styles.peopleFooterBody}>{PEOPLE.notificationsFooter.body}</Text>
               <Text style={styles.peopleFooterLink}>{PEOPLE.notificationsFooter.link}</Text>
+            </TouchableOpacity>
+          )}
+          {list.some((n: NotificationRow) => n.type === 'streaming_arrival') && (
+            <TouchableOpacity
+              onPress={() => router.push('/(app)/settings?section=viewing' as Href)}
+              accessibilityRole="button"
+              style={styles.peopleFooter}
+            >
+              <Text style={styles.peopleFooterBody}>{STREAMING_ALERTS.notificationsFooter.body}</Text>
+              <Text style={styles.peopleFooterLink}>{STREAMING_ALERTS.notificationsFooter.link}</Text>
             </TouchableOpacity>
           )}
           </>
