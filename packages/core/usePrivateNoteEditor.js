@@ -17,13 +17,15 @@ export function usePrivateNoteEditor(store, id, type, title) {
     setEditing(true); setStatus('');
   };
   const cancel = () => { setDraft(null); setEditing(false); setError(''); setConflict(false); };
+  /** @returns {Promise<boolean>} whether the note was written, so a caller saving more than one thing can stop on failure */
   const save = async (remove = false) => {
-    if (busy || conflict) return;
+    if (busy || conflict) return false;
     setBusy(true); setError('');
     try {
       await store.save({ id, type, title, text: remove ? '' : draft, revision });
       setDraft(null); setEditing(false); setStatus(remove ? PRIVATE_NOTES.deleted : PRIVATE_NOTES.saved);
-    } catch (e) { setError(e.conflict ? PRIVATE_NOTES.conflict : PRIVATE_NOTES.saveError); setConflict(!!e.conflict); }
+      return true;
+    } catch (e) { setError(e.conflict ? PRIVATE_NOTES.conflict : PRIVATE_NOTES.saveError); setConflict(!!e.conflict); return false; }
     finally { setBusy(false); }
   };
   const reload = async () => { if (await store.reload()) cancel(); };

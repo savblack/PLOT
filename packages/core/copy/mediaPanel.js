@@ -107,4 +107,43 @@ export const MEDIA_PANEL = {
   removeReview: 'Remove review',
   couldNotSaveReview: 'Could not save your review. Please try again.',
   charactersLeft: (count) => `${count} left`,
+
+  // The foot bar pinned to the bottom of the title panel. One shape in every
+  // state: a head line, the stars, then a Review box and a Private note box
+  // once the title is watched. The older yourTake / takeHint strings above are
+  // still read by mobile until it adopts this bar.
+  foot: {
+    unwatchedHead: 'Watched it?',
+    unwatchedHint: 'Tap a star to rate it',
+    iveWatched: "I've watched",
+    imWatching: "I'm watching",
+    head: 'Thoughts?',
+    watchedOn: (date) => `Watched on ${date}`,
+    watchedJustNow: 'Watched',
+    undo: 'Undo',
+    changeWatchedDate: (label) => `${label}, change date`,
+    reviewLabel: 'Review',
+    reviewEmpty: 'What did you think?',
+    // Who can read a review follows the viewer's own profile setting; see
+    // PROFILE_PRIVACY for the rules these two lines summarise.
+    reviewAudiencePublic: 'Visible on your profile',
+    reviewAudiencePrivate: 'Visible to your followers',
+    // Tags a box whose text is an unsaved draft kept after closing the editor.
+    draft: 'Draft',
+    addReview: 'Add your review',
+    editReview: 'Edit your review',
+    noteLabel: 'Private note',
+    noteEmpty: 'Add a thought for later',
+    noteAudience: 'Only visible to you',
+    addNote: 'Add your private note',
+    editNote: 'Edit your private note',
+    editorTitle: 'Review and notes',
+    rating: 'Rating',
+    saved: 'Saved',
+    reviewPlaceholder: 'What did you think?',
+    ratingStars: (stars) => `Rate ${stars - 0.5} or ${stars} stars`,
+    watchedAndRated: (stars) => `Watched and rated ${stars} ${stars === 1 ? 'star' : 'stars'}`,
+    watchedRemoved: 'Watched removed',
+    deleted: 'Deleted',
+  },
 };

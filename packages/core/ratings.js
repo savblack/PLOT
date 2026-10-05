@@ -33,3 +33,17 @@ export function ratingFromPointer(event, starIndex) {
   const isLeftHalf = event.clientX - rect.left < rect.width / 2;
   return starIndex * 2 - (isLeftHalf ? 1 : 0);
 }
+
+/** Longest written review, in characters. */
+export const REVIEW_MAX = 280;
+
+/**
+ * What tapping a star does to the current rating: the same score again clears it.
+ * Both are on the stored 1-10 scale.
+ * @param {number} current
+ * @param {number} picked
+ * @returns {number} the new rating, 0 meaning none
+ */
+export function nextRating(current, picked) {
+  return normalizeRating(current) === normalizeRating(picked) ? 0 : normalizeRating(picked);
+}

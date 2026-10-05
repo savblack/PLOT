@@ -2,7 +2,7 @@ export const PRIVATE_NOTES = Object.freeze({
   add: 'Add a private note',
   edit: 'Edit private note',
   label: 'Your private note',
-  privacy: 'Only you can see this. Never posted as a review.',
+  privacy: 'Only visible to you',
   placeholder: 'Who recommended it? Who is it for? Why this one?',
   save: 'Save note',
   saved: 'Note saved',

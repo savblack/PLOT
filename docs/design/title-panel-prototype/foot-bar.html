@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PLOT · Title panel foot bar, proposal</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="foot-bar.css">
+</head>
+<body>
+
+<div class="studio">PLOT / Title detail panel · Foot bar proposal · Sample data</div>
+
+<section class="controls" aria-label="Prototype controls">
+  <div class="control">
+    <span class="control-label">Jump to state</span>
+    <div class="seg" role="group" aria-label="State" data-seg="state">
+      <button type="button" data-v="unwatched">Not watched</button>
+      <button type="button" data-v="watched">Just marked</button>
+      <button type="button" data-v="unrated">Watched</button>
+      <button type="button" data-v="rated">Rated</button>
+      <button type="button" data-v="taken">Reviewed</button>
+    </div>
+  </div>
+  <div class="control">
+    <span class="control-label">Title</span>
+    <div class="seg" role="group" aria-label="Title type" data-seg="kind">
+      <button type="button" data-v="film">Film</button>
+      <button type="button" data-v="series">Series</button>
+    </div>
+  </div>
+  <div class="control">
+    <span class="control-label">Profile</span>
+    <div class="seg" role="group" aria-label="Profile visibility" data-seg="profile">
+      <button type="button" data-v="public">Public</button>
+      <button type="button" data-v="private">Private</button>
+    </div>
+  </div>
+  <div class="control">
+    <span class="control-label">Device</span>
+    <div class="seg" role="group" aria-label="Device" data-seg="device">
+      <button type="button" data-v="desktop">Panel</button>
+      <button type="button" data-v="phone">Phone</button>
+    </div>
+  </div>
+</section>
+
+<main class="panel mock" id="panel">
+
+  <div class="scroll" id="scroll">
+    <div class="cover">
+      <img src="../../../apps/web/public/website-images/hero/oppenheimer.webp" alt="">
+      <button class="close" type="button" aria-label="Close">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="body">
+      <div class="head">
+        <img src="../../../apps/web/public/website-images/hero/oppenheimer.webp" alt="Oppenheimer">
+        <div>
+          <div class="eyebrow" id="kind-label">Film</div>
+          <h2>Oppenheimer</h2>
+          <div class="facts">2023 · 3h 1m · Rated MA15+<br>Christopher Nolan</div>
+          <div class="chips"><span class="chip">Drama</span><span class="chip">History</span></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="pill pill--save" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          Save
+        </button>
+        <button class="pill pill--status" type="button" id="status-pill" aria-live="polite"></button>
+        <div class="spacer"></div>
+        <button class="disc disc--fav" type="button" aria-label="Favourite">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        </button>
+        <button class="disc" type="button" aria-label="Add to a list">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </button>
+        <button class="disc" type="button" aria-label="Share">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
+      </div>
+
+      <p class="filler-title">Overview</p>
+      <div class="filler"><i></i><i></i><i style="width:72%"></i></div>
+      <p class="filler-title">Cast</p>
+      <div class="filler filler--rail"><i></i><i></i><i></i><i></i></div>
+      <p class="filler-title">Trailer</p>
+      <div class="filler filler--video"></div>
+      <p class="filler-title">More like this</p>
+      <div class="filler filler--rail"><i></i><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <div class="scrim" id="scrim" hidden></div>
+
+  <div class="foot" id="foot"></div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</main>
+
+<aside class="rationale">
+  <strong>Foot bar · what changed and why</strong>
+  <ol>
+    <li><b>One bar, one shape.</b> Today the foot swaps between "Watched it?", "How was it?" and the collapsed take bar, each a different layout, so it jumps as you act. Now it is always the same grid: a head line (Watched it? or Thoughts?, with the watch status chip on the right), then stars on the left and the one next action on the right, then the written review as a quote card once there is one.</li>
+    <li><b>Stars always work.</b> They are live in the collapsed bar, so rating is one tap, half stars included. Tapping a star on an unwatched title logs it as watched and rates it in the same gesture.</li>
+    <li><b>No dead end.</b> "Mark this watched to rate it" is gone. Review and private note boxes only appear once the title is watched, and each has a plus when empty and a pencil when written, as the design system describes.</li>
+    <li><b>No nag, so no "Not yet" and no snooze.</b> The bar is quiet and always there, so there is nothing to dismiss.</li>
+    <li><b>Marking watched is forgiving.</b> The bar confirms in place with Undo and a date change, then settles on its own after six seconds. It never opens a sheet unasked.</li>
+    <li><b>Reviews write in place.</b> On the panel the editor grows upward from the bar. On a phone it is a sheet. Rating saves immediately, and an unsaved draft survives closing.</li>
+    <li><b>One source of truth.</b> The Watched pill in the action row and the bar always agree. I've watched appears in the bar only while the title is unwatched.</li>
+  </ol>
+  Static design study with sample data. Nothing here is saved.
+</aside>
+
+<script src="foot-bar.js"></script>
+</body>
+</html>
