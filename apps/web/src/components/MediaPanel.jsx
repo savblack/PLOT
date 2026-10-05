@@ -28,6 +28,7 @@ import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiograph
 import { canCreateCustomList } from '@plot/core/premium.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import { SeasonReadyAlert } from './PremiumAlertButtons.jsx';
+import StreamingAlertsCard from './StreamingAlertsCard.jsx';
 import { CastFollowCard, CrewFollowRow, PersonFollow } from './PeopleFollow.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -2065,6 +2066,9 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 on the viewer's services. Beside Where to watch, because it is
                 the same question asked of the future. */}
             {!isMovie && details && <SeasonReadyAlert show={details} />}
+            {/* Free: the film equivalent, for a film on the watchlist. The watchlist
+                is the opt-in, so this is only a way to mute it. */}
+            {isMovie && details && inList && <StreamingAlertsCard movie={details} />}
 
             {/* ── What everyone else thought ──
                 The two numbers read as a pair, with a real audience review in

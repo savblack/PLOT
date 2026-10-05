@@ -1,5 +1,6 @@
 // Premium whole-season-ready alert on a show (title panel). Following people
-// has its own controls in PeopleFollow.jsx. The opt-in logic lives in
+// has its own controls in PeopleFollow.jsx. Streaming alerts on watchlist films
+// are Free and automatic: see StreamingAlertsCard.jsx. The opt-in logic lives in
 // @plot/core/usePremiumAlerts.js and the database is the
 // authority on Premium; a Free account gets the upgrade sheet, either up front
 // (billing status already says Free) or when the insert comes back
@@ -15,7 +16,7 @@ import { PREMIUM_ALERTS as A } from '@plot/core/copy/premiumAlerts.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import './PremiumAlertButtons.css';
 
-function BellIcon({ on }) {
+export function BellIcon({ on }) {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
