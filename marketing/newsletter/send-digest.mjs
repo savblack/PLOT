@@ -363,14 +363,19 @@ const main = async () => {
   }
 
   const messages = subscribers.map(sub => {
-    const unsubscribeUrl = `${supabaseUrl}/functions/v1/newsletter-subscribe?action=unsubscribe&token=${sub.unsubscribe_token}`;
+    // The visible link goes to a real web page: Supabase serves anything from a
+    // *.supabase.co function as text/plain under a sandbox CSP, so the function
+    // cannot show a person a page. The List-Unsubscribe header keeps pointing at
+    // the function, which is what Gmail/Outlook one-click POSTs to.
+    const oneClickUrl = `${supabaseUrl}/functions/v1/newsletter-subscribe?action=unsubscribe&token=${sub.unsubscribe_token}`;
+    const unsubscribeUrl = `${APP}/newsletter/unsubscribe?token=${encodeURIComponent(sub.unsubscribe_token)}`;
     return {
       from: FROM_MARKETING,
       to: [sub.email],
       subject,
       html: buildHtml(data, unsubscribeUrl),
       headers: {
-        'List-Unsubscribe': `<${unsubscribeUrl}>`,
+        'List-Unsubscribe': `<${oneClickUrl}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
     };

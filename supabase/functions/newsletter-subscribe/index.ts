@@ -7,11 +7,23 @@
  *                                  waitlist; anything else to the newsletter.
  *                                  `source` tags where a waitlist signup came
  *                                  from. Always returns ok — no address enumeration.
- * GET  ?action=unsubscribe&token -> confirmation page with an unsubscribe button.
- * POST ?action=unsubscribe&token -> performs the unsubscribe. Also serves Gmail/
- *                                  Outlook one-click List-Unsubscribe POSTs.
+ * GET  ?action=unsubscribe&token -> redirects to the web app's unsubscribe page
+ *                                  (never unsubscribes: mail scanners prefetch
+ *                                  links). Supabase serves function responses as
+ *                                  text/plain under a sandbox CSP, so the function
+ *                                  cannot show a page itself; this only rescues
+ *                                  links in digests sent before the email linked
+ *                                  to the page directly.
+ * POST ?action=unsubscribe&token -> performs the unsubscribe and answers JSON with
+ *                                  CORS, so the web page can read the result. Also
+ *                                  serves Gmail/Outlook one-click List-Unsubscribe
+ *                                  POSTs.
  *
  * Deploy with --no-verify-jwt (public website form + email clients call this).
+ *
+ * Optional env:
+ *   NEWSLETTER_APP_ORIGIN     - where the GET redirect sends people (default
+ *                               https://app.theplot.tv; set on Staging)
  *
  * Optional secrets (best-effort Brevo sync, skipped entirely if unset):
  *   BREVO_API_KEY             - Brevo API key
@@ -31,6 +43,8 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
+
+const APP_ORIGIN = 'https://app.theplot.tv';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -63,23 +77,6 @@ function subRateLimited(ip: string): boolean {
   return rec.count > SUB_MAX;
 }
 
-const page = (title: string, body: string, status = 200) =>
-  new Response(
-    `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>${title}</title>
-    <style>
-      body { font-family: 'DM Sans', system-ui, sans-serif; background: #F8F2EA; color: #292924; /* colors.light bg/textPrimary */
-             display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-      .box { background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); border-radius: 16px; padding: 36px; max-width: 420px; text-align: center;
-             }
-      h1 { font-size: 1.2rem; margin: 0 0 10px; }
-      p { color: #5F5A52; font-size: 0.95rem; line-height: 1.5; }
-      button { background: #FF88C8; color: #292924; /* accentFill / onAccentFill */ border: none; border-radius: 9999px;
-               padding: 12px 28px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 14px; }
-    </style></head><body><div class="box">${body}</div></body></html>`,
-    { status, headers: { 'Content-Type': 'text/html; charset=utf-8', ...CORS } },
-  );
-
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -99,44 +96,41 @@ Deno.serve(async (req) => {
   // ── Unsubscribe flow ──
   if (url.searchParams.get('action') === 'unsubscribe') {
     const token = url.searchParams.get('token') ?? '';
-    if (!token) return page('plot', '<h1>Missing token</h1>', 400);
+
+    // A GET only ever redirects. It must never change anything: mail scanners
+    // and link previews open every link in an email.
+    if (req.method === 'GET') {
+      const origin = (Deno.env.get('NEWSLETTER_APP_ORIGIN') || APP_ORIGIN).replace(/\/+$/, '');
+      const target = `${origin}/newsletter/unsubscribe${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+      return new Response(null, { status: 302, headers: { Location: target, ...CORS } });
+    }
+    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+    if (!token) return json({ error: 'Missing token' }, 400);
 
     const { data: sub } = await supabase
       .from('marketing_subscribers')
       .select('id, status, email')
       .eq('unsubscribe_token', token)
       .maybeSingle();
-    if (!sub) return page('plot', '<h1>Link not valid</h1>', 404);
+    if (!sub) return json({ error: 'Link not valid' }, 404);
 
-    if (req.method === 'GET') {
-      if (sub.status === 'unsubscribed') {
-        return page('plot', '<h1>Unsubscribed</h1><p>You will not receive the plot digest again.</p>');
+    await supabase
+      .from('marketing_subscribers')
+      .update({ status: 'unsubscribed', unsubscribed_at: new Date().toISOString() })
+      .eq('id', sub.id);
+
+    const brevoKey = Deno.env.get('BREVO_API_KEY');
+    const brevoMarketingListId = Deno.env.get('BREVO_MARKETING_LIST_ID');
+    if (brevoKey && brevoMarketingListId && sub.email) {
+      try {
+        await upsertBrevoContact({ apiKey: brevoKey, email: sub.email, attributes: { OPT_IN: false } });
+        await removeContactFromList({ apiKey: brevoKey, listId: Number(brevoMarketingListId), email: sub.email });
+      } catch (error) {
+        console.error('Failed to sync unsubscribe to Brevo:', error instanceof Error ? error.message : error);
       }
-      return page('plot — unsubscribe', `
-        <h1>Unsubscribe from the plot digest?</h1>
-        <button onclick="fetch(location.href,{method:'POST'}).then(()=>location.reload())">Unsubscribe</button>`);
     }
-
-    if (req.method === 'POST') {
-      await supabase
-        .from('marketing_subscribers')
-        .update({ status: 'unsubscribed', unsubscribed_at: new Date().toISOString() })
-        .eq('id', sub.id);
-
-      const brevoKey = Deno.env.get('BREVO_API_KEY');
-      const brevoMarketingListId = Deno.env.get('BREVO_MARKETING_LIST_ID');
-      if (brevoKey && brevoMarketingListId && sub.email) {
-        try {
-          await upsertBrevoContact({ apiKey: brevoKey, email: sub.email, attributes: { OPT_IN: false } });
-          await removeContactFromList({ apiKey: brevoKey, listId: Number(brevoMarketingListId), email: sub.email });
-        } catch (error) {
-          console.error('Failed to sync unsubscribe to Brevo:', error instanceof Error ? error.message : error);
-        }
-      }
-
-      return page('plot', '<h1>Unsubscribed</h1><p>You will not receive the plot digest again.</p>');
-    }
-    return page('plot', '<h1>Method not allowed</h1>', 405);
+    return json({ ok: true });
   }
 
   // ── Subscribe flow ──
