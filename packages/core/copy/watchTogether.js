@@ -46,7 +46,6 @@ export const WATCH_TOGETHER = Object.freeze({
     getPremium: 'Get Premium',
     premiumNote: (price) => `One of you needs Premium to decide together. ${price}.`,
     seeItTitle: 'See it in action',
-    seeItBody: 'What it looks like with a friend, and a quick try with your own watchlist.',
     seeItDemoBody: 'A quick try with your own watchlist.',
     example: 'Example',
     examplePair: 'You and Sam',
@@ -64,23 +63,6 @@ export const WATCH_TOGETHER = Object.freeze({
     demoNoMatchBody: 'With a friend, you’d keep going through everything you’ve both saved until you both say yes.',
     gotInviteTitle: 'Got an invite?',
     gotInviteBody: 'Accepting is free. You can decide together as long as one of you has Premium.',
-    // Read only by the mobile start page, which still has the old layout (an
-    // overlaps card or a pitch with How it works, an example, and a Premium
-    // welcome). Web no longer shows these; remove them with mobile's redesign.
-    overlapsTitle: 'You already have things in common',
-    overlapsBody: 'People you follow, and how many titles you’ve both saved. Inviting is free.',
-    premiumOverlapsBody: 'People you follow, and how many titles you’ve both saved. They can decide with you for free.',
-    exampleMatch: (title) => `You’re both in: ${title}`,
-    exampleMatchNote: 'Matched while deciding with Sam',
-    howTitle: 'How it works',
-    steps: [
-      { title: 'Invite someone', body: 'They get a request. Inviting and joining are free.' },
-      { title: 'See what you’ve both saved', body: 'Only the titles on both your watchlists.' },
-      { title: 'Swipe together', body: 'Yes or no on each one until you match.' },
-    ],
-    premiumFirstStep: 'They get a request and join for free.',
-    premiumTitle: 'You’re on Premium',
-    premiumBody: 'Anyone you watch together with can decide with you, even on Free.',
     // Premium, still nobody to watch with.
     premiumSeeItBody: 'A quick try with your own watchlist while you wait for someone to accept.',
   },

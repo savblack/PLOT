@@ -38,3 +38,33 @@ test('only watched and didn\'t finish grey out', () => {
   assert.equal(isFinishedStatus('watching'), false);
   assert.equal(isFinishedStatus(null), false);
 });
+
+import { filterByWatchStatus, listProgress } from '@plot/core/listWatchStatus.js';
+
+const items = [
+  { tmdb_id: 1, media_type: 'movie' },
+  { tmdb_id: 2, media_type: 'movie' },
+  { tmdb_id: 3, media_type: 'tv' },
+  { tmdb_id: 4, media_type: 'movie' },
+];
+const history = [
+  { tmdb_id: 1, media_type: 'movie', dnf: false },
+  { tmdb_id: 2, media_type: 'movie', dnf: true },
+];
+const watching = [{ tmdb_id: 3 }];
+
+test('filterByWatchStatus returns everything when nothing is selected', () => {
+  assert.equal(filterByWatchStatus(items, [], history, watching).length, 4);
+});
+
+test('filterByWatchStatus keeps the chosen statuses, with none as not watched', () => {
+  const ids = (sel) => filterByWatchStatus(items, sel, history, watching).map(i => i.tmdb_id);
+  assert.deepEqual(ids(['none']), [4]);
+  assert.deepEqual(ids(['watched']), [1]);
+  assert.deepEqual(ids(['watching', 'dnf']), [2, 3]);
+});
+
+test('listProgress counts finished watches and rounds the percentage', () => {
+  assert.deepEqual(listProgress(items, history, watching), { total: 4, watched: 1, watching: 1, dnf: 1, percent: 25 });
+  assert.deepEqual(listProgress([], history, watching), { total: 0, watched: 0, watching: 0, dnf: 0, percent: 0 });
+});

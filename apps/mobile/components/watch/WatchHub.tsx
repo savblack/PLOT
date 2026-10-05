@@ -294,6 +294,7 @@ export function WatchInvite() {
     <WatchPage>
       <PageTitle>{T.invite.title}</PageTitle>
       <Note>{T.invite.body}</Note>
+      <Note>{T.invite.mutualNote}</Note>
       <TextInput
         value={query}
         onChangeText={setQuery}
@@ -325,7 +326,7 @@ export function WatchInvite() {
             : <PrimaryButton label={T.invite.invite} onPress={() => invite(person)} />}
         />
       ))}
-      <InviteLinkCard compact />
+      <InviteLinkCard />
     </WatchPage>
   );
 }

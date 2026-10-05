@@ -307,7 +307,7 @@ How: the daily run (`only: people`, 21:00 UTC) refreshes `people_feed` (one row 
 
 Air dates alone never qualify: rule 3 is required. **Known limit:** TMDB has no per-episode provider data, so rule 3 is season-level availability after the whole season has aired, not an episode-by-episode check. A service that carries only part of a finished season would still pass. Closing that needs JustWatch partner season offers with an episode count, which this repo does not call yet.
 
-### 5.10a Streaming alerts for your watchlist — **Free, in the app** (built, pending validation); push and email — **Premium**, not built
+### 5.10a Streaming alerts for your watchlist — **Free, in the app** (live); push and email — **Premium**, not built
 
 **Intent:** Everyone with a film on their watchlist ("My List") is told, in the app, when it gains a **subscription** offer on one of their own services (`profiles.streaming_providers`), or becomes **free or free-with-ads on any service**, in their region (`profiles.region`). The watchlist is the opt-in: nothing to switch on. A person can mute one film (the card on the film's page) or turn the whole thing off (Settings > Viewing > Streaming alerts; a "Manage alerts" link sits on the Notifications page). A film coming out to rent or buy after cinemas is the separate `movie_release` row and is not repeated. Leaving-soon stays out of scope (see Pending validation).
 
@@ -331,7 +331,7 @@ Rules are pure and unit-tested: `supabase/functions/_shared/availabilityAlerts.j
 
 **Known limits.** A film's first snapshot happens on the first run after it is added, so a provider that arrives in that window is absorbed into the baseline and not announced. Provider variants (Amazon Channels, "with Ads" tiers) are not collapsed. In-app only. The card and Settings controls are web only (issue 1093); mobile renders the notification row.
 
-**Before it is "live".** Merge with delivery off, let production collect state for about two weeks, then read `alert_job_runs`, `availability_events` and the would-be notifications (a `dry_run`, or the ledger itself) for precision, and check flatrate coverage in AU and US. Then set `STREAMING_ARRIVAL_DELIVER=true`, add `freeFeatures.streamingAlerts` and change the comparison tag from "Pending validation" to "In the app" in `plansPage.js`, and update the FAQ. Until then the card and Settings controls are visible but nothing is delivered, so decide before merging whether to hold the merge until Staging validation instead.
+**Live.** Delivery was switched on in production on 2026-10-05 by setting the `STREAMING_ARRIVAL_DELIVER` secret (it was already on in Staging). The first run after that records baselines and tells nobody, so the earliest real alert is the night after, and only for a provider that appeared and then held. It was switched on without the planned two-week observation period, so watch it: read `alert_job_runs` (look for `ok:false` and `breaker`), `availability_events`, and the notifications that land, and check flatrate coverage in AU and US. To pause it without a deploy, unset the secret (`supabase secrets unset STREAMING_ARRIVAL_DELIVER --project-ref mkegtssedjyqldysvzga`): the job keeps collecting data and stops writing notifications. Rows already written stay.
 
 ### 5.11 Customise your plot — **Premium** (supporting, not lead)
 

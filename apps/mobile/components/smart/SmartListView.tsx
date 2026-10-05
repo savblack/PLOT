@@ -12,6 +12,8 @@ import Svg, { Path } from 'react-native-svg';
 import PlotLoader from '@plot/ui/PlotLoader';
 import { useSmartList } from '@plot/core/useSmartList.js';
 import { useSmartListSeen } from '@plot/core/useSmartListSeen.js';
+import { isFinishedStatus, listWatchStatus } from '@plot/core/listWatchStatus.js';
+import WatchStatusChip from '../WatchStatusChip';
 import { useGenreCatalog } from '@plot/core/useGenres.js';
 import { isSmartListPremiumError } from '@plot/core/customListCreation.js';
 import { pickerProviderIds } from '@plot/core/tonightPicker.js';
@@ -66,7 +68,7 @@ export default function SmartListView({ listId }: { listId: string }) {
   const { width } = useWindowDimensions();
   const posterW = (width - spacing.xl * 2 - spacing.sm * 2) / 3;
   const { open } = useMediaPanel();
-  const { userId, profile, watchlist, history, customLists } = useAppData();
+  const { userId, profile, watchlist, watching, history, customLists } = useAppData();
   const catalogRaw = useGenreCatalog();
   const catalog = useMemo(() => asCatalog(catalogRaw), [catalogRaw]);
   const list = useMemo(
@@ -246,6 +248,7 @@ export default function SmartListView({ listId }: { listId: string }) {
           posterW={posterW}
           styles={styles}
           colors={colors}
+          statusOf={(item) => listWatchStatus(item, history?.entries ?? NONE, watching?.items ?? NONE)}
           onOpen={(item) => open(item.tmdb_id, item.media_type)}
           onUpgrade={openUpgrade}
         />
@@ -291,7 +294,7 @@ function BackBar({ onPress, color }: { onPress: () => void; color: string }) {
 }
 
 function Matches({
-  premium, smart, items, fresh, rest, since, posterW, styles, colors, onOpen, onUpgrade,
+  premium, smart, items, fresh, rest, since, posterW, styles, colors, statusOf, onOpen, onUpgrade,
 }: {
   premium: boolean;
   smart: SmartQuery;
@@ -302,6 +305,7 @@ function Matches({
   posterW: number;
   styles: ReturnType<typeof makeStyles>;
   colors: Palette;
+  statusOf: (item: SmartMatch) => ReturnType<typeof listWatchStatus>;
   onOpen: (item: SmartMatch) => void;
   onUpgrade: () => void;
 }) {
@@ -333,12 +337,15 @@ function Matches({
     <View style={styles.grid}>
       {rows.map((item) => {
         const uri = posterUrl(item.poster_path, 'w185');
+        const status = statusOf(item);
+        const finished = isFinishedStatus(status);
         return (
           <TouchableOpacity key={item.id} style={{ width: posterW }} onPress={() => onOpen(item)} accessibilityRole="button">
             <View style={[styles.poster, { width: posterW, height: posterW * 1.5 }]}>
-              {uri ? <Image source={{ uri }} style={styles.posterImage} /> : null}
+              {uri ? <Image source={{ uri }} style={[styles.posterImage, finished && styles.posterFinished]} /> : null}
+              {status && <View style={styles.statusChipSlot} pointerEvents="none"><WatchStatusChip status={status} /></View>}
             </View>
-            <Text style={styles.posterTitle} numberOfLines={2}>{item.title}</Text>
+            <Text style={[styles.posterTitle, finished && styles.titleFinished]} numberOfLines={2}>{item.title}</Text>
             <Text style={styles.posterMeta}>{item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}</Text>
           </TouchableOpacity>
         );
@@ -426,6 +433,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   poster: { borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   posterImage: { width: '100%', height: '100%' },
+  posterFinished: { opacity: 0.45 },
+  titleFinished: { color: colors.textMuted },
+  statusChipSlot: { position: 'absolute', top: 6, left: 6 },
   posterTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary, marginTop: spacing.xs },
   posterMeta: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
   more: {

@@ -21,7 +21,7 @@ either `theplot.tv` or the owner's `@handle` (never the profile URL; see the
 |---|---|---|---|
 | Highlights ("Your year so far") | sage | count, `movieMinutes`, `topGenreId`, `averageStars` | 10 titles this year |
 | Streak | pink | `streaks().current` | current streak of 3 or more |
-| Activity | cream | watch days from `calendarParts`, 22 weeks, one pink best day named under the grid | watches on 15 distinct days |
+| Activity | cream | watch days from `calendarParts`: the year to date on a post, the last 13 weeks on a story, one pink best day named under the grid | watches on 15 distinct days since 1 January |
 | You vs the crowd | charcoal | `crowdComparison` then `crowdSentence` (against TMDB, never other users) | 10 rated titles with TMDB votes |
 | Top 5 movies | cream | `useTopLists`, TMDB posters, rank numerals as the chart cut-out | the list has 5 |
 | Top 5 TV series | sage | as above | the list has 5 |
@@ -39,9 +39,42 @@ pink numeral, ring of text-shadows in the card colour, 36% of the poster width,
 hanging off the bottom-left corner. Where a numeral crosses the ghost wordmark the
 ring takes the ghost's blended colour (`#ECE6DE` on cream, `#CBD0A3` on sage).
 
+The Activity grid has the weekdays down the side, labelled M T W T F S S, one equal square
+per day and a week per column, with month names over the week each month starts. A post
+shows the year to date: the week holding 1 January to this week, so the grid grows through
+the year, and the cells stop growing at a set size so a young year is a small grid, not a few
+huge squares. A story is too narrow for that many columns, so it shows the last 13 weeks
+with its own months and its own best day. Days outside the range (before 1 January, after
+today) are faint placeholders so the grid stays a rectangle without reading as watched or
+missed days. Today has a charcoal ring. `activityCard` returns both (`weeks` and `quarter`);
+the web and mobile cards read the one their format needs.
+
 Cards below their threshold stay in the carousel, locked, with the number that
 unlocks them ("Rate 10 titles to unlock · 7 of 10"). A locked card never renders
 half-empty and hides the share bar.
+
+## Themes
+
+The cards are drawn in the viewer's own theme family: the share sheet reads `themeFamily`
+from the app (already Premium-gated by `useTheme`), and `ShareCard` takes it as `family`.
+The layout never changes, only the roles:
+
+| Role on the default card | Takes, from the family's light variant |
+|---|---|
+| Pink (accent: chips, best day, rank numerals, lead bar, avatar ring, the pink grounds) | `accentFill`, with `onAccentFill` for text on it |
+| Sage (second voice: heat levels, chips, other bars, the sage grounds) | `accentSecondaryFill`, with `accentSecondary` for the darker heat level |
+| Cream ground | `bg` |
+| Cream panel | `surfaceRaised` |
+| Ink and soft ink | `textPrimary` and `textSecondary` |
+| Charcoal ground and its ink | the family's dark `surface` and `textPrimary` |
+
+`shareCardPalette(family)` in `packages/core/shareCards.js` returns those as CSS custom
+properties (`--sc-*`) for the card's root. The default family returns null, and the defaults
+defined once on `.sc` apply. Only the family is used: the app's light or dark mode does not
+change the cards, because the image goes to someone else's feed. Ink turns the pink cards
+black with white text, and Plum's yellow rank numerals are the faintest on their lavender
+ground. Mobile has no Premium themes yet (they are web-only, issue #1090), so mobile cards
+stay on the default family until it does; `ShareCardView` can read the same palette then.
 
 ## The paths
 

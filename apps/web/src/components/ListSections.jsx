@@ -18,7 +18,7 @@ import ResponsiveDialog from './ResponsiveDialog.jsx';
 import { DiscoverSectionHeader } from './DiscoverView.jsx';
 import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { CardGrid, ListCard, SelectCircle, WatchStatusChip } from './ListCards.jsx';
-import { isFinishedStatus, listWatchStatus } from '@plot/core/listWatchStatus.js';
+import { isFinishedStatus, listProgress, listWatchStatus } from '@plot/core/listWatchStatus.js';
 import { MEDIA } from '../copy/media.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
@@ -831,6 +831,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   return (
     <Frame
       title={list.name}
+      progress={listProgress(allItems, historyEntries, watching?.items)}
       count={count ?? allItems.length}
       subtitle={subtitle}
       {...sharedProps}

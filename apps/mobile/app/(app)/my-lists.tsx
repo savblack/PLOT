@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path, Polyline, Line } from 'react-native-svg';
+import Svg, { Circle, Path, Polyline, Line, Rect } from 'react-native-svg';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
@@ -29,6 +29,8 @@ import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
+import { filterByWatchStatus, isFinishedStatus, listProgress, listWatchStatus, LIST_STATUS_FILTER_IDS, type ListWatchStatus } from '@plot/core/listWatchStatus.js';
+import WatchStatusChip from '../../components/WatchStatusChip';
 import { myListsSearchSources, searchCollectionTitles, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '@plot/core/date.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
@@ -210,8 +212,10 @@ function SectionSelectActions({
 }
 
 // ── List row ──────────────────────────────────────────────────────────
-function ListRow({ item, trailing, onPress, sel }: {
+function ListRow({ item, trailing, onPress, sel, status }: {
   item: any;
+  /** Where the viewer stands with the title; finished ones grey out. */
+  status?: ListWatchStatus | null;
   trailing?: React.ReactNode;
   onPress?: () => void;
   /** Present when the row's section supports multi-select. */
@@ -231,6 +235,7 @@ function ListRow({ item, trailing, onPress, sel }: {
   // In edit mode the whole row toggles selection instead of opening the panel,
   // so a mis-tap picks a title rather than navigating away. Same as web.
   const handlePress = editing ? () => sel!.toggle(item.tmdb_id) : onPress;
+  const finished = isFinishedStatus(status);
 
   return (
     <TouchableOpacity
@@ -241,7 +246,7 @@ function ListRow({ item, trailing, onPress, sel }: {
     >
       <View style={styles.listRowPoster}>
         {img
-          ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ? <Image source={{ uri: img }} style={[StyleSheet.absoluteFill, finished && styles.finishedArt]} resizeMode="cover" />
           : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
         }
         {editing && (
@@ -254,7 +259,7 @@ function ListRow({ item, trailing, onPress, sel }: {
         )}
       </View>
       <View style={styles.listRowInfo}>
-        <Text style={styles.listRowTitle} numberOfLines={2}>{title}</Text>
+        <Text style={[styles.listRowTitle, finished && styles.finishedTitle]} numberOfLines={2}>{title}</Text>
       </View>
       <View style={styles.typeBadge}>
         <Text style={styles.typeBadgeText}>{isTV ? 'Series' : 'Movie'}</Text>
@@ -264,14 +269,17 @@ function ListRow({ item, trailing, onPress, sel }: {
           <Text style={styles.epChipText}>{epCode}</Text>
         </View>
       )}
+      <WatchStatusChip status={status} />
       {trailing}
     </TouchableOpacity>
   );
 }
 
 // ── Poster grid ───────────────────────────────────────────────────────
-function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel, caption }: {
+function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel, caption, statusOf }: {
   items: any[];
+  /** Where the viewer stands with a title; finished ones grey out. */
+  statusOf?: (item: any) => ListWatchStatus | null;
   onRemove?: (tmdbId: number) => void;
   horizontal?: boolean;
   removeLabel?: string;
@@ -289,6 +297,8 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
     const title = item.title || item.name || '';
     const isSelected = !!sel?.selected.has(item.tmdb_id);
     const byline = caption?.(item);
+    const status = statusOf?.(item) ?? null;
+    const finished = isFinishedStatus(status);
     const handlePress = editing
       ? () => sel!.toggle(item.tmdb_id)
       : (onPress ? () => onPress(item) : undefined);
@@ -308,9 +318,10 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
           }
         >
           {img
-            ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            ? <Image source={{ uri: img }} style={[StyleSheet.absoluteFill, finished && styles.finishedArt]} resizeMode="cover" />
             : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
           }
+          {status && <View style={styles.statusChipSlot} pointerEvents="none"><WatchStatusChip status={status} /></View>}
           {/* The per-card ✕ and the selection circle claim the same corner —
               edit mode owns it while active, so only one is ever drawn. */}
           {onRemove && !editing && (
@@ -333,7 +344,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
             />
           )}
         </TouchableOpacity>
-        <Text style={styles.posterTitle} numberOfLines={1}>{title}</Text>
+        <Text style={[styles.posterTitle, finished && styles.finishedTitle]} numberOfLines={1}>{title}</Text>
         {!!byline && <Text style={styles.posterCaption} numberOfLines={2}>{byline}</Text>}
       </View>
     );
@@ -799,6 +810,7 @@ export default function MyListsScreen() {
                   horizontal
                   items={favList}
                   sel={favSel}
+                  statusOf={(item) => listWatchStatus(item, history.entries, watching.items)}
                   onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
                   removeLabel={`${COMMON.remove} ${fw.nounLower}`}
                   onRemove={(tmdbId) => {
@@ -1089,9 +1101,11 @@ function CustomListCard({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { open: openPanel } = useMediaPanel();
-  const { profile, userId, customLists } = useAppData();
+  const { profile, userId, customLists, history, watching } = useAppData();
   const router = useRouter();
   const [open,     setOpen]     = useState(true);
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
+  const [view, setView] = useState<'grid' | 'rows'>('grid');
   const [renaming, setRenaming] = useState(false);
   const [name,     setName]     = useState(list.name);
   const [peopleOpen, setPeopleOpen] = useState(false);
@@ -1117,7 +1131,11 @@ function CustomListCard({
       }
     : undefined;
 
-  const items = (filterByType(list.items || [], typeFilters) ?? []) as any[];
+  const statusOf = (item: any) => listWatchStatus(item, history.entries, watching.items) as ListWatchStatus | null;
+  const progress = listProgress(list.items || [], history.entries, watching.items) as { total: number; watched: number; percent: number };
+  const items = filterByWatchStatus(
+    (filterByType(list.items || [], typeFilters) ?? []) as any[], statusFilters, history.entries, watching.items,
+  ) as any[];
   const visibility = listVisibility(list);
   const shareable = isListShareable(visibility, profile?.is_public);
   const confirmLeave = () => {
@@ -1239,15 +1257,60 @@ function CustomListCard({
         )}
       </TouchableOpacity>
 
+      {open && progress.total > 0 && (
+        <View style={styles.listToolbar}>
+          <View style={styles.progressWrap}>
+            <View style={styles.progressTrack} accessibilityRole="progressbar" accessibilityLabel={MEDIA.listProgress(progress.watched, progress.total)} accessibilityValue={{ min: 0, max: 100, now: progress.percent }}>
+              <View style={[styles.progressFill, { width: `${progress.percent}%` }]} />
+            </View>
+            <Text style={styles.progressLabel}>{MEDIA.listProgress(progress.watched, progress.total)}</Text>
+          </View>
+          <GroupedFilterMenu
+            accessibilityLabel="Filter by status"
+            groups={[{
+              heading: MEDIA.statusHeading,
+              options: LIST_STATUS_FILTER_IDS.map((id: string) => ({ id, label: MEDIA.watchStatus[id as keyof typeof MEDIA.watchStatus] })),
+              value: statusFilters,
+              onChange: setStatusFilters,
+            }]}
+          />
+          <TouchableOpacity
+            onPress={() => setView(v => (v === 'grid' ? 'rows' : 'grid'))}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel={view === 'grid' ? CUSTOM_LISTS.listView : CUSTOM_LISTS.gridView}
+          >
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              {view === 'grid'
+                ? <><Rect x={3} y={5} width={5.5} height={5.5} rx={1.5} /><Rect x={3} y={13.5} width={5.5} height={5.5} rx={1.5} /><Path d="M12 6.5h9M12 9.5h6M12 15h9M12 18h6" /></>
+                : <><Rect x={4} y={4} width={7} height={7} rx={1.5} /><Rect x={13} y={4} width={7} height={7} rx={1.5} /><Rect x={4} y={13} width={7} height={7} rx={1.5} /><Rect x={13} y={13} width={7} height={7} rx={1.5} /></>}
+            </Svg>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {open && (
         items.length === 0 ? (
           <TouchableOpacity style={styles.empty} onPress={onAddItem}>
             <Text style={styles.emptyBody}>{(list.items?.length || 0) === 0 ? 'No items yet — tap + to add' : 'No matching titles'}</Text>
           </TouchableOpacity>
+        ) : view === 'rows' ? (
+          <View>
+            {items.map(item => (
+              <ListRow
+                key={`${item.media_type || 'movie'}:${item.tmdb_id ?? item.id}`}
+                item={item}
+                sel={sel}
+                status={statusOf(item)}
+                onPress={() => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
+              />
+            ))}
+          </View>
         ) : (
           <PosterGrid
             items={items}
             sel={sel}
+            statusOf={statusOf}
             caption={addedCaption}
             onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
             onRemove={(tmdbId: number) => onRemoveItem(tmdbId, { undo: true })}
@@ -1415,6 +1478,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, gap: spacing.sm, paddingHorizontal: spacing.xl },
   posterRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   posterCard: { height: POSTER_H, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken, marginBottom: spacing.xs },
+  listToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
+  progressWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  progressTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: colors.surfaceSunken, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3, backgroundColor: colors.accentSecondary },
+  progressLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
+  statusChipSlot: { position: 'absolute', top: 6, left: 6 },
+  finishedArt: { opacity: 0.45 },
+  finishedTitle: { color: colors.textMuted },
   removeBtn: { position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   posterTitle: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
   posterCaption: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
