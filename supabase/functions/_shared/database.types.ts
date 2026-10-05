@@ -3250,6 +3250,14 @@ export type Database = {
         }[]
       }
       list_host_is_premium: { Args: { p_list: string }; Returns: boolean }
+      list_invite_peek: {
+        Args: { p_key: string }
+        Returns: {
+          member_count: number
+          members: Json
+          posters: string[]
+        }[]
+      }
       list_invite_preview: {
         Args: { p_key: string }
         Returns: {
@@ -3379,9 +3387,11 @@ export type Database = {
         Returns: undefined
       }
       run_marketing_linear_mirror: { Args: never; Returns: undefined }
+      run_movie_release_notifications: { Args: never; Returns: undefined }
       run_new_episode_notifications: { Args: never; Returns: undefined }
       run_premium_alerts: { Args: { p_only: string }; Returns: undefined }
       run_smart_list_digest: { Args: never; Returns: undefined }
+      run_streaming_arrival_alerts: { Args: never; Returns: undefined }
       save_private_title_note: {
         Args: {
           p_expected_revision: number
