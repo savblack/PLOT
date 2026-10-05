@@ -378,6 +378,19 @@ without a later `import_started` for the same person and source. An import
 picked in onboarding opens after setup, so its `import_source_selected` comes
 before `onboarding_completed` and its `import_started` after.
 
+## Episode alerts (title panel)
+
+The Episode alerts card on a followed TV show's title panel.
+
+| Event | When | Props |
+|---|---|---|
+| `episode_alerts_toggled` | The switch changed and the write landed | `tmdb_id`, `on` (the new state) |
+| `title_calendar_action` | Add to calendar was used | `action`: `subscribe` (feed link copied), `subscribe_setup` (sent to Settings to make a link), `upgrade` (Free, sent to Plans), `download` (.ics, with `count` of events) |
+
+Muting is free and is stored in `episode_alert_mutes`; the daily
+new-episode job skips muted followers, so a show turned off produces no
+`new_episode` rows for that person.
+
 ## Smart lists
 
 A smart list (Premium) is a custom list that stores rules and fills itself when
