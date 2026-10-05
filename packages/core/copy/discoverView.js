@@ -14,6 +14,15 @@ export const DISCOVER_VIEW = {
   loadErrorBody: 'There was a temporary problem. Nothing in your saved shows has changed.',
   retry: 'Try again',
   onThisDay: 'On this day',
+  // plot's Picks takes turns between its cards.
+  picks: {
+    trendingTv: 'Trending TV',
+    trendingMovie: 'Trending movie',
+    pause: 'Pause',
+    play: 'Play',
+    cardsLabel: 'plot\'s Picks',
+    showCard: (n) => `Show card ${n}`,
+  },
   releasedThisDay: (year) => `Released this day in ${year}.`,
   // Home's saved-titles shelf: the bottom of mobile Home, and the top of web
   // Home during the first run.

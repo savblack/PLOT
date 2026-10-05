@@ -1,5 +1,5 @@
 // Lists Plot has put together, saved to the viewer's account as an ordinary
-// custom list (Home's "Lists from plot"). Logic is in @plot/core
+// custom list (a card in Home's "plot's Picks"). Logic is in @plot/core
 // (curatedLists.js, useCustomLists.copyCuratedList). Mobile parity: not
 // shipped on mobile yet; the data and copy are already shared.
 import { useState } from 'react';
@@ -13,21 +13,35 @@ import { customListKey, collectionPath } from '@plot/core/listCollections.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
 import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
 import { track, EVENTS } from '../lib/analytics.js';
-import ListCover from './ListCover.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import './CuratedLists.css';
 
-/** The shelf card: the list's top three posters, its name and size. */
-export function CuratedListCover({ curated, onOpen }) {
+/** How many posters the wall holds: six across, three down. */
+const WALL_POSTERS = 18;
+
+/**
+ * The card in plot's Picks, beside the hero. The list's top posters form a
+ * tilted wall behind the same scrim, badge and title the hero uses, so the
+ * two read as siblings.
+ */
+export function CuratedListCard({ curated, onOpen }) {
+  const posters = curated.entries.filter(entry => entry.poster_path).slice(0, WALL_POSTERS);
   return (
-    <ListCover
-      name={curated.title}
-      count={COPY.titleCount(curated.entries.length)}
-      posters={curated.entries.slice(0, 3).map(entry => entry.poster_path)}
-      onOpen={onOpen}
-      size={168}
-    />
+    <div className="discover-hero curated-hero">
+      <button type="button" className="discover-hero-hit interactive-surface" onClick={onOpen} aria-label={`${curated.title}. ${COPY.titleCount(curated.entries.length)}`}>
+        <div className="curated-hero-wall" aria-hidden="true">
+          {posters.map(entry => (
+            <img key={entry.tmdb_id} src={posterUrl(entry.poster_path, 'w185')} alt="" loading="lazy" />
+          ))}
+        </div>
+        <div className="discover-hero-overlay">
+          <span className="discover-hero-badge">{COPY.cardBadge}</span>
+          <h2 className="discover-hero-title">{curated.title}</h2>
+          <p className="discover-hero-meta">{COPY.cardMeta(curated.entries.length, curated.source.name)}</p>
+        </div>
+      </button>
+    </div>
   );
 }
 

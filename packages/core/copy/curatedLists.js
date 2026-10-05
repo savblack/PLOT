@@ -1,8 +1,8 @@
-// Shared copy for the lists Plot curates (Home's "Lists from plot"). Used by
-// the web app; mobile reads the same module when it ships the shelf.
+// Shared copy for the lists Plot curates (the card in Home's "plot's Picks").
+// Used by the web app; mobile reads the same module when it ships the card.
 export const CURATED_LISTS = Object.freeze({
-  shelfTitle: 'Lists from plot',
-  shelfSubtitle: 'Save one to make it yours',
+  cardBadge: 'plot list',
+  cardMeta: (count, source) => `${count} titles · ${source}`,
   titleCount: count => `${count} ${count === 1 ? 'title' : 'titles'}`,
   source: name => `Source: ${name}`,
   viewSource: 'View the original list',

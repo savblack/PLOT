@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CURATED_LISTS, curatedListById, curatedListRows } from '@plot/core/curatedLists.js';
+import { CURATED_LISTS, curatedListById, curatedListRows, featuredCuratedList } from '@plot/core/curatedLists.js';
 
 test('every curated list is resolved, ranked and free of duplicates', () => {
   for (const list of CURATED_LISTS) {
@@ -32,4 +32,11 @@ test('rows stamp rank 1 newest so it lists first', () => {
   assert.deepEqual(rows.map(r => r.tmdb_id), [10, 20]);
   assert.ok(rows[0].added_at > rows[1].added_at);
   assert.ok(rows.every(r => r.list_id === 'list-1' && r.user_id === 'user-1'));
+});
+
+test('the featured list is stable within a day and always one of the curated lists', () => {
+  const morning = featuredCuratedList(new Date(2026, 9, 5, 8));
+  const evening = featuredCuratedList(new Date(2026, 9, 5, 22));
+  assert.equal(morning, evening);
+  assert.ok(CURATED_LISTS.includes(morning));
 });

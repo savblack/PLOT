@@ -22,9 +22,9 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { clampToSentences } from '@plot/core/sentences.js';
 import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
 import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
-import { CURATED_LISTS } from '@plot/core/curatedLists.js';
-import { CURATED_LISTS as CURATED_COPY } from '@plot/core/copy/curatedLists.js';
-import { CuratedListCover, CuratedListDialog } from './CuratedLists.jsx';
+import { featuredCuratedList } from '@plot/core/curatedLists.js';
+import { CuratedListCard, CuratedListDialog } from './CuratedLists.jsx';
+import PicksCarousel from './PicksCarousel.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SideFilters from './SideFilters.jsx';
@@ -129,7 +129,6 @@ const HOME_SECTION = {
   // First-run only: the titles they just saved in onboarding, ahead of everything else.
   saved: { id: 'home-saved', label: DISCOVER_VIEW.savedToWatch, navLabel: DISCOVER_VIEW.savedToWatch },
   picks: { id: 'home-picks', label: "plot's Picks", navLabel: "Plot's Picks" },
-  curated: { id: 'home-curated', label: CURATED_COPY.shelfTitle, navLabel: CURATED_COPY.shelfTitle },
   continue: { id: 'home-continue', label: PEOPLE.continueWatching.title, navLabel: PEOPLE.continueWatching.title },
   people: { id: 'home-people', label: PEOPLE.shelf.title, navLabel: PEOPLE.shelf.title },
   hot: { id: 'home-hot', label: 'Hot Right Now', navLabel: 'Hot Right Now' },
@@ -823,12 +822,26 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   const cinemaMovies      = applyFilters(data.cinemaMovies);
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
   const recent            = applyFilters(releases.recent);
+  // The list card follows the type filter like the hero does: a TV-only list has nothing to show under Movies.
+  const featuredList = featuredCuratedList();
+  const curated = featuredList && filterByType(featuredList.entries, typeFilters).length > 0 ? featuredList : null;
+  const showPicks = (hero || curated) && genreFilters.length === 0;
+  // Picks takes turns: the trending hero, the plot list, then the other
+  // trending leaders the hero is not already. Only the hero shows its own badge copy.
+  const picksBadges = { tv: DISCOVER_VIEW.picks.trendingTv, movie: DISCOVER_VIEW.picks.trendingMovie, cinema: MEDIA.inCinemas };
+  const seenPicks = new Set(hero ? [`${hero.media_type}-${hero.id}`] : []);
+  const otherHeroes = ['tv', 'movie', 'cinema'].map(type => ({ type, item: filterByType([data.heroByType?.[type]].filter(Boolean), typeFilters)[0] }))
+    .filter(({ item }) => item && !seenPicks.has(`${item.media_type}-${item.id}`) && seenPicks.add(`${item.media_type}-${item.id}`));
+  const pickSlides = [
+    hero && <HeroCard key="hero" item={hero} openPanel={openPanel} watchlist={watchlist} />,
+    curated && <CuratedListCard key={curated.id} curated={curated} onOpen={() => setOpenCurated(curated)} />,
+    ...otherHeroes.map(({ type, item }) => <HeroCard key={`${type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} badge={picksBadges[type]} />),
+  ].filter(Boolean);
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
   const savedItems = firstRun ? (watchlist?.items ?? []).slice(0, 20).map(row => ({ id: row.tmdb_id, media_type: row.media_type, title: row.title, poster_path: row.poster_path })) : [];
   const pageSections = [
     savedItems.length > 0 ? HOME_SECTION.saved : null,
-    hero && genreFilters.length === 0 ? HOME_SECTION.picks : null,
-    CURATED_LISTS.length > 0 ? HOME_SECTION.curated : null,
+    showPicks ? HOME_SECTION.picks : null,
     continueItems.length > 0 ? HOME_SECTION.continue : null,
     hotRail.length > 0 ? HOME_SECTION.hot : null,
     weekly.length > 0 ? HOME_SECTION.weekly : null,
@@ -866,21 +879,13 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
         </RailSection>
       )}
 
-      {hero && genreFilters.length === 0 && (
+      {showPicks && (
         <section id={HOME_SECTION.picks.id} className="discover-section discover-featured-section">
           <DiscoverSectionHeader title={HOME_SECTION.picks.label} />
-          <div className="discover-hero-row">
-            <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
-          </div>
+          {pickSlides.length > 1
+            ? <PicksCarousel>{pickSlides}</PicksCarousel>
+            : <div className="discover-hero-row">{pickSlides}</div>}
         </section>
-      )}
-
-      {CURATED_LISTS.length > 0 && (
-        <RailSection id={HOME_SECTION.curated.id} title={HOME_SECTION.curated.label} subtitle={CURATED_COPY.shelfSubtitle}>
-          {CURATED_LISTS.map(curated => (
-            <CuratedListCover key={curated.id} curated={curated} onOpen={() => setOpenCurated(curated)} />
-          ))}
-        </RailSection>
       )}
 
       {continueItems.length > 0 && (
