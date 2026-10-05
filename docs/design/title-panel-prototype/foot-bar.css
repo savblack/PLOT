@@ -1,0 +1,207 @@
+/* Foot bar proposal. Builds on style.css (same tokens, head and action pills);
+   everything here is specific to this page. */
+
+.controls {
+  width: 560px;
+  max-width: 100%;
+  margin: 24px auto 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+.control { display: flex; flex-direction: column; gap: 6px; }
+.control-label { font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--text-muted); }
+.seg { display: inline-flex; padding: 3px; border-radius: 9999px; background: var(--surface-sunken); }
+.seg button {
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+
+/* The panel scrolls inside a fixed height so the foot genuinely sticks. */
+.panel.mock {
+  height: min(780px, calc(100vh - 170px));
+  min-height: 460px;
+  margin: 16px auto 40px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.25s var(--ease);
+}
+.panel.mock.is-phone { width: 390px; }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.mock .body { padding-bottom: 28px; }
+
+.pill--status { background: var(--surface-sunken); color: var(--text-primary); }
+.pill--status.is-on { background: var(--status-watched-dim); color: var(--status-watched); }
+
+.filler-title { margin: 22px 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-secondary); }
+.filler { display: grid; gap: 8px; }
+.filler i { display: block; height: 10px; border-radius: 6px; background: var(--surface-sunken); }
+.filler--rail { grid-auto-flow: column; grid-auto-columns: 96px; gap: 10px; }
+.filler--rail i { height: 128px; border-radius: 14px; }
+.filler--video { height: 200px; border-radius: 16px; background: var(--surface-sunken); }
+
+/* ── the bar ───────────────────────────────────────────── */
+
+.foot.fb {
+  position: relative;
+  margin-top: 0;
+  z-index: 4;
+  padding: 0 20px 14px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+}
+.fb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding-top: 6px; }
+.fb-title { font-size: 14px; font-weight: 700; }
+.fb-hint, .fb-saved { font-size: 12px; color: var(--text-muted); }
+.fb-head-end { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.fb-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 10px 0 9px;
+  border: none; border-radius: 9999px;
+  background: var(--status-watched-dim); color: var(--status-watched);
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.fb-chip svg:last-child { opacity: 0.7; }
+.fb-chip:hover svg:last-child { opacity: 1; }
+
+/* stars left, next action right; wraps under on a phone rather than squeezing */
+.fb-main { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; }
+.fb-rate { display: inline-flex; align-items: center; gap: 8px; }
+.fb-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+
+.btn {
+  height: 34px; padding: 0 16px;
+  border: none; border-radius: 9999px;
+  font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+}
+.btn--sm { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn--primary { background: var(--accent-fill); color: var(--on-accent-fill); }
+.btn--outline { background: var(--surface); color: var(--text-primary); box-shadow: inset 0 0 0 1px rgba(41, 41, 36, 0.16); }
+.btn--outline:hover { box-shadow: inset 0 0 0 1px rgba(41, 41, 36, 0.4); }
+.btn--ghost { background: transparent; color: var(--text-secondary); }
+.btn--ghost:hover { background: var(--surface); }
+
+.fb-stars { display: flex; margin-left: -4px; }
+.fb-star { position: relative; width: 34px; height: 36px; padding: 0; border: none; background: transparent; display: grid; place-items: center; }
+.fb-star svg { width: 26px; height: 26px; display: block; }
+.fb-star .base { color: rgba(41, 41, 36, 0.16); }
+.fb-star .fill { position: absolute; left: 4px; top: 5px; height: 26px; overflow: hidden; color: var(--accent); pointer-events: none; }
+.fb-star .fill svg { width: 26px; }
+.fb-stars.is-ghost .fb-star .base { color: rgba(41, 41, 36, 0.11); }
+.fb-score { font-size: 13px; font-weight: 700; color: var(--accent-text); }
+
+.fb-quotes { display: grid; gap: 8px; margin-top: 10px; }
+.fb-quote {
+  position: relative;
+  display: grid; gap: 4px; width: 100%; padding: 10px 44px 10px 12px;
+  border: none; border-radius: 14px; background: var(--surface);
+  text-align: left; color: var(--text-secondary);
+}
+.fb-quote:hover { box-shadow: inset 0 0 0 1px rgba(41, 41, 36, 0.16); }
+.fb-edit {
+  position: absolute; top: 8px; right: 8px;
+  width: 28px; height: 28px; border-radius: 9999px;
+  display: grid; place-items: center;
+  background: var(--surface-sunken); color: var(--text-secondary);
+}
+.fb-quote:hover .fb-edit { color: var(--text-primary); }
+.fb-quote--private .fb-edit { background: transparent; }
+.fb-quote-label { display: flex; align-items: center; gap: 5px; font-size: 10.6px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent-text); }
+.fb-quote-text { font-size: 13px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Private reads as a different kind of thing: no fill, dashed edge, muted. */
+/* Empty: same box, dashed edge, plus instead of pencil. */
+.fb-quote--empty, .fb-quote--empty.fb-quote--private { background: transparent; box-shadow: none; border: 1px dashed rgba(41, 41, 36, 0.28); padding: 9px 43px 9px 11px; }
+.fb-quote--empty:hover { border-color: rgba(41, 41, 36, 0.55); }
+.fb-quote--empty .fb-quote-text { color: var(--text-muted); }
+.fb-quote--empty .fb-edit { background: var(--surface); }
+.fb-quote--private { background: transparent; box-shadow: inset 0 0 0 1px rgba(41, 41, 36, 0.22); border-radius: 14px; }
+.fb-quote--private:hover { box-shadow: inset 0 0 0 1px rgba(41, 41, 36, 0.45); }
+.fb-quote--private .fb-quote-label { color: var(--text-muted); }
+.fb-quote--private .fb-quote-text { color: var(--text-muted); }
+
+.fb-undo-bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--status-watched); transform-origin: left; animation: fbDrain 6s linear forwards; }
+@keyframes fbDrain { to { transform: scaleX(0); } }
+
+/* ── the editor: replaces the main row, grows upward ───── */
+
+.ed { display: grid; gap: 14px; padding-top: 4px; }
+.ed-handle { display: none; }
+.ed-rating { display: flex; align-items: center; justify-content: space-between; }
+.ed-label, .ed-field label, .ed-date label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10.6px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);
+}
+.ed-field { padding: 12px; border-radius: 16px; }
+.ed-field label { margin-bottom: 8px; justify-content: space-between; gap: 10px; }
+.ed-tag { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
+.ed-aud { font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 11.5px; text-align: right; }
+.ed-field--review { background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); }
+.ed-field--review .ed-tag { color: var(--accent-text); }
+.ed-field.ed-field--review textarea { border: none; background: var(--surface-sunken); }
+/* Private: sunken and outlined, so it never looks like the review above it. */
+.ed-field--private { background: transparent; box-shadow: inset 0 0 0 1px rgba(41, 41, 36, 0.22); }
+.ed-field.ed-field--private textarea { border: 1px dashed rgba(41, 41, 36, 0.28); background: transparent; }
+.ed-field textarea, .ed-date input {
+  width: 100%; border: 1px solid var(--border); border-radius: 14px;
+  background: var(--surface); color: var(--text-primary);
+  font: inherit; font-size: 13.5px; line-height: 1.5; padding: 10px 12px; resize: none;
+}
+.ed-field textarea { min-height: 84px; }
+.ed-field textarea:focus, .ed-date input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ed-count { margin-top: 4px; text-align: right; font-size: 11px; color: var(--text-muted); }
+.ed-count.is-near { color: var(--accent-text); }
+.ed-actions { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ed-date { display: grid; gap: 6px; }
+.ed-date input { width: 150px; padding: 6px 10px; border-radius: 10px; }
+
+.scrim { position: absolute; inset: 0; z-index: 3; background: rgba(0, 0, 0, 0.42); }
+.scrim[hidden] { display: none; }
+
+/* Phone: the editor lifts the foot into a sheet over a scrim. */
+.is-phone .foot.fb.is-open {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  max-height: 80%; overflow-y: auto;
+  border-radius: 18px 18px 0 0; background: var(--surface); z-index: 5;
+  animation: fbSheet 0.28s var(--ease);
+}
+.is-phone .foot.fb.is-open .ed-handle { display: block; position: absolute; top: 8px; left: 50%; width: 32px; height: 3px; margin-left: -16px; border-radius: 3px; background: rgba(41, 41, 36, 0.22); }
+.is-phone .foot.fb.is-open .fb-head { padding-top: 18px; }
+.is-phone .foot.fb.is-open .ed-actions { position: sticky; bottom: 0; margin: 0 -20px -14px; padding: 10px 20px calc(10px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
+@keyframes fbSheet { from { transform: translateY(100%); } to { transform: none; } }
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  z-index: 6;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  background: var(--text-primary);
+  color: var(--surface);
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
+}
+.toast[hidden] { display: none; }
+
+.rationale ol { margin: 8px 0 14px; padding-left: 18px; }
+.rationale li { margin-bottom: 6px; }
+.rationale b { color: var(--text-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-undo-bar, .is-phone .foot.fb.is-open { animation: none; }
+  .panel.mock { transition: none; }
+}
+
+@media (max-width: 620px) {
+  .controls { padding: 0 16px; }
+  .panel.mock.is-phone { width: auto; }
+}
