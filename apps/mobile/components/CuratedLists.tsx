@@ -227,7 +227,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   card: { borderRadius: radii.lg, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   content: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg },
   badge: {
-    alignSelf: 'flex-start', backgroundColor: 'rgba(0,0,0,0.6)', borderWidth: 1, borderColor: colors.accent,
+    alignSelf: 'flex-start', backgroundColor: colors.accentDim, borderWidth: 1, borderColor: colors.accent,
     borderRadius: radii.badge, paddingHorizontal: 8, paddingVertical: 3, marginBottom: spacing.sm,
   },
   badgeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accent, letterSpacing: 0.8 },

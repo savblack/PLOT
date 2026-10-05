@@ -18,8 +18,6 @@ export const DISCOVER_VIEW = {
   picks: {
     trendingTv: 'Trending TV',
     trendingMovie: 'Trending movie',
-    pause: 'Pause',
-    play: 'Play',
     cardsLabel: 'plot\'s Picks',
     showCard: (n) => `Show card ${n}`,
   },

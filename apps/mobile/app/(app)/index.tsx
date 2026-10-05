@@ -1107,7 +1107,7 @@ export default function HomeScreen() {
 // ── Styles ────────────────────────────────────────────────────────────
 const HERO_H = SCREEN_W * 0.5;
 // With the plot list card beside it the hero narrows so the next card peeks in.
-const PICKS_CARD_W = SCREEN_W - spacing.xl * 2 - 24;
+const PICKS_CARD_W = SCREEN_W - spacing.xl * 2;
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },

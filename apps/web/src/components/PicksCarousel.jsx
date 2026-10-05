@@ -1,7 +1,7 @@
 // plot's Picks as a rotating row: its cards sit in a scroll-snap track (so
-// touch and trackpad swipes just work) and an interval advances it. It stops
-// for anyone hovering, focused inside or off-screen, never starts for people
-// who ask for reduced motion, and carries a Pause button (WCAG 2.2.2).
+// touch and trackpad swipes just work), with dots to click through, and an
+// interval advances it. It stops for anyone hovering, focused inside or
+// off-screen, and never runs for people who ask for reduced motion.
 // Mobile parity: not shipped on mobile yet; the cards are web-only today.
 import { Children, useCallback, useEffect, useRef, useState } from 'react';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
@@ -20,7 +20,7 @@ export default function PicksCarousel({ children }) {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [visible, setVisible] = useState(true);
-  const [userPaused, setUserPaused] = useState(reducedMotion);
+  const [reduced] = useState(reducedMotion);
 
   // How many cards fit at once is CSS's call (two-up on desktop, one on a
   // phone), so ask the track rather than hardcode it.
@@ -73,7 +73,7 @@ export default function PicksCarousel({ children }) {
     return () => observer.disconnect();
   }, []);
 
-  const rotating = pages > 1 && !userPaused && !hovered && !focused && visible;
+  const rotating = pages > 1 && !reduced && !hovered && !focused && visible;
   useEffect(() => {
     if (!rotating) return undefined;
     const timer = setInterval(() => {
@@ -107,9 +107,6 @@ export default function PicksCarousel({ children }) {
                 aria-label={COPY.showCard(i + 1)} aria-current={i === index ? 'true' : undefined} onClick={() => goTo(i)} />
             ))}
           </div>
-          <button type="button" className="picks-pause" onClick={() => setUserPaused(p => !p)}>
-            {userPaused ? COPY.play : COPY.pause}
-          </button>
         </div>
       )}
     </div>

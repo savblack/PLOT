@@ -17,8 +17,8 @@ import ResponsiveDialog from './ResponsiveDialog.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import './CuratedLists.css';
 
-/** How many posters the wall holds: six across, three down. */
-const WALL_POSTERS = 18;
+/** How many posters the wall holds: ten across and three down in the desktop banner (CSS hides all but the first 18 on a phone). */
+const WALL_POSTERS = 30;
 
 /**
  * The card in plot's Picks, beside the hero. The list's top posters form a
@@ -31,8 +31,10 @@ export function CuratedListCard({ curated, onOpen }) {
     <div className="discover-hero curated-hero">
       <button type="button" className="discover-hero-hit interactive-surface" onClick={onOpen} aria-label={`${curated.title}. ${COPY.titleCount(curated.entries.length)}`}>
         <div className="curated-hero-wall" aria-hidden="true">
-          {posters.map(entry => (
-            <img key={entry.tmdb_id} src={posterUrl(entry.poster_path, 'w185')} alt="" loading="lazy" />
+          {/* The card is usually second in the rotation, so its first posters load up
+              front rather than blank when it slides in; the desktop-only rest stay lazy. */}
+          {posters.map((entry, i) => (
+            <img key={entry.tmdb_id} src={posterUrl(entry.poster_path, 'w185')} alt="" loading={i < 18 ? 'eager' : 'lazy'} />
           ))}
         </div>
         <div className="discover-hero-overlay">
