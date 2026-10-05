@@ -84,18 +84,24 @@ test('people and season-ready alerts are live Premium features; episode alerts a
   assert.doesNotMatch(faq, /People alerts.*still planned/);
 });
 
-test('streaming alerts on the watchlist are Free and pending validation; push and email are Premium and coming soon', () => {
+test('streaming alerts on the watchlist are a live Free feature; push and email are Premium and coming soon', () => {
   const rows = PLANS_PAGE.comparison.groups.flatMap(g => g.rows);
   const inApp = rows.find(r => r.label === 'Streaming alerts for your watchlist');
-  assert.deepEqual([inApp.free, inApp.premium, inApp.tag], [true, true, 'Pending validation']);
+  assert.deepEqual([inApp.free, inApp.premium, inApp.tag], [true, true, 'In the app']);
   const push = rows.find(r => r.label === 'Push and email alerts');
   assert.deepEqual([push.free, push.premium, push.tag], [false, true, 'Coming soon']);
   // Push and email are not built: never listed as live.
   const feature = PLANS_PAGE.premiumFeatures.find(f => f.id === 'pushAlerts');
   assert.ok(feature);
   assert.notEqual(feature.live, true);
-  // Not claimed on Free's feature list (mobile Settings prints every label) until it is live.
-  assert.equal(PLANS_PAGE.freeFeatures.find(f => f.id === 'streamingAlerts'), undefined);
+  // Live, so it is on Free's feature list (mobile Settings prints every label) and says "in the app".
+  const free = PLANS_PAGE.freeFeatures.find(f => f.id === 'streamingAlerts');
+  assert.ok(free);
+  assert.notEqual(free.planned, true);
+  assert.match(free.description, /in the app/);
+  assert.doesNotMatch(free.label + free.description, /\b(push|email)\b/i);
+  const faq = PLANS_PAGE.faqs.find(item => item.q === 'Are these alerts available now?').a;
+  assert.match(faq, /Streaming alerts for films on your watchlist are free and arrive in the app/);
   // The old Premium-only framing is gone.
   assert.equal(PLANS_PAGE.premiumFeatures.find(f => f.id === 'streamingAlerts'), undefined);
   assert.equal(rows.some(r => r.label === 'Streaming alerts for films you pick'), false);
