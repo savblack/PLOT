@@ -3,19 +3,24 @@
 The conversational control room for Plot's weekly marketing, as a runbook **any**
 coding agent can follow (Claude Code, Codex, and others).
 
-Article actions match `supabase/functions/marketing-linear-sync/index.ts`.
-That function is the source of truth for approve, reject, unapprove, reschedule,
-and publish-now. Do not re-queue publication rows or skip captions as a side
-effect of approve or reject. Those writes can push a second copy into Buffer or
-hold a caption back.
+Article actions match `supabase/functions/_shared/reviewActions.js`.
+Linear (`marketing-linear-sync`) and Notion (`marketing-notion-mirror`) both
+call it. That module is the source of truth for approve, reject, unapprove,
+reschedule, and publish-now. Do not re-queue publication rows or skip captions
+as a side effect of approve or reject. Those writes can push a second copy into
+Buffer or hold a caption back.
 
-> Two review surfaces, one database. **Linear** (team PLO, project Content
-> Automation, `https://linear.app/savblack/project/content-automation-2ce2d56ced11`)
-> is where an article is approved or edited. **Buffer**
-> (`https://publish.buffer.com`) is where a caption is edited, moved, or deleted.
-> The old `admin.theplot.tv` desk is gone (`docs/ops/retire-admin-review.md`). If
-> the human asks for something you can do here, do it here, and say when it will
-> show up on the Linear board (the mirror sweep, within about five minutes).
+> Three places, one database. **Linear** (team PLO, project Content Automation,
+> `https://linear.app/savblack/project/content-automation-2ce2d56ced11`) still
+> approves and edits articles. **Notion** is the review database being stood up
+> beside it. See "Notion review" below. Linear stays on until the edge secret
+> `MARKETING_LINEAR_ENABLED` is `off`. **Buffer** (`https://publish.buffer.com`)
+> is where a caption is edited, moved, or deleted. The old `admin.theplot.tv`
+> desk is gone (`docs/ops/retire-admin-review.md`). If the human asks for
+> something you can do here, write the database row, and say when it will show
+> up on Linear and on the Notion page. Each mirror sweep is about five minutes.
+> Do not approve the same article on both boards in one sitting. A second write
+> is a no-op when the row already has that status.
 
 You load the week from the database, show the human everything, and apply their
 edits/approvals via the Supabase REST API. Everything is $0 and uses the repo's
@@ -51,6 +56,9 @@ existing contracts.
 - `marketing_posts.linear_issue_id` / `linear_issue_url`: the mirrored Linear issue,
   if the post has one. Include `linear_issue_url` in your summaries so the human can
   jump straight to it.
+- `marketing_posts.notion_page_id` / `notion_page_url`: the mirrored Notion page,
+  once that sweep has created one. Include `notion_page_url` the same way. Null
+  means the page does not exist yet.
 - Post types: `upcoming`, `trending` (both Monday), `on_this_day` (Tue–Fri feature),
   `watch_tonight` (Sat), `hidden_gem` (Sun), plus event fill `now_streaming`,
   `countdown`, `trailer`, and a generic text-only `question`.
@@ -63,8 +71,9 @@ existing contracts.
   reject, or publish action in §3–§5, POST one row here.** Nothing else logs
   actions taken through you. Skipping it is a permanent blind spot in the trail,
   not a cosmetic gap. `actor` is always `marketing_week_skill`, never a name.
-  (Linear writes `linear`. Historical rows may say `web_desk` from the retired
-  admin page. The surface is the only attribution there is.)
+  (Linear writes `linear`. Notion writes `notion`. Historical rows may say
+  `web_desk` from the retired admin page. The surface is the only attribution
+  there is.)
   ```bash
   node --env-file=.env -e '
     const u=process.env.SUPABASE_URL||process.env.VITE_SUPABASE_URL, k=process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY;
@@ -86,8 +95,9 @@ Query active posts, grouped by AEST (Australia/Sydney) day:
 Give a tight summary: counts (needs review / approved / rejected), then per post the
 day, the **why** (decode `topic_key`+`payload`+`tmdb_refs` like `reason()` in
 `supabase/functions/_shared/postSummary.js`), status, target platforms, and
-`linear_issue_url` when the post has one. Lead with what needs review. Send the
-human to that Linear URL for the article, and to Buffer for the caption.
+`linear_issue_url` and `notion_page_url` when the post has them. Lead with what
+needs review. Send the human to the Notion page once it exists, and to the
+Linear URL while that board is still on. Captions stay in Buffer.
 
 ## 2. Read the week locally when you need the full copy
 One local page with every post's full copy (X / Instagram / Threads / article), its
@@ -179,7 +189,7 @@ a paid API; see `marketing/copy/AGENT.md`).
 Touch `marketing_posts.status` and nothing else. Do not update
 `marketing_post_publications`. Do not re-queue `skipped` or `failed` rows.
 Do not set `queued` rows to `skipped`. Those side effects belonged to the old
-desk and do not match Linear.
+desk and do not match Linear or Notion.
 
 - **Approve**: `status='approved'`. The article goes on theplot.tv once its day
   arrives. Social posts are unaffected. Tell the human that.
@@ -187,7 +197,8 @@ desk and do not match Linear.
   once: every `needs_review` row that has a slug → `approved`. Still do not
   touch publication rows. Question posts have no article. Leave them. Prefer
   the human doing this on the Linear board, one card at a time, unless they
-  asked you to write the rows.
+  asked you to write the rows. Once the Notion page exists, that board is the
+  other place to do it one article at a time.
 - **Reject**: `status='vetoed'`. The article stays off theplot.tv. Captions
   already in Buffer, and captions still `queued` in the database, still go out
   unless the human deletes them in Buffer. Do not skip the rows yourself.
@@ -221,6 +232,111 @@ After a run, verify each post's `marketing_post_publications.status`/`permalink`
 - **Log it**: one `marketing_review_events` row (§0). `action` is `publish_now`, `retry`,
   `pause`, or `resume` (the last two take no `post_id`).
 
+## Notion review
+
+Savannah reviews What's On articles in a Notion database titled What's On review.
+One page per article. The page title and body are rendered from `copy`. Status,
+the scheduled date, the article URL, the post type, and the social copy are
+properties. Social copy on the page is read-only. Edit captions in Buffer.
+
+`marketing-notion-mirror` runs every five minutes, same cadence as the Linear
+mirror. It creates missing pages, applies a Status or date edit, applies slash
+comments, then rewrites the page from the row. `marketing-notion-sync` can wake
+that comparison for one page. The sweep is what makes a missed webhook harmless
+for Status and the date. Notion does not send the previous property value, so
+the sweep stores `notion_observed_status` and `notion_observed_date` and treats
+a difference as the only decision. That is the polling stand-in for Linear's
+`updatedFrom.stateId`.
+
+How to act, once the database exists:
+
+- Set Status to Scheduled to approve, Review to send it back, Canceled to reject.
+  Published is not a command. The sweep sets that when the article's day has arrived.
+- Change the Scheduled date to move the day. Same write as `/reschedule YYYY-MM-DD`.
+- Comment `/copy` with `title:`, `body:`, or `cta:` to edit the article. Same parser
+  and validators as Linear (`linearCommands.js`, `copySchema.js`). A failed check
+  writes nothing.
+- `/publish-now`, `/unapprove`, `/regenerate`, `/pause`, `/resume`, `/generate`,
+  and `/help` are the same comments as on a Linear card.
+- Approving sets `status` only. It does not touch `marketing_post_publications`
+  or Buffer.
+
+Guards, same as Linear:
+
+- A Status change counts only when the page differs from the status the sweep last wrote.
+- If the row already has the target status, the sweep does not write it again.
+- A Status edit does not walk `published` or `partially_published` backwards.
+  A `/unapprove` comment still can.
+- Replies start with the bot marker and are not parsed as commands.
+
+Weekly website-refresh PR cards stay on Linear and GitHub. Notion does not merge
+or close them. `MARKETING_LINEAR_ENABLED=off` turns off Linear article cards only.
+Those PR cards, and `/pause`, `/resume`, `/generate`, `/help` on Linear, keep working.
+
+Chat still writes rows with actor `marketing_week_skill`. You do not comment on
+the Notion page unless the human is looking at it and asked you to. The mirror
+picks the row up.
+
+### Turn Notion on
+
+Do this by hand. Merging the migration schedules the cron. The function answers
+200 and writes nothing until the secrets exist. Do not deploy from this runbook
+unless the human asked, and do not run the setup script against a live workspace
+unless they asked for the database to be created.
+
+1. Create a Notion internal integration and copy its token. Share the parent
+   page with that integration.
+2. Parent page. Savannah's Growth page, under 01 · Plot. Page id
+   `3ed4f244-aec7-818c-8c18-c3f1228a4525`. Put that id in `NOTION_PARENT_PAGE_ID`.
+   The script has no built-in parent.
+3. Dry-run the schema, then create the database:
+
+   ```bash
+   DRY_RUN=1 node --env-file=.env marketing/setup/notion-review-db.mjs
+   node --env-file=.env marketing/setup/notion-review-db.mjs
+   ```
+
+   The script prints the database id. It does not create article pages.
+
+4. Supabase edge secrets, not GitHub:
+   - `NOTION_TOKEN`, or `NOTION_API_KEY`
+   - `NOTION_MARKETING_DATABASE_ID`, the id the script printed
+   - Optional `NOTION_WEBHOOK_SECRET`. Subscribe the webhook at
+     `<SUPABASE_URL>/functions/v1/marketing-notion-sync` for page property
+     updates, page content updates, and comments. The first delivery is an
+     unsigned `{ "verification_token": "..." }`. Paste that token into the
+     secret. Until then event deliveries are refused and the cron still applies edits.
+   - `/generate` and `/regenerate` reuse `GH_DISPATCH_TOKEN_CONTENT`
+     (fallback `GH_DISPATCH_TOKEN`) and `GH_REPO`.
+
+5. Dry-run the sweep before the first real tick:
+
+   ```bash
+   curl -sX POST "$SUPABASE_URL/functions/v1/marketing-notion-mirror" \
+     -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+     -H 'Content-Type: application/json' -d '{"dry_run": true}'
+   ```
+
+   Read `would_create`. Real sweeps create at most 15 pages each, newest
+   `scheduled_for` first.
+
+6. Leave Linear on. After a real week in Notion, set the edge secret
+   `MARKETING_LINEAR_ENABLED` to `off` (`0`, `false`, and `no` also count).
+   Unset, empty, or anything else keeps Linear article cards on. That secret
+   is the switch. The migration does not flip it.
+
+What is not the same as Linear:
+
+- PR cards are Linear only.
+- Comments on a page whose day was more than 21 days ago apply when the webhook
+  fires, or if someone also edits the page. Status and the date are read every
+  tick for every page in the database.
+- Editing a comment the sweep already handled does not run it again.
+- Typing in the page body, or in the Social copy property, is overwritten on
+  the next refresh. `/copy` is the edit path.
+- The first sweeps fill the board 15 pages at a time. Linear used to open a
+  card for every eligible row in one pass.
+
 ## 6. Newsletter
 Preview it locally:
 ```bash
@@ -237,5 +353,5 @@ all `active` subscribers): `node --env-file=.env marketing/newsletter/send-diges
   this runbook can undo, because it cannot see Buffer's editor.
 - **$0 only**: never use a paid API. You write copy yourself per the contract.
 - Verify state with a read before and after each write. Report exactly what changed,
-  plus Linear links. Article status shows up on the Linear board on the
-  next mirror sweep.
+  plus Linear links and Notion links when the post has them. Article status
+  shows up on each board on the next mirror sweep.

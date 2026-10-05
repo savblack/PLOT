@@ -874,6 +874,24 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_notion_mirror_lease: {
+        Row: {
+          lease_until: string
+          owner: string
+          singleton: boolean
+        }
+        Insert: {
+          lease_until: string
+          owner: string
+          singleton?: boolean
+        }
+        Update: {
+          lease_until?: string
+          owner?: string
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       marketing_metrics: {
         Row: {
           collected_at: string
@@ -1023,6 +1041,15 @@ export type Database = {
           linear_sync_error: string | null
           linear_synced_at: string | null
           media: Json | null
+          notion_body_hash: string | null
+          notion_handled_comment_ids: Json
+          notion_observed_date: string | null
+          notion_observed_status: string | null
+          notion_page_id: string | null
+          notion_page_url: string | null
+          notion_remote_edited_at: string | null
+          notion_sync_error: string | null
+          notion_synced_at: string | null
           payload: Json
           post_type: string
           scheduled_for: string
@@ -1047,6 +1074,15 @@ export type Database = {
           linear_sync_error?: string | null
           linear_synced_at?: string | null
           media?: Json | null
+          notion_body_hash?: string | null
+          notion_handled_comment_ids?: Json
+          notion_observed_date?: string | null
+          notion_observed_status?: string | null
+          notion_page_id?: string | null
+          notion_page_url?: string | null
+          notion_remote_edited_at?: string | null
+          notion_sync_error?: string | null
+          notion_synced_at?: string | null
           payload?: Json
           post_type: string
           scheduled_for: string
@@ -1071,6 +1107,15 @@ export type Database = {
           linear_sync_error?: string | null
           linear_synced_at?: string | null
           media?: Json | null
+          notion_body_hash?: string | null
+          notion_handled_comment_ids?: Json
+          notion_observed_date?: string | null
+          notion_observed_status?: string | null
+          notion_page_id?: string | null
+          notion_page_url?: string | null
+          notion_remote_edited_at?: string | null
+          notion_sync_error?: string | null
+          notion_synced_at?: string | null
           payload?: Json
           post_type?: string
           scheduled_for?: string
@@ -3109,6 +3154,10 @@ export type Database = {
         Args: { p_owner: string }
         Returns: boolean
       }
+      claim_marketing_notion_mirror: {
+        Args: { p_owner: string }
+        Returns: boolean
+      }
       claim_tracking_job: {
         Args: { p_provider: string; p_users?: string[] }
         Returns: Json
@@ -3365,6 +3414,10 @@ export type Database = {
       record_kofi_tip: { Args: { p_payload: Json }; Returns: Json }
       refresh_premium_badges: { Args: never; Returns: number }
       release_marketing_linear_mirror: {
+        Args: { p_owner: string }
+        Returns: undefined
+      }
+      release_marketing_notion_mirror: {
         Args: { p_owner: string }
         Returns: undefined
       }
