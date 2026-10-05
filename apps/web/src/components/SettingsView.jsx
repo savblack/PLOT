@@ -1903,7 +1903,7 @@ export default function SettingsView() {
         </div>
 
       </div>
-      <StreamingAlertsSettings userId={user?.id} />
+      <StreamingAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
       <PremiumAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
         </>}
         {activeSection === 'connections' && <>

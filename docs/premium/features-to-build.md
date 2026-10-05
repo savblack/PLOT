@@ -311,7 +311,25 @@ Air dates alone never qualify: rule 3 is required. **Known limit:** TMDB has no 
 
 **Intent:** Everyone with a film on their watchlist ("My List") is told, in the app, when it gains a **subscription** offer on one of their own services (`profiles.streaming_providers`), or becomes **free or free-with-ads on any service**, in their region (`profiles.region`). The watchlist is the opt-in: nothing to switch on. A person can mute one film (the card on the film's page) or turn the whole thing off (Settings > Viewing > Streaming alerts; a "Manage alerts" link sits on the Notifications page). A film coming out to rent or buy after cinemas is the separate `movie_release` row and is not repeated. Leaving-soon stays out of scope (see Pending validation).
 
-**Premium, later:** getting the same alerts as push, email and phone notifications. **Not built:** nothing sends push yet (no device tokens, see `docs/research/expo-push-notifications.md`), and email needs an unsubscribe link and a registered address first (`docs/launch/app-store-launch-sprint.md`). The plans page lists it as "Push and email alerts, Coming soon". `notification_preferences` is where per-channel switches will go. Nothing in the app may promise push or email until then (`streamingAlertsCopy.test.js` pins that).
+**Premium: email (built, dormant) and push (not built).** Premium members can also get these alerts by email. It is opt-in and off by default ("Also email me" under the in-app switch in Settings > Viewing, web and mobile, hidden until `ALERT_EMAIL_ENABLED` in `packages/core/features.js` is true). Push and phone notifications are still not built: no device tokens, and they need an Apple push key, a native rebuild and a TestFlight build (`docs/research/expo-push-notifications.md`, partly stale). The plans page keeps "Push and email alerts, Coming soon" until email is live.
+
+How email works (migration `20261006090000_alert_email_delivery.sql`):
+
+- `notification_preferences.streaming_email` (default false). Turning it **on** needs Premium: a trigger raises the same 42501 an RLS denial does, so the client opens the upgrade sheet. Turning it off always works. A lapsed member keeps their choice and gets nothing, because delivery checks Premium on every run.
+- `alert-email-delivery` runs daily at 22:45 UTC (after detection at 22:15) and sends **one email per person per run** covering everything new (up to 10 films; the rest wait for the next run). The in-app notification is the source of truth. `notification_deliveries (notification_id, channel, status, attempts, ...)` is the ledger: an alert is claimed by a primary-key insert **before** it is sent, so a re-run, two runs at once or a crash cannot send it twice. A failed send is retried up to 3 times; a claim abandoned for 15 minutes is retaken; a 2xx from the provider is "sent" even if its body is unreadable (a duplicate is worse than a missing reference). Only alerts from the last 7 days are considered. The run is capped, stops sending at about 100s, writes an `alert_job_runs` row, and is reported not ok if most sends fail.
+- Who is emailed is decided at send time: preference on, in-app switch still on, Premium current, and a **confirmed address read from `auth.users`** (never a copy).
+- Delivery is off unless the `ALERT_EMAIL_DELIVER` function secret is `true`. With it off the job plans and reports what it would send and claims and sends nothing. Needs `RESEND_API_KEY` and `ALERT_EMAIL_UNSUBSCRIBE_SECRET` (16+ characters; rotating it invalidates every unsubscribe link already sent).
+- Every email carries a one-click unsubscribe (`List-Unsubscribe` and `List-Unsubscribe-Post`), the registered address (SUSUMU HOUSE, Level 1, 63-73 Ann Street, Surry Hills, NSW 2010), why they got it, a link to Settings, and the TMDB attribution.
+
+Consent model (the missing slice of the #481 taxonomy for this event):
+
+| Event | In app | Email | Push |
+|---|---|---|---|
+| Streaming alert on a watchlist film | Free, automatic, mute per film or all | Premium, **opt-in, default off** | Premium, not built |
+
+- **Opt-in only**, expressly chosen in Settings by a Premium member. Signing up for the app, or being Premium, is not consent. It is separate from the weekly digest (`profiles.marketing_emails`).
+- **Withdrawing is one click** from any email (a signed, stateless token for that person and that channel, `alert-email-unsubscribe`; GET only shows a confirm page, POST acts, because mail scanners prefetch links) or in Settings. It works whatever the plan, and with delivery off. The link only ever turns alert email off, and never touches the digest.
+- **Sender identification:** every email names plot and carries the registered office address, as the Spam Act expects of a commercial message.
 
 **Why it needs its own state.** TMDB `watch/providers` (JustWatch data) is a snapshot with no history, lags, and flaps. The daily job (`streaming-arrival-alerts`, 22:15 UTC) keeps a snapshot per film and region (`title_availability`) and only believes a change once it has held:
 

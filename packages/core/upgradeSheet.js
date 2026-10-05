@@ -8,7 +8,7 @@ import { SETTINGS_VIEW } from './copy/settingsView.js';
 import { FREE_CUSTOM_LIST_CAP } from './premium.js';
 import { isPremiumFamily } from './themes.js';
 
-/** @typedef {'lists' | 'themes' | 'smartLists' | 'collaborativeLists' | 'alerts'} UpgradeReason */
+/** @typedef {'lists' | 'themes' | 'smartLists' | 'collaborativeLists' | 'alerts' | 'alertEmail'} UpgradeReason */
 
 /**
  * @typedef {object} UpgradeSheetContent

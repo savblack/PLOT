@@ -120,6 +120,13 @@ export const PLANS_PAGE = {
         body: 'Hear when they have something new.',
         also: ['pick', 'together'],
       },
+      // Opened from the Also email me row in Settings > Viewing (ALERT_EMAIL_ENABLED).
+      alertEmail: {
+        context: () => 'Email alerts are part of Premium',
+        title: 'Get your watchlist alerts in your inbox.',
+        body: 'Premium can also email you when a film on your watchlist lands on one of your services or becomes free to watch. Alerts in the app stay free.',
+        also: ['pick', 'together'],
+      },
     },
   },
   host: {

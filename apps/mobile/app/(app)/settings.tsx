@@ -47,8 +47,10 @@ import { PEOPLE } from '@plot/core/copy/people.js';
 import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { useMyAlerts } from '@plot/core/usePremiumAlerts.js';
-import { useStreamingAlertsSwitch, useMutedFilms } from '@plot/core/useStreamingAlerts.js';
+import { useStreamingAlertsSwitch, useMutedFilms, useStreamingEmailSwitch } from '@plot/core/useStreamingAlerts.js';
 import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
+import { ALERT_EMAIL } from '@plot/core/copy/alertEmail.js';
+import { ALERT_EMAIL_ENABLED } from '@plot/core/features.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -219,18 +221,32 @@ function PeopleFollowSettings({ userId, isPremium }: { userId: string | null; is
 // everyone: the alerts are automatic for films on the watchlist, so there is
 // nothing to opt in to, only this to opt out of. Logic and copy are shared
 // (@plot/core useStreamingAlerts.js, copy/streamingAlerts.js).
-function StreamingAlertsSettings({ userId }: { userId: string | null }) {
+function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: string | null; isPremium: boolean; onCompare: () => void }) {
   const { colors } = useTheme();
   const S = STREAMING_ALERTS.settings;
+  const E = ALERT_EMAIL.settings;
   const all = useStreamingAlertsSwitch(userId);
   const { films, loading, unmute } = useMutedFilms(userId);
+  // Not read at all until the Premium email option is switched on (features.js).
+  const email = useStreamingEmailSwitch(ALERT_EMAIL_ENABLED ? userId : null);
   const [busy, setBusy] = useState(false);
-  if (!userId || all.loading || loading) return null;
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  if (!userId || all.loading || loading || (ALERT_EMAIL_ENABLED && email.loading)) return null;
   const turnOn = async (id: number) => {
     setBusy(true);
     await unmute(id);
     setBusy(false);
   };
+  const toggleEmail = async () => {
+    // Turning it off always works. Turning it on needs Premium: a Free account
+    // goes straight to the upgrade sheet, and the database is the authority if
+    // the plan turns out to have changed.
+    if (!email.on && !isPremium) { setUpgradeOpen(true); return; }
+    const { error } = await email.setOn(!email.on);
+    if (error === 'premium_required') setUpgradeOpen(true);
+  };
+  // Email follows the in-app alerts: with those off there is nothing to email.
+  const emailBlocked = !all.on && !email.on;
   return (
     <>
       <SettingsGroup title={S.groupTitle}>
@@ -241,7 +257,17 @@ function StreamingAlertsSettings({ userId }: { userId: string | null }) {
           trailing={<Switch value={all.on} onValueChange={(next) => { void all.setOn(next); }} disabled={all.busy} trackColor={{ true: colors.accent }} accessibilityLabel={S.switchLabel} />}
         />
         {all.error ? <SettingsRow icon={null} label={STREAMING_ALERTS.error} /> : null}
+        {ALERT_EMAIL_ENABLED ? (
+          <SettingsRow
+            icon={null}
+            label={E.label}
+            description={emailBlocked ? E.needsAlerts : E.hint}
+            trailing={<Switch value={email.on} onValueChange={() => { void toggleEmail(); }} disabled={email.busy || emailBlocked} trackColor={{ true: colors.accent }} accessibilityLabel={E.label} />}
+          />
+        ) : null}
+        {ALERT_EMAIL_ENABLED && email.error ? <SettingsRow icon={null} label={E.error} /> : null}
       </SettingsGroup>
+      <UpgradeSheet visible={upgradeOpen} reason="alertEmail" onClose={() => setUpgradeOpen(false)} onCompare={() => { setUpgradeOpen(false); onCompare(); }} />
       {films.length > 0 && (
         <SettingsGroup title={S.muted}>
           {films.map(film => (
@@ -1425,7 +1451,7 @@ export default function SettingsScreen() {
             trailing={<Switch value={includeKidsContent} onValueChange={toggleKidsContent} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.kidsContent.label} />}
           />
         </SettingsGroup>
-        <StreamingAlertsSettings userId={userId} />
+        <StreamingAlertsSettings userId={userId} isPremium={!!profile?.is_premium} onCompare={() => { setSection('billing'); setPremiumExpanded(true); }} />
         <PeopleFollowSettings userId={userId} isPremium={!!profile?.is_premium} />
         </>}
 

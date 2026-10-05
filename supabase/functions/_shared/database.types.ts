@@ -1390,19 +1390,66 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_deliveries: {
+        Row: {
+          attempts: number
+          channel: string
+          claimed_at: string
+          created_at: string
+          error: string | null
+          notification_id: string
+          provider_ref: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          channel: string
+          claimed_at?: string
+          created_at?: string
+          error?: string | null
+          notification_id: string
+          provider_ref?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          claimed_at?: string
+          created_at?: string
+          error?: string | null
+          notification_id?: string
+          provider_ref?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           streaming_alerts: boolean
+          streaming_email: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
           streaming_alerts?: boolean
+          streaming_email?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
           streaming_alerts?: boolean
+          streaming_email?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -3053,6 +3100,10 @@ export type Database = {
         Args: { p_caller_bucket: string }
         Returns: boolean
       }
+      alert_email_recipients: {
+        Args: { p_users: string[] }
+        Returns: { email: string; user_id: string }[]
+      }
       apply_stripe_subscription_event: {
         Args: {
           p_cancel_at_period_end: boolean
@@ -3387,6 +3438,7 @@ export type Database = {
         Returns: undefined
       }
       run_marketing_linear_mirror: { Args: never; Returns: undefined }
+      run_alert_email_delivery: { Args: never; Returns: undefined }
       run_movie_release_notifications: { Args: never; Returns: undefined }
       run_new_episode_notifications: { Args: never; Returns: undefined }
       run_premium_alerts: { Args: { p_only: string }; Returns: undefined }
