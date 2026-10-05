@@ -92,7 +92,13 @@ Requests and consent
 
 Privacy
 - Private profile: the partner sees titles on both watchlists and picks in
-  shared sessions. An opt-in "Also share my full watchlist" is off by default.
+  shared sessions. An opt-in "Also share my full watchlist" is off by default,
+  except between people who follow each other (decided 2026-10-04): the accept
+  sheet starts it on (still one tap to turn off, with "On because you follow
+  each other"), and the migration 20261004100000 turns on the sender's side
+  when a mutual-follow pairing is accepted. The start and invite screens tell
+  the sender this before they invite. Settings still lets either person turn
+  their own sharing off.
   Since `20260927160000_watchlist_visibility.sql` the watchlist has its own
   setting ("Who can see your Want to Watch": everyone, followers, selected
   people, only me), and a private profile starts at only me. The switch adds

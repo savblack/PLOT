@@ -71,7 +71,7 @@ export default function WatchTogetherLinkPage() {
       <div className="wt-page wt-landing">
         <h1 className="wt-title">{L.selfTitle}</h1>
         <p className="wt-card-body">{L.selfBody}</p>
-        <InviteLinkCard compact />
+        <InviteLinkCard />
       </div>
     );
   }
