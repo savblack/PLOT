@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { personName, tileMode, tileShowsCount } from '@plot/core/watchTogether.js';
-import { useWatchTogether, useWatchTogetherStatus } from '@plot/core/useWatchTogether.js';
+import { useWatchTogether, useWatchTogetherStatus, useMutualFollow } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
@@ -26,6 +26,7 @@ export function WatchTogetherTile({ person, onChange }: {
   const { userId, profile } = useAppData();
   const { status, refresh } = useWatchTogetherStatus(person.id, userId);
   const watch = useWatchTogether(userId);
+  const mutual = useMutualFollow(userId, person.id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState(false);
@@ -90,6 +91,7 @@ export function WatchTogetherTile({ person, onChange }: {
           </Text>
         )}
       <Note>{body}</Note>
+      {mutual && (mode === 'free' || mode === 'public' || mode === 'private' || mode === 'pending') && <Note>{T.tile.mutualShare(name)}</Note>}
       {!!error && <ErrorNote>{error}</ErrorNote>}
       <View style={{ gap: spacing.sm }}>
         {(mode === 'free' || mode === 'public' || mode === 'private') && (
