@@ -759,11 +759,12 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     const path = `${user.id}/avatar.jpg`;
     const { error: upErr } = await supabase.storage
       .from('avatars')
-      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
     if (upErr) { setBusy(false); onError(upErr.message || SETTINGS_VIEW.avatar.uploadFailed); return; }
 
     const { data } = supabase.storage.from('avatars').getPublicUrl(path);
     // Cache-bust so a replaced photo at the same path refreshes immediately.
+    // The object itself is cached for a year; the query string is the bust.
     const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
     const { error: dbErr } = await updateProfile({ userId: user.id, patch: { avatar_url: publicUrl } });
     setBusy(false);
