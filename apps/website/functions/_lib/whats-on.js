@@ -1,49 +1,87 @@
 // /whats-on and /whats-on/<slug> — proxy to the `marketing-feed` Edge
 // Function. Port of apps/website/api/whats-on.mjs.
 import { SUPABASE_FN, AUTH_HEADERS, htmlError } from './proxy.js';
+import { cacheable, tagged } from './edgeCache.js';
 
 const UPSTREAM = `${SUPABASE_FN}/marketing-feed`;
 const FALLBACK = '<!doctype html><meta charset="utf-8">'
   + '<title>What\'s On</title>'
   + '<p style="font-family:sans-serif;padding:40px">What\'s On is briefly unavailable. Please try again in a moment.</p>';
 
+const SHAREABLE = 'public, s-maxage=3600, stale-while-revalidate=86400';
+
+const PAGE_HEADERS = {
+  'Content-Type': 'text/html; charset=utf-8',
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+  // The upstream feed is a complete server-rendered document with inline
+  // presentation and navigation scripts. Keep this aligned with _headers:
+  // Pages Functions replace the static-header policy for this route.
+  'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://image.tmdb.org https://theplot.tv https://a.theplot.tv; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline' https://a.theplot.tv https://www.googletagmanager.com; connect-src 'self' https://a.theplot.tv https://www.googletagmanager.com; frame-src https://www.googletagmanager.com; worker-src 'self' blob:; form-action 'self'; upgrade-insecure-requests",
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), browsing-topics=()',
+};
+
+/**
+ * Cache key for a feed page. page and type change the document; tracking
+ * parameters and query order do not, so they all land on one entry.
+ *
+ * @param {URL} url
+ * @param {string|null} slug
+ */
+export function feedCacheKey(url, slug) {
+  const page = url.searchParams.get('page') || '';
+  const type = url.searchParams.get('type') || '';
+  const path = slug ? `/whats-on/${encodeURIComponent(slug)}` : '/whats-on';
+  return new Request(`${url.origin}${path}?page=${page}&type=${type}`, { method: 'GET' });
+}
+
 /**
  * @param {Request} request
  * @param {string|null} slug trailing path segment, or null for an index
+ * @param {(promise: Promise<unknown>) => void} [waitUntil]
  */
-export async function marketingFeedPage(request, slug) {
+export async function marketingFeedPage(request, slug, waitUntil) {
   // Forward the index's query params (page, type, utm_*). The slug is a path
   // segment on Pages, so it isn't in searchParams.
-  const { searchParams } = new URL(request.url);
-  const qs = searchParams.toString();
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
   const path = slug ? encodeURIComponent(slug) : '';
-  const url = `${UPSTREAM}${path ? `/${path}` : ''}${qs ? `?${qs}` : ''}`;
+  const upstreamUrl = `${UPSTREAM}${path ? `/${path}` : ''}${qs ? `?${qs}` : ''}`;
+
+  const method = request.method === 'HEAD' ? 'HEAD' : 'GET';
+  const cache = globalThis.caches && globalThis.caches.default;
+  const cacheKey = feedCacheKey(url, slug);
+  if (cache) {
+    try {
+      const hit = await cache.match(cacheKey);
+      if (hit) return tagged(hit, 'hit');
+    } catch { /* a cache fault falls through to the Edge Function */ }
+  }
 
   let upstream;
   try {
-    upstream = await fetch(url, { headers: { accept: 'text/html', ...AUTH_HEADERS } });
+    upstream = await fetch(upstreamUrl, { headers: { accept: 'text/html', ...AUTH_HEADERS } });
   } catch {
     return htmlError(502, FALLBACK);
   }
 
   const body = await upstream.text();
   // Serve as HTML; drop Supabase's text/plain + sandbox CSP.
-  return new Response(body, {
+  const response = new Response(body, {
     status: upstream.status,
     headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': upstream.headers.get('cache-control') || 'public, s-maxage=3600, stale-while-revalidate=86400',
-      'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
-      // The upstream feed is a complete server-rendered document with inline
-      // presentation and navigation scripts. Keep this aligned with _headers:
-      // Pages Functions replace the static-header policy for this route.
-      'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://image.tmdb.org https://theplot.tv https://a.theplot.tv; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline' https://a.theplot.tv https://www.googletagmanager.com; connect-src 'self' https://a.theplot.tv https://www.googletagmanager.com; frame-src https://www.googletagmanager.com; worker-src 'self' blob:; form-action 'self'; upgrade-insecure-requests",
-      'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'DENY',
-      'Referrer-Policy': 'strict-origin-when-cross-origin',
-      'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), browsing-topics=()',
+      ...PAGE_HEADERS,
+      'Cache-Control': upstream.headers.get('cache-control') || SHAREABLE,
     },
   });
+
+  if (cache && method === 'GET' && cacheable(response.status, response.headers.get('cache-control'))) {
+    const stored = cache.put(cacheKey, response.clone()).catch(() => {});
+    if (waitUntil) waitUntil(stored); else await stored;
+  }
+  return tagged(response, 'miss');
 }
 
-export const whatsOn = (request, slug) => marketingFeedPage(request, slug);
+export const whatsOn = (request, slug, waitUntil) => marketingFeedPage(request, slug, waitUntil);

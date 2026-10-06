@@ -3,32 +3,14 @@
 // edge geo header (x-vercel-ip-country) becomes Cloudflare's request.cf.country,
 // forwarded as ?r=<country>; the function defaults to US when absent.
 import { SUPABASE_FN, AUTH_HEADERS, htmlError } from './proxy.js';
+import { cacheable, tagged } from './edgeCache.js';
+
+export { cacheable };
 
 const UPSTREAM = `${SUPABASE_FN}/title-page`;
 const FALLBACK = '<!doctype html><meta charset="utf-8">'
   + '<title>plot</title>'
   + '<p style="font-family:sans-serif;padding:40px">This page is briefly unavailable. Please try again in a moment.</p>';
-
-/**
- * Whether a response is worth keeping. The Edge Function says how long a page
- * may be shared (s-maxage) and only sends it on pages and canonical redirects,
- * so that is the whole rule: a 404, a 5xx, the 502 fallback below, or anything
- * the function did not mark shareable is never stored. Caching a blip would hold
- * a good page broken for a day.
- *
- * @param {number} status
- * @param {string | null} cacheControl
- */
-export function cacheable(status, cacheControl) {
-  return (status === 200 || status === 301) && /(^|[\s,])s-maxage=[1-9]\d*/i.test(cacheControl || '');
-}
-
-/** A copy of a response with an X-Plot-Cache header, so a hit is visible. */
-function tagged(response, state) {
-  const headers = new Headers(response.headers);
-  headers.set('X-Plot-Cache', state);
-  return new Response(response.body, { status: response.status, headers });
-}
 
 /**
  * @param {Request} request
