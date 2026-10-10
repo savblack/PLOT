@@ -10,7 +10,7 @@
 // No network and no Deno.env. marketing/tests/notion-review.test.mjs covers it.
 
 import { parseCommand, looksLikeAttempt, HELP_TEXT, WEEK_SCOPED, BOT_MARKER } from './linearCommands.js';
-import { buildTitle, dueDateFor } from './linearIssue.js';
+import { dueDateFor } from './linearIssue.js';
 import { articleLink, reason } from './postSummary.js';
 import { commandForStatusName, guardIncomingStatus } from './reviewActions.js';
 
@@ -244,7 +244,7 @@ export const blocksForPost = (post, supabaseUrl) => {
     type: 'callout',
     callout: {
       rich_text: textChunk(
-        'This page is rendered from the database. Set Status to Scheduled to approve, Review to send it back, or Canceled to reject. Change the Scheduled date to move the day. To edit the article, leave a /copy comment. Social copy on this page is read-only. Edit captions in Buffer. Approving does not change those posts.',
+        'This page is rendered from the database. Set Status to Scheduled to approve, Review to send it back, or Canceled to reject. Change the Scheduled date to move the day. Social copy on this page is read-only. Edit captions in Buffer. Approving does not change those posts.',
       ),
     },
   });
@@ -312,22 +312,36 @@ export const blocksForPost = (post, supabaseUrl) => {
     paragraph: { rich_text: textChunk(socialReference(post)) },
   });
 
-  blocks.push({
-    object: 'block',
-    type: 'heading_3',
-    heading_3: { rich_text: textChunk('Commands') },
-  });
-  blocks.push({
-    object: 'block',
-    type: 'code',
-    code: { language: 'plain text', rich_text: textChunk(HELP_TEXT) },
-  });
-
   return blocks;
 };
 
+/**
+ * Notion's Name property. The day and the post type already have Scheduled
+ * and Post type, so the title is only the article title. The fallback matches
+ * the subject Linear uses, without that prefix. A row with no title at all
+ * is called Article, so the Name property is never blank.
+ */
+export const articleTitle = (post) => {
+  const subject = String(
+    post?.copy?.page_title
+    || post?.tmdb_refs?.[0]?.title
+    || post?.payload?.title
+    || '',
+  ).trim();
+  return subject || 'Article';
+};
+
+// `shape` is part of the hash on purpose. The Commands block was never in
+// this object, and a title that was already only the article title would not
+// move `title`. Pages written before this change store the previous hash.
+// The new shape makes the next sweep replace those blocks and rewrite Name.
+// That pass is outbound. Status and Scheduled are still a decision only when
+// they differ from the values the sweep last wrote.
+export const BODY_SHAPE = 'article-title';
+
 export const bodyFingerprint = (post, supabaseUrl) => JSON.stringify({
-  title: buildTitle(post),
+  title: articleTitle(post),
+  shape: BODY_SHAPE,
   reason: reason(post),
   link: articleLink(post),
   pageTitle: post?.copy?.page_title ?? null,
@@ -342,7 +356,7 @@ export const propertiesForPost = (post, now = new Date()) => {
   const desired = statusNameForRow(post, now);
   const social = socialReference(post).slice(0, 1900);
   const props = {
-    [PROPS.title]: { title: textChunk(buildTitle(post).slice(0, 2000)) },
+    [PROPS.title]: { title: textChunk(articleTitle(post).slice(0, 2000)) },
     [PROPS.scheduled]: { date: { start: dueDateFor(post) } },
     [PROPS.articleUrl]: { url: articleLink(post) },
     [PROPS.postType]: { rich_text: textChunk(String(post.post_type ?? '').replace(/_/g, ' ')) },
@@ -358,6 +372,11 @@ export const propertiesForPost = (post, now = new Date()) => {
  * the row whenever it is not an unapplied human decision (the caller applies
  * inbound first). Block replacement follows the article body, not the status,
  * so an approval does not wipe the page content.
+ *
+ * A body-hash mismatch rewrites Name and the blocks. That includes the shape
+ * mark that drops the dated title and the Commands section. The rewrite is
+ * not a status or date command. Those still require a difference from the
+ * values last written.
  */
 export const outboundPlan = ({ post, pageStatus, pageDate, bodyHash, supabaseUrl, now }) => {
   const desired = statusNameForRow(post, now);

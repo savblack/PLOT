@@ -6,7 +6,8 @@
  * Status edit or a /copy comment is applied when Notion delivers it, instead
  * of on the next five-minute tick. The handler does not trust the payload's
  * property values. It loads the page and runs the same comparison the sweep
- * runs, which ignores a write this system just made.
+ * runs, which ignores a write this system just made. A title and body rewrite
+ * from the mirror is not a status change.
  *
  * Notion signs the raw body with the verification token from the subscription
  * handshake (`X-Notion-Signature: sha256=<hex>`). The first delivery is an
