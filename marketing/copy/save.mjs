@@ -84,4 +84,7 @@ const main = async () => {
   if (rejected) process.exitCode = 1; // surface bad worker output to the runner
 };
 
-main().catch((err) => { console.error(err); process.exit(1); });
+// Exit 1 is "some files rejected, the script finished". The weekly runner
+// still renders what saved, then fails the workflow. Exit 2 is a real crash
+// and must stop the week before rendering.
+main().catch((err) => { console.error(err); process.exit(2); });

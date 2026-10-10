@@ -33,6 +33,10 @@ on:
         description: 'Report what would change; write nothing'
         type: boolean
         default: false
+      render_only:
+        description: 'Only render missing cards. Skip reconcile, schedule, and the queue check.'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -53,10 +57,17 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Card render retries live here, not only on Sunday. The 4 Oct 2026 weekly
+      # batch exited at copy save (two files rejected) and never reached
+      # generate.mjs, so the week sat at copy_ready with no cards. Playwright
+      # is installed every day so this step can finish those rows before the
+      # top-up. A card post with no media is not queued.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
       # Re-push first when asked: a row that never reached Buffer has nothing to
       # reconcile, so retrying it is a scheduling job, not a reading one.
       - name: Re-push failed publications
-        if: inputs.retry_failed
+        if: inputs.retry_failed && inputs.render_only != true
         env:
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -65,6 +76,7 @@ jobs:
         run: node marketing/publish/schedule.mjs --retry-failed
 
       - name: Reconcile the Buffer queue
+        if: inputs.render_only != true
         env:
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -72,8 +84,23 @@ jobs:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
         run: node marketing/publish/reconcile.mjs
 
-      # Top the queue back up, AFTER reconciling — this is what makes the whole
-      # thing work on a capped plan.
+      # Render before the top-up. copy_ready rows, failed renders, and approved
+      # rows that never got a card are finished here. Questions stay text-only.
+      # continue-on-error so a render crash does not skip the queue top-up for
+      # posts that already have cards. The step below still fails the job.
+      - name: Render missing cards
+        id: render
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MARKETING_ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+        run: node marketing/generate/generate.mjs
+
+      # Top the queue back up, AFTER reconciling and rendering. This is what
+      # makes the whole thing work on a capped plan.
       #
       # The queue holds 10 posts per channel and a week produces about 16, so a
       # week cannot go in at once. It goes in as a rolling window instead: each
@@ -84,12 +111,18 @@ jobs:
       # Posts are pushed in scheduled_for order, so the slots always go to the
       # soonest posts and the horizon stays contiguous rather than gappy.
       - name: Top up the Buffer queue
+        if: inputs.render_only != true
         env:
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
         run: node marketing/publish/schedule.mjs
+
+      - name: Fail the job when card render failed
+        if: steps.render.outcome == 'failure'
+        run: exit 1
+
       # Watchdog for the weekly batch, deliberately parked in this job rather
       # than that one. When the 2026-08-30 batch was refused a runner over
       # billing, its own "Alert on failure" step could not run either, and the
@@ -98,14 +131,14 @@ jobs:
       # empty queue — those are different problems and both want reporting.
       - name: Check the queue ahead
         id: queue
-        if: always()
+        if: always() && inputs.render_only != true
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node marketing/publish/queue-check.mjs --days=3
 
       - name: Warn when nothing is queued
-        if: always() && steps.queue.outputs.empty == 'true'
+        if: always() && inputs.render_only != true && steps.queue.outputs.empty == 'true'
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}

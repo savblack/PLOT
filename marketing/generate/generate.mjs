@@ -1,8 +1,14 @@
-// Render step (weekly batch): for each post whose copy is ready, render media
-// (Playwright), upload to storage, create publication rows, and move it to
-// status 'needs_review' — onto the review surfaces. Copy is written upstream by
-// the AI copy worker (see marketing/copy/), so this step is API-key-free.
-// Approved posts are sent to Buffer by the daily push.
+// Render step (weekly batch, and again on the daily job): for each post whose
+// copy is ready, render media (Playwright), upload to storage, create
+// publication rows, and move it to status 'needs_review' on the review
+// surfaces. Copy is written upstream by the AI copy worker (see
+// marketing/copy/), so this step is API-key-free.
+//
+// A card post that is already approved but still has no media is rendered in
+// place and stays approved. That is the retry for a week whose render never
+// ran. Questions stay text-only. Guides get no social card.
+// Social posts are sent to Buffer by schedule.mjs once the cards exist.
+// Approval is the article gate, not the Buffer gate.
 //
 // Posts reaching 'needs_review' are picked up within five minutes by the
 // marketing-linear-mirror Edge Function, which opens the Linear issue the week
@@ -16,6 +22,7 @@ import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
 import { feedHeroUrl, guideHeroUrl } from '../lib/images.mjs';
 import { postSlug } from '../lib/feed.mjs';
+import { nextStatus, renderAction } from '../lib/pipelineGate.mjs';
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
 
@@ -26,9 +33,10 @@ const CONVERSATION_PLATFORMS = ['x', 'threads']; // text-only — no Instagram
 const generateConversation = async (supabase, post) => {
   if (!post.copy) throw new Error('Conversation post has no copy yet');
   const copy = { ...post.copy };
+  const status = nextStatus(post);
   const { error } = await supabase
     .from('marketing_posts')
-    .update({ copy, media: [], status: 'needs_review', updated_at: new Date().toISOString() })
+    .update({ copy, media: [], status, error: null, updated_at: new Date().toISOString() })
     .eq('id', post.id);
   if (error) throw new Error(`Post update failed: ${error.message}`);
 
@@ -49,9 +57,10 @@ const generateGuide = async (supabase, post) => {
   if (!post.copy) throw new Error('Guide has no copy — the copy worker has not run for it yet');
   const copy = { ...post.copy, hero_image: guideHeroUrl(post.tmdb_refs) };
   const slug = postSlug(copy.page_title || 'guide', post.scheduled_for);
+  const status = nextStatus(post);
   const { error } = await supabase
     .from('marketing_posts')
-    .update({ copy, media: [], slug, status: 'needs_review', updated_at: new Date().toISOString() })
+    .update({ copy, media: [], slug, status, error: null, updated_at: new Date().toISOString() })
     .eq('id', post.id);
   if (error) throw new Error(`Guide update failed: ${error.message}`);
   return { ...post, copy, media: [], slug };
@@ -70,6 +79,7 @@ const generatePost = async (supabase, post) => {
   // branded render. The branded media below is still used on the social channels.
   copy.hero_image = feedHeroUrl(post.post_type, post.payload);
   const cards = await spec.cards(post.payload);
+  if (!cards.length) throw new Error(`No cards for ${post.post_type}`);
 
   const media = [];
   for (let i = 0; i < cards.length; i++) {
@@ -86,9 +96,10 @@ const generatePost = async (supabase, post) => {
   }
 
   const slug = postSlug(copy.page_title || post.post_type, post.scheduled_for);
+  const status = nextStatus(post);
   const { error } = await supabase
     .from('marketing_posts')
-    .update({ copy, media, slug, status: 'needs_review', updated_at: new Date().toISOString() })
+    .update({ copy, media, slug, status, error: null, updated_at: new Date().toISOString() })
     .eq('id', post.id);
   if (error) throw new Error(`Post update failed: ${error.message}`);
 
@@ -179,43 +190,68 @@ const main = async () => {
   const runId = await startBatchRun(supabase);
 
   try {
-    // Render every post whose copy is ready (the copy worker has run), across the
-    // whole upcoming week (status needs_review). Review is Linear and Buffer.
+    // The upcoming week, plus any approved or needs_review row that still has
+    // no media. The second set is the retry: a week can be approved (or left
+    // for review) before its cards exist, and those rows are not inside the
+    // 8-day window by the time someone notices.
     const horizon = new Date(Date.now() + 8 * 86400000).toISOString();
-    const { data: pending, error } = await supabase
+    const { data: upcoming, error } = await supabase
       .from('marketing_posts')
       .select('*')
-      .in('status', ['copy_ready', 'generated'])
+      .in('status', ['copy_ready', 'generated', 'failed', 'needs_review', 'approved'])
       .lte('scheduled_for', horizon)
       .order('scheduled_for');
     if (error) throw new Error(error.message);
 
+    const { data: uncarded, error: uncardedError } = await supabase
+      .from('marketing_posts')
+      .select('*')
+      .in('status', ['needs_review', 'approved'])
+      .is('media', null);
+    if (uncardedError) throw new Error(uncardedError.message);
+
+    const byId = new Map();
+    for (const post of [...(upcoming || []), ...(uncarded || [])]) byId.set(post.id, post);
+    const pending = [...byId.values()]
+      .filter((post) => renderAction(post) !== 'skip')
+      .sort((a, b) => String(a.scheduled_for).localeCompare(String(b.scheduled_for)));
+
     let count = 0;
-    for (const post of pending || []) {
+    let reviewCount = 0;
+    for (const post of pending) {
       try {
-        if (post.status === 'generated' && post.copy && post.media) {
+        const action = renderAction(post);
+        if (action === 'promote') {
           await supabase.from('marketing_posts')
-            .update({ status: 'needs_review', updated_at: new Date().toISOString() })
+            .update({ status: 'needs_review', error: null, updated_at: new Date().toISOString() })
             .eq('id', post.id);
           await applyAnnounceState(supabase, post);
+          reviewCount++;
         } else {
           await generatePost(supabase, post);
+          if (nextStatus(post) === 'needs_review' && post.status !== 'needs_review') reviewCount++;
         }
         count++;
       } catch (err) {
         console.error(`Generation failed for ${post.topic_key}:`, err.message);
-        await supabase.from('marketing_posts')
-          .update({ status: 'failed', error: String(err.message).slice(0, 500) })
-          .eq('id', post.id);
+        // Keep an approval. A render miss is not a decision to take the article
+        // back off the site. The row stays approved, media stays empty, and the
+        // next run tries the cards again.
+        const patch = {
+          error: String(err.message).slice(0, 500),
+          updated_at: new Date().toISOString(),
+        };
+        if (post.status !== 'approved') patch.status = 'failed';
+        await supabase.from('marketing_posts').update(patch).eq('id', post.id);
       }
     }
 
     await closeBrowser();
-    await notifyReview(count);
-    console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.`);
+    await notifyReview(reviewCount);
+    console.log(`Rendered ${count} post(s); ${reviewCount} newly needs_review; notified ${ADMIN_EMAIL}.`);
     await finishBatchRun(supabase, runId, {
       status: 'succeeded',
-      counts: { pending: (pending || []).length, rendered: count, failed: (pending || []).length - count },
+      counts: { pending: pending.length, rendered: count, failed: pending.length - count },
     });
   } catch (err) {
     await finishBatchRun(supabase, runId, { status: 'failed', error: String(err.message || err).slice(0, 500) });
