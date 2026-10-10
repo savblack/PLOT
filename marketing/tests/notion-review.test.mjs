@@ -5,7 +5,9 @@ import { readFileSync } from 'node:fs';
 import {
   CREATE_LIMIT,
   STATUS,
+  BODY_SHAPE,
   blocksForPost,
+  bodyFingerprint,
   databaseCreateBody,
   databaseProperties,
   inboundDateDecision,
@@ -27,6 +29,7 @@ import {
   linearArticlesEnabled,
   mergedCopyForEdit,
 } from '../../supabase/functions/_shared/reviewActions.js';
+import { buildTitle } from '../../supabase/functions/_shared/linearIssue.js';
 
 const NOW = new Date('2026-10-05T00:00:00.000Z');
 const FUTURE = '2026-10-08T12:00:00.000Z';
@@ -360,11 +363,122 @@ test('webhook helpers tell a handshake from a page event', async () => {
   assert.equal(await notionSignatureOk('', body, `sha256=${hex}`), false);
 });
 
-test('the page body renders the article and keeps social copy out of the title', () => {
+test('the page body renders the article and does not list commands', () => {
   const blocks = blocksForPost(post(), 'https://example.supabase.co');
   const dumped = JSON.stringify(blocks);
   assert.match(dumped, /Warrior still hits harder/);
   assert.match(dumped, /Social copy \(read only\)/);
-  assert.match(dumped, /\/copy/);
+  assert.equal(blocks.some((block) => block.type === 'code'), false);
+  assert.equal(blocks.some((block) => block.type === 'heading_3' && JSON.stringify(block).includes('Commands')), false);
+  assert.doesNotMatch(dumped, /\/approve/);
+  assert.doesNotMatch(dumped, /\/reject/);
+  assert.doesNotMatch(dumped, /\/reschedule/);
+  assert.doesNotMatch(dumped, /\/copy/);
   assert.doesNotMatch(dumped, /3ed4f244/);
+});
+
+test('the Name property is the article title, without the day or the post type', () => {
+  const nameOf = (row) => propertiesForPost(row, NOW).Name.title.map((part) => part.text.content).join('');
+  assert.equal(nameOf(post()), 'Warrior still hits harder than the poster');
+  assert.equal(nameOf(post({ copy: { ...post().copy, page_title: '' } })), 'Warrior');
+  assert.equal(nameOf(post({
+    copy: { page_body: ['No headline.'] },
+    tmdb_refs: [],
+    payload: { title: 'From the payload' },
+  })), 'From the payload');
+  assert.equal(nameOf(post({ copy: {}, tmdb_refs: [], payload: {} })), 'Article');
+  assert.notEqual(nameOf(post()), buildTitle(post()));
+});
+
+test('a /copy comment is still planned after the page stops listing commands', () => {
+  const planned = planInbound({
+    post: post(),
+    pageStatus: 'Review',
+    pageDate: '2026-10-08',
+    observedStatus: 'Review',
+    observedDate: '2026-10-08',
+    handledIds: [],
+    comments: [{
+      id: 'c-copy',
+      created_time: '2026-10-05T04:00:00.000Z',
+      rich_text: [{ plain_text: '/copy\ntitle: A quieter headline for Warrior' }],
+    }],
+  });
+  assert.equal(planned.actions.length, 1);
+  assert.equal(planned.actions[0].source, 'comment');
+  assert.equal(planned.actions[0].intent.command, 'edit');
+  assert.equal(planned.actions[0].intent.fields.page_title, 'A quieter headline for Warrior');
+});
+
+test('a stored hash from the old title still repaints, and that is not a status edit', () => {
+  const row = post();
+  const url = 'https://example.supabase.co';
+  const hash = bodyFingerprint(row, url);
+  const parsed = JSON.parse(hash);
+  assert.equal(parsed.title, 'Warrior still hits harder than the poster');
+  assert.equal(parsed.shape, BODY_SHAPE);
+
+  // The previous fingerprint used the Linear title and had no shape field.
+  // The Commands block was not in the hash, so removing it alone would not
+  // have moved this string.
+  const previous = JSON.stringify({
+    title: buildTitle(row),
+    reason: parsed.reason,
+    link: parsed.link,
+    pageTitle: parsed.pageTitle,
+    body: parsed.body,
+    social: parsed.social,
+    type: parsed.type,
+    media: parsed.media,
+    images: parsed.images,
+  });
+  assert.notEqual(previous, hash);
+
+  const plan = outboundPlan({
+    post: row,
+    pageStatus: 'Review',
+    pageDate: '2026-10-08',
+    bodyHash: previous,
+    supabaseUrl: url,
+    now: NOW,
+  });
+  assert.equal(plan.replaceBlocks, true);
+  assert.equal(plan.patchProperties, true);
+  assert.equal(plan.desiredStatus, 'Review');
+  assert.equal(plan.desiredDate, '2026-10-08');
+
+  const sameTitle = JSON.parse(hash);
+  delete sameTitle.shape;
+  const titleUnchanged = outboundPlan({
+    post: row,
+    pageStatus: 'Review',
+    pageDate: '2026-10-08',
+    bodyHash: JSON.stringify(sameTitle),
+    supabaseUrl: url,
+    now: NOW,
+  });
+  assert.equal(titleUnchanged.replaceBlocks, true);
+  assert.equal(titleUnchanged.desiredStatus, 'Review');
+
+  const inbound = planInbound({
+    post: row,
+    pageStatus: 'Review',
+    pageDate: '2026-10-08',
+    observedStatus: 'Review',
+    observedDate: '2026-10-08',
+    comments: [],
+    handledIds: [],
+  });
+  assert.deepEqual(inbound.actions, []);
+
+  const settled = outboundPlan({
+    post: row,
+    pageStatus: 'Review',
+    pageDate: '2026-10-08',
+    bodyHash: hash,
+    supabaseUrl: url,
+    now: NOW,
+  });
+  assert.equal(settled.replaceBlocks, false);
+  assert.equal(settled.patchProperties, false);
 });

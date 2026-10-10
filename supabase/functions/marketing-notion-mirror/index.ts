@@ -20,6 +20,11 @@
  * reject on those cards stay on Linear, including when MARKETING_LINEAR_ENABLED
  * is turned off. That flag does not affect this function.
  *
+ * The Name property is the article title. The page body does not list slash
+ * commands. Comments still accept them, including /copy. The body fingerprint
+ * carries a shape mark so the next sweep rewrites pages that were rendered
+ * with the dated title and the Commands block. That rewrite is not a decision.
+ *
  * Auth: pg_cron via pg_net with the Vault service-role bearer. verify_jwt
  * stays true.
  *

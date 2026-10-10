@@ -235,9 +235,12 @@ After a run, verify each post's `marketing_post_publications.status`/`permalink`
 ## Notion review
 
 Savannah reviews What's On articles in a Notion database titled What's On review.
-One page per article. The page title and body are rendered from `copy`. Status,
-the scheduled date, the article URL, the post type, and the social copy are
-properties. Social copy on the page is read-only. Edit captions in Buffer.
+One page per article. The Name property is the article title (`copy.page_title`,
+or the title the row falls back to when that field is empty). It does not
+include the day or the post type. Those are the Scheduled and Post type
+properties. The body is the article, the reason, and the read-only social copy.
+There is no Commands section on the page. Social captions are still edited in
+Buffer.
 
 `marketing-notion-mirror` runs every five minutes, same cadence as the Linear
 mirror. It creates missing pages, applies a Status or date edit, applies slash
@@ -252,14 +255,22 @@ How to act, once the database exists:
 
 - Set Status to Scheduled to approve, Review to send it back, Canceled to reject.
   Published is not a command. The sweep sets that when the article's day has arrived.
-- Change the Scheduled date to move the day. Same write as `/reschedule YYYY-MM-DD`.
-- Comment `/copy` with `title:`, `body:`, or `cta:` to edit the article. Same parser
-  and validators as Linear (`linearCommands.js`, `copySchema.js`). A failed check
-  writes nothing.
+- Change the Scheduled date to move the day. Same write as a `/reschedule YYYY-MM-DD`
+  comment.
+- The page does not list slash commands. They still work as comments, including
+  `/copy`. Comment `/copy` with `title:`, `body:`, or `cta:` to edit the article.
+  Same parser and validators as Linear (`linearCommands.js`, `copySchema.js`).
+  A failed check writes nothing.
 - `/publish-now`, `/unapprove`, `/regenerate`, `/pause`, `/resume`, `/generate`,
   and `/help` are the same comments as on a Linear card.
 - Approving sets `status` only. It does not touch `marketing_post_publications`
   or Buffer.
+- The next sweep after this change rewrites existing pages. The body fingerprint
+  now includes a shape mark the stored hash does not have, so Name and the body
+  are painted again even when the article text is unchanged. That rewrite is
+  not a status change and it is not a human edit. Status and Scheduled still
+  count only when they differ from `notion_observed_status` and
+  `notion_observed_date`.
 
 Guards, same as Linear:
 
