@@ -63,10 +63,23 @@ existing contracts.
   `watch_tonight` (Sat), `hidden_gem` (Sun), plus event fill `now_streaming`,
   `countdown`, `trailer`, and a generic text-only `question`.
 - Lifecycle: `planned → copy_ready → generated → needs_review → approved → published`.
-  `vetoed` = rejected. **Approval does not gate Buffer.** The scheduler pushes
-  social copy for `needs_review` and `approved` posts whose publication rows are
-  still `queued`. Approval decides whether the **article** goes on theplot.tv
-  once `scheduled_for` has passed. Rejecting an article does not change those rows.
+  `vetoed` = rejected. **Approval does not gate Buffer.** Social posts are not
+  approved in chat. Once copy is saved and the card images exist, `schedule.mjs`
+  pushes them into Buffer as scheduled posts on their planned day. Edit them in
+  Buffer. Approval decides whether the **article** goes on theplot.tv once
+  `scheduled_for` has passed. That decision stays on the Notion board (Linear,
+  while that board is on). Rejecting an article does not change publication rows.
+- **Cards before the queue.** Post types with a card template (`upcoming`,
+  `trending`, `countdown`, `now_streaming`, `trailer`, `on_this_day`,
+  `watch_tonight`, `hidden_gem`) are not pushed while `media` is null or has no
+  portrait and landscape file. Those publication rows stay `queued`, the post's
+  `error` says the cards are missing, and the daily job renders them before the
+  next push. Do not attach a raw TMDB still or the brand image in their place.
+  `question` posts are text-only (X and Threads) and have no card. `guide` posts
+  are the website article only. This pipeline does not give them a social card.
+- A copy file that fails validation does not stop the rest of the week. The
+  posts that saved are rendered and queued. The weekly workflow then fails so
+  the rejected copy is visible. Rejected posts stay `planned`.
 - `marketing_review_events`: append-only audit trail. **After every edit, approve,
   reject, or publish action in §3–§5, POST one row here.** Nothing else logs
   actions taken through you. Skipping it is a permanent blind spot in the trail,
@@ -208,9 +221,12 @@ desk and do not match Linear or Notion.
   `reject`, or `unapprove`.
 
 ## 5. Publish
-**Nothing here sends.** Social posts are pushed into Buffer when the week is
-rendered, and Buffer sends them. Approval governs the **website article** only:
-an approved post appears on `/whats-on` once its `scheduled_for` has passed.
+**Nothing here sends.** Social posts are pushed into Buffer once their copy and
+cards are ready, with no chat approval, and Buffer sends them. A card post
+with no rendered images stays `queued` until the daily render retry fills them.
+Do not schedule one by hand with a TMDB backdrop. Approval governs the
+**website article** only: an approved post appears on `/whats-on` once its
+`scheduled_for` has passed. Articles still go through the Notion board.
 - **To change or drop a social post**: do it in Buffer, on the post. Nothing
   needs to be told. The daily reconcile run reads the change back.
 - **Article live now**: set it `approved` and `scheduled_for=now()`. No dispatch
@@ -347,10 +363,11 @@ Edit subject or content on request (the script is
 all `active` subscribers): `node --env-file=.env marketing/newsletter/send-digest.mjs`.
 
 ## Safety
-- **Confirm before anything outward-facing** (publishing, sending the newsletter).
-  It is public and irreversible. Editing or approving an article in the database
-  is reversible. Changing a caption that is already in Buffer is not something
-  this runbook can undo, because it cannot see Buffer's editor.
+- **Confirm before a newsletter send.** That email is public. Do not hold a
+  social post for a chat approval. The pipeline queues it once copy and cards
+  are ready, and the edit happens in Buffer. Editing or approving an article in
+  the database is reversible. Changing a caption that is already in Buffer is
+  not something this runbook can undo, because it cannot see Buffer's editor.
 - **$0 only**: never use a paid API. You write copy yourself per the contract.
 - Verify state with a read before and after each write. Report exactly what changed,
   plus Linear links and Notion links when the post has them. Article status

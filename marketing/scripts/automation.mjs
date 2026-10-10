@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { isCliAvailable, runCli } from '../lib/cli-runner.mjs';
+import { saveExitAction } from '../lib/pipelineGate.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MARKETING_ROOT = join(HERE, '..');
@@ -68,13 +69,18 @@ const BASE_ENV = { ...process.env, ...fileEnv };
 const getEnv = (...names) => names.map((name) => BASE_ENV[name]).find(Boolean) || null;
 const hasCommand = isCliAvailable;
 
-const run = (label, command, args = [], { cwd = REPO_ROOT, env = BASE_ENV, shell = false } = {}) => {
+const runResult = (label, command, args = [], { cwd = REPO_ROOT, env = BASE_ENV, shell = false } = {}) => {
   console.log(`\n== ${label} ==`);
   const result = shell
     ? spawnSync(command, args, { cwd, env, stdio: 'inherit', shell: true })
     : spawnSync(command, args, { cwd, env, stdio: 'inherit' });
-  if (result.status !== 0) {
-    throw new Error(`${label} failed with exit code ${result.status ?? 1}`);
+  return result.status ?? 1;
+};
+
+const run = (label, command, args = [], opts = {}) => {
+  const status = runResult(label, command, args, opts);
+  if (status !== 0) {
+    throw new Error(`${label} failed with exit code ${status}`);
   }
 };
 
@@ -149,6 +155,7 @@ const runCustomCopyWriter = (command) => {
 };
 
 const runWeekly = (args) => {
+  let copyRejections = false;
   requireEnv([
     ['SUPABASE_URL', 'VITE_SUPABASE_URL'],
     ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'],
@@ -184,17 +191,30 @@ const runWeekly = (args) => {
       );
     }
 
-    run('Validate and save copy', process.execPath, ['marketing/copy/save.mjs']);
+    const saveStatus = runResult('Validate and save copy', process.execPath, ['marketing/copy/save.mjs']);
+    const saveAction = saveExitAction(saveStatus);
+    if (saveAction === 'abort') {
+      throw new Error(`Validate and save copy failed with exit code ${saveStatus}`);
+    }
+    if (saveAction === 'continue_and_fail') {
+      console.error('Some copy was rejected. Rendering and scheduling the posts that saved.');
+      copyRejections = true;
+    }
   } else {
     console.log('\nNo posts need copy.');
   }
 
   run('Render posts for review', process.execPath, ['marketing/generate/generate.mjs']);
 
-  // Straight into Buffer, dated. Not gated on the Linear review: that review is
-  // about the website article now, and holding the social queue behind it would
-  // leave nothing to look at in Buffer until after someone had already decided.
+  // Straight into Buffer, dated. Not gated on article approval. A card post
+  // with no rendered media stays queued. schedule.mjs refuses it.
   runSchedule(args);
+
+  if (copyRejections) {
+    throw new Error(
+      'Copy validation rejected one or more posts. Cards were rendered and Buffer scheduling ran for the posts that saved. Rejected posts stay planned until the next run.',
+    );
+  }
 };
 
 // Push the rendered week into Buffer, dated. Social review happens there from

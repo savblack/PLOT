@@ -6,7 +6,7 @@ is still [`marketing/README.md`](../../marketing/README.md). This file is the
 map: what runs, what starts it, where the words and pictures come from, and
 where they land.
 
-Last reviewed against the tree on 21 September 2026. If a workflow, script, or
+Last reviewed against the tree on 10 October 2026. If a workflow, script, or
 edge function named below disappears or changes trigger, update this file in
 the same change.
 
@@ -27,6 +27,9 @@ outside the repo (Linear, a doc, a manual Buffer post).
 
 1. Sunday morning, GitHub Actions plans the coming week, asks Claude to write
    the copy, renders social cards, and pushes as many posts as Buffer will hold.
+   A rejected copy file does not skip that render. If a card is still missing,
+   the daily job renders it again before the top-up, and will not queue the post
+   on a raw TMDB still.
 2. Within about five minutes, a database job opens one Linear card per website
    article (team PLO, project Content Automation).
 3. You edit or delete the social captions in Buffer. Buffer sends them on the
@@ -95,10 +98,10 @@ Resend.
 2. A second planner adds up to four web-only SEO guides ("best of" and "if you liked"). Those never go to social.
 3. Each post that still needs words gets a markdown brief under `marketing/copy/jobs/`.
 4. Claude reads [`marketing/copy/AGENT.md`](../../marketing/copy/AGENT.md) and each brief, searches the web for the article, and writes one JSON file per post. It runs in a temp folder so it cannot see `.env`.
-5. `save.mjs` checks the JSON against the copy contract. Bad copy is rejected. Good copy is stored as both `copy` (what we will use) and `generated_copy` (what the model first wrote).
-6. Playwright screenshots the HTML card templates into portrait and landscape JPEGs and uploads them. The website hero is a plain TMDB still, not the branded card. Trending charts are the exception: the branded chart is the hero.
-7. The script emails you with links to Linear and Buffer.
-8. It then pushes social copy into Buffer. It does not wait for you to approve the article.
+5. `save.mjs` checks the JSON against the copy contract. Bad copy is rejected and that post stays `planned`. Good copy is stored as both `copy` (what we will use) and `generated_copy` (what the model first wrote), and the row moves to `copy_ready`. A rejection does not stop the rest of the week. The workflow still fails at the end so the rejected files are visible. On 4 October 2026 this exit used to happen *before* rendering, which is why a week reached `copy_ready` with `media` null.
+6. Playwright screenshots the HTML card templates into portrait (1080x1350) and landscape JPEGs and uploads them to `marketing/<post id>/card-0-portrait.jpg` and `card-0-landscape.jpg`. The website hero is a plain TMDB still, not the branded card. Trending charts are the exception: the branded chart is the hero. `question` posts stay text-only. `guide` posts get no social card.
+7. The script emails you with links to Linear and Buffer when something new needs article review.
+8. It then pushes social copy into Buffer for posts whose cards exist. It does not wait for you to approve the article. It does not attach a TMDB still when the card is missing. Those rows stay `queued` and the daily job renders them again.
 
 Local equivalent: `pnpm run mkt:plan` through `mkt:generate` and `mkt:schedule`, or from `marketing/`: `pnpm run weekly`. Local runs default to Codex, not Claude. Pass `--copy-runner=claude` to match CI.
 
@@ -123,11 +126,12 @@ Nothing in this repo sends social posts itself anymore.
 
 **How it works.**
 
-1. The script reads posts that are ready and not yet in Buffer, soonest day first.
-2. If `marketing_settings.publishing_paused` is true, it stops. Posts already in Buffer still go out. `/pause` in Linear sets that flag. It does not empty the queue.
-3. The day is fixed by the planner, because the caption talks about that day ("aired last night", "14 days until"). The clock time comes from Buffer's per-channel posting schedule, in Sydney time: X mornings, Threads mid-morning, Instagram evenings. If a channel has no schedule that weekday, the fallback hour is `SEND_HOUR_SYDNEY` in `payload.mjs`.
-4. Buffer's plan holds about 10 scheduled posts per channel. A week is about 16 per channel, so the push fills a rolling window of roughly four days. The rest stay `queued` in the database until a later run.
-5. A full queue is normal. The job reports the leftover count instead of failing.
+1. The script reads posts in `needs_review` or `approved` that are not yet in Buffer, soonest day first. Article approval is not required. `needs_review` is enough.
+2. A post that has a card template and no portrait plus landscape file in `media` is not pushed. The publication stays `queued`, the post's `error` says the cards are missing, and the run fails after the other posts are handled so the miss is mailed. Questions are text-only and are pushed without an image. Guides are not given publication rows by the renderer.
+3. If `marketing_settings.publishing_paused` is true, it stops. Posts already in Buffer still go out. `/pause` in Linear sets that flag. It does not empty the queue.
+4. The day is fixed by the planner, because the caption talks about that day ("aired last night", "14 days until"). The clock time comes from Buffer's per-channel posting schedule, in Sydney time: X mornings, Threads mid-morning, Instagram evenings. If a channel has no schedule that weekday, the fallback hour is `SEND_HOUR_SYDNEY` in `payload.mjs`.
+5. Buffer's plan holds about 10 scheduled posts per channel. A week is about 16 per channel, so the push fills a rolling window of roughly four days. The rest stay `queued` in the database until a later run.
+6. A full queue is normal. The job reports the leftover count instead of failing. Missing cards are not normal. That count fails the run.
 
 You review, edit, reschedule, and delete in Buffer. Those edits are not checked against the copy contract. The daily reconcile records the text that actually went out in `sent_text`.
 
@@ -141,21 +145,22 @@ You review, edit, reschedule, and delete in Buffer. Those edits are not checked 
 
 **Schedule.** Cron `0 2 * * *`. The file's own comment, from ten consecutive runs, says it really starts around 07:10 UTC (about 17:10 Sydney), five-plus hours after the stated time. Buffer itself is punctual. What the drift costs is how fast freed slots get refilled.
 
-**Entrypoints.** [`marketing/publish/reconcile.mjs`](../../marketing/publish/reconcile.mjs), then [`marketing/publish/schedule.mjs`](../../marketing/publish/schedule.mjs), then [`marketing/publish/queue-check.mjs`](../../marketing/publish/queue-check.mjs). Failure mail: [`.github/scripts/marketing-alert.sh`](../../.github/scripts/marketing-alert.sh).
+**Entrypoints.** [`marketing/publish/reconcile.mjs`](../../marketing/publish/reconcile.mjs), then [`marketing/generate/generate.mjs`](../../marketing/generate/generate.mjs) (retry any card that never rendered), then [`marketing/publish/schedule.mjs`](../../marketing/publish/schedule.mjs), then [`marketing/publish/queue-check.mjs`](../../marketing/publish/queue-check.mjs). Failure mail: [`.github/scripts/marketing-alert.sh`](../../.github/scripts/marketing-alert.sh). `workflow_dispatch` input `render_only` runs just the card retry.
 
-**Secrets.** `VITE_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BUFFER_API_KEY`, `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`.
+**Secrets.** `VITE_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BUFFER_API_KEY`, `TMDB_API_KEY` (the card retry), `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`.
 
 **Outputs.** Updated `marketing_post_publications` (status, permalink, `sent_text`). Approved posts whose socials have all gone out move to `published` or `partially_published`. Rejected and unreviewed articles keep their verdict even if the tweets sent. IndexNow is told about newly finished article URLs (not trending charts). A `marketing_batch_runs` row with `run_type = 'reconcile'`. Email if the job fails, or if nothing is queued for the next 3 days.
 
-**Dependencies.** Buffer (read), IndexNow (`https://api.indexnow.org/IndexNow`), Resend.
+**Dependencies.** Buffer (read), Playwright Chromium (the card retry), IndexNow (`https://api.indexnow.org/IndexNow`), Resend.
 
 **How it works.**
 
 1. Optional: if you checked "retry failed", push publications that never reached Buffer.
 2. For every publication still marked scheduled, ask Buffer for its status and write the answer down.
-3. Push the next queued posts into whatever slots that freed.
-4. If the next three days have nothing queued, email you. This check lives on the daily job on purpose: when the Sunday batch cannot get a runner (billing), its own failure email cannot run either. The daily job is the watchdog.
-5. The watchdog email says /whats-on will go stale. Social posts already sitting in Buffer can still go out. The two problems are different.
+3. Render cards for any post that has copy and still has no media. An approved article stays approved. A question is left text-only.
+4. Push the next queued posts into whatever slots that freed. A card post that still has no image is left `queued` and the job fails.
+5. If the next three days have nothing queued, email you. This check lives on the daily job on purpose: when the Sunday batch cannot get a runner (billing), its own failure email cannot run either. The daily job is the watchdog.
+6. The watchdog email says /whats-on will go stale. Social posts already sitting in Buffer can still go out. The two problems are different.
 
 Guides have no Buffer rows, so this job never sees them. IndexNow is not called for a guide that only exists as a website article. The article sitemap (`marketing-feed?sitemap=1`, proxied at `/sitemap-articles.xml`) is the other way search engines find pages.
 
