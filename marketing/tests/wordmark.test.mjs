@@ -38,8 +38,12 @@ test('charts wordmark uses the darker beige, and only landscape scales it up', a
   assert.match(card, /--wordmark:\s+#eadfcf/);
   assert.match(card, /fill:\s+var\(--wordmark,\s+#eadfcf\)/);
   assert.doesNotMatch(card, /#f1e9dc/i);
-  const landscape = card.slice(card.indexOf('@media (min-aspect-ratio: 4/3)'));
+  const at = card.indexOf('@media (min-aspect-ratio: 4/3)');
+  const portrait = card.slice(0, at);
+  const landscape = card.slice(at);
+  assert.match(portrait, /bottom:\s+5\.5cqh/);
+  assert.doesNotMatch(portrait, /124cqw/);
   assert.match(landscape, /width:\s+124cqw/);
-  assert.match(landscape, /margin-top:\s+-1cqw/);
-  assert.doesNotMatch(card.slice(0, card.indexOf('@media (min-aspect-ratio: 4/3)')), /124cqw/);
+  assert.match(landscape, /bottom:\s+0/);
+  assert.match(landscape, /margin-top:\s+calc\(-1cqw \+ 8cqh\)/);
 });

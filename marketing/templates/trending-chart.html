@@ -38,7 +38,9 @@
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
+    /* Portrait sits a little above the card edge (about 5.5% of the height). */
+    bottom: 5.5vh;
+    bottom: 5.5cqh;
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
@@ -107,17 +109,17 @@
 
   @media (min-aspect-ratio: 4/3) {
     /* Landscape only. Larger than the footer crop, so the bowls fill most of
-       the card. Shifted just enough that the l touches the top and the bottoms
-       of p, o and t run off the bottom; centered so the stem of p and the right
-       of t bleed off the sides. Portrait stays on the footer crop above. */
-    .bg-wordmark { top: 0; height: auto; }
+       the card. Centered so the stem of p and the right of t bleed off the
+       sides. Dropped about 8% of the card height from the top-aligned place.
+       bottom: 0 cancels the portrait lift above. */
+    .bg-wordmark { top: 0; bottom: 0; height: auto; }
     .bg-wordmark svg {
       width: 124vw;
       width: 124cqw;
       margin-left: -12vw;
       margin-left: -12cqw;
-      margin-top: -1vw;
-      margin-top: -1cqw;
+      margin-top: calc(-1vw + 8vh);
+      margin-top: calc(-1cqw + 8cqh);
     }
     .chart-card { padding-top: calc(var(--pad) + 140px); }
     .header { margin-bottom: 36px; }
