@@ -68,13 +68,13 @@ export const evidenceFor = (p) => {
   const payload = p.payload || {};
 
   if (typeof payload.rating === 'number') bits.push(`${payload.rating.toFixed(1)} rating`);
-  if (typeof payload.votes === 'number') bits.push(`${payload.votes.toLocaleString('en-AU')} votes`);
+  if (typeof payload.votes === 'number') bits.push(`${payload.votes.toLocaleString('en-US')} votes`);
   if (payload.year) bits.push(String(payload.year));
   if (typeof payload.days_until === 'number') bits.push(`${payload.days_until} days away`);
 
-  // Where it can actually be watched, US first — the same default the copy uses.
+  // Where a US viewer can watch it. UK and AU lists are not the audience.
   const streaming = payload.streaming || {};
-  const providers = streaming.US || streaming.UK || streaming.AU || [];
+  const providers = streaming.US || [];
   const names = providers.map((x) => x?.provider_name || x?.name || x).filter((x) => typeof x === 'string');
   if (names.length) bits.push(names.slice(0, 3).join(', '));
 

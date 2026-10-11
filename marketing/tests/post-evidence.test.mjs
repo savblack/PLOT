@@ -18,11 +18,10 @@ test('the numbers are what would have exposed the famous picks', () => {
   assert.ok(evidenceFor(starWars).includes('22,843 votes'));
 });
 
-test('where to watch it comes from the planner, US first', () => {
+test('where to watch it comes from the US list only', () => {
   const e = evidenceFor(gem({ streaming: { US: [{ provider_name: 'Netflix' }], AU: [{ provider_name: 'Stan' }] } }));
   assert.deepEqual(e, ['Netflix']);
-  // Falls through when there is no US listing rather than showing nothing.
-  assert.deepEqual(evidenceFor(gem({ streaming: { AU: [{ provider_name: 'Stan' }] } })), ['Stan']);
+  assert.deepEqual(evidenceFor(gem({ streaming: { AU: [{ provider_name: 'Stan' }] } })), []);
 });
 
 test('at most three providers, so the line stays a line', () => {

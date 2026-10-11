@@ -69,7 +69,7 @@ export const PLANS_PAGE = {
     { icon: 'together', label: 'Find something you both want', note: 'The overlap in your watchlists' },
     { icon: 'lists', label: 'Unlimited and smart lists', note: 'Rules that keep finding matches' },
     { icon: 'stats', label: 'Deeper viewing stats', note: 'Beyond the Free overview' },
-    { icon: 'customise', label: 'Customise your plot', note: 'Themes now. Widgets and app icons are coming.' },
+    { icon: 'customise', label: 'Customize your plot', note: 'Themes now. Widgets and app icons are coming.' },
   ],
   assurances: [
     '7-day free trial for new subscribers',
@@ -228,7 +228,7 @@ export const PLANS_PAGE = {
       description: 'Get your watchlist alerts on your phone and in your inbox, as well as in the app.' },
     { id: 'themes', label: 'Themes', live: true,
       description: 'Themes, each in light and dark with its own accent. The default look stays free in light, dark and system.' },
-    { id: 'customize', label: 'Customise your plot', highlight: true,
+    { id: 'customize', label: 'Customize your plot', highlight: true,
       description: 'Make plot feel like yours: Home Screen widgets, custom app icons and custom profile pages.' },
   ],
   planSummary: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Themes now, with widgets and app icons to come'],

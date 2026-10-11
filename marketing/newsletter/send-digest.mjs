@@ -339,7 +339,7 @@ const main = async () => {
     return;
   }
 
-  const dateLabel = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const dateLabel = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const data = { dateLabel, featured, kicker: "This week's No.1", chart, weekend, streaming };
   const issueHtml = buildHtml(data, `${SITE}/?unsubscribe_preview`);
   const subject = 'This week in film & TV — plot';

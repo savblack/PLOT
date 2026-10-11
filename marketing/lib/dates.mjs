@@ -36,24 +36,24 @@ export const daysBetween = (a, b) =>
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const WEEKDAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-// '2026-06-19' -> '19 June'
+// Reader-facing marketing dates use US order. '2026-06-19' -> 'June 19'
 export const formatDayMonth = (dateStr) => {
   const d = new Date(`${dateStr}T00:00:00Z`);
-  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
 };
 
-// '2026-06-19' -> 'Friday 19 June'; a date outside `relativeTo`'s year keeps its
-// year -> 'Friday 24 July 2027'. Without that, a release far enough out reads as
+// '2026-06-19' -> 'Friday, June 19'; a date outside `relativeTo`'s year keeps its
+// year -> 'Saturday, July 24, 2027'. Without that, a release far enough out reads as
 // a date that has already been and gone: a trailer post written in September
-// 2026 for a July 2027 film said "It arrives Friday 24 July", which a reader
+// 2026 for a July 2027 film said "It arrives Friday, July 24", which a reader
 // dates to the previous July. Same-year dates are unchanged.
 export const formatWeekdayDayMonth = (dateStr, relativeTo = new Date()) => {
   const d = new Date(`${dateStr}T00:00:00Z`);
-  const base = `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
-  return d.getUTCFullYear() === relativeTo.getUTCFullYear() ? base : `${base} ${d.getUTCFullYear()}`;
+  const base = `${WEEKDAYS[d.getUTCDay()]}, ${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  return d.getUTCFullYear() === relativeTo.getUTCFullYear() ? base : `${base}, ${d.getUTCFullYear()}`;
 };
 
-// ('2026-06-15', '2026-06-21') -> '15 to 21 June' (or '28 June to 4 July')
+// ('2026-06-15', '2026-06-21') -> 'June 15 to 21' (or 'June 28 to July 4')
 //
 // "to", not an en dash. This label is copied verbatim into the week's social
 // posts and printed on the slate card, and Plot's copy rule bans en and em
@@ -63,9 +63,9 @@ export const formatWeekRange = (fromStr, toStr) => {
   const from = new Date(`${fromStr}T00:00:00Z`);
   const to = new Date(`${toStr}T00:00:00Z`);
   if (from.getUTCMonth() === to.getUTCMonth()) {
-    return `${from.getUTCDate()} to ${to.getUTCDate()} ${MONTHS[to.getUTCMonth()]}`;
+    return `${MONTHS[from.getUTCMonth()]} ${from.getUTCDate()} to ${to.getUTCDate()}`;
   }
-  return `${from.getUTCDate()} ${MONTHS[from.getUTCMonth()]} to ${to.getUTCDate()} ${MONTHS[to.getUTCMonth()]}`;
+  return `${MONTHS[from.getUTCMonth()]} ${from.getUTCDate()} to ${MONTHS[to.getUTCMonth()]} ${to.getUTCDate()}`;
 };
 
 export const addDays = (dateStr, days) => {

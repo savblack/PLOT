@@ -14,7 +14,7 @@ const colorTokens = [
   ['--text-muted', 'Muted text', 'Metadata, hints, timestamps, and quiet counters.'],
   ['--border', 'Standard border', 'Separates structural surfaces without heavy outlines.'],
   ['--border-strong', 'Strong border', 'Higher-contrast separator for overlays, focused inputs, and modals.'],
-  ['--accent', 'Accent', 'Spent sparingly — consequential actions (save, delete, logout) and small hierarchy cues (favourite, save) only. Never decoration.'],
+  ['--accent', 'Accent', 'Spent sparingly — consequential actions (save, delete, logout) and small hierarchy cues (favorite, save) only. Never decoration.'],
   ['--accent-dim', 'Accent dim', 'Tinted accent fill for the few accented states (save confirmation, selected). Not a background color.'],
   ['--danger', 'Danger', 'Destructive actions, error states, and delete confirmations.'],
   ['--danger-dim', 'Danger dim', 'Danger background tint for warning banners and error input fills.'],
@@ -52,10 +52,10 @@ const spacingScale = [
 ];
 
 const accentRules = [
-  ['Actions and controls', 'Save, favourite, delete / destructive confirm, logout, active tabs or indicators, and focus / hover states on interactive controls.'],
-  ['Selection and progress', 'Selected filters and provider cards, onboarding / import / watching progress, completion, calendar today / selected days, and the EPG now line / active programme.'],
+  ['Actions and controls', 'Save, favorite, delete / destructive confirm, logout, active tabs or indicators, and focus / hover states on interactive controls.'],
+  ['Selection and progress', 'Selected filters and provider cards, onboarding / import / watching progress, completion, calendar today / selected days, and the EPG now line / active program.'],
   ['Status and hierarchy', 'List, profile, settings, featured, and chart status cues: ranks, official labels, Premium / public-list badges, and Discover hero actions.'],
-  ['Everything else is greyscale', 'Do not use pink for decorative fills, large surfaces, generic branding, or inactive content. Marketing and transactional surfaces retain their established treatment.'],
+  ['Everything else is grayscale', 'Do not use pink for decorative fills, large surfaces, generic branding, or inactive content. Marketing and transactional surfaces retain their established treatment.'],
 ];
 
 const shadowRules = [
@@ -258,7 +258,7 @@ export default function DesignSystemPage() {
 
         <h3 className="ds-subsection-title">Spending the accent</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          <code>--accent</code> (#E05578 on Light; its hue is per theme under Premium themes) is a signal, not a decorative palette colour. Everything else is black, white, and grey. Use it only where it earns its place:
+          <code>--accent</code> (#E05578 on Light; its hue is per theme under Premium themes) is a signal, not a decorative palette color. Everything else is black, white, and gray. Use it only where it earns its place:
         </p>
         <div className="ds-utility-grid">
           {accentRules.map(([label, purpose]) => (

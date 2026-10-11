@@ -1,0 +1,12 @@
+---
+description: American English for user-facing copy. Legal pages stay as written.
+alwaysApply: true
+---
+
+Plot's primary market is the United States. Write user-facing copy in American English (color, favorite, theater, organize, program, -ize verbs). That includes app and web UI, the marketing site, social posts, What's On, card text, alt text, and email.
+
+Marketing content is for a US reader: US release dates, US streaming services, US references, and US date order (June 19, Friday, June 19). Do not localize marketing for Australia or the UK.
+
+Legal pages stay as they are. Terms of Service, Privacy Policy, Community Standards, and other legal pages keep their current wording, including British spelling where they already use it.
+
+Do not add new `regionalWords()` call sites or new entries in `packages/core/spelling.js`. Existing call sites stay until a ticket asks to sweep them. A new string is American spelling, written out.

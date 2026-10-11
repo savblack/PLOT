@@ -11,8 +11,8 @@ do not need identical layouts, but they should share the same brand mark, typogr
 color roles, spacing rhythm, radii, motion language, and core control patterns.
 
 The system is **warm, flat and quiet.** The ground is cream, the ink is a soft charcoal,
-and structure comes from two creams and hairline borders, not from depth or colour.
-Semantic guide and status colours remain valid when they communicate time, availability,
+and structure comes from two creams and hairline borders, not from depth or color.
+Semantic guide and status colors remain valid when they communicate time, availability,
 media type, or account state. The brand pink is spent in two deliberate ways (below);
 shadow is a legibility rescue only.
 
@@ -32,7 +32,7 @@ shadow is a legibility rescue only.
 | `--accent-secondary` | `#5F7030` | Soft green, the second voice: availability, "now at home". 4.9:1 on cream. |
 | `--accent-secondary-fill` | `#DBE1B0` | The sage tint the green sits on as a chip. |
 | `--accent-fill` | `#FF88C8` | The brand pink as a **fill** behind charcoal text. See below. |
-| `--on-accent-fill` | `#292924` | The only text colour that goes on the fill. 6.69:1. |
+| `--on-accent-fill` | `#292924` | The only text color that goes on the fill. 6.69:1. |
 
 Dark mode keeps the warm-neutral `#0c0c0c` / `#f0efe8` scale; the accent lightens to
 `#F06A88`, the secondary green to `#C9D48A`, and the fill is the same pink in both themes.
@@ -70,28 +70,28 @@ rendered page is the visual contract; this file is the prose for what code can't
 
 The pink and the green are not interchangeable.
 
-- **`--accent` (`#E05578` light / `#F06A88` dark, the pink)** colours *type and line*: small
+- **`--accent` (`#E05578` light / `#F06A88` dark, the pink)** colors *type and line*: small
   text, icons, focus and selection rings, rank numbers, the active tab underline. It is
   a signal you spend on the few things that earn it.
-- **`--accent-fill` (`#FF88C8`, the brand pink)** colours *surfaces*: the primary button,
+- **`--accent-fill` (`#FF88C8`, the brand pink)** colors *surfaces*: the primary button,
   chips, the Live badge, the sign-up pill. It only ever sits behind `--on-accent-fill`
   charcoal text. It is too light to carry text itself (1.97:1 on cream) and must never
-  colour type, an icon, or a border.
+  color type, an icon, or a border.
 - **`--accent-secondary` (`#5F7030` light / `#C9D48A` dark, soft green)** is the second
   voice, spent even more sparingly: availability and "now at home" chips on its sage fill,
   a positive state beside the pink. Never a primary action.
 
-Neutral UI is **cream, charcoal and the warm greys.** Neither the pink nor the green is a general-purpose
-palette colour. Semantic guide/status tokens are the separate, permitted exception for
+Neutral UI is **cream, charcoal and the warm grays.** Neither the pink nor the green is a general-purpose
+palette color. Semantic guide/status tokens are the separate, permitted exception for
 meaning.
 
 Keep the accent for these approved interaction and hierarchy cues:
 
-- **Actions and controls** — Save, favourite, delete/destructive confirm, logout, active
+- **Actions and controls** — Save, favorite, delete/destructive confirm, logout, active
   tabs or indicators, and focus/hover states on interactive controls.
 - **Selection and progress** — selected filters and provider cards, onboarding/import/watch
   progress and completion, checked/current episodes, calendar today/selected days, and the
-  EPG now line/active programme.
+  EPG now line/active program.
 - **Status and labels** — top-ranked list items, Premium/public-list/cinema/date-group labels,
   profile and settings status, and other explicit account/integration state.
 - **Featured and chart hierarchy** — Discover hero badges and active actions, chart ranks,
@@ -111,7 +111,7 @@ variant carries its own `--accent`, `--accent-text`, `--accent-fill`, `--accent-
 `--on-accent-fill` and secondary set, so Blush's accent is a teal and Ink's light fill is
 black. Only the hue moves: the approved roles above stay exactly as listed, and the three
 jobs (type and line, fill behind its own text, the second voice) stay separate. So always
-reach for the token, never the pink's hex, and never let a fill colour type, an icon or a
+reach for the token, never the pink's hex, and never let a fill color type, an icon or a
 line: several family fills are about 1.3:1 against their own ground. A few tokens exist
 because one theme's fill cannot do every fill job: `--artwork-fill` / `--on-artwork-fill`
 for a fill chip or stamp over a poster or backdrop (Ink's black fill would vanish on a dark
@@ -168,17 +168,17 @@ including that numeral, is still out.
   on the Discover platform charts, the My Lists Top 5 and the public profile Top 5; a rank
   does not get a chip.
 - **Both treatments:** verify readable contrast over light and dark image areas in both
-  themes; never rely on colour alone to communicate the state.
+  themes; never rely on color alone to communicate the state.
 
 ### The reference: the Trending panel
 
 The landing page's "Everything. In one place." section is the canonical use of every
-colour, and new work should match it rather than invent a new distribution:
+color, and new work should match it rather than invent a new distribution:
 
 - **Cream panel** (`--surface-sunken`, 20px radius, no border, no shadow) on the cream ground,
   rows separated by hairlines.
 - **Charcoal for everything that carries information**: the panel title, the rank numbers,
-  the titles, the meta line in the warm grey. Rank numbers are charcoal, not pink.
+  the titles, the meta line in the warm gray. Rank numbers are charcoal, not pink.
 - **One pink fill chip** (`--accent-fill`, charcoal text) on the single item that earns it —
   the lead, "Trending #1". Never more than one pink chip per panel.
 - **Sage chips** (`--accent-secondary-fill`, charcoal text) for kind and availability —
@@ -218,7 +218,7 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
     the sage fill with green text marks availability.
   - **Cards and panels** are the deeper cream at 20px radius with no border and no shadow.
     Rows inside them separate with a hairline.
-- Semantic guide/status roles (meaning-bearing colours, not neutral surfaces):
+- Semantic guide/status roles (meaning-bearing colors, not neutral surfaces):
   - `--chip-now`, `--chip-today`, `--chip-tomorrow`, `--chip-soon`, `--chip-cinema`,
     `--chip-streaming`, `--chip-episode`
   - `--epg-bar-stream`, `--epg-bar-broadcast`
@@ -252,11 +252,11 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
   3:1 for essential non-text controls and focus indicators.
 - Every keyboard-operable control has a visible `:focus-visible` treatment that is not
   removed by an outline reset. Focus must remain visible in both themes.
-- Never communicate status, selection, or progress through colour alone; pair colour with
+- Never communicate status, selection, or progress through color alone; pair color with
   text, an icon, a shape, a checkmark, or another structural cue.
 - Touch targets provide at least 44×44 CSS px of hit area. A compact visual control may
   use an invisible padding/hit-area expansion to meet this requirement.
-- Honour `prefers-reduced-motion: reduce` by removing non-essential transforms, bounce,
+- Honor `prefers-reduced-motion: reduce` by removing non-essential transforms, bounce,
   and staggered animation while preserving state changes and loading feedback.
 - Text over posters/backdrops follows the image recipe above and must remain readable
   against the actual image, not only a placeholder or average background.
@@ -287,7 +287,7 @@ system patterns, not panel one-offs: reuse them rather than re-deriving a near-m
   for a second row of actions.
 - **Disclosure cards** (`.panel-card` + `.panel-disclosure`). A sunken 20px card whose
   header is a bare `<button>` carrying `aria-expanded`, with the chevron as a direct child
-  (`.panel-disclosure > svg`, scoped so it does not recolour icons inside the row). When
+  (`.panel-disclosure > svg`, scoped so it does not recolor icons inside the row). When
   collapsed the header keeps the answer visible in miniature (Where to watch shows
   overlapped provider marks), so collapsing hides detail, never the fact. Prefer this to a
   tab or a jump link when a section is long but its summary is one glance.

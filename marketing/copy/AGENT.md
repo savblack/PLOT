@@ -32,6 +32,14 @@ model-agnostic; nothing here depends on which CLI is executing it.
 
 ## Rules
 
+- Plot's primary market is the United States. Social copy, What's On articles,
+  card text, alt text, and anything else this job writes are for a US reader:
+  US release dates, US streaming services, US references, and US date order
+  ("Friday, June 19"). American spelling throughout (color, favorite, theater,
+  organize, program, -ize verbs). Do not localize for Australia or the UK, and
+  do not name a platform from the payload's UK or AU lists.
+- Legal pages are out of scope here. This job does not edit terms, privacy, or
+  other legal copy, and those pages are not a spelling model for posts.
 - Follow `marketing/copy/WHATSON_GUIDELINES.md` for website-article sourcing,
   structure and post-type guidance.
 - Use only the facts supplied in the brief for social copy.
@@ -53,14 +61,14 @@ model-agnostic; nothing here depends on which CLI is executing it.
 `supabase/functions/_shared/articleRules.js`, which rejects em and en dashes,
 quoted passages and quoted titles, reception narration ("critics have…",
 "according to", "reportedly"), exposed research ("could not verify"), banned
-filler and trivia asides, audience scores, UK spelling, a TMDB mention, more
+filler and trivia asides, audience scores, British spelling, a TMDB mention, more
 than two rating citations, a ratings sentence as the closer, and a Title Case
 post-type label at the front of the headline. A `now_streaming`, `watch_tonight`
 or `hidden_gem` post is additionally rejected if the body never says where to
 watch.
 
-The social captions (`x`, `instagram`, `threads`) are checked too, for em and
-en dashes, UK spelling, narrated research, audience scores, and calling a
+The social captions (`x`, `instagram`, `threads`) and `alt_text` are checked too, for em and
+en dashes, British spelling, narrated research, audience scores, and calling a
 rental "streaming" when the post's `home_kind` says it is rent or buy, and for
 calling a rental platform a "store" or "storefront". People rent in the app they
 already have: name the platforms, or say "on digital".
