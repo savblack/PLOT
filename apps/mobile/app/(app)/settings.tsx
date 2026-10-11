@@ -47,6 +47,8 @@ import { PEOPLE } from '@plot/core/copy/people.js';
 import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { useMyAlerts } from '@plot/core/usePremiumAlerts.js';
+import { useStreamingAlertsSwitch, useMutedFilms } from '@plot/core/useStreamingAlerts.js';
+import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -203,6 +205,53 @@ function PeopleFollowSettings({ userId, isPremium }: { userId: string | null; is
               label={show.title}
               trailing={action(PREMIUM_ALERTS.settings.remove)}
               onPress={busy ? undefined : () => { void remove(show.tmdb_id); }}
+            />
+          ))}
+        </SettingsGroup>
+      )}
+    </>
+  );
+}
+
+// Settings > Viewing: where to manage streaming alerts. One switch for the whole
+// thing and the films someone has muted, each with a way to turn it back on.
+// Mirrors apps/web/src/components/StreamingAlertsSettings.jsx. Free for
+// everyone: the alerts are automatic for films on the watchlist, so there is
+// nothing to opt in to, only this to opt out of. Logic and copy are shared
+// (@plot/core useStreamingAlerts.js, copy/streamingAlerts.js).
+function StreamingAlertsSettings({ userId }: { userId: string | null }) {
+  const { colors } = useTheme();
+  const S = STREAMING_ALERTS.settings;
+  const all = useStreamingAlertsSwitch(userId);
+  const { films, loading, unmute } = useMutedFilms(userId);
+  const [busy, setBusy] = useState(false);
+  if (!userId || all.loading || loading) return null;
+  const turnOn = async (id: number) => {
+    setBusy(true);
+    await unmute(id);
+    setBusy(false);
+  };
+  return (
+    <>
+      <SettingsGroup title={S.groupTitle}>
+        <SettingsRow
+          icon={null}
+          label={S.switchLabel}
+          description={S.switchHint}
+          trailing={<Switch value={all.on} onValueChange={(next) => { void all.setOn(next); }} disabled={all.busy} trackColor={{ true: colors.accent }} accessibilityLabel={S.switchLabel} />}
+        />
+        {all.error ? <SettingsRow icon={null} label={STREAMING_ALERTS.error} /> : null}
+      </SettingsGroup>
+      {films.length > 0 && (
+        <SettingsGroup title={S.muted}>
+          {films.map(film => (
+            <SettingsRow
+              key={film.tmdb_id}
+              icon={null}
+              label={film.title}
+              accessibilityLabel={S.unmuteLabel(film.title)}
+              trailing={<Text style={{ color: colors.accentText, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm }}>{S.unmute}</Text>}
+              onPress={busy ? undefined : () => { void turnOn(film.tmdb_id); }}
             />
           ))}
         </SettingsGroup>
@@ -1376,6 +1425,7 @@ export default function SettingsScreen() {
             trailing={<Switch value={includeKidsContent} onValueChange={toggleKidsContent} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.kidsContent.label} />}
           />
         </SettingsGroup>
+        <StreamingAlertsSettings userId={userId} />
         <PeopleFollowSettings userId={userId} isPremium={!!profile?.is_premium} />
         </>}
 

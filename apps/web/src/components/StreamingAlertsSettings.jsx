@@ -4,7 +4,7 @@
 // so there is nothing to opt in to, only this to opt out of.
 // Logic: @plot/core/useStreamingAlerts.js.
 //
-// Mobile parity: not shipped on mobile yet (issue 1093).
+// Mobile: StreamingAlertsSettings in apps/mobile/app/(app)/settings.tsx (same hooks and copy).
 import { useState } from 'react';
 import { useStreamingAlertsSwitch, useMutedFilms } from '@plot/core/useStreamingAlerts.js';
 import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';

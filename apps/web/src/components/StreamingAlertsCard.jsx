@@ -7,8 +7,7 @@
 // Logic: @plot/core/useStreamingAlerts.js. Detection and delivery happen
 // server-side in the streaming-arrival-alerts Edge Function.
 //
-// Mobile parity: not shipped on mobile yet (issue 1093); mobile already renders
-// the streaming_arrival notification row.
+// Mobile: apps/mobile/components/StreamingAlertsCard.tsx (same hooks and copy).
 import { useApp } from '../hooks/useApp.js';
 import { useStreamingAlertMute, useStreamingAlertsSwitch } from '@plot/core/useStreamingAlerts.js';
 import { STREAMING_ALERTS as A } from '@plot/core/copy/streamingAlerts.js';

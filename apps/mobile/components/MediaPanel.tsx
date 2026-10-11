@@ -1,5 +1,6 @@
 import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import { getEpisodeGuideState } from '@plot/core/episodeProgress.js';
+import StreamingAlertsCard from './StreamingAlertsCard';
 import TitleFootBar from './TitleFootBar';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
@@ -1331,6 +1332,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     )}
                   </View>
                 )}
+
+                {/* Free: streaming alerts for a film on the watchlist. The watchlist is
+                    the opt-in, so this is only a way to mute it (mirrors web). */}
+                {isMovie && details && inList && <StreamingAlertsCard movie={details} />}
 
                 {(criticScore || Number.isFinite(audienceScore)) && (
                   <View style={styles.scoresRow}>
