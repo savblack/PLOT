@@ -15,7 +15,7 @@ test('charts card reuses the website footer wordmark svg', async () => {
   assert.match(svg, /<path /);
 });
 
-test('charts card copies the footer wordmark crop and fill', async () => {
+test('charts card copies the footer wordmark crop', async () => {
   const css = await readFile(path.join(root, 'apps/website/_partials/footer.css'), 'utf8');
   const card = await readFile(path.join(root, 'marketing/templates/trending-chart.html'), 'utf8');
   const snippets = [
@@ -24,10 +24,22 @@ test('charts card copies the footer wordmark crop and fill', async () => {
     'width: 108cqw',
     'aspect-ratio: 1403 / 871',
     'margin-left: -4cqw',
-    'fill: var(--surface, #f1e9dc)',
   ];
   for (const snippet of snippets) {
     assert.ok(css.includes(snippet), `footer css missing ${snippet}`);
     assert.ok(card.includes(snippet), `charts card missing ${snippet}`);
   }
+});
+
+test('charts wordmark uses the darker beige, and only landscape scales it up', async () => {
+  const theme = await readFile(path.join(root, 'apps/website/theme.css'), 'utf8');
+  const card = await readFile(path.join(root, 'marketing/templates/trending-chart.html'), 'utf8');
+  assert.match(theme, /--surface-hover:\s+#eadfcf/i);
+  assert.match(card, /--wordmark:\s+#eadfcf/);
+  assert.match(card, /fill:\s+var\(--wordmark,\s+#eadfcf\)/);
+  assert.doesNotMatch(card, /#f1e9dc/i);
+  const landscape = card.slice(card.indexOf('@media (min-aspect-ratio: 4/3)'));
+  assert.match(landscape, /width:\s+124cqw/);
+  assert.match(landscape, /margin-top:\s+-1cqw/);
+  assert.doesNotMatch(card.slice(0, card.indexOf('@media (min-aspect-ratio: 4/3)')), /124cqw/);
 });

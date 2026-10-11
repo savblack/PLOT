@@ -14,7 +14,8 @@
      bold NEW / up-move marks. */
   body.light {
     --bg: #F8F2EA;
-    --surface: #F1E9DC; /* colors.light.surfaceSunken, the footer wordmark fill */
+    /* Darker beige than the sunken cream. theme.css --surface-hover. */
+    --wordmark: #eadfcf;
     --text: #292924;
     --text-dim: #5F5A52;
     --text-faint: #6B655D;
@@ -32,7 +33,7 @@
   /* Same crop as the website footer (apps/website/_partials/footer.css).
      The card is the viewport, so vw and cqw are the card width: 108% wide,
      pulled 4% left, clipped above the baseline so the bottoms of p, o and t
-     run off the card. Fill is the sunken surface on the cream ground. */
+     run off the card. Portrait keeps this size. Landscape scales it up below. */
   .bg-wordmark {
     position: absolute;
     left: 0;
@@ -52,7 +53,7 @@
     aspect-ratio: 1403 / 871;
     margin-left: -4vw;
     margin-left: -4cqw;
-    fill: var(--surface, #f1e9dc);
+    fill: var(--wordmark, #eadfcf);
   }
   .header { position: relative; z-index: 2; margin-bottom: 40px; }
   /* Kicker sits top-right, on the wordmark's line, so the header is just the week. */
@@ -105,6 +106,19 @@
   .detail .display { font-size: 150px; max-width: 96%; }
 
   @media (min-aspect-ratio: 4/3) {
+    /* Landscape only. Larger than the footer crop, so the bowls fill most of
+       the card. Shifted just enough that the l touches the top and the bottoms
+       of p, o and t run off the bottom; centered so the stem of p and the right
+       of t bleed off the sides. Portrait stays on the footer crop above. */
+    .bg-wordmark { top: 0; height: auto; }
+    .bg-wordmark svg {
+      width: 124vw;
+      width: 124cqw;
+      margin-left: -12vw;
+      margin-left: -12cqw;
+      margin-top: -1vw;
+      margin-top: -1cqw;
+    }
     .chart-card { padding-top: calc(var(--pad) + 140px); }
     .header { margin-bottom: 36px; }
     .header .meta-caps { margin-bottom: 8px; font-size: 22px; }
