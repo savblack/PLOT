@@ -145,23 +145,25 @@ Deno.serve(async (req) => {
         return json({ error: 'Billing price configuration needs attention' }, 503);
       }
 
-      const url = await subscriptionCheckout(admin, stripe, user.id, price, SETTINGS_URL, createPortalUrl);
+      const result = await subscriptionCheckout(admin, stripe, user.id, price, SETTINGS_URL, createPortalUrl);
       // Capture only after Stripe has returned a real Checkout URL. The gate
       // above stays closed until launch, so preview clicks cannot masquerade as
       // checkout starts.
       try {
-        await capturePostHogEvent('premium_checkout_started', user.id, {
-          channel: 'stripe',
-          checkout_type: 'subscription',
-          plan,
-          price_id: configuredPrice.id,
-          amount: typeof configuredPrice.unit_amount === 'number' ? configuredPrice.unit_amount / 100 : null,
-          currency: normaliseCurrency(configuredPrice.currency),
-        });
+        if (result.destination === 'checkout') {
+          await capturePostHogEvent('premium_checkout_started', user.id, {
+            channel: 'stripe',
+            checkout_type: 'subscription',
+            plan,
+            price_id: configuredPrice.id,
+            amount: typeof configuredPrice.unit_amount === 'number' ? configuredPrice.unit_amount / 100 : null,
+            currency: normaliseCurrency(configuredPrice.currency),
+          });
+        }
       } catch (err) {
         console.error(`stripe-billing: PostHog capture failed for ${user.id}: ${(err as Error).message}`);
       }
-      return json({ url });
+      return json({ url: result.url });
     } catch (err) {
       if (err instanceof CheckoutPendingError) {
         await captureCheckoutFailure(user.id, 'checkout_pending', plan);
