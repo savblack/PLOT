@@ -21,7 +21,7 @@ function AddToListExample({ onClose }) {
         <form className="add-list-create">
           <label htmlFor="story-list-name">List name</label>
           <input id="story-list-name" placeholder="e.g. Rainy Sunday films" autoFocus />
-          <p>You can customise the cover and list details after creating it.</p>
+          <p>You can customize the cover and list details after creating it.</p>
           <div className="add-list-create-actions">
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCreating(false)}>Cancel</button>
             <button type="button" className="btn btn-primary btn-sm">Create list</button>

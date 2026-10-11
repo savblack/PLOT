@@ -859,7 +859,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
             }}
             autoFocus
           />
-          <p>You can customise the cover and list details after creating it.</p>
+          <p>You can customize the cover and list details after creating it.</p>
           {createError && <div className="add-list-error">{createError}</div>}
           {showUpgrade && <UpgradeSheet reason="lists" onClose={() => setShowUpgrade(false)} />}
           <div className="add-list-create-actions">

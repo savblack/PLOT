@@ -156,7 +156,7 @@ test('programme details and narrow agenda render on the production route', async
   await page.goto('/guide');
   await page.getByRole('button', { name: /Test evening news/ }).click();
   await expect(page.getByText('A test programme description.')).toBeVisible();
-  await page.getByRole('button', { name: 'Close programme details' }).click();
+  await page.getByRole('button', { name: 'Close program details' }).click();
   await expect(page.locator('dialog')).not.toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
