@@ -24,6 +24,36 @@ const dedupeByMediaId = items => {
 // dropped, so sections rarely fall short of a full row.
 const MIN_RAIL_SIZE = 14;
 
+/**
+ * Movies in cinemas today, from TMDB's now-playing results: English-origin,
+ * kids content dropped when asked, released on or before `today` (so they and
+ * "coming soon" never share a title), flagged `_cinema`. Web's Now Showing
+ * rail and plot's Picks read this, and so does mobile's Picks.
+ * @param {any[] | null | undefined} nowPlayingResults
+ * @param {{ today: string, hideKids?: boolean }} options
+ * @returns {any[]}
+ */
+export function currentCinemaMovies(nowPlayingResults, { today, hideKids = false }) {
+  return dedupeByMediaId(
+    excludeKidsContent((nowPlayingResults || []).filter(isEnglishOriginTitle), hideKids)
+      .filter(movie => (movie.release_date || '') <= today)
+      .map(movie => ({ ...movie, media_type: 'movie', _cinema: true })),
+  );
+}
+
+/**
+ * The "In cinemas" card in plot's Picks: the highest trending movie that is
+ * in cinemas now, else the first title in cinemas.
+ * @param {any[]} trendingMovies Trending movies, most trending first.
+ * @param {any[]} inCinemas currentCinemaMovies().
+ * @returns {any | null}
+ */
+export function trendingCinemaHero(trendingMovies, inCinemas) {
+  return trendingMovies
+    .map(movie => inCinemas.find(cinema => cinema.id === movie.id))
+    .find(Boolean) || inCinemas[0] || null;
+}
+
 const emptyDiscoverData = () => ({
   hero: null,
   heroByType: {},
@@ -83,20 +113,14 @@ export async function loadDiscoverData({ hideKids = false, client = tmdb, onPrim
   // Now and next are separate rails, split strictly on today's date, so
   // neither can show the other's titles.
   const today = localDateStr();
-  const currentCinemaMovies = dedupeByMediaId(
-    excludeKidsContent((nowPlaying?.results || []).filter(isEnglishOriginTitle), hideKids)
-      .filter(movie => (movie.release_date || '') <= today)
-      .map(movie => ({ ...movie, media_type: 'movie', _cinema: true })),
-  );
-  const cinemaMovies = currentCinemaMovies.slice(0, 10);
+  const inCinemas = currentCinemaMovies(nowPlaying?.results, { today, hideKids });
+  const cinemaMovies = inCinemas.slice(0, 10);
   const anticipatedMovies = dedupeByMediaId(
     excludeKidsContent((upcoming?.results || []).filter(isEnglishOriginTitle), hideKids)
       .filter(movie => (movie.release_date || '') > today)
       .map(movie => ({ ...movie, media_type: 'movie' })),
   ).slice(0, 10);
-  const trendingCinema = trendingMovieItems
-    .map(movie => currentCinemaMovies.find(cinema => cinema.id === movie.id))
-    .find(Boolean) || cinemaMovies[0] || null;
+  const trendingCinema = trendingCinemaHero(trendingMovieItems, inCinemas);
 
   return {
     ...primary,

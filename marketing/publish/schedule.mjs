@@ -26,6 +26,7 @@
 import { getSupabase } from '../lib/supabase.mjs';
 import { publishToBuffer, channelCapacity, getPostingSchedules } from './buffer.mjs';
 import { buildPayload, sendTimeFor, sydneyDay, SERVICE } from './payload.mjs';
+import { queueBlockReason } from '../lib/pipelineGate.mjs';
 
 const DRY_RUN = process.env.DRY_RUN === '1';
 
@@ -150,8 +151,24 @@ const slotsTaken = async (supabase) => {
   return counts;
 };
 
-const scheduleOne = async (supabase, post, pub, budget, schedules, taken) => {
+const scheduleOne = async (supabase, post, pub, budget, schedules, taken, flagged) => {
   const service = SERVICE[pub.platform];
+
+  // Branded cards, or nothing. A raw TMDB still is the website hero, not the
+  // social image. Leave the row queued so the render step can fill it.
+  if (queueBlockReason(post) === 'missing_cards') {
+    console.error(`${post.topic_key} ${pub.platform}: not queued — branded cards are missing`);
+    if (!DRY_RUN && !flagged.has(post.id)) {
+      flagged.add(post.id);
+      const { error } = await supabase.from('marketing_posts').update({
+        error: 'Cards missing: left queued. The render step retries this.',
+        updated_at: new Date().toISOString(),
+      }).eq('id', post.id);
+      if (error) console.error(`Could not flag ${post.id}:`, error.message);
+    }
+    return 'missing_cards';
+  }
+
   // The day is ours, the time is Buffer's: the nth post for this channel on this
   // day takes the nth slot of the channel's own posting schedule.
   const slotKey = `${service}|${sydneyDay(post)}`;
@@ -295,11 +312,12 @@ const main = async () => {
     const budget = await budgetFor();
     const schedules = await getPostingSchedules();
     const taken = await slotsTaken(supabase);
+    const flagged = new Set();
     const counts = {};
     for (const post of pending) {
       const queued = (post.marketing_post_publications || []).filter((x) => x.status === 'queued');
       for (const pub of queued) {
-        const outcome = await scheduleOne(supabase, post, pub, budget, schedules, taken);
+        const outcome = await scheduleOne(supabase, post, pub, budget, schedules, taken, flagged);
         if (outcome) counts[outcome] = (counts[outcome] || 0) + 1;
       }
     }
@@ -315,6 +333,13 @@ const main = async () => {
 
     console.log(`\nScheduled across ${pending.length} post(s):`,
       Object.entries(counts).map(([k, v]) => `${k}=${v}`).join(' ') || 'nothing');
+
+    if (counts.missing_cards) {
+      const message = `${counts.missing_cards} publication(s) left queued because branded cards are missing.`;
+      console.error(message);
+      if (!DRY_RUN) throw new Error(message);
+    }
+
     await finishBatchRun(supabase, runId, {
       status: 'succeeded',
       counts: { posts: pending.length, ...counts },

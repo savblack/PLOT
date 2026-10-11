@@ -6,7 +6,7 @@ is still [`marketing/README.md`](../../marketing/README.md). This file is the
 map: what runs, what starts it, where the words and pictures come from, and
 where they land.
 
-Last reviewed against the tree on 21 September 2026. If a workflow, script, or
+Last reviewed against the tree on 10 October 2026. If a workflow, script, or
 edge function named below disappears or changes trigger, update this file in
 the same change.
 
@@ -27,6 +27,9 @@ outside the repo (Linear, a doc, a manual Buffer post).
 
 1. Sunday morning, GitHub Actions plans the coming week, asks Claude to write
    the copy, renders social cards, and pushes as many posts as Buffer will hold.
+   A rejected copy file does not skip that render. If a card is still missing,
+   the daily job renders it again before the top-up, and will not queue the post
+   on a raw TMDB still.
 2. Within about five minutes, a database job opens one Linear card per website
    article (team PLO, project Content Automation).
 3. You edit or delete the social captions in Buffer. Buffer sends them on the
@@ -95,10 +98,10 @@ Resend.
 2. A second planner adds up to four web-only SEO guides ("best of" and "if you liked"). Those never go to social.
 3. Each post that still needs words gets a markdown brief under `marketing/copy/jobs/`.
 4. Claude reads [`marketing/copy/AGENT.md`](../../marketing/copy/AGENT.md) and each brief, searches the web for the article, and writes one JSON file per post. It runs in a temp folder so it cannot see `.env`.
-5. `save.mjs` checks the JSON against the copy contract. Bad copy is rejected. Good copy is stored as both `copy` (what we will use) and `generated_copy` (what the model first wrote).
-6. Playwright screenshots the HTML card templates into portrait and landscape JPEGs and uploads them. The website hero is a plain TMDB still, not the branded card. Trending charts are the exception: the branded chart is the hero.
-7. The script emails you with links to Linear and Buffer.
-8. It then pushes social copy into Buffer. It does not wait for you to approve the article.
+5. `save.mjs` checks the JSON against the copy contract. Bad copy is rejected and that post stays `planned`. Good copy is stored as both `copy` (what we will use) and `generated_copy` (what the model first wrote), and the row moves to `copy_ready`. A rejection does not stop the rest of the week. The workflow still fails at the end so the rejected files are visible. On 4 October 2026 this exit used to happen *before* rendering, which is why a week reached `copy_ready` with `media` null.
+6. Playwright screenshots the HTML card templates into portrait (1080x1350) and landscape JPEGs and uploads them to `marketing/<post id>/card-0-portrait.jpg` and `card-0-landscape.jpg`. The website hero is a plain TMDB still, not the branded card. Trending charts are the exception: the branded chart is the hero. `question` posts stay text-only. `guide` posts get no social card.
+7. The script emails you with links to Linear and Buffer when something new needs article review.
+8. It then pushes social copy into Buffer for posts whose cards exist. It does not wait for you to approve the article. It does not attach a TMDB still when the card is missing. Those rows stay `queued` and the daily job renders them again.
 
 Local equivalent: `pnpm run mkt:plan` through `mkt:generate` and `mkt:schedule`, or from `marketing/`: `pnpm run weekly`. Local runs default to Codex, not Claude. Pass `--copy-runner=claude` to match CI.
 
@@ -123,11 +126,12 @@ Nothing in this repo sends social posts itself anymore.
 
 **How it works.**
 
-1. The script reads posts that are ready and not yet in Buffer, soonest day first.
-2. If `marketing_settings.publishing_paused` is true, it stops. Posts already in Buffer still go out. `/pause` in Linear sets that flag. It does not empty the queue.
-3. The day is fixed by the planner, because the caption talks about that day ("aired last night", "14 days until"). The clock time comes from Buffer's per-channel posting schedule, in Sydney time: X mornings, Threads mid-morning, Instagram evenings. If a channel has no schedule that weekday, the fallback hour is `SEND_HOUR_SYDNEY` in `payload.mjs`.
-4. Buffer's plan holds about 10 scheduled posts per channel. A week is about 16 per channel, so the push fills a rolling window of roughly four days. The rest stay `queued` in the database until a later run.
-5. A full queue is normal. The job reports the leftover count instead of failing.
+1. The script reads posts in `needs_review` or `approved` that are not yet in Buffer, soonest day first. Article approval is not required. `needs_review` is enough.
+2. A post that has a card template and no portrait plus landscape file in `media` is not pushed. The publication stays `queued`, the post's `error` says the cards are missing, and the run fails after the other posts are handled so the miss is mailed. Questions are text-only and are pushed without an image. Guides are not given publication rows by the renderer.
+3. If `marketing_settings.publishing_paused` is true, it stops. Posts already in Buffer still go out. `/pause` in Linear sets that flag. It does not empty the queue.
+4. The day is fixed by the planner, because the caption talks about that day ("aired last night", "14 days until"). The clock time comes from Buffer's per-channel posting schedule, in Sydney time: X mornings, Threads mid-morning, Instagram evenings. If a channel has no schedule that weekday, the fallback hour is `SEND_HOUR_SYDNEY` in `payload.mjs`.
+5. Buffer's plan holds about 10 scheduled posts per channel. A week is about 16 per channel, so the push fills a rolling window of roughly four days. The rest stay `queued` in the database until a later run.
+6. A full queue is normal. The job reports the leftover count instead of failing. Missing cards are not normal. That count fails the run.
 
 You review, edit, reschedule, and delete in Buffer. Those edits are not checked against the copy contract. The daily reconcile records the text that actually went out in `sent_text`.
 
@@ -141,21 +145,22 @@ You review, edit, reschedule, and delete in Buffer. Those edits are not checked 
 
 **Schedule.** Cron `0 2 * * *`. The file's own comment, from ten consecutive runs, says it really starts around 07:10 UTC (about 17:10 Sydney), five-plus hours after the stated time. Buffer itself is punctual. What the drift costs is how fast freed slots get refilled.
 
-**Entrypoints.** [`marketing/publish/reconcile.mjs`](../../marketing/publish/reconcile.mjs), then [`marketing/publish/schedule.mjs`](../../marketing/publish/schedule.mjs), then [`marketing/publish/queue-check.mjs`](../../marketing/publish/queue-check.mjs). Failure mail: [`.github/scripts/marketing-alert.sh`](../../.github/scripts/marketing-alert.sh).
+**Entrypoints.** [`marketing/publish/reconcile.mjs`](../../marketing/publish/reconcile.mjs), then [`marketing/generate/generate.mjs`](../../marketing/generate/generate.mjs) (retry any card that never rendered), then [`marketing/publish/schedule.mjs`](../../marketing/publish/schedule.mjs), then [`marketing/publish/queue-check.mjs`](../../marketing/publish/queue-check.mjs). Failure mail: [`.github/scripts/marketing-alert.sh`](../../.github/scripts/marketing-alert.sh). `workflow_dispatch` input `render_only` runs just the card retry.
 
-**Secrets.** `VITE_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BUFFER_API_KEY`, `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`.
+**Secrets.** `VITE_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BUFFER_API_KEY`, `TMDB_API_KEY` (the card retry), `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`.
 
 **Outputs.** Updated `marketing_post_publications` (status, permalink, `sent_text`). Approved posts whose socials have all gone out move to `published` or `partially_published`. Rejected and unreviewed articles keep their verdict even if the tweets sent. IndexNow is told about newly finished article URLs (not trending charts). A `marketing_batch_runs` row with `run_type = 'reconcile'`. Email if the job fails, or if nothing is queued for the next 3 days.
 
-**Dependencies.** Buffer (read), IndexNow (`https://api.indexnow.org/IndexNow`), Resend.
+**Dependencies.** Buffer (read), Playwright Chromium (the card retry), IndexNow (`https://api.indexnow.org/IndexNow`), Resend.
 
 **How it works.**
 
 1. Optional: if you checked "retry failed", push publications that never reached Buffer.
 2. For every publication still marked scheduled, ask Buffer for its status and write the answer down.
-3. Push the next queued posts into whatever slots that freed.
-4. If the next three days have nothing queued, email you. This check lives on the daily job on purpose: when the Sunday batch cannot get a runner (billing), its own failure email cannot run either. The daily job is the watchdog.
-5. The watchdog email says /whats-on will go stale. Social posts already sitting in Buffer can still go out. The two problems are different.
+3. Render cards for any post that has copy and still has no media. An approved article stays approved. A question is left text-only.
+4. Push the next queued posts into whatever slots that freed. A card post that still has no image is left `queued` and the job fails.
+5. If the next three days have nothing queued, email you. This check lives on the daily job on purpose: when the Sunday batch cannot get a runner (billing), its own failure email cannot run either. The daily job is the watchdog.
+6. The watchdog email says /whats-on will go stale. Social posts already sitting in Buffer can still go out. The two problems are different.
 
 Guides have no Buffer rows, so this job never sees them. IndexNow is not called for a guide that only exists as a website article. The article sitemap (`marketing-feed?sitemap=1`, proxied at `/sitemap-articles.xml`) is the other way search engines find pages.
 
@@ -171,7 +176,9 @@ Guides have no Buffer rows, so this job never sees them. IndexNow is not called 
 
 **Entrypoints.** [`supabase/functions/marketing-linear-mirror/index.ts`](../../supabase/functions/marketing-linear-mirror/index.ts). Issue body HTML is built in [`supabase/functions/_shared/linearIssue.js`](../../supabase/functions/_shared/linearIssue.js).
 
-**Secrets (Supabase edge function secrets, not GitHub).** `LINEAR_API_KEY`, Vault secrets `edge_webhook_bearer` and `edge_webhook_base_url` (the cron uses these). Optional: `LINEAR_MARKETING_TEAM_ID`, `LINEAR_MARKETING_PROJECT_ID`, `LINEAR_REVIEW_STATE`, `LINEAR_SCHEDULED_STATE`, `LINEAR_REJECTED_STATE`, `LINEAR_PUBLISHED_STATE`, `GH_REPO`, `GH_DISPATCH_TOKEN_CONTENT`, `GH_DISPATCH_TOKEN_WEBSITE`, `GH_DISPATCH_TOKEN` (legacy fallback), `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`.
+**Secrets (Supabase edge function secrets, not GitHub).** `LINEAR_API_KEY`, Vault secrets `edge_webhook_bearer` and `edge_webhook_base_url` (the cron uses these). Optional: `LINEAR_MARKETING_TEAM_ID`, `LINEAR_MARKETING_PROJECT_ID`, `LINEAR_REVIEW_STATE`, `LINEAR_SCHEDULED_STATE`, `LINEAR_REJECTED_STATE`, `LINEAR_PUBLISHED_STATE`, `GH_REPO`, `GH_DISPATCH_TOKEN_CONTENT`, `GH_DISPATCH_TOKEN_WEBSITE`, `GH_DISPATCH_TOKEN` (legacy fallback), `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`, `MARKETING_LINEAR_ENABLED`.
+
+`MARKETING_LINEAR_ENABLED` defaults to on. Set it to `off` (`0`, `false`, or `no` also count) only after the Notion database in section 5a has been used for a real week. Article create, refresh, and column moves stop. The Monday website-refresh PR card still gets filed.
 
 **Outputs.** Linear issues in team PLO, project Content Automation. States, by name: Review, Scheduled, Canceled, Published. A website-refresh card for the Monday timeline PR (section 8), marked urgent. `marketing_batch_runs` rows with `run_type = 'linear_mirror'`. `marketing_posts.linear_sync_error` when a card fails. Once a day (first sweep after 06:00 UTC) it probes the two GitHub tokens and emails if one is dead.
 
@@ -225,6 +232,49 @@ curl -sX POST "$SUPABASE_URL/functions/v1/marketing-linear-mirror" \
 | `/help` | The list, in the issue. |
 
 Leaving a card untouched means the article does not go live. It does not stop the social posts.
+
+With `MARKETING_LINEAR_ENABLED` off, a comment on an article card gets a reply that review moved to Notion, and a column drag is ignored with no reply. `/pause`, `/resume`, `/generate`, and `/help` still run. Approve and reject on a website-refresh PR card still run, including the scope check that refuses anything that is not that Monday PR.
+
+The writes live in [`supabase/functions/_shared/reviewActions.js`](../../supabase/functions/_shared/reviewActions.js). Notion calls the same module.
+
+---
+
+## 5a. Notion review (stand this up beside Linear)
+
+**What it is.** A second article board, in Notion, kept in step with `marketing_posts` the way section 4 keeps Linear. One page per article. Linear keeps working until you set `MARKETING_LINEAR_ENABLED` to `off`. That secret is the switch. Merging the migration does not flip it.
+
+**Trigger.** `pg_cron` job `marketing-notion-mirror`, every 5 minutes. An optional Notion webhook on `<SUPABASE_URL>/functions/v1/marketing-notion-sync` wakes the same comparison for one page.
+
+**Schedule.** Defined in [`supabase/migrations/20261005180000_marketing_notion_review.sql`](../../supabase/migrations/20261005180000_marketing_notion_review.sql). The cron can be scheduled before the Notion secrets exist. The function then answers 200 and writes nothing.
+
+**Entrypoints.** [`supabase/functions/marketing-notion-mirror/index.ts`](../../supabase/functions/marketing-notion-mirror/index.ts), [`supabase/functions/marketing-notion-sync/index.ts`](../../supabase/functions/marketing-notion-sync/index.ts). Page body and status mapping live in [`supabase/functions/_shared/notionReview.js`](../../supabase/functions/_shared/notionReview.js). The sweep is [`supabase/functions/_shared/notionMirror.js`](../../supabase/functions/_shared/notionMirror.js). Comments reuse [`linearCommands.js`](../../supabase/functions/_shared/linearCommands.js).
+
+**Why a sweep, not webhooks alone.** Notion's webhook does not include the previous property value. Acting on the current Status would re-apply the sweep's own write, which is how a Linear description refresh once unapproved a card (PLO-421). The sweep stores `notion_observed_status` and `notion_observed_date`. A difference is the decision. Status and the scheduled date are read for every page on every tick, so a missed webhook cannot drop an approval. Slash comments are listed for posts that are not yet live and for posts whose day is within 21 days, because a comment does not bump Notion's `last_edited_time`. Older comments need the webhook, or a page edit in the same window.
+
+**Secrets (Supabase edge function secrets).** `NOTION_TOKEN` (or `NOTION_API_KEY`), `NOTION_MARKETING_DATABASE_ID`. Optional `NOTION_WEBHOOK_SECRET`. `/generate` and `/regenerate` reuse `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN`, and `GH_REPO`. The cron reuses Vault `edge_webhook_bearer` and `edge_webhook_base_url`.
+
+**Create the database.** [`marketing/setup/notion-review-db.mjs`](../../marketing/setup/notion-review-db.mjs). Parent page comes from `NOTION_PARENT_PAGE_ID`. There is no default in the script. Savannah's Growth page, under 01 · Plot, is `3ed4f244-aec7-818c-8c18-c3f1228a4525`. Share that page with the integration, dry-run, then create:
+
+```sh
+DRY_RUN=1 node --env-file=.env marketing/setup/notion-review-db.mjs
+node --env-file=.env marketing/setup/notion-review-db.mjs
+```
+
+Properties: Name, Status (Review, Scheduled, Canceled, Published), Scheduled, Article URL, Post type, Social copy, Post id. Put the printed id in `NOTION_MARKETING_DATABASE_ID`. Full steps are in [`marketing/REVIEW.md`](../../marketing/REVIEW.md).
+
+**Outputs.** One Notion page per article row that has a slug. `marketing_posts.notion_page_id` and `notion_synced_at`. Audit rows with actor `notion`. `marketing_batch_runs` with `run_type = 'notion_mirror'`. A bot comment on the page when a command needs a reply. The first real sweeps create at most 15 pages each, newest day first.
+
+**What it does not do.** Weekly website-refresh PR cards stay on Linear. Approving does not touch Buffer or `marketing_post_publications`. Social copy on the page is reference text. Edits to the page body or that property are overwritten. The public site still shows `approved`, `published`, and `partially_published` only.
+
+Dry run, after the secrets exist and before you want pages created:
+
+```sh
+curl -sX POST "$SUPABASE_URL/functions/v1/marketing-notion-mirror" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H 'Content-Type: application/json' -d '{"dry_run": true}'
+```
+
+`would_create` is the number to read.
 
 ---
 
@@ -496,11 +546,11 @@ CI installs Claude and passes `--copy-runner=claude`. A local `pnpm run weekly` 
 What you can already see:
 
 - **GitHub Actions** run history for the weekly batch, the daily reconcile, backfill, Brevo sync, and the timeline PR. Each marketing workflow emails `MARKETING_ADMIN_EMAIL` via Resend on failure, with a link to the run. The empty-queue warning is a separate email from a healthy daily run.
-- **`marketing_batch_runs`.** `generate`, `reconcile`, and `linear_mirror` (including `idle`). This is the heartbeat for the five-minute sweep. Query in `marketing/README.md`.
-- **`marketing_review_events`.** Approve, reject, edit, reschedule, with actor `web_desk`, `marketing_week_skill`, or `linear`.
-- **`marketing_posts.error` and `linear_sync_error`.** Per-post failure text.
+- **`marketing_batch_runs`.** `generate`, `reconcile`, `linear_mirror`, and `notion_mirror` (including `idle`). These are the heartbeats for the five-minute sweeps. Query in `marketing/README.md`.
+- **`marketing_review_events`.** Approve, reject, edit, reschedule, with actor `web_desk`, `marketing_week_skill`, `linear`, or `notion`.
+- **`marketing_posts.error`, `linear_sync_error`, and `notion_sync_error`.** Per-post failure text.
 - **`sent_text` / `sent_payload` / `generated_copy`.** What the model wrote versus what Buffer sent. Nothing alerts on the diff.
-- **Linear** is the place a person looks for articles. The daily token probe emails you if `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN_WEBSITE` stops answering.
+- **Linear** is still the place a person looks for articles until `MARKETING_LINEAR_ENABLED` is off. **Notion** is the board being stood up beside it (section 5a). The daily token probe emails you if `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN_WEBSITE` stops answering.
 - **Buffer** is the place a person looks for captions.
 - The old **admin desk** (`admin.theplot.tv`) is retired. See [`docs/ops/retire-admin-review.md`](retire-admin-review.md).
 - **Broadcast guide** (not content, listed under Adjacent) uploads a `broadcast-guide-health` artifact for 7 days. The content pipelines do not do that.
@@ -522,7 +572,7 @@ Gaps:
 
 1. **Tone changes only when a person edits a markdown file.** The automated loop that was supposed to learn from shipped copy never applied a single week. `generated_copy` and `sent_text` are write-only history.
 2. **Three places can change words, and only two are checked.** The model and a Linear `/copy` go through `articleRules.js`. A Buffer edit does not. The caption that ships can be one you typed in a hurry, and the next brief will not know you preferred it.
-3. **Rejecting an article does not stop the post.** Correcting tone on the website leaves the social caption live unless you also delete it in Buffer. The review email and the Linear card do not show the social copy, on purpose, which makes that split easy to forget.
+3. **Rejecting an article does not stop the post.** Correcting tone on the website leaves the social caption live unless you also delete it in Buffer. The review email and the Linear card do not show the social copy, on purpose. The Notion page does, as read-only reference, and still cannot edit the caption.
 4. **There is no eval set.** Tests lock regexes (no em dash, no "according to", where-to-watch present). They cannot tell a warm specific note from a flat one that happens to pass. There is no labelled set of good and bad posts, no score, and no "run the new prompt on last month's briefs and diff".
 5. **Two models.** CI is Claude (pinned CLI `2.1.226`). Local default is Codex. A prompt change tested locally is not the prompt that will run on Sunday unless you pass `--copy-runner=claude`.
 6. **Regenerate is all or nothing.** `/regenerate` throws the copy away. There is no "rewrite the closer, keep the rest" in the production path. `sweep-closer.mjs` and `rewrite-published.mjs` are one-off scripts for that kind of repair.

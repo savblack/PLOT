@@ -67,5 +67,5 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW_NAME: weekly batch
-          FAILURE_NOTE: 'Weekly generation did not complete. Nothing is queued for the coming week until this is rerun.'
+          FAILURE_NOTE: 'Weekly generation did not finish cleanly. Posts whose copy saved are still rendered and queued. Rejected copy stays planned until this is rerun.'
         run: bash .github/scripts/marketing-alert.sh

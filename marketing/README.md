@@ -23,9 +23,13 @@ calendar, so it is where a caption should be judged; it has no idea the article
 exists. Linear can render 600 words of prose, so it is where the writing should
 be judged; it cannot show you how a tweet will look.
 
-Articles are reviewed in Linear. Social posts are reviewed in Buffer. The
-hosted desk at `admin.theplot.tv` is retired: see `docs/ops/retire-admin-review.md`.
-The database is what Linear and Buffer both write.
+Articles are reviewed in Linear. A Notion database is being stood up beside
+that board (`marketing-notion-mirror`, documented in `docs/ops/gtm-automations.md`
+section 5a and `marketing/REVIEW.md`). Linear stays the live article board until
+the edge secret `MARKETING_LINEAR_ENABLED` is set to `off`. Social posts are
+reviewed in Buffer. The hosted desk at `admin.theplot.tv` is retired: see
+`docs/ops/retire-admin-review.md`. The database is what Linear, Notion, and
+Buffer all write.
 
 The voice and spec rules in `VOICE.md` and `copy/AGENT.md` are maintained by
 hand. An automated Sunday learning loop used to rewrite them from the previous
@@ -77,7 +81,9 @@ can never fail a render or a publish run.
 ## Operator surfaces
 
 - **Articles:** Linear, team PLO, project **Content Automation**
-  (`https://linear.app/savblack/project/content-automation-2ce2d56ced11`)
+  (`https://linear.app/savblack/project/content-automation-2ce2d56ced11`).
+  Notion (What's On review) once `NOTION_MARKETING_DATABASE_ID` is set. Both
+  write the same row until Linear article cards are turned off.
 - **Social posts:** Buffer (`https://publish.buffer.com`)
 - **Primary automation layer:** GitHub Actions
 - **Primary copy worker:** Claude Code CLI in CI; Codex is the local/manual default

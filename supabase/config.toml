@@ -62,6 +62,20 @@ verify_jwt = true
 [functions.marketing-linear-sync]
 verify_jwt = false
 
+# Notion mirror sweep. Same shape as the Linear one: pg_cron posts the Vault
+# service-role bearer, so verify_jwt stays true. The function no-ops until
+# NOTION_TOKEN and NOTION_MARKETING_DATABASE_ID are set, which is how it can
+# be scheduled before the database exists.
+[functions.marketing-notion-mirror]
+verify_jwt = true
+
+# Notion webhook. Notion signs the body and sends no Supabase JWT, so the
+# gateway has to let the delivery through. The HMAC inside the function is
+# the auth. Unsigned traffic is refused except for the one-time verification
+# handshake, which writes nothing.
+[functions.marketing-notion-sync]
+verify_jwt = false
+
 # Ko-fi webhook — Ko-fi sends no Supabase JWT and no signature header; it
 # authenticates with the verification_token inside the form body, checked
 # inside the function. With verify_jwt = true every tip dies at the gateway

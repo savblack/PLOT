@@ -1,5 +1,5 @@
-/* Two cards across on desktop, one on a phone; the track scroll-snaps so a
-   swipe lands on a card and the timer can scrollTo the next. */
+/* One full-width card at a time. The track scroll-snaps so a swipe lands on a
+   card and the timer can scrollTo the next. */
 .picks-carousel { margin: 0.25rem auto 0; padding: 0 1rem; }
 .picks-track {
   display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory;
@@ -8,14 +8,21 @@
 .picks-track::-webkit-scrollbar { display: none; }
 .picks-slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
 .picks-slide .discover-hero { margin: 0; }
-@media (min-width: 641px) {
-  .picks-slide { flex-basis: calc((100% - 1rem) / 2); }
+/* A lone hero spans the whole column, so 3:2 would push the next row off
+   screen. On desktop each card becomes the banner the single hero always was,
+   with a synopsis and a "View details" cue (the same rules discover-hero-row
+   applies to a lone hero). */
+@media (min-width: 900px) {
+  .picks-slide .discover-hero { aspect-ratio: auto; height: 20.5rem; }
+  .picks-slide .discover-hero-synopsis { display: block; margin-bottom: 0; }
+  .picks-slide .discover-hero-actions { display: flex; }
+  /* Reserve the action row's height (1rem inset + ~2.2rem button + gap). */
+  .picks-slide .discover-hero-overlay { padding-bottom: 4.1rem; }
+  .picks-slide .curated-hero .discover-hero-overlay { padding-bottom: 1rem; }
 }
-.picks-controls { display: flex; align-items: center; justify-content: space-between; margin-top: 0.6rem; }
+.picks-controls { display: flex; align-items: center; margin-top: 0.6rem; }
 .picks-dots { display: flex; gap: 6px; }
 .picks-dot { width: 7px; height: 7px; padding: 0; border: 0; border-radius: var(--radius-pill); background: var(--border-strong); cursor: pointer; transition: width 0.2s var(--ease), background 0.2s var(--ease); }
 .picks-dot.is-active { width: 18px; background: var(--accent); }
-.picks-dot:focus-visible, .picks-pause:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.picks-pause { padding: 2px 6px; border: 0; background: none; font: inherit; font-size: 0.72rem; color: var(--text-muted); cursor: pointer; }
-.picks-pause:hover { color: var(--text-primary); }
+.picks-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .picks-dot { transition: none; } }

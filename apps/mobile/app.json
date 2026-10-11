@@ -21,7 +21,7 @@
     "android": {
       "package": "tv.theplot.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0c0c0c",
+        "backgroundColor": "#292924",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
