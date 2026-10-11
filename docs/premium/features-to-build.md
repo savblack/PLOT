@@ -38,7 +38,7 @@
 | `/plans` rebuild | **In review:** PR #1031 (`agent/premium-plans-a2`), side-by-side plans at US$3/$24. |
 | One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free. Public copy does not list automatic sync as a Premium benefit. |
 | Following people + season-ready | **Built on web (PLO-521, round 2 design).** Follow from the title panel's Cast and Directed by rows, a person's page, Home and the Your people page (`/your-people`); Premium checked in RLS. Daily `premium-alerts` run keeps `people_feed` current and writes release-day notifications; `people-feed-refresh` fills a new follow straight away. Home also gained Continue watching (free). Whole-season alerts stay as built, secondary. Mobile shows the rows read-only; the rest is issue #1093. See §5.9 and §5.10. |
-| Stats, smart lists, customise | **Not built** as product features (copy only). |
+| Stats, smart lists, customize | **Not built** as product features (copy only). |
 
 ---
 
@@ -98,7 +98,7 @@ Lead stories (positioning priority, not a statistical ranking):
 7. Live calendar subscription. **Built (PLO-519).** Premium URL on web and mobile. Free keeps a one-time snapshot.
 8. Actor / director release alerts
 9. Whole-season-ready alerts (verified episode availability on selected services/region)
-10. Customise your plot (widgets, custom icons, custom profile pages, themes)
+10. Customize your plot (widgets, custom icons, custom profile pages, themes)
 
 ### Pending validation (do not market as ready)
 
@@ -125,7 +125,7 @@ Do **not** reorder. Paying users must get working sync before the first charge.
 | 2 | [PLO-494](https://linear.app/savblack/issue/PLO-494) | Point secrets + public copy at the **confirmed** live prices (see §2). |
 | 3 | [PLO-493](https://linear.app/savblack/issue/PLO-493) | Restore Checkout: unstub `usePremium.startCheckout`, remove `premium_coming_soon` 503, wire Settings + `/plans`, update smoke tests. Real Checkout → webhook → `is_premium`. |
 
-Also complete `docs/billing/stripe-launch.md` in live mode when going public: portal catalogue, webhook events, secrets, one real low-value purchase test.
+Also complete `docs/billing/stripe-launch.md` in live mode when going public: portal catalog, webhook events, secrets, one real low-value purchase test.
 
 **Out of scope for first charge:** Customer Portal polish (nice to have), mobile IAP.
 
@@ -140,7 +140,7 @@ Suggested priority for “Less deciding. More watching.” (matches plans storie
 5. **Deeper stats** — define what “additional” means beyond today’s Free overview.
 6. **Smart lists** — filter rules that auto-update, including discoveries beyond saved titles.
 7. **People alerts** + **whole-season-ready** — need notification infrastructure; season-ready needs verified episode-level availability.
-8. **Customise your plot** — supporting Premium, not the lead; widgets / icons / themes / profile pages.
+8. **Customize your plot** — supporting Premium, not the lead; widgets / icons / themes / profile pages.
 
 ### Phase C — Related Free work (not Premium, but promised)
 
@@ -186,7 +186,7 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 - **Pick** draws up to five (hero Top pick + cards); **Surprise me** draws one. Pool is watchlist + TMDB discover, excluding titles already watched. Copy never promises a count, since tight answers can return fewer.
 - **Loading ("Finding…"):** while picks load, the sentence reads "Finding a movie…" in the Top pick's spot, each answered phrase highlighted in turn. When picks land, the sentence dissolves (blur + fade) into the Top pick in place, the heading and Save simply appear, and cards dissolve in 250ms apart. Only straight after Pick / Surprise me / Regenerate; saved searches and restored pages skip it. Mobile fades without blur. Reduced motion shows the final state.
 - **Results:** heading follows local time ("Tonight, sorted" 3:30pm to midnight, "Your shortlist" otherwise), sized like Home and Calendar section headings (24px desktop, 20px phone), no subline. Edit / Regenerate. Top pick 280px on desktop (210px phone), image anchored near the top, with the Home hero's bottom-up gradient scrim.
-- **Favourite and watchlist on every pick**, the same buttons as Home: the hero's corner buttons on the Top pick, the Top 20 row buttons on the right of each card. Hover reveals them on desktop; touch always shows them. Tiles are not buttons; the title is, stretched over the tile (`.tonight-tile-open`), so the action buttons can sit inside.
+- **Favorite and watchlist on every pick**, the same buttons as Home: the hero's corner buttons on the Top pick, the Top 20 row buttons on the right of each card. Hover reveals them on desktop; touch always shows them. Tiles are not buttons; the title is, stretched over the tile (`.tonight-tile-open`), so the action buttons can sit inside.
 - **Keeps your search:** answers, step and picks are stored for 2 hours after the last change (`PICKER_SESSION_TTL_MS`), so leaving and coming back (or reloading) finds the page as it was. Mid-spin or with the pop-up open, it comes back to the questions. Regenerate after returning skips picks already shown.
 - **Saved searches:** a Save / Saved toggle (pin icon; the bookmark means watchlist) beside the results heading. Listed under Questions on desktop (two rows, then "Show all") and under the questions on phone and in the app: the sentence without "Find me", pick count and date. Tap to reopen those exact picks, × to remove. Up to 10, newest first, deduped by picks, Premium only.
 - Both are **device-only** (web localStorage, mobile AsyncStorage) through the hook's `storage` adapter; keys and formats live in `@plot/core` (`pickerSessionKey`/`serialiseSession`/`parseSession`, `savedSearchesKey`/`addSavedSearch`/`parseSavedSearches`). Syncing saved searches to the account would need a table (confirm with Savannah before any migration).
@@ -333,7 +333,7 @@ Rules are pure and unit-tested: `supabase/functions/_shared/availabilityAlerts.j
 
 **Live.** Delivery was switched on in production on 2026-10-05 by setting the `STREAMING_ARRIVAL_DELIVER` secret (it was already on in Staging). The first run after that records baselines and tells nobody, so the earliest real alert is the night after, and only for a provider that appeared and then held. It was switched on without the planned two-week observation period, so watch it: read `alert_job_runs` (look for `ok:false` and `breaker`), `availability_events`, and the notifications that land, and check flatrate coverage in AU and US. To pause it without a deploy, unset the secret (`supabase secrets unset STREAMING_ARRIVAL_DELIVER --project-ref mkegtssedjyqldysvzga`): the job keeps collecting data and stops writing notifications. Rows already written stay.
 
-### 5.11 Customise your plot — **Premium** (supporting, not lead)
+### 5.11 Customize your plot — **Premium** (supporting, not lead)
 
 **Intent:** Home Screen widgets, custom app icons, custom profile pages, themes. Make Plot feel like the user’s journal.
 
@@ -423,4 +423,4 @@ If starting cold, in order:
 2. What concrete **deeper stats** belong in v1 Premium?
 3. Collaborative lists: invite model (link vs follow-only), edit permissions, max members?
 4. ~~Picker v1 pool~~ **Decided 2026-09-24: watchlist + discover.** Shipped as Pick for Me (§5.2).
-5. Is **Customise your plot** in first Premium ship or a later supporting drop?
+5. Is **Customize your plot** in first Premium ship or a later supporting drop?
