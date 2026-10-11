@@ -57,6 +57,11 @@ scripts/guide/__pycache__/
 # Local package-manager cache.
 .pnpm-store/
 
+# Local Deno module cache and agent working files. Both are disposable outputs
+# of validation, never source files.
+.deno-cache/
+.work/
+
 # Plot is a pnpm workspace and .npmrc's node-linker=hoisted is load-bearing
 # (Metro and check-expo-sdk-deps.mjs both assume a flat node_modules). An npm or
 # yarn lockfile here means the wrong package manager ran; committing one would

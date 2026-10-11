@@ -1,7 +1,7 @@
 // /whats-on/<slug>
 import { whatsOn } from '../_lib/whats-on.js';
 
-export async function onRequest({ request, params }) {
+export async function onRequest({ request, params, waitUntil }) {
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
-  return whatsOn(request, slug);
+  return whatsOn(request, slug, waitUntil);
 }

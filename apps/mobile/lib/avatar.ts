@@ -30,7 +30,7 @@ export async function pickAndUploadAvatar(userId: string): Promise<{ changed: bo
   try {
     const body = await (await fetch(asset.uri)).arrayBuffer();
     const path = `${userId}/avatar.jpg`;
-    const { error: upErr } = await supabase.storage.from('avatars').upload(path, body, { upsert: true, contentType: 'image/jpeg' });
+    const { error: upErr } = await supabase.storage.from('avatars').upload(path, body, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
     if (upErr) return { changed: false, error: upErr.message || A.uploadFailed };
 
     const { data } = supabase.storage.from('avatars').getPublicUrl(path);

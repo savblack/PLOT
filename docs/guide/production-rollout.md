@@ -19,7 +19,7 @@ only way to reach the new Guide.
 - `broadcast-guide` is a public Supabase Storage bucket containing schedule data only.
   No authenticated client can upload snapshots. The scheduled server-side importer
   validates the full replacement before uploading, retaining the prior object on failure.
-  Public snapshots use a five-minute cache lifetime and a ten-megabyte size limit.
+  Public snapshots use a six-hour cache lifetime (matching the importer) and a ten-megabyte size limit.
 - `.github/workflows/broadcast-guide.yml` refreshes every six hours, on relevant merges
   to main, and on manual dispatch. It reuses the existing repository secrets
   `VITE_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. No browser secret is introduced.

@@ -177,6 +177,14 @@ test('errors, misses and unmarked pages are not kept', async () => {
   }
 });
 
+test('an unsuccessful upstream page is never shareable downstream', async () => {
+  await withCache(async ({ get }) => {
+    const response = await get('https://theplot.tv/movie/carnage-72113');
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+  }, () => new Response('down', { status: 503, headers: { 'cache-control': SHAREABLE } }));
+});
+
 test('a fetch failure returns the fallback page and caches nothing', async () => {
   const real = globalThis.fetch;
   const realCaches = globalThis.caches;
