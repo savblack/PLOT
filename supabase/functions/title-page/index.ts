@@ -17,7 +17,7 @@
  * Public function: verify_jwt = false in supabase/config.toml.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
+import { FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 
 const SITE = 'https://theplot.tv';
@@ -52,176 +52,12 @@ const REGION_NAMES: Record<string, string> = {
 };
 const regionName = (code: string) => REGION_NAMES[code] || code;
 
-const PH = `<script>
-if (['theplot.tv','www.theplot.tv','app.theplot.tv'].indexOf(location.hostname)>-1) {
-!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-/* Report unhandled errors and promise rejections to PostHog Error Tracking.
-   Only the app had this; these server-rendered pages ship real JavaScript to
-   real visitors and produced no error signal at all. The host gate above is
-   the dev gate, same as it is for pageviews.
-   dropOpaqueException discards the browser's opaque cross-origin "Script
-   error." — no message, no filename, no stack, so it can only ever be closed,
-   never diagnosed. Mirrors isOpaqueBrowserException in
-   apps/web/src/utils/opaqueException.js: an entry qualifies only when it is
-   BOTH synthetic and frameless, so a real throw is never dropped. Four copies
-   of this live in the tree (here, the other two rendered surfaces, and
-   apps/website/js/config.js) because none of them can import. Keep in step. */
-function dropOpaqueException(e){if(!e||e.event!=='$exception')return e;var L=e.properties&&e.properties.$exception_list;if(!Array.isArray(L)||!L.length)return e;return L.every(function(x){if(!x||typeof x!=='object')return false;if(!x.mechanism||x.mechanism.synthetic!==true)return false;var F=x.stacktrace&&x.stacktrace.frames;return !(F&&F.length>0);})?null:e;}
-posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U',{api_host:'https://a.theplot.tv',ui_host:'https://us.posthog.com',person_profiles:'identified_only',persistence:'localStorage+cookie',cross_subdomain_cookie:true,capture_pageview:true,autocapture:true,capture_exceptions:true,before_send:dropOpaqueException});
-document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="app.theplot.tv/"]');if(!a)return;var path;try{path=new URL(a.href).pathname;}catch(e){return;}var action=path.indexOf('/signup')===0?'signup_cta_clicked':path.indexOf('/login')===0?'login_click':path.indexOf('/save')===0?'save_cta_clicked':null;if(!action)return;posthog.capture(action,{placement:a.getAttribute('data-cta')||'title_page',source:'title_page'});},true);
-/* Forward this visit's real acquisition params onto the app links, so a
-   visitor who arrived here from social or search keeps their true source
-   across the hop. Mirrors forwardAttribution in apps/website/js/config.js.
-   Existing params win, so each page's own ?src= identity survives. */
-document.addEventListener('DOMContentLoaded',function(){var K=['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid','fbclid','msclkid','ref','src'],H=new URLSearchParams(location.search),C=new URLSearchParams();K.forEach(function(k){if(H.get(k))C.set(k,H.get(k));});try{var R=document.referrer&&new URL(document.referrer).hostname;if(R&&R!==location.hostname)C.set('referrer',R);}catch(e){}if(C.toString()){document.querySelectorAll('a[href*="app.theplot.tv/"],a[href^="/signup"],a[href^="/login"]').forEach(function(a){try{var u=new URL(a.href,location.origin);C.forEach(function(v,k){if(!u.searchParams.has(k))u.searchParams.set(k,v);});a.href=u.toString();}catch(e){}});}});
-}
-</script>`;
 
-// Google tag (gtag.js) + Google Tag Manager — mirrors apps/website/index.html,
-// crossOrigin included: without it the browser masks anything Google's scripts
-// throw to the opaque "Script error." (see apps/web/src/utils/opaqueException.js).
-const GA_GTM = `<script>
-if (['theplot.tv','www.theplot.tv','app.theplot.tv'].indexOf(location.hostname)>-1) {
-window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
-gtag('js',new Date());gtag('config','G-PYLHY9JMK1');
-var g=document.createElement('script');g.async=true;g.crossOrigin='anonymous';g.src='https://www.googletagmanager.com/gtag/js?id=G-PYLHY9JMK1';document.head.appendChild(g);
-(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.crossOrigin='anonymous';j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PC72PHBN');
-}
-</script>`;
+
+
 const GTM_NOSCRIPT = `<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PC72PHBN" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`;
 
-const STYLE = `
-/* Self-hosted from apps/website/fonts — this function is proxied under
-   theplot.tv, so an absolute path resolves against that origin regardless
-   of where the HTML itself is generated. Gabarito is the display face
-   (--display); it was referenced here long before it was ever loaded. */
-@font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Gabarito'; src: url('${SITE}/fonts/Gabarito-Variable.woff2') format('woff2'); font-weight: 400 900; font-style: normal; font-display: swap; }
-/* Warm brand system — mirrors apps/website/theme.css. The pink is a FILL
-   behind charcoal text and never carries type; --accent is the pink for small
-   text accents, --accent-2 the green, --sage its fill for kind/availability. */
-:root{--ink:#292924;--bg:#f8f2ea;--surface:#f1e9dc;--mut:#5f5a52;--faint:#a39c91;--rule:rgba(41,41,36,0.12);--accent:#E05578;--fill:#ff88c8;--fill-hover:#ff9fd3;--accent-2:#5F7030;--sage:#dbe1b0;--display:'Gabarito','DM Sans',system-ui,sans-serif;--ease:cubic-bezier(0.23,1,0.32,1);}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;}
-a{color:inherit;}
-nav.topnav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;background:transparent;transition:background .3s var(--ease),backdrop-filter .3s var(--ease);}
-nav.topnav.scrolled{background:rgba(248,242,234,.86);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
-.nav-logo{text-decoration:none;display:flex;align-items:center;font-family:var(--display);font-size:1.6rem;font-weight:700;letter-spacing:-.045em;color:var(--ink);line-height:1;}
-.nav-links{display:flex;align-items:center;gap:1.75rem;list-style:none;}
-.nav-links li{display:flex;}
-.nav-links a{display:inline-block;padding:.75rem .25rem;text-decoration:none;color:var(--mut);font-size:.69rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;transition:color .2s;}
-.nav-links a:hover{color:var(--ink);}
-.nav-cta{background:var(--fill);color:var(--ink)!important;font-weight:700!important;padding:.55rem 1rem!important;border-radius:999px;}
-.nav-cta:hover{background:var(--fill-hover);}
-.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:14px 12px;margin-right:-12px;flex-direction:column;gap:5px;}
-.nav-hamburger span{display:block;width:22px;height:2px;background:var(--ink);border-radius:2px;transition:all .3s var(--ease);}
-.nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
-.nav-hamburger.open span:nth-child(2){opacity:0;}
-.nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
-@media (max-width:600px){.nav-links{display:none;}.nav-links.open{display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(248,242,234,.94);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);padding:1.25rem 2rem;gap:.35rem;align-items:stretch;}.nav-links.open li{display:block;}.nav-links.open a{display:block;padding:.85rem 0;text-align:center;}.nav-links.open .nav-cta{text-align:center;}.nav-hamburger{display:flex;}nav.topnav.nav-open{background:rgba(248,242,234,.94);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);}}
-.wrap{max-width:960px;margin:0 auto;padding:64px 28px 0;}
-.crumbs{height:44px;display:flex;align-items:center;gap:8px;font-size:.76rem;color:var(--mut);}
-.crumbs a{text-decoration:none;}
-.crumbs a:hover{color:var(--accent);}
-.crumbs .sep{color:var(--faint);}
-/* The backdrop is a band, not a screen-filling hero. No overflow clip: the
-   radius sits on the image itself and the scrim reaches solid --bg well before
-   the bottom edge, so there is no seam where the band meets the page. */
-.band{position:relative;height:240px;}
-.band img{width:100%;height:240px;display:block;object-fit:cover;object-position:50% 28%;border-radius:16px 16px 0 0;}
-.band .scrim{position:absolute;left:0;right:0;bottom:0;height:184px;background:linear-gradient(to bottom,rgba(248,242,234,0) 0%,rgba(248,242,234,.04) 13%,rgba(248,242,234,.13) 25%,rgba(248,242,234,.28) 37%,rgba(248,242,234,.47) 49%,rgba(248,242,234,.67) 60%,rgba(248,242,234,.84) 70%,rgba(248,242,234,.95) 79%,var(--bg) 88%,var(--bg) 100%);}
-.band.noart{height:0;}
-.lead{display:flex;align-items:flex-end;gap:24px;margin-top:-64px;padding-left:28px;position:relative;}
-.lead.noart{margin-top:0;padding-left:0;}
-.poster{width:132px;flex-shrink:0;border-radius:10px;overflow:hidden;border:1px solid var(--rule);background:var(--surface);}
-.poster img{width:100%;display:block;aspect-ratio:2/3;object-fit:cover;}
-.lead-meta{flex-grow:1;min-width:0;padding-bottom:4px;}
-.kind{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
-.chip{background:var(--sage);color:var(--ink);font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:5px 10px;border-radius:999px;}
-.kind .genre{font-size:.62rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);}
-h1.title{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,2.9rem);font-weight:700;line-height:1;letter-spacing:-.025em;}
-.meta{color:var(--mut);font-size:.94rem;margin-top:10px;}
-.meta .dot{margin:0 .5em;color:var(--faint);}
-.card{background:var(--surface);border-radius:16px;padding:22px 26px;margin-top:28px;}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;}
-.card h2,.section h2{font-family:var(--display);font-size:1.3rem;font-weight:700;letter-spacing:-.01em;}
-.region{position:relative;display:inline-block;}
-.region>summary{display:inline-flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--rule);color:var(--ink);font-family:inherit;font-size:.81rem;font-weight:600;padding:9px 14px;border-radius:999px;white-space:nowrap;cursor:pointer;list-style:none;}
-.region>summary::-webkit-details-marker{display:none;}
-.region[open]>summary svg{transform:rotate(180deg);}
-.region-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;background:var(--bg);border:1px solid var(--rule);border-radius:12px;padding:6px;min-width:190px;max-height:260px;overflow:auto;box-shadow:0 10px 24px rgba(41,41,36,.12);}
-.region-menu a{display:block;padding:8px 12px;border-radius:8px;font-size:.84rem;text-decoration:none;color:var(--ink);}
-.region-menu a:hover{background:var(--surface);}
-.region-menu a[aria-current]{font-weight:700;background:var(--surface);}
-.region svg{width:11px;height:11px;display:block;transition:transform .2s var(--ease);}
-.watch{display:flex;flex-direction:column;gap:14px;margin-top:18px;}
-.watch-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
-.watch-label{width:96px;flex-shrink:0;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);}
-.provs{display:flex;gap:10px;flex-wrap:wrap;flex-grow:1;}
-.prov{display:inline-flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:7px 14px 7px 7px;font-size:.84rem;font-weight:600;}
-.prov img{width:28px;height:28px;border-radius:6px;display:block;}
-.avail{background:var(--sage);color:var(--ink);font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 11px;border-radius:999px;white-space:nowrap;}
-.answer{display:flex;align-items:center;gap:20px;margin-top:16px;}
-.answer-text{flex-grow:1;min-width:0;}
-.answer-hd{font-size:1.05rem;font-weight:600;line-height:1.35;}
-.answer-sub{font-size:.88rem;color:var(--mut);margin-top:4px;}
-.answer-act{display:flex;align-items:center;gap:12px;}
-.badge{background:var(--sage);color:var(--ink);font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:6px 12px;border-radius:999px;white-space:nowrap;}
-.cta{display:inline-block;background:var(--fill);color:var(--ink);text-decoration:none;font-size:.81rem;font-weight:600;padding:9px 16px;border-radius:999px;white-space:nowrap;transition:background .15s var(--ease);}
-.cta:hover{background:var(--fill-hover);}
-.link2{font-size:.81rem;font-weight:600;color:var(--accent-2);text-decoration:none;white-space:nowrap;}
-.link2:hover{text-decoration:underline;}
-.card-foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;gap:16px;}
-.card-foot .src{font-size:.75rem;color:var(--mut);}
-.cols{display:flex;gap:24px;align-items:flex-start;margin-top:28px;}
-.cols .col-main{flex-grow:1;min-width:0;}
-.facts{width:264px;flex-shrink:0;background:var(--surface);border-radius:14px;padding:6px 18px;}
-.fact{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--rule);font-size:.81rem;}
-.fact:last-child{border-bottom:none;}
-.fact .k{color:var(--mut);}
-.fact .v{font-weight:600;text-align:right;}
-.section{margin-top:28px;}
-.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;}
-.overview{font-size:1rem;line-height:1.62;max-width:64ch;}
-.cast{display:flex;gap:26px;flex-wrap:wrap;}
-.cast figure{width:112px;}
-.cast img,.cast .noface{width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--surface);display:block;margin-bottom:9px;}
-.cast figcaption{font-size:.79rem;line-height:1.32;}
-.cast .cn{font-weight:600;}
-.cast .cc{color:var(--mut);font-size:.74rem;}
-.rel{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:14px;}
-.rel a{text-decoration:none;}
-.rel img,.rel .noart2{width:100%;aspect-ratio:2/3;border-radius:10px;object-fit:cover;background:var(--surface);display:block;}
-.rel .rt{font-size:.78rem;font-weight:600;margin-top:8px;line-height:1.3;}
-.rel a:hover .rt{color:var(--accent);}
-/* Shared site footer — generated from website/_partials/footer.css. */
-${FOOTER_CSS}
-.site-footer{margin-top:40px;}
-@media (max-width:640px){
-.wrap{padding:64px 16px 0;}
-nav.topnav{padding:0 1rem;}
-.band{height:172px;}
-.band img{height:172px;border-radius:14px 14px 0 0;}
-.band .scrim{height:132px;}
-.lead{gap:14px;margin-top:-48px;padding-left:14px;}
-/* The lead is bottom-aligned, so a text block taller than the poster grows
-   UPWARDS over the photo. One genre keeps the chip row to a single line. */
-.kind{flex-wrap:nowrap;margin-bottom:8px;}
-.kind .genre:nth-of-type(n+2){display:none;}
-.poster{width:92px;}
-.card{padding:16px;border-radius:14px;}
-.card h2,.section h2{font-size:1.06rem;}
-.answer{flex-direction:column;align-items:stretch;gap:0;}
-.answer-act{margin-top:16px;margin-left:auto;}
-.card-foot{justify-content:flex-end;}
-.card-foot .src{text-align:right;}
-.cols{flex-direction:column;}
-.facts{width:100%;}
-.watch-label{width:100%;}
-.cast{gap:18px;}
-.cast figure{width:96px;}
-}
-`;
+
 
 function page(title: string, head: string, body: string, status = 200, cache = true) {
   const html = `<!DOCTYPE html>
@@ -230,12 +66,12 @@ function page(title: string, head: string, body: string, status = 200, cache = t
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
-${PH}
-${GA_GTM}
 ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
-<style>${STYLE}</style>
+<link rel="stylesheet" href="${SITE}/_partials/footer.css">
+<link rel="stylesheet" href="${SITE}/title-page.css?v=60b888083620">
+<script defer src="${SITE}/title-page.js?v=37a1a8165a48"></script>
 </head>
 <body>
 ${GTM_NOSCRIPT}
@@ -254,28 +90,6 @@ ${GTM_NOSCRIPT}
 ${body}
 </div>
 ${FOOTER_HTML}
-<script>
-  (function () {
-    var nav = document.getElementById('topnav');
-    var update = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
-    window.addEventListener('scroll', update, { passive: true });
-    update();
-    var hamburger = document.getElementById('hamburger');
-    var navLinks = document.getElementById('navLinks');
-    if (hamburger && navLinks) {
-      var setOpen = function (open) {
-        navLinks.classList.toggle('open', open);
-        hamburger.classList.toggle('open', open);
-        nav.classList.toggle('nav-open', open);
-        hamburger.setAttribute('aria-expanded', String(open));
-      };
-      hamburger.addEventListener('click', function () { setOpen(!navLinks.classList.contains('open')); });
-      navLinks.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { setOpen(false); }); });
-      document.addEventListener('click', function (e) { if (navLinks.classList.contains('open') && !e.target.closest('nav') && !e.target.closest('.nav-links')) { setOpen(false); } });
-      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && navLinks.classList.contains('open')) { setOpen(false); hamburger.focus(); } });
-    }
-  })();
-</script>
 </body>
 </html>`;
   return new Response(html, {

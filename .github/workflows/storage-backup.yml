@@ -44,7 +44,16 @@ jobs:
         with:
           node-version: 22
 
-      - name: Download every Storage object
+      - name: Fetch previous manifest
+        run: |
+          set -euo pipefail
+          aws configure set default.s3.addressing_style path
+          mkdir -p ./storage-mirror
+          # First night, or a wiped prefix, has nothing to compare against.
+          aws s3 cp "s3://${R2_BUCKET}/storage-mirror/_manifest.json" ./storage-mirror/_manifest.json \
+            --endpoint-url "$R2_ENDPOINT" || true
+
+      - name: Download changed Storage objects
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

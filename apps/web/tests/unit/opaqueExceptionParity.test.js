@@ -24,7 +24,7 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 const SURFACES = [
   'apps/website/js/config.js',
-  'supabase/functions/title-page/index.ts',
+  'apps/website/title-page.js',
   'supabase/functions/marketing-feed/index.ts',
   'functions/list/[id].js',
 ];

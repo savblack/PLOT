@@ -33,6 +33,13 @@ def wait_for_bucket():
             time.sleep(10)
 
 
+# Snapshots refresh every six hours. Five minutes used to be the public TTL,
+# which meant the Smart CDN expired a ~2 MB AU file seventy-two times between
+# imports. Six hours matches the importer, and the Guide already labels a
+# snapshot stale after twelve.
+SNAPSHOT_CACHE_CONTROL = 'max-age=21600'
+
+
 def publish(snapshot):
     base = os.environ['SUPABASE_URL'].rstrip('/')
     key = os.environ['SUPABASE_SERVICE_ROLE_KEY']
@@ -40,7 +47,8 @@ def publish(snapshot):
         f"{base}/storage/v1/object/broadcast-guide/{snapshot['region']}.json",
         data=json.dumps(snapshot).encode(), method='POST',
         headers={'Authorization': f'Bearer {key}', 'apikey': key,
-                 'Content-Type': 'application/json', 'x-upsert': 'true', 'cache-control': 'max-age=300'})
+                 'Content-Type': 'application/json', 'x-upsert': 'true',
+                 'cache-control': SNAPSHOT_CACHE_CONTROL})
     with urllib.request.urlopen(request, timeout=60) as response:
         if response.status not in (200, 201):
             raise ValueError('Snapshot upload failed')
