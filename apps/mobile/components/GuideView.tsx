@@ -16,17 +16,17 @@ import BroadcastGuideSetup from './BroadcastGuideSetup';
 type Programme = { id: string; channelId: string; title: string; start: string; end: string; description?: string };
 type Channel = { id: string; name: string };
 
-export default function GuideView() {
+export default function GuideView({ showHeading = true }: { showHeading?: boolean }) {
   const { broadcastPreferences: preferences, profile } = useAppData();
   const { colors } = useTheme();
   if (preferences.loading) return <Text style={{ color: colors.textPrimary }}>{COPY.loading}</Text>;
   if (preferences.error) return <View><Text style={{ color: colors.textPrimary }}>{COPY.preferencesError}</Text><Pressable accessibilityRole="button" onPress={preferences.retry}><Text style={{ color: colors.accentText }}>{COPY.retry}</Text></Pressable></View>;
   const market = GUIDE_REGIONS.find(m => m.id === preferences.value.market_id);
   if (!market || !market.provider || market.scope === 'unavailable') return <BroadcastGuideSetup key={preferences.value.market_id || 'new'} preferences={preferences} profileRegion={profile?.region} />;
-  return <BroadcastAgenda key={market.id} region={market.id} preferences={preferences} />;
+  return <BroadcastAgenda key={market.id} region={market.id} preferences={preferences} showHeading={showHeading} />;
 }
 
-export function BroadcastAgenda({ region, preferences, endpoint = '' }: { region: string; preferences: ReturnType<typeof useAppData>['broadcastPreferences']; endpoint?: string }) {
+export function BroadcastAgenda({ region, preferences, endpoint = '', showHeading = true }: { region: string; preferences: ReturnType<typeof useAppData>['broadcastPreferences']; endpoint?: string; showHeading?: boolean }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const agenda = useBroadcastAgenda(region, preferences.value.channel_ids, endpoint);
@@ -48,7 +48,7 @@ export function BroadcastAgenda({ region, preferences, endpoint = '' }: { region
       keyExtractor={p => p.id}
       contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_CLEARANCE + insets.bottom }}
       ListHeaderComponent={<View style={{ gap: 12 }}>
-        <Text style={{ fontFamily: fontFamily.display, fontSize: 28, color: colors.textPrimary }}>{COPY.title}</Text>
+        {showHeading && <Text style={{ fontFamily: fontFamily.display, fontSize: 28, color: colors.textPrimary }}>{COPY.title}</Text>}
         <Text style={{ color: colors.textMuted }}>{market.name} · {timezone}</Text>
         {button(COPY.changeRegion, () => router.push('/settings'))}
         <Text style={{ color: colors.textMuted }}>{COPY.coverage[market.scope as keyof typeof COPY.coverage]}</Text>

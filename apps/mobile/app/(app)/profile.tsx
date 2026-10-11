@@ -1,11 +1,9 @@
 /**
  * The signed-in user's own profile, as a static route.
  *
- * Web's tab bar links straight to /u/:username. Mobile can't: pointing a
- * Tabs.Screen at the nested dynamic `u/[username]` route lays its icon out
- * ~16pt higher than the other tabs (confirmed by swapping in a known-good icon
- * — the slot is what moves, not the icon). A static route sits correctly, so
- * the tab uses this and the dynamic route stays for everyone else's profile.
+ * The tab bar no longer shows it (History takes that slot, matching web's
+ * primary nav). The drawer opens /u/:username. This route stays so a direct
+ * /profile link still renders the signed-in profile.
  */
 import { useAppData } from '../../contexts/AppDataContext';
 import ProfileScreen from './u/[username]';

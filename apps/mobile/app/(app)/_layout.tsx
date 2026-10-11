@@ -1,11 +1,9 @@
 import { Tabs } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import Svg, { Path, Rect, Line, Polyline, Circle } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useAppData } from '../../contexts/AppDataContext';
-import { Avatar } from '../../components/Avatar';
 import { spacing } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 
@@ -46,22 +44,12 @@ function IconSettings({ color }: { color: any }) {
   );
 }
 
-function IconProfile({ profile, focused, colors }: { profile: any; focused: boolean; colors: any }) {
+function IconHistory({ color }: { color: any }) {
   return (
-    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{
-        width: 26, height: 26, borderRadius: 13, overflow: 'hidden',
-        borderWidth: 1.5,
-        borderColor: focused ? colors.accent : colors.textMuted,
-      }}>
-        <Avatar
-          url={profile?.avatar_url}
-          name={profile?.display_name || profile?.username}
-          size={23}
-          colors={colors}
-        />
-      </View>
-    </View>
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx={12} cy={12} r={9} />
+      <Polyline points="12,7 12,12 15,14" />
+    </Svg>
   );
 }
 
@@ -85,7 +73,6 @@ function TabBarBackground() {
 function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { profile } = useAppData();
 
   return (
     <Tabs
@@ -133,17 +120,17 @@ function TabsLayout() {
         name="my-lists"
         options={{ tabBarIcon: ({ color }) => <IconLists color={color} /> }}
       />
-      {/* Profile is the 4th tab, after My Lists — the position web renders it
-          in (AppShell puts it last in .tab-bar). Falls back to a hidden route
-          until the profile has loaded and has a username to link to. */}
+      {/* Fourth primary destination, same order as web: Home, Calendar,
+          My Lists, History. Profile stays in the drawer. */}
       <Tabs.Screen
-        name="profile"
+        name="history"
         options={{
-          // No explicit `href` — a static route provides its own, and passing
-          // one as a string makes the tab item lay out ~16pt above the others.
-          tabBarIcon: ({ focused }) => <IconProfile profile={profile} focused={focused} colors={colors} />,
+          title: 'History',
+          tabBarIcon: ({ color }) => <IconHistory color={color} />,
         }}
       />
+      <Tabs.Screen name="profile" options={{ href: null }} />
+      <Tabs.Screen name="guide" options={{ href: null }} />
       <Tabs.Screen name="u/[username]" options={{ href: null }} />
       <Tabs.Screen name="compare" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
@@ -151,6 +138,7 @@ function TabsLayout() {
       <Tabs.Screen name="requests" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="tonight" options={{ href: null }} />
+      <Tabs.Screen name="watchlist-visibility" options={{ href: null }} />
       <Tabs.Screen name="themes" options={{ href: null }} />
       <Tabs.Screen name="smart-list/[id]" options={{ href: null }} />
       <Tabs.Screen name="together" options={{ href: null }} />

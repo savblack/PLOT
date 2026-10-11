@@ -9,6 +9,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { APP_SHELL } from '@plot/core/copy/appShell.js';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { titleForView } from '@plot/core/navigation.js';
+import { useNotifications } from '@plot/core/useNotifications.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
@@ -19,17 +20,18 @@ import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 // Web's drawer is min(300px, 85vw). The old 58% width was sized for bare labels.
 const DRAWER_W = Math.min(300, Dimensions.get('window').width * 0.85);
 
-// Search leads. Settings stays in the footer, after Notifications. Guide,
-// Top 5 and History are not destinations here. Watch together stays out
-// until the launch flag is on.
+// Same order as the web phone drawer, with Search kept at the top because
+// the desktop rail leads with it. Settings stays pinned. Watch together
+// stays out while its launch flag is off. Follow requests live in Settings.
 const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; premium?: boolean }[] = [
-  { id: 'search',   label: APP_SHELL.search,            path: '/(app)/search',        icon: 'search' },
-  { id: 'index',    label: 'Home',                       path: '/(app)/',              icon: 'home' },
-  { id: 'calendar', label: 'Calendar',                   path: '/(app)/calendar',      icon: 'calendar' },
-  { id: 'my-lists', label: 'My Lists',                   path: '/(app)/my-lists',      icon: 'lists' },
-  { id: 'tonight',  label: titleForView('tonight'),      path: '/(app)/tonight',       icon: 'tonight', premium: true },
+  { id: 'search',   label: APP_SHELL.search,       path: '/(app)/search',   icon: 'search' },
+  { id: 'index',    label: 'Home',                  path: '/(app)/',         icon: 'home' },
+  { id: 'calendar', label: 'Calendar',              path: '/(app)/calendar', icon: 'calendar' },
+  { id: 'my-lists', label: 'My Lists',              path: '/(app)/my-lists', icon: 'lists' },
+  { id: 'history',  label: titleForView('history'), path: '/(app)/history',  icon: 'history' },
+  { id: 'guide',    label: titleForView('guide'),   path: '/(app)/guide',    icon: 'guide' },
+  { id: 'tonight',  label: titleForView('tonight'), path: '/(app)/tonight',  icon: 'tonight', premium: true },
   ...(SHOW_WATCH_TOGETHER ? [{ id: 'together', label: titleForView('together'), path: '/(app)/together', icon: 'together' as const, premium: true }] : []),
-  { id: 'notifications', label: APP_SHELL.notifications, path: '/(app)/notifications', icon: 'notifications' },
 ];
 
 const FEEDBACK_ITEMS = [
@@ -41,8 +43,7 @@ const FEEDBACK_ITEMS = [
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 
 const BOTTOM_NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName }[] = [
-  { id: 'requests', label: titleForView('requests'), path: '/(app)/requests', icon: 'requests' },
-  { id: 'settings', label: 'Settings',               path: '/(app)/settings', icon: 'settings' },
+  { id: 'settings', label: 'Settings', path: '/(app)/settings', icon: 'settings' },
 ];
 
 interface DrawerMenuProps {
@@ -55,7 +56,8 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   const router   = useRouter();
   const pathname = usePathname();
   const { colors, resolved } = useTheme();
-  const { profile } = useAppData();
+  const { profile, userId } = useAppData();
+  const { unread } = useNotifications(userId);
   const styles = useMemo(() => makeStyles(colors, resolved === 'dark'), [colors, resolved]);
 
   const slideX   = useRef(new Animated.Value(-DRAWER_W)).current;
@@ -88,9 +90,17 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
     void Linking.openURL(KOFI_URL).catch(() => {});
   };
 
-  const activeId = pathname === '/' || pathname === '/(app)' || pathname === '/(app)/'
-    ? 'index'
-    : pathname.split('/').pop() ?? '';
+  const pathParts = pathname.split('?')[0].split('/').filter(Boolean);
+  const segment = pathParts[pathParts.length - 1] ?? '';
+  const onHome = pathname === '/' || pathname === '/(app)' || pathname === '/(app)/';
+  const isActive = (id: string) => {
+    if (id === 'index') return onHome;
+    // Together is a stack, so /together/pick should still light the row.
+    if (id === 'together') return pathname.startsWith('/together');
+    return segment === id;
+  };
+  const profileActive = segment === 'profile'
+    || (!!profile?.username && pathParts[0] === 'u' && pathParts[1] === profile.username);
 
   // Don't block touches when fully closed
   if (!visible) {
@@ -127,7 +137,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
           {/* Main nav */}
           <View style={styles.nav}>
             {NAV_ITEMS.map(item => {
-              const active = item.id === 'together' ? pathname.startsWith('/together') : activeId === item.id;
+              const active = isActive(item.id);
               const color = active ? colors.accent : colors.textSecondary;
               return (
                 <TouchableOpacity
@@ -149,6 +159,38 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                 </TouchableOpacity>
               );
             })}
+            {profile?.username && (
+              <TouchableOpacity
+                style={[styles.navItem, profileActive && styles.navItemActive]}
+                onPress={() => navigate(`/(app)/u/${profile.username}`)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityState={{ selected: profileActive }}
+                accessibilityLabel={APP_SHELL.profile}
+              >
+                <Avatar
+                  url={profile.avatar_url}
+                  name={profile.display_name || profile.username}
+                  size={18}
+                  colors={colors}
+                />
+                <Text style={[styles.navLabel, profileActive && { color: colors.accent }]}>{APP_SHELL.profile}</Text>
+              </TouchableOpacity>
+            )}
+            {userId && (
+              <TouchableOpacity
+                style={[styles.navItem, isActive('notifications') && styles.navItemActive]}
+                onPress={() => navigate('/(app)/notifications')}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive('notifications') }}
+                accessibilityLabel={unread > 0 ? `${APP_SHELL.notifications}, ${unread} unread` : APP_SHELL.notifications}
+              >
+                <NavGlyph name="notifications" color={isActive('notifications') ? colors.accent : colors.textSecondary} />
+                <Text style={[styles.navLabel, isActive('notifications') && { color: colors.accent }]}>{APP_SHELL.notifications}</Text>
+                {unread > 0 && <Text style={styles.badge}>{unread > 9 ? '9+' : unread}</Text>}
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={[styles.nav, styles.help]}>
@@ -179,27 +221,10 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
           </View>
           </ScrollView>
 
-          {/* Bottom-pinned nav */}
+          {/* Bottom-pinned nav. Web's phone drawer pins Settings the same way. */}
           <View style={[styles.nav, styles.navBottom]}>
-            {profile?.username && (
-              <TouchableOpacity
-                style={styles.navItem}
-                onPress={() => navigate(`/(app)/u/${profile.username}`)}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={APP_SHELL.profile}
-              >
-                <Avatar
-                  url={profile.avatar_url}
-                  name={profile.display_name || profile.username}
-                  size={18}
-                  colors={colors}
-                />
-                <Text style={styles.navLabel}>{APP_SHELL.profile}</Text>
-              </TouchableOpacity>
-            )}
             {BOTTOM_NAV_ITEMS.map(item => {
-              const active = activeId === item.id;
+              const active = isActive(item.id);
               const color = active ? colors.accent : colors.textSecondary;
               return (
                 <TouchableOpacity
@@ -316,6 +341,19 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
     gap: 14,
   },
   // Premium marker for Free viewers: the Beta pill's shape in the pink fill.
+  badge: {
+    marginLeft: 'auto',
+    minWidth: 18,
+    paddingHorizontal: 5,
+    borderRadius: 9,
+    overflow: 'hidden',
+    backgroundColor: colors.accent,
+    color: colors.onAccentFill,
+    fontFamily: fontFamily.sansBold,
+    fontSize: 10,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
   premiumPill: {
     marginLeft: 'auto',
     overflow: 'hidden',
