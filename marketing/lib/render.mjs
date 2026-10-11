@@ -4,6 +4,8 @@ import { chromium } from 'playwright';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chartWeekDate } from './dates.mjs';
+import { loadFooterWordmark } from './wordmark.mjs';
 
 const TEMPLATES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 
@@ -41,9 +43,19 @@ export const renderCard = async (templateName, data, { size = 'portrait' } = {})
   const gabarito = await readFile(path.join(TEMPLATES_DIR, '..', '..', 'apps', 'web', 'public', 'fonts', 'Gabarito-Bold.ttf'));
   const fontFace = `@font-face { font-family: 'Gabarito'; src: url(data:font/ttf;base64,${gabarito.toString('base64')}) format('truetype'); font-weight: 700; font-style: normal; }\n`;
 
-  const html = template
+  // chartWeekDate lives in dates.mjs so the header order is tested. The
+  // template runs in the page, so the function source is inlined here.
+  const helpers = template.includes('chartWeekDate(')
+    ? `${helpersJs}\nconst chartWeekDate = ${chartWeekDate.toString()};\n`
+    : helpersJs;
+
+  let html = template;
+  if (html.includes('/*WORDMARK_SVG*/')) {
+    html = html.replace('/*WORDMARK_SVG*/', JSON.stringify(await loadFooterWordmark()));
+  }
+  html = html
     .replace('/*INLINE_BASE_CSS*/', fontFace + baseCss)
-    .replace('/*HELPERS_JS*/', helpersJs)
+    .replace('/*HELPERS_JS*/', helpers)
     .replace('"/*DATA_JSON*/"', JSON.stringify(data).replace(/</g, '\\u003c'));
 
   const viewport = SIZES[size];

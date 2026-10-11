@@ -42,6 +42,15 @@ export const formatDayMonth = (dateStr) => {
   return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
 };
 
+// The charts header date. New payloads are already "October 12". A row planned
+// before that change stored "Week of 12 October"; flip it at render so the
+// card does not keep day-first order.
+export const chartWeekDate = (weekLabel) => {
+  const raw = String(weekLabel || '').replace(/^week of\s+/i, '').trim();
+  const dayFirst = raw.match(/^(\d{1,2}) ([A-Za-z]+)$/);
+  return dayFirst ? `${dayFirst[2]} ${dayFirst[1]}` : raw;
+};
+
 // '2026-06-19' -> 'Friday, June 19'; a date outside `relativeTo`'s year keeps its
 // year -> 'Saturday, July 24, 2027'. Without that, a release far enough out reads as
 // a date that has already been and gone: a trailer post written in September

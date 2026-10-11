@@ -234,7 +234,7 @@ const runSelfTest = () => {
     on_this_day: { years: 25, release_year: 2001, title: { title: 'The Quiet Year' } },
     upcoming: { week_label: '8 – 14 June', titles: [{ title: 'Alpha' }, { title: 'Beta' }, { title: 'Gamma' }, { title: 'Delta' }] },
     trending: {
-      week_label: 'Week of 12 June',
+      week_label: 'Week of June 12',
       items: [
         { rank: 1, title: 'Alpha', media_type: 'movie', movement: { dir: 'same' } },
         { rank: 2, title: 'Beta', media_type: 'tv', movement: { dir: 'new' } },

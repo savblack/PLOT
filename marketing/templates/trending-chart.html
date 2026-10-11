@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <style>/*INLINE_BASE_CSS*/</style>
 <style>
-  /* ── Chart card: a flat dark table. No art behind the rows: the chart IS the
-     image, so nothing competes with the names. One hairline per row, a fixed
+  /* ── Chart card: cream ground, the rows are the image. The footer wordmark
+     sits behind them as a low-contrast ground. One hairline per row, a fixed
      column grid so ranks, posters, names and movement all align. ── */
   .chart-card { justify-content: flex-start; padding-top: calc(var(--pad) + 176px); }
   /* The chart is the one light-mode card: cream ground, charcoal ink
@@ -14,6 +14,7 @@
      bold NEW / up-move marks. */
   body.light {
     --bg: #F8F2EA;
+    --surface: #F1E9DC; /* colors.light.surfaceSunken, the footer wordmark fill */
     --text: #292924;
     --text-dim: #5F5A52;
     --text-faint: #6B655D;
@@ -28,6 +29,31 @@
     justify-self: end; padding: 4px 12px; border-radius: 999px;
   }
   body.light .move.down { color: var(--text-faint); }
+  /* Same crop as the website footer (apps/website/_partials/footer.css).
+     The card is the viewport, so vw and cqw are the card width: 108% wide,
+     pulled 4% left, clipped above the baseline so the bottoms of p, o and t
+     run off the card. Fill is the sunken surface on the cream ground. */
+  .bg-wordmark {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    height: calc(108vw * 681 / 1403 - 14.9vw);
+    height: calc(108cqw * 681 / 1403 - 14.9cqw);
+  }
+  .bg-wordmark svg {
+    display: block;
+    width: 108vw;
+    width: 108cqw;
+    height: auto;
+    aspect-ratio: 1403 / 871;
+    margin-left: -4vw;
+    margin-left: -4cqw;
+    fill: var(--surface, #f1e9dc);
+  }
   .header { position: relative; z-index: 2; margin-bottom: 40px; }
   /* Kicker sits top-right, on the wordmark's line, so the header is just the week. */
   .chart-card > .meta-caps { position: absolute; top: calc(var(--pad) + 18px); right: var(--pad); z-index: 4; font-size: 26px; }
@@ -129,6 +155,14 @@ window.DATA = "/*DATA_JSON*/";
 const d = window.DATA;
 const card = document.getElementById('card');
 
+const footerWordmark = () => {
+  const wrap = document.createElement('div');
+  wrap.className = 'bg-wordmark';
+  wrap.setAttribute('aria-hidden', 'true');
+  wrap.innerHTML = /*WORDMARK_SVG*/;
+  return wrap;
+};
+
 const moveNode = (m) => {
   if (!m || m.dir === 'none') return el('span', 'move same', '');
   if (m.dir === 'new') return el('span', 'move new', 'NEW');
@@ -153,8 +187,9 @@ if (d.kind === 'detail') {
 } else {
   card.classList.add('chart-card');
   document.body.classList.add('light');
+  card.append(footerWordmark());
   const header = el('div', 'header');
-  const weekDate = String(d.week_label || '').replace(/^week of\s+/i, '');
+  const weekDate = chartWeekDate(d.week_label);
   const h = el('h1', 'display', 'Week of ');
   h.append(el('span', 'wk', weekDate));
   header.append(h);
