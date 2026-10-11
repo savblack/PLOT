@@ -94,11 +94,21 @@ test('rejects an audience score, which is not in the brief', () => {
 });
 
 test('rejects UK spelling in a US-default article', () => {
-  assert.match(articleErrors(body('It arrives in theatres on Friday.'))[0], /UK spelling/);
-  assert.match(articleErrors(body('The colour palette is muted.'))[0], /UK spelling/);
+  assert.match(articleErrors(body('It arrives in theatres on Friday.'))[0], /British spelling/);
+  assert.match(articleErrors(body('The colour palette is muted.'))[0], /British spelling/);
+  assert.match(articleErrors(body('She organised the shoot around one location.'))[0], /British spelling/);
+  assert.match(articleErrors(body('The late show is the better programme.'))[0], /British spelling/);
+  assert.match(articleErrors(body('It opened in the city centre.'))[0], /British spelling/);
+  assert.match(articleErrors(body('A favourite of the crew.'))[0], /British spelling/);
+  assert.match(articleErrors(body('It is on Stan from today.'))[0], /Australian service/);
   assert.deepEqual(articleErrors(body('It arrives in theaters on Friday, in color.')), []);
-  // "cinemas" is the ordinary word for the place, not a US/UK spelling split.
+  // Same-spelling words, and "cinemas" as the ordinary word for the place.
   assert.deepEqual(articleErrors(body('It arrives in cinemas on Friday.')), []);
+  assert.deepEqual(articleErrors(body('The premise is a surprise, and the analysis is precise. She will practice the scene. Emphasis matters. A franchise exercise, and a promise.')), []);
+  // Legal pages keep their existing wording, including British spelling.
+  assert.deepEqual(articleErrors(body('It arrives in theatres on Friday.'), { legal: true }), []);
+  assert.deepEqual(articleErrors(body('It arrives in theatres on Friday.'), { source: 'apps/website/terms.html' }), []);
+  assert.deepEqual(articleErrors(body('It arrives in theatres on Friday.'), { source: 'apps/web/src/pages/PrivacyPage.jsx' }), []);
 });
 
 test('rejects a Title Case post-type label on the front of a headline', () => {
@@ -171,7 +181,9 @@ test('a rental is never called a store, but a real shop is left alone', () => {
 
 test('the social captions carry the same house rules', () => {
   assert.match(socialErrors({ x: 'It lands 1 \u2013 7 June.' })[0], /em or en dash/);
-  assert.match(socialErrors({ threads: 'It arrives in theatres Friday.' })[0], /UK spelling/);
+  assert.match(socialErrors({ threads: 'It arrives in theatres Friday.' })[0], /British spelling/);
+  assert.match(socialErrors({ alt_text: 'A theatre marquee at night.' })[0], /British spelling/);
+  assert.deepEqual(socialErrors({ alt_text: 'A theatre marquee at night.' }, { legal: true }), []);
   assert.match(socialErrors({ instagram: 'Reportedly the best of the year.' })[0], /narrates research/);
   assert.deepEqual(socialErrors({ x: 'It lands 1 to 7 June.', threads: 'In theaters Friday.' }), []);
 });
@@ -185,8 +197,8 @@ test('a rental is never called streaming in a caption', () => {
 });
 
 test('formatWeekRange never emits a dash', () => {
-  assert.equal(formatWeekRange('2026-06-15', '2026-06-21'), '15 to 21 June');
-  assert.equal(formatWeekRange('2026-06-28', '2026-07-04'), '28 June to 4 July');
+  assert.equal(formatWeekRange('2026-06-15', '2026-06-21'), 'June 15 to 21');
+  assert.equal(formatWeekRange('2026-06-28', '2026-07-04'), 'June 28 to July 4');
   assert.deepEqual(socialErrors({ x: `All landing ${formatWeekRange('2026-06-01', '2026-06-07')}.` }), []);
 });
 

@@ -87,7 +87,7 @@ test('an unreleased trending title is never the subject', async (t) => {
 
   assert.equal(c.tmdb_refs[0].id, 2);
   assert.equal(c.payload.topic.hook, 'just_out');
-  assert.equal(c.payload.topic.when_label, '5 September');
+  assert.equal(c.payload.topic.when_label, 'September 5');
 });
 
 test('a trending title with no release date at all is skipped', async (t) => {
@@ -137,7 +137,7 @@ test('a show airing now is picked on its latest episode, not its premiere', asyn
 
   assert.equal(c.tmdb_refs[0].id, 7);
   assert.equal(c.payload.topic.hook, 'airing');
-  assert.equal(c.payload.topic.when_label, '8 September');
+  assert.equal(c.payload.topic.when_label, 'September 8');
 });
 
 test('an old show with no recent episode is not treated as current', async (t) => {

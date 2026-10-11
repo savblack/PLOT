@@ -123,8 +123,11 @@ node --env-file=.env marketing/preview/week.mjs && open marketing/preview/out/we
 Re-run after edits to refresh. The weekly email links Linear and Buffer.
 
 **QA scan before approving** — flag (don't silently pass) anything off:
-- A card date in the PAST or that contradicts the copy ("Streaming · 31 March" on an
+- A card date in the PAST or that contradicts the copy ("Streaming · March 31" on an
   "upcoming this week" card; a countdown "X days" that doesn't match the date).
+  Dates a reader sees are US order (June 19, Friday, June 19).
+- British spelling (colour, favourite, theatre, organise, programme) or a UK or
+  Australian platform or release date. The post is for a US reader.
 - An upcoming / now-streaming title that already released — not "new".
 - X over 280 chars, a URL in the X copy, or an article that narrates its sources (§3).
 Surface these with the fix (edit, regenerate, reschedule) rather than approving as-is.

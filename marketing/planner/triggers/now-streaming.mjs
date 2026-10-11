@@ -11,11 +11,12 @@ export const evaluate = async (ctx) => {
     .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
   if (!candidates.length) return null;
 
-  // Take the first candidate TMDB can actually place in a home: a subscription
-  // service or a rent/buy store in at least one audience region. A digital_date
-  // alone is a plan, not availability, and a post that says "now available at
-  // home" with no platform to name (Toy Story 5, Mutiny, Minions & Monsters
-  // all shipped that way) is the one thing the voice guide forbids outright.
+  // Take the first candidate TMDB can place on a US subscription service or a
+  // US rent/buy platform. A UK or Australian listing is not a US release.
+  // A digital_date alone is a plan, not availability, and a post that says
+  // "now available at home" with no platform to name (Toy Story 5, Mutiny,
+  // Minions & Monsters all shipped that way) is the one thing the voice guide
+  // forbids outright.
   for (const pick of candidates) {
     const [details, home] = await Promise.all([
       tmdb.getDetails('movie', pick.tmdb_id),
@@ -30,13 +31,13 @@ export const evaluate = async (ctx) => {
   return null;
 };
 
-const REGIONS = ['US', 'UK', 'AU'];
+const REGIONS = ['US'];
 const has = (lists, r) => (lists?.[r]?.length || 0) > 0;
 
 export const hasHomeProvider = (home) =>
   REGIONS.some(r => has(home.streaming, r) || has(home.digital, r));
 
-// How the title is arriving at home, US first: on a subscription service
+// How the title is arriving at home in the US: on a subscription service
 // ('streaming') or as a digital rental/purchase ('rental'). A cinema release
 // usually reaches the stores weeks before any service, and that is the moment
 // most people can actually watch it, so it gets its own word everywhere the
@@ -58,8 +59,8 @@ const candidate = (pick, details, home) => {
     announce: { tracked_id: pick.id, key: 'now_streaming' },
     payload: {
       home_kind: homeKind(home), // 'streaming' | 'rental' — drives every label on the post
-      streaming: home.streaming, // subscription: { US:[…], UK:[…], AU:[…] } — name it in the copy (US default)
-      digital: home.digital,     // rent/buy stores per region, for a rental arrival ("to rent on Prime Video")
+      streaming: home.streaming, // { US, UK, AU } lists. Copy names streaming.US only.
+      digital: home.digital,     // rent/buy per region. Copy names the US platforms ("to rent on Prime Video").
       from_label: pick.release_date ? `In cinemas since ${formatDayMonth(pick.release_date)}` : null,
       title: {
         tmdb_id: pick.tmdb_id,

@@ -55,26 +55,39 @@ actually trust, writing a short note — not a brand running a content calendar.
 - Keep social copy short. The image does the heavy lifting; the caption is not
   the essay. (The theplot.tv article is the long-form piece — see below.)
 
-## Audience & regions
+## Audience
 
-Plot's audience is **US, UK and Australia**. Default to **US** framing (dates,
-spelling-light, "this week") unless a post is clearly about another region.
+Plot's primary market is the United States. Write every post, article, caption,
+alt text line, card, and email for a US reader. Do not localize for Australia
+or the UK.
+
+- **US release dates.** Use the US theatrical opening or the US streaming date.
+  Do not substitute a UK or Australian date.
+- **US streaming services only.** The payload may still include `UK` and `AU`
+  provider lists. Ignore them. Name the US platform ("now on Netflix"). Never
+  add a second country ("or Prime Video in the UK", "on Stan in Australia").
+  Never name Stan, Binge, or Foxtel.
+- **US references and date format.** When a date is written out, use US order:
+  "Friday, June 19", "June 19", "June 15 to 21". The payload's `when_label` is
+  already in that shape. Copy it. Don't reorder it to "19 June".
+- **American spelling in every field.** color, favorite, theater, center,
+  organize, program, and -ize verbs (realize, recognize). "Cinemas" is the
+  ordinary word for the place and is fine.
+
+Legal pages are not written from this guide. Terms, privacy, and other legal
+copy keep their existing wording.
 
 **Always say where to watch a streaming title.** On any "now streaming", "what to
-watch tonight" or "hidden gem" post — across social, the whats-on article, and the
-newsletter — name the platform it's on. A digital rental or purchase is not
-"streaming": if the payload's `streaming` lists are empty and `digital` names
+watch tonight" or "hidden gem" post, across social, the whats-on article, and the
+newsletter, name the US platform it's on. A digital rental or purchase is not
+"streaming": if the payload's US `streaming` list is empty and US `digital` names
 platforms, say "to rent or buy on Prime Video and Apple TV", never "now
 streaming". People rent through the apps they already use, so never call those
 platforms "stores", "digital stores" or "storefronts".
 
-The payload provides a `streaming` object
-with providers per region: `{ US: [...], UK: [...], AU: [...] }`.
-- Lead with the **US** platform ("now on Netflix").
-- If UK/AU differ meaningfully, you may add them briefly ("on Netflix, or Prime
-  Video in the UK"). Don't list all three if they're the same.
-- Only name a platform that's in the provided `streaming` data — never guess.
-- If a region's list is empty, just leave that region out.
+Only name a platform that appears in the payload's **US** list. Never guess,
+and never fill a gap with the UK or AU list. If the US list is empty, leave
+the platform out rather than naming another country.
 
 ## Platform constraints
 

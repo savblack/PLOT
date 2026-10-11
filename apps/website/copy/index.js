@@ -98,7 +98,7 @@ export const LISTS_DEMO = {
   headline: 'The lists only ',
   headlineEm: 'you',
   headlineEnd: ' could curate.',
-  body: "Organise by decade, director, or whatever mood you're in. Create and share movie and TV collections that are unmistakably yours.",
+  body: "Organize by decade, director, or whatever mood you're in. Create and share movie and TV collections that are unmistakably yours.",
   cta: 'Start curating →',
   // Sample list categories cycled through in the coverflow demo
   sampleLists: [

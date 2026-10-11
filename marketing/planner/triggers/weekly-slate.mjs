@@ -56,7 +56,7 @@ export const evaluate = async (ctx) => {
 
   const titles = await Promise.all(pool.map(async (item) => {
     const dateStr = item.media_type === 'tv' ? item.first_air_date : item.release_date;
-    // when_label is the date only ("Friday 19 June") — the card renders the
+    // when_label is the date only ("Friday, June 19") — the card renders the
     // release kind as its own colored label. `where` stays in the payload for
     // the post copy; it is never rendered on the image.
     const whenLabel = dateStr ? formatWeekdayDayMonth(dateStr) : null;

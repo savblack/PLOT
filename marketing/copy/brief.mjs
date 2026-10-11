@@ -9,6 +9,14 @@ import { COPY_FIELDS, POST_TYPE_BRIEFS, GUIDE_FIELDS, GUIDE_ARCHETYPE_BRIEFS } f
 
 const VOICE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'VOICE.md');
 
+// Repeated in every brief, ahead of the voice guide, so a worker that skims
+// still sees the audience rule. VOICE.md is the long form.
+const AUDIENCE_RULE = `Plot's primary market is the United States. Write for a US reader.
+US release dates, US streaming services only (ignore UK and AU provider lists),
+US references, and US date order ("Friday, June 19", "June 15 to 21").
+American spelling in every field, including alt text: color, favorite, theater,
+center, organize, program, realize. Do not localize for Australia or the UK.`;
+
 let voiceCache = null;
 const voice = async () => (voiceCache ??= await readFile(VOICE_PATH, 'utf8'));
 
@@ -98,6 +106,9 @@ characters.
 
 **No spoilers**, and the question has to land for someone who hasn't seen it —
 never assume the reader already watched.
+
+## Audience
+${AUDIENCE_RULE}
 ${sources}
 ## Output — a single JSON object
 - \`question\` (string): the post text, used verbatim on both Threads and X.
@@ -139,6 +150,9 @@ ${JSON.stringify(post.payload, null, 2)}
 
 ## Titles to cover, in this exact order — do not reorder, skip, add, or merge any
 ${titleList}
+
+## Audience
+${AUDIENCE_RULE}
 
 ## How to write it
 - A finished editorial guide in Plot's voice — never narrate your sources or research.
@@ -183,7 +197,7 @@ Write your answer to: \`marketing/copy/jobs/${outFile}\`
 ${brief}
 
 ## Social facts (for x / instagram / threads: state ONLY what is here — never add dates, cast, or platforms not present)
-${post.payload?.days_until != null ? `\n**This is ${post.payload.days_until} day(s) away${post.payload.when_label ? ` — ${post.payload.when_label}` : ''}.** Name that date in full. Do NOT write a relative day ("this Friday", "next week", "tomorrow"): at this distance it points at the wrong day and the validator rejects it.\n` : ''}
+${post.payload?.days_until != null ? `\n**This is ${post.payload.days_until} day(s) away${post.payload.when_label ? ` — ${post.payload.when_label}` : ''}.** Name that date in full, in the US order already on the label ("Friday, June 19"). Do NOT write a relative day ("this Friday", "next week", "tomorrow"): at this distance it points at the wrong day and the validator rejects it. Do NOT reorder it to day-month ("19 June").\n` : ''}
 \`\`\`json
 ${JSON.stringify(post.payload, null, 2)}
 \`\`\`
@@ -200,6 +214,9 @@ ${hasResearch
 
 ### Starting sources to consult / browse further
 ${sourceList(research)}
+
+## Audience
+${AUDIENCE_RULE}
 
 ## How to write the article (page_body)
 Write a short blog post (3-5 developed paragraphs) for theplot.tv/whats-on.
