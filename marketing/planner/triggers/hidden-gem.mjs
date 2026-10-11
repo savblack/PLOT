@@ -9,7 +9,8 @@
 //             title. With no ceiling and a vote_average sort the pool was the
 //             IMDb top 250 (Shawshank, Empire, The Usual Suspects, Mononoke all
 //             ran as "hidden gems"), which the copy then had to argue around.
-// We discover per region (US/UK/AU) and prefer the broadest availability:
+// We discover per region (US/UK/AU) and prefer the broadest availability.
+// Copy names the US platform only.
 // a title on streaming in all three beats one in two beats US-only.
 import { tmdb } from '../../lib/tmdb.mjs';
 import { isoDate } from '../../lib/dates.mjs';
@@ -66,7 +67,7 @@ export const evaluate = async (ctx) => {
     topic_key: `hidden_gem:${isoDate(ctx.publishAt)}`,
     tmdb_refs: [{ media_type: 'movie', id: pick.id, title: pick.title }],
     payload: {
-      streaming, // { US:[…], UK:[…], AU:[…] } — name the platform (US default)
+      streaming, // { US, UK, AU }. Copy names the US platform only.
       year: pick.release_date ? Number(pick.release_date.slice(0, 4)) : null,
       // The numbers behind the "highly-rated, lesser-seen" claim, carried so the
       // review card can show its working. MIN_VOTES and MAX_VOTES decide what is

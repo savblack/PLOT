@@ -39,7 +39,7 @@ export const CHANGELOG_PAGE = {
       fixed: [
         'Poster quick actions on lists working again',
         'Genre filtering on New Releases completing as expected',
-        'Favourites shelf staying compact on profiles',
+        'Favorites shelf staying compact on profiles',
         'Navigation rail and title panel polish that left controls misaligned',
       ],
     },

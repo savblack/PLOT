@@ -201,19 +201,19 @@ export const tmdb = {
     return (data?.results || []).map(s => ({ ...s, media_type: 'tv' }));
   },
 
-  // Subscription (flatrate) providers across our audience regions, from the one
-  // /watch/providers response (no extra calls). Returns
-  // { US:[names], UK:[names], AU:[names] } — top 2 each, US is the default.
+  // Subscription (flatrate) providers. Copy names the US list only. UK and AU
+  // stay on the payload so the planner can prefer a title that is also available
+  // outside the US. Returns { US:[names], UK:[names], AU:[names] }, top 2 each.
   getStreamingRegions: async (mediaType, id) => {
     const data = await fetchTMDB(`/${mediaType}/${id}/watch/providers`);
     const names = (code) => (data?.results?.[code]?.flatrate || []).slice(0, 2).map(p => p.provider_name);
     return { US: names('US'), UK: names('GB'), AU: names('AU') };
   },
 
-  // Subscription AND rent/buy availability across the audience regions, from
-  // one /watch/providers call. The now_streaming trigger uses it both to gate
-  // the post (no provider anywhere = not actually watchable at home yet) and
-  // to let the copy name the stores when a title arrives as a digital rental.
+  // Subscription AND rent/buy availability. Copy names the US lists only.
+  // The now_streaming trigger uses this both to gate the post (no US provider
+  // means it is not the home release we are announcing) and to name the US
+  // platforms when a title arrives as a digital rental.
   getHomeRegions: async (mediaType, id) => {
     const data = await fetchTMDB(`/${mediaType}/${id}/watch/providers`);
     const names = (code, kinds) => {

@@ -8,16 +8,18 @@ const home = (streaming = {}, digital = {}) => ({
   digital: { US: [], UK: [], AU: [], ...digital },
 });
 
-test('a subscription provider anywhere wins over a store, US first', () => {
+test('a US subscription provider wins over a US rental', () => {
   assert.equal(homeKind(home({ US: ['Netflix'] }, { US: ['Apple TV'] })), 'streaming');
   assert.equal(homeKind(home({ UK: ['Sky Go'] }, { US: ['Apple TV'] })), 'rental');
-  assert.equal(homeKind(home({}, { UK: ['Apple TV'] })), 'rental');
+  assert.equal(homeKind(home({}, { UK: ['Apple TV'] })), null);
+  assert.equal(homeKind(home({ AU: ['Stan'] })), null);
 });
 
-test('no provider anywhere means not yet watchable at home', () => {
+test('only a US provider counts as watchable at home', () => {
   assert.equal(homeKind(home()), null);
   assert.equal(hasHomeProvider(home()), false);
-  assert.equal(hasHomeProvider(home({}, { AU: ['Google Play'] })), true);
+  assert.equal(hasHomeProvider(home({}, { AU: ['Google Play'] })), false);
+  assert.equal(hasHomeProvider(home({ US: ['Netflix'] })), true);
 });
 
 test('a trailer post is only for a title that has not opened', () => {

@@ -524,14 +524,14 @@ There is no eval harness and no prompt registry. The Sunday learning loop that u
 
 | Path | What it governs |
 | --- | --- |
-| [`marketing/VOICE.md`](../../marketing/VOICE.md) | The voice. Injected into every brief. Warm, specific, sentence case, where-to-watch rules, per-network limits, question-post rules. Hand-maintained. |
+| [`marketing/VOICE.md`](../../marketing/VOICE.md) | The voice. Injected into every brief. Warm, specific, sentence case, US audience (US dates, US streaming services, American spelling), where-to-watch rules, per-network limits, question-post rules. Hand-maintained. |
 | [`marketing/copy/AGENT.md`](../../marketing/copy/AGENT.md) | The worker contract: which JSON fields to write, what the validator will reject, which runner CI uses. |
 | [`marketing/copy/WHATSON_GUIDELINES.md`](../../marketing/copy/WHATSON_GUIDELINES.md) | How the website article should be sourced and structured, by post type. |
 | [`marketing/copy/brief.mjs`](../../marketing/copy/brief.mjs) | Turns one database row plus `VOICE.md` into the markdown brief the model sees. |
 | [`marketing/copy/enrich.mjs`](../../marketing/copy/enrich.mjs) | Research pack: TMDB, Wikipedia, OMDb ratings, starting URLs. The model may browse further for the article. Social copy is supposed to stay inside the brief's facts. |
 | [`marketing/copy/schema.mjs`](../../marketing/copy/schema.mjs) | Re-export of the shared validator. |
 | [`supabase/functions/_shared/copySchema.js`](../../supabase/functions/_shared/copySchema.js) | Field types and lengths. Used when saving model output and when applying a Linear `/copy`. |
-| [`supabase/functions/_shared/articleRules.js`](../../supabase/functions/_shared/articleRules.js) | Regex rejects: em and en dashes, long quotations, "critics say" narration, UK spelling, audience scores, calling a rental "streaming", trivia asides, a ratings sentence as the closer, and a missing where-to-watch on streaming-type posts. |
+| [`supabase/functions/_shared/articleRules.js`](../../supabase/functions/_shared/articleRules.js) | Regex rejects: em and en dashes, long quotations, "critics say" narration, British spelling in social and article copy (legal docs are exempt), audience scores, calling a rental "streaming", trivia asides, a ratings sentence as the closer, and a missing where-to-watch on streaming-type posts. |
 | [`marketing/templates/*.html`](../../marketing/templates/) plus `base.css` and `_helpers.js` | The look of the social cards, not the words. |
 | [`marketing/tests/`](../../marketing/tests/) | Unit tests for the validator, planner, Buffer payload, Linear commands, and IndexNow. These are regression checks, not scored tone evals. |
 

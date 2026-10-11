@@ -1,7 +1,7 @@
-// Region-linked UI spelling. Add an entry to SPELLING below when a piece of
-// copy needs a US/UK variant; everything else in the app's copy has been
-// cross-checked and is spelled identically in both dialects, so it needs no
-// entry until that changes.
+// Region-linked UI spelling for strings that already ship. Do not add entries
+// or new call sites. New user-facing copy is American English (see AGENTS.md),
+// except legal pages, which stay as written. This dictionary remains so the
+// existing favorite/color switch keeps working until that sweep is decided.
 //
 // The data layer stays whatever it already is regardless of copy (e.g. the
 // user_favourites table, source_type = 'favourite', the profile_sections

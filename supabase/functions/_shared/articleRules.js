@@ -72,16 +72,69 @@ const AUDIENCE_SCORE = /\baudience (?:score|rating)\b|\bpopcornmeter\b|\bverifie
 // Day: Die Hard turns 38" shipped exactly this way.
 const TITLE_CASE_LABEL = /^(?:On This Day|First Look|Trailer Drop|Watch Tonight|Hidden Gem|Now Streaming|Now At Home|Coming Soon|The Week Ahead|New This Week)\b/;
 
-// Plot defaults to US framing and US spelling. These are the forms that reach
-// an article; words spelled the same either side of the Atlantic need no entry.
-const UK_SPELLINGS = [
-  [/\btheatres?\b/i, 'theater/theaters'],
-  [/\bcentres?\b/i, 'center/centers'],
-  [/\bcolours?\b/i, 'color/colors'],
-  [/\bfavourites?\b/i, 'favorite/favorites'],
-  [/\borganis(?:e|ed|ing|ation)\b/i, 'organize/organization'],
-  [/\brealis(?:e|ed|ing)\b/i, 'realize'],
+// Generated social and article copy is American English. Legal documents are
+// exempt: pass { legal: true } or a source path isLegalCopySource() accepts.
+// Words spelled the same in both dialects (promise, surprise, practice the
+// noun, cinema) are not in this list.
+const ISE_STEMS = [
+  'organ', 'real', 'recogn', 'apolog', 'custom', 'personal', 'special',
+  'emphas', 'critic', 'summar', 'minim', 'maxim', 'author', 'character',
+  'normal', 'final', 'util', 'mobil', 'legal', 'polar', 'stabil', 'memor',
+  'categor', 'priorit', 'visual', 'optim', 'harmon', 'modern', 'standard',
+  'popular', 'colon', 'fictional', 'dramat', 'capital', 'global', 'local',
+  'national', 'rational', 'revital', 'familiar', 'general', 'ideal',
+  'material', 'neutral', 'patron', 'penal', 'privat', 'public', 'random',
+  'revolution', 'romantic', 'sanit', 'satir', 'scrutin', 'sensit', 'serial',
+  'social', 'steril', 'stigmat', 'subsid', 'symbol', 'sympath', 'synchron',
+  'synthes', 'systemat', 'tantal', 'terror', 'theor', 'traumat', 'trivial',
+  'union', 'urban', 'vapor', 'verbal', 'victim', 'vocal', 'western',
+  'digital', 'pressur', 'marginal', 'mechan', 'mesmer', 'militar', 'monet',
+  'moral', 'novel', 'ostrac', 'oxid', 'pasteur', 'philosoph', 'plagiar',
+  'plural', 'professional', 'pulver', 'radical', 'scandal', 'secular',
+  'sermon', 'sexual', 'solemn', 'tranquil', 'tyrann',
 ];
+const ISE_RE = new RegExp(
+  `\\b(?:${ISE_STEMS.join('|')})is(?:e|es|ed|ing|ation|ations|er|ers)\\b`,
+  'i',
+);
+const BRITISH_SPELLING_RULES = [
+  [/\btheatres?\b/i, 'theater/theaters'],
+  [/\b(?:epi)?cent(?:re|res|red|ring)\b/i, 'center/centers'],
+  [/\bcolou(?:r|rs|red|ring|rful|rfully)\b/i, 'color/colors'],
+  [/\bfavou(?:r|rs|red|ring|rite|rites|rited|riting)\b/i, 'favor/favorite'],
+  [/\bprogrammes?\b/i, 'program/programs'],
+  [/\bcatalogues?\b/i, 'catalog/catalogs'],
+  [/\bbehaviours?\b/i, 'behavior/behaviors'],
+  [/\bpractis(?:e|es|ed|ing)\b/i, 'practice'],
+  [/\banalys(?:e|es|ed|ing)\b/i, 'analyze'],
+  [ISE_RE, 'the -ize form (organize, realize, recognize)'],
+];
+
+/**
+ * True for terms, privacy, community standards, and other legal pages.
+ * Generated marketing copy is never a legal doc, so callers pass this only
+ * when the same checker is pointed at a file.
+ *
+ * @param {string | boolean | null | undefined} source
+ */
+export const isLegalCopySource = (source) => {
+  if (source === true) return true;
+  if (typeof source !== 'string' || !source) return false;
+  const path = source.replace(/\\/g, '/');
+  return /(?:^|\/)(?:terms|privacy|community)(?:[._-]|$)/i.test(path)
+    || /(?:Terms|Privacy|Community)(?:Page|OfService)/.test(path);
+};
+
+const spellingExempt = (opts) => opts?.legal === true || isLegalCopySource(opts?.source);
+
+const spellingError = (field, text, opts) => {
+  if (!text || spellingExempt(opts)) return null;
+  for (const [re, better] of BRITISH_SPELLING_RULES) {
+    const hit = re.exec(text);
+    if (hit) return `${field} uses British spelling ("${hit[0]}"); write the American spelling (${better})`;
+  }
+  return null;
+};
 
 // Nobody rents a film in a shop. "Digital stores" and "storefronts" are trade
 // jargon for the apps a reader already has, and six published articles used
@@ -89,6 +142,10 @@ const UK_SPELLINGS = [
 // legitimately contain one (boarded up storefronts in Hell or High Water, the
 // shop in Smoking Behind the Supermarket with You).
 const STORE_JARGON = /\bdigital\s+stores?\b|\bdigital\s+storefronts?\b|\bin stores\b|\bstorefronts?\s+like\b/i;
+
+// Australian services. Naming one is localizing the post away from the US.
+// "Sky" is left out: it is also the ordinary word for the sky.
+const AU_ONLY_SERVICE = /\b(?:Stan|Binge|Foxtel)\b/;
 
 // Trivia framing and the content-free closers the guidelines ban by name.
 const FILLER = [
@@ -119,10 +176,13 @@ const paraLabel = (i) => `page_body[${i}]`;
  * the article passes).
  *
  * @param {{page_title?: string, page_body?: string[]}} copy
- * @param {{guide?: boolean}} [opts]  guides are long lists with one paragraph
- *   per title, so the single-title ratings rules do not apply to them.
+ * @param {{guide?: boolean, legal?: boolean, source?: string}} [opts]
+ *   guides are long lists with one paragraph per title, so the single-title
+ *   ratings rules do not apply to them. legal or a legal-doc source skips the
+ *   British-spelling check. Other prose rules still run.
  */
-export const articleErrors = ({ page_title = '', page_body = [] } = {}, { guide = false } = {}) => {
+export const articleErrors = ({ page_title = '', page_body = [] } = {}, opts = {}) => {
+  const { guide = false } = opts;
   const errors = [];
   const fields = [['page_title', page_title], ...page_body.map((p, i) => [paraLabel(i), p])];
 
@@ -160,15 +220,12 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, { guide 
     }
     const audience = AUDIENCE_SCORE.exec(text);
     if (audience) errors.push(`${field} cites an audience score ("${audience[0]}"); only the brief's IMDb, Rotten Tomatoes and Metacritic figures may be used`);
-    for (const [re, better] of UK_SPELLINGS) {
-      const hit = re.exec(text);
-      if (hit) {
-        errors.push(`${field} uses UK spelling ("${hit[0]}"); Plot defaults to US spelling (${better})`);
-        break;
-      }
-    }
+    const spelling = spellingError(field, text, opts);
+    if (spelling) errors.push(spelling);
     const store = STORE_JARGON.exec(text);
     if (store) errors.push(`${field} calls a rental a store ("${store[0]}"); name the platforms, or say "on digital"`);
+    const auService = AU_ONLY_SERVICE.exec(text);
+    if (auService) errors.push(`${field} names an Australian service ("${auService[0]}"); name the US platform`);
     if (TMDB_RE.test(text)) errors.push(`${field} names TMDB; reference data never appears on the page`);
   }
 
@@ -199,7 +256,7 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, { guide 
   return errors;
 };
 
-const SOCIAL_FIELDS = ['x', 'instagram', 'threads'];
+const SOCIAL_FIELDS = ['x', 'instagram', 'threads', 'alt_text'];
 
 // A rental is not "streaming". Two published posts said "X is now streaming"
 // in their social copy for a film that had only reached the rent-or-buy
@@ -210,10 +267,13 @@ const CLAIMS_STREAMING = /\b(?:now streaming|streaming now|is streaming|are stre
  * The same house rules, applied to the social captions. Shorter copy, so only
  * the checks that are about wording rather than article structure.
  *
- * @param {{x?: string, instagram?: string, threads?: string}} copy
- * @param {{home_kind?: string|null}} [opts]  'rental' forbids calling it streaming.
+ * @param {{x?: string, instagram?: string, threads?: string, alt_text?: string}} copy
+ * @param {{home_kind?: string|null, legal?: boolean, source?: string}} [opts]
+ *   'rental' forbids calling it streaming. legal or a legal-doc source skips
+ *   the British-spelling check.
  */
-export const socialErrors = (copy = {}, { home_kind } = {}) => {
+export const socialErrors = (copy = {}, opts = {}) => {
+  const { home_kind } = opts;
   const errors = [];
   for (const field of SOCIAL_FIELDS) {
     const text = typeof copy[field] === 'string' ? copy[field] : '';
@@ -227,12 +287,12 @@ export const socialErrors = (copy = {}, { home_kind } = {}) => {
     }
     const audience = AUDIENCE_SCORE.exec(text);
     if (audience) errors.push(`${field} cites an audience score ("${audience[0]}")`);
-    for (const [re, better] of UK_SPELLINGS) {
-      const hit = re.exec(text);
-      if (hit) { errors.push(`${field} uses UK spelling ("${hit[0]}"); Plot defaults to US spelling (${better})`); break; }
-    }
+    const spelling = spellingError(field, text, opts);
+    if (spelling) errors.push(spelling);
     const store = STORE_JARGON.exec(text);
     if (store) errors.push(`${field} calls a rental a store ("${store[0]}"); name the platforms, or say "on digital"`);
+    const auService = AU_ONLY_SERVICE.exec(text);
+    if (auService) errors.push(`${field} names an Australian service ("${auService[0]}"); name the US platform`);
     if (home_kind === 'rental') {
       const hit = CLAIMS_STREAMING.exec(text);
       if (hit) errors.push(`${field} says "${hit[0]}" for a rental release; it is available to rent or buy, not streaming`);

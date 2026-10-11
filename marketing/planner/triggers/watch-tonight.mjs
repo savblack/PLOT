@@ -15,7 +15,8 @@ export const evaluate = async (ctx) => {
     .filter(m => m.poster_path && m.backdrop_path && (m.vote_average || 0) >= 7 && !used.has(m.id));
 
   // Look up where each is streamable across US/UK/AU (one call each), then prefer
-  // the broadest availability: all-3 > any-2 > US-only. Bounded scan.
+  // the broadest availability: all-3 > any-2 > US-only. Copy names the US
+  // platform only. Bounded scan.
   const scanned = [];
   for (const m of trending.slice(0, 20)) {
     const streaming = await tmdb.getStreamingRegions(m.media_type, m.id).catch(() => ({}));
@@ -33,7 +34,7 @@ export const evaluate = async (ctx) => {
     topic_key: `watch_tonight:${isoDate(ctx.publishAt)}`,
     tmdb_refs: [{ media_type: pick.media_type, id: pick.id, title: pick.title || pick.name }],
     payload: {
-      streaming, // { US:[…], UK:[…], AU:[…] } — name the platform (US default)
+      streaming, // { US, UK, AU }. Copy names the US platform only.
       title: {
         tmdb_id: pick.id,
         media_type: pick.media_type,

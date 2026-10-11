@@ -20,7 +20,7 @@ test('mondayOfWeekInTz snaps Sunday Sydney runs back to the same week Monday', (
 test('formatWeekdayDayMonth leaves a same-year date bare', () => {
   assert.equal(
     formatWeekdayDayMonth('2026-06-19', new Date('2026-09-01T00:00:00Z')),
-    'Friday 19 June',
+    'Friday, June 19',
   );
 });
 
@@ -28,7 +28,7 @@ test('formatWeekdayDayMonth keeps the year on an out-of-year date', () => {
   // A September 2026 post about a July 2027 release must not read as last July.
   assert.equal(
     formatWeekdayDayMonth('2027-07-24', new Date('2026-09-01T00:00:00Z')),
-    'Saturday 24 July 2027',
+    'Saturday, July 24, 2027',
   );
 });
 

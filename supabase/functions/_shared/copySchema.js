@@ -35,18 +35,18 @@ export const POST_TYPE_BRIEFS = {
     'titles compactly (e.g. "Also this week: A, B, and C"). Fit 280 characters; drop titles before truncating mid-name.',
   countdown:
     'A countdown post. The payload says how many days remain until the release. Lead with the anticipation; ' +
-    'the big number is on the image. Name the release using the payload\'s `when_label` in full ' +
-    '("Friday 25 September"), NEVER a relative day. "This Friday" on a T-14 countdown points at the wrong ' +
+    'the big number is on the image. Name the release using the payload\'s `when_label` in full, US date order ' +
+    '("Friday, September 25"), NEVER a relative day and never day-month order. "This Friday" on a T-14 countdown points at the wrong ' +
     'Friday, contradicts the article it links to, and is rejected by the validator.',
-  now_streaming: 'This title is available to watch at home starting today. The payload\'s `home_kind` says how: "streaming" means lead with the US subscription provider from the `streaming` object; "rental" means it can now be rented or bought at home after its cinema run, so say that and name the US platforms from the `digital` object ("to rent or buy on Prime Video and Apple TV"). Never call a rental "streaming", and never guess a platform that isn\'t in the data. People rent on the apps they already use, so never write "stores", "digital stores" or "storefronts"; name the platforms, or just say "on digital". If the title had a cinema run (`from_label`), the hook is the home arrival, not the end of the run.',
+  now_streaming: 'This title is available to watch at home starting today. The payload\'s `home_kind` says how: "streaming" means lead with the US subscription provider from `streaming.US`; "rental" means it can now be rented or bought at home after its cinema run, so say that and name the US platforms from `digital.US` ("to rent or buy on Prime Video and Apple TV"). Never name a UK or Australian service, even if those lists are filled in. Never call a rental "streaming", and never guess a platform that isn\'t in the US list. People rent on the apps they already use, so never write "stores", "digital stores" or "storefronts"; name the platforms, or just say "on digital". If the title had a cinema run (`from_label`), the hook is the home arrival, not the end of the run.',
   trending:
     'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
     'X gets the full top-10 chart as its single image. ' +
     'Instagram and Threads get a carousel: chart 1-5, chart 6-10, then detail cards for the top 3.',
   trailer: 'A new official trailer just dropped for this title, which is still unreleased (`when_label` is the release date). React to the trailer existing; never describe scenes you haven\'t been given, and never treat footage as proof the film works.',
   on_this_day: 'A release anniversary. The payload says how many years, counted from the original theatrical release (for a US film, its US opening, not the premiere). Invite reflection or a rewatch; no spoilers, and make a title-specific critical point rather than a birthday calculation.',
-  watch_tonight: 'A "what to watch tonight" pick — a title streaming right now. Make a quick, genuine case for tonight, and ALWAYS name the platform it\'s on (US default from the payload\'s `streaming` object).',
-  hidden_gem: 'A "hidden gem" — an older film (1980s onwards) that is well made but outside the obvious picks, streamable now. Say who it will reward and why it has been overlooked; ALWAYS name the platform it\'s on (US default). No spoilers.',
+  watch_tonight: 'A "what to watch tonight" pick — a title streaming right now. Make a quick, genuine case for tonight, and ALWAYS name the US platform from `streaming.US`. Do not name a UK or Australian service.',
+  hidden_gem: 'A "hidden gem" — an older film (1980s onwards) that is well made but outside the obvious picks, streamable now. Say who it will reward and why it has been overlooked; ALWAYS name the US platform from `streaming.US`. Do not name a UK or Australian service. No spoilers.',
 };
 
 // ── Guides: web-only long-form SEO articles (post_type 'guide') ──
@@ -70,7 +70,7 @@ const hasUrl = (s) => /https?:\/\/|www\.|\b[a-z0-9-]+\.(com|tv|net|org|io|co)\b/
 //
 // Added after a T-14 countdown published "Heart of the Beast lands in cinemas
 // this Friday" for a release thirteen days away. The planner had handed the
-// worker exactly the right data — `when_label: "Friday 25 September"`,
+// worker exactly the right data — `when_label: "Friday, September 25"`,
 // `days_until: 14` — and the worker compressed it into a relative day that
 // pointed at the wrong Friday and contradicted the article the post linked to.
 // Nothing mechanical caught it; it surfaced because someone happened to read
@@ -80,7 +80,7 @@ const hasUrl = (s) => /https?:\/\/|www\.|\b[a-z0-9-]+\.(com|tv|net|org|io|co)\b/
 // Each rule fires only when the post itself carries `days_until`, so the posts
 // that legitimately say "tonight" or "today" — watch_tonight, now_streaming —
 // are unaffected: they are about now, and either carry no horizon or carry 0.
-// Note that an absolute date containing a weekday ("Friday 25 September") is
+// Note that an absolute date containing a weekday ("Friday, September 25") is
 // deliberately NOT matched; only `this`/`next` + a day are.
 const RELATIVE_TIME_RULES = [
   { re: /\b(today|tonight)\b/i, maxDays: 0, label: '"today" / "tonight"' },
@@ -269,6 +269,7 @@ export const validateConversation = (raw) => {
   if (!question) errors.push('question is empty');
   if (hasUrl(question)) errors.push('question contains a URL (not allowed)');
   if (/#\w/.test(question)) errors.push('question contains a hashtag (not allowed)');
+  errors.push(...socialErrors({ x: question }));
 
   const q = question.length > 280 ? `${question.slice(0, 279)}…` : question;
   return {

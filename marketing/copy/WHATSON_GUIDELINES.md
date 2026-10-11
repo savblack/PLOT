@@ -65,7 +65,7 @@ into an article by themselves.
 
 - Studio, distributor, streamer, network and production-company pressrooms.
 - Official trailers, release announcements and press kits.
-- Official festival programme pages and filmmaker interviews.
+- Official festival program pages and filmmaker interviews.
 - Plot’s verified provider/release data for where and when to watch.
 
 Use these for dates, release plans, platform availability, cast, crew, official
@@ -74,11 +74,11 @@ rumour or a trade report into a confirmed fact when a primary source is silent.
 
 ### 2. Industry reporting, use for what has changed and why it matters
 
-- Variety and Variety Australia.
-- Deadline.
+- Variety, Deadline, and the Hollywood Reporter. Variety Australia only when it
+  has the original report. The article still uses the US date and the US platform.
 - IndieWire.
 - Screen Daily.
-- The Hollywood Reporter and TheWrap, where accessible.
+- TheWrap, where accessible.
 
 Use these for casting, development, distribution, box-office context, a
 festival debut, a release-date change, a trailer announcement or an interview
@@ -109,7 +109,8 @@ film has endured. Do not reduce an anniversary post to a birthday calculation.
 
 - TMDB for title IDs, basic credits, poster paths and initial metadata.
 - OMDb’s pre-fetched IMDb, Rotten Tomatoes and Metacritic fields when present.
-- JustWatch/Plot availability data for regional viewing information.
+- JustWatch/Plot availability data for US viewing information. UK and
+  Australian provider lists are not for the article.
 
 Reference data verifies a baseline. It does not substitute for reporting,
 criticism or an editorial idea. Never use TMDB vote averages or vote counts.
@@ -151,8 +152,12 @@ leave it out.
   in a single sentence. A cast list is not a paragraph.
 - Em and en dashes are banned. Hyphens in compound words and in names are
   correct English and stay (“co-writer”, “low-budget”, “Young-White”).
-- US spelling throughout: theaters, center, color, favorite, organize.
-  “Cinemas” is the ordinary word for the place and is fine.
+- American spelling throughout: theaters, center, color, favorite, organize,
+  program, realize. “Cinemas” is the ordinary word for the place and is fine.
+- Write for a US reader. US release dates, US streaming services, and US date
+  order (“Friday, June 19”, “June 15 to 21”). Do not localize the piece for
+  Australia or the UK, and do not name a platform that is only in the UK or
+  AU list.
 - A digital rental is never described as a “store”. Nobody rents a film in a
   shop; they rent it in the app they already have. Name the platforms, or say
   “on digital”. “Digital stores” and “storefronts” are banned.
@@ -207,7 +212,7 @@ can actually watch it, so treat it as the news, not as the end of a run.
 1. The week’s shape: what connects the release slate or where the choice lies.
 2. Two or three key releases, each with a distinct one-sentence reason to care.
 3. A practical split between cinema, streaming and television, using verified
-   regional availability.
+   US availability.
 4. A concise recommendation for different moods or audiences.
 
 ### Trailer drop

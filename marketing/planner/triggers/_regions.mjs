@@ -1,7 +1,8 @@
-// Regional-coverage preference for the streaming picks (hidden_gem, watch_tonight):
-// favour titles the whole audience can watch. Tier 3 = available in all of
-// US/UK/AU, tier 2 = any two, tier 1 = US only. A title available only in UK or
-// only in AU (not US) is tier 0 — not eligible.
+// Regional-coverage preference for the streaming picks (hidden_gem, watch_tonight).
+// Prefer a title a US viewer can watch, and prefer one also available in the UK
+// and Australia when the choice is otherwise equal. Copy still names only the
+// US service. Tier 3 = available in all of US/UK/AU, tier 2 = any two, tier 1 =
+// US only. A title available only in the UK or only in Australia is tier 0.
 export const coverageTier = (presentRegions) => {
   const set = new Set(presentRegions);
   if (set.size >= 3) return 3;

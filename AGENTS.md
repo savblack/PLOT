@@ -141,27 +141,31 @@ CI on Node 22.
   the same symbol — two paths to one module, picked at random. Import `@plot/core/…`
   directly unless a shim already exists.
 
-## Region-aware spelling (US/UK)
+## Spelling
 
-Plot spells words that differ between US and UK English (favorite/favourite, color/colour,
-organize/organise, etc.) according to the viewer's own `profile.region`, via
-**`packages/core/spelling.js`** — one shared dictionary for both apps. (`apps/web/src/utils/spelling.js`
-and `apps/mobile/lib/spelling.ts` are re-export shims kept so existing import sites still
-resolve; there is no longer a second copy to keep in sync.) Whenever new copy contains one
-of these words:
+Plot's primary market is the United States. User-facing copy is American English:
+color, favorite, theater, organize, program, and the other -ize forms. That covers
+the apps, the marketing site, social posts, What's On, card text, alt text, and email.
 
-- Check whether it already has a block in the `SPELLING` dictionary. If so, call
-  `regionalWords('color', region)` (or `favoriteWords(region)`, the one named shortcut) —
-  never hardcode the literal string.
-- If not, add a new block to `packages/core/spelling.js` — `[US, UK]` pairs for each
-  inflected form the copy needs (noun, plural, verb, -ing, -ed, …) — then call it. Don't
-  hardcode the string and move on; the whole point is that the next word is a lookup, not
-  a fresh hardcode.
-- Region comes from the *viewer's own* profile (`useApp()` on web / `useAppData()` on
-  mobile), not the profile being looked at — e.g. on someone else's public profile, pass
-  `undefined` (US default) rather than that profile owner's region.
-- Exception: Terms of Service and Privacy Policy copy is fixed British English regardless
-  of viewer region — legal text stays one canonical wording, not personalized per reader.
+Marketing copy is for a US reader. Use US release dates, US streaming services,
+US references, and US date order (June 19, Friday, June 19) when a date is written
+out. Do not localize marketing for Australia or the UK.
+
+Legal pages stay as they are. Terms of Service, Privacy Policy, Community Standards,
+and any other legal page keep their current wording, including British spelling
+where the text already uses it. Do not "correct" them to American spelling.
+
+`packages/core/spelling.js` still switches a few already-shipped words (favorite,
+color, and the rest of that dictionary) from the viewer's `profile.region`.
+(`apps/web/src/utils/spelling.js` and `apps/mobile/lib/spelling.ts` are re-export
+shims.) Leave those call sites alone unless a ticket asks for the sweep. Do not
+add new words to the dictionary, and do not add new `regionalWords()` call sites.
+A new string is American spelling, written out.
+
+If you do touch an existing call site, region still comes from the viewer's own
+profile (`useApp()` on web, `useAppData()` on mobile), not the profile being
+looked at. On someone else's public profile, pass `undefined` (US) rather than
+that profile owner's region.
 
 ## Web → mobile parity
 

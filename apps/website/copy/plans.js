@@ -28,7 +28,7 @@ export const PLANS_PAGE = {
     name: 'Free',
     amount: '$0',
     per: 'forever',
-    tagline: 'Everything you need to organise your watching.',
+    tagline: 'Everything you need to organize your watching.',
     features: [
       'Track movies & TV in one place',
       'Watchlist, history & release calendar',
