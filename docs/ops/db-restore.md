@@ -109,8 +109,11 @@ pg_restore --clean --if-exists --no-owner --no-privileges \
   Prefer `scripts/db-restore-drill.sh`, which pipes the dump and never writes one.
 - Storage **objects** (files in buckets) are not in these dumps — only the `storage`
   schema metadata, so a database restore alone leaves avatar rows pointing at objects
-  that no longer exist. The bytes are mirrored nightly by `storage-backup.yml` to
-  `storage-mirror/<bucket>/<path>` in the same R2 bucket. To put them back:
+  that no longer exist. The bytes are mirrored weekly on Sunday by
+  `storage-backup.yml` to `storage-mirror/<bucket>/<path>` in the same R2 bucket.
+  Object recovery has a seven-day recovery point objective: a database dump can be
+  newer than the latest object mirror, so objects created or updated after that
+  mirror cannot be restored from R2. To put mirrored objects back:
 
   ```sh
   aws s3 sync "s3://<bucket>/storage-mirror/avatars/" ./avatars \

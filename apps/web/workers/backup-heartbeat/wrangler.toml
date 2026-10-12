@@ -44,6 +44,10 @@ PREFIX = "db-backups/"
 # redeploy. See the note in src/index.js.
 CHECK_STORAGE = "false"
 STORAGE_SENTINEL = "storage-mirror/_synced-at.txt"
+# Storage backups run each Sunday at 03:47 UTC. The 170-hour threshold leaves a
+# small completion window, then detects a missed weekly run on the next daily
+# heartbeat. Keep this separate from the nightly database dump threshold below.
+MAX_STORAGE_AGE_HOURS = "170"
 
 # One missed night is worth knowing about. The nightly cadence means anything
 # past ~26h is a skipped run, not a slow one. db-backup.yml's own alert covers
