@@ -179,10 +179,18 @@ export const EVENTS = Object.freeze({
   IMPORT_COMPLETED: 'import_completed',
   // Carries `reason`, an IMPORT_FAILURE_REASONS slug, never a parser message.
   IMPORT_FAILED: 'import_failed',
-  // Home's first-run Finishing touches card: a step's action was opened
-  // (`step`: friends | import | people), or the card was hidden for now.
+  // Home's first-run Finishing touches card.
+  // finishing_touches_viewed: the card was on screen (`done_count`, `total`).
+  // Once per app session, after the watchlist has loaded.
+  // finishing_touch_opened: a step's action was opened (`step`: friends | import | people).
+  // finishing_touches_hidden: Hide for now (`done_count`). The control is in the
+  // header whether the card is expanded or not.
+  FINISHING_TOUCHES_VIEWED: 'finishing_touches_viewed',
   FINISHING_TOUCH_OPENED: 'finishing_touch_opened',
   FINISHING_TOUCHES_HIDDEN: 'finishing_touches_hidden',
+  // The Saved to watch rail on Home. Once per app session, when it is on
+  // screen. `item_count`, `first_run` (true while the rail leads Home).
+  SAVED_TO_WATCH_VIEWED: 'saved_to_watch_viewed',
   // Marketing email consent. `source` distinguishes the Settings toggle from the
   // in-app prompt so we can tell which surface actually earns opt-ins.
   MARKETING_EMAILS_OPTED_IN: 'marketing_emails_opted_in',
