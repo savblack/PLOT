@@ -22,12 +22,12 @@ export const TYPES = {
 // Ordered so the most "featured" post is first (build.mjs sorts it newest).
 export const SCHEDULE = {
   Monday:    ['trending'],
-  Tuesday:   ['upcoming', 'on_this_day', 'spotlight', 'text_question', 'countdown'],
+  Tuesday:   ['upcoming', 'on_this_day', 'spotlight', 'countdown'],
   Wednesday: ['what_to_watch_tonight', 'on_this_day', 'spotlight', 'countdown'],
-  Thursday:  ['on_this_day', 'spotlight', 'text_question', 'countdown'],
-  Friday:    ['on_this_day', 'spotlight', 'countdown'],
+  Thursday:  ['trailer', 'countdown', 'on_this_day', 'spotlight'],
+  Friday:    ['now_streaming', 'on_this_day', 'spotlight', 'countdown'],
   Saturday:  ['hidden_gem', 'on_this_day', 'spotlight', 'countdown'],
-  Sunday:    ['question_of_week', 'on_this_day', 'spotlight', 'countdown'],
+  Sunday:    ['on_this_day', 'spotlight', 'countdown'],
 };
 
 export const CTA = {

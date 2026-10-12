@@ -4,14 +4,15 @@
 // Weekly cadence (US Eastern publish day). Posts are dated 9:00am Eastern
 // unless a type has an entry in PUBLISH_TIME_BY_TYPE.
 //   Monday    -> trending
-//   Tuesday   -> upcoming, then the mid question
-//   Wednesday -> watch_tonight / anniversary / spotlight / fill
-//   Thursday  -> anniversary / spotlight / question / fill
-//   Friday    -> anniversary / spotlight / fill
-//   Saturday  -> hidden_gem / anniversary / spotlight / fill
-//   Sunday    -> question / anniversary / spotlight / fill
-// Fill order is: now_streaming -> countdown T-1 -> trailer -> countdown T-7 ->
-// countdown T-14. Thin days simply publish fewer posts.
+//   Tuesday   -> upcoming
+//   Wednesday -> watch_tonight / anniversary / fill
+//   Thursday  -> trailer, else a countdown, else the fill mix
+//   Friday    -> now_streaming, else the fill mix
+//   Saturday  -> hidden_gem / anniversary / fill
+//   Sunday    -> on_this_day, else the fill mix
+// Question posts are not planned. Fill order is: now_streaming ->
+// countdown T-1 -> trailer -> countdown T-7 -> countdown T-14.
+// Thin days simply publish fewer posts.
 import { getSupabase } from '../lib/supabase.mjs';
 import { tmdb } from '../lib/tmdb.mjs';
 import { nextPublishAt, weekdayInTz, isoDate, datePartsInTz, publishAtOn, addDays } from '../lib/dates.mjs';
@@ -24,7 +25,9 @@ import * as onThisDay from './triggers/on-this-day.mjs';
 import * as watchTonight from './triggers/watch-tonight.mjs';
 import * as hiddenGem from './triggers/hidden-gem.mjs';
 import * as conversation from './triggers/conversation.mjs';
-import { anchorPostForDay, fixedFeatureForDay, isAnchorDay, questionSlotForDay } from './cadence.mjs';
+import {
+  QUESTIONS_ENABLED, anchorChainForDay, fixedFeatureForDay, questionSlotForDay, postTypeShips,
+} from './cadence.mjs';
 
 const TRACK_LIMIT = 25;
 // How long after a cinema opening we keep watching a title for its home release.
@@ -105,6 +108,10 @@ const maintainTrackedTitles = async (supabase) => {
 };
 
 const insertPost = async (supabase, candidate, publishAt) => {
+  if (!postTypeShips(candidate.post_type)) {
+    console.log(`Question posts are off. Not planning ${candidate.topic_key}.`);
+    return false;
+  }
   const day = datePartsInTz(publishAt).date;
   const when = publishAtOn(day, candidate.post_type);
   const { error } = await supabase.from('marketing_posts').insert({
@@ -131,78 +138,99 @@ const insertPost = async (supabase, candidate, publishAt) => {
 const planSlot = async (supabase, publishAt, tracked) => {
   const weekday = weekdayInTz(publishAt);
   const ctx = { supabase, publishAt, weekday, tracked };
-  const anchorType = anchorPostForDay(weekday);
+  const chain = anchorChainForDay(weekday);
   const featureType = fixedFeatureForDay(weekday);
   const questionSlot = questionSlotForDay(weekday);
+  const isAnchor = chain.length > 0;
 
-  // Compose the day's posts. Anchors are single themed posts; non-anchor days can
+  // Compose the day's posts. An anchor chain that finds a candidate is the
+  // day's post. A chain that finds nothing, and every non-anchor day, can
   // publish up to 4. A title never appears twice in one day.
   const DAILY_TARGET = 4;
   const candidates = [];
   const chosenIds = new Set();
   const consider = async (evaluate, opts) => {
-    if (candidates.length >= DAILY_TARGET) return;
+    if (candidates.length >= DAILY_TARGET) return false;
     const c = await evaluate(ctx, opts);
-    if (!c) return;
+    if (!c || !postTypeShips(c.post_type)) return false;
     const id = c.tmdb_refs?.[0]?.id;
-    if (id && chosenIds.has(id)) return; // same title already covered today
+    if (id && chosenIds.has(id)) return false;
     candidates.push(c);
     if (id) chosenIds.add(id);
+    return true;
   };
 
-  const isAnchor = isAnchorDay(weekday);
+  // Stop at the first candidate. Thursday tries a trailer, then a countdown.
+  const considerChain = async () => {
+    for (const step of chain) {
+      if (step === 'countdown') {
+        if (await consider(makeCountdown(1))) return;
+        if (await consider(makeCountdown(7))) return;
+        if (await consider(makeCountdown(14))) return;
+      } else if (step === 'trailer') {
+        if (await consider(trailerDrop.evaluate)) return;
+      } else if (step === 'now_streaming') {
+        if (await consider(nowStreaming.evaluate)) return;
+      } else if (step === 'on_this_day') {
+        if (await consider((c) => onThisDay.evaluate(c))) return;
+        if (await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }))) return;
+      } else if (EVALUATORS[step]) {
+        if (await consider(EVALUATORS[step])) return;
+      }
+    }
+  };
 
   // Release-day spotlight, evaluated once so we can both detect a "major" release
   // and (otherwise) reuse it as the spotlight slot without a second TMDB call.
-  const release = isAnchor ? null : await nowStreaming.evaluate(ctx);
+  // Anchor days fetch it only if their chain misses and did not already try it.
+  let releaseFetched = !isAnchor;
+  let release = isAnchor ? null : await nowStreaming.evaluate(ctx);
 
   // Major release = a top-tier tracked title (top 3 by popularity) hitting home
-  // today. On those days we focus the day on it instead of the usual mix:
-  // the release + a question about it + the day's anniversary (3 posts).
+  // today. On those days we focus the day on the release and one anniversary.
   const pops = tracked.map(t => t.popularity || 0).sort((a, b) => b - a);
   const majorBar = pops.length >= 3 ? pops[2] : Infinity;
   const popOf = (id) => tracked.find(t => t.tmdb_id === id)?.popularity || 0;
   const releaseId = release?.tmdb_refs?.[0]?.id;
   const isMajorRelease = !isAnchor && release && majorBar !== Infinity && popOf(releaseId) >= majorBar;
 
-  // Titles the question must not claim. Questions are now title-anchored, so on
-  // the Sunday *lead* slot the question runs before the release spotlight — hold
-  // the release's title back so a question can't outrank the now_streaming post
-  // for it. Evaluated at call time: chosenIds grows as the day fills.
+  // Titles a question must not claim, if questions are turned back on.
+  // Evaluated at call time: chosenIds grows as the day fills.
   const reservedIds = () => new Set(releaseId ? [...chosenIds, releaseId] : chosenIds);
 
   if (isMajorRelease) {
-    // Lead with the release, then a question about that same title — the one
-    // place a question deliberately shares the day's subject.
-    const related = await conversation.evaluate(ctx, { subject: release.tmdb_refs[0] });
     candidates.push(release);
-    if (related) candidates.push(related);
     chosenIds.add(releaseId);
-    await consider((c) => onThisDay.evaluate(c)); // one unrelated post
+    if (QUESTIONS_ENABLED) {
+      const related = await conversation.evaluate(ctx, { subject: release.tmdb_refs[0] });
+      if (related && postTypeShips(related.post_type)) candidates.push(related);
+    }
+    await consider((c) => onThisDay.evaluate(c));
     if (candidates.length < 3) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
     console.log(`Major release detected (${release.tmdb_refs[0].title}) — focusing the day.`);
   } else {
-    if (anchorType) {
-      await consider(EVALUATORS[anchorType]);
-    }
+    if (isAnchor) await considerChain();
 
-    // Anchor days are one themed post. Tuesday also keeps the mid question,
-    // placed after the slate. A day whose anchor produced nothing falls
-    // through to the normal mix. Sunday questions lead; Thu questions sit
-    // in the middle.
+    // A day whose anchor produced nothing falls through to the normal mix.
     if (!isAnchor || candidates.length === 0) {
-      if (questionSlot === 'lead') await consider(conversation.evaluate, { exclude: reservedIds() });
+      if (!releaseFetched && !chain.includes('now_streaming')) {
+        releaseFetched = true;
+        release = await nowStreaming.evaluate(ctx);
+      }
+      if (QUESTIONS_ENABLED && questionSlot === 'lead') {
+        await consider(conversation.evaluate, { exclude: reservedIds() });
+      }
       if (featureType) await consider(EVALUATORS[featureType]);
       await consider((c) => onThisDay.evaluate(c));
       if (!candidates.length) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
       await consider(() => release);
-      if (questionSlot === 'mid') await consider(conversation.evaluate, { exclude: reservedIds() });
+      if (QUESTIONS_ENABLED && questionSlot === 'mid') {
+        await consider(conversation.evaluate, { exclude: reservedIds() });
+      }
       await consider(makeCountdown(1));
       await consider(trailerDrop.evaluate);
       await consider(makeCountdown(7));
       await consider(makeCountdown(14));
-    } else if (questionSlot === 'mid') {
-      await consider(conversation.evaluate, { exclude: reservedIds() });
     }
   }
 

@@ -11,6 +11,7 @@ import { getSupabase } from '../lib/supabase.mjs';
 import { buildBrief, buildConversationBrief, buildGuideBrief } from './brief.mjs';
 import { enrichPost } from './enrich.mjs';
 import { JOBS_DIR } from './paths.mjs';
+import { postTypeShips } from '../planner/cadence.mjs';
 
 const main = async () => {
   const supabase = getSupabase();
@@ -37,6 +38,10 @@ const main = async () => {
   const todo = (posts || []).filter(p => p.payload && Object.keys(p.payload).length);
   const manifest = [];
   for (const post of todo) {
+    if (!postTypeShips(post.post_type)) {
+      console.log(`Skipping ${post.id}: question posts are off.`);
+      continue;
+    }
     const briefPath = path.join(JOBS_DIR, `${post.id}.brief.md`);
     if (post.post_type === 'question') {
       // Text-only question: no research pack, its own short brief.

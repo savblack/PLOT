@@ -269,8 +269,8 @@ const runSelfTest = () => {
 };
 
 // ── Planning: assign a post type to each backdated day ───────────────────────
-// Monday -> trending, Tuesday -> upcoming (the planner's anchors);
-// every other day cycles the priority-ladder types for a realistic mix.
+// Anchors match the planner. Wednesday and Saturday stay in the mix because
+// the seed copy builders do not cover watch_tonight or hidden_gem.
 const NON_ANCHOR_CYCLE = [
   { type: 'countdown', days: 7 },
   { type: 'now_streaming' },
@@ -283,14 +283,15 @@ const NON_ANCHOR_CYCLE = [
   { type: 'countdown', days: 1 },
 ];
 
-// Monday -> trending, Tuesday -> upcoming (the planner's anchors);
-// every other day cycles the priority ladder for a realistic mix.
 const assignPlans = (days) => {
   let cycleIdx = 0;
   return days.map((date) => {
     const weekday = weekdayInTz(date);
     if (weekday === 'Monday') return { date, plan: { type: 'trending' } };
     if (weekday === 'Tuesday') return { date, plan: { type: 'upcoming' } };
+    if (weekday === 'Thursday') return { date, plan: { type: 'trailer' } };
+    if (weekday === 'Friday') return { date, plan: { type: 'now_streaming' } };
+    if (weekday === 'Sunday') return { date, plan: { type: 'on_this_day' } };
     return { date, plan: NON_ANCHOR_CYCLE[cycleIdx++ % NON_ANCHOR_CYCLE.length] };
   });
 };

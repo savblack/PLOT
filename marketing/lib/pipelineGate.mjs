@@ -4,6 +4,7 @@
 // `media`. Questions and guides are not card posts: a question is text-only,
 // a guide is the website article and never gets a social card.
 import { POST_TYPES } from './post-types.mjs';
+import { QUESTIONS_ENABLED } from '../planner/cadence.mjs';
 
 const EARLY = new Set(['copy_ready', 'generated', 'failed']);
 const OPEN = new Set(['copy_ready', 'generated', 'failed', 'needs_review', 'approved']);
@@ -15,15 +16,17 @@ export const postHasCards = (post) =>
 
 /**
  * Why schedule.mjs must not push this post, or null when it may go to Buffer.
- * A missing card stays `queued` so the next render can fill it. Questions and
- * guides are not blocked: they are not supposed to have cards.
+ * A missing card stays `queued` so the next render can fill it. Guides are
+ * not blocked: they are not supposed to have cards. Question posts are off
+ * and return `questions_off` so Buffer never receives one.
  *
  * @param {object} post
- * @returns {'missing_cards' | null}
+ * @returns {'missing_cards' | 'questions_off' | null}
  */
-export const queueBlockReason = (post) => (
-  postNeedsCards(post) && !postHasCards(post) ? 'missing_cards' : null
-);
+export const queueBlockReason = (post) => {
+  if (post?.post_type === 'question' && !QUESTIONS_ENABLED) return 'questions_off';
+  return postNeedsCards(post) && !postHasCards(post) ? 'missing_cards' : null;
+};
 
 /**
  * What generate.mjs should do with one row.
@@ -42,7 +45,11 @@ export const queueBlockReason = (post) => (
  */
 export const renderAction = (post) => {
   if (!post?.copy || !OPEN.has(post.status)) return 'skip';
-  if (post.post_type === 'question' || post.post_type === 'guide') {
+  if (post.post_type === 'question') {
+    if (!QUESTIONS_ENABLED) return 'skip';
+    return EARLY.has(post.status) ? 'generate' : 'skip';
+  }
+  if (post.post_type === 'guide') {
     return EARLY.has(post.status) ? 'generate' : 'skip';
   }
   if (!postNeedsCards(post)) return 'skip';

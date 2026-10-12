@@ -114,6 +114,10 @@ the platform out rather than naming another country.
 
 ## Question posts (Threads & X)
 
+Not planned. `QUESTIONS_ENABLED` in `marketing/planner/cadence.mjs` is false,
+so none of these are generated or queued. The rules below apply only if that
+flag is turned back on.
+
 Text-only posts (no image) that join the conversation around a new release.
 **Every question is hooked to a specific title that is already out** — the
 planner picks it and the brief names it: something out today, the most trending

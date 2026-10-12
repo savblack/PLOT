@@ -34,10 +34,11 @@ test('a card post with no media is not queued', () => {
   assert.equal(queueBlockReason(row({ media: cards })), null);
 });
 
-test('questions and guides are queued without cards', () => {
-  assert.equal(queueBlockReason(row({ post_type: 'question', media: null })), null);
+test('guides are queued without cards, and question posts are not sent', () => {
   assert.equal(queueBlockReason(row({ post_type: 'guide', media: null })), null);
-  assert.equal(queueBlockReason(row({ post_type: 'question', media: [] })), null);
+  assert.equal(queueBlockReason(row({ post_type: 'question', media: null })), 'questions_off');
+  assert.equal(queueBlockReason(row({ post_type: 'question', media: [] })), 'questions_off');
+  assert.equal(queueBlockReason(row({ post_type: 'question', media: cards })), 'questions_off');
 });
 
 test('copy_ready card posts render, and approved card posts render without losing approval', () => {
@@ -58,10 +59,11 @@ test('a card post that already has files is not rendered again', () => {
   assert.equal(renderAction(row({ status: 'copy_ready', media: cards })), 'promote');
 });
 
-test('questions and guides only finish while they are still early, and stay text-only', () => {
-  assert.equal(renderAction(row({ post_type: 'question', status: 'copy_ready' })), 'generate');
+test('question posts are left alone, and guides finish only while they are still early', () => {
+  assert.equal(renderAction(row({ post_type: 'question', status: 'copy_ready' })), 'skip');
   assert.equal(renderAction(row({ post_type: 'question', status: 'approved' })), 'skip');
   assert.equal(renderAction(row({ post_type: 'question', status: 'needs_review' })), 'skip');
+  assert.equal(renderAction(row({ post_type: 'question', status: 'failed' })), 'skip');
   assert.equal(renderAction(row({ post_type: 'guide', status: 'copy_ready' })), 'generate');
   assert.equal(renderAction(row({ post_type: 'guide', status: 'approved' })), 'skip');
 });

@@ -59,11 +59,12 @@ existing contracts.
 - `marketing_posts.notion_page_id` / `notion_page_url`: the mirrored Notion page,
   once that sweep has created one. Include `notion_page_url` the same way. Null
   means the page does not exist yet.
-- Post types by Eastern Time weekday: Monday `trending`, Tuesday `upcoming`
-  (then the mid question), Wednesday `watch_tonight`, Thursday mid question,
-  Friday fill only, Saturday `hidden_gem`, Sunday lead question. Fill types
-  are `now_streaming`, `countdown`, `trailer`, and `on_this_day`, plus
-  anniversary or spotlight when one qualifies. `question` is text-only.
+- Post types by Eastern Time weekday: Monday `trending`, Tuesday `upcoming`,
+  Wednesday `watch_tonight`, Thursday a trailer or else a countdown, Friday
+  `now_streaming`, Saturday `hidden_gem`, Sunday `on_this_day`. If Thursday,
+  Friday, or Sunday's lead has no candidate, the fill mix runs. Fill types
+  are `now_streaming`, `countdown`, `trailer`, and `on_this_day`. Question
+  posts are not planned and are not sent.
 - Lifecycle: `planned → copy_ready → generated → needs_review → approved → published`.
   `vetoed` = rejected. **Approval does not gate Buffer.** Social posts are not
   approved in chat. Once copy is saved and the card images exist, `schedule.mjs`
@@ -77,8 +78,8 @@ existing contracts.
   portrait and landscape file. Those publication rows stay `queued`, the post's
   `error` says the cards are missing, and the daily job renders them before the
   next push. Do not attach a raw TMDB still or the brand image in their place.
-  `question` posts are text-only (X and Threads) and have no card. `guide` posts
-  are the website article only. This pipeline does not give them a social card.
+  Question posts are not planned. `guide` posts are the website article only.
+  This pipeline does not give them a social card.
 - A copy file that fails validation does not stop the rest of the week. The
   posts that saved are rendered and queued. The weekly workflow then fails so
   the rejected copy is visible. Rejected posts stay `planned`.
