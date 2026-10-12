@@ -32,3 +32,9 @@ ignoredBuiltDependencies:
 # current release inside the range react-devtools-core already allows.
 overrides:
   "shell-quote@<1.11.0": 1.12.0
+  # micromatch 4.0.8 (metro-file-map and @expo/metro-file-map) depends on
+  # braces ^3.0.3. 3.0.3 is the latest release and it is CVE-2026-93687
+  # (GHSA-vfj7-8cjw-p6xm): a deeply nested pattern overflows the stack.
+  # Upstream has no patched version. @dieub/braces-depth-guard@3.0.3-pn.0
+  # is that release plus a nesting cap of 100, which throws instead.
+  braces: "npm:@dieub/braces-depth-guard@3.0.3-pn.0"
