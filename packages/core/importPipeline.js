@@ -24,6 +24,7 @@ import { genreIdsFromItem } from './media.js';
 import { HISTORY_CONFLICT_TARGET } from './userMedia.js';
 import { watchedAtFor } from './importParsing.js';
 import { emit, HISTORY_CHANGED_EVENT } from './events.js';
+import { markBrevoImported } from './brevoLifecycleClient.js';
 
 /** TMDB searches run concurrently in batches, with a pause between them. */
 const RESOLVE_BATCH = 4;
@@ -143,6 +144,9 @@ export function createImportReporter({ entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, 
  */
 export function reportImport(stage, props) {
   try { getConfig().onImport?.({ stage, ...props }); } catch { /* analytics is best-effort */ }
+  // A finished import, including one that only found duplicates. The hourly
+  // job copies the flag onto the Brevo contact. Never throws.
+  if (stage === 'completed') void markBrevoImported();
 }
 
 /**

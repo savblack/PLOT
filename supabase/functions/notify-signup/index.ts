@@ -182,6 +182,8 @@ Deno.serve(async (req) => {
         listIds,
       })
     } catch (error) {
+      // A 401 is a dead BREVO_API_KEY. The trigger is still running. The
+      // signup email below is independent of this sync.
       console.error('Failed to sync signup to Brevo:', error instanceof Error ? error.message : error)
     }
   }

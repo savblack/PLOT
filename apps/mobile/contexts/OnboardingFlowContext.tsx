@@ -18,6 +18,7 @@ import { setTmdbRegion } from '../lib/tmdb';
 import { track, EVENTS } from '../lib/analytics';
 import { startFinishingTouchesFor } from '../lib/finishingTouches';
 import { setPendingImportSource } from '../lib/pendingImport';
+import { notifyOnboardingCompleted } from '@plot/core/brevoLifecycleClient.js';
 import { useAppData } from './AppDataContext';
 import { useOnboardingRefresh } from './OnboardingContext';
 import { previousOnboardingComplete, shouldTrackOnboardingCompleted } from '@plot/core/onboardingGate.js';
@@ -134,7 +135,8 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
     setSaveError(null);
     // Read before the write. The patch always sets the flag true, so the row
     // that comes back cannot tell us whether this is the first time. The
-    // welcome email listens for onboarding_completed.
+    // welcome email and the Brevo event both listen for onboarding_completed,
+    // and only this first time.
     const prior = await supabase.from('profiles')
       .select('onboarding_complete')
       .eq('id', user.id)
@@ -172,6 +174,8 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
     // setup is done rather than pretending to run during it.
     setPendingImportSource(importSource);
     if (trackCompletion) {
+      // After the picks are on My List, so the email sees the current watchlist.
+      await notifyOnboardingCompleted();
       track(EVENTS.ONBOARDING_COMPLETED, {
         region,
         seed_titles_added: chosen.length,

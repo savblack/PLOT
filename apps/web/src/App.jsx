@@ -38,6 +38,7 @@ import { readStorage, writeStorage } from './utils/storage.js';
 import { readCachedSession, writeCachedSession, clearCachedSession } from './utils/sessionCache.js';
 import { markKnownAccountBrowser } from './utils/accountRecognition.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
+import { touchLastSeen } from '@plot/core/brevoLifecycleClient.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
 import { onPendingWatchQueued } from '@plot/core/watchQueued.js';
 import { updateProfile } from '@plot/core/profile.js';
@@ -223,6 +224,13 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, [loadProfile]);
+
+  // Once a day (the RPC no-ops after the first call of the UTC day). The
+  // hourly job copies this onto the Brevo contact.
+  useEffect(() => {
+    if (!user?.id) return;
+    void touchLastSeen();
+  }, [user?.id]);
 
   // DOM focus/visibility belongs to web; the entitlement read lives in core.
   // Recheck on return from Stripe and while open, even without a new webhook.
