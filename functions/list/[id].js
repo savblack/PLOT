@@ -1,5 +1,6 @@
 import { buildTitleShareUrl } from '../../packages/core/sharing.js';
 import { SHARING } from '../../packages/core/copy/sharing.js';
+import { cachePage } from '../_lib/edgeCache.js';
 // Public custom-list page — app.theplot.tv/list/<id>.
 // Cloudflare Pages Function — port of api/list.js (Node `(req,res)` → Pages
 // `onRequest`). Logic unchanged; only request/response plumbing differs.
@@ -104,7 +105,7 @@ const htmlResponse = (html, status, cache) =>
     },
   });
 
-export async function onRequest({ request, params }) {
+async function listPage({ request, params }) {
   const host = request.headers.get('host') || 'app.theplot.tv';
   const id = (Array.isArray(params?.id) ? params.id[0] : params?.id || '').trim();
 
@@ -191,4 +192,8 @@ ${posters}
 <p class="by" style="margin-top:16px">Already on plot? <a href="/login?src=list_page">Sign in</a></p>`;
 
   return htmlResponse(shell(metaTitle, head, body), 200, true);
+}
+
+export async function onRequest(context) {
+  return cachePage(context.request, () => listPage(context), context.waitUntil);
 }

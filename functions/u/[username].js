@@ -13,6 +13,7 @@
 import { staticCard } from '../_lib/og-card.js';
 import { colors } from '../../packages/core/tokens.js';
 import { isSectionEnabled } from '../../packages/core/profileFields.js';
+import { cachePage } from '../_lib/edgeCache.js';
 
 // Warm dark neutrals + the green accent from the canonical token source.
 const D = { ...colors.light, ...colors.dark };
@@ -106,7 +107,7 @@ function seoSnapshot(p) {
 </div>`;
 }
 
-export async function onRequest({ request, params }) {
+async function profilePage({ request, params }) {
   const host = request.headers.get('host') || 'app.theplot.tv';
   const raw = Array.isArray(params?.username) ? params.username[0] : params?.username;
   const handle = (raw || '').replace(/^@/, '').trim().toLowerCase();
@@ -180,7 +181,13 @@ export async function onRequest({ request, params }) {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      // Never retain an unknown or private handle. A successful public profile
+      // is rendered only from anonymous-safe RPCs and can be shared for an hour.
+      'Cache-Control': profile ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'no-store',
     },
   });
+}
+
+export async function onRequest(context) {
+  return cachePage(context.request, () => profilePage(context), context.waitUntil);
 }
