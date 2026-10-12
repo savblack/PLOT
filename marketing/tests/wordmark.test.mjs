@@ -15,20 +15,18 @@ test('charts card reuses the website footer wordmark svg', async () => {
   assert.match(svg, /<path /);
 });
 
-test('charts card copies the footer wordmark crop', async () => {
+test('portrait wordmark keeps the footer scale and side crop', async () => {
   const css = await readFile(path.join(root, 'apps/website/_partials/footer.css'), 'utf8');
   const card = await readFile(path.join(root, 'marketing/templates/trending-chart.html'), 'utf8');
-  const snippets = [
-    '108cqw * 681 / 1403',
-    '14.9cqw',
-    'width: 108cqw',
-    'aspect-ratio: 1403 / 871',
-    'margin-left: -4cqw',
-  ];
-  for (const snippet of snippets) {
+  for (const snippet of ['108cqw * 681 / 1403', '14.9cqw']) {
     assert.ok(css.includes(snippet), `footer css missing ${snippet}`);
-    assert.ok(card.includes(snippet), `charts card missing ${snippet}`);
   }
+  const portrait = card.slice(0, card.indexOf('@media (min-aspect-ratio: 4/3)'));
+  for (const snippet of ['width: 108cqw', 'aspect-ratio: 1403 / 871', 'margin-left: -4cqw']) {
+    assert.ok(portrait.includes(snippet), `portrait wordmark missing ${snippet}`);
+  }
+  assert.doesNotMatch(portrait, /14\.9cqw/);
+  assert.match(portrait, /overflow:\s+visible/);
 });
 
 test('charts wordmark uses the darker beige, and only landscape scales it up', async () => {
@@ -41,9 +39,10 @@ test('charts wordmark uses the darker beige, and only landscape scales it up', a
   const at = card.indexOf('@media (min-aspect-ratio: 4/3)');
   const portrait = card.slice(0, at);
   const landscape = card.slice(at);
-  assert.match(portrait, /bottom:\s+5\.5cqh/);
+  assert.match(portrait, /top:\s+52\.4cqh/);
   assert.doesNotMatch(portrait, /124cqw/);
   assert.match(landscape, /width:\s+124cqw/);
   assert.match(landscape, /bottom:\s+0/);
+  assert.match(landscape, /top:\s+auto/);
   assert.match(landscape, /margin-top:\s+calc\(-1cqw \+ 8cqh\)/);
 });

@@ -30,31 +30,27 @@
     justify-self: end; padding: 4px 12px; border-radius: 999px;
   }
   body.light .move.down { color: var(--text-faint); }
-  /* Same crop as the website footer (apps/website/_partials/footer.css).
-     The card is the viewport, so vw and cqw are the card width: 108% wide,
-     pulled 4% left, clipped above the baseline so the bottoms of p, o and t
-     run off the card. Portrait keeps this size. Landscape scales it up below. */
+  /* Portrait: option A's scale and side crop (108% wide, 4% left),
+     sitting at option D's height. The wrapper does not clip. Letters run
+     off the card, which is what cuts them. Landscape scales it up below. */
   .bg-wordmark {
     position: absolute;
-    left: 0;
-    right: 0;
-    /* Portrait sits a little above the card edge (about 5.5% of the height). */
-    bottom: 5.5vh;
-    bottom: 5.5cqh;
+    inset: 0;
     z-index: 0;
-    overflow: hidden;
+    overflow: visible;
     pointer-events: none;
-    height: calc(108vw * 681 / 1403 - 14.9vw);
-    height: calc(108cqw * 681 / 1403 - 14.9cqw);
   }
   .bg-wordmark svg {
-    display: block;
+    position: absolute;
     width: 108vw;
     width: 108cqw;
     height: auto;
     aspect-ratio: 1403 / 871;
     margin-left: -4vw;
     margin-left: -4cqw;
+    /* D's svg top: a 130vw wordmark with bottom -17vh on a 1350px card. */
+    top: 52.4vh;
+    top: 52.4cqh;
     fill: var(--wordmark, #eadfcf);
   }
   .header { position: relative; z-index: 2; margin-bottom: 40px; }
@@ -111,9 +107,13 @@
     /* Landscape only. Larger than the footer crop, so the bowls fill most of
        the card. Centered so the stem of p and the right of t bleed off the
        sides. Dropped about 8% of the card height from the top-aligned place.
-       bottom: 0 cancels the portrait lift above. */
-    .bg-wordmark { top: 0; bottom: 0; height: auto; }
+       top/left/bottom reset so the portrait placement above does not apply. */
+    .bg-wordmark { top: 0; bottom: 0; height: auto; overflow: hidden; }
     .bg-wordmark svg {
+      position: relative;
+      top: auto;
+      left: auto;
+      bottom: auto;
       width: 124vw;
       width: 124cqw;
       margin-left: -12vw;
