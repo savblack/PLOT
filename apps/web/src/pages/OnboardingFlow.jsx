@@ -15,11 +15,17 @@ import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
 import { upsertProfile } from '@plot/core/profile.js';
 import {
-  ONBOARDING_PROGRESS, buildingFan, buildingLines, firstNameFromAuthUser, topRegionServices,
+  ONBOARDING_PROGRESS, buildingFan, buildingLines, firstNameFromAuthUser, showsFirstWin, topRegionServices,
 } from '@plot/core/onboardingSetup.js';
+import { logLastEpisodeSeen } from '@plot/core/watchingProgress.js';
+import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
+import { useTvSeasonBrowser } from '@plot/core/useTvSeasonBrowser.js';
+import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { finishingTouchesKey, serialiseFinishingTouches, startFinishingTouches } from '@plot/core/finishingTouches.js';
 import { useWatchlist } from '../hooks/useWatchlist.js';
+import { useWatching } from '../hooks/useWatching.js';
+import { useHistory } from '../hooks/useHistory.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
@@ -49,6 +55,8 @@ export default function OnboardingFlow() {
   const [saving, setSaving] = useState(false);
   const premium = usePremium(null);
   const watchlist = useWatchlist(user?.id);
+  const watching = useWatching(user?.id);
+  const history = useHistory(user?.id);
 
   const [region, setRegion] = useState(guessRegionFromTimezone);
   const [regionTouched, setRegionTouched] = useState(false);
@@ -73,6 +81,13 @@ export default function OnboardingFlow() {
   const [lineIndex, setLineIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const nextPathRef = useRef(null);
+
+  // First win, after building and only when the next page is Home.
+  const [openId, setOpenId] = useState(null);
+  const [doneIds, setDoneIds] = useState(() => new Set());
+  const [busyId, setBusyId] = useState(null);
+  const [rowError, setRowError] = useState(null);
+  const browser = useTvSeasonBrowser(step === 'firstwin' ? openId : null);
 
   const firstName = useMemo(() => firstNameFromAuthUser(user), [user]);
 
@@ -240,9 +255,62 @@ export default function OnboardingFlow() {
       completeStep('building');
       nextPathRef.current = await exitPath();
       if (!nextPathRef.current) return;
+      // Import, pricing, and a saved return path still leave straight away.
+      if (showsFirstWin(nextPathRef.current)) {
+        setStep('firstwin');
+        return;
+      }
       setLeaving(true);
       setTimeout(() => navigate(nextPathRef.current, { replace: true }), prefersReducedMotion() ? 0 : FADE_MS);
     });
+  };
+
+  const leaveHome = () => {
+    navigate(nextPathRef.current || '/home', { replace: true });
+  };
+
+  const openPick = async (pick) => {
+    setRowError(null);
+    if (pick.media_type !== 'tv') {
+      setBusyId(pick.id);
+      const result = await markMediaAsWatched({
+        logWatched: () => history.logWatched({ ...pick, media_type: 'movie' }),
+        clearWatching: async () => true,
+        removeFromSaved: () => watchlist.removeFromList(pick.id),
+        rollbackHistory: () => history.removeEntry(pick.id, 'movie'),
+        mediaType: 'movie',
+        isWatching: false,
+        inList: watchlist.isInList(pick.id),
+      });
+      setBusyId(null);
+      if (!result.ok) setRowError(MEDIA_PANEL.couldNotUpdateWatchStatus);
+      else setDoneIds(prev => new Set(prev).add(pick.id));
+      return;
+    }
+    setOpenId(id => (id === pick.id ? null : pick.id));
+  };
+
+  const tickEpisode = async (episodeNumber) => {
+    const pick = seedSelected.find(item => item.id === openId);
+    const episodes = browser.episodes;
+    if (!pick || !episodes?.length) return;
+    const episodeCount = episodes.reduce((max, ep) => Math.max(max, ep.episode_number), episodeNumber);
+    setBusyId(pick.id);
+    setRowError(null);
+    const result = await logLastEpisodeSeen({
+      startWatching: watching.startWatching,
+      setProgress: watching.setProgress,
+      show: pick,
+      season: browser.season,
+      episodeNumber,
+      episodeCount,
+    });
+    setBusyId(null);
+    if (!result.ok) setRowError(MEDIA_PANEL.couldNotUpdateWatchStatus);
+    else {
+      setDoneIds(prev => new Set(prev).add(pick.id));
+      setOpenId(null);
+    }
   };
 
   /* ── Rotate the building lines ── */
@@ -279,7 +347,7 @@ export default function OnboardingFlow() {
       saveError={saveError}
       canGoBack={step === 'import' || (step === 'services' && !pendingSave)}
       onBack={goBack}
-      onSkip={step === 'services' ? () => startBuilding({ skipped: true }) : skipToHome}
+      onSkip={step === 'services' ? () => startBuilding({ skipped: true }) : step === 'firstwin' ? leaveHome : skipToHome}
       seed={{
         query: seedQuery,
         onQuery: setSeedQuery,
@@ -313,6 +381,27 @@ export default function OnboardingFlow() {
         fan: buildingFan(seedSelected, trending),
         lines: buildingLines(selectedServiceIds.length > 0),
         lineIndex,
+      }}
+      firstWin={{
+        picks: seedSelected.map(item => ({
+          id: item.id,
+          media_type: item.media_type === 'tv' ? 'tv' : 'movie',
+          title: item.title || item.name || F.untitled,
+          poster_path: item.poster_path,
+          done: doneIds.has(item.id),
+        })),
+        openId,
+        seasons: browser.seasons,
+        season: browser.season,
+        episodes: browser.episodes,
+        loading: browser.loading,
+        loadFailed: browser.failed,
+        busyId,
+        error: rowError,
+        onOpen: openPick,
+        onSeason: browser.setSeason,
+        onEpisode: tickEpisode,
+        onTonight: () => navigate('/tonight', { replace: true }),
       }}
     />
   );

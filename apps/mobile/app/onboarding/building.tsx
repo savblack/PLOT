@@ -10,6 +10,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { buildingFan, buildingLines } from '@plot/core/onboardingSetup.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { peekCompareReturn } from '../../lib/authReturn';
+import { holdFirstWin, releaseFirstWin } from '../../lib/firstWinHold';
+import { peekWatchTogetherReturn } from '../../lib/watchTogetherReturn';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
 
@@ -49,13 +52,18 @@ export default function Building() {
   useEffect(() => {
     if (ran.current) return;
     ran.current = true;
+    // Import and a saved return path still open Home, which handles them.
+    // Otherwise hold the auth guard: save flips onboarding_complete, and the
+    // guard would replace this screen with Home before first win can show.
+    const showWin = !flow.importSource && !peekCompareReturn() && !peekWatchTogetherReturn();
+    if (showWin) holdFirstWin();
     const wait = new Promise<void>(resolve => setTimeout(resolve, LINE_MS * lines.length));
     Promise.all([save({ skipServices: !!skipped }), wait]).then(([ok]) => {
       // A failed write goes back to services, where the error shows.
-      if (!ok) { router.back(); return; }
+      if (!ok) { releaseFirstWin(); router.back(); return; }
       completeStep('building');
       Animated.timing(fade, { toValue: 0, duration: FADE_MS, easing: Easing.out(Easing.quad), useNativeDriver: true })
-        .start(() => router.replace('/(app)'));
+        .start(() => router.replace(showWin ? '/onboarding/first-win' : '/(app)'));
     });
     // Runs exactly once, on mount; the values it reads are the ones at that moment.
     // eslint-disable-next-line react-hooks/exhaustive-deps

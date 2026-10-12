@@ -13,6 +13,8 @@ const noop = () => {};
 function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', lineIndex = 1, ticking = false }) {
   const [sel, setSel] = useState(selected);
   const [line, setLine] = useState(lineIndex);
+  const [openId, setOpenId] = useState(null);
+  const [done, setDone] = useState([]);
   useEffect(() => {
     if (!ticking) return undefined;
     const id = setInterval(() => setLine(i => (i + 1) % 4), 1500);
@@ -25,7 +27,7 @@ function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 
       firstName={firstName}
       saving={false}
       saveError={null}
-      canGoBack={step !== 'seed' && step !== 'building'}
+      canGoBack={step === 'import' || step === 'services'}
       onBack={noop}
       onSkip={noop}
       seed={{
@@ -41,6 +43,28 @@ function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 
         onContinue: noop,
       }}
       building={{ leaving: false, fan: buildingFan(titles.filter(t => sel.includes(t.id)), titles), lines: buildingLines(svc.length > 0), lineIndex: line }}
+      firstWin={{
+        picks: titles.filter(t => sel.includes(t.id)).map(t => ({ ...t, done: done.includes(t.id) })),
+        openId,
+        seasons: [1, 2],
+        season: 1,
+        episodes: [
+          { episode_number: 1, name: 'Cold open' },
+          { episode_number: 2, name: 'The second reel' },
+          { episode_number: 3, name: '' },
+        ],
+        loading: false,
+        loadFailed: false,
+        busyId: null,
+        error: null,
+        onOpen: (pick) => {
+          if (pick.media_type !== 'tv') { setDone(d => (d.includes(pick.id) ? d : [...d, pick.id])); return; }
+          setOpenId(id => (id === pick.id ? null : pick.id));
+        },
+        onSeason: noop,
+        onEpisode: () => { if (openId != null) setDone(d => (d.includes(openId) ? d : [...d, openId])); setOpenId(null); },
+        onTonight: noop,
+      }}
     />
   );
 }
@@ -64,3 +88,7 @@ export const WhereDoYouWatchNonePicked = { render: () => <Screen step="services"
 export const Building = { render: () => <Screen step="building" ticking /> };
 /** 3 · Only one title picked: trending titles fill the fan. */
 export const BuildingOnePick = { render: () => <Screen step="building" selected={[-5]} ticking /> };
+/** After building, before Home. A show opens its episode list. A movie is marked watched. */
+export const FirstWin = { render: () => <Screen step="firstwin" selected={[-1, -2]} /> };
+/** After building with nothing saved. Skip and Pick for Me are still there. */
+export const FirstWinEmpty = { render: () => <Screen step="firstwin" selected={[]} /> };

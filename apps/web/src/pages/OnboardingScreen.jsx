@@ -7,6 +7,8 @@ import PlotLogo from '../components/PlotLogo.jsx';
 import ImportSourceIcon from '../components/ImportSourceIcon.jsx';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { COMMON } from '../copy/common.js';
+import { MEDIA } from '../copy/media.js';
+import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { REGIONS } from '@plot/core/regions.js';
 import { IMPORT_SOURCES, ONBOARDING_PROGRESS, ONBOARDING_PROGRESS_TOTAL } from '@plot/core/onboardingSetup.js';
 import './OnboardingFlow.css';
@@ -27,6 +29,85 @@ function Check() {
   );
 }
 
+function FirstWin({ win }) {
+  const picks = win?.picks || [];
+  return (
+    <div className="ob-win">
+      <div className="ob-head">
+        <h1 className="ob-title">{F.firstWin.title}</h1>
+        {picks.length === 0 && <p className="ob-win-empty">{F.firstWin.empty}</p>}
+      </div>
+      {picks.length > 0 && (
+        <div className="ob-win-list">
+          {picks.map(pick => {
+            const open = win.openId === pick.id && pick.media_type === 'tv';
+            const busy = win.busyId === pick.id;
+            return (
+              <div key={`${pick.media_type}-${pick.id}`} className="ob-win-row">
+                <div className="ob-win-main">
+                  {pick.poster_path
+                    ? <img className="ob-win-poster" src={posterUrl(pick.poster_path, 'w185')} alt="" />
+                    : <span className="ob-win-poster" />}
+                  <span className="ob-win-title">{pick.title}</span>
+                  {pick.done
+                    ? <span className="ob-win-done">{F.firstWin.logged}</span>
+                    : (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={busy}
+                        onClick={() => win.onOpen(pick)}
+                      >
+                        {busy ? COMMON.saving : pick.media_type === 'tv' ? F.firstWin.tickEpisode : MEDIA.markWatched}
+                      </button>
+                    )}
+                </div>
+                {open && (
+                  <div className="ob-win-sheet">
+                    <p className="ob-win-sub">{F.firstWin.sheetSub(pick.title)}</p>
+                    {win.seasons && win.seasons.length > 1 && (
+                      <label className="ob-win-season">
+                        {MEDIA_PANEL.chooseSeason}
+                        <select value={win.season} onChange={e => win.onSeason(Number(e.target.value))}>
+                          {win.seasons.map(n => <option key={n} value={n}>{MEDIA_PANEL.seasonLabel(n)}</option>)}
+                        </select>
+                      </label>
+                    )}
+                    {win.loading && <div className="loading-state" style={{ minHeight: 48 }}><PlotLoader size="sm" /></div>}
+                    {win.loadFailed && <p className="ob-win-error">{MEDIA_PANEL.episodesLoadError}</p>}
+                    {!win.loading && !win.loadFailed && win.episodes && win.episodes.length === 0 && (
+                      <p className="ob-win-sub">{MEDIA_PANEL.noEpisodesAvailable}</p>
+                    )}
+                    {win.episodes && win.episodes.length > 0 && (
+                      <div className="ob-win-eps">
+                        {win.episodes.map(ep => (
+                          <button
+                            key={ep.episode_number}
+                            type="button"
+                            className="ob-win-ep"
+                            disabled={busy}
+                            aria-label={F.firstWin.tickLabel(ep.episode_number, ep.name)}
+                            onClick={() => win.onEpisode(ep.episode_number)}
+                          >
+                            <span className="ob-win-ep-num">{ep.episode_number}</span>
+                            <span>{ep.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {win?.error && <p className="ob-win-error">{win.error}</p>}
+      <button type="button" className="onboarding-cta ob-win-tonight" onClick={win?.onTonight}>{F.firstWin.tonight}</button>
+    </div>
+  );
+}
+
 function Progress({ step }) {
   const on = ONBOARDING_PROGRESS[step];
   return (
@@ -38,7 +119,7 @@ function Progress({ step }) {
 
 /**
  * @param {{
- *   step: import('@plot/core/onboardingSetup.js').OnboardingStep,
+ *   step: import('@plot/core/onboardingSetup.js').OnboardingStep | 'firstwin',
  *   firstName: string, saving: boolean, saveError: string | null,
  *   canGoBack: boolean, onBack: () => void, onSkip: () => void,
  *   seed: { query: string, onQuery: (q: string) => void, searching: boolean, items: any[], selectedIds: Set<number>,
@@ -49,9 +130,17 @@ function Progress({ step }) {
  *               onEditRegion: () => void, onRegion: (code: string) => void, onRegionDone: () => void,
  *               onContinue: () => void },
  *   building: { leaving: boolean, fan: any[], lines: string[], lineIndex: number },
+ *   firstWin?: {
+ *     picks: Array<{ id: number, media_type: string, title: string, poster_path?: string | null, done?: boolean }>,
+ *     openId: number | null, seasons: number[] | null, season: number,
+ *     episodes: Array<{ episode_number: number, name: string }> | null,
+ *     loading: boolean, loadFailed: boolean, busyId: number | null, error: string | null,
+ *     onOpen: (pick: any) => void, onSeason: (n: number) => void, onEpisode: (n: number) => void,
+ *     onTonight: () => void,
+ *   } | null,
  * }} props
  */
-export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, onPickImport, services, building }) {
+export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, onPickImport, services, building, firstWin = null }) {
   const regionName = REGIONS.find(r => r.code === services.region)?.name || services.region;
   const columnClass = step === 'seed' ? 'ob-column ob-column--wide' : step === 'services' ? 'ob-column ob-column--services' : 'ob-column';
 
@@ -65,7 +154,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
       </div>
 
       <div className={columnClass}>
-        <Progress step={step} />
+        {step !== 'firstwin' && <Progress step={step} />}
         {canGoBack && (
           <button type="button" className="ob-back" onClick={onBack} aria-label={F.goBack}>
             <Chevron left className="ob-back-icon" />{COMMON.back}
@@ -233,6 +322,8 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
             </div>
           </div>
         )}
+
+        {step === 'firstwin' && <FirstWin win={firstWin} />}
       </div>
     </div>
   );

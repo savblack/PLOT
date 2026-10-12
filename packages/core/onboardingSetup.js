@@ -99,3 +99,16 @@ export function buildingLines(hasServices) {
   const [first, ...rest] = ONBOARDING_FLOW.building.lines;
   return [hasServices ? first : ONBOARDING_FLOW.building.noServicesFirstLine, ...rest];
 }
+
+/**
+ * The first-win screen only sits between the building moment and Home.
+ * An import, the pricing page, and any saved return path skip it.
+ *
+ * @param {string | null | undefined} path
+ * @returns {boolean}
+ */
+export function showsFirstWin(path) {
+  if (typeof path !== 'string' || !path) return false;
+  const bare = path.split('?')[0].split('#')[0];
+  return bare === '/home';
+}

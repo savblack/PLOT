@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Slot, usePathname, useRouter, useSegments, type Href } from 'expo-router';
 import { consumeCompareHandoff, rememberCompareReturn, resetCompareHandoff } from '../lib/authReturn';
+import { firstWinHeld, releaseFirstWin } from '../lib/firstWinHold';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -68,6 +69,13 @@ function AuthGuard({ session, onboardingComplete }: {
       // Logged in but onboarding not done
       if (!inOnboarding) router.replace('/onboarding/seed');
     } else if (onboardingComplete === true) {
+      if (!inOnboarding) releaseFirstWin();
+      // First win is still an onboarding route, but the profile is already
+      // marked complete. Hold it here or this guard sends them Home before
+      // the screen can show. A compare or invite return never sets the hold.
+      if (inOnboarding && firstWinHeld()) {
+        return;
+      }
       if (onInviteLink) {
         clearWatchTogetherReturn();
         resetCompareHandoff();

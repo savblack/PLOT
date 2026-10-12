@@ -8,6 +8,8 @@ import {
   getSeasonWatchState,
   isSeriesComplete,
   isRewind,
+  logLastEpisodeSeen,
+  pointerAfterEpisode,
 } from '../../watchingProgress.js';
 
 test('reports missing-progress when there is no progress object', () => {
@@ -214,6 +216,46 @@ test('un-marking a season is a rewind', () => {
 test('rewriting the same position is not a rewind', () => {
   const before = { current_season: 1, current_episode: 1 };
   assert.equal(isRewind(before, 1, 1), false);
+});
+
+test('ticking the last episode seen moves the pointer to the next one', () => {
+  assert.deepEqual(pointerAfterEpisode(1, 3, 8), { season: 1, episode: 4 });
+  assert.deepEqual(pointerAfterEpisode(2, 10, 10), { season: 3, episode: 1 });
+  assert.equal(pointerAfterEpisode(1, 0, 8), null);
+  assert.equal(pointerAfterEpisode(0, 1, 8), null);
+  assert.equal(pointerAfterEpisode(1, 9, 8), null);
+  assert.equal(pointerAfterEpisode(1, 1, 0), null);
+});
+
+test('ticking the last episode seen starts the show, then moves the pointer past it', async () => {
+  const calls = [];
+  const result = await logLastEpisodeSeen({
+    startWatching: async (show) => { calls.push(['start', show.id, show.media_type]); return { tmdb_id: show.id }; },
+    setProgress: async (id, season, episode, opts) => { calls.push(['progress', id, season, episode, opts]); return { ok: true }; },
+    show: { id: 11, title: 'North' },
+    season: 1,
+    episodeNumber: 3,
+    episodeCount: 8,
+  });
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls, [
+    ['start', 11, 'tv'],
+    ['progress', 11, 1, 4, { reason: 'episode', undo: true }],
+  ]);
+});
+
+test('a failed start does not move the pointer', async () => {
+  let progressed = false;
+  const result = await logLastEpisodeSeen({
+    startWatching: async () => null,
+    setProgress: async () => { progressed = true; return { ok: true }; },
+    show: { id: 11 },
+    season: 1,
+    episodeNumber: 1,
+    episodeCount: 8,
+  });
+  assert.equal(result.ok, false);
+  assert.equal(progressed, false);
 });
 
 test('a first write with no prior row counts as forward', () => {

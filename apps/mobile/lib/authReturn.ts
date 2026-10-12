@@ -14,6 +14,11 @@ export function rememberCompareReturn(path: string | null | undefined) {
   if (bare === '/compare' || COMPARE_PATH.test(bare)) pending = bare;
 }
 
+/** A compare path waiting to be restored, without consuming it. */
+export function peekCompareReturn(): string | null {
+  return pending;
+}
+
 /** One handoff per sign-in. A second call, after Strict Mode remounts the guard, does not send them home. */
 export function consumeCompareHandoff(): { go: boolean; path: string | null } {
   if (handedOff) return { go: false, path: null };

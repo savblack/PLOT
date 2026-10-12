@@ -71,6 +71,17 @@ export const ONBOARDING_FLOW = {
     noServicesFirstLine: 'Checking every platform…',
     status: 'Building your Plot',
   },
+  // After the building moment, before Home. An import or a return path skips
+  // this screen. Skip still leaves for Home.
+  firstWin: {
+    title: 'Watching this? Tick your last episode',
+    tonight: 'Pick something for tonight',
+    empty: 'Nothing saved yet. Pick something for tonight, or skip this.',
+    tickEpisode: 'Tick episode',
+    logged: 'Logged',
+    sheetSub: (title) => `Tick the last episode of ${title} you’ve seen.`,
+    tickLabel: (episode, name) => (name ? `Tick episode ${episode}, ${name}` : `Tick episode ${episode}`),
+  },
   skip: 'Skip',
   stepLabel: (step, total) => `Step ${step} of ${total}`,
   clearSearch: 'Clear search',
