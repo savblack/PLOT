@@ -171,8 +171,8 @@ All monetization dashboards keep PostHog's internal and test-account filter on.
 `premium_waitlist_joined` is not one of those. The Custom themes and Smart lists
 sheets fire it in the client after the `premium-waitlist` function confirms a
 new join. `gate` is `themes` or `smart_lists`. Someone already on the list for
-that gate does not fire it again. A second gate updates the Resend contact
-property and does fire, because the property holds one value.
+that gate does not fire it again. A second gate updates the Brevo attribute
+PREMIUM_INTEREST and does fire, because the attribute holds one value.
 
 ## Bots
 

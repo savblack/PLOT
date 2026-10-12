@@ -1,18 +1,49 @@
 // Thin Brevo wrapper for contact upserts (Deno edge functions).
 const API_URL = 'https://api.brevo.com/v3/contacts'
 
+type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
+
+export async function getBrevoContact({
+  apiKey,
+  email,
+  fetchImpl = fetch,
+}: {
+  apiKey: string
+  email: string
+  fetchImpl?: FetchLike
+}): Promise<{ attributes: Record<string, unknown>; listIds: number[] } | null> {
+  const res = await fetchImpl(`${API_URL}/${encodeURIComponent(email)}`, {
+    headers: { 'api-key': apiKey, Accept: 'application/json' },
+  })
+  if (res.status === 404) return null
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Brevo ${res.status}: ${err}`)
+  }
+  const body = await res.json().catch(() => null) as {
+    attributes?: Record<string, unknown>
+    listIds?: number[]
+  } | null
+  return {
+    attributes: body?.attributes ?? {},
+    listIds: Array.isArray(body?.listIds) ? body.listIds : [],
+  }
+}
+
 export async function upsertBrevoContact({
   apiKey,
   email,
   attributes,
   listIds,
+  fetchImpl = fetch,
 }: {
   apiKey: string
   email: string
   attributes?: Record<string, unknown>
   listIds?: number[]
+  fetchImpl?: FetchLike
 }) {
-  const res = await fetch(API_URL, {
+  const res = await fetchImpl(API_URL, {
     method: 'POST',
     headers: {
       'api-key': apiKey,

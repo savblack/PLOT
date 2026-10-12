@@ -1,6 +1,6 @@
 /**
  * Premium waitlist for the Custom themes and Smart lists sheets.
- * The Resend call lives in supabase/functions/premium-waitlist. This module
+ * The Brevo call lives in supabase/functions/premium-waitlist. This module
  * only decides the gate, the address, and whether the join is new.
  *
  * WAITLIST_EMAIL_RE must match supabase/functions/_shared/premiumWaitlist.ts.

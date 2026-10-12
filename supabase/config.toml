@@ -28,9 +28,10 @@ verify_jwt = false
 
 # Custom themes and Smart lists waitlist. Signed-out visitors call it, so the
 # gateway JWT check stays off. The function reads a user JWT itself when one
-# is present and ignores a body email in that case. Needs the existing
-# RESEND_API_KEY secret, a Resend segment named "Premium waitlist", and a
-# string contact property premium_interest. See supabase/functions/premium-waitlist.
+# is present and ignores a body email in that case. Needs BREVO_API_KEY, the
+# numeric id of the Brevo list "Premium waitlist" in
+# BREVO_PREMIUM_WAITLIST_LIST_ID, and a text attribute PREMIUM_INTEREST.
+# See supabase/functions/premium-waitlist.
 [functions.premium-waitlist]
 verify_jwt = false
 

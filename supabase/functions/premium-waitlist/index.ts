@@ -7,26 +7,30 @@
  * Custom themes and Smart lists sheets call this. Checkout is not involved.
  * A signed-in caller's account email comes from their JWT and the body email
  * is ignored. A signed-out caller must send email. The address is upserted
- * onto the Resend segment "Premium waitlist" with contact property
- * premium_interest set to the gate. The same gate again returns already: true.
+ * onto the Brevo list "Premium waitlist" with attribute PREMIUM_INTEREST set
+ * to the gate. The same gate again returns already: true.
  *
  * verify_jwt is false (supabase/config.toml) because signed-out visitors call
  * this. The function checks a user JWT itself when one is present.
  *
  * Deploy:
- *   RESEND_API_KEY is the existing project secret. notify-signup and the
- *   other mail functions already read that name. Confirm it is set on the
- *   project. Do not add a second key.
- *   Create the Resend segment "Premium waitlist" if it is missing.
- *   Create the string contact property premium_interest if it is missing.
+ *   BREVO_API_KEY is the existing project secret. newsletter-subscribe and
+ *   notify-signup already read that name. Confirm it is set. Do not add a
+ *   second key.
+ *   Create a Brevo list named "Premium waitlist" if it is missing. Put its
+ *   numeric id in the edge secret BREVO_PREMIUM_WAITLIST_LIST_ID. Brevo lists
+ *   are addressed by id, not by name.
+ *   Create the text contact attribute PREMIUM_INTEREST if it is missing.
+ *   Brevo drops attribute keys it does not already know, and the upsert still
+ *   returns success, so a missing attribute looks like a join that saved nothing.
  *   supabase functions deploy premium-waitlist
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   decideWaitlistJoin,
-  findWaitlistSegmentId,
   rateLimitHit,
   upsertPremiumWaitlistContact,
+  WAITLIST_LIST_ENV,
 } from '../_shared/premiumWaitlist.ts';
 
 const WINDOW_MS = 60 * 60 * 1000;
@@ -61,6 +65,12 @@ function json(body: unknown, origin: string | null, status = 200) {
 }
 
 const clientIp = (req: Request) => req.headers.get('cf-connecting-ip') || 'unknown';
+
+function premiumListId(raw: string | undefined): number | null {
+  if (!raw || !/^[1-9]\d*$/.test(raw)) return null;
+  const id = Number(raw);
+  return Number.isSafeInteger(id) ? id : null;
+}
 
 async function accountEmail(authHeader: string): Promise<string | null> {
   const url = Deno.env.get('SUPABASE_URL');
@@ -104,15 +114,10 @@ Deno.serve(async (req) => {
   if (decision.action === 'reject') return json({ error: decision.error }, origin, decision.status);
   if (decision.action !== 'join') return json({ ok: true, already: true }, origin);
 
-  const apiKey = Deno.env.get('RESEND_API_KEY');
-  if (!apiKey) {
-    console.error('premium-waitlist RESEND_API_KEY is not configured');
-    return json({ error: 'unavailable' }, origin, 503);
-  }
-
-  const segmentId = await findWaitlistSegmentId(fetch, apiKey);
-  if (!segmentId) {
-    console.error('premium-waitlist segment missing');
+  const apiKey = Deno.env.get('BREVO_API_KEY');
+  const listId = premiumListId(Deno.env.get(WAITLIST_LIST_ENV));
+  if (!apiKey || listId == null) {
+    console.error(`premium-waitlist Brevo is not configured (${WAITLIST_LIST_ENV})`);
     return json({ error: 'unavailable' }, origin, 503);
   }
 
@@ -121,10 +126,10 @@ Deno.serve(async (req) => {
     apiKey,
     email: decision.email,
     gate: decision.gate,
-    segmentId,
+    listId,
   });
   if (!result.ok) {
-    console.error('premium-waitlist resend failed');
+    console.error('premium-waitlist brevo failed');
     return json({ error: 'unavailable' }, origin, 503);
   }
   return json({ ok: true, already: result.already }, origin);

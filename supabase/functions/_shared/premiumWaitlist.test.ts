@@ -1,11 +1,12 @@
 import { assertEquals } from 'jsr:@std/assert@1';
 import {
   decideWaitlistJoin,
-  findWaitlistSegmentId,
   rateLimitHit,
   upsertPremiumWaitlistContact,
-  WAITLIST_SEGMENT_NAME,
+  WAITLIST_ATTRIBUTE,
 } from './premiumWaitlist.ts';
+
+const LIST_ID = 42;
 
 function mockFetch(handler: (url: string, init?: RequestInit) => Response): typeof fetch {
   return (input, init) => Promise.resolve(handler(String(input), init));
@@ -28,91 +29,102 @@ Deno.test('a signed-in address wins, and a honeypot never joins', () => {
   assertEquals(decideWaitlistJoin({ gate: 'themes', email: 'nope' }), { action: 'reject', error: 'invalid_email', status: 400 });
 });
 
-Deno.test('the segment lookup uses the exact Premium waitlist name', async () => {
-  const fetchImpl = mockFetch((url) => {
-    if (url.includes('after=')) {
-      return Response.json({ data: [{ id: 'seg-2', name: WAITLIST_SEGMENT_NAME }], has_more: false });
-    }
-    return Response.json({ data: [{ id: 'seg-1', name: 'Early Users' }], has_more: true });
-  });
-  assertEquals(await findWaitlistSegmentId(fetchImpl, 'key'), 'seg-2');
-
-  const missing = mockFetch(() => Response.json({ data: [{ id: 'seg-1', name: 'Early Users' }], has_more: false }));
-  assertEquals(await findWaitlistSegmentId(missing, 'key'), null);
-});
-
-Deno.test('a new address is created on the segment with the gate', async () => {
+Deno.test('a new address is created on the Premium waitlist with the gate', async () => {
   const bodies: unknown[] = [];
   const fetchImpl = mockFetch((url, init) => {
     const method = init?.method ?? 'GET';
     if (method === 'GET') return new Response('missing', { status: 404 });
     bodies.push(JSON.parse(String(init?.body)));
-    assertEquals(url, 'https://api.resend.com/contacts');
-    return Response.json({ id: 'contact-1' });
+    assertEquals(url, 'https://api.brevo.com/v3/contacts');
+    assertEquals(new Headers(init?.headers).get('api-key'), 'key');
+    return new Response(null, { status: 201 });
   });
   const result = await upsertPremiumWaitlistContact({
-    fetchImpl, apiKey: 'key', email: 'reader@example.com', gate: 'themes', segmentId: 'seg-1',
+    fetchImpl, apiKey: 'key', email: 'reader@example.com', gate: 'themes', listId: LIST_ID,
   });
   assertEquals(result, { ok: true, already: false });
   assertEquals(bodies[0], {
     email: 'reader@example.com',
-    unsubscribed: false,
-    properties: { premium_interest: 'themes' },
-    segments: [{ id: 'seg-1' }],
+    attributes: { [WAITLIST_ATTRIBUTE]: 'themes' },
+    listIds: [LIST_ID],
+    updateEnabled: true,
   });
 });
 
-Deno.test('the same gate on an existing contact is already joined', async () => {
+Deno.test('the same gate on a contact already in the list is already joined', async () => {
   let wrote = false;
-  const fetchImpl = mockFetch((url, init) => {
-    const method = init?.method ?? 'GET';
-    if (method !== 'GET') wrote = true;
-    if (url.endsWith('/segments')) return Response.json({ data: [{ id: 'seg-1', name: 'Premium waitlist' }] });
-    return Response.json({ properties: { premium_interest: { type: 'string', value: 'themes' } } });
+  const fetchImpl = mockFetch((_url, init) => {
+    if ((init?.method ?? 'GET') !== 'GET') wrote = true;
+    return Response.json({
+      email: 'reader@example.com',
+      attributes: { [WAITLIST_ATTRIBUTE]: 'themes' },
+      listIds: [LIST_ID],
+    });
   });
   const result = await upsertPremiumWaitlistContact({
-    fetchImpl, apiKey: 'key', email: 'reader@example.com', gate: 'themes', segmentId: 'seg-1',
+    fetchImpl, apiKey: 'key', email: 'reader@example.com', gate: 'themes', listId: LIST_ID,
   });
   assertEquals(result, { ok: true, already: true });
   assertEquals(wrote, false);
 });
 
-Deno.test('a second gate updates the property and counts as a new join', async () => {
-  let patched: unknown = null;
-  const fetchImpl = mockFetch((url, init) => {
+Deno.test('a second gate updates the attribute and counts as a new join', async () => {
+  let posted: unknown = null;
+  const fetchImpl = mockFetch((_url, init) => {
     const method = init?.method ?? 'GET';
-    if (url.endsWith('/segments')) return Response.json({ data: [{ id: 'seg-1', name: 'Premium waitlist' }] });
-    if (method === 'PATCH') {
-      patched = JSON.parse(String(init?.body));
-      return Response.json({ id: 'contact-1' });
+    if (method === 'POST') {
+      posted = JSON.parse(String(init?.body));
+      return new Response(null, { status: 204 });
     }
-    return Response.json({ properties: { premium_interest: { type: 'string', value: 'themes' } } });
+    return Response.json({
+      attributes: { [WAITLIST_ATTRIBUTE]: 'themes' },
+      listIds: [LIST_ID],
+    });
   });
   const result = await upsertPremiumWaitlistContact({
-    fetchImpl, apiKey: 'key', email: 'reader@example.com', gate: 'smart_lists', segmentId: 'seg-1',
+    fetchImpl, apiKey: 'key', email: 'reader@example.com', gate: 'smart_lists', listId: LIST_ID,
   });
   assertEquals(result, { ok: true, already: false });
-  assertEquals(patched, { properties: { premium_interest: 'smart_lists' } });
+  assertEquals(posted, {
+    email: 'reader@example.com',
+    attributes: { [WAITLIST_ATTRIBUTE]: 'smart_lists' },
+    listIds: [LIST_ID],
+    updateEnabled: true,
+  });
 });
 
-Deno.test('a missing property or a failed create stays unavailable', async () => {
-  const createFails = mockFetch((_url, init) => {
-    if ((init?.method ?? 'GET') === 'GET') return new Response('missing', { status: 404 });
-    return new Response('unknown property', { status: 422 });
+Deno.test('a contact with the attribute but not on the list is a new join', async () => {
+  let posted = false;
+  const fetchImpl = mockFetch((_url, init) => {
+    if ((init?.method ?? 'GET') === 'POST') {
+      posted = true;
+      return new Response(null, { status: 204 });
+    }
+    return Response.json({
+      attributes: { [WAITLIST_ATTRIBUTE]: 'themes' },
+      listIds: [9],
+    });
   });
+  const result = await upsertPremiumWaitlistContact({
+    fetchImpl, apiKey: 'key', email: 'reader@example.com', gate: 'themes', listId: LIST_ID,
+  });
+  assertEquals(result, { ok: true, already: false });
+  assertEquals(posted, true);
+});
+
+Deno.test('a failed read or a failed upsert stays unavailable', async () => {
+  const readFails = mockFetch(() => new Response('down', { status: 500 }));
   assertEquals(
-    await upsertPremiumWaitlistContact({ fetchImpl: createFails, apiKey: 'key', email: 'reader@example.com', gate: 'themes', segmentId: 'seg-1' }),
+    await upsertPremiumWaitlistContact({ fetchImpl: readFails, apiKey: 'key', email: 'reader@example.com', gate: 'themes', listId: LIST_ID }),
     { ok: false, error: 'unavailable' },
   );
 
-  const patchFails = mockFetch((url, init) => {
-    const method = init?.method ?? 'GET';
-    if (url.endsWith('/segments')) return Response.json({ data: [{ id: 'seg-1' }] });
-    if (method === 'PATCH') return new Response('unknown property', { status: 422 });
-    return Response.json({ properties: {} });
+  const writeFails = mockFetch((_url, init) => {
+    if ((init?.method ?? 'GET') === 'GET') return new Response('missing', { status: 404 });
+    return new Response('rejected', { status: 400 });
   });
   assertEquals(
-    await upsertPremiumWaitlistContact({ fetchImpl: patchFails, apiKey: 'key', email: 'reader@example.com', gate: 'themes', segmentId: 'seg-1' }),
+    await upsertPremiumWaitlistContact({ fetchImpl: writeFails, apiKey: 'key', email: 'reader@example.com', gate: 'themes', listId: LIST_ID }),
     { ok: false, error: 'unavailable' },
   );
 });
