@@ -65,7 +65,7 @@ function useFakePicker({ phase: initialPhase = 'setup', step: initialStep = 0, p
     savedSearches: premium ? saved : [], isSaved,
     toggleSaveSearch: () => setSaved(list => (isSaved
       ? list.filter(i => i.results.map(r => r.id).join('|') !== sig)
-      : [{ id: `s${list.length}`, savedAt: Date.now(), label: savedSearchLabel(sentence), options, mode, results }, ...list])),
+      : [{ id: `s${list.length}`, savedAt: Date.parse('2026-09-16T12:00:00Z'), label: savedSearchLabel(sentence), options, mode, results }, ...list])),
     removeSavedSearch: (id) => setSaved(list => list.filter(i => i.id !== id)),
     openSavedSearch: (id) => { const item = saved.find(i => i.id === id); if (item) { setResults(item.results); setPhase('results'); } },
   };
