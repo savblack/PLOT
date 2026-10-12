@@ -6,7 +6,7 @@
 //
 // A card post that is already approved but still has no media is rendered in
 // place and stays approved. That is the retry for a week whose render never
-// ran. Question posts are not rendered. Guides get no social card.
+// ran. Questions stay text-only. Guides get no social card.
 // Social posts are sent to Buffer by schedule.mjs once the cards exist.
 // Approval is the article gate, not the Buffer gate.
 //
@@ -23,7 +23,6 @@ import { POST_TYPES } from '../lib/post-types.mjs';
 import { feedHeroUrl, guideHeroUrl } from '../lib/images.mjs';
 import { postSlug } from '../lib/feed.mjs';
 import { nextStatus, renderAction } from '../lib/pipelineGate.mjs';
-import { QUESTIONS_ENABLED } from '../planner/cadence.mjs';
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
 
@@ -68,13 +67,7 @@ const generateGuide = async (supabase, post) => {
 };
 
 const generatePost = async (supabase, post) => {
-  if (post.post_type === 'question') {
-    if (!QUESTIONS_ENABLED) {
-      console.log(`${post.topic_key}: question posts are off. Not rendering.`);
-      return post;
-    }
-    return generateConversation(supabase, post);
-  }
+  if (post.post_type === 'question') return generateConversation(supabase, post);
   if (post.post_type === 'guide') return generateGuide(supabase, post);
 
   const spec = POST_TYPES[post.post_type];

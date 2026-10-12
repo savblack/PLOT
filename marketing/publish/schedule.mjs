@@ -157,17 +157,6 @@ const scheduleOne = async (supabase, post, pub, budget, schedules, taken, flagge
 
   // Branded cards, or nothing. A raw TMDB still is the website hero, not the
   // social image. Leave the row queued so the render step can fill it.
-  if (queueBlockReason(post) === 'questions_off') {
-    console.log(`${post.topic_key} ${pub.platform}: question posts are off`);
-    if (!DRY_RUN) {
-      await updatePublication(supabase, pub.id, {
-        status: 'skipped',
-        error: 'Question posts are off. Not sent.',
-      });
-    }
-    return 'questions_off';
-  }
-
   if (queueBlockReason(post) === 'missing_cards') {
     console.error(`${post.topic_key} ${pub.platform}: not queued — branded cards are missing`);
     if (!DRY_RUN && !flagged.has(post.id)) {

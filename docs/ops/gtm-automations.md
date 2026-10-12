@@ -103,7 +103,7 @@ Resend.
 3. Each post that still needs words gets a markdown brief under `marketing/copy/jobs/`.
 4. Claude reads [`marketing/copy/AGENT.md`](../../marketing/copy/AGENT.md) and each brief, searches the web for the article, and writes one JSON file per post. It runs in a temp folder so it cannot see `.env`.
 5. `save.mjs` checks the JSON against the copy contract. Bad copy is rejected and that post stays `planned`. Good copy is stored as both `copy` (what we will use) and `generated_copy` (what the model first wrote), and the row moves to `copy_ready`. A rejection does not stop the rest of the week. The workflow still fails at the end so the rejected files are visible. On 4 October 2026 this exit used to happen *before* rendering, which is why a week reached `copy_ready` with `media` null.
-6. Playwright screenshots the HTML card templates into portrait (1080x1350) and landscape JPEGs and uploads them to `marketing/<post id>/card-0-portrait.jpg` and `card-0-landscape.jpg`. The website hero is a plain TMDB still, not the branded card. Trending charts are the exception: the branded chart is the hero. Question posts are not planned. `guide` posts get no social card.
+6. Playwright screenshots the HTML card templates into portrait (1080x1350) and landscape JPEGs and uploads them to `marketing/<post id>/card-0-portrait.jpg` and `card-0-landscape.jpg`. The website hero is a plain TMDB still, not the branded card. Trending charts are the exception: the branded chart is the hero. `question` posts stay text-only. `guide` posts get no social card.
 7. The script emails you with links to Linear and Buffer when something new needs article review.
 8. It then pushes social copy into Buffer for posts whose cards exist. It does not wait for you to approve the article. It does not attach a TMDB still when the card is missing. Those rows stay `queued` and the daily job renders them again.
 
@@ -126,7 +126,7 @@ Nothing in this repo sends social posts itself anymore.
 
 **Outputs.** Scheduled (or, on retry, re-queued) posts in Buffer. Publication rows updated with Buffer's post id. `marketing_batch_runs` rows from the schedule script.
 
-**Dependencies.** Buffer GraphQL API (`https://api.buffer.com`). Public image URLs from the `marketing` storage bucket. Instagram needs an image. Question posts are not sent.
+**Dependencies.** Buffer GraphQL API (`https://api.buffer.com`). Public image URLs from the `marketing` storage bucket. Instagram needs an image; question posts are text-only and skip Instagram.
 
 **How it works.**
 
@@ -161,7 +161,7 @@ You review, edit, reschedule, and delete in Buffer. Those edits are not checked 
 
 1. Optional: if you checked "retry failed", push publications that never reached Buffer.
 2. For every publication still marked scheduled, ask Buffer for its status and write the answer down.
-3. Render cards for any post that has copy and still has no media. An approved article stays approved. A question row is skipped.
+3. Render cards for any post that has copy and still has no media. An approved article stays approved. A question is left text-only.
 4. Push the next queued posts into whatever slots that freed. A card post that still has no image is left `queued` and the job fails.
 5. If the next three days have nothing queued, email you. This check lives on the daily job on purpose: when the Sunday batch cannot get a runner (billing), its own failure email cannot run either. The daily job is the watchdog.
 6. The watchdog email says /whats-on will go stale. Social posts already sitting in Buffer can still go out. The two problems are different.
@@ -507,18 +507,18 @@ From [`marketing/planner/cadence.mjs`](../../marketing/planner/cadence.mjs) and 
 | Day | Fixed slot | Also considered |
 | --- | --- | --- |
 | Monday | `trending` | The chart. Snapshot from section 10, dated the Sunday before. |
-| Tuesday | `upcoming` (weekly slate) | If the slate is empty, the fill mix. |
+| Tuesday | `upcoming` (weekly slate) | Then the mid question only. The rest of the mix waits unless the slate is empty. |
 | Wednesday | `watch_tonight` | Anniversary, then fill |
-| Thursday | Trailer, else a countdown | T-1, then T-7, then T-14. If none of those has a candidate, the fill mix. |
+| Thursday | Trailer, else a countdown | T-1, then T-7, then T-14, then the mid question. If none of those has a candidate, the fill mix, which still places the mid question. |
 | Friday | `now_streaming` | A title new at home that day. If none, the fill mix. |
 | Saturday | `hidden_gem` | Vote count has a floor and a ceiling so household names do not slip through. See `marketing/README.md`. |
-| Sunday | `on_this_day` | If none, the fill mix. |
+| Sunday | Lead question, then `on_this_day` | If the anniversary has no candidate, the fill mix. |
 
-Question posts are not planned. `QUESTIONS_ENABLED` in `cadence.mjs` is false. Render skips them, and a publication that is already queued is marked skipped instead of pushed to Buffer.
+Question posts are about a title that is already out. They are text-only, X and Threads, no article, no Linear card. If nothing released qualifies, the slot stays empty.
 
 Guides (`post_type = guide`) are extra, web-only, and not on this calendar. About four new evergreen topics per weekly run, skipped when that topic already exists.
 
-Post types and their card templates live in [`marketing/lib/post-types.mjs`](../../marketing/lib/post-types.mjs): `upcoming`, `trending`, `countdown`, `now_streaming`, `trailer`, `on_this_day`, `watch_tonight`, `hidden_gem`. `guide` has no social template. `question` is not planned.
+Post types and their card templates live in [`marketing/lib/post-types.mjs`](../../marketing/lib/post-types.mjs): `upcoming`, `trending`, `countdown`, `now_streaming`, `trailer`, `on_this_day`, `watch_tonight`, `hidden_gem`. `question` and `guide` have no template.
 
 ---
 
@@ -580,7 +580,7 @@ Gaps:
 4. **There is no eval set.** Tests lock regexes (no em dash, no "according to", where-to-watch present). They cannot tell a warm specific note from a flat one that happens to pass. There is no labelled set of good and bad posts, no score, and no "run the new prompt on last month's briefs and diff".
 5. **Two models.** CI is Claude (pinned CLI `2.1.226`). Local default is Codex. A prompt change tested locally is not the prompt that will run on Sunday unless you pass `--copy-runner=claude`.
 6. **Regenerate is all or nothing.** `/regenerate` throws the copy away. There is no "rewrite the closer, keep the rest" in the production path. `sweep-closer.mjs` and `rewrite-published.mjs` are one-off scripts for that kind of repair.
-7. **Guides sit outside the social review.** Guides have an article and no Buffer post. Question posts are not planned, so there is no question caption to review.
+7. **Guides and questions sit outside the review you see.** Guides have an article and a card but no social preview. Questions have social and no card. A tone pass that only reads Linear misses the questions. A pass that only reads Buffer misses the guides.
 8. **Nothing closes the loop.** The Learning prep chip is gone, and so is the workflow behind it. Shipped copy still does not teach the next week. That gap is intentional until an eval loop is actually built.
 
 ---
@@ -622,7 +622,8 @@ Documentation only. None of this is built here.
 1. Keep `VOICE.md` as the source of truth. Do not revive an unattended rewriter. The last one prepared seven weeks and applied none.
 2. Start a small labelled set: 10 to 20 briefs with a human "ship / rewrite" and a one-line reason, checked into the repo next to the voice file. Run the pinned Claude CLI against them when the voice or the validator changes, and read the diff. That is the eval. Regex tests stay as the hard gate.
 3. Once a week, sample `sent_text` against `generated_copy` for posts you edited in Buffer. Those edits are the preference data the old loop wanted. Fold a rule into `VOICE.md` by hand when the same edit shows up twice.
-4. Pin the eval to `--copy-runner=claude` so it matches Sunday.
+4. Run that sample on question posts too. They never appear on the Linear board, so they are the captions most likely to drift.
+5. Pin the eval to `--copy-runner=claude` so it matches Sunday.
 
 ---
 

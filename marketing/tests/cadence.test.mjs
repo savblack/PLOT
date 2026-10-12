@@ -1,12 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  QUESTIONS_ENABLED,
   anchorChainForDay,
   anchorPostForDay,
   fixedFeatureForDay,
   isAnchorDay,
-  postTypeShips,
   questionSlotForDay,
 } from '../planner/cadence.mjs';
 
@@ -34,13 +32,12 @@ test('fixed-feature cadence matches Wednesday watch tonight and Saturday hidden 
   assert.equal(fixedFeatureForDay('Thursday'), null);
 });
 
-test('question posts do not ship', () => {
-  assert.equal(QUESTIONS_ENABLED, false);
-  assert.equal(questionSlotForDay('Tuesday'), null);
-  assert.equal(questionSlotForDay('Thursday'), null);
-  assert.equal(questionSlotForDay('Sunday'), null);
+test('questions stay Tuesday and Thursday mid, Sunday lead', () => {
+  assert.equal(questionSlotForDay('Tuesday'), 'mid');
+  assert.equal(questionSlotForDay('Thursday'), 'mid');
+  assert.equal(questionSlotForDay('Sunday'), 'lead');
+  assert.equal(questionSlotForDay('Monday'), null);
   assert.equal(questionSlotForDay('Wednesday'), null);
-  assert.equal(postTypeShips('question'), false);
-  assert.equal(postTypeShips('trending'), true);
-  assert.equal(postTypeShips('now_streaming'), true);
+  assert.equal(questionSlotForDay('Friday'), null);
+  assert.equal(questionSlotForDay('Saturday'), null);
 });

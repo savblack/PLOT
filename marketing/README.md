@@ -222,8 +222,13 @@ not shown read-only, not there. Those posts are in Buffer and reviewed in Buffer
 a card that reproduced them could not change them, and showing them only invited
 the belief that it could.
 
-**Social-only posts get no card.** Question posts are not planned. The sweep
-opens cards only for posts with a slug, which is the set that has an article.
+**Social-only posts get no card.** `question` posts have no website article —
+they never get a slug and never appear on theplot.tv, they exist purely as
+conversation starters on social. Since the board stopped showing social copy,
+their card said "No article written yet." and nothing else: an approval prompt
+for a page that does not exist, three a week. The sweep now opens cards only for
+posts with a slug, which is exactly the set that has an article (across 226 posts
+the split is clean — `question` on one side, every other type on the other).
 
 Comment on the issue. The first line is the command:
 
@@ -487,17 +492,26 @@ Days are US Eastern weekdays. Posts are stored at 9:00am ET unless a type has
 an entry in `PUBLISH_TIME_BY_TYPE`.
 
 - Monday: `trending` (the chart)
-- Tuesday: `upcoming` (the week's slate)
+- Tuesday: `upcoming`, then the mid question. If the slate is empty, the fill mix, which still places the mid question
 - Wednesday fixed feature: `watch_tonight`, then the fill mix
-- Thursday: a new trailer, otherwise a countdown. If neither has a candidate, the fill mix
+- Thursday: a new trailer, otherwise a countdown (T-1, then T-7, then T-14), then the mid question. If that chain has no candidate, the fill mix, which still places the mid question
 - Friday: `now_streaming` (a title new at home that day). If none, the fill mix
 - Saturday fixed feature: `hidden_gem`, then the fill mix
-- Sunday: `on_this_day`. If none, the fill mix
+- Sunday: the lead question, then `on_this_day`. If the anniversary has no candidate, the fill mix
 
-Question posts are off. `QUESTIONS_ENABLED` in `marketing/planner/cadence.mjs`
-is false. The planner does not insert them, copy pull skips them, render
-leaves them alone, and a queued publication is marked skipped instead of
-sent to Buffer. The conversation trigger and its brief stay in the repo.
+Question posts join the conversation around a **new release that is already
+out** — never something upcoming. The planner anchors each one to a real title:
+something out that day, otherwise the most trending title released in the last
+14 days (widening to 30 only to avoid an empty slot). A show airing new episodes
+counts, judged on its latest episode rather than its premiere. The copy worker
+then searches the web for that title's reception
+before writing the question, so the ask is for a reaction rather than a
+prediction.
+
+If nothing released qualifies, the slot is left empty rather than filled with
+speculation about an unreleased title. Questions are never about a title the
+same day already covers — the one exception is a major-release day, where the
+release post and the question are deliberately about the same title.
 
 ## Newsletter and metrics
 
