@@ -214,7 +214,7 @@ curl -sX POST "$SUPABASE_URL/functions/v1/marketing-linear-mirror" \
 
 **Entrypoints.** [`supabase/functions/marketing-linear-sync/index.ts`](../../supabase/functions/marketing-linear-sync/index.ts), command parser [`supabase/functions/_shared/linearCommands.js`](../../supabase/functions/_shared/linearCommands.js).
 
-**Secrets.** `LINEAR_WEBHOOK_SECRET`, `LINEAR_API_KEY`, `GH_DISPATCH_TOKEN_CONTENT`, `GH_DISPATCH_TOKEN_WEBSITE`, `GH_DISPATCH_TOKEN` (legacy), `GH_REPO`. Gateway JWT check is off because Linear does not send a Supabase JWT. The HMAC is the auth. Pinned in [`supabase/config.toml`](../../supabase/config.toml).
+**Secrets.** `LINEAR_WEBHOOK_SECRET`, `LINEAR_API_KEY`, `LINEAR_OPERATOR_USER_IDS`, `GH_DISPATCH_TOKEN_CONTENT`, `GH_DISPATCH_TOKEN_WEBSITE`, `GH_DISPATCH_TOKEN` (legacy), `GH_REPO`. Set `LINEAR_OPERATOR_USER_IDS` to the comma-separated Linear user IDs permitted to make review decisions before deploying this function. Missing or unmatched IDs make comment commands and issue state decisions inert. The webhook HMAC authenticates Linear as sender; the operator list checks the comment author (`data.userId`) or the issue state-change actor. Gateway JWT check is off because Linear does not send a Supabase JWT. Pinned in [`supabase/config.toml`](../../supabase/config.toml).
 
 **Outputs.** Updates to `marketing_posts` (status, copy, day). Audit rows in `marketing_review_events` with actor `linear`. A bot reply on the issue. For `/generate`, `/publish-now`, and `/regenerate`, a GitHub workflow dispatch. For `/approve` and `/reject` on a timeline-refresh card, a merge or close of that PR.
 
