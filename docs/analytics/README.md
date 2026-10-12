@@ -396,12 +396,19 @@ The Episode alerts card on a followed TV show's title panel.
 
 | Event | When | Props |
 |---|---|---|
-| `episode_alerts_toggled` | The switch changed and the write landed | `tmdb_id`, `on` (the new state) |
+| `episode_alerts_toggled` | The switch changed and the write landed, or the first-episode prompt was accepted | `tmdb_id`, `on` (the new state) |
 | `title_calendar_action` | Add to calendar was used | `action`: `subscribe` (feed link copied), `subscribe_setup` (sent to Settings to make a link), `upgrade` (Free, sent to Plans), `download` (.ics, with `count` of events) |
 
 Muting is free and is stored in `episode_alert_mutes`; the daily
 new-episode job skips muted followers, so a show turned off produces no
 `new_episode` rows for that person.
+
+The first forward episode tick, when no watching row is already past season 1
+episode 1, shows a toast: "Get told when the next episode drops?" Accepting
+deletes a mute for that show if one exists and fires `episode_alerts_toggled`
+with `on: true`, including when alerts were already on. The toast is once per
+account on that device. It does not open the calendar subscribe flow, which
+stays Premium.
 
 ## Smart lists
 

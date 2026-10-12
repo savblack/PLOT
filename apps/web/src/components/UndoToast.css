@@ -69,6 +69,19 @@
   to   { opacity: 1; transform: none; }
 }
 
+/* The episode-alerts prompt can show with the undo toast from the same tick. */
+.undo-toast.episode-alerts-prompt {
+  bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px) + 4.75rem);
+}
+@media (max-width: 767px) {
+  .undo-toast.episode-alerts-prompt {
+    bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px) + 4.5rem);
+  }
+}
+@media (min-width: 1024px) {
+  .undo-toast.episode-alerts-prompt { bottom: 5rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .undo-toast { animation: none; }
 }

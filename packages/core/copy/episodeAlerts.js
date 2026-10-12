@@ -13,6 +13,10 @@ export const EPISODE_ALERTS = {
   toastOn: (title) => `You’ll get notified when new ${title} episodes are out.`,
   toastOff: (title) => `Episode alerts off for ${title}.`,
   error: 'Couldn’t update episode alerts. Try again.',
+  // After the first forward episode tick. Once per account on this device.
+  // Alerts themselves are free. Add to calendar is the Premium part.
+  promptQuestion: 'Get told when the next episode drops?',
+  promptAction: 'Turn on alerts',
 
   nextEpisode: 'Next episode',
   noNextEpisode: 'No next episode announced yet',

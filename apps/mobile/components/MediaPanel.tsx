@@ -61,6 +61,7 @@ import CollectionCard from './CollectionCard';
 import { MEDIA } from '@plot/core/copy/media.js';
 import UndoToast from './UndoToast';
 import NoticeToast from './NoticeToast';
+import { EpisodeAlertsPromptToast } from './EpisodeAlertsPrompt';
 import { clearUndo } from '@plot/core/undo.js';
 
 
@@ -1546,6 +1547,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       </Animated.View>
       <UndoToast placement="panel" />
       <NoticeToast placement="panel" />
+      <EpisodeAlertsPromptToast placement="panel" />
     </Modal>
 
     {showListSheet && details && (
