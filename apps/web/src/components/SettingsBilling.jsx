@@ -17,7 +17,7 @@ export default function SettingsBilling({ isPremium, canManage = false, billing,
           <h3>{T.premium.groupTitle}</h3>
           <span className="settings-status">{isPremium ? T.billing.active : T.billing.freePlan}</span>
         </div>
-        <p>{canManage && !isPremium ? T.premium.subscriptionEnded : isPremium ? T.premium.thankYou : T.billing.intro}</p>
+        <p>{canManage && !isPremium ? T.premium.subscriptionEnded : isPremium && !canManage ? T.premium.accessProvidedByPlot : isPremium ? T.premium.thankYou : T.billing.intro}</p>
         {!isPremium && !canManage && (
           <>
             <p className="settings-selection">{PLANS_PAGE.premium.priceTerms}</p>

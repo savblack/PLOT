@@ -270,6 +270,7 @@ export const SETTINGS_VIEW = {
     thankYou: 'Thank you for keeping plot running',
     opening: 'Opening…',
     manageSubscription: 'Manage subscription',
+    accessProvidedByPlot: 'Your Premium access is provided by Plot. There is no Stripe subscription to manage.',
     paymentNeedsAttention: 'Your payment needs attention. Manage your subscription to update your payment method.',
     subscriptionEnded: 'Your subscription is not active. Your lists and watch history are still available.',
     cancellationScheduled: 'Your subscription is set to end after the current paid period.',

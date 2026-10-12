@@ -18,7 +18,7 @@ import Stripe from 'npm:stripe@22.6.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { CheckoutPendingError, subscriptionCheckout } from '../_shared/checkout.ts';
-import { checkoutClosedToAll, checkoutPlan, matchesPremiumPrice, billingSettingsUrl, mayStartCheckout } from '../_shared/billingPolicy.ts';
+import { checkoutClosedToAll, checkoutPlan, matchesPremiumPrice, billingSettingsUrl, hasStripeSubscription, mayStartCheckout } from '../_shared/billingPolicy.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
   );
   const { data: billing, error: billingError } = await admin
     .from('billing_customers')
-    .select('stripe_customer_id')
+    .select('stripe_customer_id, stripe_subscription_id')
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -176,7 +176,9 @@ Deno.serve(async (req) => {
   }
 
   if (action === 'portal') {
-    if (!billing?.stripe_customer_id) return json({ error: 'No subscription found' }, 404);
+    if (!hasStripeSubscription(billing)) {
+      return json({ error: 'No subscription found' }, 404);
+    }
     try {
       return json({ url: await createPortalUrl(billing.stripe_customer_id) });
     } catch (err) {
