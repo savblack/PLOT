@@ -12,9 +12,18 @@ export const META = {
 };
 
 export const HERO = {
-  headline: 'Your movie and TV companion',
-  sub: "Everything you've watched. Everything you want to watch.",
-  cta: 'Start your plot →',
+  eyebrow: 'Your movie and TV companion',
+  headline: "Everything you've watched. Everything you want to watch.",
+  sub: "Track what you've seen, save what's coming, and keep the notes that make it yours.",
+  cta: 'Start tracking',
+  note: 'Free forever. No credit card required.',
+  secondary: "See what's on",
+  proof: [
+    'Log and rate what you watch',
+    'A release calendar for shows, movies and cinema releases',
+    'Trending and top 10s across US streamers',
+  ],
+  shotAlt: 'The Plot diary, with movies and shows logged and rated.',
 };
 
 // A scroll-driven series of short lines building to the "plot does." payoff.

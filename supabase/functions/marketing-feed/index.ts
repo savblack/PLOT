@@ -29,6 +29,7 @@ import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
 import { ARTICLE_TABLE_CSS, articleExcerpt, isArticleTable, renderArticleBlock } from '../_shared/articleBody.js';
+import { articleSignupPromptHtml, insertPromptAfterSecondParagraph } from '../_shared/articleSignupPrompt.js';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -700,6 +701,12 @@ ${ARTICLE_TABLE_CSS}
   .article-save:hover { background:var(--fill-hover); transform:translateY(-1px); }
   .cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.85rem 1.6rem; min-height: 44px; border-radius: 9999px; background: var(--fill); color: var(--ink); text-decoration: none; font-weight: 500; font-size: 0.9rem; white-space: nowrap; transition: all 0.25s var(--ease); }
   .cta:hover { background: var(--fill-hover); transform: translateY(-1px); }
+  .track-prompt { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 8px 0 32px; padding: 20px 22px; border-radius: 16px; background: var(--paper); border: 1px solid var(--hair); }
+  .track-prompt p, .post-body .track-prompt p { margin: 0; font-size: 1rem; font-weight: 500; line-height: 1.45; color: var(--ink); }
+  .track-prompt .cta { flex-shrink: 0; }
+  @media (max-width: 640px) {
+    .track-prompt { flex-direction: column; align-items: flex-start; }
+  }
   .back { display: inline-block; margin-top: 40px; color: var(--mut); text-decoration: none; }
   .back:hover { color: var(--ink); }
   .post-foot { max-width: 680px; margin: 0 auto; }
@@ -1481,8 +1488,6 @@ Deno.serve(async (req) => {
       </div>`;
   };
   const bodyLede = body.length ? renderArticleBlock(body[0], { lede: true }) : '';
-  const paragraphs = (from: number, to?: number) =>
-    body.slice(from, to).map((p) => renderArticleBlock(p)).join('');
 
   // What the modules did not feature. Poster, name, and the same action — the
   // grid this replaces offered neither, so an eleven-title guide carried less
@@ -1571,6 +1576,39 @@ Deno.serve(async (req) => {
       </section>`
     : '';
 
+  // Second prose paragraph gets the signup prompt when the article continues
+  // past it. The end prompt is always there, so a short piece is not asked twice.
+  const bodyChunks: { html: string; prose: boolean }[] = [];
+  const pushProse = (text: string, html: string) => {
+    if (!text) return;
+    bodyChunks.push({ html, prose: !isArticleTable(text) });
+  };
+  if (body[0]) pushProse(body[0], bodyLede);
+  if (storyHtml) bodyChunks.push({ html: storyHtml, prose: false });
+  if (inlineTitles) {
+    refs.forEach((r, i) => {
+      const text = body[i + 1] || '';
+      pushProse(text, titleParagraph(text, r));
+    });
+    pushProse(body[refs.length + 1] || '', renderArticleBlock(body[refs.length + 1] || ''));
+  } else if (runnerUpHtml) {
+    body.slice(1, runnerUpAt + 1).forEach((text) => pushProse(text, renderArticleBlock(text)));
+    bodyChunks.push({ html: runnerUpHtml, prose: false });
+    body.slice(runnerUpAt + 1).forEach((text) => pushProse(text, renderArticleBlock(text)));
+  } else {
+    body.slice(1).forEach((text) => pushProse(text, renderArticleBlock(text)));
+  }
+  const inlinePrompt = articleSignupPromptHtml({
+    app: APP,
+    slug: typed.slug,
+    placement: 'whats_on_article_inline',
+  });
+  const endPrompt = articleSignupPromptHtml({
+    app: APP,
+    slug: typed.slug,
+    placement: 'whats_on_article_end',
+  });
+  const bodyHtml = insertPromptAfterSecondParagraph(bodyChunks, inlinePrompt, Boolean(titlesSection));
 
   return page(`${title} · Plot`, head, `
     <nav class="crumbs" aria-label="Breadcrumb">
@@ -1583,15 +1621,10 @@ Deno.serve(async (req) => {
       </header>
       ${hero ? `<figure class="hero"><img src="${esc(hero)}" alt=""></figure>` : ''}
       <div class="post-body">
-        ${bodyLede}
-        ${storyHtml}
-        ${inlineTitles
-          ? [...refs.map((r, i) => titleParagraph(body[i + 1], r)), renderArticleBlock(body[refs.length + 1])].join('')
-          : runnerUpHtml
-            ? `${paragraphs(1, runnerUpAt + 1)}${runnerUpHtml}${paragraphs(runnerUpAt + 1)}`
-            : paragraphs(1)}
+        ${bodyHtml}
       </div>
       ${titlesSection}
+      ${endPrompt}
     </article>
     <div class="post-cards">
       ${aboutCard('whats_on_article')}

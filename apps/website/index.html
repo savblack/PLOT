@@ -245,15 +245,21 @@
     @media (max-width: 1100px) { #posterSide { display: none; } }
 
     /* ── Hero ───────────────────────────────────────────────── */
+    /* The opening is one screen: hero, then the product shot. The
+       manifesto starts on the next one. */
+    #opening {
+      min-height: calc(100svh - var(--ticker-height));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
     #hero {
-      min-height: 100vh;
-      min-height: 100svh;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 16rem 2rem 4rem;
+      padding: 5.75rem 2rem 1rem;
     }
 
     .hero-content {
@@ -265,10 +271,10 @@
     }
 
     .hero-headline {
-      font-size: clamp(2.4rem, 4.8vw, 4.4rem);
-      line-height: 0.95;
+      font-size: clamp(2.05rem, 4vw, 3.35rem);
+      line-height: 0.96;
       color: var(--text);
-      margin-bottom: 1.75rem;
+      margin-bottom: 0.85rem;
       text-wrap: balance;
     }
 
@@ -280,15 +286,15 @@
       font-weight: 500;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0.8rem;
     }
 
     .hero-sub {
-      font-size: 1.05rem;
+      font-size: 1rem;
       color: var(--text-secondary);
       font-weight: 400;
-      line-height: 1.5;
-      margin-bottom: 2.25rem;
+      line-height: 1.45;
+      margin-bottom: 1.15rem;
       max-width: 460px;
       margin-left: auto;
       margin-right: auto;
@@ -296,9 +302,82 @@
 
     .hero-actions {
       display: flex;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.7rem;
+    }
+    .hero-note {
+      margin: 0;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      color: var(--text-secondary);
+    }
+    .hero-secondary {
+      display: inline-flex;
+      align-items: center;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: underline;
+      text-underline-offset: 0.22em;
+    }
+    .hero-secondary::after {
+      content: "";
+      display: inline-block;
+      flex-shrink: 0;
+      width: 0.85em;
+      height: 0.85em;
+      margin-left: 0.35em;
+      background: currentColor;
+      clip-path: polygon(0 43%, 73% 43%, 43% 13%, 53% 3%, 100% 50%, 53% 97%, 43% 87%, 73% 57%, 0 57%);
+    }
+    .hero-secondary:hover { color: var(--text-secondary); }
+
+    /* Product proof sits on the same screen as the hero. The shot is a
+       seeded diary, not a live account. */
+    #hero-proof {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(16rem, 0.72fr);
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: center;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0.35rem 2rem calc(var(--ticker-height) + 1.25rem);
+    }
+    .hero-shot {
+      margin: 0;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(41, 41, 36, 0.14);
+      background: rgba(41, 41, 36, 0.04);
+      line-height: 0;
+    }
+    .hero-shot img {
+      display: block;
+      width: 100%;
+      height: clamp(168px, 30vh, 280px);
+      object-fit: cover;
+      object-position: top center;
+    }
+    .hero-points {
+      margin: 0;
+      padding-left: 1.15rem;
+      color: var(--text);
+      font-size: 1rem;
+      line-height: 1.35;
+    }
+    .hero-points li + li { margin-top: 0.85rem; }
+    @media (max-width: 800px) {
+      #hero-proof {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.15rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+      }
+      .hero-shot img { height: clamp(150px, 24vh, 210px); }
+      .hero-points { font-size: 0.95rem; }
     }
 
 
@@ -783,8 +862,16 @@
 
     /* Short viewports (landscape phones) — the 16rem desktop hero padding
        would push the headline below the fold */
+    @media (max-height: 800px) {
+      #hero { padding-top: 5rem; padding-bottom: 0.6rem; }
+      .hero-headline { margin-bottom: 0.55rem; }
+      .hero-sub { margin-bottom: 0.8rem; }
+      .hero-shot img { height: clamp(132px, 22vh, 200px); }
+      .hero-points li + li { margin-top: 0.6rem; }
+    }
     @media (max-height: 500px) {
-      #hero { padding-top: 5rem; padding-bottom: 2rem; }
+      #hero { padding-top: 4.5rem; padding-bottom: 0.35rem; }
+      .hero-shot img { height: 112px; }
     }
 
     /* Hero scroll-teaser — posters peeking up from the bottom of the fold.
@@ -792,7 +879,7 @@
        hero always has posters, including at tablet portrait widths. */
     @media (max-width: 1100px) {
       .hero-peek {
-        display: flex;
+        display: none;
         gap: 14px;
         justify-content: center;
         align-items: center;
@@ -880,21 +967,29 @@
     @media (max-width: 600px) {
       /* Nav mobile menu (hamburger + slide-down panel) is in the shared /nav.css */
 
-      /* Hero — compact spacing on mobile */
-      /* Copy sits in the top half of the fold rather than centred, so the
-         headline and CTA are on screen at load; the peek posters take the
-         lower half. The ticker is dropped on phones: it covered every poster
-         and the footer. */
-      #hero { align-items: flex-start; padding-top: 7rem; padding-bottom: 2rem; }
-      .hero-actions { flex-direction: column; align-items: center; }
+      /* Hero — compact spacing on mobile. The ticker is dropped on phones. */
+      #hero { align-items: flex-start; padding-top: 5.4rem; padding-bottom: 0.75rem; }
       .ticker-section { display: none; }
       :root { --ticker-height: 0px; }
-      .hero-peek { transform: translateY(55%); bottom: 0; }
+      .hero-peek { display: none; }
+
+      /* Short phones: keep the hero and the three bullets on one screen. */
+      @media (max-height: 720px) {
+        #hero { padding-top: 4.5rem; padding-bottom: 0.35rem; }
+        .hero-eyebrow { margin-bottom: 0.4rem; }
+        .hero-headline { font-size: 1.62rem; line-height: 1.02; margin-bottom: 0.4rem; }
+        .hero-sub { margin-bottom: 0.5rem; font-size: 0.92rem; }
+        .hero-actions { gap: 0.4rem; }
+        #hero-proof { gap: 0.7rem; padding-bottom: 0.5rem; }
+        .hero-shot img { height: 112px; }
+        .hero-points { font-size: 0.9rem; }
+        .hero-points li + li { margin-top: 0.35rem; }
+      }
 
       /* Unify the mobile gutter — the interactive demo sections default to a
          2rem side padding while the editorial sections (manifesto, closing,
          footer) use 1.5rem. Match them so section edges line up on scroll. */
-      section#hero, section#guide-demo, section#calendar-demo, section#lists-demo, section#app-soon {
+      section#hero, section#hero-proof, section#guide-demo, section#calendar-demo, section#lists-demo, section#app-soon {
         padding-left: 1.5rem;
         padding-right: 1.5rem;
       }
@@ -1584,11 +1679,6 @@
       .guide-panel { max-width: none; }
     }
   </style>
-  <!-- The three mobile/tablet hero posters are real first-frame fallbacks.
-       Preload them so the hero never waits for the live discovery request. -->
-  <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg">
-  <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/gRMalasZEzsZi4w2VFuYusfSfqf.jpg">
-  <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg">
   <link rel="stylesheet" href="/premium-home.css?v=18">
 </head>
 <body>
@@ -1614,22 +1704,31 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </nav>
 
   <!-- ── Hero ────────────────────────────────────────────────── -->
+  <div id="opening">
   <section id="hero">
     <div class="hero-content">
-      <span class="hero-eyebrow reveal">Your movie and TV companion</span>
-      <h1 class="hero-headline reveal reveal-delay-1">Everything you've watched.<br>Everything you want to watch.</h1>
-      <p class="hero-sub reveal reveal-delay-2">Track what you've seen, save what's coming, and keep the notes that make it yours.</p>
-      <div class="hero-actions reveal reveal-delay-3">
-        <a href="/whats-on" class="btn btn-outline btn-large" data-cta="hero-whats-on">See what's on</a>
-        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="hero">Start your Plot</a>
+      <span class="hero-eyebrow">Your movie and TV companion</span>
+      <h1 class="hero-headline">Everything you've watched.<br>Everything you want to watch.</h1>
+      <p class="hero-sub">Track what you've seen, save what's coming, and keep the notes that make it yours.</p>
+      <div class="hero-actions">
+        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="hero">Start tracking</a>
+        <p class="hero-note">Free forever. No credit card required.</p>
+        <a href="/whats-on" class="hero-secondary">See what's on</a>
       </div>
     </div>
-    <div class="hero-peek" aria-hidden="true">
-      <img class="hpk" src="https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
-      <img class="hpk" src="https://image.tmdb.org/t/p/w500/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
-      <img class="hpk" src="https://image.tmdb.org/t/p/w500/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
-    </div>
   </section>
+
+  <section id="hero-proof" aria-label="What you can do with Plot">
+    <figure class="hero-shot">
+      <img src="/images/hero-diary.webp" alt="The Plot diary, with movies and shows logged and rated." width="1280" height="720">
+    </figure>
+    <ul class="hero-points">
+      <li>Log and rate what you watch</li>
+      <li>A release calendar for shows, movies and cinema releases</li>
+      <li>Trending and top 10s across US streamers</li>
+    </ul>
+  </section>
+  </div>
 
   <!-- ── Manifesto ────────────────────────────────────────────── -->
   <section id="manifesto">
@@ -1918,7 +2017,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <h2 class="premium-headline">Less deciding.<br><em>More watching.</em></h2>
         <div class="premium-copy-stage"><div class="premium-copy-slide is-active"><h3>Choose something together</h3><p>You’ve both got a watchlist. Find the overlap, make a list together and get movie night started. Friends can join for free.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Find tonight’s movie</h3><p>A little time to spare and too much to choose from? Find a movie that fits your evening, on the services you use.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Follow the people behind your favorites</h3><p>Love an actor? Always make time for a certain director? Follow them and get a heads-up when their next movie or show is on the way.</p></div></div>
         <p class="premium-note">Your everyday watching stays free.</p>
-        <a href="https://app.theplot.tv/plans" class="btn btn-primary btn-large">Explore Premium</a>
         <div class="premium-switcher" role="group" aria-label="Premium benefits" hidden>
           <button type="button" class="premium-step" aria-pressed="true"><span class="premium-bar" aria-hidden="true"></span><span class="premium-step-label">Together</span></button>
           <button type="button" class="premium-step" aria-pressed="false"><span class="premium-bar" aria-hidden="true"></span><span class="premium-step-label">Tonight</span></button>
@@ -2409,16 +2507,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       if (sidePostersStarted || window.innerWidth < 1100) return;
       sidePostersStarted = true;
+    const afterFold = Math.max(720, Math.round(window.innerHeight));
     const sideLayout = [
-      // First four posters (2 left, 2 right) — reach well into centre.
-      // Small positive showAt keeps the hero clean on load; they slide in as
-      // soon as the user starts to scroll, staggered left/right for rhythm.
-      // showAt is negative by one slide-in so these four are fully in place at
-      // load: the hero opens with posters in its corners rather than empty.
-      { side: 'left',  vy: 0.48, showAt: -320, w: 200, h: 300, restX:  32, hold: 1000 },
-      { side: 'left',  vy: 0.12, showAt: -320, w: 150, h: 225, restX:  72, hold: 1000 },
-      { side: 'right', vy: 0.11, showAt: -320, w: 200, h: 300, restX:  32, hold: 1000 },
-      { side: 'right', vy: 0.51, showAt: -320, w: 140, h: 210, restX:  92, hold: 1000 },
+      // First four posters wait until the opening screen has scrolled away.
+      // The approved fold is the hero plus the product shot, and these used
+      // to sit in the corners at load.
+      { side: 'left',  vy: 0.48, showAt: afterFold, w: 200, h: 300, restX:  32, hold: 1000 },
+      { side: 'left',  vy: 0.12, showAt: afterFold, w: 150, h: 225, restX:  72, hold: 1000 },
+      { side: 'right', vy: 0.11, showAt: afterFold, w: 200, h: 300, restX:  32, hold: 1000 },
+      { side: 'right', vy: 0.51, showAt: afterFold, w: 140, h: 210, restX:  92, hold: 1000 },
       // Scroll reveals — wide range of restX (4 = nearly touching centre, 160 = tucked to edge)
       { side: 'left',  vy: 0.24, showAt:  400, w: 320, h: 480, restX:  4 },
       { side: 'right', vy: 0.20, showAt:  440, w: 165, h: 248, restX: 155 },
