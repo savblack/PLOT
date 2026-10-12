@@ -230,11 +230,6 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
   if (!hasServiceRoleBearer(req)) return json({ error: 'Forbidden' }, 403);
 
-  const resendKey = Deno.env.get('RESEND_API_KEY');
-  const secret = Deno.env.get('ALERT_EMAIL_UNSUBSCRIBE_SECRET');
-  // Say which setting is missing, never its value.
-  if (!resendKey) return json({ ok: false, error: 'RESEND_API_KEY is not set' }, 500);
-  if (!secret || secret.length < 16) return json({ ok: false, error: 'ALERT_EMAIL_UNSUBSCRIBE_SECRET is not set or too short' }, 500);
   const from = Deno.env.get('ALERT_EMAIL_FROM') || ALERT_EMAIL_FROM;
   // Where the email's links point. Only overridden to test against a preview or staging app.
   const appOrigin = Deno.env.get('ALERT_EMAIL_APP_ORIGIN') || APP_ORIGIN;
@@ -325,6 +320,12 @@ Deno.serve(async (req) => {
     if (dryRun || !deliver) {
       return await finish(200, { ok: true, ...stats, emails_sent: 0, emails_failed: 0, note: dryRun ? 'dry run: nothing claimed or sent' : 'delivery is off: nothing claimed or sent' });
     }
+
+    const resendKey = Deno.env.get('RESEND_API_KEY');
+    const secret = Deno.env.get('ALERT_EMAIL_UNSUBSCRIBE_SECRET');
+    // Sending needs both secrets; planning with delivery off does not.
+    if (!resendKey) return await finish(500, { ok: false, error: 'RESEND_API_KEY is not set' });
+    if (!secret || secret.length < 16) return await finish(500, { ok: false, error: 'ALERT_EMAIL_UNSUBSCRIBE_SECRET is not set or too short' });
 
     // Build and send in batches, claiming each person's alerts just before their email goes out.
     stage = 'send';
