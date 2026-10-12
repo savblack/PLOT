@@ -9,14 +9,12 @@ overrides:
   braces: npm:@dieub/braces-depth-guard@3.0.3-pn.0
   uuid@<11.1.1: 11.1.1
   decode-uri-component@<=0.4.2: 0.5.0
+  node-forge: file:vendor/node-forge
 
 patchedDependencies:
   decode-uri-component@0.5.0:
     hash: 98948870151581b58082ba6d11049564c999baeb94af582330a6d69f0f3ab9af
     path: patches/decode-uri-component@0.5.0.patch
-  node-forge@1.4.0:
-    hash: 4fa957cddb4b4601a48b535053d0fec7ed013f9d075660a38365f285fc830fe0
-    path: patches/node-forge@1.4.0.patch
 
 importers:
 
@@ -1675,6 +1673,10 @@ packages:
     resolution: {integrity: sha512-oTN9FNYuN6bqQMwiho6jJKLCG2/QOYCixGXuCjRmzOq23eODeukuY2XiAVoVpAECbuezMt1MHQjAiQxK8F+Y+g==}
     engines: {node: '>=20'}
     hasBin: true
+
+  '@plot/node-forge@file:vendor/node-forge':
+    resolution: {directory: vendor/node-forge, type: directory}
+    engines: {node: '>= 6.13.0'}
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -4352,10 +4354,6 @@ packages:
       encoding:
         optional: true
 
-  node-forge@1.4.0:
-    resolution: {integrity: sha512-LarFH0+6VfriEhqMMcLX2F7SwSXeWwnEAJEsYm5QKWchiVYVvJyV9v7UDvUv+w5HO23ZpQTXDv/GxdDdMyOuoQ==}
-    engines: {node: '>= 6.13.0'}
-
   node-int64@0.4.0:
     resolution: {integrity: sha512-O5lz91xSOeoXP6DulyHfllpq+Eg00MWitZIbtPfoSEvqIHdl5gfcY6hYzDWnj0qD5tz52PI08u9qUvSVeUBeHw==}
 
@@ -6378,7 +6376,7 @@ snapshots:
       glob: 13.0.6
       lan-network: 0.2.1
       multitars: 1.0.2
-      node-forge: 1.4.0(patch_hash=4fa957cddb4b4601a48b535053d0fec7ed013f9d075660a38365f285fc830fe0)
+      node-forge: '@plot/node-forge@file:vendor/node-forge'
       npm-package-arg: 11.0.3
       ora: 3.4.0
       picomatch: 4.0.7
@@ -6415,7 +6413,7 @@ snapshots:
 
   '@expo/code-signing-certificates@0.0.6':
     dependencies:
-      node-forge: 1.4.0(patch_hash=4fa957cddb4b4601a48b535053d0fec7ed013f9d075660a38365f285fc830fe0)
+      node-forge: '@plot/node-forge@file:vendor/node-forge'
 
   '@expo/config-plugins@57.0.9(typescript@6.0.3)':
     dependencies:
@@ -7093,6 +7091,8 @@ snapshots:
   '@playwright/test@1.64.0':
     dependencies:
       playwright: 1.64.0
+
+  '@plot/node-forge@file:vendor/node-forge': {}
 
   '@polka/url@1.0.0-next.29': {}
 
@@ -10282,8 +10282,6 @@ snapshots:
   node-fetch@2.7.0:
     dependencies:
       whatwg-url: 5.0.0
-
-  node-forge@1.4.0(patch_hash=4fa957cddb4b4601a48b535053d0fec7ed013f9d075660a38365f285fc830fe0): {}
 
   node-int64@0.4.0: {}
 

@@ -49,10 +49,12 @@ overrides:
   # 0.5.0 is ESM-only, and query-string calls require(), so the patch
   # publishes the same function as CommonJS.
   "decode-uri-component@<=0.4.2": 0.5.0
-
-# node-forge 1.4.0 is still the latest release on npm. CVE-2026-85393
-# (GHSA-86w9-cpqp-85rv) lets a nested DigestAlgorithm carry extra elements
-# and forge an RSA PKCS#1 v1.5 signature for a low public exponent.
-# patches/node-forge@1.4.0.patch is the unmerged check from
-# digitalbazaar/forge#1152. @expo/cli and @expo/code-signing-certificates
-# are the packages that depend on it.
+  # @expo/cli and @expo/code-signing-certificates depend on node-forge.
+  # 1.4.0 is still the latest npm release. CVE-2026-85393
+  # (GHSA-86w9-cpqp-85rv) lets a nested DigestAlgorithm carry extra elements
+  # and forge an RSA PKCS#1 v1.5 signature for a low public exponent.
+  # Upstream has no patched version. Patching 1.4.0 in place keeps the name
+  # node-forge@1.4.0, so Dependabot leaves alert 102 open. vendor/node-forge
+  # is that release plus the DigestAlgorithm child-count check from
+  # digitalbazaar/forge#1152, under the name @plot/node-forge.
+  node-forge: "file:vendor/node-forge"
