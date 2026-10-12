@@ -1,9 +1,10 @@
 /**
  * Home's first-run card after onboarding: the RN counterpart of
- * apps/web/src/components/FinishingTouches.jsx. Four steps, each ticking only
- * when the action is really done (titles saved, someone followed, an import
- * finished, an actor or director followed). The rules, copy and stored state's
- * shape live in @plot/core/finishingTouches.js and copy/finishingTouches.js.
+ * apps/web/src/components/FinishingTouches.jsx. Five steps, each ticking only
+ * when the action is really done (titles saved, an episode or a watch logged,
+ * someone followed, an import finished, an actor or director followed). The
+ * rules, copy and stored state's shape live in @plot/core/finishingTouches.js
+ * and copy/finishingTouches.js.
  *
  * Collapsed by default: web opens it on wide screens only, and a phone has none.
  */
@@ -14,10 +15,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { followUser } from '@plot/core/useFollows.js';
 import { usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
-import { deriveFinishingTouches, finishingTouchesVisible, type FinishingTouchesState } from '@plot/core/finishingTouches.js';
+import { deriveFinishingTouches, finishingTouchesVisible, upToTarget, type FinishingTouchesState, type UpToTarget } from '@plot/core/finishingTouches.js';
+import { pointerAfterEpisode } from '@plot/core/watchingProgress.js';
+import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
 import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
 import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
 import { FINISHING_TOUCHES as T } from '@plot/core/copy/finishingTouches.js';
+import { MEDIA } from '@plot/core/copy/media.js';
+import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { supabase } from '../lib/supabase';
 import { tmdb } from '../lib/tmdb';
@@ -35,7 +41,7 @@ import ImportSourceIcon from './ImportSourceIcon';
 import { FollowPill, PersonFace } from './people/FollowControls';
 import { useFollowPerson } from './people/useFollowPerson';
 
-type Sheet = 'friends' | 'import' | 'people' | null;
+type Sheet = 'friends' | 'import' | 'people' | 'progress' | null;
 
 /** Whether Home treats this account as first-run. Null until AsyncStorage answers. */
 export function useFinishingTouchesState(userId: string | null | undefined) {
@@ -74,7 +80,8 @@ export default function FinishingTouches({ state, onState }: {
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { userId, profile, watchlist } = useAppData();
+  const { userId, profile, watchlist, watching, history } = useAppData();
+  const router = useRouter();
   const follows = useFollows(userId, userId);
   const followPerson = useFollowPerson();
   const [expanded, setExpanded] = useState(false);
@@ -82,11 +89,14 @@ export default function FinishingTouches({ state, onState }: {
   const fav = favoriteWords(profile?.region);
 
   const savedCount = watchlist?.items?.length ?? 0;
+  const target = upToTarget(state?.picks);
+  const progressDone = (history?.entries?.length ?? 0) > 0 || (watching?.items?.length ?? 0) > 0;
   const { steps, doneCount, total, allDone } = deriveFinishingTouches({
     savedCount,
     followingCount: follows.following,
     importDone: !!state?.importDone,
     peopleCount: followPerson.follows.length,
+    progressDone,
   });
 
   if (!userId || !finishingTouchesVisible(state)) return null;
@@ -94,6 +104,18 @@ export default function FinishingTouches({ state, onState }: {
   const first = followPerson.follows[0]?.name;
   const tiles = steps.map(step => {
     if (step.id === 'watchlist') return { ...step, title: T.steps.watchlist.title, sub: T.steps.watchlist.sub(savedCount), cta: undefined };
+    if (step.id === 'progress') {
+      const name = target?.pick.title || '';
+      const sub = step.done
+        ? T.steps.progress.doneSub
+        : !target
+          ? T.steps.progress.emptySub
+          : target.mode === 'watched'
+            ? T.steps.progress.movieSub(name)
+            : T.steps.progress.sub(name);
+      const cta = !target ? T.steps.progress.findShow : target.mode === 'watched' ? MEDIA.markWatched : T.steps.progress.cta;
+      return { ...step, title: T.steps.progress.title, sub, cta };
+    }
     if (step.id === 'friends') {
       return { ...step, title: T.steps.friends.title, sub: step.done ? T.steps.friends.doneSub(follows.following) : T.steps.friends.sub, cta: T.steps.friends.cta };
     }
@@ -182,7 +204,11 @@ export default function FinishingTouches({ state, onState }: {
               {!tile.done && tile.cta && (
                 <TouchableOpacity
                   style={styles.tileCta}
-                  onPress={() => { track(EVENTS.FINISHING_TOUCH_OPENED, { step: tile.id }); setSheet(tile.id as Sheet); }}
+                  onPress={() => {
+                    track(EVENTS.FINISHING_TOUCH_OPENED, { step: tile.id });
+                    if (tile.id === 'progress' && !target) { router.push('/(app)/search' as Href); return; }
+                    setSheet(tile.id as Sheet);
+                  }}
                   accessibilityRole="button"
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
@@ -194,6 +220,9 @@ export default function FinishingTouches({ state, onState }: {
         </View>
       )}
 
+      {sheet === 'progress' && target && (
+        <UpToSheet target={target} watching={watching} history={history} watchlist={watchlist} onClose={closeSheet} />
+      )}
       {sheet === 'friends' && <FriendsSheet userId={userId} onClose={closeSheet} />}
       {sheet === 'people' && <PeopleSheet watchlistItems={watchlist?.items ?? []} favourites={fav.pluralLower} follow={followPerson} onClose={closeSheet} />}
       {sheet === 'import' && !!userId && (
@@ -374,6 +403,146 @@ function PeopleSheet({ watchlistItems, favourites, follow, onClose }: {
   );
 }
 
+function UpToSheet({ target, watching, history, watchlist, onClose }: {
+  target: UpToTarget;
+  watching: ReturnType<typeof useAppData>['watching'];
+  history: ReturnType<typeof useAppData>['history'];
+  watchlist: ReturnType<typeof useAppData>['watchlist'];
+  onClose: () => void;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const pick = target.pick;
+  const [details, setDetails] = useState<{ name?: string; poster_path?: string | null; seasons?: Array<{ season_number: number }> } | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [selSeason, setSelSeason] = useState(1);
+  const [seasonLoad, setSeasonLoad] = useState<{ season: number; episodes: Array<{ episode_number: number; name?: string }> | null; failed: boolean }>({ season: 0, episodes: null, failed: false });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (target.mode !== 'episodes') return undefined;
+    let alive = true;
+    tmdb.getTVDetails(pick.id).then((data: { name?: string; poster_path?: string | null; seasons?: Array<{ season_number: number }> } | null) => {
+      if (!alive) return;
+      if (!data) { setFailed(true); return; }
+      setDetails(data);
+      const first = (data.seasons || []).find(s => s.season_number > 0);
+      if (first) setSelSeason(first.season_number);
+    }).catch(() => { if (alive) setFailed(true); });
+    return () => { alive = false; };
+  }, [pick.id, target.mode]);
+
+  useEffect(() => {
+    if (target.mode !== 'episodes' || !details) return undefined;
+    let alive = true;
+    const season = selSeason;
+    tmdb.getSeason(pick.id, season).then((data: { episodes?: Array<{ episode_number: number; name?: string }> } | null) => {
+      if (!alive) return;
+      setSeasonLoad({ season, episodes: data?.episodes || [], failed: !data });
+    }).catch(() => { if (alive) setSeasonLoad({ season, episodes: [], failed: true }); });
+    return () => { alive = false; };
+  }, [details, pick.id, selSeason, target.mode]);
+
+  const episodes = seasonLoad.season === selSeason ? seasonLoad.episodes : null;
+  const epFailed = seasonLoad.season === selSeason && seasonLoad.failed;
+
+  const tick = async (ep: { episode_number: number; name?: string }) => {
+    if (busy || !episodes) return;
+    setBusy(true);
+    setError('');
+    const show = {
+      id: pick.id,
+      media_type: 'tv' as const,
+      title: details?.name || pick.title,
+      name: details?.name || pick.title,
+      poster_path: details?.poster_path ?? pick.poster_path,
+    };
+    if (!watching.isWatching(pick.id)) {
+      const started = await watching.startWatching(show);
+      if (!started) { setError(T.steps.progress.saveError); setBusy(false); return; }
+    }
+    const next = pointerAfterEpisode(selSeason, ep.episode_number, episodes.length);
+    if (!next) { setError(T.steps.progress.saveError); setBusy(false); return; }
+    const result = await watching.setProgress(pick.id, next.season, next.episode, { reason: 'episode', undo: true });
+    setBusy(false);
+    if (!result?.ok) { setError(T.steps.progress.saveError); return; }
+    onClose();
+  };
+
+  const markMovie = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    const item = { id: pick.id, media_type: 'movie' as const, title: pick.title, poster_path: pick.poster_path };
+    const result = await markMediaAsWatched({
+      logWatched: () => history.logWatched(item),
+      clearWatching: async () => true,
+      removeFromSaved: () => watchlist.removeFromList(pick.id),
+      rollbackHistory: () => history.removeEntry(pick.id, 'movie'),
+      mediaType: 'movie',
+      isWatching: false,
+      inList: !!watchlist.isInList?.(pick.id),
+    });
+    setBusy(false);
+    if (!result.ok) { setError(T.steps.progress.saveError); return; }
+    onClose();
+  };
+
+  if (target.mode === 'watched') {
+    return (
+      <BottomSheet title={T.steps.progress.title} sub={T.steps.progress.movieSub(pick.title)} onClose={onClose}>
+        {!!error && <Text style={styles.empty}>{error}</Text>}
+        <TouchableOpacity style={styles.pill} disabled={busy} onPress={markMovie} accessibilityRole="button">
+          <Text style={styles.pillText}>{busy ? COMMON.saving : MEDIA.markWatched}</Text>
+        </TouchableOpacity>
+      </BottomSheet>
+    );
+  }
+
+  const seasons = (details?.seasons || []).filter(s => s.season_number > 0);
+  const title = details?.name || pick.title;
+
+  return (
+    <BottomSheet title={T.steps.progress.title} sub={T.steps.progress.sheetSub(title)} onClose={onClose}>
+      {failed && <Text style={styles.empty}>{MEDIA_PANEL.episodesLoadError}</Text>}
+      {seasons.length > 1 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.seasonRow}>
+          {seasons.map(s => (
+            <TouchableOpacity
+              key={s.season_number}
+              style={[styles.seasonPill, s.season_number === selSeason && styles.seasonPillOn]}
+              onPress={() => setSelSeason(s.season_number)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: s.season_number === selSeason }}
+            >
+              <Text style={styles.pillText}>{MEDIA_PANEL.seasonLabel(s.season_number)}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+      {!!error && <Text style={styles.empty}>{error}</Text>}
+      {episodes === null && !failed ? <Text style={styles.empty}>{COMMON.loading}</Text> : null}
+      {episodes && episodes.length === 0 ? (
+        <Text style={styles.empty}>{epFailed ? MEDIA_PANEL.episodesLoadError : MEDIA_PANEL.noEpisodesAvailable}</Text>
+      ) : null}
+      {episodes?.map(ep => (
+        <TouchableOpacity
+          key={ep.episode_number}
+          style={styles.ep}
+          disabled={busy}
+          onPress={() => tick(ep)}
+          accessibilityRole="button"
+          accessibilityLabel={T.steps.progress.tickEpisode(ep.episode_number, ep.name)}
+        >
+          <Text style={styles.epNum}>{`E${String(ep.episode_number).padStart(2, '0')}`}</Text>
+          <Text style={styles.personName} numberOfLines={1}>{ep.name || MEDIA_PANEL.seasonEpisode(selSeason, ep.episode_number)}</Text>
+        </TouchableOpacity>
+      ))}
+    </BottomSheet>
+  );
+}
+
 const makeStyles = (colors: Palette) => StyleSheet.create({
   card: { marginHorizontal: spacing.xl, marginBottom: spacing.xl, padding: spacing.lg, gap: spacing.md, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -414,6 +583,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   source: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: radii.md, backgroundColor: colors.surfaceSunken },
+  seasonRow: { gap: spacing.sm, paddingVertical: spacing.xs },
+  seasonPill: { minHeight: 36, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg },
+  seasonPillOn: { borderColor: colors.accent },
+  ep: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  epNum: { width: 36, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
   pill: { minHeight: 36, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg },
   pillOn: { borderColor: colors.accent },
   pillText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },

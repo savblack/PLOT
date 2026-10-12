@@ -25,10 +25,11 @@ async function update(userId: string, change: (state: FinishingTouchesState) => 
   return next;
 }
 
-/** Onboarding finished: start the card, once per account on this device. */
-export async function startFinishingTouchesFor(userId: string): Promise<void> {
+/** Onboarding finished: start the card, once per account on this device.
+ *  `picks` is the onboarding selection, so Home can open the first show. */
+export async function startFinishingTouchesFor(userId: string, picks: unknown[] = []): Promise<void> {
   const key = finishingTouchesKey(userId);
-  if (!(await readStorage(key))) await writeStorage(key, serialiseFinishingTouches(startFinishingTouches()));
+  if (!(await readStorage(key))) await writeStorage(key, serialiseFinishingTouches(startFinishingTouches(Date.now(), picks)));
 }
 
 /** An import finished: ticks "Bring your history over". A no-op for accounts that never had the card. */

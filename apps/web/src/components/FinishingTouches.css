@@ -1,7 +1,7 @@
 /* Finishing touches: Home's first-run card. A white card with a hairline,
-   a one-line header (title, run bar, count, hide, chevron) and, open, the four
-   tiles: one row on desktop, a 2x2 grid on phones. Progress and ticks use the
-   accent (approved for this card, Oct 2026). */
+   a one-line header (title, run bar, count, hide, chevron) and, open, the
+   tiles: one row on a wide desktop, a 2-column grid on phones. Progress and
+   ticks use the accent (approved for this card, Oct 2026). */
 
 .ft-card {
   margin: 0 var(--gut) 28px;
@@ -31,7 +31,7 @@
   .ft-bar { order: 10; flex-basis: 100%; width: auto; margin-right: 10px; }
 }
 .ft-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0 10px 10px; }
-@media (min-width: 1024px) { .ft-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .ft-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 .ft-tile { min-width: 0; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; background: var(--surface-sunken); display: flex; flex-direction: column; gap: 4px; }
 .ft-tile--friends { background: var(--accent-secondary-dim); }
 .ft-tile--people { background: var(--accent-dim); }
@@ -78,6 +78,23 @@
 .ft-source-text { display: flex; flex-direction: column; }
 .ft-source-text b { font-size: 15px; }
 .ft-source-text span { font-size: 13px; color: var(--text-secondary); }
+
+.ft-season { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.ft-season select {
+  height: 40px; padding: 0 12px; border-radius: var(--radius-md); border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-primary); font: inherit; font-size: 14px;
+}
+.ft-eps { list-style: none; margin: 0; padding: 0; max-height: 50vh; overflow: auto; }
+.ft-ep {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 0;
+  border: none; border-bottom: 1px solid var(--border); background: none; color: inherit;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.ft-ep:last-child { border-bottom: none; }
+.ft-ep:hover { color: var(--accent-text); }
+.ft-ep b { font-size: 13px; font-variant-numeric: tabular-nums; }
+.ft-ep span { font-size: 14px; }
+.ft-ep:disabled { opacity: 0.5; cursor: default; }
 .ft-preview { margin-bottom: 18px; padding: 14px; border-radius: var(--radius-md); background: var(--surface-sunken); }
 .ft-preview-head { display: flex; align-items: baseline; justify-content: space-between; }
 .ft-preview-head b { font-family: var(--font-display); font-size: 17px; font-weight: 400; }

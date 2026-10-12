@@ -158,7 +158,7 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
       await watchlist.addToList(item, { source: 'onboarding' });
     }
     // Home's Finishing touches card starts now (once per account on this device).
-    await startFinishingTouchesFor(user.id);
+    await startFinishingTouchesFor(user.id, chosen);
     // Switching apps: the import itself needs a screen, so Home opens it once
     // setup is done rather than pretending to run during it.
     setPendingImportSource(importSource);

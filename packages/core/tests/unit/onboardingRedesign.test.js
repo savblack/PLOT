@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  deriveFinishingTouches, finishingTouchesVisible, hideFinishingTouches, parseFinishingTouches,
-  serialiseFinishingTouches, startFinishingTouches, ACTIVE_DAYS, HIDE_DAYS,
+  deriveFinishingTouches, finishingTouchesVisible, hideFinishingTouches, onboardingPicks,
+  parseFinishingTouches, serialiseFinishingTouches, startFinishingTouches, upToTarget,
+  ACTIVE_DAYS, HIDE_DAYS,
 } from '../../finishingTouches.js';
 import { greetingFor, partOfDay } from '../../greeting.js';
 import {
@@ -14,12 +15,50 @@ const NOW = Date.UTC(2026, 9, 3, 12);
 
 test('a step is done only when its data says so', () => {
   const fresh = deriveFinishingTouches({ savedCount: 3, followingCount: 0, importDone: false, peopleCount: 0 });
-  assert.deepEqual(fresh.steps.map(s => [s.id, s.done]), [['watchlist', true], ['friends', false], ['import', false], ['people', false]]);
+  assert.deepEqual(fresh.steps.map(s => [s.id, s.done]), [
+    ['watchlist', true], ['progress', false], ['friends', false], ['import', false], ['people', false],
+  ]);
   assert.equal(fresh.doneCount, 1);
-  assert.equal(fresh.total, 4);
+  assert.equal(fresh.total, 5);
   assert.equal(fresh.allDone, false);
-  const all = deriveFinishingTouches({ savedCount: 1, followingCount: 2, importDone: true, peopleCount: 1 });
+  const all = deriveFinishingTouches({ savedCount: 1, followingCount: 2, importDone: true, peopleCount: 1, progressDone: true });
   assert.equal(all.allDone, true);
+});
+
+test('the progress step stays open after onboarding saves, and ticks once something is logged', () => {
+  const saved = deriveFinishingTouches({ savedCount: 3, progressDone: false });
+  assert.equal(saved.steps.find(step => step.id === 'watchlist').done, true);
+  assert.equal(saved.steps.find(step => step.id === 'progress').done, false);
+  assert.equal(deriveFinishingTouches({ savedCount: 3, progressDone: true }).steps.find(step => step.id === 'progress').done, true);
+});
+
+test('up to opens the first show, or the next show when the first pick is a movie', () => {
+  const show = { id: 11, media_type: 'tv', title: 'North', name: 'ignored', poster_path: '/n.jpg' };
+  const film = { id: 22, media_type: 'movie', title: 'West', poster_path: null };
+  const later = { tmdb_id: 33, media_type: 'tv', name: 'East' };
+  assert.deepEqual(upToTarget([show, film]), {
+    pick: { id: 11, media_type: 'tv', title: 'North', poster_path: '/n.jpg' },
+    mode: 'episodes',
+    fellBack: false,
+  });
+  const fellBack = upToTarget([film, later]);
+  assert.equal(fellBack.pick.id, 33);
+  assert.equal(fellBack.pick.title, 'East');
+  assert.equal(fellBack.mode, 'episodes');
+  assert.equal(fellBack.fellBack, true);
+  assert.equal(upToTarget([film]).mode, 'watched');
+  assert.equal(upToTarget([film]).pick.id, 22);
+  assert.equal(upToTarget([]), null);
+  assert.equal(upToTarget(null), null);
+  assert.deepEqual(onboardingPicks([{ id: 0, media_type: 'tv' }, { id: 4, media_type: 'person' }, 'nope']), []);
+});
+
+test('onboarding picks round-trip on the card, and a card without them still parses', () => {
+  const picks = [{ id: 11, media_type: 'tv', title: 'North', poster_path: '/n.jpg' }];
+  const started = startFinishingTouches(NOW, picks);
+  assert.deepEqual(parseFinishingTouches(serialiseFinishingTouches(started)).picks, picks);
+  const bare = startFinishingTouches(NOW);
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(bare)).picks, undefined);
 });
 
 test('nothing saved means the watchlist step is not done', () => {
