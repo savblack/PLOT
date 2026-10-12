@@ -1,0 +1,7 @@
+/* The page opened from an alert email's Unsubscribe link: one small centred card. */
+.email-unsub { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: var(--bg); }
+.email-unsub-card { width: 100%; max-width: 420px; padding: 32px 28px; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
+.email-unsub-title { margin: 0 0 10px; font-size: 1.25rem; color: var(--text-primary); }
+.email-unsub-body { margin: 0 0 18px; font-size: 0.95rem; line-height: 1.5; color: var(--text-secondary); }
+.email-unsub-link { margin: 16px 0 0; font-size: 0.9rem; }
+.email-unsub-link a { color: var(--accent-text); }

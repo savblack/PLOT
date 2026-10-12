@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
-import { useAlertToggle } from './usePremiumAlerts.js';
+import { alertWriteError, useAlertToggle } from './usePremiumAlerts.js';
 
 /**
  * Streaming alerts on watchlist films, shared by web and mobile. Free, in the
@@ -82,4 +82,47 @@ export function useMutedFilms(userId) {
   }, [userId]);
 
   return { films, loading: !!userId && loadedFor !== userId, unmute };
+}
+
+/**
+ * The Premium option to also get streaming alerts by email
+ * (notification_preferences.streaming_email). Off by default, and a missing row
+ * is off. Turning it ON needs Premium: the database refuses otherwise (a trigger
+ * raising the same 42501 an RLS denial does), and `setOn` reports that as
+ * `premium_required`, which callers answer with the upgrade sheet. Turning it
+ * OFF always works, whatever the plan. Nothing here sends anything; the daily
+ * alert-email-delivery Edge Function does.
+ * @param {string | null | undefined} userId
+ */
+export function useStreamingEmailSwitch(userId) {
+  const [state, setState] = useState(/** @type {{ userId: string | null, on: boolean }} */ ({ userId: null, on: false }));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(/** @type {string | null} */ (null));
+
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    supabase.from('notification_preferences').select('streaming_email').eq('user_id', userId).maybeSingle()
+      .then(({ data }) => { if (active) setState({ userId, on: data?.streaming_email === true }); });
+    return () => { active = false; };
+  }, [userId]);
+
+  const setOn = useCallback(async (/** @type {boolean} */ value) => {
+    if (!userId || busy) return { ok: false, error: null };
+    setBusy(true);
+    setError(null);
+    const { error: writeError } = await supabase.from('notification_preferences')
+      .upsert({ user_id: userId, streaming_email: value, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    setBusy(false);
+    if (writeError) {
+      const message = alertWriteError(writeError);
+      // Needing Premium is not an error to show: the caller opens the upgrade sheet.
+      if (message !== 'premium_required') setError(message);
+      return { ok: false, error: message };
+    }
+    setState({ userId, on: value });
+    return { ok: true, error: null };
+  }, [userId, busy]);
+
+  return { on: state.userId === userId ? state.on : false, loading: !!userId && state.userId !== userId, busy, error, setOn };
 }

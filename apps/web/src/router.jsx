@@ -59,6 +59,7 @@ const ProfileSectionPage = lazy(() => import('./pages/PublicProfilePage.jsx').th
 const RootRoute         = lazy(() => import('./pages/RootRoute.jsx'));
 const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
+const EmailUnsubscribePage = lazy(() => import('./pages/EmailUnsubscribePage.jsx'));
 const NewsletterUnsubscribePage = lazy(() => import('./pages/NewsletterUnsubscribePage.jsx'));
 const TalentPage        = lazy(() => import('./pages/TalentPage.jsx'));
 const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
@@ -92,6 +93,9 @@ const router = createBrowserRouter([
 
   // Design system — standalone, no auth, dev builds only
   ...(import.meta.env.DEV ? [{ path: '/design-system', element: wrap(<DesignSystemPage />) }, { path: '/guide-preview', element: wrap(<BroadcastGuidePreview />) }, { path: '/guide-settings-preview', element: wrap(<BroadcastRegionSettingsPreview />) }] : []),
+
+  // Unsubscribe link in a streaming alert email. Public: the signed token is the authority.
+  { path: '/email/unsubscribe', element: wrap(<EmailUnsubscribePage />) },
 
   // Deep link: "Save to watchlist" from outside the app (newsletter, chart page)
   { path: '/save',           element: wrap(<SavePage />) },
