@@ -14,6 +14,14 @@ class ProviderTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_xmltv(b'<!DOCTYPE tv [<!ENTITY x "bad">]><tv/>', CHANNELS)
 
+    def test_xmltv_skips_zero_length_source_listings(self):
+        data = b'''<tv>
+          <programme channel="one" start="20261031063000 +0000" stop="20261031063000 +0000"><title>Broken listing</title></programme>
+          <programme channel="one" start="20261031063000 +0000" stop="20261031070000 +0000"><title>Usable listing</title></programme>
+        </tv>'''
+        rows = parse_xmltv(data, CHANNELS)
+        self.assertEqual([row['title'] for row in rows], ['Usable listing'])
+
     def test_passport_uses_source_timezone_not_machine_timezone(self):
         html = '''<select id="timezone_selector"><option selected value="America/Los_Angeles">Pacific</option></select><div class="list-group-item" data-st="2026-09-16 23:30:00" data-duration="60" data-showname="Movie" data-episodetitle="An Example Film"></div>'''
         p = parse_passport(html, CHANNELS[0])[0]
