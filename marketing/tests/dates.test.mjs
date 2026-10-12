@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDaysStr } from '../lib/tmdb.mjs';
-import { mondayOfWeekInTz, formatWeekdayDayMonth } from '../lib/dates.mjs';
+import { mondayOfWeekInTz, formatWeekdayDayMonth, formatDayMonth, chartWeekDate } from '../lib/dates.mjs';
 
 test('mondayOfWeekInTz uses the Monday of the Australia week for Friday publish slots', () => {
   assert.equal(
@@ -15,6 +15,16 @@ test('mondayOfWeekInTz snaps Sunday Sydney runs back to the same week Monday', (
     mondayOfWeekInTz(new Date('2026-06-21T02:00:00Z')),
     '2026-06-15',
   );
+});
+
+test('formatDayMonth uses US month-day order', () => {
+  assert.equal(formatDayMonth('2026-10-12'), 'October 12');
+});
+
+test('chartWeekDate flips a stored day-first week label', () => {
+  assert.equal(chartWeekDate('Week of 12 October'), 'October 12');
+  assert.equal(chartWeekDate('Week of October 12'), 'October 12');
+  assert.equal(chartWeekDate('October 12'), 'October 12');
 });
 
 test('formatWeekdayDayMonth leaves a same-year date bare', () => {
