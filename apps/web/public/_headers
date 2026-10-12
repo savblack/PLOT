@@ -30,3 +30,8 @@
 # iOS universal links file must be served as JSON.
 /.well-known/apple-app-site-association
   Content-Type: application/json
+
+# Email clients fetch this wordmark by URL. Pin the type.
+/logo-email.png
+  Content-Type: image/png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
