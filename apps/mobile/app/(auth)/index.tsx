@@ -161,8 +161,8 @@ export default function AuthScreen() {
   const refreshCaptcha = () => setCaptchaNonce((n) => n + 1);
 
   // Funnel head, mirroring web: one view event per time the signup form is
-  // shown, then one "started" on the first keystroke. The typed value is never
-  // captured — only the fact that typing began.
+  // shown, then one "started" on the first keystroke, Apple sign-in, or
+  // submit. The typed value is never captured.
   const signupStarted = useRef(false);
   useEffect(() => {
     if (mode === 'signup') {
@@ -252,6 +252,7 @@ export default function AuthScreen() {
   };
 
   const handleSignUp = async () => {
+    noteSignupStarted();
     if (!email || !password) return;
     if (!isValidEmail(email)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
     if (password.length < 6) { Alert.alert(AUTH_PAGE.weakPassword); return; }
@@ -278,6 +279,7 @@ export default function AuthScreen() {
   };
 
   const handleMagicLink = async () => {
+    noteSignupStarted();
     if (!email) return;
     if (!isValidEmail(email)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
     if (!captchaReady) { Alert.alert('One moment', 'Just finishing a quick security check…'); return; }
@@ -298,6 +300,7 @@ export default function AuthScreen() {
 
   const handleAppleSignIn = async () => {
     if (appleLoading) return;
+    noteSignupStarted();
     setAppleLoading(true);
 
     try {
