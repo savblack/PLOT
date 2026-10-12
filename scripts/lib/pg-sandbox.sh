@@ -124,8 +124,10 @@ sandbox_prereqs() {
       "do \$\$ begin if not exists (select 1 from pg_roles where rolname='$r') then create role $r nologin; end if; end \$\$;" 2>/dev/null
   done
   psql "$SANDBOX_URL" -q -c 'create schema if not exists extensions;' 2>/dev/null
-  # citext is installed in `public` on Production, not `extensions` — match it.
-  psql "$SANDBOX_URL" -q -c 'create extension if not exists citext schema public;' 2>/dev/null
+  # citext lives in extensions on production (20261012130000). Creating it in
+  # public makes extensions.citext columns fail to restore, and pg_restore
+  # still exits 0, so the table is simply missing.
+  psql "$SANDBOX_URL" -q -c 'create extension if not exists citext schema extensions;' 2>/dev/null
   for e in pgcrypto "uuid-ossp"; do
     psql "$SANDBOX_URL" -q -c "create extension if not exists \"$e\" schema extensions;" 2>/dev/null
   done
