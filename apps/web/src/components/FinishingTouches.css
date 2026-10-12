@@ -31,7 +31,7 @@
   .ft-bar { order: 10; flex-basis: 100%; width: auto; margin-right: 10px; }
 }
 .ft-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0 10px 10px; }
-@media (min-width: 1024px) { .ft-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .ft-grid { grid-template-columns: repeat(var(--ft-cols, 5), minmax(0, 1fr)); } }
 .ft-tile { min-width: 0; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; background: var(--surface-sunken); display: flex; flex-direction: column; gap: 4px; }
 .ft-tile--friends { background: var(--accent-secondary-dim); }
 .ft-tile--people { background: var(--accent-dim); }

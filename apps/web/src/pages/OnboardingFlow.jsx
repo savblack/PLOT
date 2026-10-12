@@ -195,9 +195,9 @@ export default function OnboardingFlow() {
       await watchlist.addToList(item, { source: 'onboarding' });
     }
     // Home's Finishing touches card starts now (once per account on this device).
-    // The picks stay on the card so "Mark where you're up to" can open the first show.
+    // "Mark where you're up to" reads the watchlist later, not these picks.
     const key = finishingTouchesKey(user.id);
-    if (!readStorage(key)) writeStorage(key, serialiseFinishingTouches(startFinishingTouches(Date.now(), seeds)));
+    if (!readStorage(key)) writeStorage(key, serialiseFinishingTouches(startFinishingTouches(Date.now())));
     track(EVENTS.ONBOARDING_COMPLETED, {
       region,
       seed_titles_added: seeds.length,

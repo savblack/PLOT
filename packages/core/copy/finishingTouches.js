@@ -23,11 +23,9 @@ export const FINISHING_TOUCHES = {
     progress: {
       title: 'Mark where you’re up to',
       sub: (title) => `Tick the last episode of ${title} you’ve seen.`,
-      movieSub: (title) => `${title} is a movie. Mark it watched.`,
-      emptySub: 'Save a show, then tick the last episode you’ve seen.',
       cta: 'Tick episode',
-      findShow: 'Find a show',
       doneSub: 'You logged where you are',
+      traktDoneSub: 'Brought over from Trakt',
       sheetSub: (title) => `Tick the last episode of ${title} you’ve seen.`,
       tickEpisode: (episode, name) => (name ? `Tick episode ${episode}, ${name}` : `Tick episode ${episode}`),
       saveError: 'Couldn’t save that. Try again in a moment.',

@@ -15,13 +15,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { followUser } from '@plot/core/useFollows.js';
 import { usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
-import { deriveFinishingTouches, finishingTouchesVisible, upToTarget, type FinishingTouchesState, type UpToTarget } from '@plot/core/finishingTouches.js';
+import { deriveFinishingTouches, finishingTouchesVisible, firstWatchlistShow, type FinishingTouchesState, type WatchlistShow } from '@plot/core/finishingTouches.js';
 import { pointerAfterEpisode } from '@plot/core/watchingProgress.js';
-import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
 import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
 import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
 import { FINISHING_TOUCHES as T } from '@plot/core/copy/finishingTouches.js';
-import { MEDIA } from '@plot/core/copy/media.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -81,7 +79,6 @@ export default function FinishingTouches({ state, onState }: {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { userId, profile, watchlist, watching, history } = useAppData();
-  const router = useRouter();
   const follows = useFollows(userId, userId);
   const followPerson = useFollowPerson();
   const [expanded, setExpanded] = useState(false);
@@ -89,14 +86,17 @@ export default function FinishingTouches({ state, onState }: {
   const fav = favoriteWords(profile?.region);
 
   const savedCount = watchlist?.items?.length ?? 0;
-  const target = upToTarget(state?.picks);
-  const progressDone = (history?.entries?.length ?? 0) > 0 || (watching?.items?.length ?? 0) > 0;
+  const show = firstWatchlistShow(watchlist?.items);
+  const progressDone = (watching?.items?.length ?? 0) > 0
+    || (history?.entries || []).some((entry: { media_type?: string }) => entry?.media_type === 'tv');
   const { steps, doneCount, total, allDone } = deriveFinishingTouches({
     savedCount,
     followingCount: follows.following,
     importDone: !!state?.importDone,
     peopleCount: followPerson.follows.length,
     progressDone,
+    traktImportDone: !!state?.traktImportDone,
+    showProgress: !!show,
   });
 
   if (!userId || !finishingTouchesVisible(state)) return null;
@@ -105,16 +105,10 @@ export default function FinishingTouches({ state, onState }: {
   const tiles = steps.map(step => {
     if (step.id === 'watchlist') return { ...step, title: T.steps.watchlist.title, sub: T.steps.watchlist.sub(savedCount), cta: undefined };
     if (step.id === 'progress') {
-      const name = target?.pick.title || '';
       const sub = step.done
-        ? T.steps.progress.doneSub
-        : !target
-          ? T.steps.progress.emptySub
-          : target.mode === 'watched'
-            ? T.steps.progress.movieSub(name)
-            : T.steps.progress.sub(name);
-      const cta = !target ? T.steps.progress.findShow : target.mode === 'watched' ? MEDIA.markWatched : T.steps.progress.cta;
-      return { ...step, title: T.steps.progress.title, sub, cta };
+        ? (state?.traktImportDone && !progressDone ? T.steps.progress.traktDoneSub : T.steps.progress.doneSub)
+        : T.steps.progress.sub(show?.title || '');
+      return { ...step, title: T.steps.progress.title, sub, cta: T.steps.progress.cta };
     }
     if (step.id === 'friends') {
       return { ...step, title: T.steps.friends.title, sub: step.done ? T.steps.friends.doneSub(follows.following) : T.steps.friends.sub, cta: T.steps.friends.cta };
@@ -206,7 +200,6 @@ export default function FinishingTouches({ state, onState }: {
                   style={styles.tileCta}
                   onPress={() => {
                     track(EVENTS.FINISHING_TOUCH_OPENED, { step: tile.id });
-                    if (tile.id === 'progress' && !target) { router.push('/(app)/search' as Href); return; }
                     setSheet(tile.id as Sheet);
                   }}
                   accessibilityRole="button"
@@ -220,15 +213,15 @@ export default function FinishingTouches({ state, onState }: {
         </View>
       )}
 
-      {sheet === 'progress' && target && (
-        <UpToSheet target={target} watching={watching} history={history} watchlist={watchlist} onClose={closeSheet} />
+      {sheet === 'progress' && show && (
+        <UpToSheet show={show} watching={watching} onClose={closeSheet} />
       )}
       {sheet === 'friends' && <FriendsSheet userId={userId} onClose={closeSheet} />}
       {sheet === 'people' && <PeopleSheet watchlistItems={watchlist?.items ?? []} favourites={fav.pluralLower} follow={followPerson} onClose={closeSheet} />}
       {sheet === 'import' && !!userId && (
         <ImportSourceSheet
           userId={userId}
-          onImported={async () => onState(await markImportDone(userId))}
+          onImported={async (source) => onState(await markImportDone(userId, source))}
           onClose={closeSheet}
         />
       )}
@@ -323,7 +316,7 @@ function FriendsSheet({ userId, onClose }: { userId: string; onClose: () => void
 }
 
 /* ── Bring your history over: pick a source, then the import opens on it ── */
-function ImportSourceSheet({ userId, onImported, onClose }: { userId: string; onImported: () => void; onClose: () => void }) {
+function ImportSourceSheet({ userId, onImported, onClose }: { userId: string; onImported: (source: string) => void; onClose: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [source, setSource] = useState<string | null>(null);
@@ -403,16 +396,14 @@ function PeopleSheet({ watchlistItems, favourites, follow, onClose }: {
   );
 }
 
-function UpToSheet({ target, watching, history, watchlist, onClose }: {
-  target: UpToTarget;
+function UpToSheet({ show, watching, onClose }: {
+  show: WatchlistShow;
   watching: ReturnType<typeof useAppData>['watching'];
-  history: ReturnType<typeof useAppData>['history'];
-  watchlist: ReturnType<typeof useAppData>['watchlist'];
   onClose: () => void;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const pick = target.pick;
+  const pick = show;
   const [details, setDetails] = useState<{ name?: string; poster_path?: string | null; seasons?: Array<{ season_number: number }> } | null>(null);
   const [failed, setFailed] = useState(false);
   const [selSeason, setSelSeason] = useState(1);
@@ -421,7 +412,6 @@ function UpToSheet({ target, watching, history, watchlist, onClose }: {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (target.mode !== 'episodes') return undefined;
     let alive = true;
     tmdb.getTVDetails(pick.id).then((data: { name?: string; poster_path?: string | null; seasons?: Array<{ season_number: number }> } | null) => {
       if (!alive) return;
@@ -431,10 +421,10 @@ function UpToSheet({ target, watching, history, watchlist, onClose }: {
       if (first) setSelSeason(first.season_number);
     }).catch(() => { if (alive) setFailed(true); });
     return () => { alive = false; };
-  }, [pick.id, target.mode]);
+  }, [pick.id]);
 
   useEffect(() => {
-    if (target.mode !== 'episodes' || !details) return undefined;
+    if (!details) return undefined;
     let alive = true;
     const season = selSeason;
     tmdb.getSeason(pick.id, season).then((data: { episodes?: Array<{ episode_number: number; name?: string }> } | null) => {
@@ -442,7 +432,7 @@ function UpToSheet({ target, watching, history, watchlist, onClose }: {
       setSeasonLoad({ season, episodes: data?.episodes || [], failed: !data });
     }).catch(() => { if (alive) setSeasonLoad({ season, episodes: [], failed: true }); });
     return () => { alive = false; };
-  }, [details, pick.id, selSeason, target.mode]);
+  }, [details, pick.id, selSeason]);
 
   const episodes = seasonLoad.season === selSeason ? seasonLoad.episodes : null;
   const epFailed = seasonLoad.season === selSeason && seasonLoad.failed;
@@ -451,7 +441,7 @@ function UpToSheet({ target, watching, history, watchlist, onClose }: {
     if (busy || !episodes) return;
     setBusy(true);
     setError('');
-    const show = {
+    const item = {
       id: pick.id,
       media_type: 'tv' as const,
       title: details?.name || pick.title,
@@ -459,7 +449,7 @@ function UpToSheet({ target, watching, history, watchlist, onClose }: {
       poster_path: details?.poster_path ?? pick.poster_path,
     };
     if (!watching.isWatching(pick.id)) {
-      const started = await watching.startWatching(show);
+      const started = await watching.startWatching(item);
       if (!started) { setError(T.steps.progress.saveError); setBusy(false); return; }
     }
     const next = pointerAfterEpisode(selSeason, ep.episode_number, episodes.length);
@@ -469,36 +459,6 @@ function UpToSheet({ target, watching, history, watchlist, onClose }: {
     if (!result?.ok) { setError(T.steps.progress.saveError); return; }
     onClose();
   };
-
-  const markMovie = async () => {
-    if (busy) return;
-    setBusy(true);
-    setError('');
-    const item = { id: pick.id, media_type: 'movie' as const, title: pick.title, poster_path: pick.poster_path };
-    const result = await markMediaAsWatched({
-      logWatched: () => history.logWatched(item),
-      clearWatching: async () => true,
-      removeFromSaved: () => watchlist.removeFromList(pick.id),
-      rollbackHistory: () => history.removeEntry(pick.id, 'movie'),
-      mediaType: 'movie',
-      isWatching: false,
-      inList: !!watchlist.isInList?.(pick.id),
-    });
-    setBusy(false);
-    if (!result.ok) { setError(T.steps.progress.saveError); return; }
-    onClose();
-  };
-
-  if (target.mode === 'watched') {
-    return (
-      <BottomSheet title={T.steps.progress.title} sub={T.steps.progress.movieSub(pick.title)} onClose={onClose}>
-        {!!error && <Text style={styles.empty}>{error}</Text>}
-        <TouchableOpacity style={styles.pill} disabled={busy} onPress={markMovie} accessibilityRole="button">
-          <Text style={styles.pillText}>{busy ? COMMON.saving : MEDIA.markWatched}</Text>
-        </TouchableOpacity>
-      </BottomSheet>
-    );
-  }
 
   const seasons = (details?.seasons || []).filter(s => s.season_number > 0);
   const title = details?.name || pick.title;

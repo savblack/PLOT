@@ -11,15 +11,13 @@ import { tmdb } from '@plot/core/tmdb.js';
 import { useFollows, followUser } from '@plot/core/useFollows.js';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
-import { deriveFinishingTouches, finishingTouchesVisible, upToTarget } from '@plot/core/finishingTouches.js';
+import { deriveFinishingTouches, finishingTouchesVisible, firstWatchlistShow } from '@plot/core/finishingTouches.js';
 import { pointerAfterEpisode } from '@plot/core/watchingProgress.js';
-import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
 import { useHistory } from '@plot/core/useHistory.js';
 import { favoriteWords } from '@plot/core/spelling.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { FINISHING_TOUCHES as T } from '../copy/finishingTouches.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
-import { MEDIA } from '../copy/media.js';
 import { COMMON } from '../copy/common.js';
 import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
 import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
@@ -37,7 +35,7 @@ import './FinishingTouches.css';
 const wideScreen = () => typeof window !== 'undefined' && window.matchMedia?.('(min-width: 1024px)').matches;
 
 export default function FinishingTouches() {
-  const { user, profile, watchlist, watching, openSearch } = useApp();
+  const { user, profile, watchlist, watching } = useApp();
   const history = useHistory(user?.id);
   const navigate = useNavigate();
   const [state, setState] = useState(() => readFinishingTouches(user?.id));
@@ -46,16 +44,19 @@ export default function FinishingTouches() {
   const follows = useFollows(user?.id, user?.id);
   const people = usePeopleFollows(user?.id);
   const fav = favoriteWords(profile?.region);
-  const target = upToTarget(state?.picks);
+  const show = firstWatchlistShow(watchlist?.items);
 
   const savedCount = watchlist?.items?.length ?? 0;
-  const progressDone = (history.entries?.length ?? 0) > 0 || (watching?.items?.length ?? 0) > 0;
+  const progressDone = (watching?.items?.length ?? 0) > 0
+    || (history.entries || []).some(entry => entry?.media_type === 'tv');
   const { steps, doneCount, total, allDone } = deriveFinishingTouches({
     savedCount,
     followingCount: follows.following,
     importDone: !!state?.importDone,
     peopleCount: people.follows.length,
     progressDone,
+    traktImportDone: !!state?.traktImportDone,
+    showProgress: !!show,
   });
 
   if (!user || !finishingTouchesVisible(state)) return null;
@@ -64,16 +65,10 @@ export default function FinishingTouches() {
     const base = { id: step.id, done: step.done };
     if (step.id === 'watchlist') return { ...base, title: T.steps.watchlist.title, sub: T.steps.watchlist.sub(savedCount) };
     if (step.id === 'progress') {
-      const name = target?.pick.title || '';
       const sub = step.done
-        ? T.steps.progress.doneSub
-        : !target
-          ? T.steps.progress.emptySub
-          : target.mode === 'watched'
-            ? T.steps.progress.movieSub(name)
-            : T.steps.progress.sub(name);
-      const cta = !target ? T.steps.progress.findShow : target.mode === 'watched' ? MEDIA.markWatched : T.steps.progress.cta;
-      return { ...base, title: T.steps.progress.title, sub, cta };
+        ? (state?.traktImportDone && !progressDone ? T.steps.progress.traktDoneSub : T.steps.progress.doneSub)
+        : T.steps.progress.sub(show?.title || '');
+      return { ...base, title: T.steps.progress.title, sub, cta: T.steps.progress.cta };
     }
     if (step.id === 'friends') {
       return { ...base, title: T.steps.friends.title, sub: step.done ? T.steps.friends.doneSub(follows.following) : T.steps.friends.sub, cta: T.steps.friends.cta };
@@ -106,14 +101,10 @@ export default function FinishingTouches() {
         onToggle={() => setExpanded(open => !open)}
         onHide={() => { track(EVENTS.FINISHING_TOUCHES_HIDDEN, { done_count: doneCount }); setState(hideFinishingTouchesFor(user.id)); }}
         onClose={() => setState(closeFinishingTouches(user.id))}
-        onAction={(id) => {
-          track(EVENTS.FINISHING_TOUCH_OPENED, { step: id });
-          if (id === 'progress' && !target) { openSearch?.(); return; }
-          setSheet(id);
-        }}
+        onAction={(id) => { track(EVENTS.FINISHING_TOUCH_OPENED, { step: id }); setSheet(id); }}
       />
-      {sheet === 'progress' && target && (
-        <UpToSheet target={target} watching={watching} history={history} watchlist={watchlist} onClose={closeSheet} />
+      {sheet === 'progress' && show && (
+        <UpToSheet show={show} watching={watching} onClose={closeSheet} />
       )}
       {sheet === 'friends' && <FriendsSheet userId={user.id} onClose={closeSheet} />}
       {sheet === 'import' && (
@@ -238,9 +229,9 @@ function PeopleSheet({ watchlistItems, favourites, onClose }) {
   );
 }
 
-/* ── Mark where you're up to: episode list for the first show, or mark a movie watched ── */
-function UpToSheet({ target, watching, history, watchlist, onClose }) {
-  const pick = target.pick;
+/* ── Mark where you're up to: episode list for the first show still on the watchlist ── */
+function UpToSheet({ show, watching, onClose }) {
+  const pick = show;
   const [details, setDetails] = useState(null);
   const [failed, setFailed] = useState(false);
   const [selSeason, setSelSeason] = useState(1);
@@ -249,7 +240,6 @@ function UpToSheet({ target, watching, history, watchlist, onClose }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (target.mode !== 'episodes') return undefined;
     let alive = true;
     tmdb.getTVDetails(pick.id).then(data => {
       if (!alive) return;
@@ -259,10 +249,10 @@ function UpToSheet({ target, watching, history, watchlist, onClose }) {
       if (first) setSelSeason(first.season_number);
     }).catch(() => { if (alive) setFailed(true); });
     return () => { alive = false; };
-  }, [pick.id, target.mode]);
+  }, [pick.id]);
 
   useEffect(() => {
-    if (target.mode !== 'episodes' || !details) return undefined;
+    if (!details) return undefined;
     let alive = true;
     const season = selSeason;
     tmdb.getSeason(pick.id, season).then(data => {
@@ -270,7 +260,7 @@ function UpToSheet({ target, watching, history, watchlist, onClose }) {
       setSeasonLoad({ season, episodes: data?.episodes || [], failed: !data });
     }).catch(() => { if (alive) setSeasonLoad({ season, episodes: [], failed: true }); });
     return () => { alive = false; };
-  }, [details, pick.id, selSeason, target.mode]);
+  }, [details, pick.id, selSeason]);
 
   const episodes = seasonLoad.season === selSeason ? seasonLoad.episodes : null;
   const epFailed = seasonLoad.season === selSeason && seasonLoad.failed;
@@ -279,7 +269,7 @@ function UpToSheet({ target, watching, history, watchlist, onClose }) {
     if (busy || !episodes) return;
     setBusy(true);
     setError('');
-    const show = {
+    const item = {
       id: pick.id,
       media_type: 'tv',
       title: details?.name || pick.title,
@@ -287,7 +277,7 @@ function UpToSheet({ target, watching, history, watchlist, onClose }) {
       poster_path: details?.poster_path ?? pick.poster_path,
     };
     if (!watching?.isWatching(pick.id)) {
-      const started = await watching.startWatching(show);
+      const started = await watching.startWatching(item);
       if (!started) { setError(T.steps.progress.saveError); setBusy(false); return; }
     }
     const next = pointerAfterEpisode(selSeason, ep.episode_number, episodes.length);
@@ -297,37 +287,6 @@ function UpToSheet({ target, watching, history, watchlist, onClose }) {
     if (!result?.ok) { setError(T.steps.progress.saveError); return; }
     onClose();
   };
-
-  const markMovie = async () => {
-    if (busy) return;
-    setBusy(true);
-    setError('');
-    const item = { id: pick.id, media_type: 'movie', title: pick.title, poster_path: pick.poster_path };
-    const result = await markMediaAsWatched({
-      logWatched: () => history.logWatched(item),
-      clearWatching: async () => true,
-      removeFromSaved: () => watchlist.removeFromList(pick.id),
-      rollbackHistory: () => history.removeEntry(pick.id, 'movie'),
-      mediaType: 'movie',
-      isWatching: false,
-      inList: !!watchlist.isInList?.(pick.id),
-    });
-    setBusy(false);
-    if (!result.ok) { setError(T.steps.progress.saveError); return; }
-    onClose();
-  };
-
-  if (target.mode === 'watched') {
-    return (
-      <ResponsiveDialog title={T.steps.progress.title} onClose={onClose} size="compact">
-        <p className="ft-sheet-sub">{T.steps.progress.movieSub(pick.title)}</p>
-        {error && <p className="ft-sheet-empty" role="alert">{error}</p>}
-        <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={markMovie}>
-          {busy ? COMMON.saving : MEDIA.markWatched}
-        </button>
-      </ResponsiveDialog>
-    );
-  }
 
   const seasons = (details?.seasons || []).filter(s => s.season_number > 0);
   const title = details?.name || pick.title;

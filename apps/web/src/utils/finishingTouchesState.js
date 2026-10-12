@@ -2,7 +2,7 @@
 // @plot/core/finishingTouches.js so mobile can read the same shape from
 // AsyncStorage; this file is only the localStorage side.
 import {
-  finishingTouchesKey, hideFinishingTouches, parseFinishingTouches, serialiseFinishingTouches,
+  finishingTouchesKey, hideFinishingTouches, noteImportFinished, parseFinishingTouches, serialiseFinishingTouches,
 } from '@plot/core/finishingTouches.js';
 import { readStorage, writeStorage } from './storage.js';
 
@@ -18,8 +18,8 @@ function update(userId, change) {
   return next;
 }
 
-// An import finished: ticks "Bring your history over". A no-op for accounts
-// that never had the card.
-export const markImportDone = (userId) => update(userId, state => ({ ...state, importDone: true }));
+// An import finished: ticks "Bring your history over". A Trakt import also
+// completes "Mark where you're up to". A no-op for accounts that never had the card.
+export const markImportDone = (userId, source) => update(userId, state => noteImportFinished(state, source));
 export const hideFinishingTouchesFor = (userId) => update(userId, state => hideFinishingTouches(state));
 export const closeFinishingTouches = (userId) => update(userId, state => ({ ...state, closed: true }));
