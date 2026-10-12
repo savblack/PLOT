@@ -70,6 +70,44 @@ test('a failed mute clear does not touch the watchlist switch', async () => {
   assert.equal(client.__db.tables.notification_preferences[0].streaming_alerts, false);
 });
 
+test('enabling reports streaming_alert_set and still succeeds when that call fails', async () => {
+  const client = createInMemorySupabase({
+    tables: {
+      movie_streaming_alert_mutes: [{ user_id: 'u1', tmdb_id: 11, title: 'Harbour Lights' }],
+      notification_preferences: [],
+    },
+    unique: { notification_preferences: ['user_id'] },
+    session: { access_token: 'tok' },
+  });
+  configure({ supabaseClient: client, supabaseUrl: 'https://proj.supabase.co' });
+  const calls = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    calls.push({
+      url: String(url),
+      auth: init.headers.Authorization,
+      body: JSON.parse(init.body),
+    });
+    return new Response('no', { status: 503 });
+  };
+  try {
+    const result = await enableStreamingArrivalAlert('u1', { id: 11, title: 'Harbour Lights' });
+    assert.equal(result.ok, true);
+    assert.equal(client.__db.tables.movie_streaming_alert_mutes.length, 0);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'https://proj.supabase.co/functions/v1/alert-brevo-event');
+    assert.equal(calls[0].auth, 'Bearer tok');
+    assert.deepEqual(calls[0].body, {
+      event: 'streaming_alert_set',
+      title: 'Harbour Lights',
+      title_id: 11,
+      media_type: 'movie',
+    });
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
 test('a film without a TMDB title is refused before any write', async () => {
   const client = clientWith({
     movie_streaming_alert_mutes: [{ user_id: 'u1', tmdb_id: 11, title: 'Harbour Lights' }],

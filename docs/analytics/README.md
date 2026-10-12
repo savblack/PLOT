@@ -406,9 +406,13 @@ new-episode job skips muted followers, so a show turned off produces no
 The first forward episode tick, when no watching row is already past season 1
 episode 1, shows a toast: "Get told when the next episode drops?" Accepting
 deletes a mute for that show if one exists and fires `episode_alerts_toggled`
-with `on: true`, including when alerts were already on. The toast is once per
-account on that device. It does not open the calendar subscribe flow, which
-stays Premium.
+with `on: true`, including when alerts were already on. The same accept asks
+`alert-brevo-event` to send Brevo event `episode_alert_set`. That is not a
+PostHog event. Its properties are `title`, `title_id`, `media_type` (`tv`),
+and `title_url` (`https://app.theplot.tv/save?media_type=tv&tmdb_id=<id>`).
+The account email is the Brevo contact identifier, taken from the JWT. A
+Brevo failure does not put the toast back. The toast is once per account on
+that device. It does not open the calendar subscribe flow, which stays Premium.
 
 ## Streaming arrival (title panel)
 
@@ -432,7 +436,13 @@ skips the account while the switch is off.
 
 A save from this prompt also fires `watchlist_saved` with
 `source: streaming_arrival_ask` when the film was not already saved. The
-prompt event does not fire if the save or the alert writes fail.
+prompt event does not fire if the save or the alert writes fail. After those
+writes land, the same prompt asks `alert-brevo-event` to send Brevo event
+`streaming_alert_set`. That is not a PostHog event. Its properties are
+`title`, `title_id`, `media_type` (`movie`), and `title_url`
+(`https://app.theplot.tv/save?media_type=movie&tmdb_id=<id>`). The account
+email is the Brevo contact identifier, taken from the JWT. A Brevo failure
+does not un-arm the prompt.
 
 ## Smart lists
 

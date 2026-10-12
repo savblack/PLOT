@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { emit, on } from './events.js';
 import { enableEpisodeAlerts } from './useEpisodeAlerts.js';
+import { EPISODE_ALERT_SET, reportBrevoAlertSet } from './alertBrevo.js';
 
 export const EPISODE_ALERTS_PROMPT_EVENT = 'plot:episode-alerts-prompt';
 
@@ -99,7 +100,8 @@ export function dismissEpisodeAlertsPrompt() {
 /**
  * Accept turns alerts on for the offered show and clears the toast. A failed
  * write leaves the toast up. Tracking stays with the app, which already owns
- * episode_alerts_toggled for the title-panel switch.
+ * episode_alerts_toggled for the title-panel switch. A successful accept also
+ * asks Brevo to record episode_alert_set. That call does not change the toast.
  *
  * @param {string | null | undefined} userId
  */
@@ -118,6 +120,12 @@ export function useEpisodeAlertsPromptActions(userId) {
       setFailed(true);
       return { ok: false, tmdbId: current.tmdbId };
     }
+    await reportBrevoAlertSet({
+      event: EPISODE_ALERT_SET,
+      title: current.title,
+      titleId: current.tmdbId,
+      mediaType: 'tv',
+    });
     dismissEpisodeAlertsPrompt();
     return { ok: true, tmdbId: current.tmdbId };
   }, [current, busy, userId]);

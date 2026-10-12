@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 import { alertWriteError, useAlertToggle } from './usePremiumAlerts.js';
+import { reportBrevoAlertSet, STREAMING_ALERT_SET } from './alertBrevo.js';
 
 /**
  * Streaming alerts on watchlist films, shared by web and mobile. Free, in the
@@ -8,7 +9,9 @@ import { alertWriteError, useAlertToggle } from './usePremiumAlerts.js';
  * alerts Edge Function with nothing to switch on. The ways out are a mute for
  * one film (movie_streaming_alert_mutes) or the whole-watchlist switch
  * (notification_preferences). Both are rows the person owns; a missing row
- * means "alert me". Nothing here sends or detects anything.
+ * means "alert me". The daily job is what delivers an arrival. This module
+ * only writes the rows that job reads, then asks Brevo to record that the
+ * prompt turned the alert on.
  *
  * The Where to watch prompt is the way in for a film that has no offer in the
  * viewer's region. The daily job only reads films, so a TV title has no alert
@@ -62,6 +65,12 @@ export async function enableStreamingArrivalAlert(userId, movie) {
       { onConflict: 'user_id' },
     );
   if (prefError) return { ok: false };
+  await reportBrevoAlertSet({
+    event: STREAMING_ALERT_SET,
+    title,
+    titleId: id,
+    mediaType: 'movie',
+  });
   return { ok: true };
 }
 

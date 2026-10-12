@@ -172,6 +172,14 @@ verify_jwt = true
 [functions.streaming-arrival-alerts]
 verify_jwt = true
 
+# Records streaming_alert_set and episode_alert_set in Brevo after the
+# in-app prompt or toast has already written the alert. Called from the
+# browser with the user's bearer. Needs BREVO_API_KEY. Declared because a
+# new function without an entry here can be silently skipped by the deploy
+# integration.
+[functions.alert-brevo-event]
+verify_jwt = true
+
 # Premium email alerts: called daily by pg_cron via pg_net with the Vault
 # service-role bearer (run_alert_email_delivery, 20261006090000), so verify_jwt
 # stays true and the handler also requires the service role. Declared because a
