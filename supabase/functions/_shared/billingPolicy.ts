@@ -83,5 +83,32 @@ export function mayStartCheckout(userId: string | undefined, enabled?: string, c
 
 /** Private launch pilot: compare only the server-verified Auth user ID. */
 export function isCheckoutPilot(userId: string | undefined, configuredIds?: string): boolean {
-  return Boolean(userId && configuredIds?.split(',').map(id => id.trim()).filter(Boolean).includes(userId));
+  return Boolean(userId && checkoutPilotIds(configuredIds).includes(userId));
+}
+
+function checkoutPilotIds(configuredIds?: string): string[] {
+  if (!configuredIds) return [];
+  return configuredIds.split(',').map(id => id.trim()).filter(Boolean);
+}
+
+/** How many accounts are on the pilot list. Never returns the ids themselves. */
+export function checkoutPilotCount(configuredIds?: string): number {
+  return checkoutPilotIds(configuredIds).length;
+}
+
+/**
+ * What an operator can safely read back. `checkoutEnabled` is the public switch.
+ * `pilotCount` is a count, not the allowlist.
+ */
+export function checkoutConfigStatus(enabled?: string, configuredIds?: string) {
+  return {
+    checkoutEnabled: publicCheckoutOpen(enabled),
+    pilotCount: checkoutPilotCount(configuredIds),
+  };
+}
+
+/** One log line for the function logs. Must not include secrets, price ids, or user ids. */
+export function checkoutConfigLog(enabled?: string, configuredIds?: string): string {
+  const status = checkoutConfigStatus(enabled, configuredIds);
+  return `checkout enabled=${status.checkoutEnabled ? 'yes' : 'no'} pilotCount=${status.pilotCount}`;
 }

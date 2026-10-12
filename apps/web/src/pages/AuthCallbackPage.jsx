@@ -9,6 +9,7 @@ import { AUTH_PAGE } from '../copy/authPage.js';
 import { AUTH_CALLBACK_PAGE } from '../copy/authCallbackPage.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
 import { takeReturnPath } from '../utils/authReturn.js';
+import { authCallbackRoute, readOnboardingUntilDecided } from '@plot/core/onboardingGate.js';
 
 // Report a sign-in that died here. Unlike reportAuth this fires even with no
 // method marker: an expired confirmation link opened in a fresh tab has none, and
@@ -105,10 +106,21 @@ export default function AuthCallbackPage() {
         // Someone sent to sign in on the way to a page (a taste comparison
         // link, say) goes back there, but only once their account is set up:
         // new accounts finish onboarding first, which then sends them on.
+        //
+        // The default path from resolveAuthCallback is /onboarding. That is
+        // only correct once a profile row says setup is unfinished. A finished
+        // account with nothing stored to return to used to fall through to
+        // /onboarding anyway, and so did an empty profile read.
         if (dest === '/onboarding' && session?.user?.id) {
-          const { data: prof } = await supabase.from('profiles')
-            .select('onboarding_complete').eq('id', session.user.id).maybeSingle();
-          if (prof?.onboarding_complete) dest = takeReturnPath(dest);
+          const read = await readOnboardingUntilDecided(
+            () => supabase.from('profiles')
+              .select('onboarding_complete')
+              .eq('id', session.user.id)
+              .maybeSingle(),
+            { maxAttempts: 5 },
+          );
+          const route = authCallbackRoute(dest, read);
+          if (route === 'home') dest = takeReturnPath('/app');
         }
         navigate(dest, { replace: true });
       } catch (e) {

@@ -18,6 +18,7 @@ import { colors, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import Turnstile from '../../components/Turnstile';
 import { track, EVENTS } from '../../lib/analytics';
 import { authErrorReason } from '@plot/core/authErrors.js';
+import { CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, captchaSubmitPlan } from '@plot/core/captchaGate.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { AUTH_PAGE } from '@plot/core/copy/authPage.js';
 import { SHOW_APPLE_LOGIN } from '../../lib/launchFeatures';
@@ -150,15 +151,69 @@ export default function AuthScreen() {
   const [appleLoading, setAppleLoading] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
   const [posterPaths, setPosterPaths] = useState<string[]>(FALLBACK_PATHS);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh token (single-use)
+  const [captchaNonce, setCaptchaNonce] = useState(0); // bump to drop a used token
+  const [captchaExecute, setCaptchaExecute] = useState(0); // bump to run the challenge
+  const captchaTokenRef = useRef<string | null>(null);
+  const captchaBlockedRef = useRef(false);
 
-  // Website signup no longer dead-ends on a missing Turnstile token
-  // (packages/core/captchaGate.js routes that case through signup-bypass).
-  // Native still waits for a token: this screen has no bypass client, and
-  // the signup drop being fixed is app.theplot.tv, which is the web app.
-  const captchaReady = !TURNSTILE_SITE_KEY || !!captchaToken;
-  const refreshCaptcha = () => setCaptchaNonce((n) => n + 1);
+  // The widget stays mounted and does not run until submit. Web can still
+  // create the account through signup-bypass when the widget never returns a
+  // token. This screen has no bypass client, so that case stops here.
+  const refreshCaptcha = () => {
+    captchaTokenRef.current = null;
+    setCaptchaNonce((n) => n + 1);
+  };
+
+  const handleCaptchaToken = (token: string | null) => {
+    captchaTokenRef.current = token;
+  };
+
+  const handleCaptchaError = () => {
+    captchaTokenRef.current = null;
+    captchaBlockedRef.current = true;
+  };
+
+  // One attempt. A widget error ends the wait early so the retry can run.
+  // A timeout does not: the challenge may still be in flight.
+  const waitForCaptchaAttempt = (ms: number) => {
+    const blockedAtStart = captchaBlockedRef.current;
+    if (captchaTokenRef.current) return Promise.resolve(captchaTokenRef.current);
+    return new Promise<string | null>((resolve) => {
+      const started = Date.now();
+      const id = setInterval(() => {
+        const token = captchaTokenRef.current;
+        const failedNow = captchaBlockedRef.current && !blockedAtStart;
+        if (token || failedNow || Date.now() - started >= ms) {
+          clearInterval(id);
+          resolve(token);
+        }
+      }, 50);
+    });
+  };
+
+  const requestCaptcha = () => {
+    captchaTokenRef.current = null;
+    setCaptchaExecute((n) => n + 1);
+  };
+
+  // Token to send, or null when captcha is off. False when both attempts
+  // finished without a token. Do not post that request to GoTrue.
+  const takeCaptchaToken = async (authMode: 'signup' | 'login' | 'forgot' | 'magic') => {
+    if (!TURNSTILE_SITE_KEY) return null;
+    for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
+      requestCaptcha();
+      const token = await waitForCaptchaAttempt(CAPTCHA_TOKEN_WAIT_MS);
+      const plan = captchaSubmitPlan({
+        siteKey: TURNSTILE_SITE_KEY,
+        token,
+        mode: authMode,
+        blocked: captchaBlockedRef.current,
+        waited: !token,
+      });
+      if (plan === 'ready') return token;
+    }
+    return false as const;
+  };
 
   // Funnel head, mirroring web: one view event per time the signup form is
   // shown, then one "started" on the first keystroke, Apple sign-in, or
@@ -203,6 +258,12 @@ export default function AuthScreen() {
     if (!email || !password) return;
     if (!isValidEmail(email)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
     setLoading(true);
+    const captchaToken = await takeCaptchaToken('login');
+    if (captchaToken === false) {
+      setLoading(false);
+      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      return;
+    }
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(), password, options: { captchaToken: captchaToken ?? undefined },
     });
@@ -226,6 +287,11 @@ export default function AuthScreen() {
   const handleResend = async () => {
     const e = email.trim();
     if (!e || !isValidEmail(e)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
+    const captchaToken = await takeCaptchaToken('signup');
+    if (captchaToken === false) {
+      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      return;
+    }
     const { error } = await supabase.auth.resend({
       type: 'signup', email: e,
       options: { emailRedirectTo: AUTH_WEB_CALLBACK, captchaToken: captchaToken ?? undefined },
@@ -238,6 +304,12 @@ export default function AuthScreen() {
     if (!email) return;
     if (!isValidEmail(email)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
     setLoading(true);
+    const captchaToken = await takeCaptchaToken('forgot');
+    if (captchaToken === false) {
+      setLoading(false);
+      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      return;
+    }
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: AUTH_WEB_CALLBACK,
       captchaToken: captchaToken ?? undefined,
@@ -258,6 +330,12 @@ export default function AuthScreen() {
     if (password.length < 6) { Alert.alert(AUTH_PAGE.weakPassword); return; }
     setLoading(true);
     track(EVENTS.SIGNUP_SUBMIT_CLICKED);
+    const captchaToken = await takeCaptchaToken('signup');
+    if (captchaToken === false) {
+      setLoading(false);
+      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      return;
+    }
     const { error } = await supabase.auth.signUp({
       email: email.trim(), password, options: { captchaToken: captchaToken ?? undefined },
     });
@@ -282,8 +360,13 @@ export default function AuthScreen() {
     noteSignupStarted();
     if (!email) return;
     if (!isValidEmail(email)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
-    if (!captchaReady) { Alert.alert('One moment', 'Just finishing a quick security check…'); return; }
     setLoading(true);
+    const captchaToken = await takeCaptchaToken('magic');
+    if (captchaToken === false) {
+      setLoading(false);
+      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      return;
+    }
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: { shouldCreateUser: true, emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
@@ -492,15 +575,17 @@ export default function AuthScreen() {
                   <View style={styles.captcha}>
                     <Turnstile
                       siteKey={TURNSTILE_SITE_KEY}
-                      onToken={setCaptchaToken}
+                      onToken={handleCaptchaToken}
+                      onError={handleCaptchaError}
                       resetSignal={captchaNonce}
+                      executeSignal={captchaExecute}
                     />
                   </View>
                 ) : null}
                 <TouchableOpacity
-                  style={[styles.cta, (loading || !captchaReady) && { opacity: 0.6 }]}
+                  style={[styles.cta, loading && { opacity: 0.6 }]}
                   onPress={handleSubmit}
-                  disabled={loading || !captchaReady}
+                  disabled={loading}
                   activeOpacity={0.85}
                 >
                   {loading

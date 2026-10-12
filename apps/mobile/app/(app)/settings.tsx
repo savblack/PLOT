@@ -48,6 +48,9 @@ import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { useMyAlerts } from '@plot/core/usePremiumAlerts.js';
 import { useStreamingAlertsSwitch, useMutedFilms, useStreamingEmailSwitch } from '@plot/core/useStreamingAlerts.js';
+import { usePushAlerts } from '@plot/core/usePushAlerts.js';
+import { PUSH_ALERTS } from '@plot/core/copy/pushAlerts.js';
+import { registerPushToken, unregisterPushToken } from '../../lib/pushNotifications';
 import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
 import { ALERT_EMAIL } from '@plot/core/copy/alertEmail.js';
 import { ALERT_EMAIL_ENABLED } from '@plot/core/features.js';
@@ -282,6 +285,63 @@ function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: str
           ))}
         </SettingsGroup>
       )}
+    </>
+  );
+}
+
+function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string | null; isPremium: boolean; onCompare: () => void }) {
+  const { colors } = useTheme();
+  const push = usePushAlerts(userId);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [devices, setDevices] = useState(0);
+  useEffect(() => {
+    if (!userId) return;
+    void supabase.from('push_tokens').select('token', { count: 'exact', head: true })
+      .eq('user_id', userId).is('disabled_at', null)
+      .then(({ count }) => setDevices(count ?? 0));
+  }, [userId, push.enabled]);
+
+  const enable = async () => {
+    if (!isPremium) { setUpgradeOpen(true); return; }
+    Alert.alert(PUSH_ALERTS.permissionTitle, PUSH_ALERTS.permissionBody, [
+      { text: PUSH_ALERTS.permissionNo, style: 'cancel' },
+      { text: PUSH_ALERTS.permissionYes, onPress: () => { void (async () => {
+        setBusy(true);
+        try {
+          const registration = await registerPushToken(true);
+          if (registration !== 'ok') {
+            Alert.alert(registration === 'denied' ? PUSH_ALERTS.permissionDenied : PUSH_ALERTS.permissionUnavailable);
+            return;
+          }
+          const result = await push.setEnabled(true);
+          if (result.error === 'premium_required') setUpgradeOpen(true);
+          else if (result.error) Alert.alert(PUSH_ALERTS.error);
+          else setDevices(d => Math.max(d, 1));
+        } catch {
+          Alert.alert(PUSH_ALERTS.error);
+        } finally { setBusy(false); }
+      })(); } },
+    ]);
+  };
+  const disable = async () => {
+    setBusy(true);
+    const result = await push.setEnabled(false);
+    if (result.error) Alert.alert(PUSH_ALERTS.error);
+    setBusy(false);
+  };
+  return (
+    <>
+      <SettingsGroup title={PUSH_ALERTS.settingsTitle}>
+        <SettingsRow
+          icon={null}
+          label={PUSH_ALERTS.settingsTitle}
+          description={push.enabled ? PUSH_ALERTS.settingsDevices(devices) : PUSH_ALERTS.settingsHint}
+          trailing={<Switch value={push.enabled} onValueChange={() => { void (push.enabled ? disable() : enable()); }} disabled={busy || push.busy || push.loading} trackColor={{ true: colors.accent }} accessibilityLabel={PUSH_ALERTS.settingsTitle} />}
+        />
+        {push.error ? <SettingsRow icon={null} label={PUSH_ALERTS.error} /> : null}
+      </SettingsGroup>
+      <UpgradeSheet visible={upgradeOpen} reason="pushAlerts" onClose={() => setUpgradeOpen(false)} onCompare={() => { setUpgradeOpen(false); onCompare(); }} />
     </>
   );
 }
@@ -1080,6 +1140,10 @@ export default function SettingsScreen() {
     Alert.alert(SETTINGS_VIEW.page.signOutTitle, SETTINGS_VIEW.page.signOutMessage, [
       { text: COMMON.cancel, style: 'cancel' },
       { text: SETTINGS_VIEW.signOut, style: 'destructive', onPress: async () => {
+        if (userId) {
+          try { await unregisterPushToken(userId); }
+          catch { Alert.alert(PUSH_ALERTS.error); return; }
+        }
         // Capture before the reset, or the event lands on the fresh anonymous
         // profile instead of the person who actually signed out.
         track(EVENTS.USER_SIGNED_OUT, {});
@@ -1452,6 +1516,7 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
         <StreamingAlertsSettings userId={userId} isPremium={!!profile?.is_premium} onCompare={() => { setSection('billing'); setPremiumExpanded(true); }} />
+        <PushAlertsSettings userId={userId} isPremium={!!profile?.is_premium} onCompare={() => { setSection('billing'); setPremiumExpanded(true); }} />
         <PeopleFollowSettings userId={userId} isPremium={!!profile?.is_premium} />
         </>}
 

@@ -25,10 +25,10 @@
 
 | Area | State |
 | --- | --- |
-| `/plans` preview page | Live on web (`SHOW_PRICING_PAGE = true`). Says Premium is coming soon; no payment. |
-| Upgrade journey | Feature prompt → Explore Premium → `/plans?from=` → coming-soon message. See `apps/web/src/utils/premiumExplore.js`. |
+| `/plans` preview page | Live on web (`SHOW_PRICING_PAGE = true`). Upgrade follows `billing-availability`: waitlist while checkout is closed, Stripe Checkout when it is open. |
+| Upgrade journey | Feature prompt → Explore Premium → `/plans?from=`. Closed checkout shows the waitlist. Open checkout starts Stripe. See `apps/web/src/utils/premiumExplore.js`. |
 | Stripe plumbing | `stripe-billing`, `stripe-webhook`, `billing_customers`, `is_premium()`, portal + tip paths exist. |
-| Checkout | **Hard-closed:** `usePremium.startCheckout` stubs; `stripe-billing` returns 503 `premium_coming_soon` for `action=checkout`. |
+| Checkout | Server gate: `STRIPE_CHECKOUT_ENABLED` must be exactly `true`, or the caller must be on `STRIPE_CHECKOUT_PILOT_USER_IDS`. Closed checkout returns 503 `premium_coming_soon`. The web UI shows a waitlist instead of that error. |
 | Free list cap | Free: 5 custom lists (`FREE_CUSTOM_LIST_CAP`). Premium: unlimited via `can_create_custom_list()`. Enforced in DB. Sixth-list UX → Explore Premium. |
 | Live calendar feed | Premium URL on web and mobile. Free gets a one-time `.ics`. `calendar-feed` returns an empty calendar when `is_premium()` is false. |
 | Plex / Trakt sync | Edge functions return `premium_required` for non-Premium `sync`. **UI flag on:** `SHOW_MEDIA_SYNC_INTEGRATIONS = true` (web + mobile). Premium Settings shows Connect and Import watch history. Public copy does not call it automatic or two-way sync. Free Settings shows the Premium gate. Live OAuth still needs a Premium account smoke. |
@@ -54,7 +54,7 @@ Never put Stripe secret keys or price IDs in browser vars or tracked files.
 
 --- | --- |
 | Locked plans copy + `docs/billing/stripe-launch.md` | **A$5/month or A$40/year** (marked tentative but likely in Sep 21 decisions) |
-| Linear [PLO-494](https://linear.app/savblack/issue/PLO-494) (first-paid track, 2026-09-23) | **USD $3/month + USD $25/year** live Stripe prices; notes AUD prices on product inactive |
+| Linear [PLO-494](https://linear.app/savblack/issue/PLO-494) (first-paid track, 2026-09-23) | Recorded USD $3/month + USD $25/year. Superseded: launch price is US$3/month and US$24/year. |
 
 **Decision (Savannah, 2026-09-24, annual price updated 2026-09-25, trial locked 2026-09-28):** USD is the primary price: USD $3/month, $24/year, taxes included, with a 7-day card-required trial. The earlier $25/year price is not the launch price. Buyers outside the US see it converted to their currency. The intended Stripe mechanism is **Adaptive Pricing** on Checkout (one USD price; Stripe shows and charges local currency at checkout, and the buyer pays the FX margin). The alternative is fixed per-currency `currency_options` on the price, which gives round local prices but needs manual upkeep. Confirm in the Stripe Dashboard that Adaptive Pricing covers subscriptions on this account before relying on it. Plans copy should show USD with a note that checkout shows local currency.
 
