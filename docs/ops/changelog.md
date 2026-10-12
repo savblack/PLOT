@@ -13,7 +13,7 @@ list in `changelog.html` or `copy/changelog.js`.
 
 | Command | What it does |
 | --- | --- |
-| `pnpm run changelog:add` | Prepend a scaffold entry (optional `--version`, `--date YYYY-MM-DD`) |
+| `pnpm run changelog:add --version X.Y.Z` | Prepend a scaffold entry. `--version` is the mobile semver from [versioning.md](versioning.md). `--date YYYY-MM-DD` is optional. |
 | `pnpm run changelog` | Regenerate `changelog.html` + `copy/changelog.js` from the JSON |
 | `pnpm run changelog:check` | CI gate: generated files must match the JSON |
 | `pnpm run dev:website` | Preview at http://localhost:5202/changelog |
@@ -67,10 +67,15 @@ Do not point people at source for "more detail."
 
 Newest first. Each entry in the JSON has:
 
-1. **Version** — calendar `YYYY.M.D` for web ships until the App Store line has
-   its own store version. When a mobile build ships with a store version, use
-   that (`1.0.1`) and keep the date beside it. `changelog:add` defaults to
-   today's calendar version.
+1. **Version.** The mobile app version (`X.Y.Z`), the same number
+   release-please cuts. Pass it explicitly:
+
+   `pnpm run changelog:add --version 0.9.1`
+
+   How that number is chosen is in [versioning.md](versioning.md). The script
+   still defaults to a calendar version (`YYYY.M.D`) if you omit `--version`.
+   Don't use that default for new entries. The existing `2026.9.21` entry
+   stays as it is. Keep the date beside the version as `date` and `dateLabel`.
 2. **Date** — ISO `YYYY-MM-DD` plus a human `dateLabel` (the scaffold fills both).
 3. **Buckets** — only the ones that apply:
    - **New** — something members can do or see that they could not before
@@ -85,7 +90,7 @@ ticket IDs, no PR numbers, no em dashes (period, colon, comma, or parentheses).
 ## Checklist
 
 1. Confirm the ship is live for members and fits **What to post** (not a Don't).
-2. `pnpm run changelog:add` (or edit `data/changelog.json` by hand).
+2. `pnpm run changelog:add --version X.Y.Z` (or edit `data/changelog.json` by hand with that same version).
 3. Fill New / Improved / Fixed in the JSON.
 4. `pnpm run changelog` and commit the JSON plus regenerated HTML and copy.
 5. Leave a note for Competitor Watch / Comp Watch when a ship is worth

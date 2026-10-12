@@ -1,0 +1,46 @@
+name: PR title
+
+# Squash is the only merge method. GitHub's squash title setting is
+# COMMIT_OR_PR_TITLE: a one-commit PR lands that commit's subject, and a PR
+# with more than one commit lands the PR title. release-please reads the
+# squash commit, so the subject that lands has to be a conventional commit.
+# Recent history is mostly conventional, with exceptions such as
+# "Show watch status chips on list titles".
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  lint:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # `content` is already used for website copy PRs. Scope stays
+          # optional: some merged titles are `feat:` with no scope.
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+            content
+          requireScope: false
+          validateSingleCommit: true

@@ -1,0 +1,24 @@
+name: Release please
+
+# Versions apps/mobile only. Web and the marketing site deploy from main
+# and stay unversioned. This needs a push to main so it can open the release
+# PR and, once that PR merges, tag mobile-vX.Y.Z. That is a GitHub event, so
+# it stays on Actions. See docs/ops/versioning.md.
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
