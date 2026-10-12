@@ -45,6 +45,8 @@ export default {
 };
 
 export const Open = {
+  // The search and genre responses are live when the proxy is configured.
+  parameters: { chromatic: { disableSnapshot: true } },
   args: { onClose: fn() },
   render: args => <SearchPalette {...args} />,
   play: async ({ args, canvasElement }) => {

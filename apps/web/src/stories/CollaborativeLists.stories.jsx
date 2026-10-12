@@ -38,7 +38,8 @@ configure({
 const noop = () => {};
 const resolved = () => Promise.resolve(true);
 const DAY = 24 * 60 * 60 * 1000;
-const ago = (days) => new Date(Date.now() - days * DAY).toISOString();
+const FIXTURE_NOW = Date.parse('2026-10-02T12:00:00Z');
+const ago = (days) => new Date(FIXTURE_NOW - days * DAY).toISOString();
 
 const person = (user_id, display_name, username, extra = {}) => ({ user_id, display_name, username, avatar_url: null, ...extra });
 const mia   = person('u-mia', 'Mia', 'mia');
@@ -398,7 +399,8 @@ export const SharedListAddPeopleDialog = {
 /* ── Adding from a title (A6): shared lists among yours, with their people ── */
 
 export const AddFromTitle = {
-  parameters: { app: app({
+  // The underlying MediaPanel loads live TMDB and provider content.
+  parameters: { chromatic: { disableSnapshot: true }, app: app({
     user: null,
     // The panel's own needs, as in MediaPanel.stories.jsx.
     watchlist: { items: [], isInList: () => false, toggle: noop, removeFromList: noop },

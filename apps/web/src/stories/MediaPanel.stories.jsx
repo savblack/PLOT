@@ -31,7 +31,9 @@ const app = {
 export default {
   title: 'Panels/MediaPanel',
   component: MediaPanel,
-  parameters: { layout: 'fullscreen' },
+  // These exploratory stories use live TMDB, provider and review responses.
+  // Keep them in Storybook without treating changing external content as a visual baseline.
+  parameters: { layout: 'fullscreen', chromatic: { disableSnapshot: true } },
   decorators: [
     (Story) => (
       <MemoryRouter>

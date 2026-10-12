@@ -40,7 +40,9 @@ function Preview({ initialSection = 'viewing', premium = false }) {
   );
 }
 export default { title: 'Pages/Settings', component: Preview, parameters: { layout: 'fullscreen' } };
-export const Viewing = {};
+// Viewing loads live TMDB genre and provider catalogs, so its content changes
+// independently of the settings design.
+export const Viewing = { parameters: { chromatic: { disableSnapshot: true } } };
 export const Billing = { args: { initialSection: 'billing' } };
 export const PremiumBilling = { args: { initialSection: 'billing', premium: true } };
 export const Connections = { args: { initialSection: 'connections' } };

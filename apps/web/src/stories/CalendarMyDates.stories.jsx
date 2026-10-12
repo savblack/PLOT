@@ -4,10 +4,9 @@ import CalendarStream from '../components/CalendarStream.jsx';
 import CalendarEventRows from '../components/CalendarEventRows.jsx';
 import { filterCalendarEvents } from '../utils/calendar.js';
 
-/* Dates are built relative to the day the story is opened, so "today" is
-   always today and the stream always starts at the top of the mini month. */
-const TODAY = new Date();
-TODAY.setHours(0, 0, 0, 0);
+/* Keep the calendar on a fixed day so Chromatic compares the same month and
+   event positions on every build. */
+const TODAY = new Date(2026, 8, 16);
 const fmt = (d) => [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
 const todayStr = fmt(TODAY);
 const plusDays = (n) => { const d = new Date(TODAY); d.setDate(d.getDate() + n); return fmt(d); };
