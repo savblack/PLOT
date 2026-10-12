@@ -5,14 +5,65 @@ import { alertWriteError, useAlertToggle } from './usePremiumAlerts.js';
 /**
  * Streaming alerts on watchlist films, shared by web and mobile. Free, in the
  * app, automatic: a film on your watchlist is alerted by the streaming-arrival-
- * alerts Edge Function with nothing to switch on. What lives here is only the
- * ways out: mute one film (movie_streaming_alert_mutes) or turn the whole thing
- * off (notification_preferences). Both are rows the person owns; a missing row
+ * alerts Edge Function with nothing to switch on. The ways out are a mute for
+ * one film (movie_streaming_alert_mutes) or the whole-watchlist switch
+ * (notification_preferences). Both are rows the person owns; a missing row
  * means "alert me". Nothing here sends or detects anything.
+ *
+ * The Where to watch prompt is the way in for a film that has no offer in the
+ * viewer's region. The daily job only reads films, so a TV title has no alert
+ * to turn on. The caller adds the film to the watchlist. enableStreamingArrivalAlert
+ * clears a mute and turns the watchlist switch back on, which the job requires.
  *
  * tmdb_id must come from a TMDB response (the film being shown). The title is
  * only a display cache for the list in Settings.
  */
+
+/**
+ * Whether Where to watch should offer the streaming-arrival prompt.
+ * `hasWatchOffers` includes subscription, free, rent, buy, and cinemas.
+ * A show is never eligible: the job does not read TV.
+ * @param {string | null | undefined} mediaType
+ * @param {boolean} hasWatchOffers
+ */
+export function showStreamingArrivalAsk(mediaType, hasWatchOffers) {
+  return mediaType === 'movie' && hasWatchOffers === false;
+}
+
+/**
+ * Turn the existing streaming-arrival alert on for one film. Deletes a mute
+ * for that film if one exists, and sets notification_preferences.streaming_alerts
+ * so the daily job will not skip the account. Does not add the film to the
+ * watchlist: that write is the caller's, because it is the opt-in the job reads
+ * and it already reports watchlist_saved.
+ *
+ * Turning the switch on applies to the whole watchlist. A film-only request
+ * cannot be delivered while the switch is off.
+ *
+ * @param {string | null | undefined} userId
+ * @param {{ id?: number, title?: string } | null | undefined} movie TMDB movie details
+ * @returns {Promise<{ ok: boolean }>}
+ */
+export async function enableStreamingArrivalAlert(userId, movie) {
+  const id = Number(movie?.id);
+  const title = String(movie?.title ?? '').trim();
+  if (!userId || !Number.isInteger(id) || id < 1 || !title) return { ok: false };
+
+  const { error: muteError } = await supabase
+    .from('movie_streaming_alert_mutes')
+    .delete()
+    .eq('user_id', userId)
+    .eq('tmdb_id', id);
+  if (muteError) return { ok: false };
+
+  const { error: prefError } = await supabase.from('notification_preferences')
+    .upsert(
+      { user_id: userId, streaming_alerts: true, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' },
+    );
+  if (prefError) return { ok: false };
+  return { ok: true };
+}
 
 /**
  * Mute or unmute streaming alerts for one film. `muted` is "a mute row exists".

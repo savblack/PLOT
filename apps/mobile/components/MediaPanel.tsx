@@ -2,6 +2,8 @@ import { useEpisodeWatches, useSpecialEpisodeWatches } from '@plot/core/useEpiso
 import { getEpisodeGuideState } from '@plot/core/episodeProgress.js';
 import StreamingAlertsCard from './StreamingAlertsCard';
 import EpisodeAlertsCard from './EpisodeAlertsCard';
+import StreamingArrivalAsk from './StreamingArrivalAsk';
+import { showStreamingArrivalAsk } from '@plot/core/useStreamingAlerts.js';
 import TitleFootBar from './TitleFootBar';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
@@ -1005,6 +1007,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           inCinemas = det.status === 'Released' && days >= 0 && days <= 90 && streaming.length === 0 && rentBuy.length === 0;
         }
         setWhereToWatch({ streaming, rentBuy, inCinemas, region, justwatchLink: verified?.title_url || regionData.link || null });
+        const hasOffers = streaming.length > 0 || rentBuy.length > 0 || inCinemas;
+        if (showStreamingArrivalAsk(itemType, hasOffers)) setWatchOpen(true);
         // Critic score + audience quote depend on the imdb_id this same call just
         // returned, so they can't join the Promise.all above. Fire-and-forget
         // rather than block the panel on a third-party lookup.
@@ -1365,6 +1369,17 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                             <Text style={styles.providersEmpty}>
                               {watchRegionName ? `Not streaming in ${watchRegionName} yet.` : 'Not streaming anywhere yet.'}
                             </Text>
+                            {showStreamingArrivalAsk(itemType, hasWatchOffers) && details?.title && (
+                              <StreamingArrivalAsk
+                                userId={userId}
+                                movie={{ id: details.id, title: details.title }}
+                                inList={inList}
+                                onAdd={() => watchlist.addToList(
+                                  { ...details, id: itemId, media_type: 'movie' },
+                                  { source: 'streaming_arrival_ask' },
+                                )}
+                              />
+                            )}
                           </>
                         )}
                         {hasWatchOffers && (

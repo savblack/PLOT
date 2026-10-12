@@ -410,6 +410,30 @@ with `on: true`, including when alerts were already on. The toast is once per
 account on that device. It does not open the calendar subscribe flow, which
 stays Premium.
 
+## Streaming arrival (title panel)
+
+The daily `streaming-arrival-alerts` job tells someone, in the app, when a
+film on their watchlist gains a subscription offer on one of their services
+or becomes free to watch, in their region. The watchlist is the opt-in. A row
+in `movie_streaming_alert_mutes` mutes one film. `notification_preferences.streaming_alerts`
+set to false mutes the whole watchlist. A missing preferences row means on.
+The job does not read TV, so a show has no equivalent alert.
+
+Where to watch shows "Tell me when it's streaming here" on a film with no
+offer in the viewer's region (nothing streaming, nothing to rent or buy, and
+not in cinemas). Accepting saves the film when it is not already on the
+watchlist, deletes a mute for that film, and turns the watchlist switch back
+on. That last write applies to every film on the watchlist, because the job
+skips the account while the switch is off.
+
+| Event | When | Props |
+|---|---|---|
+| `streaming_arrival_requested` | The prompt's writes landed | `tmdb_id`, `added_to_watchlist` |
+
+A save from this prompt also fires `watchlist_saved` with
+`source: streaming_arrival_ask` when the film was not already saved. The
+prompt event does not fire if the save or the alert writes fail.
+
 ## Smart lists
 
 A smart list (Premium) is a custom list that stores rules and fills itself when
