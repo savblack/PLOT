@@ -19,6 +19,7 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
   const restoreFocusRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
   const [typedPhrase, setTypedPhrase] = useState('');
+  const [error, setError] = useState(null);
   const titleId = useId();
   const messageId = useId();
   const phraseId = useId();
@@ -65,8 +66,14 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
 
     try {
       setSubmitting(true);
+      setError(null);
       const result = onConfirm ? await onConfirm(typedPhrase) : true;
       if (result !== false) onClose();
+    } catch (err) {
+      // Keep the modal open with a visible error. A throw here was otherwise an
+      // unhandled rejection with nothing on screen, so users clicked again and again.
+      console.error('[confirm] onConfirm failed:', err);
+      setError(CONFIRM_MODAL.failed);
     } finally {
       setSubmitting(false);
     }
@@ -150,6 +157,16 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
                 }}
               />
             </div>
+          )}
+          {error && (
+            <p role="alert" style={{
+              fontSize: '0.8rem',
+              color: 'var(--danger)',
+              lineHeight: 1.5,
+              marginBottom: '1rem',
+            }}>
+              {error}
+            </p>
           )}
           <div style={{ display: 'flex', gap: '0.625rem', justifyContent: 'flex-end' }}>
             {!informational && <button

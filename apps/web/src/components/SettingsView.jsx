@@ -1478,9 +1478,15 @@ export default function SettingsView() {
       confirmLabel: SETTINGS_VIEW.confirm.revoke,
       danger: true,
       onConfirm: async () => {
-        await updateProfile({ userId: user.id, patch: { calendar_token: null } });
+        setActionError(null);
+        const { error } = await updateProfile({ userId: user.id, patch: { calendar_token: null } });
+        if (error) {
+          setActionError(error.message || SETTINGS_VIEW.errors.failedToRevokeCalendarLink);
+          return false;
+        }
         setLocalCalToken(null);
         refreshProfile();
+        return true;
       },
     });
   };

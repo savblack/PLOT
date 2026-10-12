@@ -117,6 +117,7 @@ export const SETTINGS_VIEW = {
     failedToClearLists: 'Failed to clear your lists.',
     failedToDeleteCustomList: 'Failed to delete a custom list.',
     failedToExportData: 'Failed to export your data.',
+    failedToRevokeCalendarLink: 'Failed to revoke your calendar link.',
     couldNotUpdateName: 'Could not update name. Try again.',
     enterAName: 'Enter a name.',
     enterAValidEmail: 'Enter a valid email address.',

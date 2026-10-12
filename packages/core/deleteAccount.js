@@ -9,6 +9,9 @@
  * Callers inject `supabase`, `fetchImpl` and `deleteAccountUrl` so this stays
  * platform-agnostic and testable without a live client.
  */
+import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
+
+export const DELETE_ACCOUNT_NETWORK_ERROR = 'Could not reach Plot. Check your connection and try again.';
 
 /** @param {{ json: () => Promise<any>, text: () => Promise<string> }} response */
 export async function parseDeleteAccountError(response) {
@@ -53,11 +56,19 @@ export async function deleteAccountAndSignOut({
     };
   }
 
-  const response = await fetchImpl(deleteAccountUrl, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ confirmationPhrase }),
-  });
+  // A network failure rejects with `TypeError: Failed to fetch`. Return it like
+  // any other failure so the caller can show it, instead of an unhandled rejection.
+  let response;
+  try {
+    response = await fetchImpl(deleteAccountUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmationPhrase }),
+    });
+  } catch (err) {
+    reportActionFailure(FAILED_ACTIONS.ACCOUNT_DELETE, err, { kind: 'network' });
+    return { ok: false, error: DELETE_ACCOUNT_NETWORK_ERROR };
+  }
 
   if (!response.ok) {
     return {
