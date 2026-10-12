@@ -1,8 +1,6 @@
-// Fronts the Supabase `tmdb-proxy` Edge Function with distributed per-IP rate
-// limiting at Cloudflare's edge. The app calls this Worker (via
-// VITE_TMDB_PROXY_URL); the Worker forwards to UPSTREAM, preserving the auth
-// headers and the browser Origin so the Edge Function's CORS allowlist still
-// applies. CORS response headers come from the Edge Function and pass through.
+// TMDB admission, rate limiting, and caching at Cloudflare's edge. The app
+// calls this Worker (via VITE_TMDB_PROXY_URL). When TMDB_API_KEY is configured
+// here, requests never reach Supabase; UPSTREAM is a rollout fallback.
 //
 // Anyone holding the Supabase publishable key can call this, and that key is
 // public by design (it ships in the app bundle, and the mobile app sends no
@@ -14,6 +12,7 @@
 // TMDB, so the most an unwanted caller can cost is one upstream request per
 // query per TTL. See cache.js.
 import { cacheKey, ttlFor } from './cache.js';
+import { fetchTMDB, preflightResponse } from './tmdb.js';
 
 function forwardHeaders(headers) {
   const h = new Headers(headers);
@@ -65,14 +64,10 @@ const handler = {
     if (admissionError) return admissionResponse(admissionError);
 
     const url = new URL(request.url);
-    const upstream = env.UPSTREAM + url.search;
-
-    const upstreamHeaders = forwardHeaders(request.headers);
-    upstreamHeaders.set('X-PLOT-TMDB-Proxy-Secret', env.UPSTREAM_SHARED_SECRET);
-
-    // Preflight: forward without spending rate budget so OPTIONS never 429s.
+    const origin = request.headers.get('Origin');
+    // Preflight never needs TMDB or Supabase, and must not spend rate budget.
     if (request.method === 'OPTIONS') {
-      return fetch(upstream, { method: 'OPTIONS', headers: upstreamHeaders });
+      return preflightResponse(origin);
     }
 
     // Cache before rate limiting, not after. The limiter exists to protect what
@@ -103,15 +98,30 @@ const handler = {
       });
     }
 
-    const resp = await fetch(upstream, {
-      method: request.method,
-      headers: upstreamHeaders,
-    });
+    let resp;
+    if (request.method !== 'GET') {
+      resp = new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origin || '*', Vary: 'Origin' },
+      });
+    } else if (env.TMDB_API_KEY) {
+      resp = await fetchTMDB(url, env.TMDB_API_KEY, origin);
+    } else if (env.UPSTREAM && env.UPSTREAM_SHARED_SECRET) {
+      const upstreamHeaders = forwardHeaders(request.headers);
+      upstreamHeaders.set('X-PLOT-TMDB-Proxy-Secret', env.UPSTREAM_SHARED_SECRET);
+      resp = await fetch(env.UPSTREAM + url.search, { method: request.method, headers: upstreamHeaders });
+    } else {
+      resp = new Response(JSON.stringify({ error: 'TMDB proxy is not configured' }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origin || '*', Vary: 'Origin' },
+      });
+    }
     // The Workers runtime has already decoded the body, so passing the upstream
     // content-encoding/content-length through makes the browser fail to decode.
     // Drop those (and the upstream's set-cookie) and keep content-type + CORS.
     const headers = new Headers(resp.headers);
     ['content-encoding', 'content-length', 'transfer-encoding', 'set-cookie'].forEach((h) => headers.delete(h));
+    headers.set('X-Plot-Backend', env.TMDB_API_KEY ? 'tmdb' : 'supabase');
 
     // Only success is worth keeping. Caching a 429 or a 502 would hold every
     // caller on a failure that lasted seconds for as long as the TTL.

@@ -7,7 +7,7 @@ const TMDB = 'https://api.themoviedb.org/3';
 const normalizeType = (mediaType) =>
   mediaType === 'tv' || mediaType === 'show' || mediaType === 'series' ? 'tv' : 'movie';
 
-/** Fetch the minimal title fields needed for share meta. Returns null on any failure. */
+/** Fetch the title fields needed for share meta and the logged-out save preview. */
 export async function loadTitle(apiKey, mediaType, tmdbId) {
   const id = Number(tmdbId);
   if (!Number.isInteger(id) || id <= 0) return null;
@@ -26,10 +26,16 @@ export async function loadTitle(apiKey, mediaType, tmdbId) {
   try { d = await res.json(); } catch { return null; }
 
   return {
+    id,
     type,
     title: d.title || d.name || '',
     year: (d.release_date || d.first_air_date || '').slice(0, 4),
     backdrop: d.backdrop_path ? `https://image.tmdb.org/t/p/w1280${d.backdrop_path}` : null,
+    poster_path: d.poster_path || null,
     overview: d.overview || '',
+    vote_average: d.vote_average || 0,
+    genres: Array.isArray(d.genres) ? d.genres.slice(0, 2).map((genre) => ({ name: genre.name })) : [],
+    runtime: d.runtime || null,
+    number_of_seasons: d.number_of_seasons || null,
   };
 }

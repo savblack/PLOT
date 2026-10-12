@@ -1,5 +1,6 @@
-# Cloudflare Worker that fronts the Supabase `tmdb-proxy` Edge Function and adds
-# real, distributed per-IP rate limiting (the in-isolate limiter in the Edge
+# Cloudflare Worker that calls TMDB directly when TMDB_API_KEY is configured,
+# with Supabase `tmdb-proxy` as a rollout fallback. It adds distributed per-IP
+# rate limiting (the in-isolate limiter in the Edge
 # Function was ineffective: Supabase spreads a burst across isolates, each with
 # its own empty counter — 400 concurrent requests all returned 200).
 #
@@ -26,10 +27,10 @@ compatibility_date = "2025-06-01"
 workers_dev = true
 
 [vars]
-# The real Supabase Edge Function the Worker forwards to.
+# Rollout fallback only. Remove after direct TMDB traffic is verified.
 UPSTREAM = "https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy"
-# Set `UPSTREAM_SHARED_SECRET` as a Worker secret and set the identical
-# `TMDB_PROXY_SHARED_SECRET` in Supabase before deploying either side.
+# Set TMDB_API_KEY as a Worker secret in each environment. Keep
+# UPSTREAM_SHARED_SECRET during rollout so a missing key cannot break the app.
 
 # Distributed rate limit: 100 requests per 10s per client IP, enforced at
 # Cloudflare's edge (consistent across requests, unlike the per-isolate limiter).
@@ -49,17 +50,15 @@ simple = { limit = 100, period = 10 }
 #
 # Deploy (one-off, needs a Workers-scoped token or `npx wrangler login`):
 #   cd apps/web/workers/tmdb-proxy
-#   npx wrangler secret put UPSTREAM_SHARED_SECRET --env staging
-#     ^ paste the Staging project's TMDB_PROXY_SHARED_SECRET, from
-#       Supabase → uzrhfivnhdcfieuaxzip → Edge Functions → Secrets.
-#       It is already set there; it must match on both sides.
-#   npx wrangler deploy --env staging
+#   pnpm exec wrangler secret put TMDB_API_KEY --env staging
+#   pnpm exec wrangler deploy --env staging
+# Check `X-Plot-Backend: tmdb` on a successful request before production.
 #
 # Then point local dev at it (these are URLs, not secrets):
 #   .env             VITE_TMDB_PROXY_URL        = https://tmdb-proxy-staging.<subdomain>.workers.dev
 #   apps/mobile/.env EXPO_PUBLIC_TMDB_PROXY_URL = https://tmdb-proxy-staging.<subdomain>.workers.dev
 #
-# Production is untouched by any of this — it keeps using the default env.
+# Production uses a separate TMDB_API_KEY secret on the default Worker.
 [env.staging]
 name = "tmdb-proxy-staging"
 workers_dev = true
