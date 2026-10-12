@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { checkoutErrorMessage, checkoutPlan, signupPathForPlan } from '../../src/utils/premiumCheckout.js';
+import { checkoutErrorMessage, checkoutPlan, signupPathForPlan, waitlistMailto } from '../../src/utils/premiumCheckout.js';
 
 test('only monthly and yearly are real plans; anything else is monthly', () => {
   assert.equal(checkoutPlan('monthly'), 'monthly');
@@ -21,4 +21,18 @@ test('only a 409 shows the server wording; other failures use the fallback', () 
   for (const status of [400, 401, 500, 503, undefined]) {
     assert.equal(checkoutErrorMessage(status, 'Billing price configuration needs attention', fallback), fallback);
   }
+});
+
+test('a closed checkout and a billing outage are not the generic retry line', () => {
+  const fallback = 'We couldn’t start checkout.';
+  const extra = { closed: 'Checkout isn’t open yet.', unavailable: 'Checkout isn’t available right now.' };
+  assert.equal(checkoutErrorMessage(503, 'Plot Premium is coming soon.', fallback, { ...extra, code: 'premium_coming_soon' }), extra.closed);
+  assert.equal(checkoutErrorMessage(503, 'Billing price configuration needs attention', fallback, extra), extra.unavailable);
+  assert.equal(checkoutErrorMessage(500, 'Could not start checkout', fallback, extra), fallback);
+});
+
+test('the waitlist mailto does not include a payment link', () => {
+  const href = waitlistMailto('Plot Premium waitlist');
+  assert.equal(href, 'mailto:contact@theplot.tv?subject=Plot%20Premium%20waitlist');
+  assert.equal(href.includes('stripe'), false);
 });

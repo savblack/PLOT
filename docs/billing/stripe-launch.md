@@ -77,13 +77,19 @@ This decision does not enable public checkout or authorize a production change.
    the end of the current period. The tested sandbox configuration resets the
    billing anchor to now and uses `always_invoice` for immediate prorated upgrades.
    Verify the invoice preview before copying this configuration into live mode.
-4. Create a live webhook at
+4. Create or update the live webhook at
    `https://mkegtssedjyqldysvzga.supabase.co/functions/v1/stripe-webhook`.
-   Subscribe to `checkout.session.completed`, `customer.subscription.updated`,
-   and `customer.subscription.deleted`.
+   Subscribe to `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `checkout.session.expired`, `customer.subscription.created`,
+   `customer.subscription.updated`, `customer.subscription.deleted`,
+   `invoice.payment_failed`, `invoice.payment_succeeded`, and `invoice.paid`.
+   The handler verifies `Stripe-Signature` and writes `stripe_events` in the
+   same transaction as `billing_customers`. Invoice events refetch the
+   subscription. Do not point this endpoint at a test-mode secret.
 5. Set these Supabase Edge Function secrets from the live Stripe dashboard:
    `STRIPE_SECRET_KEY`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`, and
-   `STRIPE_WEBHOOK_SECRET`.
+   `STRIPE_WEBHOOK_SECRET`. `STRIPE_PRICE_YEARLY` must be the active
+   tax-inclusive USD price at 2400 cents. A 2500-cent price is rejected.
 6. Keep `STRIPE_CHECKOUT_ENABLED=false` until launch approval. Checkout validates
    that the selected price is an active USD recurring price for exactly US$3/month and
    US$24/year. Verify Adaptive Pricing is enabled in the intended live Plot
@@ -99,6 +105,37 @@ This decision does not enable public checkout or authorize a production change.
    value `true` opens checkout; anything else, including `TRUE`, `1` or a typo, leaves
    it closed. Verify the deployed behavior before announcing launch. To close it again,
    set the secret back to `false`; the pilot allowlist keeps working.
+
+## Confirm the switch without reading the secret
+
+Do this on the project you are about to open (staging first, production only
+when that launch is approved). Do not paste secret values into chat or into
+the repo.
+
+1. Deploy `billing-availability`, `stripe-billing`, and `stripe-webhook`.
+   Leave `STRIPE_CHECKOUT_ENABLED` unset or set to `false`.
+2. In the `stripe-billing` or `billing-availability` logs, confirm one line:
+   `checkout enabled=no pilotCount=0` (or the pilot count you intended).
+   The line does not include user ids or price ids.
+3. Or call the operator endpoint with the service-role bearer (the gateway
+   verifies it; a user JWT is rejected):
+
+   `POST https://<project>.supabase.co/functions/v1/stripe-billing?action=status`
+
+   Expect `{ "checkoutEnabled": false, "pilotCount": 0 }`.
+4. Signed out, the plans page calls `billing-availability` and shows
+   "Join the waitlist" while `checkoutEnabled` is false. It must not show
+   "We couldn’t start checkout."
+5. After the live prices, webhook, and portal are in place, set
+   `STRIPE_CHECKOUT_ENABLED=true`. Repeat steps 2 and 3 and expect
+   `checkout enabled=yes`. A signed-in free account on `/plans` should then
+   see "Upgrade to Premium", and Checkout should open. A pilot-only check
+   is `STRIPE_CHECKOUT_PILOT_USER_IDS` set to that account's auth user id,
+   with the public switch still false. `pilotCount` goes up by one. The
+   id itself is not returned.
+
+This repository change does not set the production secret, does not create
+live prices, and does not send a live webhook.
 
 Never put Stripe secret keys or price IDs in browser variables or tracked files.
 
