@@ -1,0 +1,16 @@
+.upgrade-waitlist { position: relative; width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 0.65rem; }
+.upgrade-waitlist .fn-website { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.upgrade-waitlist-email { width: 100%; display: flex; flex-direction: column; gap: 0.35rem; }
+.upgrade-waitlist-email label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+.upgrade-waitlist-email input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 1rem;
+}
+.upgrade-waitlist-success { width: 100%; margin: 0; padding: 0.7rem 0.8rem; border-radius: var(--radius-badge); background: var(--surface-sunken); font-size: 0.85rem; line-height: 1.5; }

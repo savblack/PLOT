@@ -15,18 +15,37 @@ export default {
   parameters: { layout: 'fullscreen' },
   args: { reason: 'lists', onClose: () => {} },
   decorators: [
-    (Story) => (
-      <MemoryRouter initialEntries={['/my-lists']}>
-        <AppContext.Provider value={app}>
-          <Story />
-        </AppContext.Provider>
-      </MemoryRouter>
-    ),
+    (Story) => {
+      localStorage.removeItem('plot.premiumWaitlist.anon.themes');
+      localStorage.removeItem('plot.premiumWaitlist.anon.smart_lists');
+      return (
+        <MemoryRouter initialEntries={['/my-lists']}>
+          <AppContext.Provider value={app}>
+            <Story />
+          </AppContext.Provider>
+        </MemoryRouter>
+      );
+    },
   ],
 };
 
 export const Lists = {};
-export const Themes = { args: { reason: 'themes' } };
+export const Themes = { args: { reason: 'themes', family: 'sage' } };
+
+const signedIn = { profile: { id: 'story-user', is_premium: false }, user: { id: 'story-user', email: 'reader@example.com' } };
+
+export const ThemesSignedIn = {
+  args: { reason: 'themes', family: 'sage' },
+  decorators: [(Story) => <AppContext.Provider value={signedIn}><Story /></AppContext.Provider>],
+};
+
+export const ThemesAlreadyJoined = {
+  args: { reason: 'themes', family: 'sage' },
+  render: (args) => {
+    localStorage.setItem('plot.premiumWaitlist.anon.themes', '1');
+    return <UpgradeSheet {...args} />;
+  },
+};
 
 // Focus opens on the sheet itself; Shift+Tab from there must wrap inside it.
 export const ReverseTabStaysInside = {

@@ -11,10 +11,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { familySwatch, type ThemeFamily } from '@plot/core/themes.js';
+import { premiumWaitlistCopy, premiumWaitlistGate } from '@plot/core/premiumWaitlist.js';
 import { upgradeSheetContent, type UpgradeReason } from '@plot/core/upgradeSheet.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import PremiumIcon from './PremiumIcon';
+import PremiumWaitlistJoin from './PremiumWaitlistJoin';
 
 const S = PLANS_PAGE.upgradeSheet;
 
@@ -34,6 +36,8 @@ export default function UpgradeSheet({
   const insets = useSafeAreaInsets();
   const [comingSoon, setComingSoon] = useState(false);
   const content = upgradeSheetContent(reason, { family });
+  const waitlistGate = premiumWaitlistGate(reason);
+  const waitlistCopy = waitlistGate ? premiumWaitlistCopy(waitlistGate) : null;
   if (!content) return null;
 
   const close = () => { setComingSoon(false); onClose(); };
@@ -52,8 +56,8 @@ export default function UpgradeSheet({
               </View>
               <Text style={styles.contextText}>{content.context}</Text>
             </View>
-            <Text style={styles.title} accessibilityRole="header">{content.title}</Text>
-            <Text style={styles.body}>{content.body}</Text>
+            <Text style={styles.title} accessibilityRole="header">{waitlistCopy ? waitlistCopy.headline : content.title}</Text>
+            <Text style={styles.body}>{waitlistCopy ? waitlistCopy.body : content.body}</Text>
             {content.preview && <ThemePreview family={content.preview.family} line={content.preview.line} />}
 
             <View style={styles.offer}>
@@ -70,10 +74,14 @@ export default function UpgradeSheet({
               <Text style={styles.trial}>{PLANS_PAGE.premium.trialNote}</Text>
             </View>
 
-            <TouchableOpacity style={styles.primary} onPress={() => setComingSoon(true)} accessibilityRole="button">
-              <Text style={styles.primaryText}>{PLANS_PAGE.upgradeAction}</Text>
-            </TouchableOpacity>
-            {comingSoon && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
+            {waitlistGate ? <PremiumWaitlistJoin gate={waitlistGate} /> : (
+              <>
+                <TouchableOpacity style={styles.primary} onPress={() => setComingSoon(true)} accessibilityRole="button">
+                  <Text style={styles.primaryText}>{PLANS_PAGE.upgradeAction}</Text>
+                </TouchableOpacity>
+                {comingSoon && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
+              </>
+            )}
 
             <Text style={styles.also}>{S.alsoIn}</Text>
             {content.also.map(row => (

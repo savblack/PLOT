@@ -26,6 +26,14 @@ verify_jwt = false
 [functions.newsletter-subscribe]
 verify_jwt = false
 
+# Custom themes and Smart lists waitlist. Signed-out visitors call it, so the
+# gateway JWT check stays off. The function reads a user JWT itself when one
+# is present and ignores a body email in that case. Needs the existing
+# RESEND_API_KEY secret, a Resend segment named "Premium waitlist", and a
+# string contact property premium_interest. See supabase/functions/premium-waitlist.
+[functions.premium-waitlist]
+verify_jwt = false
+
 # Exceptional signup path for browsers where Turnstile has persistently
 # failed — no session exists yet when this is called (that's the point), so
 # the gateway JWT check can't apply. Does its own bot mitigation (honeypot,

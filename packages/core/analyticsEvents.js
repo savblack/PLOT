@@ -73,6 +73,10 @@ export const EVENTS = Object.freeze({
   // and a stray call site stays a loud reference (see ACTIVATED).
   PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
+  // Custom themes and Smart lists sheets, after premium-waitlist confirms a
+  // new join. `gate` is themes | smart_lists. Already on the list does not
+  // fire again. Not a payment event, and it does not start checkout.
+  PREMIUM_WAITLIST_JOINED: 'premium_waitlist_joined',
   // The Tonight picker, Plot's "what should I watch" surface. Fired from
   // useTonightPicker via the onTonightPicker seam. A draw with result_count 0
   // is an empty result; a failed draw is load_failed (resource tonight_picks).

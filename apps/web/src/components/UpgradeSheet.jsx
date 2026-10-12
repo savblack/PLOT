@@ -5,6 +5,7 @@
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { premiumWaitlistCopy, premiumWaitlistGate } from '@plot/core/premiumWaitlist.js';
 import { upgradeSheetContent } from '@plot/core/upgradeSheet.js';
 import { useApp } from '../hooks/useApp.js';
 import { usePremium } from '../hooks/usePremium.js';
@@ -12,6 +13,7 @@ import { PLANS_PAGE } from '../copy/plansPage.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import PremiumIcon from './PremiumIcon.jsx';
 import PremiumPurchaseAction from './PremiumPurchaseAction.jsx';
+import PremiumWaitlistJoin from './PremiumWaitlistJoin.jsx';
 import { ThemeMiniaturePair } from './ThemeMiniature.jsx';
 import './UpgradeSheet.css';
 
@@ -24,18 +26,21 @@ const S = PLANS_PAGE.upgradeSheet;
  *   returnFocusRef?: { current: HTMLElement | null },
  *   family?: string,
  *   kept?: boolean,
+ *   joinWaitlist?: (input: { gate: 'themes' | 'smart_lists', email?: string, website?: string, signedIn?: boolean }) => Promise<{ ok?: boolean, already?: boolean, error?: string }>,
  * }} props  returnFocusRef: where focus goes on close when the element that had
  *   it is gone (e.g. the create-list dialog the sheet replaced). theme: for
  *   reason 'themes', the Premium family tapped, drawn light and dark (never applied).
  */
-export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, kept = false }) {
-  const { profile } = useApp();
+export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, kept = false, joinWaitlist }) {
+  const { profile, user } = useApp();
   const premium = usePremium(profile);
   const navigate = useNavigate();
   const location = useLocation();
   const sheetRef = useRef(null);
   const titleId = useId();
   const content = upgradeSheetContent(reason, { family, kept });
+  const waitlistGate = premiumWaitlistGate(reason);
+  const waitlistCopy = waitlistGate ? premiumWaitlistCopy(waitlistGate) : null;
   // Callers pass inline handlers; reading them through refs keeps the setup
   // below to one run per open, so focus and scroll lock aren't reset on render.
   const onCloseRef = useRef(onClose);
@@ -56,14 +61,14 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
       if (event.key !== 'Escape' && event.key !== 'Tab') return;
       event.stopPropagation();
       if (event.key === 'Escape') { event.preventDefault(); onCloseRef.current(); return; }
-      const focusables = [...(sheetRef.current?.querySelectorAll('button:not(:disabled), a.btn') ?? [])];
+      const focusables = [...(sheetRef.current?.querySelectorAll('input:not(.fn-website):not(:disabled), button:not(:disabled), a.btn') ?? [])];
       if (!focusables.length) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
       // Focus starts on the sheet itself, which isn't in the list: wrap from there too.
-      const onButton = focusables.includes(document.activeElement);
-      if (event.shiftKey && (!onButton || document.activeElement === first)) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && (!onButton || document.activeElement === last)) { event.preventDefault(); first.focus(); }
+      const onFocusable = focusables.includes(document.activeElement);
+      if (event.shiftKey && (!onFocusable || document.activeElement === first)) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (!onFocusable || document.activeElement === last)) { event.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', onKeyDown, true);
     return () => {
@@ -95,10 +100,10 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
           {content.context}
         </p>
         {content.preview && <ThemeMiniaturePair family={content.preview.family} className="upgrade-sheet-preview" />}
-        <h2 id={titleId} className="upgrade-sheet-title">{content.title}</h2>
+        <h2 id={titleId} className="upgrade-sheet-title">{waitlistCopy ? waitlistCopy.headline : content.title}</h2>
         <p className="upgrade-sheet-body">
           {content.preview && <>{content.preview.line} </>}
-          {content.body}
+          {waitlistCopy ? waitlistCopy.body : content.body}
         </p>
         {content.kept && <p className="upgrade-sheet-kept">{content.kept}</p>}
 
@@ -114,9 +119,15 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
           <p className="upgrade-sheet-trial">{PLANS_PAGE.premium.trialNote}</p>
         </div>
 
-        <PremiumPurchaseAction premium={premium} plan="monthly" />
-        {premium.checkoutAvailable === false && <p className="upgrade-sheet-note" role="status">{PLANS_PAGE.checkoutClosedDetail}</p>}
-        {premium.error && <p className="upgrade-sheet-note" role="alert">{premium.error}</p>}
+        {waitlistGate ? (
+          <PremiumWaitlistJoin gate={waitlistGate} userId={user?.id} signedIn={Boolean(user?.email)} joinWaitlist={joinWaitlist} />
+        ) : (
+          <>
+            <PremiumPurchaseAction premium={premium} plan="monthly" />
+            {premium.checkoutAvailable === false && <p className="upgrade-sheet-note" role="status">{PLANS_PAGE.checkoutClosedDetail}</p>}
+            {premium.error && <p className="upgrade-sheet-note" role="alert">{premium.error}</p>}
+          </>
+        )}
 
         <p className="upgrade-sheet-also">{S.alsoIn}</p>
         <ul className="upgrade-sheet-rows">
