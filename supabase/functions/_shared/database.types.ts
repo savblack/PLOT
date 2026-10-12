@@ -1481,22 +1481,94 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          push_enabled: boolean
+          push_enabled_at: string | null
           streaming_alerts: boolean
           streaming_email: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
+          push_enabled?: boolean
+          push_enabled_at?: string | null
           streaming_alerts?: boolean
           streaming_email?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
+          push_enabled?: boolean
+          push_enabled_at?: string | null
           streaming_alerts?: boolean
           streaming_email?: boolean
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      push_deliveries: {
+        Row: {
+          notification_id: string
+          token: string
+          status: string
+          attempts: number
+          provider_ref: string | null
+          error: string | null
+          claimed_at: string | null
+          sent_at: string | null
+          receipted_at: string | null
+          created_at: string
+        }
+        Insert: {
+          notification_id: string
+          token: string
+          status?: string
+          attempts?: number
+          provider_ref?: string | null
+          error?: string | null
+          claimed_at?: string | null
+          sent_at?: string | null
+          receipted_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          notification_id?: string
+          token?: string
+          status?: string
+          attempts?: number
+          provider_ref?: string | null
+          error?: string | null
+          claimed_at?: string | null
+          sent_at?: string | null
+          receipted_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      push_tokens: {
+        Row: {
+          token: string
+          user_id: string
+          platform: string
+          created_at: string
+          last_seen_at: string
+          disabled_at: string | null
+        }
+        Insert: {
+          token: string
+          user_id: string
+          platform: string
+          created_at?: string
+          last_seen_at?: string
+          disabled_at?: string | null
+        }
+        Update: {
+          token?: string
+          user_id?: string
+          platform?: string
+          created_at?: string
+          last_seen_at?: string
+          disabled_at?: string | null
         }
         Relationships: []
       }
@@ -3152,6 +3224,10 @@ export type Database = {
           email: string
           user_id: string
         }[]
+      }
+      register_push_token: {
+        Args: { p_token: string; p_platform: string }
+        Returns: undefined
       }
       apply_stripe_subscription_event: {
         Args: {

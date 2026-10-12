@@ -28,6 +28,7 @@ import CollectionPanel from '../components/CollectionPanel';
 import type { Session } from '@supabase/supabase-js';
 import UndoToast from '../components/UndoToast';
 import { FollowToastHost } from '../components/people/FollowControls';
+import PushHost from '../components/PushHost';
 import {
   clearWatchTogetherReturn,
   consumeWatchTogetherReturn,
@@ -263,6 +264,7 @@ function RootInner() {
         <ThemeEntitlement signedIn={!!session?.user} />
         <DrawerProvider>
           <MediaPanelProvider>
+            <PushHost signedIn={!!session?.user} onboardingComplete={onboardingComplete} />
             <ThemedStatusBar />
             <RootDrawerMenu />
             <RootMediaPanel />
