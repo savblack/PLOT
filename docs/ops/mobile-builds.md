@@ -229,8 +229,12 @@ also covers the APNs key (let EAS generate it; the account cap is 2 keys) and
 the `aps-environment` entitlement trap.
 
 `appVersionSource: "remote"` means EAS owns the build number and `production`
-increments it. Do not also bump `version` in `app.json` by hand per build; that
-is the marketing version, not the build number.
+increments it. Do not also bump `version` in `app.json` by hand per build. That
+is the marketing version, not the build number. release-please cuts the
+marketing version. See [versioning.md](versioning.md). Do not add
+`ios.buildNumber` or `android.versionCode` to `app.json`. If those keys exist,
+the expo updater rewrites them on each release, and the build number in git
+disagrees with the one EAS is incrementing.
 
 ## Order of operations
 
