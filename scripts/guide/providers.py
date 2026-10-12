@@ -52,6 +52,10 @@ def parse_xmltv(xml, channels):
             continue
         start = dt.datetime.strptime(item.attrib['start'], '%Y%m%d%H%M%S %z')
         end = dt.datetime.strptime(item.attrib['stop'], '%Y%m%d%H%M%S %z')
+        # Source feeds occasionally include zero-length listings. Discard only
+        # those rows; build_snapshot still rejects an unusable future schedule.
+        if end <= start:
+            continue
         rows.append(programme(item.get('channel'), item.findtext('title') or '', start, end, item.findtext('desc') or ''))
     return rows
 
