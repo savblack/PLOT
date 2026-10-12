@@ -34,15 +34,46 @@ function loadScript(): Promise<void> {
 export interface TurnstileProps {
   siteKey?: string;
   onToken: (token: string | null) => void;
+  /** Widget error (script or challenge). Distinct from an expired token. */
+  onError?: () => void;
   resetSignal?: number;
+  /**
+   * Bump to run the challenge. The widget does not run when the screen opens.
+   * reset() alone does not re-run it.
+   */
+  executeSignal?: number;
 }
 
-export default function Turnstile({ siteKey, onToken, resetSignal = 0 }: TurnstileProps) {
+export default function Turnstile({
+  siteKey,
+  onToken,
+  onError,
+  resetSignal = 0,
+  executeSignal = 0,
+}: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
   const onTokenRef = useRef(onToken);
+  const onErrorRef = useRef(onError);
+  const executeSignalRef = useRef(0);
+  const lastExecutedRef = useRef(0);
+  const runExecuteRef = useRef(() => {});
 
   useEffect(() => { onTokenRef.current = onToken; }, [onToken]);
+  useEffect(() => { onErrorRef.current = onError; }, [onError]);
+
+  useEffect(() => {
+    runExecuteRef.current = () => {
+      const signal = executeSignalRef.current;
+      if (!signal || lastExecutedRef.current === signal) return;
+      const id = widgetIdRef.current;
+      if (!id || !window.turnstile?.execute) return;
+      lastExecutedRef.current = signal;
+      try { window.turnstile.reset(id); } catch { /* widget already gone */ }
+      onTokenRef.current?.(null);
+      try { window.turnstile.execute(id); } catch { /* widget already gone */ }
+    };
+  }, []);
 
   useEffect(() => {
     if (!siteKey) return undefined;
@@ -52,15 +83,25 @@ export default function Turnstile({ siteKey, onToken, resetSignal = 0 }: Turnsti
         if (cancelled || !containerRef.current || !window.turnstile) return;
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
-          // Hidden unless a challenge genuinely needs interaction — no visible
-          // Cloudflare box in the normal auto-pass flow.
+          // Hidden unless a challenge genuinely needs interaction. The
+          // challenge itself waits for execute(), so opening the form does
+          // not start a token that can expire before the person submits.
           appearance: 'interaction-only',
+          execution: 'execute',
+          retry: 'never',
           callback: (token: string) => onTokenRef.current?.(token),
           'expired-callback': () => onTokenRef.current?.(null),
-          'error-callback': () => onTokenRef.current?.(null),
+          'error-callback': () => {
+            onTokenRef.current?.(null);
+            onErrorRef.current?.();
+          },
         });
+        runExecuteRef.current();
       })
-      .catch(() => { onTokenRef.current?.(null); });
+      .catch(() => {
+        onTokenRef.current?.(null);
+        onErrorRef.current?.();
+      });
     return () => {
       cancelled = true;
       if (widgetIdRef.current && window.turnstile) {
@@ -70,11 +111,17 @@ export default function Turnstile({ siteKey, onToken, resetSignal = 0 }: Turnsti
     };
   }, [siteKey]);
 
+  // With execution "execute", reset does not start the next challenge.
   useEffect(() => {
     if (!resetSignal || !widgetIdRef.current || !window.turnstile) return;
     try { window.turnstile.reset(widgetIdRef.current); } catch { /* already gone */ }
     onTokenRef.current?.(null);
   }, [resetSignal]);
+
+  useEffect(() => {
+    executeSignalRef.current = executeSignal;
+    runExecuteRef.current();
+  }, [executeSignal]);
 
   if (!siteKey) return null;
   // No reserved height — interaction-only keeps the widget hidden until (if

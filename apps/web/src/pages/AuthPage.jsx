@@ -12,7 +12,7 @@ import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../util
 import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE, captchaFailureCopy } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
-import { captchaSubmitPlan, CAPTCHA_TOKEN_WAIT_MS } from '@plot/core/captchaGate.js';
+import { captchaSubmitPlan, CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS } from '@plot/core/captchaGate.js';
 import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js';
 import { signupFormTokenIsStale } from '../utils/signupFormToken.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
@@ -52,23 +52,6 @@ function readAuthFormFields(form) {
     email: (emailEl instanceof HTMLInputElement ? emailEl.value : '').trim(),
     password: passwordEl instanceof HTMLInputElement ? passwordEl.value : '',
   };
-}
-
-// Poll until `read` returns a value or `ms` elapses. Used so a click during
-// Turnstile load still takes the normal signUp path if the token arrives.
-function waitForValue(read, ms) {
-  const current = read();
-  if (current) return Promise.resolve(current);
-  return new Promise((resolve) => {
-    const started = Date.now();
-    const id = setInterval(() => {
-      const next = read();
-      if (next || Date.now() - started >= ms) {
-        clearInterval(id);
-        resolve(next);
-      }
-    }, 50);
-  });
 }
 
 // signup-bypass rejects posts younger than its server minimum, measured from
@@ -125,7 +108,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [success, setSuccess]         = useState(false);
   const [magicSent, setMagicSent]     = useState(false);
   const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
-  const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh Turnstile token
+  const [captchaNonce, setCaptchaNonce] = useState(0); // bump to drop a used Turnstile token
+  const [captchaExecute, setCaptchaExecute] = useState(0); // bump to run the challenge
   // Kept in a ref so a submit handler can see a token that arrived during
   // the short wait, without waiting for another render.
   const captchaTokenRef = useRef(null);
@@ -177,7 +161,28 @@ export default function AuthPage({ initialMode = 'signup' }) {
     captchaBlockedRef.current = blocked;
   };
 
-  const waitForCaptchaToken = (ms) => waitForValue(() => captchaTokenRef.current, ms);
+  // One attempt. A widget error ends the wait early so the retry can run.
+  // A timeout does not: the challenge may still be in flight.
+  const waitForCaptchaAttempt = (ms) => {
+    const blockedAtStart = captchaBlockedRef.current;
+    if (captchaTokenRef.current) return Promise.resolve(captchaTokenRef.current);
+    return new Promise((resolve) => {
+      const started = Date.now();
+      const id = setInterval(() => {
+        const token = captchaTokenRef.current;
+        const failedNow = captchaBlockedRef.current && !blockedAtStart;
+        if (token || failedNow || Date.now() - started >= ms) {
+          clearInterval(id);
+          resolve(token);
+        }
+      }, 50);
+    });
+  };
+
+  const requestCaptcha = () => {
+    captchaTokenRef.current = null;
+    setCaptchaExecute((n) => n + 1);
+  };
 
   // signup-bypass's MIN_SUBMIT_MS is 1200. Stay above it so a real person
   // who clicks immediately is not shown a success screen for an account
@@ -216,21 +221,21 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const attemptIsCurrent = (epoch) => authAttemptIsCurrent(epoch, authEpochRef.current);
 
   const resolveCaptchaPlan = async (authMode) => {
-    let plan = captchaSubmitPlan({
-      siteKey: TURNSTILE_SITE_KEY,
-      token: captchaTokenRef.current,
-      mode: authMode,
-      blocked: captchaBlockedRef.current,
-    });
-    if (plan === 'wait') {
-      const token = await waitForCaptchaToken(CAPTCHA_TOKEN_WAIT_MS);
+    if (!TURNSTILE_SITE_KEY) {
+      return captchaSubmitPlan({ siteKey: TURNSTILE_SITE_KEY, token: null, mode: authMode });
+    }
+    let plan = 'wait';
+    for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
+      requestCaptcha();
+      const token = await waitForCaptchaAttempt(CAPTCHA_TOKEN_WAIT_MS);
       plan = captchaSubmitPlan({
         siteKey: TURNSTILE_SITE_KEY,
         token,
         mode: authMode,
         blocked: captchaBlockedRef.current,
-        waited: true,
+        waited: !token,
       });
+      if (plan === 'ready') return plan;
     }
     return plan;
   };
@@ -358,6 +363,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       if (plan === 'bypass') {
         if (!captchaBlockedRef.current) {
           track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt: 0, reason: 'timeout' });
+          setError(AUTH_PAGE.verificationFailedSignup);
         }
         track(EVENTS.SIGNUP_BYPASS_OFFERED);
         const formToken = await ensureFormToken();
@@ -742,6 +748,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   siteKey={TURNSTILE_SITE_KEY}
                   onToken={handleCaptchaToken}
                   resetSignal={captchaNonce}
+                  executeSignal={captchaExecute}
                   failureMessage={captchaCopy.failed}
                   blockedMessage={captchaCopy.blocked}
                   onBlocked={mode === 'signup'
