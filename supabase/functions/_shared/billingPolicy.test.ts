@@ -1,4 +1,4 @@
-import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutClosedToAll, checkoutPlan, checkoutSubscriptionData, matchesPremiumPrice, mayStartCheckout, publicCheckoutOpen, PREMIUM_TRIAL_DAYS } from './billingPolicy.ts';
+import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutClosedToAll, checkoutPlan, checkoutSubscriptionData, hasStripeSubscription, matchesPremiumPrice, mayStartCheckout, publicCheckoutOpen, PREMIUM_TRIAL_DAYS } from './billingPolicy.ts';
 
 function equal(actual: unknown, expected: unknown) {
   if (actual !== expected) throw new Error(`Expected ${expected}, got ${actual}`);
@@ -10,6 +10,14 @@ Deno.test('checkout requires an explicit supported plan', () => {
   for (const value of [null, {}, { plan: 'annual' }, { plan: 5 }, 'yearly']) {
     equal(checkoutPlan(value), null);
   }
+});
+
+Deno.test('only a real Stripe subscription can open the customer portal', () => {
+  equal(hasStripeSubscription(null), false);
+  equal(hasStripeSubscription({ stripe_customer_id: 'manual_screenshots_20261002', stripe_subscription_id: null }), false);
+  equal(hasStripeSubscription({ stripe_customer_id: 'cus_valid', stripe_subscription_id: null }), false);
+  equal(hasStripeSubscription({ stripe_customer_id: 'manual_screenshots_20261002', stripe_subscription_id: 'sub_valid' }), false);
+  equal(hasStripeSubscription({ stripe_customer_id: 'cus_valid', stripe_subscription_id: 'sub_valid' }), true);
 });
 
 Deno.test('portal cancellation timestamps and reversal map to the period-end flag', () => {

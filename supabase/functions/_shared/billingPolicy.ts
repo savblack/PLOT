@@ -4,6 +4,11 @@ export function checkoutPlan(body: unknown): 'monthly' | 'yearly' | null {
   return plan === 'monthly' || plan === 'yearly' ? plan : null;
 }
 
+/** A Premium entitlement without a Stripe subscription has no customer portal. */
+export function hasStripeSubscription(billing: { stripe_customer_id: string; stripe_subscription_id: string | null } | null): billing is { stripe_customer_id: string; stripe_subscription_id: string } {
+  return Boolean(billing?.stripe_customer_id?.startsWith('cus_') && billing.stripe_subscription_id);
+}
+
 /** The free trial lives here, not on the Stripe Price: a Price made without trial days would otherwise charge at once. */
 export const PREMIUM_TRIAL_DAYS = 7;
 
