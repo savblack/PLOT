@@ -1,5 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { confirmedPremium } from '../_shared/securityGuards.js';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -109,12 +110,12 @@ Deno.serve(async (req) => {
   const userId = profile.id;
 
   // Calendar apps poll this URL with no JWT. is_premium() is the entitlement,
-  // the same call media-sync uses for the token owner. An RPC error must not
-  // blank a working Premium feed, so a failed check still serves events.
+  // the same call media-sync uses for the token owner. Only a confirmed
+  // entitlement may expose events through this public token URL.
   // A definite non-Premium result is an empty calendar (200), not a 401:
   // clients keep the subscription and simply stop showing events.
   const { data: premium, error: premiumError } = await db.rpc('is_premium', { p_user: userId });
-  if (!premiumError && premium !== true) {
+  if (!confirmedPremium({ data: premium, error: premiumError })) {
     return icsResponse([]);
   }
 

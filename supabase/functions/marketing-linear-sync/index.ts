@@ -28,6 +28,8 @@
  * Secrets:
  *   LINEAR_API_KEY         - to post replies (same key the mirror uses)
  *   LINEAR_WEBHOOK_SECRET  - signing secret shown when you create the webhook
+ *   LINEAR_OPERATOR_USER_IDS - comma-separated Linear user IDs allowed to decide
+ *                            on cards; unset fails closed for all commands
  *   GH_DISPATCH_TOKEN_CONTENT - optional; lets /generate, /publish-now and
  *                            /regenerate kick their workflow (Actions: write)
  *   GH_DISPATCH_TOKEN_WEBSITE - optional; lets a website-refresh card be merged
@@ -42,6 +44,7 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { parseCommand, BOT_MARKER, HELP_TEXT, WEEK_SCOPED, looksLikeAttempt } from '../_shared/linearCommands.js';
 import { prNumberFromAttachments, prScopeRefusal } from '../_shared/linearIssue.js';
+import { isLinearOperator } from '../_shared/linearOperator.js';
 import {
   applyArticleAction, applyWeekAction, commandForStatusName, guardIncomingStatus, linearArticlesEnabled,
 } from '../_shared/reviewActions.js';
@@ -57,6 +60,7 @@ const articlesOn = () => linearArticlesEnabled(Deno.env.get('MARKETING_LINEAR_EN
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const WEBHOOK_SECRET = Deno.env.get('LINEAR_WEBHOOK_SECRET') ?? '';
 const LINEAR_API_KEY = Deno.env.get('LINEAR_API_KEY') ?? '';
+const LINEAR_OPERATOR_USER_IDS = Deno.env.get('LINEAR_OPERATOR_USER_IDS') ?? '';
 const GH_REPO = Deno.env.get('GH_REPO') ?? 'savblack/PLOT';
 
 // Two tokens, one per job. CONTENT starts workflows for /generate, /publish-now
@@ -300,7 +304,10 @@ Deno.serve(async (req) => {
 
   // A comment carrying a slash command.
   if (payload.type === 'Comment' && payload.action === 'create') {
-    const issueId = payload.data?.issue?.id;
+    if (!isLinearOperator(payload, LINEAR_OPERATOR_USER_IDS)) {
+      return json({ ok: true, ignored: 'unauthorized actor' });
+    }
+    const issueId = payload.data?.issue?.id ?? payload.data?.issueId;
     const body = payload.data?.body ?? '';
     const intent = parseCommand(body);
     if (!issueId) return json({ ok: true, ignored: true });
@@ -406,6 +413,9 @@ Deno.serve(async (req) => {
     const stateName = String(payload.data?.state?.name ?? '');
     const command = commandForStatusName(stateName);
     if (!issueId || !command) return json({ ok: true, ignored: true });
+    if (!isLinearOperator(payload, LINEAR_OPERATOR_USER_IDS)) {
+      return json({ ok: true, ignored: 'unauthorized actor' });
+    }
 
     const post = await findPost(supabase, issueId);
     if (!post) return json({ ok: true, ignored: true });

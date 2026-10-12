@@ -13,6 +13,11 @@ describe('safeAppReturnPath', () => {
     assert.equal(safeAppReturnPath('//evil.example/x'), '/');
     assert.equal(safeAppReturnPath('javascript:alert(1)'), '/');
     assert.equal(safeAppReturnPath('settings'), '/');
+    assert.equal(safeAppReturnPath('/\\evil.example'), '/');
+    assert.equal(safeAppReturnPath('/%5cevil.example'), '/');
+    assert.equal(safeAppReturnPath('/%255cevil.example'), '/');
+    assert.equal(safeAppReturnPath('/%2fevil.example'), '/');
+    assert.equal(safeAppReturnPath('/%09/evil.example'), '/');
   });
 
   it('honours a null fallback for optional return links', () => {

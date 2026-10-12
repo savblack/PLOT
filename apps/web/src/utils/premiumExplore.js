@@ -10,6 +10,8 @@ export function premiumPlansPath(from) {
   return `/plans?${new URLSearchParams({ from: safe })}`;
 }
 
+const hasControlChar = (value) => [...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127);
+
 /**
  * Only same-app relative paths. Rejects protocol-relative URLs, schemes, and
  * anything that is not a rooted app path.
@@ -20,6 +22,21 @@ export function safeAppReturnPath(from, fallback = '/') {
   if (typeof from !== 'string') return fallback;
   const trimmed = from.trim();
   if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return fallback;
-  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return fallback;
+  // URL parsers treat backslashes as slashes on HTTP origins. Reject encoded
+  // separators too, including nested encodings that another layer may decode.
+  let decoded = trimmed;
+  while (decoded.includes('%')) {
+    let next;
+    try { next = decodeURIComponent(decoded); } catch { return fallback; }
+    if (next === decoded) break;
+    decoded = next;
+    if (decoded.includes('\\') || decoded.startsWith('//') || hasControlChar(decoded)) return fallback;
+  }
+  if (decoded.includes('\\') || hasControlChar(decoded)) return fallback;
+  try {
+    if (new URL(trimmed, 'https://app.theplot.tv').origin !== 'https://app.theplot.tv') return fallback;
+  } catch {
+    return fallback;
+  }
   return trimmed;
 }

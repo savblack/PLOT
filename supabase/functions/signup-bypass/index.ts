@@ -39,6 +39,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { usableRateCount } from '../_shared/securityGuards.js';
 
 function allowedOrigin(origin: string | null) {
   if (!origin) return 'https://app.theplot.tv';
@@ -220,7 +221,12 @@ Deno.serve(async (req) => {
     p_ip: ip,
     p_window_ms: RATE_WINDOW_MS,
   });
-  if (!rateError && typeof rateCount === 'number' && rateCount > RATE_MAX_ATTEMPTS) {
+  const attempts = usableRateCount({ data: rateCount, error: rateError });
+  if (attempts === null) {
+    console.error('Signup rate check failed:', rateError ?? 'invalid attempt count');
+    return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 503);
+  }
+  if (attempts > RATE_MAX_ATTEMPTS) {
     return json(
       { error: 'Too many attempts. Please wait a moment and try again.', reason: 'rate_limited' },
       origin,
