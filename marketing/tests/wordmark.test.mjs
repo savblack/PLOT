@@ -29,7 +29,7 @@ test('portrait wordmark keeps the footer scale and side crop', async () => {
   assert.match(portrait, /overflow:\s+visible/);
 });
 
-test('charts wordmark uses the darker beige, and only landscape scales it up', async () => {
+test('charts wordmark uses the darker beige, with the portrait baseline on the card edge', async () => {
   const theme = await readFile(path.join(root, 'apps/website/theme.css'), 'utf8');
   const card = await readFile(path.join(root, 'marketing/templates/trending-chart.html'), 'utf8');
   assert.match(theme, /--surface-hover:\s+#eadfcf/i);
