@@ -12,6 +12,7 @@ import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
 import { tmdb, fetchTMDB } from '../lib/tmdb.mjs';
+import { addDays, datePartsInTz, publishAtOn } from '../lib/dates.mjs';
 
 const REGION = 'US';
 const BEST_OF_TARGET = Number(process.env.MARKETING_GUIDES_BESTOF || 2);
@@ -126,7 +127,7 @@ const insertGuide = async (supabase, candidate, publishAt) => {
 export const planGuides = async (supabase = getSupabase()) => {
   let planned = 0;
   // Spread guides over the coming days (within pull.mjs's 8-day window).
-  const at = (dayOffset) => { const d = new Date(); d.setUTCDate(d.getUTCDate() + dayOffset); d.setUTCHours(15, 0, 0, 0); return d; };
+  const at = (dayOffset) => publishAtOn(addDays(datePartsInTz(new Date()).date, dayOffset), 'guide');
 
   // ── Best-of listicles ──
   let made = 0;

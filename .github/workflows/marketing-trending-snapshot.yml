@@ -1,0 +1,47 @@
+name: Marketing — trending snapshot
+
+# Writes this week's TMDB trending chart. The Monday post and the chart page
+# both read the row. Dated the most recent Sunday in US Eastern, so a late
+# start after midnight Eastern still updates Sunday's row.
+on:
+  schedule:
+    # 22:30 UTC Sunday. Sunday evening Eastern: 6:30pm during daylight time,
+    # 5:30pm during standard time. Before Monday's 9:00am Eastern chart post.
+    - cron: '30 22 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketing-trending-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Write the trending snapshot
+        run: node marketing/snapshot/write-snapshot.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+
+      - name: Alert on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: trending snapshot
+          FAILURE_NOTE: 'The Sunday trending snapshot did not write. The Monday chart fetches live if the row is missing.'
+        run: bash .github/scripts/marketing-alert.sh

@@ -285,10 +285,14 @@ test('the linear edit reply stays the sentence the webhook already sends', async
   );
 });
 
-test('reschedule writes noon UTC and does not touch publications', async () => {
+test('reschedule writes 9:00am Eastern and does not touch publications', async () => {
   const db = fakeSupabase();
   await applyArticleAction(db, post(), { command: 'reschedule', date: '2026-10-12' }, { actor: 'notion' });
-  assert.equal(db.calls[0].payload.scheduled_for, '2026-10-12T12:00:00.000Z');
+  // October 12, 2026 is during daylight time, so 9:00am Eastern is 13:00 UTC.
+  assert.equal(db.calls[0].payload.scheduled_for, '2026-10-12T13:00:00.000Z');
+  const winter = fakeSupabase();
+  await applyArticleAction(winter, post(), { command: 'reschedule', date: '2026-01-15' }, { actor: 'notion' });
+  assert.equal(winter.calls[0].payload.scheduled_for, '2026-01-15T14:00:00.000Z');
   assert.equal(db.calls[0].table, 'marketing_posts');
   assert.ok(!db.calls.some((call) => call.table === 'marketing_post_publications'));
 });

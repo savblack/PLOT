@@ -4,13 +4,14 @@ import assert from 'node:assert/strict';
 // publicUrl() reads this at module load to build storage URLs.
 process.env.SUPABASE_URL ??= 'https://example.supabase.co';
 
-const { buildPayload, sendTimeFor, sydneyDay, weekdayKey, SERVICE, SEND_HOUR_SYDNEY } =
+const { buildPayload, sendTimeFor, publishDay, weekdayKey, SERVICE, SEND_HOUR_ET } =
   await import('../publish/payload.mjs');
 
 const post = {
   topic_key: 'test',
   post_type: 'hidden_gem',
-  scheduled_for: '2026-09-14T23:30:00.000Z',
+  // Tuesday, September 15, 2026, 9:00am Eastern.
+  scheduled_for: '2026-09-15T13:00:00.000Z',
   copy: {
     x: 'A quiet one nobody talks about.',
     instagram: 'A quiet one nobody talks about.',
@@ -24,17 +25,17 @@ const post = {
   ],
 };
 
-test('the planner schedules at 23:30 UTC, which is already tomorrow in Sydney', () => {
-  // The single most repeatable mistake in this pipeline: slicing the UTC string
-  // names the day BEFORE the one the post is actually for, on every post.
-  assert.equal(post.scheduled_for.slice(0, 10), '2026-09-14');
-  assert.equal(sydneyDay(post), '2026-09-15');
+test('an evening Eastern instant is already the next UTC date', () => {
+  // 11:30pm Eastern on September 15 is 03:30 UTC on September 16. Slicing the
+  // UTC string names the day after the one the post is for.
+  const evening = { scheduled_for: '2026-09-16T03:30:00.000Z' };
+  assert.equal(evening.scheduled_for.slice(0, 10), '2026-09-16');
+  assert.equal(publishDay(evening), '2026-09-15');
 });
 
-// A stand-in for what Buffer reports for a channel: the hours it recommends for
-// that service, per weekday, in the channel's own timezone.
+// A stand-in for what Buffer reports for a channel: the hours it recommends
+// for that service, per weekday. Applied as Eastern Time.
 const igSlots = {
-  timezone: 'Australia/Sydney',
   byDay: { tue: ['17:05', '19:37'], wed: ['13:37', '18:34'] },
 };
 
@@ -44,15 +45,15 @@ test('the weekday key matches the one Buffer uses', () => {
 });
 
 test('the time comes from the channel schedule, the day from the post', () => {
-  // 15 Sep 2026 is a Tuesday; Instagram's first Tuesday slot is 17:05 Sydney,
-  // which is 07:05 UTC in AEST. The DAY is still the post's own.
+  // September 15, 2026 is a Tuesday. The first Tuesday slot is 5:05pm Eastern,
+  // which is 21:05 UTC during daylight time. The day is still the post's own.
   const when = sendTimeFor(post, igSlots);
-  assert.equal(sydneyDay({ scheduled_for: when.toISOString() }), '2026-09-15');
-  assert.equal(when.toISOString(), '2026-09-15T07:05:00.000Z');
+  assert.equal(publishDay({ scheduled_for: when.toISOString() }), '2026-09-15');
+  assert.equal(when.toISOString(), '2026-09-15T21:05:00.000Z');
 });
 
 test('the second post of the day takes the second slot', () => {
-  assert.equal(sendTimeFor(post, igSlots, 1).toISOString(), '2026-09-15T09:37:00.000Z');
+  assert.equal(sendTimeFor(post, igSlots, 1).toISOString(), '2026-09-15T23:37:00.000Z');
 });
 
 test('more posts than slots are spaced out, never stacked', () => {
@@ -64,41 +65,41 @@ test('more posts than slots are spaced out, never stacked', () => {
   assert.equal(sendTimeFor(post, igSlots, 3).getTime() - second.getTime(), 90 * 60_000);
 });
 
-test('a channel with no schedule for that weekday falls back to the house hour', () => {
-  // 15 Sep is a Tuesday and this schedule only covers Wednesday.
-  const sparse = { timezone: 'Australia/Sydney', byDay: { wed: ['13:37'] } };
-  assert.equal(sendTimeFor(post, sparse).toISOString(), '2026-09-15T02:00:00.000Z');
-  assert.equal(sendTimeFor(post, undefined).toISOString(), '2026-09-15T02:00:00.000Z');
+test('a channel with no schedule for that weekday falls back to 9:00am Eastern', () => {
+  // September 15 is a Tuesday and this schedule only covers Wednesday.
+  const sparse = { byDay: { wed: ['13:37'] } };
+  assert.equal(sendTimeFor(post, sparse).toISOString(), '2026-09-15T13:00:00.000Z');
+  assert.equal(sendTimeFor(post, undefined).toISOString(), '2026-09-15T13:00:00.000Z');
+  assert.equal(SEND_HOUR_ET, 9);
 });
 
-test('a post goes out at noon Sydney on its own day', () => {
-  // September is AEST (UTC+10), so noon Sydney is 02:00 UTC — which is what the
-  // old publish cron ASKED for and never got. GitHub started it ~07:10 UTC every
-  // time, so posts really landed ~17:15 Sydney. Buffer honours the time it is
-  // given, so this constant now decides the hour rather than describing it.
-  assert.equal(sendTimeFor(post).toISOString(), '2026-09-15T02:00:00.000Z');
+test('a post with no channel schedule goes out at 9:00am Eastern on its own day', () => {
+  assert.equal(sendTimeFor(post).toISOString(), '2026-09-15T13:00:00.000Z');
+  assert.equal(publishDay(post), '2026-09-15');
 });
 
-test('a channel slot survives the daylight-saving changeover too', () => {
-  // Sydney goes to UTC+11 on 4 October 2026. 5 Oct is a Monday.
-  const slots = { timezone: 'Australia/Sydney', byDay: { mon: ['19:06'] } };
-  const after = { ...post, scheduled_for: '2026-10-04T23:30:00.000Z' };
-  assert.equal(sydneyDay(after), '2026-10-05');
-  assert.equal(sendTimeFor(after, slots).toISOString(), '2026-10-05T08:06:00.000Z');
+test('a channel slot keeps the same Eastern hour across the daylight-time change', () => {
+  const slots = { byDay: { mon: ['19:06'] } };
+  // October 26, 2026 is a Monday during daylight time. 7:06pm Eastern is 23:06 UTC.
+  const before = { ...post, scheduled_for: '2026-10-26T13:00:00.000Z' };
+  assert.equal(publishDay(before), '2026-10-26');
+  assert.equal(sendTimeFor(before, slots).toISOString(), '2026-10-26T23:06:00.000Z');
+  // November 2, 2026 is the Monday after standard time returns. 7:06pm Eastern is 00:06 UTC Tuesday.
+  const after = { ...post, scheduled_for: '2026-11-02T14:00:00.000Z' };
+  assert.equal(publishDay(after), '2026-11-02');
+  assert.equal(sendTimeFor(after, slots).toISOString(), '2026-11-03T00:06:00.000Z');
 });
 
-test('noon Sydney survives the daylight-saving changeover', () => {
-  // Sydney goes to UTC+11 on 4 October 2026. A week generated across that
-  // boundary would be an hour out on one side of it if the offset were fixed.
-  const after = { ...post, scheduled_for: '2026-10-04T23:30:00.000Z' };
-  assert.equal(sydneyDay(after), '2026-10-05');
-  assert.equal(sendTimeFor(after).toISOString(), '2026-10-05T01:00:00.000Z');
+test('9:00am Eastern stays 9:00am on both sides of the daylight-time change', () => {
+  const before = { scheduled_for: '2026-10-26T13:00:00.000Z' };
+  const after = { scheduled_for: '2026-11-02T14:00:00.000Z' };
+  assert.equal(sendTimeFor(before).toISOString(), '2026-10-26T13:00:00.000Z');
+  assert.equal(sendTimeFor(after).toISOString(), '2026-11-02T14:00:00.000Z');
 
-  // Same wall-clock hour on both sides, which is the property that matters.
-  for (const iso of ['2026-09-14T23:30:00.000Z', '2026-10-04T23:30:00.000Z']) {
+  for (const iso of [before.scheduled_for, after.scheduled_for]) {
     const hour = sendTimeFor({ scheduled_for: iso })
-      .toLocaleString('en-AU', { timeZone: 'Australia/Sydney', hour: 'numeric', hour12: false });
-    assert.equal(Number(hour), SEND_HOUR_SYDNEY, iso);
+      .toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false });
+    assert.equal(Number(hour), SEND_HOUR_ET, iso);
   }
 });
 

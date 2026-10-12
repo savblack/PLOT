@@ -1,20 +1,63 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDaysStr } from '../lib/tmdb.mjs';
-import { mondayOfWeekInTz, formatWeekdayDayMonth, formatDayMonth, chartWeekDate } from '../lib/dates.mjs';
+import {
+  mondayOfWeekInTz, formatWeekdayDayMonth, formatDayMonth, chartWeekDate,
+  nextPublishAt, publishAtOn, weekdayInTz, PUBLISH_TIME_BY_TYPE, trendingSnapshotDate, snapshotIsStale,
+} from '../lib/dates.mjs';
 
-test('mondayOfWeekInTz uses the Monday of the Australia week for Friday publish slots', () => {
+test('mondayOfWeekInTz uses the Monday of the US Eastern week', () => {
+  // Monday, October 19, 2026, 9:00am Eastern (daylight time).
   assert.equal(
-    mondayOfWeekInTz(new Date('2026-06-25T23:30:00Z')),
-    '2026-06-22',
+    mondayOfWeekInTz(new Date('2026-10-19T13:00:00Z')),
+    '2026-10-19',
   );
 });
 
-test('mondayOfWeekInTz snaps Sunday Sydney runs back to the same week Monday', () => {
+test('mondayOfWeekInTz snaps a Sunday evening Eastern run back to that week Monday', () => {
+  // Sunday, October 18, 2026, 6:30pm Eastern.
   assert.equal(
-    mondayOfWeekInTz(new Date('2026-06-21T02:00:00Z')),
-    '2026-06-15',
+    mondayOfWeekInTz(new Date('2026-10-18T22:30:00Z')),
+    '2026-10-12',
   );
+});
+
+test('nextPublishAt is 9:00am Eastern, including across daylight time', () => {
+  // Monday, June 15, 2026, 8:00am Eastern. The same morning's 9:00am is still ahead.
+  assert.equal(nextPublishAt(new Date('2026-06-15T12:00:00Z')).toISOString(), '2026-06-15T13:00:00.000Z');
+  // Exactly 9:00am has passed, so the next slot is tomorrow.
+  assert.equal(nextPublishAt(new Date('2026-06-15T13:00:00Z')).toISOString(), '2026-06-16T13:00:00.000Z');
+  // Thursday, January 15, 2026, 8:00am Eastern (standard time) is 9:00am at 14:00 UTC.
+  assert.equal(nextPublishAt(new Date('2026-01-15T13:00:00Z')).toISOString(), '2026-01-15T14:00:00.000Z');
+  // The Sunday daylight-time changes in 2026. 9:00am stays 9:00am on the wall clock.
+  assert.equal(nextPublishAt(new Date('2026-03-08T11:00:00Z')).toISOString(), '2026-03-08T13:00:00.000Z');
+  assert.equal(nextPublishAt(new Date('2026-11-01T12:00:00Z')).toISOString(), '2026-11-01T14:00:00.000Z');
+});
+
+test('a per-type override replaces 9:00am and leaves every other type alone', () => {
+  PUBLISH_TIME_BY_TYPE.hidden_gem = { hour: 18, minute: 30 };
+  try {
+    assert.equal(publishAtOn('2026-06-15', 'hidden_gem').toISOString(), '2026-06-15T22:30:00.000Z');
+    assert.equal(publishAtOn('2026-06-15', 'trending').toISOString(), '2026-06-15T13:00:00.000Z');
+    assert.equal(publishAtOn('2026-01-15').toISOString(), '2026-01-15T14:00:00.000Z');
+  } finally {
+    delete PUBLISH_TIME_BY_TYPE.hidden_gem;
+  }
+});
+
+test('weekdayInTz defaults to US Eastern', () => {
+  assert.equal(weekdayInTz(new Date('2026-10-19T13:00:00Z')), 'Monday');
+  assert.equal(weekdayInTz(new Date('2026-10-18T22:30:00Z')), 'Sunday');
+});
+
+test('the trending snapshot is dated the most recent Sunday in Eastern Time', () => {
+  assert.equal(trendingSnapshotDate(new Date('2026-10-18T22:30:00Z')), '2026-10-18');
+  // A Monday morning slip still belongs to Sunday night.
+  assert.equal(trendingSnapshotDate(new Date('2026-10-19T13:00:00Z')), '2026-10-18');
+  const monday = new Date('2026-10-19T13:00:00Z');
+  assert.equal(snapshotIsStale('2026-10-18', monday), false);
+  assert.equal(snapshotIsStale('2026-10-11', monday), true);
+  assert.equal(snapshotIsStale(null, monday), true);
 });
 
 test('formatDayMonth uses US month-day order', () => {

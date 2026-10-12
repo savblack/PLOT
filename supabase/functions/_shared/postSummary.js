@@ -16,8 +16,8 @@ export const SITE_URL = 'https://theplot.tv';
 export const reason = (p) => {
   const title = p.tmdb_refs?.[0]?.title || p.payload?.title || p.payload?.topic?.title || '';
   switch (p.post_type) {
-    case 'upcoming': return 'Monday slate — the week’s most-anticipated titles';
-    case 'trending': return 'Friday chart — this week’s trending top 10';
+    case 'upcoming': return "Tuesday slate: the week's most-anticipated titles";
+    case 'trending': return "Monday chart: this week's trending top 10";
     case 'watch_tonight': return title ? `Trending & streamable now: ${title}` : 'What to watch tonight';
     case 'hidden_gem': return title ? `Highly-rated, lesser-seen: ${title}` : 'Hidden gem of the week';
     case 'on_this_day': return title ? `Anniversary: ${title}` : 'On this day in film/TV';

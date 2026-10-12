@@ -1,22 +1,25 @@
 // Weekly trending snapshot writer. Fetches this week's TMDB
-// trending top 10 and upserts it into marketing_trending_snapshots so the
-// chart page (theplot.tv/whats-on/chart) and the Friday social carousel can
+// trending top 20 and upserts it into marketing_trending_snapshots so the
+// chart page (theplot.tv/whats-on/chart) and the Monday social carousel can
 // render it and compute week-over-week movement against the prior week.
 //
-// This writes DATA ONLY — no marketing_posts row, so it doesn't touch the
-// 1-post-per-day social cadence. Idempotent: upsert keyed on snapshot_date,
-// so re-running on the same UTC day is a no-op.
+// The row is dated the most recent Sunday in US Eastern, which is the Sunday
+// evening the cron owns. A run that starts after midnight Eastern still writes
+// that Sunday, so it does not open a second row for the week.
+//
+// This writes DATA ONLY. No marketing_posts row. Idempotent: upsert keyed on
+// snapshot_date, so re-running the same Sunday replaces the same row.
 //
 //   TMDB_API_KEY=… SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… npm run mkt:snapshot
 import { getSupabase } from '../lib/supabase.mjs';
-import { isoDate } from '../lib/dates.mjs';
+import { trendingSnapshotDate } from '../lib/dates.mjs';
 import { fetchTrendingTop } from '../lib/trending.mjs';
 
 const CHART_SIZE = 20; // the page shows 20; social/newsletter slice the top 10
 
 const main = async () => {
   const supabase = getSupabase();
-  const today = isoDate(new Date());
+  const today = trendingSnapshotDate(new Date());
 
   const items = await fetchTrendingTop(CHART_SIZE);
   if (items.length < CHART_SIZE) {

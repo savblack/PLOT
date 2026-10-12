@@ -1,6 +1,9 @@
+// US Eastern weekdays. Monday and Tuesday are the themed posts.
+// Tuesday also keeps the mid question. The planner adds that question
+// after the slate instead of opening the rest of Tuesday's mix.
 export const ANCHOR_POST_BY_DAY = {
-  Monday: 'upcoming',
-  Friday: 'trending',
+  Monday: 'trending',
+  Tuesday: 'upcoming',
 };
 
 export const FIXED_FEATURE_BY_DAY = {

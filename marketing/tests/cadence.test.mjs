@@ -7,12 +7,14 @@ import {
   questionSlotForDay,
 } from '../planner/cadence.mjs';
 
-test('anchor cadence matches the documented Monday and Friday single-post days', () => {
-  assert.equal(anchorPostForDay('Monday'), 'upcoming');
-  assert.equal(anchorPostForDay('Friday'), 'trending');
+test('anchor cadence is Monday trending and Tuesday upcoming', () => {
+  assert.equal(anchorPostForDay('Monday'), 'trending');
+  assert.equal(anchorPostForDay('Tuesday'), 'upcoming');
+  assert.equal(anchorPostForDay('Friday'), null);
   assert.equal(anchorPostForDay('Wednesday'), null);
   assert.equal(isAnchorDay('Monday'), true);
-  assert.equal(isAnchorDay('Friday'), true);
+  assert.equal(isAnchorDay('Tuesday'), true);
+  assert.equal(isAnchorDay('Friday'), false);
   assert.equal(isAnchorDay('Sunday'), false);
 });
 

@@ -4,7 +4,7 @@ import { buildTitle, buildDescription, dueDateFor } from '../../supabase/functio
 
 const SUPA = 'https://example.supabase.co';
 
-// A Saturday in AEST. Noon UTC is the convention the pipeline schedules on.
+// Saturday, September 12, 2026, 8:00am Eastern.
 const basePost = {
   post_type: 'hidden_gem',
   scheduled_for: '2026-09-12T12:00:00.000Z',
@@ -31,28 +31,28 @@ const basePost = {
 test('the title names the day, the type and the subject', () => {
   // The article headline wins over the bare TMDB title when there is one — it
   // is the more specific description of what this post actually says.
-  assert.equal(buildTitle(basePost), 'Sat, 12 Sept · hidden gem · Hard Boiled still sets the bar');
+  assert.equal(buildTitle(basePost), 'Sat, Sep 12 · hidden gem · Hard Boiled still sets the bar');
   assert.equal(
     buildTitle({ ...basePost, copy: { ...basePost.copy, page_title: '' } }),
-    'Sat, 12 Sept · hidden gem · Hard Boiled',
+    'Sat, Sep 12 · hidden gem · Hard Boiled',
   );
 });
 
 test('the title falls back to the type when there is no subject', () => {
   assert.equal(
     buildTitle({ ...basePost, tmdb_refs: [], payload: {}, copy: {} }),
-    'Sat, 12 Sept · hidden gem',
+    'Sat, Sep 12 · hidden gem',
   );
 });
 
 test('a guide is titled by its headline', () => {
   const t = buildTitle({ ...basePost, post_type: 'guide', copy: { page_title: 'The best sci-fi on Max' } });
-  assert.equal(t, 'Sat, 12 Sept · guide · The best sci-fi on Max');
+  assert.equal(t, 'Sat, Sep 12 · guide · The best sci-fi on Max');
 });
 
 test('the body leads with the day and the reason the post exists', () => {
   const d = buildDescription(basePost, SUPA);
-  assert.match(d.split('\n')[0], /^\*\*Saturday 12 September\*\* · Highly-rated, lesser-seen: Hard Boiled$/);
+  assert.match(d.split('\n')[0], /^\*\*Saturday, September 12\*\* · Highly-rated, lesser-seen: Hard Boiled$/);
 });
 
 test('it links the article', () => {
@@ -149,20 +149,19 @@ test('rendering is pure — same row, same markdown', () => {
   assert.equal(buildDescription(basePost, SUPA), buildDescription(basePost, SUPA));
 });
 
-test('the due date is the AEST day the post runs, not the UTC slice', () => {
-  // The planner schedules at 23:30 UTC, which is already the next morning in
-  // Sydney. Slicing the UTC string gave the day before the one the title names —
-  // on every post, until PLO-245 showed it.
-  const post = { ...basePost, scheduled_for: '2026-09-12T23:30:00+00:00' };
-  assert.equal(dueDateFor(post), '2026-09-13');
-  assert.equal(String(post.scheduled_for).slice(0, 10), '2026-09-12'); // the old, wrong value
-  assert.match(buildTitle(post), /^Sun, 13 Sept/);                     // and what it disagreed with
+test('the due date is the Eastern day the post runs, not the UTC slice', () => {
+  // 10:30pm Eastern on Saturday is already Sunday in UTC. Slicing the UTC
+  // string names the day after the one the title uses.
+  const post = { ...basePost, scheduled_for: '2026-09-13T02:30:00+00:00' };
+  assert.equal(dueDateFor(post), '2026-09-12');
+  assert.equal(String(post.scheduled_for).slice(0, 10), '2026-09-13');
+  assert.match(buildTitle(post), /^Sat, Sep 12/);
 });
 
 test('the due date agrees with the title for any scheduling convention', () => {
   for (const iso of ['2026-09-12T23:30:00+00:00', '2026-09-12T12:00:00.000Z', '2026-09-12T00:30:00+00:00']) {
     const post = { ...basePost, scheduled_for: iso };
-    const dayFromTitle = buildTitle(post).match(/^\w+, (\d+) (\w+)/);
+    const dayFromTitle = buildTitle(post).match(/^\w+, \w+ (\d+)/);
     assert.equal(Number(dueDateFor(post).slice(8, 10)), Number(dayFromTitle[1]), iso);
   }
 });

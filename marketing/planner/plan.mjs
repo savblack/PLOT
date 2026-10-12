@@ -1,19 +1,20 @@
 // Daily content planner. Evaluates triggers for the next publish slot and
 // inserts the day's marketing_posts rows (up to 4/day).
 //
-// Weekly cadence (Sydney publish day):
-//   Monday    -> upcoming
-//   Tuesday   -> anniversary / spotlight / question / fill
+// Weekly cadence (US Eastern publish day). Posts are dated 9:00am Eastern
+// unless a type has an entry in PUBLISH_TIME_BY_TYPE.
+//   Monday    -> trending
+//   Tuesday   -> upcoming, then the mid question
 //   Wednesday -> watch_tonight / anniversary / spotlight / fill
 //   Thursday  -> anniversary / spotlight / question / fill
-//   Friday    -> trending
+//   Friday    -> anniversary / spotlight / fill
 //   Saturday  -> hidden_gem / anniversary / spotlight / fill
 //   Sunday    -> question / anniversary / spotlight / fill
 // Fill order is: now_streaming -> countdown T-1 -> trailer -> countdown T-7 ->
 // countdown T-14. Thin days simply publish fewer posts.
 import { getSupabase } from '../lib/supabase.mjs';
 import { tmdb } from '../lib/tmdb.mjs';
-import { nextPublishAt, weekdayInTz, isoDate } from '../lib/dates.mjs';
+import { nextPublishAt, weekdayInTz, isoDate, datePartsInTz, publishAtOn, addDays } from '../lib/dates.mjs';
 import * as weeklySlate from './triggers/weekly-slate.mjs';
 import * as trendingChart from './triggers/trending-chart.mjs';
 import { makeEvaluator as makeCountdown } from './triggers/countdown.mjs';
@@ -104,12 +105,14 @@ const maintainTrackedTitles = async (supabase) => {
 };
 
 const insertPost = async (supabase, candidate, publishAt) => {
+  const day = datePartsInTz(publishAt).date;
+  const when = publishAtOn(day, candidate.post_type);
   const { error } = await supabase.from('marketing_posts').insert({
     post_type: candidate.post_type,
     topic_key: candidate.topic_key,
     status: candidate.status || 'planned',
-    scheduled_for: publishAt.toISOString(),
-    veto_expires_at: publishAt.toISOString(),
+    scheduled_for: when.toISOString(),
+    veto_expires_at: when.toISOString(),
     tmdb_refs: candidate.tmdb_refs || [],
     payload: { ...candidate.payload, announce: candidate.announce || null },
   });
@@ -183,8 +186,10 @@ const planSlot = async (supabase, publishAt, tracked) => {
       await consider(EVALUATORS[anchorType]);
     }
 
-    // Non-anchor days follow the weekly cadence. Sunday questions lead; Tue/Thu
-    // questions sit in the middle of the mix.
+    // Anchor days are one themed post. Tuesday also keeps the mid question,
+    // placed after the slate. A day whose anchor produced nothing falls
+    // through to the normal mix. Sunday questions lead; Thu questions sit
+    // in the middle.
     if (!isAnchor || candidates.length === 0) {
       if (questionSlot === 'lead') await consider(conversation.evaluate, { exclude: reservedIds() });
       if (featureType) await consider(EVALUATORS[featureType]);
@@ -196,6 +201,8 @@ const planSlot = async (supabase, publishAt, tracked) => {
       await consider(trailerDrop.evaluate);
       await consider(makeCountdown(7));
       await consider(makeCountdown(14));
+    } else if (questionSlot === 'mid') {
+      await consider(conversation.evaluate, { exclude: reservedIds() });
     }
   }
 
@@ -203,7 +210,7 @@ const planSlot = async (supabase, publishAt, tracked) => {
     // Nothing triggered (rare): record it so the digest says "nothing today".
     await insertPost(supabase, {
       post_type: 'on_this_day',
-      topic_key: `skipped:${isoDate(publishAt)}`,
+      topic_key: `skipped:${datePartsInTz(publishAt).date}`,
       status: 'skipped',
       payload: {},
     }, publishAt);
@@ -216,7 +223,7 @@ const planSlot = async (supabase, publishAt, tracked) => {
     const inserted = await insertPost(supabase, c, publishAt);
     if (inserted) { planned++; console.log(`Planned ${c.post_type} (${c.topic_key})`); }
   }
-  console.log(`Planned ${planned} post(s) for ${isoDate(publishAt)} (${weekday} AEST).`);
+  console.log(`Planned ${planned} post(s) for ${datePartsInTz(publishAt).date} (${weekday} ET).`);
 };
 
 const main = async () => {
@@ -224,11 +231,11 @@ const main = async () => {
   const tracked = await maintainTrackedTitles(supabase);
   // MARKETING_PLAN_DAYS=7 plans the whole upcoming week in one batch; default 1.
   const days = Math.max(1, Math.min(14, Number(process.env.MARKETING_PLAN_DAYS) || 1));
-  const base = nextPublishAt();
+  const start = datePartsInTz(nextPublishAt()).date;
   for (let i = 0; i < days; i++) {
-    const publishAt = new Date(base);
-    publishAt.setUTCDate(publishAt.getUTCDate() + i);
-    console.log(`\n── ${weekdayInTz(publishAt)} ${isoDate(publishAt)} ──`);
+    const day = addDays(start, i);
+    const publishAt = publishAtOn(day);
+    console.log(`\n── ${weekdayInTz(publishAt)} ${day} ──`);
     await planSlot(supabase, publishAt, tracked);
   }
 };

@@ -6,41 +6,50 @@
 // render (post-types.mjs) and the subscriber newsletter (send-digest.mjs) need.
 // Movement is computed on read against the prior week's snapshot.
 //
-// Fallback: if the latest snapshot is missing or stale, fetch live and write this
-// week's snapshot now, so neither the post nor the chart page is left empty.
-import { isoDate, formatDayMonth, daysBetween, mondayOfWeekInTz } from '../../lib/dates.mjs';
+// The weekly job writes the row on Sunday evening Eastern, dated that Sunday.
+// If that row is missing, fetch live and write the same Sunday key, so a missed
+// cron still leaves one snapshot for the Monday chart.
+import { formatDayMonth, mondayOfWeekInTz, snapshotIsStale, trendingSnapshotDate } from '../../lib/dates.mjs';
 import { fetchTrendingTop, recentSnapshots, withMovement } from '../../lib/trending.mjs';
 
 // The snapshot/page hold 20; the social carousel + newsletter use the top 10.
 const SOCIAL_SIZE = 10;
 
-export const evaluate = async (ctx) => {
+export const chartWeek = (publishAt) => {
+  const weekDate = mondayOfWeekInTz(publishAt);
+  return {
+    weekDate,
+    topic_key: `trending:${weekDate}`,
+    week_label: `Week of ${formatDayMonth(weekDate)}`,
+    snapshot_date: trendingSnapshotDate(publishAt),
+  };
+};
 
-  const today = isoDate(ctx.publishAt);
+export const evaluate = async (ctx) => {
   const snaps = await recentSnapshots(ctx.supabase, 2);
   let latest = snaps[0] || null;
   let prior = snaps[1] || null;
 
-  // Use this week's snapshot if it's recent (Thursday's, ~1 day ago). Otherwise
-  // the weekly job didn't run — fetch live, write it now, keep movement honest.
-  const stale = !latest || daysBetween(latest.snapshot_date, today) > 6;
-  if (stale) {
+  const week = chartWeek(ctx.publishAt);
+  if (snapshotIsStale(latest?.snapshot_date, ctx.publishAt)) {
     const fresh = await fetchTrendingTop();
     if (fresh.length < SOCIAL_SIZE) return null;
-    await ctx.supabase.from('marketing_trending_snapshots').upsert({ snapshot_date: today, items: fresh });
+    await ctx.supabase.from('marketing_trending_snapshots').upsert({
+      snapshot_date: week.snapshot_date,
+      items: fresh,
+    });
     prior = latest; // the most recent existing snapshot becomes the comparison week
-    latest = { snapshot_date: today, items: fresh };
+    latest = { snapshot_date: week.snapshot_date, items: fresh };
   }
 
-  const weekDate = mondayOfWeekInTz(ctx.publishAt);
   // Social + newsletter use the top 10; movement is vs the full prior week.
   const items = withMovement(latest.items.slice(0, SOCIAL_SIZE), prior?.items || null);
 
   return {
     post_type: 'trending',
-    // Key the weekly chart to the Monday of the Australia week the post belongs to.
-    topic_key: `trending:${weekDate}`,
+    // Key the weekly chart to the Monday of the US Eastern week the post belongs to.
+    topic_key: week.topic_key,
     tmdb_refs: items.map(i => ({ media_type: i.media_type, id: i.tmdb_id, title: i.title })),
-    payload: { week_label: `Week of ${formatDayMonth(weekDate)}`, items },
+    payload: { week_label: week.week_label, items },
   };
 };

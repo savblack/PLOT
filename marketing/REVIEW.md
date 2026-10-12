@@ -59,9 +59,11 @@ existing contracts.
 - `marketing_posts.notion_page_id` / `notion_page_url`: the mirrored Notion page,
   once that sweep has created one. Include `notion_page_url` the same way. Null
   means the page does not exist yet.
-- Post types: `upcoming`, `trending` (both Monday), `on_this_day` (Tue–Fri feature),
-  `watch_tonight` (Sat), `hidden_gem` (Sun), plus event fill `now_streaming`,
-  `countdown`, `trailer`, and a generic text-only `question`.
+- Post types by Eastern Time weekday: Monday `trending`, Tuesday `upcoming`
+  (then the mid question), Wednesday `watch_tonight`, Thursday mid question,
+  Friday fill only, Saturday `hidden_gem`, Sunday lead question. Fill types
+  are `now_streaming`, `countdown`, `trailer`, and `on_this_day`, plus
+  anniversary or spotlight when one qualifies. `question` is text-only.
 - Lifecycle: `planned → copy_ready → generated → needs_review → approved → published`.
   `vetoed` = rejected. **Approval does not gate Buffer.** Social posts are not
   approved in chat. Once copy is saved and the card images exist, `schedule.mjs`
@@ -101,7 +103,7 @@ existing contracts.
   `pause`, `resume`).
 
 ## 1. Load & summarise the week
-Query active posts, grouped by AEST (Australia/Sydney) day:
+Query active posts, grouped by Eastern Time day (`America/New_York`, not the UTC date):
 `status=in.(planned,needs_review,copy_ready,generated,approved,vetoed)`,
 `select=id,post_type,scheduled_for,status,slug,copy,payload,topic_key,tmdb_refs,marketing_post_publications(platform,status,permalink,error)`,
 `order=scheduled_for`.
@@ -187,8 +189,11 @@ a paid API; see `marketing/copy/AGENT.md`).
   previews fall back to the brand image when nothing else is there.
 - **Regenerate**: rewrite the copy fresh per the contract and save (all fields).
   This does not edit or delete a post already sitting in Buffer.
-- **Reschedule**: PATCH `scheduled_for = "<YYYY-MM-DD>T12:00:00.000Z"` (noon UTC renders
-  as that AEST day and is before the publish run).
+- **Reschedule**: set `scheduled_for` to 9:00am Eastern on that calendar day.
+  October 12, 2026 is `2026-10-12T13:00:00.000Z` (daylight time). January 15,
+  2026 is `2026-01-15T14:00:00.000Z` (standard time). Do not write noon UTC.
+  The Eastern day is the day the title and the article URL use. A Linear or
+  Notion reschedule comment does this for you.
 - **Bulk-edit in a spreadsheet** (best for many at once):
   `node --env-file=.env marketing/preview/copy-export.mjs && open marketing/preview/out/copy.csv`
   → edit the copy columns → `node --env-file=.env marketing/preview/copy-import.mjs --dry`

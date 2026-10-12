@@ -47,10 +47,18 @@ commands exist as fallback and debug tools, not the primary operating model.
 ## Primary flow
 
 ```text
-Sunday morning
+Saturday evening Eastern
   -> marketing-weekly-batch.yml generates the next week
-  -> and pushes as much of it into Buffer as the queue will hold,
-     each post due at noon Sydney on its own day
+     (cron 00:30 UTC Sunday, which is Saturday evening ET)
+  -> and pushes as much of it into Buffer as the queue will hold.
+     Each post is dated for its Eastern Time day. The planner stores
+     9:00am ET. Buffer then uses that channel's hour on that ET day.
+
+Sunday evening Eastern
+  -> marketing-trending-snapshot.yml writes this week's chart
+     (cron 22:30 UTC Sunday: 6:30pm ET during daylight time,
+     5:30pm ET during standard time)
+  -> the Monday trending post and the chart page both read that row
 
 Every 5 minutes (pg_cron -> marketing-linear-mirror)
   -> opens a Linear issue for each post's ARTICLE
@@ -65,9 +73,11 @@ Any time, in Linear
   -> you comment /approve, /copy, /reject ... on the issue
   -> marketing-linear-sync applies it to marketing_posts
 
-Daily, 12pm Sydney
+Daily, before 9:00am ET
   -> marketing-publish.yml asks Buffer what happened and writes it down,
      then tops the queue back up with the next posts due
+     (cron 02:00 UTC; this repo's scheduler starts it hours later,
+     still before 9:00am ET)
 ```
 
 Nothing sends any more. Buffer sends. The daily run exists to find out what it
@@ -131,19 +141,13 @@ slides to the next day starts lying about itself, which is why `validateCopy`
 checks day claims in the first place.
 
 The time is Buffer's because Buffer is better placed to judge it. Each channel
-carries a posting schedule — the hours Buffer recommends for that service on that
-weekday, in Sydney time — and the nth post for a channel on a day takes the nth
-slot:
+carries a posting schedule: the hours Buffer recommends for that service on that
+weekday. Those hours are applied as Eastern Time on the post's ET day. Any
+timezone Buffer reports on the channel is ignored. The nth post for a channel
+on a day takes the nth slot.
 
-| Channel | Slots per day | Shape |
-| --- | --- | --- |
-| X | 4 | mornings, ~08:00-11:45 |
-| Threads | 2 | mid-morning, ~09:00-12:30 |
-| Instagram | 2 | evenings, ~17:00-22:40 |
-
-So a day's three posts no longer fire together at one hour: X goes out at 08:03,
-Threads at 09:56, Instagram at 18:34. Edit those schedules in Buffer and the next
-push follows them — nothing here needs changing.
+Edit those schedules in Buffer and the next push follows them. Nothing here
+needs changing. The hours move with whatever Buffer currently recommends.
 
 **Why not just use Buffer's queue?** Because `addToQueue` lets *queue order*
 decide the date. Threads has 14 slots a week against roughly 16 posts, so posts
@@ -151,23 +155,15 @@ would quietly land on days their own text contradicts. Pinning the day and
 borrowing the hour keeps both judgements where they belong.
 
 When a day has more posts than slots, the extras are spaced 45 minutes after the
-last one rather than stacked on it — two posts on the same minute read as a bot,
+last one rather than stacked on it. Two posts on the same minute read as a bot,
 and Instagram may drop the second. A channel with no schedule for that weekday
-falls back to `SEND_HOUR_SYDNEY` in `publish/payload.mjs`.
+falls back to 9:00am ET (`SEND_HOUR_ET` in `publish/payload.mjs`).
 
-### The send time really did change
-
-Worth stating plainly, because the repo used to claim otherwise. The old publish
-cron was `0 2 * * *` with a comment reading "12:00pm Sydney" — but GitHub's
-scheduler is best-effort, and this repo's crons run **2.5-5.5 hours behind** their
-stated time, every run, not occasionally. Ten consecutive publish runs all started
-around 07:10 UTC. Posts have actually been going out at about **17:15 Sydney**,
-not midday, for as long as anyone has been reading that comment.
-
-Buffer honours the time it is given, so the schedule above is now what happens
-rather than what was hoped for. Any engagement pattern measured before this
-change was measured at ~17:15 for all three channels at once, which is not a
-baseline the new times can be compared against.
+The daily GitHub job does not choose that hour. Buffer does, and Buffer sends
+at the Eastern Time it was given. GitHub's scheduler on this repo starts crons
+hours after the line in the file. That lag only delays the reconcile and the
+queue top-up. A 5.5 hour lag on the 02:00 UTC job is about 3:30am ET, still
+before the 9:00am ET slot the planner stores.
 - Within five minutes the mirror sweep opens a Linear issue for each post's
   article, in **Review**.
 - **Leaving a card untouched means the article does not go live.** It does not
@@ -492,11 +488,15 @@ the next category of bad pick too, the one there is no rule for yet.
 
 ## Cadence
 
-- Monday: `upcoming`
-- Friday: `trending`
+Days are US Eastern weekdays. Posts are stored at 9:00am ET unless a type has
+an entry in `PUBLISH_TIME_BY_TYPE`.
+
+- Monday: `trending` (the chart)
+- Tuesday: `upcoming`, then the mid question
 - Wednesday fixed feature: `watch_tonight`
+- Thursday: question mid-slot
+- Friday: fill only (no anchor)
 - Saturday fixed feature: `hidden_gem`
-- Tuesday / Thursday: question mid-slot
 - Sunday: question lead slot
 
 Question posts join the conversation around a **new release that is already
@@ -537,8 +537,12 @@ release post and the question are deliberately about the same title.
   (`marketingEmails`), the archive strings in
   `supabase/functions/marketing-feed/index.ts`, and the homepage newsletter hint
   and success message in `apps/website/index.html`.
-- The trending chart page carries no cadence claim either, for the same reason:
-  `marketing/snapshot/write-snapshot.mjs` is also manual.
+- The trending snapshot runs every Sunday evening Eastern
+  (`.github/workflows/marketing-trending-snapshot.yml`, cron `30 22 * * 0`:
+  6:30pm ET during daylight time, 5:30pm ET during standard time). The row is
+  dated that Sunday. `pnpm run snapshot` writes the same Sunday row by hand.
+  If Monday's post is planned before the row exists, the planner fetches live
+  and writes it. The chart page does not state a clock time.
 - IG, Threads, and X are all copy-diff only — none has a $0 auto-collected
   analytics path (the Meta-direct token/insights pipeline for IG/Threads was
   retired; it depended on a 60-day token refresh that was never wired back up

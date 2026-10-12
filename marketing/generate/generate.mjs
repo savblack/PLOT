@@ -154,7 +154,7 @@ const notifyReview = async (count) => {
       <a href="${BUFFER_URL}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9999px;font-weight:600;display:inline-block;margin-left:8px;">Open in Buffer</a>
     </p>
     <p style="font-size:.95rem;line-height:1.6;">Articles show up in Linear within about five minutes, one card each, in <strong>Content Automation</strong>. Comment <code>/approve</code>, or <code>/copy</code> with the lines you want changed. Leaving a card untouched keeps that article off theplot.tv.</p>
-    <p style="font-size:.95rem;line-height:1.6;">Social posts are already in Buffer, as many as the queue will hold. Edit, move, or delete them there. Buffer sends them. Approving an article does not change the caption.</p>
+    <p style="font-size:.95rem;line-height:1.6;">Social posts are already in Buffer, dated for their Eastern Time day, as many as the queue will hold. Edit, move, or delete them there. Buffer sends them. Approving an article does not change the caption.</p>
   </div>`;
   try {
     await sendEmail({ to: ADMIN_EMAIL, subject: `Plot marketing: ${count} post(s) ready to review`, html });
