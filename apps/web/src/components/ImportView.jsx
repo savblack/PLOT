@@ -7,6 +7,8 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { markImportDone } from '../utils/finishingTouchesState.js';
+import { clearLetterboxdImport, rememberLetterboxdImport } from '../utils/letterboxdImportPrompt.js';
+import { letterboxdLeaveDecision } from '@plot/core/letterboxdImportPrompt.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
 import { planHistoryImport } from '@plot/core/importPlan.js';
@@ -145,7 +147,7 @@ const PLATFORMS = [
     id: 'letterboxd',
     name: 'Letterboxd',
     color: '#00E054',
-    format: 'CSV',
+    format: 'ZIP',
     get shortInstructions() { return IMPORT_VIEW.letterboxdHint(getConfig().importAnnotationsEnabled); },
     get instructions() { return [this.shortInstructions]; },
   },
@@ -248,6 +250,8 @@ function AccountImportView() {
   const [providerLogos, setProviderLogos] = useState({});
   const [connectionResult, setConnectionResult] = useState(null);
   const fileRef = useRef(null);
+  const letterboxdVisit = useRef({ active: false, uploaded: false, exportOpened: false, reported: false });
+  const letterboxdLeaveToken = useRef(0);
 
   useEffect(() => {
     tmdb.getWatchProvidersForRegion('movie', 'US').then(res => {
@@ -266,6 +270,45 @@ function AccountImportView() {
     loadTraktIntegration();
     loadSimklIntegration();
   }, [loadPlexIntegration, loadTraktIntegration, loadSimklIntegration]);
+
+  useEffect(() => {
+    const onStep = step === 2 && platform?.id === 'letterboxd';
+    if (!onStep || !user?.id) return undefined;
+    // A file already chosen in this visit stays chosen if the step remounts.
+    // Remembering again would bring the reminder back after a successful read.
+    if (!letterboxdVisit.current.active && !letterboxdVisit.current.uploaded) {
+      letterboxdVisit.current = { active: true, uploaded: false, exportOpened: false, reported: false };
+    }
+    letterboxdVisit.current.active = true;
+    if (!letterboxdVisit.current.uploaded) rememberLetterboxdImport(user.id);
+    const token = ++letterboxdLeaveToken.current;
+    const onPageHide = () => {
+      const decision = letterboxdLeaveDecision(letterboxdVisit.current);
+      if (!decision) return;
+      letterboxdVisit.current.reported = true;
+      importReport.abandoned(decision);
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      const tokenAtLeave = token;
+      setTimeout(() => {
+        // A StrictMode remount bumps the token before this runs. The read has to see that.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- compare against the latest visit, not this effect's token
+        if (letterboxdLeaveToken.current !== tokenAtLeave) return;
+        letterboxdVisit.current.active = false;
+        const decision = letterboxdLeaveDecision(letterboxdVisit.current);
+        if (!decision) return;
+        letterboxdVisit.current.reported = true;
+        importReport.abandoned(decision);
+      }, 0);
+    };
+  }, [step, platform, user, importReport]);
+
+  const openLetterboxdExport = () => {
+    letterboxdVisit.current.exportOpened = true;
+    importReport.exportOpened();
+  };
 
   const connection = platform?.id === 'plex' ? plex : platform?.id === 'trakt' ? trakt : platform?.id === 'simkl' ? simkl : null;
 
@@ -302,7 +345,9 @@ function AccountImportView() {
     setDocumentReport([]);
     let parsed;
     try {
+      if (platform.id === 'letterboxd' && files?.length) letterboxdVisit.current.uploaded = true;
       const document = await readImportSelection(platform.id === 'trakt-export' ? 'trakt' : platform.id, Array.from(files));
+      if (platform.id === 'letterboxd') clearLetterboxdImport(user?.id);
       parsed = document.entries;
       setDocumentReport(importReportMessages(document));
       if (!parsed.length && (document.warnings.length || document.notImported.length)) { setResults([]); setStep(4); return; }
@@ -600,7 +645,7 @@ function AccountImportView() {
               Drop your {platform.format} here
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.9rem' }}>
-              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : platform.id === 'letterboxd' ? 'diary.csv' : platform.id === 'imdb' ? IMPORT_VIEW.imdbFileName : `Your ${platform.name} export file`}
+              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : platform.id === 'letterboxd' ? IMPORT_VIEW.letterboxdDropHint : platform.id === 'imdb' ? IMPORT_VIEW.imdbFileName : `Your ${platform.name} export file`}
             </div>
             <span style={{
               fontSize: '0.78rem', fontWeight: 600,
@@ -612,6 +657,25 @@ function AccountImportView() {
           </div>
 
           {/* Condensed instructions */}
+          {platform.id === 'letterboxd' ? (
+            <div>
+              <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                How to export from {platform.name}
+              </div>
+              <ol style={{ margin: '0 0 0.75rem', paddingLeft: '1.15rem', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                {IMPORT_VIEW.letterboxdSteps.map(item => <li key={item}>{item}</li>)}
+              </ol>
+              <a
+                href={IMPORT_VIEW.letterboxdExportUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={openLetterboxdExport}
+                style={{ color: 'var(--accent)', fontWeight: 600, fontSize: '0.78rem' }}
+              >
+                {IMPORT_VIEW.letterboxdExportLink}
+              </a>
+            </div>
+          ) : (
           <div>
             <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
               How to export from {platform.name}
@@ -625,6 +689,7 @@ function AccountImportView() {
               ))}
             </div>
           </div>
+          )}
           </>}
         </>
       )}

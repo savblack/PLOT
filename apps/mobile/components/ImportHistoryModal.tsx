@@ -3,10 +3,11 @@ import { TRACKING } from '@plot/core/copy/tracking.js';
 import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
 import { needsDuplicateReview, leftOutWatchSummary, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
-import { useState, useCallback, useMemo } from 'react';
+import { letterboxdLeaveDecision } from '@plot/core/letterboxdImportPrompt.js';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  Modal, Alert, ActivityIndicator, StyleSheet, FlatList,
+  Modal, Alert, ActivityIndicator, StyleSheet, FlatList, Linking, AppState,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -20,6 +21,7 @@ import {
   createImportReporter, IMPORT_ENTRY_POINTS, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
+import { clearLetterboxdImport, rememberLetterboxdImport } from '../lib/letterboxdImportPrompt';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useMediaSync } from '../hooks/useMediaSync';
@@ -213,16 +215,59 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
   const [documentReport, setDocumentReport] = useState([] as string[]);
   const [alreadyCount, setAlreadyCount] = useState(0);
   const [pushedCount, setPushedCount] = useState(0);
+  const letterboxdVisit = useRef({ active: false, uploaded: false, exportOpened: false, reported: false });
+  const letterboxdLeaveToken = useRef(0);
+  const letterboxdPicking = useRef(false);
 
   const handleSelectPlatform = (p: Platform) => {
+    importReport.selected(p);
     setPlatform(p);
     setStep(availablePlatforms.find(item => item.id === p)?.kind === 'connection' ? 'connection' : 'pick-file');
+  };
+
+  useEffect(() => {
+    const onStep = step === 'pick-file' && platform === 'letterboxd';
+    if (!onStep) return undefined;
+    if (!letterboxdVisit.current.active && !letterboxdVisit.current.uploaded) {
+      letterboxdVisit.current = { active: true, uploaded: false, exportOpened: false, reported: false };
+    }
+    letterboxdVisit.current.active = true;
+    if (!letterboxdVisit.current.uploaded) void rememberLetterboxdImport(userId);
+    const token = ++letterboxdLeaveToken.current;
+    const sub = AppState.addEventListener('change', next => {
+      if (next !== 'background' || letterboxdPicking.current) return;
+      const decision = letterboxdLeaveDecision(letterboxdVisit.current);
+      if (!decision) return;
+      letterboxdVisit.current.reported = true;
+      importReport.abandoned(decision);
+    });
+    return () => {
+      sub.remove();
+      const tokenAtLeave = token;
+      setTimeout(() => {
+        // A StrictMode remount bumps the token before this runs. The read has to see that.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- compare against the latest visit, not this effect's token
+        if (letterboxdLeaveToken.current !== tokenAtLeave) return;
+        letterboxdVisit.current.active = false;
+        const decision = letterboxdLeaveDecision(letterboxdVisit.current);
+        if (!decision) return;
+        letterboxdVisit.current.reported = true;
+        importReport.abandoned(decision);
+      }, 0);
+    };
+  }, [step, platform, userId, importReport]);
+
+  const openLetterboxdExport = () => {
+    letterboxdVisit.current.exportOpened = true;
+    importReport.exportOpened();
+    void Linking.openURL(IMPORT_VIEW.letterboxdExportUrl);
   };
 
   const handlePickFile = useCallback(async () => {
     if (!platform) return;
     const cfg = PLATFORMS.find(p => p.id === platform)!;
     let started = false;
+    letterboxdPicking.current = true;
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: cfg.accept ?? '*/*',
@@ -230,12 +275,14 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
         multiple: ['tvtime', 'trakt-export', 'letterboxd'].includes(platform),
       });
       if (result.canceled || !result.assets?.[0]) return;
+      if (platform === 'letterboxd') letterboxdVisit.current.uploaded = true;
 
       const files = result.assets.map(asset => {
         const file = new FileSystem.File(asset.uri);
         return { name: asset.name, size: asset.size, text: () => file.text(), arrayBuffer: () => file.arrayBuffer() };
       });
       const document = await readImportSelection(platform === 'trakt-export' ? 'trakt' : platform, files);
+      if (platform === 'letterboxd') void clearLetterboxdImport(userId);
       const raw = document.entries;
       setDocumentReport(importReportMessages(document));
       if (!raw.length && (document.warnings.length || document.notImported.length)) { setResolved([]); setStep('preview'); return; }
@@ -301,6 +348,8 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
         reason: started ? IMPORT_FAILURE_REASONS.MATCH_FAILED : IMPORT_FAILURE_REASONS.UNREADABLE_FILE,
       });
       setStep('pick-file');
+    } finally {
+      letterboxdPicking.current = false;
     }
   }, [platform, userId, importReport]);
 
@@ -506,7 +555,18 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
             <Text style={styles.stepTitle}>{PLATFORMS.find(p => p.id === platform)!.name}</Text>
             <View style={styles.hintBox}>
               <Text style={styles.hintLabel}>How to export your data</Text>
-              <Text style={styles.hintText}>{PLATFORMS.find(p => p.id === platform)!.hint}</Text>
+              {platform === 'letterboxd' ? (
+                <>
+                  {IMPORT_VIEW.letterboxdSteps.map((item, index) => (
+                    <Text key={item} style={styles.hintText}>{index + 1}. {item}</Text>
+                  ))}
+                  <TouchableOpacity onPress={openLetterboxdExport} accessibilityRole="link" style={styles.exportLink}>
+                    <Text style={styles.exportLinkText}>{IMPORT_VIEW.letterboxdExportLink}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={styles.hintText}>{PLATFORMS.find(p => p.id === platform)!.hint}</Text>
+              )}
             </View>
             <TouchableOpacity style={styles.filePicker} onPress={handlePickFile} activeOpacity={0.8}>
               <Svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -719,6 +779,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   hintLabel: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textSecondary },
   hintText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
+  exportLink: { alignSelf: 'flex-start', marginTop: spacing.sm },
+  exportLinkText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.danger, lineHeight: 20, marginBottom: spacing.md },
 
   filePicker: {

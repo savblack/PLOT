@@ -78,6 +78,18 @@ export const IMPORT_VIEW = {
   traktUnsupported: 'Unsupported Trakt history file or record. Choose an individual-event history JSON with movie/show titles, episode numbers and valid watch dates (or null for unknown dates). No records were imported.',
 
   letterboxdHint: (annotations = false) => `Letterboxd → Settings → Import & Export → Export your data. Extract diary.csv, watched.csv, watchlist.csv or an individual custom-list CSV.${annotations ? ' Separate ratings.csv and reviews.csv files are also supported.' : ''} Choose the extracted CSV files or their ZIP. Keep original filenames. A watched.csv row that overlaps a diary entry is left out.`,
+  letterboxdDropHint: 'Your Letterboxd export ZIP',
+  letterboxdExportUrl: 'https://letterboxd.com/settings/data/',
+  letterboxdExportLink: 'Open Letterboxd export',
+  letterboxdSteps: [
+    'Open your Letterboxd data export.',
+    'Export your data, then unzip the download.',
+    'Come back here and upload the ZIP.',
+  ],
+  letterboxdFinishTitle: 'Finish your Letterboxd import',
+  letterboxdFinishSub: 'Upload the ZIP when your export is ready.',
+  letterboxdFinishCta: 'Upload export',
+  letterboxdFinishDismiss: 'Dismiss',
   matchOption: (title, year, type) => `${title} (${year || '?'} · ${type === 'tv' ? 'TV' : 'Movie'})`,
   chooseSource: 'Choose where you want to import from.',
   accountImportSubtitle: 'Import from your account',

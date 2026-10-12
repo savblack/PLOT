@@ -113,6 +113,16 @@ export function createImportReporter({ entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, 
     selected(source) {
       reportImport('selected', { source, entry });
     },
+    /** The Letterboxd data-export link. Leaving after this is expected. */
+    exportOpened() {
+      reportImport('export_opened', { source: 'letterboxd', entry });
+    },
+    /** They left the upload step, or dismissed the reminder.
+     * @param {'left' | 'dismissed'} reason
+     */
+    abandoned(reason) {
+      reportImport('abandoned', { source: 'letterboxd', entry, reason });
+    },
     /** @param {'started' | 'completed' | 'failed'} stage @param {{ source: string, count?: number, failed_count?: number, reason?: string }} props */
     report(stage, props) {
       if (stage === 'started') { startedAt = now(); writeAt = null; reportImport('started', { ...props, entry }); return; }
@@ -138,7 +148,7 @@ export function createImportReporter({ entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, 
  * write finished; the import stopped), so import_started / import_completed /
  * import_failed mean the same thing on web and mobile. Never throws.
  *
- * @param {'selected' | 'started' | 'completed' | 'failed'} stage
+ * @param {'selected' | 'started' | 'completed' | 'failed' | 'export_opened' | 'abandoned'} stage
  * @param {{ source: string, count?: number, failed_count?: number, reason?: string, entry?: string, duration_ms?: number, write_ms?: number }} props
  */
 export function reportImport(stage, props) {
