@@ -200,11 +200,10 @@ export default function AuthScreen() {
   // finished without a token. Do not post that request to GoTrue.
   const takeCaptchaToken = async (authMode: 'signup' | 'login' | 'forgot' | 'magic') => {
     if (!TURNSTILE_SITE_KEY) return null;
-    let plan: ReturnType<typeof captchaSubmitPlan> = 'wait';
     for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
       requestCaptcha();
       const token = await waitForCaptchaAttempt(CAPTCHA_TOKEN_WAIT_MS);
-      plan = captchaSubmitPlan({
+      const plan = captchaSubmitPlan({
         siteKey: TURNSTILE_SITE_KEY,
         token,
         mode: authMode,
