@@ -15,6 +15,8 @@
 //   saveToDraft: true  -> a draft you approve in Buffer before it sends
 // No idempotency key exists — the atomic claim in schedule.mjs prevents
 // duplicates.
+import { PUBLISH_TZ } from '../lib/dates.mjs';
+
 const API_URL = 'https://api.buffer.com';
 
 const gql = async (query) => {
@@ -255,7 +257,7 @@ export const getPostingSchedules = async () => {
         const times = (slot.times || []).filter(Boolean).sort();
         if (times.length) byDay[String(slot.day).toLowerCase()] = times;
       }
-      out[c.service] = { timezone: c.timezone || 'Australia/Sydney', byDay };
+      out[c.service] = { timezone: PUBLISH_TZ, byDay };
     }
   }
   return out;

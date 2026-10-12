@@ -3,7 +3,10 @@ name: Marketing — weekly batch
 # Generates the coming week from the voice/spec rules as they stand in the repo.
 on:
   schedule:
-    - cron: '30 0 * * 0' # 10:30am Sydney Sunday (AEST)
+    # 00:30 UTC Sunday. Saturday evening Eastern, and still before 9:00am ET
+    # Sunday even with this repo's scheduler lag, so the week is planned
+    # before the first post.
+    - cron: '30 0 * * 0'
   workflow_dispatch:
 
 permissions:

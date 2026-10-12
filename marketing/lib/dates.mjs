@@ -1,21 +1,32 @@
 // Date helpers for the planner. All "dates" from TMDB are YYYY-MM-DD strings.
+// Publish instants are US Eastern (America/New_York). Daylight time is handled
+// by the zone, not by a fixed UTC offset.
+
+import { PUBLISH_TZ, zonedInstant } from '../../supabase/functions/_shared/etTime.js';
+
+export { PUBLISH_TZ, zonedInstant };
 
 export const isoDate = (d) => d.toISOString().slice(0, 10);
 
-// The intended publish instant: today 23:30 UTC (9:30am AEST next day, ~6:30pm US ET).
-export const nextPublishAt = (now = new Date()) => {
-  const d = new Date(now);
-  d.setUTCHours(23, 30, 0, 0);
-  if (d <= now) d.setUTCDate(d.getUTCDate() + 1);
-  return d;
-};
+/** Default publish clock: 9:00am Eastern. */
+export const DEFAULT_PUBLISH_TIME = { hour: 9, minute: 0 };
 
-// Weekday name of an instant in a timezone (anchors are AEST publish days).
-export const weekdayInTz = (date, tz = 'Australia/Sydney') =>
-  new Intl.DateTimeFormat('en-AU', { weekday: 'long', timeZone: tz }).format(date);
+/**
+ * Optional per-type wall-clock overrides, in Eastern Time.
+ * A type that is not listed uses DEFAULT_PUBLISH_TIME.
+ * @type {Record<string, {hour: number, minute: number}>}
+ */
+export const PUBLISH_TIME_BY_TYPE = {};
 
-export const datePartsInTz = (date, tz = 'Australia/Sydney') => {
-  const parts = new Intl.DateTimeFormat('en-CA', {
+export const publishTimeFor = (postType) =>
+  (postType && PUBLISH_TIME_BY_TYPE[postType]) || DEFAULT_PUBLISH_TIME;
+
+// Weekday name of an instant. Anchors are US Eastern publish days.
+export const weekdayInTz = (date, tz = PUBLISH_TZ) =>
+  new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: tz }).format(date);
+
+export const datePartsInTz = (date, tz = PUBLISH_TZ) => {
+  const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: tz,
     year: 'numeric',
     month: '2-digit',
@@ -83,6 +94,21 @@ export const addDays = (dateStr, days) => {
   return isoDate(d);
 };
 
+/** 9:00am Eastern on `day`, or that type's override if one is set. */
+export const publishAtOn = (day, postType) => {
+  const { hour, minute } = publishTimeFor(postType);
+  return zonedInstant(day, hour, minute, PUBLISH_TZ);
+};
+
+// The next publish instant at or after `now`: today at the type's Eastern
+// clock time, or tomorrow if that instant has already passed.
+export const nextPublishAt = (now = new Date(), postType) => {
+  const { date } = datePartsInTz(now);
+  const today = publishAtOn(date, postType);
+  if (today > now) return today;
+  return publishAtOn(addDays(date, 1), postType);
+};
+
 const MONDAY_OFFSET = {
   Monday: 0,
   Tuesday: 1,
@@ -93,7 +119,32 @@ const MONDAY_OFFSET = {
   Sunday: 6,
 };
 
-export const mondayOfWeekInTz = (date, tz = 'Australia/Sydney') => {
+export const mondayOfWeekInTz = (date, tz = PUBLISH_TZ) => {
   const local = datePartsInTz(date, tz);
   return addDays(local.date, -(MONDAY_OFFSET[local.weekday] ?? 0));
+};
+
+// Days back from a US Eastern weekday to the Sunday that feeds Monday's chart.
+// Sunday itself is that Sunday. Monday through Saturday step back to the
+// Sunday just past, so a job that starts after midnight Eastern still dates
+// the row to Sunday night.
+const DAYS_SINCE_SUNDAY = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+};
+
+export const trendingSnapshotDate = (now = new Date()) => {
+  const { date, weekday } = datePartsInTz(now);
+  return addDays(date, -(DAYS_SINCE_SUNDAY[weekday] ?? 0));
+};
+
+/** A snapshot is stale when it is missing or older than this week's Sunday. */
+export const snapshotIsStale = (snapshotDate, publishAt) => {
+  const expected = trendingSnapshotDate(publishAt);
+  return !snapshotDate || String(snapshotDate).slice(0, 10) < expected;
 };

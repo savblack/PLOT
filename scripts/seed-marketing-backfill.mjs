@@ -21,8 +21,8 @@
 // Target a specific inclusive date range instead of the default 50-day window
 // (one post per day, same anchors/cycle). Use it to fill a gap the daily
 // automation missed. A same-day --to is scheduled just behind now() so it shows
-// on the feed immediately. Only trending days (Fridays) render a card, so
-// a gap with no Friday in it needs no browser:
+// on the feed immediately. Only trending days (Mondays) render a card, so
+// a gap with no Monday in it needs no browser:
 //   TMDB_API_KEY=… node scripts/seed-marketing-backfill.mjs --from=2026-06-13 --to=2026-06-16 --dry-run
 //   SUPABASE_SERVICE_KEY=… TMDB_API_KEY=… node scripts/seed-marketing-backfill.mjs --from=2026-06-13 --to=2026-06-16
 // NOTE: do NOT pass --reset with a range — --reset deletes ALL backfill:% posts
@@ -30,7 +30,7 @@
 
 import { writeFile } from 'node:fs/promises';
 // Pure helpers (no external deps) — safe to import at top level for --selftest.
-import { isoDate, addDays, daysBetween, formatWeekdayDayMonth, formatWeekRange, formatDayMonth, weekdayInTz } from '../marketing/lib/dates.mjs';
+import { isoDate, addDays, daysBetween, formatWeekdayDayMonth, formatWeekRange, formatDayMonth, weekdayInTz, publishAtOn, datePartsInTz } from '../marketing/lib/dates.mjs';
 import { postSlug } from '../marketing/lib/feed.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -269,8 +269,8 @@ const runSelfTest = () => {
 };
 
 // ── Planning: assign a post type to each backdated day ───────────────────────
-// Monday -> upcoming, Friday -> trending (the planner's anchors);
-// every other day cycles the priority-ladder types for a realistic mix.
+// Anchors match the planner. Wednesday and Saturday stay in the mix because
+// the seed copy builders do not cover watch_tonight or hidden_gem.
 const NON_ANCHOR_CYCLE = [
   { type: 'countdown', days: 7 },
   { type: 'now_streaming' },
@@ -283,38 +283,31 @@ const NON_ANCHOR_CYCLE = [
   { type: 'countdown', days: 1 },
 ];
 
-// Monday -> upcoming, Friday -> trending (the planner's anchors);
-// every other day cycles the priority ladder for a realistic mix.
 const assignPlans = (days) => {
   let cycleIdx = 0;
   return days.map((date) => {
     const weekday = weekdayInTz(date);
-    if (weekday === 'Monday') return { date, plan: { type: 'upcoming' } };
-    if (weekday === 'Friday') return { date, plan: { type: 'trending' } };
+    if (weekday === 'Monday') return { date, plan: { type: 'trending' } };
+    if (weekday === 'Tuesday') return { date, plan: { type: 'upcoming' } };
+    if (weekday === 'Thursday') return { date, plan: { type: 'trailer' } };
+    if (weekday === 'Friday') return { date, plan: { type: 'now_streaming' } };
+    if (weekday === 'Sunday') return { date, plan: { type: 'on_this_day' } };
     return { date, plan: NON_ANCHOR_CYCLE[cycleIdx++ % NON_ANCHOR_CYCLE.length] };
   });
 };
 
 const buildSchedule = (now) => {
-  // 50 days, one per day, noon UTC, ending yesterday (newest strictly < now).
-  const startOfToday = new Date(now);
-  startOfToday.setUTCHours(12, 0, 0, 0);
+  // 50 days, one per day, 9:00am Eastern, ending yesterday.
+  const today = datePartsInTz(now).date;
   const days = [];
-  for (let i = POST_COUNT; i >= 1; i--) {
-    const d = new Date(startOfToday);
-    d.setUTCDate(d.getUTCDate() - i);
-    days.push(d);
-  }
+  for (let i = POST_COUNT; i >= 1; i--) days.push(publishAtOn(addDays(today, -i)));
   return assignPlans(days);
 };
 
-// Inclusive [fromISO, toISO] range, one day per date at noon UTC.
+// Inclusive [fromISO, toISO] range, one day per date at 9:00am Eastern.
 const buildScheduleRange = (fromISO, toISO) => {
   const days = [];
-  const end = new Date(`${toISO}T12:00:00.000Z`);
-  for (let d = new Date(`${fromISO}T12:00:00.000Z`); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
-    days.push(new Date(d));
-  }
+  for (let d = fromISO; d <= toISO; d = addDays(d, 1)) days.push(publishAtOn(d));
   return assignPlans(days);
 };
 
@@ -420,7 +413,7 @@ const makePayloadBuilder = (tmdb, fetchTMDB, anchorDay = null) => {
     return chosen || null;
   };
 
-  let priorChart = null; // previous backdated Friday's ranks, for movement
+  let priorChart = null; // previous backdated Monday's ranks, for movement
   let chartWeek = 0;
 
   return {
@@ -643,8 +636,8 @@ const main = async () => {
     // Feed/article hero = plain TMDB still (no branding) for every type except
     // trending, which keeps its branded chart render (hero_image = null).
     copy.hero_image = feedHeroUrl(cand.post_type, cand.payload);
-    // Past days post at noon UTC (pipeline convention); a same-day backfill whose
-    // noon UTC is still ahead of now() is clamped just behind now so the feed
+    // Past days post at 9:00am Eastern. A same-day backfill whose 9:00am is
+    // still ahead of now() is clamped just behind now so the feed
     // (scheduled_for <= now) shows it immediately rather than later today.
     const scheduledFor = (slot.date > now ? new Date(now.getTime() - 60_000) : slot.date).toISOString();
     candidates.push({ ...cand, copy, scheduledFor, slug: postSlug(copy.page_title, scheduledFor) });

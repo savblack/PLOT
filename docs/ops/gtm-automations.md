@@ -6,7 +6,7 @@ is still [`marketing/README.md`](../../marketing/README.md). This file is the
 map: what runs, what starts it, where the words and pictures come from, and
 where they land.
 
-Last reviewed against the tree on 10 October 2026. If a workflow, script, or
+Last reviewed against the tree on October 12, 2026. If a workflow, script, or
 edge function named below disappears or changes trigger, update this file in
 the same change.
 
@@ -25,11 +25,14 @@ outside the repo (Linear, a doc, a manual Buffer post).
 
 ## How a normal week works
 
-1. Sunday morning, GitHub Actions plans the coming week, asks Claude to write
+1. Saturday evening Eastern, GitHub Actions plans the coming week, asks Claude to write
    the copy, renders social cards, and pushes as many posts as Buffer will hold.
-   A rejected copy file does not skip that render. If a card is still missing,
-   the daily job renders it again before the top-up, and will not queue the post
-   on a raw TMDB still.
+   Each post is dated for its Eastern Time day. The planner stores 9:00am ET.
+   Buffer then uses that channel's hour on that ET day. A rejected copy file
+   does not skip that render. If a card is still missing, the daily job renders
+   it again before the top-up, and will not queue the post on a raw TMDB still.
+   Sunday evening Eastern, a separate job writes the trending snapshot the
+   Monday chart reads.
 2. Within about five minutes, a database job opens one Linear card per website
    article (team PLO, project Content Automation).
 3. You edit or delete the social captions in Buffer. Buffer sends them on the
@@ -55,9 +58,10 @@ renders images, and starts the Buffer queue.
 Linear comment `/generate` (which dispatches this same workflow).
 
 **Schedule.** Cron `30 0 * * 0` in [`.github/workflows/marketing-weekly-batch.yml`](../../.github/workflows/marketing-weekly-batch.yml).
-The comment says 10:30am Sydney Sunday (AEST). GitHub's scheduler on this repo
-runs hours late (measured on the daily job; see section 3). Treat the cron line
-as the request, not the clock time.
+That is 00:30 UTC Sunday, Saturday evening Eastern, and still before 9:00am ET
+Sunday even when GitHub starts the job hours late (measured on the daily job;
+see section 3). Treat the cron line as the request. The week is planned before
+the first 9:00am ET post.
 
 **Entrypoints.**
 
@@ -129,7 +133,7 @@ Nothing in this repo sends social posts itself anymore.
 1. The script reads posts in `needs_review` or `approved` that are not yet in Buffer, soonest day first. Article approval is not required. `needs_review` is enough.
 2. A post that has a card template and no portrait plus landscape file in `media` is not pushed. The publication stays `queued`, the post's `error` says the cards are missing, and the run fails after the other posts are handled so the miss is mailed. Questions are text-only and are pushed without an image. Guides are not given publication rows by the renderer.
 3. If `marketing_settings.publishing_paused` is true, it stops. Posts already in Buffer still go out. `/pause` in Linear sets that flag. It does not empty the queue.
-4. The day is fixed by the planner, because the caption talks about that day ("aired last night", "14 days until"). The clock time comes from Buffer's per-channel posting schedule, in Sydney time: X mornings, Threads mid-morning, Instagram evenings. If a channel has no schedule that weekday, the fallback hour is `SEND_HOUR_SYDNEY` in `payload.mjs`.
+4. The day is fixed by the planner, because the caption talks about that day ("aired last night", "14 days until"). The planner stores 9:00am Eastern. The hour Buffer sends comes from that channel's posting schedule, applied as Eastern Time on the post's ET day. Any timezone Buffer reports is ignored. If a channel has no schedule that weekday, the fallback hour is 9:00am ET (`SEND_HOUR_ET` in `payload.mjs`).
 5. Buffer's plan holds about 10 scheduled posts per channel. A week is about 16 per channel, so the push fills a rolling window of roughly four days. The rest stay `queued` in the database until a later run.
 6. A full queue is normal. The job reports the leftover count instead of failing. Missing cards are not normal. That count fails the run.
 
@@ -143,7 +147,7 @@ You review, edit, reschedule, and delete in Buffer. Those edits are not checked 
 
 **Trigger.** [`.github/workflows/marketing-publish.yml`](../../.github/workflows/marketing-publish.yml). The filename still says "publish". The workflow no longer sends. It is also what you rerun with `retry_failed`.
 
-**Schedule.** Cron `0 2 * * *`. The file's own comment, from ten consecutive runs, says it really starts around 07:10 UTC (about 17:10 Sydney), five-plus hours after the stated time. Buffer itself is punctual. What the drift costs is how fast freed slots get refilled.
+**Schedule.** Cron `0 2 * * *` (02:00 UTC). GitHub's scheduler on this repo starts the job hours later. A 5.5 hour lag is about 3:30am ET, still before the 9:00am ET slot. Buffer itself is punctual and sends at the Eastern hour it was given. What the drift costs is how fast freed slots get refilled.
 
 **Entrypoints.** [`marketing/publish/reconcile.mjs`](../../marketing/publish/reconcile.mjs), then [`marketing/generate/generate.mjs`](../../marketing/generate/generate.mjs) (retry any card that never rendered), then [`marketing/publish/schedule.mjs`](../../marketing/publish/schedule.mjs), then [`marketing/publish/queue-check.mjs`](../../marketing/publish/queue-check.mjs). Failure mail: [`.github/scripts/marketing-alert.sh`](../../.github/scripts/marketing-alert.sh). `workflow_dispatch` input `render_only` runs just the card retry.
 
@@ -370,17 +374,17 @@ Signup itself is section 12.
 
 ## 10. Trending chart snapshot
 
-**What it is.** Writes this week's TMDB trending top 20 into `marketing_trending_snapshots` so the chart page, the Friday social carousel, and the newsletter can show ranks and week-over-week movement.
+**What it is.** Writes this week's TMDB trending top 20 into `marketing_trending_snapshots` so the chart page, the Monday social carousel, and the newsletter can show ranks and week-over-week movement.
 
-**Trigger.** Manual: `pnpm run mkt:snapshot`. Also, as a fallback inside the Friday planner ([`marketing/planner/triggers/trending-chart.mjs`](../../marketing/planner/triggers/trending-chart.mjs)): if the latest snapshot is missing or older than six days, that planner fetches live and writes one so the Friday post is not empty.
+**Trigger.** GitHub Actions, every Sunday evening Eastern: [`.github/workflows/marketing-trending-snapshot.yml`](../../.github/workflows/marketing-trending-snapshot.yml), cron `30 22 * * 0` (22:30 UTC Sunday). That is 6:30pm ET during daylight time and 5:30pm ET during standard time, before Monday's 9:00am ET chart post. Manual: `pnpm run mkt:snapshot`. Also, as a fallback inside the Monday planner ([`marketing/planner/triggers/trending-chart.mjs`](../../marketing/planner/triggers/trending-chart.mjs)): if the latest snapshot is missing or older than the Sunday before that Monday, the planner fetches live and writes the same Sunday row so the Monday post is not empty.
 
 **Entrypoint.** [`marketing/snapshot/write-snapshot.mjs`](../../marketing/snapshot/write-snapshot.mjs).
 
 **Secrets.** `SUPABASE_URL` or `VITE_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `TMDB_API_KEY`.
 
-**Outputs.** One upserted row per UTC day. The page shows 20. Social and the newsletter use the top 10. Re-running the same day is a no-op.
+**Outputs.** One upserted row per week, dated the most recent Sunday in Eastern Time. A run that starts after midnight ET still writes that Sunday, not Monday. The page shows 20. Social and the newsletter use the top 10. Re-running the same Sunday replaces the row.
 
-**How it works.** It fetches TMDB trending, refuses to write a short list, and upserts. It does not create a social post. The Friday post is a separate planner step that reads this table.
+**How it works.** It fetches TMDB trending, refuses to write a short list, and upserts. It does not create a social post. The Monday post is a separate planner step that reads this table. The topic key is `trending:<Monday>` and the label is `Week of October 19`.
 
 ---
 
@@ -502,13 +506,13 @@ From [`marketing/planner/cadence.mjs`](../../marketing/planner/cadence.mjs) and 
 
 | Day | Fixed slot | Also considered |
 | --- | --- | --- |
-| Monday | `upcoming` (weekly slate) | Fill: now streaming, countdown, trailer, on this day |
-| Tuesday | Question in the middle | Anniversary / spotlight, then the same fill order |
-| Wednesday | `watch_tonight` | Same |
-| Thursday | Question in the middle | Same |
-| Friday | `trending` | The chart. Snapshot from section 10. |
+| Monday | `trending` | The chart. Snapshot from section 10, dated the Sunday before. |
+| Tuesday | `upcoming` (weekly slate) | Then the mid question only. The rest of the mix waits unless the slate is empty. |
+| Wednesday | `watch_tonight` | Anniversary, then fill |
+| Thursday | Trailer, else a countdown | T-1, then T-7, then T-14, then the mid question. If none of those has a candidate, the fill mix, which still places the mid question. |
+| Friday | `now_streaming` | A title new at home that day. If none, the fill mix. |
 | Saturday | `hidden_gem` | Vote count has a floor and a ceiling so household names do not slip through. See `marketing/README.md`. |
-| Sunday | Question in the lead slot | Then anniversary / spotlight / fill |
+| Sunday | Lead question, then `on_this_day` | If the anniversary has no candidate, the fill mix. |
 
 Question posts are about a title that is already out. They are text-only, X and Threads, no article, no Linear card. If nothing released qualifies, the slot stays empty.
 
@@ -558,8 +562,8 @@ What you can already see:
 Gaps:
 
 - No status page, dashboard, or Slack/Linear ping that says "Sunday batch succeeded, 14 posts in Buffer, 11 articles in Review". Success is the absence of an email.
-- The Sunday job's own failure email cannot send if GitHub refuses it a runner. The daily queue check is the backup, and that check runs in the late afternoon Sydney time, not at midday.
-- Cron comments and real start times disagree by several hours. Easy to think a post "should have gone at noon" when Buffer sent it on its own schedule and the reconcile has not caught up yet.
+- The Sunday job's own failure email cannot send if GitHub refuses it a runner. The daily queue check is the backup. That check is requested at 02:00 UTC and often starts hours later, still before 9:00am ET.
+- Cron comments and real start times disagree by several hours. Buffer sends at the Eastern hour it was given. The reconcile catching up is a later clock. A post stored at 9:00am ET can already be in Buffer at a different ET hour from that channel's schedule.
 - No alert when Linear mirror heartbeats stop, unless someone runs the SQL.
 - No alert when Claude's pinned CLI version breaks a flag. That class of failure has already taken down a batch. The preflight in `cli-runner.mjs` helps only once the job is running.
 - Social analytics are dark (section 13). You cannot see which tone is working from inside this system.
@@ -604,12 +608,12 @@ Documentation only. None of this is built here.
 1. Treat this file plus `marketing/README.md` as the pair: map here, weekly operating steps there. When a workflow changes, update both.
 2. Add one diagram to the Sunday review email: article path (Linear to /whats-on) and social path (Buffer), and the sentence "rejecting the card does not delete the posts".
 3. Decide where `/marketing-week` lives. The email tells you to run it. The repo only has `marketing/REVIEW.md`.
-4. Confirm, in one place, whether the newsletter and the trending snapshot are meant to stay manual.
+4. The newsletter stays manual. The trending snapshot runs every Sunday evening Eastern (section 10).
 
 ### b. Standing health visibility
 
 1. One daily note, not another inbox rule to ignore: batch succeeded or not, posts queued per channel, articles sitting in Review, age of the newest `linear_mirror` heartbeat, whether the GitHub dispatch tokens probed ok. Email is enough. A dashboard can wait.
-2. Page that note off the daily reconcile, which is the job that still runs when Sunday cannot get a runner. State the real clock ("this job usually starts ~17:10 Sydney") in the note so the cron comment stops being the source of truth.
+2. Page that note off the daily reconcile, which is the job that still runs when Sunday cannot get a runner. State the real clock (requested at 02:00 UTC, often hours later, still before 9:00am ET) so the cron comment is not the only clock.
 3. Alert when the Linear heartbeat is older than about ten minutes. The SQL already exists. Nothing sends it.
 4. Alert when IndexNow fails, and submit guide URLs when a guide's day arrives. Today they rely on the sitemap alone.
 
@@ -629,11 +633,10 @@ These are ambiguous from the repo alone.
 
 1. **Changelog.** Not in the repo. Is one planned, and if so where should it live (What's On post type, a page, Buffer only)?
 2. **Newsletter cadence.** The code is explicit that there is no schedule and that the product must not promise one. Is "I run it when I want an issue" still the plan?
-3. **Trending snapshot.** Manual, with a Friday fallback. Is a weekly cron wanted so the chart page cannot go stale if the Friday post is rejected?
-4. **Social analytics.** The Meta insights path is gone and the report script is manual. Should reach stay a Buffer-side glance, or is a replacement in scope?
-5. **`/marketing-week`.** The review email names it. The skill is not in the repo. Is it a local Claude command you still use, or is `marketing/REVIEW.md` the thing to point at?
-6. **Empty timeline notes.** The Monday PR auto-merges even when the new title has no joke. The Linear card is only a record. Is that still what you want?
-7. **Guide indexing.** Guides do not pass through Buffer, so IndexNow does not hear about them. Is the sitemap enough?
+3. **Social analytics.** The Meta insights path is gone and the report script is manual. Should reach stay a Buffer-side glance, or is a replacement in scope?
+4. **`/marketing-week`.** The review email names it. The skill is not in the repo. Is it a local Claude command you still use, or is `marketing/REVIEW.md` the thing to point at?
+5. **Empty timeline notes.** The Monday PR auto-merges even when the new title has no joke. The Linear card is only a record. Is that still what you want?
+6. **Guide indexing.** Guides do not pass through Buffer, so IndexNow does not hear about them. Is the sitemap enough?
 
 ---
 

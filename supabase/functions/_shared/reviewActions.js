@@ -12,6 +12,13 @@
 import { validateCopy, validateGuide, validateConversation } from './copySchema.js';
 import { rescheduledSlug } from './postSlug.js';
 import { HELP_TEXT } from './linearCommands.js';
+import { etPublishInstant } from './etTime.js';
+
+const ET_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const etDateLabel = (isoDate) => {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return `${ET_MONTHS[month - 1]} ${day}, ${year}`;
+};
 
 const nowIso = () => new Date().toISOString();
 
@@ -163,8 +170,8 @@ export const applyArticleAction = async (supabase, post, intent, opts) => {
     case 'approve': {
       await supabase.from('marketing_posts').update({ status: 'approved', updated_at: nowIso() }).eq('id', id);
       await logEvent(supabase, actor, { postId: id, action: 'approve' });
-      const day = new Date(post.scheduled_for).toLocaleDateString('en-AU', { weekday: 'long', timeZone: 'Australia/Sydney' });
-      return { ok: true, reply: `Approved — the article goes live on theplot.tv on ${day}. (The social posts are scheduled in Buffer either way.)` };
+      const day = new Date(post.scheduled_for).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' });
+      return { ok: true, reply: `Approved. The article goes live on theplot.tv on ${day}. The social posts are scheduled in Buffer either way.` };
     }
 
     case 'reject': {
@@ -181,18 +188,20 @@ export const applyArticleAction = async (supabase, post, intent, opts) => {
 
     case 'reschedule': {
       const slug = rescheduledSlug(post.slug, post.status, intent.date);
+      const scheduledFor = etPublishInstant(intent.date).toISOString();
       await supabase.from('marketing_posts')
-        .update({ scheduled_for: `${intent.date}T12:00:00.000Z`, slug, updated_at: nowIso() }).eq('id', id);
+        .update({ scheduled_for: scheduledFor, slug, updated_at: nowIso() }).eq('id', id);
       await logEvent(supabase, actor, {
         postId: id,
         action: 'reschedule',
         after: { scheduled_date: intent.date, slug },
       });
+      const label = etDateLabel(intent.date);
       return {
         ok: true,
         reply: slug !== post.slug
-          ? `Rescheduled to ${intent.date}. The article URL now ends in that date; re-read the copy for anything written for the old day.`
-          : `Rescheduled to ${intent.date}. Re-read the copy for anything written for the old day.`,
+          ? `Rescheduled to ${label}, 9:00am ET. The article URL now ends in that date. Re-read the copy for anything written for the old day.`
+          : `Rescheduled to ${label}, 9:00am ET. Re-read the copy for anything written for the old day.`,
       };
     }
 

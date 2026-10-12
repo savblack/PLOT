@@ -83,6 +83,8 @@ const buildScheduled = async (ctx, type) => {
     case 'upcoming': return weeklySlate.evaluate(ctx).catch(() => null);
     case 'trending': return trendingChart.evaluate(ctx).catch(() => null);
     case 'countdown': return nearestCountdown(ctx);
+    case 'trailer': return trailerDrop.evaluate(ctx).catch(() => null);
+    case 'now_streaming': return nowStreaming.evaluate(ctx).catch(() => null);
     case 'on_this_day':
       return (await onThisDay.evaluate(ctx).catch(() => null))
         || (await onThisDay.evaluate(ctx, { minVotes: 500 }).catch(() => null));

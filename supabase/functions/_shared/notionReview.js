@@ -206,9 +206,9 @@ export const shouldPollComments = (post, now = new Date()) => {
   return delta < COMMENT_WINDOW_MS;
 };
 
-const aestLong = (iso) =>
-  new Date(iso).toLocaleDateString('en-AU', {
-    timeZone: 'Australia/Sydney', weekday: 'long', day: 'numeric', month: 'long',
+const etLong = (iso) =>
+  new Date(iso).toLocaleDateString('en-US', {
+    timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric',
   });
 
 const mediaUrl = (supabaseUrl, path) =>
@@ -252,7 +252,7 @@ export const blocksForPost = (post, supabaseUrl) => {
   blocks.push({
     object: 'block',
     type: 'paragraph',
-    paragraph: { rich_text: textChunk(`${aestLong(post.scheduled_for)} · ${reason(post)}`) },
+    paragraph: { rich_text: textChunk(`${etLong(post.scheduled_for)} · ${reason(post)}`) },
   });
 
   if (link) {

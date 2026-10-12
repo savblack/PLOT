@@ -25,15 +25,16 @@
 //   --retry-failed   re-queue rows whose push to Buffer failed, then push them
 import { getSupabase } from '../lib/supabase.mjs';
 import { publishToBuffer, channelCapacity, getPostingSchedules } from './buffer.mjs';
-import { buildPayload, sendTimeFor, sydneyDay, SERVICE } from './payload.mjs';
+import { buildPayload, sendTimeFor, publishDay, SERVICE } from './payload.mjs';
+import { PUBLISH_TZ } from '../lib/dates.mjs';
 import { queueBlockReason } from '../lib/pipelineGate.mjs';
 
 const DRY_RUN = process.env.DRY_RUN === '1';
 
-const bufferTime = (date, slots) =>
-  date.toLocaleString('en-AU', {
-    timeZone: slots?.timezone || 'Australia/Sydney',
-    weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
+const bufferTime = (date) =>
+  date.toLocaleString('en-US', {
+    timeZone: PUBLISH_TZ,
+    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   });
 
 // Rendered, not yet resolved. A post is pushed once its copy and cards exist,
@@ -124,7 +125,7 @@ const budgetFor = async () => {
 };
 
 /**
- * How many posts each channel already has scheduled on each Sydney day.
+ * How many posts each channel already has scheduled on each Eastern Time day.
  *
  * Counted from the database rather than from this run, because slots are taken
  * across runs: the week goes in on Sunday and the daily top-up adds to it, so a
@@ -145,7 +146,7 @@ const slotsTaken = async (supabase) => {
     const service = SERVICE[row.platform];
     const when = row.marketing_posts?.scheduled_for;
     if (!service || !when) continue;
-    const key = `${service}|${sydneyDay({ scheduled_for: when })}`;
+    const key = `${service}|${publishDay({ scheduled_for: when })}`;
     counts[key] = (counts[key] || 0) + 1;
   }
   return counts;
@@ -171,7 +172,7 @@ const scheduleOne = async (supabase, post, pub, budget, schedules, taken, flagge
 
   // The day is ours, the time is Buffer's: the nth post for this channel on this
   // day takes the nth slot of the channel's own posting schedule.
-  const slotKey = `${service}|${sydneyDay(post)}`;
+  const slotKey = `${service}|${publishDay(post)}`;
   const dueAt = sendTimeFor(post, schedules[service], taken[slotKey] || 0);
 
   // A due time already past cannot be scheduled — Buffer rejects it, and

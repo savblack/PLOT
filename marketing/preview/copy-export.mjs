@@ -11,7 +11,7 @@ mkdirSync(OUT, { recursive: true });
 const u = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL, k = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 if (!u || !k) { console.error('Missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (run with --env-file=.env)'); process.exit(1); }
 const h = { apikey: k, Authorization: `Bearer ${k}` };
-const day = (iso) => new Date(iso).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Australia/Sydney' });
+const day = (iso) => new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
 const q = (s) => '"' + String(s ?? '').replace(/"/g, '""') + '"';
 
 const rows = await (await fetch(`${u}/rest/v1/marketing_posts?status=in.(needs_review,approved,vetoed)&select=id,post_type,scheduled_for,status,copy&order=scheduled_for`, { headers: h })).json();

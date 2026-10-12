@@ -18,24 +18,23 @@ const MEDIA_BUCKET = 'marketing';
 const mediaUrl = (supabaseUrl, path) =>
   `${supabaseUrl}/storage/v1/object/public/${MEDIA_BUCKET}/${path}`;
 
-const aestDate = (iso, opts) =>
-  new Date(iso).toLocaleDateString('en-AU', { timeZone: 'Australia/Sydney', ...opts });
+const etDate = (iso, opts) =>
+  new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/New_York', ...opts });
 
 /**
- * The issue's due date, as the AEST calendar day the post actually runs on.
+ * The issue's due date, as the Eastern Time calendar day the post runs on.
  *
- * NOT `scheduled_for.slice(0, 10)`. The planner schedules at 23:30 UTC, which is
- * already the next morning in Sydney, so slicing the UTC string gives the day
- * before the one the title and body both name — every post, not an edge case.
- * en-CA is the terse way to get YYYY-MM-DD out of toLocaleDateString, the same
- * trick the web desk uses for its day keys.
+ * NOT `scheduled_for.slice(0, 10)`. An evening Eastern instant is already the
+ * next UTC date, so slicing the UTC string names the day after the one the
+ * title and body both use. en-CA is the terse way to get YYYY-MM-DD out of
+ * toLocaleDateString.
  */
 export const dueDateFor = (post) =>
-  new Date(post.scheduled_for).toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' });
+  new Date(post.scheduled_for).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
 /** The issue title: enough to recognise the post in a list, nothing more. */
 export const buildTitle = (post) => {
-  const day = aestDate(post.scheduled_for, { weekday: 'short', day: 'numeric', month: 'short' });
+  const day = etDate(post.scheduled_for, { weekday: 'short', month: 'short', day: 'numeric' });
   const label = String(post.post_type).replace(/_/g, ' ');
   const subject = post.copy?.page_title || post.tmdb_refs?.[0]?.title || post.payload?.title || '';
   return subject ? `${day} · ${label} · ${subject}` : `${day} · ${label}`;
@@ -62,7 +61,7 @@ export const buildDescription = (post, supabaseUrl) => {
   // description should be arguable from the card alone.
   const evidence = evidenceFor(post);
   const parts = [
-    `**${aestDate(post.scheduled_for, { weekday: 'long', day: 'numeric', month: 'long' })}** · ${reason(post)}`,
+    `**${etDate(post.scheduled_for, { weekday: 'long', month: 'long', day: 'numeric' })}** · ${reason(post)}`,
     ...(evidence.length ? ['', `*${evidence.join(' · ')}*`] : []),
     '',
     link ? `[Read the article ↗](${link})` : '',

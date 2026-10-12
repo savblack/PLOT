@@ -9,71 +9,35 @@
 
 import { publicUrl } from '../lib/storage.mjs';
 import { chartUrl } from '../lib/feed.mjs';
+import { DEFAULT_PUBLISH_TIME, PUBLISH_TZ, zonedInstant } from '../lib/dates.mjs';
 
 /** Our platform name -> Buffer's service name. */
 export const SERVICE = { x: 'twitter', instagram: 'instagram', threads: 'threads' };
 
 /**
- * The hour, in Sydney, that a post goes out.
+ * The hour, in Eastern Time, that a post goes out when a channel has no
+ * posting schedule for that weekday.
  *
- * This used to be implicit, and everything written down about it was wrong. The
- * publish cron said `0 2 * * *` with a comment reading "12:00pm Sydney", and
- * swept up whatever was already due — so the send time was a property of the
- * workflow schedule, not of the post. But GitHub's scheduler is best-effort, and
- * this repo's crons run 2.5-5.5 hours behind their stated time, consistently:
- * ten consecutive publish runs all started ~07:10 UTC, never 02:00. Posts have
- * actually been landing about **17:15 Sydney**.
- *
- * It is now only a FALLBACK. The real times come from each channel's own posting
- * schedule in Buffer (see sendTimeFor); this is what a channel with no schedule
- * for that weekday gets. Buffer honours the time it is given either way, which
- * is why moving to Buffer changed when posts land, not just what sends them.
+ * The real times come from each channel's own posting schedule in Buffer
+ * (see sendTimeFor). Those hours are applied on the post's Eastern Time day.
+ * This fallback matches the planner's 9:00am Eastern default.
  */
-export const SEND_HOUR_SYDNEY = 12;
-const TZ = 'Australia/Sydney';
+export const SEND_HOUR_ET = DEFAULT_PUBLISH_TIME.hour;
 
 // Cards can be limited to specific platforms (media[i].channels); null = all.
 const cardsFor = (media, channel) => media.filter((m) => !m.channels || m.channels.includes(channel));
 
 /**
- * The Sydney calendar day a post belongs to.
+ * The Eastern Time calendar day a post belongs to.
  *
- * NOT `scheduled_for.slice(0, 10)`. The planner schedules at 23:30 UTC, which is
- * already the next morning in Sydney, so slicing the UTC string names the day
- * before the one the post is actually for — every post, not an edge case. This
- * matches dueDateFor() in supabase/functions/_shared/linearIssue.js, so the card
- * and the Buffer post agree about what day it is.
+ * NOT `scheduled_for.slice(0, 10)`. An evening Eastern instant is already the
+ * next UTC date, so slicing the UTC string names the day after the one the
+ * post is for. This matches dueDateFor() in
+ * supabase/functions/_shared/linearIssue.js, so the card and the Buffer post
+ * agree about what day it is.
  */
-export const sydneyDay = (post) =>
-  new Date(post.scheduled_for).toLocaleDateString('en-CA', { timeZone: TZ });
-
-/** A zone's UTC offset, in ms, at a given instant. Handles DST by asking. */
-const offsetMsAt = (instant, timeZone) => {
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'longOffset' })
-    .formatToParts(instant);
-  const name = parts.find((p) => p.type === 'timeZoneName')?.value ?? 'GMT+00:00';
-  const m = /GMT([+-])(\d{2}):(\d{2})/.exec(name);
-  if (!m) return 0;
-  return (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) * 60_000;
-};
-
-/**
- * The UTC instant for a wall-clock time on a given calendar day in a zone.
- *
- * Resolved against the zone rather than by adding a fixed offset, because Sydney
- * is UTC+10 for half the year and UTC+11 for the other half, and a week
- * generated across the changeover in early October would otherwise be an hour
- * out on one side of it. The offset is looked up twice — once at the naive
- * guess, once at the answer — which is what makes the changeover day itself
- * correct.
- */
-const zonedInstant = (day, hour, minute, timeZone) => {
-  const [y, m, d] = day.split('-').map(Number);
-  const wallClock = Date.UTC(y, m - 1, d, hour, minute, 0);
-  let instant = wallClock - offsetMsAt(new Date(wallClock), timeZone);
-  instant = wallClock - offsetMsAt(new Date(instant), timeZone);
-  return new Date(instant);
-};
+export const publishDay = (post) =>
+  new Date(post.scheduled_for).toLocaleDateString('en-CA', { timeZone: PUBLISH_TZ });
 
 /** 'mon'...'sun' for a YYYY-MM-DD day, matching Buffer's schedule keys. */
 const WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -92,32 +56,31 @@ const OVERFLOW_GAP_MINUTES = 45;
 /**
  * When this post should be sent, and why.
  *
- * The DAY is ours: it comes from the post's own schedule, and the copy is
- * written against it. The TIME is Buffer's: each channel carries a posting
- * schedule of the hours Buffer recommends for that service on that weekday, and
- * the nth post for a channel on a day takes the nth slot.
+ * The DAY is ours: it comes from the post's Eastern Time schedule, and the
+ * copy is written against it. The clock time is the channel's posting
+ * schedule, applied as Eastern Time on that day. The nth post for a channel
+ * on a day takes the nth slot.
  *
  * @param {object} post     a marketing_posts row
- * @param {object} [slots]  that channel's schedule: {timezone, byDay}
+ * @param {object} [slots]  that channel's schedule: {byDay}
  * @param {number} [index]  how many posts this channel already has that day
  * @returns {Date}
  */
 export const sendTimeFor = (post, slots, index = 0) => {
-  const day = sydneyDay(post);
-  const timeZone = slots?.timezone || TZ;
+  const day = publishDay(post);
   const times = slots?.byDay?.[weekdayKey(day)] ?? [];
 
-  // No schedule for this channel or this weekday — fall back to the house hour.
-  if (!times.length) return zonedInstant(day, SEND_HOUR_SYDNEY, 0, timeZone);
+  // No schedule for this channel or this weekday — fall back to 9:00am Eastern.
+  if (!times.length) return zonedInstant(day, SEND_HOUR_ET, 0, PUBLISH_TZ);
 
   if (index < times.length) {
     const [hh, mm] = times[index].split(':').map(Number);
-    return zonedInstant(day, hh, mm, timeZone);
+    return zonedInstant(day, hh, mm, PUBLISH_TZ);
   }
 
   const [hh, mm] = times[times.length - 1].split(':').map(Number);
   const overflow = (index - times.length + 1) * OVERFLOW_GAP_MINUTES;
-  return new Date(zonedInstant(day, hh, mm, timeZone).getTime() + overflow * 60_000);
+  return new Date(zonedInstant(day, hh, mm, PUBLISH_TZ).getTime() + overflow * 60_000);
 };
 
 /**

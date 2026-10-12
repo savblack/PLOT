@@ -46,7 +46,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Only trending days (Fridays) render a branded card; every other type
+      # Only trending days (Mondays) render a branded card; every other type
       # leads with a plain TMDB still. Installing unconditionally keeps the
       # workflow correct for any range rather than guessing at its weekdays.
       - name: Install Playwright browser

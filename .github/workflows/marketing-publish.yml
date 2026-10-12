@@ -13,15 +13,10 @@ name: Marketing — reconcile
 
 on:
   schedule:
-    # Stated 02:00 UTC. REALLY starts ~07:10 UTC (~17:10 Sydney) — measured over
-    # ten consecutive runs, every one of them 5+ hours late. GitHub's scheduler
-    # is best-effort and this repo's crons run 2.5-5.5h behind their stated time,
-    # consistently. Do not read this line as when anything happens.
-    #
-    # It matters less than it used to: this job no longer sends anything, and the
-    # posts it reconciles are sent by Buffer, which is punctual. What the drift
-    # still costs is freshness — the top-up below runs late afternoon Sydney, so
-    # a slot freed at noon is refilled about five hours later.
+    # 02:00 UTC. This repo's scheduler starts the job hours later. A 5.5 hour
+    # lag is about 3:30am Eastern, still before the 9:00am ET publish slot.
+    # The job no longer sends. Buffer does, and Buffer is punctual. The lag
+    # costs how soon a freed slot is refilled.
     - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
