@@ -36,7 +36,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * @property {number} startedAt     ms epoch, when onboarding finished
  * @property {number} [hiddenUntil] ms epoch, set by "Hide for now"
  * @property {boolean} [importDone] an import finished on this device
- * @property {boolean} [traktImportDone] a Trakt import finished on this device
+ * @property {boolean} [traktImportDone] a Trakt import wrote at least one history row on this device
  * @property {boolean} [closed]     dismissed for good after the all-done moment
  */
 
@@ -116,16 +116,20 @@ export function startFinishingTouches(now = Date.now()) {
 }
 
 /**
- * An import finished. A Trakt import (account or export file) also completes
- * the "where you're up to" step, because that history is already logged.
+ * An import finished, so the history step is done. A Trakt import, account
+ * or export file, also completes "where you're up to" when it wrote at least
+ * one history row. A finished import that added nothing does not.
  *
  * @param {FinishingTouchesState} state
  * @param {string | null | undefined} source
+ * @param {number | null | undefined} [importedCount] rows written. Missing
+ *   counts as none, so the progress step stays open.
  * @returns {FinishingTouchesState}
  */
-export function noteImportFinished(state, source) {
+export function noteImportFinished(state, source, importedCount) {
   const trakt = source === 'trakt' || source === 'trakt-export';
-  return { ...state, importDone: true, ...(trakt ? { traktImportDone: true } : {}) };
+  const wrote = Number(importedCount) > 0;
+  return { ...state, importDone: true, ...(trakt && wrote ? { traktImportDone: true } : {}) };
 }
 
 /**
@@ -146,7 +150,7 @@ export function hideFinishingTouches(state, now = Date.now()) {
  * @property {boolean} [progressDone] a show was marked watched, watching
  *   started, or an episode was ticked. The watchlist save from onboarding
  *   does not count.
- * @property {boolean} [traktImportDone] a Trakt import finished
+ * @property {boolean} [traktImportDone] a Trakt import wrote at least one history row
  * @property {boolean} [showProgress] false hides the step when the watchlist
  *   has no show
  */

@@ -221,7 +221,7 @@ export default function FinishingTouches({ state, onState }: {
       {sheet === 'import' && !!userId && (
         <ImportSourceSheet
           userId={userId}
-          onImported={async (source) => onState(await markImportDone(userId, source))}
+          onImported={async (source, count) => onState(await markImportDone(userId, source, count))}
           onClose={closeSheet}
         />
       )}
@@ -316,7 +316,7 @@ function FriendsSheet({ userId, onClose }: { userId: string; onClose: () => void
 }
 
 /* ── Bring your history over: pick a source, then the import opens on it ── */
-function ImportSourceSheet({ userId, onImported, onClose }: { userId: string; onImported: (source: string) => void; onClose: () => void }) {
+function ImportSourceSheet({ userId, onImported, onClose }: { userId: string; onImported: (source: string, importedCount: number) => void; onClose: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [source, setSource] = useState<string | null>(null);

@@ -18,8 +18,9 @@ function update(userId, change) {
   return next;
 }
 
-// An import finished: ticks "Bring your history over". A Trakt import also
-// completes "Mark where you're up to". A no-op for accounts that never had the card.
-export const markImportDone = (userId, source) => update(userId, state => noteImportFinished(state, source));
+// An import finished: ticks "Bring your history over". A Trakt import that
+// wrote at least one row also completes "Mark where you're up to". A no-op
+// for accounts that never had the card.
+export const markImportDone = (userId, source, importedCount) => update(userId, state => noteImportFinished(state, source, importedCount));
 export const hideFinishingTouchesFor = (userId) => update(userId, state => hideFinishingTouches(state));
 export const closeFinishingTouches = (userId) => update(userId, state => ({ ...state, closed: true }));

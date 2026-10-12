@@ -51,9 +51,16 @@ test('the progress step is hidden with no show, and a Trakt import completes it'
   assert.equal(hidden.total, 4);
   const trakt = deriveFinishingTouches({ savedCount: 2, showProgress: true, traktImportDone: true });
   assert.equal(trakt.steps.find(step => step.id === 'progress').done, true);
-  const started = noteImportFinished(startFinishingTouches(NOW), 'trakt');
+  const started = noteImportFinished(startFinishingTouches(NOW), 'trakt', 12);
   assert.equal(parseFinishingTouches(serialiseFinishingTouches(started)).traktImportDone, true);
-  const other = noteImportFinished(startFinishingTouches(NOW), 'letterboxd');
+  const empty = noteImportFinished(startFinishingTouches(NOW), 'trakt', 0);
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(empty)).traktImportDone, undefined);
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(empty)).importDone, true);
+  const file = noteImportFinished(startFinishingTouches(NOW), 'trakt-export', 1);
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(file)).traktImportDone, true);
+  const missing = noteImportFinished(startFinishingTouches(NOW), 'trakt');
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(missing)).traktImportDone, undefined);
+  const other = noteImportFinished(startFinishingTouches(NOW), 'letterboxd', 4);
   assert.equal(parseFinishingTouches(serialiseFinishingTouches(other)).traktImportDone, undefined);
   assert.equal(parseFinishingTouches(serialiseFinishingTouches(other)).importDone, true);
 });
