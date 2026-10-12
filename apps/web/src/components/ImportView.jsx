@@ -2,7 +2,7 @@ import { usePlexSource } from '@plot/core/usePlexSource.js';
 import { TRACKING } from '@plot/core/copy/tracking.js';
 import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
-import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
+import { needsDuplicateReview, leftOutWatchSummary, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
@@ -413,10 +413,11 @@ function AccountImportView() {
     setStep(5);
   }, [plan, platform, user, results, resolvingMatch, importReport]);
 
-  const newCount       = getConfig().importEventsEnabled ? results.filter(r => r.status === 'matched' && r.listSelected !== false && !alreadyImportedEvent(r)).length : plan.rows.length;
+  const importable     = row => row.status === 'matched' && row.listSelected !== false && !leftOutWatchSummary(row);
+  const newCount       = getConfig().importEventsEnabled ? results.filter(row => importable(row) && !alreadyImportedEvent(row)).length : plan.rows.length;
   const alreadyCount   = results[0]?.destination ? 0 : getConfig().importEventsEnabled ? results.filter(alreadyImportedEvent).length : plan.alreadyInHistory;
   const unmatchedCount = results.filter(r => r.status === 'unmatched').length;
-  const matchedCount   = results.filter(r => r.status === 'matched' && r.listSelected !== false).length;
+  const matchedCount   = results.filter(importable).length;
   const canConfirm = getConfig().importEventsEnabled ? matchedCount > 0 : newCount > 0;
 
   return (
@@ -683,12 +684,13 @@ function AccountImportView() {
             {results.slice(previewPage * 100, (previewPage + 1) * 100).map((r, offset) => {
               const i = previewPage * 100 + offset;
               const unmatched = r.status === 'unmatched';
-              const isNew = !unmatched && (getConfig().importEventsEnabled ? !alreadyImportedEvent(r) : plannedRows.has(rowByIndex.get(i)));
+              const leftOut = leftOutWatchSummary(r);
+              const isNew = !unmatched && !leftOut && (getConfig().importEventsEnabled ? !alreadyImportedEvent(r) : plannedRows.has(rowByIndex.get(i)));
               // Matched but not planned: either the user already has this
               // title, or it merged into another entry for the same title — a
               // Netflix export lists one row per episode, so a night of one
               // series arrives as several rows describing one title.
-              const alreadyHave = !unmatched && !isNew;
+              const alreadyHave = !unmatched && !leftOut && !isNew;
               const merged = !getConfig().importEventsEnabled && alreadyHave && !existingRows.some(
                 e => e.tmdb_id === r.tmdbId && e.media_type === r.mediaType);
               return (
@@ -696,7 +698,7 @@ function AccountImportView() {
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
                   padding: '0.65rem 0',
                   borderBottom: '1px solid var(--border)',
-                  opacity: alreadyHave || unmatched ? 0.45 : 1,
+                  opacity: alreadyHave || unmatched || leftOut ? 0.45 : 1,
                 }}>
                   <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', width: 18, textAlign: 'right', flexShrink: 0 }}>{i + 1}</div>
                   <PosterThumb path={r.posterPath} />
@@ -710,9 +712,9 @@ function AccountImportView() {
                       {r.annotation ? ` · ${IMPORT_VIEW.annotationLabel(r)}` : r.date ? ` · ${r.date}` : ` · ${IMPORT_VIEW.unknownDate}`}
                     </div>
                     {r.reason === 'episode_identity_required' && <p>{IMPORT_VIEW.episodeIdentityRequired}</p>}
-                    {needsDuplicateReview(r) && <div>
-                      <p>{r.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</p>
-                      <button onClick={() => setResults(current => current.map((entry, index) => index === i ? { ...entry, duplicateDecision: 'keep' } : entry))}>{IMPORT_VIEW.keepSeparateWatch}</button>
+                    {(needsDuplicateReview(r) || leftOut) && <div>
+                      <p>{leftOut && !getConfig().importEventsEnabled ? IMPORT_VIEW.overlappingSummaryOmitted : r.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</p>
+                      {(needsDuplicateReview(r) || getConfig().importEventsEnabled) && <button onClick={() => setResults(current => current.map((entry, index) => index === i ? { ...entry, duplicateDecision: 'keep' } : entry))}>{IMPORT_VIEW.keepSeparateWatch}</button>}
                     </div>}
                     {r.duplicateDecision === 'keep' && <p>{IMPORT_VIEW.duplicateConfirmed}</p>}
                     {!!r.candidates?.length && (

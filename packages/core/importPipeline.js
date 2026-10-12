@@ -17,7 +17,7 @@
 import { writeImportedAnnotations } from './importAnnotations.js';
 import { writeImportedList } from './importLists.js';
 import { planHistoryImport } from './importPlan.js';
-import { buildWatchEvent, possibleWatchDuplicates, needsDuplicateReview, requiresEpisodeIdentity, reviewPendingWatchSummaries } from './importEvents.js';
+import { buildWatchEvent, leftOutWatchSummary, possibleWatchDuplicates, needsDuplicateReview, requiresEpisodeIdentity, reviewPendingWatchSummaries } from './importEvents.js';
 import { getConfig } from './config.js';
 import { supabase } from './supabase.js';
 import { genreIdsFromItem } from './media.js';
@@ -337,7 +337,7 @@ export async function readExistingHistory({ userId, tmdbIds = [] }) {
  */
 export function buildImportRows({ userId, resolved = [] }) {
   return resolved.flatMap((r, index) => {
-    if (r.status !== 'matched' || r.annotation) return [];
+    if (r.status !== 'matched' || r.annotation || leftOutWatchSummary(r)) return [];
 
     const row = {
       user_id:     userId,

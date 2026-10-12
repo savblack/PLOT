@@ -50,6 +50,7 @@ test('strict saved Letterboxd layouts reject malformed dates, ratings and unexpe
     assert.throws(() => parseLetterboxdDocument(`${header}\n${row}`, 'ratings.csv'), /Unsupported Letterboxd/);
   }
   assert.throws(() => parseLetterboxdDocument(fixture('ratings'), 'diary.csv'), /Unsupported Letterboxd/);
+  assert.throws(() => parseLetterboxdDocument('Date,Name,Year,Letterboxd URI\n,Example,,https://boxd.it/test', 'watched.csv'), /Unsupported Letterboxd/);
 });
 
 test('Letterboxd annotation documents cannot enter the legacy watch-only UI path', () => {
@@ -88,30 +89,110 @@ test('conflicting Letterboxd source records fail before lookup or writes', async
   assert.throws(() => prepareImportFiles('letterboxd', [{ name: 'diary.csv', text }, { name: 'letterboxd-diary.csv', text: text.replace('2024-01-01', '2024-01-02') }]), /conflicting values/);
 });
 
-test('pending Letterboxd summary review follows confirmed matches and blocks unreviewed writes', async () => {
-  const { reviewPendingWatchSummaries, needsDuplicateReview, identifyImportEntries } = await import('../../importEvents.js');
+test('pending Letterboxd summaries are left out unless saved as a separate watch', async () => {
+  const { reviewPendingWatchSummaries, needsDuplicateReview, leftOutWatchSummary, identifyImportEntries, importEventIdentity } = await import('../../importEvents.js');
   const { writeImportDocument } = await import('../../importPipeline.js');
   const { default: captured } = await import('../fixtures/imports/imdb-movie-match.json', { with: { type: 'json' } });
   const common = { status: 'matched', tmdbId: captured.movie.id, mediaType: 'movie', tmdbTitle: captured.movie.title };
   const rows = identifyImportEntries([{ ...common, eventId: 'diary:entry' }, { ...common, eventId: 'watched:film' }], 'letterboxd', 'synthetic overlap');
   const reviewed = reviewPendingWatchSummaries(rows);
   assert.equal(needsDuplicateReview(reviewed[0]), false);
-  assert.equal(needsDuplicateReview(reviewed[1]), true);
-  assert.equal(needsDuplicateReview(reviewPendingWatchSummaries([{ ...rows[0], status: 'unmatched' }, rows[1]])[1]), false);
-  configure({ importEventsEnabled: true, supabaseClient: { rpc() { assert.fail('No writes before overlap review'); } } });
-  await assert.rejects(writeImportDocument({ userId: 'owner', resolved: rows, summaryRows: [] }), /Duplicate review/);
+  assert.equal(needsDuplicateReview(reviewed[1]), false);
+  assert.equal(leftOutWatchSummary(reviewed[1]), true);
+  assert.equal(leftOutWatchSummary(reviewPendingWatchSummaries([{ ...rows[0], status: 'unmatched' }, rows[1]])[1]), false);
+  const written = [];
+  configure({ importEventsEnabled: true, supabaseClient: { rpc: async (_name, { p_records }) => {
+    written.push(...p_records.map(record => record.event.source_key));
+    return { data: { inserted: p_records.length, duplicates: 0 }, error: null };
+  } } });
+  try {
+    const first = await writeImportDocument({ userId: 'owner', resolved: rows, summaryRows: [] });
+    assert.equal(first.inserted, 1);
+    assert.deepEqual(written, [importEventIdentity(rows[0])]);
+    const kept = rows.map(row => row.eventId === 'watched:film' ? { ...row, duplicateDecision: 'keep' } : row);
+    const second = await writeImportDocument({ userId: 'owner', resolved: kept, summaryRows: [] });
+    assert.equal(second.inserted, 2);
+    assert.deepEqual(written.slice(1), rows.map(importEventIdentity));
+  } finally {
+    configure({ importEventsEnabled: false });
+  }
 });
 
 test('Letterboxd archive list files remain membership records and unrelated CSVs are reported', async () => {
   const { prepareImportArchive } = await import('../../importArchive.js');
   const { zipSync, strToU8 } = await import('fflate');
+  configure({ importEventsEnabled: true });
+  try {
+    const document = prepareImportArchive('letterboxd', zipSync({
+      'lists/software-history.csv': strToU8(fixture('custom-list')),
+      'watchlist.csv': strToU8(fixture('watchlist')),
+      'comments.csv': strToU8('not a supported review file'),
+    }));
+    assert.equal(document.entries.length, 4);
+    assert.ok(document.entries.every(row => row.destination && row.date === null));
+    assert.equal(document.entries.filter(row => row.destination.kind === 'custom').length, 2);
+    assert.deepEqual(document.notImported, [{ title: 'comments.csv', reason: 'archive_file_unsupported' }]);
+  } finally {
+    configure({ importEventsEnabled: false });
+  }
+});
+
+test('a Letterboxd export keeps diary and watched rows when list import is off', async () => {
+  const { prepareImportArchive } = await import('../../importArchive.js');
+  const { zipSync, strToU8 } = await import('fflate');
+  const diary = [
+    'Date,Name,Year,Letterboxd URI,Rating,Rewatch,Tags,Watched Date',
+    '2024-03-02,Parasite,2019,https://boxd.it/parasite,4.5,,,2024-03-01',
+    '2024-06-02,Parasite,2019,https://boxd.it/parasite-rewatch,4,Yes,rewatch,2024-06-01',
+    '2024-04-02,"Goodbye, Dragon Inn",2003,https://boxd.it/dragon,3.5,,,2024-04-01',
+    '2024-05-02,Moonlight,2016,https://boxd.it/moonlight,,,,',
+  ].join('\n');
+  const watched = [
+    'Date,Name,Year,Letterboxd URI',
+    '2024-03-02,Parasite,2019,https://boxd.it/parasite',
+    '2024-01-02,Heat,1995,https://boxd.it/heat',
+  ].join('\n');
+  const ratings = 'Date,Name,Year,Letterboxd URI,Rating\n2024-05-03,Moonlight,2016,https://boxd.it/moonlight,5';
+  const reviews = 'Date,Name,Year,Letterboxd URI,Rating,Rewatch,Review,Tags,Watched Date\n2024-07-02,Past Lives,2023,https://boxd.it/pastlives,4,,Saved review,,2024-07-01';
+  configure({ importEventsEnabled: false, importAnnotationsEnabled: false });
   const document = prepareImportArchive('letterboxd', zipSync({
-    'lists/software-history.csv': strToU8(fixture('custom-list')),
+    'diary.csv': strToU8(diary),
+    'watched.csv': strToU8(watched),
+    'ratings.csv': strToU8(ratings),
+    'reviews.csv': strToU8(reviews),
     'watchlist.csv': strToU8(fixture('watchlist')),
-    'comments.csv': strToU8('not a supported review file'),
+    'lists/software-history.csv': strToU8(fixture('custom-list')),
+    'profile.csv': strToU8('not imported'),
+    'comments.csv': strToU8('not imported'),
+    'likes/films.csv': strToU8('not imported'),
   }));
-  assert.equal(document.entries.length, 4);
-  assert.ok(document.entries.every(row => row.destination && row.date === null));
-  assert.equal(document.entries.filter(row => row.destination.kind === 'custom').length, 2);
-  assert.deepEqual(document.notImported, [{ title: 'comments.csv', reason: 'archive_file_unsupported' }]);
+  assert.equal(document.entries.length, 6);
+  assert.ok(document.entries.every(row => !row.destination && !row.annotation));
+  const parasite = document.entries.find(row => row.eventId === 'diary:https://boxd.it/parasite');
+  assert.equal(parasite.date, '2024-03-01');
+  assert.equal(parasite.rating, 9);
+  assert.equal(parasite.note, null);
+  const rewatch = document.entries.find(row => row.eventId === 'diary:https://boxd.it/parasite-rewatch');
+  assert.equal(rewatch.date, '2024-06-01');
+  assert.equal(rewatch.rating, 8);
+  const dragon = document.entries.find(row => row.title === 'Goodbye, Dragon Inn');
+  assert.equal(dragon.year, '2003');
+  assert.equal(dragon.rating, 7);
+  const moonlight = document.entries.find(row => row.eventId === 'diary:https://boxd.it/moonlight');
+  assert.equal(moonlight.date, null);
+  assert.equal(moonlight.rating, null);
+  const heat = document.entries.find(row => row.eventId === 'watched:https://boxd.it/heat');
+  assert.equal(heat.date, null);
+  assert.equal(heat.rating, null);
+  assert.equal(document.entries.filter(row => row.eventId === 'watched:https://boxd.it/parasite').length, 1);
+  const leftOut = document.notImported.map(row => `${row.title}:${row.reason}`).sort();
+  assert.deepEqual(leftOut, [
+    'Software History:lists_unavailable',
+    'Watchlist:lists_unavailable',
+    'comments.csv:archive_file_unsupported',
+    'likes/films.csv:archive_file_unsupported',
+    'profile.csv:archive_file_unsupported',
+    'ratings.csv:archive_file_unsupported',
+    'reviews.csv:archive_file_unsupported',
+  ]);
 });

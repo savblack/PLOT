@@ -2,7 +2,7 @@ import { usePlexSource } from '@plot/core/usePlexSource.js';
 import { TRACKING } from '@plot/core/copy/tracking.js';
 import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
-import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
+import { needsDuplicateReview, leftOutWatchSummary, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
 import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
@@ -333,7 +333,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
   }, [rowByIndex, plannedRows]);
 
   const matched = useMemo(
-    () => resolved.filter((r: ResolvedEntry) => r.status === 'matched' && r.listSelected !== false),
+    () => resolved.filter((r: ResolvedEntry) => r.status === 'matched' && r.listSelected !== false && !leftOutWatchSummary(r)),
     [resolved],
   );
 
@@ -346,7 +346,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
       return;
     }
 
-    setImportTotal(getConfig().importEventsEnabled ? resolved.filter(r => r.status === 'matched').length : rows.length);
+    setImportTotal(getConfig().importEventsEnabled ? resolved.filter(r => r.status === 'matched' && !leftOutWatchSummary(r)).length : rows.length);
     setImportDone(0);
     setStep('importing');
 
@@ -561,13 +561,13 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
                     <Text style={styles.previewTitle}>{item.tmdbTitle || item.title}</Text>
                     <Text style={styles.previewMeta}>{item.annotation ? IMPORT_VIEW.annotationLabel(item) : item.date || IMPORT_VIEW.unknownDate}</Text>
                     {!item.annotation && item.episodeNumber != null && <Text style={styles.previewMeta}>{IMPORT_VIEW.episodeLabel(item.seasonNumber, item.episodeNumber)}</Text>}
-                    <Text style={styles.previewMeta}>{item.status !== 'matched' ? IMPORT_VIEW.notMatched : (getConfig().importEventsEnabled ? alreadyImportedEvent(item) : !isNew(index)) ? (item.annotation ? IMPORT_VIEW.annotationAlreadySaved : IMPORT_VIEW.alreadyInHistory) : IMPORT_VIEW.newBadge}</Text>
+                    {!leftOutWatchSummary(item) && <Text style={styles.previewMeta}>{item.status !== 'matched' ? IMPORT_VIEW.notMatched : (getConfig().importEventsEnabled ? alreadyImportedEvent(item) : !isNew(index)) ? (item.annotation ? IMPORT_VIEW.annotationAlreadySaved : IMPORT_VIEW.alreadyInHistory) : IMPORT_VIEW.newBadge}</Text>}
                     {item.reason === 'episode_identity_required' && <Text style={styles.previewMeta}>{IMPORT_VIEW.episodeIdentityRequired}</Text>}
-                    {needsDuplicateReview(item) && <View>
-                      <Text style={styles.previewMeta}>{item.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</Text>
-                      <TouchableOpacity accessibilityRole="button" onPress={() => setResolved(current => current.map((entry, i) => i === index ? { ...entry, duplicateDecision: 'keep' } : entry))}>
+                    {(needsDuplicateReview(item) || leftOutWatchSummary(item)) && <View>
+                      <Text style={styles.previewMeta}>{leftOutWatchSummary(item) && !getConfig().importEventsEnabled ? IMPORT_VIEW.overlappingSummaryOmitted : item.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</Text>
+                      {(needsDuplicateReview(item) || getConfig().importEventsEnabled) && <TouchableOpacity accessibilityRole="button" onPress={() => setResolved(current => current.map((entry, i) => i === index ? { ...entry, duplicateDecision: 'keep' } : entry))}>
                         <Text style={[styles.previewMeta, { color: colors.accent, paddingVertical: spacing.sm }]}>{IMPORT_VIEW.keepSeparateWatch}</Text>
-                      </TouchableOpacity>
+                      </TouchableOpacity>}
                     </View>}
                     {item.duplicateDecision === 'keep' && <Text style={styles.previewMeta}>{IMPORT_VIEW.duplicateConfirmed}</Text>}
                     {!!item.candidates?.length && (
