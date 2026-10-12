@@ -1,15 +1,6 @@
 {
   "entries": [
     {
-      "slug": "presumed-innocent",
-      "tmdb_id": 156933,
-      "media_type": "tv",
-      "poster_path": "/7MXg0BxuSRWz2yKc03M40du2mrc.jpg",
-      "title": "Presumed Innocent",
-      "date_label": "Jun 2024",
-      "note": "\"Did not trust a single character. I was right.\""
-    },
-    {
       "slug": "the-substance",
       "tmdb_id": 933260,
       "media_type": "movie",
@@ -112,7 +103,7 @@
       "slug": "mayday",
       "tmdb_id": 1137844,
       "media_type": "movie",
-      "poster_path": "/sKIO6oO1GRCVt9Ag2iIBAdCjUj.jpg",
+      "poster_path": "/hVXjX1jLZ1ljFSNGXpjJfbTUOa7.jpg",
       "title": "Mayday",
       "date_label": "Sep 2026",
       "note": ""
@@ -134,16 +125,25 @@
       "title": "Runner",
       "date_label": "Sep 2026",
       "note": ""
+    },
+    {
+      "slug": "fall-2-deadpoint",
+      "tmdb_id": 1101412,
+      "media_type": "movie",
+      "poster_path": "/fgSm5ylwiXbIHn8UbUXDjk9RRu4.jpg",
+      "title": "Fall 2: Deadpoint",
+      "date_label": "Sep 2026",
+      "note": ""
     }
   ],
   "trending": {
     "hero": {
-      "slug": "spider-man-brand-new-day",
-      "tmdb_id": 969681,
-      "media_type": "movie",
-      "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
-      "title": "Spider-Man: Brand New Day",
-      "year": "2026"
+      "slug": "link-click",
+      "tmdb_id": 123542,
+      "media_type": "tv",
+      "poster_path": "/wo9jwu5qMvXzhW2cyy5E6hOVs92.jpg",
+      "title": "LINK CLICK",
+      "year": "2021"
     }
   }
 }
