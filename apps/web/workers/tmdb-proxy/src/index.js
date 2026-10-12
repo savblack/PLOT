@@ -6,7 +6,10 @@
 //
 // Anyone holding the Supabase publishable key can call this, and that key is
 // public by design (it ships in the app bundle, and the mobile app sends no
-// Origin at all, so origin checks cannot be tightened without breaking it).
+// Origin at all). A browser does send Origin for a cross-origin fetch, though.
+// Rejecting an originless browser prevents an automated Chrome session from
+// using the public key as an unauthenticated catalogue harvester, while native
+// clients remain supported. See requestAdmissionError below.
 // The cache below is the answer to that: a hit reaches neither Supabase nor
 // TMDB, so the most an unwanted caller can cost is one upstream request per
 // query per TTL. See cache.js.
@@ -18,8 +21,49 @@ function forwardHeaders(headers) {
   return h;
 }
 
+function isAllowedOrigin(origin) {
+  try {
+    const { hostname, protocol } = new URL(origin);
+    if (protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) return true;
+    if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv')) return true;
+    return protocol === 'https:' && hostname.endsWith('.plot-5wr.pages.dev');
+  } catch {
+    return false;
+  }
+}
+
+function isBrowserLikeRequest(request) {
+  const userAgent = request.headers.get('User-Agent') || '';
+  return request.headers.has('Sec-Fetch-Mode') || /^Mozilla\//i.test(userAgent);
+}
+
+/**
+ * The web app calls this cross-origin Worker with its app Origin. React Native
+ * has no Origin and is allowed through. A desktop-style browser with no Origin
+ * cannot be a normal Plot web request, so reject it before it reaches Supabase.
+ * This mirrors the origin allowlist in `supabase/functions/tmdb-proxy/index.ts`.
+ */
+export function requestAdmissionError(request) {
+  const origin = request.headers.get('Origin');
+  if (origin) return isAllowedOrigin(origin) ? null : 'Origin not allowed';
+  return isBrowserLikeRequest(request) ? 'Browser requests require an approved Origin' : null;
+}
+
+function admissionResponse(error) {
+  return new Response(JSON.stringify({ error }), {
+    status: 403,
+    headers: {
+      'content-type': 'application/json',
+      'Vary': 'Origin',
+    },
+  });
+}
+
 const handler = {
   async fetch(request, env, ctx) {
+    const admissionError = requestAdmissionError(request);
+    if (admissionError) return admissionResponse(admissionError);
+
     const url = new URL(request.url);
     const upstream = env.UPSTREAM + url.search;
 
