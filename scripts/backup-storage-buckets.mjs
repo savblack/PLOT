@@ -9,8 +9,8 @@
  * it was found on 2026-08-14 while restore-testing.
  *
  * Unchanged objects are skipped when a previous `_manifest.json` is present.
- * The nightly job used to re-download the whole bucket (~80 MB) every run,
- * which is Supabase egress, not R2. A quiet night now costs a list call.
+ * The former nightly job re-downloaded the whole bucket (~80 MB) every run,
+ * which is Supabase egress, not R2. A quiet weekly run now costs a list call.
  *
  * This deliberately uses the Storage REST API with the service-role key rather
  * than Supabase's S3-compatible endpoint, because the latter needs a separate

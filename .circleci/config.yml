@@ -334,7 +334,7 @@ jobs:
             aws s3 cp synced-at.txt "s3://${R2_BUCKET}/storage-mirror/_synced-at.txt" --endpoint-url "$R2_ENDPOINT" --only-show-errors
       - alert_on_failure:
           workflow_name: storage-backup
-          subject: "PLOT: nightly STORAGE BACKUP failed"
+          subject: "PLOT: weekly STORAGE BACKUP failed"
           note: Avatar and marketing files were not mirrored to R2.
 
   db-write-paths:

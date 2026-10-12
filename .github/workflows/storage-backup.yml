@@ -1,9 +1,13 @@
-# Nightly Supabase Storage → Cloudflare R2 mirror.
+# Weekly Supabase Storage → Cloudflare R2 mirror.
 #
 # WHY: db-backup.yml dumps the database, and `pg_dump` captures `storage.objects`
 # METADATA but not object bytes. A restore therefore rebuilds rows pointing at
 # avatars and marketing images that no longer exist. Found 2026-08-14 while
 # restore-testing the database backup, which had never been drilled.
+#
+# Cadence: the database dump remains nightly, but object bytes have a seven-day
+# recovery point objective. This bounds Storage backup egress while retaining an
+# R2 copy. Use workflow_dispatch for a recovery point that cannot wait for Sunday.
 #
 # Uses the same R2 secrets as db-backup.yml — no new credentials needed.
 # Requires SUPABASE_SERVICE_ROLE_KEY (already set) to read private buckets.
@@ -11,11 +15,11 @@
 # Restore: objects live under `storage-mirror/<bucket>/<path>` in the same
 # bucket as the database dumps. See docs/ops/db-restore.md.
 
-name: Storage backup (nightly → R2)
+name: Storage backup (weekly → R2)
 
 on:
   schedule:
-    - cron: '47 3 * * *'   # 30 min after the DB dump, so the two are close together
+    - cron: '47 3 * * 0'   # Sunday, 30 min after the database dump
   workflow_dispatch: {}
 
 concurrency:
@@ -49,7 +53,7 @@ jobs:
           set -euo pipefail
           aws configure set default.s3.addressing_style path
           mkdir -p ./storage-mirror
-          # First night, or a wiped prefix, has nothing to compare against.
+          # First weekly run, or a wiped prefix, has nothing to compare against.
           aws s3 cp "s3://${R2_BUCKET}/storage-mirror/_manifest.json" ./storage-mirror/_manifest.json \
             --endpoint-url "$R2_ENDPOINT" || true
 
@@ -72,7 +76,7 @@ jobs:
             --endpoint-url "$R2_ENDPOINT" --only-show-errors
           # Sentinel so the backup-heartbeat Worker can tell "synced, nothing
           # changed" from "never ran". `aws s3 sync` uploads nothing on a quiet
-          # night, so object freshness alone cannot distinguish the two.
+          # weekly run, so object freshness alone cannot distinguish the two.
           date -u +%Y-%m-%dT%H:%M:%SZ > synced-at.txt
           aws s3 cp synced-at.txt "s3://${R2_BUCKET}/storage-mirror/_synced-at.txt" \
             --endpoint-url "$R2_ENDPOINT" --only-show-errors
@@ -85,6 +89,6 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW_NAME: storage-backup
-          ALERT_SUBJECT: 'Plot: nightly STORAGE BACKUP failed'
+          ALERT_SUBJECT: 'Plot: weekly STORAGE BACKUP failed'
           FAILURE_NOTE: 'Avatar and marketing files were not mirrored to R2. The database dump does not contain object bytes, so these files are unrecoverable without this job.'
         run: bash .github/scripts/marketing-alert.sh

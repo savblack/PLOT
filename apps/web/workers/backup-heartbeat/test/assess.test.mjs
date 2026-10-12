@@ -4,6 +4,7 @@ import { assess, assessSentinel } from '../src/index.js';
 
 const NOW = Date.parse('2026-08-15T05:00:00Z');
 const OPTS = { maxAgeHours: 26, minBytes: 500000, now: NOW };
+const STORAGE_OPTS = { maxAgeHours: 170, now: NOW };
 const obj = (hoursAgo, size) => ({
   key: 'db-backups/plot-x.dump.gpg',
   size,
@@ -51,6 +52,11 @@ const sentinel = (hoursAgo) => ({
 
 test('a recent Storage sentinel passes', () => {
   assert.equal(assessSentinel(sentinel(3), OPTS).ok, true);
+});
+
+test('a completed weekly Storage mirror stays fresh until its next expected run', () => {
+  assert.equal(assessSentinel(sentinel(169.9), STORAGE_OPTS).ok, true);
+  assert.equal(assessSentinel(sentinel(170.1), STORAGE_OPTS).ok, false);
 });
 
 test('a missing Storage sentinel fails — the mirror never completed', () => {

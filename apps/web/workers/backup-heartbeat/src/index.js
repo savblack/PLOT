@@ -88,7 +88,7 @@ async function sendAlert(env, verdict) {
 
 /**
  * The Storage mirror needs a different test. `aws s3 sync` uploads nothing on a
- * night where no avatar changed, so object freshness cannot distinguish "synced,
+ * weekly run where no avatar changed, so object freshness cannot distinguish "synced,
  * nothing to do" from "never ran". storage-backup.yml therefore writes a
  * `_synced-at.txt` sentinel on every run, and we age that instead.
  *
@@ -112,6 +112,7 @@ export function assessSentinel(sentinel, { maxAgeHours, now }) {
 
 async function check(env) {
   const maxAgeHours = Number(env.MAX_AGE_HOURS ?? 26);
+  const maxStorageAgeHours = Number(env.MAX_STORAGE_AGE_HOURS ?? 170);
   const minBytes = Number(env.MIN_BYTES ?? 200000);
   const now = Date.now();
 
@@ -128,7 +129,7 @@ async function check(env) {
   const checkStorage = String(env.CHECK_STORAGE ?? 'false') === 'true';
   const storage = checkStorage
     ? assessSentinel(await env.BACKUPS.head(env.STORAGE_SENTINEL ?? 'storage-mirror/_synced-at.txt'), {
-        maxAgeHours,
+        maxAgeHours: maxStorageAgeHours,
         now,
       })
     : { ok: true, reason: 'Storage check disabled (CHECK_STORAGE is not "true").', disabled: true };

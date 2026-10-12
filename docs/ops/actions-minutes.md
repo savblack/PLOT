@@ -26,7 +26,7 @@ not embedded in the config for this GitHub App project.
 | `0 12 * * *` | `netflix-top10` |
 | `23 */6 * * *` | `broadcast-guide` |
 | `17 3 * * *` | `db-backup` |
-| `47 3 * * *` | `storage-backup` |
+| `47 3 * * 0` | `storage-backup` |
 | `25 6 * * *` | `db-write-paths` |
 
 Before enabling those triggers, create the restricted CircleCI context
