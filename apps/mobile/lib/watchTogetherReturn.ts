@@ -11,11 +11,6 @@ export function rememberWatchTogetherReturn(path: string) {
   if (WATCH_LINK.test(path)) pending = path;
 }
 
-/** An invite path waiting to be restored, without consuming it. */
-export function peekWatchTogetherReturn(): string | null {
-  return pending;
-}
-
 /** One handoff per sign-in. A second call, after a remount, does not redirect. */
 export function consumeWatchTogetherReturn(): string | null {
   if (handedOff) return null;

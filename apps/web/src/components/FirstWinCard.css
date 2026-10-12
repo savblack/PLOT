@@ -1,0 +1,87 @@
+/* First-win card: the top of Home, after onboarding. A hairline card, compact
+   actions, never a full-width bar. */
+
+.fw-card {
+  margin: 0 var(--gut) 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.fw-head { display: flex; align-items: flex-start; gap: 12px; width: 100%; }
+.fw-title {
+  margin: 0;
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+.fw-skip {
+  flex-shrink: 0;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fw-skip:hover { color: var(--text-primary); }
+.fw-empty { margin: 0; font-size: 13px; line-height: 1.4; color: var(--text-secondary); }
+.fw-row { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; }
+.fw-poster {
+  width: 36px;
+  height: 54px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--surface-sunken);
+}
+.fw-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--text-primary); }
+.fw-logged { flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.fw-error { margin: 0; font-size: 13px; color: var(--accent-text); }
+.fw-season { display: block; font-size: 13px; color: var(--text-secondary); }
+.fw-season select {
+  display: block;
+  margin-top: 4px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+}
+.fw-eps {
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+}
+.fw-ep {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  width: 100%;
+  text-align: left;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.fw-ep:hover { color: var(--accent-text); }
+.fw-ep:disabled { opacity: 0.5; cursor: default; }
+.fw-ep-num { font-variant-numeric: tabular-nums; color: var(--text-secondary); min-width: 1.5em; }

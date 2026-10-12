@@ -71,8 +71,8 @@ export const ONBOARDING_FLOW = {
     noServicesFirstLine: 'Checking every platform…',
     status: 'Building your Plot',
   },
-  // After the building moment, before Home. An import or a return path skips
-  // this screen. Skip still leaves for Home.
+  // A dismissible card at the top of Home. Skipped onboarding and a finished
+  // Trakt import never arm it. Skip on the card hides it. Home is already open.
   firstWin: {
     title: 'Watching this? Tick your last episode',
     tonight: 'Pick something for tonight',

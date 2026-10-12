@@ -41,6 +41,7 @@ import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches from './FinishingTouches.jsx';
+import FirstWinCard from './FirstWinCard.jsx';
 import { useFirstRun } from '../hooks/useFirstRun.js';
 import { ContinueCard, PeopleInvite, PeopleShelfCard } from './HomeShelves.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
@@ -992,6 +993,7 @@ export default function DiscoverView() {
         genres={genres}
         onOpenSearch={openSearch}
       />
+      <FirstWinCard />
       <h1 className="home-greeting">{greetingFor({ name: profile?.first_name })}</h1>
       <FinishingTouches />
       <DiscoverContent

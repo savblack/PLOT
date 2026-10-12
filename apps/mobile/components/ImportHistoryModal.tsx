@@ -19,6 +19,7 @@ import {
   resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, chooseImportMatch, reviewImportDuplicates,
   createImportReporter, IMPORT_ENTRY_POINTS, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
+import { suppressFirstWinForImport } from '../lib/firstWinCard';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -168,8 +169,10 @@ interface Props {
   entry?: string;
   /** Open straight on this platform's source step (onboarding's switching-apps pick). */
   initialPlatform?: Platform;
-  /** An import finished and wrote at least one title, so the first-run card can tick. */
-  onImported?: () => void;
+  /** An import finished and wrote at least one title (or a connected account
+   *  returned a result). The platform id is passed so Home can hide the
+   *  first-win card after a Trakt import. */
+  onImported?: (source: Platform) => void;
 }
 
 export default function ImportHistoryModal(props: Props) {
@@ -365,7 +368,10 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     if (failed) {
       Alert.alert(IMPORT_VIEW.partialFailureHeading, IMPORT_VIEW.partialFailure(failed));
     }
-    if (inserted > 0) onImported?.();
+    if (inserted > 0 && platform) {
+      onImported?.(platform);
+      if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
+    }
     setStep('done');
   }, [plan, resolved, userId, platform, importReport, onImported]);
 
@@ -385,9 +391,10 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     setImportedCount(result.importedCount || 0);
     setAlreadyCount(result.alreadyCount || 0);
     setPushedCount(result.pushedCount || 0);
-    onImported?.();
+    onImported?.(platform);
+    if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
     setStep('done');
-  }, [connection, platform, importReport, onImported]);
+  }, [connection, platform, importReport, onImported, userId]);
 
   const reset = () => {
     setStep('pick-platform');

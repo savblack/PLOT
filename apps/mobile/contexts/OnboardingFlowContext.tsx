@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
 import { track, EVENTS } from '../lib/analytics';
 import { startFinishingTouchesFor } from '../lib/finishingTouches';
+import { armFirstWinCard } from '../lib/firstWinCard';
 import { setPendingImportSource } from '../lib/pendingImport';
 import { useAppData } from './AppDataContext';
 import { useOnboardingRefresh } from './OnboardingContext';
@@ -159,6 +160,8 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
     }
     // Home's Finishing touches card starts now (once per account on this device).
     await startFinishingTouchesFor(user.id);
+    // The first-win card sits on Home. A skip (nothing saved) does not arm it.
+    await armFirstWinCard(user.id, { skipped: chosen.length === 0 });
     // Switching apps: the import itself needs a screen, so Home opens it once
     // setup is done rather than pretending to run during it.
     setPendingImportSource(importSource);

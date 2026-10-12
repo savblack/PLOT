@@ -6,7 +6,7 @@ import {
 } from '../../finishingTouches.js';
 import { greetingFor, partOfDay } from '../../greeting.js';
 import {
-  buildingFan, buildingLines, firstNameFromAuthUser, showsFirstWin, topRegionServices,
+  buildingFan, buildingLines, firstNameFromAuthUser, topRegionServices,
 } from '../../onboardingSetup.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -78,17 +78,6 @@ test('building lines swap the first line when no services were picked', () => {
   assert.match(buildingLines(true)[0], /your platforms/);
   assert.match(buildingLines(false)[0], /every platform/);
   assert.equal(buildingLines(true).length, 4);
-});
-
-test('the first-win screen only interrupts the path home', () => {
-  assert.equal(showsFirstWin('/home'), true);
-  assert.equal(showsFirstWin('/home?from=signup'), true);
-  assert.equal(showsFirstWin('/home#top'), true);
-  assert.equal(showsFirstWin('/import?source=trakt&from=onboarding'), false);
-  assert.equal(showsFirstWin('/pricing?billing=monthly'), false);
-  assert.equal(showsFirstWin('/u/sam'), false);
-  assert.equal(showsFirstWin(null), false);
-  assert.equal(showsFirstWin(''), false);
 });
 
 test('the building fan is always full: first pick in front, trending fills the gaps', () => {

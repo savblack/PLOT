@@ -53,7 +53,7 @@ export function pointerAfterEpisode(season, episodeNumber, episodeCount) {
  * @param {{
  *   startWatching: (item: object) => Promise<unknown>,
  *   setProgress: (id: number, season: number, episode: number, opts?: object) => Promise<{ ok?: boolean } | null | undefined>,
- *   show: { id?: number, tmdb_id?: number, media_type?: string },
+ *   show: { id?: number, tmdb_id?: number, media_type?: string, title?: string, name?: string, poster_path?: string | null },
  *   season: number,
  *   episodeNumber: number,
  *   episodeCount: number,
