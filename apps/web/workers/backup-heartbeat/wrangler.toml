@@ -37,12 +37,9 @@ bucket_name = "plot-db-backups"
 [vars]
 PREFIX = "db-backups/"
 
-# Storage mirror check (storage-backup.yml). Left OFF until that workflow has
-# completed at least one run and written storage-mirror/_synced-at.txt —
-# otherwise this correctly-but-uselessly alarms every morning about a mirror
-# that was never set up. Flip to "true" after the first successful run, then
-# redeploy. See the note in src/index.js.
-CHECK_STORAGE = "false"
+# Storage mirror check (storage-backup.yml). The mirror has completed and
+# written storage-mirror/_synced-at.txt, so alert if its weekly run goes missing.
+CHECK_STORAGE = "true"
 STORAGE_SENTINEL = "storage-mirror/_synced-at.txt"
 # Storage backups run each Sunday at 03:47 UTC. The 170-hour threshold leaves a
 # small completion window, then detects a missed weekly run on the next daily
