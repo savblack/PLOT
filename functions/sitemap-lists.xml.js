@@ -3,19 +3,24 @@
 // Only visibility = 'public' lists, and RLS drops those on private profiles.
 // 'link' lists are readable by URL but deliberately never listed.
 // Routing: file path functions/sitemap-lists.xml.js → /sitemap-lists.xml.
+import { cachePage } from './_lib/edgeCache.js';
+
 const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
 
-export async function onRequest({ request }) {
+async function sitemap({ request }) {
   const host = request.headers.get('host') || 'app.theplot.tv';
   let rows = [];
+  let loaded = false;
   try {
     const r = await fetch(
       `${SUPABASE_URL}/rest/v1/user_custom_lists?visibility=eq.public&select=id&order=created_at.desc&limit=5000`,
       { headers: { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` } },
     );
+    if (!r.ok) throw new Error(`public lists -> ${r.status}`);
     const json = await r.json();
     if (Array.isArray(json)) rows = json;
+    loaded = true;
   } catch { /* serve an empty urlset on failure */ }
 
   const urls = rows
@@ -29,8 +34,12 @@ export async function onRequest({ request }) {
       status: 200,
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
+        'Cache-Control': loaded ? 'public, s-maxage=86400, stale-while-revalidate=604800' : 'no-store',
       },
     },
   );
+}
+
+export async function onRequest(context) {
+  return cachePage(context.request, () => sitemap(context), context.waitUntil);
 }
