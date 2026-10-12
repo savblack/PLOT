@@ -12,18 +12,18 @@ export const META = {
 };
 
 export const HERO = {
-  eyebrow: 'Your movie and TV companion',
-  headline: "Everything you've watched. Everything you want to watch.",
-  sub: "Track what you've seen, save what's coming, and keep the notes that make it yours.",
+  eyebrow: 'Your movie and TV tracker',
+  headline: 'Always know what to watch.',
+  sub: 'All the movies and shows you’ve seen, saved and are counting down to. Finally in one place. That’s Plot.',
   cta: 'Start tracking',
   note: 'Free forever. No credit card required.',
-  secondary: "See what's on",
-  proof: [
-    'Log and rate what you watch',
-    'A release calendar for shows, movies and cinema releases',
-    'Trending and top 10s across US streamers',
-  ],
-  shotAlt: 'The Plot diary, with movies and shows logged and rated.',
+  // "Up next": a fan of three posters with a notification over them. Titles
+  // and dates come from /api/discover at runtime; these are the patterns.
+  upNext: {
+    label: 'Up next · {when}', // Tonight, Tomorrow, a weekday, or "Oct 24"
+    notificationTitle: '{title} is in theaters now',
+    notificationText: "It's on your watchlist, so we let you know.",
+  },
 };
 
 // A scroll-driven series of short lines building to the "plot does." payoff.
