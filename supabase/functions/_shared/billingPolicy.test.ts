@@ -1,4 +1,4 @@
-import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutClosedToAll, checkoutPlan, checkoutSubscriptionData, hasStripeSubscription, matchesPremiumPrice, mayStartCheckout, publicCheckoutOpen, PREMIUM_TRIAL_DAYS } from './billingPolicy.ts';
+import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutClosedToAll, checkoutConfigLog, checkoutConfigStatus, checkoutPilotCount, checkoutPlan, checkoutSubscriptionData, hasStripeSubscription, matchesPremiumPrice, mayStartCheckout, publicCheckoutOpen, PREMIUM_TRIAL_DAYS } from './billingPolicy.ts';
 
 function equal(actual: unknown, expected: unknown) {
   if (actual !== expected) throw new Error(`Expected ${expected}, got ${actual}`);
@@ -89,6 +89,21 @@ Deno.test('with the switch off only the pilot list can check out, and no list me
   equal(checkoutClosedToAll('false', undefined), true);
   equal(checkoutClosedToAll(undefined, ' , '), false);
   equal(checkoutClosedToAll('false', 'pilot-user'), false);
+});
+
+Deno.test('config status reports the switch and a pilot count, never the ids', () => {
+  equal(checkoutPilotCount(undefined), 0);
+  equal(checkoutPilotCount(' , , '), 0);
+  equal(checkoutPilotCount('pilot-user, other-user'), 2);
+  const status = checkoutConfigStatus(' true ', 'pilot-user, other-user');
+  equal(status.checkoutEnabled, true);
+  equal(status.pilotCount, 2);
+  equal(checkoutConfigStatus('false', undefined).checkoutEnabled, false);
+  const line = checkoutConfigLog('true', 'pilot-user, secret-looking-id');
+  equal(line, 'checkout enabled=yes pilotCount=2');
+  equal(line.includes('pilot-user'), false);
+  equal(line.includes('secret'), false);
+  equal(checkoutConfigLog(undefined, undefined), 'checkout enabled=no pilotCount=0');
 });
 
 Deno.test('with the switch on everyone can check out, with or without a pilot list', () => {

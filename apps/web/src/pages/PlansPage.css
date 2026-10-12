@@ -32,6 +32,8 @@
 .plans-cards { display: grid; grid-template-columns: 1fr 1.35fr; gap: 1rem; align-items: stretch; }
 .plan-card { display: flex; flex-direction: column; align-items: flex-start; gap: 1.1rem; padding: 1.6rem; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--border); }
 .plan-card--premium { background: var(--surface-raised); border: 1.5px solid var(--accent); }
+.plan-card a.btn { text-decoration: none; }
+.plan-card a.btn-primary:hover { color: var(--on-accent-fill); }
 .plan-card-top { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; width: 100%; }
 .plan-name { font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
 .plan-pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem; border-radius: var(--radius-pill); font-size: 0.68rem; font-weight: 600; white-space: nowrap; }

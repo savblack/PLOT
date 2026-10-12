@@ -1,7 +1,17 @@
 import { test, expect } from '@playwright/test';
+import { PLANS_PAGE } from '../../src/copy/plansPage.js';
+
+async function mockCheckoutAvailability(page, checkoutAvailable) {
+  await page.route('**/billing-availability**', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ checkoutAvailable }),
+  }));
+}
 
 for (const width of [390, 1440]) {
   test(`Premium plans page sends a signed-out visitor to sign up at ${width}px`, async ({ page }) => {
+    await mockCheckoutAvailability(page, true);
     await page.setViewportSize({ width, height: 900 });
     const billingRequests = [];
     const errors = [];
@@ -57,5 +67,24 @@ for (const width of [390, 1440]) {
     await page.goto('/plans?from=%2Fterms');
     await page.getByRole('link', { name: 'Back to plot' }).click();
     await expect(page).toHaveURL(/\/terms/);
+  });
+
+  test(`closed checkout shows a waitlist instead of a failed upgrade at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const checkoutPosts = [];
+    page.on('request', request => {
+      if (request.method() === 'POST' && request.url().includes('stripe-billing')) checkoutPosts.push(request.url());
+    });
+    await mockCheckoutAvailability(page, false);
+    await page.goto('/plans');
+    await expect(page.getByRole('link', { name: PLANS_PAGE.waitlistAction })).toBeVisible();
+    await expect(page.getByRole('link', { name: PLANS_PAGE.waitlistAction })).toHaveAttribute('href', /mailto:contact@theplot.tv/);
+    await expect(page.getByText(PLANS_PAGE.checkoutClosedDetail)).toBeVisible();
+    await expect(page.getByText(PLANS_PAGE.checkoutClosedAnswer)).toBeVisible();
+    await expect(page.getByRole('button', { name: PLANS_PAGE.upgradeAction })).toHaveCount(0);
+    await expect(page.getByText(PLANS_PAGE.checkoutMessage)).toHaveCount(0);
+    expect(checkoutPosts).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: `/tmp/plot-premium-closed-${width}.png` });
   });
 }

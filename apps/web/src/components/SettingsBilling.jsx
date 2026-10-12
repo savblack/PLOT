@@ -5,8 +5,9 @@ import { SETTINGS_VIEW as T } from '../copy/settingsView.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 import { SettingsTextAction } from './SettingsPage.jsx';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
+import { waitlistMailto } from '../utils/premiumCheckout.js';
 
-export default function SettingsBilling({ isPremium, canManage = false, billing, busy, error, onManage, notice }) {
+export default function SettingsBilling({ isPremium, canManage = false, billing, busy, error, onManage, notice, checkoutAvailable = null }) {
   const navigate = useNavigate();
   const explore = () => navigate(premiumPlansPath('/settings?section=billing'));
 
@@ -35,6 +36,13 @@ export default function SettingsBilling({ isPremium, canManage = false, billing,
             <SettingsTextAction disabled={busy} onClick={onManage}>
               {busy ? T.premium.opening : T.premium.manageSubscription}
             </SettingsTextAction>
+          </div>
+        ) : !isPremium && checkoutAvailable === false ? (
+          <div className="settings-billing-actions">
+            <p>{PLANS_PAGE.checkoutClosedDetail}</p>
+            <a className="settings-text-action" href={waitlistMailto(PLANS_PAGE.waitlistSubject)}>
+              {PLANS_PAGE.waitlistAction}<span aria-hidden="true">→</span>
+            </a>
           </div>
         ) : !isPremium && (
           <div className="settings-billing-actions">

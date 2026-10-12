@@ -8,7 +8,13 @@ type Attempt = { operation_id: string; price_id: string; settings_url: string; s
 // Only explicitly safe checkout messages may be returned to the client.
 export class CheckoutPendingError extends Error {}
 
-/** Stable operation identity survives response loss, edge restarts and lease expiry. */
+/**
+ * One Checkout per user. claim_billing_checkout holds a row lock and a lease, so
+ * a second request while the first is in flight gets no row and must retry.
+ * The operation id survives response loss, edge restarts and lease expiry, and
+ * is the Stripe idempotency key. An open session is reused. A subscription that
+ * is not canceled or incomplete_expired goes to the portal instead of a second Checkout.
+ */
 export async function subscriptionCheckout(admin: Admin, stripe: Stripe, userId: string, price: string, settingsUrl: string, portal: (customer: string) => Promise<string>) {
   const { data, error } = await admin.rpc('claim_billing_checkout', { p_user_id: userId, p_price_id: price, p_settings_url: settingsUrl });
   if (error) throw error;

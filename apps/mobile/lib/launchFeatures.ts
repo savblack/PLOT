@@ -7,10 +7,10 @@
  * reasoning behind each.
  */
 
-// Visible in Settings; usable with Plot Premium. Server-side enforcement lives
-// in the media-sync / trakt-sync edge functions (403 premium_required on sync).
-// On so a Premium member can connect Plex and Trakt. Free accounts stay on the
-// upgrade path in Settings. Flip back to false to hide the connect rows.
+// Plex and Trakt rows in Settings. They are a one-off history import, not
+// automatic two-way tracking. Free accounts can import. Flip back to false
+// to hide the connect rows. The media-sync and trakt-sync functions still
+// enforce premium_required on any ongoing sync action.
 export const SHOW_MEDIA_SYNC_INTEGRATIONS = true;
 
 // Social sign-in buttons. A button only appears once its provider is actually

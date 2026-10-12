@@ -1,5 +1,8 @@
 # Stripe test-mode verification
 
+Launch price is US$3/month or US$24/year. Dollar amounts below are what those
+sessions charged. A US$25 figure in this log is not the current price.
+
 ## Scope and status
 
 Savannah prioritised Stripe test-mode subscriptions on 2026-09-23 and deferred
