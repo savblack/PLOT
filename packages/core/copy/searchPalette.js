@@ -36,7 +36,7 @@ export const SEARCH_PALETTE = {
   move: 'move',
   open: 'open',
   saveToList: 'save to list',
-  close: 'close',
+  close: 'esc, close search',
   filters: 'Filter:',
   filterFriends: 'friends',
   filterPeople: 'people',
