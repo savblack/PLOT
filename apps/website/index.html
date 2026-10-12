@@ -1860,7 +1860,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       <div class="up-next-caption" id="upNextCaption" aria-live="polite">
         <span class="up-next-title" id="upNextTitle">Runner</span>
-        <span class="up-next-when" id="upNextWhen">Up next · Tonight</span>
+        <span class="up-next-when" id="upNextWhen">Up next · Out now</span>
       </div>
 
       <div class="up-next-dots" id="upNextDots" role="group" aria-label="This week on Plot">
@@ -2513,8 +2513,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       var items = posters.map(function (img, i) {
         return { title: dots[i].getAttribute('aria-label'), when: i === 0 ? whenEl.textContent : '' };
       });
-      items[1].when = 'Up next · Friday';
-      items[2].when = 'Up next · This weekend';
+      // Fallback statuses for the committed titles, chosen to stay true.
+      items[1].when = 'Up next · In theaters';
+      items[2].when = 'Up next · New series';
       var order = [0, 1, 2]; // order[slot] = item index
       var swapTimer = null;
 
@@ -2557,15 +2558,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         dot.addEventListener('click', function () { bring(order.indexOf(i)); });
       });
 
-      // The labels describe the viewer's week, not release dates: TMDB's
-      // upcoming list for an unset region is mostly past dates, so dated
-      // labels would be wrong more often than right.
-      function weekLabels(today) {
-        var day = today.getDay(); // 0 Sunday … 6 Saturday
-        var toFriday = (5 - day + 7) % 7;
-        var second = toFriday <= 1 ? 'Tomorrow' : 'Friday';
-        var weekend = day === 0 || day === 6 ? 'Next week' : 'This weekend';
-        return ['Up next · Tonight', 'Up next · ' + second, 'Up next · ' + weekend];
+      // Each label states the title's status as the data shows it, so it is
+      // true for whatever fills the slot: a film from now_playing is in
+      // theaters, a show from trending/tv/week is trending. "New" only when
+      // the release or premiere date is recent.
+      function daysSince(iso, today) {
+        var p = String(iso || '').split('-');
+        if (p.length !== 3) return Infinity;
+        var d = new Date(+p[0], +p[1] - 1, +p[2]);
+        return Math.round((today - d) / 86400000);
+      }
+      function statusLabel(r, kind, today) {
+        if (kind === 'tv') {
+          var since = daysSince(r.first_air_date, today);
+          return 'Up next · ' + (since >= 0 && since <= 30 ? 'New series' : 'Trending this week');
+        }
+        var age = daysSince(r.release_date, today);
+        return 'Up next · ' + (age >= 0 && age <= 14 ? 'New in theaters' : 'In theaters now');
       }
       function preload(src) {
         return new Promise(function (resolve, reject) {
@@ -2585,12 +2594,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         var playing = unseen((sets[1].results || []).filter(withPoster), seen);
         var shows = unseen((sets[2].results || []).filter(withPoster), seen);
         if (playing.length < 3 || !shows.length) return;
-        var labels = weekLabels(new Date());
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         var live = [playing[0], shows[0], playing[1]];
+        var kinds = ['movie', 'tv', 'movie'];
         return Promise.all(live.map(function (r) { return preload(IMG + r.poster_path); })).then(function () {
           live.forEach(function (r, i) {
             var title = r.title || r.name;
-            items[i] = { title: title, when: labels[i] };
+            items[i] = { title: title, when: statusLabel(r, kinds[i], today) };
             posters[i].src = IMG + r.poster_path;
             posters[i].alt = title + ' poster';
             dots[i].setAttribute('aria-label', title);
