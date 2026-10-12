@@ -166,6 +166,13 @@ verify_jwt = true
 [functions.alert-email-delivery]
 verify_jwt = true
 
+# Private push jobs use the service-role bearer and verify it again in code.
+[functions.send-push]
+verify_jwt = true
+
+[functions.push-receipts]
+verify_jwt = true
+
 # The unsubscribe link at the bottom of every alert email. Opened from an email
 # client with no session, so it must be reachable without a JWT. It trusts only a
 # signed token (ALERT_EMAIL_UNSUBSCRIBE_SECRET) and reflects nothing from the

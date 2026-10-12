@@ -127,6 +127,12 @@ export const PLANS_PAGE = {
         body: 'Premium can also email you when a film on your watchlist lands on one of your services or becomes free to watch. Alerts in the app stay free.',
         also: ['pick', 'together'],
       },
+      pushAlerts: {
+        context: () => 'Push alerts are part of Premium',
+        title: 'Get title alerts on your lock screen.',
+        body: 'Premium brings new episode, movie release, and streaming alerts to your phone. Alerts in the app stay free.',
+        also: ['pick', 'together'],
+      },
     },
   },
   host: {
