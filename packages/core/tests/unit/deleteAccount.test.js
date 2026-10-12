@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { deleteAccountAndSignOut, parseDeleteAccountError } from '../../deleteAccount.js';
+import { configure } from '../../config.js';
+import { DELETE_ACCOUNT_NETWORK_ERROR, deleteAccountAndSignOut, parseDeleteAccountError } from '../../deleteAccount.js';
 
 function createSupabase({ session = { access_token: 'token-123' }, signOutError = null } = {}) {
   let signOutCalls = 0;
@@ -138,4 +139,25 @@ test('deleteAccountAndSignOut signs out only after a successful delete response'
   assert.deepEqual(result, { ok: true });
   assert.equal(supabase.signOutCallsRef(), 1);
   assert.equal(redirected, true);
+});
+
+test('deleteAccountAndSignOut returns a handled error when the request cannot reach the server', async () => {
+  const supabase = createSupabase();
+  const failures = [];
+  configure({ onActionFailed: (props) => failures.push(props) });
+
+  try {
+    const result = await deleteAccountAndSignOut({
+      supabase,
+      deleteAccountUrl: 'https://example.com/delete-account',
+      confirmationPhrase: 'delete account',
+      fetchImpl: async () => { throw new TypeError('Failed to fetch'); },
+    });
+
+    assert.deepEqual(result, { ok: false, error: DELETE_ACCOUNT_NETWORK_ERROR });
+    assert.equal(supabase.signOutCallsRef(), 0);
+    assert.deepEqual(failures, [{ action: 'account_delete', error_kind: 'network' }]);
+  } finally {
+    configure({ onActionFailed: undefined });
+  }
 });

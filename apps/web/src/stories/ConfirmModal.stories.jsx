@@ -62,3 +62,18 @@ export const WithConfirmPhrase = {
     await expect(args.onClose).toHaveBeenCalledOnce();
   },
 };
+
+export const ConfirmThrows = {
+  args: {
+    onConfirm: fn(async () => { throw new TypeError('Failed to fetch'); }),
+  },
+  play: async ({ args, canvasElement }) => {
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog');
+    const confirm = within(dialog).getByRole('button', { name: 'Remove' });
+
+    await userEvent.click(confirm);
+    await expect(await within(dialog).findByRole('alert')).toHaveTextContent('Something went wrong. Please try again.');
+    await expect(args.onClose).not.toHaveBeenCalled();
+    await waitFor(() => expect(confirm).toBeEnabled());
+  },
+};
