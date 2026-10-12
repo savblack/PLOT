@@ -103,19 +103,19 @@
   .detail .display { font-size: 150px; max-width: 96%; }
 
   @media (min-aspect-ratio: 4/3) {
-    /* Landscape only. Narrowed to just inside the card so the stem of p
-       and the t crossbar sit on the card. Same top anchor as before.
-       top/left/bottom reset so the portrait placement does not apply. */
-    .bg-wordmark { top: 0; bottom: 0; height: auto; overflow: hidden; }
+    /* Landscape only. The p stem is the viewBox's left edge and the t
+       crossbar is its right edge, so a full-bleed svg puts that ink on
+       x=0 and x=1600. Same top anchor as before. top/left/bottom reset
+       so the portrait placement does not apply. */
+    .bg-wordmark { top: 0; bottom: 0; height: auto; overflow: visible; }
     .bg-wordmark svg {
       position: relative;
       top: auto;
       left: auto;
       bottom: auto;
-      width: 98vw;
-      width: 98cqw;
-      margin-left: 1vw;
-      margin-left: 1cqw;
+      width: 100vw;
+      width: 100cqw;
+      margin-left: 0;
       margin-top: calc(-1vw + 8vh);
       margin-top: calc(-1cqw + 8cqh);
     }

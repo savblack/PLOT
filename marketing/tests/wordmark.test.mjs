@@ -41,8 +41,9 @@ test('charts wordmark uses the darker beige, with the portrait baseline on the c
   const landscape = card.slice(at);
   assert.match(portrait, /top:\s+calc\(100cqh - 108cqw \* 686 \/ 1403\)/);
   assert.doesNotMatch(portrait, /98cqw/);
-  assert.match(landscape, /width:\s+98cqw/);
-  assert.match(landscape, /margin-left:\s+1cqw/);
+  assert.match(landscape, /width:\s+100cqw/);
+  assert.match(landscape, /margin-left:\s+0/);
+  assert.doesNotMatch(landscape, /98cqw/);
   assert.match(landscape, /bottom:\s+0/);
   assert.match(landscape, /top:\s+auto/);
   assert.match(landscape, /margin-top:\s+calc\(-1cqw \+ 8cqh\)/);
