@@ -35,3 +35,17 @@
 /logo-email.png
   Content-Type: image/png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Email social marks. Named files only, so a missing path under /email/
+# still falls through as HTML instead of being labeled image/png.
+/email/icon-instagram.png
+  Content-Type: image/png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/email/icon-threads.png
+  Content-Type: image/png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/email/icon-x.png
+  Content-Type: image/png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

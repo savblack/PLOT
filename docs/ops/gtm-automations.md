@@ -412,6 +412,7 @@ Lifecycle mail (welcome, day 1, day 7, day 14) is a Brevo automation the owner b
 - Contact attributes the hourly job keeps current: `TRACK_COUNT`, `LAST_TRACK_AT`, `LAST_SEEN_AT`, `IMPORTED`, `SAVED_TITLES`, `TITLE_1_NAME`, `TITLE_1_POSTER_URL`, `TITLE_1_URL`, and the same for slots 2 and 3. `ONBOARDING_COMPLETED_AT` is set with the event. Day-1 mail should read the contact attributes, not the event. Import usually finishes after the event, and the watchlist can change during the wait.
 - Deep link: `https://app.theplot.tv/save?media_type=movie|tv&tmdb_id={id}&src=lifecycle`. Web opens the title panel and does not add it again. Mobile opens the panel for any `/save` link and does not add it.
 - Header image: `https://app.theplot.tv/logo-email.png` (130×72 transparent PNG of the outlined wordmark).
+- Social icons: `https://app.theplot.tv/email/icon-instagram.png`, `icon-threads.png`, and `icon-x.png` (48×48, transparent, `#6B655D`).
 - Cron `brevo-lifecycle-sync` (`17 * * * *`) calls `brevo-lifecycle`. Deploy that function after the migration. Create the new attributes first or Brevo drops them:
 
 ```
