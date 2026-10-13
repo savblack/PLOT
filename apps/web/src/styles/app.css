@@ -3775,6 +3775,11 @@ svg { stroke-width: 1.5; }
   border-radius: var(--radius-pill);
   background: var(--status-watching);
 }
+.panel-upnext-left {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
 .panel-upnext-error { margin: 0.65rem 0 0; font-size: 0.75rem; color: var(--danger); }
 
 /* ── The season line above the episode list ── */

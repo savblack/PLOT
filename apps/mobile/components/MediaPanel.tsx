@@ -38,6 +38,7 @@ import {
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import UpgradeSheet from './UpgradeSheet';
@@ -407,7 +408,7 @@ type UpNextOffer = { provider_name?: string };
 
 function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }: {
   tvId: number;
-  details: { status?: string };
+  details: TMDBDetails;
   progress?: { current_season?: number; current_episode?: number } | null;
   whereToWatch: { streaming: UpNextOffer[]; rentBuy: UpNextOffer[] };
   onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }>;
@@ -437,8 +438,16 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }:
   const seasonTotal = episodes.length;
   const offer = whereToWatch.streaming[0] || whereToWatch.rentBuy[0] || null;
   const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
-  const runtime = episode?.runtime ? MEDIA_PANEL.episodeRuntime(episode.runtime) : '';
-  const where = [offer?.provider_name, runtime].filter(Boolean).join(' · ');
+  const episodeMinutes = episode?.runtime && episode.runtime > 0 ? episode.runtime : fallbackEpisodeRuntime(details);
+  const runtime = episodeMinutes ? MEDIA_PANEL.episodeRuntime(episodeMinutes) : '';
+  const ends = episodeMinutes ? endsAtTime(episodeMinutes) : null;
+  const where = [offer?.provider_name, runtime, ends ? MEDIA_PANEL.endsAt(ends) : ''].filter(Boolean).join(' · ');
+  const leftCaption = timeLeftCaption(showTimeLeft({
+    details,
+    season,
+    episode: episodeNumber,
+    knownEpisodes: episodes.map(item => ({ ...item, season_number: season })),
+  }));
 
   const markWatched = async () => {
     if (pending) return;
@@ -487,6 +496,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }:
           <View style={[styles.upNextFill, { width: `${Math.round((watchedInSeason / seasonTotal) * 100)}%` }]} />
         </View>
       )}
+      {!!leftCaption && <Text style={styles.upNextLeft}>{leftCaption}</Text>}
       {!!error && <Text style={styles.epActionError}>{error}</Text>}
     </View>
   );
@@ -498,11 +508,13 @@ interface TMDBNextEpisode {
   name?: string;
   episode_number?: number;
   season_number?: number;
+  runtime?: number | null;
 }
 
 interface TMDBSeason {
   season_number: number;
   name: string;
+  episode_count?: number;
 }
 
 interface TMDBGenre {
@@ -535,9 +547,11 @@ interface TMDBDetails {
   vote_count?: number;
   genres?: TMDBGenre[];
   runtime?: number;
+  episode_run_time?: number[];
   number_of_seasons?: number;
   seasons?: TMDBSeason[];
   next_episode_to_air?: TMDBNextEpisode | null;
+  last_episode_to_air?: TMDBNextEpisode | null;
   status?: string;
   videos?: { results: Array<{ site: string; type: string; key: string; name?: string }> };
   external_ids?: { imdb_id?: string | null };
@@ -1007,7 +1021,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     : (details?.number_of_seasons
         ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
         : '');
-  const factLine = [year, runtimeText].filter(Boolean).join(' · ');
+  const movieEnds = isMovie && details?.runtime > 0 ? endsAtTime(details.runtime) : null;
+  const factLine = [year, runtimeText, movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''].filter(Boolean).join(' · ');
   const author = isMovie
     ? details?.credits?.crew?.find(person => person.job === 'Director')?.name
     : details?.created_by?.[0]?.name;
@@ -1611,6 +1626,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   upNextBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.onAccentFill },
   upNextTrack: { height: 5, borderRadius: radii.pill, backgroundColor: colors.border, marginTop: spacing.md, overflow: 'hidden' },
+  upNextLeft: { marginTop: spacing.sm, fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted },
   upNextFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.statusWatching },
   watchCard: { marginBottom: spacing.lg },
   watchHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },

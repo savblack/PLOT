@@ -39,6 +39,7 @@ import {
   getSeasonWatchState,
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
+import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -225,8 +226,16 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
   const seasonTotal = episodes.length;
   const offer = whereToWatch.streaming[0] || whereToWatch.rentBuy[0] || null;
   const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
-  const runtime = episode?.runtime ? MEDIA_PANEL.episodeRuntime(episode.runtime) : '';
-  const where = [offer?.providerName, runtime].filter(Boolean).join(' · ');
+  const episodeMinutes = episode?.runtime > 0 ? episode.runtime : fallbackEpisodeRuntime(details);
+  const runtime = episodeMinutes ? MEDIA_PANEL.episodeRuntime(episodeMinutes) : '';
+  const ends = episodeMinutes ? endsAtTime(episodeMinutes) : null;
+  const where = [offer?.providerName, runtime, ends ? MEDIA_PANEL.endsAt(ends) : ''].filter(Boolean).join(' · ');
+  const leftCaption = timeLeftCaption(showTimeLeft({
+    details,
+    season,
+    episode: episodeNumber,
+    knownEpisodes: episodes.map(item => ({ ...item, season_number: season })),
+  }));
 
   const markWatched = async () => {
     if (pending) return;
@@ -280,6 +289,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
           <span style={{ width: `${Math.round((watchedInSeason / seasonTotal) * 100)}%` }} />
         </div>
       )}
+      {leftCaption && <p className="panel-upnext-left">{leftCaption}</p>}
       {error && <p className="panel-upnext-error" role="alert">{error}</p>}
     </section>
   );
@@ -1347,7 +1357,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     : (details?.number_of_seasons
         ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
         : '');
-  const factLine = [year, runtimeText].filter(Boolean).join(' · ');
+  const movieEnds = isMovie && details?.runtime > 0 ? endsAtTime(details.runtime) : null;
+  const factLine = [year, runtimeText, movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''].filter(Boolean).join(' · ');
   const author = isMovie
     ? (details?.credits?.crew || []).find(c => c.job === 'Director')?.name
     : (details?.created_by || [])[0]?.name;
