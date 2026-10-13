@@ -25,8 +25,8 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../../..');
 const SURFACES = [
   'apps/website/js/config.js',
   'apps/website/title-page.js',
-  'supabase/functions/marketing-feed/index.ts',
-  'functions/list/[id].js',
+  'apps/website/js/whats-on-head.js',
+  'apps/web/public/boot/public-page.js',
 ];
 
 /** Pull `function dropOpaqueException(…) {…}` out of a file by brace matching. */

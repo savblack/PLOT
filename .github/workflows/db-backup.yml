@@ -98,8 +98,9 @@ jobs:
           pg_dump -Fc --no-owner --no-privileges \
             -n public -n auth -n storage -n supabase_migrations \
             -f "$FILE"
-          gpg --batch --yes --symmetric --cipher-algo AES256 \
-            --passphrase "$BACKUP_GPG_PASSPHRASE" -o "${FILE}.gpg" "$FILE"
+          # Passphrase on stdin, not argv: argv is readable by every process on the runner.
+          gpg --batch --yes --symmetric --cipher-algo AES256 --pinentry-mode loopback \
+            --passphrase-fd 0 -o "${FILE}.gpg" "$FILE" <<< "$BACKUP_GPG_PASSPHRASE"
           rm -f "$FILE"
           echo "ARTIFACT=${FILE}.gpg" >> "$GITHUB_ENV"
           ls -lh "${FILE}.gpg"

@@ -5,15 +5,9 @@ import test from 'node:test';
 // (app.theplot.tv) and a preview deployment per branch (*.plot-5wr.pages.dev).
 // It decides noindex by asking whether the host IS production, so a mistake in
 // that condition would deindex the real site silently. That is the case worth
-// pinning down; the rest of the middleware (CSP nonce) is not what this covers.
-//
-// HTMLRewriter is a Cloudflare runtime global with no Node equivalent, so the
-// HTML path gets a pass-through stub. The non-HTML path returns before it.
-globalThis.HTMLRewriter = class {
-  on() { return this; }
-  transform(response) { return response; }
-};
+// pinning down, plus the shape of the CSP: no inline script allowance, ever.
 
+import { readFileSync } from 'node:fs';
 const { onRequest } = await import('../../../../functions/_middleware.js');
 
 function call(url, contentType) {
@@ -57,11 +51,26 @@ test('any other host is treated as non-production', async () => {
   }
 });
 
-test('the CSP nonce header is still set on html regardless of host', async () => {
+test('the CSP is set on html and allows no inline script', async () => {
+  // No nonce and no 'unsafe-inline': an escaping slip in a server-rendered
+  // page must produce a blocked script, not a running one. The old nonce was
+  // stamped onto every inline <script> in the response, injected ones included.
   const res = await call('https://app.theplot.tv/home', HTML);
   const csp = res.headers.get('Content-Security-Policy');
-  assert.match(csp, /nonce-/);
-  assert.equal(res.headers.get('Cache-Control'), 'no-store');
+  const scriptSrc = csp.split(';').map((d) => d.trim()).find((d) => d.startsWith('script-src '));
+  assert.ok(scriptSrc, 'script-src present');
+  assert.doesNotMatch(scriptSrc, /nonce-|unsafe-inline|unsafe-eval|\*/);
+  assert.match(scriptSrc, /'self'/);
+});
+
+test('the shell carries no inline script for the CSP to block', () => {
+  // Everything that runs before React is a file under public/boot/.
+  const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+  const inline = [...html.matchAll(/<script\b([^>]*)>/g)].filter(([, attrs]) => !/\bsrc=/.test(attrs));
+  assert.deepEqual(inline, []);
+  for (const file of ['startup-guard.js', 'theme.js']) {
+    assert.match(html, new RegExp(`<script src="/boot/${file}"`), file);
+  }
 });
 
 test('the CSP permits the curated Australian Guide logo hosts', async () => {

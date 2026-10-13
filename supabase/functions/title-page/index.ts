@@ -20,6 +20,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { hasServiceKeyBearer } from '../_shared/serviceBearer.ts';
 import { clampDescription, fitTitle } from '../_shared/seoText.ts';
 
 const SITE = 'https://theplot.tv';
@@ -132,16 +133,27 @@ type SitemapTitle = {
 };
 
 // Seed the sitemap from Plot's tracked catalogue plus TMDB's current discovery
-// feeds. Fetching the live feeds here means newly popular and newly released
-// titles become crawlable within the sitemap's one-day cache window, without
-// hardcoding opaque TMDB IDs or creating thin duplicate pages.
+// feeds. Fetching the live feeds means newly popular and newly released titles
+// become crawlable within a day, without hardcoding opaque TMDB IDs or
+// creating thin duplicate pages.
+//
+// Built once a day, not per request. This function is public (verify_jwt is
+// off so the Pages proxy can fetch it), and a live build is 21 TMDB fetches,
+// up to 45 index pages and a service-role upsert, so serving it on demand was
+// an amplifier for anyone who added a query parameter the proxy's cache did
+// not key on. pg_cron (run_title_sitemap_refresh, migration 20261014090200)
+// calls `?sitemap=refresh` with the service bearer; `?sitemap=1` serves the
+// stored copy. The one exception is an empty cache, before the first refresh
+// has run: that request builds and stores the sitemap so it is never missing.
 const admin = () => createClient<Database>(Deno.env.get('SUPABASE_URL')!, serviceKey());
 
 // A sitemap file may hold 50,000 URLs; leave room for the seeded sources.
 const INDEX_LIMIT = 45000;
 const INDEX_PAGE = 1000; // PostgREST's default max rows per request
 
-async function titlesSitemap(): Promise<Response> {
+const SITEMAP_CACHE = 'public, s-maxage=86400, stale-while-revalidate=604800';
+
+async function buildTitlesSitemap(): Promise<{ xml: string; count: number }> {
   const supabase = admin();
   const urls = new Map<string, string>(); // "type:id" -> loc (dedupes)
   const add = (mt: unknown, rawId: unknown, t: unknown) => {
@@ -211,16 +223,45 @@ async function titlesSitemap(): Promise<Response> {
     await Promise.all(requests);
   }
 
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${[...urls.values()].map((loc) => `<url><loc>${esc(loc)}</loc><changefreq>weekly</changefreq></url>`).join('\n')}
 </urlset>`;
-  return new Response(body, {
-    headers: {
-      'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
-    },
+  return { xml, count: urls.size };
+}
+
+async function storeTitlesSitemap(): Promise<{ xml: string; count: number }> {
+  const built = await buildTitlesSitemap();
+  const { error } = await admin()
+    .from('title_sitemap_cache')
+    .upsert({ id: 1, xml: built.xml, url_count: built.count, generated_at: new Date().toISOString() }, { onConflict: 'id' });
+  if (error) console.error('title_sitemap_cache write failed:', error.message);
+  return built;
+}
+
+const sitemapResponse = (xml: string) =>
+  new Response(xml, {
+    headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': SITEMAP_CACHE },
   });
+
+async function titlesSitemap(req: Request, mode: string): Promise<Response> {
+  if (mode === 'refresh') {
+    if (req.method !== 'POST' || !hasServiceKeyBearer(req)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const { count } = await storeTitlesSitemap();
+    return new Response(JSON.stringify({ ok: true, url_count: count }), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+
+  const { data } = await admin().from('title_sitemap_cache').select('xml').eq('id', 1).maybeSingle();
+  if (data?.xml) return sitemapResponse(data.xml);
+  // Bootstrap: nothing stored yet. Build once, store, serve.
+  return sitemapResponse((await storeTitlesSitemap()).xml);
 }
 
 type IndexedTitle = { media_type: 'movie' | 'tv'; tmdb_id: number; title: string };
@@ -243,7 +284,8 @@ function recordTitles(rows: IndexedTitle[]) {
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  if (url.searchParams.get('sitemap') === '1') return titlesSitemap();
+  const sitemapMode = url.searchParams.get('sitemap');
+  if (sitemapMode === '1' || sitemapMode === 'refresh') return titlesSitemap(req, sitemapMode);
   const type = url.searchParams.get('type') === 'tv' ? 'tv' : url.searchParams.get('type') === 'movie' ? 'movie' : null;
   const slug = url.searchParams.get('slug') || '';
   const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';

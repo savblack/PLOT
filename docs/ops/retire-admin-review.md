@@ -14,9 +14,9 @@ replacement from July 2026. Do not revive it.
 1. `marketing-weekly-batch.yml` plans the week, writes copy, renders cards, and pushes social posts into Buffer.
 2. `marketing-linear-mirror` opens one Linear card per website article (team PLO, project Content Automation).
 3. `marketing-linear-sync` applies `/approve`, `/reject`, `/copy`, and the other slash commands.
-4. Buffer holds captions and sends them.
+4. Buffer holds captions as drafts and sends the ones you approve there.
 5. `marketing-publish.yml` reconciles Buffer and tops the queue up.
-6. `/pause` stops **new** posts entering Buffer. Posts already there still go out until deleted in Buffer.
+6. `/pause` stops **new** posts entering Buffer. Drafts already there send only if approved in Buffer.
 
 Rejecting an article leaves social posts alone. That is deliberate.
 

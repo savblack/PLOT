@@ -21,7 +21,7 @@ function allowed(settings: Notifications.NotificationPermissionsStatus) {
   return settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
 }
 
-export async function registerPushToken(askPermission: boolean): Promise<'ok' | 'denied' | 'unavailable'> {
+export async function registerPushToken(askPermission: boolean): Promise<'ok' | 'denied' | 'unavailable' | 'in_use'> {
   if (!projectId || (Platform.OS !== 'ios' && Platform.OS !== 'android')) return 'unavailable';
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('title-alerts', {
@@ -33,6 +33,11 @@ export async function registerPushToken(askPermission: boolean): Promise<'ok' | 
   if (!allowed(permission)) return 'denied';
   const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
   const { error } = await supabase.rpc('register_push_token', { p_token: token, p_platform: Platform.OS });
+  // The token is still bound to another account that never signed out on
+  // this device. register_push_token refuses to move it (a token is not a
+  // secret, so a move on request would let anyone redirect a device's alerts);
+  // that account's sign-out, or a token rotation, frees it.
+  if (error?.message?.includes('push_token_in_use')) return 'in_use';
   if (error) throw error;
   currentToken = token;
   return 'ok';

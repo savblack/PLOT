@@ -104,6 +104,11 @@ const MAX_TOKEN_AGE_MS = 15 * 60 * 1000;
 const RATE_SCOPE = 'signup-bypass';
 const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const RATE_MAX_ATTEMPTS = 3;
+// Across all callers. The per-IP limit is cheap to sidestep from a pool of
+// addresses; this bounds what the whole pool can do in an hour (each attempt
+// here creates an unconfirmed account and sends an email). A real hour of
+// bypass signups is in the single digits.
+const RATE_MAX_GLOBAL = 60;
 
 // Only accept a platform-provided connection header — X-Forwarded-For is
 // caller-controlled when this public function is invoked directly.
@@ -216,17 +221,17 @@ Deno.serve(async (req) => {
   // login throttle and media-sync's companion-token auth, kept independent
   // via `scope`.
   const ip = clientIp(req);
-  const { data: rateCount, error: rateError } = await supabaseAdmin.rpc('auth_note_fail', {
-    p_scope: RATE_SCOPE,
-    p_ip: ip,
-    p_window_ms: RATE_WINDOW_MS,
-  });
-  const attempts = usableRateCount({ data: rateCount, error: rateError });
-  if (attempts === null) {
-    console.error('Signup rate check failed:', rateError ?? 'invalid attempt count');
+  const [perIp, global] = await Promise.all([
+    supabaseAdmin.rpc('auth_note_fail', { p_scope: RATE_SCOPE, p_ip: ip, p_window_ms: RATE_WINDOW_MS }),
+    supabaseAdmin.rpc('auth_note_fail', { p_scope: `${RATE_SCOPE}-all`, p_ip: 'global', p_window_ms: RATE_WINDOW_MS }),
+  ]);
+  const attempts = usableRateCount(perIp);
+  const globalAttempts = usableRateCount(global);
+  if (attempts === null || globalAttempts === null) {
+    console.error('Signup rate check failed:', perIp.error ?? global.error ?? 'invalid attempt count');
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 503);
   }
-  if (attempts > RATE_MAX_ATTEMPTS) {
+  if (attempts > RATE_MAX_ATTEMPTS || globalAttempts > RATE_MAX_GLOBAL) {
     return json(
       { error: 'Too many attempts. Please wait a moment and try again.', reason: 'rate_limited' },
       origin,
@@ -243,14 +248,15 @@ Deno.serve(async (req) => {
     email_confirm: false,
   });
   if (createError) {
+    // An address that already has an account gets the same answer as a new
+    // one, and no email. Saying "already registered" here let anyone confirm
+    // whether an address is a Plot member, three guesses an hour per IP and
+    // as many as they had IPs. The normal path (supabase.auth.signUp with
+    // enumeration protection on) answers the same way, and a real owner who
+    // forgot they signed up reaches the account through "forgot password".
     const already = /already|exists|registered/i.test(createError.message || '');
-    return json(
-      already
-        ? { error: 'An account with this email already exists. Try signing in instead.', reason: 'already_registered' }
-        : { error: 'Something went wrong. Please try again.', reason: 'unknown' },
-      origin,
-      already ? 409 : 400,
-    );
+    if (already) return json({ ok: true, requires_email_confirmation: true }, origin);
+    return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 400);
   }
 
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({

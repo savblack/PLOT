@@ -311,7 +311,8 @@ function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string |
         try {
           const registration = await registerPushToken(true);
           if (registration !== 'ok') {
-            Alert.alert(registration === 'denied' ? PUSH_ALERTS.permissionDenied : PUSH_ALERTS.permissionUnavailable);
+            Alert.alert(registration === 'denied' ? PUSH_ALERTS.permissionDenied
+              : registration === 'in_use' ? PUSH_ALERTS.inUse : PUSH_ALERTS.permissionUnavailable);
             return;
           }
           const result = await push.setEnabled(true);

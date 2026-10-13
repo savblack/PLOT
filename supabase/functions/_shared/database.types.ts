@@ -2500,6 +2500,27 @@ export type Database = {
         }
         Relationships: []
       }
+      title_sitemap_cache: {
+        Row: {
+          generated_at: string
+          id: number
+          url_count: number
+          xml: string
+        }
+        Insert: {
+          generated_at?: string
+          id?: number
+          url_count?: number
+          xml: string
+        }
+        Update: {
+          generated_at?: string
+          id?: number
+          url_count?: number
+          xml?: string
+        }
+        Relationships: []
+      }
       tracking_connections: {
         Row: {
           automatic_enabled: boolean

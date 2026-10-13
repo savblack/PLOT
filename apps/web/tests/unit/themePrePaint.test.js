@@ -5,13 +5,13 @@ import vm from 'node:vm';
 import { themeFamilies } from '@plot/core/tokens.js';
 import { FAMILY_ALIASES, LEGACY_THEMES, THEME_FAMILIES, THEME_MODES, readThemePreference, themeAttributes } from '@plot/core/themes.js';
 
-// The pre-paint script in index.html runs before any module loads, so it
-// carries a generated copy of the family list and the retired theme ids. These
-// tests run that script against stored values and hold it to themes.js.
+// The pre-paint script (public/boot/theme.js, loaded by index.html) runs
+// before any module loads, so it carries a generated copy of the family list
+// and the retired theme ids. These tests run that script against stored values
+// and hold it to themes.js.
+const script = readFileSync(new URL('../../public/boot/theme.js', import.meta.url), 'utf8');
+// The boot loader's per-variant critical CSS still lives in index.html.
 const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-const script = [...html.matchAll(/<script data-cfasync="false">([\s\S]*?)<\/script>/g)]
-  .map(m => m[1])
-  .find(body => body.includes('plot-theme'));
 
 function prePaint(mode, family, systemDark = false) {
   const attrs = {};

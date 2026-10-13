@@ -12,6 +12,8 @@
 // for everybody, and the parts that are not (`region`, `language`) travel in
 // the query string and so are already part of the key.
 
+import { normalizeParams } from './tmdb.js';
+
 // Longest first, because the cost of a stale answer differs by endpoint. A
 // genre list is effectively immutable; what is trending is not.
 const TTLS = [
@@ -72,11 +74,10 @@ export function ttlFor(path, params = new URLSearchParams()) {
  * @returns {Request}
  */
 export function cacheKey(url, origin) {
-  const params = new URLSearchParams(url.searchParams);
-  // The backend always ignores caller-supplied keys. They must not let a
-  // caller create unlimited cache misses for the same catalogue response.
-  params.delete('api_key');
-  params.sort();
+  // Only the parameters the backend forwards (tmdb.js ALLOWED_PARAMS) reach
+  // the key. A caller-supplied api_key, a utm tag or a random `&x=` never
+  // changes the catalogue answer, so none of them may fork the cache.
+  const params = normalizeParams(url.searchParams);
   // A key is never fetched, only compared, so the host is arbitrary. Keeping it
   // off the real hostname means nothing can confuse a key with a live URL.
   return new Request(`https://tmdb-proxy.plot.invalid/?${params}&__origin=${encodeURIComponent(origin || 'none')}`);

@@ -218,6 +218,12 @@ These checks fail the build if two sources drift. Fix by regenerating both, not 
 - `footer:check` · `changelog:check` · `tokens:marketing` · `emails:check` — shared
   footer / public changelog (`apps/website/data/changelog.json`) / website+email
   tokens / auth email templates.
+- `csp:check` — the marketing site's Content-Security-Policy (`apps/website/_headers`
+  and `apps/website/functions/_lib/csp.generated.js`) must match the inline
+  `<script>` blocks in `apps/website/*.html`, which it admits by hash. There is no
+  `'unsafe-inline'`: after editing an inline block run `pnpm run csp`; an inline
+  `onclick=` or a new inline block in an Edge-Function-rendered page is blocked
+  outright, so use `addEventListener` and a file under `apps/website/js/`.
 - `migrations:check` — no migration may recreate a function with a different
   `ON CONFLICT` target without acknowledging it. See below.
 - `copy:check` — no app file may hardcode a string that `packages/core/copy` owns.

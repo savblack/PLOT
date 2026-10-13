@@ -19,6 +19,8 @@
   "test:workers": "node --test apps/web/workers/*/test/*.test.mjs",
     "footer": "node scripts/build-footer.mjs",
     "footer:check": "node scripts/build-footer.mjs --check",
+    "csp": "node scripts/build-csp.mjs",
+    "csp:check": "node scripts/build-csp.mjs --check",
     "changelog": "node scripts/build-changelog.mjs",
     "changelog:check": "node scripts/build-changelog.mjs --check",
     "changelog:add": "node scripts/build-changelog.mjs --add",
