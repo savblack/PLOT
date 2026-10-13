@@ -156,7 +156,7 @@ export const TICKER = {
 export const CLOSER = {
   headline: 'Your next favorite ',
   headlineEm: 'is out there.',
-  sub: 'Start free. Upgrade whenever you like.',
+  sub: 'Free forever. Premium if you want more.',
   cta: 'Start tracking',
   browse: 'Browse What’s On',
   newsletterHint: 'Not ready? Get the latest movie and TV updates by email.',
