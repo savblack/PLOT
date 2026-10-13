@@ -135,6 +135,13 @@ verify_jwt = true
 [functions.stripe-billing]
 verify_jwt = true
 
+# Public "can this caller check out?" read. verify_jwt stays false: signed-out
+# plans pages call it with the publishable key, which is not a JWT the gateway
+# would accept. The handler checks a user bearer with Auth getUser and returns
+# only a boolean. See supabase/functions/billing-availability/index.ts.
+[functions.billing-availability]
+verify_jwt = false
+
 # New-episode notifications — daily at 12:00 UTC, called by pg_cron via pg_net
 # with the Vault service-role bearer (run_new_episode_notifications), so
 # verify_jwt stays true. Declared because a new function without an entry here

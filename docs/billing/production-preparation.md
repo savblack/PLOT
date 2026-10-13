@@ -1,15 +1,18 @@
 # Plot billing production preparation
 
 Read-only audit: 2026-09-24. This document is a review plan, not approval to
-deploy, alter production billing or open checkout. Prices remain US$3/month
-and US$25/year with Adaptive Pricing for eligible sessions.
+deploy, alter production billing or open checkout. The launch price is
+US$3/month or US$24/year (300 and 2400 cents, tax inclusive). Sentences
+below that say US$25/year are what the catalogue showed on that date, not
+the price to configure. The server rejects a yearly price that is not 2400
+cents.
 
 ## Verified current state
 
 | Area | Evidence | Required next step |
 | --- | --- | --- |
 | Account | Plot live account `acct_1TquJrIke4XlO34A`, AU; charges and payouts enabled; no currently due or past-due account requirements | Preserve the separate sandbox account |
-| Catalogue | Active Plot Premium product already has USD 300/month and USD 2500/year recurring prices | Reuse these prices; tax behavior is currently unspecified |
+| Catalogue | On 2026-09-24 the live product had USD 300/month and USD 2500/year. A 25 September read found a 2400-cent annual price active. | Launch uses 300 and 2400 cents, tax inclusive. Do not point STRIPE_PRICE_YEARLY at 2500 cents. |
 | Settlement | Live Dashboard lists AUD only, default, free | Review USD settlement and payout arrangement before enabling it; no bank changes made |
 | Portal | Live Plot Premium portal created and API-verified; Dashboard confirms both approved USD prices | Set its configuration ID in production during approved backend rollout |
 | Webhook | Existing enabled production endpoint subscribes to Checkout completion and subscription update/deletion; API version 2026-06-24.dahlia | Reuse endpoint; review upgrade to the sandbox-tested 2026-08-26.dahlia alongside handler deployment |
@@ -48,8 +51,8 @@ secrets, never tracked files. Creation and credential handoff remain outstanding
 
 Savannah confirmed on 2026-09-24 that she has an ABN, is not registered for
 Australian GST and has no other business income. The agreed pricing approach
-is US$3/month and US$25/year inclusive of applicable tax when collection is
-required. Do not add an Australian GST registration or describe current
+was recorded that day as US$3/month and US$25/year inclusive of applicable tax when collection is
+required. The launch annual price is US$24 (2400 cents). Do not configure 2500 cents. Do not add an Australian GST registration or describe current
 invoices as including GST. Monitor current and projected turnover; the absence
 of other business income is not a permanent exemption. Overseas registration
 obligations remain to be assessed. No tax settings were changed.

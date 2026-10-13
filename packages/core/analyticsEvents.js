@@ -182,7 +182,7 @@ export const EVENTS = Object.freeze({
   // Home's first-run Finishing touches card.
   // finishing_touches_viewed: the card was on screen (`done_count`, `total`).
   // Once per app session, after the watchlist has loaded.
-  // finishing_touch_opened: a step's action was opened (`step`: friends | import | people).
+  // finishing_touch_opened: a step's action was opened (`step`: progress | friends | import | people).
   // finishing_touches_hidden: Hide for now (`done_count`). The control is in the
   // header whether the card is expanded or not.
   FINISHING_TOUCHES_VIEWED: 'finishing_touches_viewed',

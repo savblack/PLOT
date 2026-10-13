@@ -11,8 +11,18 @@
  *                                  and records paid one-time tips
  *   checkout.session.async_payment_succeeded  delayed-payment tips
  *   checkout.session.expired        abandoned Premium Checkout sessions
+ *   customer.subscription.created  subscription exists; same snapshot path as updated
  *   customer.subscription.updated  renewals, plan switches, past_due, cancel_at_period_end
  *   customer.subscription.deleted  final cancellation
+ *   invoice.payment_failed         refetch the subscription (past_due / unpaid)
+ *   invoice.payment_succeeded      refetch the subscription (active after a retry)
+ *   invoice.paid                   same snapshot as payment_succeeded
+ *
+ * Signature: Stripe-Signature, via constructEventAsync. A bad or missing
+ * signature is rejected before any write. Idempotency: apply_stripe_subscription_event
+ * inserts stripe_events in the same transaction as the billing row, so a
+ * repeated event id does not apply twice. Invoice events do not trust the
+ * invoice's implied status; they refetch the subscription and write that.
  *
  * Auth is the Stripe signature, not a Supabase JWT — deploy with
  * verify_jwt = false (see supabase/config.toml).
@@ -25,6 +35,7 @@ import { serviceKey } from '../_shared/serviceKey.ts';
 import { cancelsAtPeriodEnd } from '../_shared/billingPolicy.ts';
 import { reconcileBillingSnapshot } from '../_shared/billingSnapshot.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
+import { subscriptionIdFromInvoice, webhookAction } from '../_shared/stripeEvents.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
@@ -160,6 +171,14 @@ async function captureStripeTip(session: Stripe.Checkout.Session, event: Stripe.
   }
 }
 
+/** Invoice events carry a subscription id, not the status we store. Refetch. */
+async function subscriptionForInvoice(event: Stripe.Event) {
+  const invoice = event.data.object as Stripe.Invoice;
+  const subId = subscriptionIdFromInvoice(invoice as Parameters<typeof subscriptionIdFromInvoice>[0]);
+  if (!subId) return null;
+  return await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
+}
+
 async function recordStripeTip(event: Stripe.Event) {
   const session = event.data.object as Stripe.Checkout.Session;
   if (session.mode !== 'payment' || session.metadata?.kind !== 'tip' || session.payment_status !== 'paid') return;
@@ -191,8 +210,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
+    // webhookAction() is the list under test. A new lifecycle event has to be
+    // added there and handled in this switch, or the tests fail and the event
+    // is acknowledged without a billing write.
+    switch (webhookAction(event.type)) {
+      case 'checkout_completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode !== 'subscription') {
           await recordStripeTip(event);
@@ -209,25 +231,31 @@ Deno.serve(async (req) => {
         if ((result as { applied?: boolean } | null)?.applied) await capturePremiumConversion(userId, sub, event);
         return json({ received: true, ...result });
       }
-      case 'checkout.session.async_payment_succeeded':
+      case 'async_payment':
         await recordStripeTip(event);
         break;
-      case 'checkout.session.expired':
+      case 'checkout_expired':
         await recordPremiumCheckoutCancellation(event);
         break;
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
-        const sub = event.data.object as Stripe.Subscription;
+      case 'sync_subscription':
+      case 'sync_invoice': {
+        const sub = webhookAction(event.type) === 'sync_invoice'
+          ? await subscriptionForInvoice(event)
+          : event.data.object as Stripe.Subscription;
+        if (!sub) break;
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
         const userId = await resolveUser(customerId, sub);
         if (!userId) {
+          // Ack rather than retry forever. Checkout writes the customer row
+          // before the session is returned, so a missing user is not the
+          // normal first-purchase path.
           console.error(`${event.type}: no user for customer ${customerId}`);
           break;
         }
         return json({ received: true, ...await syncSubscription({ userId, customerId, sub, event }) });
       }
-      default:
-        break; // unrecognised events are acknowledged, not retried
+      case 'ignore':
+        break;
     }
   } catch (err) {
     console.error(`Handler failed for ${event.type}:`, (err as Error).message);

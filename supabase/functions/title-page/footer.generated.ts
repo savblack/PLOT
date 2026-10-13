@@ -16,7 +16,8 @@ export const FOOTER_HTML = `
             <h2 class="footer-heading">Explore</h2>
             <ul>
               <li><a href="/whats-on" data-cta="footer">What's On</a></li>
-              <li><a href="/plans" data-cta="footer">Pricing</a></li>
+              <li><a href="/pricing" data-cta="footer">Pricing</a></li>
+              <li><a href="/taste-match" data-cta="footer">Taste match</a></li>
             </ul>
           </div>
           <div class="footer-col">

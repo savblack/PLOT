@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  deriveFinishingTouches, finishingTouchesVisible, hideFinishingTouches, parseFinishingTouches,
-  serialiseFinishingTouches, startFinishingTouches, ACTIVE_DAYS, HIDE_DAYS,
+  deriveFinishingTouches, finishingTouchesVisible, firstWatchlistShow, hideFinishingTouches,
+  noteImportFinished, parseFinishingTouches, serialiseFinishingTouches, startFinishingTouches,
+  ACTIVE_DAYS, HIDE_DAYS,
 } from '../../finishingTouches.js';
 import { greetingFor, partOfDay } from '../../greeting.js';
 import {
@@ -14,12 +15,54 @@ const NOW = Date.UTC(2026, 9, 3, 12);
 
 test('a step is done only when its data says so', () => {
   const fresh = deriveFinishingTouches({ savedCount: 3, followingCount: 0, importDone: false, peopleCount: 0 });
-  assert.deepEqual(fresh.steps.map(s => [s.id, s.done]), [['watchlist', true], ['friends', false], ['import', false], ['people', false]]);
+  assert.deepEqual(fresh.steps.map(s => [s.id, s.done]), [
+    ['watchlist', true], ['progress', false], ['friends', false], ['import', false], ['people', false],
+  ]);
   assert.equal(fresh.doneCount, 1);
-  assert.equal(fresh.total, 4);
+  assert.equal(fresh.total, 5);
   assert.equal(fresh.allDone, false);
-  const all = deriveFinishingTouches({ savedCount: 1, followingCount: 2, importDone: true, peopleCount: 1 });
+  const all = deriveFinishingTouches({ savedCount: 1, followingCount: 2, importDone: true, peopleCount: 1, progressDone: true });
   assert.equal(all.allDone, true);
+});
+
+test('the progress step stays open after onboarding saves, and ticks once something is logged', () => {
+  const saved = deriveFinishingTouches({ savedCount: 3, progressDone: false });
+  assert.equal(saved.steps.find(step => step.id === 'watchlist').done, true);
+  assert.equal(saved.steps.find(step => step.id === 'progress').done, false);
+  assert.equal(deriveFinishingTouches({ savedCount: 3, progressDone: true }).steps.find(step => step.id === 'progress').done, true);
+});
+
+test('the progress step uses the first show still on the watchlist', () => {
+  const film = { tmdb_id: 22, media_type: 'movie', title: 'West' };
+  const show = { tmdb_id: 11, media_type: 'tv', title: 'North', poster_path: '/n.jpg' };
+  const later = { id: 33, media_type: 'tv', name: 'East' };
+  assert.deepEqual(firstWatchlistShow([film, show, later]), {
+    id: 11, media_type: 'tv', title: 'North', poster_path: '/n.jpg',
+  });
+  assert.equal(firstWatchlistShow([film]), null);
+  assert.equal(firstWatchlistShow([]), null);
+  assert.equal(firstWatchlistShow(null), null);
+  assert.equal(firstWatchlistShow([{ id: 0, media_type: 'tv' }, { media_type: 'person', id: 4 }]), null);
+});
+
+test('the progress step is hidden with no show, and a Trakt import completes it', () => {
+  const hidden = deriveFinishingTouches({ savedCount: 2, showProgress: false });
+  assert.equal(hidden.steps.some(step => step.id === 'progress'), false);
+  assert.equal(hidden.total, 4);
+  const trakt = deriveFinishingTouches({ savedCount: 2, showProgress: true, traktImportDone: true });
+  assert.equal(trakt.steps.find(step => step.id === 'progress').done, true);
+  const started = noteImportFinished(startFinishingTouches(NOW), 'trakt', 12);
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(started)).traktImportDone, true);
+  const empty = noteImportFinished(startFinishingTouches(NOW), 'trakt', 0);
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(empty)).traktImportDone, undefined);
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(empty)).importDone, true);
+  const file = noteImportFinished(startFinishingTouches(NOW), 'trakt-export', 1);
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(file)).traktImportDone, true);
+  const missing = noteImportFinished(startFinishingTouches(NOW), 'trakt');
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(missing)).traktImportDone, undefined);
+  const other = noteImportFinished(startFinishingTouches(NOW), 'letterboxd', 4);
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(other)).traktImportDone, undefined);
+  assert.equal(parseFinishingTouches(serialiseFinishingTouches(other)).importDone, true);
 });
 
 test('nothing saved means the watchlist step is not done', () => {

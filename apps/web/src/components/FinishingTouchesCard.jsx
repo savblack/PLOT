@@ -47,7 +47,7 @@ export default function FinishingTouchesCard({ tiles, doneCount, total, allDone,
         </button>
       </div>
       {expanded && (
-        <div className="ft-grid">
+        <div className="ft-grid" style={{ '--ft-cols': String(tiles.length) }}>
           {tiles.map(tile => (
             <div key={tile.id} className={`ft-tile ft-tile--${tile.id}${tile.done ? ' is-done' : ''}`}>
               <span className="ft-tile-head"><Tick done={tile.done} /><span className="ft-tile-title">{tile.title}</span></span>

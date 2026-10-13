@@ -13,13 +13,14 @@ import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
 import { setUserTimezone } from '@plot/core/date.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
+import { onboardingGuardDecision, readOnboardingUntilDecided } from '@plot/core/onboardingGate.js';
 import { initAnalytics, identifyUser, resetAnalytics, setPersonProps } from '../lib/analytics';
 import { hydrateSectionOpenState } from '../lib/sectionOpenState';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { consumeSimklState, exchangeSimklCode } from '../hooks/useSimklSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider, useAppData } from '../contexts/AppDataContext';
-import { OnboardingRefreshContext } from '../contexts/OnboardingContext';
+import { OnboardingCompleteContext, OnboardingRefreshContext } from '../contexts/OnboardingContext';
 import { DrawerProvider, useDrawer } from '../contexts/DrawerContext';
 import { MediaPanelProvider, useMediaPanel } from '../contexts/MediaPanelContext';
 import DrawerMenu from '../components/DrawerMenu';
@@ -44,13 +45,23 @@ function AuthGuard({ session, onboardingComplete }: {
   const segments = useSegments();
   const pathname = usePathname();
   const router   = useRouter();
+  const { colors } = useTheme();
+  const inAuth = segments[0] === '(auth)';
+  const inOnboarding = segments[0] === 'onboarding';
+  const onInviteLink = segments[0] === 'watch-with' || segments[0] === 'join-list';
+  // null onboardingComplete means the profile row has not loaded. That is
+  // 'loading', not a new account. The root layout also holds the loader then.
+  const decision = onboardingGuardDecision({
+    authDecided: true,
+    authenticated: !!session,
+    profileDecided: onboardingComplete !== null,
+    onboardingComplete: onboardingComplete === true,
+  });
 
   useEffect(() => {
-    const inAuth = segments[0] === '(auth)';
-    const inOnboarding = segments[0] === 'onboarding';
-    const onInviteLink = segments[0] === 'watch-with' || segments[0] === 'join-list';
+    if (decision === 'loading') return;
 
-    if (!session) {
+    if (decision === 'login') {
       resetCompareHandoff();
       // A signed-out visitor can read an invite link. Remember it so sign-in
       // brings them back. A compare link is restored the same way. Anywhere
@@ -65,27 +76,46 @@ function AuthGuard({ session, onboardingComplete }: {
           router.replace('/(auth)');
         }
       }
-    } else if (onboardingComplete === false) {
-      // Logged in but onboarding not done
-      if (!inOnboarding) router.replace('/onboarding/seed');
-    } else if (onboardingComplete === true) {
-      if (onInviteLink) {
-        clearWatchTogetherReturn();
-        resetCompareHandoff();
-      } else if (inAuth || inOnboarding) {
-        const back = consumeWatchTogetherReturn();
-        if (back) router.replace(back as Href);
-        else if (!watchTogetherHandedOff()) {
-          const handoff = consumeCompareHandoff();
-          if (handoff.go) router.replace((handoff.path ?? '/(app)') as Href);
-        }
-      } else {
-        resetCompareHandoff();
-      }
+      return;
     }
-  }, [session, onboardingComplete, segments, pathname]);
 
-  return <Slot />;
+    if (decision === 'onboarding') {
+      if (!inOnboarding) router.replace('/onboarding/seed');
+      return;
+    }
+
+    if (onInviteLink) {
+      clearWatchTogetherReturn();
+      resetCompareHandoff();
+    } else if (inAuth || inOnboarding) {
+      const back = consumeWatchTogetherReturn();
+      if (back) router.replace(back as Href);
+      else if (!watchTogetherHandedOff()) {
+        const handoff = consumeCompareHandoff();
+        if (handoff.go) router.replace((handoff.path ?? '/(app)') as Href);
+      }
+    } else {
+      resetCompareHandoff();
+    }
+  }, [decision, inAuth, inOnboarding, onInviteLink, pathname, router]);
+
+  // Cover the screen we are about to leave so a finished account never sees
+  // the setup flow, even for a frame, while the replace runs.
+  const cover =
+    (decision === 'login' && !inAuth && !onInviteLink) ||
+    (decision === 'onboarding' && !inOnboarding) ||
+    (decision === 'app' && (inAuth || inOnboarding));
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Slot />
+      {cover ? (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 function RootDrawerMenu() {
@@ -126,6 +156,15 @@ function ThemedBlank() {
   return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
 }
 
+type BootProfile = {
+  region: string | null;
+  timezone: string | null;
+  onboarding_complete: boolean | null;
+  is_premium: boolean | null;
+  is_supporter: boolean | null;
+  last_kofi_tip_at: string | null;
+};
+
 export default function RootLayout() {
   return (
     <ErrorBoundary>
@@ -140,8 +179,11 @@ function RootInner() {
   const { colors } = useTheme();
   const [session,            setSession]            = useState<Session | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+  const [profileReady,       setProfileReady]       = useState(false);
   const [authReady,          setAuthReady]          = useState(false);
   const activeUserIdRef = useRef<string | null>(null);
+  const profileGen = useRef(0);
+  const profileReadyRef = useRef(false);
 
   const [fontsLoaded] = useFonts({
     // Display face: Gabarito static cuts (RN cannot pick a weight axis from a variable font).
@@ -155,29 +197,56 @@ function RootInner() {
     'DMSans-TabularSemiBold':  require('../assets/fonts/DMSans-TabularSemiBold.ttf'),
   });
 
-  // Load profile to check onboarding status
-  const loadProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('region, timezone, onboarding_complete, is_premium, is_supporter, last_kofi_tip_at')
-      .eq('id', userId)
-      .maybeSingle();
-    if (activeUserIdRef.current !== userId) return;
+  // Load profile to check onboarding status. An empty read is not "new
+  // account": the request right after sign-in can go out before the access
+  // token is attached, and RLS then returns no row. Keep loading until a row
+  // arrives. `revalidate` is a token refresh for an account we already decided.
+  const loadProfile = useCallback(async (userId: string, gen: number, mode: 'block' | 'refresh' | 'revalidate') => {
+    const result = await readOnboardingUntilDecided(
+      async () => {
+        const res = await supabase
+          .from('profiles')
+          .select('region, timezone, onboarding_complete, is_premium, is_supporter, last_kofi_tip_at')
+          .eq('id', userId)
+          .maybeSingle();
+        return {
+          data: res.data as BootProfile | null,
+          error: res.error,
+        };
+      },
+      {
+        shouldStop: () => profileGen.current !== gen || activeUserIdRef.current !== userId,
+        maxAttempts: mode === 'revalidate' ? 1 : Number.POSITIVE_INFINITY,
+      },
+    );
+    if (profileGen.current !== gen || activeUserIdRef.current !== userId || !result.decided) return;
+    const data = result.data;
     if (data?.region) setTmdbRegion(data.region);
     // Set alongside the region at boot, before any screen renders a date —
     // AppDataProvider applies it again on its own profile load.
     setUserTimezone(data?.timezone || null);
-    setOnboardingComplete(data?.onboarding_complete ?? false);
+    setOnboardingComplete(result.onboardingComplete);
     // Keep all badges on the PostHog person so any event can be segmented by
     // them — paying and tipping are different behaviours worth telling apart.
-    if (data) setPersonProps(personPropsFromProfile(data));
-  };
+    if (data) {
+      setPersonProps(personPropsFromProfile({
+        is_premium: data.is_premium === true,
+        is_supporter: data.is_supporter === true,
+        last_kofi_tip_at: data.last_kofi_tip_at,
+      }));
+    }
+    profileReadyRef.current = true;
+    setProfileReady(true);
+  }, []);
 
   // Re-read the profile on demand. The seed screen awaits this after it writes
   // onboarding_complete, so AuthGuard below never routes off the stale value.
   const refreshOnboarding = useCallback(async () => {
-    if (session?.user) await loadProfile(session.user.id);
-  }, [session]);
+    const userId = activeUserIdRef.current;
+    if (!userId) return;
+    const gen = ++profileGen.current;
+    await loadProfile(userId, gen, 'refresh');
+  }, [loadProfile]);
 
   useEffect(() => {
     // Before the first session check, so nothing captured during boot is lost —
@@ -189,38 +258,56 @@ function RootInner() {
     // synchronously; without this a collapsed section flashes open first.
     hydrateSectionOpenState();
 
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      activeUserIdRef.current = session?.user?.id ?? null;
-      setSession(session);
-      if (session?.user) {
-        identifyUser(session.user.id);
-        loadProfile(session.user.id);
-      } else {
+    let cancelled = false;
+
+    // Session state updates here. The profile read is deferred so it does not
+    // run inside onAuthStateChange, where the new access token may not be on
+    // the client yet.
+    const begin = (next: Session | null) => {
+      if (cancelled) return;
+      const nextId = next?.user?.id ?? null;
+      const prevId = activeUserIdRef.current;
+      activeUserIdRef.current = nextId;
+      setSession(next);
+      if (!nextId) {
         resetAnalytics();
         setOnboardingComplete(null);
+        profileReadyRef.current = false;
+        setProfileReady(false);
+        profileGen.current += 1;
+        return;
       }
-      setAuthReady(true);
+      identifyUser(nextId);
+      const mode = nextId !== prevId || !profileReadyRef.current ? 'block' : 'revalidate';
+      if (mode === 'block') {
+        setOnboardingComplete(null);
+        profileReadyRef.current = false;
+        setProfileReady(false);
+      }
+      const gen = ++profileGen.current;
+      setTimeout(() => {
+        if (!cancelled) loadProfile(nextId, gen, mode);
+      }, 0);
+    };
+
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session: next } }) => {
+      begin(next);
+      if (!cancelled) setAuthReady(true);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      activeUserIdRef.current = session?.user?.id ?? null;
-      setSession(session);
-      if (session?.user) {
-        identifyUser(session.user.id);
-        loadProfile(session.user.id);
-      } else {
-        resetAnalytics();
-        setOnboardingComplete(null);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => {
+      begin(next);
     });
 
     return () => {
+      cancelled = true;
       activeUserIdRef.current = null;
+      profileGen.current += 1;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [loadProfile]);
 
   useEffect(() => {
     const handle = async (url: string | null) => {
@@ -255,7 +342,11 @@ function RootInner() {
   // The wordmark loader needs Gabarito — before the fonts are in it
   // would render in the system fallback with mangled spacing. Blank until then.
   if (!fontsLoaded) return <ThemedBlank />;
-  if (!authReady)   return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
+  // Signed in but the profile row has not loaded: deciding now would treat
+  // them as new. Signed out skips this and goes to the auth screen.
+  if (!authReady || (session && !profileReady)) {
+    return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
+  }
 
   return (
     <SafeAreaProvider>
@@ -268,9 +359,11 @@ function RootInner() {
             <ThemedStatusBar />
             <RootDrawerMenu />
             <RootMediaPanel />
-            <OnboardingRefreshContext.Provider value={refreshOnboarding}>
-              <AuthGuard session={session} onboardingComplete={onboardingComplete} />
-            </OnboardingRefreshContext.Provider>
+            <OnboardingCompleteContext.Provider value={onboardingComplete}>
+              <OnboardingRefreshContext.Provider value={refreshOnboarding}>
+                <AuthGuard session={session} onboardingComplete={onboardingComplete} />
+              </OnboardingRefreshContext.Provider>
+            </OnboardingCompleteContext.Provider>
             {/* After the navigator so it draws on top. The panel has its own. */}
             <UndoToast />
             <FollowToastHost />

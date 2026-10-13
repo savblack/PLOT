@@ -32,3 +32,29 @@ ignoredBuiltDependencies:
 # current release inside the range react-devtools-core already allows.
 overrides:
   "shell-quote@<1.11.0": 1.12.0
+  # micromatch 4.0.8 (metro-file-map and @expo/metro-file-map) depends on
+  # braces ^3.0.3. 3.0.3 is the latest release and it is CVE-2026-93687
+  # (GHSA-vfj7-8cjw-p6xm): a deeply nested pattern overflows the stack.
+  # Upstream has no patched version. @dieub/braces-depth-guard@3.0.3-pn.0
+  # is that release plus a nesting cap of 100, which throws instead.
+  braces: "npm:@dieub/braces-depth-guard@3.0.3-pn.0"
+  # xcode 3.0.1 (Expo config plugins) depends on uuid ^7.0.3, which locks
+  # 7.0.3. CVE-2026-41907 (GHSA-w5hq-g745-h8pq) is fixed in 11.1.1. 11.x is
+  # the CommonJS line, and xcode calls uuid.v4().
+  "uuid@<11.1.1": 11.1.1
+  # expo-router depends on query-string 7.1.3, which depends on
+  # decode-uri-component ^0.2.2. That caret stops before 0.3.0, so the
+  # lockfile stayed on 0.2.2. CVE-2026-45822 (GHSA-vcc3-ghjq-m6fr) is fixed
+  # in 0.5.0. query-string already turns "+" into a space before decoding.
+  # 0.5.0 is ESM-only, and query-string calls require(), so the patch
+  # publishes the same function as CommonJS.
+  "decode-uri-component@<=0.4.2": 0.5.0
+  # @expo/cli and @expo/code-signing-certificates depend on node-forge.
+  # 1.4.0 is still the latest npm release. CVE-2026-85393
+  # (GHSA-86w9-cpqp-85rv) lets a nested DigestAlgorithm carry extra elements
+  # and forge an RSA PKCS#1 v1.5 signature for a low public exponent.
+  # Upstream has no patched version. Patching 1.4.0 in place keeps the name
+  # node-forge@1.4.0, so Dependabot leaves alert 102 open. vendor/node-forge
+  # is that release plus the DigestAlgorithm child-count check from
+  # digitalbazaar/forge#1152, under the name @plot/node-forge.
+  node-forge: "file:vendor/node-forge"
