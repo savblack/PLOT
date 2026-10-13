@@ -43,6 +43,10 @@ import { shareDataExport, type ExportFormat } from '../../lib/shareDataExport';
 import { pickAndUploadAvatar, removeAvatar } from '../../lib/avatar';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../../lib/launchFeatures';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
+import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
+import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
+import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../../lib/letterboxdImportPrompt';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
@@ -892,6 +896,8 @@ export default function SettingsScreen() {
   const [query, setQuery] = useState('');
   const [themeUpgrade, setThemeUpgrade] = useState<string | null>(null);
   const [showImport,     setShowImport]     = useState(false);
+  const [showLetterboxdImport, setShowLetterboxdImport] = useState(false);
+  const [letterboxdPrompt, setLetterboxdPrompt] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [clearingHist,   setClearingHist]   = useState(false);
   const [clearingList,   setClearingList]   = useState(false);
@@ -933,6 +939,16 @@ export default function SettingsScreen() {
   const { visibility: watchlistVisibility, refresh: refreshWatchlistVisibility } = useWatchlistVisibility(userId, isPublic);
   // The choice is made on its own screen; re-read it on the way back.
   useFocusEffect(useCallback(() => { refreshWatchlistVisibility(); }, [refreshWatchlistVisibility]));
+  const refreshLetterboxdPrompt = useCallback(() => {
+    readLetterboxdImportPrompt(userId).then(prompt => setLetterboxdPrompt(!!prompt));
+  }, [userId]);
+  useEffect(() => { refreshLetterboxdPrompt(); }, [refreshLetterboxdPrompt]);
+  useFocusEffect(useCallback(() => { refreshLetterboxdPrompt(); }, [refreshLetterboxdPrompt]));
+  const dismissLetterboxdImport = useCallback(async () => {
+    await clearLetterboxdImport(userId);
+    setLetterboxdPrompt(false);
+    createImportReporter({ entry: IMPORT_ENTRY_POINTS.IMPORT_PAGE }).abandoned(LETTERBOXD_IMPORT_ABANDON.DISMISSED);
+  }, [userId]);
 
   const toggleVisibility = async () => {
     if (!userId) return;
@@ -1604,6 +1620,23 @@ export default function SettingsScreen() {
 
         <TrackingSettings userId={userId} connect={trakt.connect} connectPlex={plex.startPlexAuth} plexPolling={plex.polling} connectionError={trakt.error || plex.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : plex.disconnect()} />
         <SettingsGroup title={SETTINGS_VIEW.integrations.importWatchHistoryLabel}>
+          {letterboxdPrompt ? (
+            <View>
+              <SettingsRow
+                icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><Polyline points="17 8 12 3 7 8"/><Line x1={12} y1={3} x2={12} y2={15}/></Svg>}
+                label={IMPORT_VIEW.letterboxdFinishTitle}
+                description={IMPORT_VIEW.letterboxdFinishSub}
+                onPress={() => setShowLetterboxdImport(true)}
+              />
+              <TouchableOpacity
+                onPress={() => { void dismissLetterboxdImport(); }}
+                accessibilityRole="button"
+                style={{ alignSelf: 'flex-start', paddingHorizontal: 16, paddingBottom: 12 }}
+              >
+                <Text style={{ color: colors.textMuted, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{IMPORT_VIEW.letterboxdFinishDismiss}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><Polyline points="16,17 21,12 16,7"/><Line x1={21} y1={12} x2={9} y2={12}/></Svg>}
             label={SETTINGS_VIEW.integrations.importWatchHistory}
@@ -1771,7 +1804,15 @@ export default function SettingsScreen() {
         <FeedbackModal userId={userId} userEmail={user.email ?? ''} initialType={feedbackType} onClose={() => setFeedbackType(null)} />
       )}
       {showImport && userId && (
-        <ImportHistoryModal userId={userId} onClose={() => setShowImport(false)} />
+        <ImportHistoryModal userId={userId} onClose={() => { setShowImport(false); refreshLetterboxdPrompt(); }} />
+      )}
+      {showLetterboxdImport && userId && (
+        <ImportHistoryModal
+          userId={userId}
+          entry={IMPORT_ENTRY_POINTS.IMPORT_PAGE}
+          initialPlatform="letterboxd"
+          onClose={() => { setShowLetterboxdImport(false); refreshLetterboxdPrompt(); }}
+        />
       )}
       {showDeleteAccount && (
         <ConfirmPhraseModal

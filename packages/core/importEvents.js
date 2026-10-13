@@ -150,9 +150,18 @@ export function alreadyImportedEvent(entry) {
   return known.some(event => event.source_key === ownKey);
 }
 
+/** A watched.csv row that overlaps a selected diary entry for the same film.
+ * Left out of the write unless the person saves it as a separate watch.
+ * It does not block the rest of the file.
+ * @param {any} entry
+ */
+export function leftOutWatchSummary(entry) {
+  return entry.status === 'matched' && !!entry.pendingDuplicates?.length && entry.duplicateDecision !== 'keep';
+}
+
 /** @param {any} entry */
 export function needsDuplicateReview(entry) {
-  return entry.status === 'matched' && !!(entry.duplicateCandidates?.length || entry.pendingDuplicates?.length) && entry.duplicateDecision !== 'keep';
+  return entry.status === 'matched' && !!entry.duplicateCandidates?.length && entry.duplicateDecision !== 'keep';
 }
 
 /** A Letterboxd watched summary is not evidence of another watch when a
