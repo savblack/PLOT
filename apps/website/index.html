@@ -1340,6 +1340,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </section>
 
   <!-- ── Lists ──────────────────────────────────────────────────── -->
+  <!-- Each cover's name describes the TMDB set that fills it (data-src); the
+       committed posters are fallbacks if /api/discover is unavailable. -->
   <section id="lists" class="hx hx--flip" aria-labelledby="listsHeadline">
     <div class="hx-inner">
       <div class="hx-copy reveal">
@@ -1349,9 +1351,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <div class="hx-visual reveal" aria-hidden="true">
         <div class="ls-fan">
-        <figure class="ls-card ls-card--a"><div class="ls-grid"><img src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/tvUHVSTJV9ITON3oyHaWp7oaAc8.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/VHSzNBTwxV8vh7wylo7O9CLdac.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/evKz85EKouVbIr51zy5fOtpNRPg.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"></div><figcaption><span><span class="ls-name">Comfort watches</span><span class="ls-count">12 titles</span></span><span class="ls-vis">Private</span></figcaption></figure>
-        <figure class="ls-card ls-card--c"><div class="ls-grid"><img src="https://image.tmdb.org/t/p/w185/vP7Yd6couiAaw9jgMd5cjMRj3hQ.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/78aK4Msbr22A5PGa6PZV0pAvdwf.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/m5x8D0bZ3eKqIVWZ5y7TnZ2oTVg.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/AdYr4DjOgXvDUMwu6vEhZy1Rnxk.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"></div><figcaption><span><span class="ls-name">Watch with Dad</span><span class="ls-count">8 titles</span></span><span class="ls-vis">Shared</span></figcaption></figure>
-        <figure class="ls-card ls-card--b"><div class="ls-grid"><img src="https://image.tmdb.org/t/p/w185/fWPgbnt2LSqkQ6cdQc0SZN9CpLm.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/cpf7vsRZ0MYRQcnLWteD5jK9ymT.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"></div><figcaption><span><span class="ls-name">Best of the year</span><span class="ls-count">31 titles</span></span><span class="ls-vis">Public</span></figcaption></figure>
+        <figure class="ls-card ls-card--a" data-src="romance"><div class="ls-grid"><img src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/H6vke7zGiuLsz4v4RPeReb9rsv.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/tvUHVSTJV9ITON3oyHaWp7oaAc8.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/evKz85EKouVbIr51zy5fOtpNRPg.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"></div><figcaption><span><span class="ls-name">Date night</span><span class="ls-count">14 titles</span></span><span class="ls-vis">Private</span></figcaption></figure>
+        <figure class="ls-card ls-card--c" data-src="horror"><div class="ls-grid"><img src="https://image.tmdb.org/t/p/w185/cpf7vsRZ0MYRQcnLWteD5jK9ymT.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/fWPgbnt2LSqkQ6cdQc0SZN9CpLm.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/oCoTgC3UyWGfyQ9thE10ulWR7bn.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"></div><figcaption><span><span class="ls-name">Horror night</span><span class="ls-count">9 titles</span></span><span class="ls-vis">Shared</span></figcaption></figure>
+        <figure class="ls-card ls-card--b" data-src="trending"><div class="ls-grid"><img src="https://image.tmdb.org/t/p/w185/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/AdYr4DjOgXvDUMwu6vEhZy1Rnxk.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"></div><figcaption><span><span class="ls-name">This week’s must-sees</span><span class="ls-count">23 titles</span></span><span class="ls-vis">Public</span></figcaption></figure>
         </div>
       </div>
       <div class="hx-actions reveal">
@@ -1787,6 +1789,36 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             + '<img class="dr-poster" src="' + IMG + p.r.poster_path + '" alt="" loading="lazy" decoding="async" width="44" height="66">'
             + '<span class="dr-meta"><span class="dr-name">' + esc(p.r.title || p.r.name || '') + '</span><span class="dr-kind">' + esc(p.kind) + '</span></span>' + chip + '</li>';
         }).join('');
+      }).catch(function () {});
+    })();
+
+    // Lists — each cover fills from the TMDB set its name describes, so the
+    // posters always fit the list: top-rated romance, this week's trending,
+    // top-rated horror. Covers never repeat a title between them.
+    (function () {
+      var cards = document.querySelectorAll('.ls-card[data-src]');
+      if (!cards.length) return;
+      var IMG = 'https://image.tmdb.org/t/p/w185';
+      var TOP = 'sort_by=vote_average.desc&vote_count.gte=2500&include_adult=false';
+      var SOURCES = {
+        romance: ['discover/movie', 'with_genres=10749&' + TOP],
+        horror: ['discover/movie', 'with_genres=27&' + TOP],
+        trending: ['trending/all/week'],
+      };
+      var keys = Object.keys(SOURCES);
+      Promise.all(keys.map(function (k) {
+        return tmdbProxy(SOURCES[k][0], SOURCES[k][1]).catch(function () { return {}; });
+      })).then(function (results) {
+        var seen = {};
+        var byKey = {};
+        keys.forEach(function (k, i) {
+          byKey[k] = unseen(((results[i] && results[i].results) || []).filter(function (r) { return r.poster_path; }), seen).slice(0, 4);
+        });
+        cards.forEach(function (card) {
+          var picks = byKey[card.getAttribute('data-src')] || [];
+          if (picks.length < 4) return;
+          card.querySelectorAll('.ls-grid img').forEach(function (img, i) { img.src = IMG + picks[i].poster_path; });
+        });
       }).catch(function () {});
     })();
 

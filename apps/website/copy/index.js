@@ -89,10 +89,11 @@ export const LISTS = {
   eyebrow: 'Lists',
   headline: 'Lists only you could make.',
   body: 'By decade, director, mood or the person you watch with. Share them, or keep them just for you.',
+  // Each name matches the TMDB set that fills its cover (data-src in index.html).
   cards: [
-    { name: 'Comfort watches', count: '12 titles', visibility: 'Private' },
-    { name: 'Best of the year', count: '31 titles', visibility: 'Public' },
-    { name: 'Watch with Dad', count: '8 titles', visibility: 'Shared' },
+    { name: 'Date night', count: '14 titles', visibility: 'Private', source: 'Top-rated romance' },
+    { name: 'This week’s must-sees', count: '23 titles', visibility: 'Public', source: 'Trending this week' },
+    { name: 'Horror night', count: '9 titles', visibility: 'Shared', source: 'Top-rated horror' },
   ],
   cta: 'Start a list',
   note: 'Five lists free. Unlimited with Premium.',

@@ -69,14 +69,23 @@ test('the allowlist still covers every path the homepage asks for', () => {
   }
 });
 
-test('the allowlist still passes every path the homepage requests', () => {
-  // The homepage asks /api/discover for a fixed set of paths (hero, Coming up,
-  // ticker, poster wall). A path missing from _lib/discover.js would quietly
-  // leave its surface on the committed fallbacks. Fail here instead.
-  const paths = [...new Set([...homepage.matchAll(/tmdbProxy\('([^']+)'/g)].map((match) => match[1]))];
-  assert.ok(paths.length > 0, 'found no tmdbProxy paths to check, so this test is not testing anything');
-  for (const path of paths) {
-    const { error } = query(`?path=${path}`);
+test('the allowlist still passes every request the homepage makes', () => {
+  // The homepage asks /api/discover for a fixed set of paths and query strings
+  // (hero, Coming up, list covers, ticker, poster wall). Values are enumerated
+  // in _lib/discover.js, so a path or parameter missing there quietly leaves its
+  // surface on the committed fallbacks. Fail here instead.
+  const calls = [...homepage.matchAll(/tmdbProxy\('([^']+)'(?:,\s*'([^']*)')?/g)].map((m) => [m[1], m[2] || '']);
+  const vars = Object.fromEntries([...homepage.matchAll(/var (\w+) = '([^']*)';/g)].map((m) => [m[1], m[2]]));
+  // List covers build their query from SOURCES; resolve those too.
+  for (const m of homepage.matchAll(/\['(discover\/movie)', '([^']*)' \+ (\w+)\]/g)) calls.push([m[1], m[2] + (vars[m[3]] || '')]);
+  for (const m of homepage.matchAll(/\['([a-z_/]+)'\]/g)) calls.push([m[1], '']);
+  assert.ok(calls.length > 0, 'found no tmdbProxy requests to check, so this test is not testing anything');
+  for (const [path, params] of calls) {
+    const { search, error } = query(`?path=${path}${params ? '&' + params : ''}`);
     assert.equal(error, undefined, `the homepage requests ${path}, which _lib/discover.js refuses`);
+    for (const [key, value] of new URLSearchParams(params)) {
+      assert.ok(new URLSearchParams(search).getAll(key).includes(value),
+        `the homepage sends ${key}=${value} to ${path}, which _lib/discover.js drops`);
+    }
   }
 });
