@@ -7,7 +7,7 @@
  * "not loaded yet" as "no card" and the card appears once the read lands.
  */
 import {
-  finishingTouchesKey, hideFinishingTouches, parseFinishingTouches,
+  finishingTouchesKey, hideFinishingTouches, noteImportFinished, parseFinishingTouches,
   serialiseFinishingTouches, startFinishingTouches,
   type FinishingTouchesState,
 } from '@plot/core/finishingTouches.js';
@@ -28,10 +28,12 @@ async function update(userId: string, change: (state: FinishingTouchesState) => 
 /** Onboarding finished: start the card, once per account on this device. */
 export async function startFinishingTouchesFor(userId: string): Promise<void> {
   const key = finishingTouchesKey(userId);
-  if (!(await readStorage(key))) await writeStorage(key, serialiseFinishingTouches(startFinishingTouches()));
+  if (!(await readStorage(key))) await writeStorage(key, serialiseFinishingTouches(startFinishingTouches(Date.now())));
 }
 
-/** An import finished: ticks "Bring your history over". A no-op for accounts that never had the card. */
-export const markImportDone = (userId: string) => update(userId, state => ({ ...state, importDone: true }));
+/** An import finished: ticks "Bring your history over". A Trakt import that
+ *  wrote at least one row also completes "Mark where you're up to". A no-op
+ *  when the card was never started. */
+export const markImportDone = (userId: string, source?: string | null, importedCount?: number | null) => update(userId, state => noteImportFinished(state, source, importedCount));
 export const hideFinishingTouchesFor = (userId: string) => update(userId, state => hideFinishingTouches(state));
 export const closeFinishingTouches = (userId: string) => update(userId, state => ({ ...state, closed: true }));

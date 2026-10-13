@@ -43,7 +43,9 @@ const PERSISTENT_FAILURE_THRESHOLD = 1;
  * @param {object}   props
  * @param {string}   [props.siteKey]    Turnstile site key; when falsy the widget is not rendered.
  * @param {Function} props.onToken      Called with the token string on success, or null on expiry/error/reset.
- * @param {number}   [props.resetSignal] Bump this number to force the widget to issue a fresh token.
+ * @param {number}   [props.resetSignal] Bump this number to drop the current token without running a new challenge.
+ * @param {number}   [props.executeSignal] Bump this number to run the challenge. The widget
+ *                                      does not run on load. reset() alone does not re-run it.
  * @param {Function} [props.onBlocked]  Called with the 1-based attempt number each time the
  *                                      widget fails to load or errors, for tracking incidence.
  * @param {Function} [props.onPersistentlyBlocked] Called with true once failures cross
@@ -58,6 +60,7 @@ export default function Turnstile({
   siteKey,
   onToken,
   resetSignal = 0,
+  executeSignal = 0,
   onBlocked,
   onPersistentlyBlocked,
   failureMessage = AUTH_PAGE.verificationFailed,
@@ -70,11 +73,27 @@ export default function Turnstile({
   const onPersistentlyBlockedRef = useRef(onPersistentlyBlocked);
   const [failCount, setFailCount] = useState(0);
   const [retryNonce, setRetryNonce] = useState(0);
+  const executeSignalRef = useRef(0);
+  const lastExecutedRef = useRef(0);
+  const runExecuteRef = useRef(() => {});
 
   // Keep the latest callbacks without re-running the render effect below.
   useEffect(() => { onTokenRef.current = onToken; }, [onToken]);
   useEffect(() => { onBlockedRef.current = onBlocked; }, [onBlocked]);
   useEffect(() => { onPersistentlyBlockedRef.current = onPersistentlyBlocked; }, [onPersistentlyBlocked]);
+
+  useEffect(() => {
+    runExecuteRef.current = () => {
+      const signal = executeSignalRef.current;
+      if (!signal || lastExecutedRef.current === signal) return;
+      const id = widgetIdRef.current;
+      if (!id || !window.turnstile?.execute) return;
+      lastExecutedRef.current = signal;
+      try { window.turnstile.reset(id); } catch { /* widget already gone */ }
+      onTokenRef.current?.(null);
+      try { window.turnstile.execute(id); } catch { /* widget already gone */ }
+    };
+  }, []);
 
   // Render once per site key (and again on manual retry).
   useEffect(() => {
@@ -94,9 +113,12 @@ export default function Turnstile({
         if (cancelled || !containerRef.current || !window.turnstile) return;
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
-          // Hidden unless a challenge genuinely needs interaction — no visible
-          // Cloudflare box in the normal auto-pass flow.
+          // Hidden unless a challenge genuinely needs interaction. The
+          // challenge itself waits for execute(), so opening the form does
+          // not start a token that can expire before the person submits.
           appearance: 'interaction-only',
+          execution: 'execute',
+          retry: 'never',
           callback: (token) => {
             onTokenRef.current?.(token);
             if (cancelled) return;
@@ -105,6 +127,7 @@ export default function Turnstile({
           'expired-callback': () => onTokenRef.current?.(null),
           'error-callback': () => { onTokenRef.current?.(null); reportFailure(); },
         });
+        runExecuteRef.current();
       })
       .catch(() => { onTokenRef.current?.(null); reportFailure(); });
     return () => {
@@ -116,12 +139,18 @@ export default function Turnstile({
     };
   }, [siteKey, retryNonce]);
 
-  // Reset to a fresh token when asked (tokens are single-use).
+  // Reset to a fresh token when asked (tokens are single-use). With
+  // execution "execute", reset does not start the next challenge.
   useEffect(() => {
     if (!resetSignal || !widgetIdRef.current || !window.turnstile) return;
     try { window.turnstile.reset(widgetIdRef.current); } catch { /* widget already gone */ }
     onTokenRef.current?.(null);
   }, [resetSignal]);
+
+  useEffect(() => {
+    executeSignalRef.current = executeSignal;
+    runExecuteRef.current();
+  }, [executeSignal]);
 
   if (!siteKey) return null;
   // No reserved height — interaction-only keeps the widget hidden until (if
@@ -133,16 +162,9 @@ export default function Turnstile({
         className="auth-turnstile"
         style={{ display: 'flex', justifyContent: 'center' }}
       />
-      {failCount > PERSISTENT_FAILURE_THRESHOLD ? (
+      {failCount > 1 ? (
         <p className="auth-turnstile-error">
-          {blockedMessage}{' '}
-          <button type="button" onClick={() => setRetryNonce((n) => n + 1)}>
-            {AUTH_PAGE.verificationRetry}
-          </button>
-        </p>
-      ) : failCount > 0 ? (
-        <p className="auth-turnstile-error">
-          {failureMessage}{' '}
+          {failCount > PERSISTENT_FAILURE_THRESHOLD + 1 ? blockedMessage : failureMessage}{' '}
           <button type="button" onClick={() => setRetryNonce((n) => n + 1)}>
             {AUTH_PAGE.verificationRetry}
           </button>

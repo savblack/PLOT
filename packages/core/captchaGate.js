@@ -17,6 +17,9 @@
 /** How long to wait for a Turnstile token before giving up on this attempt. */
 export const CAPTCHA_TOKEN_WAIT_MS = 4000;
 
+/** How many times a submit runs the widget before bypass or the error. */
+export const CAPTCHA_SUBMIT_ATTEMPTS = 2;
+
 /**
  * @param {object} opts
  * @param {string} [opts.siteKey] Turnstile site key. Falsy means captcha is off.

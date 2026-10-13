@@ -290,7 +290,7 @@ function AccountImportView() {
     if (result) {
       setConnectionResult(result);
       importReport.report('completed', { source, count: result.importedCount || 0 });
-      markImportDone(user?.id);
+      markImportDone(user?.id, source, result.importedCount || 0);
       suppressFirstWinForImport(user?.id, source);
     } else {
       importReport.report('failed', { source, reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
@@ -411,7 +411,7 @@ function AccountImportView() {
     setImportResult({ duplicates, failed });
     if (failed) setImportError(IMPORT_VIEW.partialFailure(failed));
     if (inserted > 0) {
-      markImportDone(user.id);
+      markImportDone(user.id, platform?.id, inserted);
       suppressFirstWinForImport(user.id, platform?.id);
     }
     setImporting(false);

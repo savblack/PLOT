@@ -25,9 +25,12 @@ warning unless you read stderr.
 Create these in the target database **before** restoring:
 
 ```sh
-# citext lives in `public` on Production, not `extensions` — match that exactly.
-psql "$TARGET" -c 'create extension if not exists citext schema public;'
+# citext lived in public when the drill above was written. 20261012130000
+# moved it to extensions. Create it there, or extensions.citext columns
+# (app_waitlist, marketing_subscribers) fail to restore and pg_restore
+# still exits 0.
 psql "$TARGET" -c 'create schema if not exists extensions;'
+psql "$TARGET" -c 'create extension if not exists citext schema extensions;'
 psql "$TARGET" -c 'create extension if not exists pgcrypto schema extensions;'
 psql "$TARGET" -c 'create extension if not exists "uuid-ossp" schema extensions;'
 # Only needed on a bare Postgres; a real Supabase project already has these.
@@ -101,7 +104,7 @@ first and confirm the blast radius.
 
 ```sh
 pg_restore --clean --if-exists --no-owner --no-privileges \
-  -n public -n auth -n storage -d "$SUPABASE_DB_URL" plot.dump
+  -n public -n private -n auth -n storage -d "$SUPABASE_DB_URL" plot.dump
 ```
 
 ## Notes

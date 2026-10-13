@@ -21,6 +21,7 @@ import { armFirstWinCard } from '../lib/firstWinCard';
 import { setPendingImportSource } from '../lib/pendingImport';
 import { useAppData } from './AppDataContext';
 import { useOnboardingRefresh } from './OnboardingContext';
+import { previousOnboardingComplete, shouldTrackOnboardingCompleted } from '@plot/core/onboardingGate.js';
 
 // Web detects region against its own /api/region Pages Function; mobile has no
 // origin of its own, so it hits the deployed one.
@@ -132,6 +133,14 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
     if (!user) return false;
     setSaving(true);
     setSaveError(null);
+    // Read before the write. The patch always sets the flag true, so the row
+    // that comes back cannot tell us whether this is the first time. The
+    // welcome email listens for onboarding_completed.
+    const prior = await supabase.from('profiles')
+      .select('onboarding_complete')
+      .eq('id', user.id)
+      .maybeSingle();
+    const trackCompletion = shouldTrackOnboardingCompleted(previousOnboardingComplete(prior));
     const chosen = skipSeeds ? [] : seeds;
     const providers = skipServices ? [] : services.filter(s => selectedServiceIds.includes(s.id));
     const patch = {
@@ -165,13 +174,15 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
     // Switching apps: the import itself needs a screen, so Home opens it once
     // setup is done rather than pretending to run during it.
     setPendingImportSource(importSource);
-    track(EVENTS.ONBOARDING_COMPLETED, {
-      region,
-      seed_titles_added: chosen.length,
-      services_added: providers.length,
-      import_source: importSource,
-      skipped: chosen.length === 0,
-    });
+    if (trackCompletion) {
+      track(EVENTS.ONBOARDING_COMPLETED, {
+        region,
+        seed_titles_added: chosen.length,
+        services_added: providers.length,
+        import_source: importSource,
+        skipped: chosen.length === 0,
+      });
+    }
     setSaving(false);
     // Await before anyone navigates: the root layout caches onboarding_complete
     // and only re-reads it on session changes (see contexts/OnboardingContext.tsx).

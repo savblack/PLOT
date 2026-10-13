@@ -45,7 +45,7 @@ are connected, there is no minimum, and the amounts below are per subscriber per
 month, before O:
 
 The AUD model below is historical and must be recalculated for the new
-US$3/month and US$25/year pricing before a provider commitment.
+US$3/month and US$24/year pricing before a provider commitment.
 
 | Assumed provider charge | A$5 monthly plan remaining | A$40 annual plan remaining |
 | --- | ---: | ---: |
@@ -74,7 +74,7 @@ streaming flag or placeholder UI can make an unverified provider appear enabled.
 
 Plot is a movie and TV journal with web and Expo 57 / React Native 0.86.3 apps.
 We are evaluating Younify Connect for incoming watch history, including individual
-episodes and rewatches, for Australian customers. Pricing is US$3/month or US$25/year.
+episodes and rewatches, for Australian customers. Pricing is US$3/month or US$24/year.
 
 Please provide sandbox access and the applicable evaluation/commercial terms;
 SDK compatibility with our native versions; Australian service/profile coverage;

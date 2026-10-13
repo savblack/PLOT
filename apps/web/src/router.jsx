@@ -89,6 +89,7 @@ const router = createBrowserRouter([
   { path: '/privacy',        element: wrap(<PrivacyPage />) },
   { path: '/community',      element: wrap(<CommunityPage />) },
   { path: '/pricing',        element: SHOW_PRICING_PAGE ? wrap(<PlansPage />) : <Navigate to="/app" replace /> },
+  // /plans was the page's first name; old links still open it.
   { path: '/plans',          element: SHOW_PRICING_PAGE ? wrap(<PlansPage />) : <Navigate to="/app" replace /> },
 
   // Design system — standalone, no auth, dev builds only
@@ -111,9 +112,10 @@ const router = createBrowserRouter([
   { path: '/auth/simkl',     element: wrap(<SimklCallbackPage />) },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
-  // Onboarding (protected, skip onboarding check). Previews never send anyone
-  // here (ProtectedRoute skips the check there), but visiting it directly still
-  // opens it, so a branch's onboarding can be tested before it merges.
+  // Onboarding (protected, skip the gate's own redirect so this page can
+  // render). The page sends a finished account home once the profile has
+  // loaded. Previews still open it directly, so a branch's onboarding can be
+  // tested before it merges. Previews also skip the gate (ProtectedRoute).
   {
     path: '/onboarding',
     element: wrap(

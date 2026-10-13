@@ -1,9 +1,9 @@
 -- No view that bypasses RLS may be writable by anon or authenticated.
 --
 -- A view with security_invoker = off runs as its owner, so RLS on the tables
--- underneath does not apply to it. That is the point of public_profiles (a safe
--- public projection of profiles), and it is only safe while callers can do
--- nothing but SELECT. Until 20261001120000 they could do everything: the
+-- underneath does not apply to it. public_profiles used to be such a view;
+-- it is now an RLS-protected table containing only public profile fields.
+-- Until 20261001120000 the view's callers could do everything: the
 -- project's default privileges give anon and authenticated ALL on every new
 -- relation, so each `create view … ; grant select …` quietly granted INSERT,
 -- UPDATE and DELETE too, and an auto-updatable view passed them straight
@@ -47,10 +47,20 @@ group by c.relname, r.rolname
 order by c.relname, r.rolname;
 
 \echo ''
-\echo '=== public_profiles stays readable (OG worker, Pages Functions, sitemap) ==='
+\echo '=== public_profiles is an RLS-protected, read-only table ==='
+select case when c.relkind = 'r' and c.relrowsecurity then 'PASS' else 'FAIL' end
+       || ' public_profiles table has RLS'
+from pg_class c where c.oid = 'public.public_profiles'::regclass;
+
 select case when has_table_privilege(r, 'public.public_profiles', 'select') then 'PASS ' else 'FAIL ' end
        || 'public_profiles SELECT (' || r || ')'
 from unnest(array['anon', 'authenticated']) r;
+
+select case when count(*) filter (where has_table_privilege(r, 'public.public_profiles', p)) = 0
+            then 'PASS' else 'FAIL' end
+       || ' public_profiles has no client writes'
+from unnest(array['anon', 'authenticated']) r
+cross join unnest(array['insert', 'update', 'delete', 'truncate']) p;
 
 \echo ''
 \echo '=== marketing_template_stats is service-role only ==='

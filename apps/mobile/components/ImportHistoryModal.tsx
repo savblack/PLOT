@@ -169,10 +169,10 @@ interface Props {
   entry?: string;
   /** Open straight on this platform's source step (onboarding's switching-apps pick). */
   initialPlatform?: Platform;
-  /** An import finished and wrote at least one title (or a connected account
-   *  returned a result). The platform id is passed so Home can hide the
-   *  first-win card after a Trakt import. */
-  onImported?: (source: Platform) => void;
+  /** An import finished, so the first-run card can tick. `importedCount` is
+   *  the number of history rows written. The platform id is `trakt` or
+   *  `trakt-export` when that history came from Trakt. */
+  onImported?: (source: Platform, importedCount: number) => void;
 }
 
 export default function ImportHistoryModal(props: Props) {
@@ -369,7 +369,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
       Alert.alert(IMPORT_VIEW.partialFailureHeading, IMPORT_VIEW.partialFailure(failed));
     }
     if (inserted > 0 && platform) {
-      onImported?.(platform);
+      onImported?.(platform, inserted);
       if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
     }
     setStep('done');
@@ -391,7 +391,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     setImportedCount(result.importedCount || 0);
     setAlreadyCount(result.alreadyCount || 0);
     setPushedCount(result.pushedCount || 0);
-    onImported?.(platform);
+    onImported?.(platform, result.importedCount || 0);
     if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
     setStep('done');
   }, [connection, platform, importReport, onImported, userId]);

@@ -1,5 +1,5 @@
 // Documents the .btn / .btn-primary / .btn-outline / .btn-outline-white
-// pattern used across apps/website/index.html, about.html, plans.html.
+// pattern used across apps/website/index.html, about.html, pricing.html.
 // The live site and this story both read the canonical rules from ui.css.
 import '../ui.css';
 

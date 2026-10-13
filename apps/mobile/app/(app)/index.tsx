@@ -879,8 +879,8 @@ export default function HomeScreen() {
             userId={userId}
             entry={IMPORT_ENTRY_POINTS.ONBOARDING}
             initialPlatform={importSource as never}
-            onImported={async (source) => {
-              ft.setState(await markImportDone(userId));
+            onImported={async (source, count) => {
+              ft.setState(await markImportDone(userId, source, count));
               await suppressFirstWinForImport(userId, source);
             }}
             onClose={() => setImportSource(null)}

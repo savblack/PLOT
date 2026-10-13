@@ -2170,7 +2170,7 @@ export default function SettingsView() {
       </div>
         </>}
         {activeSection === 'billing' && <SettingsBilling
-          isPremium={premium.isPremium} canManage={premium.canManage} billing={premium.billing} busy={premium.busy} error={premium.error} onManage={premium.openPortal}
+          isPremium={premium.isPremium} canManage={premium.canManage} billing={premium.billing} busy={premium.busy} error={premium.error} onManage={premium.openPortal} checkoutAvailable={premium.checkoutAvailable}
           notice={billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : billingReturn === 'premium' ? (premium.isPremium ? SETTINGS_VIEW.premium.activeThankYou : SETTINGS_VIEW.billing.confirming) : null}
         />}
         {activeSection === 'privacy' && <>

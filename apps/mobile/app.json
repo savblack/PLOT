@@ -68,6 +68,7 @@
       "expo-router",
       "expo-font",
       "expo-status-bar",
+      "expo-notifications",
       "expo-secure-store",
       "expo-apple-authentication",
       "@react-native-community/datetimepicker",

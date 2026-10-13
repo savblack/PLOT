@@ -26,6 +26,12 @@ import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import { readPendingSave } from '../utils/pendingSave.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
+import { isPreviewDeployment } from '../utils/previewDeployment.js';
+import {
+  previousOnboardingComplete,
+  readOnboardingUntilDecided,
+  shouldTrackOnboardingCompleted,
+} from '@plot/core/onboardingGate.js';
 
 const F = ONBOARDING_FLOW;
 // The building moment: each line holds this long, then Home fades in.
@@ -42,6 +48,11 @@ export default function OnboardingFlow() {
 
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  // 'pending' until a profile row says setup is unfinished. A finished account
+  // that lands here (a bad redirect, a bookmark) goes home without seeing the
+  // flow. Previews skip this so a branch can still open the page directly.
+  const previewOnboarding = isPreviewDeployment();
+  const [setupGate, setSetupGate] = useState(() => (previewOnboarding ? 'show' : 'pending'));
   const [pendingSave] = useState(readPendingSave);
   // Someone who already chose a title on the way in skips "save a few"; that
   // title opens once setup is done.
@@ -93,14 +104,35 @@ export default function OnboardingFlow() {
     };
   }, []);
 
-  /* ── Activation funnel: fire once the authed user reaches onboarding ── */
+  /* ── Hold the flow until the profile row says setup is unfinished ── */
+  useEffect(() => {
+    if (!user || previewOnboarding) return undefined;
+    let cancelled = false;
+    readOnboardingUntilDecided(
+      () => supabase.from('profiles')
+        .select('onboarding_complete')
+        .eq('id', user.id)
+        .maybeSingle(),
+      { shouldStop: () => cancelled },
+    ).then((read) => {
+      if (cancelled || !read.decided) return;
+      if (read.onboardingComplete) {
+        navigate(takeReturnPath('/home'), { replace: true });
+        return;
+      }
+      setSetupGate('show');
+    });
+    return () => { cancelled = true; };
+  }, [user, previewOnboarding, navigate]);
+
+  /* ── Activation funnel: fire once the flow is actually shown ── */
   const startedRef = useRef(false);
   useEffect(() => {
-    if (user && !startedRef.current) {
+    if (user && setupGate === 'show' && !startedRef.current) {
       startedRef.current = true;
       track(EVENTS.ONBOARDING_STARTED);
     }
-  }, [user]);
+  }, [user, setupGate]);
 
   const completeStep = (name, { skipped = false } = {}) => {
     track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: ONBOARDING_PROGRESS[name], step_name: name, skipped });
@@ -172,6 +204,14 @@ export default function OnboardingFlow() {
     if (!user) return false;
     setSaving(true);
     setSaveError(null);
+    // Read before the write. The patch always sets the flag true, so the row
+    // that comes back cannot tell us whether this is the first time. The
+    // welcome email listens for onboarding_completed.
+    const prior = await supabase.from('profiles')
+      .select('onboarding_complete')
+      .eq('id', user.id)
+      .maybeSingle();
+    const trackCompletion = shouldTrackOnboardingCompleted(previousOnboardingComplete(prior));
     const patch = {
       region,
       timezone: detectTimezone(),
@@ -196,17 +236,20 @@ export default function OnboardingFlow() {
       await watchlist.addToList(item, { source: 'onboarding' });
     }
     // Home's Finishing touches card starts now (once per account on this device).
+    // "Mark where you're up to" reads the watchlist later, not these picks.
     const key = finishingTouchesKey(user.id);
-    if (!readStorage(key)) writeStorage(key, serialiseFinishingTouches(startFinishingTouches()));
+    if (!readStorage(key)) writeStorage(key, serialiseFinishingTouches(startFinishingTouches(Date.now())));
     // The first-win card sits on Home. A skip (nothing saved) does not arm it.
     armFirstWinCard(user.id, { skipped: seeds.length === 0 });
-    track(EVENTS.ONBOARDING_COMPLETED, {
-      region,
-      seed_titles_added: seeds.length,
-      services_added: providers.length,
-      import_source: importSource,
-      skipped: seeds.length === 0,
-    });
+    if (trackCompletion) {
+      track(EVENTS.ONBOARDING_COMPLETED, {
+        region,
+        seed_titles_added: seeds.length,
+        services_added: providers.length,
+        import_source: importSource,
+        skipped: seeds.length === 0,
+      });
+    }
     setSaving(false);
     return true;
   };
@@ -267,10 +310,9 @@ export default function OnboardingFlow() {
     else if (step === 'services') setStep(importSource ? 'import' : 'seed');
   };
 
-  if (authLoading) {
+  if (authLoading || !user || setupGate !== 'show') {
     return <div className="app-boot-loader"><PlotLoader /></div>;
   }
-  if (!user) return null;
 
   const n = seedSelected.length;
 
