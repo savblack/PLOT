@@ -41,7 +41,7 @@ export const MEMORIES = {
   // Sample diary content on the cards (illustrative, not a real user's).
   cards: [
     { title: 'Severance', date: 'Apr 2', review: 'Watched the finale twice.' },
-    { title: 'Perfect Days', date: 'Sep 14', review: 'Still thinking about it.', privateNote: 'Dad’s favorite. Now mine too.' },
+    { title: 'Perfect Days', date: 'Sep 14', review: 'Still thinking about it.', privateNote: 'Reminder to notice the light more.' },
     { title: 'The Bear', date: 'Jul 3', review: 'Made me want to cook.' },
   ],
 };
