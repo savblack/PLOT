@@ -94,6 +94,15 @@ const fmtWeekday = (iso: string) =>
 const fmtMonthDay = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' });
 
+// Posts planned before the planner switched to US order still carry labels
+// like "Friday 18 December" in their payload. Reorder them on the way out so
+// every page reads "Friday, December 18"; labels already in US order pass through.
+const DAY_MONTH = new RegExp(
+  '\\b(?:(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),? )?(\\d{1,2}) '
+  + '(January|February|March|April|May|June|July|August|September|October|November|December)\\b', 'g');
+const usDateLabel = (label: string | null | undefined) =>
+  (label || '').replace(DAY_MONTH, (_m, day, n, month) => (day ? `${day}, ${month} ${n}` : `${month} ${n}`));
+
 const utcDay = (iso: string) => new Date(iso).toISOString().slice(0, 10);
 
 // Visible = approved (cleared to publish on its day) or already published; never
@@ -195,7 +204,7 @@ const uniqueProviders = (providers: WatchProvider[]) => {
 // it, is a dead end; this sits under the lede rather than at the foot, because
 // that is where a reader is still deciding whether they care.
 //
-// Three states, the same three the title page card has: providers, in cinemas,
+// Three states, the same three the title page card has: providers, in theaters,
 // and nothing. The last is the common one across the back catalogue, so it says
 // so plainly and lets the watchlist be the way out.
 const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?.[0]) => {
@@ -270,7 +279,7 @@ const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?
   const homeLabel = (kind === 'rental' || homeKind === 'rental') ? 'Rent or buy' : 'Stream';
   const today = new Date().toISOString().slice(0, 10);
   const notYetOut = Boolean(date && date > today);
-  const when = post.payload?.when_label;
+  const when = usDateLabel(post.payload?.when_label);
 
   let status: string;
   if (streaming.length) status = chips('Stream', streaming);
@@ -281,7 +290,7 @@ const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?
     status = `<span class="sm-row"><span class="sm-chip">Streaming</span><span class="sm-note">Arrives ${esc(when)}.</span></span>`;
   } else if (isHomeRelease) {
     status = `<span class="sm-row"><span class="sm-chip">Streaming</span><span class="sm-note">Available to stream.</span></span>`;
-  } else if (inCinemas) status = `<span class="sm-row"><span class="sm-chip">In cinemas</span><span class="sm-note">Not yet on any streaming service.</span></span>`;
+  } else if (inCinemas) status = `<span class="sm-row"><span class="sm-chip">In theaters</span><span class="sm-note">Not yet on any streaming service.</span></span>`;
   else status = `<span class="sm-note">Not streaming in ${esc(regionName(region))} right now.</span>`;
 
   return `<aside class="storymod">
@@ -326,7 +335,7 @@ const trailerModule = async (post: FeedPost, ref = post.tmdb_refs?.[0]) => {
   const title = post.payload?.title?.title || ref.title || postTitle(post);
   const saveUrl = `${APP}/save?media_type=${mediaType}&tmdb_id=${id}&src=whats_on_article&utm_content=${encodeURIComponent(post.slug)}`;
   const youtubeUrl = `https://www.youtube.com/watch?v=${key}`;
-  const release = post.payload?.when_label ? `In cinemas ${post.payload.when_label}` : '';
+  const release = post.payload?.when_label ? `In theaters ${usDateLabel(post.payload.when_label)}` : '';
 
   return `<aside class="trailermod" aria-label="${esc(title)} trailer">
     <div class="tm-video">
@@ -1534,9 +1543,9 @@ Deno.serve(async (req) => {
     if (!rid) return {};
     if (typed.post_type === 'upcoming') {
       const item = (typed.payload?.titles || []).find((i) => i.tmdb_id === rid);
-      const KIND: Record<string, string> = { cinema: 'In cinemas', streaming: 'Streaming', tv: 'On TV' };
+      const KIND: Record<string, string> = { cinema: 'In theaters', streaming: 'Streaming', tv: 'On TV' };
       return item
-        ? { note: item.when_label || '', chip: KIND[item.release_kind ?? ''] || '', poster: item.poster_path || '' }
+        ? { note: usDateLabel(item.when_label), chip: KIND[item.release_kind ?? ''] || '', poster: item.poster_path || '' }
         : {};
     }
     return {};
