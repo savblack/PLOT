@@ -10,7 +10,7 @@
     "ios": {
       "bundleIdentifier": "tv.theplot.app",
       "usesAppleSignIn": true,
-      "supportsTablet": true,
+      "supportsTablet": false,
       "associatedDomains": [
         "applinks:app.theplot.tv"
       ],

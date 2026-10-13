@@ -208,19 +208,18 @@ submitting.
 
 ## Screenshots
 
-Required sets, since `supportsTablet` is `true` in `app.json`:
+iPhone only for v1 (`supportsTablet: false` in `app.json`, decided
+2026-10-14), so no iPad screenshots. Required sets:
 
 | Device class | Size | Needed |
 | --- | --- | --- |
 | iPhone 6.9" (17 Pro Max class) | 1320 × 2868 | Yes, 3 to 10 |
 | iPhone 6.5" (11 Pro Max class) | 1284 × 2778 or 1242 × 2688 | Yes |
-| iPad 13" | 2064 × 2752 | Yes, while iPad is supported |
 
-If iPad screenshots are not worth doing for v1, set `supportsTablet: false`
-in `app.json` before the store build. The app is designed phone-first and has
-not been opened on an iPad simulator; the honest v1 is iPhone only.
+The app still installs on an iPad as an iPhone app in a window; that is fine
+and needs nothing from the listing.
 
-Order and content, phone:
+Order and content:
 
 1. Home with the Up next rail and a full-width Pick (the hero of the app).
 2. A title panel with the Watched it? / Thoughts? foot bar filled in.
