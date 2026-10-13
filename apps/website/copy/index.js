@@ -158,7 +158,7 @@ export const CLOSER = {
   headlineEm: 'is out there.',
   sub: 'Start free. Upgrade whenever you like.',
   cta: 'Start tracking',
-  pricing: 'See pricing',
+  browse: 'Browse What’s On',
   newsletterHint: 'Not ready? Get the latest movie and TV updates by email.',
   newsletterCta: 'Subscribe',
   newsletterSuccess: "You're in. We'll email you the next issue.",
