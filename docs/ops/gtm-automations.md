@@ -325,30 +325,9 @@ curl -sX POST "$SUPABASE_URL/functions/v1/marketing-notion-mirror" \
 
 ---
 
-## 8. Homepage timeline and trending hero
+## 8. Homepage timeline and trending hero (retired)
 
-**What it is.** Keeps the marketing homepage's watch-history timeline and the app-mockup hero on current titles.
-
-**Trigger.** [`.github/workflows/timeline-refresh.yml`](../../.github/workflows/timeline-refresh.yml).
-
-**Schedule.** Cron `0 9 * * 1` (09:00 UTC Monday). Also manual. A second job listens for CircleCI's success status and squash-merges the PR.
-
-**Entrypoint.** [`scripts/refresh-timeline.mjs`](../../scripts/refresh-timeline.mjs).
-
-**Secrets.** `TMDB_API_KEY`. The PR uses the default `GITHUB_TOKEN`. The Linear card (section 4) uses `GH_DISPATCH_TOKEN_WEBSITE`.
-
-**Outputs.** A PR on branch `timeline-refresh/YYYY-MM-DD` touching `apps/website/data/timeline.json`, `apps/website/images`, and `apps/website/index.html`. After merge, Cloudflare Pages deploys theplot.tv. A Linear card appears within about five minutes. It is a record, not a gate: the PR still auto-merges when CI is green, including when a new title has an empty note.
-
-**Dependencies.** TMDB trending API, CircleCI (the merge waits on `ci/circleci: check`), Linear (display only).
-
-**How it works.**
-
-1. The script appends at most one newly trending title per week, and only if it clears a high bar (250 votes, score 7.0). Most weeks it adds nothing.
-2. Poster URLs point at TMDB's image CDN. Paths are refreshed so they stay valid. Artwork is not stored as files for the timeline itself. The workflow still commits `apps/website/images` if the script changes anything there.
-3. Hand-written notes are kept. New titles land with an empty note. The PR body lists those titles. Notes are a person's job, but the merge does not wait for them.
-4. `/approve` on the Linear card merges a refresh that CI left open. `/reject` closes it. Both re-check that the PR is a bot-authored `timeline-refresh/` branch.
-
-This is the automated homepage image workflow. The static share cards in section 14 are separate and are not on a schedule.
+Retired on 2026-10-13. The homepage redesign removed the watch-history timeline and the "Everything. In one place." trending panel, so `.github/workflows/timeline-refresh.yml`, `scripts/refresh-timeline.mjs` and `apps/website/data/timeline.json` were deleted. The hero and the "Coming up" card now fill themselves from `/api/discover` in the browser, so nothing needs a weekly PR. The Linear mirror's timeline-refresh card handling is now unused.
 
 ---
 

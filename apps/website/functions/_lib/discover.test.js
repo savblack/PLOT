@@ -69,19 +69,14 @@ test('the allowlist still covers every path the homepage asks for', () => {
   }
 });
 
-test('the allowlist still passes every query the homepage sends', () => {
-  // Values are enumerated, not pattern-matched, so a retuned category ring
-  // (a different genre id, a different vote threshold) silently loses its
-  // posters unless this list is updated with it. Fail here instead.
-  const queries = [...homepage.matchAll(/q: '([^']+)'/g)].map((match) => match[1]);
-  assert.ok(queries.length > 0, 'found no category queries to check, so this test is not testing anything');
-  for (const q of queries) {
-    const sent = new URLSearchParams(`${q}&include_adult=false`); // as loadLiveCovers calls it
-    const { search, error } = query(`?path=discover/movie&${sent}`);
-    assert.equal(error, undefined, `the homepage sends ?${q}, which _lib/discover.js refuses`);
-    for (const [key, value] of sent) {
-      assert.ok(new URLSearchParams(search).getAll(key).includes(value),
-        `the homepage sends ${key}=${value}, which _lib/discover.js drops: the ring loses its posters`);
-    }
+test('the allowlist still passes every path the homepage requests', () => {
+  // The homepage asks /api/discover for a fixed set of paths (hero, Coming up,
+  // ticker, poster wall). A path missing from _lib/discover.js would quietly
+  // leave its surface on the committed fallbacks. Fail here instead.
+  const paths = [...new Set([...homepage.matchAll(/tmdbProxy\('([^']+)'/g)].map((match) => match[1]))];
+  assert.ok(paths.length > 0, 'found no tmdbProxy paths to check, so this test is not testing anything');
+  for (const path of paths) {
+    const { error } = query(`?path=${path}`);
+    assert.equal(error, undefined, `the homepage requests ${path}, which _lib/discover.js refuses`);
   }
 });
