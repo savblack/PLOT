@@ -160,3 +160,21 @@ pg_restore --clean --if-exists --no-owner --no-privileges \
   delete from vault.secrets where name = 'edge_webhook_bearer';
   select vault.create_secret('<new key>', 'edge_webhook_bearer', 'Bearer for internal DB webhooks');
   ```
+
+## CI read-only role (`plot_ci_readonly`)
+
+`.github/workflows/db-write-paths.yml` runs on every pull request and used to
+connect with the owner connection string. The check only reads catalogs, and a
+collaborator's PR can edit the script it runs, so since 2026-10-14 it connects
+as `plot_ci_readonly` (created with `nologin` and no password by
+`20261014110000_low_findings_hardening.sql`). One-time setup, from an owner
+session:
+
+```sql
+alter role plot_ci_readonly with login password '<generate a long random one>';
+```
+
+Then add `SUPABASE_DB_URL_READONLY` in Settings → Secrets → Actions with the
+same host and database as `SUPABASE_DB_URL`, user `plot_ci_readonly` and that
+password. Until the secret exists the workflow falls back to the owner URL and
+prints a warning on every run.

@@ -63,6 +63,24 @@ test('the CSP is set on html and allows no inline script', async () => {
   assert.match(scriptSrc, /'self'/);
 });
 
+test('production connect-src names production hosts only; previews may reach staging', async () => {
+  // Previews are built against the staging Supabase project and proxy, so
+  // they need both. Production never talks to staging, and listing it there
+  // would hand an injected script an exfiltration host we control but watch
+  // less closely.
+  const connect = async (host) => {
+    const csp = (await call(`https://${host}/home`, HTML)).headers.get('Content-Security-Policy');
+    return csp.split(';').map((d) => d.trim()).find((d) => d.startsWith('connect-src '));
+  };
+  const prod = await connect('app.theplot.tv');
+  assert.match(prod, /mkegtssedjyqldysvzga\.supabase\.co/);
+  assert.match(prod, /tmdb-proxy\.sav-black\.workers\.dev/);
+  assert.doesNotMatch(prod, /uzrhfivnhdcfieuaxzip|tmdb-proxy-staging/);
+  const preview = await connect('0379f55a.plot-5wr.pages.dev');
+  assert.match(preview, /uzrhfivnhdcfieuaxzip\.supabase\.co/);
+  assert.match(preview, /tmdb-proxy-staging\.sav-black\.workers\.dev/);
+});
+
 test('the shell carries no inline script for the CSP to block', () => {
   // Everything that runs before React is a file under public/boot/.
   const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');

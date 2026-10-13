@@ -303,7 +303,8 @@ Deno.serve(async (req) => {
       .limit(limit)
 
     if (error) {
-      return new Response(JSON.stringify({ ok: false, error: error.message }),
+      console.error('[notify-report] reports query failed', error)
+      return new Response(JSON.stringify({ ok: false, error: 'query_failed' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } })
     }
 

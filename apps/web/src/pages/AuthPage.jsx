@@ -350,7 +350,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         track(EVENTS.LOGIN_SUBMIT_FAILED, { reason: errorReason(error.message) });
         setError(friendlyError(error.message)); setLoading(false); resetCaptcha();
       } else {
-        identifyUser(data.user.id, { email: data.user.email });
+        identifyUser(data.user.id);
         track(EVENTS.USER_LOGGED_IN);
         const plan = getPremiumCheckoutIntent();
         navigate(plan ? `/pricing?billing=${plan}` : takeReturnPath('/app'));
@@ -396,7 +396,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       else {
         // Identify on signup (not just login) so the anonymous pre-signup
         // session — carrying first-touch attribution — stitches to this user.
-        identifyUser(data.user?.id, { email: data.user?.email || submittedEmail });
+        identifyUser(data.user?.id);
         track(EVENTS.USER_SIGNED_UP, { method: 'email' });
         // Supabase returns an obfuscated user with no identities when the email
         // already exists. Only a genuinely new account may authorize the

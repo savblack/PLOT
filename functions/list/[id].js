@@ -80,7 +80,9 @@ const htmlResponse = (html, status, cache) =>
     status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': cache ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'no-store',
+      // Ten minutes, not an hour: the owner can make the list private at any
+      // moment and the edge copy would keep serving it until it expired.
+      'Cache-Control': cache ? 'public, s-maxage=600, stale-while-revalidate=600' : 'no-store',
     },
   });
 

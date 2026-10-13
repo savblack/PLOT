@@ -46,6 +46,23 @@ export default defineConfig([
     },
   },
   {
+    // Classic scripts loaded by <script src> before any bundle: the app's
+    // pre-React boot files and the marketing site's page scripts. They are
+    // the inline blocks the CSP work (2026-10-14) moved into files, so they
+    // keep their inline idiom: vendor snippets that assign `posthog`, `gtag`
+    // and `dataLayer` as page globals, and `try {} catch (e) {}` guards
+    // around storage access that may throw.
+    files: ['apps/web/public/boot/*.js', 'apps/website/js/whats-on*.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: { ...globals.browser, posthog: 'writable', gtag: 'writable', dataLayer: 'writable' },
+    },
+    rules: {
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-unused-vars': ['error', { caughtErrors: 'none', varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+  {
     files: ['scripts/**/*.{js,mjs}', 'apps/web/playwright.config.js'],
     languageOptions: {
       globals: globals.node,

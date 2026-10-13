@@ -66,7 +66,8 @@ export async function onRequest({ request, params }) {
       .replace(/\s*<meta[^>]+name="twitter:[^"]*"[^>]*>/g, '')
       .replace(/\s*<title>[^<]*<\/title>/i, '');
   }
-  html = html.replace('</head>', `${tags}</head>`);
+  // Function replacer: a string replacement would interpret `$` patterns in a name.
+  html = html.replace('</head>', () => `${tags}</head>`);
 
   return new Response(html, {
     status: 200,

@@ -42,10 +42,19 @@ export function feedCacheKey(url, slug) {
  * @param {(promise: Promise<unknown>) => void} [waitUntil]
  */
 export async function marketingFeedPage(request, slug, waitUntil) {
-  // Forward the index's query params (page, type, utm_*). The slug is a path
+  // Forward only the params the renderer reads (page, type). The cache key
+  // below ignores everything else, so forwarding more would let one visitor's
+  // arbitrary query string be rendered and then served to everyone on that
+  // page if the renderer ever reflected a parameter. utm_* is a browser-side
+  // concern and never reached the Edge Function's output. The slug is a path
   // segment on Pages, so it isn't in searchParams.
   const url = new URL(request.url);
-  const qs = url.searchParams.toString();
+  const forwarded = new URLSearchParams();
+  for (const name of ['page', 'type']) {
+    const value = url.searchParams.get(name);
+    if (value) forwarded.set(name, value);
+  }
+  const qs = forwarded.toString();
   const path = slug ? encodeURIComponent(slug) : '';
   const upstreamUrl = `${UPSTREAM}${path ? `/${path}` : ''}${qs ? `?${qs}` : ''}`;
 

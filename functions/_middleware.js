@@ -21,6 +21,24 @@
 //
 // Anything new that needs to run before React must be a file under
 // apps/web/public/boot/, not an inline block.
+//
+// connect-src depends on the host. Production talks to the production Supabase
+// project and TMDB proxy only; the per-branch previews are built against the
+// staging project, so they get both. Listing staging on production too (as
+// this did until 2026-10-14) would let a script that slipped past the rest of
+// the policy exfiltrate to a project we control but do not monitor as closely.
+const PRODUCTION_CONNECT = [
+  "'self'",
+  'https://mkegtssedjyqldysvzga.supabase.co', 'wss://mkegtssedjyqldysvzga.supabase.co',
+  'https://tmdb-proxy.sav-black.workers.dev',
+  'https://api.tvmaze.com', 'https://a.theplot.tv', 'https://challenges.cloudflare.com',
+];
+const STAGING_CONNECT = [
+  'https://uzrhfivnhdcfieuaxzip.supabase.co', 'wss://uzrhfivnhdcfieuaxzip.supabase.co',
+  'https://tmdb-proxy-staging.sav-black.workers.dev',
+];
+const connectSrc = (production) => `connect-src ${(production ? PRODUCTION_CONNECT : [...PRODUCTION_CONNECT, ...STAGING_CONNECT]).join(' ')}`;
+
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -30,14 +48,17 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "script-src 'self' https://a.theplot.tv https://challenges.cloudflare.com",
-  "connect-src 'self' https://mkegtssedjyqldysvzga.supabase.co wss://mkegtssedjyqldysvzga.supabase.co https://uzrhfivnhdcfieuaxzip.supabase.co wss://uzrhfivnhdcfieuaxzip.supabase.co https://tmdb-proxy.sav-black.workers.dev https://tmdb-proxy-staging.sav-black.workers.dev https://api.tvmaze.com https://a.theplot.tv https://challenges.cloudflare.com",
+  connectSrc(true),
   "frame-src https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com",
   "worker-src 'self' blob:",
   "form-action 'self'",
   'upgrade-insecure-requests',
 ].join('; ');
 
-export { CSP };
+// The policy for a non-production host: the same, with staging reachable.
+const PREVIEW_CSP = CSP.replace(connectSrc(true), connectSrc(false));
+
+export { CSP, PREVIEW_CSP };
 
 export async function onRequest(context) {
   const response = await context.next();
@@ -56,7 +77,7 @@ export async function onRequest(context) {
   }
 
   const headers = new Headers(response.headers);
-  headers.set('Content-Security-Policy', CSP);
+  headers.set('Content-Security-Policy', isPreview ? PREVIEW_CSP : CSP);
   if (isPreview) headers.set('X-Robots-Tag', 'noindex, nofollow');
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }

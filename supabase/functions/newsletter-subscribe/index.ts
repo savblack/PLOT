@@ -78,7 +78,10 @@ const RATE_MAX_PER_IP = 10;
 const RATE_MAX_GLOBAL = 300;
 // Only accept a platform-provided connection header. `X-Forwarded-For` is
 // caller controlled when this public Edge Function is invoked directly.
-const clientIp = (req: Request): string => req.headers.get('cf-connecting-ip') || 'unknown';
+// No header means no per-IP bucket, so every caller would share one and the
+// limit would either fail open (keyed on a constant) or lock everyone out at
+// once. Returning null makes the caller refuse the request instead.
+const clientIp = (req: Request): string | null => req.headers.get('cf-connecting-ip') || null;
 /**
  * true = over a limit, false = allowed, null = the limiter itself failed (the
  * caller answers 503 rather than letting an outage of the limiter open the gate).
@@ -159,7 +162,12 @@ Deno.serve(async (req) => {
   // ── Subscribe flow ──
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  const limited = await subscribeRateLimited(supabase, clientIp(req));
+  const ip = clientIp(req);
+  if (!ip) {
+    console.error('[newsletter-subscribe] no cf-connecting-ip header; refusing rather than sharing one rate bucket');
+    return json({ error: 'Something went wrong' }, 503);
+  }
+  const limited = await subscribeRateLimited(supabase, ip);
   if (limited === null) return json({ error: 'Something went wrong' }, 503);
   if (limited) {
     return new Response(JSON.stringify({ error: 'Too many requests' }), {

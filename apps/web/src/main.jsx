@@ -242,6 +242,10 @@ if (posthogToken) {
         return event;
       },
       session_recording: {
+        // Replays must never show what someone typed: the review editor, the
+        // private note editor and the auth form are all inputs. Text content
+        // stays visible so a replay is still debuggable.
+        maskAllInputs: true,
         // Applies to captured network requests, not the replay's page URL
         // (posthog-recorder.js runs it over request/response headers). Inert
         // unless network capture is enabled — kept so that turning it on later

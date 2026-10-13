@@ -69,8 +69,9 @@ const sortKey = (entry) => {
 };
 
 // Titles come from TMDB and reach the page as markup: "Minions & Monsters" has
-// to be escaped. Notes are hand-authored and left alone.
-const esc = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// to be escaped. Notes are hand-authored and left alone. Quotes are escaped
+// too because poster paths land in attribute values.
+const esc = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 const slug = (title) => title.toLowerCase()
   .replace(/['’]/g, '')
@@ -124,7 +125,7 @@ function renderTimeline(entries) {
     }
     lines.push(
       '        <div class="tl-card">',
-      `          <div class="tl-poster" data-bg='${IMG}${entry.poster_path}'></div>`,
+      `          <div class="tl-poster" data-bg='${IMG}${esc(entry.poster_path)}'></div>`,
       `          <div class="tl-date">${entry.date_label}</div>`,
       `          <div class="tl-title">${esc(entry.title)}</div>`);
     if (entry.note) lines.push(`          <div class="tl-note">${entry.note}</div>`);
@@ -165,7 +166,7 @@ const KIND = { movie: 'Film', tv: 'Series' };
 // other rows are static fallbacks the browser replaces on load.
 const renderHeroCard = (hero) => [
   '',
-  `            <div class="gp-row"><div class="gp-rank">1</div><img class="gp-poster" src="${IMG}${hero.poster_path}" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">${esc(hero.title)}</div><div class="gp-sub">${hero.year} &middot; ${KIND[hero.media_type]}</div></div><span class="gp-chip is-top">Trending #1</span></div>`,
+  `            <div class="gp-row"><div class="gp-rank">1</div><img class="gp-poster" src="${IMG}${esc(hero.poster_path)}" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">${esc(hero.title)}</div><div class="gp-sub">${hero.year} &middot; ${KIND[hero.media_type]}</div></div><span class="gp-chip is-top">Trending #1</span></div>`,
 ].join('\n');
 
 function replaceBlock(html, name, body, indent = '        ') {

@@ -37,11 +37,12 @@ const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const NEGATIVE_CACHE_TTL_MS = 60 * 60 * 1000; // retry misses after 1 hour
 const OMDB_BASE = 'https://www.omdbapi.com/';
 
-async function callerBucket(req: Request, salt: string) {
-  const address = req.headers.get('cf-connecting-ip')
-    || req.headers.get('x-real-ip')
-    || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown';
+// Only the platform-set connection header. x-forwarded-for and x-real-ip are
+// caller-controlled on a direct invocation, so a caller could pick its own
+// bucket. Null when absent; the caller refuses rather than sharing one bucket.
+async function callerBucket(req: Request, salt: string): Promise<string | null> {
+  const address = req.headers.get('cf-connecting-ip');
+  if (!address) return null;
   const digest = await crypto.subtle.digest(
     'SHA-256',
     new TextEncoder().encode(`${salt}:${address}`),
@@ -79,6 +80,10 @@ Deno.serve(async (req) => {
   // budget. It also bounds/prunes caller buckets so address rotation cannot
   // turn the limiter itself into unbounded storage growth.
   const bucket = await callerBucket(req, Deno.env.get('CRITIC_RATE_LIMIT_SALT') || serviceRole);
+  if (!bucket) {
+    console.error('[critic-score] no cf-connecting-ip header; refusing rather than sharing one rate bucket');
+    return json({ error: 'Service unavailable' }, origin, 503);
+  }
   const { data: allowed, error: quotaError } = await admin.rpc('admit_critic_score_request', {
     p_caller_bucket: bucket,
   });

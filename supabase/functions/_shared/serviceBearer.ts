@@ -7,7 +7,7 @@
 // itself holds, byte for byte, in constant time.
 import { serviceKey } from './serviceKey.ts';
 
-function constantTimeEqual(a: string, b: string): boolean {
+export function constantTimeEqual(a: string, b: string): boolean {
   const x = new TextEncoder().encode(a);
   const y = new TextEncoder().encode(b);
   let diff = x.length ^ y.length;

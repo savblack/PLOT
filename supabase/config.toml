@@ -50,9 +50,9 @@ verify_jwt = false
 # Declared because the GitHub integration did not deploy this directory on
 # 78eb5f1 and still reported success: it shipped marketing-linear-sync, which
 # was declared here, and silently skipped marketing-linear-mirror, which was
-# not. Every other function in this tree is declared; critic-score is the lone
-# undeclared one and predates the integration. Treat a config.toml entry as
-# required for a NEW function, not as optional metadata.
+# not. Every other function in this tree is declared (critic-score was the lone
+# undeclared one until 2026-10-14). Treat a config.toml entry as required for a
+# NEW function, not as optional metadata.
 [functions.marketing-linear-mirror]
 verify_jwt = true
 
@@ -218,4 +218,11 @@ verify_jwt = true
 # member follows them. Called from the browser with the user's own bearer, so
 # verify_jwt stays true; the handler checks the follow and is_premium().
 [functions.people-feed-refresh]
+verify_jwt = true
+
+# Critic score lookup (OMDb via the critic_scores cache). Called with the anon
+# key like tmdb-proxy, so the gateway requires a signed JWT the same way; the
+# function rate-limits per caller on top. Declared on 2026-10-14 so a deploy
+# never falls back to the default for this one function.
+[functions.critic-score]
 verify_jwt = true

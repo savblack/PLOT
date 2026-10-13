@@ -1,3 +1,5 @@
+import { constantTimeEqual } from '../_shared/serviceBearer.ts';
+
 // Only browser origins we actually serve from may call the proxy. Requests
 // with no Origin header (curl, server-to-server) are allowed through. Cross-site
 // browser requests are rejected with 403. Rate limiting is handled upstream by a
@@ -84,7 +86,7 @@ Deno.serve(async (req) => {
   // The Worker is the public admission-control boundary. A browser JWT alone
   // must not be enough to bypass its distributed rate limiter.
   const proxySecret = Deno.env.get('TMDB_PROXY_SHARED_SECRET');
-  if (!proxySecret || req.headers.get(PROXY_SECRET_HEADER) !== proxySecret) {
+  if (!proxySecret || !constantTimeEqual(req.headers.get(PROXY_SECRET_HEADER) ?? '', proxySecret)) {
     return new Response(JSON.stringify({ error: 'Proxy access required' }), {
       status: 403,
       headers: { ...CORS, 'Content-Type': 'application/json' },
