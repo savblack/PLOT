@@ -12,7 +12,7 @@ export function signupPathForPlan(plan) {
 
 /** Mailto for the closed-checkout waitlist. No payment, no new account store. */
 export function waitlistMailto(subject) {
-  return `mailto:contact@theplot.tv?subject=${encodeURIComponent(subject)}`;
+  return `mailto:support@theplot.tv?subject=${encodeURIComponent(subject)}`;
 }
 
 /**
