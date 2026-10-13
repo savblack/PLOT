@@ -40,6 +40,12 @@ export const SHOW_PRICING_PAGE = false;
 // PLANS_PAGE.inAppUnavailable. Flip on only with in-app purchase wired up.
 export const SHOW_PREMIUM_PRICING = false;
 
+// The Ko-fi tip link (Settings ▸ Billing and the drawer's Support Plot row).
+// Off for the App Store build: a link that takes money for the app outside
+// in-app purchase is the same 3.1.1 problem as the price above, and Apple has
+// rejected apps for Patreon and Ko-fi links specifically. Web keeps it.
+export const SHOW_KOFI_LINK = false;
+
 // Watch together (PLO-515). Web turns this on in production
 // (SHOW_WATCH_TOGETHER in apps/web/src/launchFeatures.js). The mobile screens
 // exist, and this flag stays off until they have been checked with two

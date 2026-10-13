@@ -15,7 +15,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { Avatar } from './Avatar';
 import NavGlyph, { NavIconName } from './NavIcons';
-import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
+import { SHOW_KOFI_LINK, SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 
 // Web's drawer is min(300px, 85vw). The old 58% width was sized for bare labels.
 const DRAWER_W = Math.min(300, Dimensions.get('window').width * 0.85);
@@ -208,16 +208,18 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                 <Text style={styles.navLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity
-              style={styles.navItem}
-              onPress={openSupport}
-              activeOpacity={0.7}
-              accessibilityRole="link"
-              accessibilityLabel={SETTINGS_VIEW.support.supportPlot}
-            >
-              <NavGlyph name="support" color={colors.textSecondary} />
-              <Text style={styles.navLabel}>{SETTINGS_VIEW.support.supportPlot}</Text>
-            </TouchableOpacity>
+            {SHOW_KOFI_LINK && (
+              <TouchableOpacity
+                style={styles.navItem}
+                onPress={openSupport}
+                activeOpacity={0.7}
+                accessibilityRole="link"
+                accessibilityLabel={SETTINGS_VIEW.support.supportPlot}
+              >
+                <NavGlyph name="support" color={colors.textSecondary} />
+                <Text style={styles.navLabel}>{SETTINGS_VIEW.support.supportPlot}</Text>
+              </TouchableOpacity>
+            )}
           </View>
           </ScrollView>
 

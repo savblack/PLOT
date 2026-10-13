@@ -41,7 +41,7 @@ import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { fetchUserDataExport } from '@plot/core/exportData.js';
 import { shareDataExport, type ExportFormat } from '../../lib/shareDataExport';
 import { pickAndUploadAvatar, removeAvatar } from '../../lib/avatar';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PREMIUM_PRICING } from '../../lib/launchFeatures';
+import { SHOW_KOFI_LINK, SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PREMIUM_PRICING } from '../../lib/launchFeatures';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
@@ -1630,14 +1630,14 @@ export default function SettingsScreen() {
           </SettingsGroup>
         )}
         {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
-        <SettingsGroup title={SETTINGS_VIEW.billing.supportTitle}>
+        {SHOW_KOFI_LINK && <SettingsGroup title={SETTINGS_VIEW.billing.supportTitle}>
           <SettingsRow
             icon={null}
             label={SETTINGS_VIEW.billing.supportAction}
             description={`${SETTINGS_VIEW.billing.supportHint} ${SETTINGS_VIEW.billing.supportNote}`}
             onPress={() => { void Linking.openURL(KOFI_URL).catch(() => {}); }}
           />
-        </SettingsGroup>
+        </SettingsGroup>}
         </>}
 
         {active.id === 'help' && <>
