@@ -19,6 +19,7 @@ import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import { shareUrl } from '../utils/share.js';
 import { PersonAvatar } from './WatchTogetherParts.jsx';
+import PlotLogo from './PlotLogo.jsx';
 
 const S = T.start;
 
@@ -27,7 +28,7 @@ const S = T.start;
 const EXAMPLE_POSTERS = [1, 2, 3, 4, 5];
 
 export function Wordmark() {
-  return <span className="wt-wordmark">plot</span>;
+  return <span className="wt-wordmark"><PlotLogo inherit /></span>;
 }
 
 /** Links point at the host you're on for previews (they use Staging's data). */

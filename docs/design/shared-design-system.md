@@ -39,10 +39,17 @@ Dark mode keeps the warm-neutral `#0c0c0c` / `#f0efe8` scale; the accent lighten
 
 ### The wordmark
 
-The mark is the plain lowercase word **plot** in Gabarito 700, tracked `−0.045em`.
-No full stop, no symbol, no mascot: all three were explored and declined in the Sept
-2026 brand pass. Render it as text through `PlotLogo` (web) or the display face
-(marketing, edge functions); never a raster.
+The mark is the lowercase word **plot** in Gabarito 700, tracked `−0.045em`, with the
+l's foot swept into the o (Oct 2026). No full stop, no symbol, no mascot: all three were
+explored and declined in the Sept 2026 brand pass. Capitals, title case and an o→t join
+were tried and declined in the Oct 2026 pass.
+
+The font can't set the join, so the mark is vector outlines, not live text. The paths
+live once in `packages/core/wordmark.js` (the favicon and footer SVGs carry the same
+outlines). Render it through `PlotLogo` (web; `inherit` matches surrounding text),
+`PlotWordmark` (mobile), or `wordmarkSvg()` (website, edge functions, generators);
+never a raster. Email is the one exception: clients don't render SVG, so emails keep
+the live word in the display face, without the join.
 
 ## Canonical sources
 

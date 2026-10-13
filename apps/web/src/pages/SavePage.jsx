@@ -7,6 +7,7 @@ import { writePendingSave } from '../utils/pendingSave.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { SAVE_PAGE } from '../copy/savePage.js';
 import { isKnownAccountBrowser } from '../utils/accountRecognition.js';
+import PlotLogo from '../components/PlotLogo.jsx';
 
 /**
  * /save?media_type=movie&tmdb_id=12345
@@ -136,7 +137,7 @@ export default function SavePage() {
   return (
     <div className="save-preview">
       <style>{styles}</style>
-      <Link to="/" className="save-brand" aria-label="plot">plot</Link>
+      <Link to="/" className="save-brand" aria-label="plot"><PlotLogo inherit aria-hidden="true" /></Link>
 
       <div className="save-inner">
         {poster

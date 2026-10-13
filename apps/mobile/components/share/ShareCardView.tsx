@@ -8,6 +8,7 @@ import Svg, { Path, Text as SvgText } from 'react-native-svg';
 import { CARD_IDS, CARD_FORMATS } from '@plot/core/shareCards.js';
 import { SHARE_CARDS as T } from '@plot/core/copy/shareCards.js';
 import { fontFamily, posterUrl, profileUrl } from '../../lib/tokens';
+import PlotWordmark from '../PlotWordmark';
 
 const INK = '#292924';
 const CREAM_PANEL = '#FFFCF7';
@@ -512,19 +513,19 @@ export default function ShareCardView({
       }}
     >
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Text style={{
-          position: 'absolute',
-          right: story ? undefined : -px(22),
-          top: story ? height * 0.28 : -px(18),
-          left: story ? width * 0.18 : undefined,
-          fontFamily: fontFamily.display,
-          fontSize: story ? px(105) : px(118),
-          lineHeight: story ? px(105) : px(94),
-          letterSpacing: (story ? px(105) : px(118)) * -0.06,
-          color: ground.ink,
-          opacity: ground.ghost,
-          transform: story ? [{ rotate: '-90deg' }] : undefined,
-        }}>plot</Text>
+        <PlotWordmark
+          size={story ? px(105) : px(118)}
+          color={ground.ink}
+          label={null}
+          style={{
+            position: 'absolute',
+            right: story ? undefined : -px(22),
+            top: story ? height * 0.28 : -px(6),
+            left: story ? width * 0.18 : undefined,
+            opacity: ground.ghost,
+            transform: story ? [{ rotate: '-90deg' }] : undefined,
+          }}
+        />
         {story && !!card.handle && (
           <Text style={{
             position: 'absolute',

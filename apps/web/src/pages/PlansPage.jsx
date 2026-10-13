@@ -12,6 +12,7 @@ import { PLANS_PAGE } from '../copy/plansPage.js';
 import { safeAppReturnPath } from '../utils/premiumExplore.js';
 import PremiumIcon from '../components/PremiumIcon.jsx';
 import PremiumPurchaseAction from '../components/PremiumPurchaseAction.jsx';
+import PlotLogo from '../components/PlotLogo.jsx';
 
 const { comparison: CMP } = PLANS_PAGE;
 
@@ -31,7 +32,7 @@ function Tick() {
 // "plot" in a label is the brand, so it takes the wordmark's face and tracking.
 function withWordmark(label) {
   const parts = label.split(/\b(plot)\b/);
-  return parts.map((part, i) => (i % 2 ? <span key={i} className="plans-wordmark-inline">{part}</span> : part));
+  return parts.map((part, i) => (i % 2 ? <span key={i} className="plans-wordmark-inline"><PlotLogo inherit /></span> : part));
 }
 
 function FeatureRows({ items, className = '' }) {
@@ -113,7 +114,7 @@ export default function PlansPage() {
       <div className="plans-shell">
         <header className="plans-head">
           <Link to={backTo} className="plans-back">{backLabel}</Link>
-          <span className="plans-wordmark">plot</span>
+          <span className="plans-wordmark"><PlotLogo inherit /></span>
         </header>
 
         <div className="plans-hero">

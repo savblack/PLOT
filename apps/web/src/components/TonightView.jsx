@@ -23,6 +23,7 @@ import { MEDIA } from '../copy/media.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import './TonightView.css';
+import PlotLogo from './PlotLogo.jsx';
 
 /* Pick for Me. Phone: one column, a Filters panel that folds away, and a
    sticky bar with the sentence and Pick. Desktop (>=1024px): the same 264px
@@ -120,7 +121,7 @@ function UnlockDialog({ picker, navigate }) {
       onKeyDown={(e) => { if (e.key === 'Escape') picker.closeLock(); }}>
       <button type="button" className="tonight-unlock-close" aria-label={T.gate.close} onClick={picker.closeLock}><IconClose /></button>
       <span className="tonight-unlock-badge" aria-label={T.gate.label}>
-        <span className="tonight-unlock-brand" aria-hidden="true">{T.gate.brand}</span>
+        <span className="tonight-unlock-brand" aria-hidden="true"><PlotLogo inherit /></span>
         <span aria-hidden="true">{T.gate.premium}</span>
       </span>
       <h2 id="tonight-unlock-title" className="tonight-unlock-title">{T.gate.title}</h2>

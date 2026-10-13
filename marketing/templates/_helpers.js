@@ -44,7 +44,22 @@ const metaCaps = (kind, dateText) => {
 // Brand chrome on every card: big plot wordmark top-left, and a footer
 // strip with the site. (TMDB attribution lives in the profile bios and the
 // website footer, not on the cards.)
-const plotMark = () => el('div', 'plot-mark', 'plot');
+const WORDMARK_PATH = '/*WORDMARK_PATH*/';
+const plotMark = () => {
+  const mark = el('div', 'plot-mark');
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '52 -681 1568 871');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'plot');
+  svg.setAttribute('fill', 'currentColor');
+  svg.setAttribute('style', 'display:block;height:.871em;width:1.568em;overflow:visible');
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', WORDMARK_PATH);
+  svg.append(path);
+  mark.append(svg);
+  return mark;
+};
 
 const plotFooter = () => {
   const footer = el('div', 'plot-footer');

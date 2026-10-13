@@ -7,6 +7,7 @@ import { _resetHistoryCache } from '@plot/core/useHistory.js';
 import { clearCachedSession } from '../utils/sessionCache.js';
 import './AuthPage.css';
 import { loadSupabase } from '../utils/loadSupabase.js';
+import PlotLogo from '../components/PlotLogo.jsx';
 
 // The marketing site doubles as the logged-out home.
 const MARKETING_URL = 'https://theplot.tv';
@@ -57,7 +58,7 @@ export default function LogoutPage() {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <span className="auth-visual-logo">plot</span>
+          <span className="auth-visual-logo"><PlotLogo inherit /></span>
           <span className="auth-visual-tagline">Your movie &amp; TV companion</span>
         </div>
       </div>
