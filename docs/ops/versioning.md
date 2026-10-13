@@ -42,10 +42,9 @@ Merging that PR is the release. The same workflow then tags `mobile-vX.Y.Z`
 and publishes a GitHub Release. `component` is `mobile`, the tag includes
 `v`, and the separator is `-`.
 
-`bootstrap-sha` is `89554c6c6cb8d96533d824c50a047e063a3e073a`, the `main`
-commit this setup branched from. release-please ignores history before that
-SHA until the first release PR merges. After that the value is ignored and
-can be deleted.
+The first release, `mobile-v0.10.0`, shipped on 2026-10-13. Since then
+release-please reads history from the latest `mobile-v*` tag, so the config
+no longer needs a `bootstrap-sha`.
 
 ## Build numbers stay on EAS
 
