@@ -75,7 +75,7 @@ class Component extends DCLogic {
     const secondary = 'font-family: inherit; cursor: pointer; height: 48px; border-radius: 9999px; border: 1px solid rgba(41,41,36,0.16); background: #FFFCF7; color: #292924; font-weight: 600; font-size: 15px';
     const invite = () => this.setState({ mode: 'pending' });
     const copy = {
-      free: { body: 'See what you’ve both saved, narrow it to tonight, and choose together.', label: 'Get Premium to invite ' + f, foot: '$3/month or $25/year. ' + f + ' doesn’t need Premium.', act: () => {} },
+      free: { body: 'See what you’ve both saved, narrow it to tonight, and choose together.', label: 'Get Premium to invite ' + f, foot: '$3/month or $24/year. ' + f + ' doesn’t need Premium.', act: () => {} },
       public: { body: f + ' gets a request to accept. Once they do, you can choose from what you’ve both saved.', label: 'Invite ' + f + ' to watch together', foot: f + ' can join for free.', act: invite },
       private: { body: 'Send a request. If ' + f + ' accepts, you’ll see the titles you’ve both saved.', label: 'Invite ' + f + ' to watch together', foot: f + ' can join for free.', act: invite },
       pending: { body: 'Watch together request sent. ' + f + ' needs to accept before you can choose together.', label: 'Cancel request', foot: 'Requests expire after 30 days.', act: () => this.setState((s) => ({ mode: s.was === 'pending' ? 'public' : s.was })) },

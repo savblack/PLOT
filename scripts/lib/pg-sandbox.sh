@@ -124,8 +124,10 @@ sandbox_prereqs() {
       "do \$\$ begin if not exists (select 1 from pg_roles where rolname='$r') then create role $r nologin; end if; end \$\$;" 2>/dev/null
   done
   psql "$SANDBOX_URL" -q -c 'create schema if not exists extensions;' 2>/dev/null
-  # citext is installed in `public` on Production, not `extensions` — match it.
-  psql "$SANDBOX_URL" -q -c 'create extension if not exists citext schema public;' 2>/dev/null
+  # citext lives in extensions on production (20261012130000). Creating it in
+  # public makes extensions.citext columns fail to restore, and pg_restore
+  # still exits 0, so the table is simply missing.
+  psql "$SANDBOX_URL" -q -c 'create extension if not exists citext schema extensions;' 2>/dev/null
   for e in pgcrypto "uuid-ossp"; do
     psql "$SANDBOX_URL" -q -c "create extension if not exists \"$e\" schema extensions;" 2>/dev/null
   done
@@ -184,9 +186,11 @@ sandbox_restore_prod() {
   local prod_url="$1"
   PLOT_DB_CONNINFO="$prod_url" node scripts/write-pg-service.mjs \
     "$SANDBOX_WORK/prod_service.conf" plot_production
+  # private holds the RLS helpers (20261012150000). Policies in public call
+  # them by name, and pg_restore drops those policies when the schema is absent.
   PGSERVICEFILE="$SANDBOX_WORK/prod_service.conf" PGSERVICE=plot_production \
   pg_dump -Fc --no-owner --no-privileges \
-    -n public -n auth -n storage -n supabase_migrations \
+    -n public -n private -n auth -n storage -n supabase_migrations \
     2>"$SANDBOX_WORK/dump.err" \
   | pg_restore --no-owner --no-privileges -d "$SANDBOX_URL" 2>"$SANDBOX_WORK/restore.err"
   echo "restored from Production (dump stderr: $(wc -l < "$SANDBOX_WORK/dump.err") lines, restore stderr: $(wc -l < "$SANDBOX_WORK/restore.err") lines)"

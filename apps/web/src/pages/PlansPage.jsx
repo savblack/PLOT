@@ -11,6 +11,7 @@ import './PlansPage.css';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 import { safeAppReturnPath } from '../utils/premiumExplore.js';
 import PremiumIcon from '../components/PremiumIcon.jsx';
+import PremiumPurchaseAction from '../components/PremiumPurchaseAction.jsx';
 
 const { comparison: CMP } = PLANS_PAGE;
 
@@ -171,14 +172,18 @@ export default function PlansPage() {
             ) : isPremium ? (
               <span className="plan-current">{PLANS_PAGE.free.yourCurrentPlan}</span>
             ) : (
-              <button className="btn btn-primary" onClick={() => premium.startCheckout(annual ? 'yearly' : 'monthly')} disabled={authState === 'loading' || premium.busy}>
-                {premium.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.upgradeAction}
-              </button>
+              <PremiumPurchaseAction premium={premium} plan={annual ? 'yearly' : 'monthly'} disabled={authState === 'loading'} />
+            )}
+            {premium.checkoutAvailable === false && (
+              <>
+                <p className="plans-note" role="status">{PLANS_PAGE.checkoutClosedDetail}</p>
+                <p className="plans-note">{PLANS_PAGE.waitlistHint}</p>
+              </>
             )}
             {premium.error && <p className="plans-note plans-note--err" role="alert">{premium.error}</p>}
             <p className="plan-intro">{PLANS_PAGE.premiumIntro}</p>
             <FeatureRows items={PLANS_PAGE.premiumCard} className="plan-rows--two" />
-            <p className="plan-availability">{PLANS_PAGE.premium.availability}</p>
+            <p className="plan-availability">{premium.checkoutAvailable === false ? PLANS_PAGE.checkoutClosed : PLANS_PAGE.premium.availability}</p>
           </article>
         </div>
 
@@ -260,12 +265,17 @@ export default function PlansPage() {
         <section className="faq-wrap" aria-labelledby="faq-title">
           <h2 id="faq-title" className="plans-h2">{PLANS_PAGE.faqTitle}</h2>
           <div className="faq-list">
-            {PLANS_PAGE.faqs.map((item, i) => (
-              <details className="faq-item" key={item.q} open={i === 0}>
-                <summary>{item.q}</summary>
-                <p>{item.a}</p>
-              </details>
-            ))}
+            {PLANS_PAGE.faqs.map((item, i) => {
+              const answer = item.closed && premium.checkoutAvailable === false
+                ? PLANS_PAGE.checkoutClosedAnswer
+                : item.a;
+              return (
+                <details className="faq-item" key={item.q} open={i === 0}>
+                  <summary>{item.q}</summary>
+                  <p>{answer}</p>
+                </details>
+              );
+            })}
           </div>
         </section>
 

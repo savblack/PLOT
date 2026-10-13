@@ -20,6 +20,11 @@ import { createContext, useContext } from 'react';
 
 export const OnboardingRefreshContext = createContext<() => Promise<void>>(async () => {});
 
+// null: the profile row has not loaded. false: setup is still to do.
+// true: this account already finished. The onboarding stack reads it so a
+// finished account passing through does not count as the start of setup.
+export const OnboardingCompleteContext = createContext<boolean | null>(null);
+
 export function useOnboardingRefresh() {
   return useContext(OnboardingRefreshContext);
 }

@@ -11,6 +11,7 @@ import { usePremium } from '../hooks/usePremium.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import PremiumIcon from './PremiumIcon.jsx';
+import PremiumPurchaseAction from './PremiumPurchaseAction.jsx';
 import { ThemeMiniaturePair } from './ThemeMiniature.jsx';
 import './UpgradeSheet.css';
 
@@ -55,7 +56,7 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
       if (event.key !== 'Escape' && event.key !== 'Tab') return;
       event.stopPropagation();
       if (event.key === 'Escape') { event.preventDefault(); onCloseRef.current(); return; }
-      const focusables = [...(sheetRef.current?.querySelectorAll('button:not(:disabled)') ?? [])];
+      const focusables = [...(sheetRef.current?.querySelectorAll('button:not(:disabled), a.btn') ?? [])];
       if (!focusables.length) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
@@ -113,9 +114,8 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
           <p className="upgrade-sheet-trial">{PLANS_PAGE.premium.trialNote}</p>
         </div>
 
-        <button type="button" className="btn btn-primary" onClick={() => premium.startCheckout('monthly')} disabled={premium.busy}>
-          {premium.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.upgradeAction}
-        </button>
+        <PremiumPurchaseAction premium={premium} plan="monthly" />
+        {premium.checkoutAvailable === false && <p className="upgrade-sheet-note" role="status">{PLANS_PAGE.checkoutClosedDetail}</p>}
         {premium.error && <p className="upgrade-sheet-note" role="alert">{premium.error}</p>}
 
         <p className="upgrade-sheet-also">{S.alsoIn}</p>

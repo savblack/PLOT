@@ -30,6 +30,18 @@ test('the trial note says the charge is 7 days later', () => {
   assert.equal(PLANS_PAGE.assurances.includes('Nothing to pay today'), false);
 });
 
+test('closed checkout is a waitlist, not the generic retry line', () => {
+  assert.match(PLANS_PAGE.checkoutClosed, /isn’t open yet/);
+  assert.match(PLANS_PAGE.checkoutClosedDetail, /US\$3\/month or US\$24\/year/);
+  assert.match(PLANS_PAGE.checkoutClosedDetail, /7-day free trial/);
+  assert.match(PLANS_PAGE.checkoutClosedAnswer, /Not yet/);
+  assert.match(PLANS_PAGE.waitlistAction, /Join the waitlist/);
+  assert.match(PLANS_PAGE.waitlistHint, /when checkout opens/);
+  assert.match(PLANS_PAGE.checkoutUnavailable, /isn’t available right now/);
+  assert.doesNotMatch(PLANS_PAGE.checkoutMessage, /not open yet|coming soon/i);
+  assert.doesNotMatch(PLANS_PAGE.checkoutClosedDetail, /—/);
+});
+
 test('a failed web checkout says so plainly, and mobile keeps the closed-checkout wording with the trial', () => {
   assert.match(PLANS_PAGE.checkoutMessage, /couldn’t start checkout/);
   assert.doesNotMatch(PLANS_PAGE.checkoutMessage, /not open yet|coming soon/i);
@@ -44,6 +56,7 @@ test('a failed web checkout says so plainly, and mobile keeps the closed-checkou
   assert.doesNotMatch(SETTINGS_VIEW.billing.exploreHint, /nothing to pay today/i);
 
   const upgrade = PLANS_PAGE.faqs.find(item => item.q === 'Can I upgrade now?');
+  assert.equal(upgrade.closed, true);
   assert.doesNotMatch(upgrade.a, /not open|Not yet/);
   assert.match(upgrade.a, /US\$3\/month or US\$24\/year, taxes included, with a 7-day free trial for new subscribers/);
   assert.doesNotMatch(upgrade.a, /does not start a payment or a trial/);

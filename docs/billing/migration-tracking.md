@@ -1,7 +1,7 @@
 # Migration and automatic tracking
 
 Implementation record, updated 23 September 2026. **Prepared locally, not launched.**
-TMDB clearance is confirmed. Pricing remains US$3/month and US$25/year. Public
+TMDB clearance is confirmed. Pricing remains US$3/month and US$24/year. Public
 pricing, checkout and integration launch switches have not been enabled.
 
 ## Supported implementation

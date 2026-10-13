@@ -4,11 +4,12 @@
  * new episodes of followed shows (title rows: a poster instead of an avatar,
  * and they open the title rather than a profile).
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
 } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { supabase } from '../../lib/supabase';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -25,6 +26,8 @@ import { PEOPLE } from '@plot/core/copy/people.js';
 import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
+import { usePushAlerts } from '@plot/core/usePushAlerts.js';
+import { PUSH_ALERTS } from '@plot/core/copy/pushAlerts.js';
 import { AcceptSheet } from '../../components/watch/AcceptSheet';
 import { PrimaryButton, SecondaryButton } from '../../components/watch/WatchChrome';
 import { useTogether, type WtPerson } from '../../components/watch/watchModel';
@@ -62,8 +65,11 @@ export default function NotificationsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const pushParams = useLocalSearchParams<{ open?: string; title?: string; kind?: string }>();
+  const openedPush = useRef<string | null>(null);
   const { userId, profile } = useAppData();
   const { list, loading, refreshList, markAllRead } = useNotifications(userId);
+  const push = usePushAlerts(userId);
   const { open: openPanel } = useMediaPanel();
   const together = useTogether(SHOW_WATCH_TOGETHER ? userId : null);
   const [reviewing, setReviewing] = useState<WtPerson | null>(null);
@@ -71,6 +77,15 @@ export default function NotificationsScreen() {
   // Load the feed and clear the unread badge on open — same as web.
   useEffect(() => { refreshList(); }, [refreshList]);
   useEffect(() => { markAllRead(); }, [markAllRead]);
+
+  useEffect(() => {
+    const { open, title, kind } = pushParams;
+    const tmdbId = Number(title);
+    if (!userId || !open || openedPush.current === open || !Number.isSafeInteger(tmdbId) || tmdbId <= 0 || (kind !== 'movie' && kind !== 'tv')) return;
+    openedPush.current = open;
+    void supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', open).eq('user_id', userId);
+    openPanel(tmdbId, kind);
+  }, [pushParams, userId, openPanel]);
 
   const go = (n: NotificationRow) => {
     if (SHOW_WATCH_TOGETHER && n.type === 'watch_together_session' && n.actor_username) router.push(`/(app)/together/join/${encodeURIComponent(n.actor_username)}`);
@@ -122,6 +137,19 @@ export default function NotificationsScreen() {
             ))}
           </View>
         )}
+        {profile?.is_premium && !push.loading && !push.enabled ? (
+          <TouchableOpacity
+            onPress={() => router.push('/(app)/settings?section=viewing' as Href)}
+            accessibilityRole="button"
+            accessibilityLabel={PUSH_ALERTS.enable}
+            style={[styles.row, { borderWidth: 1, borderColor: colors.border, marginTop: spacing.md }]}
+          >
+            <View style={styles.rowBody}>
+              <Text style={styles.rowText}>{PUSH_ALERTS.enable}</Text>
+              <Text style={styles.rowMuted}>{PUSH_ALERTS.settingsHint}</Text>
+            </View>
+          </TouchableOpacity>
+        ) : null}
         {loading ? (
           <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xxl }} />
         ) : list.length === 0 && together.incoming.length === 0 ? (

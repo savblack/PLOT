@@ -4,7 +4,7 @@ Reviewed 16 September 2026. This is a build assessment, not evidence of a live p
 
 ## Product decision
 
-Keep the recorded US$3/month or US$25/year price (31% annual saving). Keep tracking,
+Keep the recorded US$3/month or US$24/year price (four months free against monthly). Keep tracking,
 watch history, discovery, statistics, imports and data exports free. Existing lists
 must remain accessible after cancellation. Launch Premium around unlimited custom
 lists and a live release calendar. Treat Plex/Trakt sync as a later addition until
@@ -35,7 +35,7 @@ amounts; regional checkout prices and tax were not independently verified.
 
 - Stripe Checkout, customer portal, signed webhook, database entitlements and
   calendar feed already exist. Public pricing and media-sync flags remain disabled.
-- Correct shared/web prices to US$3/US$25; marketing already had those amounts.
+- Shared, web, and marketing prices are US$3/month and US$24/year. The server accepts 300 and 2400 cents.
 - Move plans copy into core and retain the web shim. Show calendar benefits and free
   statistics/export instead of promising unavailable sync.
 - Preserve the selected plan through anonymous signup.
@@ -49,13 +49,23 @@ amounts; regional checkout prices and tax were not independently verified.
 
 1. **Licence:** TMDB clearance confirmed by Savannah. This is not a launch
    blocker. Historical quotes are not used as current cost assumptions.
-2. **Checkout concurrency:** persist a stable Stripe customer before checkout and
-   reuse an open session. Current checks only catch an already-mapped active
-   subscription; simultaneous first purchases can still create two subscriptions.
-3. **Webhook durability:** the staging migration and handler now atomically commit
-   subscription, badge and receipt with an account lock. Staging rollback tests
-   prove failure recovery, duplicate and older-event behaviour. Production rollout
-   and concurrent/equal-timestamp delivery checks remain. See
+2. **Checkout concurrency:** `claim_billing_checkout` takes a per-user row lock
+   and a two-minute lease. Customer creation uses idempotency key
+   `plot-customer-<user id>`. Session creation uses `plot-checkout-<operation id>`.
+   An open session is reused. Any subscription that is not `canceled` or
+   `incomplete_expired` sends the member to the portal instead of a second
+   Checkout. Coverage: `supabase/functions/_shared/checkout.test.ts`. Two
+   browsers against staging were not re-run for this change.
+3. **Webhook durability:** signature verification rejects a missing or invalid
+   `Stripe-Signature` before any write. `apply_stripe_subscription_event`
+   inserts `stripe_events` in the same transaction as the billing row, so a
+   repeated event id does not apply twice. Handled events: `checkout.session.completed`,
+   `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`, `invoice.payment_failed`,
+   `invoice.payment_succeeded`, and `invoice.paid`. Invoice events refetch the
+   subscription and write that status. They do not invent one from the invoice.
+   Staging rollback tests still stand. A signed production delivery of this set
+   was not run for this change. See
    [test evidence](stripe-test-verification.md#subscription-and-access-follow-up-2026-09-23).
 4. **Entitlement consistency:** web now reads the authoritative entitlement and
    retains billing management after expiry. The new badge write uses the database
@@ -65,11 +75,19 @@ amounts; regional checkout prices and tax were not independently verified.
    decline; renewal; failed renewal and recovery; cancel at period end; resume;
    plan switch; expiry; portal access after loss of entitlement. Prove list data
    survives downgrade and the calendar feed stops granting expired access.
-6. **Native payments:** resolve the iOS/Android purchase approach and entitlement
-   parity before showing native upgrade actions. The historical instruction to
-   link iOS users to the website is not a universal approval. Review current
-   [Apple guidelines](https://developer.apple.com/app-store/review/guidelines/)
-   (3.1.1 and 3.1.3) for each storefront. Native implementation is not changed here.
+6. **Native payments (PLO-526):** not in this change. Mobile does not start a
+   purchase. `billing_customers.stripe_customer_id` is `NOT NULL` and
+   `is_premium()` reads that table, so a store receipt cannot grant Premium
+   until there is a place to write a non-Stripe subscription. Before any
+   in-app purchase work, Savannah needs: an App Store Connect subscription
+   group with monthly and yearly products at US$3 and US$24 and a 7-day
+   trial; the same products in Play Console; a RevenueCat project (or a
+   decision to validate StoreKit 2 and Play Billing without it) whose
+   entitlement maps onto `billing_customers`; an App Store Server API key
+   and a Google Play service account; and a current read of Apple guidelines
+   3.1.1 and 3.1.3. Linking iOS users out to web checkout is not a substitute
+   and was not added. Web checkout being open does not by itself make the
+   iOS or Android upgrade button take a payment.
 7. **Operational setup:** configure live prices, portal, webhook, support details
    and licence; obtain launch approval; enable server checkout and public pricing
    together. Re-add marketing sitemap/llms entries only at launch.

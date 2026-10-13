@@ -18,7 +18,8 @@ import Stripe from 'npm:stripe@22.6.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { CheckoutPendingError, subscriptionCheckout } from '../_shared/checkout.ts';
-import { checkoutClosedToAll, checkoutPlan, matchesPremiumPrice, billingSettingsUrl, hasStripeSubscription, mayStartCheckout } from '../_shared/billingPolicy.ts';
+import { checkoutClosedToAll, checkoutConfigLog, checkoutConfigStatus, checkoutPlan, matchesPremiumPrice, billingSettingsUrl, hasStripeSubscription, mayStartCheckout } from '../_shared/billingPolicy.ts';
+import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
@@ -50,6 +51,14 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
 const SETTINGS_URL = billingSettingsUrl(Deno.env.get('STRIPE_SETTINGS_URL'));
 const TIP_MIN_AMOUNT = 100;
 const TIP_MAX_AMOUNT = 50000;
+
+// Once per isolate. Supabase logs show the switch without a dashboard read of the secret.
+let loggedCheckoutConfig = false;
+function logCheckoutConfig(enabled: string | undefined, pilotIds: string | undefined) {
+  if (loggedCheckoutConfig) return;
+  loggedCheckoutConfig = true;
+  console.log(`stripe-billing: ${checkoutConfigLog(enabled, pilotIds)}`);
+}
 
 async function captureCheckoutFailure(userId: string, reason: string, plan: string | null = null) {
   try {
@@ -99,6 +108,15 @@ Deno.serve(async (req) => {
   const action = new URL(req.url).searchParams.get('action');
   const pilotIds = Deno.env.get('STRIPE_CHECKOUT_PILOT_USER_IDS');
   const checkoutEnabled = Deno.env.get('STRIPE_CHECKOUT_ENABLED');
+  logCheckoutConfig(checkoutEnabled, pilotIds);
+
+  // Operator read-back. The gateway has already verified this bearer (verify_jwt).
+  // The body is the public switch and a count. No ids, price ids, or secret values.
+  if (action === 'status') {
+    if (!hasServiceRoleBearer(req)) return json({ error: 'Unauthorized' }, 401);
+    return json(checkoutConfigStatus(checkoutEnabled, pilotIds));
+  }
+
   // Checkout is open to everyone only when STRIPE_CHECKOUT_ENABLED is exactly "true".
   // Otherwise only the private pilot allowlist can start one, and with no pilot it is closed.
   if (action === 'checkout' && checkoutClosedToAll(checkoutEnabled, pilotIds)) {

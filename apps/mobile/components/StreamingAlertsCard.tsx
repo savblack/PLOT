@@ -9,9 +9,12 @@
 // copy/streamingAlerts.js). Detection and delivery happen server-side in the
 // streaming-arrival-alerts Edge Function.
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useStreamingAlertMute, useStreamingAlertsSwitch } from '@plot/core/useStreamingAlerts.js';
+import { usePushAlerts } from '@plot/core/usePushAlerts.js';
+import { PUSH_ALERTS } from '@plot/core/copy/pushAlerts.js';
+import { registerPushToken } from '../lib/pushNotifications';
 import { STREAMING_ALERTS as A } from '@plot/core/copy/streamingAlerts.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -34,6 +37,18 @@ export default function StreamingAlertsCard({ movie }: { movie: { id: number; ti
   const { userId, profile } = useAppData();
   const mute = useStreamingAlertMute(userId, movie);
   const all = useStreamingAlertsSwitch(userId);
+  const push = usePushAlerts(userId);
+
+  const enablePush = () => Alert.alert(PUSH_ALERTS.permissionTitle, PUSH_ALERTS.permissionBody, [
+    { text: PUSH_ALERTS.permissionNo, style: 'cancel' },
+    { text: PUSH_ALERTS.permissionYes, onPress: () => { void (async () => {
+      try {
+        const result = await registerPushToken(true);
+        if (result !== 'ok') { Alert.alert(result === 'denied' ? PUSH_ALERTS.permissionDenied : PUSH_ALERTS.permissionUnavailable); return; }
+        if ((await push.setEnabled(true)).error) Alert.alert(PUSH_ALERTS.error);
+      } catch { Alert.alert(PUSH_ALERTS.error); }
+    })(); } },
+  ]);
 
   // Nothing until both reads land, so the card never flashes the wrong state.
   if (!userId || !movie?.id || !movie?.title || mute.loading || all.loading) return null;
@@ -85,6 +100,11 @@ export default function StreamingAlertsCard({ movie }: { movie: { id: number; ti
         {action}
       </View>
       {failed ? <Text style={styles.error} accessibilityRole="alert">{A.error}</Text> : null}
+      {profile?.is_premium && !push.loading && !push.enabled && all.on && !mute.muted ? (
+        <TouchableOpacity onPress={enablePush} accessibilityRole="button" accessibilityLabel={PUSH_ALERTS.enable} style={{ marginTop: spacing.sm }}>
+          <Text style={styles.hint}>{PUSH_ALERTS.enable}</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }

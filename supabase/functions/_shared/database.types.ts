@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -874,24 +874,6 @@ export type Database = {
         }
         Relationships: []
       }
-      marketing_notion_mirror_lease: {
-        Row: {
-          lease_until: string
-          owner: string
-          singleton: boolean
-        }
-        Insert: {
-          lease_until: string
-          owner: string
-          singleton?: boolean
-        }
-        Update: {
-          lease_until?: string
-          owner?: string
-          singleton?: boolean
-        }
-        Relationships: []
-      }
       marketing_metrics: {
         Row: {
           collected_at: string
@@ -975,6 +957,24 @@ export type Database = {
           snapshot?: Json
           subject?: string
           week_start?: string
+        }
+        Relationships: []
+      }
+      marketing_notion_mirror_lease: {
+        Row: {
+          lease_until: string
+          owner: string
+          singleton: boolean
+        }
+        Insert: {
+          lease_until: string
+          owner: string
+          singleton?: boolean
+        }
+        Update: {
+          lease_until?: string
+          owner?: string
+          singleton?: boolean
         }
         Relationships: []
       }
@@ -1481,22 +1481,94 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          push_enabled: boolean
+          push_enabled_at: string | null
           streaming_alerts: boolean
           streaming_email: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
+          push_enabled?: boolean
+          push_enabled_at?: string | null
           streaming_alerts?: boolean
           streaming_email?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
+          push_enabled?: boolean
+          push_enabled_at?: string | null
           streaming_alerts?: boolean
           streaming_email?: boolean
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      push_deliveries: {
+        Row: {
+          notification_id: string
+          token: string
+          status: string
+          attempts: number
+          provider_ref: string | null
+          error: string | null
+          claimed_at: string | null
+          sent_at: string | null
+          receipted_at: string | null
+          created_at: string
+        }
+        Insert: {
+          notification_id: string
+          token: string
+          status?: string
+          attempts?: number
+          provider_ref?: string | null
+          error?: string | null
+          claimed_at?: string | null
+          sent_at?: string | null
+          receipted_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          notification_id?: string
+          token?: string
+          status?: string
+          attempts?: number
+          provider_ref?: string | null
+          error?: string | null
+          claimed_at?: string | null
+          sent_at?: string | null
+          receipted_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      push_tokens: {
+        Row: {
+          token: string
+          user_id: string
+          platform: string
+          created_at: string
+          last_seen_at: string
+          disabled_at: string | null
+        }
+        Insert: {
+          token: string
+          user_id: string
+          platform: string
+          created_at?: string
+          last_seen_at?: string
+          disabled_at?: string | null
+        }
+        Update: {
+          token?: string
+          user_id?: string
+          platform?: string
+          created_at?: string
+          last_seen_at?: string
+          disabled_at?: string | null
         }
         Relationships: []
       }
@@ -2177,6 +2249,41 @@ export type Database = {
           watchlist_visibility?: string | null
         }
         Relationships: []
+      }
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          display_name: string | null
+          id: string
+          is_premium: boolean | null
+          is_supporter: boolean
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          display_name?: string | null
+          id: string
+          is_premium?: boolean | null
+          is_supporter: boolean
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          display_name?: string | null
+          id?: string
+          is_premium?: boolean | null
+          is_supporter?: boolean
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reminders: {
         Row: {
@@ -2910,13 +3017,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "watch_together_links_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       watch_together_sessions: {
@@ -3092,33 +3192,6 @@ export type Database = {
         }
         Relationships: []
       }
-      public_profiles: {
-        Row: {
-          avatar_url: string | null
-          display_name: string | null
-          id: string | null
-          is_premium: boolean | null
-          is_supporter: boolean | null
-          username: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          display_name?: string | null
-          id?: string | null
-          is_premium?: boolean | null
-          is_supporter?: boolean | null
-          username?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          display_name?: string | null
-          id?: string | null
-          is_premium?: boolean | null
-          is_supporter?: boolean | null
-          username?: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       accept_list_invite: { Args: { p_key: string }; Returns: string }
@@ -3147,7 +3220,14 @@ export type Database = {
       }
       alert_email_recipients: {
         Args: { p_users: string[] }
-        Returns: { email: string; user_id: string }[]
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
+      register_push_token: {
+        Args: { p_token: string; p_platform: string }
+        Returns: undefined
       }
       apply_stripe_subscription_event: {
         Args: {
@@ -3490,8 +3570,9 @@ export type Database = {
         Args: { p_accept: boolean; p_requester: string; p_share_full?: boolean }
         Returns: undefined
       }
-      run_marketing_linear_mirror: { Args: never; Returns: undefined }
       run_alert_email_delivery: { Args: never; Returns: undefined }
+      run_marketing_linear_mirror: { Args: never; Returns: undefined }
+      run_marketing_notion_mirror: { Args: never; Returns: undefined }
       run_movie_release_notifications: { Args: never; Returns: undefined }
       run_new_episode_notifications: { Args: never; Returns: undefined }
       run_premium_alerts: { Args: { p_only: string }; Returns: undefined }
