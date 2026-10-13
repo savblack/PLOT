@@ -92,7 +92,7 @@ export const PLANS_PAGE = {
       },
       {
         q: 'Can I get a refund?',
-        a: 'The 7-day free trial is there so you can try Premium before you pay, so charges after the trial aren’t refundable and we don’t refund partial months or years. Cancel anytime and keep Premium until the end of the period you’ve paid for. If you think you were charged by mistake, email contact@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.',
+        a: 'The 7-day free trial is there so you can try Premium before you pay, so charges after the trial aren’t refundable and we don’t refund partial months or years. Cancel anytime and keep Premium until the end of the period you’ve paid for. If you think you were charged by mistake, email support@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.',
       },
       {
         q: 'What happens to my lists if I downgrade?',
