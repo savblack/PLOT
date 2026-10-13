@@ -159,7 +159,7 @@ export const CLOSER = {
   sub: 'Free forever. Premium if you want more.',
   cta: 'Start tracking',
   browse: 'Browse What’s On',
-  newsletterHint: 'Not ready? Get the latest movie and TV updates by email.',
+  newsletterHint: 'Want more? Get movie and TV updates by email.',
   newsletterCta: 'Subscribe',
   newsletterSuccess: "You're in. We'll email you the next issue.",
 };
