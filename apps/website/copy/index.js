@@ -130,7 +130,7 @@ export const INDIE = {
   headline: 'Made by an independent developer, not a studio or streaming platform.',
   body: 'Plot is paid for by the people who use it, not advertisers. That keeps it answering to you. Going Premium is the best way to support it.',
   pills: ['No ads', 'No investors', 'Free plan, forever'],
-  cta: 'Start tracking free',
+  cta: 'Support Plot with Premium', // same checkout intent as the Premium card
   story: 'Read the story',
 };
 
