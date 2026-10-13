@@ -28,14 +28,14 @@ describe('safeAppReturnPath', () => {
 
 describe('premiumPlansPath', () => {
   it('omits from when absent or unsafe', () => {
-    assert.equal(premiumPlansPath(), '/plans');
-    assert.equal(premiumPlansPath('https://evil.example'), '/plans');
+    assert.equal(premiumPlansPath(), '/pricing');
+    assert.equal(premiumPlansPath('https://evil.example'), '/pricing');
   });
 
   it('encodes a safe return path', () => {
     assert.equal(
       premiumPlansPath('/settings?section=connections'),
-      '/plans?from=%2Fsettings%3Fsection%3Dconnections',
+      '/pricing?from=%2Fsettings%3Fsection%3Dconnections',
     );
   });
 });
