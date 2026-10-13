@@ -9,10 +9,14 @@
 -- the stored copy; only the cron caller, carrying the service key, rebuilds it.
 
 create table if not exists public.title_sitemap_cache (
-  id           smallint    primary key default 1 check (id = 1),
+  id           smallint    not null default 1 check (id = 1),
   xml          text        not null,
   url_count    integer     not null default 0,
-  generated_at timestamptz not null default now()
+  generated_at timestamptz not null default now(),
+  -- A table-level key, not an inline one: scripts/check-db-write-paths.mjs only
+  -- recognises this shape when it folds a not-yet-applied migration into the
+  -- schema it checks upserts against.
+  primary key (id)
 );
 
 alter table public.title_sitemap_cache enable row level security;
