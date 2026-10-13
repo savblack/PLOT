@@ -1,6 +1,7 @@
 import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import { getEpisodeGuideState } from '@plot/core/episodeProgress.js';
 import StreamingAlertsCard from './StreamingAlertsCard';
+import EpisodeAlertsCard from './EpisodeAlertsCard';
 import TitleFootBar from './TitleFootBar';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
@@ -57,6 +58,7 @@ import { TrailerPlayer } from './TrailerPlayer';
 import CollectionCard from './CollectionCard';
 import { MEDIA } from '@plot/core/copy/media.js';
 import UndoToast from './UndoToast';
+import NoticeToast from './NoticeToast';
 import { clearUndo } from '@plot/core/undo.js';
 
 
@@ -1245,6 +1247,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </View>
                 </View>
 
+                {!isMovie && details && (inList || isWatching) && (
+                  <EpisodeAlertsCard show={details} />
+                )}
+
                 {!isMovie && isWatching && details && (
                   <UpNextCard
                     tvId={itemId}
@@ -1515,6 +1521,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         </KeyboardAvoidingView>
       </Animated.View>
       <UndoToast placement="panel" />
+      <NoticeToast placement="panel" />
     </Modal>
 
     {showListSheet && details && (
