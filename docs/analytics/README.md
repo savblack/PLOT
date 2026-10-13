@@ -125,6 +125,10 @@ Encoded here once so nobody rediscovers them.
   apps now report through `reportImport()` in `importPipeline.js`. A write
   that saved nothing because every row failed is `import_failed`
   (`reason: write_failed`), not a completion, so it cannot activate anyone.
+  From 2026-09-27 until 2026-10-12 a Trakt account import fired
+  `import_completed` twice: once inside `useTraktSync.importHistory` and
+  again from the import screen. The screen is the only sender now. `count`
+  is the number of history rows written, when the import result includes it.
 - **An undone removal is `action_undone`, not a new save.** The undo toast
   (`packages/core/undo.js`, 2026-09-27) writes the removed row straight back
   and fires no success seam, so undoing "removed from Want to Watch" does not
@@ -365,11 +369,19 @@ the import page's `?from=` param.
 |---|---|---|
 | `import_source_selected` | A source was tapped, before any file or account | `source`, `entry` |
 | `import_started` | The file parsed, or the account import began | `source`, `entry`, `count` (file rows) |
-| `import_completed` | The write finished and saved something | `source`, `entry`, `count`, `failed_count`, `duration_ms`, `write_ms` (file imports) |
+| `import_completed` | The write finished and saved something. A Trakt account import uses the same event | `source`, `entry`, `count` when the result includes how many rows were written, `failed_count`, `duration_ms`, `write_ms` for file imports |
 | `import_failed` | The import stopped, or saved nothing | `source`, `entry`, `reason` (an `IMPORT_FAILURE_REASONS` slug), `failed_count`, `duration_ms` once it had started |
 | `onboarding_completed` | Setup saved | `region`, `seed_titles_added`, `services_added`, `import_source` (null unless they took the switching-apps step), `skipped` |
+| `finishing_touches_viewed` | The Finishing touches card was on screen | `done_count`, `total`. Once per app session, after the watchlist has loaded |
 | `finishing_touch_opened` | A Finishing touches step's action was opened | `step` (`progress` / `friends` / `import` / `people`) |
 | `finishing_touches_hidden` | "Hide for now" | `done_count` |
+| `saved_to_watch_viewed` | The Saved to watch rail was on screen | `item_count`, `first_run`. Once per app session |
+
+`finishing_touches_hidden` had never fired because Hide for now was rendered
+only while the card was expanded. Web starts expanded at 1024px and up. Mobile
+starts collapsed, and so does web below that width, so a phone never had the
+button. The `track()` call itself was already correct. Hide now sits in the
+header on both apps, collapsed or not. The event name is unchanged.
 
 `duration_ms` runs from `import_started` to the end, so for a file import it
 includes the time spent reviewing the preview; `write_ms` is just the write,

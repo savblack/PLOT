@@ -112,7 +112,8 @@ export function useTraktSync(userId: string | null | undefined) {
     try {
       const result = await callTraktSync('import-history');
       if (result?.importedCount) emit(HISTORY_CHANGED_EVENT);
-      track(EVENTS.IMPORT_COMPLETED, { source: 'trakt', count: result?.importedCount || 0 });
+      // The import screen reports import_completed through reportImport.
+      // Tracking it here as well counted every Trakt account import twice.
       await loadIntegration();
       return result;
     } catch (e) {

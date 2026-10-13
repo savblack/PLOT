@@ -42,6 +42,8 @@ import { PEOPLE } from '@plot/core/copy/people.js';
 import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches from './FinishingTouches.jsx';
 import { useFirstRun } from '../hooks/useFirstRun.js';
+import { oncePerSession } from '@plot/core/oncePerSession.js';
+import { track, EVENTS } from '../lib/analytics.js';
 import { ContinueCard, PeopleInvite, PeopleShelfCard } from './HomeShelves.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 
@@ -809,6 +811,15 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   // to the user's own streaming selections. The hook returns only platforms
   // with synced rows; PlatformCharts fills in the rest as unavailable.
   const platformList = usePlatformCharts();
+  const savedShown = !loading && firstRun && !watchlist?.loading
+    ? Math.min(watchlist?.items?.length ?? 0, 20)
+    : 0;
+  useEffect(() => {
+    if (savedShown === 0) return;
+    oncePerSession('saved_to_watch_viewed', () => {
+      track(EVENTS.SAVED_TO_WATCH_VIEWED, { item_count: savedShown, first_run: true });
+    });
+  }, [savedShown]);
   if (loading) {
     return <LoadingSpinner />;
   }
