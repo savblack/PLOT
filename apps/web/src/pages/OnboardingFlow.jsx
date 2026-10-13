@@ -24,6 +24,7 @@ import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import { readPendingSave } from '../utils/pendingSave.js';
+import { notifyOnboardingCompleted } from '@plot/core/brevoLifecycleClient.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import {
@@ -205,7 +206,8 @@ export default function OnboardingFlow() {
     setSaveError(null);
     // Read before the write. The patch always sets the flag true, so the row
     // that comes back cannot tell us whether this is the first time. The
-    // welcome email listens for onboarding_completed.
+    // welcome email and the Brevo event both listen for onboarding_completed,
+    // and only this first time.
     const prior = await supabase.from('profiles')
       .select('onboarding_complete')
       .eq('id', user.id)
@@ -239,6 +241,8 @@ export default function OnboardingFlow() {
     const key = finishingTouchesKey(user.id);
     if (!readStorage(key)) writeStorage(key, serialiseFinishingTouches(startFinishingTouches(Date.now())));
     if (trackCompletion) {
+      // After the picks are on My List, so the email sees the current watchlist.
+      await notifyOnboardingCompleted();
       track(EVENTS.ONBOARDING_COMPLETED, {
         region,
         seed_titles_added: seeds.length,

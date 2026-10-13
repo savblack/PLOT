@@ -404,6 +404,23 @@ Signup itself is section 12.
 
 **How it works.** Run the script with `DRY_RUN=1` first. It still creates lists and attributes in the live Brevo account even on a dry run. Copy the three list ids it prints into the edge secrets. Brevo silently drops attribute keys it does not know, so the attribute has to exist before waitlist sync can record a source.
 
+A signup sync that logs `Brevo 401` / `Key not found` means the trigger is still firing and `BREVO_API_KEY` is not a key Brevo recognizes. Replace the edge secret. Trimming whitespace does not repair a revoked key.
+
+Lifecycle mail (welcome, day 1, day 7, day 14) is a Brevo automation the owner builds in the Brevo UI. The app only syncs the data it reads.
+
+- Event `onboarding_completed`, sent only the first time onboarding finishes. The same `shouldTrackOnboardingCompleted` check gates the analytics event. A later pass through setup does not send it. Properties: `imported` (boolean), `picked_count` (number), `streaming_services` (text), and up to three `title_N_name`, `title_N_poster_url`, `title_N_url`.
+- Contact attributes the hourly job keeps current: `TRACK_COUNT`, `LAST_TRACK_AT`, `LAST_SEEN_AT`, `IMPORTED`, `SAVED_TITLES`, `TITLE_1_NAME`, `TITLE_1_POSTER_URL`, `TITLE_1_URL`, and the same for slots 2 and 3. `ONBOARDING_COMPLETED_AT` is set with the event. Day-1 mail should read the contact attributes, not the event. Import usually finishes after the event, and the watchlist can change during the wait.
+- Deep link: `https://app.theplot.tv/save?media_type=movie|tv&tmdb_id={id}&src=lifecycle`. Web opens the title panel and does not add it again. Mobile opens the panel for any `/save` link and does not add it.
+- Header image: `https://app.theplot.tv/logo-email.png` (130×72 transparent PNG of the outlined wordmark).
+- Social icons: `https://app.theplot.tv/email/icon-instagram.png`, `icon-threads.png`, and `icon-x.png` (48×48, transparent, `#6B655D`).
+- Cron `brevo-lifecycle-sync` (`17 * * * *`) calls `brevo-lifecycle`. Deploy that function after the migration. Create the new attributes first or Brevo drops them:
+
+```
+node --env-file=.env marketing/setup/brevo-lifecycle-backfill.mjs --attributes-only
+```
+
+The same script can backfill existing contacts (`--apply`). It does not send the event. Dry run is the default. Do not point it at production unless you mean to update those contacts.
+
 ---
 
 ## 12. Newsletter and waitlist signup

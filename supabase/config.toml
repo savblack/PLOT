@@ -119,6 +119,13 @@ verify_jwt = true
 [functions.notify-signup]
 verify_jwt = true
 
+# Onboarding event and the hourly lifecycle attribute sync. Signed-in callers
+# send onboarding_completed. pg_cron calls it with the Vault service-role
+# bearer (run_brevo_lifecycle_sync). verify_jwt stays true; the handler also
+# checks hasServiceRoleBearer before it will sync anyone but the caller.
+[functions.brevo-lifecycle]
+verify_jwt = true
+
 # Profile-change notifier for Brevo sync — invoked by a Database Webhook on
 # public.profiles (INSERT + UPDATE), configured via the Supabase dashboard.
 # The dashboard's own service-role auth option supplies the bearer, so

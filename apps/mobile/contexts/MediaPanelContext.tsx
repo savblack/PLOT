@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+import * as Linking from 'expo-linking';
 import { onPendingWatchQueued } from '@plot/core/watchQueued.js';
+import { parseTitleDeepLink } from '@plot/core/brevoLifecycle.js';
 
 export type PanelItemType = 'movie' | 'tv' | 'collection';
 
@@ -31,6 +33,19 @@ export function MediaPanelProvider({ children }: { children: ReactNode }) {
 
   const open  = useCallback((itemId: number, itemType: PanelItemType) => setState({ itemId, itemType }), []);
   const close = useCallback(() => setState({ itemId: null, itemType: null }), []);
+
+  // /save links (lifecycle email, share sheet) open the title. They do not
+  // add it to the watchlist. Web does the add-or-open choice in drainPendingSave.
+  useEffect(() => {
+    const openLink = (url: string | null) => {
+      const title = parseTitleDeepLink(url);
+      if (!title) return;
+      setState({ itemId: title.tmdbId, itemType: title.mediaType });
+    };
+    Linking.getInitialURL().then(openLink);
+    const sub = Linking.addEventListener('url', ({ url }) => openLink(url));
+    return () => sub.remove();
+  }, []);
 
   // Out-of-panel save: open the title so the watch prompt can show same session.
   useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type }) => {
