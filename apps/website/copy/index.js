@@ -159,7 +159,7 @@ export const CLOSER = {
   sub: 'Start free. Upgrade whenever you like.',
   cta: 'Start tracking',
   pricing: 'See pricing',
-  newsletterHint: 'Not ready? Get What’s On, daily, by email.',
+  newsletterHint: 'Not ready? Get the latest movie and TV updates by email.',
   newsletterCta: 'Subscribe',
   newsletterSuccess: "You're in. We'll email you the next issue.",
 };
