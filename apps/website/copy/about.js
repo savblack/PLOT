@@ -13,9 +13,9 @@ export const ABOUT_PAGE = {
     description: "Plot is a free movie and TV tracker and journal built by a solo developer. Track what you watch, never miss a release, and pick what to watch tonight. Premium from US$2/month.",
   },
   pageLabel: "About",
-  h1: "A movie and TV journal that feels like yours",
-  pageMeta: "A note from the person building plot. Updated October 2026.",
-  lead: "Plot is a free movie and TV tracker and journal. It keeps everything you've watched and everything you want to watch in one place, tells you the moment a new episode or release drops, and helps you pick something when you can't decide. It's built by one person, not a studio.",
+  h1: "Everything you watched, and how it actually felt",
+  pageMeta: "Written by the one person who builds plot. October 2026.",
+  lead: "You watched it. You had a feeling. Plot is where that goes. Log a movie or an episode in about ten seconds, say how it hit you in a sentence, and get told when the next one drops. No essays, no dark-mode gloom, no scrolling seven apps to find out what's on. It's a movie and TV journal made by one person, around a day job, for people who just love this stuff.",
   facts: [
     {
       term: "What it is",
@@ -53,7 +53,7 @@ export const ABOUT_PAGE = {
       id: "why",
       heading: "Why I built plot",
       paragraphs: [
-        "You don't have to call yourself a cinephile to belong here. Plot is built for anyone who just genuinely loves movies and TV. That's it.",
+        "You don't have to call yourself a cinephile to belong here. If you've ever rewatched the same show three times because nothing else felt right, you're the person I made this for.",
         "Plot started because of a real lack of enthusiasm for the apps that already exist. They're clunky, seemingly only ever in dark mode, and bluntly, no fun to look at. A place to track what you watch shouldn't be hard on the eyes or a chore to open.",
         "Then there was the pressure. The pressure of writing reviews, of performing how you felt about something in the \"right\" way. Plot is for people who love TV, who love movies, who love the cinema and aren't afraid to say exactly how something made them feel. If all you have to say about a movie is that it made you cry 14 separate times, firstly, shout out to my emotional baddies, and secondly, thanks for the heads up! That one's getting saved for when a good cry is needed.",
       ],
@@ -79,8 +79,8 @@ export const ABOUT_PAGE = {
           detail: "Movies and TV in one timeline, with ratings and short notes that stay yours.",
         },
         {
-          title: "A watchlist you'll come back to",
-          detail: "Save anything in seconds, see where it's streaming, and never lose the movie a friend swore by.",
+          title: "A watchlist with a memory",
+          detail: "Save the movie your friend swore by before you forget the title, and see where it's streaming when you finally get to it.",
         },
         {
           title: "Your own release calendar",
@@ -95,7 +95,7 @@ export const ABOUT_PAGE = {
           detail: "The service that has it, right on the title, so the hunt ends before it starts.",
         },
         {
-          title: "Lists you'd actually show someone",
+          title: "Lists with a point of view",
           detail: "Comfort rewatches, \"movies to make my partner watch\", the lot. Up to 5 on Free, unlimited on Premium.",
         },
         {
@@ -108,7 +108,7 @@ export const ABOUT_PAGE = {
       id: "premium",
       heading: "Free forever, and Premium when you want more",
       paragraphs: [
-        "Everything above is free, with no credit card and no trial clock. Free is the real product, not a demo.",
+        "Everything above is free, with no credit card and no trial clock. I'm not holding the good bits hostage.",
         "Premium is for the nights you want Plot to do the deciding. Every subscription goes straight into keeping Plot independent and shipping the next thing. There are no ads to fall back on, and that's on purpose.",
       ],
       premiumCard: {
@@ -130,7 +130,7 @@ export const ABOUT_PAGE = {
       heading: "Better with your people",
       paragraphs: [
         "Plot is quieter than a social network and better than a group chat. Follow a friend and you'll see what they're watching and what they thought, in their own words, not a 2,000-word essay. Compare your taste and settle the argument about whose recommendations are better. Share your calendar with family so they know not to call you during the Summer House reunion.",
-        "The fastest way to get someone on Plot is to send them your <a href=\"/taste-match\" data-cta=\"about-friends\">taste match</a>. Curiosity does the rest.",
+        "The fastest way to get someone on Plot is to send them your <a href=\"/taste-match\" data-cta=\"about-friends\">taste match</a>. Nobody can resist finding out they're a 41.",
       ],
     },
     {
