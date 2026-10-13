@@ -76,14 +76,8 @@ export const IMPORT = {
   eyebrow: 'Switching is easy',
   headline: 'Bring your whole history with you.',
   body: 'Coming from Letterboxd, Trakt, TV Time or IMDb? Import your ratings, reviews, watchlist and watch history. It’s free on every plan.',
-  cardTitle: 'Import your history',
-  sources: [
-    { name: 'Letterboxd', what: 'Ratings, reviews, watchlist and diary' },
-    { name: 'Trakt', what: 'History, ratings and watchlist' },
-    { name: 'TV Time', what: 'Shows and episode progress' },
-    { name: 'IMDb', what: 'Ratings and watchlist' },
-  ],
-  imported: 'Imported',
+  cardTitle: 'Your watch history',
+  cardSub: 'All of it, in one place',
   // Sample result on the card (illustrative).
   resultTitle: '1,284 titles are on your Plot',
   resultSub: '412 ratings · 96 reviews · 58 on your watchlist',

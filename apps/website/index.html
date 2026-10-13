@@ -1021,16 +1021,36 @@
     .dr-sync svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--fill); }
     .hx-pill { margin-left: auto; padding: 3px 9px; border-radius: var(--r-pill); background: var(--fill); color: var(--text); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 
-    /* Bring your history: the four import sources the app supports. */
-    .im-card { display: flex; flex-direction: column; gap: 8px; }
-    .im-card .hx-card-title { margin-bottom: 6px; }
-    .im-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--surface); }
-    .im-row.is-done { background: #fff; box-shadow: 0 0 0 2px var(--fill); }
-    .im-mark { width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; background: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 700; }
-    .im-name { display: block; font-weight: 700; font-size: 0.95rem; }
-    .im-what { display: block; font-size: 0.75rem; color: var(--text-secondary); }
-    .im-state { margin-left: auto; font-size: 0.75rem; font-weight: 700; color: var(--accent-2); }
-    .im-done { margin-top: 8px; display: flex; gap: 12px; align-items: center; padding: 16px; border-radius: 16px; background: var(--sage); }
+    /* Bring your history: a watch history filling in poster by poster, then
+       the summary lands. Loops; reduced motion shows the finished state. */
+    .im-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+    .im-grid img {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4 / 5;
+      object-fit: cover;
+      border-radius: 8px;
+      background: var(--surface);
+      opacity: 0;
+      animation: im-in 9s infinite;
+      animation-delay: calc(var(--i) * 0.11s);
+    }
+    @keyframes im-in {
+      0% { opacity: 0; transform: translateY(12px) scale(0.9); }
+      6%, 88% { opacity: 1; transform: none; }
+      96%, 100% { opacity: 0; transform: none; }
+    }
+    .im-done { animation: im-done 9s infinite; }
+    @keyframes im-done {
+      0%, 17% { opacity: 0; transform: translateY(10px); }
+      23%, 88% { opacity: 1; transform: none; }
+      96%, 100% { opacity: 0; transform: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .im-grid img, .im-done { animation: none; opacity: 1; }
+    }
+    .im-done { margin-top: 14px; display: flex; gap: 12px; align-items: center; padding: 16px; border-radius: 16px; background: var(--sage); }
     .im-done-mark { width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; background: var(--accent-2); color: #fff; display: flex; align-items: center; justify-content: center; }
     .im-done-mark svg { width: 16px; height: 16px; }
     .im-done strong { display: block; font-size: 0.95rem; }
@@ -1294,11 +1314,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <div class="hx-visual reveal" aria-hidden="true">
         <div class="hx-card im-card">
-          <span class="hx-card-title">Import your history</span>
-          <div class="im-row is-done"><span class="im-mark">L</span><span><span class="im-name">Letterboxd</span><span class="im-what">Ratings, reviews, watchlist and diary</span></span><span class="im-state">Imported</span></div>
-          <div class="im-row"><span class="im-mark">T</span><span><span class="im-name">Trakt</span><span class="im-what">History, ratings and watchlist</span></span></div>
-          <div class="im-row"><span class="im-mark">T</span><span><span class="im-name">TV Time</span><span class="im-what">Shows and episode progress</span></span></div>
-          <div class="im-row"><span class="im-mark">I</span><span><span class="im-name">IMDb</span><span class="im-what">Ratings and watchlist</span></span></div>
+          <div class="dr-head"><span class="hx-card-title">Your watch history</span><span class="dr-sub">All of it, in one place</span></div>
+          <div class="im-grid">
+            <img src="https://image.tmdb.org/t/p/w185/tvUHVSTJV9ITON3oyHaWp7oaAc8.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 0">
+            <img src="https://image.tmdb.org/t/p/w185/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 1">
+            <img src="https://image.tmdb.org/t/p/w185/fWPgbnt2LSqkQ6cdQc0SZN9CpLm.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 2">
+            <img src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 3">
+            <img src="https://image.tmdb.org/t/p/w185/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 4">
+            <img src="https://image.tmdb.org/t/p/w185/vP7Yd6couiAaw9jgMd5cjMRj3hQ.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 5">
+            <img src="https://image.tmdb.org/t/p/w185/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 6">
+            <img src="https://image.tmdb.org/t/p/w185/H6vke7zGiuLsz4v4RPeReb9rsv.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 7">
+            <img src="https://image.tmdb.org/t/p/w185/cpf7vsRZ0MYRQcnLWteD5jK9ymT.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 8">
+            <img src="https://image.tmdb.org/t/p/w185/AdYr4DjOgXvDUMwu6vEhZy1Rnxk.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 9">
+            <img src="https://image.tmdb.org/t/p/w185/78aK4Msbr22A5PGa6PZV0pAvdwf.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 10">
+            <img src="https://image.tmdb.org/t/p/w185/yBKMAIj7clP42UkFejhGDBBoTpb.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 11">
+          </div>
           <div class="im-done"><span class="im-done-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><strong>1,284 titles are on your Plot</strong><span>412 ratings · 96 reviews · 58 on your watchlist</span></div></div>
         </div>
       </div>
