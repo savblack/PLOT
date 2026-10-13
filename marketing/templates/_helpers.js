@@ -32,7 +32,7 @@ const accentLine = (plain, italic) => {
 // Caps kicker line merging release kind + date: "STREAMING · FRIDAY, JUNE 12".
 // The date string is already US order (see formatWeekdayDayMonth).
 // kind: 'cinema' | 'streaming' | 'rental' | 'tv' (colors the kind word); either part optional.
-const KIND_TEXT = { cinema: 'In cinemas', streaming: 'Streaming', rental: 'At home', tv: 'New series' };
+const KIND_TEXT = { cinema: 'In theaters', streaming: 'Streaming', rental: 'At home', tv: 'New series' };
 const metaCaps = (kind, dateText) => {
   const line = el('div', 'meta-caps');
   if (kind && KIND_TEXT[kind]) line.append(el('span', `kind ${kind}`, KIND_TEXT[kind]));
