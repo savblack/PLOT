@@ -12,9 +12,21 @@ export const META = {
 };
 
 export const HERO = {
-  headline: 'Your movie and TV companion',
-  sub: "Everything you've watched. Everything you want to watch.",
-  cta: 'Start your plot →',
+  eyebrow: 'Your movie and TV tracker',
+  headline: 'Always know what to watch.',
+  sub: 'All the movies and shows you’ve seen, saved and are counting down to. Finally in one place. That’s Plot.',
+  cta: 'Start tracking',
+  note: 'Free forever. No credit card required.',
+  // "Up next": a fan of three posters with a notification over them. Titles
+  // and dates come from /api/discover at runtime; these are the patterns.
+  upNext: {
+    // The status comes from the title's own data: "In theaters now" or
+    // "New in theaters" (released in the last 14 days) for films,
+    // "Trending this week" or "New series" (premiered in the last 30 days) for shows.
+    label: 'Up next · {status}',
+    notificationTitle: '{title} is in theaters now',
+    notificationText: "It's on your watchlist, so we let you know.",
+  },
 };
 
 // A scroll-driven series of short lines building to the "plot does." payoff.
