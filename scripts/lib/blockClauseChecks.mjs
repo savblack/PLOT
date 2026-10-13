@@ -20,7 +20,7 @@ const DOLLAR_TAG = /\$([A-Za-z_][A-Za-z0-9_]*)?\$/;
  */
 export function extractFunctionStatements(sql) {
   const out = [];
-  const re = /\b(create\s+(?:or\s+replace\s+)?function|drop\s+function(?:\s+if\s+exists)?)\s+(?:public\.)?("?)([A-Za-z_][A-Za-z0-9_]*)\2/gi;
+  const re = /\b(create\s+(?:or\s+replace\s+)?function|drop\s+function(?:\s+if\s+exists)?)\s+(?:(?:public|private)\.)?("?)([A-Za-z_][A-Za-z0-9_]*)\2/gi;
   let m;
   while ((m = re.exec(sql)) !== null) {
     const name = m[3];
