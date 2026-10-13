@@ -91,6 +91,10 @@ export const PLANS_PAGE = {
         a: 'Yes. Cancel during the 7-day trial and you pay $0. After the trial, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.',
       },
       {
+        q: 'Can I get a refund?',
+        a: 'The 7-day free trial is there so you can try Premium before you pay, so charges after the trial aren’t refundable and we don’t refund partial months or years. Cancel anytime and keep Premium until the end of the period you’ve paid for. If you think you were charged by mistake, email contact@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.',
+      },
+      {
         q: 'What happens to my lists if I downgrade?',
         a: 'Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.',
       },

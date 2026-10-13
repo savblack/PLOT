@@ -70,7 +70,12 @@ This decision does not enable public checkout or authorize a production change.
    and engineering gates in the readiness document. After launch approval, in Stripe **live mode**, create a Plot Premium product with two recurring
    USD prices: US$3/month and US$24/year. Record the two live price IDs.
 2. Set the Stripe account's public business URL and support email. The Customer
-   Portal should also show the Plot terms and privacy URLs.
+   Portal should also show the Plot terms and privacy URLs. In Settings, Billing,
+   Subscriptions and emails, turn on the customer email for trials that are about to
+   end. Stripe sends it before the trial converts (and fires
+   `customer.subscription.trial_will_end`), which is the notice the Terms promise and
+   that US and Australian consumer rules expect before a free trial becomes a charge.
+   Keep successful-payment emails on too, so each charge produces a receipt.
 3. In the live-mode Customer Portal, enable cancellation, payment-method
    updates, invoice history, and price switching. Its catalogue must contain
    only the Plot Premium product and both live prices. Schedule shorter-interval changes for
