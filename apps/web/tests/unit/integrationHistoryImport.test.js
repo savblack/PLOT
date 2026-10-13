@@ -21,6 +21,19 @@ test('Plex and Trakt expose Free history-only actions while sync stays Premium',
   assert.doesNotMatch(trakt.match(/async function handleImportHistory[\s\S]+?\n}\n/)?.[0] || '', /fetchTraktWatchlist|processOutbox/);
 });
 
+test('a Trakt account import reports import_completed once, from the screen', () => {
+  const webHook = read('../../src/hooks/useTraktSync.js');
+  const mobileHook = read('../../../mobile/hooks/useTraktSync.ts');
+  const webImport = read('../../src/components/ImportView.jsx');
+  const mobileImport = read('../../../mobile/components/ImportHistoryModal.tsx');
+
+  for (const hook of [webHook, mobileHook]) {
+    assert.doesNotMatch(hook, /IMPORT_COMPLETED/);
+  }
+  assert.match(webImport, /report\('completed', \{ source, count: result\.importedCount \|\| 0 \}\)/);
+  assert.match(mobileImport, /report\('completed', \{ source: platform, count: result\.importedCount \|\| 0 \}\)/);
+});
+
 test('both import surfaces offer Plex and Trakt, and sync UI is Premium-gated', () => {
   const webImport = read('../../src/components/ImportView.jsx');
   const mobileImport = read('../../../mobile/components/ImportHistoryModal.tsx');

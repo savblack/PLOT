@@ -14,6 +14,7 @@ import { usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
 import { deriveFinishingTouches, finishingTouchesVisible, firstWatchlistShow } from '@plot/core/finishingTouches.js';
 import { pointerAfterEpisode } from '@plot/core/watchingProgress.js';
 import { useHistory } from '@plot/core/useHistory.js';
+import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { favoriteWords } from '@plot/core/spelling.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { FINISHING_TOUCHES as T } from '../copy/finishingTouches.js';
@@ -58,8 +59,16 @@ export default function FinishingTouches() {
     traktImportDone: !!state?.traktImportDone,
     showProgress: !!show,
   });
+  const visible = !!user && finishingTouchesVisible(state);
 
-  if (!user || !finishingTouchesVisible(state)) return null;
+  useEffect(() => {
+    if (!visible || watchlist?.loading) return;
+    oncePerSession('finishing_touches_viewed', () => {
+      track(EVENTS.FINISHING_TOUCHES_VIEWED, { done_count: doneCount, total });
+    });
+  }, [visible, watchlist?.loading, doneCount, total]);
+
+  if (!visible) return null;
 
   const tiles = steps.map(step => {
     const base = { id: step.id, done: step.done };

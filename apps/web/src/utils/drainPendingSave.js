@@ -40,7 +40,7 @@ export async function drainPendingSave({ intent }, deps) {
 
   // These surfaces promise a route into Plot, not a silent write to the
   // default watchlist. The title panel exposes both Add to watchlist and List.
-  if (['whats_on_article', 'whats_on_guide', 'chart', 'newsletter'].includes(src)) {
+  if (['whats_on_article', 'whats_on_guide', 'chart', 'newsletter', 'lifecycle'].includes(src)) {
     (openSavePrompt || openPanel)(tmdb_id, media_type, src);
     return { terminal: true, status: 'opened' };
   }

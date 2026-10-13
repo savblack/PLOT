@@ -2,7 +2,7 @@
   "name": "tmdb-proxy-worker",
   "private": true,
   "type": "module",
-  "description": "Cloudflare Worker fronting the Supabase tmdb-proxy Edge Function with distributed rate limiting.",
+  "description": "Cloudflare Worker for TMDB admission, rate limiting, and caching.",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

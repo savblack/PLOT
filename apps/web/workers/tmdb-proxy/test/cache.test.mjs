@@ -11,6 +11,11 @@ test('the same question asked two ways is one cache entry', () => {
   );
 });
 
+test('a caller-supplied API key cannot create a cache miss', () => {
+  assert.equal(key('?path=genre/movie/list&api_key=one'), key('?path=genre/movie/list&api_key=two'));
+  assert.equal(key('?path=genre/movie/list&api_key=one'), key('?path=genre/movie/list'));
+});
+
 test('region and language stay part of the key', () => {
   // Watch providers differ by country. Sharing one entry across regions would
   // tell an Australian where to watch something in the United States.

@@ -6,7 +6,8 @@
  * rules, copy and stored state's shape live in @plot/core/finishingTouches.js
  * and copy/finishingTouches.js.
  *
- * Collapsed by default: web opens it on wide screens only, and a phone has none.
+ * Collapsed by default, same as web below 1024px. Hide stays in the header
+ * either way: a phone that never expands the card can still dismiss it.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -17,6 +18,7 @@ import { followUser } from '@plot/core/useFollows.js';
 import { usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
 import { deriveFinishingTouches, finishingTouchesVisible, firstWatchlistShow, type FinishingTouchesState, type WatchlistShow } from '@plot/core/finishingTouches.js';
 import { pointerAfterEpisode } from '@plot/core/watchingProgress.js';
+import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
 import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
 import { FINISHING_TOUCHES as T } from '@plot/core/copy/finishingTouches.js';
@@ -42,14 +44,19 @@ import { useFollowPerson } from './people/useFollowPerson';
 
 type Sheet = 'friends' | 'import' | 'people' | 'progress' | null;
 
-/** Whether Home treats this account as first-run. Null until AsyncStorage answers. */
+/** Whether Home treats this account as first-run. `ready` flips once AsyncStorage has answered. */
 export function useFinishingTouchesState(userId: string | null | undefined) {
   const [state, setState] = useState<FinishingTouchesState | null>(null);
+  const [loadedFor, setLoadedFor] = useState<string | null | undefined>(undefined);
   const reload = useCallback(() => {
-    readFinishingTouches(userId).then(setState);
+    const id = userId;
+    readFinishingTouches(id).then(next => {
+      setState(next);
+      setLoadedFor(id);
+    });
   }, [userId]);
   useEffect(() => { reload(); }, [reload]);
-  return { state, setState, reload, visible: finishingTouchesVisible(state) };
+  return { state, setState, reload, ready: loadedFor === userId, visible: finishingTouchesVisible(state) };
 }
 
 function Tick({ done, size = 12 }: { done: boolean; size?: number }) {
@@ -99,8 +106,16 @@ export default function FinishingTouches({ state, onState }: {
     traktImportDone: !!state?.traktImportDone,
     showProgress: !!show,
   });
+  const visible = !!userId && finishingTouchesVisible(state);
 
-  if (!userId || !finishingTouchesVisible(state)) return null;
+  useEffect(() => {
+    if (!visible || watchlist?.loading) return;
+    oncePerSession('finishing_touches_viewed', () => {
+      track(EVENTS.FINISHING_TOUCHES_VIEWED, { done_count: doneCount, total });
+    });
+  }, [visible, watchlist?.loading, doneCount, total]);
+
+  if (!visible) return null;
 
   const first = followPerson.follows[0]?.name;
   const tiles = steps.map(step => {
@@ -157,23 +172,18 @@ export default function FinishingTouches({ state, onState }: {
     <View style={styles.card} accessibilityLabel={T.title}>
       <View style={styles.head}>
         <Text style={styles.title} accessibilityRole="header">{T.title}</Text>
-        <View style={styles.bar} accessibilityRole="image" accessibilityLabel={T.progressLabel(doneCount, total)}>
-          {tiles.map((tile, i) => <View key={tile.id} style={[styles.barSeg, i < doneCount && styles.barSegOn]} />)}
-        </View>
-        <Text style={styles.count}>{T.count(doneCount, total)}</Text>
         <View style={{ flex: 1 }} />
-        {expanded && (
-          <TouchableOpacity
-            onPress={async () => {
-              track(EVENTS.FINISHING_TOUCHES_HIDDEN, { done_count: doneCount });
-              onState(await hideFinishingTouchesFor(userId));
-            }}
-            accessibilityRole="button"
-            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
-          >
-            <Text style={styles.hide}>{T.hide}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          onPress={async () => {
+            track(EVENTS.FINISHING_TOUCHES_HIDDEN, { done_count: doneCount });
+            onState(await hideFinishingTouchesFor(userId));
+          }}
+          accessibilityRole="button"
+          hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+        >
+          <Text style={styles.hide}>{T.hide}</Text>
+        </TouchableOpacity>
+        <Text style={styles.count}>{T.count(doneCount, total)}</Text>
         <TouchableOpacity
           onPress={() => setExpanded(open => !open)}
           accessibilityRole="button"
@@ -185,6 +195,9 @@ export default function FinishingTouches({ state, onState }: {
             <Path d="M6 9l6 6 6-6" />
           </Svg>
         </TouchableOpacity>
+        <View style={styles.barFull} accessibilityRole="image" accessibilityLabel={T.progressLabel(doneCount, total)}>
+          {tiles.map((tile, i) => <View key={tile.id} style={[styles.barSeg, i < doneCount && styles.barSegOn]} />)}
+        </View>
       </View>
 
       {expanded && (
@@ -509,10 +522,10 @@ function UpToSheet({ show, watching, onClose }: {
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   card: { marginHorizontal: spacing.xl, marginBottom: spacing.xl, padding: spacing.lg, gap: spacing.md, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
   title: { fontFamily: fontFamily.display, fontSize: fontSize.lg, letterSpacing: -0.34, color: colors.textPrimary },
-  bar: { flexDirection: 'row', gap: 3 },
-  barSeg: { width: 14, height: 6, borderRadius: 3, backgroundColor: colors.surfaceSunken },
+  barFull: { flexBasis: '100%', flexDirection: 'row', gap: 3 },
+  barSeg: { flex: 1, height: 6, borderRadius: 3, backgroundColor: colors.surfaceSunken },
   barSegOn: { backgroundColor: colors.accentFill },
   count: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textSecondary },
   hide: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },

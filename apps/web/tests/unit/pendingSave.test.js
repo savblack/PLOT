@@ -117,6 +117,18 @@ test('drainPendingSave: editorial CTA opens the title without silently choosing 
   assert.equal(calls.results.length, 0, 'opening a choice is not a save confirmation');
 });
 
+test('drainPendingSave: a lifecycle email opens the title without adding it again', async () => {
+  let fetched = false;
+  const { deps, calls } = makeDeps({
+    getDetails: async () => { fetched = true; return { ok: true, data: {}, retryable: false }; },
+  });
+  const out = await drainPendingSave({ intent: { tmdb_id: 11, media_type: 'tv', source: 'lifecycle' } }, deps);
+  assert.deepEqual(out, { terminal: true, status: 'opened' });
+  assert.equal(fetched, false, 'the title panel owns its own detail fetch');
+  assert.equal(calls.added.length, 0, 'the email link must not save the title a second time');
+  assert.deepEqual(calls.prompted[0], [11, 'tv', 'lifecycle']);
+});
+
 test('drainPendingSave: transient 429 → not terminal, intent preserved, no error toast', async () => {
   const { deps, calls } = makeDeps({
     getDetails: async () => ({ ok: false, data: null, retryable: true }),
