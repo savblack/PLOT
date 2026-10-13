@@ -73,6 +73,9 @@ export function ttlFor(path, params = new URLSearchParams()) {
  */
 export function cacheKey(url, origin) {
   const params = new URLSearchParams(url.searchParams);
+  // The backend always ignores caller-supplied keys. They must not let a
+  // caller create unlimited cache misses for the same catalogue response.
+  params.delete('api_key');
   params.sort();
   // A key is never fetched, only compared, so the host is arbitrary. Keeping it
   // off the real hostname means nothing can confuse a key with a live URL.

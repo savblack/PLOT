@@ -115,7 +115,7 @@ for browser tests, but must never print, commit, upload, or share the file.
 
 ## Supabase Functions
 
-The frontend expects `VITE_TMDB_PROXY_URL` to point at the deployed `tmdb-proxy` function. The proxy keeps the TMDB API key out of the browser and only allows the TMDB endpoints used by the app.
+The frontend expects `VITE_TMDB_PROXY_URL` to point at the Cloudflare `tmdb-proxy` Worker. The Worker keeps the TMDB API key out of the browser, allows only the TMDB endpoints used by the app, and serves cache hits without contacting TMDB. Set `TMDB_API_KEY` as a Worker secret in staging and production; the Supabase Edge Function remains a rollout fallback until the direct path is verified.
 
 Deploy functions with the Supabase CLI after configuring project secrets:
 
