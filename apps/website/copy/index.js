@@ -57,8 +57,8 @@ export const MEMORIES = {
 // Never miss a drop: the "Coming up" card fills from /api/discover movie/upcoming.
 export const DROPS = {
   eyebrow: 'Never miss a drop',
-  headline: 'Every release date, in one calendar.',
-  body: 'Save anything you’re waiting for, whatever service it’s on. Plot keeps the dates and lets you know when it’s out.',
+  headline: 'Every release date, in your calendar.',
+  body: 'Save what you’re waiting for and Plot tells you when it’s out, in theaters or streaming.',
   cardTitle: 'Coming up',
   cardSub: 'From your watchlist',
   saved: 'On your list',
@@ -68,7 +68,7 @@ export const DROPS = {
   sync: 'Synced live to your calendar app',
   premiumPill: 'Premium',
   cta: 'Start tracking',
-  note: 'Free forever. Premium syncs it to your calendar app.',
+  note: 'Free in-app calendar. Premium integrates with your calendar app.',
 };
 
 // Bring your history: the import sources the app supports today.
