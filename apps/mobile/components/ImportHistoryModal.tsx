@@ -168,8 +168,10 @@ interface Props {
   entry?: string;
   /** Open straight on this platform's source step (onboarding's switching-apps pick). */
   initialPlatform?: Platform;
-  /** An import finished and wrote at least one title, so the first-run card can tick. */
-  onImported?: () => void;
+  /** An import finished, so the first-run card can tick. `importedCount` is
+   *  the number of history rows written. The platform id is `trakt` or
+   *  `trakt-export` when that history came from Trakt. */
+  onImported?: (source: Platform, importedCount: number) => void;
 }
 
 export default function ImportHistoryModal(props: Props) {
@@ -365,7 +367,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     if (failed) {
       Alert.alert(IMPORT_VIEW.partialFailureHeading, IMPORT_VIEW.partialFailure(failed));
     }
-    if (inserted > 0) onImported?.();
+    if (inserted > 0 && platform) onImported?.(platform, inserted);
     setStep('done');
   }, [plan, resolved, userId, platform, importReport, onImported]);
 
@@ -385,7 +387,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     setImportedCount(result.importedCount || 0);
     setAlreadyCount(result.alreadyCount || 0);
     setPushedCount(result.pushedCount || 0);
-    onImported?.();
+    onImported?.(platform, result.importedCount || 0);
     setStep('done');
   }, [connection, platform, importReport, onImported]);
 

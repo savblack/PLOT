@@ -18,6 +18,18 @@ export const FINISHING_TOUCHES = {
       title: 'Start your watchlist',
       sub: (n) => `${n} ${n === 1 ? 'title' : 'titles'} saved`,
     },
+    // The watchlist step is already ticked by the onboarding picks, so this
+    // is the step that asks where they actually are in a show.
+    progress: {
+      title: 'Mark where you’re up to',
+      sub: (title) => `Tick the last episode of ${title} you’ve seen.`,
+      cta: 'Tick episode',
+      doneSub: 'You logged where you are',
+      traktDoneSub: 'Brought over from Trakt',
+      sheetSub: (title) => `Tick the last episode of ${title} you’ve seen.`,
+      tickEpisode: (episode, name) => (name ? `Tick episode ${episode}, ${name}` : `Tick episode ${episode}`),
+      saveError: 'Couldn’t save that. Try again in a moment.',
+    },
     friends: {
       title: 'Find your people',
       sub: 'Follow friends and see what they’re watching.',
