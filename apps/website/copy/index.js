@@ -44,7 +44,7 @@ export const MEMORIES = {
   cards: [
     { title: 'Severance', date: 'Apr 2', rating: 5 },
     { title: 'Perfect Days', date: 'Sep 14', rating: 5, review: 'Still thinking about it.' },
-    { title: 'The Bear', date: 'Jul 3', rating: 2, review: 'Too stressful for me.' },
+    { title: 'The Bear', date: 'Jul 3', rating: 3, review: 'Too stressful for me.' },
   ],
   privateNotes: [
     'Reminder to notice the light more.',
