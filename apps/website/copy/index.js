@@ -99,18 +99,21 @@ export const LISTS = {
   note: 'Five lists free. Unlimited with Premium.',
 };
 
-// Premium: only what /pricing promises. Prices and the checkout link mirror
-// pricing.html (and copy/plans.js); change them together.
+// Premium: taste, deciding together, stats and personalisation lead (from the
+// in-app plans list); `more` sums up the rest. Prices and the checkout link
+// mirror pricing.html (and copy/plans.js); change them together.
 export const PREMIUM = {
   eyebrow: 'Plot Premium',
   headline: 'Less deciding. More watching.',
   intro: 'Everything in Free, plus:',
   features: [
-    { title: 'Pick for Me', body: 'Say how long you’ve got and what you’re in the mood for. Get a shortlist for tonight, on the services you use.' },
-    { title: 'Your release calendar, live', body: 'Every date you’re waiting on, kept up to date in your own calendar app.' },
-    { title: 'Unlimited lists', body: 'Make as many as you like. Free has five.' },
+    { title: 'Pick for Me', body: 'Tell it how long you’ve got and what you’re in the mood for. Get a shortlist that fits your taste.' },
+    { title: 'Pick something together', body: 'See what you and a friend both want to watch and decide in a few swipes. Only one of you needs Premium.' },
+    { title: 'Deeper stats', body: 'See how your taste breaks down, well beyond the Free overview.' },
+    { title: 'Make it yours', body: 'Every theme, with widgets and app icons on the way.' },
   ],
-  free: 'Your everyday watching stays free.',
+  more: 'Plus unlimited and smart lists, your release calendar in your calendar app, and actor and director alerts.',
+  moreLink: 'See everything in Premium',
   monthly: 'Monthly',
   annual: 'Annual',
   annualBadge: '· 4 months free',

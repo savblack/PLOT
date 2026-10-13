@@ -1091,7 +1091,8 @@
     .pr-icon svg { width: 22px; height: 22px; }
     .pr-feature strong { display: block; font-family: var(--display); font-weight: 700; font-size: 1.3rem; letter-spacing: -0.02em; }
     .pr-feature div span { display: block; margin-top: 4px; font-size: 0.95rem; line-height: 1.45; color: #d9d1c4; }
-    .pr-free { margin: 0; font-size: 0.85rem; color: #d9d1c4; }
+    .pr-more { margin: 0; max-width: 520px; font-size: 0.95rem; line-height: 1.45; color: #d9d1c4; }
+    .pr-more a { color: var(--fill); font-weight: 600; text-underline-offset: 4px; }
     .pr-card {
       width: 100%;
       max-width: 400px;
@@ -1148,7 +1149,7 @@
       .hx-actions .btn { justify-content: center; }
       .hx-dbreak { display: none; }
       .pr-features { margin-bottom: 0; }
-      .pr-free { display: none; }
+      .pr-features { gap: 1.1rem; margin-bottom: 1.2rem; }
       #indie .hx-body { margin-bottom: 1.6rem; }
       #indie .hx-actions { align-self: stretch; }
     }
@@ -1364,8 +1365,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </section>
 
   <!-- ── Premium ────────────────────────────────────────────────── -->
-  <!-- Only what /pricing promises. Prices and the checkout link match
-       pricing.html; keep the two in step. -->
+  <!-- Features follow the in-app plans list (packages/core/copy/plansPage.js).
+       Prices and the checkout link match pricing.html; keep the two in step. -->
   <section id="premium" class="hx" aria-labelledby="premiumHeadline">
     <div class="hx-inner">
       <div class="hx-copy reveal">
@@ -1373,11 +1374,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <h2 class="hx-headline" id="premiumHeadline">Less deciding.<br>More watching.</h2>
         <p class="hx-body">Everything in Free, plus:</p>
         <ul class="pr-features">
-          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg></span><div><strong>Pick for Me</strong><span>Say how long you’ve got and what you’re in the mood for. Get a shortlist for tonight, on the services you use.</span></div></li>
-          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><div><strong>Your release calendar, live</strong><span>Every date you’re waiting on, kept up to date in your own calendar app.</span></div></li>
-          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span><div><strong>Unlimited lists</strong><span>Make as many as you like. Free has five.</span></div></li>
+          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg></span><div><strong>Pick for Me</strong><span>Tell it how long you’ve got and what you’re in the mood for. Get a shortlist that fits your taste.</span></div></li>
+          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9.5" r="2.5"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5M16 14c3 0 5.5 2.4 5.5 6"/></svg></span><div><strong>Pick something together</strong><span>See what you and a friend both want to watch and decide in a few swipes. Only one of you needs Premium.</span></div></li>
+          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M6 16v-5M11 16V6M16 16v-8"/></svg></span><div><strong>Deeper stats</strong><span>See how your taste breaks down, well beyond the Free overview.</span></div></li>
+          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></svg></span><div><strong>Make it yours</strong><span>Every theme, with widgets and app icons on the way.</span></div></li>
         </ul>
-        <p class="pr-free">Your everyday watching stays free.</p>
+        <p class="pr-more">Plus unlimited and smart lists, your release calendar in your calendar app, and actor and director alerts. <a href="/pricing" data-cta="premium-more">See everything in Premium</a></p>
       </div>
       <div class="hx-visual reveal">
         <div class="pr-card">
