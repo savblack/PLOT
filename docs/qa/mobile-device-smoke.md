@@ -369,6 +369,47 @@ Still not repointed: `EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN` and
 change; whether test builds should fire into the production PostHog project is a
 separate decision from database safety.
 
+### 2026-10-14 — fresh sign-up, deep-link routes, App Store gating
+
+iOS Simulator, iPhone 17 Pro on iOS 26.5, local `expo run:ios` development
+build from branch `mobile-app-store`, Metro pointed at **Staging** (via
+`eas env:pull --environment development`).
+
+- [x] **Phase 2 fresh sign-up, first time ever.** Email + password sign-up
+      as `smoke-20261014@plot-staging.test` (a Staging-only test account).
+      Landed on onboarding step 1 with the "Almost there! We sent a
+      confirmation link" alert over it; the session is live without the
+      confirmation, so onboarding proceeds. Picked one trending title,
+      step 2 services (Netflix), step 3 ran on its own, arrived on Home with
+      "Good morning" (no name: email sign-up has none), the Finishing touches
+      card at 1 of 5, and the pick in the Saved to watch rail. No red box.
+      One wrinkle: iOS offers its Strong Password sheet on focusing the
+      password field, which hides the form until dismissed. Expected
+      behaviour on a real device too, not a bug.
+- [x] **Phase 6 routes.** `plot://list` opens My Lists; `plot://list/abc`
+      and `plot://whats-on/anything` land on Home via `+not-found.tsx`;
+      `plot://save?media_type=movie&tmdb_id=27205` opens the Inception panel
+      over Home. No Unmatched Route screen anywhere.
+- [x] **Settings ▸ Billing on the Free smoke account**: the Premium list
+      ends in "Premium isn't available in the app yet." with no price, trial
+      note or Upgrade row, and the Ko-fi group is gone (`SHOW_PREMIUM_PRICING`
+      and `SHOW_KOFI_LINK` both off). The Premium account shows no Ko-fi row
+      either.
+- [x] **Force-quit and relaunch** (`xcrun simctl terminate`, then the dev
+      client URL): still signed in as the smoke account, straight to the app,
+      not back through onboarding.
+- [ ] Not looked at this run: the upgrade sheet itself (hit a Free limit to
+      open it) and Pick for Me's locked state, both gated by the same flag.
+
+**Metro trap, new this run.** Edits made after `expo start` were not picked
+up: a reload reported "Bundled 89ms (1 module)" and served the old Settings
+screen, even after a force-quit. `expo start --clear` and a relaunch fixed it.
+When a change you just made is not on screen, suspect this before the code.
+
+`touch_last_seen` warns on every launch against Staging ("Could not find the
+function public.touch_last_seen without parameters"): the Brevo last-seen RPC
+is not migrated on Staging. Harmless for the app, worth a Staging migration.
+
 ## When you are done
 
 Anything broken that is not already in `docs/agents/web-mobile-parity.md` gets
