@@ -122,6 +122,17 @@ export const PREMIUM = {
   compare: 'Compare Free and Premium',
 };
 
+// Plot mobile, coming soon: the app's home screen in a phone, and the launch
+// waitlist (posts with list: 'mobile-app').
+export const APP = {
+  eyebrow: 'Plot mobile',
+  pill: 'Coming soon',
+  headline: 'plot, in your pocket.',
+  body: 'Everything you love about Plot: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.',
+  notifyCta: 'Notify me',
+  notifySuccess: "You're on the list — we'll email you the moment the app lands.",
+};
+
 // Replaces "Built by a solo developer" and its Ko-fi button.
 export const INDIE = {
   eyebrow: 'Who makes Plot',
