@@ -32,6 +32,14 @@ export const SHOW_APPLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_APPLE_LOGIN === 'tr
 // anti-steering rules keep purchases on the web app).
 export const SHOW_PRICING_PAGE = false;
 
+// Premium prices, trial wording and Upgrade buttons inside the app. Off for
+// the App Store build: Apple's 3.1.1 rejects any price or call to action for
+// a digital subscription the app does not sell through in-app purchase, and
+// Plot sells Premium on the web only. Feature lists stay visible; the price,
+// the trial note and every Upgrade button are replaced by
+// PLANS_PAGE.inAppUnavailable. Flip on only with in-app purchase wired up.
+export const SHOW_PREMIUM_PRICING = false;
+
 // Watch together (PLO-515). Web turns this on in production
 // (SHOW_WATCH_TOGETHER in apps/web/src/launchFeatures.js). The mobile screens
 // exist, and this flag stays off until they have been checked with two

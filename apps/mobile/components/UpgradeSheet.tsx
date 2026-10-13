@@ -13,6 +13,7 @@ import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { familySwatch, type ThemeFamily } from '@plot/core/themes.js';
 import { upgradeSheetContent, type UpgradeReason } from '@plot/core/upgradeSheet.js';
 import { useTheme } from '../contexts/ThemeContext';
+import { SHOW_PREMIUM_PRICING } from '../lib/launchFeatures';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import PremiumIcon from './PremiumIcon';
 
@@ -56,24 +57,30 @@ export default function UpgradeSheet({
             <Text style={styles.body}>{content.body}</Text>
             {content.preview && <ThemePreview family={content.preview.family} line={content.preview.line} />}
 
-            <View style={styles.offer}>
-              <View style={styles.offerTop}>
-                <View style={styles.offerName}>
-                  <Text style={styles.offerNameText}>{PLANS_PAGE.premium.name}</Text>
-                  <View style={styles.pill}><Text style={styles.pillText}>{PLANS_PAGE.comingSoon}</Text></View>
+            {SHOW_PREMIUM_PRICING ? (
+              <>
+                <View style={styles.offer}>
+                  <View style={styles.offerTop}>
+                    <View style={styles.offerName}>
+                      <Text style={styles.offerNameText}>{PLANS_PAGE.premium.name}</Text>
+                      <View style={styles.pill}><Text style={styles.pillText}>{PLANS_PAGE.comingSoon}</Text></View>
+                    </View>
+                    <Text style={styles.price}>
+                      <Text style={styles.amount}>{PLANS_PAGE.premium.price}</Text> {PLANS_PAGE.premium.period}
+                    </Text>
+                  </View>
+                  <Text style={styles.alt}>{PLANS_PAGE.premium.priceTerms}</Text>
+                  <Text style={styles.trial}>{PLANS_PAGE.premium.trialNote}</Text>
                 </View>
-                <Text style={styles.price}>
-                  <Text style={styles.amount}>{PLANS_PAGE.premium.price}</Text> {PLANS_PAGE.premium.period}
-                </Text>
-              </View>
-              <Text style={styles.alt}>{PLANS_PAGE.premium.priceTerms}</Text>
-              <Text style={styles.trial}>{PLANS_PAGE.premium.trialNote}</Text>
-            </View>
 
-            <TouchableOpacity style={styles.primary} onPress={() => setComingSoon(true)} accessibilityRole="button">
-              <Text style={styles.primaryText}>{PLANS_PAGE.upgradeAction}</Text>
-            </TouchableOpacity>
-            {comingSoon && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
+                <TouchableOpacity style={styles.primary} onPress={() => setComingSoon(true)} accessibilityRole="button">
+                  <Text style={styles.primaryText}>{PLANS_PAGE.upgradeAction}</Text>
+                </TouchableOpacity>
+                {comingSoon && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
+              </>
+            ) : (
+              <Text style={styles.note}>{PLANS_PAGE.inAppUnavailable}</Text>
+            )}
 
             <Text style={styles.also}>{S.alsoIn}</Text>
             {content.also.map(row => (

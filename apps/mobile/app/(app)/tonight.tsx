@@ -31,6 +31,7 @@ import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { titleForView } from '@plot/core/navigation.js';
 import { TONIGHT_PICKER as T } from '@plot/core/copy/tonightPicker.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { SHOW_PREMIUM_PRICING } from '../../lib/launchFeatures';
 import { Palette, fontFamily, fontSize, spacing, posterUrl, backdropUrl } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 
@@ -493,11 +494,17 @@ function Locked({ picker, onUpgrade, styles, colors, dark }: {
             </View>
           ))}
         </View>
-        <TouchableOpacity onPress={onUpgrade} style={[styles.btn, styles.btnPrimary, styles.unlockCta]} accessibilityRole="button">
-          <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{PLANS_PAGE.upgradeAction}</Text>
-        </TouchableOpacity>
-        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.priceTerms}</Text>
-        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.trialNote}</Text>
+        {SHOW_PREMIUM_PRICING ? (
+          <>
+            <TouchableOpacity onPress={onUpgrade} style={[styles.btn, styles.btnPrimary, styles.unlockCta]} accessibilityRole="button">
+              <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{PLANS_PAGE.upgradeAction}</Text>
+            </TouchableOpacity>
+            <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.priceTerms}</Text>
+            <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.trialNote}</Text>
+          </>
+        ) : (
+          <Text style={styles.unlockPrice}>{PLANS_PAGE.inAppUnavailable}</Text>
+        )}
       </View>
     </View>
   );

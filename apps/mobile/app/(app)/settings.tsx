@@ -41,7 +41,7 @@ import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { fetchUserDataExport } from '@plot/core/exportData.js';
 import { shareDataExport, type ExportFormat } from '../../lib/shareDataExport';
 import { pickAndUploadAvatar, removeAvatar } from '../../lib/avatar';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../../lib/launchFeatures';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PREMIUM_PRICING } from '../../lib/launchFeatures';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
@@ -362,8 +362,8 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
         </Text>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.customLists(FREE_CUSTOM_LIST_CAP)}</Text>
         <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansMedium }}>{PLANS_PAGE.premium.name}</Text>
-        <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.premium.priceTerms}</Text>
-        <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.trialNote}</Text>
+        {SHOW_PREMIUM_PRICING && <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.premium.priceTerms}</Text>}
+        {SHOW_PREMIUM_PRICING && <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.trialNote}</Text>}
         {PLANS_PAGE.premiumFeatures.map(feature => <View key={feature.id} style={{ gap: spacing.xs }}>
           <Text style={{ color: colors.textPrimary }}>{feature.label}</Text>
           <Text style={{ color: colors.textSecondary }}>{feature.description}</Text>
@@ -371,9 +371,15 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
             <Text style={{ color: colors.textMuted }}>{('pendingValidation' in feature && feature.pendingValidation) ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
           )}
         </View>)}
-        <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
-        <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
-          onPress={() => Alert.alert(PLANS_PAGE.comingSoon, PLANS_PAGE.mobileCheckoutMessage)} />
+        {SHOW_PREMIUM_PRICING ? (
+          <>
+            <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
+            <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
+              onPress={() => Alert.alert(PLANS_PAGE.comingSoon, PLANS_PAGE.mobileCheckoutMessage)} />
+          </>
+        ) : (
+          <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.inAppUnavailable}</Text>
+        )}
       </View>}
     </SettingsGroup>
   );

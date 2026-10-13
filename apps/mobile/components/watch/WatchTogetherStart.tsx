@@ -6,6 +6,7 @@ import { useWatchTogetherExampleTitles } from '@plot/core/useWatchTogether.js';
 import { supabase } from '@plot/core/supabase.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { SHOW_PREMIUM_PRICING } from '../../lib/launchFeatures';
 import { fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -57,7 +58,7 @@ function PremiumPrompt({ label }: { label: string }) {
   return (
     <View style={{ gap: spacing.sm }}>
       <PrimaryButton label={label} onPress={() => openPremium(router)} />
-      <Note>{S.premiumNote(PLANS_PAGE.premium.priceSummary)}</Note>
+      <Note>{SHOW_PREMIUM_PRICING ? S.premiumNote(PLANS_PAGE.premium.priceSummary) : T.hub.lockedNote}</Note>
     </View>
   );
 }

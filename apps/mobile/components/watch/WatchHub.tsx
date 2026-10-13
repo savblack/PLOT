@@ -5,6 +5,7 @@ import { personName, unlockedPartners } from '@plot/core/watchTogether.js';
 import { useWatchTogetherSuggestions, startWatchTogetherSession } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { SHOW_PREMIUM_PRICING } from '../../lib/launchFeatures';
 import { COMMON } from '@plot/core/copy/common.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { supabase } from '@plot/core/supabase.js';
@@ -139,7 +140,7 @@ export function WatchHub() {
         />
       )}
       {!premium && together.partners.some(p => !p.can_decide) && (
-        <Banner title={T.locked.title} note={PLANS_PAGE.premium.priceSummary} onPress={() => openPremium(router)} />
+        <Banner title={T.locked.title} note={SHOW_PREMIUM_PRICING ? PLANS_PAGE.premium.priceSummary : T.hub.lockedNote} onPress={() => openPremium(router)} />
       )}
       {reviewing && (
         <AcceptSheet

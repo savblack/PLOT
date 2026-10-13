@@ -32,6 +32,8 @@ export const PLANS_PAGE = {
   // Price config or a billing-account lookup failed. Not the same as a closed launch switch.
   checkoutUnavailable: 'Checkout isn’t available right now. Please try again later.',
   // Mobile never takes a payment in the app, so it keeps the closed-checkout wording.
+  // iOS build: no price, no checkout, no pointer to the web (App Review 3.1.1).
+  inAppUnavailable: 'Premium isn’t available in the app yet.',
   mobileCheckoutMessage: 'Checkout is not open yet. When Premium opens, it is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
   free: {
     name: 'Free',
