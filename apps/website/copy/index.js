@@ -105,7 +105,7 @@ export const PREMIUM = {
   headline: 'Less deciding. More watching.',
   intro: 'Everything in Free, plus:',
   features: [
-    { title: 'Pick for Me', body: 'Tell it how long you’ve got and what you’re in the mood for. Get a shortlist that fits your taste.' },
+    { title: 'Pick for Me', body: 'Stop scrolling. Answer four quick questions and you’ve got a shortlist tailored to you and your mood.' },
     { title: 'Pick something together', body: 'Settle “what should we watch?” before the snacks are ready. Only one of you needs Premium.' },
     { title: 'Deeper stats', body: 'See how your taste breaks down, well beyond the Free overview.' },
     { title: 'Make it yours', body: 'Your Plot, your style. Get access to custom themes, widgets and app icons.' },
