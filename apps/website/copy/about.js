@@ -16,38 +16,6 @@ export const ABOUT_PAGE = {
   h1: "About plot",
   pageMeta: "A letter from the founder.",
   lead: "You watched it. You had a feeling. Plot is where that goes. Log a movie or an episode in about ten seconds, say how it hit you in a sentence, and get told when the next one drops. No essays, no dark-mode gloom, no scrolling seven apps to find out what's on. It's a movie and TV journal made by one person, around a day job, for people who just love this stuff.",
-  facts: [
-    {
-      term: "What it is",
-      detail: "A movie and TV tracker, watchlist, release calendar and journal.",
-    },
-    {
-      term: "Who it's for",
-      detail: "Anyone who loves movies and TV. You don't need to call yourself a cinephile.",
-    },
-    {
-      term: "What it costs",
-      detail: "Free, forever. Premium is US$3/month or US$24/year with a 7-day free trial.",
-    },
-    {
-      term: "Where it runs",
-      detail: "In your browser at <a href=\"https://app.theplot.tv\" data-cta=\"about-facts\">app.theplot.tv</a>. iPhone and Android apps are on the way.",
-    },
-    {
-      term: "Who makes it",
-      detail: "One independent developer, around a full-time job. No investors, no ads.",
-    },
-  ],
-  heroCtas: [
-    {
-      label: "Start your plot, free",
-      href: "https://app.theplot.tv/signup",
-    },
-    {
-      label: "See what Premium adds",
-      href: "/pricing",
-    },
-  ],
   sections: [
     {
       id: "why",
@@ -148,6 +116,21 @@ export const ABOUT_PAGE = {
         "Plot is still early, so if you're using it now, you're an early user too, bugs and all. When something breaks or feels off, tell me. <strong>I don't take that kind of patience lightly, and it's already more than enough.</strong>",
         "If you ever want to do more than that, going Premium is the biggest help. Plot is also on <a href=\"https://ko-fi.com/J7P123TYGK\" target=\"_blank\" rel=\"noopener\" data-cta=\"about-kofi\">Ko-fi</a> for anyone who'd rather just buy the builder a coffee. Both cover what it actually costs to run, and both buy me more time to keep building.",
         "Thank you for reading this. Thank you for considering Plot. And if you're already a user, thank you for backing a solo builder trying to make a life out of building beautiful things.",
+      ],
+    },
+    {
+      id: "glance",
+      heading: "plot, at a glance",
+      facts: [
+        { term: "What it is", detail: "A journal for movies and TV. What you watched, how it felt, and what's next." },
+        { term: "Who it's for", detail: "People who love movies and TV and don't need a word for it." },
+        { term: "What it costs", detail: "Nothing. Premium is US$3/month or US$24/year, with the first 7 days free." },
+        { term: "Where it runs", detail: "Any browser, at app.theplot.tv. iPhone and Android are coming." },
+        { term: "Who makes it", detail: "Me. One person, around a full-time job. No team, no investors, no ads." },
+      ],
+      ctas: [
+        { label: "Start your plot, free", href: "https://app.theplot.tv/signup" },
+        { label: "See what Premium adds", href: "/pricing" },
       ],
     },
     {
