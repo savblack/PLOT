@@ -23,19 +23,6 @@ export function getSeasonWatchState({
   return { episodeCount, watchedCount, isComplete: watchedCount >= episodeCount };
 }
 
-/* Where the pointer lands when the season-level control is used. Marking rolls
-   past the season; unmarking rewinds to its first episode. */
-/* Is this pointer write a rewind?
- *
- * Progress is a single pointer, so un-ticking an episode and un-marking a
- * season are the same kind of write as doing them: same call site, same
- * arguments, same `reason`. Only the direction distinguishes them. Before this
- * existed, a rewind reported episode_watched / season_watched, so undo counted
- * as engagement and inflated every activation and retention number built on it.
- *
- * A missing `before` row is not a rewind: with nothing to compare against, the
- * safe reading is forward, matching what every caller means by a first write.
- */
 /**
  * Where the pointer goes after the person ticks episode N as the last one
  * they have seen. The last episode of a season lands on the next season's
@@ -57,6 +44,19 @@ export function pointerAfterEpisode(season, episodeNumber, episodeCount) {
   return { season: seasonNum + 1, episode: 1 };
 }
 
+/* Where the pointer lands when the season-level control is used. Marking rolls
+   past the season; unmarking rewinds to its first episode. */
+/* Is this pointer write a rewind?
+ *
+ * Progress is a single pointer, so un-ticking an episode and un-marking a
+ * season are the same kind of write as doing them: same call site, same
+ * arguments, same `reason`. Only the direction distinguishes them. Before this
+ * existed, a rewind reported episode_watched / season_watched, so undo counted
+ * as engagement and inflated every activation and retention number built on it.
+ *
+ * A missing `before` row is not a rewind: with nothing to compare against, the
+ * safe reading is forward, matching what every caller means by a first write.
+ */
 export function isRewind(before, season, episode) {
   if (!before) return false;
   const fromSeason  = Number(before.current_season) || 0;
