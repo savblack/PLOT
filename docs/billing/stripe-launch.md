@@ -71,11 +71,15 @@ This decision does not enable public checkout or authorize a production change.
    USD prices: US$3/month and US$24/year. Record the two live price IDs.
 2. Set the Stripe account's public business URL and support email. The Customer
    Portal should also show the Plot terms and privacy URLs. In Settings, Billing,
-   Subscriptions and emails, turn on the customer email for trials that are about to
-   end. Stripe sends it before the trial converts (and fires
-   `customer.subscription.trial_will_end`), which is the notice the Terms promise and
-   that US and Australian consumer rules expect before a free trial becomes a charge.
-   Keep successful-payment emails on too, so each charge produces a receipt.
+   Subscriptions and emails (https://dashboard.stripe.com/settings/billing/automatic),
+   turn on the trial-ending reminder email and choose "Link to a Stripe-hosted page".
+   Stripe sends the reminder 7 days before a trial ends; because the Plot trial is exactly
+   7 days, it arrives as soon as the trial starts and states the first-charge date and the
+   cancellation link. That is the notice the Terms promise and what the card networks
+   require. Stripe does not send it from a sandbox, so the live pilot is the first real
+   check. Turn on successful-payment emails too
+   (https://dashboard.stripe.com/settings/emails): Stripe adds the trial and cancellation
+   details to those receipts automatically.
 3. In the live-mode Customer Portal, enable cancellation, payment-method
    updates, invoice history, and price switching. Its catalogue must contain
    only the Plot Premium product and both live prices. Schedule shorter-interval changes for

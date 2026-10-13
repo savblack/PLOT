@@ -83,10 +83,12 @@ Within about 10 seconds:
   Pick for Me, confirm no upgrade prompt appears.
 - [ ] Analytics: PostHog shows `premium_checkout_started` and `premium_converted`. Note
   `premium_converted` fires when the trial starts, before any payment, so it counts trials.
-- [ ] Email: confirm the trial-ending email is **on** in Stripe (Settings, Billing, Subscriptions
-  and emails) and that "Successful payments" receipts are on. The Terms promise a reminder before
-  the trial ends; with a 7-day trial Stripe sends it a few days before the first charge. Check
-  you received the trial confirmation, and after day 7 (or step 7) the receipt.
+- [ ] Email: confirm the trial-ending reminder is **on** in Stripe
+  (https://dashboard.stripe.com/settings/billing/automatic, "Link to a Stripe-hosted page") and
+  that "Successful payments" receipts are on (https://dashboard.stripe.com/settings/emails).
+  Stripe sends the reminder 7 days before the trial ends, so with a 7-day trial it should land
+  within minutes of checkout. Check it names the first-charge date and has a cancel link, and
+  after day 7 (or step 7) check the receipt.
 
 ## 5. Guard rails
 
