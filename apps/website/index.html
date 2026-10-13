@@ -1395,7 +1395,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <button type="button" id="prAnnual" class="is-active" aria-pressed="true">Annual</button>
           </div>
           <div class="pr-price"><span class="pr-amount" id="prAmount">$2</span><span class="pr-per">/mo</span><span class="pr-save" id="prSave">4 months free</span></div>
-          <p class="pr-billed" id="prBilled">$24 a year <s>$36</s> · taxes included</p>
+          <p class="pr-billed" id="prBilled">Billed $24 once a year</p>
           <a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-primary btn-large" id="prCta" data-cta="premium-home">Start 7-day free trial</a>
           <p class="pr-trial">You won’t be charged until day 7.<br>Cancel during the trial and you pay $0.</p>
           <a href="/pricing" class="pr-compare" data-cta="premium-compare">Compare Free and Premium</a>
@@ -1847,7 +1847,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         mo.setAttribute('aria-pressed', String(!annual));
         yr.setAttribute('aria-pressed', String(annual));
         amount.textContent = '$' + (annual ? ANNUAL / 12 : MONTHLY);
-        billed.innerHTML = annual ? '$' + ANNUAL + ' a year <s>$' + MONTHLY * 12 + '</s> · taxes included' : '$' + MONTHLY + ' billed monthly · taxes included';
+        billed.textContent = annual ? 'Billed $' + ANNUAL + ' once a year' : 'Billed monthly. Cancel anytime.';
         save.hidden = !annual;
         cta.href = 'https://app.theplot.tv/signup?intent=premium&plan=' + (annual ? 'yearly' : 'monthly');
       }
