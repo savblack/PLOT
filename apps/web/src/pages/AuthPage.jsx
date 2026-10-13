@@ -17,6 +17,7 @@ import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js'
 import { signupFormTokenIsStale } from '../utils/signupFormToken.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
+import PlotLogo from '../components/PlotLogo.jsx';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -593,7 +594,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <span className="auth-visual-logo">plot</span>
+          <span className="auth-visual-logo"><PlotLogo inherit /></span>
           <span className="auth-visual-tagline">Your movie &amp; TV companion</span>
         </div>
       </div>

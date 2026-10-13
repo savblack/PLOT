@@ -158,7 +158,7 @@ export function buildAlertEmail(items, { unsubscribeUrl, manageUrl = MANAGE_URL,
   <tr><td align="center" style="padding:30px 12px;">
     <table role="presentation" width="520" cellpadding="0" cellspacing="0" border="0" style="width:520px;max-width:520px;background:${CARD};border:1px solid ${HAIR};border-radius:16px;">
       <tr><td style="padding:30px 30px 8px;">
-        <div style="font-family:${DISPLAY};font-size:34px;font-weight:700;line-height:0.9;letter-spacing:-0.045em;color:${INK};">plot</div>
+        <img src="${APP_ORIGIN}/logo-email.png" width="56" height="31" alt="plot" style="display:block;width:56px;height:31px;border:0;font-family:${DISPLAY};font-size:30px;font-weight:700;line-height:1;color:${INK};">
         <div style="font-family:${SANS};font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:${FAINT};margin-top:10px;">${escapeHtml(T.kicker)}</div>
       </td></tr>
       <tr><td style="padding:6px 30px 0;">

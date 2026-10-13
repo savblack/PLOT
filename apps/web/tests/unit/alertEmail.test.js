@@ -6,6 +6,9 @@ import {
 } from '../../../../supabase/functions/_shared/alertEmail.js';
 import { titleBadge, titlePhrase } from '../../../../packages/core/copy/notifications.js';
 
+// The emailed wordmark: the outlined logo PNG (the l joins the o).
+const LOGO_IMG = /<img src="https:\/\/app\.theplot\.tv\/logo-email\.png"[^>]*>/g;
+
 // The email for streaming alerts. Titles and provider names come from TMDB and
 // the person's own data, so most of these are about hostile or odd input.
 // Titles here are fictional.
@@ -56,7 +59,7 @@ test('every value that reaches the HTML is escaped', () => {
 test('a poster is only used when its path is a plain TMDB path', () => {
   assert.match(buildAlertEmail([streaming], links).html, /src="https:\/\/image\.tmdb\.org\/t\/p\/w154\/abc123\.jpg"/);
   for (const bad of ['javascript:alert(1)', '/a/b.jpg', 'https://evil.example/x.jpg', '/x" onerror="y', '', null, undefined]) {
-    assert.doesNotMatch(buildAlertEmail([{ ...streaming, media_poster_path: bad }], links).html, /<img /);
+    assert.doesNotMatch(buildAlertEmail([{ ...streaming, media_poster_path: bad }], links).html.replace(LOGO_IMG, ''), /<img /);
   }
 });
 
@@ -139,12 +142,15 @@ test('an email built from alertLinks sends the visible Unsubscribe link to the w
   }
 });
 
-test('the wordmark is the plain lowercase word in Gabarito 700, tracked -0.045em, as text and never an image', () => {
-  // docs/design/shared-design-system.md: render it as text in the display face; never a raster.
+test('the wordmark is the outlined logo image, with a Gabarito "plot" alt for blocked images', () => {
+  // docs/design/shared-design-system.md: email is the one place the wordmark is a raster,
+  // because clients don't render SVG and the l-o join can't be set in the font.
   const { html } = buildAlertEmail([{ ...streaming, media_poster_path: null }], links);
-  assert.match(html, /font-family:'Gabarito'[^"]*;font-size:34px;font-weight:700;line-height:0\.9;letter-spacing:-0\.045em;[^"]*">plot<\/div>/);
-  assert.match(html, /<link href="https:\/\/fonts\.googleapis\.com\/css2\?family=Gabarito:wght@600;700&display=swap" rel="stylesheet">/);
-  assert.doesNotMatch(html, /<img /, 'no logo image (and no poster was given)');
-  assert.doesNotMatch(html, /logo\.(png|svg|jpe?g)/i);
+  const logos = html.match(LOGO_IMG) ?? [];
+  assert.equal(logos.length, 1, 'one logo image');
+  assert.match(logos[0], /alt="plot"/);
+  assert.match(logos[0], /width="56" height="31"/);
+  assert.match(logos[0], /font-family:'Gabarito'[^"]*;font-weight:700/, 'alt text falls back to the display face');
+  assert.doesNotMatch(html.replace(LOGO_IMG, ''), /<img /, 'no other image (and no poster was given)');
 });
 

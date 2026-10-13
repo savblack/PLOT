@@ -16,6 +16,7 @@ import { useApp } from '../hooks/useApp.js';
 import {
   IconMenu, IconClose, IconSearch, IconArrowUp, IconBell, IconSettings, NAV_ICONS,
 } from './navIcons.jsx';
+import PlotLogo from './PlotLogo.jsx';
 
 /* ── SVG Icons ───────────────────────── */
 /* Shared with AppSidebar — see ./navIcons.jsx. */
@@ -223,7 +224,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         aria-hidden={!drawerOpen}
       >
         <div className="nav-drawer-header">
-          <span className="nav-drawer-logo-text">plot</span>
+          <span className="nav-drawer-logo-text"><PlotLogo inherit /></span>
           <button type="button" className="icon-btn" onClick={closeDrawer} aria-label={APP_SHELL.closeMenu}>
             <IconClose />
           </button>

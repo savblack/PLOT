@@ -19,6 +19,7 @@ import {
   resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, chooseImportMatch, reviewImportDuplicates,
   createImportReporter, IMPORT_ENTRY_POINTS, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
+import { suppressFirstWinForImport } from '../lib/firstWinCard';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -367,7 +368,10 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     if (failed) {
       Alert.alert(IMPORT_VIEW.partialFailureHeading, IMPORT_VIEW.partialFailure(failed));
     }
-    if (inserted > 0 && platform) onImported?.(platform, inserted);
+    if (inserted > 0 && platform) {
+      onImported?.(platform, inserted);
+      if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
+    }
     setStep('done');
   }, [plan, resolved, userId, platform, importReport, onImported]);
 
@@ -388,8 +392,9 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     setAlreadyCount(result.alreadyCount || 0);
     setPushedCount(result.pushedCount || 0);
     onImported?.(platform, result.importedCount || 0);
+    if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
     setStep('done');
-  }, [connection, platform, importReport, onImported]);
+  }, [connection, platform, importReport, onImported, userId]);
 
   const reset = () => {
     setStep('pick-platform');

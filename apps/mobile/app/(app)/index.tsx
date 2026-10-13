@@ -48,8 +48,10 @@ import { currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.
 import { localDateStr } from '@plot/core/date.js';
 import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
+import FirstWinCard from '../../components/FirstWinCard';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
 import { markImportDone } from '../../lib/finishingTouches';
+import { suppressFirstWinForImport } from '../../lib/firstWinCard';
 import { takePendingImportSource } from '../../lib/pendingImport';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 
@@ -874,6 +876,7 @@ export default function HomeScreen() {
           }}
       >
 
+        {userId && importSource !== 'trakt' && importSource !== 'trakt-export' && <FirstWinCard userId={userId} />}
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
         <FinishingTouches state={ft.state} onState={ft.setState} />
 
@@ -883,7 +886,10 @@ export default function HomeScreen() {
             userId={userId}
             entry={IMPORT_ENTRY_POINTS.ONBOARDING}
             initialPlatform={importSource as never}
-            onImported={async (source, count) => ft.setState(await markImportDone(userId, source, count))}
+            onImported={async (source, count) => {
+              ft.setState(await markImportDone(userId, source, count));
+              await suppressFirstWinForImport(userId, source);
+            }}
             onClose={() => setImportSource(null)}
           />
         )}
