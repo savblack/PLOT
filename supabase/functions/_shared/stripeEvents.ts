@@ -10,6 +10,7 @@ export type WebhookAction =
   | 'checkout_expired'
   | 'sync_subscription'
   | 'sync_invoice'
+  | 'trial_ending'
   | 'ignore';
 
 export function webhookAction(type: string): WebhookAction {
@@ -28,6 +29,8 @@ export function webhookAction(type: string): WebhookAction {
     case 'invoice.payment_succeeded':
     case 'invoice.paid':
       return 'sync_invoice';
+    case 'customer.subscription.trial_will_end':
+      return 'trial_ending';
     default:
       return 'ignore';
   }
