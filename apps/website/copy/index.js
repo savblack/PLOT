@@ -65,8 +65,6 @@ export const DROPS = {
   save: '+ Save',
   inTheatersNow: 'In theaters now',
   inTheatersOn: 'In theaters {date}',
-  sync: 'Synced live to your calendar app',
-  premiumPill: 'Premium',
   cta: 'Start tracking',
   note: 'Free in-app calendar. Premium integrates with your calendar app.',
 };
