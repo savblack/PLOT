@@ -107,7 +107,7 @@ export const PREMIUM = {
   features: [
     { title: 'Pick for Me', body: 'Stop scrolling. Answer four quick questions and you’ve got a shortlist tailored to you and your mood.' },
     { title: 'Pick something together', body: 'Settle “what should we watch?” before the snacks are ready. Only one of you needs Premium.' },
-    { title: 'Deeper stats', body: 'See how your taste breaks down, well beyond the Free overview.' },
+    { title: 'Deeper stats', body: 'Get to know your watching habits, and settle who has the best taste.' },
     { title: 'Make it yours', body: 'Your Plot, your style. Get access to custom themes, widgets and app icons.' },
   ],
   more: 'Plus unlimited and smart lists, release dates in your calendar app, and actor and director alerts.',
