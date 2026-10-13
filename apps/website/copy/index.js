@@ -129,7 +129,7 @@ export const INDIE = {
   eyebrow: 'Who makes Plot',
   headline: 'Made by an independent developer, not a studio or streaming platform.',
   body: 'Plot answers to the people who use it, not advertisers or investors. Premium keeps it that way.',
-  pills: ['No ads', 'No investors', 'Free plan, forever'],
+  pills: ['No ads', 'Independent', 'Free plan, forever'],
   cta: 'Support Plot with Premium', // same checkout intent as the Premium card
   story: 'Read the story',
 };
