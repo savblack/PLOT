@@ -29,16 +29,29 @@ export const HERO = {
   },
 };
 
-// A scroll-driven series of short lines building to the "plot does." payoff.
-export const MANIFESTO = {
-  lines: [
-    "You don't just watch things.",
-    'You think about them.',
-    'You talk about them.',
-    'You carry them with you.',
-    'But no app has ever cared\nas much as you do.',
+// The one-screen section after the hero: headline, sub, CTA, and the sample
+// diary cards beside it. "remember" is the pink word in the headline.
+export const MEMORIES = {
+  headline: 'Review, rate, remember.',
+  sub: 'Reviews for the thoughts worth sharing. Private notes just for you.',
+  subStrong: 'Plot keeps both safe, and always yours.',
+  cta: 'Start your Plot',
+  note: 'Free forever. No credit card required.',
+  privateNoteLabel: 'Private note',
+  // Sample diary content on the cards (illustrative, not a real user's).
+  // Three diary states: rating only, rating + review, and review + private note.
+  // The private note cycles through privateNotes on the site.
+  cards: [
+    { title: 'Severance', date: 'Apr 2', rating: 5 },
+    { title: 'Perfect Days', date: 'Sep 14', rating: 5, review: 'Still thinking about it.' },
+    { title: 'The Bear', date: 'Jul 3', rating: 3, review: 'Too stressful for me.' },
   ],
-  payoff: 'does.', // rendered after the plot wordmark, e.g. "plot does."
+  privateNotes: [
+    'Reminder to notice the light more.',
+    'Bf’s favorite. Now mine too.',
+    'Mom cried. Then I did.',
+    'Watched alone. Didn’t feel alone.',
+  ],
 };
 
 export const GUIDE_DEMO = {

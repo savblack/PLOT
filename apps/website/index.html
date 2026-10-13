@@ -130,11 +130,6 @@
       font-weight: 700;
       letter-spacing: var(--display-tracking);
     }
-    .manifesto-line {
-      font-family: var(--display);
-      font-weight: 600;
-      letter-spacing: -0.025em;
-    }
 
     html { scroll-behavior: smooth; }
 
@@ -220,36 +215,10 @@
 
     /* Buttons live in /ui.css (shared with every page). */
 
-    /* ── Poster side-slides — float in from edges on scroll ── */
-    #posterSide {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 3;
-      overflow: hidden;
-    }
-    .side-poster {
-      position: absolute;
-      border-radius: var(--r-badge);
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      background-color: transparent;
-      box-shadow: 0 8px 28px rgba(0,0,0,0.09);
-      will-change: transform, opacity;
-      transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1),
-                  opacity 0.6s ease;
-    }
-    /* Poster sizes/offsets are tuned for wide desktop — below 1100px they
-       collide with the centered hero/manifesto text, so hide them entirely.
-       The hero-peek teaser takes over at the same breakpoint (see below) so
-       the hero is never left without posters — tablet portrait sits here. */
-    @media (max-width: 1100px) { #posterSide { display: none; } }
-
     /* ── Hero ───────────────────────────────────────────────── */
     /* One dark screen: the pitch on the left, "Up next" on the right (a fan
        of three posters fed from /api/discover, with a notification dropping
-       in over them). The manifesto starts on the next, light screen. */
+       in over them). "Review, rate, remember." starts on the next, light screen. */
     #opening {
       position: relative;
       z-index: 4;
@@ -487,73 +456,158 @@
       .hero-copy { width: 100%; max-width: 600px; align-items: center; text-align: center; }
     }
 
-    #manifesto {
+    /* ── Review, rate, remember ─────────────────────────────── */
+    /* One screen straight after the hero: the pitch and a signup CTA on the
+       left, three diary cards on the right (a review on each, a private note
+       on the front one). The cards scale with their container, so phones get
+       the same composition, just smaller. */
+    #memories {
       position: relative;
       z-index: 2;
       background: var(--bg);
+      padding: 8rem 2rem;
+      overflow-x: clip;
     }
-
-    /* ── Manifesto ──────────────────────────────────────────── */
-    /* Two beats instead of five single lines: each beat is a lead line with
-       its follow-ons underneath at reduced ink, so the first feature arrives
-       after two screens rather than five. */
-    #manifesto {
-      padding: 8rem 2rem 12rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12rem;
-      text-align: center;
+    .mem-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 600px) 500px;
+      grid-template-rows: 1fr auto auto 1fr;
+      grid-template-areas: ". diary" "copy diary" "actions diary" ". diary";
+      justify-content: space-between;
+      column-gap: 3rem;
     }
-    .manifesto-beat {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .manifesto-line {
+    .mem-copy { grid-area: copy; }
+    .mem-headline {
+      margin: 0 0 1.1rem;
       font-family: var(--display);
-      font-size: clamp(1.5rem, 2.8vw, 2.6rem);
-      font-weight: 600;
-      letter-spacing: -0.025em;
-      line-height: 1.15;
-      color: var(--text);
-      max-width: 820px;
-      transition: color 1.4s var(--ease);
-    }
-    .manifesto-line.passed {
-      color: rgba(41,41,36,0.35);
-    }
-    .manifesto-line em {
-      font-style: normal; font-weight: 500;
-    }
-    #plotDoes .manifesto-wordmark {
       font-weight: 700;
-      letter-spacing: -0.1em;
-    }
-    #plotDoes em { font-style: italic; }
-    .manifesto-line.no-fade.passed {
+      font-size: clamp(2.6rem, 4.5vw, 3.6rem);
+      line-height: 1;
+      letter-spacing: -0.035em;
       color: var(--text);
     }
-    .manifesto-line.manifesto-stack {
+    .mem-headline span { color: var(--accent); }
+    .mem-mbreak { display: none; }
+    .mem-sub {
+      margin: 0 0 2.25rem;
+      max-width: 520px;
+      font-size: 1.3rem;
+      line-height: 1.45;
+      color: var(--text-secondary);
+    }
+    .mem-sub strong { font-weight: 600; color: var(--text); }
+    .mem-actions { grid-area: actions; display: flex; align-items: center; gap: 1.4rem; }
+    .mem-note { margin: 0; font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); }
+
+    .mem-diary {
+      grid-area: diary;
+      position: relative;
+      width: 100%;
+      aspect-ratio: 5 / 6;
+      container-type: inline-size;
+    }
+    /* Sizes are in cqw of the 500px desktop diary (1cqw = 5px there). */
+    .mem-card {
+      position: absolute;
+      margin: 0;
+      box-sizing: border-box;
+      width: 46cqw;
+      padding: 2cqw 2cqw 2.8cqw;
+      background: #fffaf3;
+      border-radius: 3.6cqw;
+      box-shadow: 0 18px 40px rgba(41,41,36,0.16), 0 2px 6px rgba(41,41,36,0.06);
+      font-size: 2.8cqw;
+      transform: translate(var(--tx, 0px), var(--ty, 0px)) rotate(var(--r, 0deg)) scale(var(--s, 1));
+      transition: transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1.25), box-shadow 220ms ease;
+    }
+    .mem-card--a { left: 0; top: 14cqw; --r: -7deg; }
+    .mem-card--c { left: 56.8cqw; top: 19.2cqw; --r: 6deg; }
+    .mem-card--b { left: 26.8cqw; top: 0; width: 50.4cqw; z-index: 1; font-size: 3.2cqw; }
+    .mem-poster { position: relative; }
+    .mem-poster img {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 2 / 3;
+      object-fit: cover;
+      border-radius: 2cqw;
+      background: var(--surface-hover);
+    }
+    /* The same chip the app's diary puts on a poster (review icon top-right);
+       the private-note lock mirrors it top-left. */
+    .mem-chip {
+      position: absolute;
+      top: 5.2%;
+      right: 5.2%;
+      width: 19.8%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.82);
+      color: #fff;
+    }
+    .mem-chip--lock { right: auto; left: 5.2%; }
+    .mem-chip svg { width: 50%; height: 50%; }
+    .mem-card figcaption { display: flex; flex-direction: column; gap: 0.3em; padding: 0.85em 0.3em 0; }
+    .mem-card-head { display: flex; justify-content: space-between; align-items: baseline; }
+    .mem-card-title { font-family: var(--display); font-weight: 700; font-size: 1.28em; letter-spacing: -0.02em; color: var(--text); }
+    .mem-card-date { font-size: 0.75em; color: var(--text-secondary); }
+    .mem-stars { font-size: 1.07em; letter-spacing: 1px; color: var(--accent); }
+    .mem-stars span { color: rgba(41,41,36,0.18); }
+    .mem-review { color: var(--text-secondary); }
+    .mem-private {
+      margin-top: 0.6em;
       display: flex;
       flex-direction: column;
+      gap: 0.55em;
+      padding: 0.85em 0.95em;
+      background: var(--surface);
+      border-radius: 0.65em;
+      color: var(--text);
+    }
+    .mem-private-label {
+      display: flex;
       align-items: center;
-      gap: 0.18em;
-      line-height: 1;
+      gap: 0.35em;
+      font-size: 0.65em;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
     }
-    .manifesto-stack > span { display: block; }
-    /* Poster interludes — mobile only (desktop uses edge side-posters) */
-    .manifesto-poster { display: none; }
-    .manifesto-poster-row { display: none; }
-    .tl-mbreak { display: none; }
-    .hero-peek { display: none; }
+    .mem-private-label svg { width: 1em; height: 1em; }
+    /* The private note cycles through a few examples, one every 4s. */
+    .mem-notes { display: grid; }
+    .mem-notes > span { grid-area: 1 / 1; opacity: 0; animation: mem-note 16s infinite; }
+    .mem-notes > span:nth-child(2) { animation-delay: 4s; }
+    .mem-notes > span:nth-child(3) { animation-delay: 8s; }
+    .mem-notes > span:nth-child(4) { animation-delay: 12s; }
+    @keyframes mem-note {
+      0% { opacity: 0; transform: translateY(4px); }
+      3%, 22% { opacity: 1; transform: none; }
+      25%, 100% { opacity: 0; transform: translateY(-4px); }
+    }
+    /* Hover lifts a card to the front and nudges the others apart. */
+    @media (hover: hover) and (pointer: fine) {
+      .mem-diary:hover .mem-card--a:not(:hover) { --tx: -2.4cqw; --r: -9deg; }
+      .mem-diary:hover .mem-card--c:not(:hover) { --tx: 2.4cqw; --r: 8deg; }
+      .mem-card:hover {
+        --ty: -2.4cqw; --r: 0deg; --s: 1.04;
+        z-index: 2;
+        box-shadow: 0 28px 60px rgba(41,41,36,0.22), 0 4px 10px rgba(41,41,36,0.08);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mem-card { transition: none; }
+      .mem-notes > span { animation: none; }
+      .mem-notes > span:first-child { opacity: 1; }
+    }
 
-    #plotDoes {
-      margin-top: 20rem;
-      margin-bottom: 10rem;
-    }
+    .tl-mbreak { display: none; }
 
     /* ── Timeline ───────────────────────────────────────────── */
     #timeline-section {
@@ -982,94 +1036,23 @@
       .up-next { transform: scale(0.88); transform-origin: center; }
     }
 
-    /* Hero scroll-teaser — posters peeking up from the bottom of the fold.
-       Shown from 1100px down (where the desktop side-posters hide) so the
-       hero always has posters, including at tablet portrait widths. */
+    /* Review, rate, remember: stack the copy, the diary and the CTA in one
+       column below 1100px, where the side-by-side layout runs out of room. */
     @media (max-width: 1100px) {
-      .hero-peek {
-        display: none;
-        gap: 14px;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        left: 1.5rem;
-        right: 1.5rem;
-        bottom: calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px));
-        /* Peek up far enough to be visible before the first scroll (SUS-112) */
-        /* Keep a clear pause below the CTA row before the artwork enters. */
-        transform: translateY(50%);
-        pointer-events: none;
-        z-index: 1;
+      #memories { padding: 6rem 1.5rem 5rem; }
+      .mem-inner {
+        max-width: 600px;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
+        grid-template-areas: "copy" "diary" "actions";
+        row-gap: 2.5rem;
       }
-      .hpk {
-        width: auto;           /* JS varies this once fresh artwork is ready */
-        height: clamp(150px, 24vh, 220px);
-        aspect-ratio: 2 / 3;
-        flex-shrink: 0;
-        border-radius: 12px;
-        background-color: rgba(0,0,0,0.05);
-        object-fit: cover;
-        box-shadow: 0 -10px 30px rgba(0,0,0,0.12);
-      }
-
-      /* Manifesto — scroll-driven reveal with poster interludes. Applies
-         across the whole sub-1100px range (tablet + phone) so the manifesto
-         still has posters wherever the desktop side-posters are hidden. */
-      #manifesto {
-        padding: 22vh 1.5rem;
-        gap: 13vh;
-        text-align: center;
-      }
+      .mem-sub { margin-bottom: 0; }
+      .mem-diary { max-width: 500px; justify-self: center; }
+      .mem-actions { flex-direction: column; align-items: stretch; gap: 0.75rem; text-align: center; }
+      .mem-actions .btn { justify-content: center; }
+      .mem-dbreak { display: none; }
       .tl-mbreak { display: inline; }
-      .manifesto-line {
-        display: block;
-        font-size: clamp(1.8rem, 7.5vw, 2.6rem);
-        max-width: 100%;
-      }
-      .manifesto-poster {
-        display: block;
-        align-self: center;
-        width: 160px;
-        height: 240px;
-        border-radius: var(--r-badge);
-        background-color: rgba(0,0,0,0.05);
-        background-size: cover;
-        background-position: center;
-        box-shadow: 0 16px 34px rgba(0,0,0,0.16);
-      }
-      .manifesto-poster-row {
-        display: flex;
-        align-self: center;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-      }
-      .manifesto-poster-row .manifesto-poster { align-self: center; }
-      /* Entrance — slow, clear fade + drift up + scale as they scroll in. */
-      .manifesto-poster.reveal,
-      .manifesto-poster-row.reveal {
-        transform: translateY(70px) scale(0.82);
-        transition: opacity 1.3s var(--ease), transform 1.3s var(--ease);
-      }
-      .manifesto-poster.reveal.visible,
-      .manifesto-poster-row.reveal.visible { transform: none; }
-      /* Dim out once scrolled past, mirroring the text's fade. */
-      .manifesto-poster.passed,
-      .manifesto-poster-row.passed { opacity: 0.22; }
-      #plotDoes { margin-top: 12vh; margin-bottom: 24vh; }
-    }
-
-    /* Tablet (portrait/landscape between phone and desktop): the phone
-       manifesto rhythm above uses viewport-height gaps and a deep fade that
-       leave posters marooned and ghosted on a larger screen. Tighten the
-       spacing and keep posters present so the section reads as intentional. */
-    @media (min-width: 601px) and (max-width: 1100px) {
-      #manifesto { padding: 9rem 2rem; gap: 6rem; }
-      #plotDoes { margin-top: 8rem; margin-bottom: 11rem; }
-      /* Keep posters legible after they've been scrolled past — a gentle
-         recede rather than the near-invisible phone fade. */
-      .manifesto-poster.passed,
-      .manifesto-poster-row.passed { opacity: 0.82; }
     }
 
     @media (max-width: 600px) {
@@ -1086,7 +1069,11 @@
       .hero-note { text-align: center; }
       .ticker-section { display: none; }
       :root { --ticker-height: 0px; }
-      .hero-peek { display: none; }
+      #memories { padding: 4.5rem 1.5rem 4rem; }
+      .mem-headline { font-size: 2.75rem; }
+      .mem-mbreak { display: inline; }
+      .mem-sub { font-size: 1.0625rem; }
+      .mem-inner { row-gap: 2rem; }
       .up-next {
         --un-w: 150px;
         --un-h: 225px;
@@ -1110,7 +1097,7 @@
       .up-next-dots { top: 392px; }
 
       /* Unify the mobile gutter — the interactive demo sections default to a
-         2rem side padding while the editorial sections (manifesto, closing,
+         2rem side padding while the editorial sections (memories, closing,
          footer) use 1.5rem. Match them so section edges line up on scroll. */
       section#guide-demo, section#calendar-demo, section#lists-demo, section#app-soon {
         padding-left: 1.5rem;
@@ -1810,9 +1797,6 @@
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
-  <!-- ── Poster side-slides ──────────────────────────────────── -->
-  <div id="posterSide"></div>
-
   <!-- ── Navbar ──────────────────────────────────────────────── -->
   <nav id="navbar">
     <a href="/" class="nav-logo">plot</a>
@@ -1872,24 +1856,47 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </section>
   </div>
 
-  <!-- ── Manifesto ────────────────────────────────────────────── -->
-  <section id="manifesto">
-    <div class="manifesto-beat">
-      <p class="manifesto-line manifesto-stack reveal"><span>You don't just watch things.</span><span>You think about them.</span><span>You talk about them.</span><span>You carry them with you.</span></p>
+  <!-- ── Review, rate, remember ────────────────────────────────── -->
+  <!-- Posters are TMDB paths already committed in this repo (Severance and The
+       Bear from the discover mockup below, Perfect Days from the app's history
+       fixture). The reviews, dates and note are sample diary content. -->
+  <section id="memories" aria-labelledby="memHeadline">
+    <div class="mem-inner">
+      <div class="mem-copy reveal">
+        <h2 class="mem-headline" id="memHeadline">Review, rate, <br class="mem-mbreak"><span>remember</span>.</h2>
+        <p class="mem-sub">Reviews for the thoughts worth sharing. Private notes just for you. <strong>Plot keeps both safe, and always yours.</strong></p>
+      </div>
+      <div class="mem-diary reveal" aria-hidden="true">
+        <figure class="mem-card mem-card--a">
+          <div class="mem-poster"><img src="https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async" width="342" height="513"></div>
+          <figcaption>
+            <span class="mem-card-head"><span class="mem-card-title">Severance</span><span class="mem-card-date">Apr 2</span></span>
+            <span class="mem-stars">★★★★★</span>
+          </figcaption>
+        </figure>
+        <figure class="mem-card mem-card--c">
+          <div class="mem-poster"><img src="https://image.tmdb.org/t/p/w342/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg" alt="" loading="lazy" decoding="async" width="342" height="513"><span class="mem-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/></svg></span></div>
+          <figcaption>
+            <span class="mem-card-head"><span class="mem-card-title">The Bear</span><span class="mem-card-date">Jul 3</span></span>
+            <span class="mem-stars">★★★<span>★★</span></span>
+            <span class="mem-review">“Too stressful for me.”</span>
+          </figcaption>
+        </figure>
+        <figure class="mem-card mem-card--b">
+          <div class="mem-poster"><img src="https://image.tmdb.org/t/p/w342/tvUHVSTJV9ITON3oyHaWp7oaAc8.jpg" alt="" loading="lazy" decoding="async" width="342" height="513"><span class="mem-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/></svg></span><span class="mem-chip mem-chip--lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></div>
+          <figcaption>
+            <span class="mem-card-head"><span class="mem-card-title">Perfect Days</span><span class="mem-card-date">Sep 14</span></span>
+            <span class="mem-stars">★★★★★</span>
+            <span class="mem-review">“Still thinking about it.”</span>
+            <span class="mem-private"><span class="mem-private-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Private note</span><span class="mem-notes"><span>Reminder to notice the light more.</span><span>Bf’s favorite. Now mine too.</span><span>Mom cried. Then I did.</span><span>Watched alone. Didn’t feel alone.</span></span></span>
+          </figcaption>
+        </figure>
+      </div>
+      <div class="mem-actions reveal">
+        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="memories">Start your Plot</a>
+        <p class="mem-note">Free forever. <br class="mem-dbreak">No credit card required.</p>
+      </div>
     </div>
-    <div class="manifesto-poster-row reveal">
-      <div class="manifesto-poster"></div>
-      <div class="manifesto-poster"></div>
-    </div>
-    <div class="manifesto-beat">
-      <p class="manifesto-line manifesto-stack reveal"><span>But no app has ever cared</span><span>as much as you do.</span></p>
-    </div>
-    <div class="manifesto-poster-row reveal">
-      <div class="manifesto-poster"></div>
-      <div class="manifesto-poster"></div>
-      <div class="manifesto-poster"></div>
-    </div>
-    <p class="manifesto-line no-fade reveal" id="plotDoes"><span class="manifesto-wordmark">plot</span> <em>does.</em></p>
   </section>
 
 
@@ -2740,305 +2747,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     if (guideDateHdr) {
       guideDateHdr.textContent = 'Today — ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
     }
-
-    // ── Manifesto scroll-driven fade ──────────────────────────
-    const manifestoLines = [...document.querySelectorAll('.manifesto-line')];
-    // Posters/rows dim out the same way the text does once scrolled past.
-    const manifestoFaders = [
-      ...document.querySelectorAll('#manifesto > .manifesto-poster'),
-      ...document.querySelectorAll('#manifesto .manifesto-poster-row'),
-    ];
-
-    function updateManifesto() {
-      const threshold = window.innerHeight * 0.4;
-      manifestoLines.forEach(line => {
-        const rect = line.getBoundingClientRect();
-        line.classList.toggle('passed', rect.bottom < threshold);
-      });
-      manifestoFaders.forEach(el => {
-        const rect = el.getBoundingClientRect();
-        // Fade in on scroll: trigger the reveal as soon as the poster rises
-        // into view from the bottom. Deterministic + idempotent, so it works
-        // even if the shared IntersectionObserver hasn't fired yet.
-        if (rect.top < window.innerHeight * 0.85 && rect.bottom > 0) el.classList.add('visible');
-        el.classList.toggle('passed', rect.bottom < threshold);
-      });
-    }
-
-    window.addEventListener('scroll', updateManifesto, { passive: true });
-    updateManifesto();
-
-    // ── Side-slide poster system ──────────────────────────────
-    // Each poster floats in from its screen edge at a scroll trigger,
-    // holds, then floats back out. Pairs stagger left/right for rhythm.
-    //
-    // showAt      → scrollY (px) at which the poster begins sliding in
-    // vy          → vertical position as fraction of viewport height (poster top)
-    // restX       → distance from screen edge when fully in
-    // Initialized lazily so a rotation/resize up past 1100px still gets
-    // posters even when the page loaded narrower. Runs at most once; below
-    // 1100px the CSS hides #posterSide again.
-    let sidePostersStarted = false;
-    function initSidePosters() {
-      // Purely decorative scroll-driven motion — skip for reduced-motion users
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      if (sidePostersStarted || window.innerWidth < 1100) return;
-      sidePostersStarted = true;
-    const afterFold = Math.max(720, Math.round(window.innerHeight));
-    const sideLayout = [
-      // First four posters wait until the opening screen has scrolled away.
-      // The dark hero carries its own posters, and these used to sit in the
-      // corners at load.
-      { side: 'left',  vy: 0.48, showAt: afterFold, w: 200, h: 300, restX:  32, hold: 1000 },
-      { side: 'left',  vy: 0.12, showAt: afterFold, w: 150, h: 225, restX:  72, hold: 1000 },
-      { side: 'right', vy: 0.11, showAt: afterFold, w: 200, h: 300, restX:  32, hold: 1000 },
-      { side: 'right', vy: 0.51, showAt: afterFold, w: 140, h: 210, restX:  92, hold: 1000 },
-      // Scroll reveals — wide range of restX (4 = nearly touching centre, 160 = tucked to edge)
-      { side: 'left',  vy: 0.24, showAt:  400, w: 320, h: 480, restX:  4 },
-      { side: 'right', vy: 0.20, showAt:  440, w: 165, h: 248, restX: 155 },
-      { side: 'left',  vy: 0.50, showAt:  580, w: 195, h: 293, restX: 130 },
-      { side: 'right', vy: 0.48, showAt:  620, w: 285, h: 428, restX:  6 },
-      { side: 'left',  vy: 0.08, showAt:  760, w: 155, h: 233, restX: 160 },
-      { side: 'right', vy: 0.12, showAt:  800, w: 310, h: 465, restX:  2 },
-      { side: 'left',  vy: 0.35, showAt:  940, w: 270, h: 405, restX: 10 },
-      { side: 'right', vy: 0.30, showAt:  980, w: 180, h: 270, restX: 145 },
-      { side: 'left',  vy: 0.55, showAt: 1120, w: 145, h: 218, restX: 165 },
-      { side: 'right', vy: 0.50, showAt: 1160, w: 295, h: 443, restX:  5 },
-      { side: 'left',  vy: 0.12, showAt: 1300, w: 240, h: 360, restX: 55 },
-      { side: 'right', vy: 0.08, showAt: 1340, w: 170, h: 255, restX: 150 },
-      { side: 'left',  vy: 0.40, showAt: 1480, w: 305, h: 458, restX:  3 },
-      { side: 'right', vy: 0.38, showAt: 1520, w: 200, h: 300, restX: 120 },
-      { side: 'left',  vy: 0.52, showAt: 1660, w: 160, h: 240, restX: 155 },
-      { side: 'right', vy: 0.50, showAt: 1700, w: 275, h: 413, restX:  8 },
-      { side: 'left',  vy: 0.15, showAt: 1840, w: 290, h: 435, restX:  6 },
-      { side: 'right', vy: 0.10, showAt: 1880, w: 185, h: 278, restX: 135 },
-      { side: 'left',  vy: 0.38, showAt: 2020, w: 215, h: 323, restX: 80 },
-      { side: 'right', vy: 0.36, showAt: 2060, w: 330, h: 495, restX:  2 },
-    ];
-
-    const TMDB_IMG  = 'https://image.tmdb.org/t/p/w500';
-
-    async function fetchSidePosters() {
-      const [trending, nowPlaying, tv] = await fetchTrendingSets();
-      const all = [
-        ...(trending.results || []), ...(nowPlaying.results || []), ...(tv.results || [])
-      ].filter(r => r.poster_path);
-      // Dedupe by title, then shuffle: these three sets overlap, and the strip
-      // shows several posters at once, so a repeat is plainly visible.
-      const unique = unseen(all, {});
-      for (let i = unique.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [unique[i], unique[j]] = [unique[j], unique[i]];
-      }
-      return unique.map(r => TMDB_IMG + r.poster_path);
-    }
-
-    const posterSide = document.getElementById('posterSide');
-
-    fetchSidePosters().then(posters => {
-      const sideData = sideLayout.map((layout, i) => ({
-        ...layout,
-        src: posters[i % posters.length],
-      }));
-
-      // Keep every poster inside the edge zone outside a protected centre
-      // column, so none can reach the headline. The column is 960px wide at
-      // 1440 and shrinks with the viewport; where the zone gets too thin for
-      // a poster (roughly 1100–1300px), the hero-visible posters also move
-      // out of the headline's vertical band instead of shrinking to nothing.
-      const CENTRE_COL = Math.min(960, window.innerWidth * 0.66);
-      const edgeZone   = Math.max(120, (window.innerWidth - CENTRE_COL) / 2);
-      const sidePosters = sideData.map(data => {
-        // First pull the poster out to the edge, then shrink it only if the zone
-        // is still too thin: a small poster tucked to the edge reads as a
-        // thumbnail, a full-size one does not.
-        let maxW = edgeZone - data.restX - 8;
-        if (data.w > maxW) {
-          data.restX = Math.max(8, Math.floor(edgeZone - data.w - 8));
-          maxW = edgeZone - data.restX - 8;
-        }
-        if (data.w > maxW) {
-          const ratio = data.h / data.w;
-          data.w = Math.max(96, Math.floor(maxW));
-          data.h = Math.round(data.w * ratio);
-        }
-        if (edgeZone < 200 && data.showAt < 200 && data.vy > 0.26 && data.vy < 0.62) {
-          data.vy = data.vy < 0.44 ? 0.08 : 0.66;
-        }
-        const el = document.createElement('div');
-        el.className = 'side-poster';
-        el.style.width  = data.w + 'px';
-        el.style.height = data.h + 'px';
-        el.style.backgroundImage = `url('${data.src}')`;
-        posterSide.appendChild(el);
-        return { el, data };
-      });
-
-      const SLIDE_IN  = 320;
-      const HOLD      = 600;
-      const SLIDE_OUT = 280;
-
-      function easeOutQuint(t) { return 1 - Math.pow(1 - t, 5); }
-      function easeInCubic(t)  { return t * t * t; }
-
-      let smoothScrollY = window.scrollY;
-      let rafId = null;
-
-      function updateSide() {
-        smoothScrollY += (window.scrollY - smoothScrollY) * 0.05;
-        const scrollY = smoothScrollY;
-        const vh      = window.innerHeight;
-
-        const plotDoes      = document.getElementById('plotDoes');
-        const plotDoesPageY = plotDoes ? plotDoes.getBoundingClientRect().top + window.scrollY : 999999;
-        // Clear the stage for the closing statement. All edge posters begin
-        // travelling back off-screen as it approaches, and are fully gone
-        // before "plot does." reaches the viewport's focal area.
-        const exitStart     = plotDoesPageY - vh * 0.95;
-        const exitEnd       = plotDoesPageY - vh * 0.62;
-        const exitProgress  = Math.max(0, Math.min(1, (window.scrollY - exitStart) / (exitEnd - exitStart)));
-        const exitEase      = easeInCubic(exitProgress);
-
-        sidePosters.forEach(({ el, data }) => {
-          const { side, vy, showAt, w, restX } = data;
-          const hold     = data.hold !== undefined ? data.hold : HOLD;
-          const total    = SLIDE_IN + hold + SLIDE_OUT;
-          const progress = scrollY - showAt;
-          const slideAmt = restX + w + 40;
-          const dir      = side === 'left' ? -1 : 1;
-
-          let opacity, tx;
-
-          if (progress <= 0) {
-            opacity = 0;
-            tx = dir * slideAmt;
-          } else if (progress < SLIDE_IN) {
-            const e = easeOutQuint(progress / SLIDE_IN);
-            opacity = Math.min(1, e * 1.4);
-            tx = dir * slideAmt * (1 - e);
-          } else if (progress < SLIDE_IN + hold) {
-            opacity = 1;
-            tx = 0;
-          } else if (progress < total) {
-            const e = easeInCubic((progress - SLIDE_IN - hold) / SLIDE_OUT);
-            opacity = 1 - e;
-            tx = dir * slideAmt * e;
-          } else {
-            opacity = 0;
-            tx = dir * slideAmt;
-          }
-
-          opacity *= 1 - exitProgress;
-          tx += dir * slideAmt * exitEase;
-
-          el.style.top       = `${vy * vh}px`;
-          el.style.opacity   = opacity;
-          el.style.transform = `translateX(${tx.toFixed(1)}px)`;
-
-          if (side === 'left') {
-            el.style.left  = `${restX}px`;
-            el.style.right = '';
-          } else {
-            el.style.right = `${restX}px`;
-            el.style.left  = '';
-          }
-        });
-
-        // Keep ticking only while the smoothed scroll is still catching up to
-        // the real position; otherwise stop until the next scroll/resize so the
-        // rAF loop isn't running perpetually while idle. (SUS-84)
-        if (Math.abs(window.scrollY - smoothScrollY) > 0.4) {
-          rafId = requestAnimationFrame(updateSide);
-        } else {
-          smoothScrollY = window.scrollY;
-          rafId = null;
-        }
-      }
-      function requestSideTick() {
-        if (rafId === null) rafId = requestAnimationFrame(updateSide);
-      }
-      window.addEventListener('scroll', requestSideTick, { passive: true });
-      window.addEventListener('resize', requestSideTick, { passive: true });
-      requestSideTick(); // initial positioning
-    }).catch(() => {}); // end fetchSidePosters
-    } // end initSidePosters
-    initSidePosters();
-    window.addEventListener('resize', initSidePosters);
-
-    // Manifesto poster interludes + hero scroll-teaser — populate with live
-    // TMDB posters (mobile). Same trending/now-playing source as the hero.
-    (function() {
-      const posterEls = document.querySelectorAll('.manifesto-poster');
-      const peekEls   = document.querySelectorAll('.hpk');
-      if (!posterEls.length && !peekEls.length) return;
-      // These strips are mobile-only (display:none on desktop). Skip building
-      // them — and downloading their posters — when none are actually shown. (SUS-85)
-      var anyVisible = [].some.call([].concat([].slice.call(posterEls), [].slice.call(peekEls)),
-        function(el) { return el.offsetParent !== null; });
-      if (!anyVisible) return;
-      fetchTrendingSets().then(function(sets) {
-        const IMG = 'https://image.tmdb.org/t/p/w500';
-        const seen = {};
-        const paths = [];
-        sets.forEach(function(set) {
-          unseen(((set && set.results) || []).filter(function(r) { return r.poster_path; }), seen)
-            .forEach(function(r) { paths.push(r.poster_path); });
-        });
-        if (!paths.length) return;
-        // Hero teaser posters — varied sizes + slight vertical scatter.
-        var pAvail = Math.min(window.innerWidth, 420) - 48;
-        var pN = peekEls.length;
-        var pSlot = (pAvail - 14 * (pN - 1)) / pN;
-        var pFactors = [0.82, 0.97, 1.12];
-        for (var p = pFactors.length - 1; p > 0; p--) {       // shuffle which is big
-          var pt = Math.floor(Math.random() * (p + 1));
-          var ptmp = pFactors[p]; pFactors[p] = pFactors[pt]; pFactors[pt] = ptmp;
-        }
-        peekEls.forEach(function(el, i) {
-          el.src = IMG + paths[i % paths.length];
-          var w = Math.round(pSlot * (pFactors[i] || 1));
-          el.style.width = w + 'px';
-          el.style.height = Math.round(w * 1.5) + 'px'; // fixed 2:3 poster ratio
-        });
-        // Manifesto interludes — randomise size for a scattered, organic feel.
-        var GAP = 16;
-        var avail = Math.min(window.innerWidth, 600) - 48; // content width minus 1.5rem padding
-        var pick = 3;
-        function dress(el, w) {
-          el.style.backgroundImage = "url('" + IMG + paths[(pick += 4) % paths.length] + "')";
-          el.style.width = w + 'px';
-          el.style.height = Math.round(w * 1.5) + 'px'; // fixed 2:3 poster ratio
-        }
-        // Solo posters — big, wide spread.
-        document.querySelectorAll('#manifesto > .manifesto-poster').forEach(function(el) {
-          dress(el, Math.round(120 + Math.random() * (avail - 120)));   // 120px → full width
-        });
-        // Rows — give each member a deliberately contrasting size (clear
-        // small/large split), shuffled so the big one isn't always first.
-        var rowIdx = 0;
-        document.querySelectorAll('#manifesto .manifesto-poster-row').forEach(function(row) {
-          var kids = Array.prototype.slice.call(row.children);
-          var n = kids.length;
-          var slot = (avail - GAP * (n - 1)) / n;
-          // Contrast the sizes, but keep the smallest readable. Pairs get a
-          // bigger spread; trios stay closer to even so none gets tiny.
-          var lo = n === 3 ? 0.9 : 0.82;
-          var hi = n === 3 ? 1.0 : 1.06;
-          var minW = n === 3 ? 96 : 132;
-          var factors = [];
-          for (var j = 0; j < n; j++) {
-            var t = n > 1 ? j / (n - 1) : 0;
-            factors.push(lo + t * (hi - lo) + (Math.random() - 0.5) * 0.05);
-          }
-          // Alternate which side is big so consecutive rows mirror each other.
-          if (rowIdx % 2 === 1) factors.reverse();
-          rowIdx++;
-          kids.forEach(function(el, ci) {
-            dress(el, Math.max(minW, Math.round(slot * factors[ci])));
-          });
-        });
-      }).catch(function() {});
-    })();
 
     // Discover phone mockup — populate with live TMDB content (real titles,
     // posters and Movie/TV badges). Local images stay as a fallback.
