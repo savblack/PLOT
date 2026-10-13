@@ -43,20 +43,20 @@ export default function Building() {
     return () => clearInterval(id);
   }, [lines.length]);
 
-  // Save and wait out the lines together, then leave. Runs once.
-  const ran = useRef(false);
-  const { save, completeStep } = flow;
-  useEffect(() => {
-    if (ran.current) return;
-    ran.current = true;
-    const wait = new Promise<void>(resolve => setTimeout(resolve, LINE_MS * lines.length));
-    Promise.all([save({ skipServices: !!skipped }), wait]).then(([ok]) => {
-      // A failed write goes back to services, where the error shows.
-      if (!ok) { router.back(); return; }
-      completeStep('building');
-      Animated.timing(fade, { toValue: 0, duration: FADE_MS, easing: Easing.out(Easing.quad), useNativeDriver: true })
-        .start(() => router.replace('/(app)'));
-    });
+    // Save and wait out the lines together, then leave for Home. Runs once.
+    const ran = useRef(false);
+    const { save, completeStep } = flow;
+    useEffect(() => {
+      if (ran.current) return;
+      ran.current = true;
+      const wait = new Promise<void>(resolve => setTimeout(resolve, LINE_MS * lines.length));
+      Promise.all([save({ skipServices: !!skipped }), wait]).then(([ok]) => {
+        // A failed write goes back to services, where the error shows.
+        if (!ok) { router.back(); return; }
+        completeStep('building');
+        Animated.timing(fade, { toValue: 0, duration: FADE_MS, easing: Easing.out(Easing.quad), useNativeDriver: true })
+          .start(() => router.replace('/(app)'));
+      });
     // Runs exactly once, on mount; the values it reads are the ones at that moment.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

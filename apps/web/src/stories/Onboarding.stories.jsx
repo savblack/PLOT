@@ -25,7 +25,7 @@ function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 
       firstName={firstName}
       saving={false}
       saveError={null}
-      canGoBack={step !== 'seed' && step !== 'building'}
+      canGoBack={step === 'import' || step === 'services'}
       onBack={noop}
       onSkip={noop}
       seed={{

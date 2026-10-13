@@ -71,6 +71,17 @@ export const ONBOARDING_FLOW = {
     noServicesFirstLine: 'Checking every platform…',
     status: 'Building your Plot',
   },
+  // A dismissible card at the top of Home. Skipped onboarding and a finished
+  // Trakt import never arm it. Skip on the card hides it. Home is already open.
+  firstWin: {
+    title: 'Watching this? Tick your last episode',
+    tonight: 'Pick something for tonight',
+    empty: 'Nothing saved yet. Pick something for tonight, or skip this.',
+    tickEpisode: 'Tick episode',
+    logged: 'Logged',
+    sheetSub: (title) => `Tick the last episode of ${title} you’ve seen.`,
+    tickLabel: (episode, name) => (name ? `Tick episode ${episode}, ${name}` : `Tick episode ${episode}`),
+  },
   skip: 'Skip',
   stepLabel: (step, total) => `Step ${step} of ${total}`,
   clearSearch: 'Clear search',
