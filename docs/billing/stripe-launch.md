@@ -82,6 +82,11 @@ This decision does not enable public checkout or authorize a production change.
    the end of the current period. The tested sandbox configuration resets the
    billing anchor to now and uses `always_invoice` for immediate prorated upgrades.
    Verify the invoice preview before copying this configuration into live mode.
+   **Decision (14 October 2026): a plan switch during the trial keeps the trial.** In the
+   live portal configuration, switch off "End trials on subscription updates" so that
+   moving between monthly and yearly in the first 7 days does not bill immediately; the
+   first charge stays on the day the trial ends, at the newly chosen price. The Terms
+   state this, so verify it in the pilot before opening checkout.
 4. Create or update the live webhook at
    `https://mkegtssedjyqldysvzga.supabase.co/functions/v1/stripe-webhook`.
    Subscribe to `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
