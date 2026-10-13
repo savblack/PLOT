@@ -1114,9 +1114,25 @@
       color: var(--text-secondary);
       cursor: pointer;
     }
-    .pr-toggle button.is-active { flex: 1.4; background: #fff; color: var(--text); box-shadow: 0 2px 6px rgba(41,41,36,0.1); }
-    .pr-toggle em { font-style: normal; color: var(--accent-2); }
+    .pr-toggle button.is-active { background: #fff; color: var(--text); box-shadow: 0 2px 6px rgba(41,41,36,0.1); }
     .pr-price { display: flex; align-items: baseline; gap: 6px; }
+    /* The annual saving, as loud as the price: Annual is preselected. */
+    .pr-save {
+      align-self: center;
+      margin-left: auto;
+      padding: 8px 14px;
+      border-radius: var(--r-pill);
+      background: var(--accent-2);
+      color: #fff;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      transform: rotate(-3deg);
+      box-shadow: 0 6px 16px rgba(95,112,48,0.35);
+    }
+    .pr-save[hidden] { display: none; }
     .pr-amount { font-family: var(--display); font-weight: 700; font-size: 4rem; letter-spacing: -0.04em; line-height: 1; }
     .pr-per { font-size: 1.1rem; color: var(--text-secondary); }
     .pr-billed { margin: 6px 0 22px; font-size: 0.88rem; color: var(--text-secondary); }
@@ -1385,10 +1401,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="pr-card">
           <div class="pr-toggle" role="group" aria-label="Billing period">
             <button type="button" id="prMonthly" aria-pressed="false">Monthly</button>
-            <button type="button" id="prAnnual" class="is-active" aria-pressed="true">Annual <em>· 4 months free</em></button>
+            <button type="button" id="prAnnual" class="is-active" aria-pressed="true">Annual</button>
           </div>
-          <div class="pr-price"><span class="pr-amount" id="prAmount">US$2</span><span class="pr-per">/mo</span></div>
-          <p class="pr-billed" id="prBilled">US$24 billed yearly · taxes included</p>
+          <div class="pr-price"><span class="pr-amount" id="prAmount">US$2</span><span class="pr-per">/mo</span><span class="pr-save" id="prSave">4 months free</span></div>
+          <p class="pr-billed" id="prBilled">US$24 a year <s>US$36</s> · taxes included</p>
           <a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-primary btn-large" id="prCta" data-cta="premium-home">Start 7-day free trial</a>
           <p class="pr-trial">You won’t be charged until day 7.<br>Cancel during the trial and you pay $0.</p>
           <a href="/pricing" class="pr-compare" data-cta="premium-compare">Compare Free and Premium</a>
@@ -1832,6 +1848,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       if (!mo || !yr) return;
       var amount = document.getElementById('prAmount');
       var billed = document.getElementById('prBilled');
+      var save = document.getElementById('prSave');
       var cta = document.getElementById('prCta');
       function setBilling(annual) {
         mo.classList.toggle('is-active', !annual);
@@ -1839,7 +1856,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         mo.setAttribute('aria-pressed', String(!annual));
         yr.setAttribute('aria-pressed', String(annual));
         amount.textContent = 'US$' + (annual ? ANNUAL / 12 : MONTHLY);
-        billed.textContent = annual ? 'US$' + ANNUAL + ' billed yearly · taxes included' : 'US$' + MONTHLY + ' billed monthly · taxes included';
+        billed.innerHTML = annual ? 'US$' + ANNUAL + ' a year <s>US$' + MONTHLY * 12 + '</s> · taxes included' : 'US$' + MONTHLY + ' billed monthly · taxes included';
+        save.hidden = !annual;
         cta.href = 'https://app.theplot.tv/signup?intent=premium&plan=' + (annual ? 'yearly' : 'monthly');
       }
       mo.addEventListener('click', function () { setBilling(false); });
