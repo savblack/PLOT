@@ -472,7 +472,7 @@
       max-width: 1180px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: minmax(0, 600px) 500px;
+      grid-template-columns: minmax(0, 580px) 560px;
       grid-template-rows: 1fr auto auto 1fr;
       grid-template-areas: ". diary" "copy diary" "actions diary" ". diary";
       justify-content: space-between;
@@ -505,15 +505,15 @@
       grid-area: diary;
       position: relative;
       width: 100%;
-      aspect-ratio: 5 / 6;
+      aspect-ratio: 100 / 104;
       container-type: inline-size;
     }
-    /* Sizes are in cqw of the 500px desktop diary (1cqw = 5px there). */
+    /* Sizes are in cqw of the 560px desktop diary (1cqw = 5.6px there). */
     .mem-card {
       position: absolute;
       margin: 0;
       box-sizing: border-box;
-      width: 46cqw;
+      width: 44cqw;
       padding: 2cqw 2cqw 2.8cqw;
       background: #fffaf3;
       border-radius: 3.6cqw;
@@ -522,26 +522,27 @@
       transform: translate(var(--tx, 0px), var(--ty, 0px)) rotate(var(--r, 0deg)) scale(var(--s, 1));
       transition: transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1.25), box-shadow 220ms ease;
     }
-    .mem-card--a { left: 0; top: 14cqw; --r: -7deg; }
-    .mem-card--c { left: 56.8cqw; top: 19.2cqw; --r: 6deg; }
-    .mem-card--b { left: 26.8cqw; top: 0; width: 50.4cqw; z-index: 1; font-size: 3.2cqw; }
-    .mem-poster { position: relative; }
+    .mem-card--a { left: 0; top: 12cqw; --r: -7deg; }
+    .mem-card--c { left: 56cqw; top: 16cqw; --r: 6deg; }
+    .mem-card--b { left: 20cqw; top: 0; width: 60cqw; z-index: 1; font-size: 2.9cqw; }
+    .mem-poster { position: relative; container-type: inline-size; }
     .mem-poster img {
       display: block;
       width: 100%;
       height: auto;
-      aspect-ratio: 2 / 3;
+      aspect-ratio: 4 / 5;
       object-fit: cover;
-      border-radius: 2cqw;
+      object-position: 50% 20%;
+      border-radius: 4.4cqw;
       background: var(--surface-hover);
     }
     /* The same chip the app's diary puts on a poster (review icon top-right);
        the private-note lock mirrors it top-left. */
     .mem-chip {
       position: absolute;
-      top: 5.2%;
-      right: 5.2%;
-      width: 19.8%;
+      top: 5.2cqw;
+      right: 5.2cqw;
+      width: 17cqw;
       aspect-ratio: 1;
       border-radius: 50%;
       display: flex;
@@ -550,7 +551,7 @@
       background: rgba(0,0,0,0.82);
       color: #fff;
     }
-    .mem-chip--lock { right: auto; left: 5.2%; }
+    .mem-chip--lock { right: auto; left: 5.2cqw; }
     .mem-chip svg { width: 50%; height: 50%; }
     .mem-card figcaption { display: flex; flex-direction: column; gap: 0.3em; padding: 0.85em 0.3em 0; }
     .mem-card-head { display: flex; justify-content: space-between; align-items: baseline; }
@@ -558,13 +559,14 @@
     .mem-card-date { font-size: 0.75em; color: var(--text-secondary); }
     .mem-stars { font-size: 1.07em; letter-spacing: 1px; color: var(--accent); }
     .mem-stars span { color: rgba(41,41,36,0.18); }
+    .mem-rated { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2em 0.6em; }
     .mem-review { color: var(--text-secondary); }
     .mem-private {
       margin-top: 0.6em;
       display: flex;
       flex-direction: column;
-      gap: 0.55em;
-      padding: 0.85em 0.95em;
+      gap: 0.45em;
+      padding: 0.75em 0.85em;
       background: var(--surface);
       border-radius: 0.65em;
       color: var(--text);
@@ -581,7 +583,7 @@
     }
     .mem-private-label svg { width: 1em; height: 1em; }
     /* The private note cycles through a few examples, one every 4s. */
-    .mem-notes { display: grid; }
+    .mem-notes { display: grid; font-size: 0.92em; }
     .mem-notes > span { grid-area: 1 / 1; opacity: 0; animation: mem-note 16s infinite; }
     .mem-notes > span:nth-child(2) { animation-delay: 4s; }
     .mem-notes > span:nth-child(3) { animation-delay: 8s; }
@@ -1048,7 +1050,7 @@
         row-gap: 2.5rem;
       }
       .mem-sub { margin-bottom: 0; }
-      .mem-diary { max-width: 500px; justify-self: center; }
+      .mem-diary { max-width: 560px; justify-self: center; }
       .mem-actions { flex-direction: column; align-items: stretch; gap: 0.75rem; text-align: center; }
       .mem-actions .btn { justify-content: center; }
       .mem-dbreak { display: none; }
@@ -1074,6 +1076,10 @@
       .mem-mbreak { display: inline; }
       .mem-sub { font-size: 1.0625rem; }
       .mem-inner { row-gap: 2rem; }
+      /* Card text would drop to ~9px at phone width; keep it readable. */
+      .mem-diary { aspect-ratio: 100 / 116; }
+      .mem-card { font-size: 3.3cqw; }
+      .mem-card--b { font-size: 3.5cqw; }
       .up-next {
         --un-w: 150px;
         --un-h: 225px;
@@ -1878,16 +1884,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="mem-poster"><img src="https://image.tmdb.org/t/p/w342/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg" alt="" loading="lazy" decoding="async" width="342" height="513"><span class="mem-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/></svg></span></div>
           <figcaption>
             <span class="mem-card-head"><span class="mem-card-title">The Bear</span><span class="mem-card-date">Jul 3</span></span>
-            <span class="mem-stars">★★★<span>★★</span></span>
-            <span class="mem-review">“Too stressful for me.”</span>
+            <span class="mem-rated"><span class="mem-stars">★★★<span>★★</span></span> <span class="mem-review">“Too stressful for me.”</span></span>
           </figcaption>
         </figure>
         <figure class="mem-card mem-card--b">
           <div class="mem-poster"><img src="https://image.tmdb.org/t/p/w342/tvUHVSTJV9ITON3oyHaWp7oaAc8.jpg" alt="" loading="lazy" decoding="async" width="342" height="513"><span class="mem-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/></svg></span><span class="mem-chip mem-chip--lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></div>
           <figcaption>
             <span class="mem-card-head"><span class="mem-card-title">Perfect Days</span><span class="mem-card-date">Sep 14</span></span>
-            <span class="mem-stars">★★★★★</span>
-            <span class="mem-review">“Still thinking about it.”</span>
+            <span class="mem-rated"><span class="mem-stars">★★★★★</span> <span class="mem-review">“Still thinking about it.”</span></span>
             <span class="mem-private"><span class="mem-private-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Private note</span><span class="mem-notes"><span>Reminder to notice the light more.</span><span>Bf’s favorite. Now mine too.</span><span>Mom cried. Then I did.</span><span>Watched alone. Didn’t feel alone.</span></span></span>
           </figcaption>
         </figure>
