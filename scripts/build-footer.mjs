@@ -46,7 +46,7 @@ const PAGES = [
   'about.html',
   'privacy.html',
   'terms.html',
-  'plans.html',
+  'pricing.html',
   'community.html',
   'support.html',
   'taste-match.html',

@@ -16,6 +16,8 @@ export default defineConfig([
     'storybook-static', '**/storybook-static/**',
     '.claude', 'apps/website/.claude',
     'supabase/.temp', 'node_modules', '.pnpm-store', '.playwright', '.deno-cache', '.work', 'archive/',
+    // Upstream node-forge, vendored with one signature check. Not our lint.
+    'vendor/node-forge/**',
     'apps/mobile/ios/**', 'apps/mobile/android/**', 'apps/mobile/.expo/**',
     // Same story: `wrangler dev`/`pages dev` writes bundled worker JS under
     // .wrangler/tmp/, so running `npm run dev:website` once leaves lint errors

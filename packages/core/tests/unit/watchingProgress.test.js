@@ -8,6 +8,7 @@ import {
   getSeasonWatchState,
   isSeriesComplete,
   isRewind,
+  pointerAfterEpisode,
 } from '../../watchingProgress.js';
 
 test('reports missing-progress when there is no progress object', () => {
@@ -214,6 +215,14 @@ test('un-marking a season is a rewind', () => {
 test('rewriting the same position is not a rewind', () => {
   const before = { current_season: 1, current_episode: 1 };
   assert.equal(isRewind(before, 1, 1), false);
+});
+
+test('ticking the last episode seen moves the pointer to the next one', () => {
+  assert.deepEqual(pointerAfterEpisode(1, 3, 8), { season: 1, episode: 4 });
+  assert.deepEqual(pointerAfterEpisode(2, 10, 10), { season: 3, episode: 1 });
+  assert.equal(pointerAfterEpisode(1, 0, 8), null);
+  assert.equal(pointerAfterEpisode(1, 9, 8), null);
+  assert.equal(pointerAfterEpisode(0, 1, 8), null);
 });
 
 test('a first write with no prior row counts as forward', () => {

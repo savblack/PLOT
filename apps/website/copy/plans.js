@@ -1,8 +1,8 @@
-// Reference-only copy catalog for apps/website/plans.html. Not imported by
+// Reference-only copy catalog for apps/website/pricing.html. Not imported by
 // the HTML — see copy/common.js for how this catalog is used.
 //
 // Note: the page's CSS also styles .tmony (testimonials) and .social-stats
-// blocks, but neither has any actual markup/content in plans.html today —
+// blocks, but neither has any actual markup/content in pricing.html today —
 // nothing to catalog there.
 
 export const PLANS_PAGE = {

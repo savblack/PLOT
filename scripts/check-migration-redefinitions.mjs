@@ -46,7 +46,7 @@ function parseDefinitions(sql) {
   const defs = new Map();
   // Split on each function definition; everything up to the next one (or EOF)
   // is that function's text. Good enough for this codebase's plain-SQL style.
-  const re = /create\s+or\s+replace\s+function\s+(?:public\.)?([a-z0-9_]+)\s*\(/gi;
+  const re = /create\s+or\s+replace\s+function\s+(?:(?:public|private)\.)?([a-z0-9_]+)\s*\(/gi;
   const marks = [...sql.matchAll(re)].map(m => ({ name: m[1].toLowerCase(), start: m.index }));
 
   for (const [i, mark] of marks.entries()) {

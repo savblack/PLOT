@@ -1,7 +1,8 @@
-// Home's first-run card after onboarding: four steps, each ticking only when
-// the action is really done (titles saved, someone followed, an import
-// finished, an actor or director followed). The rules and the stored state's
-// shape live in @plot/core/finishingTouches.js; this file is the web render.
+// Home's first-run card after onboarding: five steps, each ticking only when
+// the action is really done (titles saved, an episode or a watch logged,
+// someone followed, an import finished, an actor or director followed). The
+// rules and the stored state's shape live in @plot/core/finishingTouches.js;
+// this file is the web render.
 // Mobile: apps/mobile/components/FinishingTouches.tsx, on the same core rules.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -10,10 +11,14 @@ import { tmdb } from '@plot/core/tmdb.js';
 import { useFollows, followUser } from '@plot/core/useFollows.js';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
-import { deriveFinishingTouches, finishingTouchesVisible } from '@plot/core/finishingTouches.js';
+import { deriveFinishingTouches, finishingTouchesVisible, firstWatchlistShow } from '@plot/core/finishingTouches.js';
+import { pointerAfterEpisode } from '@plot/core/watchingProgress.js';
+import { useHistory } from '@plot/core/useHistory.js';
 import { favoriteWords } from '@plot/core/spelling.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { FINISHING_TOUCHES as T } from '../copy/finishingTouches.js';
+import { MEDIA_PANEL } from '../copy/mediaPanel.js';
+import { COMMON } from '../copy/common.js';
 import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
 import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -30,7 +35,8 @@ import './FinishingTouches.css';
 const wideScreen = () => typeof window !== 'undefined' && window.matchMedia?.('(min-width: 1024px)').matches;
 
 export default function FinishingTouches() {
-  const { user, profile, watchlist } = useApp();
+  const { user, profile, watchlist, watching } = useApp();
+  const history = useHistory(user?.id);
   const navigate = useNavigate();
   const [state, setState] = useState(() => readFinishingTouches(user?.id));
   const [expanded, setExpanded] = useState(wideScreen);
@@ -38,13 +44,19 @@ export default function FinishingTouches() {
   const follows = useFollows(user?.id, user?.id);
   const people = usePeopleFollows(user?.id);
   const fav = favoriteWords(profile?.region);
+  const show = firstWatchlistShow(watchlist?.items);
 
   const savedCount = watchlist?.items?.length ?? 0;
+  const progressDone = (watching?.items?.length ?? 0) > 0
+    || (history.entries || []).some(entry => entry?.media_type === 'tv');
   const { steps, doneCount, total, allDone } = deriveFinishingTouches({
     savedCount,
     followingCount: follows.following,
     importDone: !!state?.importDone,
     peopleCount: people.follows.length,
+    progressDone,
+    traktImportDone: !!state?.traktImportDone,
+    showProgress: !!show,
   });
 
   if (!user || !finishingTouchesVisible(state)) return null;
@@ -52,6 +64,12 @@ export default function FinishingTouches() {
   const tiles = steps.map(step => {
     const base = { id: step.id, done: step.done };
     if (step.id === 'watchlist') return { ...base, title: T.steps.watchlist.title, sub: T.steps.watchlist.sub(savedCount) };
+    if (step.id === 'progress') {
+      const sub = step.done
+        ? (state?.traktImportDone && !progressDone ? T.steps.progress.traktDoneSub : T.steps.progress.doneSub)
+        : T.steps.progress.sub(show?.title || '');
+      return { ...base, title: T.steps.progress.title, sub, cta: T.steps.progress.cta };
+    }
     if (step.id === 'friends') {
       return { ...base, title: T.steps.friends.title, sub: step.done ? T.steps.friends.doneSub(follows.following) : T.steps.friends.sub, cta: T.steps.friends.cta };
     }
@@ -85,6 +103,9 @@ export default function FinishingTouches() {
         onClose={() => setState(closeFinishingTouches(user.id))}
         onAction={(id) => { track(EVENTS.FINISHING_TOUCH_OPENED, { step: id }); setSheet(id); }}
       />
+      {sheet === 'progress' && show && (
+        <UpToSheet show={show} watching={watching} onClose={closeSheet} />
+      )}
       {sheet === 'friends' && <FriendsSheet userId={user.id} onClose={closeSheet} />}
       {sheet === 'import' && (
         <ResponsiveDialog title={T.importSheet.title} onClose={closeSheet} size="compact">
@@ -204,6 +225,107 @@ function PeopleSheet({ watchlistItems, favourites, onClose }) {
         </ul>
       )}
       {follow.sheet}
+    </ResponsiveDialog>
+  );
+}
+
+/* ── Mark where you're up to: episode list for the first show still on the watchlist ── */
+function UpToSheet({ show, watching, onClose }) {
+  const pick = show;
+  const [details, setDetails] = useState(null);
+  const [failed, setFailed] = useState(false);
+  const [selSeason, setSelSeason] = useState(1);
+  const [seasonLoad, setSeasonLoad] = useState({ season: 0, episodes: null, failed: false });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    tmdb.getTVDetails(pick.id).then(data => {
+      if (!alive) return;
+      if (!data) { setFailed(true); return; }
+      setDetails(data);
+      const first = (data.seasons || []).find(s => s.season_number > 0);
+      if (first) setSelSeason(first.season_number);
+    }).catch(() => { if (alive) setFailed(true); });
+    return () => { alive = false; };
+  }, [pick.id]);
+
+  useEffect(() => {
+    if (!details) return undefined;
+    let alive = true;
+    const season = selSeason;
+    tmdb.getSeason(pick.id, season).then(data => {
+      if (!alive) return;
+      setSeasonLoad({ season, episodes: data?.episodes || [], failed: !data });
+    }).catch(() => { if (alive) setSeasonLoad({ season, episodes: [], failed: true }); });
+    return () => { alive = false; };
+  }, [details, pick.id, selSeason]);
+
+  const episodes = seasonLoad.season === selSeason ? seasonLoad.episodes : null;
+  const epFailed = seasonLoad.season === selSeason && seasonLoad.failed;
+
+  const tick = async (ep) => {
+    if (busy || !episodes) return;
+    setBusy(true);
+    setError('');
+    const item = {
+      id: pick.id,
+      media_type: 'tv',
+      title: details?.name || pick.title,
+      name: details?.name || pick.title,
+      poster_path: details?.poster_path ?? pick.poster_path,
+    };
+    if (!watching?.isWatching(pick.id)) {
+      const started = await watching.startWatching(item);
+      if (!started) { setError(T.steps.progress.saveError); setBusy(false); return; }
+    }
+    const next = pointerAfterEpisode(selSeason, ep.episode_number, episodes.length);
+    if (!next) { setError(T.steps.progress.saveError); setBusy(false); return; }
+    const result = await watching.setProgress(pick.id, next.season, next.episode, { reason: 'episode', undo: true });
+    setBusy(false);
+    if (!result?.ok) { setError(T.steps.progress.saveError); return; }
+    onClose();
+  };
+
+  const seasons = (details?.seasons || []).filter(s => s.season_number > 0);
+  const title = details?.name || pick.title;
+
+  return (
+    <ResponsiveDialog title={T.steps.progress.title} onClose={onClose} size="compact">
+      <p className="ft-sheet-sub">{T.steps.progress.sheetSub(title)}</p>
+      {failed && <p className="ft-sheet-empty">{MEDIA_PANEL.episodesLoadError}</p>}
+      {seasons.length > 1 && (
+        <label className="ft-season">
+          <span className="ft-sheet-h">{MEDIA_PANEL.chooseSeason}</span>
+          <select value={selSeason} onChange={e => setSelSeason(Number(e.target.value))}>
+            {seasons.map(s => <option key={s.season_number} value={s.season_number}>{MEDIA_PANEL.seasonLabel(s.season_number)}</option>)}
+          </select>
+        </label>
+      )}
+      {error && <p className="ft-sheet-empty" role="alert">{error}</p>}
+      {episodes === null && !failed ? <p className="ft-sheet-empty">{COMMON.loading}</p> : null}
+      {episodes && episodes.length === 0 ? (
+        <p className="ft-sheet-empty">{epFailed ? MEDIA_PANEL.episodesLoadError : MEDIA_PANEL.noEpisodesAvailable}</p>
+      ) : null}
+      {episodes && episodes.length > 0 && (
+        <ul className="ft-eps">
+          {episodes.map(ep => (
+            <li key={ep.episode_number}>
+              <button
+                type="button"
+                className="ft-ep"
+                disabled={busy}
+                aria-label={T.steps.progress.tickEpisode(ep.episode_number, ep.name)}
+                onClick={() => tick(ep)}
+              >
+                <b>{`E${String(ep.episode_number).padStart(2, '0')}`}</b>
+                <span>{ep.name || MEDIA_PANEL.seasonEpisode(selSeason, ep.episode_number)}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </ResponsiveDialog>
   );
 }

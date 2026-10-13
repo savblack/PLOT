@@ -237,8 +237,9 @@ export default function OnboardingFlow() {
       await watchlist.addToList(item, { source: 'onboarding' });
     }
     // Home's Finishing touches card starts now (once per account on this device).
+    // "Mark where you're up to" reads the watchlist later, not these picks.
     const key = finishingTouchesKey(user.id);
-    if (!readStorage(key)) writeStorage(key, serialiseFinishingTouches(startFinishingTouches()));
+    if (!readStorage(key)) writeStorage(key, serialiseFinishingTouches(startFinishingTouches(Date.now())));
     if (trackCompletion) {
       // After the picks are on My List, so the email sees the current watchlist.
       await notifyOnboardingCompleted();

@@ -26,6 +26,16 @@ import { isKnownAccountBrowser } from '../utils/accountRecognition.js';
  */
 const posterUrl = (path) => (path ? `https://image.tmdb.org/t/p/w342${path}` : null);
 const yearOf = (t) => (t?.release_date || t?.first_air_date || '').slice(0, 4);
+const serverTitle = (intent) => {
+  const script = document.getElementById('plot-save-title');
+  if (!script) return null;
+  try {
+    const title = JSON.parse(script.textContent || 'null');
+    return title?.id === intent.tmdb_id && title?.type === intent.media_type ? title : null;
+  } catch {
+    return null;
+  }
+};
 
 // Movies show runtime ("2h 35m"); series show season count ("3 seasons") —
 // whichever the TMDB record carries.
@@ -84,10 +94,15 @@ export default function SavePage() {
         return;
       }
       setReturning(isKnownAccountBrowser());
-      // Logged-out: show a preview instead of walling at /login. Resolve the
-      // title at runtime from the id in the link (never hardcoded). A failed
-      // lookup (bad id / rate limit) still shows the generic save preview — the
-      // wall is what we're removing, so we never bounce here.
+      const initialTitle = serverTitle(intent);
+      if (initialTitle) {
+        setTitle(initialTitle);
+        setPhase('preview');
+        return;
+      }
+      // The Pages Function already looked up the title for share metadata.
+      // Fall back to the client lookup when that server lookup failed or this
+      // page was reached through client-side navigation.
       tmdb.getDetails(intent.media_type, intent.tmdb_id)
         .then(({ ok, data }) => setTitle(ok ? data : null))
         .catch(() => {})
@@ -107,7 +122,7 @@ export default function SavePage() {
   }
 
   const name = title?.title || title?.name || null;
-  const year = yearOf(title);
+  const year = title?.year || yearOf(title);
   const poster = posterUrl(title?.poster_path);
   const overview = title?.overview
     ? (title.overview.length > 200 ? `${title.overview.slice(0, 197)}…` : title.overview)

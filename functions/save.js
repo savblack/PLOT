@@ -1,18 +1,20 @@
 // Per-title meta injection for app.theplot.tv/save?media_type=&tmdb_id=
-// Cloudflare Pages Function — port of api/save.js (Node `(req,res)` → Pages
-// `onRequest`). Logic unchanged; only request/response plumbing differs, and
-// the TMDB key comes from env.TMDB_API_KEY instead of process.env.
+// Cloudflare Pages Function. The TMDB key comes from env.TMDB_API_KEY.
 //
 // The /save deep link is where shared title links point (see utils/share.js).
 // Serves the SPA shell but rewrites the OG/Twitter tags for the requested title,
-// with og:image pointing at the title's TMDB backdrop. Humans boot the SPA and the
-// pending-save flow runs; crawlers read the injected per-title tags.
+// with og:image pointing at the title's TMDB backdrop. The same lookup seeds
+// the logged-out preview, so loading /save does not fetch it again from Supabase.
+// Crawlers read the share tags without indexing this action route.
 //
 // Routing: file path functions/save.js → /save (query string passes through).
 import { loadTitle } from './_lib/tmdb.js';
 import { staticCard, STATIC_CARD, TMDB_BACKDROP } from './_lib/og-card.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const safeJson = (value) => JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (char) => ({
+  '<': '\\u003c', '>': '\\u003e', '&': '\\u0026', '\u2028': '\\u2028', '\u2029': '\\u2029',
+}[char]));
 
 export async function onRequest({ request, env }) {
   const host = request.headers.get('host') || 'app.theplot.tv';
@@ -65,6 +67,8 @@ export async function onRequest({ request, env }) {
       `<meta name="twitter:title" content="${esc(ogTitle)}"/>` +
       `<meta name="twitter:description" content="${esc(desc)}"/>` +
       `<meta name="twitter:image" content="${esc(image)}"/>` +
+      `<meta name="robots" content="noindex, nofollow"/>` +
+      `<script type="application/json" id="plot-save-title">${safeJson(title)}</script>` +
       `<title>${esc(ogTitle)}</title>`;
 
     html = html
@@ -80,6 +84,7 @@ export async function onRequest({ request, env }) {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      'X-Robots-Tag': 'noindex, nofollow',
     },
   });
 }

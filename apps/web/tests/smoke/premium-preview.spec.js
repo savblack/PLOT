@@ -19,7 +19,7 @@ for (const width of [390, 1440]) {
       if (request.url().includes('stripe-billing')) billingRequests.push(request.url());
     });
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto('/plans');
+    await page.goto('/pricing');
     await expect(page.getByRole('heading', { name: 'Less deciding. More watching.' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Compare every feature' })).toBeVisible();
     await expect(page.getByText('Features marked Coming soon are still on the way.', { exact: true })).toBeVisible();
@@ -62,9 +62,9 @@ for (const width of [390, 1440]) {
     await expect(page).toHaveURL(/\/signup\?intent=premium&plan=yearly/);
     expect(billingRequests).toEqual([]);
 
-    await page.goto('/plans?from=%2Fsettings%3Fsection%3Dbilling');
+    await page.goto('/pricing?from=%2Fsettings%3Fsection%3Dbilling');
     await expect(page.getByRole('link', { name: 'Back to plot' })).toHaveAttribute('href', '/settings?section=billing');
-    await page.goto('/plans?from=%2Fterms');
+    await page.goto('/pricing?from=%2Fterms');
     await page.getByRole('link', { name: 'Back to plot' }).click();
     await expect(page).toHaveURL(/\/terms/);
   });
@@ -76,7 +76,7 @@ for (const width of [390, 1440]) {
       if (request.method() === 'POST' && request.url().includes('stripe-billing')) checkoutPosts.push(request.url());
     });
     await mockCheckoutAvailability(page, false);
-    await page.goto('/plans');
+    await page.goto('/pricing');
     await expect(page.getByRole('link', { name: PLANS_PAGE.waitlistAction })).toBeVisible();
     await expect(page.getByRole('link', { name: PLANS_PAGE.waitlistAction })).toHaveAttribute('href', /mailto:contact@theplot.tv/);
     await expect(page.getByText(PLANS_PAGE.checkoutClosedDetail)).toBeVisible();

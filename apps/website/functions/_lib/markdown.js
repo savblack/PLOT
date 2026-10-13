@@ -1,10 +1,8 @@
-// Pricing isn't public yet (SHOW_PRICING_PAGE, see _middleware.js) — don't
-// advertise the Plans page to AI crawlers while it 302s for everyone else.
-function homepageMarkdown(showPricingPage) {
+function homepageMarkdown() {
   const moreInfo = [
     '- [About plot](https://theplot.tv/about)',
     '- [Changelog](https://theplot.tv/changelog)',
-    ...(showPricingPage ? ['- [Plans](https://theplot.tv/plans)'] : []),
+    '- [Pricing](https://theplot.tv/pricing)',
     '- [Privacy policy](https://theplot.tv/privacy)',
     '- [Terms of service](https://theplot.tv/terms)',
   ].join('\n');
@@ -43,15 +41,12 @@ export function acceptsMarkdown(request) {
     });
 }
 
-/**
- * @param {Request} request
- * @param {{ SHOW_PRICING_PAGE?: string }} [env]
- */
-export function homepageMarkdownResponse(request, env) {
+/** @param {Request} request */
+export function homepageMarkdownResponse(request) {
   const headers = new Headers({
     'Content-Type': 'text/markdown; charset=utf-8',
     'Vary': 'Accept',
   });
-  const body = request.method === 'HEAD' ? null : homepageMarkdown(env?.SHOW_PRICING_PAGE === 'true');
+  const body = request.method === 'HEAD' ? null : homepageMarkdown();
   return new Response(body, { headers });
 }
