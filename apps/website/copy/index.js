@@ -39,10 +39,18 @@ export const MEMORIES = {
   note: 'Free forever. No credit card required.',
   privateNoteLabel: 'Private note',
   // Sample diary content on the cards (illustrative, not a real user's).
+  // Three diary states: rating only, rating + review, and review + private note.
+  // The private note cycles through privateNotes on the site.
   cards: [
-    { title: 'Severance', date: 'Apr 2', review: 'Watched the finale twice.' },
-    { title: 'Perfect Days', date: 'Sep 14', review: 'Still thinking about it.', privateNote: 'Reminder to notice the light more.' },
-    { title: 'The Bear', date: 'Jul 3', review: 'Made me want to cook.' },
+    { title: 'Severance', date: 'Apr 2', rating: 5 },
+    { title: 'Perfect Days', date: 'Sep 14', rating: 5, review: 'Still thinking about it.' },
+    { title: 'The Bear', date: 'Jul 3', rating: 2, review: 'Too stressful for me.' },
+  ],
+  privateNotes: [
+    'Reminder to notice the light more.',
+    'Bf’s favorite. Now mine too.',
+    'Mom cried. Then I did.',
+    'Watched alone. Didn’t feel alone.',
   ],
 };
 

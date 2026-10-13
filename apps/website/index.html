@@ -519,9 +519,11 @@
       border-radius: 3.6cqw;
       box-shadow: 0 18px 40px rgba(41,41,36,0.16), 0 2px 6px rgba(41,41,36,0.06);
       font-size: 2.8cqw;
+      transform: translate(var(--tx, 0px), var(--ty, 0px)) rotate(var(--r, 0deg)) scale(var(--s, 1));
+      transition: transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1.25), box-shadow 220ms ease;
     }
-    .mem-card--a { left: 0; top: 14cqw; transform: rotate(-7deg); }
-    .mem-card--c { left: 56.8cqw; top: 19.2cqw; transform: rotate(6deg); }
+    .mem-card--a { left: 0; top: 14cqw; --r: -7deg; }
+    .mem-card--c { left: 56.8cqw; top: 19.2cqw; --r: 6deg; }
     .mem-card--b { left: 26.8cqw; top: 0; width: 50.4cqw; z-index: 1; font-size: 3.2cqw; }
     .mem-poster { position: relative; }
     .mem-poster img {
@@ -578,6 +580,32 @@
       color: var(--text-secondary);
     }
     .mem-private-label svg { width: 1em; height: 1em; }
+    /* The private note cycles through a few examples, one every 4s. */
+    .mem-notes { display: grid; }
+    .mem-notes > span { grid-area: 1 / 1; opacity: 0; animation: mem-note 16s infinite; }
+    .mem-notes > span:nth-child(2) { animation-delay: 4s; }
+    .mem-notes > span:nth-child(3) { animation-delay: 8s; }
+    .mem-notes > span:nth-child(4) { animation-delay: 12s; }
+    @keyframes mem-note {
+      0% { opacity: 0; transform: translateY(4px); }
+      3%, 22% { opacity: 1; transform: none; }
+      25%, 100% { opacity: 0; transform: translateY(-4px); }
+    }
+    /* Hover lifts a card to the front and nudges the others apart. */
+    @media (hover: hover) and (pointer: fine) {
+      .mem-diary:hover .mem-card--a:not(:hover) { --tx: -2.4cqw; --r: -9deg; }
+      .mem-diary:hover .mem-card--c:not(:hover) { --tx: 2.4cqw; --r: 8deg; }
+      .mem-card:hover {
+        --ty: -2.4cqw; --r: 0deg; --s: 1.04;
+        z-index: 2;
+        box-shadow: 0 28px 60px rgba(41,41,36,0.22), 0 4px 10px rgba(41,41,36,0.08);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mem-card { transition: none; }
+      .mem-notes > span { animation: none; }
+      .mem-notes > span:first-child { opacity: 1; }
+    }
 
     .tl-mbreak { display: none; }
 
@@ -1840,19 +1868,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <div class="mem-diary reveal" aria-hidden="true">
         <figure class="mem-card mem-card--a">
-          <div class="mem-poster"><img src="https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async" width="342" height="513"><span class="mem-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/></svg></span></div>
+          <div class="mem-poster"><img src="https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async" width="342" height="513"></div>
           <figcaption>
             <span class="mem-card-head"><span class="mem-card-title">Severance</span><span class="mem-card-date">Apr 2</span></span>
             <span class="mem-stars">★★★★★</span>
-            <span class="mem-review">“Watched the finale twice.”</span>
           </figcaption>
         </figure>
         <figure class="mem-card mem-card--c">
           <div class="mem-poster"><img src="https://image.tmdb.org/t/p/w342/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg" alt="" loading="lazy" decoding="async" width="342" height="513"><span class="mem-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/></svg></span></div>
           <figcaption>
             <span class="mem-card-head"><span class="mem-card-title">The Bear</span><span class="mem-card-date">Jul 3</span></span>
-            <span class="mem-stars">★★★★<span>★</span></span>
-            <span class="mem-review">“Made me want to cook.”</span>
+            <span class="mem-stars">★★<span>★★★</span></span>
+            <span class="mem-review">“Too stressful for me.”</span>
           </figcaption>
         </figure>
         <figure class="mem-card mem-card--b">
@@ -1861,7 +1888,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <span class="mem-card-head"><span class="mem-card-title">Perfect Days</span><span class="mem-card-date">Sep 14</span></span>
             <span class="mem-stars">★★★★★</span>
             <span class="mem-review">“Still thinking about it.”</span>
-            <span class="mem-private"><span class="mem-private-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Private note</span>Reminder to notice the light more.</span>
+            <span class="mem-private"><span class="mem-private-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Private note</span><span class="mem-notes"><span>Reminder to notice the light more.</span><span>Bf’s favorite. Now mine too.</span><span>Mom cried. Then I did.</span><span>Watched alone. Didn’t feel alone.</span></span></span>
           </figcaption>
         </figure>
       </div>
