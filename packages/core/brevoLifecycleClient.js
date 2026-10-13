@@ -23,7 +23,7 @@ async function quiet(label, run) {
 /**
  * After the first time onboarding saves its watchlist picks. Callers gate
  * this with shouldTrackOnboardingCompleted. A second pass through setup
- * must not call it. The RPC flags the account so the hourly job can still
+ * must not call it. The RPC flags the account so the nightly job can still
  * send if this call never reaches the function. The function itself sends
  * onboarding_completed, and will not send it again once the claim is taken.
  */
@@ -46,7 +46,7 @@ export function touchLastSeen() {
   });
 }
 
-/** A finished import. The hourly job copies IMPORTED onto the Brevo contact. */
+/** A finished import. The nightly job copies IMPORTED onto the Brevo contact. */
 export function markBrevoImported() {
   return quiet('import flag', async () => {
     const { error } = await supabase.rpc('mark_brevo_imported');

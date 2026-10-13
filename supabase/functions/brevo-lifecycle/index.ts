@@ -6,10 +6,10 @@
  *   Contact attributes on that call are the welcome snapshot (current watchlist,
  *   not the raw onboarding picks).
  *
- * Service-role POST (pg_cron, hourly)
+ * Service-role POST (pg_cron, daily at 03:17 UTC)
  *   Notes recent sign-ins, retries pending onboarding events, then pushes
  *   TRACK_COUNT, LAST_TRACK_AT, LAST_SEEN_AT, IMPORTED, and the current
- *   watchlist slots for contacts that have been dirty for an hour.
+ *   watchlist slots for every contact flagged dirty since the last run.
  *   This path never sends onboarding_completed for an account the client
  *   did not flag. That is what keeps the existing base out of the automation.
  *
@@ -34,8 +34,9 @@ import {
 } from '../../../packages/core/brevoLifecycle.js';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const EVENT_BATCH = 20;
-const ATTRIBUTE_BATCH = 40;
+// One run a day has to drain the whole day's activity.
+const EVENT_BATCH = 100;
+const ATTRIBUTE_BATCH = 400;
 const HOUR_MS = 60 * 60 * 1000;
 
 // The new table and RPCs are not in the generated Database types until the

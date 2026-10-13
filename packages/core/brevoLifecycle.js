@@ -185,7 +185,7 @@ export function watchlistContactAttributes(titles) {
 }
 
 /**
- * Contact attributes the hourly sync writes. Dates are omitted when unknown
+ * Contact attributes the nightly sync writes. Dates are omitted when unknown
  * so a later sync does not blank a value Brevo already has.
  * @param {{ trackCount?: number, lastTrackAt?: string | null, lastSeenAt?: unknown, imported?: boolean, titles?: Array<{ name?: string, poster_path?: string | null, tmdbId?: number, mediaType?: string }> }} input
  */
