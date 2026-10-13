@@ -9,10 +9,20 @@
 // differs per platform, so like sectionOpenState.js this module owns only the
 // key and the encoding; web reads localStorage, mobile reads AsyncStorage.
 
-/** @typedef {'watchlist' | 'friends' | 'import' | 'people'} FinishingTouchId */
+/** @typedef {'watchlist' | 'progress' | 'friends' | 'import' | 'people'} FinishingTouchId */
+
+/**
+ * A show on the current watchlist. The id has to have come from a TMDB
+ * response the caller already holds.
+ * @typedef {object} WatchlistShow
+ * @property {number} id
+ * @property {'tv'} media_type
+ * @property {string} title
+ * @property {string | null} poster_path
+ */
 
 /** Order matters: it is the order on the card and in the progress bar. */
-export const FINISHING_TOUCH_IDS = /** @type {const} */ (['watchlist', 'friends', 'import', 'people']);
+export const FINISHING_TOUCH_IDS = /** @type {const} */ (['watchlist', 'progress', 'friends', 'import', 'people']);
 
 /** How long "Hide for now" hides the card. */
 export const HIDE_DAYS = 7;
@@ -26,6 +36,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * @property {number} startedAt     ms epoch, when onboarding finished
  * @property {number} [hiddenUntil] ms epoch, set by "Hide for now"
  * @property {boolean} [importDone] an import finished on this device
+ * @property {boolean} [traktImportDone] a Trakt import wrote at least one history row on this device
  * @property {boolean} [closed]     dismissed for good after the all-done moment
  */
 
@@ -53,6 +64,7 @@ export function parseFinishingTouches(value) {
       startedAt: parsed.startedAt,
       hiddenUntil: typeof parsed.hiddenUntil === 'number' ? parsed.hiddenUntil : undefined,
       importDone: parsed.importDone === true,
+      ...(parsed.traktImportDone === true ? { traktImportDone: true } : {}),
       closed: parsed.closed === true,
     };
   } catch {
@@ -69,11 +81,55 @@ export function serialiseFinishingTouches(state) {
 }
 
 /**
+ * The first show in the watchlist the caller passes. Movies are skipped.
+ * Onboarding picks are not used: people delete those, and the list they
+ * still have is the one to open. No show means the progress step stays off
+ * the card. This does not look up a TMDB id.
+ *
+ * @param {unknown} items
+ * @returns {WatchlistShow | null}
+ */
+export function firstWatchlistShow(items) {
+  if (!Array.isArray(items)) return null;
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue;
+    const row = /** @type {{ id?: unknown, tmdb_id?: unknown, media_type?: unknown, title?: unknown, name?: unknown, poster_path?: unknown }} */ (item);
+    const id = Number(row.tmdb_id ?? row.id);
+    if (row.media_type !== 'tv' || !Number.isInteger(id) || id < 1) continue;
+    const rawTitle = typeof row.title === 'string' ? row.title : typeof row.name === 'string' ? row.name : '';
+    return {
+      id,
+      media_type: 'tv',
+      title: rawTitle.slice(0, 200),
+      poster_path: typeof row.poster_path === 'string' ? row.poster_path : null,
+    };
+  }
+  return null;
+}
+
+/**
  * @param {number} [now]
  * @returns {FinishingTouchesState}
  */
 export function startFinishingTouches(now = Date.now()) {
   return { startedAt: now };
+}
+
+/**
+ * An import finished, so the history step is done. A Trakt import, account
+ * or export file, also completes "where you're up to" when it wrote at least
+ * one history row. A finished import that added nothing does not.
+ *
+ * @param {FinishingTouchesState} state
+ * @param {string | null | undefined} source
+ * @param {number | null | undefined} [importedCount] rows written. Missing
+ *   counts as none, so the progress step stays open.
+ * @returns {FinishingTouchesState}
+ */
+export function noteImportFinished(state, source, importedCount) {
+  const trakt = source === 'trakt' || source === 'trakt-export';
+  const wrote = Number(importedCount) > 0;
+  return { ...state, importDone: true, ...(trakt && wrote ? { traktImportDone: true } : {}) };
 }
 
 /**
@@ -91,6 +147,12 @@ export function hideFinishingTouches(state, now = Date.now()) {
  * @property {number} followingCount accounts followed (accepted or requested)
  * @property {boolean} importDone    an import finished
  * @property {number} peopleCount    actors and directors followed
+ * @property {boolean} [progressDone] a show was marked watched, watching
+ *   started, or an episode was ticked. The watchlist save from onboarding
+ *   does not count.
+ * @property {boolean} [traktImportDone] a Trakt import wrote at least one history row
+ * @property {boolean} [showProgress] false hides the step when the watchlist
+ *   has no show
  */
 
 /**
@@ -103,15 +165,17 @@ export function hideFinishingTouches(state, now = Date.now()) {
  * @param {FinishingTouchSignals} signals
  * @returns {{ steps: FinishingTouchStep[], doneCount: number, total: number, allDone: boolean }}
  */
-export function deriveFinishingTouches({ savedCount = 0, followingCount = 0, importDone = false, peopleCount = 0 }) {
+export function deriveFinishingTouches({ savedCount = 0, followingCount = 0, importDone = false, peopleCount = 0, progressDone = false, traktImportDone = false, showProgress = true }) {
   /** @type {Record<FinishingTouchId, boolean>} */
   const done = {
     watchlist: savedCount > 0,
+    progress: progressDone === true || traktImportDone === true,
     friends: followingCount > 0,
     import: importDone === true,
     people: peopleCount > 0,
   };
-  const steps = FINISHING_TOUCH_IDS.map(id => ({ id, done: done[id] }));
+  const ids = showProgress ? FINISHING_TOUCH_IDS : FINISHING_TOUCH_IDS.filter(id => id !== 'progress');
+  const steps = ids.map(id => ({ id, done: done[id] }));
   const doneCount = steps.filter(s => s.done).length;
   return { steps, doneCount, total: steps.length, allDone: doneCount === steps.length };
 }

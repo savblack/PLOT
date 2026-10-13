@@ -23,6 +23,27 @@ export function getSeasonWatchState({
   return { episodeCount, watchedCount, isComplete: watchedCount >= episodeCount };
 }
 
+/**
+ * Where the pointer goes after the person ticks episode N as the last one
+ * they have seen. The last episode of a season lands on the next season's
+ * first episode, the same move the episode guide makes.
+ *
+ * @param {number} season
+ * @param {number} episodeNumber
+ * @param {number} episodeCount
+ * @returns {{ season: number, episode: number } | null}
+ */
+export function pointerAfterEpisode(season, episodeNumber, episodeCount) {
+  const seasonNum = Number(season);
+  const episode = Number(episodeNumber);
+  const count = Number(episodeCount);
+  if (!Number.isInteger(seasonNum) || seasonNum < 1) return null;
+  if (!Number.isInteger(episode) || episode < 1 || episode > count) return null;
+  if (!Number.isInteger(count) || count < 1) return null;
+  if (episode < count) return { season: seasonNum, episode: episode + 1 };
+  return { season: seasonNum + 1, episode: 1 };
+}
+
 /* Where the pointer lands when the season-level control is used. Marking rolls
    past the season; unmarking rewinds to its first episode. */
 /* Is this pointer write a rewind?

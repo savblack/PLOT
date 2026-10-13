@@ -180,7 +180,7 @@ export const EVENTS = Object.freeze({
   // Carries `reason`, an IMPORT_FAILURE_REASONS slug, never a parser message.
   IMPORT_FAILED: 'import_failed',
   // Home's first-run Finishing touches card: a step's action was opened
-  // (`step`: friends | import | people), or the card was hidden for now.
+  // (`step`: progress | friends | import | people), or the card was hidden for now.
   FINISHING_TOUCH_OPENED: 'finishing_touch_opened',
   FINISHING_TOUCHES_HIDDEN: 'finishing_touches_hidden',
   // Marketing email consent. `source` distinguishes the Settings toggle from the

@@ -7,7 +7,7 @@ import { acceptsMarkdown, homepageMarkdownResponse } from './_lib/markdown.js';
 import { vanityTarget } from './_lib/vanity.js';
 
 export async function onRequest(context) {
-  const { request, env } = context;
+  const { request } = context;
   const url = new URL(request.url);
   const host = url.hostname;
   if (host === 'admin.theplot.tv') {
@@ -33,16 +33,12 @@ export async function onRequest(context) {
   // attributable. See _lib/vanity.js.
   const vanity = vanityTarget(url);
   if (vanity) return Response.redirect(vanity, 302);
-  // Pricing isn't public yet. Redirect rather than 404 so an old bookmark or
-  // shared link lands somewhere real. Flip SHOW_PRICING_PAGE=true (Cloudflare
-  // Pages env var) to bring it back — no code change needed.
-  // Cloudflare Pages' html_handling serves plans.html at both /plans and
-  // /plans.html, so gate both paths (gating only .html left /plans live).
-  if (
-    (url.pathname === '/plans' || url.pathname === '/plans.html')
-    && env.SHOW_PRICING_PAGE !== 'true'
-  ) {
-    return Response.redirect(new URL('/', url), 302);
+  // The pricing page lives at /pricing. It was /plans while it was hidden
+  // behind SHOW_PRICING_PAGE; old links and bookmarks move permanently, keeping
+  // any query (utm_*, ?from=) they carried.
+  if (url.pathname === '/plans' || url.pathname === '/plans.html') {
+    url.pathname = '/pricing';
+    return Response.redirect(url, 301);
   }
   // Collapse the trailing-slash variant so /whats-on and /whats-on/ don't
   // compete as duplicates (both previously returned 200 with the same body).
@@ -51,7 +47,7 @@ export async function onRequest(context) {
     return Response.redirect(url, 301);
   }
   if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/' && acceptsMarkdown(request)) {
-    return homepageMarkdownResponse(request, env);
+    return homepageMarkdownResponse(request);
   }
   return context.next();
 }

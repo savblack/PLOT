@@ -144,6 +144,16 @@ test('the latest definition wins, and a drop removes the function entirely', () 
   assert.deepEqual(codes(run(latest, ['search_users'], [])), ['unknown']);
 });
 
+test('a private schema prefix is not parsed as the function name', () => {
+  const [stmt] = extractFunctionStatements(`
+create or replace function private.not_blocked(p_uid uuid)
+returns boolean language sql as $function$
+  select true
+$function$;`);
+  assert.equal(stmt.name, 'not_blocked');
+  assert.match(stmt.body, /select true/);
+});
+
 test('a $$ inside a $function$ body does not end it early', () => {
   const [stmt] = extractFunctionStatements(`
 create or replace function public.get_profile_card(p_username text)

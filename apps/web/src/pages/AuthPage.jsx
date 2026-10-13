@@ -140,9 +140,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Fires once per visit, on the first keystroke in either field — never the
-  // value itself. Distinguishes "opened the form but never engaged" from
-  // "engaged but abandoned before submitting."
+  // Fires once per visit, the first time someone actually starts signup.
+  // Keystrokes cover the email form. Google, Apple, magic link, and a
+  // submit that autofill never reported as a change used to skip it.
   const markFormStarted = () => {
     if (mode === 'signup' && !formStarted) {
       setFormStarted(true);
@@ -283,6 +283,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    if (mode === 'signup') markFormStarted();
 
     // Prefer the live input values over React state. Password managers often
     // fill the DOM without firing onChange; with `noValidate` on the form,
@@ -480,6 +481,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     // /authorize calls inside four seconds from a single tap-happy device.
     if (oauthStartingRef.current) return;
     oauthStartingRef.current = true;
+    if (mode === 'signup') markFormStarted();
     // Cancels a password submit that is still inside the captcha wait.
     beginAuthAttempt();
     setLoading(true);
@@ -513,6 +515,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Passwordless: email a one-time sign-in link. Works for new and returning
   // users alike; the callback completes auth and reports the method.
   const sendMagicLink = async () => {
+    if (mode === 'signup') markFormStarted();
     // Same autofill caveat as handleSubmit — read the live email field.
     const emailEl = document.getElementById('auth-email');
     const submittedEmail = (
