@@ -101,5 +101,5 @@ export const PLANS_PAGE = {
     ],
   },
 
-  fineprint: 'Prices are in US dollars and include tax. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? contact@theplot.tv',
+  fineprint: 'Prices are in US dollars and include tax. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? support@theplot.tv',
 };

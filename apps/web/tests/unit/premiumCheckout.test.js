@@ -33,6 +33,6 @@ test('a closed checkout and a billing outage are not the generic retry line', ()
 
 test('the waitlist mailto does not include a payment link', () => {
   const href = waitlistMailto('Plot Premium waitlist');
-  assert.equal(href, 'mailto:contact@theplot.tv?subject=Plot%20Premium%20waitlist');
+  assert.equal(href, 'mailto:support@theplot.tv?subject=Plot%20Premium%20waitlist');
   assert.equal(href.includes('stripe'), false);
 });

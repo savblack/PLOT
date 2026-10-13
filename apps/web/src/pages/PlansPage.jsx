@@ -255,7 +255,7 @@ export default function PlansPage() {
             <p>{PLANS_PAGE.requests.description}</p>
           </div>
           <div className="plans-request-action">
-            <a className="btn btn-primary" href={`mailto:contact@theplot.tv?subject=${encodeURIComponent(PLANS_PAGE.requests.subject)}`}>
+            <a className="btn btn-primary" href={`mailto:support@theplot.tv?subject=${encodeURIComponent(PLANS_PAGE.requests.subject)}`}>
               {PLANS_PAGE.requests.action} <span aria-hidden="true">↗</span>
             </a>
             <p>{PLANS_PAGE.requests.hint}</p>
