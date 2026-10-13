@@ -186,9 +186,11 @@ sandbox_restore_prod() {
   local prod_url="$1"
   PLOT_DB_CONNINFO="$prod_url" node scripts/write-pg-service.mjs \
     "$SANDBOX_WORK/prod_service.conf" plot_production
+  # private holds the RLS helpers (20261012150000). Policies in public call
+  # them by name, and pg_restore drops those policies when the schema is absent.
   PGSERVICEFILE="$SANDBOX_WORK/prod_service.conf" PGSERVICE=plot_production \
   pg_dump -Fc --no-owner --no-privileges \
-    -n public -n auth -n storage -n supabase_migrations \
+    -n public -n private -n auth -n storage -n supabase_migrations \
     2>"$SANDBOX_WORK/dump.err" \
   | pg_restore --no-owner --no-privileges -d "$SANDBOX_URL" 2>"$SANDBOX_WORK/restore.err"
   echo "restored from Production (dump stderr: $(wc -l < "$SANDBOX_WORK/dump.err") lines, restore stderr: $(wc -l < "$SANDBOX_WORK/restore.err") lines)"

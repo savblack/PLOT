@@ -104,7 +104,7 @@ first and confirm the blast radius.
 
 ```sh
 pg_restore --clean --if-exists --no-owner --no-privileges \
-  -n public -n auth -n storage -d "$SUPABASE_DB_URL" plot.dump
+  -n public -n private -n auth -n storage -d "$SUPABASE_DB_URL" plot.dump
 ```
 
 ## Notes
