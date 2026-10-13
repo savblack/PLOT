@@ -6,7 +6,7 @@
 
 import { NAV, FOOTER, EMAIL_FORM } from '../copy/common.js';
 import {
-  META, HERO, MANIFESTO, GUIDE_DEMO, TIMELINE, CALENDAR_DEMO, LISTS_DEMO, APP_SOON, TICKER, WHATS_ON_CTA,
+  META, HERO, MEMORIES, GUIDE_DEMO, TIMELINE, CALENDAR_DEMO, LISTS_DEMO, APP_SOON, TICKER, WHATS_ON_CTA,
 } from '../copy/index.js';
 import { ABOUT_PAGE } from '../copy/about.js';
 import { CHANGELOG_PAGE } from '../copy/changelog.js';
@@ -25,7 +25,7 @@ const MODULES = {
   'common.emailForm': EMAIL_FORM,
   'index.meta': META,
   'index.hero': HERO,
-  'index.manifesto': MANIFESTO,
+  'index.memories': MEMORIES,
   'index.guideDemo': GUIDE_DEMO,
   'index.timeline': TIMELINE,
   'index.calendarDemo': CALENDAR_DEMO,
