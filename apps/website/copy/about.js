@@ -122,7 +122,7 @@ export const ABOUT_PAGE = {
       id: "glance",
       heading: "plot, at a glance",
       facts: [
-        { term: "What it is", detail: "A journal for movies and TV. What you watched, how it felt, and what's next." },
+        { term: "What it is", detail: "Your whole watching life in one place. A journal for how it felt, a watchlist with a memory, a calendar for what's coming, a guide to what's on, and a way to share it with the people you watch with." },
         { term: "Who it's for", detail: "People who love movies and TV and don't need a word for it." },
         { term: "What it costs", detail: "Nothing. Premium is US$3/month or US$24/year, with the first 7 days free." },
         { term: "Where it runs", detail: "Any browser, at app.theplot.tv. iPhone and Android are coming." },
