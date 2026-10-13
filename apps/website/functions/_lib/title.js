@@ -51,14 +51,23 @@ export async function titlePage(request, type, slug, waitUntil) {
     } catch { /* a cache fault falls through to the Edge Function */ }
   }
 
+  // One retry on a 5xx or a network fault. Crawls hit brief upstream 503s
+  // (a cold or busy Edge Function) that a second request a moment later does
+  // not; a crawler that sees the 503 backs off from the whole site.
+  const get = () => fetch(`${UPSTREAM}?${params.toString()}`, {
+    redirect: 'manual', // pass the function's canonical 301 through to the browser
+    headers: { accept: 'text/html', ...AUTH_HEADERS },
+  });
   let upstream;
   try {
-    upstream = await fetch(`${UPSTREAM}?${params.toString()}`, {
-      redirect: 'manual', // pass the function's canonical 301 through to the browser
-      headers: { accept: 'text/html', ...AUTH_HEADERS },
-    });
-  } catch {
-    return htmlError(502, FALLBACK);
+    upstream = await get();
+  } catch { /* retried below */ }
+  if (!upstream || upstream.status >= 500) {
+    try {
+      upstream = await get();
+    } catch {
+      return htmlError(502, FALLBACK);
+    }
   }
 
   let response;

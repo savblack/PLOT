@@ -17,8 +17,10 @@
  * Public function: verify_jwt = false in supabase/config.toml.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import type { Database } from '../_shared/database.types.ts';
 import { FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { clampDescription, fitTitle } from '../_shared/seoText.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -70,7 +72,7 @@ ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${SITE}/_partials/footer.css">
-<link rel="stylesheet" href="${SITE}/title-page.css?v=60b888083620">
+<link rel="stylesheet" href="${SITE}/title-page.css?v=017f036845b7">
 <script defer src="${SITE}/title-page.js?v=37a1a8165a48"></script>
 </head>
 <body>
@@ -133,11 +135,14 @@ type SitemapTitle = {
 // feeds. Fetching the live feeds here means newly popular and newly released
 // titles become crawlable within the sitemap's one-day cache window, without
 // hardcoding opaque TMDB IDs or creating thin duplicate pages.
+const admin = () => createClient<Database>(Deno.env.get('SUPABASE_URL')!, serviceKey());
+
+// A sitemap file may hold 50,000 URLs; leave room for the seeded sources.
+const INDEX_LIMIT = 45000;
+const INDEX_PAGE = 1000; // PostgREST's default max rows per request
+
 async function titlesSitemap(): Promise<Response> {
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    serviceKey(),
-  );
+  const supabase = admin();
   const urls = new Map<string, string>(); // "type:id" -> loc (dedupes)
   const add = (mt: unknown, rawId: unknown, t: unknown) => {
     const id = Number(rawId);
@@ -158,7 +163,20 @@ async function titlesSitemap(): Promise<Response> {
     .select('items')
     .order('snapshot_date', { ascending: false })
     .limit(1);
-  for (const it of (snaps?.[0]?.items || [])) add((it as any).media_type, (it as any).tmdb_id, (it as any).title);
+  for (const it of ((snaps?.[0]?.items as unknown[] | null) || [])) add((it as any).media_type, (it as any).tmdb_id, (it as any).title);
+
+  // Every title a title page has rendered or linked to, most recently seen
+  // first (see recordTitles below and migration 20261013180000).
+  for (let from = 0; from < INDEX_LIMIT; from += INDEX_PAGE) {
+    const { data: seen, error } = await supabase
+      .from('title_page_index')
+      .select('media_type, tmdb_id, title')
+      .order('last_seen_at', { ascending: false })
+      .range(from, from + INDEX_PAGE - 1);
+    if (error || !seen?.length) break;
+    for (const t of seen) add(t.media_type, t.tmdb_id, t.title);
+    if (seen.length < INDEX_PAGE) break;
+  }
 
   const key = Deno.env.get('TMDB_API_KEY');
   if (key) {
@@ -203,6 +221,24 @@ ${[...urls.values()].map((loc) => `<url><loc>${esc(loc)}</loc><changefreq>weekly
       'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
     },
   });
+}
+
+type IndexedTitle = { media_type: 'movie' | 'tv'; tmdb_id: number; title: string };
+
+// Remember a rendered page and the related titles it links, so the sitemap
+// names the pages crawlers reach through "More like this". Only runs on a
+// cache miss (the Pages proxy keeps a page for a day), and never holds up the
+// response: a failed write just means the sitemap learns of it next time.
+function recordTitles(rows: IndexedTitle[]) {
+  // One upsert may not touch the same key twice, so drop repeats first.
+  const unique = [...new Map(rows.map((r) => [`${r.media_type}:${r.tmdb_id}`, r])).values()];
+  const seenAt = new Date().toISOString();
+  const write = Promise.resolve(admin()
+    .from('title_page_index')
+    .upsert(unique.map((r) => ({ ...r, last_seen_at: seenAt })), { onConflict: 'media_type,tmdb_id' })
+    .then(() => {}, () => {}));
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+  if (runtime) runtime.waitUntil(write);
 }
 
 Deno.serve(async (req) => {
@@ -286,14 +322,15 @@ Deno.serve(async (req) => {
   const saveHref = `${APP}/save?media_type=${type}&tmdb_id=${id}&src=title_page`;
   // A real control now that the Pages proxy forwards ?r= (it used to build the
   // region from Cloudflare geo alone, so this could only ever be a label).
-  // <details> so it works with no JavaScript; rel="nofollow" keeps a crawler out
-  // of eighteen near-duplicate variants of every title, and each one canonicalises
-  // back to the clean URL anyway.
+  // <details> so it works with no JavaScript. The choices are submit buttons in
+  // a GET form, not links: crawlers follow links, nofollow or not, and eighteen
+  // ?r= links per title had audits counting thousands of near-duplicate,
+  // nofollow-only pages. A form lands the reader on the same ?r= URL.
   const regionPill = `<details class="region">
     <summary>${esc(regionName(region))}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
-    <div class="region-menu">${Object.keys(REGION_NAMES).map((code) =>
-      `<a href="${esc(canonicalUrl)}?r=${code}" rel="nofollow"${code === region ? ' aria-current="true"' : ''}>${esc(regionName(code))}</a>`
-    ).join('')}</div>
+    <form class="region-menu" method="get" action="${esc(canonicalUrl)}">${Object.keys(REGION_NAMES).map((code) =>
+      `<button type="submit" name="r" value="${code}"${code === region ? ' aria-current="true"' : ''}>${esc(regionName(code))}</button>`
+    ).join('')}</form>
   </details>`;
 
   // The card answers the question the page was found for, so it comes first and
@@ -399,8 +436,19 @@ Deno.serve(async (req) => {
     : inCinemas
       ? `${title}${yr ? ` (${yr})` : ''} is showing in cinemas in ${regionName(region)}. Track it on plot to know when it starts streaming.`
       : `Find where to watch ${title}${yr ? ` (${yr})` : ''} in ${regionName(region)} and track when it becomes available to stream, rent or buy.`;
-  const desc = `${availabilityDescription}${overview ? ` ${overview}` : ''}`.slice(0, 300);
-  const metaTitle = `${title}${yr ? ` (${yr})` : ''}: where to watch in ${regionName(region)} · plot`;
+  // Overview pads the availability line past the "too short" mark; a title
+  // with no overview gets a sentence about tracking it instead.
+  const desc = clampDescription(`${availabilityDescription} ${overview || 'Get an alert on Plot the day it lands.'}`);
+  // No region in the title. The page is one canonical URL whatever the reader's
+  // country, so a geo-dependent title gave every crawler location a different
+  // one; it also pushed most titles past 60 characters.
+  const yrPart = yr ? ` (${yr})` : '';
+  const metaTitle = fitTitle([
+    `${title}${yrPart}: where to watch · plot`,
+    `Where to watch ${title}${yrPart}`,
+    `Where to watch ${title}`,
+    title,
+  ]);
   const actors = (data.credits?.cast || []).slice(0, 8)
     .filter((person: any) => person.name)
     .map((person: any) => ({ '@type': 'Person', name: person.name }));
@@ -472,6 +520,15 @@ ${watchHtml}
 ${castHtml}
 ${relHtml}
 `;
+
+  recordTitles([
+    { media_type: type, tmdb_id: id, title },
+    ...recs.map((r: any): IndexedTitle => ({
+      media_type: r.media_type === 'tv' || (!r.media_type && !isMovie) ? 'tv' : 'movie',
+      tmdb_id: r.id,
+      title: r.title || r.name || 'Untitled',
+    })).filter((r: IndexedTitle) => Number.isInteger(r.tmdb_id) && r.tmdb_id > 0),
+  ]);
 
   return page(metaTitle, head, body);
 });

@@ -172,7 +172,9 @@ test('errors, misses and unmarked pages are not kept', async () => {
       await settle();
       assert.equal(cache.store.size, 0);
       await get('https://theplot.tv/movie/cacheable-title');
-      assert.equal(calls.length, 2, 'the next reader still reaches the function');
+      // A 5xx is retried once per reader, so it reaches the function twice each time.
+      const perReader = make().status >= 500 ? 2 : 1;
+      assert.equal(calls.length, 2 * perReader, 'the next reader still reaches the function');
     }, make);
   }
 });
@@ -258,4 +260,47 @@ test('with no Cache API (local node) it still serves, uncached', async () => {
     globalThis.fetch = realFetch;
     if (realCaches !== undefined) globalThis.caches = realCaches;
   }
+});
+
+// ── Retry ──────────────────────────────────────────────────────────────────
+// A crawl saw brief upstream 503s that a second request did not reproduce.
+
+const withUpstream = async (responses, run) => {
+  const real = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = () => {
+    const next = responses[Math.min(calls++, responses.length - 1)];
+    return next instanceof Error ? Promise.reject(next) : Promise.resolve(next());
+  };
+  try {
+    return { res: await run(), calls: () => calls };
+  } finally {
+    globalThis.fetch = real;
+  }
+};
+const page = (status) => () => new Response('<!doctype html>', { status });
+const load = () => titlePage(new Request('https://theplot.tv/movie/retry-title'), 'movie', 'retry-title');
+
+test('a 503 from the Edge Function is retried once', async () => {
+  const { res, calls } = await withUpstream([page(503), page(200)], load);
+  assert.equal(res.status, 200);
+  assert.equal(calls(), 2);
+});
+
+test('a network fault is retried once', async () => {
+  const { res, calls } = await withUpstream([new Error('reset'), page(200)], load);
+  assert.equal(res.status, 200);
+  assert.equal(calls(), 2);
+});
+
+test('a second failure is passed through, not retried again', async () => {
+  const { res, calls } = await withUpstream([page(503), page(503), page(200)], load);
+  assert.equal(res.status, 503);
+  assert.equal(calls(), 2);
+});
+
+test('a 404 is not retried', async () => {
+  const { res, calls } = await withUpstream([page(404), page(200)], load);
+  assert.equal(res.status, 404);
+  assert.equal(calls(), 1);
 });

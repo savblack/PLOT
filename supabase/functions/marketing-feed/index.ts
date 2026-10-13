@@ -30,6 +30,7 @@ import { serviceKey } from '../_shared/serviceKey.ts';
 import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
 import { ARTICLE_TABLE_CSS, articleExcerpt, isArticleTable, renderArticleBlock } from '../_shared/articleBody.js';
 import { articleSignupPromptHtml, insertPromptAfterSecondParagraph } from '../_shared/articleSignupPrompt.js';
+import { clampDescription, fitTitle } from '../_shared/seoText.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -402,7 +403,14 @@ var g=document.createElement('script');g.async=true;g.crossOrigin='anonymous';g.
 </script>`;
 const GTM_NOSCRIPT = `<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PC72PHBN" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`;
 
-const page = (title: string, head: string, body: string, status = 200, nav = 'whats-on') =>
+const SHORT_CACHE = 'public, s-maxage=3600, stale-while-revalidate=86400';
+// A published article does not change once it is live, and its "More from"
+// row is its older neighbours, not the newest posts, so it can be shared for a
+// day like the title pages. Uncached article hits were most of the slow pages
+// in the site audit.
+const ARTICLE_CACHE = 'public, s-maxage=86400, stale-while-revalidate=604800';
+
+const page = (title: string, head: string, body: string, status = 200, nav = 'whats-on', cacheControl = SHORT_CACHE) =>
   new Response(
     `<!DOCTYPE html>
 <html lang="en">
@@ -803,7 +811,7 @@ ${FOOTER_HTML}
       status,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control': cacheControl,
       },
     },
   );
@@ -933,14 +941,17 @@ const fetchTrendingSnapshots = async (supabase: Db) => {
   };
 };
 
+const CHART_TITLE = 'The chart: the top 20 films and shows this week · Plot';
+
 const renderChart = async (supabase: Db) => {
   const { latest, prior } = await fetchTrendingSnapshots(supabase);
   const pageUrl = `${SITE}${FEED_PATH}/chart`;
 
   const head = `<style>${CHART_CSS}</style>
-<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by Plot.">
+<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by Plot, with how far each one rose or fell since last week and what is new.">
 <link rel="canonical" href="${pageUrl}">
-<meta property="og:title" content="The chart · Plot">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${CHART_TITLE}">
 <meta property="og:description" content="The twenty titles the world is watching this week, ranked.">
 <meta property="og:url" content="${pageUrl}">
 <meta property="og:image" content="${OG_FALLBACK}">
@@ -958,7 +969,7 @@ const renderChart = async (supabase: Db) => {
     </aside>`;
 
   if (!latest) {
-    return page('The chart · Plot', head, `
+    return page(CHART_TITLE, head, `
       <div class="head r2"><div class="head-row">
         <h1 class="feed-title">The <em>chart</em></h1>
       </div></div>
@@ -987,7 +998,7 @@ const renderChart = async (supabase: Db) => {
     </div></li>`;
   }).join('');
 
-  return page('The chart · Plot', head, `
+  return page(CHART_TITLE, head, `
     <div class="head r2">
       <div class="head-row">
         <h1 class="feed-title">The <em>chart</em></h1>
@@ -1282,6 +1293,7 @@ Deno.serve(async (req) => {
     const head = `${SUBSCRIBE_HEAD}
 <meta name="description" content="What’s On is Plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <link rel="canonical" href="${SITE}${FEED_PATH}">
+<meta property="og:type" content="website">
 <meta property="og:title" content="${FEED_SEO_TITLE}">
 <meta property="og:description" content="What’s On is Plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <meta property="og:url" content="${SITE}${FEED_PATH}">
@@ -1366,12 +1378,16 @@ Deno.serve(async (req) => {
         subscribeForm('whats_on'),
       ].join('');
 
+      // The front page shows the newest few dozen posts in sections; without
+      // this nothing linked past them, so every older article was an orphan
+      // reachable only from the sitemap.
       return page(FEED_SEO_TITLE, head, `
         ${titleRow}
         <div class="feed-grid">
           <div class="feed-main">${main}</div>
           <aside class="feed-side">${side}</aside>
         </div>
+        <div class="older-row r4"><a class="older sc" href="${FEED_PATH}?page=2">Older updates &rarr;</a></div>
       `);
     }
 
@@ -1432,13 +1448,28 @@ Deno.serve(async (req) => {
   const shareImg = postShareImage(typed);
   const title = postTitle(typed);
   const body = postBody(typed);
-  const description = articleExcerpt(body, 160) || `Film & TV updates from Plot.`;
+  // The first paragraph alone is often one short sentence ("too short" in
+  // audits), so keep adding paragraphs until there is enough to summarise.
+  let summary = '';
+  for (const block of body) {
+    const prose = articleExcerpt([block]);
+    if (prose) summary = summary ? `${summary} ${prose}` : prose;
+    if (summary.length >= 110) break;
+  }
+  const description = clampDescription(summary) || `Film & TV updates from Plot.`;
   const pageUrl = entryUrl(typed);
 
-  const { data: others } = await baseQuery()
-    .neq('slug', slug)
+  // The three posts published just before this one, so following "More from"
+  // walks back through the whole archive and every article has at least one
+  // link in. Showing the newest three instead linked only those, from every
+  // page, and left the rest orphaned. The oldest posts fall back to the newest.
+  const { data: older } = await baseQuery()
+    .lt('scheduled_for', typed.scheduled_for)
     .order('scheduled_for', { ascending: false })
     .limit(3);
+  const others = (older || []).length
+    ? older
+    : (await baseQuery().neq('slug', slug).order('scheduled_for', { ascending: false }).limit(3)).data;
 
   const more = (others || []).length
     ? `<div class="more r4">
@@ -1610,7 +1641,8 @@ Deno.serve(async (req) => {
   });
   const bodyHtml = insertPromptAfterSecondParagraph(bodyChunks, inlinePrompt, Boolean(titlesSection));
 
-  return page(`${title} · Plot`, head, `
+  const docTitle = fitTitle([`${title} · Plot`, title]);
+  return page(docTitle, head, `
     <nav class="crumbs" aria-label="Breadcrumb">
       <a href="${SITE}">Home</a><span class="sep2">/</span><a href="${FEED_PATH}">What's On</a>${k ? `<span class="sep2">/</span><span>${esc(TYPE_META[typed.post_type]?.label ?? 'Update')}</span>` : ''}
     </nav>
@@ -1634,5 +1666,5 @@ Deno.serve(async (req) => {
     <div class="post-cards">
       ${subscribeForm('whats_on_article')}
     </div>
-  `);
+  `, 200, 'whats-on', ARTICLE_CACHE);
 });

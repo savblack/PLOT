@@ -6,6 +6,10 @@ Content-Signal: ai-train=no, search=yes, ai-input=no
 # Search Console (same-origin discover returns 403; health is not HTML).
 Disallow: /api/
 
+# Cloudflare's own endpoints (bot-trap links, email obfuscation, speculation
+# rules). They are not Plot pages and audits count them as thin, H1-less pages.
+Disallow: /cdn-cgi/
+
 Sitemap: https://theplot.tv/sitemap.xml
 Sitemap: https://theplot.tv/sitemap-titles.xml
 Sitemap: https://theplot.tv/sitemap-articles.xml
