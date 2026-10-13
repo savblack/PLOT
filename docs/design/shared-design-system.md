@@ -48,8 +48,10 @@ The font can't set the join, so the mark is vector outlines, not live text. The 
 live once in `packages/core/wordmark.js` (the favicon and footer SVGs carry the same
 outlines). Render it through `PlotLogo` (web; `inherit` matches surrounding text),
 `PlotWordmark` (mobile), or `wordmarkSvg()` (website, edge functions, generators);
-never a raster. Email is the one exception: clients don't render SVG, so emails keep
-the live word in the display face, without the join.
+never a raster. Email is the one exception: clients don't render SVG, so emails use
+`https://app.theplot.tv/logo-email.png` (130×72, transparent, regenerate it from
+`wordmarkSvg()` when the mark changes) with `alt="plot"` styled in the display face
+for clients that block images.
 
 ## Canonical sources
 
