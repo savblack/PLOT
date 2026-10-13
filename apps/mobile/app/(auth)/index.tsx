@@ -22,6 +22,7 @@ import { CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, captchaSubmitPlan } fro
 import { COMMON } from '@plot/core/copy/common.js';
 import { AUTH_PAGE } from '@plot/core/copy/authPage.js';
 import { SHOW_APPLE_LOGIN } from '../../lib/launchFeatures';
+import PlotWordmark from '../../components/PlotWordmark';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -481,7 +482,7 @@ export default function AuthScreen() {
       >
         {/* Wordmark at top */}
         <View style={[styles.wordmarkWrap, { paddingTop: insets.top + spacing.xl }]}>
-          <Text style={styles.wordmark}>plot</Text>
+          <PlotWordmark size={52} color="#FAFAFA" />
           <Text style={styles.tagline}>Your personal movie & TV companion</Text>
         </View>
 
@@ -648,12 +649,6 @@ const styles = StyleSheet.create({
   wordmarkWrap: {
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
-  },
-  wordmark: {
-    fontFamily: fontFamily.display,
-    fontSize: 52,
-    color: '#FAFAFA',
-    letterSpacing: -1,
   },
   tagline: {
     fontFamily: fontFamily.sans,

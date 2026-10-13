@@ -12,6 +12,7 @@ import { buildingFan, buildingLines } from '@plot/core/onboardingSetup.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
+import PlotWordmark from '../../components/PlotWordmark';
 
 const F = ONBOARDING_FLOW;
 // Each line holds this long, then Home fades in.
@@ -84,7 +85,7 @@ export default function Building() {
         })}
       </View>
 
-      <Text style={styles.heading}>{F.building.heading} <Text style={styles.wordmark}>plot</Text></Text>
+      <Text style={styles.heading}>{F.building.heading} <PlotWordmark size={30} color={colors.textPrimary} style={styles.wordmark} /></Text>
       <View style={styles.lines} accessibilityRole="progressbar" accessibilityLabel={F.building.status} accessibilityLiveRegion="polite">
         <Text style={styles.line}>{lines[lineIndex]}</Text>
       </View>
@@ -102,7 +103,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 8 },
   },
   heading: { fontFamily: fontFamily.display, fontSize: 30, letterSpacing: -0.6, color: colors.textPrimary },
-  wordmark: { fontFamily: fontFamily.display, fontSize: 30, letterSpacing: -1.5 },
+  // An inline view sits on its bottom edge: drop the descender onto the text baseline.
+  wordmark: { transform: [{ translateY: 30 * 0.19 }] },
   lines: { minHeight: 24 },
   line: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
 });

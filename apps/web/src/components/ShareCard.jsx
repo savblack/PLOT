@@ -2,6 +2,7 @@ import { posterUrl, profileUrl } from '../utils/images.js';
 import { CARD_IDS, CARD_FORMATS, shareCardPalette } from '@plot/core/shareCards.js';
 import { SHARE_CARDS as T } from '../copy/shareCards.js';
 import './ShareCard.css';
+import PlotLogo from './PlotLogo.jsx';
 
 // TMDB only sends CORS headers when a request carries an Origin, and sends no
 // Vary. A poster already cached from a plain <img> elsewhere in the app is
@@ -31,13 +32,13 @@ const RING = {
 };
 
 function Ghost() {
-  return <div className="sc-ghost" aria-hidden="true"><span>plot</span></div>;
+  return <div className="sc-ghost" aria-hidden="true"><span><PlotLogo inherit /></span></div>;
 }
 
 function Foot({ right }) {
   return (
     <div className="sc-foot">
-      <span className="sc-wm">plot</span>
+      <span className="sc-wm"><PlotLogo inherit /></span>
       <span className="sc-url">{right || T.site}</span>
     </div>
   );
