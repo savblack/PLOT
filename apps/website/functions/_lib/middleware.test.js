@@ -10,18 +10,18 @@ function ctx(url, { env = {}, next } = {}) {
   };
 }
 
-test('gates /plans and /plans.html while pricing is hidden', async () => {
+test('moves /plans and /plans.html to /pricing, keeping the query', async () => {
   for (const path of ['/plans', '/plans.html']) {
-    const res = await onRequest(ctx(`https://theplot.tv${path}`));
-    assert.equal(res.status, 302, path);
-    assert.equal(new URL(res.headers.get('location')).pathname, '/');
+    const res = await onRequest(ctx(`https://theplot.tv${path}?utm_source=x`));
+    assert.equal(res.status, 301, path);
+    const loc = new URL(res.headers.get('location'));
+    assert.equal(loc.pathname, '/pricing', path);
+    assert.equal(loc.search, '?utm_source=x', path);
   }
 });
 
-test('serves /plans when SHOW_PRICING_PAGE is enabled', async () => {
-  const res = await onRequest(ctx('https://theplot.tv/plans', {
-    env: { SHOW_PRICING_PAGE: 'true' },
-  }));
+test('serves /pricing', async () => {
+  const res = await onRequest(ctx('https://theplot.tv/pricing'));
   assert.equal(res.status, 200);
   assert.equal(await res.text(), 'ok');
 });

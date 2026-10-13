@@ -2479,6 +2479,27 @@ export type Database = {
         }
         Relationships: []
       }
+      title_page_index: {
+        Row: {
+          last_seen_at: string
+          media_type: string
+          title: string
+          tmdb_id: number
+        }
+        Insert: {
+          last_seen_at?: string
+          media_type: string
+          title: string
+          tmdb_id: number
+        }
+        Update: {
+          last_seen_at?: string
+          media_type?: string
+          title?: string
+          tmdb_id?: number
+        }
+        Relationships: []
+      }
       tracking_connections: {
         Row: {
           automatic_enabled: boolean

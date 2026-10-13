@@ -89,6 +89,7 @@ const router = createBrowserRouter([
   { path: '/privacy',        element: wrap(<PrivacyPage />) },
   { path: '/community',      element: wrap(<CommunityPage />) },
   { path: '/pricing',        element: SHOW_PRICING_PAGE ? wrap(<PlansPage />) : <Navigate to="/app" replace /> },
+  // /plans was the page's first name; old links still open it.
   { path: '/plans',          element: SHOW_PRICING_PAGE ? wrap(<PlansPage />) : <Navigate to="/app" replace /> },
 
   // Design system — standalone, no auth, dev builds only

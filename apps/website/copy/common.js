@@ -5,12 +5,12 @@
 // HTML changes.
 //
 // Strings repeated across the nav and footer on every page (index.html,
-// about.html, plans.html) live here. Copy used on only one page stays local
+// about.html, pricing.html) live here. Copy used on only one page stays local
 // to that page's copy module (see copy/<page>.js).
 
 export const NAV = {
   whatsOn: "What's On",
-  pricing: 'Pricing', // only shown in plans.html's own nav
+  pricing: 'Pricing', // pricing.html's nav and the footer
   login: 'Log in',
   signup: 'Sign up',
 };

@@ -1,13 +1,13 @@
 /**
- * In-app Premium explore links. Checkout stays closed; these only open /plans
+ * In-app Premium explore links. Checkout stays closed; these only open /pricing
  * and optionally return the visitor to the screen they left.
  */
 
 /** @param {string | null | undefined} from */
 export function premiumPlansPath(from) {
   const safe = safeAppReturnPath(from, null);
-  if (!safe) return '/plans';
-  return `/plans?${new URLSearchParams({ from: safe })}`;
+  if (!safe) return '/pricing';
+  return `/pricing?${new URLSearchParams({ from: safe })}`;
 }
 
 const hasControlChar = (value) => [...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127);
