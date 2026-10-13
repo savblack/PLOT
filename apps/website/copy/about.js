@@ -14,7 +14,7 @@ export const ABOUT_PAGE = {
   },
   pageLabel: "About",
   h1: "About plot",
-  pageMeta: "Written by the one person who builds plot. October 2026.",
+  pageMeta: "A letter from the founder.",
   lead: "You watched it. You had a feeling. Plot is where that goes. Log a movie or an episode in about ten seconds, say how it hit you in a sentence, and get told when the next one drops. No essays, no dark-mode gloom, no scrolling seven apps to find out what's on. It's a movie and TV journal made by one person, around a day job, for people who just love this stuff.",
   facts: [
     {
