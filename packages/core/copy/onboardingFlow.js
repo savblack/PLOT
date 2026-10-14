@@ -60,7 +60,7 @@ export const ONBOARDING_FLOW = {
     trakt: 'Connect your account',
     netflix: 'Upload your viewing activity',
     plex: 'Connect your server',
-    note: 'We’ll finish setting up first, then open the import. One entry per title, so nothing doubles up.',
+    note: 'Pick one to start. The import runs in the background while you finish setting up. One entry per title, so nothing doubles up.',
   },
   services: {
     title: 'Where do you watch?',

@@ -23,6 +23,9 @@ export default defineConfig([
     // .wrangler/tmp/, so running `npm run dev:website` once leaves lint errors
     // behind in generated code that nobody wrote.
     '.wrangler', '**/.wrangler/**',
+    // Bundled from packages/core by scripts/build-import-engine.mjs; its
+    // sources are linted where they live.
+    'supabase/functions/_shared/importEngine.generated.js',
   ]),
   {
     files: ['**/*.{js,jsx}'],

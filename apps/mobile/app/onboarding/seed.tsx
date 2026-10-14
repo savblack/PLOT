@@ -3,9 +3,11 @@
  * A "trending this week" poster grid, prefilled before the user searches, with
  * a "Switching apps?" row that opens the import-source picker in place of the
  * grid (web navigates to a separate screen; mobile folds it in so the step
- * count stays at two). Picks are held in the flow context and saved to the
- * watchlist once, behind the building moment, so backing out of a later step
- * costs nothing.
+ * count stays at two). A picked source opens the import panel right here: the
+ * file is uploaded, or the account connected, and the import runs in the
+ * background (components/OnboardingImportPanel.tsx). Picks are held in the
+ * flow context and saved to the watchlist once, behind the building moment,
+ * so backing out of a later step costs nothing.
  */
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
@@ -21,6 +23,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
 import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
 import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
+import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
+import OnboardingImportPanel from '../../components/OnboardingImportPanel';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
 import ImportSourceIcon from '../../components/ImportSourceIcon';
 
@@ -71,7 +75,10 @@ export default function Seed() {
   const [trendingFailed, setTrendingFailed] = useState(false);
   const [trendingTry, setTrendingTry] = useState(0);
   const [searchTry, setSearchTry] = useState(0);
-  const [showSources, setShowSources] = useState(false);
+  const [showSources, setShowSources] = useState(!!flow.importSource);
+  // The import is queued: the step's Continue leads on to services.
+  const [queued, setQueued] = useState(!!flow.importJob);
+  const onQueued = useCallback(() => setQueued(true), []);
   const selected = flow.seeds;
   const setFlowTrending = flow.setTrending;
 
@@ -146,16 +153,25 @@ export default function Seed() {
     if (ok) router.replace('/(app)');
   };
 
+  // Picking a source opens its panel in place; the import starts here and
+  // runs in the background (web: OnboardingFlow's pickImport). Once a job is
+  // queued the pick is final for this setup.
+  const source = flow.importSource;
   const pickSource = (id: string) => {
+    if (queued) return;
     createImportReporter({ entry: IMPORT_ENTRY_POINTS.ONBOARDING }).selected(id);
     flow.setImportSource(id);
-    flow.completeStep('import');
-    router.push('/onboarding/services');
   };
 
   const toggleSources = () => {
+    if (queued) return;
     if (showSources) flow.setImportSource(null);
     setShowSources(v => !v);
+  };
+
+  const continueFromImport = () => {
+    flow.completeStep('import');
+    router.push('/onboarding/services');
   };
 
   // One screen, as web renders it. Mobile used to open step 2 on an intro that
@@ -167,19 +183,20 @@ export default function Seed() {
       step={1}
       title={showSources ? F.importSources.title : F.seed.title(flow.firstName)}
       subtitle={showSources ? F.importSources.subtitle : F.seed.subtitle}
-      ctaLabel={count === 0 ? F.seed.tapAFew : F.seed.continueWith(count)}
-      ctaDisabled={count === 0}
-      hideCta={showSources}
-      onContinue={() => { flow.completeStep('seed'); router.push('/onboarding/services'); }}
+      ctaLabel={showSources ? IMPORT_JOBS.onboarding.continue : count === 0 ? F.seed.tapAFew : F.seed.continueWith(count)}
+      ctaDisabled={!showSources && count === 0}
+      hideCta={showSources && !queued}
+      onContinue={showSources ? continueFromImport : () => { flow.completeStep('seed'); router.push('/onboarding/services'); }}
       saving={flow.saving}
-      onSkip={count === 0 ? skip : undefined}
+      onSkip={count === 0 && !queued ? skip : undefined}
       error={flow.saveError}
     >
       <TouchableOpacity
         style={styles.switchRow}
         onPress={toggleSources}
+        disabled={queued}
         accessibilityRole="button"
-        accessibilityState={{ expanded: showSources }}
+        accessibilityState={{ expanded: showSources, disabled: queued }}
       >
         <View style={styles.switchMarks}>
           {IMPORT_SOURCES.slice(0, 3).map(src => <ImportSourceIcon key={src.id} id={src.id} size={26} />)}
@@ -193,22 +210,30 @@ export default function Seed() {
       {showSources ? (
         <>
           <View accessibilityLabel={F.importSources.sourcesLabel} style={styles.sources}>
-            {IMPORT_SOURCES.map(src => (
-              <TouchableOpacity
-                key={src.id}
-                style={styles.source}
-                accessibilityRole="button"
-                onPress={() => pickSource(src.id)}
-              >
-                <ImportSourceIcon id={src.id} name={src.name} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.sourceName}>{src.name}</Text>
-                  <Text style={styles.sourceHint}>{src.hint}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+            {IMPORT_SOURCES.map(src => {
+              const on = source === src.id;
+              const off = queued && !on;
+              return (
+                <TouchableOpacity
+                  key={src.id}
+                  style={[styles.source, on && styles.sourceOn, off && styles.sourceOff]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on, disabled: off }}
+                  disabled={off}
+                  onPress={() => pickSource(src.id)}
+                >
+                  <ImportSourceIcon id={src.id} name={src.name} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.sourceName}>{src.name}</Text>
+                    <Text style={styles.sourceHint}>{src.hint}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-          <Text style={styles.note}>{F.importSources.note}</Text>
+          {source
+            ? <OnboardingImportPanel key={source} source={source} onQueued={onQueued} />
+            : <Text style={styles.note}>{F.importSources.note}</Text>}
         </>
       ) : (
         <>
@@ -332,6 +357,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   switchLead:  { fontFamily: fontFamily.sansBold, color: colors.textPrimary },
   sources:     { gap: spacing.sm },
   source:      { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  sourceOn:    { borderColor: colors.accent, backgroundColor: colors.accentDim },
+  sourceOff:   { opacity: 0.5 },
   sourceName:  { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
   sourceHint:  { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   note:        { marginTop: spacing.lg, fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted, textAlign: 'center' },

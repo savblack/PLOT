@@ -23,6 +23,22 @@ function jsonError(message: string, status = 500, extra: Record<string, unknown>
   })
 }
 
+// deno-lint-ignore no-explicit-any
+async function removeImportUploads(client: { storage: { from: (bucket: string) => any } }, userId: string): Promise<string | null> {
+  const bucket = client.storage.from('import-uploads')
+  const { data: folders, error } = await bucket.list(userId, { limit: 1000 })
+  if (error) return error.message || 'Failed to list import files.'
+  const paths: string[] = []
+  for (const folder of (folders ?? []) as { name: string }[]) {
+    const { data: files, error: listError } = await bucket.list(`${userId}/${folder.name}`, { limit: 1000 })
+    if (listError) return listError.message || 'Failed to list import files.'
+    for (const file of (files ?? []) as { name: string }[]) paths.push(`${userId}/${folder.name}/${file.name}`)
+  }
+  if (!paths.length) return null
+  const { error: removeError } = await bucket.remove(paths)
+  return removeError ? (removeError.message || 'Failed to delete import files.') : null
+}
+
 Deno.serve(async (req) => {
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) return new Response('Unauthorized', { status: 401 })
@@ -76,6 +92,12 @@ Deno.serve(async (req) => {
     const { error: storageError } = await supabaseClient.storage.from('feedback-attachments').remove(attachmentPaths)
     if (storageError) return jsonError(storageError.message || 'Failed to delete feedback attachments.')
   }
+
+  // Background-import files (uploads still queued, review leftovers) live at
+  // import-uploads/<user id>/<job id>/. The folder is the caller's own, and the
+  // owner delete policy applies through their client.
+  const importFilesError = await removeImportUploads(supabaseClient, userId)
+  if (importFilesError) return jsonError(importFilesError)
 
   const cleanupError = await runAccountCleanup(supabaseClient, userId)
   if (cleanupError) {

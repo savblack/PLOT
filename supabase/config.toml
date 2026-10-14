@@ -208,6 +208,15 @@ verify_jwt = false
 [functions.tracking-worker]
 verify_jwt = false
 
+# Background watch-history imports (import_jobs). Called by pg_cron via pg_net
+# with the Vault service bearer (run_import_worker_tick, 20261015090000) and
+# by the app with the user's own JWT to nudge their job along. The handler
+# verifies both in code (hasServiceKeyBearer, then auth.getUser), so the
+# gateway check is off like tracking-worker. Needs TMDB_API_KEY, and the same
+# IMPORT_EVENTS_ENABLED / IMPORT_ANNOTATIONS_ENABLED flags the apps read.
+[functions.import-worker]
+verify_jwt = false
+
 # Premium alerts (actor/director releases, whole-season-ready): called twice a
 # day by pg_cron via pg_net with the Vault service-role bearer
 # (run_premium_alerts, 20260928120000), so verify_jwt stays true and the
