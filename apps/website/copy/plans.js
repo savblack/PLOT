@@ -15,7 +15,7 @@ export const PLANS_PAGE = {
   hero: {
     pageLabel: 'Plans',
     h1: 'Free forever. Premium when you want more.',
-    lede: 'Free keeps track. Premium helps you decide what to watch next. Skip the scroll, the first week is on us.',
+    lede: 'Free keeps track. Premium helps you decide what to watch next. Skip the endless scroll, the first week is on us.',
   },
 
   billingToggle: {
