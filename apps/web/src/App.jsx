@@ -45,6 +45,7 @@ import { onPendingWatchQueued } from '@plot/core/watchQueued.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { loadPremiumEntitlement } from '@plot/core/billing.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
+import { ArtworkProvider } from '@plot/core/useUserArtwork.js';
 import { AppContext, useApp } from './hooks/useApp.js';
 import { SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 
@@ -382,6 +383,7 @@ export default function App() {
 
   return (
     <AppContext.Provider value={ctx}>
+      <ArtworkProvider userId={user?.id ?? null} premium={!!profile && isPremiumProfile(profile)}>
       {/* panelOpen drops on the first frame of the close animation so the
           content column and the outgoing panel travel together. */}
       <AppShell
@@ -449,6 +451,7 @@ export default function App() {
           onDismiss={handleTzDismiss}
         />
       )}
+      </ArtworkProvider>
     </AppContext.Provider>
   );
 }

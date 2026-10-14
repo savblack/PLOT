@@ -28,6 +28,8 @@ import { EVENTS, track } from '../../lib/analytics';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -309,6 +311,7 @@ function Matches({
   onOpen: (item: SmartMatch) => void;
   onUpgrade: () => void;
 }) {
+  const art = useUserArtwork();
   if (!premium) {
     return (
       <View style={styles.locked}>
@@ -336,7 +339,7 @@ function Matches({
   const grid = (rows: SmartMatch[]) => (
     <View style={styles.grid}>
       {rows.map((item) => {
-        const uri = posterUrl(item.poster_path, 'w185');
+        const uri = posterUrl(displayPosterPath(art.apply(item)), 'w185');
         const status = statusOf(item);
         const finished = isFinishedStatus(status);
         return (

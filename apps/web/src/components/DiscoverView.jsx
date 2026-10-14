@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
+import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { todayLongLabel } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
@@ -216,7 +218,8 @@ export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, set
 }
 
 function HomeUpcomingRow({ event, todayStr, openPanel }) {
-  const image = posterUrl(event.item?.poster_path, 'w92');
+  const art = useUserArtwork();
+  const image = posterUrl(displayPosterPath(art.apply(event.item)), 'w92');
   const date = getCalendarRelativeLabel(event.date, todayStr);
   const meta = [event.label, date, event.item?.network_name].filter(Boolean).join(' · ');
   return (
@@ -283,8 +286,9 @@ function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPane
 }
 
 function OnThisDayCard({ item, openPanel }) {
+  const art = useUserArtwork();
   if (!item) return null;
-  const image = posterUrl(item.poster_path, 'w185');
+  const image = posterUrl(displayPosterPath(art.apply(item)), 'w185');
   return (
     <section className="hist-card home-on-this-day">
       <span className="hist-card-label">{DISCOVER_VIEW.onThisDay}</span>
@@ -355,8 +359,9 @@ function rankBadgeClass(rank) {
    poster in the frame that cuts the numeral (.rank-cut in app.css); the
    numeral comes after the poster so it is drawn on the artwork. */
 export function RankedCard({ item, rank, showRank = true, showMeta = true, openPanel, watchlist }) {
+  const art = useUserArtwork();
   const title = item.title || item.name;
-  const img   = posterUrl(item.poster_path, 'w185');
+  const img   = posterUrl(displayPosterPath(art.apply(item)), 'w185');
   const type  = item.media_type || 'movie';
   const openDetails = () => openPanel(item.id, type);
   const poster = (
@@ -389,12 +394,14 @@ export function RankedCard({ item, rank, showRank = true, showMeta = true, openP
 }
 
 function BingeCard({ item, openPanel, watchlist }) {
+  const art = useUserArtwork();
   const { favorites, profile } = useApp();
   const fw       = favoriteWords(profile?.region);
   const [hovered, setHovered] = useState(false);
   const title    = item.name || item.title;
-  const backdrop = backdropUrl(item.backdrop_path, 'w780');
-  const poster   = posterUrl(item.poster_path, 'w342');
+  const shown    = art.apply(item);
+  const backdrop = backdropUrl(displayBackdropPath(shown), 'w780');
+  const poster   = posterUrl(displayPosterPath(shown), 'w342');
   const type     = item.media_type || 'tv';
   const year     = (item.first_air_date || item.release_date || '').slice(0, 4);
   const saved    = watchlist.isInList(item.id);
@@ -454,11 +461,12 @@ function BingeCard({ item, openPanel, watchlist }) {
 // Budget for the featured synopsis; clampToSentences drops whole sentences to fit.
 const HERO_SYNOPSIS_MAX_CHARS = 200;
 function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
+  const art = useUserArtwork();
   const { favorites, profile } = useApp();
   const fw       = favoriteWords(profile?.region);
   const [hovered, setHovered] = useState(false);
   const title    = item.title || item.name;
-  const backdrop = backdropUrl(item.backdrop_path, 'w780');
+  const backdrop = backdropUrl(displayBackdropPath(art.apply(item)), 'w780');
   const type     = item.media_type || 'movie';
   const yearsAgo = item.anniversary_years;
   const archiveYear = item.archive_year;
@@ -576,9 +584,10 @@ function HeartIcon({ filled }) {
    out two rows deep and scrolls sideways, so each card is a fixed width and
    the title gets the room the old full-width list row never gave it. */
 function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
+  const art = useUserArtwork();
   const fw    = favoriteWords(region);
   const title = item.title || item.name;
-  const img   = posterUrl(item.poster_path, 'w154');
+  const img   = posterUrl(displayPosterPath(art.apply(item)), 'w154');
   const type  = item.media_type || 'movie';
   const id    = item.id;
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);

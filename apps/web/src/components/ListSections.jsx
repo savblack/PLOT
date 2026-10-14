@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip } from '../utils/countdown.js';
 import { posterUrl } from '../utils/images.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { findDuplicateCustomList, LIST_VISIBILITIES, listVisibility, isListShareable } from '@plot/core/customLists.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
@@ -34,6 +36,11 @@ import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { cardActions, cardState } from './listCardActions.js';
+
+function shownPoster(art, item, size = 'w185') {
+  const path = displayPosterPath(art.apply(item));
+  return path ? posterUrl(path, size) : null;
+}
 
 /* The lists themselves: one component per list, each rendering into a
    `Frame` it is handed. On My Lists the frame is a section on the page (the
@@ -178,7 +185,8 @@ export function AddToRankModal({ listType, rank, onAdd, onClose }) {
 }
 
 function ModalResultRow({ item, onSelect }) {
-  const img   = posterUrl(item.poster_path, 'w92');
+  const art = useUserArtwork();
+  const img = shownPoster(art, item, 'w92');
   const title = item.title || item.name || 'Unknown';
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
   return (
@@ -442,6 +450,7 @@ export function SelectControls({ selection, hasItems, menuLabel, deleteLabel, on
 /* ── Watching ── */
 export function WatchingSection({ watching, hidden, Frame = ListSection }) {
   const { openPanel } = useApp();
+  const art = useUserArtwork();
   const items = watching.items || [];
   const selection = useSelection();
 
@@ -507,7 +516,7 @@ export function WatchingSection({ watching, hidden, Frame = ListSection }) {
               <ListCard
                 key={item.tmdb_id}
                 title={item.title}
-                img={posterUrl(item.poster_path, 'w185')}
+                img={shownPoster(art, item)}
                 meta={meta}
                 progress={pct}
                 onOpen={() => openPanel(item.tmdb_id, 'tv')}
@@ -535,9 +544,11 @@ function wantMeta(item) {
 }
 
 export function ListPageRow({ item, title, meta, open, selection, note, watchStatus = null }) {
+  const art = useUserArtwork();
+  const poster = shownPoster(art, item);
   return (
     <div className={`list-page-row${isFinishedStatus(watchStatus) ? ' list-page-row--finished' : ''}`}>
-      <button type="button" className="list-page-row-poster" onClick={open} aria-label={title}>{item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />}</button>
+      <button type="button" className="list-page-row-poster" onClick={open} aria-label={title}>{poster && <img src={poster} alt="" loading="lazy" />}</button>
       <div className="list-page-row-copy">
         <button type="button" className="list-page-row-title" onClick={open}>{title}</button>
         <div className="list-page-row-meta">{meta}</div>
@@ -551,6 +562,7 @@ export function ListPageRow({ item, title, meta, open, selection, note, watchSta
 
 export function WantToWatchSection({ items, count = items.length, narrowed, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
   const { openPanel, watchlist, watching, privateNotes, favorites, profile } = useApp();
+  const art = useUserArtwork();
   const fw = favoriteWords(profile?.region);
   const selection = useSelection();
   const [showAdd, setShowAdd] = useState(false);
@@ -593,19 +605,20 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
           {pageLayout && <CardGrid>{items.map(item => {
             const title = item.title || item.name || MEDIA.unknown;
             const type = item.media_type || 'movie';
-            return <ListCard key={`${type}:${item.tmdb_id}`} title={title} img={posterUrl(item.poster_path, 'w185')} meta={wantMeta(item)} {...cardState(item, historyEntries, privateNotes, watching?.items)} {...cardActions(item, favorites, watchlist, fw)} onOpen={() => openPanel(item.tmdb_id, type)} editMode={selection.editMode} selected={selection.selected.has(item.tmdb_id)} onToggleSelect={() => selection.toggle(item.tmdb_id)} />;
+            return <ListCard key={`${type}:${item.tmdb_id}`} title={title} img={shownPoster(art, item)} meta={wantMeta(item)} {...cardState(item, historyEntries, privateNotes, watching?.items)} {...cardActions(item, favorites, watchlist, fw)} onOpen={() => openPanel(item.tmdb_id, type)} editMode={selection.editMode} selected={selection.selected.has(item.tmdb_id)} onToggleSelect={() => selection.toggle(item.tmdb_id)} />;
           })}</CardGrid>}
           <div className="private-watchlist">
             {items.map(item => {
             const title = item.title || item.name || MEDIA.unknown;
             const type = item.media_type || 'movie';
+            const poster = shownPoster(art, item);
             const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, type);
             return pageLayout ? (
               <ListPageRow key={`${type}:${item.tmdb_id}`} item={item} title={title} meta={wantMeta(item)} open={open} selection={selection} watchStatus={listWatchStatus(item, historyEntries, watching?.items)} note={!selection.editMode && <PrivateNote id={item.tmdb_id} type={type} title={title} />} />
             ) : (
               <div className="private-watchlist-row" key={`${type}:${item.tmdb_id}`}>
                 <button type="button" className="private-watchlist-poster" onClick={open} aria-label={title}>
-                  {item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />}
+                  {poster && <img src={poster} alt="" loading="lazy" />}
                 </button>
                 <div className="private-watchlist-body">
                   <button type="button" className="private-watchlist-title" onClick={open}>{title}</button>
@@ -629,6 +642,7 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
 /* ── Favourites ── */
 export function FavoritesSection({ favorites: favsHook, visibleItems, count, typeFilters, genreFilters = [], narrowed, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
   const { openPanel, profile, watchlist, watching, privateNotes } = useApp();
+  const art = useUserArtwork();
   const fw = favoriteWords(profile?.region);
   const [showAdd, setShowAdd] = useState(false);
   const selection = useSelection();
@@ -678,7 +692,7 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
               <ListCard
                 key={item.id}
                 title={title}
-                img={posterUrl(item.poster_path, 'w185')}
+                img={shownPoster(art, item)}
                 meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}
                 {...(pageLayout ? cardState(item, historyEntries, privateNotes, watching?.items) : {})}
                 {...(pageLayout ? cardActions(item, favsHook, watchlist, fw) : {})}
@@ -719,6 +733,7 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
    and on a phone A8's people line, which opens who added what. */
 export function CustomListSection({ list, visibleItems, count, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
   const { openPanel, favorites, watchlist, watching, privateNotes, profile, user } = useApp();
+  const art = useUserArtwork();
   const navigate = useNavigate();
   const fw = favoriteWords(profile?.region);
   const { renameList, setListVisibility, addItem, removeItem, deleteList, leaveList } = customLists;
@@ -884,7 +899,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
               <ListCard
                 key={item.id}
                 title={title}
-                img={posterUrl(item.poster_path, 'w185')}
+                img={shownPoster(art, item)}
                 meta={cardMeta(item)}
                 {...(pageLayout ? cardState(item, historyEntries, privateNotes, watching?.items) : {})}
                 {...(pageLayout ? cardActions(item, favorites, watchlist, fw) : {})}
@@ -948,6 +963,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
    dragging between ranks, with arrow controls as a precise fallback. */
 export function TopFiveSection({ topLists, Frame = ListSection }) {
   const { openPanel } = useApp();
+  const art = useUserArtwork();
   const [listType,   setListType]   = useState('movies');
   const [editMode,   setEditMode]   = useState(null);
   const [addingRank, setAddingRank] = useState(null);
@@ -1009,7 +1025,7 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
         </div>
       );
     }
-    const img = posterUrl(item.poster_path, 'w185');
+    const img = shownPoster(art, item);
     return (
       <div
         key={rank}
