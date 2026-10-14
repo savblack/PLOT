@@ -133,7 +133,7 @@
           {
             "@type": "Question",
             "name": "Is Plot free?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Yes. Tracking, your watchlist, the release calendar, What's On, where to watch, up to 5 lists and following friends are all free, forever, with no credit card. Premium adds unlimited lists, a live calendar subscription and Pick for Me for US$3/month or US$24/year, with a 7-day free trial." }
+            "acceptedAnswer": { "@type": "Answer", "text": "Yes. Tracking, your watchlist, the release calendar, What's On, up to 5 lists and following friends are free, with no credit card. Premium adds unlimited lists, a live calendar subscription and Pick for Me for US$3/month or US$24/year, with a 7-day free trial." }
           },
           {
             "@type": "Question",
@@ -241,7 +241,7 @@
     /* ── About page components ───────────────────────────────── */
     /* The reading column stays 680px; the facts card, feature grid and
        Premium card break out to 820px so they read as objects, not prose. */
-    .breakout, .facts, .feature-grid, .premium-card, .closer {
+    .breakout, .facts, .feature-grid, .closer {
       width: min(820px, 100vw - 4rem);
       margin-left: 50%;
       transform: translateX(-50%);
@@ -352,59 +352,8 @@
       margin-bottom: 0.2rem;
     }
     .feature-wide { grid-column: 1 / -1; }
-    .premium-card {
-      margin-top: 1.75rem;
-      margin-bottom: 1rem;
-      padding: 2rem 2rem 1.75rem;
-      background: var(--ink);
-      color: var(--bg);
-      border-radius: var(--r-lg);
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem 2.5rem;
-    }
-    .premium-head { grid-row: 1 / span 2; align-self: start; }
-    .premium-eyebrow {
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--fill);
-      margin: 0 0 0.75rem;
-    }
-    .premium-price { display: flex; align-items: baseline; gap: 0.5rem; margin: 0; color: var(--bg); }
-    .premium-amount {
-      font-family: var(--display);
-      font-size: 3.2rem;
-      font-weight: 700;
-      letter-spacing: var(--display-tracking);
-      line-height: 1;
-    }
-    .premium-per { font-size: 0.95rem; opacity: 0.75; }
-    .premium-alt { font-size: 0.85rem; opacity: 0.65; margin: 0.6rem 0 0; color: var(--bg); line-height: 1.5; }
-    .premium-list { list-style: none; padding: 0; margin: 0; }
-    .premium-list li {
-      position: relative;
-      padding: 0 0 0.85rem 1.6rem;
-      font-size: 0.95rem;
-      line-height: 1.55;
-      color: rgba(248,242,234,0.78);
-    }
-    .premium-list li strong { color: var(--bg); font-weight: 600; }
-    .premium-list li::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0.45em;
-      width: 0.85rem;
-      height: 0.45rem;
-      border-left: 2px solid var(--fill);
-      border-bottom: 2px solid var(--fill);
-      transform: rotate(-45deg);
-    }
-    .premium-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; }
-    .premium-actions .btn { font-family: var(--display); font-weight: 700; font-size: 0.95rem; }
-    .premium-note { font-size: 0.8rem; opacity: 0.65; }
+    .premium-note-inline { margin-top: 1.5rem; font-size: 0.95rem; color: var(--text-secondary); }
+    .premium-note-inline a { color: var(--text); font-weight: 500; }
     .faq details {
       border-top: 1px solid var(--rule);
       padding: 1rem 0;
@@ -454,14 +403,11 @@
     }
     .closer .cta-row { justify-content: center; margin: 0; }
     @media (max-width: 720px) {
-      .facts, .feature-grid, .premium-card, .closer { width: 100%; margin-left: 0; transform: none; }
+      .facts, .feature-grid, .closer { width: 100%; margin-left: 0; transform: none; }
       .facts { grid-template-columns: 1fr; padding: 0.25rem 1.25rem; }
       .facts div { padding: 0.9rem 0 !important; border-left: 0 !important; }
       .facts div:nth-child(2) { border-top: 1px solid var(--rule); }
       .feature-grid { grid-template-columns: 1fr; }
-      .premium-card { grid-template-columns: 1fr; padding: 1.6rem 1.4rem; }
-      .premium-head { grid-row: auto; }
-      .premium-amount { font-size: 2.6rem; }
       .closer { padding: 2.5rem 1.25rem; }
       .cta-row .btn { width: 100%; }
     }
@@ -532,88 +478,41 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       <p>You don't have to call yourself a cinephile to belong here. If you've ever rewatched the same show three times because nothing else felt right, you're the person I made this for.</p>
 
-      <p>Plot started because of a real lack of enthusiasm for the apps that already exist. They're clunky, seemingly only ever in dark mode, and bluntly, no fun to look at. A place to track what you watch shouldn't be hard on the eyes or a chore to open.</p>
-
-      <p>Then there was the pressure. The pressure of writing reviews, of performing how you felt about something in the "right" way. Plot is for people who love TV, who love movies, who love the cinema and aren't afraid to say exactly how something made them feel. If all you have to say about a movie is that it made you cry 14 separate times, firstly, shout out to my emotional baddies, and secondly, thanks for the heads up! That one's getting saved for when a good cry is needed.</p>
+      <p>The apps that already exist are clunky, seemingly only ever in dark mode, and no fun to look at. Worse, they come with pressure: write the review, perform how you felt in the "right" way. If all you have to say about a movie is that it made you cry 14 separate times, firstly, shout out to my emotional baddies, and secondly, thanks for the heads up. That one's getting saved for when a good cry is needed.</p>
 
       <blockquote class="pull">
         <p>Sometimes the only review worth writing is "I fucking loved that", and then moving on.</p>
       </blockquote>
-    </section>
 
-    <section class="about-section">
-      <h2 id="reviews">Reviews that take ten seconds</h2>
-
-      <p>That's why Plot caps the characters in your reviews. The point is to capture your immediate, true reaction, the way you would in a journal. Nobody delivers a measured critique the second the credits roll. You have a feeling. That's what movies and TV are designed to give us. They're not made to be picked apart frame by frame.</p>
-
-      <p>Rate it, say how it hit you, move on. Months later you'll scroll back through your Plot and remember exactly who you were when you watched it. <strong>That's the whole product: the joy of watching, minus the performance of it.</strong></p>
+      <p>That's why Plot caps the characters in your reviews. Nobody delivers a measured critique the second the credits roll. You have a feeling, and that's what movies and TV are for. Rate it, say how it hit you, move on. Months later you'll scroll back and remember exactly who you were when you watched it. <strong>That's the whole product: the joy of watching, minus the performance of it.</strong></p>
     </section>
 
     <section class="about-section">
       <h2 id="features">What plot does</h2>
 
-      <p>Building in this space, you notice the small frustrations you'd usually ignore. Never knowing when a show drops or the next episode lands. Forgetting the movie a friend swore by. The nightly hunt across seven platforms, only to give up and pick the first thing on Netflix. Plot remembers all of it, so you don't have to.</p>
-
       <ul class="feature-grid">
         <li><span class="feature-icon" aria-hidden="true">01</span><strong>Track everything you watch</strong><span>Movies and TV in one timeline, with ratings and short notes that stay yours.</span></li>
-        <li><span class="feature-icon" aria-hidden="true">02</span><strong>A watchlist with a memory</strong><span>Save the movie your friend swore by before you forget the title, and see where it's streaming when you finally get to it.</span></li>
-        <li><span class="feature-icon" aria-hidden="true">03</span><strong>Your own release calendar</strong><span>Every new episode, season and film you care about, laid out so there's always something to look forward to.</span></li>
-        <li><span class="feature-icon" aria-hidden="true">04</span><strong>What's On, daily</strong><span>What's new and trending across streaming platforms on one page, no logging in to seven apps. <a href="/whats-on" data-cta="about-features">Browse What's On</a></span></li>
-        <li><span class="feature-icon" aria-hidden="true">05</span><strong>Where to watch</strong><span>The service that has it, right on the title, so the hunt ends before it starts.</span></li>
-        <li><span class="feature-icon" aria-hidden="true">06</span><strong>Lists with a point of view</strong><span>Comfort rewatches, "movies to make my partner watch", the lot. Up to 5 on Free, unlimited on Premium.</span></li>
-        <li class="feature-wide"><span class="feature-icon" aria-hidden="true">07</span><strong>Friends and taste match</strong><span>Follow friends, share your profile, and see how alike your taste really is with one number. <a href="/taste-match" data-cta="about-features">Try Taste match</a></span></li>
+        <li><span class="feature-icon" aria-hidden="true">02</span><strong>A watchlist with a memory</strong><span>Save the movie your friend swore by, and see where it's streaming when you finally get to it.</span></li>
+        <li><span class="feature-icon" aria-hidden="true">03</span><strong>Your own release calendar</strong><span>Every new episode, season and film you care about, so there's always something to look forward to.</span></li>
+        <li><span class="feature-icon" aria-hidden="true">04</span><strong>What's On, daily</strong><span>What's new and trending across streaming platforms on one page. <a href="/whats-on" data-cta="about-features">Browse What's On</a></span></li>
+        <li class="feature-wide"><span class="feature-icon" aria-hidden="true">05</span><strong>Friends and taste match</strong><span>Follow friends and see what they thought in their own words, not a 2,000-word essay. Compare your taste with one number, then send it to someone. Nobody can resist finding out they're a 41. <a href="/taste-match" data-cta="about-features">Try Taste match</a></span></li>
       </ul>
-    </section>
 
-    <section class="about-section">
-      <h2 id="premium">Free forever, and Premium when you want more</h2>
-
-      <p>Everything above is free, with no credit card and no trial clock. I'm not holding the good bits hostage.</p>
-
-      <p>Premium is for the nights you want Plot to do the deciding. Every subscription goes straight into keeping Plot independent and shipping the next thing. There are no ads to fall back on, and that's on purpose.</p>
-
-      <aside class="premium-card">
-        <div class="premium-head">
-          <p class="premium-eyebrow">Premium</p>
-          <p class="premium-price"><span class="premium-amount">US$2</span><span class="premium-per">/month</span></p>
-          <p class="premium-alt">US$24 billed yearly, or US$3 monthly. Taxes included. 7-day free trial.</p>
-        </div>
-        <ul class="premium-list">
-          <li><strong>Pick for Me</strong> hands you a shortlist for tonight from your own watchlist.</li>
-          <li><strong>Live calendar subscription</strong> puts new episodes in your calendar app, next to your actual life.</li>
-          <li><strong>Unlimited lists</strong>, so the "movies to make my partner watch" list never has to end.</li>
-        </ul>
-        <div class="premium-actions">
-          <a class="btn btn-primary btn-large" href="/pricing" data-cta="about-premium">Try Premium free for 7 days</a>
-          <span class="premium-note">Cancel in the trial and you pay nothing.</span>
-        </div>
-      </aside>
-    </section>
-
-    <section class="about-section">
-      <h2 id="friends">Better with your people</h2>
-
-      <p>Plot is quieter than a social network and better than a group chat. Follow a friend and you'll see what they're watching and what they thought, in their own words, not a 2,000-word essay. Compare your taste and settle the argument about whose recommendations are better. Share your calendar with family so they know not to call you during the Summer House reunion.</p>
-
-      <p>The fastest way to get someone on Plot is to send them your <a href="/taste-match" data-cta="about-friends">taste match</a>. Nobody can resist finding out they're a 41.</p>
+      <p class="premium-note-inline">All of it is free, with no credit card. Premium is US$3 a month or US$24 a year, with the first 7 days free, and adds Pick for Me, a live calendar subscription and unlimited lists. It's also the biggest way to keep Plot independent. <a href="/pricing" data-cta="about-premium">See what Premium adds</a></p>
     </section>
 
     <section class="about-section">
       <h2 id="next">What's next</h2>
 
-      <p>I've got a lot more I want to do. Native apps for iPhone and Android. Push and email alerts the moment something on your watchlist arrives. Smarter, more personal recommendations. And watch together, so you and your friends can line up the same show and watch in real time, wherever you are. Everything that has already shipped is on the <a href="/changelog" data-cta="about-changelog">changelog</a>, newest first.</p>
+      <p>Native apps for iPhone and Android. Alerts the moment something on your watchlist arrives on a service you use. Smarter recommendations. And watch together, so you and your friends can line up the same show and watch in real time, wherever you are. Everything that has already shipped is on the <a href="/changelog" data-cta="about-changelog">changelog</a>.</p>
     </section>
 
     <section class="about-section">
       <h2 id="solo">Built by one person</h2>
 
-      <p>Plot is built by one person, around a full-time job. There's no team, no investors and no corporate roadmap. It's shaped almost entirely by feedback from the people who use it, which means you. Any note, good or bad, any feature request or bug you spot, lands in my inbox and usually ends up in the app. You can send one anytime from Settings, or email <a href="mailto:contact@theplot.tv" data-cta="about-email">contact@theplot.tv</a>.</p>
+      <p>Plot is built by one person, around a full-time job. There's no team, no investors and no corporate roadmap. It's shaped almost entirely by feedback from the people who use it, which means you. Any note, good or bad, any feature request or bug you spot, lands in my inbox and usually ends up in the app. Send one from Settings, or email <a href="mailto:contact@theplot.tv" data-cta="about-email">contact@theplot.tv</a>.</p>
 
-      <p>Plot is still early, so if you're using it now, you're an early user too, bugs and all. When something breaks or feels off, tell me. <strong>I don't take that kind of patience lightly, and it's already more than enough.</strong></p>
-
-      <p>If you ever want to do more than that, going Premium is the biggest help. Plot is also on <a href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener" data-cta="about-kofi">Ko-fi</a> for anyone who'd rather just buy the builder a coffee. Both cover what it actually costs to run, and both buy me more time to keep building.</p>
-
-      <p>Thank you for reading this. Thank you for considering Plot. And if you're already a user, thank you for backing a solo builder trying to make a life out of building beautiful things.</p>
+      <p>Plot is still early, so if you're using it now, you're an early user too, bugs and all. <strong>I don't take that kind of patience lightly, and it's already more than enough.</strong> If you ever want to do more, Plot is on <a href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener" data-cta="about-kofi">Ko-fi</a>. Thank you for reading this, and for considering Plot.</p>
     </section>
 
     <section class="about-section">
@@ -637,7 +536,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="faq">
         <details>
           <summary>Is Plot free?</summary>
-          <p>Yes. Tracking, your watchlist, the release calendar, What's On, where to watch, up to 5 lists and following friends are all free, forever, with no credit card. Premium adds unlimited lists, a live calendar subscription and Pick for Me for US$3/month or US$24/year, with a 7-day free trial.</p>
+          <p>Yes. Tracking, your watchlist, the release calendar, What's On, up to 5 lists and following friends are free, with no credit card. Premium adds unlimited lists, a live calendar subscription and Pick for Me for US$3/month or US$24/year, with a 7-day free trial.</p>
         </details>
         <details>
           <summary>How is Plot different from Letterboxd, Trakt or IMDb?</summary>

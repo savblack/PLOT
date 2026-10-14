@@ -22,25 +22,14 @@ export const ABOUT_PAGE = {
       heading: "Why I built plot",
       paragraphs: [
         "You don't have to call yourself a cinephile to belong here. If you've ever rewatched the same show three times because nothing else felt right, you're the person I made this for.",
-        "Plot started because of a real lack of enthusiasm for the apps that already exist. They're clunky, seemingly only ever in dark mode, and bluntly, no fun to look at. A place to track what you watch shouldn't be hard on the eyes or a chore to open.",
-        "Then there was the pressure. The pressure of writing reviews, of performing how you felt about something in the \"right\" way. Plot is for people who love TV, who love movies, who love the cinema and aren't afraid to say exactly how something made them feel. If all you have to say about a movie is that it made you cry 14 separate times, firstly, shout out to my emotional baddies, and secondly, thanks for the heads up! That one's getting saved for when a good cry is needed.",
+        "The apps that already exist are clunky, seemingly only ever in dark mode, and no fun to look at. Worse, they come with pressure: write the review, perform how you felt in the \"right\" way. If all you have to say about a movie is that it made you cry 14 separate times, firstly, shout out to my emotional baddies, and secondly, thanks for the heads up. That one's getting saved for when a good cry is needed.",
+        "That's why Plot caps the characters in your reviews. Nobody delivers a measured critique the second the credits roll. You have a feeling, and that's what movies and TV are for. Rate it, say how it hit you, move on. Months later you'll scroll back and remember exactly who you were when you watched it. <strong>That's the whole product: the joy of watching, minus the performance of it.</strong>",
       ],
       pullQuote: "Sometimes the only review worth writing is \"I fucking loved that\", and then moving on.",
     },
     {
-      id: "reviews",
-      heading: "Reviews that take ten seconds",
-      paragraphs: [
-        "That's why Plot caps the characters in your reviews. The point is to capture your immediate, true reaction, the way you would in a journal. Nobody delivers a measured critique the second the credits roll. You have a feeling. That's what movies and TV are designed to give us. They're not made to be picked apart frame by frame.",
-        "Rate it, say how it hit you, move on. Months later you'll scroll back through your Plot and remember exactly who you were when you watched it. <strong>That's the whole product: the joy of watching, minus the performance of it.</strong>",
-      ],
-    },
-    {
       id: "features",
       heading: "What plot does",
-      paragraphs: [
-        "Building in this space, you notice the small frustrations you'd usually ignore. Never knowing when a show drops or the next episode lands. Forgetting the movie a friend swore by. The nightly hunt across seven platforms, only to give up and pick the first thing on Netflix. Plot remembers all of it, so you don't have to.",
-      ],
       features: [
         {
           title: "Track everything you watch",
@@ -48,100 +37,81 @@ export const ABOUT_PAGE = {
         },
         {
           title: "A watchlist with a memory",
-          detail: "Save the movie your friend swore by before you forget the title, and see where it's streaming when you finally get to it.",
+          detail: "Save the movie your friend swore by, and see where it's streaming when you finally get to it.",
         },
         {
           title: "Your own release calendar",
-          detail: "Every new episode, season and film you care about, laid out so there's always something to look forward to.",
+          detail: "Every new episode, season and film you care about, so there's always something to look forward to.",
         },
         {
           title: "What's On, daily",
-          detail: "What's new and trending across streaming platforms on one page, no logging in to seven apps. <a href=\"/whats-on\" data-cta=\"about-features\">Browse What's On</a>",
-        },
-        {
-          title: "Where to watch",
-          detail: "The service that has it, right on the title, so the hunt ends before it starts.",
-        },
-        {
-          title: "Lists with a point of view",
-          detail: "Comfort rewatches, \"movies to make my partner watch\", the lot. Up to 5 on Free, unlimited on Premium.",
+          detail: "What's new and trending across streaming platforms on one page. <a href=\"/whats-on\" data-cta=\"about-features\">Browse What's On</a>",
         },
         {
           title: "Friends and taste match",
-          detail: "Follow friends, share your profile, and see how alike your taste really is with one number. <a href=\"/taste-match\" data-cta=\"about-features\">Try Taste match</a>",
+          detail: "Follow friends and see what they thought in their own words, not a 2,000-word essay. Compare your taste with one number, then send it to someone. Nobody can resist finding out they're a 41. <a href=\"/taste-match\" data-cta=\"about-features\">Try Taste match</a>",
         },
       ],
-    },
-    {
-      id: "premium",
-      heading: "Free forever, and Premium when you want more",
-      paragraphs: [
-        "Everything above is free, with no credit card and no trial clock. I'm not holding the good bits hostage.",
-        "Premium is for the nights you want Plot to do the deciding. Every subscription goes straight into keeping Plot independent and shipping the next thing. There are no ads to fall back on, and that's on purpose.",
-      ],
-      premiumCard: {
-        eyebrow: "Premium",
-        amount: "US$2",
-        per: "/month",
-        alt: "US$24 billed yearly, or US$3 monthly. Taxes included. 7-day free trial.",
-        items: [
-          "<strong>Pick for Me</strong> hands you a shortlist for tonight from your own watchlist.",
-          "<strong>Live calendar subscription</strong> puts new episodes in your calendar app, next to your actual life.",
-          "<strong>Unlimited lists</strong>, so the \"movies to make my partner watch\" list never has to end.",
-        ],
-        cta: "Try Premium free for 7 days",
-        note: "Cancel in the trial and you pay nothing.",
-      },
-    },
-    {
-      id: "friends",
-      heading: "Better with your people",
-      paragraphs: [
-        "Plot is quieter than a social network and better than a group chat. Follow a friend and you'll see what they're watching and what they thought, in their own words, not a 2,000-word essay. Compare your taste and settle the argument about whose recommendations are better. Share your calendar with family so they know not to call you during the Summer House reunion.",
-        "The fastest way to get someone on Plot is to send them your <a href=\"/taste-match\" data-cta=\"about-friends\">taste match</a>. Nobody can resist finding out they're a 41.",
-      ],
+      premiumNote: "All of it is free, with no credit card. Premium is US$3 a month or US$24 a year, with the first 7 days free, and adds Pick for Me, a live calendar subscription and unlimited lists. It's also the biggest way to keep Plot independent. <a href=\"/pricing\" data-cta=\"about-premium\">See what Premium adds</a>",
     },
     {
       id: "next",
       heading: "What's next",
       paragraphs: [
-        "I've got a lot more I want to do. Native apps for iPhone and Android. Push and email alerts the moment something on your watchlist arrives. Smarter, more personal recommendations. And watch together, so you and your friends can line up the same show and watch in real time, wherever you are. Everything that has already shipped is on the <a href=\"/changelog\" data-cta=\"about-changelog\">changelog</a>, newest first.",
+        "Native apps for iPhone and Android. Alerts the moment something on your watchlist arrives on a service you use. Smarter recommendations. And watch together, so you and your friends can line up the same show and watch in real time, wherever you are. Everything that has already shipped is on the <a href=\"/changelog\" data-cta=\"about-changelog\">changelog</a>.",
       ],
     },
     {
       id: "solo",
       heading: "Built by one person",
       paragraphs: [
-        "Plot is built by one person, around a full-time job. There's no team, no investors and no corporate roadmap. It's shaped almost entirely by feedback from the people who use it, which means you. Any note, good or bad, any feature request or bug you spot, lands in my inbox and usually ends up in the app. You can send one anytime from Settings, or email <a href=\"mailto:contact@theplot.tv\" data-cta=\"about-email\">contact@theplot.tv</a>.",
-        "Plot is still early, so if you're using it now, you're an early user too, bugs and all. When something breaks or feels off, tell me. <strong>I don't take that kind of patience lightly, and it's already more than enough.</strong>",
-        "If you ever want to do more than that, going Premium is the biggest help. Plot is also on <a href=\"https://ko-fi.com/J7P123TYGK\" target=\"_blank\" rel=\"noopener\" data-cta=\"about-kofi\">Ko-fi</a> for anyone who'd rather just buy the builder a coffee. Both cover what it actually costs to run, and both buy me more time to keep building.",
-        "Thank you for reading this. Thank you for considering Plot. And if you're already a user, thank you for backing a solo builder trying to make a life out of building beautiful things.",
+        "Plot is built by one person, around a full-time job. There's no team, no investors and no corporate roadmap. It's shaped almost entirely by feedback from the people who use it, which means you. Any note, good or bad, any feature request or bug you spot, lands in my inbox and usually ends up in the app. Send one from Settings, or email <a href=\"mailto:contact@theplot.tv\" data-cta=\"about-email\">contact@theplot.tv</a>.",
+        "Plot is still early, so if you're using it now, you're an early user too, bugs and all. <strong>I don't take that kind of patience lightly, and it's already more than enough.</strong> If you ever want to do more, Plot is on <a href=\"https://ko-fi.com/J7P123TYGK\" target=\"_blank\" rel=\"noopener\" data-cta=\"about-kofi\">Ko-fi</a>. Thank you for reading this, and for considering Plot.",
       ],
     },
     {
       id: "glance",
       heading: "plot, at a glance",
       facts: [
-        { term: "What it is", detail: "Your whole watching life in one place. A journal for how it felt, a watchlist with a memory, a calendar for what's coming, a guide to what's on, and a way to share it with the people you watch with." },
-        { term: "Who it's for", detail: "People who love movies and TV and don't need a word for it." },
-        { term: "What it costs", detail: "Nothing. Premium is US$3/month or US$24/year, with the first 7 days free." },
-        { term: "Where it runs", detail: "Any browser, at app.theplot.tv. iPhone and Android are coming." },
-        { term: "Who makes it", detail: "Me. One person, around a full-time job. No team, no investors, no ads." },
+        {
+          term: "What it is",
+          detail: "Your whole watching life in one place. A journal for how it felt, a watchlist with a memory, a calendar for what's coming, a guide to what's on, and a way to share it with the people you watch with.",
+        },
+        {
+          term: "Who it's for",
+          detail: "People who love movies and TV and don't need a word for it.",
+        },
+        {
+          term: "What it costs",
+          detail: "Nothing. Premium is US$3/month or US$24/year, with the first 7 days free.",
+        },
+        {
+          term: "Where it runs",
+          detail: "Any browser, at <a href=\"https://app.theplot.tv\" data-cta=\"about-facts\">app.theplot.tv</a>. iPhone and Android are coming.",
+        },
+        {
+          term: "Who makes it",
+          detail: "Me. One person, around a full-time job. No team, no investors, no ads.",
+        },
       ],
       ctas: [
-        { label: "Start your plot, free", href: "https://app.theplot.tv/signup" },
-        { label: "See what Premium adds", href: "/pricing" },
+        {
+          label: "Start your plot, free",
+          href: "https://app.theplot.tv/signup",
+        },
+        {
+          label: "See what Premium adds",
+          href: "/pricing",
+        },
       ],
     },
     {
       id: "faq",
       heading: "Questions people ask",
-      paragraphs: [
-      ],
       faq: [
         {
           q: "Is Plot free?",
-          a: "Yes. Tracking, your watchlist, the release calendar, What's On, where to watch, up to 5 lists and following friends are all free, forever, with no credit card. Premium adds unlimited lists, a live calendar subscription and Pick for Me for US$3/month or US$24/year, with a 7-day free trial.",
+          a: "Yes. Tracking, your watchlist, the release calendar, What's On, up to 5 lists and following friends are free, with no credit card. Premium adds unlimited lists, a live calendar subscription and Pick for Me for US$3/month or US$24/year, with a 7-day free trial.",
         },
         {
           q: "How is Plot different from Letterboxd, Trakt or IMDb?",
