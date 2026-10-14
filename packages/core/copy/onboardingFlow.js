@@ -41,6 +41,14 @@ export const ONBOARDING_FLOW = {
     subtitle: 'Pick a few of this week’s trending titles to start your watchlist. You can always add more or change these later.',
     switchingLead: 'Switching apps?',
     switchingBody: 'Bring your history and watchlist over instead.',
+    // Mobile folds the import-source picker into this step: the row above
+    // toggles it in place of the poster grid, and this is the row's text while
+    // the sources are showing.
+    switchingBack: 'Pick a few titles instead.',
+    // Inline, under the search field. Both keep the step completable.
+    searchError: 'Search isn\u2019t working right now.',
+    trendingError: 'We couldn\u2019t load this week\u2019s trending titles.',
+    retry: 'Retry',
     continueWith: (n) => `Continue with ${n} ${n === 1 ? 'title' : 'titles'} →`,
     tapAFew: 'Pick at least one to continue',
   },
@@ -70,6 +78,14 @@ export const ONBOARDING_FLOW = {
     // Line one when they skipped services.
     noServicesFirstLine: 'Checking every platform…',
     status: 'Building your Plot',
+    // Mobile shows what the one save is actually writing, and holds the screen
+    // only as long as that takes (with a short floor so it never flashes).
+    saving: (titles, services) => {
+      const t = titles === 0 ? '' : `${titles} ${titles === 1 ? 'title' : 'titles'}`;
+      const s = services === 0 ? '' : `${services} ${services === 1 ? 'service' : 'services'}`;
+      const what = [t, s].filter(Boolean).join(' and ');
+      return what ? `Saving ${what}…` : 'Saving your setup…';
+    },
   },
   // A dismissible card at the top of Home. Skipped onboarding and a finished
   // Trakt import never arm it. Skip on the card hides it. Home is already open.

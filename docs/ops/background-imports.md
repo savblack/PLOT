@@ -23,7 +23,20 @@ and carry on using the app. Shipped 2026-10 (migration `20261015090000`).
    offers "Finish matching", which opens the import page's preview on exactly
    those entries (`/import?job=<id>`).
 5. Uploads and intermediate files are deleted when the job finishes or fails
-   for good; `_review.json` stays until the user deletes their account.
+   for good. `_review.json` is removed when the user finishes the review
+   (`finishImportJobReview`, which also zeroes `review_count`), swept by the
+   worker after 30 days (`run_import_review_sweep`, daily cron, posts
+   `{"action":"sweep"}` with the Vault bearer), and cleared with the rest of
+   the user's `import-uploads` folder by `delete-account`.
+
+Plex: the worker needs a server and profile on the integration. The
+onboarding panel (web and mobile) lists them once Plex is connected, and
+`usePlexSource(userId, { autoPick: true })` picks the only server and the only
+profile itself, so most people never see the chips.
+
+Web only: a blocked Trakt popup sends the tab to Trakt instead. The step-one
+picks are parked in sessionStorage (`utils/onboardingStash.js`) on the way out
+and restored when `?import=trakt` brings the flow back.
 
 The parse / match / plan / write code is the apps' own pipeline, bundled from
 `packages/core/importEngine.js` into
@@ -33,8 +46,8 @@ stale; run `pnpm run import-engine` after touching the import pipeline.
 
 ## Deploying
 
-- The migration applies to production on merge. It creates the bucket, the
-  table, the RPCs and the cron entry.
+- The migrations apply to production on merge. They create the bucket, the
+  table, the RPCs and the two cron entries (worker tick, daily review sweep).
 - Deploy the function: `supabase functions deploy import-worker`. It is
   declared in `config.toml` with `verify_jwt = false` (it verifies the service
   bearer or the user JWT itself).

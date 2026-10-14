@@ -32,6 +32,7 @@ import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import { readPendingSave } from '../utils/pendingSave.js';
+import { writeOnboardingStash, takeOnboardingStash } from '../utils/onboardingStash.js';
 import { notifyOnboardingCompleted } from '@plot/core/brevoLifecycleClient.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
@@ -83,7 +84,9 @@ export default function OnboardingFlow() {
   const [seedResults, setSeedResults] = useState([]);
   const [seedSearching, setSeedSearching] = useState(false);
   const [trending, setTrending] = useState([]);
-  const [seedSelected, setSeedSelected] = useState([]);
+  // The same-tab Trakt fallback parks the picks in sessionStorage on the way
+  // out (utils/onboardingStash.js); ?import=trakt is the way back in.
+  const [seedSelected, setSeedSelected] = useState(() => (searchParams.get('import') ? takeOnboardingStash()?.seeds ?? [] : []));
 
   // Switching apps. The import itself starts here: a file is uploaded and
   // queued, or an account is connected and queued, and the import-worker
@@ -95,7 +98,7 @@ export default function OnboardingFlow() {
   const [importJob, setImportJob] = useState(null);
   const trakt = useTraktSync(user?.id);
   const plex = useMediaSync(user?.id);
-  const plexSource = usePlexSource(user?.id);
+  const plexSource = usePlexSource(user?.id, { autoPick: true });
 
   // Where do you watch
   const [services, setServices] = useState([]);
@@ -394,11 +397,12 @@ export default function OnboardingFlow() {
     const clientId = getConfig().traktClientId;
     if (!clientId) { setImportError(IMPORT_JOBS.onboarding.uploadFailed); return; }
     // The popup keeps this page, and its picks, alive. A blocked popup falls
-    // back to the same tab; ?import=trakt brings the flow back to this step.
+    // back to the same tab with the picks stashed; ?import=trakt brings the
+    // flow back to this step and the stash restores them.
     const url = buildTraktAuthorizeUrl(clientId, createTraktState('/onboarding?import=trakt'));
     const popup = window.open(url, 'plot-trakt', 'popup,width=600,height=760');
     if (popup) setImportPhase('connecting');
-    else redirectToExternal(url);
+    else { writeOnboardingStash({ seeds: seedSelected }); redirectToExternal(url); }
   };
 
   const startImportJob = async () => {
@@ -453,7 +457,7 @@ export default function OnboardingFlow() {
         connectedName: connected ? importSource : null,
         plex: importSource === 'plex' && connected ? {
           servers: plexSource.servers || [], profiles: plexSource.profiles || [], serverId: plexSource.serverId || null,
-          selected: !!plexSource.selected, busy: plexSource.busy, error: plexSource.error || null, choose: plexSource.choose,
+          selected: !!plexSource.selected, selection: plexSource.selection || null, busy: plexSource.busy, error: plexSource.error || null, choose: plexSource.choose,
         } : null,
         onFiles: uploadImport,
         onConnect: connectImport,

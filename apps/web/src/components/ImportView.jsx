@@ -7,7 +7,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { markImportDone } from '../utils/finishingTouchesState.js';
-import { readImportJob, readImportJobReview, importSourceName } from '@plot/core/importJobs.js';
+import { readImportJob, readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { suppressFirstWinForImport } from '../utils/firstWinCardState.js';
 import { tmdb } from '@plot/core/tmdb.js';
@@ -440,9 +440,11 @@ function AccountImportView() {
       markImportDone(user.id, platform?.id, inserted);
       suppressFirstWinForImport(user.id, platform?.id);
     }
+    // A background job's leftovers are done with: drop the review file.
+    if (reviewJob) await finishImportJobReview(reviewJob);
     setImporting(false);
     setStep(5);
-  }, [plan, platform, user, results, resolvingMatch, importReport]);
+  }, [plan, platform, user, results, resolvingMatch, importReport, reviewJob]);
 
   const newCount       = getConfig().importEventsEnabled ? results.filter(r => r.status === 'matched' && r.listSelected !== false && !alreadyImportedEvent(r)).length : plan.rows.length;
   const alreadyCount   = results[0]?.destination ? 0 : getConfig().importEventsEnabled ? results.filter(alreadyImportedEvent).length : plan.alreadyInHistory;

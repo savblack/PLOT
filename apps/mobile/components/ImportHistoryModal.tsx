@@ -20,7 +20,7 @@ import {
   createImportReporter, IMPORT_ENTRY_POINTS, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
 import { suppressFirstWinForImport } from '../lib/firstWinCard';
-import { readImportJobReview, importSourceName } from '@plot/core/importJobs.js';
+import { readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
@@ -391,8 +391,10 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
       onImported?.(platform, inserted);
       if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
     }
+    // A background job's leftovers are done with: drop the review file.
+    if (reviewJob) await finishImportJobReview(reviewJob);
     setStep('done');
-  }, [plan, resolved, userId, platform, importReport, onImported]);
+  }, [plan, resolved, userId, platform, importReport, onImported, reviewJob]);
 
   const connection = platform === 'plex' ? plex : platform === 'trakt' ? trakt : platform === 'simkl' ? simkl : null;
   const connectionName = platform === 'plex' ? 'Plex' : platform === 'trakt' ? 'Trakt' : 'Simkl';

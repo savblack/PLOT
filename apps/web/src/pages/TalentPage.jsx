@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { profileUrl } from '../utils/images.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
+import CustomizeArtwork from '../components/ArtworkSheet.jsx';
 import { tmdb } from '@plot/core/tmdb.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import { TalentWork } from '../components/TalentCredits.jsx';
@@ -26,6 +28,7 @@ export default function TalentPage() {
 function TalentPageContent({ personId }) {
   const navigate = useNavigate();
   const { openPanel } = useApp();
+  const art = useUserArtwork();
   const [person, setPerson] = useState(null);
   const [credits, setCredits] = useState(null);
   const [error, setError] = useState(false);
@@ -52,7 +55,7 @@ function TalentPageContent({ personId }) {
     </div>
   );
 
-  const image = profileUrl(person.profile_path, 'h632');
+  const image = profileUrl(art.path('person', person.id, 'profile') || person.profile_path, 'h632');
   const knownFor = person.known_for_department || MEDIA_PANEL.talentFallback;
   const biographyPreview = shortBiography(person.biography);
   return (
@@ -69,6 +72,7 @@ function TalentPageContent({ personId }) {
           <h1>{person.name}</h1>
           {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
           <PersonFollow person={person} />
+          <CustomizeArtwork mediaType="person" tmdbId={person.id} defaults={{ profile: person.profile_path }} />
         </div>
       </header>
       {person.biography && (

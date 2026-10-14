@@ -166,6 +166,19 @@ export async function dismissImportJob(jobId) {
 }
 
 /**
+ * The user finished (or gave up on) a job's review: the leftovers file has
+ * served its purpose, so it goes, and the card stops offering "Finish
+ * matching". Files nobody comes back for are swept by the worker after 30 days.
+ * @param {{ id: string, user_id: string }} job
+ */
+export async function finishImportJobReview(job) {
+  if (!job?.id || !job.user_id) return false;
+  await supabase.storage.from(IMPORT_UPLOADS_BUCKET).remove([`${job.user_id}/${job.id}/_review.json`]).catch(() => {});
+  const { error } = await supabase.rpc('finish_import_job_review', { p_job: job.id });
+  return !error;
+}
+
+/**
  * The newest import for this account, finished or not.
  * @param {string} userId
  */

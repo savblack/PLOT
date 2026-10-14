@@ -58,6 +58,16 @@ const fallbackLink = (href) => `
   <a href="${href}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline; word-break: break-all;">${href}</a>
 </p>`;
 
+// The six-digit code, for the mobile app's inbox step: a link opened on a
+// different device than the one that signed up cannot sign that device in, so
+// the app also accepts the code typed by hand. {{ .Token }} is the same OTP
+// the link carries, and Supabase only renders it when the template asks.
+const codeBlock = (lead) => `
+<p style="margin: 28px 0 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted}; text-align: center;">${lead}</p>
+<p style="margin: 8px 0 0; text-align: center;">
+  <span style="font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 26px; letter-spacing: 8px; color: ${t.textPrimary};">{{ .Token }}</span>
+</p>`;
+
 const noteBlock = (note) => note ? `
 <div style="margin-top: 22px; padding: 14px 16px; border-radius: 12px; background-color: ${t.surfaceTint}; border: 1px solid ${t.accentSoft}; text-align: center;">
   <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.65; color: ${t.textSecondary};">${note}</p>
@@ -146,7 +156,7 @@ const emails = {
       preheader: 'One click and your film & TV journal is ready.',
       heading: 'Welcome to plot',
       intro: "Confirm your email to start logging, rating, and lining up what to watch next.",
-      content: button(authUrl('signup'), 'Confirm email') + fallbackLink(authUrl('signup')),
+      content: button(authUrl('signup'), 'Confirm email') + codeBlock('In the app? Enter this code instead:') + fallbackLink(authUrl('signup')),
       note: 'This is the email most new plot members see first, so we kept it simple: one step in, then straight to your watch journal.',
       safety: "Didn't sign up for plot? You can safely ignore this email.",
     }),
@@ -170,7 +180,7 @@ const emails = {
       preheader: 'Your one-time sign-in link for plot.',
       heading: 'Sign in to plot',
       intro: "Here's your one-time sign-in link. It only works once and expires in an hour.",
-      content: button(authUrl('magiclink'), 'Sign in') + fallbackLink(authUrl('magiclink')),
+      content: button(authUrl('magiclink'), 'Sign in') + codeBlock('In the app? Enter this code instead:') + fallbackLink(authUrl('magiclink')),
       note: 'If you requested multiple sign-in links, use the newest one.',
       safety: "Didn't try to sign in? You can safely ignore this email.",
     }),

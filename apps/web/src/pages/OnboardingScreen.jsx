@@ -73,6 +73,7 @@ function ImportPanel({ importStep }) {
             <div className="ob-import-plex">
               {(plex.servers || []).map(server => <button type="button" key={server.clientIdentifier} className={`ob-chip${plex.serverId === server.clientIdentifier ? ' is-on' : ''}`} disabled={plex.busy} onClick={() => plex.choose(server.clientIdentifier)}>{server.name}</button>)}
               {(plex.profiles || []).map(profile => <button type="button" key={profile.accountID} className="ob-chip" disabled={plex.busy} onClick={() => plex.choose(plex.serverId, profile.accountID)}>{profile.name}</button>)}
+              {plex.selected && plex.selection ? <p className="ob-import-body">{I.plexPicked(plex.selection.name, plex.selection.profileName)}</p> : null}
               {!plex.selected && <p className="ob-import-body">{I.plexServerLater}</p>}
               {plex.error && <p className="ob-error">{plex.error}</p>}
             </div>
@@ -109,7 +110,7 @@ function Progress({ step }) {
  *   onPickImport: (id: string) => void,
  *   importStep: { source: string | null, phase: 'pick' | 'file' | 'uploading' | 'connect' | 'connecting' | 'ready' | 'starting' | 'queued',
  *                 error: string | null, accept: string, formats: string, connectedName: string | null,
- *                 plex: { servers: any[], profiles: any[], serverId: string | null, selected: boolean, busy: boolean, error: string | null, choose: (server?: string, profile?: string) => void } | null,
+ *                 plex: { servers: any[], profiles: any[], serverId: string | null, selected: boolean, selection: { name?: string, profileName?: string } | null, busy: boolean, error: string | null, choose: (server?: string, profile?: string) => void } | null,
  *                 onFiles: (files: FileList | File[]) => void, onConnect: () => void, onStartImport: () => void, onContinue: () => void },
  *   services: { list: Array<{ id: number, name: string, logo_path: string | null }> | null, error: boolean,
  *               selectedIds: number[], onToggle: (id: number) => void, region: string, editingRegion: boolean,

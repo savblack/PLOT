@@ -44,6 +44,9 @@ import {
 } from '@plot/core/watchingProgress.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
+import CustomizeArtwork from './ArtworkSheet';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import UpgradeSheet from './UpgradeSheet';
@@ -164,7 +167,7 @@ function IconBookmark({ saved }: { saved: boolean }) {
   );
 }
 // ── Episode guide ─────────────────────────────────────────────────────
-function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }> }) {
+function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onSeasonChange }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }>; onSeasonChange?: (season: number) => void }) {
   const { colors } = useTheme();
   const { userId } = useAppData();
   const sparse = useEpisodeWatches(userId, tvId);
@@ -175,6 +178,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
   const seasons = guideSeasons(details, episodeStates);
   const [selSeason, setSelSeason] = useState(progress?.current_season || 1);
   const guideSeason = guideSeasonSelection(seasons, selSeason);
+  useEffect(() => { onSeasonChange?.(guideSeason); }, [guideSeason, onSeasonChange]);
   const [episodes,  setEpisodes]  = useState<any[]>([]);
   const [loading,   setLoading]   = useState(false);
   const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || specials.loading || specials.refreshing || specials.error || loading;
@@ -790,6 +794,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { userId, profile, watchlist, watching, favorites, history, customLists, topLists, privateNotes } = useAppData();
+  const art = useUserArtwork();
   const { open: openTitle } = useMediaPanel();
   const router = useRouter();
   const followPerson = useFollowPerson();
@@ -809,6 +814,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const [statusPending, setStatusPending] = useState('');
   // True while a watched or watching change started from the foot bar is in flight.
   const [footBusy, setFootBusy] = useState(false);
+  const [pickedSeason, setPickedSeason] = useState<number | null>(null);
+  const [seasonItemId, setSeasonItemId] = useState(itemId);
+  if (seasonItemId !== itemId) {
+    setSeasonItemId(itemId);
+    setPickedSeason(null);
+  }
 
   const slideY = useRef(new Animated.Value(PANEL_H)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -1055,6 +1066,15 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const movieRuntime = isMovie ? details?.runtime : undefined;
   const movieEnds = movieRuntime != null && movieRuntime > 0 ? endsAtTime(movieRuntime) : null;
   const factLine = [year, runtimeText, movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''].filter(Boolean).join(' · ');
+  const artworkSubject = isMovie ? 'movie' : 'tv';
+  const fromProgress = progress?.current_season;
+  const seasonForPoster = isMovie
+    ? null
+    : (pickedSeason ?? (Number.isInteger(fromProgress) ? fromProgress : null));
+  const seasonPoster = seasonForPoster == null ? null : art.path('season', itemId, 'poster', seasonForPoster);
+  const posterPath = seasonPoster || art.path(artworkSubject, itemId, 'poster') || details?.poster_path || null;
+  const backdropPath = art.path(artworkSubject, itemId, 'backdrop') || details?.backdrop_path || null;
+  const logoPath = art.path(artworkSubject, itemId, 'logo');
   const author = isMovie
     ? details?.credits?.crew?.find(person => person.job === 'Director')?.name
     : details?.created_by?.[0]?.name;
@@ -1126,13 +1146,16 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         >
           {/* Backdrop image */}
           <View style={styles.backdropWrap}>
-            {details?.backdrop_path
-              ? <Image source={{ uri: backdropUrl(details.backdrop_path) ?? '' }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-              : details?.poster_path
-              ? <Image source={{ uri: posterUrl(details.poster_path, 'w780') ?? '' }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            {backdropPath
+              ? <Image source={{ uri: backdropUrl(backdropPath) ?? '' }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              : posterPath
+              ? <Image source={{ uri: posterUrl(posterPath, 'w780') ?? '' }} style={StyleSheet.absoluteFill} resizeMode="cover" />
               : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
             }
             <View style={styles.backdropGradient} />
+            {logoPath ? (
+              <Image source={{ uri: logoUrl(logoPath, 'w300') ?? '' }} style={styles.titleLogo} resizeMode="contain" accessibilityElementsHidden />
+            ) : null}
             <TouchableOpacity style={styles.closeBtn} onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
               <IconX />
             </TouchableOpacity>
@@ -1154,8 +1177,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
               <>
                 {/* Head: poster over the cover band, facts beside it. */}
                 <View style={styles.head}>
-                  {details?.poster_path
-                    ? <Image source={{ uri: posterUrl(details.poster_path, 'w342') ?? '' }} style={styles.poster} />
+                  {posterPath
+                    ? <Image source={{ uri: posterUrl(posterPath, 'w342') ?? '' }} style={styles.poster} />
                     : <View style={styles.poster} />}
                   <View style={styles.headText}>
                     <Text style={styles.kicker}>{isMovie ? MEDIA.movie : MEDIA.series}</Text>
@@ -1175,6 +1198,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         ))}
                       </View>
                     )}
+                    <CustomizeArtwork
+                      mediaType={artworkSubject}
+                      tmdbId={itemId}
+                      seasonNumber={seasonForPoster == null ? undefined : seasonForPoster}
+                      defaults={{ poster: details?.poster_path, backdrop: details?.backdrop_path }}
+                      onLeave={close}
+                    />
                   </View>
                 </View>
 
@@ -1497,6 +1527,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       details={details}
                       watching={watching}
                       onSeriesFinished={handleSeriesFinished}
+                      onSeasonChange={setPickedSeason}
                     />
                   </>
                 )}
@@ -1517,7 +1548,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         const year = releaseDateFromItem(item)?.slice(0, 4) || '';
                         return (
                           <TouchableOpacity key={`${type}-${item.id}`} style={styles.similarCard} activeOpacity={0.7} onPress={() => openTitle(item.id, type)} accessibilityRole="button" accessibilityLabel={titleFromItem(item)}>
-                            <Image source={{ uri: posterUrl(item.poster_path, 'w185') ?? '' }} style={styles.similarPoster} />
+                            <Image source={{ uri: posterUrl(displayPosterPath(art.apply(item)), 'w185') ?? '' }} style={styles.similarPoster} />
                             <Text style={styles.similarName} numberOfLines={1}>{titleFromItem(item)}</Text>
                             <Text style={styles.similarMeta} numberOfLines={1}>{[year, type === 'tv' ? 'TV' : 'Movie'].filter(Boolean).join(' · ')}</Text>
                           </TouchableOpacity>
@@ -1616,6 +1647,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   headText: { flex: 1, minWidth: 0, paddingTop: spacing.md },
   kicker: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.accent, marginBottom: 4 },
   title: { fontFamily: fontFamily.display, fontSize: 24, letterSpacing: -0.6, color: colors.textPrimary, lineHeight: 26, marginBottom: 4 },
+  titleLogo: {
+    position: 'absolute', left: 148, right: 56, bottom: 10, height: 36, zIndex: 2,
+  },
   facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
   genreChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.badge, backgroundColor: colors.accentSecondaryFill },

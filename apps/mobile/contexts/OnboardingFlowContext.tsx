@@ -1,7 +1,7 @@
 /**
  * State shared by the onboarding screens: the mobile counterpart of the state
  * apps/web/src/pages/OnboardingFlow.jsx keeps in one component. Mobile splits
- * the flow across expo-router screens (seed → import → services → building), so
+ * the flow across expo-router screens (seed → services → building), so
  * the picks, the region and the one save at the end live here.
  *
  * The save runs behind the building moment. It flips onboarding_complete first
@@ -46,7 +46,7 @@ interface OnboardingFlow {
   toggleSeed: (item: PickedTitle) => void;
   importSource: string | null;
   setImportSource: (id: string | null) => void;
-  /** The background import queued on the import step, if any. Home shows it. */
+  /** The background import queued from step 1's import panel, if any. Home shows it. */
   importJob: { id: string } | null;
   setImportJob: (job: { id: string } | null) => void;
   region: string;

@@ -1,0 +1,96 @@
+.panel-artwork-btn {
+  display: inline-flex;
+  margin-top: 0.65rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
+.panel-artwork-btn:hover { color: var(--text-primary); }
+
+.panel-title-logo {
+  position: absolute;
+  z-index: 1;
+  left: calc(1.25rem + 144px);
+  right: 1rem;
+  bottom: 0.75rem;
+  width: auto;
+  max-width: 11rem;
+  max-height: 2.6rem;
+  margin: 0;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+
+.artwork-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  padding: 1rem 1.1rem 1.25rem;
+}
+.artwork-sheet-note { margin: 0; color: var(--danger); font-size: 0.8rem; }
+.artwork-sheet-empty { margin: 0.35rem 0 0; color: var(--text-muted); font-size: 0.78rem; }
+
+.artwork-section-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.artwork-row {
+  display: flex;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding: 2px 2px 0.35rem;
+}
+
+.artwork-tile {
+  flex: 0 0 auto;
+  width: 5.4rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.artwork-tile--wide { width: 9.5rem; }
+.artwork-tile--logo { width: 8.5rem; background: var(--surface); }
+
+.artwork-tile img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  background: var(--surface-sunken);
+}
+
+.artwork-tile--wide img,
+.artwork-tile--logo img { aspect-ratio: 16 / 9; }
+.artwork-tile--logo img { object-fit: contain; }
+
+.artwork-tile span {
+  display: block;
+  padding: 0.35rem 0.4rem 0.45rem;
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+
+.artwork-tile-empty { display: block; aspect-ratio: 2 / 3; }
+.artwork-tile--wide .artwork-tile-empty,
+.artwork-tile--logo .artwork-tile-empty { aspect-ratio: 16 / 9; }
+.artwork-tile--selected { border-color: var(--accent); color: var(--text-primary); }
+.artwork-tile:disabled { opacity: 0.6; cursor: default; }

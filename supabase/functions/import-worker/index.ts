@@ -51,6 +51,8 @@ const SLICE = 100;
 const BUDGET_MS = 45_000;
 /** Only this much of the job's leftovers is kept for review. */
 const REVIEW_CAP = 2000;
+/** A review file nobody came back for is deleted after this long. */
+const REVIEW_TTL_DAYS = 30;
 const TMDB = 'https://api.themoviedb.org/3';
 
 const corsHeaders = {
@@ -269,6 +271,28 @@ async function runConnectionJob(admin: Db, job: Job) {
   }, true);
 }
 
+// ── Sweep ────────────────────────────────────────────────────────────────────
+
+/**
+ * Review files older than REVIEW_TTL_DAYS go, and the card stops offering
+ * "Finish matching" for them. Called daily by run_import_review_sweep (cron,
+ * service bearer). Files the user finished were already removed by the app.
+ */
+async function sweepReviews(admin: Db) {
+  const cutoff = new Date(Date.now() - REVIEW_TTL_DAYS * 86_400_000).toISOString();
+  const { data, error } = await admin.from('import_jobs').select('id, user_id')
+    .gt('review_count', 0).in('status', ['succeeded', 'partial', 'failed', 'cancelled']).lt('updated_at', cutoff).limit(500);
+  if (error) throw new Error(`sweep: ${error.message}`);
+  const stale = data ?? [];
+  if (stale.length) {
+    await admin.storage.from(BUCKET).remove(stale.map(j => `${j.user_id}/${j.id}/_review.json`)).catch(() => {});
+    const { error: updateError } = await admin.from('import_jobs')
+      .update({ review_count: 0, updated_at: new Date().toISOString() }).in('id', stale.map(j => j.id));
+    if (updateError) throw new Error(`sweep: ${updateError.message}`);
+  }
+  return stale.length;
+}
+
 // ── Entry ────────────────────────────────────────────────────────────────────
 
 async function callerScope(req: Request): Promise<{ user: string | null } | Response> {
@@ -289,6 +313,17 @@ serve(async (req) => {
   if (scope instanceof Response) return scope;
 
   const admin = createClient<Database>(Deno.env.get('SUPABASE_URL') ?? '', serviceKey());
+  const body = await req.json().catch(() => ({})) as { action?: string };
+  if (body.action === 'sweep') {
+    // The cron's job, not a user's: a user JWT gets no further.
+    if (scope.user) return json({ error: 'Forbidden' }, 403);
+    try {
+      return json({ swept: await sweepReviews(admin) });
+    } catch (error) {
+      console.error('[import-worker] sweep', error);
+      return json({ error: 'Sweep failed.' }, 500);
+    }
+  }
   // The bundled pipeline reads these exactly as the apps do (main.jsx / configureCore.ts).
   engine.configure({
     supabaseClient: admin,

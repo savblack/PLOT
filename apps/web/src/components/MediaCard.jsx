@@ -2,6 +2,8 @@ import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl, logoUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
+import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { MEDIA } from '../copy/media.js';
 
 /* The poster card used by the release rails (Calendar's "All releases"; it
@@ -44,7 +46,9 @@ function FavBtn({ item }) {
 }
 
 export default function MediaCard({ item, openPanel, providerLogo, watchlist }) {
-  const img   = posterUrl(item.poster_path, 'w185') || backdropUrl(item.backdrop_path, 'w300');
+  const art = useUserArtwork();
+  const shown = art.apply(item);
+  const img = posterUrl(displayPosterPath(shown), 'w185') || backdropUrl(displayBackdropPath(shown), 'w300');
   const type  = item.media_type || 'movie';
   const title = item.title || item.name;
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);

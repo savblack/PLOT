@@ -19,6 +19,8 @@ export const IMPORT_JOBS = {
     connected: (source) => `${source} is connected.`,
     startImport: 'Import my history',
     plexServerLater: 'Plex needs a server and profile picked in Settings before the import can run. We’ll remind you on Home.',
+    // The only server and profile were picked for them (or they picked).
+    plexPicked: (server, profile) => [server, profile].filter(Boolean).join(' · '),
     uploadFailed: 'We couldn’t upload that file. Check your connection and try again.',
     alreadyRunning: 'An import is already running. You can follow it on Home.',
     continue: 'Continue →',

@@ -40,6 +40,7 @@ import { serviceKey } from '../_shared/serviceKey.ts';
 import { billingSettingsUrl, cancelsAtPeriodEnd } from '../_shared/billingPolicy.ts';
 import { reconcileBillingSnapshot } from '../_shared/billingSnapshot.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
+import { errorText, reportLog } from '../_shared/posthogLog.ts';
 import { subscriptionIdFromInvoice, webhookAction } from '../_shared/stripeEvents.ts';
 import { TRIAL_REMINDER_FROM, TRIAL_REMINDER_REPLY_TO, buildTrialReminderEmail, planFromPrice } from '../_shared/trialReminderEmail.js';
 
@@ -136,7 +137,7 @@ async function capturePremiumConversion(userId: string, sub: Stripe.Subscription
   } catch (err) {
     // Analytics must never make Stripe retry a successfully-applied billing
     // event. The subscription state is already committed at this point.
-    console.error(`stripe-webhook: PostHog conversion capture failed for ${event.id}: ${(err as Error).message}`);
+    reportLog('stripe-webhook', 'error', `stripe-webhook: PostHog conversion capture failed for ${event.id}: ${errorText(err)}`, { distinctId: userId, attributes: { stripe_event_id: event.id } });
   }
 }
 
@@ -157,7 +158,7 @@ async function recordPremiumCheckoutCancellation(event: Stripe.Event) {
   } catch (err) {
     // The receipt makes the event idempotent. Analytics failure should not
     // make Stripe retry an already-recorded expiry.
-    console.error(`stripe-webhook: checkout cancellation capture failed for ${event.id}: ${(err as Error).message}`);
+    reportLog('stripe-webhook', 'error', `stripe-webhook: checkout cancellation capture failed for ${event.id}: ${errorText(err)}`, { distinctId: userId, attributes: { stripe_event_id: event.id } });
   }
 }
 
@@ -175,7 +176,7 @@ async function captureStripeTip(session: Stripe.Checkout.Session, event: Stripe.
       currency: normaliseCurrency(session.currency),
     }, new Date(event.created * 1000).toISOString());
   } catch (err) {
-    console.error(`stripe-webhook: PostHog tip capture failed for ${event.id}: ${(err as Error).message}`);
+    reportLog('stripe-webhook', 'error', `stripe-webhook: PostHog tip capture failed for ${event.id}: ${errorText(err)}`, { distinctId: userId, attributes: { stripe_event_id: event.id } });
   }
 }
 
@@ -201,19 +202,19 @@ async function sendTrialReminder(event: Stripe.Event) {
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
   const userId = await resolveUser(customerId, sub);
   if (!userId) {
-    console.error(`${event.type}: no user for customer ${customerId}`);
+    reportLog('stripe-webhook', 'error', `${event.type}: no user for customer ${customerId}`, { attributes: { stripe_event_type: event.type, stripe_customer_id: customerId } });
     return;
   }
   const plan = planFromPrice(sub.items?.data?.[0]?.price ?? null);
   if (!plan || typeof sub.trial_end !== 'number') {
-    console.error(`${event.type}: subscription ${sub.id} is not a Plot trial`);
+    reportLog('stripe-webhook', 'error', `${event.type}: subscription ${sub.id} is not a Plot trial`, { distinctId: userId, attributes: { stripe_event_type: event.type, stripe_subscription_id: sub.id } });
     return;
   }
   const { data: user, error: userError } = await admin().auth.admin.getUserById(userId);
   if (userError) throw new Error(`User lookup failed: ${userError.message}`);
   const to = user?.user?.email;
   if (!to) {
-    console.error(`${event.type}: no email for user`);
+    reportLog('stripe-webhook', 'error', `${event.type}: no email for user`, { distinctId: userId, attributes: { stripe_event_type: event.type } });
     return;
   }
   const { error: receiptError } = await admin().from('stripe_events').insert({ id: event.id, type: event.type });
@@ -257,7 +258,7 @@ Deno.serve(async (req) => {
       cryptoProvider,
     );
   } catch (err) {
-    console.error('Signature verification failed:', (err as Error).message);
+    reportLog('stripe-webhook', 'error', `Signature verification failed: ${errorText(err)}`);
     return json({ error: 'Invalid signature' }, 400);
   }
 
@@ -301,7 +302,7 @@ Deno.serve(async (req) => {
           // Ack rather than retry forever. Checkout writes the customer row
           // before the session is returned, so a missing user is not the
           // normal first-purchase path.
-          console.error(`${event.type}: no user for customer ${customerId}`);
+          reportLog('stripe-webhook', 'error', `${event.type}: no user for customer ${customerId}`, { attributes: { stripe_event_type: event.type, stripe_customer_id: customerId } });
           break;
         }
         return json({ received: true, ...await syncSubscription({ userId, customerId, sub, event }) });
@@ -313,7 +314,7 @@ Deno.serve(async (req) => {
         break;
     }
   } catch (err) {
-    console.error(`Handler failed for ${event.type}:`, (err as Error).message);
+    reportLog('stripe-webhook', 'error', `Handler failed for ${event.type}: ${errorText(err)}`, { attributes: { stripe_event_type: event.type } });
     // The RPC rolls back its receipt with the failed state update. No cleanup
     // request (which could also fail) is needed before Stripe retries.
     return json({ error: 'Handler failure' }, 500);
