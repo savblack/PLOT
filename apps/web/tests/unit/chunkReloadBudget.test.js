@@ -1,7 +1,7 @@
 // The stale-chunk reload budget is enforced in two places that cannot import
 // each other: src/utils/chunkError.js (module scope, used by the React error
-// boundaries) and an inline <script> in index.html that runs before any module
-// exists, so it can catch a failed *entry* script — the one failure no error
+// boundaries) and public/boot/startup-guard.js, a classic script index.html
+// loads before any module exists, so it can catch a failed *entry* script — the one failure no error
 // boundary ever sees, because React never mounted.
 //
 // They share one sessionStorage key, so if the key, window or max ever diverge
@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const WEB = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const html = readFileSync(join(WEB, 'index.html'), 'utf8');
+const html = readFileSync(join(WEB, 'public', 'boot', 'startup-guard.js'), 'utf8');
 const util = readFileSync(join(WEB, 'src', 'utils', 'chunkError.js'), 'utf8');
 
 /** Pull `var|const NAME = <literal>` out of a source file. */
@@ -26,7 +26,7 @@ function constant(src, name) {
   return m[1].trim().replace(/_/g, '').replace(/['"]/g, '');
 }
 
-test('index.html and chunkError.js agree on the reload budget', () => {
+test('startup-guard.js and chunkError.js agree on the reload budget', () => {
   assert.equal(
     constant(html, 'KEY'),
     constant(util, 'RELOAD_KEY'),

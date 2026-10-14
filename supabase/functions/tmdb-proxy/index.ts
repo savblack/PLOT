@@ -1,3 +1,5 @@
+import { constantTimeEqual } from '../_shared/serviceBearer.ts';
+
 // Only browser origins we actually serve from may call the proxy. Requests
 // with no Origin header (curl, server-to-server) are allowed through. Cross-site
 // browser requests are rejected with 403. Rate limiting is handled upstream by a
@@ -58,6 +60,21 @@ const ALLOWED_PATHS = [
   /^genre\/(movie|tv)\/list$/,
 ];
 
+// Mirror of ALLOWED_PARAMS in apps/web/workers/tmdb-proxy/src/tmdb.js.
+const ALLOWED_PARAMS = new Set([
+  'language', 'region', 'page', 'query', 'include_adult', 'external_source',
+  'append_to_response', 'watch_region', 'sort_by', 'year', 'timezone',
+  'primary_release_year', 'first_air_date_year',
+  'with_genres', 'without_genres', 'with_keywords', 'with_watch_providers',
+  'with_watch_monetization_types', 'with_release_type', 'with_original_language',
+  'with_type', 'with_companies', 'with_networks',
+  'vote_count.gte', 'vote_count.lte', 'vote_average.gte', 'vote_average.lte',
+  'with_runtime.gte', 'with_runtime.lte',
+  'release_date.gte', 'release_date.lte',
+  'primary_release_date.gte', 'primary_release_date.lte',
+  'first_air_date.gte', 'first_air_date.lte', 'air_date.gte', 'air_date.lte',
+]);
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   const CORS = corsHeaders(origin);
@@ -69,7 +86,7 @@ Deno.serve(async (req) => {
   // The Worker is the public admission-control boundary. A browser JWT alone
   // must not be enough to bypass its distributed rate limiter.
   const proxySecret = Deno.env.get('TMDB_PROXY_SHARED_SECRET');
-  if (!proxySecret || req.headers.get(PROXY_SECRET_HEADER) !== proxySecret) {
+  if (!proxySecret || !constantTimeEqual(req.headers.get(PROXY_SECRET_HEADER) ?? '', proxySecret)) {
     return new Response(JSON.stringify({ error: 'Proxy access required' }), {
       status: 403,
       headers: { ...CORS, 'Content-Type': 'application/json' },
@@ -125,12 +142,21 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Forward all query params except 'path' to TMDB.
-  // Never forward a client-supplied 'api_key': the server key is set last so a
-  // caller cannot override it via ?api_key=.
+  // Forward only the allow-listed query params to TMDB (see ALLOWED_PARAMS;
+  // the Worker in apps/web/workers/tmdb-proxy applies the same list before
+  // its cache key). Never forward a client-supplied 'api_key': the server key
+  // is set last so a caller cannot override it via ?api_key=.
   const tmdbUrl = new URL(`${BASE}/${cleanPath}`);
   url.searchParams.forEach((v, k) => {
-    if (k !== 'path' && k !== 'api_key') tmdbUrl.searchParams.set(k, v);
+    if (!ALLOWED_PARAMS.has(k) || tmdbUrl.searchParams.has(k)) return;
+    if (k === 'page') {
+      const n = Number(v);
+      if (!Number.isInteger(n) || n < 1) return;
+      tmdbUrl.searchParams.set(k, String(Math.min(n, 500)));
+      return;
+    }
+    if (v.length > 256) return;
+    tmdbUrl.searchParams.set(k, v);
   });
   tmdbUrl.searchParams.set('api_key', key);
 

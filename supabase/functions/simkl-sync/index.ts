@@ -356,6 +356,6 @@ serve(async req => {
     return json({ error: 'Unknown action' }, 404)
   } catch (error) {
     console.error('[simkl-sync]', error)
-    return json({ error: (error as Error).message }, 500)
+    return json({ error: 'Internal error' }, 500)
   }
 })

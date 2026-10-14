@@ -141,6 +141,7 @@ jobs:
           name: Check generated and shared sources
           command: |
             pnpm run footer:check
+            pnpm run csp:check
             pnpm run changelog:check
             pnpm run skills:check
             pnpm run tokens:check
@@ -299,7 +300,8 @@ jobs:
             PLOT_DB_CONNINFO="$SUPABASE_DB_URL" node scripts/write-pg-service.mjs "$service_file" plot_production
             export PGSERVICEFILE="$service_file" PGSERVICE=plot_production
             pg_dump -Fc --no-owner --no-privileges -n public -n auth -n storage -n supabase_migrations -f "${artifact%.gpg}"
-            gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$BACKUP_GPG_PASSPHRASE" -o "$artifact" "${artifact%.gpg}"
+            # Passphrase on stdin, not argv: argv is readable by every process on the runner.
+            gpg --batch --yes --symmetric --cipher-algo AES256 --pinentry-mode loopback --passphrase-fd 0 -o "$artifact" "${artifact%.gpg}" <<< "$BACKUP_GPG_PASSPHRASE"
             rm -f "${artifact%.gpg}"
             aws configure set default.s3.addressing_style path
             aws s3 cp "$artifact" "s3://${R2_BUCKET}/db-backups/${artifact}" --endpoint-url "$R2_ENDPOINT" --only-show-errors
@@ -325,17 +327,38 @@ jobs:
       - checkout
       - run: sudo apt-get update && sudo apt-get install -y awscli
       - run:
-          name: Mirror Supabase Storage to R2
+          name: Archive, encrypt and upload Supabase Storage
           command: |
+            # Every object, every run (no manifest, so nothing is skipped): the
+            # archive has to be self-contained to be restorable on its own.
+            # Encrypted with the same passphrase as the database dumps, because
+            # it holds the same class of data (avatars are PII) and the old
+            # plaintext mirror sat next to the encrypted dumps for anyone with
+            # the bucket to read. See docs/ops/db-restore.md for the restore.
             node scripts/backup-storage-buckets.mjs ./storage-mirror
+            stamp="$(date -u +%Y-%m-%dT%H%M%SZ)"
+            artifact="storage-${stamp}.tar.gpg"
+            tar -C ./storage-mirror -cf "${artifact%.gpg}" .
+            gpg --batch --yes --symmetric --cipher-algo AES256 --pinentry-mode loopback --passphrase-fd 0 -o "$artifact" "${artifact%.gpg}" <<< "$BACKUP_GPG_PASSPHRASE"
+            rm -f "${artifact%.gpg}"
             aws configure set default.s3.addressing_style path
-            aws s3 sync ./storage-mirror "s3://${R2_BUCKET}/storage-mirror/" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+            aws s3 cp "$artifact" "s3://${R2_BUCKET}/storage-backups/${artifact}" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+            # Five weekly archives. Objects total ~80 MB, so this stays well
+            # inside R2's free tier.
+            cutoff="$(date -u -d '35 days ago' +%Y-%m-%d)"
+            aws s3 ls "s3://${R2_BUCKET}/storage-backups/" --endpoint-url "$R2_ENDPOINT" | awk '{print $4}' | grep -E '^storage-.*\.tar\.gpg$' | while read -r key; do
+              file_date="$(echo "$key" | sed -E 's/^storage-([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')"
+              if [[ "$file_date" < "$cutoff" ]]; then
+                aws s3 rm "s3://${R2_BUCKET}/storage-backups/${key}" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+              fi
+            done
+            # Sentinel the backup-heartbeat Worker ages (its STORAGE_SENTINEL var).
             date -u +%Y-%m-%dT%H:%M:%SZ > synced-at.txt
             aws s3 cp synced-at.txt "s3://${R2_BUCKET}/storage-mirror/_synced-at.txt" --endpoint-url "$R2_ENDPOINT" --only-show-errors
       - alert_on_failure:
           workflow_name: storage-backup
           subject: "PLOT: weekly STORAGE BACKUP failed"
-          note: Avatar and marketing files were not mirrored to R2.
+          note: Avatar and marketing files were not archived to R2. The database dump does not contain object bytes.
 
   db-write-paths:
     executor: node

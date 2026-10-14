@@ -67,10 +67,10 @@ existing contracts.
   Fill types are `now_streaming`, `countdown`, `trailer`, and `on_this_day`,
   plus anniversary or spotlight when one qualifies. `question` is text-only.
 - Lifecycle: `planned → copy_ready → generated → needs_review → approved → published`.
-  `vetoed` = rejected. **Approval does not gate Buffer.** Social posts are not
+  `vetoed` = rejected. **Approval here does not gate Buffer.** Social posts are not
   approved in chat. Once copy is saved and the card images exist, `schedule.mjs`
-  pushes them into Buffer as scheduled posts on their planned day. Edit them in
-  Buffer. Approval decides whether the **article** goes on theplot.tv once
+  pushes them into Buffer as dated drafts on their planned day; they send once
+  approved in Buffer. Edit them there. Approval here decides whether the **article** goes on theplot.tv once
   `scheduled_for` has passed. That decision stays on the Notion board (Linear,
   while that board is on). Rejecting an article does not change publication rows.
 - **Cards before the queue.** Post types with a card template (`upcoming`,
@@ -223,8 +223,9 @@ desk and do not match Linear or Notion.
   asked you to write the rows. Once the Notion page exists, that board is the
   other place to do it one article at a time.
 - **Reject**: `status='vetoed'`. The article stays off theplot.tv. Captions
-  already in Buffer, and captions still `queued` in the database, still go out
-  unless the human deletes them in Buffer. Do not skip the rows yourself.
+  already in Buffer are drafts there and send only if approved in Buffer;
+  captions still `queued` in the database will be pushed as drafts too. Do not
+  skip the rows yourself.
 - **Unapprove / restore**: `status='needs_review'`. Do not touch publication rows.
 - **Log it**: one `marketing_review_events` row per action (§0). `action` is
   `approve`, `approve_all` (no `post_id`; put the affected ids in `after`),

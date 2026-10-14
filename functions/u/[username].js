@@ -169,9 +169,11 @@ async function profilePage({ request, params }) {
       .replace(/\s*<meta[^>]+property="og:[^"]*"[^>]*>/g, '')
       .replace(/\s*<meta[^>]+name="twitter:[^"]*"[^>]*>/g, '')
       .replace(/\s*<title>[^<]*<\/title>/i, '')
-      .replace('</head>', `${tags}</head>`)
+      // Function replacers: a string replacement interprets `$&`, `$1` and
+      // friends, and a display name is user text that may contain them.
+      .replace('</head>', () => `${tags}</head>`)
       // Server-rendered snapshot for crawlers; React replaces #root on mount.
-      .replace('<div id="root"></div>', `<div id="root">${seoSnapshot(profile)}</div>`);
+      .replace('<div id="root"></div>', () => `<div id="root">${seoSnapshot(profile)}</div>`);
   } else {
     // Private or unknown handle: don't index a content-less shell.
     html = html.replace('</head>', `<meta name="robots" content="noindex"/></head>`);
@@ -182,8 +184,10 @@ async function profilePage({ request, params }) {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       // Never retain an unknown or private handle. A successful public profile
-      // is rendered only from anonymous-safe RPCs and can be shared for an hour.
-      'Cache-Control': profile ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'no-store',
+      // is rendered only from anonymous-safe RPCs, but the owner can make it
+      // private at any moment, and this snapshot (name, bio, recent titles)
+      // would otherwise keep serving for an hour afterwards. Ten minutes.
+      'Cache-Control': profile ? 'public, s-maxage=600, stale-while-revalidate=600' : 'no-store',
     },
   });
 }

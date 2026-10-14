@@ -24,6 +24,7 @@ import { FAMILY_ALIASES, LEGACY_THEMES } from '@plot/core/themes.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CSS_PATH = resolve(__dirname, '..', 'apps', 'web', 'src', 'styles', 'tokens.css');
 const HTML_PATH = resolve(__dirname, '..', 'apps', 'web', 'index.html');
+const THEME_JS_PATH = resolve(__dirname, '..', 'apps', 'web', 'public', 'boot', 'theme.js');
 
 // Render the generated declarations for one theme block.
 function emit(colorSet, { withRadii }) {
@@ -83,19 +84,21 @@ next = replaceRegion(next, ':root', emit(colors.light, { withRadii: true }));
 next = replaceRegion(next, '[data-theme="dark"]', emit(colors.dark, { withRadii: false }));
 next = replaceBetween(next, '/* @palettes:start', '/* @palettes:end */', emitPalettes(), 'tokens.css');
 
-// index.html paints before any module loads, so it carries its own copy of the
-// family ids and the retired single-theme ids (pre-paint script), plus each
-// variant's ground, ink and fill for the boot loader (critical CSS).
+// The pre-paint script (public/boot/theme.js) runs before any module loads, so
+// it carries its own copy of the family ids and the retired single-theme ids;
+// index.html carries each variant's ground, ink and fill for the boot loader
+// (critical CSS).
 const htmlCurrent = readFileSync(HTML_PATH, 'utf8');
+const themeJsCurrent = readFileSync(THEME_JS_PATH, 'utf8');
 const q = (value) => `'${value}'`;
 const familyList = Object.keys(themeFamilies).map(id => `${q(id)}: 1`).join(', ');
 const legacyList = Object.entries(LEGACY_THEMES).map(([id, p]) => `${q(id)}: [${q(p.family)}, ${q(p.mode)}]`).join(', ');
-let htmlNext = replaceBetween(htmlCurrent, '// @palettes:start', '// @palettes:end', [
-  `          var families = { ${familyList} };`,
-  `          var legacy = { ${legacyList} };`,
-  `          var familyAliases = { ${Object.entries(FAMILY_ALIASES).map(([from, to]) => `${q(from)}: ${q(to)}`).join(', ')} };`,
-].join('\n'), 'index.html');
-htmlNext = replaceBetween(htmlNext, '/* @palettes:start', '/* @palettes:end */', Object.entries(themeFamilies).flatMap(([id, family]) => ['light', 'dark'].map((mode) => {
+const themeJsNext = replaceBetween(themeJsCurrent, '// @palettes:start', '// @palettes:end', [
+  `    var families = { ${familyList} };`,
+  `    var legacy = { ${legacyList} };`,
+  `    var familyAliases = { ${Object.entries(FAMILY_ALIASES).map(([from, to]) => `${q(from)}: ${q(to)}`).join(', ')} };`,
+].join('\n'), 'boot/theme.js');
+const htmlNext = replaceBetween(htmlCurrent, '/* @palettes:start', '/* @palettes:end */', Object.entries(themeFamilies).flatMap(([id, family]) => ['light', 'dark'].map((mode) => {
   const c = family[mode];
   const sel = `[data-palette="${id}"][data-theme="${mode}"]`;
   return [
@@ -108,16 +111,18 @@ htmlNext = replaceBetween(htmlNext, '/* @palettes:start', '/* @palettes:end */',
 const mode = process.argv.includes('--write') ? 'write' : 'check';
 
 if (mode === 'write') {
-  if (next !== current || htmlNext !== htmlCurrent) {
+  if (next !== current || htmlNext !== htmlCurrent || themeJsNext !== themeJsCurrent) {
     writeFileSync(CSS_PATH, next);
     writeFileSync(HTML_PATH, htmlNext);
-    console.log('✓ tokens.css and index.html regenerated from @plot/core/tokens.js');
+    writeFileSync(THEME_JS_PATH, themeJsNext);
+    console.log('✓ tokens.css, index.html and boot/theme.js regenerated from @plot/core/tokens.js');
   } else {
-    console.log('✓ tokens.css and index.html already up to date');
+    console.log('✓ tokens.css, index.html and boot/theme.js already up to date');
   }
 } else {
-  if (next !== current || htmlNext !== htmlCurrent) {
-    console.error(`✗ ${next !== current ? 'tokens.css' : 'index.html'} is out of sync with @plot/core/tokens.js.`);
+  if (next !== current || htmlNext !== htmlCurrent || themeJsNext !== themeJsCurrent) {
+    const stale = next !== current ? 'tokens.css' : htmlNext !== htmlCurrent ? 'index.html' : 'boot/theme.js';
+    console.error(`✗ ${stale} is out of sync with @plot/core/tokens.js.`);
     console.error('  A generated block was hand-edited or values changed in tokens.js.');
     console.error('  Fix the value in packages/core/tokens.js, then run `npm run tokens:build`.');
     process.exit(1);

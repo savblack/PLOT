@@ -2,9 +2,9 @@
 # apps/web/vercel.json. Vite copies this file verbatim into dist/, where Pages
 # reads it. Keep the CSP in sync with any new external hosts the app talks to.
 #
-# Content-Security-Policy is NOT set here — it's built per-request in
-# functions/_middleware.js so script-src can use a fresh nonce instead of
-# 'unsafe-inline'. Update the allow-list there, not here.
+# Content-Security-Policy is NOT set here — it's set in functions/_middleware.js
+# so it also covers the server-rendered Function routes, which _headers does not
+# reach. Update the allow-list there, not here.
 /*
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
@@ -23,6 +23,12 @@
 
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The boot scripts (startup guard, theme pre-paint, public-page analytics) have
+# stable names, so a change cannot bust itself the way a hashed bundle does.
+# Keep the window short: the theme list changes when a palette ships.
+/boot/*
+  Cache-Control: public, max-age=300, must-revalidate
 
 /website-images/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800

@@ -7,8 +7,9 @@ This file is the operator manual for the weekly flow.
 Every post has two halves, and they are reviewed in different places.
 
 1. GitHub prepares the week.
-2. The social copy is pushed straight into **Buffer**, dated. You review, edit
-   and delete it there; Buffer sends it.
+2. The social copy is pushed into **Buffer** as dated **drafts**. You review,
+   edit and approve them there; Buffer sends what you approve. Nothing goes out
+   on its own.
 3. The website article is reviewed in **Linear** — one issue per post, in team
    PLO, project **Content Automation**. Approving a card puts the piece on
    theplot.tv; rejecting keeps it off.
@@ -127,9 +128,13 @@ Notes:
 ## Review and publish
 
 - Weekly generation renders posts with status `needs_review`, then pushes their
-  social copy into Buffer, **on the post's own day, at a time Buffer chose**. It
-  pushes as many as the queue will hold; the daily run tops it up from there
-  (see below).
+  social copy into Buffer as **drafts**, **on the post's own day, at a time
+  Buffer chose**. It pushes as many as the queue will hold; the daily run tops
+  it up from there (see below).
+- A draft sends only once you approve it in Buffer. The copy is written by a
+  model with live web access, so the gate is opt-in on purpose: a post nobody
+  has read never goes out. `BUFFER_PUSH_AS_DRAFT=0` pushes queued posts
+  instead, for a run that was reviewed some other way.
 
 ### Who decides when a post goes out
 
@@ -166,9 +171,9 @@ queue top-up. A 5.5 hour lag on the 02:00 UTC job is about 3:30am ET, still
 before the 9:00am ET slot the planner stores.
 - Within five minutes the mirror sweep opens a Linear issue for each post's
   article, in **Review**.
-- **Leaving a card untouched means the article does not go live.** It does not
-  stop the social posts: those are in Buffer and go out on their day unless you
-  delete them there. Silence is a decision about the website only.
+- **Leaving a card untouched means the article does not go live.** The social
+  posts are separate: they sit in Buffer as drafts and go out only once you
+  approve them there. Silence stops both, each in its own place.
 - **The database is the source of truth about what happened**, not about what
   will happen. Buffer holds the queue; the daily reconcile run reads it back into
   `marketing_post_publications`.

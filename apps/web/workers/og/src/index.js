@@ -44,6 +44,22 @@ const MUTED = '#a8a69c'; // colors.dark.textSecondary
 // TTLs are exactly what paused Vercel. 1-day browser, 7-day edge, SWR.
 const OG_CACHE = 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800';
 const TMDB_IMG = (p, s = 'w185') => (p ? `https://image.tmdb.org/t/p/${s}${p}` : null);
+
+// Only avatars from our own public bucket are fetched into the image. The
+// value comes from the profile row, and a profile owner can set avatar_url to
+// any URL, so passing it straight to the renderer would make this Worker
+// fetch arbitrary hosts on the owner's behalf. Anything else renders without
+// an avatar. (This Worker is not deployed as of 2026-09-18; fixed before any
+// redeploy, per the 2026-10-13 security review.)
+const AVATAR_PREFIX = `${SUPABASE_URL}/storage/v1/object/public/avatars/`;
+const safeAvatar = (url) => (typeof url === 'string' && url.startsWith(AVATAR_PREFIX) ? url : null);
+
+// Handles are exact, case-insensitive matches. PostgREST's `ilike` treats `%`
+// and `_` as wildcards, so a lookup for `%` would have matched the first
+// profile in the table; the handle is restricted to the username alphabet
+// and `_` is escaped before it goes into the filter.
+const HANDLE_RE = /^[a-z0-9_.-]{1,40}$/;
+const ilikeHandle = (handle) => encodeURIComponent(handle.replace(/_/g, '\\_'));
 const sh = (a) => `0 2px 12px rgba(0,0,0,${a})`;
 // The plot wordmark as outlines (the l joins the o, which the font can't set).
 // `size` is the font size the live word used to be set at; `shadow` is the
@@ -89,15 +105,17 @@ async function loadTitle(mediaType, tmdbId) {
 }
 
 async function loadProfile(handle) {
+  if (!HANDLE_RE.test(handle)) return null;
   const headers = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
   const pRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/public_profiles?username=ilike.${encodeURIComponent(handle)}` +
+    `${SUPABASE_URL}/rest/v1/public_profiles?username=ilike.${ilikeHandle(handle)}` +
     `&select=id,username,display_name,avatar_url,is_premium&limit=1`,
     { headers },
   );
   const rows = await pRes.json();
   const profile = Array.isArray(rows) ? rows[0] : null;
   if (!profile) return null;
+  profile.avatar_url = safeAvatar(profile.avatar_url);
 
   const [cRes, revRes, fRes, recentRes, ratedRes] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
@@ -189,6 +207,7 @@ async function loadPost(id) {
     { headers },
   );
   const author = (await pRes.json().catch(() => []))?.[0] || null;
+  if (author) author.avatar_url = safeAvatar(author.avatar_url);
 
   let poster = TMDB_IMG(post.poster_path, 'w500');
   let backdrop = null;

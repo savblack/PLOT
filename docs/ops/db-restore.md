@@ -63,9 +63,9 @@ aws s3 ls s3://<bucket>/db-backups/ --endpoint-url https://<account-id>.r2.cloud
 aws s3 cp s3://<bucket>/db-backups/plot-2026-06-21T031700Z.dump.gpg . \
   --endpoint-url https://<account-id>.r2.cloudflarestorage.com
 
-# Decrypt → a pg_dump custom-format archive
-gpg --batch --decrypt --passphrase "$BACKUP_GPG_PASSPHRASE" \
-  -o plot.dump plot-2026-06-21T031700Z.dump.gpg
+# Decrypt → a pg_dump custom-format archive (passphrase on stdin, never argv)
+gpg --batch --decrypt --pinentry-mode loopback --passphrase-fd 0 \
+  -o plot.dump plot-2026-06-21T031700Z.dump.gpg <<< "$BACKUP_GPG_PASSPHRASE"
 ```
 
 Use the **Session pooler** connection string (same as `SUPABASE_DB_URL`) for all
@@ -112,20 +112,29 @@ pg_restore --clean --if-exists --no-owner --no-privileges \
   Prefer `scripts/db-restore-drill.sh`, which pipes the dump and never writes one.
 - Storage **objects** (files in buckets) are not in these dumps — only the `storage`
   schema metadata, so a database restore alone leaves avatar rows pointing at objects
-  that no longer exist. The bytes are mirrored weekly on Sunday by
-  `storage-backup.yml` to `storage-mirror/<bucket>/<path>` in the same R2 bucket.
-  Object recovery has a seven-day recovery point objective: a database dump can be
-  newer than the latest object mirror, so objects created or updated after that
-  mirror cannot be restored from R2. To put mirrored objects back:
+  that no longer exist. The bytes are archived weekly on Sunday by the storage-backup
+  job to `storage-backups/storage-<stamp>.tar.gpg` in the same R2 bucket: one
+  self-contained tar of every bucket, encrypted with the same passphrase as the
+  dumps, five weeks retained. Object recovery has a seven-day recovery point
+  objective: a database dump can be newer than the latest archive, so objects
+  created or updated after it cannot be restored from R2. To put objects back:
 
   ```sh
-  aws s3 sync "s3://<bucket>/storage-mirror/avatars/" ./avatars \
+  aws s3 ls "s3://<bucket>/storage-backups/" --endpoint-url https://<account-id>.r2.cloudflarestorage.com
+  aws s3 cp "s3://<bucket>/storage-backups/storage-2026-10-19T034700Z.tar.gpg" . \
     --endpoint-url https://<account-id>.r2.cloudflarestorage.com
-  # then re-upload with the Storage API / dashboard into the `avatars` bucket
+  gpg --batch --decrypt --pinentry-mode loopback --passphrase-fd 0 \
+    -o storage.tar storage-2026-10-19T034700Z.tar.gpg <<< "$BACKUP_GPG_PASSPHRASE"
+  mkdir storage && tar -C storage -xf storage.tar   # storage/<bucket>/<path>
+  # then re-upload with the Storage API / dashboard into each bucket
   ```
 
-  That mirror runs **without** `--delete` on purpose: propagating a Supabase deletion
-  into the backup would destroy the copy you are keeping it for. Expect orphans.
+  Before 2026-10-14 the job mirrored objects in plaintext to `storage-mirror/<bucket>/`.
+  Those objects are still in the bucket until deleted by hand (avatars are PII, and
+  they sat unencrypted beside the dumps); once the first archive has landed, remove
+  them with `aws s3 rm --recursive "s3://<bucket>/storage-mirror/<bucket name>/"` for
+  each bucket. Leave `storage-mirror/_synced-at.txt`: the backup-heartbeat Worker
+  still ages that sentinel.
 - **Do not restore Production into Staging.** It would copy real users' emails and
   password hashes into a second, less-guarded project. Drill against a throwaway local
   cluster instead — that is what the drill script does.
@@ -138,17 +147,12 @@ pg_restore --clean --if-exists --no-owner --no-privileges \
   `pg_restore -l` output. Fixed by `20260814120000_webhook_bearer_to_vault.sql`: the
   bearer and base URL now come from Vault and the DDL carries only a function slug.
 
-  **The fix does not un-leak the old artifacts.** Up to 30 days of dumps in R2 still
-  embed that key, and it is valid until 2036. Two consequences:
-
-  - Treat any dump dated before 2026-08-14 as carrying a full-privilege credential.
-  - Rotating is still worth doing. Do **not** rotate the JWT secret — that also changes
-    the `anon` key and signs every user out. This project already has `sb_publishable_*` /
-    `sb_secret_*` keys and asymmetric signing keys, so the cheap path is to migrate
-    consumers to the new secret key and then disable legacy keys, with no session loss.
-    `internalWebhook.ts`, `notify-feedback`, `notify-signup` and `profiles-changed` assert
-    `role === 'service_role'` by decoding the bearer as a JWT, and an `sb_secret_*` key is
-    not a JWT — those four need updating first or they fail closed.
+  **The fix does not un-leak the old artifacts**, so the leaked key itself was
+  retired: legacy API keys were disabled on Production and Staging on 2026-08-23
+  (`docs/ops/supabase-key-rotation.md`), and the leaked value now answers `401`.
+  Those dumps have also aged out of the 30-day window. A dump dated before
+  2026-08-14 that anyone still holds carries a credential that no longer works;
+  treat it as sensitive all the same, because it also holds the auth schema.
 
   To rotate the webhook bearer itself now, it is a Vault update and nothing else:
 
@@ -156,3 +160,21 @@ pg_restore --clean --if-exists --no-owner --no-privileges \
   delete from vault.secrets where name = 'edge_webhook_bearer';
   select vault.create_secret('<new key>', 'edge_webhook_bearer', 'Bearer for internal DB webhooks');
   ```
+
+## CI read-only role (`plot_ci_readonly`)
+
+`.github/workflows/db-write-paths.yml` runs on every pull request and used to
+connect with the owner connection string. The check only reads catalogs, and a
+collaborator's PR can edit the script it runs, so since 2026-10-14 it connects
+as `plot_ci_readonly` (created with `nologin` and no password by
+`20261014110000_low_findings_hardening.sql`). One-time setup, from an owner
+session:
+
+```sql
+alter role plot_ci_readonly with login password '<generate a long random one>';
+```
+
+Then add `SUPABASE_DB_URL_READONLY` in Settings → Secrets → Actions with the
+same host and database as `SUPABASE_DB_URL`, user `plot_ci_readonly` and that
+password. Until the secret exists the workflow falls back to the owner URL and
+prints a warning on every run.

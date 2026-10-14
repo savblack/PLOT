@@ -66,6 +66,19 @@ jobs:
             exit 0
           fi
 
+          # And every commit on it. The PR author is whoever opened it, so a
+          # collaborator who pushes a commit onto a dependabot/* branch would
+          # otherwise ride Dependabot's authorship into an unreviewed merge
+          # (2026-10-13 security review). Dependabot's commits are authored by
+          # its bot account; anything else holds the PR.
+          OTHER_AUTHORS=$(gh pr view "$PR_NUM" --json commits \
+            --jq '[.commits[].authors[].login // "unknown"] | map(select(. != "dependabot[bot]" and . != "app/dependabot")) | unique | join(", ")')
+          if [ -n "$OTHER_AUTHORS" ]; then
+            echo "PR #$PR_NUM has commits by '$OTHER_AUTHORS', not only Dependabot. Holding for review."
+            gh pr edit "$PR_NUM" --add-label "deps:major-needs-review" || true
+            exit 0
+          fi
+
           echo "PR #$PR_NUM: $TITLE"
 
           # --- Classify the bump deterministically ---

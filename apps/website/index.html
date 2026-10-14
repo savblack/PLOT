@@ -2661,7 +2661,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           var kind  = isTv ? 'Series' : 'Movie';
           var chip  = i === 0 ? '<span class="gp-chip is-top">Trending #1</span>' : '<span class="gp-chip">' + kind + '</span>';
           return '<div class="gp-row"><div class="gp-rank">' + (i + 1) + '</div>'
-            + '<img class="gp-poster" src="' + IMG + r.poster_path + '" alt="" loading="lazy" decoding="async">'
+            + '<img class="gp-poster" src="' + esc(IMG + r.poster_path) + '" alt="" loading="lazy" decoding="async">'
             + '<div class="gp-meta"><div class="gp-name">' + esc(title) + '</div><div class="gp-sub">' + esc(year ? year + ' \u00b7 ' + kind : kind) + '</div></div>'
             + chip + '</div>';
         }).join('');
@@ -3082,8 +3082,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           html += '<div class="guide-item-title">' + esc(r.title) + '</div>';
           html += '<div class="guide-item-meta">' + MONTH_NAME + ' ' + r.day + ' · ' + TYPE[r.type].label + '</div>';
           html += '</div>';
-          html += '<button class="guide-add-btn' + (isAdded ? ' added' : '') + '" ';
-          html += 'onclick="window._calDemo.toggle(\'' + r.id + '\')" ';
+          html += '<button type="button" class="guide-add-btn' + (isAdded ? ' added' : '') + '" ';
+          // data-id + the delegated listener in init(), not an inline onclick:
+          // the site's CSP allows no inline event handlers.
+          html += 'data-release-id="' + esc(r.id) + '" ';
           html += 'title="' + (isAdded ? 'Remove' : 'Add to calendar') + '">';
           html += isAdded ? '<svg class="guide-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg>' : '+';
           html += '</button></div>';
@@ -3242,6 +3244,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       function init() {
         if (document.getElementById('calGridInt')) {
+          var guideList = document.getElementById('guideList');
+          if (guideList && !guideList.dataset.wired) {
+            guideList.dataset.wired = '1';
+            guideList.addEventListener('click', function (e) {
+              var btn = e.target && e.target.closest && e.target.closest('[data-release-id]');
+              if (btn) window._calDemo.toggle(btn.getAttribute('data-release-id'));
+            });
+          }
           var hdrTitle = document.getElementById('guideHdrTitle');
           if (hdrTitle) hdrTitle.textContent = 'Upcoming';
           // Match the save-hint verb to the input type (SUS-83)

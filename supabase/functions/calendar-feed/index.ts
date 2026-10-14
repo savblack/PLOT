@@ -4,6 +4,33 @@ import { confirmedPremium } from '../_shared/securityGuards.js';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
+// Per-isolate cache of TMDB season payloads keyed by (show, season). Calendar
+// clients poll a feed about hourly and a feed is up to 500 shows, each a live
+// TMDB fetch; episode air dates change rarely, so six hours is plenty.
+// In-flight fetches are shared too, so overlapping feeds (or one feed listing
+// a show twice) make one request. 2026-10-13 review finding.
+const SEASON_TTL_MS = 6 * 60 * 60 * 1000;
+const SEASON_CACHE_MAX = 2000;
+type SeasonPayload = { episodes?: { episode_number: number; air_date?: string; name?: string }[] } | null;
+const seasonCache = new Map<string, { at: number; value: Promise<SeasonPayload> }>();
+
+function fetchSeason(tmdbKey: string, tmdbId: number, season: number): Promise<SeasonPayload> {
+  const key = `${tmdbId}:${season}`;
+  const hit = seasonCache.get(key);
+  if (hit && Date.now() - hit.at < SEASON_TTL_MS) return hit.value;
+  const value = (async (): Promise<SeasonPayload> => {
+    const res = await fetch(`${TMDB_BASE}/tv/${tmdbId}/season/${season}?api_key=${tmdbKey}&language=en-US`);
+    if (!res.ok) return null;
+    return await res.json();
+  })().catch(() => {
+    seasonCache.delete(key); // never cache a network failure
+    return null;
+  });
+  if (seasonCache.size >= SEASON_CACHE_MAX) seasonCache.delete(seasonCache.keys().next().value!);
+  seasonCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
 // ── ICS helpers ──────────────────────────────────────────────────────────────
 
 function fmtDate(dateStr: string): string {
@@ -178,12 +205,9 @@ Deno.serve(async (req) => {
     await Promise.all(
       (watchingRes.data ?? []).map(async (show) => {
         try {
-          const res = await fetch(
-            `${TMDB_BASE}/tv/${show.tmdb_id}/season/${show.current_season}?api_key=${tmdbKey}&language=en-US`,
-          );
-          if (!res.ok) return;
-          const season = await res.json();
-          for (const ep of season?.episodes ?? []) {
+          const season = await fetchSeason(tmdbKey, show.tmdb_id, show.current_season);
+          if (!season) return;
+          for (const ep of season.episodes ?? []) {
             if (ep.episode_number < show.current_episode) continue;
             if (!ep.air_date || ep.air_date < today) continue;
             const label = `S${String(show.current_season).padStart(2, '0')}E${String(ep.episode_number).padStart(2, '0')}`;
