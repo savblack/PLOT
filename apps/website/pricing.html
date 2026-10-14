@@ -311,28 +311,57 @@
     .feature span { display: block; margin-top: 4px; font-size: 0.95rem; line-height: 1.45; color: var(--text-secondary); }
 
     /* ── Comparison table, on the sunken cream ───────────────── */
+    /* The two plans head their own columns, price and button included,
+       and the rows are grouped by job. The Premium column is lifted. */
     .compare { background: var(--surface); }
+    .inner-narrow--wide { max-width: 900px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .cmp-scroll { overflow-x: auto; }
-    .cmp-table { width: 100%; border-collapse: collapse; min-width: 520px; font-size: 0.95rem; font-weight: 400; }
+    .cmp-table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 0.95rem; font-weight: 400; }
     .cmp-table th, .cmp-table td {
-      padding: 0.95rem 0.75rem;
+      padding: 1.05rem 1rem;
       border-bottom: 1px solid var(--rule);
       text-align: center;
       vertical-align: middle;
     }
-    .cmp-table thead th {
-      font-family: var(--display);
-      font-weight: 700;
-      font-size: 1.1rem;
-      letter-spacing: -0.01em;
-      border-bottom: 2px solid var(--text);
+    .cmp-table thead th { padding: 0; border-bottom: 0; vertical-align: bottom; }
+    .cmp-table thead th.cmp-feat { border-bottom: 2px solid var(--text); }
+    .cmp-head {
+      padding: 22px 20px 18px;
+      border-radius: 22px 22px 0 0;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
-    .cmp-feat { text-align: left !important; width: 50%; color: var(--text); font-weight: 400; }
+    .cmp-head--free { background: var(--bg); }
+    .cmp-head--premium { background: var(--ink); color: var(--bg); }
+    .cmp-head--premium .plan-billed, .cmp-head--premium .plan-per { color: #d9d1c4; }
+    .cmp-head .plan-amount { font-size: 2.6rem; }
+    .cmp-head .plan-price { margin: 6px 0 0; }
+    .cmp-head .plan-save { font-size: 0.85rem; padding: 5px 10px; }
+    .cmp-head .btn { width: 100%; margin-top: 14px; }
+    .cmp-head--free .btn-outline { background: #fffaf3; }
+    .cmp-head--free .btn-outline:hover { background: var(--surface-hover); }
+    .cmp-feat { text-align: left !important; width: 46%; color: var(--text); font-weight: 400; }
+    .cmp-group td {
+      padding: 2rem 1rem 0.6rem;
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border-bottom: 0;
+    }
     .cmp-yes { display: inline-flex; }
     .cmp-yes .tick { margin-top: 0; }
     .cmp-no { color: var(--text-secondary); opacity: 0.6; }
     .cmp-text { font-weight: 500; }
-    .cmp-premium { background: var(--bg); }
+    .cmp-table td.cmp-premium { background: rgba(41,41,36,0.05); }
+    .cmp-table tbody tr:last-child td { border-bottom: 0; }
+    .cmp-table tbody tr:last-child td.cmp-premium { border-radius: 0 0 22px 22px; }
+    .cmp-trial { margin: 1.4rem auto 0; text-align: center; font-size: 0.85rem; color: var(--text-secondary); }
 
     /* ── FAQ ────────────────────────────────────────────────── */
     .faq-list { border-top: 1px solid var(--rule); }
@@ -494,7 +523,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <!-- Comparison -->
     <section class="section compare" aria-labelledby="compareHeadline">
-      <div class="inner-narrow">
+      <div class="inner-narrow inner-narrow--wide">
         <div class="section-head">
           <h2 id="compareHeadline">Compare plans</h2>
           <p>Nothing is deleted if you downgrade. Your lists stay exactly as they are.</p>
@@ -502,19 +531,40 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="cmp-scroll">
           <table class="cmp-table">
             <thead>
-              <tr><th scope="col" class="cmp-feat">Feature</th><th scope="col">Free</th><th scope="col" class="cmp-premium">Premium</th></tr>
+              <tr>
+                <th scope="col" class="cmp-feat"><span class="sr-only">Feature</span></th>
+                <th scope="col">
+                  <div class="cmp-head cmp-head--free">
+                    <span class="plan-name">Free</span>
+                    <div class="plan-price"><span class="plan-amount">$0</span><span class="plan-per">forever</span></div>
+                    <p class="plan-billed">No credit card.</p>
+                    <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large" data-cta="plans-compare-free">Start tracking</a>
+                  </div>
+                </th>
+                <th scope="col">
+                  <div class="cmp-head cmp-head--premium">
+                    <span class="plan-name">Premium</span>
+                    <div class="plan-price"><span class="plan-amount" data-premium="amount">$2</span><span class="plan-per">/mo</span><span class="plan-save" data-premium="save">4 months free</span></div>
+                    <p class="plan-billed" data-premium="billed">Billed $24 once a year</p>
+                    <a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-primary btn-large" data-premium="cta" data-cta="plans-compare-premium">Start 7-day free trial</a>
+                  </div>
+                </th>
+              </tr>
             </thead>
             <tbody>
+              <tr class="cmp-group"><td colspan="3">Tracking</td></tr>
               <tr><th scope="row" class="cmp-feat">Track movies &amp; TV</th><td><span class="cmp-yes"><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Watchlist &amp; watch history</th><td><span class="cmp-yes"><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Upcoming release calendar</th><td><span class="cmp-yes"><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Discover feed + Top 10 charts</th><td><span class="cmp-yes"><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Search every movie &amp; show</th><td><span class="cmp-yes"><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Follow friends &amp; share profile</th><td><span class="cmp-yes"><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Where to watch</th><td><span class="cmp-yes"><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Follow friends &amp; share profile</th><td><span class="cmp-yes"><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr class="cmp-group"><td colspan="3">Lists &amp; calendar</td></tr>
               <tr><th scope="row" class="cmp-feat">Custom lists</th><td><span class="cmp-text">Up to 5</span></td><td class="cmp-premium"><span class="cmp-text">Unlimited</span></td></tr>
               <tr><th scope="row" class="cmp-feat">Smart lists</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Release dates in your calendar app</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr class="cmp-group"><td colspan="3">Deciding what to watch</td></tr>
               <tr><th scope="row" class="cmp-feat">Pick for me</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Watch together</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Your watch profile</th><td><span class="cmp-text">Overview</span></td><td class="cmp-premium"><span class="cmp-text">Full profile</span></td></tr>
@@ -523,6 +573,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </tbody>
           </table>
         </div>
+        <p class="cmp-trial">7-day free trial for new subscribers. Commitment-free. Cancel during the trial and you pay $0.</p>
       </div>
     </section>
 
@@ -633,10 +684,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         yr.classList.toggle('is-active', annual);
         mo.setAttribute('aria-pressed', String(!annual));
         yr.setAttribute('aria-pressed', String(annual));
-        amount.textContent = '$' + (annual ? annualMonthly : MONTHLY);
-        billed.textContent = annual ? 'Billed $' + ANNUAL + ' once a year' : 'Billed monthly. Cancel anytime.';
+        var amountText = '$' + (annual ? annualMonthly : MONTHLY);
+        var billedText = annual ? 'Billed $' + ANNUAL + ' once a year' : 'Billed monthly. Cancel anytime.';
+        var href = 'https://app.theplot.tv/signup?intent=premium&plan=' + (annual ? 'yearly' : 'monthly');
+        amount.textContent = amountText;
+        billed.textContent = billedText;
         save.hidden = !annual;
-        cta.href = 'https://app.theplot.tv/signup?intent=premium&plan=' + (annual ? 'yearly' : 'monthly');
+        cta.href = href;
+        // The comparison table repeats the Premium price in its column header.
+        document.querySelectorAll('[data-premium]').forEach(function (el) {
+          var k = el.getAttribute('data-premium');
+          if (k === 'amount') el.textContent = amountText;
+          else if (k === 'billed') el.textContent = billedText;
+          else if (k === 'save') el.hidden = !annual;
+          else if (k === 'cta') el.href = href;
+        });
       }
       mo.addEventListener('click', function () { setBilling(false); });
       yr.addEventListener('click', function () { setBilling(true); });
