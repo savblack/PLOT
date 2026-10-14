@@ -8,14 +8,14 @@
 export const PLANS_PAGE = {
   meta: {
     title: 'Plans & Pricing — plot',
-    description: 'plot is free to use, forever. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers.',
-    ogDescription: 'Free to use, forever. Premium is US$3/month or US$24/year with a 7-day free trial for new subscribers.',
+    description: 'plot is free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
+    ogDescription: 'Free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
   },
 
   hero: {
     pageLabel: 'Plans',
     h1: 'Do more with everything you watch',
-    lede: 'Start free and keep every movie and show in one place. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial. It adds unlimited lists, a live release calendar in your calendar app and Pick for Me.',
+    lede: 'Start free and keep every movie and show in one place. Premium is $3/month or $24/year with a 7-day free trial. It adds Pick for me, Watch together, your watch profile, custom themes and more.',
   },
 
   billingToggle: {
@@ -43,18 +43,22 @@ export const PLANS_PAGE = {
     name: 'Premium',
     // Amount/billed line are recalculated by JS when the billing toggle
     // changes; these are the initial (annual) values rendered in the HTML.
-    amount: 'US$2',
+    amount: '$2',
     per: '/mo',
-    billed: 'US$24 billed yearly · taxes included',
-    billedMonthly: 'US$3 billed monthly · taxes included',
-    trial: '7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
+    billed: 'Billed $24 once a year',
+    billedMonthly: 'Billed monthly. Cancel anytime.',
+    trial: '7-day free trial for new subscribers. Commitment-free. Cancel during the trial and you pay $0.',
     tagline: 'Everything in Free, plus:',
     features: [
-      'Unlimited custom lists',
-      'Live release calendar in your calendar app',
-      'Pick for Me: a shortlist for tonight',
+      'Pick for me: a shortlist for tonight',
+      'Watch together: settle what to watch',
+      'Your watch profile',
+      'Custom themes, widgets and app icons',
+      'Unlimited and smart lists',
+      'Release dates in your calendar app',
+      'Actor and director alerts',
     ],
-    cta: 'Explore Premium',
+    cta: 'Start 7-day free trial',
   },
 
   comparison: {
@@ -70,8 +74,13 @@ export const PLANS_PAGE = {
       { feature: 'Follow friends & share profile', free: true, premium: true },
       { feature: 'Where to watch', free: true, premium: true },
       { feature: 'Custom lists', free: 'Up to 5', premium: 'Unlimited' },
-      { feature: 'Live calendar subscription', free: false, premium: true },
-      { feature: 'Pick for Me', free: false, premium: true },
+      { feature: 'Smart lists', free: false, premium: true },
+      { feature: 'Release dates in your calendar app', free: false, premium: true },
+      { feature: 'Pick for me', free: false, premium: true },
+      { feature: 'Watch together', free: false, premium: true },
+      { feature: 'Your watch profile', free: 'Overview', premium: 'Full profile' },
+      { feature: 'Custom themes, widgets & app icons', free: false, premium: true },
+      { feature: 'Actor & director alerts', free: false, premium: true },
     ],
   },
 
@@ -84,7 +93,7 @@ export const PLANS_PAGE = {
       },
       {
         q: 'Can I get Premium now?',
-        a: 'Yes. Choose Monthly or Yearly and start your free trial in plot. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
+        a: 'Yes. Choose Monthly or Yearly and start your free trial in plot. Premium is $3/month or $24/year with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
       },
       {
         q: 'Can I cancel anytime?',
