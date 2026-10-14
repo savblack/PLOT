@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { takeReturnPath } from '../utils/authReturn.js';
 import { supabase } from '@plot/core/supabase.js';
 import { tmdb } from '@plot/core/tmdb.js';
@@ -18,6 +18,13 @@ import {
   ONBOARDING_PROGRESS, buildingFan, buildingLines, firstNameFromAuthUser, topRegionServices,
 } from '@plot/core/onboardingSetup.js';
 import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
+import { startFileImport, startConnectionImport, CONNECTION_SOURCES } from '@plot/core/importJobs.js';
+import { usePlexSource } from '@plot/core/usePlexSource.js';
+import { IMPORT_JOBS } from '../copy/importJobs.js';
+import { useTraktSync } from '../hooks/useTraktSync.js';
+import { useMediaSync } from '../hooks/useMediaSync.js';
+import { buildTraktAuthorizeUrl, createTraktState, redirectToExternal, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
+import { getConfig } from '@plot/core/config.js';
 import { finishingTouchesKey, serialiseFinishingTouches, startFinishingTouches } from '@plot/core/finishingTouches.js';
 import { armFirstWinCard } from '../utils/firstWinCardState.js';
 import { useWatchlist } from '../hooks/useWatchlist.js';
@@ -25,6 +32,7 @@ import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import { readPendingSave } from '../utils/pendingSave.js';
+import { writeOnboardingStash, takeOnboardingStash } from '../utils/onboardingStash.js';
 import { notifyOnboardingCompleted } from '@plot/core/brevoLifecycleClient.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
@@ -40,12 +48,16 @@ const LINE_MS = 1500;
 const FADE_MS = 600;
 // Step 1's grid: 8 full rows on desktop (6 across), 16 on phones (3 across).
 const TRENDING_COUNT = 48;
+// What each file source's picker accepts, and the words for it.
+const FILE_ACCEPT = { letterboxd: '.csv,.zip', netflix: '.csv' };
+const FILE_FORMATS = { letterboxd: 'CSV or ZIP', netflix: 'CSV' };
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 export default function OnboardingFlow() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -57,7 +69,7 @@ export default function OnboardingFlow() {
   const [pendingSave] = useState(readPendingSave);
   // Someone who already chose a title on the way in skips "save a few"; that
   // title opens once setup is done.
-  const [step, setStep] = useState(() => (readPendingSave() ? 'services' : 'seed'));
+  const [step, setStep] = useState(() => (searchParams.get('import') ? 'import' : readPendingSave() ? 'services' : 'seed'));
   const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
   const premium = usePremium(null);
@@ -72,10 +84,21 @@ export default function OnboardingFlow() {
   const [seedResults, setSeedResults] = useState([]);
   const [seedSearching, setSeedSearching] = useState(false);
   const [trending, setTrending] = useState([]);
-  const [seedSelected, setSeedSelected] = useState([]);
+  // The same-tab Trakt fallback parks the picks in sessionStorage on the way
+  // out (utils/onboardingStash.js); ?import=trakt is the way back in.
+  const [seedSelected, setSeedSelected] = useState(() => (searchParams.get('import') ? takeOnboardingStash()?.seeds ?? [] : []));
 
-  // Switching apps
-  const [importSource, setImportSource] = useState(null);
+  // Switching apps. The import itself starts here: a file is uploaded and
+  // queued, or an account is connected and queued, and the import-worker
+  // carries on in the background (packages/core/importJobs.js).
+  const [importSource, setImportSource] = useState(() => searchParams.get('import') || null);
+  // 'pick' | 'file' | 'uploading' | 'connect' | 'connecting' | 'ready' | 'starting' | 'queued'
+  const [importPhase, setImportPhase] = useState(() => (searchParams.get('import') ? 'connecting' : 'pick'));
+  const [importError, setImportError] = useState(null);
+  const [importJob, setImportJob] = useState(null);
+  const trakt = useTraktSync(user?.id);
+  const plex = useMediaSync(user?.id);
+  const plexSource = usePlexSource(user?.id, { autoPick: true });
 
   // Where do you watch
   const [services, setServices] = useState([]);
@@ -264,9 +287,9 @@ export default function OnboardingFlow() {
       const started = await premium.startCheckout(plan, 'premium_signup');
       return started ? null : `/pricing?billing=${plan}`;
     }
-    // Switching apps: the import itself needs the page, so it opens once
-    // setup is done rather than pretending to run during it.
-    if (importSource) return `/import?source=${importSource}&from=${IMPORT_ENTRY_POINTS.ONBOARDING}`;
+    // Switching apps: a queued import runs in the background and Home shows
+    // it. A source picked but never started still opens the import page.
+    if (importSource && !importJob) return `/import?source=${importSource}&from=${IMPORT_ENTRY_POINTS.ONBOARDING}`;
     return takeReturnPath('/home');
   };
 
@@ -309,8 +332,92 @@ export default function OnboardingFlow() {
     setSelectedServiceIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
   };
 
+  /* ── Switching apps: start the import here ── */
+  const importConnection = importSource === 'trakt' ? trakt : importSource === 'plex' ? plex : null;
+  const loadTrakt = trakt.loadIntegration;
+  const loadPlex = plex.loadIntegration;
+  useEffect(() => {
+    if (!user || !importSource || !CONNECTION_SOURCES.includes(importSource)) return;
+    loadTrakt();
+    loadPlex();
+  }, [user, importSource, loadTrakt, loadPlex]);
+  // A connection that lands (popup message, Plex poll, or the same-tab
+  // fallback bringing ?import=trakt back) moves the panel on to "import".
+  const connected = !!importConnection?.isConnected;
+  useEffect(() => {
+    if (connected && ['connect', 'connecting'].includes(importPhase)) setImportPhase('ready');
+  }, [connected, importPhase]);
+  // Plex needs a server and profile; load the list as soon as it is connected.
+  const plexChoose = plexSource.choose;
+  const plexListed = !!plexSource.servers;
+  useEffect(() => {
+    if (importSource === 'plex' && connected && !plexListed) plexChoose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- choose is recreated every render; the listed flag is the guard
+  }, [importSource, connected, plexListed]);
+  useEffect(() => {
+    const onMessage = (event) => {
+      if (event.origin !== window.location.origin || event.data?.type !== TRAKT_POPUP_MESSAGE) return;
+      loadTrakt();
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [loadTrakt]);
+
+  const pickImport = (id) => {
+    if (importPhase === 'queued') return;
+    createImportReporter({ entry: IMPORT_ENTRY_POINTS.ONBOARDING }).selected(id);
+    setImportSource(id);
+    setImportError(null);
+    if (CONNECTION_SOURCES.includes(id)) {
+      const conn = id === 'trakt' ? trakt : plex;
+      setImportPhase(conn.isConnected ? 'ready' : 'connect');
+    } else {
+      setImportPhase('file');
+    }
+  };
+
+  const uploadImport = async (fileList) => {
+    if (!user || !importSource || importPhase !== 'file') return;
+    const files = Array.from(fileList).map(file => ({ name: file.name, body: file, contentType: file.type || undefined }));
+    setImportPhase('uploading');
+    setImportError(null);
+    const { job, error } = await startFileImport({ userId: user.id, source: importSource, entry: IMPORT_ENTRY_POINTS.ONBOARDING, files });
+    if (error) { setImportError(error.message); setImportPhase('file'); return; }
+    createImportReporter({ entry: IMPORT_ENTRY_POINTS.ONBOARDING }).report('started', { source: importSource, count: 0 });
+    setImportJob(job);
+    setImportPhase('queued');
+  };
+
+  const connectImport = () => {
+    if (importSource === 'plex') {
+      setImportPhase('connecting');
+      plex.startPlexAuth().then(result => { if (result?.integration?.id) plex.pollPlexAuth(result.integration.id); else setImportPhase('connect'); });
+      return;
+    }
+    const clientId = getConfig().traktClientId;
+    if (!clientId) { setImportError(IMPORT_JOBS.onboarding.uploadFailed); return; }
+    // The popup keeps this page, and its picks, alive. A blocked popup falls
+    // back to the same tab with the picks stashed; ?import=trakt brings the
+    // flow back to this step and the stash restores them.
+    const url = buildTraktAuthorizeUrl(clientId, createTraktState('/onboarding?import=trakt'));
+    const popup = window.open(url, 'plot-trakt', 'popup,width=600,height=760');
+    if (popup) setImportPhase('connecting');
+    else { writeOnboardingStash({ seeds: seedSelected }); redirectToExternal(url); }
+  };
+
+  const startImportJob = async () => {
+    if (!importSource || importPhase !== 'ready') return;
+    setImportPhase('starting');
+    setImportError(null);
+    const { job, error } = await startConnectionImport({ source: importSource, entry: IMPORT_ENTRY_POINTS.ONBOARDING });
+    if (error) { setImportError(error.message); setImportPhase('ready'); return; }
+    createImportReporter({ entry: IMPORT_ENTRY_POINTS.ONBOARDING }).report('started', { source: importSource, count: 0 });
+    setImportJob(job);
+    setImportPhase('queued');
+  };
+
   const goBack = () => {
-    if (step === 'import') setStep('seed');
+    if (step === 'import') { if (importPhase !== 'queued') { setImportSource(null); setImportPhase('pick'); } setStep('seed'); }
     else if (step === 'services') setStep(importSource ? 'import' : 'seed');
   };
 
@@ -340,10 +447,22 @@ export default function OnboardingFlow() {
         onContinue: () => { completeStep('seed'); setStep('services'); },
         onSwitch: () => { completeStep('seed'); setStep('import'); },
       }}
-      onPickImport={(id) => {
-        createImportReporter({ entry: IMPORT_ENTRY_POINTS.ONBOARDING }).selected(id);
-        setImportSource(id);
-        setStep('services');
+      onPickImport={pickImport}
+      importStep={{
+        source: importSource,
+        phase: importPhase,
+        error: importError || importConnection?.error || null,
+        accept: FILE_ACCEPT[importSource] || '.csv,.json,.zip',
+        formats: FILE_FORMATS[importSource] || 'CSV, JSON or ZIP',
+        connectedName: connected ? importSource : null,
+        plex: importSource === 'plex' && connected ? {
+          servers: plexSource.servers || [], profiles: plexSource.profiles || [], serverId: plexSource.serverId || null,
+          selected: !!plexSource.selected, selection: plexSource.selection || null, busy: plexSource.busy, error: plexSource.error || null, choose: plexSource.choose,
+        } : null,
+        onFiles: uploadImport,
+        onConnect: connectImport,
+        onStartImport: startImportJob,
+        onContinue: () => { completeStep('import'); setStep('services'); },
       }}
       services={{
         list: servicesError ? [] : (services.length ? services : null),

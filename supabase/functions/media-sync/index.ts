@@ -14,6 +14,7 @@ import { insertMissingHistory, type ImportedHistoryRow } from '../_shared/import
 import { selectTmdbMatch, tmdbIdFromGuids, yearFrom } from '../_shared/tmdbMatch.js'
 import { parsePlexItems, parsePlexResources, xmlAttrs } from '../_shared/plexXml.js'
 import { serviceKey } from '../_shared/serviceKey.ts'
+import { workerActingUser } from '../_shared/workerActingUser.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -699,7 +700,10 @@ serve(async (req) => {
       return await handleLegacySnapshot(req, supabaseAdmin, integration)
     }
 
-    const { user, error } = await authUser(req)
+    // The import-worker runs a user's background account import with the
+    // service key and an explicit user_id (see _shared/workerActingUser.ts).
+    const acting = await workerActingUser(req)
+    const { user, error } = acting ? { user: acting, error: undefined } : await authUser(req)
     if (error) return error
     const body: Record<string, unknown> = req.method === 'POST' ? await req.clone().json().catch(() => ({})) : {}
     const action = String(body.action || queryAction || '')

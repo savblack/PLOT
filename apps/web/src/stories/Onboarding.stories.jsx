@@ -10,7 +10,7 @@ const services = ['Service One', 'Service Two', 'Service Three', 'Service Four',
   .map((name, i) => ({ id: -(i + 100), name, logo_path: null }));
 const noop = () => {};
 
-function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', lineIndex = 1, ticking = false }) {
+function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', lineIndex = 1, ticking = false, importSource = null, importPhase = 'pick', importError = null }) {
   const [sel, setSel] = useState(selected);
   const [line, setLine] = useState(lineIndex);
   useEffect(() => {
@@ -34,6 +34,13 @@ function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 
         onContinue: noop, onSwitch: noop,
       }}
       onPickImport={noop}
+      importStep={{
+        source: importSource, phase: importPhase, error: importError, accept: '.csv,.zip', formats: 'CSV or ZIP', connectedName: null,
+        plex: importSource === 'plex' && ['ready', 'starting'].includes(importPhase)
+          ? { servers: [{ clientIdentifier: 'a', name: 'Living room' }], profiles: [{ accountID: '1', name: 'Sam' }], serverId: 'a', selected: false, busy: false, error: null, choose: noop }
+          : null,
+        onFiles: noop, onConnect: noop, onStartImport: noop, onContinue: noop,
+      }}
       services={{
         list: services, error: false, selectedIds: svc,
         onToggle: (id) => setSvc(s => (s.includes(id) ? s.filter(x => x !== id) : [...s, id])),
@@ -56,6 +63,15 @@ export const SaveAFew = { render: () => <Screen step="seed" /> };
 export const SaveAFewNoName = { render: () => <Screen step="seed" firstName="" selected={[]} /> };
 /** 1b · Switching apps: where their history is now. Part of step 1. */
 export const SwitchingApps = { render: () => <Screen step="import" /> };
+// The import starts on this step and carries on in the background.
+export const SwitchingAppsChooseFile = { render: () => <Screen step="import" importSource="letterboxd" importPhase="file" /> };
+export const SwitchingAppsUploading = { render: () => <Screen step="import" importSource="letterboxd" importPhase="uploading" /> };
+export const SwitchingAppsUploadFailed = { render: () => <Screen step="import" importSource="netflix" importPhase="file" importError="We couldn’t upload that file. Check your connection and try again." /> };
+export const SwitchingAppsConnect = { render: () => <Screen step="import" importSource="trakt" importPhase="connect" /> };
+export const SwitchingAppsConnecting = { render: () => <Screen step="import" importSource="trakt" importPhase="connecting" /> };
+export const SwitchingAppsConnected = { render: () => <Screen step="import" importSource="trakt" importPhase="ready" /> };
+export const SwitchingAppsPlexPickServer = { render: () => <Screen step="import" importSource="plex" importPhase="ready" /> };
+export const SwitchingAppsQueued = { render: () => <Screen step="import" importSource="letterboxd" importPhase="queued" /> };
 /** 2 · Where do you watch. */
 export const WhereDoYouWatch = { render: () => <Screen step="services" /> };
 /** 2 · Nothing picked yet. */

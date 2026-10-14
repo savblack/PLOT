@@ -43,6 +43,7 @@ import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches from './FinishingTouches.jsx';
+import ImportJobCard from './ImportJobCard.jsx';
 import FirstWinCard from './FirstWinCard.jsx';
 import { useFirstRun } from '../hooks/useFirstRun.js';
 import { oncePerSession } from '@plot/core/oncePerSession.js';
@@ -1015,6 +1016,7 @@ export default function DiscoverView() {
       />
       <FirstWinCard />
       <h1 className="home-greeting">{greetingFor({ name: profile?.first_name })}</h1>
+      <ImportJobCard />
       <FinishingTouches />
       <DiscoverContent
         openPanel={openPanel}

@@ -1,7 +1,7 @@
 /**
  * State shared by the onboarding screens: the mobile counterpart of the state
  * apps/web/src/pages/OnboardingFlow.jsx keeps in one component. Mobile splits
- * the flow across expo-router screens (seed → import → services → building), so
+ * the flow across expo-router screens (seed → services → building), so
  * the picks, the region and the one save at the end live here.
  *
  * The save runs behind the building moment. It flips onboarding_complete first
@@ -46,6 +46,9 @@ interface OnboardingFlow {
   toggleSeed: (item: PickedTitle) => void;
   importSource: string | null;
   setImportSource: (id: string | null) => void;
+  /** The background import queued from step 1's import panel, if any. Home shows it. */
+  importJob: { id: string } | null;
+  setImportJob: (job: { id: string } | null) => void;
   region: string;
   setRegion: (code: string) => void;
   selectedServiceIds: number[];
@@ -79,6 +82,7 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
   const [firstName, setFirstName] = useState('');
   const [seeds, setSeeds] = useState<PickedTitle[]>([]);
   const [importSource, setImportSource] = useState<string | null>(null);
+  const [importJob, setImportJob] = useState<{ id: string } | null>(null);
   const [region, setRegionState] = useState(guessRegionFromTimezone);
   const regionTouched = useRef(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
@@ -173,9 +177,9 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
     await startFinishingTouchesFor(user.id);
     // The first-win card sits on Home. A skip (nothing saved) does not arm it.
     await armFirstWinCard(user.id, { skipped: chosen.length === 0 });
-    // Switching apps: the import itself needs a screen, so Home opens it once
-    // setup is done rather than pretending to run during it.
-    setPendingImportSource(importSource);
+    // Switching apps: a queued import runs in the background and Home shows
+    // it. A source picked but never started still opens the import on Home.
+    setPendingImportSource(importJob ? null : importSource);
     if (trackCompletion) {
       // After the picks are on My List, so the email sees the current watchlist.
       await notifyOnboardingCompleted();
@@ -192,14 +196,14 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
     // and only re-reads it on session changes (see contexts/OnboardingContext.tsx).
     await refreshOnboarding();
     return true;
-  }, [seeds, services, selectedServiceIds, region, firstName, watchlist, importSource, refreshOnboarding]);
+  }, [seeds, services, selectedServiceIds, region, firstName, watchlist, importSource, importJob, refreshOnboarding]);
 
   // Handed to the screens as a stable object so a re-render of the provider
   // doesn't remount a screen's effects.
   const value = useMemo<OnboardingFlow>(() => ({
-    firstName, seeds, toggleSeed, importSource, setImportSource, region, setRegion,
+    firstName, seeds, toggleSeed, importSource, setImportSource, importJob, setImportJob, region, setRegion,
     selectedServiceIds, toggleService, services, setServices, trending, setTrending, completeStep, save, saving, saveError,
-  }), [firstName, seeds, toggleSeed, importSource, region, setRegion, selectedServiceIds, toggleService, services, setServices, trending, completeStep, save, saving, saveError]);
+  }), [firstName, seeds, toggleSeed, importSource, importJob, region, setRegion, selectedServiceIds, toggleService, services, setServices, trending, completeStep, save, saving, saveError]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

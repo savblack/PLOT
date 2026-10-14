@@ -7,6 +7,8 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { markImportDone } from '../utils/finishingTouchesState.js';
+import { readImportJob, readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
+import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { suppressFirstWinForImport } from '../utils/firstWinCardState.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
@@ -249,6 +251,30 @@ function AccountImportView() {
   const [providerLogos, setProviderLogos] = useState({});
   const [connectionResult, setConnectionResult] = useState(null);
   const fileRef = useRef(null);
+  // ?job= finishes a background import: the worker wrote what needed no
+  // decision and left these entries (no confident match, or a possible
+  // duplicate) for the preview step.
+  const jobId = searchParams.get('job');
+  const [reviewJob, setReviewJob] = useState(null);
+  const [reviewMissing, setReviewMissing] = useState(false);
+  useEffect(() => {
+    if (!jobId || !user) return undefined;
+    let alive = true;
+    (async () => {
+      const { job } = await readImportJob(jobId);
+      if (!alive) return;
+      const entries = job?.user_id === user.id ? await readImportJobReview(job) : [];
+      if (!alive) return;
+      if (!job || !entries.length) { setReviewMissing(true); return; }
+      const target = PLATFORMS.find(p => p.id === job.source) || null;
+      setReviewJob(job);
+      setPlatform(target);
+      setExistingRows([]);
+      setResults(entries);
+      setStep(4);
+    })();
+    return () => { alive = false; };
+  }, [jobId, user]);
 
   useEffect(() => {
     tmdb.getWatchProvidersForRegion('movie', 'US').then(res => {
@@ -414,9 +440,11 @@ function AccountImportView() {
       markImportDone(user.id, platform?.id, inserted);
       suppressFirstWinForImport(user.id, platform?.id);
     }
+    // A background job's leftovers are done with: drop the review file.
+    if (reviewJob) await finishImportJobReview(reviewJob);
     setImporting(false);
     setStep(5);
-  }, [plan, platform, user, results, resolvingMatch, importReport]);
+  }, [plan, platform, user, results, resolvingMatch, importReport, reviewJob]);
 
   const newCount       = getConfig().importEventsEnabled ? results.filter(r => r.status === 'matched' && r.listSelected !== false && !alreadyImportedEvent(r)).length : plan.rows.length;
   const alreadyCount   = results[0]?.destination ? 0 : getConfig().importEventsEnabled ? results.filter(alreadyImportedEvent).length : plan.alreadyInHistory;
@@ -455,6 +483,7 @@ function AccountImportView() {
       )}
 
       {(step === 4 || step === 5) && documentReport.length > 0 && <section aria-label={IMPORT_VIEW.reportHeading}><h2>{IMPORT_VIEW.reportHeading}</h2><ul>{documentReport.map((message, index) => <li key={index}>{message}</li>)}</ul></section>}
+      {reviewMissing && step < 4 && <p role="status" style={{ marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{IMPORT_JOBS.review.missing}</p>}
       {/* ── Step 1: Pick platform ── */}
       {step === 1 && (
         <>
@@ -656,6 +685,12 @@ function AccountImportView() {
       {/* ── Step 4: Preview ── */}
       {step === 4 && (
         <>
+          {reviewJob && (
+            <div style={{ marginBottom: '1rem', padding: '0.75rem 0.9rem', borderRadius: 'var(--radius-md)', background: 'var(--accent-secondary-dim)', fontSize: '0.85rem', lineHeight: 1.45, color: 'var(--text-primary)' }}>
+              <strong>{IMPORT_JOBS.review.title(importSourceName(reviewJob.source))}</strong><br />
+              {IMPORT_JOBS.review.body(results.length)}
+            </div>
+          )}
           {importListSelections(results).map(list => <div key={list.destination.key}><p>{IMPORT_VIEW.listPreview(list.destination)}</p><label><input type="checkbox" checked={list.listSelected !== false} onChange={e => setResults(rows => rows.map(row => row.destination?.key === list.destination.key ? { ...row, listSelected: e.target.checked } : row))} />{IMPORT_VIEW.selectList}</label></div>)}
           {/* Editorial headline */}
           <div style={{ marginBottom: '1.25rem' }}>
