@@ -27,6 +27,15 @@ import { SHOW_APPLE_LOGIN, SHOW_GOOGLE_LOGIN } from '../../lib/launchFeatures';
 import { hasSignedInBefore } from '../../lib/signedInBefore';
 import PlotWordmark from '../../components/PlotWordmark';
 
+// The panel's fixed palette (see the note on the tokens import): charcoal ink
+// and zinc greys picked against the dark poster wall, named once so the
+// colour-literal ratchet (scripts/check-color-literals.mjs) sees one each.
+const INK = '#09090B';
+const PAPER = '#FAFAFA';
+const MUTED = '#71717A';
+const QUIET = '#A1A1AA';
+const PLACEHOLDER = '#898989';
+
 const { width: W, height: H } = Dimensions.get('window');
 
 const POSTER_W = 110;
@@ -618,7 +627,7 @@ export default function AuthScreen() {
 
         {/* Dark vignette overlay */}
         <LinearGradient
-          colors={['rgba(9,9,11,0.3)', 'rgba(9,9,11,0.55)', 'rgba(9,9,11,0.85)', '#09090B']}
+          colors={['rgba(9,9,11,0.3)', 'rgba(9,9,11,0.55)', 'rgba(9,9,11,0.85)', INK]}
           locations={[0, 0.3, 0.6, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -631,7 +640,7 @@ export default function AuthScreen() {
       >
         {/* Wordmark at top */}
         <View style={[styles.wordmarkWrap, { paddingTop: insets.top + spacing.xl }]}>
-          <PlotWordmark size={52} color="#FAFAFA" />
+          <PlotWordmark size={52} color={PAPER} />
           <Text style={styles.tagline}>Your personal movie & TV companion</Text>
         </View>
 
@@ -678,7 +687,7 @@ export default function AuthScreen() {
                       accessibilityState={{ busy: googleLoading }}
                       activeOpacity={0.85}
                     >
-                      {googleLoading ? <ActivityIndicator color="#09090B" /> : (
+                      {googleLoading ? <ActivityIndicator color={INK} /> : (
                         <>
                           <GoogleIcon />
                           <Text style={styles.googleText}>{AUTH_PAGE.continueWithGoogle}</Text>
@@ -702,7 +711,7 @@ export default function AuthScreen() {
                     <TextInput
                       style={[styles.input, styles.codeInput, codeError ? styles.inputInvalid : null]}
                       placeholder={AUTH_PAGE.inbox.codePlaceholder}
-                      placeholderTextColor="#898989"
+                      placeholderTextColor={PLACEHOLDER}
                       value={code}
                       onChangeText={(t) => { setCode(t.replace(/\D/g, '').slice(0, 6)); setCodeError(null); }}
                       keyboardType="number-pad"
@@ -722,7 +731,7 @@ export default function AuthScreen() {
                     <TextInput
                       style={[styles.input, emailError ? styles.inputInvalid : null]}
                       placeholder="your@email.com"
-                      placeholderTextColor="#898989"
+                      placeholderTextColor={PLACEHOLDER}
                       value={email}
                       onChangeText={(t) => { setEmail(t); setEmailError(null); noteSignupStarted(); }}
                       onBlur={() => { if (email) checkEmail(); }}
@@ -743,7 +752,7 @@ export default function AuthScreen() {
                     <TextInput
                       style={[styles.input, passwordError ? styles.inputInvalid : null]}
                       placeholder={mode === 'signup' ? AUTH_PAGE.passwordPlaceholder.signup : AUTH_PAGE.passwordPlaceholder.login}
-                      placeholderTextColor="#898989"
+                      placeholderTextColor={PLACEHOLDER}
                       value={password}
                       onChangeText={(t) => { setPassword(t); setPasswordError(null); noteSignupStarted(); }}
                       onBlur={() => { if (mode === 'signup' && password) checkPassword(); }}
@@ -844,7 +853,7 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#09090B',
+    backgroundColor: INK,
   },
   mosaic: {
     flexDirection: 'row',
@@ -889,20 +898,20 @@ const styles = StyleSheet.create({
     // Editorial display headline, matching web .auth-header h1 (var(--font-display)).
     fontFamily: fontFamily.display,
     fontSize: fontSize.xxl,
-    color: '#09090B',
+    color: INK,
     marginBottom: 4,
     textAlign: 'center',
   },
   panelSub: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
-    color: '#71717A',
+    color: MUTED,
     marginBottom: spacing.xl,
     textAlign: 'center',
   },
   panelSubStrong: {
     fontFamily: fontFamily.sansMedium,
-    color: '#09090B',
+    color: INK,
   },
   fields: {
     gap: spacing.md,
@@ -935,7 +944,7 @@ const styles = StyleSheet.create({
   googleText: {
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.md,
-    color: '#09090B',
+    color: INK,
   },
   socialDivider: {
     flexDirection: 'row',
@@ -959,7 +968,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.xs,
-    color: '#71717A',
+    color: MUTED,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -967,7 +976,7 @@ const styles = StyleSheet.create({
   forgotText: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
-    color: '#71717A',
+    color: MUTED,
   },
   input: {
     backgroundColor: 'rgba(0,0,0,0.04)',
@@ -978,7 +987,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.md,
-    color: '#09090B',
+    color: INK,
   },
   inputInvalid: {
     borderColor: colors.danger,
@@ -997,7 +1006,7 @@ const styles = StyleSheet.create({
   resendNote: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
-    color: '#71717A',
+    color: MUTED,
     textAlign: 'center',
     marginTop: spacing.xs,
   },
@@ -1013,7 +1022,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cta: {
-    backgroundColor: '#09090B',
+    backgroundColor: INK,
     borderRadius: radii.pill,
     paddingVertical: 15,
     alignItems: 'center',
@@ -1032,12 +1041,12 @@ const styles = StyleSheet.create({
   modePrompt: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
-    color: '#71717A',
+    color: MUTED,
   },
   modeLink: {
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.sm,
-    color: '#09090B',
+    color: INK,
   },
   magicLinkBtn: {
     alignItems: 'center',
@@ -1046,6 +1055,6 @@ const styles = StyleSheet.create({
   magicLinkText: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
-    color: '#A1A1AA',
+    color: QUIET,
   },
 });
