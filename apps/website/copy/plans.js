@@ -125,8 +125,19 @@ export const PLANS_PAGE = {
         q: 'What happens to my lists if I downgrade?',
         a: 'Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.',
       },
+      {
+        q: 'What currency am I charged in?',
+        a: 'Prices are in US dollars and include tax. Your total and billing currency are shown at checkout before you confirm.',
+      },
+      {
+        q: 'How do you take payment?',
+        a: 'Payments are processed securely by Stripe. Plot never sees or stores your card details.',
+      },
+      {
+        q: 'Something else?',
+        a: 'Email support@theplot.tv and a person will get back to you.',
+      },
     ],
   },
 
-  fineprint: 'Prices are in US dollars and include tax. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? support@theplot.tv',
 };
