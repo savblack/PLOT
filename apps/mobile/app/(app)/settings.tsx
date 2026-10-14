@@ -1401,6 +1401,12 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             )}
           </View>
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2}><Rect x={3} y={3} width={18} height={18} rx={4} /><Circle cx={9} cy={9} r={1} /><Circle cx={15} cy={9} r={1} /><Circle cx={9} cy={15} r={1} /><Circle cx={15} cy={15} r={1} /></Svg>}
+            label="App icon"
+            description={premium ? 'Choose a color and logo for your Home Screen' : 'Premium colors and logos for your Home Screen'}
+            onPress={() => router.push('/(app)/app-icon' as Href)}
+          />
         </SettingsGroup>
         <SettingsGroup title={SETTINGS_VIEW.page.emailPreferences}>
           <SettingsRow
