@@ -38,6 +38,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { upsertBrevoContact, removeContactFromList } from '../_shared/brevo.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { errorText, reportLog } from '../_shared/posthogLog.ts';
 import { usableRateCount } from '../_shared/securityGuards.js';
 
 const CORS = {
@@ -97,7 +98,7 @@ async function subscribeRateLimited(
   const ipCount = usableRateCount(perIp);
   const globalCount = usableRateCount(global);
   if (ipCount === null || globalCount === null) {
-    console.error('Newsletter rate check failed:', perIp.error ?? global.error ?? 'invalid attempt count');
+    reportLog('newsletter-subscribe', 'error', `Newsletter rate check failed: ${errorText(perIp.error ?? global.error ?? 'invalid attempt count')}`);
     return null;
   }
   return ipCount > RATE_MAX_PER_IP || globalCount > RATE_MAX_GLOBAL;
@@ -153,7 +154,7 @@ Deno.serve(async (req) => {
         await upsertBrevoContact({ apiKey: brevoKey, email: sub.email, attributes: { OPT_IN: false } });
         await removeContactFromList({ apiKey: brevoKey, listId: Number(brevoMarketingListId), email: sub.email });
       } catch (error) {
-        console.error('Failed to sync unsubscribe to Brevo:', error instanceof Error ? error.message : error);
+        reportLog('newsletter-subscribe', 'error', `Failed to sync unsubscribe to Brevo: ${errorText(error)}`);
       }
     }
     return json({ ok: true });
@@ -164,7 +165,7 @@ Deno.serve(async (req) => {
 
   const ip = clientIp(req);
   if (!ip) {
-    console.error('[newsletter-subscribe] no cf-connecting-ip header; refusing rather than sharing one rate bucket');
+    reportLog('newsletter-subscribe', 'error', '[newsletter-subscribe] no cf-connecting-ip header; refusing rather than sharing one rate bucket');
     return json({ error: 'Something went wrong' }, 503);
   }
   const limited = await subscribeRateLimited(supabase, ip);
@@ -196,7 +197,7 @@ Deno.serve(async (req) => {
       .from('app_waitlist')
       .upsert({ email, source: waitlistSource(body.source) }, { onConflict: 'email', ignoreDuplicates: true });
     if (error) {
-      console.error('Waitlist failed:', error.message);
+      reportLog('newsletter-subscribe', 'error', `Waitlist failed: ${error.message}`);
       return json({ error: 'Something went wrong' }, 500);
     }
 
@@ -227,7 +228,7 @@ Deno.serve(async (req) => {
           listIds: [Number(brevoWaitlistListId)],
         });
       } catch (error) {
-        console.error('Failed to sync waitlist signup to Brevo:', error instanceof Error ? error.message : error);
+        reportLog('newsletter-subscribe', 'error', `Failed to sync waitlist signup to Brevo: ${errorText(error)}`);
       }
     }
 
@@ -240,7 +241,7 @@ Deno.serve(async (req) => {
     .from('marketing_subscribers')
     .upsert({ email, status: 'active' }, { onConflict: 'email', ignoreDuplicates: true });
   if (error) {
-    console.error('Subscribe failed:', error.message);
+    reportLog('newsletter-subscribe', 'error', `Subscribe failed: ${error.message}`);
     return json({ error: 'Something went wrong' }, 500);
   }
 
@@ -264,7 +265,7 @@ Deno.serve(async (req) => {
         listIds: optedIn ? [Number(brevoMarketingListId)] : undefined,
       });
     } catch (error) {
-      console.error('Failed to sync subscribe to Brevo:', error instanceof Error ? error.message : error);
+      reportLog('newsletter-subscribe', 'error', `Failed to sync subscribe to Brevo: ${errorText(error)}`);
     }
   }
 

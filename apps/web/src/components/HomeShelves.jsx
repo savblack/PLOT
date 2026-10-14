@@ -8,6 +8,8 @@
 //
 // Mobile parity: not shipped on mobile yet (issue 1093).
 import { posterUrl, profileUrl } from '../utils/images.js';
+import { displayPosterPath, feedDisplayItem } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { PEOPLE as P } from '@plot/core/copy/people.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { formatDuration } from '@plot/core/historyStats.js';
@@ -18,7 +20,8 @@ import './HomeShelves.css';
 
 /** Continue watching (board 4a): the poster, a thin progress line, what is next. */
 export function ContinueCard({ item, onOpen }) {
-  const img = posterUrl(item.posterPath, 'w185');
+  const art = useUserArtwork();
+  const img = posterUrl(displayPosterPath(art.apply(item)), 'w185');
   return (
     <div className="media-card continue-card">
       <button type="button" className="media-card-hit interactive-surface" onClick={onOpen} aria-label={item.title}>
@@ -43,7 +46,8 @@ function shelfMeta(item, today) {
 
 /** One title on the Your people shelf (board 4b). */
 export function PeopleShelfCard({ item, today, onOpen }) {
-  const img = posterUrl(item.posterPath, 'w185');
+  const art = useUserArtwork();
+  const img = posterUrl(displayPosterPath(art.apply(feedDisplayItem(item))), 'w185');
   return (
     <div className="media-card people-card">
       <button type="button" className="media-card-hit interactive-surface" onClick={onOpen} aria-label={item.title}>
@@ -63,13 +67,14 @@ function reason(s) {
 
 /** The invite for someone who follows nobody yet (board 4c), minus its explanatory note. */
 export function PeopleInvite({ suggestions, isFollowing, busyId, onToggle, onOpenPerson }) {
+  const art = useUserArtwork();
   if (!suggestions.length) return null;
   return (
     <div className="hist-card people-invite">
       {suggestions.map(s => (
         <div key={s.id} className="people-invite-person">
           <button type="button" className="people-invite-open" onClick={() => onOpenPerson(s.id)} aria-label={P.viewLabel(s.name)}>
-            {profileUrl(s.profilePath) ? <img src={profileUrl(s.profilePath)} alt="" loading="lazy" /> : <span aria-hidden="true">{s.name.charAt(0)}</span>}
+            {profileUrl(art.path('person', s.id, 'profile') || s.profilePath) ? <img src={profileUrl(art.path('person', s.id, 'profile') || s.profilePath)} alt="" loading="lazy" /> : <span aria-hidden="true">{s.name.charAt(0)}</span>}
           </button>
           <b>{s.name}</b>
           <span className="people-invite-reason">{reason(s)}</span>

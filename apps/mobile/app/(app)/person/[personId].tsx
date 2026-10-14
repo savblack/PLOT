@@ -5,6 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { tmdb } from '../../../lib/tmdb';
 import { posterUrl, profileUrl, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
+import CustomizeArtwork from '../../../components/ArtworkSheet';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useMediaPanel } from '../../../contexts/MediaPanelContext';
 import { TAB_BAR_CLEARANCE } from '../../../lib/tabBar';
@@ -123,6 +126,7 @@ function PersonBody({ personId }: { personId: string }) {
 
   const actingCredits = useMemo(() => dedupedActingCredits(credits?.cast), [credits]);
   const comingUp = useMemo(() => comingUpFromCredits(credits, localDateStr()), [credits]);
+  const art = useUserArtwork();
 
   if (!Number.isFinite(id) || error) {
     return (
@@ -144,7 +148,7 @@ function PersonBody({ personId }: { personId: string }) {
     );
   }
 
-  const image = profileUrl(person.profile_path, 'h632');
+  const image = profileUrl(art.path('person', person.id, 'profile') || person.profile_path, 'h632');
   const knownFor = person.known_for_department || MEDIA_PANEL.talentFallback;
   const biography = shortBiography(person.biography);
   const born = person.birthday
@@ -178,6 +182,7 @@ function PersonBody({ personId }: { personId: string }) {
           <Text style={{ marginTop: spacing.xs, fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary }}>{person.name}</Text>
           {!!born && <Text style={{ marginTop: spacing.xs, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary }}>Born {born}</Text>}
           <PersonFollow person={person} />
+          <CustomizeArtwork mediaType="person" tmdbId={person.id} defaults={{ profile: person.profile_path }} />
         </View>
       </View>
       {!!biography && (
@@ -194,7 +199,7 @@ function PersonBody({ personId }: { personId: string }) {
               <CreditCard
                 key={`${item.mediaType}-${item.tmdbId}`}
                 title={item.title}
-                image={posterUrl(item.posterPath, 'w185')}
+                image={posterUrl(displayPosterPath(art.apply(item)), 'w185')}
                 role={item.role}
                 meta={item.today ? <PeopleChip label={P.chips.outToday} tone="today" /> : shortDayMonth(item.date)}
                 onPress={() => open(item.tmdbId, item.mediaType)}
@@ -217,7 +222,7 @@ function PersonBody({ personId }: { personId: string }) {
                 <CreditCard
                   key={`${type}-${credit.id}`}
                   title={title}
-                  image={posterUrl(credit.poster_path, 'w185')}
+                  image={posterUrl(displayPosterPath(art.apply({ ...credit, media_type: type })), 'w185')}
                   role={role}
                   meta={creditMeta(credit, type)}
                   onPress={() => credit.id && open(credit.id, type)}

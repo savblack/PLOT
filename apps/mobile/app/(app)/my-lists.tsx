@@ -43,6 +43,8 @@ import { groupEntriesByMonth, monthLabel } from '@plot/core/history.js';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { COMMON } from '@plot/core/copy/common.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
@@ -223,7 +225,8 @@ function ListRow({ item, trailing, onPress, sel, status }: {
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const img    = posterUrl(item.poster_path, 'w92');
+  const art = useUserArtwork();
+  const img    = posterUrl(displayPosterPath(art.apply(item)), 'w92');
   const title  = item.title || item.name || '';
   const isTV   = item.media_type === 'tv';
   const epCode = item.current_season != null
@@ -290,10 +293,11 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
   const editing = !!sel?.editMode;
 
   const renderCard = (item: any) => {
-    const img   = posterUrl(item.poster_path, 'w185');
+    const img   = posterUrl(displayPosterPath(art.apply(item)), 'w185');
     const title = item.title || item.name || '';
     const isSelected = !!sel?.selected.has(item.tmdb_id);
     const byline = caption?.(item);

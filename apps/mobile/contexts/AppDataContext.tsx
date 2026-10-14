@@ -1,5 +1,7 @@
 import { useBroadcastPreferences } from '@plot/core/useBroadcastPreferences.js';
 import { usePrivateNotes } from '@plot/core/usePrivateNotes.js';
+import { ArtworkProvider } from '@plot/core/useUserArtwork.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
 /**
  * App-wide user data — mirrors web's AppProvider (src/App.jsx): the shared
  * core hooks are instantiated ONCE here and every screen consumes them via
@@ -46,7 +48,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppDataContext.Provider value={{ broadcastPreferences, userId, user, profile, refreshProfile, privateNotes, watchlist, watching, favorites, customLists, topLists, history }}>
-      {children}
+      <ArtworkProvider userId={userId} premium={!!profile && isPremiumProfile(profile)}>
+        {children}
+      </ArtworkProvider>
     </AppDataContext.Provider>
   );
 }

@@ -8,6 +8,8 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { fontFamily, fontSize, spacing, radii, posterUrl, profileUrl, type Palette } from '../lib/tokens';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { useHistoryDetails } from '@plot/core/useHistoryDetails.js';
 import { groupEntriesByMonth, monthLabel } from '@plot/core/history.js';
@@ -61,6 +63,7 @@ export default function HistoryInsights({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
   const { history, topLists, profile } = useAppData();
   const { open } = useMediaPanel();
   const { genres } = useGenres();
@@ -193,7 +196,7 @@ export default function HistoryInsights({
           <Text style={styles.lead}>{crowdSentence(crowd)}</Text>
           <View style={styles.crowdRow}>
             {crowd.disagreements.map(({ entry }: { entry: { id: string; tmdb_id?: number; media_type?: string; poster_path?: string | null; title?: string } }) => {
-              const uri = posterUrl(entry.poster_path, 'w92');
+              const uri = posterUrl(displayPosterPath(art.apply(entry)), 'w92');
               return (
                 <Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={T.openTitle(entry.title || '')} onPress={() => openTitle(entry)} style={styles.crowdPoster}>
                   {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
@@ -214,7 +217,7 @@ export default function HistoryInsights({
             )}
           </View>
           {people.map((person: { id: number; name: string; profile_path?: string | null; line: string }) => {
-            const uri = profileUrl(person.profile_path, 'w185');
+            const uri = profileUrl(art.path('person', person.id, 'profile') || person.profile_path, 'w185');
             return (
               <View key={person.id} style={styles.person}>
                 <View style={styles.avatar}>
@@ -266,6 +269,7 @@ function MiniMonth({
   styles: ReturnType<typeof makeStyles>;
   colors: Palette;
 }) {
+  const art = useUserArtwork();
   const first = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const lead = (first.getDay() + 6) % 7;
@@ -277,7 +281,7 @@ function MiniMonth({
     const future = isThisMonth && day > today.getDate();
     const isToday = isThisMonth && day === today.getDate();
     if (entry) {
-      const uri = posterUrl(entry.poster_path, 'w92');
+      const uri = posterUrl(displayPosterPath(art.apply(entry)), 'w92');
       cells.push(
         <Pressable
           key={day}

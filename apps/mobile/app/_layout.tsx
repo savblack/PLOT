@@ -10,6 +10,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
+import { markSignedInBefore } from '../lib/signedInBefore';
 import { setTmdbRegion } from '../lib/tmdb';
 import { setUserTimezone } from '@plot/core/date.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
@@ -309,6 +310,9 @@ function RootInner() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => {
       begin(next);
+      // The auth screen opens on Sign up for a fresh install and on Sign in
+      // once this device has held a session (app/(auth)/index.tsx reads it).
+      if (next?.user) void markSignedInBefore();
     });
 
     return () => {

@@ -29,6 +29,8 @@ import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
+import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
@@ -154,9 +156,10 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { profile } = useAppData();
+  const art = useUserArtwork();
   const fw       = favoriteWords(profile?.region);
   const title    = item.title || item.name || '';
-  const img      = posterUrl(item.poster_path, 'w185');
+  const img      = posterUrl(displayPosterPath(art.apply(item)), 'w185');
 
   return (
     <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>
@@ -197,8 +200,10 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
 function BingeCard({ item, onPress }: { item: MediaItem; onPress: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
+  const shown = art.apply(item);
   const title    = item.name || item.title || '';
-  const backdrop = backdropUrl(item.backdrop_path, 'w780') || posterUrl(item.poster_path, 'w342');
+  const backdrop = backdropUrl(displayBackdropPath(shown), 'w780') || posterUrl(displayPosterPath(shown), 'w342');
   const year     = (item.first_air_date || '').slice(0, 4);
 
   return (
@@ -226,8 +231,9 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
   const title = item.title || item.name || '';
-  const img   = posterUrl(item.poster_path, 'w92');
+  const img   = posterUrl(displayPosterPath(art.apply(item)), 'w92');
   const type  = item.media_type === 'tv' ? 'TV' : 'Movie';
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
   const glow  = rank <= 10;
@@ -273,8 +279,10 @@ function HeroCard({ item, onPress, saved, onSave, cardStyle, badge = 'TRENDING #
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
+  const shown = art.apply(item);
   const title    = item.title || item.name || '';
-  const backdrop = backdropUrl(item.backdrop_path) || posterUrl(item.poster_path, 'w780');
+  const backdrop = backdropUrl(displayBackdropPath(shown)) || posterUrl(displayPosterPath(shown), 'w780');
 
   return (
     <TouchableOpacity style={[styles.hero, cardStyle]} onPress={onPress} activeOpacity={0.9}>
@@ -434,9 +442,10 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { profile } = useAppData();
+  const art = useUserArtwork();
   const fw        = favoriteWords(profile?.region);
   const title     = item.title || item.name || '';
-  const img       = posterUrl(item.poster_path, 'w185');
+  const img       = posterUrl(displayPosterPath(art.apply(item)), 'w185');
 
   return (
     <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>

@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl } from '../utils/images.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { CURATED_LISTS as COPY } from '@plot/core/copy/curatedLists.js';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
@@ -26,7 +28,8 @@ const WALL_POSTERS = 30;
  * two read as siblings.
  */
 export function CuratedListCard({ curated, onOpen }) {
-  const posters = curated.entries.filter(entry => entry.poster_path).slice(0, WALL_POSTERS);
+  const art = useUserArtwork();
+  const posters = curated.entries.filter(entry => displayPosterPath(art.apply(entry))).slice(0, WALL_POSTERS);
   return (
     <div className="discover-hero curated-hero">
       <button type="button" className="discover-hero-hit interactive-surface" onClick={onOpen} aria-label={`${curated.title}. ${COPY.titleCount(curated.entries.length)}`}>
@@ -34,7 +37,7 @@ export function CuratedListCard({ curated, onOpen }) {
           {/* The card is usually second in the rotation, so its first posters load up
               front rather than blank when it slides in; the desktop-only rest stay lazy. */}
           {posters.map((entry, i) => (
-            <img key={entry.tmdb_id} src={posterUrl(entry.poster_path, 'w185')} alt="" loading={i < 18 ? 'eager' : 'lazy'} />
+            <img key={entry.tmdb_id} src={posterUrl(displayPosterPath(art.apply(entry)), 'w185')} alt="" loading={i < 18 ? 'eager' : 'lazy'} />
           ))}
         </div>
         <div className="discover-hero-overlay">
@@ -49,6 +52,7 @@ export function CuratedListCard({ curated, onOpen }) {
 
 /** The list in full, ranked, with "Save to my lists". */
 export function CuratedListDialog({ curated, onClose, onOpenTitle }) {
+  const art = useUserArtwork();
   const { user, customLists, profile } = useApp();
   const navigate = useNavigate();
   const [state, setState] = useState({ status: 'idle', message: '', listId: null });
@@ -120,8 +124,8 @@ export function CuratedListDialog({ curated, onClose, onOpenTitle }) {
               <button type="button" className="curated-row" onClick={() => { onClose(); onOpenTitle?.(entry.tmdb_id, entry.media_type, 'curated_list'); }}>
                 <span className="curated-rank">{entry.rank}</span>
                 <span className="list-row-poster">
-                  {entry.poster_path
-                    ? <img src={posterUrl(entry.poster_path, 'w92')} alt="" loading="lazy" />
+                  {displayPosterPath(art.apply(entry))
+                    ? <img src={posterUrl(displayPosterPath(art.apply(entry)), 'w92')} alt="" loading="lazy" />
                     : <span className="curated-poster-fallback">{entry.title.charAt(0)}</span>}
                 </span>
                 <span className="list-row-title">{entry.title}</span>

@@ -2,6 +2,8 @@ import { isTypeNarrowed, ALL_TYPES } from '@plot/core/mediaFilters.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import { useGenres } from '../hooks/useGenres.js';
 import { posterUrl } from '../utils/images.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { historyRatingLabel } from '../utils/history.js';
 import { isFinishedStatus } from '@plot/core/listWatchStatus.js';
 import { MEDIA } from '../copy/media.js';
@@ -169,6 +171,7 @@ function watchedLabel(dateStr) {
    meta line, never a toggle: every card stays the same height whether or
    not it carries one. Reading the review happens in the media panel. */
 export function HistoryCard({ entry, openPanel }) {
+  const art = useUserArtwork();
   const title  = entry.title || MEDIA.unknown;
   const date   = watchedLabel(entry.watched_at);
   const rating = historyRatingLabel(entry.rating);
@@ -188,7 +191,7 @@ export function HistoryCard({ entry, openPanel }) {
   return (
     <ListCard
       title={title}
-      img={posterUrl(entry.poster_path, 'w185')}
+      img={posterUrl(displayPosterPath(art.apply(entry)), 'w185')}
       meta={meta}
       onOpen={() => openPanel(entry.tmdb_id, entry.media_type || 'movie')}
     />

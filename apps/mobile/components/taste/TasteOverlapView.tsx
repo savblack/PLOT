@@ -186,7 +186,7 @@ function TasteOverlapBody({
               <Path d="M15 18l-6-6 6-6" />
             </Svg>
           </TouchableOpacity>
-          <View style={styles.chip}><Text style={styles.chipText}>{T.premiumChip}</Text></View>
+          {!premium && <View style={styles.chip}><Text style={styles.chipText}>{T.premiumChip}</Text></View>}
           {premium && overlap && target ? (
             <TouchableOpacity
               style={styles.iconBtn}

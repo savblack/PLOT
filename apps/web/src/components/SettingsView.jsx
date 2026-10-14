@@ -1923,7 +1923,7 @@ export default function SettingsView() {
               <div className="settings-row-left">
                 <div className="settings-row-icon">{PLEX_ICON}</div>
                 <div>
-                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.plexName}<PremiumBadge /></div>
+                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.plexName}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {sync.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.notConnected}
                   </div>
@@ -1956,7 +1956,7 @@ export default function SettingsView() {
               <div className="settings-row-left">
                 <div className="settings-row-icon">{TRAKT_ICON}</div>
                 <div>
-                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.traktName}<PremiumBadge /></div>
+                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.traktName}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {trakt.isConnected
                       ? SETTINGS_VIEW.integrations.connected
@@ -1996,7 +1996,7 @@ export default function SettingsView() {
               <div key={row.name} className="settings-row">
                 <div className="settings-row-left">
                   <div className="settings-row-icon">{row.icon}</div>
-                  <div><div className="settings-row-label">{row.name}<PremiumBadge /></div><p className="settings-selection">{row.connected && !premium.isPremium ? SETTINGS_VIEW.integrations.pausedNeedsPremium : row.blurb}</p></div>
+                  <div><div className="settings-row-label">{row.name}{!premium.isPremium && <PremiumBadge />}</div><p className="settings-selection">{row.connected && !premium.isPremium ? SETTINGS_VIEW.integrations.pausedNeedsPremium : row.blurb}</p></div>
                 </div>
                 <div className="settings-inline-actions">
                   <SettingsTextAction onClick={() => showConfirm({

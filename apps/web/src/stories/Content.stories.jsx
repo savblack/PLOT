@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { APP_SHELL } from '../copy/appShell.js';
+import { ARTWORK } from '../copy/artwork.js';
 import { AUTH_CALLBACK_PAGE } from '../copy/authCallbackPage.js';
 import { AUTH_PAGE } from '../copy/authPage.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
@@ -23,6 +24,7 @@ const MODULES = {
   common: COMMON,
   media: MEDIA,
   appShell: APP_SHELL,
+  artwork: ARTWORK,
   authPage: AUTH_PAGE,
   authCallbackPage: AUTH_CALLBACK_PAGE,
   calendarView: CALENDAR_VIEW,
