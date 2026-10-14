@@ -7,6 +7,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
+import { errorText, reportLog } from '../_shared/posthogLog.ts';
 import { PUSH_LOOK_BACK_DAYS, PUSH_TYPES, pushAction, pushBlocked, pushMessage } from '../_shared/pushDelivery.js';
 
 type Db = SupabaseClient<Database>;
@@ -181,7 +182,7 @@ Deno.serve(async req => {
         tickets = Array.isArray(body?.data) ? body.data : [];
         if (tickets.length !== claimed.length) throw new Error('Expo ticket count mismatch');
       } catch (error) {
-        console.error('send-push request failed:', error instanceof Error ? error.message : 'unknown error');
+        reportLog('send-push', 'error', `send-push request failed: ${errorText(error)}`);
         for (const c of claimed) await db.from('push_deliveries').update({ status: 'failed', error: 'provider request failed' })
           .eq('notification_id', c.notification.id).eq('token', c.token.token);
         failed += claimed.length;
@@ -207,7 +208,7 @@ Deno.serve(async req => {
     }
     return json({ ok: true, candidates: candidates.length, selected: chosen.length, sent, failed, disabled });
   } catch (error) {
-    console.error('send-push failed:', error);
+    reportLog('send-push', 'error', `send-push failed: ${errorText(error)}`);
     return json({ ok: false, error: 'Push delivery failed' }, 500);
   }
 });
