@@ -13,6 +13,8 @@ import { MEDIA } from '@plot/core/copy/media.js';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 import { tmdb } from '../../lib/tmdb';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { displayPosterPath, feedDisplayItem } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -62,7 +64,8 @@ function FeedRow({ item, today, saved, onSave, onOpen }: {
   onOpen: () => void;
 }) {
   const { colors } = useTheme();
-  const poster = posterUrl(item.posterPath, 'w92');
+  const art = useUserArtwork();
+  const poster = posterUrl(displayPosterPath(art.apply(feedDisplayItem(item))), 'w92');
   const chips: { key: string; tone: 'today' | 'quiet' | 'default'; label: string }[] = [];
   if (item.chip) chips.push({ key: 'chip', tone: chipTone(item.chip), label: P.chips[item.chip] });
   if (item.chip !== 'newSeason' && item.kind === 'season') chips.push({ key: 'season', tone: 'default', label: P.chips.newSeason });
@@ -104,6 +107,7 @@ function FeedRow({ item, today, saved, onSave, onOpen }: {
 }
 
 function FollowSearch({ follow }: { follow: ReturnType<typeof useFollowPerson> }) {
+  const art = useUserArtwork();
   const { colors } = useTheme();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ id: number; name: string; profile_path?: string | null; known_for_department?: string | null }[] | null>(null);
@@ -144,7 +148,7 @@ function FollowSearch({ follow }: { follow: ReturnType<typeof useFollowPerson> }
           {shown.length === 0 && <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{P.page.noResults}</Text>}
           {shown.map(person => (
             <View key={person.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <PersonFace name={person.name} path={person.profile_path} size={36} />
+              <PersonFace name={person.name} path={art.path('person', person.id, 'profile') || person.profile_path} size={36} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary }} numberOfLines={1}>{person.name}</Text>
                 {!!person.known_for_department && <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }}>{person.known_for_department}</Text>}
@@ -169,6 +173,7 @@ export default function YourPeopleScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { profile, userId, watchlist } = useAppData();
+  const art = useUserArtwork();
   const { open } = useMediaPanel();
   const people = usePeopleFollows(userId);
   const follow = useFollowPerson();
@@ -254,7 +259,7 @@ export default function YourPeopleScreen() {
                   accessibilityLabel={P.viewLabel(f.name)}
                   style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
                 >
-                  <PersonFace name={f.name} path={f.profile_path} size={36} />
+                  <PersonFace name={f.name} path={art.path('person', f.tmdb_person_id, 'profile') || f.profile_path} size={36} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary }} numberOfLines={1}>{f.name}</Text>
                     <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }}>{f.known_for === 'Directing' ? P.page.directingDept : P.page.acting}</Text>

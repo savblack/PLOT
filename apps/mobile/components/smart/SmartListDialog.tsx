@@ -20,6 +20,8 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import SmartListRules from './SmartListRules';
 import {
   asCatalog, asMatches, asRules, suggestedName,
@@ -43,6 +45,7 @@ export default function SmartListDialog({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
   const insets = useSafeAreaInsets();
   const { profile, watchlist, history } = useAppData();
   const catalogRaw = useGenreCatalog();
@@ -152,7 +155,7 @@ export default function SmartListDialog({
             {posters.length > 0 && (
               <View style={[styles.posters, live.loading && styles.postersStale]}>
                 {posters.map((item) => {
-                  const uri = posterUrl(item.poster_path, 'w185');
+                  const uri = posterUrl(displayPosterPath(art.apply(item)), 'w185');
                   return (
                     <View key={item.id} style={styles.poster}>
                       {uri ? <Image source={{ uri }} style={styles.posterImage} /> : null}

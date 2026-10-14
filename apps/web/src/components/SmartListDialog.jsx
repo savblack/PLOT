@@ -25,6 +25,8 @@ import { useApp } from '../hooks/useApp.js';
 import { useGenreCatalog } from '../hooks/useGenres.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { posterUrl } from '../utils/images.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import SmartListRules from './SmartListRules.jsx';
 import { SettingsSwitch } from './SettingsPage.jsx';
@@ -54,6 +56,7 @@ export default function SmartListDialog({
   onConfirm, onClose, onPremium, onLocked, onLimit, catalog: seedCatalog = null, preview: seedPreview = null,
 }) {
   const { user, profile, watchlist } = useApp();
+  const art = useUserArtwork();
   const history = useHistory(user?.id);
   const catalog = useGenreCatalog(seedCatalog);
   const editing = !!list;
@@ -169,7 +172,7 @@ export default function SmartListDialog({
             <div className={`smart-builder-posters${counting ? ' smart-builder-posters--stale' : ''}`}>
               {posters.slice(0, 4).map(item => (
                 <span key={item.id} className="smart-builder-poster">
-                  {item.poster_path ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title} loading="lazy" /> : null}
+                  {displayPosterPath(art.apply(item)) ? <img src={posterUrl(displayPosterPath(art.apply(item)), 'w185')} alt={item.title} loading="lazy" /> : null}
                 </span>
               ))}
             </div>

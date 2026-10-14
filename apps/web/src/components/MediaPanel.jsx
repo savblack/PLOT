@@ -1,4 +1,7 @@
 import { useEpisodeWatches, useSpecialEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
+import CustomizeArtwork from './ArtworkSheet.jsx';
 import PrivateNote from './PrivateNote.jsx';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -86,6 +89,7 @@ function BackIcon() {
    thumbnail rather than a full-bleed header image — a portrait crop
    stretched across a 16:9 backdrop zooms in on the face awkwardly. ── */
 function TalentPanelView({ person, credits, error, onOpenTitle }) {
+  const art = useUserArtwork();
   if (!person && !error) {
     return <div style={{ padding: '2rem 0', textAlign: 'center' }}><LoadingSpinner /></div>;
   }
@@ -98,7 +102,7 @@ function TalentPanelView({ person, credits, error, onOpenTitle }) {
   }
 
   const actingCredits = dedupedActingCredits(credits?.cast).slice(0, 12);
-  const image = profileUrl(person.profile_path, 'h632');
+  const image = profileUrl(art.path('person', person.id, 'profile') || person.profile_path, 'h632');
   const knownFor = person.known_for_department || MEDIA_PANEL.talentFallback;
   const biographyPreview = shortBiography(person.biography);
 
@@ -113,6 +117,7 @@ function TalentPanelView({ person, credits, error, onOpenTitle }) {
           <h1>{person.name}</h1>
           {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
           <PersonFollow person={person} />
+          <CustomizeArtwork mediaType="person" tmdbId={person.id} defaults={{ profile: person.profile_path }} />
         </div>
       </header>
       {person.biography && <p className="talent-biography">{biographyPreview}</p>}
@@ -300,7 +305,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
 }
 
 /* ── Season selector + episode list ── */
-export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
+export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished, onSeasonChange }) {
   const { watching, user } = useApp();
   const sparse = useEpisodeWatches(user?.id, tvId);
   const specials = useSpecialEpisodeWatches(user?.id, tvId);
@@ -308,6 +313,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
   const seasons = guideSeasons(details, episodeStates);
   const [selSeason, setSelSeason] = useState(currentProgress?.current_season || 1);
   const guideSeason = guideSeasonSelection(seasons, selSeason);
+  useEffect(() => { onSeasonChange?.(guideSeason); }, [guideSeason, onSeasonChange]);
   // A boolean, not the season list. The episode callbacks memoize on this.
   const specialsOnly = guideSeason === 0 && !seasons.some(season => Number(season?.season_number) === Number(selSeason));
   const [episodes,  setEpisodes]  = useState([]);
@@ -788,6 +794,7 @@ function pillButtonStyle(variant) {
 /* ── Add to custom list sheet ── */
 function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   const { customLists, topLists, profile, user } = useApp();
+  const art = useUserArtwork();
   const { lists, ownedCount, createList, addItem, removeItem, isInList } = customLists;
   const [creatingName, setCreatingName] = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
@@ -917,7 +924,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
         <div className="responsive-dialog-picker">
           <div className="add-list-context">
             <span className="add-list-context-poster">
-              {details?.poster_path && <img src={posterUrl(details.poster_path, 'w92')} alt="" />}
+              {(art.path(itemType === 'tv' ? 'tv' : 'movie', itemId, 'poster') || details?.poster_path) && <img src={posterUrl(art.path(itemType === 'tv' ? 'tv' : 'movie', itemId, 'poster') || details?.poster_path, 'w92')} alt="" />}
             </span>
             <span>
               <small>Adding</small>
@@ -1107,6 +1114,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
 
 export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose }) {
   const { watchlist, watching, user, profile, favorites, customLists, openPanel } = useApp();
+  const art = useUserArtwork();
   const followPerson = useFollowPerson();
   const [talentId, setTalentId] = useState(null);
   const [talentPerson, setTalentPerson] = useState(null);
@@ -1190,6 +1198,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const [statusActionError, setStatusActionError] = useState('');
   // True while a watched / watching change started from the foot bar is in flight.
   const [footBusy, setFootBusy] = useState(false);
+  const [pickedSeason, setPickedSeason] = useState(null);
+  const [seasonItemId, setSeasonItemId] = useState(itemId);
+  if (seasonItemId !== itemId) {
+    setSeasonItemId(itemId);
+    setPickedSeason(null);
+  }
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -1396,6 +1410,15 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
         : '');
   const movieEnds = isMovie && details?.runtime > 0 ? endsAtTime(details.runtime) : null;
   const factLine = [year, runtimeText, movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''].filter(Boolean).join(' · ');
+  const artworkSubject = isMovie ? 'movie' : 'tv';
+  const fromProgress = progress?.current_season;
+  const seasonForPoster = isMovie
+    ? null
+    : (pickedSeason ?? (Number.isInteger(fromProgress) ? fromProgress : null));
+  const seasonPoster = seasonForPoster == null ? null : art.path('season', itemId, 'poster', seasonForPoster);
+  const posterPath = seasonPoster || art.path(artworkSubject, itemId, 'poster') || details?.poster_path || null;
+  const backdropPath = art.path(artworkSubject, itemId, 'backdrop') || details?.backdrop_path || null;
+  const logoPath = art.path(artworkSubject, itemId, 'logo');
   const author = isMovie
     ? (details?.credits?.crew || []).find(c => c.job === 'Director')?.name
     : (details?.created_by || [])[0]?.name;
@@ -1587,17 +1610,18 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
             </button>
           </div>
         ) : (
-          <div className={`panel-header-wrap${details?.backdrop_path ? '' : ' panel-header-wrap--no-backdrop'}`}>
+          <div className={`panel-header-wrap${backdropPath ? '' : ' panel-header-wrap--no-backdrop'}`}>
             <div
               onPointerDown={handleDragStart}
               onPointerMove={handleDragMove}
               onPointerUp={endDrag}
               onPointerCancel={endDrag}
             >
-              {details?.backdrop_path
-                ? <img className="panel-header-img" src={backdropUrl(details.backdrop_path)} alt="" />
+              {backdropPath
+                ? <img className="panel-header-img" src={backdropUrl(backdropPath)} alt="" />
                 : <div className="panel-header-fallback" />
               }
+              {logoPath && <img className="panel-title-logo" src={logoUrl(logoPath, 'w300')} alt="" />}
               <div className="panel-drag-handle" />
             </div>
             <button className="panel-close-btn" onClick={onClose} aria-label="Close">
@@ -1629,8 +1653,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 made it, genre — is all above the fold instead of below a
                 half-panel of artwork. ── */}
             <div className="panel-head">
-              {details?.poster_path
-                ? <img className="panel-poster" src={posterUrl(details.poster_path, 'w342')} alt="" />
+              {posterPath
+                ? <img className="panel-poster" src={posterUrl(posterPath, 'w342')} alt="" />
                 : <div className="panel-poster panel-poster--empty" aria-hidden="true" />
               }
               <div className="panel-head-text">
@@ -1646,6 +1670,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     {genreChips.map(g => <span className="panel-genre" key={g.id}>{g.name}</span>)}
                   </div>
                 )}
+                <CustomizeArtwork
+                  mediaType={artworkSubject}
+                  tmdbId={itemId}
+                  seasonNumber={seasonForPoster == null ? undefined : seasonForPoster}
+                  defaults={{ poster: details?.poster_path, backdrop: details?.backdrop_path }}
+                />
               </div>
             </div>
 
@@ -1997,6 +2027,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                   details={details}
                   timezone={timezone}
                   onSeriesFinished={handleSeriesFinished}
+                  onSeasonChange={setPickedSeason}
                 />
               </>
             )}
@@ -2018,7 +2049,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                         onClick={() => goToTitle(item.id, type, 'more_like_this')}
                         aria-label={title}
                       >
-                        <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />
+                        <img src={posterUrl(displayPosterPath(art.apply(item)), 'w185')} alt="" loading="lazy" />
                         <span className="panel-similar-name">{title}</span>
                         <span className="panel-similar-meta">{creditMeta(item, type)}</span>
                       </button>

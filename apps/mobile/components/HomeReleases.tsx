@@ -15,6 +15,8 @@ import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '@
 import { localDateStr } from '@plot/core/date.js';
 import { pickOutNow, groupFuture } from '@plot/core/useUpcoming.js';
 import { posterUrl, backdropUrl, logoUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
+import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../contexts/ThemeContext';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -171,8 +173,10 @@ async function loadReleases(): Promise<ReleasesData> {
 function ReleaseCard({ item, providerLogo, onPress }: { item: ReleaseItem; providerLogo?: string | null; onPress: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
+  const shown = art.apply(item);
   const title = item.title || item.name || '';
-  const img   = posterUrl(item.poster_path, 'w185') || backdropUrl(item.backdrop_path, 'w300');
+  const img   = posterUrl(displayPosterPath(shown), 'w185') || backdropUrl(displayBackdropPath(shown), 'w300');
   const logo = logoUrl(providerLogo);
 
   return (
@@ -200,8 +204,10 @@ function ReleaseCard({ item, providerLogo, onPress }: { item: ReleaseItem; provi
 function WideReleaseCard({ item, providerLogo, onPress }: { item: ReleaseItem; providerLogo?: string | null; onPress: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
+  const shown = art.apply(item);
   const title    = item.title || item.name || '';
-  const backdrop = backdropUrl(item.backdrop_path, 'w780') || posterUrl(item.poster_path, 'w342');
+  const backdrop = backdropUrl(displayBackdropPath(shown), 'w780') || posterUrl(displayPosterPath(shown), 'w342');
   const isTV     = item.media_type === 'tv';
   const meta     = isTV ? 'Series' : item._cinema ? 'In Cinemas' : 'Movie';
   const logo     = logoUrl(providerLogo);

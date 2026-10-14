@@ -7,6 +7,8 @@ import { useGenres } from '../hooks/useGenres.js';
 import { useUnifiedSearch } from '@plot/core/useUnifiedSearch.js';
 import { describeSearchResult, pushRecentSearch } from '@plot/core/search.js';
 import { posterUrl, profileUrl } from '../utils/images.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { SEARCH_PALETTE } from '../copy/searchPalette.js';
@@ -48,18 +50,19 @@ function Initial({ text }) {
    screen readers and for a mouse; the keyboard model on top (arrows, Enter) is
    the palette's, driven by `active`. */
 function Row({ item, active, index, onHover, onSelect, watchlist, history, genres }) {
+  const art = useUserArtwork();
   const { kind, data } = item;
   let thumb, title, meta, kindLabel, round = false, inList = false, watched = false;
 
   if (kind === 'library') {
-    thumb = posterUrl(data.poster_path, 'w92');
+    thumb = posterUrl(displayPosterPath(art.apply(data)), 'w92');
     title = data.title || MEDIA.unknown;
     meta = '';
     kindLabel = STATUS_LABEL[data.status] || SEARCH_PALETTE.kind[data.media_type] || SEARCH_PALETTE.kind.movie;
   } else if (kind === 'title') {
     const type = data.media_type || 'movie';
     const d = describeSearchResult(data, genres);
-    thumb = posterUrl(data.poster_path, 'w92');
+    thumb = posterUrl(displayPosterPath(art.apply(data)), 'w92');
     title = data.title || data.name || MEDIA.unknown;
     meta = [d.year, ...d.genres].filter(Boolean).join(' · ');
     if (d.rating) meta = `${meta}${meta ? ' · ' : ''}${d.rating} ★`;
@@ -72,7 +75,7 @@ function Row({ item, active, index, onHover, onSelect, watchlist, history, genre
     meta = '';
     kindLabel = SEARCH_PALETTE.kind.collection;
   } else if (kind === 'person') {
-    thumb = profileUrl(data.profile_path, 'w185');
+    thumb = profileUrl(art.path('person', data.id, 'profile') || data.profile_path, 'w185');
     title = data.name;
     const knownFor = (data.known_for || []).map(k => k.title || k.name).filter(Boolean).slice(0, 2).join(', ');
     meta = [data.known_for_department, knownFor].filter(Boolean).join(' · ');

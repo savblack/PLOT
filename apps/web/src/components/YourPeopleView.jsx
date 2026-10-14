@@ -19,6 +19,8 @@ import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { PEOPLE as P } from '@plot/core/copy/people.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { posterUrl, profileUrl } from '../utils/images.js';
+import { displayPosterPath, feedDisplayItem } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import SideFilters from './SideFilters.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { IconSearch } from './navIcons.jsx';
@@ -44,6 +46,8 @@ function whenLine(item, today) {
 }
 
 export function FeedRow({ item, today, saved, onSave, onOpen }) {
+  const art = useUserArtwork();
+  const poster = displayPosterPath(art.apply(feedDisplayItem(item)));
   const chips = [
     item.chip && { key: 'chip', className: CHIP_CLASS[item.chip] ?? 'people-chip', label: P.chips[item.chip] },
     item.chip !== 'newSeason' && item.kind === 'season' && { key: 'season', className: 'people-chip', label: P.chips.newSeason },
@@ -53,7 +57,7 @@ export function FeedRow({ item, today, saved, onSave, onOpen }) {
   return (
     <div className="people-row">
       <button type="button" className="people-row-open" onClick={onOpen}>
-        {item.posterPath ? <img className="people-row-poster" src={posterUrl(item.posterPath, 'w92')} alt="" loading="lazy" /> : <span className="people-row-poster" aria-hidden="true" />}
+        {poster ? <img className="people-row-poster" src={posterUrl(poster, 'w92')} alt="" loading="lazy" /> : <span className="people-row-poster" aria-hidden="true" />}
         <span className="people-row-text">
           <span className="people-row-who">{peopleLine(item)}</span>
           <span className="people-row-title">{item.title}{item.kind === 'season' ? ` · ${P.page.season(item.season)}` : ''}</span>
@@ -71,6 +75,7 @@ export function FeedRow({ item, today, saved, onSave, onOpen }) {
 
 /** Search TMDB people and follow one from the results. */
 function FollowSearch({ follow }) {
+  const art = useUserArtwork();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
   useEffect(() => {
@@ -96,7 +101,7 @@ function FollowSearch({ follow }) {
           {shown.length === 0 && <p className="people-muted">{P.page.noResults}</p>}
           {shown.map(person => (
             <div key={person.id} className="people-follow-row">
-              <PersonAvatar path={person.profile_path} name={person.name} />
+              <PersonAvatar path={art.path('person', person.id, 'profile') || person.profile_path} name={person.name} />
               <span className="people-follow-text"><b>{person.name}</b><span>{person.known_for_department}</span></span>
               <FollowPill following={follow.isFollowing(person.id)} busy={follow.busyId === person.id} name={person.name} onClick={() => follow.toggle(person)} size="xs" />
             </div>
@@ -114,6 +119,7 @@ function PersonAvatar({ path, name }) {
 
 /** Pure layout; data comes from YourPeopleView (and from a story). */
 export function YourPeoplePage({ follows, items, today, loading, view, setView, typeFilters, setTypeFilters, follow, onUnfollow, onOpenPerson, onOpenTitle, isSaved, onSave }) {
+  const art = useUserArtwork();
   const filtered = filterFeedByType(items, typeFilters);
   const todayYear = Number(today.slice(0, 4));
   const sections = view === 'person'
@@ -143,7 +149,7 @@ export function YourPeoplePage({ follows, items, today, loading, view, setView, 
               {follows.map(f => (
                 <div key={f.tmdb_person_id} className="people-follow-row people-follow-row--manage">
                   <button type="button" className="people-follow-open" onClick={() => onOpenPerson(f.tmdb_person_id)}>
-                    <PersonAvatar path={f.profile_path} name={f.name} />
+                    <PersonAvatar path={art.path('person', f.tmdb_person_id, 'profile') || f.profile_path} name={f.name} />
                     <span className="people-follow-text"><b>{f.name}</b><span>{f.known_for === 'Directing' ? P.page.directingDept : P.page.acting}</span></span>
                   </button>
                   <button type="button" className="btn btn-secondary btn-xs people-unfollow" onClick={() => onUnfollow(f.tmdb_person_id)}>{P.unfollow}</button>

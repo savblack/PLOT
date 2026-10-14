@@ -29,6 +29,8 @@ import { collectionPath, customListKey, titleCount, wantToWatchItems, searchColl
 import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
 import { IconSearch } from './navIcons.jsx';
 import { posterUrl } from '../utils/images.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { CardGrid, ListCard, TypeGenreFilter } from './ListCards.jsx';
 import {
   CreateListModal, HeaderIconButton, ListSection, TickIcon, TopFiveSection, TrashIcon, WatchingSection,
@@ -52,7 +54,7 @@ import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
    History is not here: it has had its own page since it left the sub-tabs, and
    a cover that navigated off /my-lists was the only one that did. */
 
-const posters = (items) => items.map(i => i.poster_path);
+const posters = (art, items) => items.map(item => displayPosterPath(art.apply(item)));
 
 // How many rows the column shows before it offers the rest. Eight clears a
 // free account at its cap (Want to Watch + Favourites + five custom lists), so
@@ -148,6 +150,7 @@ function SharedJumpCard({ collections, onOpen, onNew }) {
 
 /** @param {{ newCounts?: Record<string, number> | null }} props  newCounts: Storybook's "2 new" without a network */
 export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
+  const art = useUserArtwork();
   const { user, profile, topLists, favorites, customLists, watching, watchlist, openPanel } = useApp();
   const fw = favoriteWords(profile?.region);
   const navigate = useNavigate();
@@ -370,7 +373,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
         anchorId={`collection-${c.key}`}
         name={c.name}
         count={c.smart ? c.empty : coverCount(c.items, c.empty)}
-        posters={posters(visible)}
+        posters={posters(art, visible)}
         dim={narrowed && visible.length === 0 && c.items.length > 0}
         badge={c.list && listVisibility(c.list) !== 'private' && <span className="mylists-public-badge">{PROFILE_PRIVACY.listVisibilityBadge[listVisibility(c.list)]}</span>}
         byline={byline}
@@ -433,7 +436,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
                 <p role="status">{searchResults.length ? CUSTOM_LISTS.searchCount(searchResults.length) : CUSTOM_LISTS.noSearchResults}</p>
                 <CardGrid>
                   {searchResults.map(item => (
-                    <ListCard key={`${item.media_type || 'movie'}:${item.tmdb_id ?? item.id}`} title={item.title || item.name} img={posterUrl(item.poster_path, 'w185')} onOpen={() => openPanel(item.tmdb_id ?? item.id, item.media_type || 'movie')} />
+                    <ListCard key={`${item.media_type || 'movie'}:${item.tmdb_id ?? item.id}`} title={item.title || item.name} img={posterUrl(displayPosterPath(art.apply(item)), 'w185')} onOpen={() => openPanel(item.tmdb_id ?? item.id, item.media_type || 'movie')} />
                   ))}
                 </CardGrid>
               </ListSection>

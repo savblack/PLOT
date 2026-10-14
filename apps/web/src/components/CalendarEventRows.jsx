@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { posterUrl } from '../utils/images.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { MEDIA } from '../copy/media.js';
@@ -41,6 +43,7 @@ function eventMeta(ev) {
 }
 
 export default function CalendarEventRows({ day, openPanel }) {
+  const art = useUserArtwork();
   const [resolving, setResolving] = useState(null); // tvmaze_ep_id being resolved
 
   async function openReminder(title, tvmazeEpId) {
@@ -61,7 +64,7 @@ export default function CalendarEventRows({ day, openPanel }) {
           const item       = ev.item;
           const id         = item?.tmdb_id;
           const type       = item?.media_type || 'movie';
-          const img        = posterUrl(item?.poster_path, 'w92');
+          const img        = posterUrl(displayPosterPath(art.apply(item)), 'w92');
           const title      = item?.title || item?.name || MEDIA.unknown;
           const isReminder = ev.type === 'reminder';
           const isLoading  = isReminder && resolving === item?.id;
