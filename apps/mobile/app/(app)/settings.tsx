@@ -27,6 +27,8 @@ import { localDateStr, setUserTimezone } from '@plot/core/date.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import { useTraktSync } from '../../hooks/useTraktSync';
+import { usePlexSource } from '@plot/core/usePlexSource.js';
+import { TRACKING } from '@plot/core/copy/tracking.js';
 import { useMediaSync } from '../../hooks/useMediaSync';
 import { useSimklSync } from '../../hooks/useSimklSync';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
@@ -1057,6 +1059,7 @@ export default function SettingsScreen() {
   // ── Media integrations (Plex / Trakt) ────────────────────────────
   const trakt = useTraktSync(userId);
   const plex  = useMediaSync(userId);
+  const plexSource = usePlexSource(userId);
   const simkl = useSimklSync(userId);
 
   const syncedLabel = (iso?: string | null) =>
@@ -1563,18 +1566,31 @@ export default function SettingsScreen() {
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
             label={`${SETTINGS_VIEW.integrations.plexName} · ${APP_SHELL.premium}`}
             value={plex.isConnected ? SETTINGS_VIEW.integrations.connected : (plex.polling ? 'Waiting for approval…' : undefined)}
-            onPress={plex.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.plexName, plex, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => plex.startPlexAuth()}
+            onPress={plex.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.plexName, { sync: () => { void plex.importHistory(); }, disconnect: () => { void plex.disconnect(); }, syncing: plex.syncing }, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => plex.startPlexAuth()}
             trailing={plex.isConnected ? undefined
               : <Text style={{ color: plex.polling ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{plex.polling ? 'Waiting…' : 'Connect'}</Text>}
           />
+          {plex.isConnected && profile?.is_premium && <>
+            <SettingsRow icon={null} label={TRACKING.chooseSource} onPress={() => { void plexSource.choose(); }} />
+            {(plexSource.servers || []).map(server => (
+              <SettingsRow key={server.clientIdentifier} icon={null} label={server.name} onPress={() => { void plexSource.choose(server.clientIdentifier); }} />
+            ))}
+            {(plexSource.profiles || []).map(sourceProfile => (
+              <SettingsRow key={sourceProfile.accountID} icon={null} label={sourceProfile.name} onPress={() => { void plexSource.choose(plexSource.serverId, sourceProfile.accountID); }} />
+            ))}
+            {plexSource.selected ? <SettingsRow icon={null} label={TRACKING.sourceSelected} /> : null}
+            {plexSource.error ? <SettingsRow icon={null} label={plexSource.error} /> : null}
+            {plex.error ? <SettingsRow icon={null} label={plex.error} /> : null}
+          </>}
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
             label={`${SETTINGS_VIEW.integrations.traktName} · ${APP_SHELL.premium}`}
             value={trakt.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.connectTraktToSync}
-            onPress={trakt.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.traktName, trakt, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => trakt.connect()}
+            onPress={trakt.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.traktName, { sync: () => { void trakt.importHistory(); }, disconnect: () => { void trakt.disconnect(); }, syncing: trakt.syncing }, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => trakt.connect()}
             trailing={trakt.isConnected ? undefined
               : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Connect</Text>}
           />
+          {trakt.error ? <SettingsRow icon={null} label={trakt.error} /> : null}
           </>)}
           {SHOW_MEDIA_SYNC_INTEGRATIONS && !profile?.is_premium && (<>
           <SettingsRow

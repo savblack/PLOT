@@ -55,6 +55,13 @@ test('both import surfaces offer Plex and Trakt, and sync UI is Premium-gated', 
   assert.match(webSettings, /SETTINGS_VIEW\.integrations\.syncNeedsPremium/);
   assert.match(webSettings, /SETTINGS_VIEW\.integrations\.connectPlex/);
   assert.match(webSettings, /SETTINGS_VIEW\.integrations\.connectTrakt/);
+  assert.match(webSettings, /onClick=\{sync\.importHistory\}/);
+  assert.match(webSettings, /onClick=\{trakt\.importHistory\}/);
+  assert.doesNotMatch(webSettings, /onClick=\{sync\.sync\}/);
+  assert.doesNotMatch(webSettings, /onClick=\{trakt\.sync\}/);
+  assert.match(webSettings, /usePlexSource/);
+  assert.match(mobileSettings, /plex\.importHistory\(\)/);
+  assert.match(mobileSettings, /trakt\.importHistory\(\)/);
   assert.match(mobileSettings, /SHOW_MEDIA_SYNC_INTEGRATIONS && profile\?\.is_premium/);
   assert.match(mobileSettings, /SHOW_MEDIA_SYNC_INTEGRATIONS && !profile\?\.is_premium/);
   assert.match(mobileSettings, /openPremiumSyncGate/);
