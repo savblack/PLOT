@@ -125,6 +125,42 @@ export function getLastSeasonNumber(details) {
   return Number.isInteger(count) && count > 0 ? count : 0;
 }
 
+/** Seasons for the episode guide. Numbered seasons stay in ascending order.
+ *  Season 0 is listed last, and only when it has episodes or the person
+ *  already has a special marked. It never counts as the last season.
+ *  @param {any} details
+ *  @param {Record<string, boolean>} [episodeStates]
+ */
+export function guideSeasons(details, episodeStates = {}) {
+  const numbered = [];
+  let special = null;
+  const hasSpecial = Object.keys(episodeStates).some(key => key.startsWith('0:'));
+  for (const season of details?.seasons ?? []) {
+    if (season?.season_number == null || season.season_number === '') continue;
+    const number = Number(season.season_number);
+    if (!Number.isInteger(number) || number < 0) continue;
+    if (number === 0) {
+      if ((Number(season?.episode_count) || 0) > 0 || hasSpecial) special = season;
+    } else {
+      numbered.push(season);
+    }
+  }
+  numbered.sort((a, b) => Number(a.season_number) - Number(b.season_number));
+  return special ? [...numbered, special] : numbered;
+}
+
+/** Season the episode guide should show. A specials-only show opens on
+ *  Specials. A selection that is already in the list stays put.
+ *  @param {any[]} seasons
+ *  @param {number} selected
+ */
+export function guideSeasonSelection(seasons, selected) {
+  const current = Number(selected);
+  if ((seasons ?? []).some(season => Number(season?.season_number) === current)) return current;
+  if (seasons?.length === 1 && Number(seasons[0]?.season_number) === 0) return 0;
+  return Number.isInteger(current) ? current : 1;
+}
+
 /* Whether landing the pointer on `nextSeason` means the whole series is done:
    the show has stopped producing seasons, and there is no season left to move
    into. Deliberately conservative — an unknown status or an unknown season
