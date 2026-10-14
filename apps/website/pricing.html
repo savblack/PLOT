@@ -308,7 +308,7 @@
     .stories-slide.is-active { position: relative; opacity: 1; pointer-events: auto; }
     .stories-slide h3 { font-family: var(--display); font-weight: 700; font-size: 1.5rem; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 0.5rem; }
     .stories-slide p { font-size: 1.2rem; font-weight: 400; line-height: 1.45; color: #d9d1c4; }
-    .stories-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1.6rem; }
+    .stories-steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 1.6rem; }
     .stories-step { border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; color: #d9d1c4; font-family: var(--sans); }
     .stories-step:focus-visible { outline: 2px solid var(--fill); outline-offset: 4px; border-radius: 4px; }
     .stories-bar { display: block; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.16); overflow: hidden; margin-bottom: 8px; }
@@ -388,6 +388,23 @@
     .wp-taste span { color: var(--text-secondary); }
     .wp-taste b { font-family: var(--display); font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; text-align: right; }
 
+    /* Taste match */
+    .tm-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .tm-pair { display: flex; }
+    .tm-pair .av { width: 36px; height: 36px; font-size: 0.95rem; border: 2px solid #fffaf3; }
+    .tm-pair .av + .av { margin-left: -10px; }
+    .tm-num { display: block; font-family: var(--display); font-weight: 700; font-size: 2.4rem; letter-spacing: -0.04em; line-height: 1; }
+    .tm-cap { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+    .tm-row { margin-bottom: 12px; }
+    .tm-label { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; }
+    .tm-posters { display: flex; gap: 6px; }
+    .tm-posters .poster { width: 56px; border-radius: 6px; }
+    .tm-genres { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .tm-genres .wp-bar i.is-them { background: var(--sage); }
+    .tm-disagree { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--surface); font-size: 0.8rem; }
+    .tm-disagree span { color: var(--text-secondary); }
+    .tm-disagree b { font-family: var(--display); font-weight: 700; font-size: 0.9rem; text-align: right; }
+
     /* Make it yours */
     .my-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
     .my-theme { border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px; border: 2px solid transparent; }
@@ -413,6 +430,9 @@
     @media (max-width: 900px) {
       .stories-inner { grid-template-columns: 1fr; row-gap: 2.5rem; }
       .stories-visuals { min-height: 0; }
+    }
+    @media (max-width: 640px) {
+      .stories-steps { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
     }
 
     /* ── Comparison table, on the page cream ─────────────────── */
@@ -610,12 +630,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="stories-slide is-active"><h3>Find tonight’s movie in four taps</h3><p>How long have you got, where do you watch, what are you in the mood for? Pick for me turns that into a shortlist, on the services you already pay for.</p></div>
             <div class="stories-slide" aria-hidden="true"><h3>Settle movie night before the snacks are ready</h3><p>Watch together finds the overlap in your watchlists and gets everyone to a yes. Only one of you needs Premium.</p></div>
             <div class="stories-slide" aria-hidden="true"><h3>Get to know your taste</h3><p>Your watch profile shows what you really watch, how much, and what you keep coming back to.</p></div>
+            <div class="stories-slide" aria-hidden="true"><h3>How alike is your taste?</h3><p>Compare ratings with a friend and get one number, plus the genres you share, what you both loved and where you disagree. They don’t need Premium.</p></div>
             <div class="stories-slide" aria-hidden="true"><h3>Dress it up, or dress it down</h3><p>Pick a theme, put Up next on your home screen, choose an app icon that suits you. Plot, the way you’d have made it.</p></div>
           </div>
           <div class="stories-steps" id="storiesSteps" role="group" aria-label="Premium benefits">
             <button type="button" class="stories-step" aria-pressed="true"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Pick for me</span></button>
             <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Watch together</span></button>
             <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Your profile</span></button>
+            <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Taste match</span></button>
             <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Make it yours</span></button>
           </div>
           <a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-primary btn-large" data-premium="cta" data-cta="plans-stories">Start 7-day free trial</a>
@@ -644,7 +666,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="wp-bars"><div class="wp-bar">Thriller<i style="width:88%"></i><em>38%</em></div><div class="wp-bar">Comedy<i style="width:52%"></i><em>22%</em></div><div class="wp-bar">Drama<i style="width:40%"></i><em>17%</em></div></div>
             <div class="wp-taste"><span>Most rewatched</span><b>The Grand Budapest Hotel · 3×</b></div>
           </div>
-          <!-- 4 · Make it yours. -->
+          <!-- 4 · Taste match. Example numbers from /taste-match. -->
+          <div class="vis" aria-hidden="true" role="img" aria-label="Taste match with Priya: 74%, based on 38 titles you’ve both rated. Three titles you both loved, your thriller share next to hers, and one title you disagree on.">
+            <span class="vis-kicker">Taste match</span>
+            <div class="tm-top"><div class="tm-pair"><span class="av av-you">Y</span><span class="av av-them">P</span></div><div><b class="tm-num">74%</b><span class="tm-cap">Based on 38 titles you’ve both rated</span></div></div>
+            <div class="tm-row"><span class="tm-label">You both loved</span><div class="tm-posters"><img class="poster" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
+            <div class="tm-genres"><div class="wp-bar">Thriller<i style="width:80%"></i><em>you</em></div><div class="wp-bar">Thriller<i class="is-them" style="width:68%"></i><em>Priya</em></div></div>
+            <div class="tm-disagree"><span>Where you disagree</span><b>Widow’s Bay · you ★★★★★ · Priya ★★</b></div>
+          </div>
+          <!-- 5 · Make it yours. -->
           <div class="vis" aria-hidden="true" role="img" aria-label="Make it yours: Cream, Ink and Sage themes, four app icons, and an Up next home-screen widget.">
             <span class="vis-kicker">Make it yours</span>
             <div class="my-themes"><div class="my-theme my-theme--cream is-on"><i></i><i></i><i></i><small>Cream</small></div><div class="my-theme my-theme--ink"><i></i><i></i><i></i><small>Ink</small></div><div class="my-theme my-theme--sage"><i></i><i></i><i></i><small>Sage</small></div></div>
@@ -709,6 +739,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tr><th scope="row" class="cmp-feat">Pick for me</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Watch together</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Your watch profile</th><td><span class="cmp-text">Overview</span></td><td class="cmp-premium"><span class="cmp-text">Full profile</span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Taste match with a friend</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Custom themes, widgets &amp; app icons</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Actor &amp; director alerts</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
             </tbody>
