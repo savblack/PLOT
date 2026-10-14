@@ -462,7 +462,8 @@
     .cmp-no { color: var(--text-secondary); opacity: 0.6; }
     .cmp-text { font-weight: 500; }
     .cmp-table td.cmp-premium { background: rgba(41,41,36,0.05); }
-    .cmp-table tbody tr:last-child td { border-bottom: 0; }
+    /* No hairline under the last row of each group, or of the table. */
+    .cmp-table tbody tr:has(+ .cmp-group) > *, .cmp-table tbody tr:last-child > * { border-bottom: 0; }
     .cmp-table tbody tr:last-child td.cmp-premium { border-radius: 0 0 22px 22px; }
 
     /* ── FAQ ────────────────────────────────────────────────── */
