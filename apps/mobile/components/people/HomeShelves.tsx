@@ -8,6 +8,8 @@ import { localDateStr, shortDayMonth } from '@plot/core/date.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { PEOPLE as P } from '@plot/core/copy/people.js';
+import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { formatDuration } from '@plot/core/historyStats.js';
 import { tmdb } from '../../lib/tmdb';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -90,6 +92,11 @@ export function ContinueWatchingShelf() {
               </View>
               <Text style={{ marginTop: spacing.sm, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }} numberOfLines={2}>{item.title}</Text>
               <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>{line}</Text>
+              {item.minutesLeft != null && item.minutesLeft > 0 && (
+                <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>
+                  {MEDIA_PANEL.timeLeft(formatDuration(item.minutesLeft))}
+                </Text>
+              )}
             </TouchableOpacity>
           );
         }}

@@ -24,6 +24,14 @@ export const MEDIA_PANEL = {
   upNext: 'Up next',
   seasonEpisode: (season, episode) => `Season ${season} · Episode ${episode}`,
   episodeRuntime: (minutes) => `${minutes} min`,
+  // Free. "3h 12m left" on Continue watching, and the series total under the
+  // title panel progress bar. Ends at sits beside the runtime.
+  endsAt: (time) => `Ends at ${time}`,
+  timeLeft: (duration) => `${duration} left`,
+  episodesLeft: (count) => (count === 1 ? '1 episode left' : `${count} episodes left`),
+  episodesAndTimeLeft: (count, duration) => (
+    count === 1 ? `1 episode · ${duration} left` : `${count} episodes · ${duration} left`
+  ),
   chooseSeason: 'Choose a season',
   unmarkSeasonWatched: 'Unmark season',
   couldNotUpdateSeason: 'Could not update this season right now. Please try again.',

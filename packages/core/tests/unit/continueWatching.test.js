@@ -19,6 +19,16 @@ test('an aired, unwatched next episode puts the show on Continue watching', () =
   assert.equal(item.latest, false);
   // 16 of the 20 aired episodes watched; specials never count.
   assert.equal(item.progress, 16 / 20);
+  assert.equal(item.episodesLeft, 4);
+  assert.equal(item.minutesLeft, null);
+});
+
+test('Continue watching carries the remaining runtime when the show has an average', () => {
+  const withRuntime = details(2, 10, [10, 10]);
+  withRuntime.episode_run_time = [30];
+  const item = continueItem(progress(-1, 2, 7), withRuntime);
+  assert.equal(item.episodesLeft, 4);
+  assert.equal(item.minutesLeft, 120);
 });
 
 test('the newest aired episode reads as "is out"', () => {
