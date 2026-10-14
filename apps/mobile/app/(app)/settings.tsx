@@ -1562,7 +1562,7 @@ export default function SettingsScreen() {
           {SHOW_MEDIA_SYNC_INTEGRATIONS && profile?.is_premium && (<>
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={`${SETTINGS_VIEW.integrations.plexName} · ${APP_SHELL.premium}`}
+            label={SETTINGS_VIEW.integrations.plexName}
             value={plex.isConnected ? SETTINGS_VIEW.integrations.connected : (plex.polling ? 'Waiting for approval…' : undefined)}
             onPress={plex.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.plexName, plex, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => plex.startPlexAuth()}
             trailing={plex.isConnected ? undefined
@@ -1570,7 +1570,7 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={`${SETTINGS_VIEW.integrations.traktName} · ${APP_SHELL.premium}`}
+            label={SETTINGS_VIEW.integrations.traktName}
             value={trakt.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.connectTraktToSync}
             onPress={trakt.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.traktName, trakt, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => trakt.connect()}
             trailing={trakt.isConnected ? undefined
