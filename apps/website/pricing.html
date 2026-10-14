@@ -465,7 +465,6 @@
     .cmp-table td.cmp-premium { background: rgba(41,41,36,0.05); }
     .cmp-table tbody tr:last-child td { border-bottom: 0; }
     .cmp-table tbody tr:last-child td.cmp-premium { border-radius: 0 0 22px 22px; }
-    .cmp-trial { margin: 1.4rem auto 0; text-align: center; font-size: 0.85rem; color: var(--text-secondary); }
 
     /* ── FAQ ────────────────────────────────────────────────── */
     .faq-list { border-top: 1px solid var(--rule); }
@@ -506,9 +505,10 @@
     .closer h2 em { font-style: normal; color: var(--accent); }
     .closer-sub { font-size: 1.05rem; color: var(--text-secondary); margin-bottom: 1.6rem; }
     .closer-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+    /* Sits under the comparison table, where the prices are. */
     .fineprint {
-      max-width: 760px;
-      margin: 3rem auto 0;
+      max-width: 64ch;
+      margin: 1.6rem auto 0;
       text-align: center;
       font-size: 0.78rem;
       color: var(--text-secondary);
@@ -722,7 +722,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </tbody>
           </table>
         </div>
-        <p class="cmp-trial">7-day free trial for new subscribers. Commitment-free. Cancel during the trial and you pay $0.</p>
+        <p class="fineprint">Prices are in US dollars and include tax. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? <a href="mailto:support@theplot.tv">support@theplot.tv</a></p>
       </div>
     </section>
 
@@ -748,7 +748,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="plans-closer">Start tracking</a>
         <a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-outline btn-large" data-cta="plans-closer-premium">Start 7-day free trial</a>
       </div>
-      <p class="fineprint">Prices are in US dollars and include tax. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? <a href="mailto:support@theplot.tv">support@theplot.tv</a></p>
     </section>
   </main>
 
