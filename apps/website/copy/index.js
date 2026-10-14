@@ -128,7 +128,7 @@ export const APP = {
   eyebrow: 'Plot mobile',
   pill: 'Coming soon',
   headline: 'plot, in your pocket.',
-  body: 'Everything you love about Plot: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.',
+  body: 'Everything you love about Plot: discover, track, curate and share. Be the first to know when the app drops.',
   notifyCta: 'Notify me',
   notifySuccess: "You're on the list — we'll email you the moment the app lands.",
 };
