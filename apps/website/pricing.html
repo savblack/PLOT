@@ -384,8 +384,9 @@
     .wp-bar { display: grid; grid-template-columns: 76px 1fr 34px; align-items: center; gap: 10px; font-size: 0.8rem; }
     .wp-bar i { display: block; height: 10px; border-radius: 5px; background: var(--fill); }
     .wp-bar em { font-style: normal; text-align: right; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-    .wp-taste { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--accent-dim); font-size: 0.85rem; }
-    .wp-taste b { margin-left: auto; font-family: var(--display); font-weight: 700; font-size: 1.3rem; letter-spacing: -0.03em; }
+    .wp-taste { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--accent-dim); font-size: 0.85rem; }
+    .wp-taste span { color: var(--text-secondary); }
+    .wp-taste b { font-family: var(--display); font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; text-align: right; }
 
     /* Make it yours */
     .my-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
@@ -608,7 +609,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="stories-stage" id="storiesStage" aria-live="polite">
             <div class="stories-slide is-active"><h3>Find tonight’s movie in four taps</h3><p>How long have you got, where do you watch, what are you in the mood for? Pick for me turns that into a shortlist, on the services you already pay for.</p></div>
             <div class="stories-slide" aria-hidden="true"><h3>Settle movie night before the snacks are ready</h3><p>Watch together finds the overlap in your watchlists and gets everyone to a yes. Only one of you needs Premium.</p></div>
-            <div class="stories-slide" aria-hidden="true"><h3>Get to know your taste</h3><p>Your watch profile shows what you really watch, how much, and who you line up with. Settle who has the best taste.</p></div>
+            <div class="stories-slide" aria-hidden="true"><h3>Get to know your taste</h3><p>Your watch profile shows what you really watch, how much, and what you keep coming back to.</p></div>
             <div class="stories-slide" aria-hidden="true"><h3>Your Plot, your style</h3><p>Custom themes, home-screen widgets and app icons. Make it feel like yours.</p></div>
           </div>
           <div class="stories-steps" id="storiesSteps" role="group" aria-label="Premium benefits">
@@ -637,11 +638,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="wt-outcome"><div><strong>You both want to watch this.</strong><span class="vis-meta">Widow’s Bay · in both watchlists</span></div><span class="vis-pill">Start movie night</span></div>
           </div>
           <!-- 3 · Your watch profile. Illustrative numbers. -->
-          <div class="vis" aria-hidden="true" role="img" aria-label="Your watch profile for 2026: 84 films, 31 shows, 212 hours. Thriller 38%, Comedy 22%, Drama 17%. Taste match with Priya 86%.">
+          <div class="vis" aria-hidden="true" role="img" aria-label="Your watch profile for 2026: 84 films, 31 shows, 212 hours. Thriller 38%, Comedy 22%, Drama 17%. Most rewatched: The Grand Budapest Hotel, 3 times.">
             <span class="vis-kicker">Your watch profile · 2026</span>
             <div class="wp-stats"><div class="wp-stat"><b>84</b><span>films</span></div><div class="wp-stat"><b>31</b><span>shows</span></div><div class="wp-stat"><b>212</b><span>hours</span></div></div>
             <div class="wp-bars"><div class="wp-bar">Thriller<i style="width:88%"></i><em>38%</em></div><div class="wp-bar">Comedy<i style="width:52%"></i><em>22%</em></div><div class="wp-bar">Drama<i style="width:40%"></i><em>17%</em></div></div>
-            <div class="wp-taste"><span class="av av-them">P</span>Taste match with Priya<b>86%</b></div>
+            <div class="wp-taste"><span>Most rewatched</span><b>The Grand Budapest Hotel · 3×</b></div>
           </div>
           <!-- 4 · Make it yours. -->
           <div class="vis" aria-hidden="true" role="img" aria-label="Make it yours: Cream, Ink and Sage themes, four app icons, and an Up next home-screen widget.">
