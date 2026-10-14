@@ -17,6 +17,10 @@
  *   invoice.payment_failed         refetch the subscription (past_due / unpaid)
  *   invoice.payment_succeeded      refetch the subscription (active after a retry)
  *   invoice.paid                   same snapshot as payment_succeeded
+ *   customer.subscription.trial_will_end  emails the trial-ending reminder the
+ *                                  Terms promise (Stripe sends it N days before
+ *                                  trial_end; N is the Dashboard "Trial ending
+ *                                  events" setting, default 3)
  *
  * Signature: Stripe-Signature, via constructEventAsync. A bad or missing
  * signature is rejected before any write. Idempotency: apply_stripe_subscription_event
@@ -27,15 +31,19 @@
  * Auth is the Stripe signature, not a Supabase JWT — deploy with
  * verify_jwt = false (see supabase/config.toml).
  *
- * Secrets: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
+ * Secrets: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, RESEND_API_KEY (the
+ * reminder), and optionally STRIPE_SETTINGS_URL (where its button goes).
  */
 import Stripe from 'npm:stripe@22.3.2';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
-import { cancelsAtPeriodEnd } from '../_shared/billingPolicy.ts';
+import { billingSettingsUrl, cancelsAtPeriodEnd } from '../_shared/billingPolicy.ts';
 import { reconcileBillingSnapshot } from '../_shared/billingSnapshot.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
 import { subscriptionIdFromInvoice, webhookAction } from '../_shared/stripeEvents.ts';
+import { TRIAL_REMINDER_FROM, TRIAL_REMINDER_REPLY_TO, buildTrialReminderEmail, planFromPrice } from '../_shared/trialReminderEmail.js';
+
+const RESEND_API_URL = 'https://api.resend.com/emails';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
@@ -179,6 +187,50 @@ async function subscriptionForInvoice(event: Stripe.Event) {
   return await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
 }
 
+/**
+ * The reminder before a trial converts. Receipt first so a Stripe retry cannot
+ * send it twice; if the send fails the receipt is removed so the retry can.
+ * A subscription that is not on a Plot price, or a user without an address, is
+ * acknowledged and logged rather than retried: there is nothing to send.
+ */
+async function sendTrialReminder(event: Stripe.Event) {
+  const sub = event.data.object as Stripe.Subscription;
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  // Loud, not silent: a missing key is a deployment mistake, so let Stripe retry.
+  if (!resendKey) throw new Error('RESEND_API_KEY is not set');
+  const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+  const userId = await resolveUser(customerId, sub);
+  if (!userId) {
+    console.error(`${event.type}: no user for customer ${customerId}`);
+    return;
+  }
+  const plan = planFromPrice(sub.items?.data?.[0]?.price ?? null);
+  if (!plan || typeof sub.trial_end !== 'number') {
+    console.error(`${event.type}: subscription ${sub.id} is not a Plot trial`);
+    return;
+  }
+  const { data: user, error: userError } = await admin().auth.admin.getUserById(userId);
+  if (userError) throw new Error(`User lookup failed: ${userError.message}`);
+  const to = user?.user?.email;
+  if (!to) {
+    console.error(`${event.type}: no email for user`);
+    return;
+  }
+  const { error: receiptError } = await admin().from('stripe_events').insert({ id: event.id, type: event.type });
+  if (receiptError?.code === '23505') return;
+  if (receiptError) throw receiptError;
+  const message = buildTrialReminderEmail({ trialEnd: sub.trial_end, plan, manageUrl: billingSettingsUrl(Deno.env.get('STRIPE_SETTINGS_URL')) });
+  const res = await fetch(RESEND_API_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: TRIAL_REMINDER_FROM, reply_to: TRIAL_REMINDER_REPLY_TO, to: [to], ...message }),
+  });
+  if (!res.ok) {
+    await admin().from('stripe_events').delete().eq('id', event.id);
+    throw new Error(`Resend request failed with status ${res.status}`);
+  }
+}
+
 async function recordStripeTip(event: Stripe.Event) {
   const session = event.data.object as Stripe.Checkout.Session;
   if (session.mode !== 'payment' || session.metadata?.kind !== 'tip' || session.payment_status !== 'paid') return;
@@ -254,6 +306,9 @@ Deno.serve(async (req) => {
         }
         return json({ received: true, ...await syncSubscription({ userId, customerId, sub, event }) });
       }
+      case 'trial_ending':
+        await sendTrialReminder(event);
+        break;
       case 'ignore':
         break;
     }

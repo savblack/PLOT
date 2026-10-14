@@ -39,6 +39,7 @@ Written 2 October 2026. Production: Supabase `mkegtssedjyqldysvzga`, Stripe acco
 - [ ] **Note the portal's cancel setting** (Settings, Billing, Customer portal, Cancellations):
   "Cancel immediately" or "Cancel at end of billing period". It decides what step 4 looks like.
 - [ ] Open the Stripe dashboard (live) on Developers, Webhooks, so you can watch deliveries.
+  Confirm the endpoint lists `customer.subscription.trial_will_end`; add it if not.
 
 ## 2. Start checkout
 
@@ -83,10 +84,13 @@ Within about 10 seconds:
   Pick for Me, confirm no upgrade prompt appears.
 - [ ] Analytics: PostHog shows `premium_checkout_started` and `premium_converted`. Note
   `premium_converted` fires when the trial starts, before any payment, so it counts trials.
-- [ ] Email: confirm the trial-ending email is **on** in Stripe (Settings, Billing, Subscriptions
-  and emails) and that "Successful payments" receipts are on. The Terms promise a reminder before
-  the trial ends; with a 7-day trial Stripe sends it a few days before the first charge. Check
-  you received the trial confirmation, and after day 7 (or step 7) the receipt.
+- [ ] Email: on day 4 (3 days before the trial ends) you should get "Your plot Premium trial
+  ends on ..." from billing@theplot.tv. It comes from `stripe-webhook` on
+  `customer.subscription.trial_will_end`, so the live endpoint must subscribe to that event and
+  `RESEND_API_KEY` must be set on production. Check Developers, Webhooks shows it delivered with
+  `200` and that the email names the right date, US$3 a month and the Manage subscription
+  link. Keep "Successful payments" receipts on (https://dashboard.stripe.com/settings/emails);
+  after day 7 (or step 7) check the receipt.
 
 ## 5. Guard rails
 

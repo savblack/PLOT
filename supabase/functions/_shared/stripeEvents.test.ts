@@ -26,6 +26,11 @@ Deno.test('checkout completion, expiry and ignored events stay distinct', () => 
   equal(webhookAction('customer.created'), 'ignore');
 });
 
+Deno.test('the trial-ending event sends the reminder and nothing else does', () => {
+  equal(webhookAction('customer.subscription.trial_will_end'), 'trial_ending');
+  equal(webhookAction('customer.subscription.paused'), 'ignore');
+});
+
 Deno.test('invoice subscription id is read from the legacy and current payload shapes', () => {
   equal(subscriptionIdFromInvoice(null), null);
   equal(subscriptionIdFromInvoice({}), null);
