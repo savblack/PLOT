@@ -150,3 +150,13 @@ test('the artwork migration declares a table-level primary key', () => {
   const { adds } = extractMigrationKeyChanges(sql);
   assert.equal(adds.some(key => key.table === 'user_artwork' && key.key === 'kind,season_number,subject_type,tmdb_id,user_id'), true);
 });
+
+test('the artwork cap does not count the table from its own insert policy', () => {
+  const sql = readFileSync(new URL('../../../../supabase/migrations/20261015130000_user_artwork_cap.sql', import.meta.url), 'utf8');
+  const policy = sql.slice(sql.lastIndexOf('create policy'));
+  assert.equal(/from\s+(public\.)?user_artwork/i.test(policy), false);
+  assert.match(sql, /security definer/);
+  assert.match(sql, /revoke all on function public\.enforce_user_artwork_cap\(\) from public, anon, authenticated/);
+  assert.match(sql, /before insert on public\.user_artwork/);
+  assert.match(policy, /public\.is_premium\(\)/);
+});
