@@ -302,20 +302,20 @@
       column-gap: 5rem;
       align-items: center;
     }
-    .stories-copy { max-width: 520px; min-width: 0; }
+    .stories-copy { max-width: 560px; min-width: 0; }
     .stories-stage { position: relative; margin-bottom: 1.6rem; }
     .stories-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.5s var(--ease); pointer-events: none; }
     .stories-slide.is-active { position: relative; opacity: 1; pointer-events: auto; }
     .stories-slide h3 { font-family: var(--display); font-weight: 700; font-size: 1.5rem; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 0.5rem; }
     .stories-slide p { font-size: 1.2rem; font-weight: 400; line-height: 1.45; color: #d9d1c4; }
-    .stories-steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 1.6rem; }
-    .stories-step { border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; color: #d9d1c4; font-family: var(--sans); }
+    .stories-steps { display: flex; flex-wrap: wrap; gap: 10px 12px; margin-bottom: 1.6rem; }
+    .stories-step { flex: 1 1 72px; min-width: 0; border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; color: #d9d1c4; font-family: var(--sans); }
     .stories-step:focus-visible { outline: 2px solid var(--fill); outline-offset: 4px; border-radius: 4px; }
     .stories-bar { display: block; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.16); overflow: hidden; margin-bottom: 8px; }
     .stories-bar i { display: block; height: 100%; width: 0; background: var(--fill); }
     .stories-step[aria-pressed="true"] { color: var(--bg); }
     .stories-step[aria-pressed="true"] .stories-bar i { width: 100%; transition: width 6s linear; }
-    .stories-step span:last-child { font-size: 0.82rem; font-weight: 600; }
+    .stories-step span:last-child { display: block; font-size: 0.74rem; font-weight: 600; line-height: 1.2; }
     .stories-visuals { display: flex; justify-content: center; align-items: center; min-height: 420px; }
     .stories-visuals .vis { display: none; }
     .stories-visuals .vis.is-active { display: block; animation: stories-in 0.6s var(--ease); }
@@ -431,10 +431,6 @@
       .stories-inner { grid-template-columns: 1fr; row-gap: 2.5rem; }
       .stories-visuals { min-height: 0; }
     }
-    @media (max-width: 640px) {
-      .stories-steps { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
-    }
-
     /* ── Comparison table, on the page cream ─────────────────── */
     /* The two plans head their own columns, price and button included,
        and the rows are grouped by job. The Premium column is lifted. */
