@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { applyArtwork, artworkMap, artworkPath, artworkSubject } from './artwork.js';
 import { clearUserArtwork, readUserArtwork, saveUserArtwork } from './artworkStore.js';
 import { ARTWORK } from './copy/artwork.js';
@@ -129,7 +129,7 @@ export function ArtworkProvider({ userId = null, premium = false, children }) {
     reload: () => setRevision(version => version + 1),
   }), [enabled, ready, saveError, map, save, clear]);
 
-  return <ArtworkContext.Provider value={value}>{children}</ArtworkContext.Provider>;
+  return createElement(ArtworkContext.Provider, { value }, children);
 }
 
 /**
