@@ -135,7 +135,7 @@ export const APP = {
 
 // Replaces "Built by a solo developer" and its Ko-fi button.
 export const INDIE = {
-  eyebrow: 'Who makes Plot',
+  eyebrow: 'Behind the scenes',
   headline: 'Made by an independent developer, not a studio or streaming platform.',
   body: 'Plot answers to the people who use it, not advertisers or investors. Premium keeps it that way.',
   pills: ['No ads', 'Independent', 'Free plan, forever'],
