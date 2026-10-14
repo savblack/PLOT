@@ -50,6 +50,7 @@ import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
 import FirstWinCard from '../../components/FirstWinCard';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
+import ImportJobCard, { type ImportJobRow } from '../../components/ImportJobCard';
 import { markImportDone } from '../../lib/finishingTouches';
 import { suppressFirstWinForImport } from '../../lib/firstWinCard';
 import { takePendingImportSource } from '../../lib/pendingImport';
@@ -674,6 +675,9 @@ export default function HomeScreen() {
   const firstRun = ft.visible;
   // Onboarding's "Switching apps?" pick: setup finished first, so the import opens now.
   const [importSource, setImportSource] = useState<string | null>(takePendingImportSource);
+  // A finished background import left entries to match: the modal opens on them.
+  const [reviewJob, setReviewJob] = useState<ImportJobRow | null>(null);
+  const onImportFinished = useCallback(() => { ft.reload(); }, [ft]);
   const watchlistItems: MediaItem[] = watchlist.items;
   useEffect(() => {
     if (tab !== 'discover' || !ft.ready || watchlist.loading || watchlistItems.length === 0) return;
@@ -878,9 +882,22 @@ export default function HomeScreen() {
 
         {userId && importSource !== 'trakt' && importSource !== 'trakt-export' && <FirstWinCard userId={userId} />}
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
+        {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}
         <FinishingTouches state={ft.state} onState={ft.setState} />
 
         {firstRun && savedRail}
+        {reviewJob && userId && (
+          <ImportHistoryModal
+            userId={userId}
+            entry={IMPORT_ENTRY_POINTS.ONBOARDING}
+            reviewJob={reviewJob}
+            onImported={async (source, count) => {
+              ft.setState(await markImportDone(userId, source, count));
+              await suppressFirstWinForImport(userId, source);
+            }}
+            onClose={() => setReviewJob(null)}
+          />
+        )}
         {importSource && userId && (
           <ImportHistoryModal
             userId={userId}

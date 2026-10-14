@@ -6,6 +6,7 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import PlotLogo from '../components/PlotLogo.jsx';
 import ImportSourceIcon from '../components/ImportSourceIcon.jsx';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
+import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { COMMON } from '../copy/common.js';
 import { REGIONS } from '@plot/core/regions.js';
 import { IMPORT_SOURCES, ONBOARDING_PROGRESS, ONBOARDING_PROGRESS_TOTAL } from '@plot/core/onboardingSetup.js';
@@ -27,6 +28,68 @@ function Check() {
   );
 }
 
+/* The picked source's panel: a file drop for an export, or connect + import
+   for an account. Once the job is queued, setup carries on. */
+function ImportPanel({ importStep }) {
+  const I = IMPORT_JOBS.onboarding;
+  const src = IMPORT_SOURCES.find(s => s.id === importStep.source);
+  const name = src?.name || importStep.source;
+  const { phase } = importStep;
+  if (phase === 'queued') {
+    return (
+      <div className="ob-import ob-import--done" role="status">
+        <div className="ob-import-check"><Check /></div>
+        <p className="ob-import-title">{I.queued(name)}</p>
+        <p className="ob-import-body">{I.queuedBody}</p>
+        <button type="button" className="onboarding-cta" onClick={importStep.onContinue}>{I.continue}</button>
+      </div>
+    );
+  }
+  const plex = importStep.plex;
+  return (
+    <div className="ob-import">
+      {importStep.error && <p className="ob-error">{importStep.error}</p>}
+      {(phase === 'file' || phase === 'uploading') && (
+        <label className={`ob-drop${phase === 'uploading' ? ' is-busy' : ''}`}
+          onDragOver={e => { e.preventDefault(); }}
+          onDrop={e => { e.preventDefault(); if (phase === 'file' && e.dataTransfer?.files?.length) importStep.onFiles(e.dataTransfer.files); }}>
+          <input type="file" accept={importStep.accept} multiple disabled={phase === 'uploading'}
+            onChange={e => { if (e.target.files?.length) importStep.onFiles(e.target.files); e.target.value = ''; }} />
+          {phase === 'uploading' ? <PlotLoader size="sm" /> : <UploadIcon />}
+          <span className="ob-drop-title">{phase === 'uploading' ? I.uploading : I.chooseFile}</span>
+          <span className="ob-drop-hint">{I.chooseFileHint(importStep.formats)}</span>
+        </label>
+      )}
+      {phase === 'connect' && (
+        <button type="button" className="onboarding-cta" onClick={importStep.onConnect}>{I.connect(name)}</button>
+      )}
+      {phase === 'connecting' && (
+        <div className="ob-import-wait"><PlotLoader size="sm" /><span>{I.connecting}</span></div>
+      )}
+      {(phase === 'ready' || phase === 'starting') && (
+        <>
+          <p className="ob-import-title">{I.connected(name)}</p>
+          {plex && (
+            <div className="ob-import-plex">
+              {(plex.servers || []).map(server => <button type="button" key={server.clientIdentifier} className={`ob-chip${plex.serverId === server.clientIdentifier ? ' is-on' : ''}`} disabled={plex.busy} onClick={() => plex.choose(server.clientIdentifier)}>{server.name}</button>)}
+              {(plex.profiles || []).map(profile => <button type="button" key={profile.accountID} className="ob-chip" disabled={plex.busy} onClick={() => plex.choose(plex.serverId, profile.accountID)}>{profile.name}</button>)}
+              {!plex.selected && <p className="ob-import-body">{I.plexServerLater}</p>}
+              {plex.error && <p className="ob-error">{plex.error}</p>}
+            </div>
+          )}
+          <button type="button" className="onboarding-cta" disabled={phase === 'starting' || (plex && !plex.selected)} onClick={importStep.onStartImport}>{I.startImport}</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function UploadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2" /></svg>
+  );
+}
+
 function Progress({ step }) {
   const on = ONBOARDING_PROGRESS[step];
   return (
@@ -44,6 +107,10 @@ function Progress({ step }) {
  *   seed: { query: string, onQuery: (q: string) => void, searching: boolean, items: any[], selectedIds: Set<number>,
  *           count: number, onToggle: (item: any) => void, onContinue: () => void, onSwitch: () => void },
  *   onPickImport: (id: string) => void,
+ *   importStep: { source: string | null, phase: 'pick' | 'file' | 'uploading' | 'connect' | 'connecting' | 'ready' | 'starting' | 'queued',
+ *                 error: string | null, accept: string, formats: string, connectedName: string | null,
+ *                 plex: { servers: any[], profiles: any[], serverId: string | null, selected: boolean, busy: boolean, error: string | null, choose: (server?: string, profile?: string) => void } | null,
+ *                 onFiles: (files: FileList | File[]) => void, onConnect: () => void, onStartImport: () => void, onContinue: () => void },
  *   services: { list: Array<{ id: number, name: string, logo_path: string | null }> | null, error: boolean,
  *               selectedIds: number[], onToggle: (id: number) => void, region: string, editingRegion: boolean,
  *               onEditRegion: () => void, onRegion: (code: string) => void, onRegionDone: () => void,
@@ -51,7 +118,7 @@ function Progress({ step }) {
  *   building: { leaving: boolean, fan: any[], lines: string[], lineIndex: number },
  * }} props
  */
-export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, onPickImport, services, building }) {
+export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, onPickImport, importStep, services, building }) {
   const regionName = REGIONS.find(r => r.code === services.region)?.name || services.region;
   const columnClass = step === 'seed' ? 'ob-column ob-column--wide' : step === 'services' ? 'ob-column ob-column--services' : 'ob-column';
 
@@ -143,18 +210,21 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
               <p className="ob-sub">{F.importSources.subtitle}</p>
             </div>
             <nav className="ob-sources" aria-label={F.importSources.sourcesLabel}>
-              {IMPORT_SOURCES.map(src => (
-                <button key={src.id} type="button" className="ob-source" onClick={() => onPickImport(src.id)}>
-                  <ImportSourceIcon id={src.id} name={src.name} />
-                  <span className="ob-source-text">
-                    <span className="ob-source-name">{src.name}</span>
-                    <span className="ob-source-hint">{src.hint}</span>
-                  </span>
-                  <Chevron />
-                </button>
-              ))}
+              {IMPORT_SOURCES.map(src => {
+                const on = importStep.source === src.id;
+                return (
+                  <button key={src.id} type="button" className={`ob-source${on ? ' is-on' : ''}`} aria-pressed={on} disabled={importStep.phase === 'queued' && !on} onClick={() => onPickImport(src.id)}>
+                    <ImportSourceIcon id={src.id} name={src.name} />
+                    <span className="ob-source-text">
+                      <span className="ob-source-name">{src.name}</span>
+                      <span className="ob-source-hint">{src.hint}</span>
+                    </span>
+                    <Chevron />
+                  </button>
+                );
+              })}
             </nav>
-            <div className="ob-note"><Check /><span>{F.importSources.note}</span></div>
+            {importStep.source ? <ImportPanel importStep={importStep} /> : <div className="ob-note"><Check /><span>{F.importSources.note}</span></div>}
             {saveError && <div className="ob-foot ob-foot--plain"><p className="ob-error">{saveError}</p></div>}
           </>
         )}

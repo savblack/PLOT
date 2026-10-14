@@ -65,6 +65,10 @@ export function buildSimklAuthorizeUrl(clientId, state) {
   return `https://simkl.com/oauth/authorize?${params}`;
 }
 
+// The Trakt callback page posts this to the window that opened it (onboarding
+// connects in a popup so the step's picks survive).
+export const TRAKT_POPUP_MESSAGE = 'plot:trakt-connected';
+
 export function createTraktState(returnTo = '/settings') {
   const state = crypto.randomUUID();
   sessionStorage.setItem('plot_trakt_oauth_state', state);
