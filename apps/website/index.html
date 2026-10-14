@@ -1080,15 +1080,16 @@
     .pr-more a { color: var(--accent); font-weight: 600; text-underline-offset: 4px; }
     .pr-card {
       width: 100%;
-      max-width: 400px;
+      max-width: 460px;
       box-sizing: border-box;
-      padding: 28px;
-      background: #fffaf3;
-      color: var(--text);
+      padding: 34px 36px;
+      /* Dark card on the cream section, so the price is the one thing that pops. */
+      background: var(--ink);
+      color: var(--bg);
       border-radius: 28px;
-      box-shadow: 0 24px 60px rgba(41,41,36,0.14);
+      box-shadow: 0 30px 70px rgba(41,41,36,0.28);
     }
-    .pr-toggle { display: flex; padding: 4px; margin-bottom: 22px; background: var(--surface); border-radius: var(--r-pill); }
+    .pr-toggle { display: flex; padding: 4px; margin-bottom: 22px; background: rgba(248,242,234,0.1); border-radius: var(--r-pill); }
     .pr-toggle button {
       flex: 1;
       padding: 9px 0;
@@ -1096,10 +1097,10 @@
       border-radius: var(--r-pill);
       background: transparent;
       font: 600 0.88rem var(--sans);
-      color: var(--text-secondary);
+      color: #d9d1c4;
       cursor: pointer;
     }
-    .pr-toggle button.is-active { background: #fff; color: var(--text); box-shadow: 0 2px 6px rgba(41,41,36,0.1); }
+    .pr-toggle button.is-active { background: var(--bg); color: var(--text); }
     .pr-price { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
     /* The annual saving, as loud as the price: Annual is preselected. */
     .pr-save {
@@ -1119,11 +1120,11 @@
     }
     .pr-save[hidden] { display: none; }
     .pr-amount { font-family: var(--display); font-weight: 700; font-size: 4rem; letter-spacing: -0.04em; line-height: 1; }
-    .pr-per { font-size: 1.1rem; color: var(--text-secondary); }
-    .pr-billed { margin: 6px 0 22px; font-size: 0.88rem; color: var(--text-secondary); text-align: center; }
+    .pr-per { font-size: 1.1rem; color: #d9d1c4; }
+    .pr-billed { margin: 6px 0 22px; font-size: 0.88rem; color: #d9d1c4; text-align: center; }
     .pr-card .btn { width: 100%; justify-content: center; }
-    .pr-trial { margin: 14px 0 0; font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary); text-align: center; }
-    .pr-compare { display: block; margin-top: 14px; text-align: center; font-size: 0.88rem; font-weight: 600; color: var(--text); text-underline-offset: 4px; }
+    .pr-trial { margin: 14px 0 0; font-size: 0.8rem; line-height: 1.45; color: #d9d1c4; text-align: center; }
+    .pr-compare { display: block; margin-top: 14px; text-align: center; font-size: 0.88rem; font-weight: 600; color: var(--bg); text-underline-offset: 4px; }
 
     /* Plot mobile: coming soon, with the app's home screen in a phone. Same
        cream as the sections around it. */
