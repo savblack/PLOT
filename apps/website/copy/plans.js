@@ -62,6 +62,23 @@ export const PLANS_PAGE = {
     cta: 'Start 7-day free trial',
   },
 
+  // "Less deciding. More watching." — one benefit at a time with a product
+  // visual beside it (the stories switcher). The three smaller benefits sit
+  // in pills beneath.
+  premiumStories: {
+    eyebrow: 'Plot Premium',
+    h2: 'Less deciding. More watching.',
+    steps: [
+      { label: 'Tonight', h3: 'Find tonight’s movie in four taps', body: 'How long have you got, where do you watch, what are you in the mood for? Pick for me turns that into a shortlist, on the services you already pay for.' },
+      { label: 'Together', h3: 'Settle movie night before the snacks are ready', body: 'Watch together finds the overlap in your watchlists and gets everyone to a yes. Only one of you needs Premium.' },
+      { label: 'Your profile', h3: 'Get to know your taste', body: 'Your watch profile shows what you really watch, how much, and who you line up with. Settle who has the best taste.' },
+      { label: 'Yours', h3: 'Your Plot, your style', body: 'Custom themes, home-screen widgets and app icons. Make it feel like yours.' },
+    ],
+    cta: 'Start 7-day free trial',
+    alsoLabel: 'Also in Premium',
+    also: ['Unlimited and smart lists', 'Release dates in your calendar app', 'Actor and director alerts'],
+  },
+
   comparison: {
     title: 'Compare plans',
     note: 'Nothing is deleted if you downgrade. Your lists stay exactly as they are.',
