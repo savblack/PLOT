@@ -1021,7 +1021,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     : (details?.number_of_seasons
         ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
         : '');
-  const movieEnds = isMovie && details?.runtime > 0 ? endsAtTime(details.runtime) : null;
+  const movieRuntime = isMovie ? details?.runtime : undefined;
+  const movieEnds = movieRuntime != null && movieRuntime > 0 ? endsAtTime(movieRuntime) : null;
   const factLine = [year, runtimeText, movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''].filter(Boolean).join(' · ');
   const author = isMovie
     ? details?.credits?.crew?.find(person => person.job === 'Director')?.name
