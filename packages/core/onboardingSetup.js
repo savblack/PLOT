@@ -15,17 +15,41 @@ export const ONBOARDING_PROGRESS = { seed: 1, import: 1, services: 2, building: 
 export const ONBOARDING_PROGRESS_TOTAL = 3;
 
 /**
- * The switching-apps sources, in order. Ids are the web import's platform ids,
- * so a pick can open the import straight on that source.
+ * The switching-apps sources, in two lanes. Ids are the import page's platform
+ * ids and the import_jobs sources, so a pick enqueues straight on that source.
+ * Connect sources pull the history themselves; upload sources take an export
+ * file (accept / formats feed the file picker). Order is tile order.
  *
- * @type {ReadonlyArray<{ id: 'letterboxd' | 'trakt' | 'netflix' | 'plex', name: string, hint: string }>}
+ * @typedef {{ id: string, name: string, lane: 'connect' | 'upload', hint: string,
+ *   accept?: string, formats?: string, steps?: string[], noRatings?: boolean, flag?: 'tvtime' }} ImportSource
+ * @type {ReadonlyArray<ImportSource>}
  */
 export const IMPORT_SOURCES = [
-  { id: 'letterboxd', name: 'Letterboxd', hint: ONBOARDING_FLOW.importSources.letterboxd },
-  { id: 'trakt', name: 'Trakt', hint: ONBOARDING_FLOW.importSources.trakt },
-  { id: 'netflix', name: 'Netflix', hint: ONBOARDING_FLOW.importSources.netflix },
-  { id: 'plex', name: 'Plex', hint: ONBOARDING_FLOW.importSources.plex },
+  { id: 'trakt', name: 'Trakt', lane: 'connect', hint: ONBOARDING_FLOW.importSources.trakt },
+  { id: 'plex', name: 'Plex', lane: 'connect', hint: ONBOARDING_FLOW.importSources.plex },
+  { id: 'simkl', name: 'Simkl', lane: 'connect', hint: ONBOARDING_FLOW.importSources.simkl },
+  { id: 'letterboxd', name: 'Letterboxd', lane: 'upload', hint: ONBOARDING_FLOW.importSources.letterboxd, accept: '.csv,.zip', formats: 'CSV or ZIP', steps: ONBOARDING_FLOW.importSources.steps.letterboxd },
+  { id: 'netflix', name: 'Netflix', lane: 'upload', hint: ONBOARDING_FLOW.importSources.netflix, accept: '.csv', formats: 'CSV', steps: ONBOARDING_FLOW.importSources.steps.netflix, noRatings: true },
+  { id: 'prime', name: 'Prime Video', lane: 'upload', hint: ONBOARDING_FLOW.importSources.prime, accept: '.csv', formats: 'CSV', steps: ONBOARDING_FLOW.importSources.steps.prime, noRatings: true },
+  { id: 'disney', name: 'Disney+', lane: 'upload', hint: ONBOARDING_FLOW.importSources.disney, accept: '.json', formats: 'JSON', steps: ONBOARDING_FLOW.importSources.steps.disney, noRatings: true },
+  { id: 'max', name: 'Max', lane: 'upload', hint: ONBOARDING_FLOW.importSources.max, accept: '.csv,.json', formats: 'CSV or JSON', steps: ONBOARDING_FLOW.importSources.steps.max, noRatings: true },
+  { id: 'apple', name: 'Apple TV+', lane: 'upload', hint: ONBOARDING_FLOW.importSources.apple, accept: '.json', formats: 'JSON', steps: ONBOARDING_FLOW.importSources.steps.apple, noRatings: true },
+  { id: 'tvtime', name: 'TV Time', lane: 'upload', hint: ONBOARDING_FLOW.importSources.tvtime, accept: '.csv,.json,.zip', formats: 'CSV, JSON or ZIP', steps: ONBOARDING_FLOW.importSources.steps.tvtime, flag: 'tvtime' },
+  { id: 'imdb', name: 'IMDb', lane: 'upload', hint: ONBOARDING_FLOW.importSources.imdb, accept: '.csv', formats: 'CSV', steps: ONBOARDING_FLOW.importSources.steps.imdb },
 ];
+
+/**
+ * The sources an app can offer right now: a flagged source only when its
+ * flag is on.
+ * @param {{ tvTimeImportEnabled?: boolean }} [config]
+ * @returns {ImportSource[]}
+ */
+export function availableImportSources(config = {}) {
+  return IMPORT_SOURCES.filter(src => src.flag !== 'tvtime' || !!config.tvTimeImportEnabled);
+}
+
+/** @param {string | null | undefined} id */
+export const findImportSource = (id) => IMPORT_SOURCES.find(src => src.id === id) || null;
 
 /** How many services the picker shows before "more in Settings". */
 export const ONBOARDING_SERVICE_COUNT = 8;

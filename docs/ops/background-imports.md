@@ -9,7 +9,12 @@ and carry on using the app. Shipped 2026-10 (migration `20261015090000`).
 1. The app uploads the export to the private `import-uploads` bucket at
    `<user id>/<job id>/<file name>` and calls `enqueue_file_import_job`
    (`packages/core/importJobs.js`). A connection source (Trakt, Plex, Simkl)
-   calls `enqueue_connection_import_job` instead. One open job per account.
+   calls `enqueue_connection_import_job` instead. Jobs queue (migration
+   `20261016090000`): a second source picked while one runs waits behind it,
+   one open job per source, at most ten open per account. The worker still
+   runs one job per account at a time (`claim_import_job` skips an account
+   with a job under a live lease), because the planner reads existing history
+   before it writes.
 2. The app nudges `import-worker` with the user's own JWT, and `pg_cron` calls
    it every minute via `run_import_worker_tick` (Vault bearer, like the alert
    jobs) while any job is due.
@@ -43,6 +48,27 @@ The parse / match / plan / write code is the apps' own pipeline, bundled from
 `supabase/functions/_shared/importEngine.generated.js` by
 `scripts/build-import-engine.mjs`. `pnpm run lint` fails when the bundle is
 stale; run `pnpm run import-engine` after touching the import pipeline.
+
+## Where imports start
+
+- Onboarding's switching-apps step (`apps/web/src/pages/OnboardingScreen.jsx`):
+  two lanes of source tiles (`components/ImportSourceLanes.jsx`), a sheet or
+  dialog per source (`components/ImportSourceDialog.jsx`), state in
+  `hooks/useImportStart.js`. A second pick queues; the pill above the next
+  steps and the first line of the building moment follow the running job.
+- Settings › Connections › Your sources (`components/SettingsSources.jsx`):
+  one row per connected account or file source with a job in the last 90
+  days (`readImportJobs(userId, { history: true })`), a detail per source
+  (history, automatic toggle, import again, remove), and "Add a source",
+  which opens the same lanes and dialog. The old Integrations group and the
+  flagged Watch tracking block are gone; `useTrackingJobs` still feeds the
+  automatic toggle and duplicate reviews from the detail.
+- Home's card (`components/ImportJobCard.jsx`) shows the running job (with
+  what waits behind it) and every finished job not yet dismissed.
+- A same-tab OAuth round trip (Simkl, or Trakt with the popup blocked) comes
+  back as `?import=<source>` on the page it left, which reopens the dialog.
+  Trakt and Simkl jobs carry `entry` = `onboarding`, `settings` or
+  `import_page`.
 
 ## Deploying
 

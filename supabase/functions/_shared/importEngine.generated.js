@@ -2379,7 +2379,8 @@ var IMPORT_FAILURE_REASONS = Object.freeze({
 var IMPORT_ENTRY_POINTS = Object.freeze({
   ONBOARDING: "onboarding",
   FINISHING_TOUCHES: "finishing_touches",
-  IMPORT_PAGE: "import_page"
+  IMPORT_PAGE: "import_page",
+  SETTINGS: "settings"
 });
 function pickTmdbMatch(entry, results = []) {
   const candidates = results.filter((r) => ["movie", "tv"].includes(r.media_type) && (!entry.hint || entry.hint === "unknown" || r.media_type === entry.hint) && matchTitle(r.title || r.name) === matchTitle(entry.title) && (!entry.year || (r.release_date || r.first_air_date || "").slice(0, 4) === String(entry.year)));

@@ -18,13 +18,28 @@ export const IMPORT_JOBS = {
     connecting: 'Waiting for you to finish in the other window…',
     connected: (source) => `${source} is connected.`,
     startImport: 'Import my history',
+    startPlexImport: 'Import from this profile',
+    starting: 'Starting…',
+    connectedAs: (name) => `as ${name}`,
+    plexServer: 'Server',
+    plexProfile: 'Profile',
+    plexOwned: 'Owned',
+    plexShared: 'Shared with you',
+    plexSelected: (server, profile) => `Only what ${profile} has watched on ${server} comes across. Change it any time in Settings.`,
     plexServerLater: 'Plex needs a server and profile picked in Settings before the import can run. We’ll remind you on Home.',
     // The only server and profile were picked for them (or they picked).
     plexPicked: (server, profile) => [server, profile].filter(Boolean).join(' · '),
     uploadFailed: 'We couldn’t upload that file. Check your connection and try again.',
     alreadyRunning: 'An import is already running. You can follow it on Home.',
+    // A second pick while one runs: the worker takes them one at a time.
+    queuedBehind: (source, running) => `Got it. Your ${source} history is queued and starts when ${running} finishes.`,
+    addAnother: 'Add another source',
+    queueFull: 'That’s plenty queued for now. Let these finish, then add more from Settings.',
     continue: 'Continue →',
   },
+
+  // ── The building moment: its first line while an import runs ──
+  building: { matching: (source) => `Matching your ${source} history…` },
 
   // ── Home card ──
   card: {
@@ -33,6 +48,8 @@ export const IMPORT_JOBS = {
     failedTitle: (source) => `Your ${source} import stopped`,
     cancelledTitle: (source) => `${source} import cancelled`,
     queued: 'Starting…',
+    queuedBehind: (running) => `Starts after ${running}`,
+    thenNext: (next) => `then ${next}`,
     parsing: 'Reading your file…',
     matching: (done, total) => (total ? `Matching ${done.toLocaleString()} of ${total.toLocaleString()} titles` : 'Matching titles…'),
     writing: 'Saving to your history…',

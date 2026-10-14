@@ -10,7 +10,10 @@ import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
+import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { buildingFan } from '@plot/core/onboardingSetup.js';
+import { useImportJobs, importSourceName } from '@plot/core/importJobs.js';
+import { useAppData } from '../../contexts/AppDataContext';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
@@ -37,7 +40,11 @@ export default function Building() {
   const [fade] = useState(() => new Animated.Value(1));
 
   const servicesCount = skipped ? 0 : flow.selectedServiceIds.length;
-  const line = F.building.saving(flow.seeds.length, servicesCount);
+  // While a background import runs, the line says so first (web's first
+  // line); otherwise what the one save is writing.
+  const { user } = useAppData();
+  const { current: importing } = useImportJobs(user?.id ?? null);
+  const line = importing ? IMPORT_JOBS.building.matching(importSourceName(importing.source)) : F.building.saving(flow.seeds.length, servicesCount);
   const fan = useMemo(() => buildingFan(flow.seeds, flow.trending), [flow.seeds, flow.trending]);
 
     // Save, hold at least MIN_MS, then leave for Home. Runs once.

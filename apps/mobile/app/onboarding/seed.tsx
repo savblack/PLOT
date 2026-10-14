@@ -3,15 +3,16 @@
  * A "trending this week" poster grid, prefilled before the user searches, with
  * a "Switching apps?" row that opens the import-source picker in place of the
  * grid (web navigates to a separate screen; mobile folds it in so the step
- * count stays at two). A picked source opens the import panel right here: the
- * file is uploaded, or the account connected, and the import runs in the
- * background (components/OnboardingImportPanel.tsx). Picks are held in the
- * flow context and saved to the watchlist once, behind the building moment,
- * so backing out of a later step costs nothing.
+ * count stays at two). The sources are two lanes of tiles; a picked source
+ * opens its sheet (components/ImportSourceSheet.tsx): the file is uploaded,
+ * or the account connected, and the import runs in the background while
+ * setup continues. A second source can be queued behind the first. Picks are
+ * held in the flow context and saved to the watchlist once, behind the
+ * building moment, so backing out of a later step costs nothing.
  */
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, Image,
+  View, Text, TextInput, TouchableOpacity, FlatList, Image, ScrollView,
   StyleSheet, ActivityIndicator, Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -21,12 +22,15 @@ import { tmdb } from '../../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
+import { useAppData } from '../../contexts/AppDataContext';
 import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
-import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
-import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
-import OnboardingImportPanel from '../../components/OnboardingImportPanel';
+import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
+import { importSourceName } from '@plot/core/importJobs.js';
+import { useImportStart } from '../../hooks/useImportStart';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
 import ImportSourceIcon from '../../components/ImportSourceIcon';
+import ImportSourceLanes, { ImportPill } from '../../components/ImportSourceLanes';
+import ImportSourceSheet from '../../components/ImportSourceSheet';
 
 const F = ONBOARDING_FLOW;
 
@@ -40,6 +44,8 @@ const CARD_W = (CONTENT_W - spacing.sm * (COLUMNS - 1)) / COLUMNS;
 
 // Web caps the poster grid at 42vh so the footer stays hugged to the content.
 const GRID_MAX_H = Math.round(Dimensions.get('window').height * 0.42);
+// The source lanes scroll in the same slot, with room for the pill above.
+const LANES_MAX_H = Math.round(Dimensions.get('window').height * 0.5);
 
 // Web tints the selected poster with the light-theme accent at 30% in both
 // themes and stamps a white tick, so the same literal is used here.
@@ -65,6 +71,8 @@ export default function Seed() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const flow = useOnboardingFlow();
+  const { user } = useAppData();
+  const userId = user?.id ?? null;
 
   const [query,    setQuery]    = useState('');
   const [results,  setResults]  = useState<SearchResult[]>([]);
@@ -76,9 +84,15 @@ export default function Seed() {
   const [trendingTry, setTrendingTry] = useState(0);
   const [searchTry, setSearchTry] = useState(0);
   const [showSources, setShowSources] = useState(!!flow.importSource);
-  // The import is queued: the step's Continue leads on to services.
-  const [queued, setQueued] = useState(!!flow.importJob);
-  const onQueued = useCallback(() => setQueued(true), []);
+  // A picked source's sheet, and the account's jobs (web: useImportStart).
+  // The last job queued is kept in the flow context for the save.
+  const { setImportSource, setImportJob } = flow;
+  const onStarted = useCallback((id: string, job: { id: string }) => { setImportSource(id); setImportJob(job); }, [setImportSource, setImportJob]);
+  const start = useImportStart({ userId, entry: IMPORT_ENTRY_POINTS.ONBOARDING, onStarted });
+  // A job exists (running, queued or just finished): the step's Continue leads
+  // on to services, and the title switches to adding another.
+  const queued = start.jobs.length > 0;
+  const running = start.current;
   const selected = flow.seeds;
   const setFlowTrending = flow.setTrending;
 
@@ -153,14 +167,12 @@ export default function Seed() {
     if (ok) router.replace('/(app)');
   };
 
-  // Picking a source opens its panel in place; the import starts here and
-  // runs in the background (web: OnboardingFlow's pickImport). Once a job is
-  // queued the pick is final for this setup.
-  const source = flow.importSource;
+  // Picking a source opens its sheet; the import starts there and runs in
+  // the background (web: OnboardingFlow's import step). A second source can
+  // be picked while the first runs; a held tile can't be picked again.
   const pickSource = (id: string) => {
-    if (queued) return;
-    createImportReporter({ entry: IMPORT_ENTRY_POINTS.ONBOARDING }).selected(id);
     flow.setImportSource(id);
+    start.pick(id);
   };
 
   const toggleSources = () => {
@@ -170,7 +182,12 @@ export default function Seed() {
   };
 
   const continueFromImport = () => {
+    start.close();
     flow.completeStep('import');
+    router.push('/onboarding/services');
+  };
+  const laterFromImport = () => {
+    flow.completeStep('import', { skipped: true });
     router.push('/onboarding/services');
   };
 
@@ -181,14 +198,15 @@ export default function Seed() {
   return (
     <OnboardingScaffold
       step={1}
-      title={showSources ? F.importSources.title : F.seed.title(flow.firstName)}
-      subtitle={showSources ? F.importSources.subtitle : F.seed.subtitle}
-      ctaLabel={showSources ? IMPORT_JOBS.onboarding.continue : count === 0 ? F.seed.tapAFew : F.seed.continueWith(count)}
+      title={showSources ? (queued ? F.importSources.addAnotherTitle : F.importSources.title) : F.seed.title(flow.firstName)}
+      subtitle={showSources ? (queued ? '' : F.importSources.subtitle) : F.seed.subtitle}
+      ctaLabel={showSources ? F.continueArrow : count === 0 ? F.seed.tapAFew : F.seed.continueWith(count)}
       ctaDisabled={!showSources && count === 0}
       hideCta={showSources && !queued}
       onContinue={showSources ? continueFromImport : () => { flow.completeStep('seed'); router.push('/onboarding/services'); }}
       saving={flow.saving}
-      onSkip={count === 0 && !queued ? skip : undefined}
+      onSkip={showSources ? (queued ? undefined : laterFromImport) : count === 0 ? skip : undefined}
+      skipLabel={showSources ? F.importSources.later : undefined}
       error={flow.saveError}
     >
       <TouchableOpacity
@@ -209,31 +227,12 @@ export default function Seed() {
 
       {showSources ? (
         <>
-          <View accessibilityLabel={F.importSources.sourcesLabel} style={styles.sources}>
-            {IMPORT_SOURCES.map(src => {
-              const on = source === src.id;
-              const off = queued && !on;
-              return (
-                <TouchableOpacity
-                  key={src.id}
-                  style={[styles.source, on && styles.sourceOn, off && styles.sourceOff]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: on, disabled: off }}
-                  disabled={off}
-                  onPress={() => pickSource(src.id)}
-                >
-                  <ImportSourceIcon id={src.id} name={src.name} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.sourceName}>{src.name}</Text>
-                    <Text style={styles.sourceHint}>{src.hint}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          {source
-            ? <OnboardingImportPanel key={source} source={source} onQueued={onQueued} />
-            : <Text style={styles.note}>{F.importSources.note}</Text>}
+          <ImportPill pill={start.pill} />
+          <ScrollView style={styles.lanes} showsVerticalScrollIndicator={false}>
+            <ImportSourceLanes jobs={start.jobs} current={running} connectedIds={start.connectedIds} onPick={pickSource} />
+            <Text style={styles.note}>{running ? F.importSources.queuedNote(importSourceName(running.source)) : F.importSources.note}</Text>
+          </ScrollView>
+          <ImportSourceSheet start={start} onContinue={continueFromImport} onAddAnother={start.addAnother} />
         </>
       ) : (
         <>
@@ -355,13 +354,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   switchMarks: { flexDirection: 'row', gap: 4 },
   switchText:  { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   switchLead:  { fontFamily: fontFamily.sansBold, color: colors.textPrimary },
-  sources:     { gap: spacing.sm },
-  source:      { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  sourceOn:    { borderColor: colors.accent, backgroundColor: colors.accentDim },
-  sourceOff:   { opacity: 0.5 },
-  sourceName:  { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
-  sourceHint:  { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
-  note:        { marginTop: spacing.lg, fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted, textAlign: 'center' },
+  lanes:       { maxHeight: LANES_MAX_H, marginBottom: spacing.md },
+  note:        { marginTop: spacing.lg, marginBottom: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted, textAlign: 'center' },
   inlineError: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, marginBottom: spacing.sm, borderRadius: radii.md, backgroundColor: colors.dangerDim },
   inlineErrorText:  { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
   inlineErrorRetry: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accent },
