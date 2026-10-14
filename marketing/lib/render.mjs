@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chartWeekDate } from './dates.mjs';
 import { loadFooterWordmark } from './wordmark.mjs';
+import { WORDMARK_PATH } from '../../packages/core/wordmark.js';
 
 const TEMPLATES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 
@@ -45,9 +46,12 @@ export const renderCard = async (templateName, data, { size = 'portrait' } = {})
 
   // chartWeekDate lives in dates.mjs so the header order is tested. The
   // template runs in the page, so the function source is inlined here.
-  const helpers = template.includes('chartWeekDate(')
+  const withDates = template.includes('chartWeekDate(')
     ? `${helpersJs}\nconst chartWeekDate = ${chartWeekDate.toString()};\n`
     : helpersJs;
+  // plotMark() draws the wordmark outlines (the l joins the o, which the font
+  // can't set); the path data comes from @plot/core so there's one copy.
+  const helpers = withDates.replace("'/*WORDMARK_PATH*/'", JSON.stringify(WORDMARK_PATH));
 
   let html = template;
   if (html.includes('/*WORDMARK_SVG*/')) {

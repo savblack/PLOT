@@ -41,9 +41,13 @@ export function track(event, props) {
   withPostHog(ph => ph.capture(event, props));
 }
 
-export function identifyUser(id, traits) {
+// The Supabase user id is the only identifier sent. Until 2026-10-14 the
+// email address rode along as a person property, which made PostHog the one
+// third party holding PII for every account while everything else stays
+// pseudonymous. Person properties that are not PII go through setPersonProps.
+export function identifyUser(id) {
   if (!id) return;
-  withPostHog(ph => ph.identify(id, traits));
+  withPostHog(ph => ph.identify(id));
 }
 
 /**

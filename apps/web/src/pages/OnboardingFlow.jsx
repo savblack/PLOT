@@ -19,11 +19,13 @@ import {
 } from '@plot/core/onboardingSetup.js';
 import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { finishingTouchesKey, serialiseFinishingTouches, startFinishingTouches } from '@plot/core/finishingTouches.js';
+import { armFirstWinCard } from '../utils/firstWinCardState.js';
 import { useWatchlist } from '../hooks/useWatchlist.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import { readPendingSave } from '../utils/pendingSave.js';
+import { notifyOnboardingCompleted } from '@plot/core/brevoLifecycleClient.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import {
@@ -205,7 +207,8 @@ export default function OnboardingFlow() {
     setSaveError(null);
     // Read before the write. The patch always sets the flag true, so the row
     // that comes back cannot tell us whether this is the first time. The
-    // welcome email listens for onboarding_completed.
+    // welcome email and the Brevo event both listen for onboarding_completed,
+    // and only this first time.
     const prior = await supabase.from('profiles')
       .select('onboarding_complete')
       .eq('id', user.id)
@@ -238,7 +241,11 @@ export default function OnboardingFlow() {
     // "Mark where you're up to" reads the watchlist later, not these picks.
     const key = finishingTouchesKey(user.id);
     if (!readStorage(key)) writeStorage(key, serialiseFinishingTouches(startFinishingTouches(Date.now())));
+    // The first-win card sits on Home. A skip (nothing saved) does not arm it.
+    armFirstWinCard(user.id, { skipped: seeds.length === 0 });
     if (trackCompletion) {
+      // After the picks are on My List, so the email sees the current watchlist.
+      await notifyOnboardingCompleted();
       track(EVENTS.ONBOARDING_COMPLETED, {
         region,
         seed_titles_added: seeds.length,

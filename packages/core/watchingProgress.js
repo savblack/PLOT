@@ -44,8 +44,33 @@ export function pointerAfterEpisode(season, episodeNumber, episodeCount) {
   return { season: seasonNum + 1, episode: 1 };
 }
 
-/* Where the pointer lands when the season-level control is used. Marking rolls
-   past the season; unmarking rewinds to its first episode. */
+/**
+ * Tick "the last episode I've seen" when there is no progress row yet.
+ * Starting watching lands on season 1 episode 1 (watching_started). The
+ * pointer then moves past the ticked episode (episode_watched). Callers
+ * start watching here, on the tick, so opening the list does not count.
+ *
+ * @param {{
+ *   startWatching: (item: object) => Promise<unknown>,
+ *   setProgress: (id: number, season: number, episode: number, opts?: object) => Promise<{ ok?: boolean } | null | undefined>,
+ *   show: { id?: number, tmdb_id?: number, media_type?: string, title?: string, name?: string, poster_path?: string | null },
+ *   season: number,
+ *   episodeNumber: number,
+ *   episodeCount: number,
+ * }} args
+ * @returns {Promise<{ ok: boolean }>}
+ */
+export async function logLastEpisodeSeen({ startWatching, setProgress, show, season, episodeNumber, episodeCount }) {
+  const id = Number(show?.id ?? show?.tmdb_id);
+  if (!id) return { ok: false };
+  const started = await startWatching({ ...show, id, media_type: 'tv' });
+  if (!started) return { ok: false };
+  const next = pointerAfterEpisode(season, episodeNumber, episodeCount);
+  if (!next) return { ok: false };
+  const saved = await setProgress(id, next.season, next.episode, { reason: 'episode', undo: true });
+  return { ok: saved?.ok === true };
+}
+
 /* Is this pointer write a rewind?
  *
  * Progress is a single pointer, so un-ticking an episode and un-marking a
@@ -65,6 +90,8 @@ export function isRewind(before, season, episode) {
   return Number(episode) < fromEpisode;
 }
 
+/* Where the pointer lands when the season-level control is used. Marking rolls
+   past the season; unmarking rewinds to its first episode. */
 export function getSeasonToggleProgress({ isComplete = false, selectedSeason = 0 } = {}) {
   if (!selectedSeason || selectedSeason < 1) {
     return {

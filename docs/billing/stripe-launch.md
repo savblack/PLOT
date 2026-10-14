@@ -70,13 +70,23 @@ This decision does not enable public checkout or authorize a production change.
    and engineering gates in the readiness document. After launch approval, in Stripe **live mode**, create a Plot Premium product with two recurring
    USD prices: US$3/month and US$24/year. Record the two live price IDs.
 2. Set the Stripe account's public business URL and support email. The Customer
-   Portal should also show the Plot terms and privacy URLs.
+   Portal should also show the Plot terms and privacy URLs. In Settings, Billing,
+   Subscriptions and emails, turn on the customer email for trials that are about to
+   end. Stripe sends it before the trial converts (and fires
+   `customer.subscription.trial_will_end`), which is the notice the Terms promise and
+   that US and Australian consumer rules expect before a free trial becomes a charge.
+   Keep successful-payment emails on too, so each charge produces a receipt.
 3. In the live-mode Customer Portal, enable cancellation, payment-method
    updates, invoice history, and price switching. Its catalogue must contain
    only the Plot Premium product and both live prices. Schedule shorter-interval changes for
    the end of the current period. The tested sandbox configuration resets the
    billing anchor to now and uses `always_invoice` for immediate prorated upgrades.
    Verify the invoice preview before copying this configuration into live mode.
+   **Decision (14 October 2026): a plan switch during the trial keeps the trial.** In the
+   live portal configuration, switch off "End trials on subscription updates" so that
+   moving between monthly and yearly in the first 7 days does not bill immediately; the
+   first charge stays on the day the trial ends, at the newly chosen price. The Terms
+   state this, so verify it in the pilot before opening checkout.
 4. Create or update the live webhook at
    `https://mkegtssedjyqldysvzga.supabase.co/functions/v1/stripe-webhook`.
    Subscribe to `checkout.session.completed`, `checkout.session.async_payment_succeeded`,

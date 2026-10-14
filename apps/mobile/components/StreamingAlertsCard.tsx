@@ -44,7 +44,11 @@ export default function StreamingAlertsCard({ movie }: { movie: { id: number; ti
     { text: PUSH_ALERTS.permissionYes, onPress: () => { void (async () => {
       try {
         const result = await registerPushToken(true);
-        if (result !== 'ok') { Alert.alert(result === 'denied' ? PUSH_ALERTS.permissionDenied : PUSH_ALERTS.permissionUnavailable); return; }
+        if (result !== 'ok') {
+          Alert.alert(result === 'denied' ? PUSH_ALERTS.permissionDenied
+            : result === 'in_use' ? PUSH_ALERTS.inUse : PUSH_ALERTS.permissionUnavailable);
+          return;
+        }
         if ((await push.setEnabled(true)).error) Alert.alert(PUSH_ALERTS.error);
       } catch { Alert.alert(PUSH_ALERTS.error); }
     })(); } },

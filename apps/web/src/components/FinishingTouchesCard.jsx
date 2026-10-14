@@ -41,7 +41,7 @@ export default function FinishingTouchesCard({ tiles, doneCount, total, allDone,
         </span>
         <span className="ft-count">{T.count(doneCount, total)}</span>
         <span className="ft-spacer" />
-        {expanded && <button type="button" className="ft-hide" onClick={onHide}>{T.hide}</button>}
+        <button type="button" className="ft-hide" onClick={onHide}>{T.hide}</button>
         <button type="button" className="ft-toggle" aria-expanded={expanded} aria-label={expanded ? T.collapse : T.expand} onClick={onToggle}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}><path d="M6 9l6 6 6-6" /></svg>
         </button>

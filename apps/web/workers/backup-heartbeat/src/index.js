@@ -87,9 +87,9 @@ async function sendAlert(env, verdict) {
 }
 
 /**
- * The Storage mirror needs a different test. `aws s3 sync` uploads nothing on a
- * weekly run where no avatar changed, so object freshness cannot distinguish "synced,
- * nothing to do" from "never ran". storage-backup.yml therefore writes a
+ * The Storage backup needs a different test. It writes one encrypted archive a
+ * week under storage-backups/, and listing that prefix for freshness would make
+ * this Worker depend on the archive naming. The job therefore writes a
  * `_synced-at.txt` sentinel on every run, and we age that instead.
  *
  * Exported for tests.

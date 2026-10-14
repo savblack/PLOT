@@ -11,6 +11,7 @@ import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import { useTheme } from '../../contexts/ThemeContext';
 import { WtPerson } from './watchModel';
+import PlotWordmark from '../PlotWordmark';
 
 export function PersonFace({ person, size = 40 }: { person: { display_name?: string | null; username?: string | null; avatar_url?: string | null }; size?: number }) {
   const { colors } = useTheme();
@@ -128,7 +129,7 @@ export function WatchPage({ children, backTo, backLabel, hideBack, scroll = true
 
 export function Wordmark() {
   const { colors } = useTheme();
-  return <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.6, color: colors.textPrimary }}>plot</Text>;
+  return <PlotWordmark size={fontSize.xl} color={colors.textPrimary} />;
 }
 
 export function ErrorNote({ children }: { children: string }) {

@@ -2,6 +2,73 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { titlePage } from './title.js';
 
+// TMDB returned this ID and title through Plot's Worker on 2026-10-13.
+const tmdbTitle = { id: 969681, title: 'Spider-Man: Brand New Day', release_date: '2026-07-29' };
+// Plot's Worker returned this ID and title on 2026-10-13.
+const sitemapTitle = { id: 1204680, title: 'Coyote vs. Acme' };
+
+test('a first title visit renders from direct TMDB without Supabase', async () => {
+  const realFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url: new URL(url), options });
+    return new Response(JSON.stringify(tmdbTitle), {
+      status: 200,
+      headers: { 'x-plot-backend': 'tmdb', 'content-type': 'application/json' },
+    });
+  };
+  try {
+    const request = Object.assign(new Request('https://theplot.tv/movie/spider-man-brand-new-day-969681?r=AU'), { cf: { country: 'US' } });
+    const response = await titlePage(request, 'movie', 'spider-man-brand-new-day-969681');
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-plot-backend'), 'tmdb');
+    assert.match(await response.text(), /Where to watch in Australia/);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url.host, 'tmdb-proxy.sav-black.workers.dev');
+    assert.equal(calls[0].url.searchParams.get('path'), `movie/${tmdbTitle.id}`);
+    assert.equal(calls[0].options.headers.Origin, 'https://theplot.tv');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test('a Worker fallback without direct TMDB still uses the existing title function', async () => {
+  const realFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    calls.push(new URL(url));
+    if (calls.length === 1) return new Response(JSON.stringify(tmdbTitle), { status: 200 });
+    return new Response('<!doctype html>fallback title', { status: 200 });
+  };
+  try {
+    const response = await titlePage(new Request('https://theplot.tv/movie/spider-man-brand-new-day-969681'), 'movie', 'spider-man-brand-new-day-969681');
+    assert.equal(await response.text(), '<!doctype html>fallback title');
+    assert.equal(response.headers.get('x-plot-backend'), 'supabase');
+    assert.equal(calls.length, 2);
+    assert.equal(calls[1].pathname, '/functions/v1/title-page');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test('sampled titles keep the Supabase sitemap index path', async () => {
+  const realFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    calls.push(new URL(url));
+    return new Response('<!doctype html>indexed title', { status: 200 });
+  };
+  try {
+    const response = await titlePage(new Request(`https://theplot.tv/movie/coyote-vs-acme-${sitemapTitle.id}`), 'movie', `coyote-vs-acme-${sitemapTitle.id}`);
+    assert.equal(await response.text(), '<!doctype html>indexed title');
+    assert.equal(response.headers.get('x-plot-backend'), 'supabase');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].pathname, '/functions/v1/title-page');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
 // Captures the region this proxy asks the Edge Function for. The function reads
 // ?r= and defaults to US, so whatever lands here is what the reader sees.
 const upstreamRegion = async (href, cf) => {

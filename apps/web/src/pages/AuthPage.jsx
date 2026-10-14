@@ -17,6 +17,7 @@ import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js'
 import { signupFormTokenIsStale } from '../utils/signupFormToken.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
+import PlotLogo from '../components/PlotLogo.jsx';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -350,7 +351,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         track(EVENTS.LOGIN_SUBMIT_FAILED, { reason: errorReason(error.message) });
         setError(friendlyError(error.message)); setLoading(false); resetCaptcha();
       } else {
-        identifyUser(data.user.id, { email: data.user.email });
+        identifyUser(data.user.id);
         track(EVENTS.USER_LOGGED_IN);
         const plan = getPremiumCheckoutIntent();
         navigate(plan ? `/pricing?billing=${plan}` : takeReturnPath('/app'));
@@ -396,7 +397,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       else {
         // Identify on signup (not just login) so the anonymous pre-signup
         // session — carrying first-touch attribution — stitches to this user.
-        identifyUser(data.user?.id, { email: data.user?.email || submittedEmail });
+        identifyUser(data.user?.id);
         track(EVENTS.USER_SIGNED_UP, { method: 'email' });
         // Supabase returns an obfuscated user with no identities when the email
         // already exists. Only a genuinely new account may authorize the
@@ -593,7 +594,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <span className="auth-visual-logo">plot</span>
+          <span className="auth-visual-logo"><PlotLogo inherit /></span>
           <span className="auth-visual-tagline">Your movie &amp; TV companion</span>
         </div>
       </div>

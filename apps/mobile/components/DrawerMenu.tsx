@@ -16,6 +16,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { Avatar } from './Avatar';
 import NavGlyph, { NavIconName } from './NavIcons';
 import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
+import PlotWordmark from './PlotWordmark';
 
 // Web's drawer is min(300px, 85vw). The old 58% width was sized for bare labels.
 const DRAWER_W = Math.min(300, Dimensions.get('window').width * 0.85);
@@ -129,7 +130,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
 
         <View style={[styles.content, { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
           <View style={styles.brandRow}>
-            <Text style={styles.wordmark}>plot</Text>
+            <PlotWordmark size={28} color={colors.textPrimary} />
             <Text style={styles.beta} accessibilityLabel={APP_SHELL.beta}>{APP_SHELL.beta}</Text>
           </View>
 
@@ -287,12 +288,6 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.xl,
-  },
-  wordmark: {
-    fontFamily: fontFamily.display,
-    fontSize: 28,
-    color: colors.textPrimary,
-    letterSpacing: -1,
   },
   beta: {
     overflow: 'hidden',

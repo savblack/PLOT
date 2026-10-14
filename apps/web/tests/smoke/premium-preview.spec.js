@@ -78,7 +78,7 @@ for (const width of [390, 1440]) {
     await mockCheckoutAvailability(page, false);
     await page.goto('/pricing');
     await expect(page.getByRole('link', { name: PLANS_PAGE.waitlistAction })).toBeVisible();
-    await expect(page.getByRole('link', { name: PLANS_PAGE.waitlistAction })).toHaveAttribute('href', /mailto:contact@theplot.tv/);
+    await expect(page.getByRole('link', { name: PLANS_PAGE.waitlistAction })).toHaveAttribute('href', /mailto:support@theplot.tv/);
     await expect(page.getByText(PLANS_PAGE.checkoutClosedDetail)).toBeVisible();
     await expect(page.getByText(PLANS_PAGE.checkoutClosedAnswer)).toBeVisible();
     await expect(page.getByRole('button', { name: PLANS_PAGE.upgradeAction })).toHaveCount(0);

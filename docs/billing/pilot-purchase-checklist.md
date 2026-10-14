@@ -31,10 +31,11 @@ Written 2 October 2026. Production: Supabase `mkegtssedjyqldysvzga`, Stripe acco
   If it is not there, add it with `supabase secrets set STRIPE_CHECKOUT_PILOT_USER_IDS=<id>` (this
   replaces the list). Use a real account you can sign in to on `app.theplot.tv`. Do not use an
   account that already has a billing record.
-- [ ] **Decide the portal plan-change rule.** The live portal has "End trials on subscription
-  updates" switched on, so switching plan during a trial ends the trial and charges at once.
-  Cancelling does not. Don't test a plan change during this pilot unless you accept a real charge
-  (you can refund it). Decide whether that rule is what you want for customers.
+- [ ] **Portal plan-change rule (decided 14 October: keep the trial).** In Settings, Billing,
+  Customer portal, switch **off** "End trials on subscription updates". With it off, switching
+  plan during the trial keeps the trial and the first charge stays on day 7 at the new price.
+  Check the setting before step 6, then in the portal switch monthly to yearly and confirm the
+  subscription is still Trialing with the same trial end and no payment was taken.
 - [ ] **Note the portal's cancel setting** (Settings, Billing, Customer portal, Cancellations):
   "Cancel immediately" or "Cancel at end of billing period". It decides what step 4 looks like.
 - [ ] Open the Stripe dashboard (live) on Developers, Webhooks, so you can watch deliveries.
@@ -82,9 +83,10 @@ Within about 10 seconds:
   Pick for Me, confirm no upgrade prompt appears.
 - [ ] Analytics: PostHog shows `premium_checkout_started` and `premium_converted`. Note
   `premium_converted` fires when the trial starts, before any payment, so it counts trials.
-- [ ] Email: check whether you received any receipt or trial confirmation from Stripe or the
-  payment provider. "Successful payments" emails are switched off in Stripe's customer email
-  settings, so confirm customers are told about the trial and the date of the first charge.
+- [ ] Email: confirm the trial-ending email is **on** in Stripe (Settings, Billing, Subscriptions
+  and emails) and that "Successful payments" receipts are on. The Terms promise a reminder before
+  the trial ends; with a 7-day trial Stripe sends it a few days before the first charge. Check
+  you received the trial confirmation, and after day 7 (or step 7) the receipt.
 
 ## 5. Guard rails
 

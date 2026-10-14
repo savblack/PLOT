@@ -39,7 +39,8 @@ import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { useRouter, type Href } from 'expo-router';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
-import { track } from '../../lib/analytics';
+import { track, EVENTS } from '../../lib/analytics';
+import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { featuredCuratedList } from '@plot/core/curatedLists.js';
 import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists';
 import PicksCarousel from '../../components/PicksCarousel';
@@ -47,8 +48,10 @@ import { currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.
 import { localDateStr } from '@plot/core/date.js';
 import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
+import FirstWinCard from '../../components/FirstWinCard';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
 import { markImportDone } from '../../lib/finishingTouches';
+import { suppressFirstWinForImport } from '../../lib/firstWinCard';
 import { takePendingImportSource } from '../../lib/pendingImport';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 
@@ -672,6 +675,12 @@ export default function HomeScreen() {
   // Onboarding's "Switching apps?" pick: setup finished first, so the import opens now.
   const [importSource, setImportSource] = useState<string | null>(takePendingImportSource);
   const watchlistItems: MediaItem[] = watchlist.items;
+  useEffect(() => {
+    if (tab !== 'discover' || !ft.ready || watchlist.loading || watchlistItems.length === 0) return;
+    oncePerSession('saved_to_watch_viewed', () => {
+      track(EVENTS.SAVED_TO_WATCH_VIEWED, { item_count: watchlistItems.length, first_run: firstRun });
+    });
+  }, [tab, ft.ready, watchlist.loading, watchlistItems.length, firstRun]);
   const savedIds = new Set<number>(watchlistItems.map((i: MediaItem) => i.tmdb_id ?? i.id ?? 0));
   const toggleFav = useCallback((item: MediaItem) => {
     const id = item.id ?? item.tmdb_id ?? 0;
@@ -867,6 +876,7 @@ export default function HomeScreen() {
           }}
       >
 
+        {userId && importSource !== 'trakt' && importSource !== 'trakt-export' && <FirstWinCard userId={userId} />}
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
         <FinishingTouches state={ft.state} onState={ft.setState} />
 
@@ -876,7 +886,10 @@ export default function HomeScreen() {
             userId={userId}
             entry={IMPORT_ENTRY_POINTS.ONBOARDING}
             initialPlatform={importSource as never}
-            onImported={async (source, count) => ft.setState(await markImportDone(userId, source, count))}
+            onImported={async (source, count) => {
+              ft.setState(await markImportDone(userId, source, count));
+              await suppressFirstWinForImport(userId, source);
+            }}
             onClose={() => setImportSource(null)}
           />
         )}

@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
 import { setUserTimezone } from '@plot/core/date.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
+import { touchLastSeen } from '@plot/core/brevoLifecycleClient.js';
 import { onboardingGuardDecision, readOnboardingUntilDecided } from '@plot/core/onboardingGate.js';
 import { initAnalytics, identifyUser, resetAnalytics, setPersonProps } from '../lib/analytics';
 import { hydrateSectionOpenState } from '../lib/sectionOpenState';
@@ -308,6 +309,12 @@ function RootInner() {
       subscription.unsubscribe();
     };
   }, [loadProfile]);
+
+  // Once a day. The RPC no-ops after the first call of the UTC day.
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    void touchLastSeen();
+  }, [session?.user?.id]);
 
   useEffect(() => {
     const handle = async (url: string | null) => {

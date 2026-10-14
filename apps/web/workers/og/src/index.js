@@ -21,6 +21,7 @@
 // deploy. Verify every card variant before changing callers. See README.md.
 import { ImageResponse } from 'workers-og';
 import React from 'react';
+import { WORDMARK_EM, WORDMARK_PATH, WORDMARK_VIEWBOX } from '../../../../../packages/core/wordmark.js';
 
 const h = React.createElement;
 
@@ -43,7 +44,33 @@ const MUTED = '#a8a69c'; // colors.dark.textSecondary
 // TTLs are exactly what paused Vercel. 1-day browser, 7-day edge, SWR.
 const OG_CACHE = 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800';
 const TMDB_IMG = (p, s = 'w185') => (p ? `https://image.tmdb.org/t/p/${s}${p}` : null);
+
+// Only avatars from our own public bucket are fetched into the image. The
+// value comes from the profile row, and a profile owner can set avatar_url to
+// any URL, so passing it straight to the renderer would make this Worker
+// fetch arbitrary hosts on the owner's behalf. Anything else renders without
+// an avatar. (This Worker is not deployed as of 2026-09-18; fixed before any
+// redeploy, per the 2026-10-13 security review.)
+const AVATAR_PREFIX = `${SUPABASE_URL}/storage/v1/object/public/avatars/`;
+const safeAvatar = (url) => (typeof url === 'string' && url.startsWith(AVATAR_PREFIX) ? url : null);
+
+// Handles are exact, case-insensitive matches. PostgREST's `ilike` treats `%`
+// and `_` as wildcards, so a lookup for `%` would have matched the first
+// profile in the table; the handle is restricted to the username alphabet
+// and `_` is escaped before it goes into the filter.
+const HANDLE_RE = /^[a-z0-9_.-]{1,40}$/;
+const ilikeHandle = (handle) => encodeURIComponent(handle.replace(/_/g, '\\_'));
 const sh = (a) => `0 2px 12px rgba(0,0,0,${a})`;
+// The plot wordmark as outlines (the l joins the o, which the font can't set).
+// `size` is the font size the live word used to be set at; `shadow` is the
+// text-shadow opacity, drawn as an SVG drop shadow since it's no longer text.
+const wordmark = (size, color, shadow = 0) => {
+  const unit = 1000 / size;
+  return h('svg', { width: size * WORDMARK_EM.width, height: size * WORDMARK_EM.height, viewBox: WORDMARK_VIEWBOX, style: { overflow: 'visible' } },
+    shadow ? h('defs', null, h('filter', { id: 'wm-shadow', x: '-20%', y: '-40%', width: '140%', height: '180%' },
+      h('feDropShadow', { dx: 0, dy: 2 * unit, stdDeviation: 6 * unit, floodColor: '#000', floodOpacity: shadow }))) : null,
+    h('path', { d: WORDMARK_PATH, fill: color, filter: shadow ? 'url(#wm-shadow)' : undefined }));
+};
 const STAR_RATING = 'M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 7.1-1.01z';
 const STAR_BADGE = 'M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21l2.3-7.4-6-4.6h7.6z';
 const SEAL = 'M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z';
@@ -78,15 +105,17 @@ async function loadTitle(mediaType, tmdbId) {
 }
 
 async function loadProfile(handle) {
+  if (!HANDLE_RE.test(handle)) return null;
   const headers = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
   const pRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/public_profiles?username=ilike.${encodeURIComponent(handle)}` +
+    `${SUPABASE_URL}/rest/v1/public_profiles?username=ilike.${ilikeHandle(handle)}` +
     `&select=id,username,display_name,avatar_url,is_premium&limit=1`,
     { headers },
   );
   const rows = await pRes.json();
   const profile = Array.isArray(rows) ? rows[0] : null;
   if (!profile) return null;
+  profile.avatar_url = safeAvatar(profile.avatar_url);
 
   const [cRes, revRes, fRes, recentRes, ratedRes] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
@@ -141,14 +170,14 @@ function listCard(list, fonts) {
   if (!list) {
     return new ImageResponse(
       h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Gabarito', fontWeight: 700 } },
-        h('div', { style: { display: 'flex', fontSize: 120, letterSpacing: -3 } }, 'plot'),
+        h('div', { style: { display: 'flex' } }, wordmark(120, '#fafafa')),
         h('div', { style: { display: 'flex', fontSize: 36, color: MUTED, marginTop: 10 } }, 'A list on plot')),
       opts);
   }
   const n = (list.name || 'A list').length;
   const nameSize = n <= 18 ? 96 : n <= 30 ? 76 : 60;
   const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#f0efe8', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
-    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70, fontSize: 58, color: '#fafafa', letterSpacing: -2 } }, 'plot'),
+    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70 } }, wordmark(58, '#fafafa')),
     h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 28, color: ACCENT, letterSpacing: 4, textTransform: 'uppercase' } }, 'plot lists'),
     h('div', { style: { display: 'flex', fontSize: nameSize, lineHeight: 1, color: '#fff', letterSpacing: -1, marginTop: 18, maxWidth: 1010 } }, list.name),
     list.owner ? h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 34, color: MUTED, marginTop: 16 } }, '@' + list.owner) : null,
@@ -178,6 +207,7 @@ async function loadPost(id) {
     { headers },
   );
   const author = (await pRes.json().catch(() => []))?.[0] || null;
+  if (author) author.avatar_url = safeAvatar(author.avatar_url);
 
   let poster = TMDB_IMG(post.poster_path, 'w500');
   let backdrop = null;
@@ -256,7 +286,7 @@ function titleCard(t, fonts) {
         ),
       ),
     ),
-    h('div', { style: { display: 'flex', position: 'absolute', bottom: 58, right: 74, fontSize: 60, color: '#ffffff', letterSpacing: -2, textShadow: '0 2px 16px rgba(0,0,0,0.9)' } }, 'plot'),
+    h('div', { style: { display: 'flex', position: 'absolute', bottom: 58, right: 74 } }, wordmark(60, '#ffffff', 0.9)),
   );
   return new ImageResponse(el, { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } });
 }
@@ -296,7 +326,7 @@ function postCard(post, fonts) {
         note ? h('div', { style: { display: 'flex', marginTop: 26, fontFamily: 'DM Sans', fontWeight: 400, fontSize: 32, lineHeight: 1.35, color: '#c9c9d0', maxWidth: 610 } }, `“${note}”`) : null,
       ),
     ),
-    h('div', { style: { display: 'flex', position: 'absolute', bottom: 54, right: 72, fontSize: 56, color: '#ffffff', letterSpacing: -2, textShadow: sh(0.6) } }, 'plot'),
+    h('div', { style: { display: 'flex', position: 'absolute', bottom: 54, right: 72 } }, wordmark(56, '#ffffff', 0.6)),
   );
   return new ImageResponse(el, opts);
 }
@@ -308,7 +338,7 @@ function profileCard(profile, fonts) {
   if (!profile) {
     return new ImageResponse(
       h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Gabarito', fontWeight: 700 } },
-        h('div', { style: { display: 'flex', fontSize: 120, letterSpacing: -3 } }, 'plot'),
+        h('div', { style: { display: 'flex' } }, wordmark(120, '#fafafa')),
         h('div', { style: { display: 'flex', fontSize: 36, color: MUTED, marginTop: 10 } }, 'Your film & TV companion'),
       ),
       opts,
@@ -327,7 +357,7 @@ function profileCard(profile, fonts) {
   const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#f0efe8', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
     profile.backdrop ? h('img', { src: profile.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
     profile.backdrop ? h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(11,10,14,0.97) 0%, rgba(11,10,14,0.9) 55%, rgba(11,10,14,0.66) 100%)' } }) : null,
-    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70, fontSize: 58, color: '#fafafa', letterSpacing: -2, textShadow: sh(0.6) } }, 'plot'),
+    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70 } }, wordmark(58, '#fafafa', 0.6)),
     h('div', { style: { position: 'relative', display: 'flex', alignItems: 'center' } },
       profile.avatar_url ? h('img', { src: profile.avatar_url, width: 180, height: 180, style: { borderRadius: '50%', objectFit: 'cover', border: `3px solid ${ACCENT}` } }) : null,
       h('div', { style: { display: 'flex', flexDirection: 'column', marginLeft: profile.avatar_url ? 44 : 0 } },

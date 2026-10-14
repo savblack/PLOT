@@ -721,7 +721,8 @@ serve(async (req) => {
 
     return json({ error: 'Unknown action' }, 404)
   } catch (err) {
-    console.error(err)
-    return json({ error: (err as Error).message }, 500)
+    console.error('[media-sync]', err)
+    // The log keeps the detail; the caller learns nothing about our internals.
+    return json({ error: 'Internal error' }, 500)
   }
 })

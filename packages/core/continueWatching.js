@@ -10,6 +10,8 @@
  * when it is at or before TMDB's last_episode_to_air.
  */
 
+import { showTimeLeft } from './timeLeft.js';
+
 /** Season/episode order. @param {number} s1 @param {number} e1 @param {number} s2 @param {number} e2 */
 function compareEpisode(s1, e1, s2, e2) {
   return s1 !== s2 ? s1 - s2 : e1 - e2;
@@ -38,6 +40,8 @@ function episodesBefore(details, season, episode) {
  * @property {number} episode
  * @property {boolean} latest      the next episode is the newest one out
  * @property {number} progress     0 to 1: share of the aired episodes watched
+ * @property {number} episodesLeft aired episodes from the pointer, inclusive
+ * @property {number | null} minutesLeft null when a runtime cannot be filled
  */
 
 /**
@@ -57,6 +61,7 @@ export function continueItem(progress, details) {
   if (compareEpisode(season, episode, lastSeason, lastEpisode) > 0) return null;
   const aired = episodesBefore(details, lastSeason, lastEpisode) + 1;
   const watched = episodesBefore(details, season, episode);
+  const left = showTimeLeft({ details, season, episode });
   return {
     tmdbId: Number(progress.tmdb_id),
     title: progress.title || details?.name || '',
@@ -65,6 +70,8 @@ export function continueItem(progress, details) {
     episode,
     latest: season === lastSeason && episode === lastEpisode,
     progress: aired > 0 ? Math.min(1, Math.max(0, watched / aired)) : 0,
+    episodesLeft: left.episodesLeft,
+    minutesLeft: left.minutesLeft,
   };
 }
 

@@ -12,7 +12,7 @@
 // TMDB, so the most an unwanted caller can cost is one upstream request per
 // query per TTL. See cache.js.
 import { cacheKey, ttlFor } from './cache.js';
-import { fetchTMDB, preflightResponse } from './tmdb.js';
+import { fetchTMDB, normalizeParams, preflightResponse } from './tmdb.js';
 
 function forwardHeaders(headers) {
   const h = new Headers(headers);
@@ -109,7 +109,7 @@ const handler = {
     } else if (env.UPSTREAM && env.UPSTREAM_SHARED_SECRET) {
       const upstreamHeaders = forwardHeaders(request.headers);
       upstreamHeaders.set('X-PLOT-TMDB-Proxy-Secret', env.UPSTREAM_SHARED_SECRET);
-      resp = await fetch(env.UPSTREAM + url.search, { method: request.method, headers: upstreamHeaders });
+      resp = await fetch(`${env.UPSTREAM}?${normalizeParams(url.searchParams)}`, { method: request.method, headers: upstreamHeaders });
     } else {
       resp = new Response(JSON.stringify({ error: 'TMDB proxy is not configured' }), {
         status: 503,

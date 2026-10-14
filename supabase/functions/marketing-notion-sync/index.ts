@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     return json({ ok: true, page_id: notionId(pageId), ...result });
   } catch (err) {
     console.error('Notion webhook failed:', err);
-    return json({ error: String((err as Error).message).slice(0, 300) }, 500);
+    return json({ error: 'Internal error' }, 500);
   } finally {
     const { error } = await supabase.rpc('release_marketing_notion_mirror', { p_owner: leaseOwner });
     if (error) console.error('Could not release Notion mirror lease:', error);

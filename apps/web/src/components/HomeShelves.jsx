@@ -9,6 +9,8 @@
 // Mobile parity: not shipped on mobile yet (issue 1093).
 import { posterUrl, profileUrl } from '../utils/images.js';
 import { PEOPLE as P } from '@plot/core/copy/people.js';
+import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { formatDuration } from '@plot/core/historyStats.js';
 import { shortDayMonth } from '@plot/core/date.js';
 import { FollowPill } from './PeopleFollow.jsx';
 import './PeopleFollow.css';
@@ -24,6 +26,7 @@ export function ContinueCard({ item, onOpen }) {
         <div className="continue-progress" aria-hidden="true"><span style={{ width: `${Math.round(item.progress * 100)}%` }} /></div>
         <div className="media-card-title">{item.title}</div>
         <div className="media-card-meta">{item.latest ? P.continueWatching.isOut(item.season, item.episode) : P.continueWatching.next(item.season, item.episode)}</div>
+        {item.minutesLeft > 0 && <div className="media-card-meta">{MEDIA_PANEL.timeLeft(formatDuration(item.minutesLeft))}</div>}
       </button>
     </div>
   );

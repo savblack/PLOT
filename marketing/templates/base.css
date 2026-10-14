@@ -161,6 +161,8 @@ body::before {
   color: var(--text);
   text-shadow: 0 2px 22px rgba(0,0,0,0.55);
 }
+/* The mark is outlines (plotMark), so the shadow is a drop-shadow filter. */
+.plot-mark svg { filter: drop-shadow(0 2px 11px rgba(0,0,0,0.55)); }
 
 /* ── Site mark: theplot.tv, bottom-right, no chrome ── */
 .plot-footer {
