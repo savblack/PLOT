@@ -38,4 +38,14 @@ export const STREAMING_ALERTS = Object.freeze({
     link: 'Manage alerts',
   }),
   error: 'Couldn’t update this alert. Try again.',
+  /**
+   * Where to watch, for a film with no offer in the viewer's region. Tapping
+   * saves the film (the opt-in the daily job already reads) and clears a mute.
+   * TV has no equivalent alert, so this copy is film-only. Delivery stays
+   * in-app, same as the card.
+   */
+  ask: Object.freeze({
+    prompt: 'Tell me when it’s streaming here',
+    armed: 'We’ll tell you in the app when it’s streaming here.',
+  }),
 });

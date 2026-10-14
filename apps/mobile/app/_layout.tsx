@@ -30,6 +30,7 @@ import CollectionPanel from '../components/CollectionPanel';
 import type { Session } from '@supabase/supabase-js';
 import UndoToast from '../components/UndoToast';
 import NoticeToast from '../components/NoticeToast';
+import { EpisodeAlertsPromptController, EpisodeAlertsPromptToast } from '../components/EpisodeAlertsPrompt';
 import { FollowToastHost } from '../components/people/FollowControls';
 import PushHost from '../components/PushHost';
 import {
@@ -375,6 +376,8 @@ function RootInner() {
             {/* After the navigator so it draws on top. The panel has its own. */}
             <UndoToast />
             <NoticeToast />
+            <EpisodeAlertsPromptController />
+            <EpisodeAlertsPromptToast />
             <FollowToastHost />
           </MediaPanelProvider>
         </DrawerProvider>

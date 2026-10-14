@@ -7,6 +7,7 @@ import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
 import { on, emit, WATCHING_CHANGED_EVENT } from './events.js';
+import { episodeAlertsPromptForTick, noteEpisodeAlertsCandidate } from './episodeAlertsPrompt.js';
 
 /** Put a show's episode pointer back where it was (undo toast). */
 async function restorePointer(userId, before) {
@@ -168,6 +169,14 @@ export function useWatching(userId) {
       season: progress.current_season,
       episode: progress.current_episode,
     });
+    const episodePrompt = episodeAlertsPromptForTick({
+      rows: items,
+      userId,
+      tmdbId,
+      title: data.title || progress.title || '',
+      forward: true,
+    });
+    if (episodePrompt) noteEpisodeAlertsCandidate(episodePrompt);
 
     // No history write here. History is one row per title and means "watched",
     // so logging it on the first tick would mark a half-watched show watched
@@ -215,6 +224,16 @@ export function useWatching(userId) {
         ? (reason === 'season' ? 'season_undone' : 'episode_undone')
         : reason;
       getConfig().onWatchProgress?.({ tmdb_id: Number(tmdbId), action, season, episode });
+      if (action === 'episode') {
+        const episodePrompt = episodeAlertsPromptForTick({
+          rows: items,
+          userId,
+          tmdbId,
+          title: data.title || before?.title || '',
+          forward: true,
+        });
+        if (episodePrompt) noteEpisodeAlertsCandidate(episodePrompt);
+      }
       if (before) {
         registerUndo(undo, {
           action: UNDO_ACTIONS.WATCH_PROGRESS,

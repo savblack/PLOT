@@ -28,6 +28,8 @@ import UpgradeSheet from './UpgradeSheet.jsx';
 import { SeasonReadyAlert } from './PremiumAlertButtons.jsx';
 import EpisodeAlertsCard from './EpisodeAlertsCard.jsx';
 import StreamingAlertsCard from './StreamingAlertsCard.jsx';
+import StreamingArrivalAsk from './StreamingArrivalAsk.jsx';
+import { showStreamingArrivalAsk } from '@plot/core/useStreamingAlerts.js';
 import { CastFollowCard, CrewFollowRow, PersonFollow } from './PeopleFollow.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -1180,8 +1182,9 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
 
   const [showListSheet,     setShowListSheet]     = useState(initialListOpen);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  // Where to watch opens closed — its logos say enough at a glance. The foot
-  // bar owns its own open state, inside TitleFootBar.
+  // Where to watch opens closed. Its logos answer the question when there are
+  // any. A film with no offer in this region opens, so the streaming prompt
+  // is on screen. The foot bar owns its own open state, inside TitleFootBar.
   const [watchOpen, setWatchOpen] = useState(false);
   const [statusActionPending, setStatusActionPending] = useState('');
   const [statusActionError, setStatusActionError] = useState('');
@@ -1345,6 +1348,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
         justwatchLink: verified?.title_url || regionData.link || null,
         region,
       });
+      const hasOffers = streaming.length > 0 || rentBuy.length > 0 || inCinemas;
+      if (showStreamingArrivalAsk(itemType, hasOffers)) setWatchOpen(true);
       // Critic score + audience quote depend on the imdb_id this same call just
       // returned, so they can't join the Promise.all above. Fire-and-forget
       // rather than block the panel on a third-party lookup.
@@ -1848,6 +1853,17 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                             <> <a href={whereToWatch.justwatchLink} target="_blank" rel="noopener">Check JustWatch</a></>
                           )}
                         </p>
+                        {showStreamingArrivalAsk(itemType, hasWatchOffers) && (
+                          <StreamingArrivalAsk
+                            userId={user?.id}
+                            movie={details}
+                            inList={inList}
+                            onAdd={() => watchlist.addToList(
+                              { ...details, id: itemId, media_type: 'movie' },
+                              { source: 'streaming_arrival_ask' },
+                            )}
+                          />
+                        )}
                       </>
                     )}
                     {hasWatchOffers && (

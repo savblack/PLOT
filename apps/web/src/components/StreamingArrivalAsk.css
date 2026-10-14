@@ -1,0 +1,22 @@
+.streaming-arrival-ask {
+  margin-top: 0.65rem;
+}
+.streaming-arrival-ask .btn {
+  white-space: normal;
+  text-align: left;
+  max-width: 100%;
+}
+.streaming-arrival-ask .btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.streaming-arrival-armed,
+.streaming-arrival-error {
+  margin: 0.65rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.streaming-arrival-error {
+  color: var(--text-secondary);
+}
