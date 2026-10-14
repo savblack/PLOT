@@ -310,10 +310,10 @@
     .feature strong { display: block; font-family: var(--display); font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; }
     .feature span { display: block; margin-top: 4px; font-size: 0.95rem; line-height: 1.45; color: var(--text-secondary); }
 
-    /* ── Comparison table, on the sunken cream ───────────────── */
+    /* ── Comparison table, on the page cream ─────────────────── */
     /* The two plans head their own columns, price and button included,
        and the rows are grouped by job. The Premium column is lifted. */
-    .compare { background: var(--surface); }
+    .compare { background: var(--bg); }
     .inner-narrow--wide { max-width: 900px; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .cmp-scroll { overflow-x: auto; }
@@ -334,7 +334,7 @@
       flex-direction: column;
       gap: 4px;
     }
-    .cmp-head--free { background: var(--bg); }
+    .cmp-head--free { background: var(--surface); }
     .cmp-head--premium { background: var(--ink); color: var(--bg); }
     .cmp-head--premium .plan-billed, .cmp-head--premium .plan-per { color: #d9d1c4; }
     .cmp-head .plan-amount { font-size: 2.6rem; }
