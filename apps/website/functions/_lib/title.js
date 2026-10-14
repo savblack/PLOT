@@ -7,6 +7,9 @@ import { cacheable, tagged } from './edgeCache.js';
 import { FOOTER_HTML } from './footer.generated.js';
 import { renderTitlePage } from './titleRenderer.generated.js';
 
+// Bumped 2026-10-14 for the joined l-o wordmark (savblack/PLOT#1308).
+export const TITLE_CACHE_VERSION = 2;
+
 export { cacheable };
 
 const UPSTREAM = `${SUPABASE_FN}/title-page`;
@@ -63,9 +66,13 @@ export async function titlePage(request, type, slug, waitUntil) {
   // Pages Function responses by itself (cf-cache-status: DYNAMIC). The Cache
   // API is per data centre, so each one fetches a page once per s-maxage rather
   // than once overall. Absent outside Cloudflare (local node tests).
+  // TITLE_CACHE_VERSION is in the key too: bump it when the page's markup
+  // changes (a redesign, a new wordmark) so every data centre renders fresh
+  // copies instead of serving the old ones for up to s-maxage plus the
+  // stale-while-revalidate window.
   const method = request.method === 'HEAD' ? 'HEAD' : 'GET';
   const cache = globalThis.caches && globalThis.caches.default;
-  const cacheKey = new Request(`${new URL(request.url).origin}/${rawType}/${encodeURIComponent(slug || '')}?r=${country || ''}`, { method: 'GET' });
+  const cacheKey = new Request(`${new URL(request.url).origin}/${rawType}/${encodeURIComponent(slug || '')}?r=${country || ''}&v=${TITLE_CACHE_VERSION}`, { method: 'GET' });
   if (cache) {
     try {
       const hit = await cache.match(cacheKey);
