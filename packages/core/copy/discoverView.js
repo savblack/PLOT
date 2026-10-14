@@ -33,4 +33,20 @@ export const DISCOVER_VIEW = {
     evening: 'Good evening',
     late: 'Up late',
   },
+  // The line under the greeting: how many of the last seven days had
+  // something logged, and the best run. Reads "4 nights this week · best
+  // streak 9"; with no best run yet, the first half alone.
+  weekLine: (nights, best) => {
+    const n = `${nights} ${nights === 1 ? 'night' : 'nights'} this week`;
+    return best > 1 ? `${n} · best streak ${best}` : n;
+  },
+  weekEmpty: 'Nothing logged this week yet',
+  // Up next with nothing saved: three trending posters stand in for the shelf,
+  // each with its bookmark, so the first saves happen in place.
+  emptyUpNext: {
+    body: 'Save three titles to build your plot. Start with what\u2019s trending.',
+    searchLink: 'Search for something else',
+  },
+  // The round floating entry to Pick for Me, bottom right above the tab bar.
+  tonightFab: 'Pick for Me',
 };

@@ -58,10 +58,42 @@ function Poster({ path }: { path?: string | null }) {
   );
 }
 
-export function ContinueWatchingShelf() {
+export type ContinueWatchingItem = ReturnType<typeof useContinueWatching>['items'][number];
+
+/** One show in Continue watching: poster, progress line, title, what is next. Home's Up next reuses it. */
+export function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
   const { colors } = useTheme();
-  const { watching } = useAppData();
   const { open } = useMediaPanel();
+  const line = item.latest
+    ? P.continueWatching.isOut(item.season, item.episode)
+    : P.continueWatching.next(item.season, item.episode);
+  const width = `${Math.round(Math.min(1, Math.max(0, item.progress)) * 100)}%` as `${number}%`;
+  return (
+    <TouchableOpacity
+      style={{ width: CARD_W }}
+      onPress={() => open(item.tmdbId, 'tv')}
+      accessibilityRole="button"
+      accessibilityLabel={item.title}
+    >
+      <Poster path={item.posterPath} />
+      <View style={{ height: 3, marginTop: 6, borderRadius: radii.pill, backgroundColor: colors.borderStrong, overflow: 'hidden' }}>
+        <View style={{ width, height: '100%', backgroundColor: colors.accent }} />
+      </View>
+      <Text style={{ marginTop: spacing.sm, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }} numberOfLines={2}>{item.title}</Text>
+      <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>{line}</Text>
+      {item.minutesLeft != null && item.minutesLeft > 0 && (
+        <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>
+          {MEDIA_PANEL.timeLeft(formatDuration(item.minutesLeft))}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+export const fetchContinueWatchingTv = fetchTv;
+
+export function ContinueWatchingShelf() {
+  const { watching } = useAppData();
   const { items } = useContinueWatching(watching.items ?? [], fetchTv);
   if (!items.length) return null;
   return (
@@ -74,32 +106,7 @@ export function ContinueWatchingShelf() {
         showsHorizontalScrollIndicator={false}
         nestedScrollEnabled
         contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-        renderItem={({ item }) => {
-          const line = item.latest
-            ? P.continueWatching.isOut(item.season, item.episode)
-            : P.continueWatching.next(item.season, item.episode);
-          const width = `${Math.round(Math.min(1, Math.max(0, item.progress)) * 100)}%` as `${number}%`;
-          return (
-            <TouchableOpacity
-              style={{ width: CARD_W }}
-              onPress={() => open(item.tmdbId, 'tv')}
-              accessibilityRole="button"
-              accessibilityLabel={item.title}
-            >
-              <Poster path={item.posterPath} />
-              <View style={{ height: 3, marginTop: 6, borderRadius: radii.pill, backgroundColor: colors.borderStrong, overflow: 'hidden' }}>
-                <View style={{ width, height: '100%', backgroundColor: colors.accent }} />
-              </View>
-              <Text style={{ marginTop: spacing.sm, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }} numberOfLines={2}>{item.title}</Text>
-              <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>{line}</Text>
-              {item.minutesLeft != null && item.minutesLeft > 0 && (
-                <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>
-                  {MEDIA_PANEL.timeLeft(formatDuration(item.minutesLeft))}
-                </Text>
-              )}
-            </TouchableOpacity>
-          );
-        }}
+        renderItem={({ item }) => <ContinueWatchingCard item={item} />}
       />
     </View>
   );

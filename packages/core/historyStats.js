@@ -125,6 +125,17 @@ export function streaks(entries, now = new Date()) {
 }
 
 /** Most common watch weekday: { name, count } or null. */
+/**
+ * Distinct days with something logged in the last seven days, today included.
+ * Home's one-line stat; `streaks()` carries the best run.
+ * @param {Array<{ watched_at?: string | null }>} entries
+ * @param {Date} [now]
+ */
+export function nightsThisWeek(entries, now = new Date()) {
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000;
+  return dayNumbers(entries).filter(d => d <= today && d > today - 7).length;
+}
+
 export function favouriteWeekday(entries) {
   const counts = new Array(7).fill(0);
   let total = 0;
