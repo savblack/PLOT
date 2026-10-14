@@ -70,7 +70,7 @@ export const PLANS_PAGE = {
     h2: 'Less deciding. More watching.',
     steps: [
       { label: 'Pick for me', h3: 'Find tonight’s movie in four taps', body: 'How long have you got, where do you watch, what are you in the mood for? Pick for me turns that into a shortlist, on the services you already pay for.' },
-      { label: 'Together', h3: 'Settle movie night before the snacks are ready', body: 'Watch together finds the overlap in your watchlists and gets everyone to a yes. Only one of you needs Premium.' },
+      { label: 'Watch together', h3: 'Settle movie night before the snacks are ready', body: 'Watch together finds the overlap in your watchlists and gets everyone to a yes. Only one of you needs Premium.' },
       { label: 'Your profile', h3: 'Get to know your taste', body: 'Your watch profile shows what you really watch, how much, and who you line up with. Settle who has the best taste.' },
       { label: 'Yours', h3: 'Your Plot, your style', body: 'Custom themes, home-screen widgets and app icons. Make it feel like yours.' },
     ],
