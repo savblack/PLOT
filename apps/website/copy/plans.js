@@ -15,7 +15,7 @@ export const PLANS_PAGE = {
   hero: {
     pageLabel: 'Plans',
     h1: 'Free forever. Premium when you want more.',
-    lede: 'Keep every movie and show you’ve seen, saved and are counting down to, for nothing. Premium adds Pick for me, Watch together and your watch profile for $3 a month.',
+    lede: 'Free keeps track. Premium helps you decide what to watch next. Skip the scroll, the first week is on us.',
   },
 
   billingToggle: {
