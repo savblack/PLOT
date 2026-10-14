@@ -38,6 +38,17 @@ test('what changes rarely is held longer than what changes hourly', () => {
   assert.ok(ttlFor('trending/all/week') > ttlFor('search/multi'));
 });
 
+test('artwork image lists are held as long as the title they belong to', () => {
+  assert.equal(ttlFor('movie/550/images'), ttlFor('movie/550'));
+  assert.equal(ttlFor('tv/1396/images'), ttlFor('tv/1396'));
+  assert.equal(ttlFor('person/287/images'), ttlFor('movie/550'));
+  assert.equal(ttlFor('tv/1396/season/0/images'), ttlFor('tv/1396/season/0'));
+  assert.notEqual(
+    key('?path=movie/550/images&include_image_language=en,null'),
+    key('?path=movie/550/images&include_image_language=fr,null'),
+  );
+});
+
 test('an unrecognised path still gets a conservative TTL rather than none', () => {
   assert.ok(ttlFor('something/new') > 0);
 });
