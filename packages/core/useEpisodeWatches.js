@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getConfig } from './config.js';
 import { on, emit, HISTORY_CHANGED_EVENT } from './events.js';
-import { readEpisodeWatches, saveEpisodeWatches } from './episodeWatches.js';
+import { readEpisodeWatches, readSpecialWatches, saveEpisodeWatches } from './episodeWatches.js';
 
 const EPISODES_CHANGED = 'plot:episodes-changed';
 const EMPTY = {};
@@ -60,4 +60,61 @@ export function useEpisodeWatches(userId, tmdbId) {
   }, [enabled, loading, refreshing, error, userId, tmdbId, scope]);
 
   return { states, loading, refreshing, error, hasEpisodes: Object.keys(states).length > 0, setWatched, reload };
+}
+
+/** Season 0 watches. Idle when the import gate is on, because useEpisodeWatches
+ *  already holds those rows. Otherwise this is the only reader, so a special
+ *  can be ticked without turning the whole sparse guide on.
+ *  @param {string|null|undefined} userId
+ *  @param {number} tmdbId
+ */
+export function useSpecialEpisodeWatches(userId, tmdbId) {
+  const delegates = !!getConfig().importEventsEnabled;
+  const enabled = !!userId && !delegates;
+  const scope = `${userId}:${tmdbId}`;
+  const [state, setState] = useState({ scope: '', states: EMPTY, loaded: false, loading: false, error: false });
+  const [revision, setRevision] = useState(0);
+  const request = useRef(0);
+  const saving = useRef(false);
+  const reload = useCallback(() => setRevision(value => value + 1), []);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    const version = ++request.current;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset loading when the account/title or reload revision changes
+    setState(previous => ({ scope, states: previous.scope === scope ? previous.states : EMPTY, loaded: previous.scope === scope && previous.loaded, loading: true, error: false }));
+    readSpecialWatches(userId, tmdbId).then(states => {
+      if (!cancelled && version === request.current) setState({ scope, states, loaded: true, loading: false, error: false });
+    }).catch(() => {
+      if (!cancelled && version === request.current) setState(previous => ({ ...previous, loading: false, error: true }));
+    });
+    return () => { cancelled = true; };
+  }, [enabled, userId, tmdbId, scope, revision]);
+
+  useEffect(() => {
+    const offHistory = on(HISTORY_CHANGED_EVENT, reload);
+    const offEpisodes = on(EPISODES_CHANGED, reload);
+    return () => { offHistory(); offEpisodes(); };
+  }, [reload]);
+
+  const loading = enabled && (state.scope !== scope || (state.loading && !state.loaded));
+  const refreshing = enabled && state.scope === scope && state.loading;
+  const error = enabled && state.scope === scope && state.error;
+  const states = enabled && state.scope === scope ? state.states : EMPTY;
+  const setWatched = useCallback(async (episodes, watched) => {
+    if (!enabled || loading || refreshing || error || saving.current) return false;
+    saving.current = true;
+    request.current++;
+    try {
+      const updates = await saveEpisodeWatches(userId, tmdbId, 0, episodes, watched);
+      setState(previous => previous.scope === scope
+        ? { ...previous, states: { ...previous.states, ...updates } } : previous);
+      emit(EPISODES_CHANGED);
+      return true;
+    } catch { return false; }
+    finally { saving.current = false; }
+  }, [enabled, loading, refreshing, error, userId, tmdbId, scope]);
+
+  return { states, loading, refreshing, error, setWatched, reload, delegates };
 }

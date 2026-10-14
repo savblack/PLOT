@@ -3,6 +3,8 @@ import test from 'node:test';
 
 import {
   getLastSeasonNumber,
+  guideSeasonSelection,
+  guideSeasons,
   getNextEpisodeProgress,
   getSeasonToggleProgress,
   getSeasonWatchState,
@@ -147,6 +149,37 @@ test('refuses to toggle when the season number is missing or invalid', () => {
 test('takes the highest season number and ignores the specials bucket', () => {
   const details = { seasons: [{ season_number: 0 }, { season_number: 1 }, { season_number: 3 }] };
   assert.equal(getLastSeasonNumber(details), 3);
+});
+
+test('lists specials after the numbered seasons and hides an empty bucket', () => {
+  const details = {
+    seasons: [
+      { season_number: 0, episode_count: 2, name: 'Specials' },
+      { season_number: 2, episode_count: 10 },
+      { season_number: 1, episode_count: 8 },
+    ],
+  };
+  assert.deepEqual(guideSeasons(details).map(season => season.season_number), [1, 2, 0]);
+  assert.deepEqual(guideSeasons({ seasons: [{ season_number: 0, episode_count: 0 }, { season_number: 1, episode_count: 8 }] }).map(season => season.season_number), [1]);
+  assert.deepEqual(
+    guideSeasons({ seasons: [{ season_number: 0, episode_count: 0 }] }, { '0:1': true }).map(season => season.season_number),
+    [0],
+  );
+  assert.deepEqual(
+    guideSeasons(
+      { seasons: [{ season_number: 0, episode_count: 0 }, { season_number: 10, episode_count: 1 }] },
+      { '10:1': true },
+    ).map(season => season.season_number),
+    [10],
+  );
+  assert.deepEqual(
+    guideSeasons({ seasons: [{ season_number: null }, { season_number: '' }, { season_number: 1, episode_count: 1 }] })
+      .map(season => season.season_number),
+    [1],
+  );
+  assert.equal(guideSeasonSelection([{ season_number: 1 }, { season_number: 0 }], 1), 1);
+  assert.equal(guideSeasonSelection([{ season_number: 0, episode_count: 2 }], 1), 0);
+  assert.equal(guideSeasonSelection([], 3), 3);
 });
 
 test('falls back to number_of_seasons when the season list has not loaded', () => {

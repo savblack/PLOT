@@ -17,6 +17,10 @@ export const MEDIA_PANEL = {
   // The TV-season bulk action, rendered above the episode list on both
   // platforms.
   seasonLabel: (season) => `Season ${season}`,
+  // Season 0 in the episode guide. Not "Season 0".
+  seasonListLabel: (season) => (Number(season) === 0 ? 'Specials' : `Season ${season}`),
+  markSpecialsWatched: 'Mark specials watched',
+  unmarkSpecialsWatched: 'Unmark specials',
   seasonWatchedCount: (watched, total) => `${watched} of ${total} watched`,
   markSeasonWatched: 'Mark season watched',
   // The mid-watch summary card: what a series you are part-way through is

@@ -1,4 +1,4 @@
-import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
+import { useEpisodeWatches, useSpecialEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import PrivateNote from './PrivateNote.jsx';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -37,6 +37,8 @@ import {
   getLastSeasonNumber,
   getSeasonToggleProgress,
   getSeasonWatchState,
+  guideSeasonSelection,
+  guideSeasons,
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
 import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
@@ -299,12 +301,17 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
 export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
   const { watching, user } = useApp();
   const sparse = useEpisodeWatches(user?.id, tvId);
-  const seasons     = (details?.seasons || []).filter(s => s.season_number > 0 || (s.season_number === 0 && Object.keys(sparse.states).some(key => key.startsWith('0:'))));
+  const specials = useSpecialEpisodeWatches(user?.id, tvId);
+  const episodeStates = { ...specials.states, ...sparse.states };
+  const seasons = guideSeasons(details, episodeStates);
   const [selSeason, setSelSeason] = useState(currentProgress?.current_season || 1);
+  const guideSeason = guideSeasonSelection(seasons, selSeason);
+  // A boolean, not the season list. The episode callbacks memoize on this.
+  const specialsOnly = guideSeason === 0 && !seasons.some(season => Number(season?.season_number) === Number(selSeason));
   const [episodes,  setEpisodes]  = useState([]);
   const [epLoading, setEpLoading] = useState(false);
   const [epError,   setEpError]   = useState(false);
-  const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || epLoading || epError;
+  const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || specials.loading || specials.refreshing || specials.error || epLoading || epError;
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
   const [episodeActionError, setEpisodeActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
@@ -330,7 +337,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     setEpError(false);
     setEpisodeActionError('');
     let cancelled = false;
-    tmdb.getSeason(tvId, selSeason).then(data => {
+    tmdb.getSeason(tvId, guideSeason).then(data => {
       if (cancelled) return;
       if (data?.episodes?.length) {
         setEpisodes(data.episodes);
@@ -346,7 +353,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
       setEpLoading(false);
     });
     return () => { cancelled = true; };
-  }, [tvId, selSeason]);
+  }, [tvId, guideSeason]);
 
   // Fetch episode air times from TVMaze (has airstamp even for streaming shows)
   useEffect(() => {
@@ -416,9 +423,21 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     checkingEpRef.current = true;
     setCheckingEp(ep.episode_number);
     setEpisodeActionError('');
+    const season = specialsOnly ? 0 : selSeason;
+
+    // A special never moves the series pointer, so it stays out of completion.
+    if (season === 0) {
+      const ok = specials.delegates
+        ? await sparse.setWatched(0, [ep.episode_number], !watched)
+        : await specials.setWatched([ep.episode_number], !watched);
+      if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateWatchStatus);
+      checkingEpRef.current = false;
+      setCheckingEp(null);
+      return;
+    }
 
     if (sparse.hasEpisodes) {
-      const ok = await sparse.setWatched(selSeason, [ep.episode_number], !watched);
+      const ok = await sparse.setWatched(season, [ep.episode_number], !watched);
       if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateWatchStatus);
       checkingEpRef.current = false;
       setCheckingEp(null);
@@ -427,7 +446,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
 
     if (!watched) {
       // Mark watched: advance progress past this episode
-      if (selSeason === currentSeason && ep.episode_number === currentEp) {
+      if (season === currentSeason && ep.episode_number === currentEp) {
         const result = await watching.markEpisodeWatched(tvId, { undo: true });
         if (!result?.ok) {
           setEpisodeActionError(result?.error || 'Could not update this episode right now. Please try again.');
@@ -437,48 +456,61 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
           await finishSeriesIfComplete(result.data?.current_season);
         }
       } else if (ep.episode_number < episodes.length) {
-        await watching.setProgress(tvId, selSeason, ep.episode_number + 1, { undo: true });
+        await watching.setProgress(tvId, season, ep.episode_number + 1, { undo: true });
       } else {
         // Last episode of season → advance to next season
-        const nextSeason = selSeason + 1;
+        const nextSeason = season + 1;
         await watching.setProgress(tvId, nextSeason, 1, { undo: true });
         userChangedSeason.current = false; // allow auto-follow to next season
         await finishSeriesIfComplete(nextSeason);
       }
     } else {
       // Unmark: pull progress back to this episode
-      await watching.setProgress(tvId, selSeason, ep.episode_number, { undo: true });
+      await watching.setProgress(tvId, season, ep.episode_number, { undo: true });
     }
 
     checkingEpRef.current = false;
     setCheckingEp(null);
-  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length, finishSeriesIfComplete, sparse, progressBlocked, seasonPending]);
+  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, specialsOnly, episodes.length, finishSeriesIfComplete, sparse, specials, progressBlocked, seasonPending]);
 
   /* ── Mark / unmark the whole selected season ── */
-  const seasonState = getSeasonWatchState({
+  const seasonComplete = getSeasonWatchState({
     currentEpisode: currentEp,
     currentSeason,
     episodeCount: episodes.length,
     episodeNumbers: episodes.map(ep => ep.episode_number),
-    episodeStates: sparse.states,
-    selectedSeason: selSeason,
-  });
+    episodeStates,
+    selectedSeason: guideSeason,
+  }).isComplete;
 
-  const handleToggleSeason = useCallback(async () => {
+  const handleToggleSeason = async () => {
     if ((!currentProgress && !sparse.hasEpisodes) || progressBlocked || seasonPending || checkingEpRef.current) return;
+    if (guideSeason === 0) {
+      checkingEpRef.current = true;
+      setSeasonPending(true);
+      setEpisodeActionError('');
+      const numbers = episodes.map(ep => ep.episode_number);
+      const ok = specials.delegates
+        ? await sparse.setWatched(0, numbers, !seasonComplete)
+        : await specials.setWatched(numbers, !seasonComplete);
+      if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
+      checkingEpRef.current = false;
+      setSeasonPending(false);
+      return;
+    }
     if (sparse.hasEpisodes) {
       checkingEpRef.current = true;
       setSeasonPending(true);
       setEpisodeActionError('');
-      const ok = await sparse.setWatched(selSeason, episodes.map(ep => ep.episode_number), !seasonState.isComplete);
+      const ok = await sparse.setWatched(guideSeason, episodes.map(ep => ep.episode_number), !seasonComplete);
       if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
       checkingEpRef.current = false;
       setSeasonPending(false);
       return;
     }
     const target = getSeasonToggleProgress({
-      isComplete: seasonState.isComplete,
-      selectedSeason: selSeason,
+      isComplete: seasonComplete,
+      selectedSeason: guideSeason,
     });
     if (!target.ok) {
       setEpisodeActionError(target.error);
@@ -495,11 +527,11 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season', undo: true });
     if (!result?.ok) {
       setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
-    } else if (!seasonState.isComplete) {
+    } else if (!seasonComplete) {
       await finishSeriesIfComplete(target.nextSeason);
     }
     setSeasonPending(false);
-  }, [currentProgress, seasonPending, seasonState.isComplete, selSeason, watching, tvId, finishSeriesIfComplete, sparse, progressBlocked, episodes]);
+  };
 
   const isTracking = !!currentProgress || sparse.hasEpisodes;
 
@@ -518,7 +550,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
               aria-haspopup="menu"
               aria-expanded={seasonMenuOpen}
             >
-              {MEDIA_PANEL.seasonLabel(selSeason)}
+              {MEDIA_PANEL.seasonListLabel(guideSeason)}
               <ChevronIcon size={13} />
             </button>
             {seasonMenuOpen && (
@@ -527,21 +559,21 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
                   <button
                     key={s.season_number}
                     role="menuitem"
-                    className={`panel-status-option${s.season_number === selSeason ? ' panel-status-option--current' : ''}`}
+                    className={`panel-status-option${s.season_number === guideSeason ? ' panel-status-option--current' : ''}`}
                     onClick={() => {
                       userChangedSeason.current = true;
                       setSelSeason(s.season_number);
                       setSeasonMenuOpen(false);
                     }}
                   >
-                    {MEDIA_PANEL.seasonLabel(s.season_number)}
+                    {MEDIA_PANEL.seasonListLabel(s.season_number)}
                   </button>
                 ))}
               </div>
             )}
           </div>
         ) : (
-          <span className="panel-pill season-pill season-pill--static">{MEDIA_PANEL.seasonLabel(selSeason)}</span>
+          <span className="panel-pill season-pill season-pill--static">{MEDIA_PANEL.seasonListLabel(guideSeason)}</span>
         )}
 
         {isTracking && episodes.length > 0 && (
@@ -553,18 +585,18 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
           >
             {seasonPending
               ? MEDIA_PANEL.updating
-              : seasonState.isComplete
-                ? MEDIA_PANEL.unmarkSeasonWatched
-                : MEDIA_PANEL.markSeasonWatched}
+              : seasonComplete
+                ? (guideSeason === 0 ? MEDIA_PANEL.unmarkSpecialsWatched : MEDIA_PANEL.unmarkSeasonWatched)
+                : (guideSeason === 0 ? MEDIA_PANEL.markSpecialsWatched : MEDIA_PANEL.markSeasonWatched)}
           </button>
         )}
       </div>
 
       {sparse.hasEpisodes && <p className="season-bulk-count">{MEDIA_PANEL.sparseEpisodeProgress}</p>}
-      {sparse.error && (
+      {(sparse.error || specials.error) && (
         <div role="alert">
           <p>{MEDIA_PANEL.episodeProgressLoadError}</p>
-          <button className="season-bulk-btn" onClick={sparse.reload}>{MEDIA_PANEL.retryEpisodeProgress}</button>
+          <button className="season-bulk-btn" onClick={() => { sparse.reload(); specials.reload(); }}>{MEDIA_PANEL.retryEpisodeProgress}</button>
         </div>
       )}
       {episodeActionError && (
@@ -582,7 +614,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
         </div>
       )}
 
-      {epLoading || sparse.loading ? (
+      {epLoading || sparse.loading || specials.loading ? (
         <LoadingSpinner />
       ) : episodes.length === 0 ? (
         <div style={{ padding: '1rem 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -595,12 +627,12 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
               currentEpisode: currentEp,
               currentSeason,
               episodeNumber: ep.episode_number,
-              selectedSeason: selSeason,
-              episodeStates: sparse.states,
+              selectedSeason: guideSeason,
+              episodeStates,
             });
             const chip       = ep.air_date ? countdownChip(ep.air_date) : null;
             const isUpcoming = chip && chip.cls !== 'chip-muted';
-            const airstamp   = isUpcoming ? tvmazeTimes[`${selSeason}-${ep.episode_number}`] : null;
+            const airstamp   = isUpcoming ? tvmazeTimes[`${guideSeason}-${ep.episode_number}`] : null;
             const airTime    = airstamp ? fmtAirstamp(airstamp, timezone) : null;
             const isChecking = checkingEp === ep.episode_number;
 
