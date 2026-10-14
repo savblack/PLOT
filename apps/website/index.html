@@ -1276,6 +1276,14 @@
       .ls-card { font-size: 3.1cqw; }
       .ls-card--b { font-size: 3.3cqw; }
       .pr-card { padding: 22px; }
+      /* Phones: just the four feature names in a 2 x 2 grid, then the link to
+         the full list. The explainers and the "Plus …" line stay on desktop. */
+      .pr-features { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; margin-bottom: 1rem; }
+      .pr-feature { align-items: center; gap: 10px; }
+      .pr-icon { width: 36px; height: 36px; border-radius: 10px; }
+      .pr-icon svg { width: 18px; height: 18px; }
+      .pr-feature strong { font-size: 1rem; line-height: 1.15; }
+      .pr-feature div span, .pr-more-text { display: none; }
       .pr-amount { font-size: 3.2rem; }
       #indie { padding: 3.5rem 1.5rem 3rem; }
       #indie .hx-inner { row-gap: 0; }
@@ -1496,7 +1504,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M6 16v-5M11 16V6M16 16v-8"/></svg></span><div><strong>Your watch profile</strong><span>Get to know your watching habits, and settle who has the best taste.</span></div></li>
           <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></svg></span><div><strong>Make it yours</strong><span>Your Plot, your style. Get access to custom themes, widgets and app icons.</span></div></li>
         </ul>
-        <p class="pr-more">Plus unlimited and smart lists, release dates in your calendar app, and actor and director alerts. <a href="/pricing" data-cta="premium-more">See everything in Premium</a></p>
+        <p class="pr-more"><span class="pr-more-text">Plus unlimited and smart lists, release dates in your calendar app, and actor and director alerts. </span><a href="/pricing" data-cta="premium-more">See everything in Premium</a></p>
       </div>
       <div class="hx-visual reveal">
         <div class="pr-card">
