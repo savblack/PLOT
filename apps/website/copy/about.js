@@ -15,7 +15,7 @@ export const ABOUT_PAGE = {
   pageLabel: "About",
   h1: "About plot",
   pageMeta: "A letter from the founder.",
-  lead: "For years my watchlist was a note on my phone, my reviews were texts to friends, and release dates were whatever I happened to remember. It mostly worked, which is the worst kind of broken. So I built Plot. The note became a watchlist that knows when and where everything is streaming. The texts became reviews, character-capped by design. The remembering is now outsourced to a calendar, that never forgets when the next episode drops.",
+  lead: "For years my watchlist was a note on my phone, my reviews were texts to friends, and release dates were whatever I happened to remember. This worked, if you count forgetting half of it as working. So I built Plot. The note became a watchlist that knows when and where everything is streaming. The texts became reviews, character-capped by design. The remembering is now outsourced to a calendar, that never forgets when the next episode drops.",
   sections: [
     {
       id: "why",
