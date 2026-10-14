@@ -14,8 +14,8 @@ export const PLANS_PAGE = {
 
   hero: {
     pageLabel: 'Plans',
-    h1: 'Do more with everything you watch',
-    lede: 'Start free and keep every movie and show in one place. Premium is $3/month or $24/year with a 7-day free trial. It adds Pick for me, Watch together, your watch profile, custom themes and more.',
+    h1: 'Free forever. Premium if you want more.',
+    lede: 'Keep every movie and show you’ve seen, saved and are counting down to, for nothing. Premium adds Pick for me, Watch together and your watch profile for $3 a month.',
   },
 
   billingToggle: {
@@ -36,7 +36,7 @@ export const PLANS_PAGE = {
       'Up to 5 custom lists',
       'Follow friends & share your profile',
     ],
-    cta: 'Get started free',
+    cta: 'Start tracking',
   },
 
   premiumPlan: {
@@ -47,7 +47,8 @@ export const PLANS_PAGE = {
     per: '/mo',
     billed: 'Billed $24 once a year',
     billedMonthly: 'Billed monthly. Cancel anytime.',
-    trial: '7-day free trial for new subscribers. Commitment-free. Cancel during the trial and you pay $0.',
+    flag: '7-day free trial',
+    trial: 'Commitment-free. Cancel during the trial and you pay $0.',
     tagline: 'Everything in Free, plus:',
     features: [
       'Pick for me: a shortlist for tonight',
@@ -63,7 +64,7 @@ export const PLANS_PAGE = {
 
   comparison: {
     title: 'Compare plans',
-    note: 'Features marked Coming soon are still on the way.',
+    note: 'Nothing is deleted if you downgrade. Your lists stay exactly as they are.',
     columns: { feature: 'Feature', free: 'Free', premium: 'Premium' },
     rows: [
       { feature: 'Track movies & TV', free: true, premium: true },
@@ -93,7 +94,7 @@ export const PLANS_PAGE = {
       },
       {
         q: 'Can I get Premium now?',
-        a: 'Yes. Choose Monthly or Yearly and start your free trial in plot. Premium is $3/month or $24/year with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
+        a: 'Yes. Choose Monthly or Annual and start your free trial in Plot. Premium is $3/month or $24/year with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
       },
       {
         q: 'Can I cancel anytime?',
