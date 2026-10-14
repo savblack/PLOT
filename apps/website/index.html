@@ -1068,27 +1068,24 @@
     .ls-vis { flex-shrink: 0; padding: 0.3em 0.8em; border-radius: var(--r-pill); background: var(--surface); font-size: 0.85em; font-weight: 600; color: var(--text-secondary); }
 
     /* Premium: what /pricing promises, the price and the trial, on ink. */
-    #premium { background: var(--ink); color: var(--bg); }
-    #premium .hx-eyebrow { color: var(--fill); }
-    #premium .hx-headline { color: var(--bg); }
-    #premium .hx-body { color: #d9d1c4; margin-bottom: 2rem; }
+    #premium .hx-body { margin-bottom: 2rem; }
     .pr-features { list-style: none; margin: 0 0 1.6rem; padding: 0; display: flex; flex-direction: column; gap: 1.4rem; }
     .pr-feature { display: flex; gap: 16px; align-items: flex-start; }
-    .pr-icon { width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: rgba(255,136,200,0.16); color: var(--fill); display: flex; align-items: center; justify-content: center; }
+    .pr-icon { width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: rgba(255,136,200,0.2); color: var(--accent); display: flex; align-items: center; justify-content: center; }
     .pr-icon svg { width: 22px; height: 22px; }
     .pr-feature strong { display: block; font-family: var(--display); font-weight: 700; font-size: 1.3rem; letter-spacing: -0.02em; }
-    .pr-feature div span { display: block; margin-top: 4px; font-size: 0.95rem; line-height: 1.45; color: #d9d1c4; }
-    .pr-more { margin: 0; max-width: 520px; font-size: 0.95rem; line-height: 1.45; color: #d9d1c4; }
-    .pr-more a { color: var(--fill); font-weight: 600; text-underline-offset: 4px; }
+    .pr-feature div span { display: block; margin-top: 4px; font-size: 0.95rem; line-height: 1.45; color: var(--text-secondary); }
+    .pr-more { margin: 0; max-width: 520px; font-size: 0.95rem; line-height: 1.45; color: var(--text-secondary); }
+    .pr-more a { color: var(--accent); font-weight: 600; text-underline-offset: 4px; }
     .pr-card {
       width: 100%;
       max-width: 400px;
       box-sizing: border-box;
       padding: 28px;
-      background: var(--bg);
+      background: #fffaf3;
       color: var(--text);
       border-radius: 28px;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+      box-shadow: 0 24px 60px rgba(41,41,36,0.14);
     }
     .pr-toggle { display: flex; padding: 4px; margin-bottom: 22px; background: var(--surface); border-radius: var(--r-pill); }
     .pr-toggle button {
