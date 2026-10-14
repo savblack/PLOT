@@ -105,8 +105,8 @@ export const PREMIUM = {
   headline: 'Less deciding. More watching.',
   intro: 'Everything in Free, plus:',
   features: [
-    { title: 'Pick for Me', body: 'Stop scrolling. Answer four quick questions and you’ve got a shortlist tailored to you and your mood.' },
-    { title: 'Pick something together', body: 'Settle “what should we watch?” before the snacks are ready. Only one of you needs Premium.' },
+    { title: 'Pick for me', body: 'Stop scrolling. Answer four quick questions and you’ve got a shortlist tailored to you and your mood.' },
+    { title: 'Watch together', body: 'Settle “what should we watch?” before the snacks are ready. Only one of you needs Premium.' },
     { title: 'Your watch profile', body: 'Get to know your watching habits, and settle who has the best taste.' },
     { title: 'Make it yours', body: 'Your Plot, your style. Get access to custom themes, widgets and app icons.' },
   ],
@@ -118,7 +118,7 @@ export const PREMIUM = {
   billedYearly: 'Billed $24 once a year',
   billedMonthly: 'Billed monthly. Cancel anytime.',
   cta: 'Start 7-day free trial',
-  trial: 'You won’t be charged until day 7. Cancel during the trial and you pay $0.',
+  trial: 'Commitment-free. Cancel during the trial and you pay $0.',
   compare: 'Compare Free and Premium',
 };
 
