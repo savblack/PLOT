@@ -15,7 +15,7 @@ export const ABOUT_PAGE = {
   pageLabel: "About",
   h1: "About plot",
   pageMeta: "A letter from the founder.",
-  lead: "I made Plot because I wanted somewhere to put the feeling a good film or episode leaves you with, and nothing out there felt like mine. Everything I'd watched, everything I was saving for later, when the next season was landing, what was actually worth starting tonight. All of it lived across five apps and a group chat, and none of them cared how I felt about any of it. So I built the one that does.",
+  lead: "For years my watchlist was a note on my phone, my reviews were texts to friends, and release dates were whatever I happened to remember. It mostly worked, which is the worst kind of broken. So I built Plot. The note became a watchlist that knows when and where everything is streaming. The texts became reviews, character-capped by design. The calendar makes up for my patchy memory, always knowing when the next episode lands.",
   sections: [
     {
       id: "why",
