@@ -2,7 +2,7 @@
 // or watching). The switch is that show's new-episode notifications; while it
 // is on, the next episode and Add to calendar sit under it. The store and the
 // line's wording live in @plot/core (useEpisodeAlerts.js, episodeAlerts.js).
-// Mobile parity: the card is not on mobile yet (see the PR's parity issue).
+// Mobile renders the same card in apps/mobile/components/EpisodeAlertsCard.tsx.
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useEpisodeAlerts } from '@plot/core/useEpisodeAlerts.js';
 import { nextEpisodeLine } from '@plot/core/episodeAlerts.js';

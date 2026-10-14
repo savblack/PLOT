@@ -29,6 +29,7 @@ import MediaPanel from '../components/MediaPanel';
 import CollectionPanel from '../components/CollectionPanel';
 import type { Session } from '@supabase/supabase-js';
 import UndoToast from '../components/UndoToast';
+import NoticeToast from '../components/NoticeToast';
 import { FollowToastHost } from '../components/people/FollowControls';
 import PushHost from '../components/PushHost';
 import {
@@ -373,6 +374,7 @@ function RootInner() {
             </OnboardingCompleteContext.Provider>
             {/* After the navigator so it draws on top. The panel has its own. */}
             <UndoToast />
+            <NoticeToast />
             <FollowToastHost />
           </MediaPanelProvider>
         </DrawerProvider>
