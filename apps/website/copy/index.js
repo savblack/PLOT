@@ -97,29 +97,24 @@ export const LISTS = {
   note: 'Five lists free. Unlimited with Premium.',
 };
 
-// Premium: taste, deciding together, stats and personalisation lead (from the
-// in-app plans list); `more` sums up the rest. Prices and the checkout link
-// mirror pricing.html (and copy/plans.js); change them together.
+// Premium: the same stories as /pricing (see copy/plans.js), on cream.
+// The visuals and their copy live in pricing.html and index.html; keep both
+// in step. The price line mirrors pricing.html.
 export const PREMIUM = {
   eyebrow: 'Plot Premium',
   headline: 'Less deciding. More watching.',
-  intro: 'Everything in Free, plus:',
-  features: [
-    { title: 'Pick for me', body: 'Stop scrolling. Answer four quick questions and you’ve got a shortlist tailored to you and your mood.' },
-    { title: 'Watch together', body: 'Settle “what should we watch?” before the snacks are ready. Only one of you needs Premium.' },
-    { title: 'Your watch profile', body: 'Get to know your watching habits, and settle who has the best taste.' },
-    { title: 'Make it yours', body: 'Your Plot, your style. Get access to custom themes, widgets and app icons.' },
+  stories: [
+    { step: 'Pick for me', title: 'Something to watch, in under a minute.' },
+    { step: 'Watch together', title: 'Settle movie night before the snacks are ready.' },
+    { step: 'Your profile', title: 'Every story has a plot. Here’s yours.' },
+    { step: 'Taste match', title: 'Find out your compatibility based on cinema.' },
+    { step: 'Make it yours', title: 'Your Plot, your way.' },
   ],
-  more: 'Plus unlimited and smart lists, release dates in your calendar app, and actor and director alerts.',
-  moreLink: 'See everything in Premium',
-  monthly: 'Monthly',
-  annual: 'Annual',
-  annualBadge: '4 months free',
-  billedYearly: 'Billed $24 once a year',
-  billedMonthly: 'Billed monthly. Cancel anytime.',
   cta: 'Start 7-day free trial',
-  trial: 'Commitment-free. Cancel during the trial and you pay $0.',
-  compare: 'Compare Free and Premium',
+  more: 'See everything in Premium',
+  price: '$2/mo billed yearly, 4 months free. Commitment-free: cancel during the 7-day trial and you pay $0.',
+  alsoLabel: 'Also in Premium',
+  also: ['Unlimited and smart lists', 'Release dates in your calendar app', 'Actor and director alerts'],
 };
 
 // Plot mobile, coming soon: the app's home screen in a phone, and the launch
