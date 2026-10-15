@@ -316,10 +316,20 @@
     .stories-step[aria-pressed="true"] { color: var(--bg); }
     .stories-step[aria-pressed="true"] .stories-bar i { width: 100%; transition: width 6s linear; }
     .stories-step span:last-child { display: block; font-size: 0.74rem; font-weight: 600; line-height: 1.2; }
-    .stories-visuals { display: flex; justify-content: center; align-items: center; min-height: 420px; }
-    .stories-visuals .vis { display: none; }
-    .stories-visuals .vis.is-active { display: block; animation: stories-in 0.6s var(--ease); }
-    @keyframes stories-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    /* The cards stack in one grid cell and cross-fade: the leaving card
+       eases up and out while the next eases up and in. */
+    .stories-visuals { display: grid; justify-content: center; align-items: center; min-height: 420px; }
+    .stories-visuals .vis {
+      grid-area: 1 / 1;
+      justify-self: center;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(16px) scale(0.985);
+      transition: opacity 0.55s var(--ease), transform 0.55s var(--ease), visibility 0s linear 0.55s;
+      pointer-events: none;
+    }
+    .stories-visuals .vis.is-active { opacity: 1; visibility: visible; transform: none; transition-delay: 0.12s, 0.12s, 0s; pointer-events: auto; }
+    .stories-visuals .vis.is-leaving { opacity: 0; visibility: visible; transform: translateY(-12px) scale(0.985); transition-delay: 0s; }
     .stories-also {
       grid-column: 1 / -1;
       display: flex;
@@ -463,7 +473,7 @@
        theme families (Cream, Sage, Mist, Blush, Plum). Each swatch, icon and
        widget reads its own family's colours from --t-* set inline, and the
        selected ring steps through them on the same clock. */
-    .stories-visuals .vis--yours.is-active { animation: stories-in 0.6s var(--ease), my-skin 7.5s steps(1, end) 1s infinite; }
+    .stories-visuals .vis--yours.is-active { animation: my-skin 7.5s steps(1, end) 1s infinite; }
     @keyframes my-skin {
       0%  { background: #fffaf3; color: #292924; --skin-fill: #FF88C8; --skin-surface: #F1E9DC; }
       20% { background: #EDF2DA; color: #20261A; --skin-fill: #BFDA5E; --skin-surface: #E3EACA; }
@@ -494,7 +504,7 @@
     .my-widget small:first-child { color: var(--skin-fill); opacity: 1; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.62rem; filter: saturate(1.2) brightness(0.75); }
 
     @media (prefers-reduced-motion: reduce) {
-      .vis, .vis * { animation: none !important; }
+      .vis, .vis * { animation: none !important; transition: none !important; }
     }
 
     @media (max-width: 900px) {
@@ -1033,8 +1043,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           if (k === current) slide.removeAttribute('aria-hidden'); else slide.setAttribute('aria-hidden', 'true');
         });
         visuals.forEach(function (vis, k) {
-          vis.classList.toggle('is-active', k === current);
-          if (k === current) vis.removeAttribute('aria-hidden'); else vis.setAttribute('aria-hidden', 'true');
+          var wasActive = vis.classList.contains('is-active');
+          if (k === current) {
+            // Restart the card's own sequence (a display flip resets every
+            // descendant animation), then fade it in.
+            if (!wasActive) { vis.style.display = 'none'; void vis.offsetWidth; vis.style.display = ''; }
+            vis.classList.remove('is-leaving');
+            vis.classList.add('is-active');
+            vis.removeAttribute('aria-hidden');
+          } else {
+            vis.classList.remove('is-active');
+            vis.classList.toggle('is-leaving', wasActive);
+            vis.setAttribute('aria-hidden', 'true');
+          }
         });
         countUp(visuals[current]);
         clearTimeout(timer);
