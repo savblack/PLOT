@@ -58,12 +58,15 @@ export default function CustomizeArtwork({
   seasonNumber,
   defaults = {},
   onLeave,
+  inline = false,
 }: {
   mediaType: 'movie' | 'tv' | 'person';
   tmdbId?: number | null;
   seasonNumber?: number;
   defaults?: { poster?: string | null; backdrop?: string | null; profile?: string | null };
   onLeave?: () => void;
+  /** Sit on the title kicker row instead of under the genres. */
+  inline?: boolean;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -121,7 +124,7 @@ export default function CustomizeArtwork({
           setOpen(true);
         }}
         accessibilityRole="button"
-        style={styles.link}
+        style={[styles.link, inline && styles.linkInline]}
       >
         <Text style={styles.linkText}>{ARTWORK.customize}</Text>
       </TouchableOpacity>
@@ -215,6 +218,7 @@ function Tile({
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   link: { alignSelf: 'flex-start', marginTop: spacing.sm, minHeight: 32, justifyContent: 'center' },
+  linkInline: { alignSelf: 'center', marginTop: 0, marginLeft: 'auto' },
   linkText: {
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.xs,

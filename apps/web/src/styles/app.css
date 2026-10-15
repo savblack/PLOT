@@ -4120,6 +4120,23 @@ svg { stroke-width: 1.5; }
    so its foot still lands below the text column. */
 .panel-head-text { min-width: 0; padding-top: 0.8rem; }
 
+/* Kind stays on the left. Customize artwork shares that line and sits at the
+   right edge of the head, so a long title cannot push it down under the genres. */
+.panel-kicker-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
+  margin-bottom: 0.35rem;
+}
+.panel-kicker-row .panel-kicker { margin-bottom: 0; }
+.panel-kicker-row .panel-artwork-btn {
+  margin-top: 0;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .panel-kicker {
   font-size: 0.7rem;
   font-weight: 600;
