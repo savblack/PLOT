@@ -3,6 +3,9 @@
 -- and the sheet stays on the busy state. The cap moves to a trigger. The
 -- trigger function is security definer, so the count is not subject to the
 -- policies on this table. Identity and Premium stay on the insert policy.
+--
+-- 20261015130000 was already home_layout on production, so the first copy of
+-- this change never ran. This version sorts after import_jobs_queue.
 
 create or replace function public.enforce_user_artwork_cap()
 returns trigger
