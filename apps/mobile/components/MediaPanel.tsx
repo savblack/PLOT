@@ -47,6 +47,8 @@ import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } fro
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from './ArtworkSheet';
+import ParentalGuide from './ParentalGuide';
+import { updateProfile } from '@plot/core/profile.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import UpgradeSheet from './UpgradeSheet';
@@ -793,7 +795,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { userId, profile, watchlist, watching, favorites, history, customLists, topLists, privateNotes } = useAppData();
+  const { userId, profile, refreshProfile, watchlist, watching, favorites, history, customLists, topLists, privateNotes } = useAppData();
   const art = useUserArtwork();
   const { open: openTitle } = useMediaPanel();
   const router = useRouter();
@@ -1189,6 +1191,20 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         {author ? `\n${author}` : ''}
                       </Text>
                     )}
+                    <ParentalGuide
+                      key={`${itemType}-${itemId}`}
+                      mediaType={isMovie ? 'movie' : 'tv'}
+                      tmdbId={itemId}
+                      details={details}
+                      signedIn={!!userId}
+                      hidden={profile?.show_parental_guide === false}
+                      onSetShown={async (shown) => {
+                        if (!userId) return false;
+                        const { error } = await updateProfile({ userId, patch: { show_parental_guide: shown } });
+                        if (!error) refreshProfile();
+                        return !error;
+                      }}
+                    />
                     {genreChips.length > 0 && (
                       <View style={styles.genreRow}>
                         {genreChips.map(genre => (

@@ -1,0 +1,68 @@
+.parental-guide {
+  margin-top: 0.35rem;
+}
+
+.parental-guide-rating {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+
+.parental-guide-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.28rem;
+  max-width: 28rem;
+  margin-top: 0.3rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.parental-guide-region,
+.parental-guide-meaning,
+.parental-guide-descriptors,
+.parental-guide-error {
+  margin: 0;
+}
+
+.parental-guide-region {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.parental-guide-hide,
+.parental-guide-show {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
+.parental-guide-hide:hover,
+.parental-guide-show:hover {
+  color: var(--text-primary);
+}
+
+.parental-guide-error {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}

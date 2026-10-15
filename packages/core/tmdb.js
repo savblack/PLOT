@@ -495,6 +495,11 @@ export const tmdb = {
   seasonImages: (tvId, seasonNumber) =>
     fetchFromTMDB(`/tv/${tvId}/season/${seasonNumber}/images`, { include_image_language: 'en,null' }),
 
+  /* Regional series rating. Movies carry theirs on release_dates. */
+  contentRatings: (tvId) => fetchFromTMDB(`/tv/${tvId}/content_ratings`),
+  movieCertifications: () => fetchFromTMDB('/certification/movie/list'),
+  tvCertifications: () => fetchFromTMDB('/certification/tv/list'),
+
   /* ── Digital (streaming) release date for a movie, by region ── */
   getDigitalReleaseDate: async (movieId) => {
     const data = await fetchFromTMDB(`/movie/${movieId}/release_dates`);
