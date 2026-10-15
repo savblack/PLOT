@@ -22,8 +22,8 @@ import PlotWordmark from './PlotWordmark';
 const DRAWER_W = Math.min(300, Dimensions.get('window').width * 0.85);
 
 // Same order as the web phone drawer, with Search kept at the top because
-// the desktop rail leads with it. Settings stays pinned. Watch together
-// stays out while its launch flag is off. Follow requests live in Settings.
+// the desktop rail leads with it. Settings stays pinned. Watch together is
+// included while SHOW_WATCH_TOGETHER is on. Follow requests live in Settings.
 const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; premium?: boolean }[] = [
   { id: 'search',   label: APP_SHELL.search,       path: '/(app)/search',   icon: 'search' },
   { id: 'index',    label: 'Home',                  path: '/(app)/',         icon: 'home' },

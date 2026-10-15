@@ -32,8 +32,8 @@ export const SHOW_APPLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_APPLE_LOGIN === 'tr
 // anti-steering rules keep purchases on the web app).
 export const SHOW_PRICING_PAGE = false;
 
-// Watch together (PLO-515). Web turns this on in production
-// (SHOW_WATCH_TOGETHER in apps/web/src/launchFeatures.js). The mobile screens
-// exist, and this flag stays off until they have been checked with two
-// accounts. Entry points stay hidden while it is false.
-export const SHOW_WATCH_TOGETHER = false;
+// Watch together (PLO-515). On for every signed-in account, same as web
+// (SHOW_WATCH_TOGETHER in apps/web/src/launchFeatures.js). Flip back to false
+// to hide the drawer row, profile tile, shared lists and the related alerts.
+// Deciding together still needs Premium on at least one side.
+export const SHOW_WATCH_TOGETHER = true;
