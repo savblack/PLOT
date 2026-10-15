@@ -13,6 +13,7 @@
 import { colors } from '@plot/core/tokens.js';
 import { SHARE_CARD_THEMES, SHARE_LINK, shareCardContent } from '@plot/core/tasteOverlap.js';
 import { favoriteWords } from '@plot/core/spelling.js';
+import { WORDMARK_PATH } from '@plot/core/wordmark.js';
 import { TASTE_OVERLAP as T } from '../copy/tasteOverlap.js';
 import { posterUrl } from './images.js';
 
@@ -149,10 +150,13 @@ export async function drawShareCard(canvas, { content, theme, posters = [], text
 
   // Header: wordmark and kicker.
   ctx.fillStyle = theme.ink;
-  ctx.font = `800 26px ${DISPLAY}`;
-  setLetterSpacing(ctx, -0.5);
-  ctx.textAlign = 'left';
-  ctx.fillText('plot', PAD, 50);
+  // The wordmark is outlines, not text: the font can't set the l-o join.
+  const wm = 26 / 1000;
+  ctx.save();
+  ctx.translate(PAD - 52 * wm, 50);
+  ctx.scale(wm, wm);
+  ctx.fill(new Path2D(WORDMARK_PATH));
+  ctx.restore();
   ctx.font = `700 12px ${SANS}`;
   setLetterSpacing(ctx, 1.2);
   ctx.fillStyle = theme.kicker;

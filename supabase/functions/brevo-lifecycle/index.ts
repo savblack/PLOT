@@ -23,6 +23,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
+import { errorText, reportLog } from '../_shared/posthogLog.ts';
 import { getBrevoContact, trackBrevoEvent, upsertBrevoContact } from '../_shared/brevo.ts';
 import {
   ONBOARDING_EVENT,
@@ -105,11 +106,11 @@ async function loadAccount(db: any, userId: string, known?: { email?: string | n
     const { data, error } = await db.auth.admin.getUserById(userId);
     if (userIsGone(error, data?.user ?? null)) {
       await db.from('brevo_sync_state').delete().eq('user_id', userId);
-      console.warn(`[brevo] skipped deleted user ${userId}`);
+      reportLog('brevo-lifecycle', 'warn', `[brevo] skipped deleted user ${userId}`, { distinctId: userId });
       return { ok: false, gone: true, reason: 'deleted' };
     }
     if (error || !data?.user) {
-      console.warn(`[brevo] user lookup failed ${userId}`);
+      reportLog('brevo-lifecycle', 'warn', `[brevo] user lookup failed ${userId}`, { distinctId: userId });
       return { ok: false, reason: 'lookup' };
     }
     email = data.user.email?.trim().toLowerCase() || '';
@@ -122,7 +123,7 @@ async function loadAccount(db: any, userId: string, known?: { email?: string | n
     .eq('id', userId)
     .maybeSingle();
   if (profileError || !profile) {
-    console.warn(`[brevo] profile read failed ${userId}`);
+    reportLog('brevo-lifecycle', 'warn', `[brevo] profile read failed ${userId}`, { distinctId: userId });
     return { ok: false, reason: 'profile' };
   }
   return { ok: true, email, profile };
@@ -135,7 +136,7 @@ async function snapshots(db: any, userId: string) {
     db.from('brevo_sync_state').select('imported, last_seen_at').eq('user_id', userId).maybeSingle(),
   ]);
   if (track.error || watch.error) {
-    console.error(`[brevo] snapshot failed ${userId}`, track.error?.message || watch.error?.message);
+    reportLog('brevo-lifecycle', 'error', `[brevo] snapshot failed ${userId}: ${errorText(track.error?.message || watch.error?.message)}`, { distinctId: userId });
     return null;
   }
   const titles = asTitles(watch.data?.titles);
@@ -151,7 +152,7 @@ async function snapshots(db: any, userId: string) {
 
 async function release(db: any, userId: string) {
   const { error } = await db.rpc('release_brevo_onboarding_event', { uid: userId });
-  if (error) console.error(`[brevo] release failed ${userId}`, error.message);
+  if (error) reportLog('brevo-lifecycle', 'error', `[brevo] release failed ${userId}: ${error.message}`, { distinctId: userId });
 }
 
 async function sendOnboarding(
@@ -176,7 +177,7 @@ async function sendOnboarding(
 
   const { data: claimed, error: claimError } = await db.rpc('claim_brevo_onboarding_event', { uid: userId });
   if (claimError) {
-    console.error(`[brevo] claim failed ${userId}`, claimError.message);
+    reportLog('brevo-lifecycle', 'error', `[brevo] claim failed ${userId}: ${claimError.message}`, { distinctId: userId });
     return { ok: false, skipped: 'claim' };
   }
   if (!claimed) return { ok: true, skipped: 'already_sent' };
@@ -224,7 +225,7 @@ async function sendOnboarding(
     const status = statusOf(err);
     // Once the event is in, releasing the claim would send the welcome again.
     if (!eventSent && isRetryableBrevoStatus(status)) await release(db, userId);
-    console.error(`[brevo] onboarding failed ${userId}`, err instanceof Error ? err.message : err);
+    reportLog('brevo-lifecycle', 'error', `[brevo] onboarding failed ${userId}: ${errorText(err)}`, { distinctId: userId });
     return { ok: false, skipped: 'brevo' };
   }
 }
@@ -262,7 +263,7 @@ async function syncOne(db: any, apiKey: string, row: {
       skipBlacklistCheck: true,
     });
   } catch (err) {
-    console.error(`[brevo] attribute sync failed ${row.user_id}`, err instanceof Error ? err.message : err);
+    reportLog('brevo-lifecycle', 'error', `[brevo] attribute sync failed ${row.user_id}: ${errorText(err)}`, { distinctId: row.user_id });
     return false;
   }
 
@@ -270,19 +271,19 @@ async function syncOne(db: any, apiKey: string, row: {
     .update({ synced_at: new Date().toISOString(), dirty_at: null })
     .eq('user_id', row.user_id)
     .eq('dirty_at', row.dirty_at);
-  if (error) console.error(`[brevo] clear dirty failed ${row.user_id}`, error.message);
+  if (error) reportLog('brevo-lifecycle', 'error', `[brevo] clear dirty failed ${row.user_id}: ${error.message}`, { distinctId: row.user_id });
   return true;
 }
 
 async function runCron(db: any) {
   const apiKey = Deno.env.get('BREVO_API_KEY')?.trim();
   if (!apiKey) {
-    console.error('BREVO_API_KEY is not set');
+    reportLog('brevo-lifecycle', 'error', 'BREVO_API_KEY is not set');
     return { ok: false };
   }
 
   const noted = await db.rpc('brevo_note_recent_signins');
-  if (noted.error) console.error('[brevo] sign-in fold failed', noted.error.message);
+  if (noted.error) reportLog('brevo-lifecycle', 'error', `[brevo] sign-in fold failed: ${noted.error.message}`);
 
   const pending = await db.from('brevo_sync_state')
     .select('user_id')
@@ -332,7 +333,7 @@ Deno.serve(async (req) => {
     try {
       return json(await runCron(db));
     } catch (err) {
-      console.error('[brevo] cron failed', err instanceof Error ? err.message : err);
+      reportLog('brevo-lifecycle', 'error', `[brevo] cron failed: ${errorText(err)}`);
       return json({ ok: false });
     }
   }
@@ -346,14 +347,14 @@ Deno.serve(async (req) => {
 
   const apiKey = Deno.env.get('BREVO_API_KEY')?.trim();
   if (!apiKey) {
-    console.error('BREVO_API_KEY is not set');
+    reportLog('brevo-lifecycle', 'error', 'BREVO_API_KEY is not set');
     return json({ ok: false, skipped: 'no_key' });
   }
 
   try {
     return json(await sendOnboarding(db, apiKey, user.id, { email: user.email }));
   } catch (err) {
-    console.error(`[brevo] onboarding failed ${user.id}`, err instanceof Error ? err.message : err);
+    reportLog('brevo-lifecycle', 'error', `[brevo] onboarding failed ${user.id}: ${errorText(err)}`, { distinctId: user.id });
     return json({ ok: false });
   }
 });

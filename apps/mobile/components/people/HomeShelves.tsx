@@ -8,8 +8,12 @@ import { localDateStr, shortDayMonth } from '@plot/core/date.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { PEOPLE as P } from '@plot/core/copy/people.js';
+import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { formatDuration } from '@plot/core/historyStats.js';
 import { tmdb } from '../../lib/tmdb';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { displayPosterPath, feedDisplayItem } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -56,10 +60,43 @@ function Poster({ path }: { path?: string | null }) {
   );
 }
 
-export function ContinueWatchingShelf() {
+export type ContinueWatchingItem = ReturnType<typeof useContinueWatching>['items'][number];
+
+/** One show in Continue watching: poster, progress line, title, what is next. Home's Up next reuses it. */
+export function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
+  const art = useUserArtwork();
   const { colors } = useTheme();
-  const { watching } = useAppData();
   const { open } = useMediaPanel();
+  const line = item.latest
+    ? P.continueWatching.isOut(item.season, item.episode)
+    : P.continueWatching.next(item.season, item.episode);
+  const width = `${Math.round(Math.min(1, Math.max(0, item.progress)) * 100)}%` as `${number}%`;
+  return (
+    <TouchableOpacity
+      style={{ width: CARD_W }}
+      onPress={() => open(item.tmdbId, 'tv')}
+      accessibilityRole="button"
+      accessibilityLabel={item.title}
+    >
+      <Poster path={displayPosterPath(art.apply(item))} />
+      <View style={{ height: 3, marginTop: 6, borderRadius: radii.pill, backgroundColor: colors.borderStrong, overflow: 'hidden' }}>
+        <View style={{ width, height: '100%', backgroundColor: colors.accent }} />
+      </View>
+      <Text style={{ marginTop: spacing.sm, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }} numberOfLines={2}>{item.title}</Text>
+      <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>{line}</Text>
+      {item.minutesLeft != null && item.minutesLeft > 0 && (
+        <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>
+          {MEDIA_PANEL.timeLeft(formatDuration(item.minutesLeft))}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+export const fetchContinueWatchingTv = fetchTv;
+
+export function ContinueWatchingShelf() {
+  const { watching } = useAppData();
   const { items } = useContinueWatching(watching.items ?? [], fetchTv);
   if (!items.length) return null;
   return (
@@ -72,27 +109,7 @@ export function ContinueWatchingShelf() {
         showsHorizontalScrollIndicator={false}
         nestedScrollEnabled
         contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-        renderItem={({ item }) => {
-          const line = item.latest
-            ? P.continueWatching.isOut(item.season, item.episode)
-            : P.continueWatching.next(item.season, item.episode);
-          const width = `${Math.round(Math.min(1, Math.max(0, item.progress)) * 100)}%` as `${number}%`;
-          return (
-            <TouchableOpacity
-              style={{ width: CARD_W }}
-              onPress={() => open(item.tmdbId, 'tv')}
-              accessibilityRole="button"
-              accessibilityLabel={item.title}
-            >
-              <Poster path={item.posterPath} />
-              <View style={{ height: 3, marginTop: 6, borderRadius: radii.pill, backgroundColor: colors.borderStrong, overflow: 'hidden' }}>
-                <View style={{ width, height: '100%', backgroundColor: colors.accent }} />
-              </View>
-              <Text style={{ marginTop: spacing.sm, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }} numberOfLines={2}>{item.title}</Text>
-              <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>{line}</Text>
-            </TouchableOpacity>
-          );
-        }}
+        renderItem={({ item }) => <ContinueWatchingCard item={item} />}
       />
     </View>
   );
@@ -112,6 +129,7 @@ function reason(s: { kind: string; count: number; title: string }) {
 function PeopleInvite({ suggestions }: {
   suggestions: { id: number; name: string; profilePath: string | null; kind: string; count: number; title: string }[];
 }) {
+  const art = useUserArtwork();
   const follow = useFollowPerson();
   const router = useRouter();
   const { colors } = useTheme();
@@ -126,7 +144,7 @@ function PeopleInvite({ suggestions }: {
               accessibilityRole="button"
               accessibilityLabel={P.viewLabel(s.name)}
             >
-              <PersonFace name={s.name} path={s.profilePath} size={64} />
+              <PersonFace name={s.name} path={art.path('person', s.id, 'profile') || s.profilePath} size={64} />
             </TouchableOpacity>
             <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary, textAlign: 'center' }} numberOfLines={2}>{s.name}</Text>
             <Text style={{ minHeight: 32, fontFamily: fontFamily.sans, fontSize: 11, lineHeight: 14, color: colors.textMuted, textAlign: 'center' }} numberOfLines={2}>{reason(s)}</Text>
@@ -150,6 +168,7 @@ function PeopleInvite({ suggestions }: {
 }
 
 export function YourPeopleShelf() {
+  const art = useUserArtwork();
   const { colors } = useTheme();
   const router = useRouter();
   const { open } = useMediaPanel();
@@ -210,7 +229,7 @@ export function YourPeopleShelf() {
               accessibilityRole="button"
               accessibilityLabel={item.title}
             >
-              <Poster path={item.posterPath} />
+              <Poster path={displayPosterPath(art.apply(feedDisplayItem(item)))} />
               <Text style={{ marginTop: spacing.sm, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }} numberOfLines={2}>{item.title}</Text>
               <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={2}>{shelfMeta(item, today)}</Text>
               {!!item.chip && (

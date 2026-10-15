@@ -1,0 +1,43 @@
+/* Customize Home sheet. Rows share the Settings row language; the drag
+   affordance is the only new element. */
+.home-layout-sheet-head { position: sticky; top: 0; z-index: 2; background: var(--surface); }
+.home-layout-sheet-body { padding: 0 1rem 1.5rem; }
+.home-layout-sheet-intro { margin: 0.75rem 0 1rem; font-size: 0.85rem; line-height: 1.45; color: var(--text-secondary); }
+.home-layout-sheet-error { margin: 0 0 0.75rem; font-size: 0.82rem; color: var(--danger); }
+
+.home-layout-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.home-layout-row {
+  display: grid;
+  grid-template-columns: 24px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  transition: border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+}
+.home-layout-row.is-hidden .home-layout-label > span:first-child { color: var(--text-muted); }
+.home-layout-row.is-dragging { opacity: 0.45; }
+.home-layout-row.is-over { border-color: var(--accent); background: var(--accent-dim); transform: translateY(-1px); }
+
+.home-layout-grip { display: flex; align-items: center; justify-content: center; width: 24px; height: 32px; color: var(--text-muted); cursor: grab; touch-action: none; }
+.home-layout-row:active .home-layout-grip { cursor: grabbing; }
+
+.home-layout-label { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.home-layout-label > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-layout-tag { flex-shrink: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 1px 7px; }
+
+.home-layout-nudge { display: flex; gap: 2px; }
+.home-layout-nudge-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+.home-layout-nudge-btn:hover:not(:disabled) { background: var(--accent-dim); color: var(--text-primary); }
+.home-layout-nudge-btn:disabled { opacity: 0.3; cursor: default; }
+.home-layout-nudge-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.home-layout-reset { margin-top: 1rem; width: 100%; }
+
+@media (pointer: coarse) {
+  .home-layout-grip { display: none; }
+  .home-layout-row { grid-template-columns: 1fr auto auto; padding-left: 12px; }
+}

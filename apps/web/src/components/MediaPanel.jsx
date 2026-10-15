@@ -1,4 +1,7 @@
-import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
+import { useEpisodeWatches, useSpecialEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
+import CustomizeArtwork from './ArtworkSheet.jsx';
 import PrivateNote from './PrivateNote.jsx';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -28,6 +31,8 @@ import UpgradeSheet from './UpgradeSheet.jsx';
 import { SeasonReadyAlert } from './PremiumAlertButtons.jsx';
 import EpisodeAlertsCard from './EpisodeAlertsCard.jsx';
 import StreamingAlertsCard from './StreamingAlertsCard.jsx';
+import StreamingArrivalAsk from './StreamingArrivalAsk.jsx';
+import { showStreamingArrivalAsk } from '@plot/core/useStreamingAlerts.js';
 import { CastFollowCard, CrewFollowRow, PersonFollow } from './PeopleFollow.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -37,8 +42,11 @@ import {
   getLastSeasonNumber,
   getSeasonToggleProgress,
   getSeasonWatchState,
+  guideSeasonSelection,
+  guideSeasons,
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
+import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -81,6 +89,7 @@ function BackIcon() {
    thumbnail rather than a full-bleed header image — a portrait crop
    stretched across a 16:9 backdrop zooms in on the face awkwardly. ── */
 function TalentPanelView({ person, credits, error, onOpenTitle }) {
+  const art = useUserArtwork();
   if (!person && !error) {
     return <div style={{ padding: '2rem 0', textAlign: 'center' }}><LoadingSpinner /></div>;
   }
@@ -93,7 +102,7 @@ function TalentPanelView({ person, credits, error, onOpenTitle }) {
   }
 
   const actingCredits = dedupedActingCredits(credits?.cast).slice(0, 12);
-  const image = profileUrl(person.profile_path, 'h632');
+  const image = profileUrl(art.path('person', person.id, 'profile') || person.profile_path, 'h632');
   const knownFor = person.known_for_department || MEDIA_PANEL.talentFallback;
   const biographyPreview = shortBiography(person.biography);
 
@@ -108,6 +117,7 @@ function TalentPanelView({ person, credits, error, onOpenTitle }) {
           <h1>{person.name}</h1>
           {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
           <PersonFollow person={person} />
+          <CustomizeArtwork mediaType="person" tmdbId={person.id} defaults={{ profile: person.profile_path }} />
         </div>
       </header>
       {person.biography && <p className="talent-biography">{biographyPreview}</p>}
@@ -225,8 +235,16 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
   const seasonTotal = episodes.length;
   const offer = whereToWatch.streaming[0] || whereToWatch.rentBuy[0] || null;
   const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
-  const runtime = episode?.runtime ? MEDIA_PANEL.episodeRuntime(episode.runtime) : '';
-  const where = [offer?.providerName, runtime].filter(Boolean).join(' · ');
+  const episodeMinutes = episode?.runtime > 0 ? episode.runtime : fallbackEpisodeRuntime(details);
+  const runtime = episodeMinutes ? MEDIA_PANEL.episodeRuntime(episodeMinutes) : '';
+  const ends = episodeMinutes ? endsAtTime(episodeMinutes) : null;
+  const where = [offer?.providerName, runtime, ends ? MEDIA_PANEL.endsAt(ends) : ''].filter(Boolean).join(' · ');
+  const leftCaption = timeLeftCaption(showTimeLeft({
+    details,
+    season,
+    episode: episodeNumber,
+    knownEpisodes: episodes.map(item => ({ ...item, season_number: season })),
+  }));
 
   const markWatched = async () => {
     if (pending) return;
@@ -280,21 +298,28 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
           <span style={{ width: `${Math.round((watchedInSeason / seasonTotal) * 100)}%` }} />
         </div>
       )}
+      {leftCaption && <p className="panel-upnext-left">{leftCaption}</p>}
       {error && <p className="panel-upnext-error" role="alert">{error}</p>}
     </section>
   );
 }
 
 /* ── Season selector + episode list ── */
-export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
+export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished, onSeasonChange }) {
   const { watching, user } = useApp();
   const sparse = useEpisodeWatches(user?.id, tvId);
-  const seasons     = (details?.seasons || []).filter(s => s.season_number > 0 || (s.season_number === 0 && Object.keys(sparse.states).some(key => key.startsWith('0:'))));
+  const specials = useSpecialEpisodeWatches(user?.id, tvId);
+  const episodeStates = { ...specials.states, ...sparse.states };
+  const seasons = guideSeasons(details, episodeStates);
   const [selSeason, setSelSeason] = useState(currentProgress?.current_season || 1);
+  const guideSeason = guideSeasonSelection(seasons, selSeason);
+  useEffect(() => { onSeasonChange?.(guideSeason); }, [guideSeason, onSeasonChange]);
+  // A boolean, not the season list. The episode callbacks memoize on this.
+  const specialsOnly = guideSeason === 0 && !seasons.some(season => Number(season?.season_number) === Number(selSeason));
   const [episodes,  setEpisodes]  = useState([]);
   const [epLoading, setEpLoading] = useState(false);
   const [epError,   setEpError]   = useState(false);
-  const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || epLoading || epError;
+  const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || specials.loading || specials.refreshing || specials.error || epLoading || epError;
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
   const [episodeActionError, setEpisodeActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
@@ -320,7 +345,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     setEpError(false);
     setEpisodeActionError('');
     let cancelled = false;
-    tmdb.getSeason(tvId, selSeason).then(data => {
+    tmdb.getSeason(tvId, guideSeason).then(data => {
       if (cancelled) return;
       if (data?.episodes?.length) {
         setEpisodes(data.episodes);
@@ -336,7 +361,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
       setEpLoading(false);
     });
     return () => { cancelled = true; };
-  }, [tvId, selSeason]);
+  }, [tvId, guideSeason]);
 
   // Fetch episode air times from TVMaze (has airstamp even for streaming shows)
   useEffect(() => {
@@ -406,9 +431,21 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     checkingEpRef.current = true;
     setCheckingEp(ep.episode_number);
     setEpisodeActionError('');
+    const season = specialsOnly ? 0 : selSeason;
+
+    // A special never moves the series pointer, so it stays out of completion.
+    if (season === 0) {
+      const ok = specials.delegates
+        ? await sparse.setWatched(0, [ep.episode_number], !watched)
+        : await specials.setWatched([ep.episode_number], !watched);
+      if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateWatchStatus);
+      checkingEpRef.current = false;
+      setCheckingEp(null);
+      return;
+    }
 
     if (sparse.hasEpisodes) {
-      const ok = await sparse.setWatched(selSeason, [ep.episode_number], !watched);
+      const ok = await sparse.setWatched(season, [ep.episode_number], !watched);
       if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateWatchStatus);
       checkingEpRef.current = false;
       setCheckingEp(null);
@@ -417,7 +454,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
 
     if (!watched) {
       // Mark watched: advance progress past this episode
-      if (selSeason === currentSeason && ep.episode_number === currentEp) {
+      if (season === currentSeason && ep.episode_number === currentEp) {
         const result = await watching.markEpisodeWatched(tvId, { undo: true });
         if (!result?.ok) {
           setEpisodeActionError(result?.error || 'Could not update this episode right now. Please try again.');
@@ -427,48 +464,61 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
           await finishSeriesIfComplete(result.data?.current_season);
         }
       } else if (ep.episode_number < episodes.length) {
-        await watching.setProgress(tvId, selSeason, ep.episode_number + 1, { undo: true });
+        await watching.setProgress(tvId, season, ep.episode_number + 1, { undo: true });
       } else {
         // Last episode of season → advance to next season
-        const nextSeason = selSeason + 1;
+        const nextSeason = season + 1;
         await watching.setProgress(tvId, nextSeason, 1, { undo: true });
         userChangedSeason.current = false; // allow auto-follow to next season
         await finishSeriesIfComplete(nextSeason);
       }
     } else {
       // Unmark: pull progress back to this episode
-      await watching.setProgress(tvId, selSeason, ep.episode_number, { undo: true });
+      await watching.setProgress(tvId, season, ep.episode_number, { undo: true });
     }
 
     checkingEpRef.current = false;
     setCheckingEp(null);
-  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length, finishSeriesIfComplete, sparse, progressBlocked, seasonPending]);
+  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, specialsOnly, episodes.length, finishSeriesIfComplete, sparse, specials, progressBlocked, seasonPending]);
 
   /* ── Mark / unmark the whole selected season ── */
-  const seasonState = getSeasonWatchState({
+  const seasonComplete = getSeasonWatchState({
     currentEpisode: currentEp,
     currentSeason,
     episodeCount: episodes.length,
     episodeNumbers: episodes.map(ep => ep.episode_number),
-    episodeStates: sparse.states,
-    selectedSeason: selSeason,
-  });
+    episodeStates,
+    selectedSeason: guideSeason,
+  }).isComplete;
 
-  const handleToggleSeason = useCallback(async () => {
+  const handleToggleSeason = async () => {
     if ((!currentProgress && !sparse.hasEpisodes) || progressBlocked || seasonPending || checkingEpRef.current) return;
+    if (guideSeason === 0) {
+      checkingEpRef.current = true;
+      setSeasonPending(true);
+      setEpisodeActionError('');
+      const numbers = episodes.map(ep => ep.episode_number);
+      const ok = specials.delegates
+        ? await sparse.setWatched(0, numbers, !seasonComplete)
+        : await specials.setWatched(numbers, !seasonComplete);
+      if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
+      checkingEpRef.current = false;
+      setSeasonPending(false);
+      return;
+    }
     if (sparse.hasEpisodes) {
       checkingEpRef.current = true;
       setSeasonPending(true);
       setEpisodeActionError('');
-      const ok = await sparse.setWatched(selSeason, episodes.map(ep => ep.episode_number), !seasonState.isComplete);
+      const ok = await sparse.setWatched(guideSeason, episodes.map(ep => ep.episode_number), !seasonComplete);
       if (!ok) setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
       checkingEpRef.current = false;
       setSeasonPending(false);
       return;
     }
     const target = getSeasonToggleProgress({
-      isComplete: seasonState.isComplete,
-      selectedSeason: selSeason,
+      isComplete: seasonComplete,
+      selectedSeason: guideSeason,
     });
     if (!target.ok) {
       setEpisodeActionError(target.error);
@@ -485,11 +535,11 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season', undo: true });
     if (!result?.ok) {
       setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
-    } else if (!seasonState.isComplete) {
+    } else if (!seasonComplete) {
       await finishSeriesIfComplete(target.nextSeason);
     }
     setSeasonPending(false);
-  }, [currentProgress, seasonPending, seasonState.isComplete, selSeason, watching, tvId, finishSeriesIfComplete, sparse, progressBlocked, episodes]);
+  };
 
   const isTracking = !!currentProgress || sparse.hasEpisodes;
 
@@ -508,7 +558,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
               aria-haspopup="menu"
               aria-expanded={seasonMenuOpen}
             >
-              {MEDIA_PANEL.seasonLabel(selSeason)}
+              {MEDIA_PANEL.seasonListLabel(guideSeason)}
               <ChevronIcon size={13} />
             </button>
             {seasonMenuOpen && (
@@ -517,21 +567,21 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
                   <button
                     key={s.season_number}
                     role="menuitem"
-                    className={`panel-status-option${s.season_number === selSeason ? ' panel-status-option--current' : ''}`}
+                    className={`panel-status-option${s.season_number === guideSeason ? ' panel-status-option--current' : ''}`}
                     onClick={() => {
                       userChangedSeason.current = true;
                       setSelSeason(s.season_number);
                       setSeasonMenuOpen(false);
                     }}
                   >
-                    {MEDIA_PANEL.seasonLabel(s.season_number)}
+                    {MEDIA_PANEL.seasonListLabel(s.season_number)}
                   </button>
                 ))}
               </div>
             )}
           </div>
         ) : (
-          <span className="panel-pill season-pill season-pill--static">{MEDIA_PANEL.seasonLabel(selSeason)}</span>
+          <span className="panel-pill season-pill season-pill--static">{MEDIA_PANEL.seasonListLabel(guideSeason)}</span>
         )}
 
         {isTracking && episodes.length > 0 && (
@@ -543,18 +593,18 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
           >
             {seasonPending
               ? MEDIA_PANEL.updating
-              : seasonState.isComplete
-                ? MEDIA_PANEL.unmarkSeasonWatched
-                : MEDIA_PANEL.markSeasonWatched}
+              : seasonComplete
+                ? (guideSeason === 0 ? MEDIA_PANEL.unmarkSpecialsWatched : MEDIA_PANEL.unmarkSeasonWatched)
+                : (guideSeason === 0 ? MEDIA_PANEL.markSpecialsWatched : MEDIA_PANEL.markSeasonWatched)}
           </button>
         )}
       </div>
 
       {sparse.hasEpisodes && <p className="season-bulk-count">{MEDIA_PANEL.sparseEpisodeProgress}</p>}
-      {sparse.error && (
+      {(sparse.error || specials.error) && (
         <div role="alert">
           <p>{MEDIA_PANEL.episodeProgressLoadError}</p>
-          <button className="season-bulk-btn" onClick={sparse.reload}>{MEDIA_PANEL.retryEpisodeProgress}</button>
+          <button className="season-bulk-btn" onClick={() => { sparse.reload(); specials.reload(); }}>{MEDIA_PANEL.retryEpisodeProgress}</button>
         </div>
       )}
       {episodeActionError && (
@@ -572,7 +622,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
         </div>
       )}
 
-      {epLoading || sparse.loading ? (
+      {epLoading || sparse.loading || specials.loading ? (
         <LoadingSpinner />
       ) : episodes.length === 0 ? (
         <div style={{ padding: '1rem 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -585,12 +635,12 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
               currentEpisode: currentEp,
               currentSeason,
               episodeNumber: ep.episode_number,
-              selectedSeason: selSeason,
-              episodeStates: sparse.states,
+              selectedSeason: guideSeason,
+              episodeStates,
             });
             const chip       = ep.air_date ? countdownChip(ep.air_date) : null;
             const isUpcoming = chip && chip.cls !== 'chip-muted';
-            const airstamp   = isUpcoming ? tvmazeTimes[`${selSeason}-${ep.episode_number}`] : null;
+            const airstamp   = isUpcoming ? tvmazeTimes[`${guideSeason}-${ep.episode_number}`] : null;
             const airTime    = airstamp ? fmtAirstamp(airstamp, timezone) : null;
             const isChecking = checkingEp === ep.episode_number;
 
@@ -744,6 +794,7 @@ function pillButtonStyle(variant) {
 /* ── Add to custom list sheet ── */
 function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   const { customLists, topLists, profile, user } = useApp();
+  const art = useUserArtwork();
   const { lists, ownedCount, createList, addItem, removeItem, isInList } = customLists;
   const [creatingName, setCreatingName] = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
@@ -873,7 +924,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
         <div className="responsive-dialog-picker">
           <div className="add-list-context">
             <span className="add-list-context-poster">
-              {details?.poster_path && <img src={posterUrl(details.poster_path, 'w92')} alt="" />}
+              {(art.path(itemType === 'tv' ? 'tv' : 'movie', itemId, 'poster') || details?.poster_path) && <img src={posterUrl(art.path(itemType === 'tv' ? 'tv' : 'movie', itemId, 'poster') || details?.poster_path, 'w92')} alt="" />}
             </span>
             <span>
               <small>Adding</small>
@@ -1063,6 +1114,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
 
 export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose }) {
   const { watchlist, watching, user, profile, favorites, customLists, openPanel } = useApp();
+  const art = useUserArtwork();
   const followPerson = useFollowPerson();
   const [talentId, setTalentId] = useState(null);
   const [talentPerson, setTalentPerson] = useState(null);
@@ -1138,13 +1190,20 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
 
   const [showListSheet,     setShowListSheet]     = useState(initialListOpen);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  // Where to watch opens closed — its logos say enough at a glance. The foot
-  // bar owns its own open state, inside TitleFootBar.
+  // Where to watch opens closed. Its logos answer the question when there are
+  // any. A film with no offer in this region opens, so the streaming prompt
+  // is on screen. The foot bar owns its own open state, inside TitleFootBar.
   const [watchOpen, setWatchOpen] = useState(false);
   const [statusActionPending, setStatusActionPending] = useState('');
   const [statusActionError, setStatusActionError] = useState('');
   // True while a watched / watching change started from the foot bar is in flight.
   const [footBusy, setFootBusy] = useState(false);
+  const [pickedSeason, setPickedSeason] = useState(null);
+  const [seasonItemId, setSeasonItemId] = useState(itemId);
+  if (seasonItemId !== itemId) {
+    setSeasonItemId(itemId);
+    setPickedSeason(null);
+  }
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -1303,6 +1362,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
         justwatchLink: verified?.title_url || regionData.link || null,
         region,
       });
+      const hasOffers = streaming.length > 0 || rentBuy.length > 0 || inCinemas;
+      if (showStreamingArrivalAsk(itemType, hasOffers)) setWatchOpen(true);
       // Critic score + audience quote depend on the imdb_id this same call just
       // returned, so they can't join the Promise.all above. Fire-and-forget
       // rather than block the panel on a third-party lookup.
@@ -1347,7 +1408,17 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     : (details?.number_of_seasons
         ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
         : '');
-  const factLine = [year, runtimeText].filter(Boolean).join(' · ');
+  const movieEnds = isMovie && details?.runtime > 0 ? endsAtTime(details.runtime) : null;
+  const factLine = [year, runtimeText, movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''].filter(Boolean).join(' · ');
+  const artworkSubject = isMovie ? 'movie' : 'tv';
+  const fromProgress = progress?.current_season;
+  const seasonForPoster = isMovie
+    ? null
+    : (pickedSeason ?? (Number.isInteger(fromProgress) ? fromProgress : null));
+  const seasonPoster = seasonForPoster == null ? null : art.path('season', itemId, 'poster', seasonForPoster);
+  const posterPath = seasonPoster || art.path(artworkSubject, itemId, 'poster') || details?.poster_path || null;
+  const backdropPath = art.path(artworkSubject, itemId, 'backdrop') || details?.backdrop_path || null;
+  const logoPath = art.path(artworkSubject, itemId, 'logo');
   const author = isMovie
     ? (details?.credits?.crew || []).find(c => c.job === 'Director')?.name
     : (details?.created_by || [])[0]?.name;
@@ -1539,17 +1610,18 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
             </button>
           </div>
         ) : (
-          <div className={`panel-header-wrap${details?.backdrop_path ? '' : ' panel-header-wrap--no-backdrop'}`}>
+          <div className={`panel-header-wrap${backdropPath ? '' : ' panel-header-wrap--no-backdrop'}`}>
             <div
               onPointerDown={handleDragStart}
               onPointerMove={handleDragMove}
               onPointerUp={endDrag}
               onPointerCancel={endDrag}
             >
-              {details?.backdrop_path
-                ? <img className="panel-header-img" src={backdropUrl(details.backdrop_path)} alt="" />
+              {backdropPath
+                ? <img className="panel-header-img" src={backdropUrl(backdropPath)} alt="" />
                 : <div className="panel-header-fallback" />
               }
+              {logoPath && <img className="panel-title-logo" src={logoUrl(logoPath, 'w300')} alt="" />}
               <div className="panel-drag-handle" />
             </div>
             <button className="panel-close-btn" onClick={onClose} aria-label="Close">
@@ -1581,8 +1653,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 made it, genre — is all above the fold instead of below a
                 half-panel of artwork. ── */}
             <div className="panel-head">
-              {details?.poster_path
-                ? <img className="panel-poster" src={posterUrl(details.poster_path, 'w342')} alt="" />
+              {posterPath
+                ? <img className="panel-poster" src={posterUrl(posterPath, 'w342')} alt="" />
                 : <div className="panel-poster panel-poster--empty" aria-hidden="true" />
               }
               <div className="panel-head-text">
@@ -1598,6 +1670,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     {genreChips.map(g => <span className="panel-genre" key={g.id}>{g.name}</span>)}
                   </div>
                 )}
+                <CustomizeArtwork
+                  mediaType={artworkSubject}
+                  tmdbId={itemId}
+                  seasonNumber={seasonForPoster == null ? undefined : seasonForPoster}
+                  defaults={{ poster: details?.poster_path, backdrop: details?.backdrop_path }}
+                />
               </div>
             </div>
 
@@ -1805,6 +1883,17 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                             <> <a href={whereToWatch.justwatchLink} target="_blank" rel="noopener">Check JustWatch</a></>
                           )}
                         </p>
+                        {showStreamingArrivalAsk(itemType, hasWatchOffers) && (
+                          <StreamingArrivalAsk
+                            userId={user?.id}
+                            movie={details}
+                            inList={inList}
+                            onAdd={() => watchlist.addToList(
+                              { ...details, id: itemId, media_type: 'movie' },
+                              { source: 'streaming_arrival_ask' },
+                            )}
+                          />
+                        )}
                       </>
                     )}
                     {hasWatchOffers && (
@@ -1938,6 +2027,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                   details={details}
                   timezone={timezone}
                   onSeriesFinished={handleSeriesFinished}
+                  onSeasonChange={setPickedSeason}
                 />
               </>
             )}
@@ -1959,7 +2049,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                         onClick={() => goToTitle(item.id, type, 'more_like_this')}
                         aria-label={title}
                       >
-                        <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />
+                        <img src={posterUrl(displayPosterPath(art.apply(item)), 'w185')} alt="" loading="lazy" />
                         <span className="panel-similar-name">{title}</span>
                         <span className="panel-similar-meta">{creditMeta(item, type)}</span>
                       </button>

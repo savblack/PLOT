@@ -1,9 +1,10 @@
 /**
  * Home screen. Mirrors web DiscoverView.
- * Discover order: hero, Continue watching, Hot Right Now, Out Today,
- * Top 20 This Week, Your people, Most Binged, then releases and platforms.
+ * Shelf order comes from the viewer's Home layout (@plot/core/homeLayout.js);
+ * the default is picks, Continue watching, Hot Right Now, Top 20 This Week,
+ * Your people, releases (Out Today, recent, coming soon), Most Binged, platforms.
  */
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
 import HomeReleases, { formatDayLabel } from '../../components/HomeReleases';
@@ -14,7 +15,7 @@ import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, LayoutAnimation,
   UIManager, Platform, StyleSheet, Dimensions,
 } from 'react-native';
-import Svg, { Path, Polyline } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
@@ -29,12 +30,18 @@ import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
+import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
-import { ContinueWatchingShelf, YourPeopleShelf } from '../../components/people/HomeShelves';
+import { ContinueWatchingCard, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
+import { useContinueWatching } from '@plot/core/useHomeShelves.js';
+import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
+import RateCard from '../../components/RateCard';
+import TonightFab from '../../components/TonightFab';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { useRouter, type Href } from 'expo-router';
@@ -47,9 +54,14 @@ import PicksCarousel from '../../components/PicksCarousel';
 import { currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.js';
 import { localDateStr } from '@plot/core/date.js';
 import { greetingFor } from '@plot/core/greeting.js';
+import { visibleHomeSections } from '@plot/core/homeLayout.js';
+import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
+import FirstWinCard from '../../components/FirstWinCard';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
+import ImportJobCard, { type ImportJobRow } from '../../components/ImportJobCard';
 import { markImportDone } from '../../lib/finishingTouches';
+import { suppressFirstWinForImport } from '../../lib/firstWinCard';
 import { takePendingImportSource } from '../../lib/pendingImport';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 
@@ -148,9 +160,10 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { profile } = useAppData();
+  const art = useUserArtwork();
   const fw       = favoriteWords(profile?.region);
   const title    = item.title || item.name || '';
-  const img      = posterUrl(item.poster_path, 'w185');
+  const img      = posterUrl(displayPosterPath(art.apply(item)), 'w185');
 
   return (
     <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>
@@ -191,8 +204,10 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
 function BingeCard({ item, onPress }: { item: MediaItem; onPress: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
+  const shown = art.apply(item);
   const title    = item.name || item.title || '';
-  const backdrop = backdropUrl(item.backdrop_path, 'w780') || posterUrl(item.poster_path, 'w342');
+  const backdrop = backdropUrl(displayBackdropPath(shown), 'w780') || posterUrl(displayPosterPath(shown), 'w342');
   const year     = (item.first_air_date || '').slice(0, 4);
 
   return (
@@ -220,8 +235,9 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
   const title = item.title || item.name || '';
-  const img   = posterUrl(item.poster_path, 'w92');
+  const img   = posterUrl(displayPosterPath(art.apply(item)), 'w92');
   const type  = item.media_type === 'tv' ? 'TV' : 'Movie';
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
   const glow  = rank <= 10;
@@ -267,8 +283,10 @@ function HeroCard({ item, onPress, saved, onSave, cardStyle, badge = 'TRENDING #
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
+  const shown = art.apply(item);
   const title    = item.title || item.name || '';
-  const backdrop = backdropUrl(item.backdrop_path) || posterUrl(item.poster_path, 'w780');
+  const backdrop = backdropUrl(displayBackdropPath(shown)) || posterUrl(displayPosterPath(shown), 'w780');
 
   return (
     <TouchableOpacity style={[styles.hero, cardStyle]} onPress={onPress} activeOpacity={0.9}>
@@ -428,9 +446,10 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { profile } = useAppData();
+  const art = useUserArtwork();
   const fw        = favoriteWords(profile?.region);
   const title     = item.title || item.name || '';
-  const img       = posterUrl(item.poster_path, 'w185');
+  const img       = posterUrl(displayPosterPath(art.apply(item)), 'w185');
 
   return (
     <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>
@@ -664,14 +683,23 @@ export default function HomeScreen() {
      ACTIVATED analytics, and left the shared store stale until app restart:
      save on Home, open the title's panel, and it still offered "Add to
      Watchlist". */
-  const { favorites, watchlist, userId, profile, user, customLists } = useAppData();
+  const { favorites, watchlist, watching, history, userId, profile, user, customLists, refreshProfile } = useAppData();
+  const homeLayout = useHomeLayout({ userId, saved: profile?.home_layout, onPersisted: refreshProfile });
   const router = useRouter();
+  // Up next: the shows with an episode out, then the saved titles, one shelf.
+  const continueWatching = useContinueWatching(watching.items ?? [], fetchContinueWatchingTv);
+  // The line under the greeting: nights logged in the last seven days.
+  const weekNights = useMemo(() => nightsThisWeek(history.entries ?? []), [history.entries]);
+  const bestStreak = useMemo(() => streaks(history.entries ?? []).best, [history.entries]);
   // First run: the titles just saved in onboarding lead Home, under the greeting
   // and the Finishing touches card. Everyone else keeps the rail at the bottom.
   const ft = useFinishingTouchesState(userId);
   const firstRun = ft.visible;
   // Onboarding's "Switching apps?" pick: setup finished first, so the import opens now.
   const [importSource, setImportSource] = useState<string | null>(takePendingImportSource);
+  // A finished background import left entries to match: the modal opens on them.
+  const [reviewJob, setReviewJob] = useState<ImportJobRow | null>(null);
+  const onImportFinished = useCallback(() => { ft.reload(); }, [ft]);
   const watchlistItems: MediaItem[] = watchlist.items;
   useEffect(() => {
     if (tab !== 'discover' || !ft.ready || watchlist.loading || watchlistItems.length === 0) return;
@@ -799,21 +827,31 @@ export default function HomeScreen() {
       }) as { item: MediaItem; badge: string }[]
     : [];
 
-  const savedRail = watchlistItems.length > 0 ? (
+  // Three trending titles stand in for Up next while nothing is saved, each
+  // with its bookmark, so the first saves happen where the shelf will be.
+  const starterPicks = trending.filter((t: MediaItem) => !savedIds.has(t.id ?? 0)).slice(0, 3);
+  const upNextRows: Array<{ kind: 'watching'; item: ContinueWatchingItem } | { kind: 'saved'; item: MediaItem }> = [
+    ...continueWatching.items.map((item: ContinueWatchingItem) => ({ kind: 'watching' as const, item })),
+    ...(firstRun ? watchlistItems.slice(0, 20) : watchlistItems).map((item: MediaItem) => ({ kind: 'saved' as const, item })),
+  ];
+  const upNextEmpty = upNextRows.length === 0 && !watchlist.loading && !continueWatching.loading;
+  const upNext = upNextRows.length > 0 ? (
     <View style={styles.section}>
-      <SectionHeader kicker="Your list" title={DISCOVER_VIEW.savedToWatch} />
+      <SectionHeader title={DISCOVER_VIEW.upNext} />
       <FlatList
         horizontal
-        data={firstRun ? watchlistItems.slice(0, 20) : watchlistItems}
-        keyExtractor={item => String(item.tmdb_id ?? item.id)}
-        renderItem={({ item }) => (
+        data={upNextRows}
+        keyExtractor={row => row.kind === 'watching' ? `w-${row.item.tmdbId}` : `s-${row.item.tmdb_id ?? row.item.id}`}
+        renderItem={({ item: row }) => row.kind === 'watching' ? (
+          <ContinueWatchingCard item={row.item} />
+        ) : (
           <PosterCard
-            item={{ ...item, id: item.tmdb_id ?? 0 }}
-            onPress={() => item.tmdb_id && openPanel(item.tmdb_id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+            item={{ ...row.item, id: row.item.tmdb_id ?? 0 }}
+            onPress={() => row.item.tmdb_id && openPanel(row.item.tmdb_id, (row.item.media_type === 'tv' ? 'tv' : 'movie'))}
             saved={true}
-            onSave={() => handleSave({ ...item, id: item.tmdb_id ?? 0 })}
-            isFav={favorites.isFavorite(item.tmdb_id ?? item.id ?? 0)}
-            onFavorite={() => toggleFav({ ...item, id: item.tmdb_id ?? item.id ?? 0 })}
+            onSave={() => handleSave({ ...row.item, id: row.item.tmdb_id ?? 0 })}
+            isFav={favorites.isFavorite(row.item.tmdb_id ?? row.item.id ?? 0)}
+            onFavorite={() => toggleFav({ ...row.item, id: row.item.tmdb_id ?? row.item.id ?? 0 })}
           />
         )}
         showsHorizontalScrollIndicator={false}
@@ -821,7 +859,175 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
       />
     </View>
+  ) : upNextEmpty && starterPicks.length > 0 ? (
+    <View style={styles.section}>
+      <SectionHeader title={DISCOVER_VIEW.upNext} />
+      <View style={styles.upNextEmpty}>
+        <Text style={styles.upNextEmptyBody}>{DISCOVER_VIEW.emptyUpNext.body}</Text>
+        <View style={styles.upNextEmptyRow}>
+          {starterPicks.map((item: MediaItem) => (
+            <PosterCard
+              key={`${item.media_type}-${item.id}`}
+              item={item}
+              onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+              saved={false}
+              onSave={() => handleSave(item)}
+              isFav={favorites.isFavorite(item.id ?? 0)}
+              onFavorite={() => toggleFav(item)}
+            />
+          ))}
+        </View>
+        <TouchableOpacity onPress={() => router.push('/(app)/search' as Href)} accessibilityRole="link" hitSlop={{ top: 8, bottom: 8 }}>
+          <Text style={styles.upNextEmptyLink}>{DISCOVER_VIEW.emptyUpNext.searchLink}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   ) : null;
+
+  const renderShelf: Record<string, () => ReactNode> = {
+    picks: () => (
+      <>
+        {(hero || curated) && (
+          <View onLayout={e => { picksBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}>
+            <SectionHeader title={DISCOVER_VIEW.picks.cardsLabel} />
+            {(hero && curated) || otherPicks.length > 0 ? (
+              <PicksCarousel cardWidth={PICKS_CARD_W} inView={picksInView}>
+                {hero && (
+                  <HeroCard
+                    key="hero"
+                    item={hero}
+                    cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
+                    onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
+                    saved={savedIds.has(hero.id ?? 0)}
+                    onSave={() => handleSave(hero)}
+                  />
+                )}
+                {curated && <CuratedListCard key={curated.id} curated={curated} width={PICKS_CARD_W} height={HERO_H} onPress={() => setOpenCurated(curated)} />}
+                {otherPicks.map(({ item, badge }) => (
+                  <HeroCard
+                    key={`${item.media_type}-${item.id}`}
+                    item={item}
+                    badge={badge.toUpperCase()}
+                    cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
+                    onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                    saved={savedIds.has(item.id ?? 0)}
+                    onSave={() => handleSave(item)}
+                  />
+                ))}
+              </PicksCarousel>
+            ) : hero ? (
+              <HeroCard
+                item={hero}
+                onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
+                saved={savedIds.has(hero.id ?? 0)}
+                onSave={() => handleSave(hero)}
+              />
+            ) : curated && (
+              <View style={{ paddingHorizontal: spacing.xl }}>
+                <CuratedListCard curated={curated} width={SCREEN_W - spacing.xl * 2} height={HERO_H} onPress={() => setOpenCurated(curated)} />
+              </View>
+            )}
+          </View>
+        )}
+      </>
+    ),
+    // Up next (Continue watching plus the saved titles) takes the slot the
+    // layout calls `continue`, so the viewer's order and hide apply to it. On
+    // the first run it sits above the shelves instead.
+    continue: () => (firstRun ? null : upNext),
+    hot: () => (
+      <>
+        {hotRail.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Trending today" title="Hot Right Now" />
+            <FlatList
+              horizontal
+              data={hotRail}
+              keyExtractor={item => String(item.id)}
+              renderItem={({ item }) => (
+                <PosterCard
+                  item={item}
+                  onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                  saved={savedIds.has(item.id ?? 0)}
+                  onSave={() => handleSave(item)}
+                  isFav={favorites.isFavorite(item.id ?? 0)}
+                  onFavorite={() => toggleFav(item)}
+                />
+              )}
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled
+              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+            />
+          </View>
+        )}
+      </>
+    ),
+    weekly: () => (
+      <>
+        {applyFilters(weekly).length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Global ranking" title="Top 20 This Week" />
+            {applyFilters(weekly).map((item, i) => (
+              <ChartRow
+                key={String(item.id)}
+                item={item}
+                rank={i + 1}
+                saved={savedIds.has(item.id ?? 0)}
+                onSave={() => handleSave(item)}
+                onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+              />
+            ))}
+          </View>
+        )}
+      </>
+    ),
+    people: () => <YourPeopleShelf />,
+    releases: () => <HomeReleases rails={['today', 'recent', 'comingSoon']} />,
+    binged: () => (
+      <>
+        {applyFilters(bingedShows).length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Popular TV" title="Most Binged Shows" />
+            <FlatList
+              horizontal
+              data={applyFilters(bingedShows)}
+              keyExtractor={item => String(item.id)}
+              renderItem={({ item }) => (
+                <BingeCard item={item} onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))} />
+              )}
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled
+              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+            />
+          </View>
+        )}
+      </>
+    ),
+    platforms: () => (
+      <>
+        {platforms.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Official charts" title="Top 10 by Platform" />
+            {platforms.map(platform => (
+              <PlatformSection
+                key={platform.id}
+                platform={platform}
+                saved={savedIds}
+                onSave={handleSave}
+                isFav={(id) => favorites.isFavorite(id)}
+                onFavorite={toggleFav}
+                onOpen={(item, type) => item.id && openPanel(item.id, type)}
+              />
+            ))}
+            <Text style={styles.platAttribution}>
+              Official Top 10 · Netflix and the Streaming Availability API.
+            </Text>
+          </View>
+        )}
+      </>
+    ),
+  };
+  const homeShelves = visibleHomeSections(homeLayout.layout, Object.keys(renderShelf));
 
   return (
     <View style={styles.screen}>
@@ -874,169 +1080,76 @@ export default function HomeScreen() {
           }}
       >
 
+        {userId && importSource !== 'trakt' && importSource !== 'trakt-export' && <FirstWinCard userId={userId} />}
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
+        {!history.loading && (
+          <TouchableOpacity
+            style={styles.weekLine}
+            onPress={() => router.push('/(app)/history' as Href)}
+            accessibilityRole="link"
+            hitSlop={{ top: 6, bottom: 6 }}
+          >
+            {weekNights > 0 && <View style={styles.weekDot} />}
+            <Text style={styles.weekText}>{weekNights > 0 ? DISCOVER_VIEW.weekLine(weekNights, bestStreak) : DISCOVER_VIEW.weekEmpty}</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.searchField}
+          onPress={() => router.push('/(app)/search' as Href)}
+          accessibilityRole="search"
+          accessibilityLabel={MEDIA.searchPlaceholder}
+          activeOpacity={0.8}
+        >
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Circle cx={11} cy={11} r={7} />
+            <Line x1={16.5} y1={16.5} x2={21} y2={21} />
+          </Svg>
+          <Text style={styles.searchFieldText} numberOfLines={1}>{MEDIA.searchPlaceholder}</Text>
+        </TouchableOpacity>
+        {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}
         <FinishingTouches state={ft.state} onState={ft.setState} />
+        {userId && <RateCard userId={userId} />}
 
-        {firstRun && savedRail}
+        {firstRun && upNext}
+        {reviewJob && userId && (
+          <ImportHistoryModal
+            userId={userId}
+            entry={IMPORT_ENTRY_POINTS.ONBOARDING}
+            reviewJob={reviewJob}
+            onImported={async (source, count) => {
+              ft.setState(await markImportDone(userId, source, count));
+              await suppressFirstWinForImport(userId, source);
+            }}
+            onClose={() => setReviewJob(null)}
+          />
+        )}
         {importSource && userId && (
           <ImportHistoryModal
             userId={userId}
             entry={IMPORT_ENTRY_POINTS.ONBOARDING}
             initialPlatform={importSource as never}
-            onImported={async (source, count) => ft.setState(await markImportDone(userId, source, count))}
+            onImported={async (source, count) => {
+              ft.setState(await markImportDone(userId, source, count));
+              await suppressFirstWinForImport(userId, source);
+            }}
             onClose={() => setImportSource(null)}
           />
         )}
 
-        {/* ── plot's Picks: the hero, and the plot list card beside it ── */}
-        {(hero || curated) && (
-          <View onLayout={e => { picksBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}>
-            <SectionHeader title={DISCOVER_VIEW.picks.cardsLabel} />
-            {(hero && curated) || otherPicks.length > 0 ? (
-              <PicksCarousel cardWidth={PICKS_CARD_W} inView={picksInView}>
-                {hero && (
-                  <HeroCard
-                    key="hero"
-                    item={hero}
-                    cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
-                    onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
-                    saved={savedIds.has(hero.id ?? 0)}
-                    onSave={() => handleSave(hero)}
-                  />
-                )}
-                {curated && <CuratedListCard key={curated.id} curated={curated} width={PICKS_CARD_W} height={HERO_H} onPress={() => setOpenCurated(curated)} />}
-                {otherPicks.map(({ item, badge }) => (
-                  <HeroCard
-                    key={`${item.media_type}-${item.id}`}
-                    item={item}
-                    badge={badge.toUpperCase()}
-                    cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
-                    onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
-                    saved={savedIds.has(item.id ?? 0)}
-                    onSave={() => handleSave(item)}
-                  />
-                ))}
-              </PicksCarousel>
-            ) : hero ? (
-              <HeroCard
-                item={hero}
-                onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
-                saved={savedIds.has(hero.id ?? 0)}
-                onSave={() => handleSave(hero)}
-              />
-            ) : curated && (
-              <View style={{ paddingHorizontal: spacing.xl }}>
-                <CuratedListCard curated={curated} width={SCREEN_W - spacing.xl * 2} height={HERO_H} onPress={() => setOpenCurated(curated)} />
-              </View>
-            )}
-          </View>
-        )}
+        {/* ── Shelves, in the viewer's order (Customize Home). Fixed cards
+            above are not part of the layout; a hidden shelf is skipped. The
+            releases slot carries Out Today, recent and coming soon together.
+            Ids are shared with web (@plot/core/homeLayout.js). ── */}
+        {homeShelves.map(id => <View key={id}>{renderShelf[id]?.()}</View>)}
 
-        <ContinueWatchingShelf />
-
-        {/* ── Hot Right Now ── */}
-        {hotRail.length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Trending today" title="Hot Right Now" />
-            <FlatList
-              horizontal
-              data={hotRail}
-              keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <PosterCard
-                  item={item}
-                  onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
-                  saved={savedIds.has(item.id ?? 0)}
-                  onSave={() => handleSave(item)}
-                  isFav={favorites.isFavorite(item.id ?? 0)}
-                  onFavorite={() => toggleFav(item)}
-                />
-              )}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-            />
-          </View>
-        )}
-
-        {/* ── Out Today (wide release cards) ── */}
-        <HomeReleases rails={['today']} />
-
-        {/* ── Top 20 This Week ── */}
-        {applyFilters(weekly).length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Global ranking" title="Top 20 This Week" />
-            {applyFilters(weekly).map((item, i) => (
-              <ChartRow
-                key={String(item.id)}
-                item={item}
-                rank={i + 1}
-                saved={savedIds.has(item.id ?? 0)}
-                onSave={() => handleSave(item)}
-                onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
-              />
-            ))}
-          </View>
-        )}
-
-        <YourPeopleShelf />
-
-        {/* ── Most Binged Shows ── */}
-        {applyFilters(bingedShows).length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Popular TV" title="Most Binged Shows" />
-            <FlatList
-              horizontal
-              data={applyFilters(bingedShows)}
-              keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <BingeCard item={item} onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))} />
-              )}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-            />
-          </View>
-        )}
-
-        {/* ── Releases: recent + upcoming, below the chart ── */}
-        <HomeReleases rails={['recent', 'comingSoon']} />
-
-        {/* ── Top 10 by Platform ──
-            The platforms' real published charts, not TMDB popularity within
-            the user's own subscriptions: a fixed set, the same for everyone,
-            so it needs the attribution line web carries. */}
-        {platforms.length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Official charts" title="Top 10 by Platform" />
-            {platforms.map(platform => (
-              <PlatformSection
-                key={platform.id}
-                platform={platform}
-                saved={savedIds}
-                onSave={handleSave}
-                isFav={(id) => favorites.isFavorite(id)}
-                onFavorite={toggleFav}
-                onOpen={(item, type) => item.id && openPanel(item.id, type)}
-              />
-            ))}
-            <Text style={styles.platAttribution}>
-              Official Top 10 · Netflix and the Streaming Availability API.
-            </Text>
-          </View>
-        )}
-
-        {!firstRun && savedRail}
-
-        {watchlistItems.length === 0 && !loading && (
-          <View style={styles.emptyWatchlist}>
-            <Text style={styles.emptyTitle}>Your list is empty</Text>
-            <Text style={styles.emptyBody}>Tap the bookmark on any title above to save it here.</Text>
-          </View>
-        )}
+        <TouchableOpacity style={styles.customize} onPress={() => router.push('/(app)/home-layout' as Href)} accessibilityRole="button" accessibilityLabel={DISCOVER_VIEW.customize.title}>
+          <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
+        </TouchableOpacity>
 
       </ScrollView>
       )}
+
+      {tab === 'discover' && <TonightFab />}
 
       {openCurated && (
         <CuratedListPanel
@@ -1059,6 +1172,7 @@ export default function HomeScreen() {
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
         <ScreenHeaderBar
+          showSearch={false}
           center={
             <Text style={styles.dateLabel} pointerEvents="none">
               {new Date().toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
@@ -1417,8 +1531,25 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     marginTop: spacing.sm,
   },
 
-  // ── Empty ──
-  greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.lg, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
+  // ── Greeting block ──
+  greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.xs, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
+  weekLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl, marginBottom: spacing.md, minHeight: 24 },
+  weekDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accentSecondary },
+  weekText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  searchField: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    marginHorizontal: spacing.xl, marginBottom: spacing.lg,
+    minHeight: 44, paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface,
+  },
+  searchFieldText: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  // ── Up next, empty ──
+  upNextEmpty: { marginHorizontal: spacing.xl, padding: spacing.md, gap: spacing.md, borderRadius: radii.md, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.borderStrong },
+  upNextEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },
+  upNextEmptyRow: { flexDirection: 'row', gap: spacing.md },
+  upNextEmptyLink: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
+  customize: { alignSelf: 'center', marginTop: spacing.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.lg },
+  customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
   emptyWatchlist: {
     marginHorizontal: spacing.xl,
     padding: spacing.xl,

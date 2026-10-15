@@ -4,6 +4,7 @@ import type { Database } from '../_shared/database.types.ts'
 import { buildSimklHistoryBody, parseSimklHistory } from '../_shared/simklSync.js'
 import { insertMissingHistory, type ImportedHistoryRow } from '../_shared/importHistory.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
+import { workerActingUser } from '../_shared/workerActingUser.ts'
 
 type Db = SupabaseClient<Database>
 type Integration = Database['public']['Tables']['media_integrations']['Row']
@@ -345,7 +346,10 @@ serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   const admin = createClient<Database>(Deno.env.get('SUPABASE_URL') ?? '', serviceKey())
   try {
-    const { user, error } = await authUser(req)
+    // The import-worker runs a user's background account import with the
+    // service key and an explicit user_id (see _shared/workerActingUser.ts).
+    const acting = await workerActingUser(req)
+    const { user, error } = acting ? { user: acting, error: undefined } : await authUser(req)
     if (error) return error
     const body = await req.clone().json().catch(() => ({})) as Record<string, unknown>
     const action = String(body.action || '')
@@ -356,6 +360,6 @@ serve(async req => {
     return json({ error: 'Unknown action' }, 404)
   } catch (error) {
     console.error('[simkl-sync]', error)
-    return json({ error: (error as Error).message }, 500)
+    return json({ error: 'Internal error' }, 500)
   }
 })

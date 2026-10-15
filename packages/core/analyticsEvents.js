@@ -206,6 +206,11 @@ export const EVENTS = Object.freeze({
   CALENDAR_FEED_GENERATED: 'calendar_feed_generated',
   // The title panel's Episode alerts switch for one show (`on`: the new state).
   EPISODE_ALERTS_TOGGLED: 'episode_alerts_toggled',
+  // Where to watch, when a film has no offer in the viewer's region and they
+  // ask to be told. Fired after the watchlist save (if it was not already
+  // there) and the mute clear both land. `added_to_watchlist` is true when
+  // this tap is what saved it. TV never fires this: there is no TV alert.
+  STREAMING_ARRIVAL_REQUESTED: 'streaming_arrival_requested',
   // Add to calendar from the title panel: `action` is subscribe (link copied),
   // subscribe_setup (sent to Settings), upgrade (Free) or download (.ics).
   TITLE_CALENDAR_ACTION: 'title_calendar_action',

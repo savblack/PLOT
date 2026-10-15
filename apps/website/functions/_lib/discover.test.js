@@ -69,19 +69,23 @@ test('the allowlist still covers every path the homepage asks for', () => {
   }
 });
 
-test('the allowlist still passes every query the homepage sends', () => {
-  // Values are enumerated, not pattern-matched, so a retuned category ring
-  // (a different genre id, a different vote threshold) silently loses its
-  // posters unless this list is updated with it. Fail here instead.
-  const queries = [...homepage.matchAll(/q: '([^']+)'/g)].map((match) => match[1]);
-  assert.ok(queries.length > 0, 'found no category queries to check, so this test is not testing anything');
-  for (const q of queries) {
-    const sent = new URLSearchParams(`${q}&include_adult=false`); // as loadLiveCovers calls it
-    const { search, error } = query(`?path=discover/movie&${sent}`);
-    assert.equal(error, undefined, `the homepage sends ?${q}, which _lib/discover.js refuses`);
-    for (const [key, value] of sent) {
+test('the allowlist still passes every request the homepage makes', () => {
+  // The homepage asks /api/discover for a fixed set of paths and query strings
+  // (hero, Coming up, list covers, ticker, poster wall). Values are enumerated
+  // in _lib/discover.js, so a path or parameter missing there quietly leaves its
+  // surface on the committed fallbacks. Fail here instead.
+  const calls = [...homepage.matchAll(/tmdbProxy\('([^']+)'(?:,\s*'([^']*)')?/g)].map((m) => [m[1], m[2] || '']);
+  const vars = Object.fromEntries([...homepage.matchAll(/var (\w+) = '([^']*)';/g)].map((m) => [m[1], m[2]]));
+  // List covers build their query from SOURCES; resolve those too.
+  for (const m of homepage.matchAll(/\['(discover\/movie)', '([^']*)' \+ (\w+)\]/g)) calls.push([m[1], m[2] + (vars[m[3]] || '')]);
+  for (const m of homepage.matchAll(/\['([a-z_/]+)'\]/g)) calls.push([m[1], '']);
+  assert.ok(calls.length > 0, 'found no tmdbProxy requests to check, so this test is not testing anything');
+  for (const [path, params] of calls) {
+    const { search, error } = query(`?path=${path}${params ? '&' + params : ''}`);
+    assert.equal(error, undefined, `the homepage requests ${path}, which _lib/discover.js refuses`);
+    for (const [key, value] of new URLSearchParams(params)) {
       assert.ok(new URLSearchParams(search).getAll(key).includes(value),
-        `the homepage sends ${key}=${value}, which _lib/discover.js drops: the ring loses its posters`);
+        `the homepage sends ${key}=${value} to ${path}, which _lib/discover.js drops`);
     }
   }
 });

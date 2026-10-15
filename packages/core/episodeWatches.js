@@ -16,25 +16,38 @@ export function episodeWatchStates(events, overrides) {
   return states;
 }
 
+async function readWatchRows(table, userId, tmdbId, season = null) {
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    let query = supabase.from(table).select('*').eq('user_id', userId).eq('tmdb_id', tmdbId);
+    if (table === 'watch_events') query = query.eq('media_type', 'tv');
+    if (season != null) query = query.eq('season_number', season);
+    const { data, error } = await query.order('id').range(from, from + 999);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  return rows;
+}
+
 /** Read every episode for one account/title. Never return a partially read map.
  * @param {string} userId
  * @param {number} tmdbId
  */
 export async function readEpisodeWatches(userId, tmdbId) {
-  const tables = [];
-  for (const table of ['watch_events', 'episode_watch_overrides']) {
-    const rows = [];
-    for (let from = 0; ; from += 1000) {
-      let query = supabase.from(table).select('*').eq('user_id', userId).eq('tmdb_id', tmdbId);
-      if (table === 'watch_events') query = query.eq('media_type', 'tv');
-      const { data, error } = await query.order('id').range(from, from + 999);
-      if (error) throw error;
-      rows.push(...(data || []));
-      if (!data || data.length < 1000) break;
-    }
-    tables.push(rows);
-  }
-  return episodeWatchStates(tables[0], tables[1]);
+  const events = await readWatchRows('watch_events', userId, tmdbId);
+  const overrides = await readWatchRows('episode_watch_overrides', userId, tmdbId);
+  return episodeWatchStates(events, overrides);
+}
+
+/** Season 0 only. Specials are stored beside the series pointer, not in it.
+ * @param {string} userId
+ * @param {number} tmdbId
+ */
+export async function readSpecialWatches(userId, tmdbId) {
+  const events = await readWatchRows('watch_events', userId, tmdbId, 0);
+  const overrides = await readWatchRows('episode_watch_overrides', userId, tmdbId, 0);
+  return episodeWatchStates(events, overrides);
 }
 
 /** One atomic statement for episode or season edits. No source events are deleted.

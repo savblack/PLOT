@@ -218,7 +218,7 @@ const buildHtml = ({ dateLabel, featured, kicker, chart, weekend, streaming }, u
   <tr><td align="center" style="padding:30px 12px;">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#ffffff;border:1px solid ${HAIR};border-radius:16px;">
       <tr><td style="padding:44px 32px 0;text-align:center;">
-        <div style="font-family:${DISPLAY};font-size:48px;font-weight:700;line-height:0.9;letter-spacing:-0.045em;color:${INK};">plot</div>
+        <img src="${APP}/logo-email.png" width="78" height="43" alt="plot" style="display:block;width:78px;height:43px;margin:0 auto;border:0;font-family:${DISPLAY};font-size:40px;font-weight:700;line-height:1;color:${INK};">
         <div style="font-family:${SANS};font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;color:${FAINT};margin-top:14px;">This week in film &amp; TV &middot; ${esc(dateLabel)}</div>
       </td></tr>
       ${featured ? featuredBlock(featured, kicker) : ''}

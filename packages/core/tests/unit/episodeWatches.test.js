@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { configure } from '../../config.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
-import { episodeWatchStates, readEpisodeWatches, saveEpisodeWatches } from '../../episodeWatches.js';
+import { episodeWatchStates, readEpisodeWatches, readSpecialWatches, saveEpisodeWatches } from '../../episodeWatches.js';
 import { getEpisodeGuideState } from '../../episodeProgress.js';
 import { getSeasonWatchState } from '../../watchingProgress.js';
 const { id: tmdbId } = JSON.parse(readFileSync(new URL('../fixtures/imports/tmdb-episode-series.json', import.meta.url))).result;
@@ -29,6 +29,27 @@ test('specials are separate from the main series and season counts use actual or
   const episodeStates = episodeWatchStates([{ season_number: 0, episode_number: 2 }], []);
   assert.equal(getEpisodeGuideState({ currentSeason: 2, selectedSeason: 0, episodeNumber: 1, episodeStates }).isWatched, false);
   assert.equal(getSeasonWatchState({ selectedSeason: 0, episodeCount: 2, episodeNumbers: [2, 4], episodeStates }).watchedCount, 1);
+  assert.equal(getSeasonWatchState({ currentSeason: 3, currentEpisode: 1, selectedSeason: 0, episodeCount: 2 }).isComplete, false);
+});
+
+test('specials read and write stay on season 0', async () => {
+  const client = createInMemorySupabase({
+    tables: {
+      watch_events: [
+        { id: 1, user_id: 'owner', tmdb_id: tmdbId, media_type: 'tv', season_number: 0, episode_number: 1 },
+        { id: 2, user_id: 'owner', tmdb_id: tmdbId, media_type: 'tv', season_number: 1, episode_number: 4 },
+      ],
+      episode_watch_overrides: [],
+    },
+    unique: { episode_watch_overrides: ['user_id', 'tmdb_id', 'season_number', 'episode_number'] },
+  });
+  configure({ supabaseClient: client });
+  assert.deepEqual(await readSpecialWatches('owner', tmdbId), { '0:1': true });
+  await saveEpisodeWatches('owner', tmdbId, 0, [2], true);
+  const specials = await readSpecialWatches('owner', tmdbId);
+  assert.equal(specials['0:2'], true);
+  assert.equal(specials['1:4'], undefined);
+  assert.equal((await readEpisodeWatches('owner', tmdbId))['1:4'], true);
 });
 
 test('reads beyond the row cap, isolates accounts and rejects a partial read', async () => {

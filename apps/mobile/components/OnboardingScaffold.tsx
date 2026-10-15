@@ -12,13 +12,16 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
-import { ONBOARDING_PROGRESS_TOTAL } from '@plot/core/onboardingSetup.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
+import PlotWordmark from './PlotWordmark';
 
-// Three parts: save a few (with the switching-apps branch), where do you watch,
-// then the building moment, same as web.
-export const TOTAL_STEPS = ONBOARDING_PROGRESS_TOTAL;
+// Two steps on mobile: save a few (with the import sources folded into the
+// same screen) and where do you watch. The building moment that follows has
+// no header, so it is not a step the bar can show. Web still counts it
+// (ONBOARDING_PROGRESS_TOTAL in @plot/core/onboardingSetup.js) because its
+// building screen keeps the bar; the analytics step numbers are unchanged.
+export const TOTAL_STEPS = 2;
 
 interface Props {
   step: number;
@@ -68,7 +71,7 @@ export default function OnboardingScaffold({
         ) : <View style={styles.backBtn} />}
 
         <View style={styles.headerCenter}>
-          <Text style={styles.wordmark}>plot</Text>
+          <PlotWordmark size={22} color={colors.textPrimary} style={styles.wordmark} />
           <View style={styles.progress}>
             {Array.from({ length: TOTAL_STEPS }, (_, i) => (
               <View
@@ -134,10 +137,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   backBtn: { width: 28, height: 28, marginTop: 6, alignItems: 'center', justifyContent: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
   wordmark: {
-    fontFamily: fontFamily.display,
-    fontSize: 22,
-    letterSpacing: -1.1,
-    color: colors.textPrimary,
     marginBottom: spacing.lg,
   },
   progress: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.sm, alignSelf: 'stretch', justifyContent: 'center' },

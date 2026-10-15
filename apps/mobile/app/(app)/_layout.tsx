@@ -6,6 +6,7 @@ import Svg, { Path, Rect, Line, Polyline, Circle } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
 import { spacing } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
+import AppIconEntitlement from '../../components/AppIconEntitlement';
 
 function IconHome({ color }: { color: string | any }) {
   return (
@@ -75,7 +76,9 @@ function TabsLayout() {
   const { colors } = useTheme();
 
   return (
-    <Tabs
+    <>
+      <AppIconEntitlement />
+      <Tabs
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
@@ -140,12 +143,15 @@ function TabsLayout() {
       <Tabs.Screen name="tonight" options={{ href: null }} />
       <Tabs.Screen name="watchlist-visibility" options={{ href: null }} />
       <Tabs.Screen name="themes" options={{ href: null }} />
+      <Tabs.Screen name="home-layout" options={{ href: null }} />
+      <Tabs.Screen name="app-icon" options={{ href: null }} />
       <Tabs.Screen name="smart-list/[id]" options={{ href: null }} />
       <Tabs.Screen name="together" options={{ href: null }} />
       <Tabs.Screen name="profile-section" options={{ href: null }} />
       <Tabs.Screen name="person/[personId]" options={{ href: null }} />
       <Tabs.Screen name="your-people" options={{ href: null }} />
-    </Tabs>
+      </Tabs>
+    </>
   );
 }
 

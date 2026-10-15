@@ -17,6 +17,10 @@
  *   invoice.payment_failed         refetch the subscription (past_due / unpaid)
  *   invoice.payment_succeeded      refetch the subscription (active after a retry)
  *   invoice.paid                   same snapshot as payment_succeeded
+ *   customer.subscription.trial_will_end  emails the trial-ending reminder the
+ *                                  Terms promise (Stripe sends it N days before
+ *                                  trial_end; N is the Dashboard "Trial ending
+ *                                  events" setting, default 3)
  *
  * Signature: Stripe-Signature, via constructEventAsync. A bad or missing
  * signature is rejected before any write. Idempotency: apply_stripe_subscription_event
@@ -27,15 +31,20 @@
  * Auth is the Stripe signature, not a Supabase JWT — deploy with
  * verify_jwt = false (see supabase/config.toml).
  *
- * Secrets: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
+ * Secrets: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, RESEND_API_KEY (the
+ * reminder), and optionally STRIPE_SETTINGS_URL (where its button goes).
  */
 import Stripe from 'npm:stripe@22.3.2';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
-import { cancelsAtPeriodEnd } from '../_shared/billingPolicy.ts';
+import { billingSettingsUrl, cancelsAtPeriodEnd } from '../_shared/billingPolicy.ts';
 import { reconcileBillingSnapshot } from '../_shared/billingSnapshot.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
+import { errorText, reportLog } from '../_shared/posthogLog.ts';
 import { subscriptionIdFromInvoice, webhookAction } from '../_shared/stripeEvents.ts';
+import { TRIAL_REMINDER_FROM, TRIAL_REMINDER_REPLY_TO, buildTrialReminderEmail, planFromPrice } from '../_shared/trialReminderEmail.js';
+
+const RESEND_API_URL = 'https://api.resend.com/emails';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
@@ -128,7 +137,7 @@ async function capturePremiumConversion(userId: string, sub: Stripe.Subscription
   } catch (err) {
     // Analytics must never make Stripe retry a successfully-applied billing
     // event. The subscription state is already committed at this point.
-    console.error(`stripe-webhook: PostHog conversion capture failed for ${event.id}: ${(err as Error).message}`);
+    reportLog('stripe-webhook', 'error', `stripe-webhook: PostHog conversion capture failed for ${event.id}: ${errorText(err)}`, { distinctId: userId, attributes: { stripe_event_id: event.id } });
   }
 }
 
@@ -149,7 +158,7 @@ async function recordPremiumCheckoutCancellation(event: Stripe.Event) {
   } catch (err) {
     // The receipt makes the event idempotent. Analytics failure should not
     // make Stripe retry an already-recorded expiry.
-    console.error(`stripe-webhook: checkout cancellation capture failed for ${event.id}: ${(err as Error).message}`);
+    reportLog('stripe-webhook', 'error', `stripe-webhook: checkout cancellation capture failed for ${event.id}: ${errorText(err)}`, { distinctId: userId, attributes: { stripe_event_id: event.id } });
   }
 }
 
@@ -167,7 +176,7 @@ async function captureStripeTip(session: Stripe.Checkout.Session, event: Stripe.
       currency: normaliseCurrency(session.currency),
     }, new Date(event.created * 1000).toISOString());
   } catch (err) {
-    console.error(`stripe-webhook: PostHog tip capture failed for ${event.id}: ${(err as Error).message}`);
+    reportLog('stripe-webhook', 'error', `stripe-webhook: PostHog tip capture failed for ${event.id}: ${errorText(err)}`, { distinctId: userId, attributes: { stripe_event_id: event.id } });
   }
 }
 
@@ -177,6 +186,50 @@ async function subscriptionForInvoice(event: Stripe.Event) {
   const subId = subscriptionIdFromInvoice(invoice as Parameters<typeof subscriptionIdFromInvoice>[0]);
   if (!subId) return null;
   return await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
+}
+
+/**
+ * The reminder before a trial converts. Receipt first so a Stripe retry cannot
+ * send it twice; if the send fails the receipt is removed so the retry can.
+ * A subscription that is not on a Plot price, or a user without an address, is
+ * acknowledged and logged rather than retried: there is nothing to send.
+ */
+async function sendTrialReminder(event: Stripe.Event) {
+  const sub = event.data.object as Stripe.Subscription;
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  // Loud, not silent: a missing key is a deployment mistake, so let Stripe retry.
+  if (!resendKey) throw new Error('RESEND_API_KEY is not set');
+  const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+  const userId = await resolveUser(customerId, sub);
+  if (!userId) {
+    reportLog('stripe-webhook', 'error', `${event.type}: no user for customer ${customerId}`, { attributes: { stripe_event_type: event.type, stripe_customer_id: customerId } });
+    return;
+  }
+  const plan = planFromPrice(sub.items?.data?.[0]?.price ?? null);
+  if (!plan || typeof sub.trial_end !== 'number') {
+    reportLog('stripe-webhook', 'error', `${event.type}: subscription ${sub.id} is not a Plot trial`, { distinctId: userId, attributes: { stripe_event_type: event.type, stripe_subscription_id: sub.id } });
+    return;
+  }
+  const { data: user, error: userError } = await admin().auth.admin.getUserById(userId);
+  if (userError) throw new Error(`User lookup failed: ${userError.message}`);
+  const to = user?.user?.email;
+  if (!to) {
+    reportLog('stripe-webhook', 'error', `${event.type}: no email for user`, { distinctId: userId, attributes: { stripe_event_type: event.type } });
+    return;
+  }
+  const { error: receiptError } = await admin().from('stripe_events').insert({ id: event.id, type: event.type });
+  if (receiptError?.code === '23505') return;
+  if (receiptError) throw receiptError;
+  const message = buildTrialReminderEmail({ trialEnd: sub.trial_end, plan, manageUrl: billingSettingsUrl(Deno.env.get('STRIPE_SETTINGS_URL')) });
+  const res = await fetch(RESEND_API_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: TRIAL_REMINDER_FROM, reply_to: TRIAL_REMINDER_REPLY_TO, to: [to], ...message }),
+  });
+  if (!res.ok) {
+    await admin().from('stripe_events').delete().eq('id', event.id);
+    throw new Error(`Resend request failed with status ${res.status}`);
+  }
 }
 
 async function recordStripeTip(event: Stripe.Event) {
@@ -205,7 +258,7 @@ Deno.serve(async (req) => {
       cryptoProvider,
     );
   } catch (err) {
-    console.error('Signature verification failed:', (err as Error).message);
+    reportLog('stripe-webhook', 'error', `Signature verification failed: ${errorText(err)}`);
     return json({ error: 'Invalid signature' }, 400);
   }
 
@@ -249,16 +302,19 @@ Deno.serve(async (req) => {
           // Ack rather than retry forever. Checkout writes the customer row
           // before the session is returned, so a missing user is not the
           // normal first-purchase path.
-          console.error(`${event.type}: no user for customer ${customerId}`);
+          reportLog('stripe-webhook', 'error', `${event.type}: no user for customer ${customerId}`, { attributes: { stripe_event_type: event.type, stripe_customer_id: customerId } });
           break;
         }
         return json({ received: true, ...await syncSubscription({ userId, customerId, sub, event }) });
       }
+      case 'trial_ending':
+        await sendTrialReminder(event);
+        break;
       case 'ignore':
         break;
     }
   } catch (err) {
-    console.error(`Handler failed for ${event.type}:`, (err as Error).message);
+    reportLog('stripe-webhook', 'error', `Handler failed for ${event.type}: ${errorText(err)}`, { attributes: { stripe_event_type: event.type } });
     // The RPC rolls back its receipt with the failed state update. No cleanup
     // request (which could also fail) is needed before Stripe retries.
     return json({ error: 'Handler failure' }, 500);

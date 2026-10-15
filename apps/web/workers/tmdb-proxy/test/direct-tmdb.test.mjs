@@ -101,3 +101,26 @@ test('keeps the existing Supabase path available when the Worker key is absent',
     globalThis.caches = originalCaches;
   }
 });
+
+test('forwards only allow-listed parameters to TMDB', async () => {
+  const originalFetch = globalThis.fetch;
+  let fetchedUrl;
+  globalThis.fetch = async (url) => {
+    fetchedUrl = new URL(url);
+    return Response.json({ results: [] });
+  };
+  try {
+    const response = await fetchTMDB(new URL(
+      'https://proxy.example/?path=discover/movie&with_genres=27&junk=1&utm_source=x&page=9999&sort_by=popularity.desc',
+    ), 'server-key', null);
+    assert.equal(response.status, 200);
+    assert.equal(fetchedUrl.searchParams.get('with_genres'), '27');
+    assert.equal(fetchedUrl.searchParams.get('sort_by'), 'popularity.desc');
+    assert.equal(fetchedUrl.searchParams.get('page'), '500');
+    assert.equal(fetchedUrl.searchParams.has('junk'), false);
+    assert.equal(fetchedUrl.searchParams.has('utm_source'), false);
+    assert.equal(fetchedUrl.searchParams.has('path'), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

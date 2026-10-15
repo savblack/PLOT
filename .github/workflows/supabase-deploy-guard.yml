@@ -80,7 +80,7 @@ jobs:
     steps:
       # Needed for the migration filenames this commit carries — the left-hand
       # side of the comparison against production.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ github.sha }}
 

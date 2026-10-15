@@ -370,46 +370,15 @@ const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false) =>
   return `<span class="kick${featured ? ' featured' : ''}">${esc(label)}</span>`;
 };
 
-// PostHog snippet for the server-rendered /whats-on pages. Same project token
-// as the app and marketing site (phc_uS3J…) with cross_subdomain_cookie so a
-// visit here joins the same landing → signup funnel; the delegated click
-// listener fires signup_cta_clicked / login_click to match website/js/config.js.
-const POSTHOG = `<script>
-if (['theplot.tv','www.theplot.tv','app.theplot.tv'].indexOf(location.hostname)>-1) {
-!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-/* Report unhandled errors and promise rejections to PostHog Error Tracking.
-   Only the app had this; these server-rendered pages ship real JavaScript to
-   real visitors and produced no error signal at all. The host gate above is
-   the dev gate, same as it is for pageviews.
-   dropOpaqueException discards the browser's opaque cross-origin "Script
-   error." — no message, no filename, no stack, so it can only ever be closed,
-   never diagnosed. Mirrors isOpaqueBrowserException in
-   apps/web/src/utils/opaqueException.js: an entry qualifies only when it is
-   BOTH synthetic and frameless, so a real throw is never dropped. Four copies
-   of this live in the tree (here, the other two rendered surfaces, and
-   apps/website/js/config.js) because none of them can import. Keep in step. */
-function dropOpaqueException(e){if(!e||e.event!=='$exception')return e;var L=e.properties&&e.properties.$exception_list;if(!Array.isArray(L)||!L.length)return e;return L.every(function(x){if(!x||typeof x!=='object')return false;if(!x.mechanism||x.mechanism.synthetic!==true)return false;var F=x.stacktrace&&x.stacktrace.frames;return !(F&&F.length>0);})?null:e;}
-posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U',{api_host:'https://a.theplot.tv',ui_host:'https://us.posthog.com',person_profiles:'identified_only',persistence:'localStorage+cookie',cross_subdomain_cookie:true,capture_pageview:true,autocapture:true,capture_exceptions:true,before_send:dropOpaqueException});
-document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="app.theplot.tv/"]');if(!a)return;var path;try{path=new URL(a.href).pathname;}catch(e){return;}var action=path.indexOf('/signup')===0?'signup_cta_clicked':path.indexOf('/login')===0?'login_click':path.indexOf('/save')===0?'save_cta_clicked':null;if(!action)return;posthog.capture(action,{placement:a.getAttribute('data-cta')||'whats_on',source:'whats_on'});},true);
-/* Forward this visit's real acquisition params onto the app links, so a
-   visitor who arrived here from social or search keeps their true source
-   across the hop. Mirrors forwardAttribution in apps/website/js/config.js.
-   Existing params win, so each page's own ?src= identity survives. */
-document.addEventListener('DOMContentLoaded',function(){var K=['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid','fbclid','msclkid','ref','src'],H=new URLSearchParams(location.search),C=new URLSearchParams();K.forEach(function(k){if(H.get(k))C.set(k,H.get(k));});try{var R=document.referrer&&new URL(document.referrer).hostname;if(R&&R!==location.hostname)C.set('referrer',R);}catch(e){}if(C.toString()){document.querySelectorAll('a[href*="app.theplot.tv/"],a[href^="/signup"],a[href^="/login"]').forEach(function(a){try{var u=new URL(a.href,location.origin);C.forEach(function(v,k){if(!u.searchParams.has(k))u.searchParams.set(k,v);});a.href=u.toString();}catch(e){}});}});
-}
-</script>`;
-
-// Google tag (gtag.js) + Google Tag Manager — mirrors apps/website/index.html,
-// crossOrigin included: without it the browser masks anything Google's scripts
-// throw to the opaque "Script error." (see apps/web/src/utils/opaqueException.js).
-const GA_GTM = `<script>
-if (['theplot.tv','www.theplot.tv','app.theplot.tv'].indexOf(location.hostname)>-1) {
-window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
-gtag('js',new Date());gtag('config','G-PYLHY9JMK1');
-var g=document.createElement('script');g.async=true;g.crossOrigin='anonymous';g.src='https://www.googletagmanager.com/gtag/js?id=G-PYLHY9JMK1';document.head.appendChild(g);
-(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.crossOrigin='anonymous';j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PC72PHBN');
-}
-</script>`;
+// Analytics (PostHog, gtag and GTM) and page behaviour for these pages live in
+// static files on the marketing site, apps/website/js/whats-on-head.js and
+// whats-on.js. The site's CSP allows no un-hashed inline script, and a page
+// rendered here has no build step to hash against. Same PostHog project token
+// as the app and marketing site, with cross_subdomain_cookie so a visit here
+// joins the same landing → signup funnel. The ?v= is a cache bust: bump it
+// when either file changes.
+const WHATS_ON_JS_VERSION = '20261014';
+const ANALYTICS_SCRIPT = `<script src="${SITE}/js/whats-on-head.js?v=${WHATS_ON_JS_VERSION}"></script>`;
 const GTM_NOSCRIPT = `<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PC72PHBN" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`;
 
 const SHORT_CACHE = 'public, s-maxage=3600, stale-while-revalidate=86400';
@@ -428,8 +397,7 @@ const page = (title: string, head: string, body: string, status = 200, nav = 'wh
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <link rel="icon" type="image/svg+xml" href="${SITE}/favicon.svg">
-${POSTHOG}
-${GA_GTM}
+${ANALYTICS_SCRIPT}
 ${head}
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
@@ -778,7 +746,7 @@ ${FOOTER_CSS}
 <body>
 ${GTM_NOSCRIPT}
 <nav class="topnav" id="topnav">
-  <a href="${SITE}" class="nav-logo" aria-label="Plot">plot</a>
+  <a href="${SITE}" class="nav-logo" aria-label="plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
   <ul class="nav-links" id="navLinks">
     <li><a href="${FEED_PATH}"${nav === 'whats-on' ? ' class="current"' : ''}>What's On</a></li>
     <li><a href="${APP}/login?src=whats_on_nav" data-cta="nav">Log in</a></li>
@@ -792,28 +760,7 @@ ${GTM_NOSCRIPT}
 ${body}
 </div>
 ${FOOTER_HTML}
-<script>
-  (function () {
-    var nav = document.getElementById('topnav');
-    var update = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
-    window.addEventListener('scroll', update, { passive: true });
-    update();
-    var hamburger = document.getElementById('hamburger');
-    var navLinks = document.getElementById('navLinks');
-    if (hamburger && navLinks) {
-      var setOpen = function (open) {
-        navLinks.classList.toggle('open', open);
-        hamburger.classList.toggle('open', open);
-        nav.classList.toggle('nav-open', open);
-        hamburger.setAttribute('aria-expanded', String(open));
-      };
-      hamburger.addEventListener('click', function () { setOpen(!navLinks.classList.contains('open')); });
-      navLinks.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { setOpen(false); }); });
-      document.addEventListener('click', function (e) { if (navLinks.classList.contains('open') && !e.target.closest('nav') && !e.target.closest('.nav-links')) { setOpen(false); } });
-      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && navLinks.classList.contains('open')) { setOpen(false); hamburger.focus(); } });
-    }
-  })();
-</script>
+<script defer src="${SITE}/js/whats-on.js?v=${WHATS_ON_JS_VERSION}"></script>
 </body>
 </html>`,
     {
@@ -1132,38 +1079,7 @@ const subscribeForm = (placement: string) => `
     <button type="submit">Subscribe</button>
   </form>
   <div class="nlsub-msg" id="nlMsg" role="status"></div>
-</aside>
-<script>
-  (function () {
-    var form = document.getElementById('nlForm');
-    var msg = document.getElementById('nlMsg');
-    if (!form || !msg) return;
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var button = form.querySelector('button');
-      button.disabled = true;
-      msg.textContent = '';
-      fetch('/api/newsletter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: form.elements.email.value,
-          website: form.elements.website.value,
-          list: 'newsletter',
-        }),
-      }).then(function (r) {
-        if (!r.ok) throw new Error('bad status');
-        msg.textContent = "You're in. The next issue lands in your inbox.";
-        form.reset();
-        if (window.posthog) posthog.capture('newsletter_subscribed', { placement: form.dataset.placement });
-      }).catch(function () {
-        msg.textContent = 'Something went wrong — try again in a minute.';
-      }).finally(function () {
-        button.disabled = false;
-      });
-    });
-  })();
-</script>`;
+</aside>`;
 
 // A short introduction to Plot with the two ways in. The full card sits above
 // the newsletter card on every list and article page. `compact` is a single
@@ -1178,7 +1094,7 @@ const aboutCard = (placement: string, compact = false) => {
     return `
 <aside class="about about-compact card r4" aria-label="About Plot">
   <div class="about-compact-copy">
-    <p class="about-title">New to <span class="about-wordmark">plot</span>?</p>
+    <p class="about-title">New to <span class="about-wordmark"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" role="img" aria-label="plot" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></span>?</p>
     <p class="about-sub">Track what you watch and know what's coming next.</p>
   </div>
   ${actions}
@@ -1186,7 +1102,7 @@ const aboutCard = (placement: string, compact = false) => {
   }
   return `
 <aside class="about card r4" aria-label="About Plot">
-  <span class="about-logo" aria-hidden="true">plot</span>
+  <span class="about-logo" aria-hidden="true"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></span>
   <p class="about-title">Everything you've watched. Everything you want to watch.</p>
   <p class="about-sub">Plot is your personal movie and TV companion. Track what you've seen, save what's next and know what's streaming, trending and landing soon, all in one place.</p>
   ${actions}

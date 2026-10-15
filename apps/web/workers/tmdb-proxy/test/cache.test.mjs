@@ -55,3 +55,17 @@ test('historical discovery windows are cached for a day', () => {
   assert.equal(ttlFor('discover/movie', historical), 86400);
   assert.equal(ttlFor('discover/movie', current), 3600);
 });
+
+test('an unknown parameter cannot create a cache miss', () => {
+  // Every distinct `&x=<n>` used to be a fresh TMDB call under the same rate
+  // budget. Only the parameters the backend forwards may fork the cache.
+  assert.equal(key('?path=movie/550&junk=1'), key('?path=movie/550&junk=2'));
+  assert.equal(key('?path=movie/550&junk=1'), key('?path=movie/550'));
+  assert.equal(key('?path=movie/550&utm_source=x&language=en-US'), key('?path=movie/550&language=en-US'));
+});
+
+test('a page beyond what TMDB serves collapses onto the last real page', () => {
+  assert.equal(key('?path=trending/all/week&page=9999'), key('?path=trending/all/week&page=500'));
+  assert.equal(key('?path=trending/all/week&page=0'), key('?path=trending/all/week'));
+  assert.notEqual(key('?path=trending/all/week&page=2'), key('?path=trending/all/week&page=3'));
+});

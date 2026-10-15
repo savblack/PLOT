@@ -1,14 +1,19 @@
 /**
  * Deep-link handler for Supabase auth callbacks.
- * Supabase magic-link / OAuth redirects to: plot://auth/callback?...
- * This screen catches that URL and lets Supabase parse the tokens.
+ * Supabase email links and OAuth redirect to: plot://auth/callback?...
+ * This screen catches that URL and lets Supabase verify the token.
  * The root _layout auth listener then redirects to /(app).
  */
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import * as Linking from 'expo-linking';
+import type { EmailOtpType } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../contexts/ThemeContext';
+
+// The email types whose links come back into the app (see
+// app/(auth)/index.tsx AUTH_APP_CALLBACK). Recovery stays on the web.
+const APP_EMAIL_TYPES: ReadonlyArray<EmailOtpType> = ['magiclink', 'signup', 'email', 'invite'];
 
 export default function AuthCallback() {
   const { colors } = useTheme();
@@ -23,13 +28,21 @@ export default function AuthCallback() {
       const tokenHash = (parsed.queryParams?.token_hash ?? parsed.queryParams?.token) as string | undefined;
       const type = parsed.queryParams?.type as string | undefined;
 
-      if (tokenHash && type === 'magiclink') {
-        await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'magiclink' });
+      if (tokenHash && type && APP_EMAIL_TYPES.includes(type as EmailOtpType)) {
+        await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as EmailOtpType });
+        return;
       }
-      // Note: detectSessionInUrl is false (lib/configureCore.ts) — there is no
-      // OAuth flow on mobile today, only magic-link verified above via
-      // verifyOtp. If OAuth is added later, this fragment must be parsed
-      // manually too since detectSessionInUrl won't auto-consume it.
+      // OAuth (Google) returns the session in the URL fragment. The sign-in
+      // screen normally consumes it from openAuthSessionAsync's result, but a
+      // redirect that reaches the app as a plain deep link lands here instead.
+      // detectSessionInUrl is off (lib/configureCore.ts), so parse it by hand.
+      const hash = url.split('#')[1];
+      if (hash) {
+        const params = new URLSearchParams(hash);
+        const access_token = params.get('access_token');
+        const refresh_token = params.get('refresh_token');
+        if (access_token && refresh_token) await supabase.auth.setSession({ access_token, refresh_token });
+      }
     };
 
     // Get the URL that opened the app (cold start)

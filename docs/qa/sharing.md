@@ -35,9 +35,9 @@ are not accidentally sent to friends. Tests can explicitly supply a local origin
    selectable link. Cancelling the native sheet must not open that fallback.
 6. Open a public list and select a poster. Verify the `/save` URL and `src=list_page`.
 7. Check messages/WhatsApp/iMessage link previews against the deployed Pages Functions.
-   Vite alone does not run them. A title's card is its TMDB backdrop; profiles, lists
-   and titles without a backdrop get the static og-image.png. The plot-og Worker no
-   longer serves any of them.
+   Vite alone does not run them. Titles, profiles and lists point at `/og?…`
+   (functions/og.js), which proxies the og-card Edge Function and caches the PNG at
+   the edge; watch-with links and any failed render get the static og-image.png.
 
 ## Verification on 2026-09-16
 

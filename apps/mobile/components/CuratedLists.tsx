@@ -13,6 +13,8 @@ import { canCreateCustomList } from '@plot/core/premium.js';
 import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
 import type { CuratedList } from '@plot/core/curatedLists.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
 import UpgradeSheet from './UpgradeSheet';
@@ -49,7 +51,8 @@ export function CuratedListCard({ curated, width, height, onPress }: {
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const posters = curated.entries.filter(entry => entry.poster_path).slice(0, WALL_POSTERS);
+  const art = useUserArtwork();
+  const posters = curated.entries.filter(entry => displayPosterPath(art.apply(entry))).slice(0, WALL_POSTERS);
   // Oversized and rotated so the tiles bleed past every edge.
   const wallW = width * 1.35;
   const tileW = (wallW - WALL_GAP * (WALL_COLS - 1)) / WALL_COLS;
@@ -71,7 +74,7 @@ export function CuratedListCard({ curated, width, height, onPress }: {
         {posters.map(entry => (
           <Image
             key={entry.tmdb_id}
-            source={{ uri: posterUrl(entry.poster_path, 'w185') ?? '' }}
+            source={{ uri: posterUrl(displayPosterPath(art.apply(entry)), 'w185') ?? '' }}
             style={{ width: tileW, height: tileW * 1.5, borderRadius: 3, backgroundColor: colors.surfaceSunken }}
           />
         ))}
@@ -121,6 +124,7 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
   const insets = useSafeAreaInsets();
   const [state, setState] = useState<SaveState>({ status: 'idle', message: '', listId: null });
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -191,8 +195,8 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
             >
               <Text style={styles.rank}>{entry.rank}</Text>
               <View style={styles.rowPoster}>
-                {entry.poster_path
-                  ? <Image source={{ uri: posterUrl(entry.poster_path, 'w92') ?? '' }} style={StyleSheet.absoluteFill} />
+                {displayPosterPath(art.apply(entry))
+                  ? <Image source={{ uri: posterUrl(displayPosterPath(art.apply(entry)), 'w92') ?? '' }} style={StyleSheet.absoluteFill} />
                   : <Text style={styles.rowPosterFallback}>{entry.title.charAt(0)}</Text>}
               </View>
               <Text style={styles.rowTitle} numberOfLines={1}>{entry.title}</Text>

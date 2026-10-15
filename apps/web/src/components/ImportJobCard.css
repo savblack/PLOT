@@ -1,0 +1,32 @@
+/* Import card on Home: a background import in progress, then its outcome.
+   Same shell as the Finishing touches card (hairline, surface, --gut). */
+
+.ij-card {
+  margin: 0 var(--gut) 20px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ij-card.is-done { background: var(--accent-secondary-dim); border-color: transparent; }
+.ij-card.is-failed { background: var(--danger-dim); }
+.ij-icon { flex-shrink: 0; display: flex; }
+.ij-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ij-title { margin: 0; font-family: var(--font-display); font-size: 16px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+.ij-line { margin: 0; font-size: 13px; line-height: 1.4; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.ij-bar { display: block; height: 6px; margin-top: 4px; border-radius: var(--radius-pill); background: color-mix(in srgb, var(--text-primary) 12%, transparent); overflow: hidden; }
+.ij-bar-fill { display: block; height: 100%; border-radius: var(--radius-pill); background: var(--accent); transition: width 0.4s ease; }
+.ij-bar-fill.is-indeterminate { width: 30%; animation: ij-slide 1.4s ease-in-out infinite; }
+@keyframes ij-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
+@media (prefers-reduced-motion: reduce) { .ij-bar-fill.is-indeterminate { animation: none; width: 100%; opacity: 0.5; } }
+.ij-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.ij-link { border: none; background: none; padding: 4px; color: var(--text-secondary); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.ij-link:hover { color: var(--text-primary); }
+
+@media (max-width: 639px) {
+  .ij-card { flex-wrap: wrap; }
+  .ij-actions { flex-basis: 100%; justify-content: flex-end; }
+}

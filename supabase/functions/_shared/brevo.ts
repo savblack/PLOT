@@ -2,6 +2,8 @@
 const API_URL = 'https://api.brevo.com/v3/contacts'
 const EVENTS_URL = 'https://api.brevo.com/v3/events'
 
+type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
+
 function brevoError(status: number, body: string) {
   const hint = status === 401 ? ' BREVO_API_KEY is not a live Brevo key.' : ''
   return new Error(`Brevo ${status}: ${body}${hint}`)
@@ -134,4 +136,36 @@ export async function deleteBrevoContact({ apiKey, email }: { apiKey: string; em
   // A 404 means there's nothing to delete — the end state we actually care
   // about (no PII left in Brevo) already holds, so treat it as success too.
   if (!res.ok && res.status !== 404) throw brevoError(res.status, await res.text())
+}
+
+/** POST /v3/events. The account email identifies the contact. */
+export async function sendBrevoEvent({
+  apiKey,
+  eventName,
+  email,
+  eventProperties,
+  fetchImpl = fetch,
+}: {
+  apiKey: string
+  eventName: string
+  email: string
+  eventProperties?: Record<string, string | number | boolean>
+  fetchImpl?: FetchLike
+}) {
+  const res = await fetchImpl(EVENTS_URL, {
+    method: 'POST',
+    headers: {
+      'api-key': apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      event_name: eventName,
+      identifiers: { email_id: email },
+      event_properties: eventProperties ?? {},
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Brevo ${res.status}: ${err}`)
+  }
 }

@@ -1,0 +1,113 @@
+/* Settings › Connections › Your sources (components/SettingsSources.jsx). */
+
+.ss-running { margin: 0 0 20px; }
+
+.ss-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.ss-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-top: 1px solid var(--border); }
+.ss-row:first-child { border-top: none; }
+.ss-row--source { padding: 0; }
+.ss-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0 13px 16px;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ss-row--source:hover { background: var(--surface-raised); }
+.ss-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ss-row-text > b { font-size: 14.5px; font-weight: 600; }
+.ss-row-text > span { font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); }
+.ss-row-side { display: flex; align-items: center; gap: 10px; padding-right: 14px; flex-shrink: 0; }
+.ss-chevron { width: 16px; height: 16px; color: var(--text-muted); flex-shrink: 0; }
+.ss-row--add {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ss-row--add:hover { background: var(--surface-raised); }
+.ss-row--add .ss-row-text > b { color: var(--accent-text); }
+.ss-plus {
+  width: 34px; height: 34px; flex-shrink: 0;
+  border-radius: 10px; border: 1.5px dashed var(--border-strong);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--accent-text);
+}
+.ss-foot { margin: 8px 16px 0; font-size: 12px; color: var(--text-muted); }
+
+/* On phones the row's inline action gives way to the detail. */
+@media (max-width: 639px) { .ss-row-action { display: none; } }
+
+/* Status chips: icon, colour and a word, never colour alone. */
+.ss-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-right: 6px; padding: 3px 7px 3px 5px;
+  border-radius: var(--radius-pill);
+  font-size: 11px; font-weight: 700; line-height: 1; white-space: nowrap;
+  vertical-align: middle;
+}
+.ss-chip i { font-style: normal; width: 12px; height: 12px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; box-sizing: border-box; }
+.ss-chip--ok { background: var(--success-dim); color: var(--success); }
+.ss-chip--ok i { background: var(--success); color: var(--surface-raised); }
+.ss-chip--run { background: var(--accent-dim); color: var(--accent-text); }
+.ss-chip--run i { border: 2px solid var(--accent-dim); border-top-color: var(--accent); animation: ss-spin 1s linear infinite; }
+.ss-chip--queued { background: var(--surface-sunken); color: var(--text-secondary); }
+.ss-chip--queued i { border: 1.5px dashed var(--text-muted); }
+.ss-chip--warn { background: color-mix(in srgb, var(--chip-soon) 14%, transparent); color: var(--chip-soon); }
+.ss-chip--warn i { background: var(--chip-soon); color: var(--surface-raised); }
+.ss-chip--bad { background: var(--danger-dim); color: var(--danger); }
+.ss-chip--bad i { background: var(--danger); color: var(--surface-raised); }
+.ss-chip--off { background: var(--surface-sunken); color: var(--text-muted); }
+.ss-chip--off i { border: 1.5px dashed var(--text-muted); }
+@keyframes ss-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ss-chip--run i { animation: none; border-top-color: var(--accent); } }
+
+/* Empty state. */
+.ss-empty { text-align: center; padding: 26px 16px 22px; }
+.ss-empty-logos { display: flex; justify-content: center; gap: 4px; margin-bottom: 12px; }
+.ss-empty-title { margin: 0; font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.03em; }
+.ss-empty-body { margin: 6px auto 14px; max-width: 420px; font-size: 13.5px; line-height: 1.45; color: var(--text-secondary); }
+
+/* Add a source dialog. */
+.ss-add-sub { margin: 0 0 4px; font-size: 13.5px; color: var(--text-secondary); }
+
+/* Source detail. */
+.ss-detail { display: flex; flex-direction: column; gap: 12px; }
+.ss-detail-status { margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.ss-row--switch { padding: 10px 14px; }
+.ss-row--switch .ss-row-text > b { font-size: 14px; }
+.ss-cta { align-self: stretch; }
+.ss-hint { margin: -4px 0 0; font-size: 12.5px; color: var(--text-muted); }
+.ss-hint--center { text-align: center; }
+.ss-lbl { font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+.ss-hist .ss-hist-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--border); }
+.ss-hist .ss-hist-row:first-child { border-top: none; }
+.ss-hist-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ss-hist-text > b { font-size: 13.5px; font-weight: 600; }
+.ss-hist-text > span { font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.ss-hist-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.ss-empty-line { margin: 0; padding: 12px; font-size: 13px; color: var(--text-muted); }
+.ss-link {
+  border: none; background: none; padding: 6px 4px;
+  color: var(--text-secondary); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.ss-link:hover:not(:disabled) { color: var(--text-primary); }
+.ss-link:disabled { opacity: 0.55; cursor: default; }
+.ss-link--danger { align-self: center; color: var(--danger); font-size: 13.5px; }
+.ss-link--danger:hover:not(:disabled) { color: color-mix(in srgb, var(--danger) 78%, var(--text-primary)); }

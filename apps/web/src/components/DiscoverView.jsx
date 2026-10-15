@@ -3,10 +3,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
+import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { todayLongLabel } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import ScrollRail from './ScrollRail.jsx';
+import PlotLogo from './PlotLogo.jsx';
 import RailArrows from './RailArrows.jsx';
 import { useRailScroll } from '../hooks/useRailScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
@@ -21,6 +24,9 @@ import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { clampToSentences } from '@plot/core/sentences.js';
 import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
+import { visibleHomeSections } from '@plot/core/homeLayout.js';
+import { useHomeLayout } from '@plot/core/useHomeLayout.js';
+import HomeLayoutSheet from './HomeLayoutSheet.jsx';
 import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
 import { featuredCuratedList } from '@plot/core/curatedLists.js';
 import { CuratedListCard, CuratedListDialog } from './CuratedLists.jsx';
@@ -41,6 +47,8 @@ import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches from './FinishingTouches.jsx';
+import ImportJobCard from './ImportJobCard.jsx';
+import FirstWinCard from './FirstWinCard.jsx';
 import { useFirstRun } from '../hooks/useFirstRun.js';
 import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -142,7 +150,7 @@ const HOME_SECTION = {
   platforms: { id: 'home-platforms', label: 'Top 10 by Platform', navLabel: 'Top 10 By Platform' },
 };
 
-function HomePageNav({ sections }) {
+export function HomePageNav({ sections, onCustomize }) {
   const [activeId, setActiveId] = useState(sections[0]?.id);
   const currentId = sections.some(section => section.id === activeId) ? activeId : sections[0]?.id;
 
@@ -156,7 +164,7 @@ function HomePageNav({ sections }) {
     return () => observer.disconnect();
   }, [sections]);
 
-  if (!sections.length) return null;
+  if (!sections.length && !onCustomize) return null;
   const goTo = (id) => {
     setActiveId(id);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -164,7 +172,10 @@ function HomePageNav({ sections }) {
 
   return (
     <nav className="hist-card home-page-nav" aria-label="Jump to">
-      <h2 className="home-page-nav-title">Jump to</h2>
+      <div className="home-page-nav-head">
+        <h2 className="home-page-nav-title">Jump to</h2>
+        {onCustomize && <button type="button" className="home-page-nav-customize" onClick={onCustomize}>{DISCOVER_VIEW.customize.action}</button>}
+      </div>
       <div className="home-page-nav-list">
         {sections.map(section => (
           <button key={section.id} type="button" className={`home-page-nav-row${currentId === section.id ? ' active' : ''}`} onClick={() => goTo(section.id)}>
@@ -215,7 +226,8 @@ export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, set
 }
 
 function HomeUpcomingRow({ event, todayStr, openPanel }) {
-  const image = posterUrl(event.item?.poster_path, 'w92');
+  const art = useUserArtwork();
+  const image = posterUrl(displayPosterPath(art.apply(event.item)), 'w92');
   const date = getCalendarRelativeLabel(event.date, todayStr);
   const meta = [event.label, date, event.item?.network_name].filter(Boolean).join(' · ');
   return (
@@ -282,8 +294,9 @@ function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPane
 }
 
 function OnThisDayCard({ item, openPanel }) {
+  const art = useUserArtwork();
   if (!item) return null;
-  const image = posterUrl(item.poster_path, 'w185');
+  const image = posterUrl(displayPosterPath(art.apply(item)), 'w185');
   return (
     <section className="hist-card home-on-this-day">
       <span className="hist-card-label">{DISCOVER_VIEW.onThisDay}</span>
@@ -354,8 +367,9 @@ function rankBadgeClass(rank) {
    poster in the frame that cuts the numeral (.rank-cut in app.css); the
    numeral comes after the poster so it is drawn on the artwork. */
 export function RankedCard({ item, rank, showRank = true, showMeta = true, openPanel, watchlist }) {
+  const art = useUserArtwork();
   const title = item.title || item.name;
-  const img   = posterUrl(item.poster_path, 'w185');
+  const img   = posterUrl(displayPosterPath(art.apply(item)), 'w185');
   const type  = item.media_type || 'movie';
   const openDetails = () => openPanel(item.id, type);
   const poster = (
@@ -388,12 +402,14 @@ export function RankedCard({ item, rank, showRank = true, showMeta = true, openP
 }
 
 function BingeCard({ item, openPanel, watchlist }) {
+  const art = useUserArtwork();
   const { favorites, profile } = useApp();
   const fw       = favoriteWords(profile?.region);
   const [hovered, setHovered] = useState(false);
   const title    = item.name || item.title;
-  const backdrop = backdropUrl(item.backdrop_path, 'w780');
-  const poster   = posterUrl(item.poster_path, 'w342');
+  const shown    = art.apply(item);
+  const backdrop = backdropUrl(displayBackdropPath(shown), 'w780');
+  const poster   = posterUrl(displayPosterPath(shown), 'w342');
   const type     = item.media_type || 'tv';
   const year     = (item.first_air_date || item.release_date || '').slice(0, 4);
   const saved    = watchlist.isInList(item.id);
@@ -453,11 +469,12 @@ function BingeCard({ item, openPanel, watchlist }) {
 // Budget for the featured synopsis; clampToSentences drops whole sentences to fit.
 const HERO_SYNOPSIS_MAX_CHARS = 200;
 function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
+  const art = useUserArtwork();
   const { favorites, profile } = useApp();
   const fw       = favoriteWords(profile?.region);
   const [hovered, setHovered] = useState(false);
   const title    = item.title || item.name;
-  const backdrop = backdropUrl(item.backdrop_path, 'w780');
+  const backdrop = backdropUrl(displayBackdropPath(art.apply(item)), 'w780');
   const type     = item.media_type || 'movie';
   const yearsAgo = item.anniversary_years;
   const archiveYear = item.archive_year;
@@ -575,9 +592,10 @@ function HeartIcon({ filled }) {
    out two rows deep and scrolls sideways, so each card is a fixed width and
    the title gets the room the old full-width list row never gave it. */
 function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
+  const art = useUserArtwork();
   const fw    = favoriteWords(region);
   const title = item.title || item.name;
-  const img   = posterUrl(item.poster_path, 'w154');
+  const img   = posterUrl(displayPosterPath(art.apply(item)), 'w154');
   const type  = item.media_type || 'movie';
   const id    = item.id;
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
@@ -799,9 +817,10 @@ function YourPeopleSection({ shelf, openPanel }) {
 }
 
 /* ── Home ── */
-function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr, continueItems = [], firstRun = false }) {
+function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr, continueItems = [], firstRun = false, homeLayout }) {
   const peopleShelf = useYourPeopleShelf();
   const [openCurated, setOpenCurated] = useState(null);
+  const [customizing, setCustomizing] = useState(false);
   const navigate = useNavigate();
   const { data, loading } = useDiscover();
   // Home only renders the recent rail. Loading every per-genre New Releases
@@ -850,19 +869,27 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   ].filter(Boolean);
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
   const savedItems = firstRun ? (watchlist?.items ?? []).slice(0, 20).map(row => ({ id: row.tmdb_id, media_type: row.media_type, title: row.title, poster_path: row.poster_path })) : [];
+  // Which shelves have content right now; the viewer's layout then decides
+  // the order and drops the ones they hid. The first-run Saved shelf stays
+  // ahead of everything and is not part of the layout.
+  const available = {
+    picks: showPicks,
+    continue: continueItems.length > 0,
+    hot: hotRail.length > 0,
+    weekly: weekly.length > 0,
+    people: peopleShelf.visible,
+    releases: recent.length > 0,
+    binged: bingedShows.length > 0,
+    cinema: cinemaMovies.length > 0,
+    anticipated: anticipatedMovies.length > 0,
+    platforms: platformList.length > 0,
+  };
+  const orderedIds = visibleHomeSections(homeLayout.layout, Object.keys(available).filter(id => available[id]));
   const pageSections = [
     savedItems.length > 0 ? HOME_SECTION.saved : null,
-    showPicks ? HOME_SECTION.picks : null,
-    continueItems.length > 0 ? HOME_SECTION.continue : null,
-    hotRail.length > 0 ? HOME_SECTION.hot : null,
-    weekly.length > 0 ? HOME_SECTION.weekly : null,
-    peopleShelf.visible ? HOME_SECTION.people : null,
-    recent.length > 0 ? HOME_SECTION.releases : null,
-    bingedShows.length > 0 ? HOME_SECTION.binged : null,
-    cinemaMovies.length > 0 ? HOME_SECTION.cinema : null,
-    anticipatedMovies.length > 0 ? HOME_SECTION.anticipated : null,
-    platformList.length > 0 ? HOME_SECTION.platforms : null,
+    ...orderedIds.map(id => HOME_SECTION[id]),
   ].filter(Boolean);
+  const customizable = homeLayout.layout.order.map(id => ({ id, label: HOME_SECTION[id].navLabel }));
 
   if (!hasContent) {
     return (
@@ -873,12 +900,78 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     );
   }
 
+  const renderSection = {
+    picks: () => (
+      <section key="picks" id={HOME_SECTION.picks.id} className="discover-section discover-featured-section">
+        <DiscoverSectionHeader title={<><PlotLogo inherit />&rsquo;s Picks</>} />
+        {pickSlides.length > 1
+          ? <PicksCarousel>{pickSlides}</PicksCarousel>
+          : <div className="discover-hero-row">{pickSlides}</div>}
+      </section>
+    ),
+    continue: () => (
+      <RailSection key="continue" id={HOME_SECTION.continue.id} title={HOME_SECTION.continue.label} subtitle={PEOPLE.continueWatching.subtitle}>
+        {continueItems.map(item => (
+          <ContinueCard key={item.tmdbId} item={item} onOpen={() => openPanel(item.tmdbId, 'tv', 'continue_watching')} />
+        ))}
+      </RailSection>
+    ),
+    hot: () => (
+      <RailSection key="hot" id={HOME_SECTION.hot.id} title={HOME_SECTION.hot.label} subtitle="Trending today" sectionClassName="discover-section discover-binge-section" binge>
+        {hotRail.map(item => (
+          <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+        ))}
+      </RailSection>
+    ),
+    weekly: () => <WeeklyChart key="weekly" id={HOME_SECTION.weekly.id} items={weekly} openPanel={openPanel} watchlist={watchlist} />,
+    people: () => <YourPeopleSection key="people" shelf={peopleShelf} openPanel={openPanel} />,
+    releases: () => (
+      <RailSection
+        key="releases"
+        id={HOME_SECTION.releases.id}
+        title={HOME_SECTION.releases.label}
+        subtitle="Last 30 days"
+        headerRight={
+          <button type="button" className="discover-see-all" onClick={() => navigate('/new-releases')}>
+            {MEDIA.seeAll}
+          </button>
+        }
+      >
+        {recent.map(item => (
+          <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+        ))}
+      </RailSection>
+    ),
+    binged: () => (
+      <RailSection key="binged" id={HOME_SECTION.binged.id} title={HOME_SECTION.binged.label} subtitle="Popular TV">
+        {bingedShows.map(item => (
+          <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+        ))}
+      </RailSection>
+    ),
+    cinema: () => (
+      <RailSection key="cinema" id={HOME_SECTION.cinema.id} title={HOME_SECTION.cinema.label} subtitle={MEDIA.inCinemas} sectionClassName="discover-section discover-binge-section" binge>
+        {cinemaMovies.map(item => (
+          <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+        ))}
+      </RailSection>
+    ),
+    anticipated: () => (
+      <RailSection key="anticipated" id={HOME_SECTION.anticipated.id} title={HOME_SECTION.anticipated.label} subtitle={DISCOVER_VIEW.mostAnticipatedSubtitle} sectionClassName="discover-section discover-binge-section" binge>
+        {anticipatedMovies.map(item => (
+          <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+        ))}
+      </RailSection>
+    ),
+    platforms: () => <PlatformCharts key="platforms" id={HOME_SECTION.platforms.id} platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />,
+  };
+
   return (
     <div className="home-layout cal-body">
       <aside className="cal-side home-side">
         <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} />
         <OnThisDayCard item={onThisDay} openPanel={openPanel} />
-        <HomePageNav sections={pageSections} />
+        <HomePageNav sections={pageSections} onCustomize={() => setCustomizing(true)} />
         <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
       </aside>
       <div className="discover-sections home-stream">
@@ -889,79 +982,21 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
           ))}
         </RailSection>
       )}
-
-      {showPicks && (
-        <section id={HOME_SECTION.picks.id} className="discover-section discover-featured-section">
-          <DiscoverSectionHeader title={HOME_SECTION.picks.label} />
-          {pickSlides.length > 1
-            ? <PicksCarousel>{pickSlides}</PicksCarousel>
-            : <div className="discover-hero-row">{pickSlides}</div>}
-        </section>
-      )}
-
-      {continueItems.length > 0 && (
-        <RailSection id={HOME_SECTION.continue.id} title={HOME_SECTION.continue.label} subtitle={PEOPLE.continueWatching.subtitle}>
-          {continueItems.map(item => (
-            <ContinueCard key={item.tmdbId} item={item} onOpen={() => openPanel(item.tmdbId, 'tv', 'continue_watching')} />
-          ))}
-        </RailSection>
-      )}
-
-      {hotRail.length > 0 && (
-        <RailSection id={HOME_SECTION.hot.id} title={HOME_SECTION.hot.label} subtitle="Trending today" sectionClassName="discover-section discover-binge-section" binge>
-          {hotRail.map(item => (
-            <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-          ))}
-        </RailSection>
-      )}
-
-      {weekly.length > 0 && <WeeklyChart id={HOME_SECTION.weekly.id} items={weekly} openPanel={openPanel} watchlist={watchlist} />}
-
-      {peopleShelf.visible && <YourPeopleSection shelf={peopleShelf} openPanel={openPanel} />}
-
-      {recent.length > 0 && (
-        <RailSection
-          id={HOME_SECTION.releases.id}
-          title={HOME_SECTION.releases.label}
-          subtitle="Last 30 days"
-          headerRight={
-            <button type="button" className="discover-see-all" onClick={() => navigate('/new-releases')}>
-              {MEDIA.seeAll}
-            </button>
-          }
-        >
-          {recent.map(item => (
-            <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-          ))}
-        </RailSection>
-      )}
-
-      {bingedShows.length > 0 && (
-        <RailSection id={HOME_SECTION.binged.id} title={HOME_SECTION.binged.label} subtitle="Popular TV">
-          {bingedShows.map(item => (
-            <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-          ))}
-        </RailSection>
-      )}
-
-      {cinemaMovies.length > 0 && (
-        <RailSection id={HOME_SECTION.cinema.id} title={HOME_SECTION.cinema.label} subtitle={MEDIA.inCinemas} sectionClassName="discover-section discover-binge-section" binge>
-          {cinemaMovies.map(item => (
-            <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-          ))}
-        </RailSection>
-      )}
-
-      {anticipatedMovies.length > 0 && (
-        <RailSection id={HOME_SECTION.anticipated.id} title={HOME_SECTION.anticipated.label} subtitle={DISCOVER_VIEW.mostAnticipatedSubtitle} sectionClassName="discover-section discover-binge-section" binge>
-          {anticipatedMovies.map(item => (
-            <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-          ))}
-        </RailSection>
-      )}
-
-      {platformList.length > 0 && <PlatformCharts id={HOME_SECTION.platforms.id} platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />}
+      {orderedIds.map(id => renderSection[id]())}
       </div>
+      {customizing && (
+        <HomeLayoutSheet
+          sections={customizable}
+          layout={homeLayout.layout}
+          isDefault={homeLayout.isDefault}
+          error={homeLayout.error}
+          onMove={homeLayout.move}
+          onNudge={homeLayout.nudge}
+          onToggle={(id) => homeLayout.setVisible(id)}
+          onReset={homeLayout.reset}
+          onClose={() => setCustomizing(false)}
+        />
+      )}
       {openCurated && <CuratedListDialog curated={openCurated} onClose={() => setOpenCurated(null)} onOpenTitle={openPanel} />}
     </div>
   );
@@ -978,7 +1013,8 @@ export default function DiscoverView() {
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
-  const { openPanel, openSearch, watchlist, watching, reminders, profile } = app;
+  const { openPanel, openSearch, watchlist, watching, reminders, profile, user, refreshProfile } = app;
+  const homeLayout = useHomeLayout({ userId: user?.id, saved: profile?.home_layout, onPersisted: refreshProfile });
   const firstRun = useFirstRun();
   const online = useOnlineStatus();
   const todayStr = localDateStr();
@@ -1003,7 +1039,9 @@ export default function DiscoverView() {
         genres={genres}
         onOpenSearch={openSearch}
       />
+      <FirstWinCard />
       <h1 className="home-greeting">{greetingFor({ name: profile?.first_name })}</h1>
+      <ImportJobCard />
       <FinishingTouches />
       <DiscoverContent
         openPanel={openPanel}
@@ -1021,6 +1059,7 @@ export default function DiscoverView() {
         todayStr={todayStr}
         continueItems={continueItems}
         firstRun={firstRun}
+        homeLayout={homeLayout}
       />
     </div>
   );

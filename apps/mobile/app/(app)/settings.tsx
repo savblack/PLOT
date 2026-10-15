@@ -1,4 +1,4 @@
-import TrackingSettings from '../../components/TrackingSettings';
+import SettingsSources from '../../components/SettingsSources';
 import { BroadcastRegionSheet } from '../../components/BroadcastSettings';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
@@ -26,9 +26,6 @@ import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { localDateStr, setUserTimezone } from '@plot/core/date.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
-import { useTraktSync } from '../../hooks/useTraktSync';
-import { useMediaSync } from '../../hooks/useMediaSync';
-import { useSimklSync } from '../../hooks/useSimklSync';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
 import { track, resetAnalytics, EVENTS } from '../../lib/analytics';
@@ -41,7 +38,6 @@ import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { fetchUserDataExport } from '@plot/core/exportData.js';
 import { shareDataExport, type ExportFormat } from '../../lib/shareDataExport';
 import { pickAndUploadAvatar, removeAvatar } from '../../lib/avatar';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../../lib/launchFeatures';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
@@ -57,6 +53,7 @@ import { ALERT_EMAIL_ENABLED } from '@plot/core/features.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { AVATAR_MAX_MB } from '@plot/core/profileFields.js';
 import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
 import { broadcastRegionLabel } from '@plot/core/broadcastGuide.js';
@@ -81,6 +78,7 @@ function generateCalendarToken(): string {
 }
 import { useTheme } from '../../contexts/ThemeContext';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
+import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import ThemeChip from '../../components/ThemeChip';
 import UpgradeSheet from '../../components/UpgradeSheet';
 
@@ -311,7 +309,8 @@ function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string |
         try {
           const registration = await registerPushToken(true);
           if (registration !== 'ok') {
-            Alert.alert(registration === 'denied' ? PUSH_ALERTS.permissionDenied : PUSH_ALERTS.permissionUnavailable);
+            Alert.alert(registration === 'denied' ? PUSH_ALERTS.permissionDenied
+              : registration === 'in_use' ? PUSH_ALERTS.inUse : PUSH_ALERTS.permissionUnavailable);
             return;
           }
           const result = await push.setEnabled(true);
@@ -885,13 +884,16 @@ export default function SettingsScreen() {
   const [showRegion,     setShowRegion]     = useState(false);
   const [showBroadcast, setShowBroadcast]   = useState(false);
   const [showTimezone,   setShowTimezone]   = useState(false);
-  const { feedback: feedbackParam, premium: premiumParam, section: sectionParam } = useLocalSearchParams<{ feedback?: string; premium?: string; section?: string }>();
+  const { feedback: feedbackParam, premium: premiumParam, section: sectionParam, source: sourceParam } = useLocalSearchParams<{ feedback?: string; premium?: string; section?: string; source?: string }>();
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
   const [premiumExpanded, setPremiumExpanded] = useState(premiumParam === '1');
   const [section, setSection] = useState(() => SETTINGS_SECTIONS.some(item => item.id === sectionParam) ? sectionParam! : 'account');
   const [query, setQuery] = useState('');
   const [themeUpgrade, setThemeUpgrade] = useState<string | null>(null);
-  const [showImport,     setShowImport]     = useState(false);
+  // Settings › Connections: a background import's leftovers to match, and
+  // the source Home's "Try again" asked to open (?source=<id>).
+  const [reviewJob, setReviewJob] = useState<{ id: string; user_id: string; source: string } | null>(null);
+  const [openSource] = useState<string | null>(() => sourceParam || null);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [clearingHist,   setClearingHist]   = useState(false);
   const [clearingList,   setClearingList]   = useState(false);
@@ -916,7 +918,7 @@ export default function SettingsScreen() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSection(sectionParam);
     setQuery('');
-    router.setParams({ section: undefined });
+    router.setParams({ section: undefined, source: undefined });
   }, [sectionParam, router]);
 
   const providers     = profile?.streaming_providers || [];
@@ -1052,43 +1054,6 @@ export default function SettingsScreen() {
     } finally {
       setSharingIcs(false);
     }
-  };
-
-  // ── Media integrations (Plex / Trakt) ────────────────────────────
-  const trakt = useTraktSync(userId);
-  const plex  = useMediaSync(userId);
-  const simkl = useSimklSync(userId);
-
-  const syncedLabel = (iso?: string | null) =>
-    SETTINGS_VIEW.integrations.connectedLastSynced(
-      iso ? new Date(iso).toLocaleDateString() : SETTINGS_VIEW.integrations.never,
-    );
-
-  const openIntegrationMenu = (
-    name: string,
-    i: { sync: () => void; disconnect: () => void; syncing: boolean },
-    actionLabel = SETTINGS_VIEW.integrations.syncNow,
-    busyLabel = COMMON.syncing,
-  ) => {
-    Alert.alert(name, undefined, [
-      { text: i.syncing ? busyLabel : actionLabel, onPress: () => i.sync() },
-      { text: 'Disconnect', style: 'destructive', onPress: () => i.disconnect() },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
-
-  // Free accounts can see the rows. Connect stays on Premium.
-  // Explore Premium opens the in-app preview. Mobile does not link out to pay.
-  const openPremiumSyncGate = (connected: boolean, disconnect: () => void) => {
-    Alert.alert(
-      SETTINGS_VIEW.integrations.syncNeedsPremium,
-      SETTINGS_VIEW.integrations.syncNeedsPremiumMessage,
-      [
-        { text: SETTINGS_VIEW.premium.upgradeButton, onPress: () => setPremiumExpanded(true) },
-        ...(connected ? [{ text: SETTINGS_VIEW.integrations.disconnect, style: 'destructive' as const, onPress: disconnect }] : []),
-        { text: COMMON.cancel, style: 'cancel' as const },
-      ],
-    );
   };
 
   const saveProviders = async (newProviders: any[]) => {
@@ -1400,6 +1365,18 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             )}
           </View>
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2}><Rect x={3} y={3} width={18} height={18} rx={4} /><Circle cx={9} cy={9} r={1} /><Circle cx={15} cy={9} r={1} /><Circle cx={9} cy={15} r={1} /><Circle cx={15} cy={15} r={1} /></Svg>}
+            label="App icon"
+            description={premium ? 'Choose a color and logo for your Home Screen' : 'Premium colors and logos for your Home Screen'}
+            onPress={() => router.push('/(app)/app-icon' as Href)}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={4} rx={1} /><Rect x={3} y={11} width={18} height={4} rx={1} /><Rect x={3} y={18} width={18} height={3} rx={1} /></Svg>}
+            label={DISCOVER_VIEW.customize.title}
+            description={DISCOVER_VIEW.customize.settingsHint}
+            onPress={() => router.push('/(app)/home-layout' as Href)}
+          />
         </SettingsGroup>
         <SettingsGroup title={SETTINGS_VIEW.page.emailPreferences}>
           <SettingsRow
@@ -1555,62 +1532,16 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
-        {/* Plex and Trakt are Premium. Simkl is a free, manual connection.
-            Checkout stays closed. Nothing here starts a payment. */}
-        <SettingsGroup title={SETTINGS_VIEW.integrations.groupTitle}>
-          {SHOW_MEDIA_SYNC_INTEGRATIONS && profile?.is_premium && (<>
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={`${SETTINGS_VIEW.integrations.plexName} · ${APP_SHELL.premium}`}
-            value={plex.isConnected ? SETTINGS_VIEW.integrations.connected : (plex.polling ? 'Waiting for approval…' : undefined)}
-            onPress={plex.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.plexName, plex, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => plex.startPlexAuth()}
-            trailing={plex.isConnected ? undefined
-              : <Text style={{ color: plex.polling ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{plex.polling ? 'Waiting…' : 'Connect'}</Text>}
-          />
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={`${SETTINGS_VIEW.integrations.traktName} · ${APP_SHELL.premium}`}
-            value={trakt.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.connectTraktToSync}
-            onPress={trakt.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.traktName, trakt, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => trakt.connect()}
-            trailing={trakt.isConnected ? undefined
-              : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Connect</Text>}
-          />
-          </>)}
-          {SHOW_MEDIA_SYNC_INTEGRATIONS && !profile?.is_premium && (<>
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={`${SETTINGS_VIEW.integrations.plexName} · ${APP_SHELL.premium}`}
-            value={plex.isConnected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : SETTINGS_VIEW.integrations.plexBlurb}
-            onPress={() => openPremiumSyncGate(plex.isConnected, () => { void plex.disconnect(); })}
-            trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
-          />
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={`${SETTINGS_VIEW.integrations.traktName} · ${APP_SHELL.premium}`}
-            value={trakt.isConnected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : SETTINGS_VIEW.integrations.traktBlurb}
-            onPress={() => openPremiumSyncGate(trakt.isConnected, () => { void trakt.disconnect(); })}
-            trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
-          />
-          </>)}
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M5 7h11"/><Path d="M13 4l3 3-3 3"/><Path d="M19 17H8"/><Path d="M11 14l-3 3 3 3"/></Svg>}
-            label={SETTINGS_VIEW.integrations.simklName}
-            value={simkl.isConnected ? syncedLabel(simkl.integration?.last_sync_at) : SETTINGS_VIEW.integrations.simklBlurb}
-            onPress={simkl.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.simklName, simkl) : () => simkl.connect()}
-            trailing={simkl.isConnected ? undefined
-              : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.integrations.connectSimkl}</Text>}
-          />
-        </SettingsGroup>
-
-        <TrackingSettings userId={userId} connect={trakt.connect} connectPlex={plex.startPlexAuth} plexPolling={plex.polling} connectionError={trakt.error || plex.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : plex.disconnect()} />
-        <SettingsGroup title={SETTINGS_VIEW.integrations.importWatchHistoryLabel}>
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><Polyline points="16,17 21,12 16,7"/><Line x1={21} y1={12} x2={9} y2={12}/></Svg>}
-            label={SETTINGS_VIEW.integrations.importWatchHistory}
-            description={SETTINGS_VIEW.integrations.importWatchHistoryHint}
-            onPress={() => setShowImport(true)}
-          />
-        </SettingsGroup>
+        {/* Your sources: accounts connected and files uploaded, each with its
+            own status and history. One-off imports are free for everyone; the
+            automatic toggle is the one Premium thing. */}
+        <SettingsSources
+          userId={userId}
+          isPremium={!!profile?.is_premium}
+          onPremium={() => { setSection('billing'); setPremiumExpanded(true); }}
+          onFinish={setReviewJob}
+          initialOpen={openSource}
+        />
         </>}
 
         {active.id === 'billing' && <>
@@ -1770,8 +1701,8 @@ export default function SettingsScreen() {
       {feedbackType && userId && user && (
         <FeedbackModal userId={userId} userEmail={user.email ?? ''} initialType={feedbackType} onClose={() => setFeedbackType(null)} />
       )}
-      {showImport && userId && (
-        <ImportHistoryModal userId={userId} onClose={() => setShowImport(false)} />
+      {reviewJob && userId && (
+        <ImportHistoryModal userId={userId} entry={IMPORT_ENTRY_POINTS.SETTINGS} reviewJob={reviewJob} onClose={() => setReviewJob(null)} />
       )}
       {showDeleteAccount && (
         <ConfirmPhraseModal

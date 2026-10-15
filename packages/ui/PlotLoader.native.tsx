@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { View, Animated, StyleSheet, Easing } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { WORDMARK_INK_HEIGHT, WORDMARK_LETTERS, WORDMARK_TOP } from '../core/wordmark.js';
 
-// The wordmark loader: the lowercase word in Gabarito, each letter rising into
-// place in sequence, with a thin sage bar sweeping underneath. Mirrors
-// PlotLoader.jsx; colours are passed in so it works from any screen.
-const LETTERS = ['p', 'l', 'o', 't'];
+// The wordmark loader: the plot wordmark outlines (l joined to the o), each
+// letter rising into place in sequence, with a thin bar sweeping underneath.
+// Mirrors PlotLoader.jsx; colours are passed in so it works from any screen.
+const WORD_SIZE = 40; // the font size the live word used to be set at
+const UNIT = WORD_SIZE / 1000;
 const CYCLE = 1800;
 const EASE = Easing.bezier(0.23, 1, 0.32, 1);
 
-function RiseLetter({ letter, delay, color }: { letter: string; delay: number; color: string }) {
+function RiseLetter({ index, delay, color }: { index: number; delay: number; color: string }) {
   const t = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const loop = Animated.loop(
@@ -26,8 +29,14 @@ function RiseLetter({ letter, delay, color }: { letter: string; delay: number; c
   }, []);
   const opacity = t.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 1, 0] });
   const translateY = t.interpolate({ inputRange: [0, 1, 2], outputRange: [10, 0, -6] });
+  const { path, x0, x1 } = WORDMARK_LETTERS[index];
+  const width = x1 - x0;
   return (
-    <Animated.Text style={[styles.letter, { color, opacity, transform: [{ translateY }] }]}>{letter}</Animated.Text>
+    <Animated.View style={{ overflow: 'hidden', opacity, transform: [{ translateY }] }}>
+      <Svg width={width * UNIT} height={WORDMARK_INK_HEIGHT * UNIT} viewBox={`${x0} ${WORDMARK_TOP} ${width} ${WORDMARK_INK_HEIGHT}`}>
+        <Path d={path} fill={color} />
+      </Svg>
+    </Animated.View>
   );
 }
 
@@ -72,8 +81,8 @@ export default function PlotLoader({
   return (
     <View style={containerStyle}>
       <View style={styles.word}>
-        {LETTERS.map((letter, i) => (
-          <RiseLetter key={letter} letter={letter} delay={i * 90} color={color} />
+        {WORDMARK_LETTERS.map(({ letter }, i) => (
+          <RiseLetter key={letter} index={i} delay={i * 90} color={color} />
         ))}
       </View>
       <SweepBar color={fillColor} />
@@ -83,7 +92,6 @@ export default function PlotLoader({
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  word: { flexDirection: 'row', width: BAR_W, justifyContent: 'center' },
-  letter: { fontFamily: 'Gabarito-Bold', fontSize: 40, letterSpacing: -1.8, lineHeight: 44 },
+  word: { flexDirection: 'row', width: BAR_W, justifyContent: 'center', alignItems: 'flex-end' },
   bar: { width: BAR_W, height: 5, borderRadius: 3, marginTop: 10 },
 });

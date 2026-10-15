@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { takeReturnPath } from '../utils/authReturn.js';
 import { supabase } from '@plot/core/supabase.js';
 import { tmdb } from '@plot/core/tmdb.js';
@@ -17,13 +17,18 @@ import { upsertProfile } from '@plot/core/profile.js';
 import {
   ONBOARDING_PROGRESS, buildingFan, buildingLines, firstNameFromAuthUser, topRegionServices,
 } from '@plot/core/onboardingSetup.js';
-import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
+import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
+import { importSourceName } from '@plot/core/importJobs.js';
+import { IMPORT_JOBS } from '../copy/importJobs.js';
+import { useImportStart } from '../hooks/useImportStart.js';
 import { finishingTouchesKey, serialiseFinishingTouches, startFinishingTouches } from '@plot/core/finishingTouches.js';
+import { armFirstWinCard } from '../utils/firstWinCardState.js';
 import { useWatchlist } from '../hooks/useWatchlist.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import { readPendingSave } from '../utils/pendingSave.js';
+import { writeOnboardingStash, takeOnboardingStash } from '../utils/onboardingStash.js';
 import { notifyOnboardingCompleted } from '@plot/core/brevoLifecycleClient.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
@@ -39,12 +44,12 @@ const LINE_MS = 1500;
 const FADE_MS = 600;
 // Step 1's grid: 8 full rows on desktop (6 across), 16 on phones (3 across).
 const TRENDING_COUNT = 48;
-
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 export default function OnboardingFlow() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -56,7 +61,7 @@ export default function OnboardingFlow() {
   const [pendingSave] = useState(readPendingSave);
   // Someone who already chose a title on the way in skips "save a few"; that
   // title opens once setup is done.
-  const [step, setStep] = useState(() => (readPendingSave() ? 'services' : 'seed'));
+  const [step, setStep] = useState(() => (searchParams.get('import') ? 'import' : readPendingSave() ? 'services' : 'seed'));
   const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
   const premium = usePremium(null);
@@ -71,10 +76,24 @@ export default function OnboardingFlow() {
   const [seedResults, setSeedResults] = useState([]);
   const [seedSearching, setSeedSearching] = useState(false);
   const [trending, setTrending] = useState([]);
-  const [seedSelected, setSeedSelected] = useState([]);
+  // The same-tab Trakt fallback parks the picks in sessionStorage on the way
+  // out (utils/onboardingStash.js); ?import=trakt is the way back in.
+  const [seedSelected, setSeedSelected] = useState(() => (searchParams.get('import') ? takeOnboardingStash()?.seeds ?? [] : []));
 
-  // Switching apps
-  const [importSource, setImportSource] = useState(null);
+  // Switching apps. The import itself starts here: a file is uploaded and
+  // queued, or an account is connected and queued, and the import-worker
+  // carries on in the background (packages/core/importJobs.js). More than one
+  // source can be queued; the worker takes them one at a time. A same-tab
+  // OAuth round trip comes back as ?import=<source> with the picks stashed.
+  const importStart = useImportStart({
+    userId: user?.id,
+    entry: IMPORT_ENTRY_POINTS.ONBOARDING,
+    returnPath: (id) => `/onboarding?import=${id}`,
+    onBeforeRedirect: () => writeOnboardingStash({ seeds: seedSelected }),
+    initialSource: searchParams.get('import') || null,
+  });
+  const importSource = importStart.source;
+  const importJob = importStart.jobs.length > 0 ? importStart.jobs[0] : null;
 
   // Where do you watch
   const [services, setServices] = useState([]);
@@ -240,6 +259,8 @@ export default function OnboardingFlow() {
     // "Mark where you're up to" reads the watchlist later, not these picks.
     const key = finishingTouchesKey(user.id);
     if (!readStorage(key)) writeStorage(key, serialiseFinishingTouches(startFinishingTouches(Date.now())));
+    // The first-win card sits on Home. A skip (nothing saved) does not arm it.
+    armFirstWinCard(user.id, { skipped: seeds.length === 0 });
     if (trackCompletion) {
       // After the picks are on My List, so the email sees the current watchlist.
       await notifyOnboardingCompleted();
@@ -261,9 +282,9 @@ export default function OnboardingFlow() {
       const started = await premium.startCheckout(plan, 'premium_signup');
       return started ? null : `/pricing?billing=${plan}`;
     }
-    // Switching apps: the import itself needs the page, so it opens once
-    // setup is done rather than pretending to run during it.
-    if (importSource) return `/import?source=${importSource}&from=${IMPORT_ENTRY_POINTS.ONBOARDING}`;
+    // Switching apps: queued imports run in the background and Home shows
+    // them. A source picked but never started still opens the import page.
+    if (importSource && !importJob && importStart.phase !== 'pick') return `/import?source=${importSource}&from=${IMPORT_ENTRY_POINTS.ONBOARDING}`;
     return takeReturnPath('/home');
   };
 
@@ -307,7 +328,7 @@ export default function OnboardingFlow() {
   };
 
   const goBack = () => {
-    if (step === 'import') setStep('seed');
+    if (step === 'import') { importStart.close(); setStep('seed'); }
     else if (step === 'services') setStep(importSource ? 'import' : 'seed');
   };
 
@@ -337,10 +358,10 @@ export default function OnboardingFlow() {
         onContinue: () => { completeStep('seed'); setStep('services'); },
         onSwitch: () => { completeStep('seed'); setStep('import'); },
       }}
-      onPickImport={(id) => {
-        createImportReporter({ entry: IMPORT_ENTRY_POINTS.ONBOARDING }).selected(id);
-        setImportSource(id);
-        setStep('services');
+      importStep={{
+        start: importStart,
+        onContinue: () => { completeStep('import'); importStart.close(); setStep('services'); },
+        onLater: () => { completeStep('import', { skipped: true }); setStep('services'); },
       }}
       services={{
         list: servicesError ? [] : (services.length ? services : null),
@@ -357,7 +378,9 @@ export default function OnboardingFlow() {
       building={{
         leaving,
         fan: buildingFan(seedSelected, trending),
-        lines: buildingLines(selectedServiceIds.length > 0),
+        lines: importStart.current
+          ? [IMPORT_JOBS.building.matching(importSourceName(importStart.current.source)), ...buildingLines(selectedServiceIds.length > 0).slice(1)]
+          : buildingLines(selectedServiceIds.length > 0),
         lineIndex,
       }}
     />

@@ -15,7 +15,12 @@ test('nothing on the card or in Settings promises push, email or a phone notific
 test('the copy says "in the app" where it describes delivery, and never mentions Premium', () => {
   assert.match(STREAMING_ALERTS.card.hint, /in the app/i);
   assert.match(STREAMING_ALERTS.settings.switchHint, /in the app/i);
+  assert.match(STREAMING_ALERTS.ask.armed, /in the app/i);
   for (const text of strings(STREAMING_ALERTS)) assert.doesNotMatch(text, /premium/i, text);
+});
+
+test('the Where to watch prompt asks to be told when the film is streaming here', () => {
+  assert.equal(STREAMING_ALERTS.ask.prompt, 'Tell me when it’s streaming here');
 });
 
 test('without selected services the card still promises the free arrivals, and nothing it cannot deliver', () => {

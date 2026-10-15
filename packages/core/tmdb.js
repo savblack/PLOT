@@ -485,6 +485,15 @@ export const tmdb = {
   /* ── Talent ── */
   getPersonDetails: (id) => fetchFromTMDB(`/person/${id}`),
   getPersonCredits: (id) => fetchFromTMDB(`/person/${id}/combined_credits`),
+  personImages: (id) => fetchFromTMDB(`/person/${id}/images`),
+
+  /* English and language-neutral stills. The sheet sorts them. */
+  images: (mediaType, id) => {
+    if (mediaType !== 'movie' && mediaType !== 'tv') throw new Error('Invalid media type');
+    return fetchFromTMDB(`/${mediaType}/${id}/images`, { include_image_language: 'en,null' });
+  },
+  seasonImages: (tvId, seasonNumber) =>
+    fetchFromTMDB(`/tv/${tvId}/season/${seasonNumber}/images`, { include_image_language: 'en,null' }),
 
   /* ── Digital (streaming) release date for a movie, by region ── */
   getDigitalReleaseDate: async (movieId) => {

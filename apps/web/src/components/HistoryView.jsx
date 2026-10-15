@@ -13,6 +13,8 @@ import {
 } from '@plot/core/historyStats.js';
 import { ratingToStars } from '@plot/core/ratings.js';
 import { posterUrl, profileUrl } from '../utils/images.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { IconChevronLeft, IconChevronRight, IconSearch, IconShare } from './navIcons.jsx';
@@ -125,6 +127,7 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
 /* One title per day: the month as a strip of what you saw. `month` is the
    index into the year's month groups (newest first). */
 function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, today, openPanel, onShare, shareReady }) {
+  const art = useUserArtwork();
   const group = monthGroups[monthIndex];
   const perDay = useMemo(() => (group ? titlePerDay(entries, year, group.month) : new Map()), [entries, year, group]);
   if (!group) return null;
@@ -140,7 +143,7 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
     const future = isThisMonth && d > today.getDate();
     const isToday = isThisMonth && d === today.getDate();
     if (e) {
-      const img = posterUrl(e.poster_path, 'w92');
+      const img = posterUrl(displayPosterPath(art.apply(e)), 'w92');
       cells.push(
         <button
           key={d}
@@ -189,6 +192,7 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
 }
 
 function CrowdCard({ entries, details, openPanel, onShare, shareReady }) {
+  const art = useUserArtwork();
   const cmp = crowdComparison(entries, details);
   if (!cmp || cmp.compared < 3) return null;
   const sentence = crowdSentence(cmp);
@@ -199,7 +203,7 @@ function CrowdCard({ entries, details, openPanel, onShare, shareReady }) {
         <span className="hist-card-lead">{sentence}</span>
         <div className="hist-crowd-row">
           {cmp.disagreements.map(({ entry }) => {
-            const img = posterUrl(entry.poster_path, 'w92');
+            const img = posterUrl(displayPosterPath(art.apply(entry)), 'w92');
             return (
               <button key={entry.id} type="button" className="hist-crowd-poster" onClick={() => openPanel(entry.tmdb_id, entry.media_type || 'movie')} aria-label={T.openTitle(entry.title)} title={entry.title}>
                 {img && <img src={img} alt="" />}
@@ -227,6 +231,7 @@ function CompareCard() {
 }
 
 function PeopleCard({ entries, details, navigateTo, onShare, shareReady }) {
+  const art = useUserArtwork();
   const people = recurringPeople(entries, details);
   if (!people.length) return null;
   return (
@@ -234,7 +239,7 @@ function PeopleCard({ entries, details, navigateTo, onShare, shareReady }) {
       <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.peopleHeading}</span><ShareIcon what={T.peopleHeading} ready={shareReady} onClick={onShare} /></div>
       <div className="hist-card-body">
         {people.map(p => {
-          const img = profileUrl(p.profile_path, 'w185');
+          const img = profileUrl(art.path('person', p.id, 'profile') || p.profile_path, 'w185');
           return (
             <button key={p.id} type="button" className="hist-person" onClick={() => navigateTo(`person/${p.id}`)}>
               <span className="hist-person-avatar">{img && <img src={img} alt="" />}</span>
@@ -276,7 +281,8 @@ function Filters({ types, setTypes, genres, setGenres, genreOptions, reviewed, s
 /* ── Stream ── */
 
 function PosterCard({ entry, openPanel }) {
-  const img = posterUrl(entry.poster_path, 'w185');
+  const art = useUserArtwork();
+  const img = posterUrl(displayPosterPath(art.apply(entry)), 'w185');
   const stars = entry.rating > 0 ? ratingToStars(entry.rating) : null;
   const open = () => openPanel(entry.tmdb_id, entry.media_type || 'movie');
   return (

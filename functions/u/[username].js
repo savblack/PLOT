@@ -10,7 +10,7 @@
 // replaces #root on mount. Private/unknown handles get a noindex plain shell.
 //
 // Routing: file path functions/u/[username].js → /u/<username>.
-import { staticCard } from '../_lib/og-card.js';
+import { ogCard } from '../_lib/og-card.js';
 import { colors } from '../../packages/core/tokens.js';
 import { isSectionEnabled } from '../../packages/core/profileFields.js';
 import { cachePage } from '../_lib/edgeCache.js';
@@ -131,8 +131,8 @@ async function profilePage({ request, params }) {
     const desc = profile.watchCount
       ? `@${profile.username} has tracked ${profile.watchCount} film${profile.watchCount === 1 ? '' : 's'} & shows on plot${profile.followers ? `, with ${profile.followers} follower${profile.followers === 1 ? '' : 's'}` : ''}. See their taste.`
       : `See what @${profile.username} is watching — their film & TV taste on plot.`;
-    // The branded profile card cannot render on the free plan — see _lib/og-card.js.
-    const image = staticCard(host);
+    // The branded profile card: avatar, name, stats — see _lib/og-card.js.
+    const image = ogCard(host, { u: profile.username });
     const url = `https://${host}/u/${encodeURIComponent(profile.username)}`;
     const jsonLd = ldjson({
       '@context': 'https://schema.org',
@@ -169,9 +169,11 @@ async function profilePage({ request, params }) {
       .replace(/\s*<meta[^>]+property="og:[^"]*"[^>]*>/g, '')
       .replace(/\s*<meta[^>]+name="twitter:[^"]*"[^>]*>/g, '')
       .replace(/\s*<title>[^<]*<\/title>/i, '')
-      .replace('</head>', `${tags}</head>`)
+      // Function replacers: a string replacement interprets `$&`, `$1` and
+      // friends, and a display name is user text that may contain them.
+      .replace('</head>', () => `${tags}</head>`)
       // Server-rendered snapshot for crawlers; React replaces #root on mount.
-      .replace('<div id="root"></div>', `<div id="root">${seoSnapshot(profile)}</div>`);
+      .replace('<div id="root"></div>', () => `<div id="root">${seoSnapshot(profile)}</div>`);
   } else {
     // Private or unknown handle: don't index a content-less shell.
     html = html.replace('</head>', `<meta name="robots" content="noindex"/></head>`);
@@ -182,8 +184,10 @@ async function profilePage({ request, params }) {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       // Never retain an unknown or private handle. A successful public profile
-      // is rendered only from anonymous-safe RPCs and can be shared for an hour.
-      'Cache-Control': profile ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'no-store',
+      // is rendered only from anonymous-safe RPCs, but the owner can make it
+      // private at any moment, and this snapshot (name, bio, recent titles)
+      // would otherwise keep serving for an hour afterwards. Ten minutes.
+      'Cache-Control': profile ? 'public, s-maxage=600, stale-while-revalidate=600' : 'no-store',
     },
   });
 }

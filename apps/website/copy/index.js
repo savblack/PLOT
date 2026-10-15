@@ -54,101 +54,93 @@ export const MEMORIES = {
   ],
 };
 
-export const GUIDE_DEMO = {
-  headline: 'Everything.',
-  headlineEm: 'In one place.',
-  body: "Always know what's worth watching. plot tracks what's trending worldwide, pulls the top 10 across the major platforms and every release on the way into a single feed. Your feed.",
-  cta: 'Unify your entertainment universe →',
-  // Floating UI chips shown around the phone mockup
-  chips: {
-    trending: { sub: 'Trending today', title: 'Hot right now' },
-    top10: { sub: 'This week', title: 'Top 10' },
-    popularTv: { sub: 'Popular TV', title: 'Most binged shows' },
-  },
-  heroBadge: 'TRENDING #1',
+// Never miss a drop: the "Coming up" card fills from /api/discover movie/upcoming.
+export const DROPS = {
+  eyebrow: 'Never miss a drop',
+  headline: 'Every release date, in your calendar.',
+  body: 'Save what you’re waiting for and Plot tells you when it’s out, in theaters or streaming.',
+  cardTitle: 'Coming up',
+  cardSub: 'From your watchlist',
+  saved: 'On your list',
+  save: '+ Save',
+  inTheatersNow: 'In theaters now',
+  inTheatersOn: 'In theaters {date}',
+  cta: 'Start tracking',
+  note: 'Free in-app calendar. Premium integrates with your calendar app.',
 };
 
-export const TIMELINE = {
-  headline: 'A timeline as rich as your taste',
-  intro: 'Your watch history tells a story and every story needs a plot.',
-  // Illustrative watch-history entries shown scrolling across the timeline.
-  // Titles are real; the notes are invented flavor-text reactions.
-  entries: [
-    { year: '2023', date: 'Oct 2023', title: 'Oppenheimer', note: 'Three hours. Felt like one.' },
-    { year: '2023', date: 'Nov 2023', title: 'The Bear', note: 'Stressful. Perfect. Both.' },
-    { year: '2023', date: 'Dec 2023', title: 'Saltburn', note: 'Unhinged in all the right ways.' },
-    { year: '2024', date: 'Feb 2024', title: 'Past Lives', note: 'Quietly devastating.' },
-    { year: '2024', date: 'Jun 2024', title: 'Presumed Innocent', note: 'Did not trust a single character. I was right.' },
-    { year: '2024', date: 'Sep 2024', title: 'The Substance', note: 'Nothing prepares you.' },
-    { year: '2024', date: 'Dec 2024', title: 'Babygirl', note: 'Nicole Kidman.' },
-    { year: '2025', date: 'Jan 2025', title: 'Severance S2', note: 'Worth the wait.' },
-    { year: '2025', date: 'Mar 2025', title: 'Adolescence', note: 'Four episodes. Changed everything.' },
-    { year: '2025', date: 'Apr 2025', title: 'Sinners', note: 'Ryan Coogler does it again.' },
-    { year: '2025', date: 'May 2025', title: 'Top Gun: Maverick', note: 'Still the best sequel ever made.' },
-    { year: '2026', date: 'Jan 2026', title: 'A Knight of the Seven Kingdoms', note: 'Back in Westeros.' },
-    { year: '2026', date: 'Mar 2026', title: 'Project Hail Mary', note: 'Gosling in space.' },
-    { year: '2026', date: 'May 2026', title: 'The Devil Wears Prada 2', note: "That's all." },
-    { year: '2026', date: 'Jul 2026', title: 'The Odyssey', note: 'Nolan does Homer.' },
+// Bring your history: the import sources the app supports today.
+export const IMPORT = {
+  eyebrow: 'Switching is easy',
+  headline: 'Bring your whole history with you.',
+  body: 'Coming from Letterboxd, Trakt, TV Time or IMDb? Import your ratings, reviews, watchlist and watch history. It’s free on every plan.',
+  cardTitle: 'Your watch history',
+  cardSub: 'All of it, in one place',
+  // Sample result on the card (illustrative).
+  resultTitle: '1,284 titles are on your Plot',
+  resultSub: '412 ratings · 96 reviews · 58 on your watchlist',
+  cta: 'Import my history',
+  note: 'Free forever. No credit card required.',
+};
+
+export const LISTS = {
+  eyebrow: 'Lists',
+  headline: 'Lists only you could make.',
+  body: 'By decade, director, mood or the person you watch with. Share them, or keep them just for you.',
+  // Each name matches the TMDB set that fills its cover (data-src in index.html).
+  cards: [
+    { name: 'Date night', count: '14 titles', visibility: 'Private', source: 'Top-rated romance' },
+    { name: 'This week’s must-sees', count: '23 titles', visibility: 'Public', source: 'Trending this week' },
+    { name: 'Horror night', count: '9 titles', visibility: 'Shared', source: 'Top-rated horror' },
   ],
+  cta: 'Start a list',
+  note: 'Five lists free. Unlimited with Premium.',
 };
 
-export const CALENDAR_DEMO = {
-  headline: 'Never miss ',
-  headlineEm: 'a drop.',
-  sub: "Save that new show, movie or cinema release. Whatever you're excited for, let your calendar do the remembering.",
-  guide: {
-    title: 'Upcoming',
-    hintTouch: 'Tap + to save', // default hint
-    hintPointer: 'Click + to save', // swapped in when a mouse/trackpad is detected
-    emptyState: 'Add releases from the guide to see them here',
-    emptyStateAlt: 'Add releases from the guide — they appear here', // used by the day-panel empty state
-    addToCalendar: 'Add to calendar',
-    remove: 'Remove',
-  },
-  eventTypes: {
-    cinema: 'Cinema',
-    streaming: 'Streaming',
-    episode: 'Episode',
-  },
-  toasts: {
-    removed: 'Removed from calendar',
-    added: (monthDay) => `✓ Added to ${monthDay}`, // e.g. "✓ Added to March 6"
-  },
-  dayPanelNoSaved: (monthDay) => `${monthDay} — no saved releases`,
-  // Illustrative fallback releases shown before/if the live TMDB fetch fails
-  fallbackReleases: ['F1: The Movie', 'Sinners', 'Project Hail Mary', 'Nosferatu', 'The Substance'],
-};
-
-export const LISTS_DEMO = {
-  headline: 'The lists only ',
-  headlineEm: 'you',
-  headlineEnd: ' could curate.',
-  body: "Organize by decade, director, or whatever mood you're in. Create and share movie and TV collections that are unmistakably yours.",
-  cta: 'Start curating →',
-  // Sample list categories cycled through in the coverflow demo
-  sampleLists: [
-    { name: 'Award winners', count: '20 movies' },
-    { name: 'Date night', count: '12 movies' },
-    { name: 'Spooky season', count: '13 movies' },
+// Premium: taste, deciding together, stats and personalisation lead (from the
+// in-app plans list); `more` sums up the rest. Prices and the checkout link
+// mirror pricing.html (and copy/plans.js); change them together.
+export const PREMIUM = {
+  eyebrow: 'Plot Premium',
+  headline: 'Less deciding. More watching.',
+  intro: 'Everything in Free, plus:',
+  features: [
+    { title: 'Pick for me', body: 'Stop scrolling. Answer four quick questions and you’ve got a shortlist tailored to you and your mood.' },
+    { title: 'Watch together', body: 'Settle “what should we watch?” before the snacks are ready. Only one of you needs Premium.' },
+    { title: 'Your watch profile', body: 'Get to know your watching habits, and settle who has the best taste.' },
+    { title: 'Make it yours', body: 'Your Plot, your style. Get access to custom themes, widgets and app icons.' },
   ],
+  more: 'Plus unlimited and smart lists, release dates in your calendar app, and actor and director alerts.',
+  moreLink: 'See everything in Premium',
+  monthly: 'Monthly',
+  annual: 'Annual',
+  annualBadge: '4 months free',
+  billedYearly: 'Billed $24 once a year',
+  billedMonthly: 'Billed monthly. Cancel anytime.',
+  cta: 'Start 7-day free trial',
+  trial: 'Commitment-free. Cancel during the trial and you pay $0.',
+  compare: 'Compare Free and Premium',
 };
 
-export const APP_SOON = {
-  eyebrow: 'Coming soon',
-  headline: 'plot, in',
-  headlineEm: 'your pocket.',
-  body: 'Everything you love about plot: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.',
+// Plot mobile, coming soon: the app's home screen in a phone, and the launch
+// waitlist (posts with list: 'mobile-app').
+export const APP = {
+  eyebrow: 'Plot mobile',
+  pill: 'Coming soon',
+  headline: 'plot, in your pocket.',
+  body: 'Everything you love about Plot: discover, track, curate and share. Be the first to know when the app launches.',
   notifyCta: 'Notify me',
-  // Static labels inside the phone mockup screenshot
-  mockup: {
-    tabs: ['Discover', 'Releases', 'Guide'],
-    nav: ['Home', 'Calendar', 'My Lists', 'History'],
-    heroBadge: 'TRENDING #1',
-    sections: [
-      { sub: 'Trending today', title: 'Hot right now' },
-      { sub: 'Popular TV', title: 'Most binged shows' },
-    ],
-  },
+  notifySuccess: "You're on the list — we'll email you the moment the app lands.",
+};
+
+// Replaces "Built by a solo developer" and its Ko-fi button.
+export const INDIE = {
+  eyebrow: 'Behind the scenes',
+  headline: 'Made by an independent developer, not a studio or streaming platform.',
+  body: 'Plot answers to the people who use it, not advertisers or investors. Premium keeps it that way.',
+  pills: ['No ads', 'Independent', 'Free plan, forever'],
+  cta: 'Support Plot with Premium', // same checkout intent as the Premium card
+  story: 'Read the story',
 };
 
 // Live ticker along the bottom of the page — category labels only, titles are
@@ -168,13 +160,15 @@ export const TICKER = {
   },
 };
 
-export const WHATS_ON_CTA = {
-  headline: "What's on, ",
-  headlineEm: 'daily.',
-  sub: 'Your daily briefing on everything worth watching.',
-  browseLink: "Browse What's On →",
+// Closing section over the poster wall: account signup first, the newsletter
+// as the quiet fallback.
+export const CLOSER = {
+  headline: 'Your next favorite ',
+  headlineEm: 'is out there.',
+  sub: 'Free forever. Premium if you want more.',
+  cta: 'Start tracking',
+  browse: 'Browse What’s On',
+  newsletterHint: 'Want more? Get movie and TV updates by email.',
   newsletterCta: 'Subscribe',
-  newsletterHint: 'Or get it in your inbox.',
   newsletterSuccess: "You're in. We'll email you the next issue.",
-  appNotifySuccess: "You're on the list — we'll email you the moment the app lands.",
 };

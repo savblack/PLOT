@@ -15,6 +15,7 @@ export default {
       ...config.resolve.alias,
       'react-native': 'react-native-web',
       '@react-native-community/datetimepicker': fileURLToPath(new URL('./datetimepicker.stub.js', import.meta.url)),
+      'expo-notifications': fileURLToPath(new URL('./expo-notifications.stub.js', import.meta.url)),
     };
     // apps/mobile pins its own react/react-dom (nested locally since they
     // differ from the root-hoisted versions apps/web uses); without this,

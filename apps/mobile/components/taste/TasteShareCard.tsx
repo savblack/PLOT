@@ -8,6 +8,7 @@ import { posterUrl } from '../../lib/tokens';
 import { fontFamily } from '../../lib/tokens';
 import type { TasteCardContent } from '../../lib/tasteShare';
 import type { tasteCardText } from '../../lib/tasteShare';
+import PlotWordmark from '../PlotWordmark';
 
 export type TasteTheme = {
   ground: string;
@@ -41,7 +42,7 @@ export default function TasteShareCard({
   return (
     <View style={{ width, height, backgroundColor: theme.ground, padding: px(24) }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ fontFamily: fontFamily.display, fontSize: px(26), letterSpacing: px(-0.5), color: theme.ink }}>plot</Text>
+        <PlotWordmark size={px(26)} color={theme.ink} />
         <Text style={{ fontFamily: fontFamily.sansBold, fontSize: px(12), letterSpacing: px(1.2), color: theme.kicker, textTransform: 'uppercase' }}>
           {text.kicker}
         </Text>

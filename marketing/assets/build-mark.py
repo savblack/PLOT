@@ -176,13 +176,24 @@ WORDMARK_AVATARS = {
 WM_PX = 400          # word width lands around 70% of the box, inside the circle
 WM_TRACK = -0.045
 
+# The wordmark outlines with the l joined to the o (Oct 2026). The font can't
+# set the join, so the drawn paths come from the website favicon, which holds
+# the same outlines as packages/core/wordmark.js (font units, -0.045em tracking).
+WORDMARK_SOURCE = HERE.parents[1] / 'apps' / 'website' / 'favicon.svg'
+
+def wordmark_paths(x, baseline, size, fill):
+    import re
+    ds = re.findall(r'<path fill="[^"]*" d="([^"]+)"', WORDMARK_SOURCE.read_text())
+    s = size / 1000
+    return ''.join(f'<path transform="translate({x:.2f} {baseline:.2f}) scale({s})" d="{d}" fill="{fill}"/>' for d in ds)
+
 def wordmark_avatar_svg(bg, ink, bold):
     w = measure(bold, 'plot', WM_PX, WM_TRACK)
     # Gabarito: x-height ~0.5em, p descender ~0.2em. Centre the word's optical
     # body (x-height band) on the tile, not the baseline.
     x = (AVATAR_PX - w) / 2
     baseline = AVATAR_PX / 2 + WM_PX * 0.25
-    paths, _ = outline(bold, 'plot', WM_PX, WM_TRACK, x, baseline, ink)
+    paths = wordmark_paths(x, baseline, WM_PX, ink)
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{AVATAR_PX}" height="{AVATAR_PX}" viewBox="0 0 {AVATAR_PX} {AVATAR_PX}">'
             f'<rect width="{AVATAR_PX}" height="{AVATAR_PX}" fill="{bg}"/>{paths}</svg>')
 

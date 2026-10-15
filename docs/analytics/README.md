@@ -396,12 +396,53 @@ The Episode alerts card on a followed TV show's title panel.
 
 | Event | When | Props |
 |---|---|---|
-| `episode_alerts_toggled` | The switch changed and the write landed | `tmdb_id`, `on` (the new state) |
+| `episode_alerts_toggled` | The switch changed and the write landed, or the first-episode prompt was accepted | `tmdb_id`, `on` (the new state) |
 | `title_calendar_action` | Add to calendar was used | `action`: `subscribe` (feed link copied), `subscribe_setup` (sent to Settings to make a link), `upgrade` (Free, sent to Plans), `download` (.ics, with `count` of events) |
 
 Muting is free and is stored in `episode_alert_mutes`; the daily
 new-episode job skips muted followers, so a show turned off produces no
 `new_episode` rows for that person.
+
+The first forward episode tick, when no watching row is already past season 1
+episode 1, shows a toast: "Get told when the next episode drops?" Accepting
+deletes a mute for that show if one exists and fires `episode_alerts_toggled`
+with `on: true`, including when alerts were already on. The same accept asks
+`alert-brevo-event` to send Brevo event `episode_alert_set`. That is not a
+PostHog event. Its properties are `title`, `title_id`, `media_type` (`tv`),
+and `title_url` (`https://app.theplot.tv/save?media_type=tv&tmdb_id=<id>`).
+The account email is the Brevo contact identifier, taken from the JWT. A
+Brevo failure does not put the toast back. The toast is once per account on
+that device. It does not open the calendar subscribe flow, which stays Premium.
+
+## Streaming arrival (title panel)
+
+The daily `streaming-arrival-alerts` job tells someone, in the app, when a
+film on their watchlist gains a subscription offer on one of their services
+or becomes free to watch, in their region. The watchlist is the opt-in. A row
+in `movie_streaming_alert_mutes` mutes one film. `notification_preferences.streaming_alerts`
+set to false mutes the whole watchlist. A missing preferences row means on.
+The job does not read TV, so a show has no equivalent alert.
+
+Where to watch shows "Tell me when it's streaming here" on a film with no
+offer in the viewer's region (nothing streaming, nothing to rent or buy, and
+not in cinemas). Accepting saves the film when it is not already on the
+watchlist, deletes a mute for that film, and turns the watchlist switch back
+on. That last write applies to every film on the watchlist, because the job
+skips the account while the switch is off.
+
+| Event | When | Props |
+|---|---|---|
+| `streaming_arrival_requested` | The prompt's writes landed | `tmdb_id`, `added_to_watchlist` |
+
+A save from this prompt also fires `watchlist_saved` with
+`source: streaming_arrival_ask` when the film was not already saved. The
+prompt event does not fire if the save or the alert writes fail. After those
+writes land, the same prompt asks `alert-brevo-event` to send Brevo event
+`streaming_alert_set`. That is not a PostHog event. Its properties are
+`title`, `title_id`, `media_type` (`movie`), and `title_url`
+(`https://app.theplot.tv/save?media_type=movie&tmdb_id=<id>`). The account
+email is the Brevo contact identifier, taken from the JWT. A Brevo failure
+does not un-arm the prompt.
 
 ## Smart lists
 
@@ -536,6 +577,10 @@ can read and write all of the above via `https://us.posthog.com/api/projects/471
 Note the API host is `us.posthog.com`, not the `us.i.posthog.com` ingest host,
 and org-level endpoints such as `/api/projects/` return 403 because the key is
 project-scoped.
+
+The same key can write the [data catalog](https://us.posthog.com/project/471234/data-catalog).
+The metric list, and the fact that every metric is still proposed, is in
+[data-catalog.md](data-catalog.md).
 
 ## The dashboard
 

@@ -15,6 +15,8 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder } from 'r
 import Svg, { Path, Polyline } from 'react-native-svg';
 import SearchPickModal from './SearchPickModal';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../lib/tokens';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 
@@ -39,8 +41,9 @@ function RankRow({ rank, item, editMode, dragging, highlighted, dragDy, onRowLay
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
   const rankColor = rank === 1 ? colors.accent : rank <= 3 ? colors.textSecondary : colors.textMuted;
-  const img = item ? posterUrl(item.poster_path, 'w92') : null;
+  const img = item ? posterUrl(displayPosterPath(art.apply(item)), 'w92') : null;
   const pan = PanResponder.create({
     onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dy) > 8 && Math.abs(g.dy) > Math.abs(g.dx),
     onPanResponderTerminationRequest: () => false,

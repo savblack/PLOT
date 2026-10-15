@@ -9,6 +9,7 @@ export const PUSH_ALERTS = Object.freeze({
   permissionNo: 'Not now',
   permissionDenied: 'Notifications are off for Plot in your phone settings.',
   permissionUnavailable: 'Push notifications are unavailable on this device.',
+  inUse: 'This device still gets alerts for another Plot account. Sign out of that account on this device first.',
   error: 'Could not change push notifications. Try again.',
   premium: 'Push notifications are part of Premium.',
 });

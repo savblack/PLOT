@@ -4,6 +4,7 @@ import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { wordmarkSvg } from '../packages/core/wordmark.js';
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'website', 'og-image.png');
 const FONTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'public', 'fonts');
@@ -74,7 +75,7 @@ const html = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-  <div class="wordmark">plot</div>
+  <div class="wordmark">${wordmarkSvg({ style: 'display:block;height:.871em;width:1.568em' })}</div>
   <div class="rule"></div>
   <div class="tagline">Your film &amp; TV companion &mdash; <em>everything you've watched, everything you want to watch.</em></div>
 </body>

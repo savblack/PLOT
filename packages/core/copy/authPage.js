@@ -39,8 +39,10 @@ export const AUTH_PAGE = {
   hide: 'Hide',
   forgotPassword: 'Forgot password?',
   continueWithApple: 'Continue with Apple',
+  continueWithGoogle: 'Continue with Google',
   socialDivider: 'or',
   appleSignInFailed: "We couldn't sign you in with Apple. Please try again.",
+  googleSignInFailed: "We couldn't sign you in with Google. Please try again.",
 
   // Split around the emailed {email}, which the page renders inside <strong>.
   almostThereTitle: 'Almost there!',
@@ -52,6 +54,23 @@ export const AUTH_PAGE = {
   checkInboxTitle: 'Check your inbox',
   checkInboxBefore: 'We sent a one-time sign-in link to ',
   checkInboxAfter: "Open it on this device and you're straight in, no password needed.",
+  // Mobile's in-app inbox step (replaces the "Almost there!" alert). The email
+  // carries a link that opens the app and a six-digit code for when the link
+  // is opened somewhere else; both land here.
+  inbox: {
+    title: 'Check your inbox',
+    signupBefore: 'We sent a confirmation link to ',
+    magicBefore: 'We sent a sign-in link to ',
+    after: '. Open it on this phone and you are straight in, or enter the code from the email below.',
+    codeLabel: 'Code from the email',
+    codePlaceholder: '6-digit code',
+    confirm: 'Confirm',
+    confirming: 'Confirming',
+    invalidCode: 'That code did not match. Check the newest email and try again.',
+    expiredCode: 'That code has expired. Resend and use the newest one.',
+    resent: 'Sent. Check your inbox again.',
+    differentEmail: 'Use a different email',
+  },
 
   backToSignIn: 'Back to sign in',
   back: 'Back',

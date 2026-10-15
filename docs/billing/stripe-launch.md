@@ -70,19 +70,36 @@ This decision does not enable public checkout or authorize a production change.
    and engineering gates in the readiness document. After launch approval, in Stripe **live mode**, create a Plot Premium product with two recurring
    USD prices: US$3/month and US$24/year. Record the two live price IDs.
 2. Set the Stripe account's public business URL and support email. The Customer
-   Portal should also show the Plot terms and privacy URLs.
+   Portal should also show the Plot terms and privacy URLs. In Settings, Billing,
+   Subscriptions and emails (https://dashboard.stripe.com/settings/billing/automatic),
+   set "Trial ending events" to 3 days (the default). Stripe then fires
+   `customer.subscription.trial_will_end` 3 days before the trial ends and
+   `stripe-webhook` emails the reminder itself (`_shared/trialReminderEmail.js`, sent
+   through Resend from billing@theplot.tv, reply-to support@theplot.tv). It names the
+   end date, the amount, auto-renewal and how to cancel, which is the notice the Terms
+   promise and the card networks require. Stripe's own hosted trial email is not used:
+   for a trial of 7 days or less Stripe sends it at checkout, not before the end. Turn on
+   successful-payment emails (https://dashboard.stripe.com/settings/emails) so every
+   charge produces a receipt; Stripe adds trial and cancellation details to those.
+   `stripe-webhook` needs `RESEND_API_KEY` set in the project where it runs.
 3. In the live-mode Customer Portal, enable cancellation, payment-method
    updates, invoice history, and price switching. Its catalogue must contain
    only the Plot Premium product and both live prices. Schedule shorter-interval changes for
    the end of the current period. The tested sandbox configuration resets the
    billing anchor to now and uses `always_invoice` for immediate prorated upgrades.
    Verify the invoice preview before copying this configuration into live mode.
+   **Decision (14 October 2026): a plan switch during the trial keeps the trial.** In the
+   live portal configuration, switch off "End trials on subscription updates" so that
+   moving between monthly and yearly in the first 7 days does not bill immediately; the
+   first charge stays on the day the trial ends, at the newly chosen price. The Terms
+   state this, so verify it in the pilot before opening checkout.
 4. Create or update the live webhook at
    `https://mkegtssedjyqldysvzga.supabase.co/functions/v1/stripe-webhook`.
    Subscribe to `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
    `checkout.session.expired`, `customer.subscription.created`,
    `customer.subscription.updated`, `customer.subscription.deleted`,
-   `invoice.payment_failed`, `invoice.payment_succeeded`, and `invoice.paid`.
+   `invoice.payment_failed`, `invoice.payment_succeeded`, `invoice.paid`, and
+   `customer.subscription.trial_will_end` (the trial-ending reminder email).
    The handler verifies `Stripe-Signature` and writes `stripe_events` in the
    same transaction as `billing_customers`. Invoice events refetch the
    subscription. Do not point this endpoint at a test-mode secret.

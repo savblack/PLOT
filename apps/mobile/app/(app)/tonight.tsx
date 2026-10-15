@@ -33,6 +33,7 @@ import { TONIGHT_PICKER as T } from '@plot/core/copy/tonightPicker.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { Palette, fontFamily, fontSize, spacing, posterUrl, backdropUrl } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
+import PlotWordmark from '../../components/PlotWordmark';
 
 type Styles = ReturnType<typeof makeStyles>;
 
@@ -477,7 +478,7 @@ function Locked({ picker, onUpgrade, styles, colors, dark }: {
           <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round"><Path d="M18 6 6 18M6 6l12 12" /></Svg>
         </TouchableOpacity>
         <View style={styles.unlockBadge} accessible accessibilityLabel={T.gate.label}>
-          <Text style={styles.unlockBrand}>{T.gate.brand}</Text>
+          <PlotWordmark size={16} color={colors.onAccentFill} label={T.gate.brand} style={styles.unlockBrand} />
           <Text style={styles.unlockPremium}>{T.gate.premium}</Text>
         </View>
         <Text style={styles.unlockTitle} accessibilityRole="header">{T.gate.title}</Text>
@@ -706,7 +707,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'baseline', gap: 3,
     paddingHorizontal: 12, paddingTop: 4, paddingBottom: 5, borderRadius: 999, backgroundColor: colors.accentFill,
   },
-  unlockBrand: { fontFamily: fontFamily.display, fontSize: 16, letterSpacing: -0.48, color: colors.onAccentFill },
+  // Outlines have no text baseline: drop the descender so the ink sits on Premium's baseline.
+  unlockBrand: { transform: [{ translateY: 16 * 0.19 }] },
   unlockPremium: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.onAccentFill },
   unlockTitle: { fontFamily: fontFamily.display, fontSize: 26, lineHeight: 28, color: colors.textPrimary, paddingRight: 32 },
   unlockBody: { fontFamily: fontFamily.sans, fontSize: 15, lineHeight: 23, color: colors.textSecondary },

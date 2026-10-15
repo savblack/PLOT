@@ -3,7 +3,7 @@ import { TRACKING } from '@plot/core/copy/tracking.js';
 import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
 import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   Modal, Alert, ActivityIndicator, StyleSheet, FlatList,
@@ -19,6 +19,9 @@ import {
   resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, chooseImportMatch, reviewImportDuplicates,
   createImportReporter, IMPORT_ENTRY_POINTS, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
+import { suppressFirstWinForImport } from '../lib/firstWinCard';
+import { readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
+import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -168,6 +171,8 @@ interface Props {
   entry?: string;
   /** Open straight on this platform's source step (onboarding's switching-apps pick). */
   initialPlatform?: Platform;
+  /** Finish a background import: open the preview on the entries it left for review. */
+  reviewJob?: { id: string; user_id: string; source: string } | null;
   /** An import finished, so the first-run card can tick. `importedCount` is
    *  the number of history rows written. The platform id is `trakt` or
    *  `trakt-export` when that history came from Trakt. */
@@ -179,7 +184,7 @@ export default function ImportHistoryModal(props: Props) {
   return <AccountImportHistoryModal key={props.userId} {...props} />;
 }
 
-function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, initialPlatform, onImported }: Props) {
+function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, initialPlatform, reviewJob, onImported }: Props) {
   const importReport = useMemo(() => createImportReporter({ entry }), [entry]);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -215,6 +220,21 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
   const [documentReport, setDocumentReport] = useState([] as string[]);
   const [alreadyCount, setAlreadyCount] = useState(0);
   const [pushedCount, setPushedCount] = useState(0);
+  // A background import's leftovers (no confident match, or a possible
+  // duplicate) go straight to the preview step.
+  useEffect(() => {
+    if (!reviewJob) return undefined;
+    let alive = true;
+    readImportJobReview(reviewJob).then(entries => {
+      if (!alive) return;
+      if (!entries.length) { Alert.alert(IMPORT_JOBS.review.title(importSourceName(reviewJob.source)), IMPORT_JOBS.review.missing); return; }
+      setPlatform(reviewJob.source as Platform);
+      setExistingRows([]);
+      setResolved(entries as ResolvedEntry[]);
+      setStep('preview');
+    });
+    return () => { alive = false; };
+  }, [reviewJob]);
 
   const handleSelectPlatform = (p: Platform) => {
     setPlatform(p);
@@ -367,9 +387,14 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     if (failed) {
       Alert.alert(IMPORT_VIEW.partialFailureHeading, IMPORT_VIEW.partialFailure(failed));
     }
-    if (inserted > 0 && platform) onImported?.(platform, inserted);
+    if (inserted > 0 && platform) {
+      onImported?.(platform, inserted);
+      if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
+    }
+    // A background job's leftovers are done with: drop the review file.
+    if (reviewJob) await finishImportJobReview(reviewJob);
     setStep('done');
-  }, [plan, resolved, userId, platform, importReport, onImported]);
+  }, [plan, resolved, userId, platform, importReport, onImported, reviewJob]);
 
   const connection = platform === 'plex' ? plex : platform === 'trakt' ? trakt : platform === 'simkl' ? simkl : null;
   const connectionName = platform === 'plex' ? 'Plex' : platform === 'trakt' ? 'Trakt' : 'Simkl';
@@ -388,8 +413,9 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     setAlreadyCount(result.alreadyCount || 0);
     setPushedCount(result.pushedCount || 0);
     onImported?.(platform, result.importedCount || 0);
+    if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
     setStep('done');
-  }, [connection, platform, importReport, onImported]);
+  }, [connection, platform, importReport, onImported, userId]);
 
   const reset = () => {
     setStep('pick-platform');
@@ -546,6 +572,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
             </View>
             <FlatList
               ListHeaderComponent={<View>
+            {reviewJob && <View style={styles.reviewBanner}><Text style={styles.previewTitle}>{IMPORT_JOBS.review.title(importSourceName(reviewJob.source))}</Text><Text style={styles.previewMeta}>{IMPORT_JOBS.review.body(resolved.length)}</Text></View>}
             {importListSelections(resolved).map(list => <View key={list.destination.key}>
               <Text style={styles.previewMeta}>{IMPORT_VIEW.listPreview(list.destination)}</Text>
               <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: list.listSelected !== false }} onPress={() => setResolved(rows => rows.map(row => row.destination?.key === list.destination.key ? { ...row, listSelected: list.listSelected === false } : row))}><Text style={styles.previewTitle}>{list.listSelected !== false ? '☑ ' : '☐ '}{IMPORT_VIEW.selectList}</Text></TouchableOpacity>
@@ -766,6 +793,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   previewPosterFallback: {},
   previewTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   previewMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  reviewBanner: { padding: spacing.md, marginBottom: spacing.sm, borderRadius: radii.md, backgroundColor: colors.accentSecondaryDim },
   alreadyBadge: {
     backgroundColor: colors.surfaceSunken, borderRadius: radii.pill,
     paddingHorizontal: spacing.sm, paddingVertical: 3,

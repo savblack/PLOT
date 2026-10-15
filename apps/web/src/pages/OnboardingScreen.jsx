@@ -6,9 +6,13 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import PlotLogo from '../components/PlotLogo.jsx';
 import ImportSourceIcon from '../components/ImportSourceIcon.jsx';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
+import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { COMMON } from '../copy/common.js';
 import { REGIONS } from '@plot/core/regions.js';
-import { IMPORT_SOURCES, ONBOARDING_PROGRESS, ONBOARDING_PROGRESS_TOTAL } from '@plot/core/onboardingSetup.js';
+import { ONBOARDING_PROGRESS, ONBOARDING_PROGRESS_TOTAL, findImportSource } from '@plot/core/onboardingSetup.js';
+import { importSourceName } from '@plot/core/importJobs.js';
+import ImportSourceLanes, { ImportPill } from '../components/ImportSourceLanes.jsx';
+import ImportSourceDialog from '../components/ImportSourceDialog.jsx';
 import './OnboardingFlow.css';
 
 const F = ONBOARDING_FLOW;
@@ -27,6 +31,8 @@ function Check() {
   );
 }
 
+/* The picked source's panel: a file drop for an export, or connect + import
+   for an account. Once the job is queued, setup carries on. */
 function Progress({ step }) {
   const on = ONBOARDING_PROGRESS[step];
   return (
@@ -43,7 +49,8 @@ function Progress({ step }) {
  *   canGoBack: boolean, onBack: () => void, onSkip: () => void,
  *   seed: { query: string, onQuery: (q: string) => void, searching: boolean, items: any[], selectedIds: Set<number>,
  *           count: number, onToggle: (item: any) => void, onContinue: () => void, onSwitch: () => void },
- *   onPickImport: (id: string) => void,
+ *   importStep: { start: ReturnType<typeof import('../hooks/useImportStart.js').useImportStart>,
+ *                 onContinue: () => void, onLater: () => void },
  *   services: { list: Array<{ id: number, name: string, logo_path: string | null }> | null, error: boolean,
  *               selectedIds: number[], onToggle: (id: number) => void, region: string, editingRegion: boolean,
  *               onEditRegion: () => void, onRegion: (code: string) => void, onRegionDone: () => void,
@@ -51,9 +58,9 @@ function Progress({ step }) {
  *   building: { leaving: boolean, fan: any[], lines: string[], lineIndex: number },
  * }} props
  */
-export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, onPickImport, services, building }) {
+export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, importStep, services, building }) {
   const regionName = REGIONS.find(r => r.code === services.region)?.name || services.region;
-  const columnClass = step === 'seed' ? 'ob-column ob-column--wide' : step === 'services' ? 'ob-column ob-column--services' : 'ob-column';
+  const columnClass = step === 'seed' ? 'ob-column ob-column--wide' : step === 'services' ? 'ob-column ob-column--services' : step === 'import' ? 'ob-column ob-column--import' : 'ob-column';
 
   return (
     <div className={`ob-page${step === 'seed' ? ' ob-page--fixed' : ''}`}>
@@ -80,7 +87,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
               <p className="ob-sub">{F.seed.subtitle}</p>
             </div>
             <button type="button" className="ob-switch" onClick={seed.onSwitch}>
-              <span className="ob-switch-marks" aria-hidden="true">{IMPORT_SOURCES.slice(0, 3).map(src => <span key={src.id}><ImportSourceIcon id={src.id} name={src.name} size={26} /></span>)}</span>
+              <span className="ob-switch-marks" aria-hidden="true">{['letterboxd', 'netflix', 'trakt'].map(id => findImportSource(id)).filter(Boolean).map(src => <span key={src.id}><ImportSourceIcon id={src.id} name={src.name} size={26} /></span>)}</span>
               <span className="ob-switch-text"><strong>{F.seed.switchingLead}</strong> {F.seed.switchingBody}</span>
               <Chevron />
             </button>
@@ -136,32 +143,34 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
         )}
 
         {/* ── 1b · Bring my history over ── */}
-        {step === 'import' && (
-          <>
-            <div className="ob-head ob-head--center">
-              <h1 className="ob-title">{F.importSources.title}</h1>
-              <p className="ob-sub">{F.importSources.subtitle}</p>
-            </div>
-            <nav className="ob-sources" aria-label={F.importSources.sourcesLabel}>
-              {IMPORT_SOURCES.map(src => (
-                <button key={src.id} type="button" className="ob-source" onClick={() => onPickImport(src.id)}>
-                  <ImportSourceIcon id={src.id} name={src.name} />
-                  <span className="ob-source-text">
-                    <span className="ob-source-name">{src.name}</span>
-                    <span className="ob-source-hint">{src.hint}</span>
-                  </span>
-                  <Chevron />
-                </button>
-              ))}
-            </nav>
-            <div className="ob-note"><Check /><span>{F.importSources.note}</span></div>
-            {saveError && <div className="ob-foot ob-foot--plain"><p className="ob-error">{saveError}</p></div>}
-          </>
-        )}
+        {step === 'import' && (() => {
+          const { start } = importStep;
+          const running = start.current;
+          const S = F.importSources;
+          return (
+            <>
+              <ImportPill pill={start.pill} />
+              <div className="ob-head ob-head--center">
+                <h1 className="ob-title">{start.jobs.length ? S.addAnotherTitle : S.title}</h1>
+                {!start.jobs.length && <p className="ob-sub">{S.subtitle}</p>}
+              </div>
+              <ImportSourceLanes jobs={start.jobs} current={running} connectedIds={start.connectedIds} onPick={start.pick} onDropFiles={(id, files) => start.attachFiles(files, id)} />
+              <div className="ob-note"><Check /><span>{running ? S.queuedNote(importSourceName(running.source)) : S.note}</span></div>
+              {saveError && <p className="ob-error">{saveError}</p>}
+              <div className="ob-foot ob-foot--plain">
+                {start.jobs.length
+                  ? <button type="button" className="onboarding-cta" onClick={importStep.onContinue} disabled={saving}>{F.continueArrow}</button>
+                  : <button type="button" className="isp-link isp-link--later" onClick={importStep.onLater} disabled={saving}>{S.later}</button>}
+              </div>
+              <ImportSourceDialog start={start} onContinue={importStep.onContinue} onAddAnother={start.addAnother} />
+            </>
+          );
+        })()}
 
         {/* ── 2 · Where do you watch ── */}
         {step === 'services' && (
           <>
+            <ImportPill pill={importStep.start.pill} />
             <div className="ob-head ob-head--center">
               <h1 className="ob-title">{F.services.title}</h1>
               <p className="ob-sub">{F.services.subtitle}</p>

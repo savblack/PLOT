@@ -130,3 +130,11 @@ test('smart lists are a Premium benefit that exists', () => {
   assert.equal(smart.live, true);
   assert.ok(PLANS_PAGE.upgradeSheet.reasons.smartLists);
 });
+
+test('the plans FAQ states the refund policy and keeps consumer-law rights', () => {
+  const refund = PLANS_PAGE.faqs.find(f => f.q === 'Can I get a refund?');
+  assert.ok(refund);
+  assert.match(refund.a, /aren’t refundable/);
+  assert.match(refund.a, /within 14 days/);
+  assert.match(refund.a, /consumer-law rights/);
+});

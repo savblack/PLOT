@@ -10,6 +10,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
+import { markSignedInBefore } from '../lib/signedInBefore';
 import { setTmdbRegion } from '../lib/tmdb';
 import { setUserTimezone } from '@plot/core/date.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
@@ -29,6 +30,10 @@ import MediaPanel from '../components/MediaPanel';
 import CollectionPanel from '../components/CollectionPanel';
 import type { Session } from '@supabase/supabase-js';
 import UndoToast from '../components/UndoToast';
+import RateToast from '../components/RateToast';
+import useRateReminders from '../hooks/useRateReminders';
+import NoticeToast from '../components/NoticeToast';
+import { EpisodeAlertsPromptController, EpisodeAlertsPromptToast } from '../components/EpisodeAlertsPrompt';
 import { FollowToastHost } from '../components/people/FollowControls';
 import PushHost from '../components/PushHost';
 import {
@@ -117,6 +122,11 @@ function AuthGuard({ session, onboardingComplete }: {
       ) : null}
     </View>
   );
+}
+
+function RateReminders() {
+  useRateReminders();
+  return null;
 }
 
 function RootDrawerMenu() {
@@ -300,6 +310,9 @@ function RootInner() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => {
       begin(next);
+      // The auth screen opens on Sign up for a fresh install and on Sign in
+      // once this device has held a session (app/(auth)/index.tsx reads it).
+      if (next?.user) void markSignedInBefore();
     });
 
     return () => {
@@ -373,6 +386,11 @@ function RootInner() {
             </OnboardingCompleteContext.Provider>
             {/* After the navigator so it draws on top. The panel has its own. */}
             <UndoToast />
+            <RateToast />
+            <RateReminders />
+            <NoticeToast />
+            <EpisodeAlertsPromptController />
+            <EpisodeAlertsPromptToast />
             <FollowToastHost />
           </MediaPanelProvider>
         </DrawerProvider>
