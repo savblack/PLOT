@@ -579,8 +579,8 @@ and org-level endpoints such as `/api/projects/` return 403 because the key is
 project-scoped.
 
 The same key can write the [data catalog](https://us.posthog.com/project/471234/data-catalog).
-The metric list, and the fact that every metric is still proposed, is in
-[data-catalog.md](data-catalog.md).
+The metric list is in [data-catalog.md](data-catalog.md). All 24 were approved
+on 2026-10-15.
 
 ## The dashboard
 

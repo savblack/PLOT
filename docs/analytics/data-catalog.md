@@ -2,11 +2,11 @@
 
 PostHog project 471234, [data catalog](https://us.posthog.com/project/471234/data-catalog). Created 2026-10-14 through the data catalog API. The catalog was empty before that.
 
-Every metric is `proposed`. A result is canonical only when someone has approved that metric and `is_drifted` is false. Approval is a person in the catalog, not this file. Until then, treat a run as the definition below with a noncanonical label.
+All 24 metrics were approved on 2026-10-15. A result is canonical while the metric is `approved` and `is_drifted` is false. Changing the definition, name, description, or unit returns that metric to `proposed`.
 
 Weekly series default to the trailing 90 days, unique people or event totals as the unit column says, with internal and test accounts filtered out. `activated_people` and `retained_people` are HogQL. Their windows are fixed, and a date override on those two is rejected. The other metrics take `date_from`, `date_to`, and `interval` at run time.
 
-A metric created from an insight stores a snapshot of that insight. Editing the insight sets `is_drifted`. The run still works. It stops being a candidate for approval until someone updates the snapshot or unlinks it.
+A metric created from an insight stores a snapshot of that insight. Editing the insight sets `is_drifted`, and the number stops being canonical until the snapshot is refreshed or the insight is unlinked, and the metric is approved again.
 
 Checked on 2026-10-14. The first eighteen ran, then six more the same day. `activated_people` returned 59, the same count as cohort 494035. `retained_people` returned 2, the same count as cohort 494036.
 
