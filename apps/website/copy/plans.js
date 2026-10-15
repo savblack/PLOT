@@ -73,7 +73,7 @@ export const PLANS_PAGE = {
       { label: 'Pick for me', h3: 'Something to watch, in under a minute.', body: 'How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.' },
       { label: 'Watch together', h3: 'Settle movie night before the snacks are ready.', body: 'Watch together analyzes everyone’s Plot profiles to find movie and TV matches in your lists.' },
       { label: 'Your profile', h3: 'Every story has a plot. Here’s yours.', body: 'Every film and show you log adds up to a profile: the genres you lean on, the hours you’ve put in, and the titles you keep going back to.' },
-      { label: 'Taste match', h3: 'Find out your compatibility based on <s>science</s> cinema.', body: 'A compatibility score built from the movies and shows you’ve both rated. Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.' },
+      { label: 'Taste match', h3: 'Find out your compatibility based on <s>science</s> cinema.', body: 'Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.' },
       { label: 'Make it yours', h3: 'Your Plot, your way.', body: 'Light, dark or in between. Widgets for your home screen. Customize your Plot app interface and icon. Plot, the way you’d have made it.' },
     ],
     cta: 'Start 7-day free trial',
@@ -121,11 +121,11 @@ export const PLANS_PAGE = {
       {
         label: 'Billing',
         items: [
-          { q: 'How does the free trial work?', a: 'Start Premium and the first 7 days are free. You won’t be charged until the trial ends, we’ll email you 3 days before it does, and if you cancel during the trial you pay $0. The trial is for new subscribers.' },
+          { q: 'How does the free trial work?', a: 'Start Premium and the first 7 days are free. You won’t be charged until the trial ends, and if you cancel during the trial you pay $0. The trial is for new subscribers.' },
           { q: 'Can I switch between monthly and annual?', a: 'Yes, any time, from Manage subscription in Settings.' },
           { q: 'Can I cancel anytime?', a: 'Yes. Cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.' },
           { q: 'Can I get a refund?', a: 'The trial is there so you can try Premium before you pay, so charges after it aren’t refundable and we don’t refund partial months or years. If you think you were charged by mistake, email support@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.' },
-          { q: 'What currency am I charged in?', a: 'Prices are in US dollars and include tax. Your total and billing currency are shown at checkout before you confirm.' },
+          { q: 'What currency am I charged in?', a: 'Prices are in US dollars and include tax. Checkout runs through Stripe, which shows your total in your local currency where it’s supported, so you see exactly what you’ll pay before you confirm.' },
           { q: 'How do you take payment?', a: 'Securely, through Stripe. Plot never sees or stores your card details.' },
           { q: 'Something else?', a: 'Email support@theplot.tv and a person will get back to you.' },
         ],

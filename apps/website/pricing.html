@@ -128,7 +128,7 @@
     .hero {
       background: var(--ink);
       color: var(--bg);
-      padding: 84px 2rem 0;
+      padding: 84px 2rem 5rem;
       text-align: center;
     }
     .hero-inner {
@@ -191,7 +191,7 @@
       position: relative;
       z-index: 2;
       max-width: 860px;
-      margin: 3.5rem auto -7rem;
+      margin: 3.5rem auto 0;
       display: grid;
       grid-template-columns: 1fr 1.1fr;
       gap: 1.2rem;
@@ -292,8 +292,7 @@
     /* The home page's Premium section, told one benefit at a time: copy
        and a step switcher on the left, the matching product visual on the
        right. Steps auto-advance every 6s unless motion is reduced. */
-    .plans-tail { height: 9rem; }
-    .stories { background: var(--ink); color: var(--bg); }
+    .stories { background: var(--ink); color: var(--bg); padding-top: 2rem; }
     .stories .eyebrow { color: var(--fill); }
     .stories h2 { font-size: clamp(2.4rem, 4.2vw, 3.5rem); color: var(--bg); margin-bottom: 1.1rem; }
     .stories-inner {
@@ -317,10 +316,20 @@
     .stories-step[aria-pressed="true"] { color: var(--bg); }
     .stories-step[aria-pressed="true"] .stories-bar i { width: 100%; transition: width 6s linear; }
     .stories-step span:last-child { display: block; font-size: 0.74rem; font-weight: 600; line-height: 1.2; }
-    .stories-visuals { display: flex; justify-content: center; align-items: center; min-height: 420px; }
-    .stories-visuals .vis { display: none; }
-    .stories-visuals .vis.is-active { display: block; animation: stories-in 0.6s var(--ease); }
-    @keyframes stories-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    /* The cards stack in one grid cell and cross-fade: the leaving card
+       eases up and out while the next eases up and in. */
+    .stories-visuals { display: grid; justify-content: center; align-items: center; min-height: 420px; }
+    .stories-visuals .vis {
+      grid-area: 1 / 1;
+      justify-self: center;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(16px) scale(0.985);
+      transition: opacity 0.55s var(--ease), transform 0.55s var(--ease), visibility 0s linear 0.55s;
+      pointer-events: none;
+    }
+    .stories-visuals .vis.is-active { opacity: 1; visibility: visible; transform: none; transition-delay: 0.12s, 0.12s, 0s; pointer-events: auto; }
+    .stories-visuals .vis.is-leaving { opacity: 0; visibility: visible; transform: translateY(-12px) scale(0.985); transition-delay: 0s; }
     .stories-also {
       grid-column: 1 / -1;
       display: flex;
@@ -365,7 +374,7 @@
     .pf-seg span { padding: 6px 12px; border-radius: var(--r-pill); background: var(--surface); font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); }
     .pf-seg .on { background: var(--fill); color: var(--text); animation: pf-chip 0.35s var(--ease) both; animation-delay: var(--d, 0s); }
     @keyframes pf-chip { from { background: var(--surface); color: var(--text-secondary); transform: scale(0.96); } 60% { transform: scale(1.04); } to { background: var(--fill); color: var(--text); transform: none; } }
-    .pf-pick { display: flex; gap: 14px; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule); }
+    .pf-pick { display: flex; gap: 14px; align-items: center; margin-top: 18px; }
     .pf-shuffle { position: relative; width: 68px; flex-shrink: 0; }
     .pf-shuffle .poster { width: 68px; }
     .pf-c { position: absolute; inset: 0; opacity: 0; animation: pf-card 0.9s var(--ease) both; animation-delay: calc(2s + var(--i) * 0.12s); }
@@ -378,19 +387,36 @@
     .pf-play { animation: pf-press 0.5s var(--ease) 3.8s both; }
     @keyframes pf-press { 0%, 100% { transform: none; } 40% { transform: scale(0.94); background: var(--ink-hover); } }
 
-    /* Watch together: the shared title gets its ring, then the outcome lands. */
+    /* Watch together: the two copies of the shared title travel out of
+       their rows and meet in the middle (as the old homepage did), a ring
+       lands around them, the rest of the rows dim, then the outcome lands. */
+    .wt-board { position: relative; }
     .wt-list + .wt-list { margin-top: 14px; }
     .wt-label { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 500; margin-bottom: 8px; }
     .wt-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .wt-row .poster { border-radius: 6px; }
-    .wt-row .is-match { outline: 2px solid var(--accent); outline-offset: 2px; animation: wt-ring 0.5s var(--ease) 1.1s both; }
-    @keyframes wt-ring { from { outline-color: transparent; transform: none; } 50% { transform: scale(1.06); } to { outline-color: var(--accent); transform: none; } }
-    .wt-outcome { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: var(--sage); animation: vis-rise 0.5s var(--ease) 1.7s both; }
+    .wt-row .poster:not(.is-match) { opacity: 0.45; animation: wt-dim 0.6s var(--ease) 1s both; }
+    @keyframes wt-dim { from { opacity: 1; } to { opacity: 0.45; } }
+    /* --dx/--dy: how far each copy travels to the meeting point, set per copy below. */
+    .wt-row .is-match { position: relative; z-index: 2; transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1.12); animation: wt-travel 0.9s var(--ease) 0.9s both; }
+    @keyframes wt-travel { from { transform: none; } to { transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1.12); } }
+    .wt-list:first-child .is-match { --dx: calc(200% + 16px - 7px); --dy: calc(50% + 24px); --r: -5deg; }
+    .wt-list:nth-child(2) .is-match { --dx: 7px; --dy: calc(-50% - 24px); --r: 5deg; }
+    .wt-ring { position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; border: 3px solid var(--accent); z-index: 1; pointer-events: none; animation: wt-ring 0.6s var(--ease) 1.7s both; }
+    @keyframes wt-ring { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+    .wt-both { position: absolute; left: 50%; top: 50%; z-index: 3; display: flex; transform: translate(-50%, 46px); animation: vis-rise 0.4s var(--ease) 2.1s both; }
+    .wt-both .av { border: 2px solid #fffaf3; }
+    .wt-both .av + .av { margin-left: -8px; }
+    .wt-outcome { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: var(--sage); animation: vis-rise 0.5s var(--ease) 2.4s both; }
     .wt-outcome strong { display: block; font-size: 0.92rem; }
     .wt-outcome .vis-meta { color: #3f4a1c; }
 
     /* Your watch profile: the numbers count up (script), the bars grow,
        Most rewatched flips through two titles before settling. */
+    .wp-top { margin-bottom: 14px; }
+    .wp-posters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .wp-posters .poster { border-radius: 6px; animation: vis-rise 0.45s var(--ease) both; animation-delay: calc(var(--i) * 0.1s); }
+    .wp-top-label { display: block; margin-top: 8px; font-size: 0.78rem; color: var(--text-secondary); }
     .wp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
     .wp-stat { padding: 12px; border-radius: 14px; background: var(--surface); }
     .wp-stat b { display: block; font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -400,7 +426,9 @@
     .wp-bar i { display: block; height: 10px; border-radius: 5px; background: var(--fill); width: var(--w, 50%); transform-origin: left; animation: wp-grow 0.7s var(--ease) both; animation-delay: var(--d, 0s); }
     @keyframes wp-grow { from { transform: scaleX(0); } to { transform: none; } }
     .wp-bar em { font-style: normal; text-align: right; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-    .wp-taste { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--accent-dim); font-size: 0.85rem; }
+    .wp-taste { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 14px; background: var(--accent-dim); font-size: 0.85rem; }
+    .wp-thumb { width: 30px; border-radius: 4px; flex-shrink: 0; }
+    .wp-taste > span { flex: 1; }
     .wp-taste span { color: var(--text-secondary); }
     .wp-taste b { font-family: var(--display); font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; text-align: right; }
     .wp-flip { position: relative; height: 1.3em; overflow: hidden; }
@@ -423,50 +451,60 @@
     .tm-label { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; }
     .tm-posters { display: flex; gap: 6px; }
     .tm-posters .poster { width: 56px; border-radius: 6px; animation: vis-rise 0.45s var(--ease) both; animation-delay: var(--d, 0s); }
-    .tm-genres { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-    .tm-genres .wp-bar i.is-them { background: var(--sage); }
-    .tm-disagree { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--surface); font-size: 0.8rem; animation: vis-rise 0.5s var(--ease) 2.8s both; }
-    .tm-disagree > span { color: var(--text-secondary); white-space: nowrap; }
-    .tm-disagree b { font-family: var(--display); font-weight: 700; font-size: 0.85rem; text-align: right; }
-    .tm-stars { display: inline-block; color: var(--accent); animation: tm-stars 0.4s var(--ease) both; animation-delay: var(--d, 0s); }
+    .tm-genres { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .tm-legend { display: flex; gap: 14px; justify-content: flex-end; font-size: 0.72rem; color: var(--text-secondary); }
+    .tm-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .tm-legend i { width: 10px; height: 10px; border-radius: 3px; }
+    .tm-genre { display: grid; grid-template-columns: 64px 1fr; grid-template-rows: auto auto; column-gap: 10px; row-gap: 3px; align-items: center; font-size: 0.8rem; }
+    .tm-genre span { grid-row: 1 / 3; }
+    .tm-genre i, .tm-legend i.is-you, .tm-legend i.is-them { display: block; }
+    .tm-genre i { height: 8px; border-radius: 4px; width: var(--w, 50%); transform-origin: left; animation: wp-grow 0.6s var(--ease) both; animation-delay: var(--d, 0s); }
+    .is-you { background: var(--fill); }
+    .is-them { background: var(--sage); }
+    .tm-disagree { display: grid; grid-template-columns: 1fr auto; row-gap: 2px; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--surface); font-size: 0.8rem; animation: vis-rise 0.5s var(--ease) 3.3s both; }
+    .tm-disagree .tm-label { grid-column: 1 / -1; margin-bottom: 2px; color: var(--text-secondary); }
+    .tm-disagree b { font-family: var(--display); font-weight: 700; font-size: 0.95rem; }
+    .tm-ratings { display: flex; gap: 12px; justify-content: flex-end; white-space: nowrap; }
+    .tm-ratings span { color: var(--text-secondary); }
+    .tm-stars { display: inline-block; font-style: normal; color: var(--accent); letter-spacing: 0.04em; animation: tm-stars 0.4s var(--ease) both; animation-delay: var(--d, 0s); }
     @keyframes tm-stars { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
-    /* Make it yours: the whole card re-skins every 1.5s, Cream → Ink →
-       Sage, and the swatch ring, icon ring and widget colour follow. */
-    /* Joined with the card entry animation, which would otherwise replace it. */
-    .stories-visuals .vis--yours.is-active { animation: stories-in 0.6s var(--ease), my-skin 4.5s steps(1, end) 1s infinite; }
-    @keyframes my-skin { 0% { background: #fffaf3; color: var(--text); } 33.3% { background: var(--ink); color: var(--bg); } 66.6% { background: var(--sage); color: var(--text); } }
-    .vis--yours .vis-kicker { animation: my-kicker 4.5s steps(1, end) 1s infinite; }
-    @keyframes my-kicker { 0% { color: var(--text-secondary); } 33.3% { color: #d9d1c4; } 66.6% { color: #3f4a1c; } }
-    .my-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
-    .my-theme { border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px; border: 2px solid transparent; }
-    .my-theme i { display: block; height: 7px; border-radius: 4px; }
-    .my-theme i:first-child { width: 60%; }
-    .my-theme small { font-size: 0.72rem; font-weight: 600; margin-top: 4px; }
-    .my-theme--cream { background: var(--bg); color: var(--text); border-color: var(--accent); } .my-theme--cream i { background: var(--surface-hover); } .my-theme--cream i:first-child { background: var(--fill); }
-    .my-theme--ink { background: var(--ink); color: var(--bg); } .my-theme--ink i { background: var(--ink-hover); } .my-theme--ink i:first-child { background: var(--fill); }
-    .my-theme--sage { background: var(--sage); color: var(--text); } .my-theme--sage i { background: #c6ce95; } .my-theme--sage i:first-child { background: var(--accent-2); }
-    .my-theme--cream { animation: my-ring-1 4.5s steps(1, end) 1s infinite; }
-    .my-theme--ink { animation: my-ring-2 4.5s steps(1, end) 1s infinite; }
-    .my-theme--sage { animation: my-ring-3 4.5s steps(1, end) 1s infinite; }
-    @keyframes my-ring-1 { 0% { border-color: var(--accent); } 33.3% { border-color: transparent; } }
-    @keyframes my-ring-2 { 0% { border-color: transparent; } 33.3% { border-color: var(--fill); } 66.6% { border-color: transparent; } }
-    @keyframes my-ring-3 { 0% { border-color: transparent; } 66.6% { border-color: var(--accent-2); } }
-    .my-icons { display: flex; gap: 10px; align-items: center; }
-    .my-icon { width: 46px; height: 46px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 0.8rem; letter-spacing: -0.04em; box-shadow: 0 0 0 2px transparent; }
-    .my-icon--1 { background: var(--fill); color: var(--text); animation: my-ring-1 4.5s steps(1, end) 1s infinite; border: 2px solid var(--accent); }
-    .my-icon--2 { background: var(--ink); color: var(--fill); animation: my-ring-2 4.5s steps(1, end) 1s infinite; border: 2px solid transparent; }
-    .my-icon--3 { background: var(--sage); color: var(--text); animation: my-ring-3 4.5s steps(1, end) 1s infinite; border: 2px solid transparent; }
-    .my-icon--4 { background: var(--bg); color: var(--text); border: 1px solid var(--rule); }
-    .my-icons small { margin-left: auto; font-size: 0.78rem; color: inherit; opacity: 0.7; }
-    .my-widget { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--ink); color: var(--bg); display: flex; justify-content: space-between; align-items: center; gap: 10px; animation: my-widget 4.5s steps(1, end) 1s infinite; }
-    @keyframes my-widget { 0% { background: var(--ink); color: var(--bg); } 33.3% { background: #fffaf3; color: var(--text); } 66.6% { background: var(--accent-2); color: #fff; } }
-    .my-widget b { display: block; font-family: var(--display); font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; }
-    .my-widget small { font-size: 0.74rem; opacity: 0.75; }
-    .my-chip { padding: 4px 9px; border-radius: var(--r-pill); background: var(--fill); color: var(--text); font-size: 0.7rem; font-weight: 700; }
+    /* Make it yours: the whole card re-skins every 1.5s through the app's five
+       theme families (Cream, Sage, Mist, Blush, Plum). Each swatch, icon and
+       widget reads its own family's colours from --t-* set inline, and the
+       selected ring steps through them on the same clock. */
+    .stories-visuals .vis--yours.is-active { animation: my-skin 7.5s steps(1, end) 1s infinite; }
+    @keyframes my-skin {
+      0%  { background: #fffaf3; color: #292924; --skin-fill: #FF88C8; --skin-surface: #F1E9DC; }
+      20% { background: #EDF2DA; color: #20261A; --skin-fill: #BFDA5E; --skin-surface: #E3EACA; }
+      40% { background: #EBF0F4; color: #1B232A; --skin-fill: #A8CBEE; --skin-surface: #E1E8EE; }
+      60% { background: #FAE8ED; color: #2B1A20; --skin-fill: #8FD6CB; --skin-surface: #F6DCE3; }
+      80% { background: #F0EBF8; color: #221B2E; --skin-fill: #F2C04F; --skin-surface: #E7E0F2; }
+    }
+    .vis--yours { --skin-fill: #FF88C8; --skin-surface: #F1E9DC; }
+    .vis--yours .vis-kicker { color: inherit; opacity: 0.6; }
+    .my-themes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px; }
+    .my-theme { border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 5px; border: 2px solid transparent; background: var(--t-bg); color: var(--t-ink); animation: my-ring 7.5s steps(1, end) 1s infinite; animation-delay: calc(1s + var(--i) * 1.5s); }
+    .my-theme i { display: block; height: 6px; border-radius: 3px; background: rgba(0,0,0,0.08); }
+    .my-theme i:first-child { width: 60%; background: var(--t-fill); }
+    .my-theme small { font-size: 0.68rem; font-weight: 600; margin-top: 3px; }
+    /* One keyframe set: the ring is on for the first fifth of the cycle, and
+       each item's delay shifts that window to its own family. Until its delay
+       runs out an item shows its base state: ringed for Cream, bare for the rest. */
+    @keyframes my-ring { 0% { border-color: var(--t-ink); } 20% { border-color: transparent; } }
+    .my-theme[style*="--i:0"], .my-icon[style*="--i:0"] { border-color: var(--t-ink); }
+    .my-icons { display: flex; gap: 8px; align-items: center; }
+    .my-icon { width: 42px; height: 42px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 0.78rem; letter-spacing: -0.04em; background: var(--t-bg); color: var(--t-ink); border: 2px solid transparent; animation: my-ring 7.5s steps(1, end) 1s infinite; animation-delay: calc(1s + var(--i) * 1.5s); }
+    .my-icons small { margin-left: auto; font-size: 0.78rem; color: inherit; opacity: 0.6; }
+    .my-widgets { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .my-widget { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 16px; background: var(--skin-surface); color: inherit; }
+    .my-widget .poster { width: 44px; border-radius: 6px; flex-shrink: 0; }
+    .my-widget b { display: block; font-family: var(--display); font-weight: 700; font-size: 0.95rem; letter-spacing: -0.02em; line-height: 1.15; }
+    .my-widget small { display: block; font-size: 0.7rem; opacity: 0.65; }
+    .my-widget small:first-child { color: var(--skin-fill); opacity: 1; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.62rem; filter: saturate(1.2) brightness(0.75); }
 
     @media (prefers-reduced-motion: reduce) {
-      .vis, .vis * { animation: none !important; }
+      .vis, .vis * { animation: none !important; transition: none !important; }
     }
 
     @media (max-width: 900px) {
@@ -575,7 +613,6 @@
     @media (max-width: 640px) {
       .section { padding: 4.5rem 1.25rem; }
       .hero { padding-left: 1.25rem; padding-right: 1.25rem; }
-      .plans-tail { height: 8rem; }
       .plan-card { padding: 22px; }
       .plan-amount { font-size: 3.2rem; }
       .closer { padding: 5rem 1.25rem 3rem; }
@@ -657,9 +694,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
     </section>
 
-    <!-- The plan cards hang off the hero into this cream band. -->
-    <div class="plans-tail" aria-hidden="true"></div>
-
     <!-- Plot Premium: one benefit at a time, with the product beside it. -->
     <section class="section stories" aria-labelledby="storiesHeadline">
       <div class="inner stories-inner">
@@ -670,7 +704,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="stories-slide is-active"><h3>Something to watch, in under a minute.</h3><p>How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.</p></div>
             <div class="stories-slide" aria-hidden="true"><h3>Settle movie night before the snacks are ready.</h3><p>Watch together analyzes everyone’s Plot profiles to find movie and TV matches in your lists.</p></div>
             <div class="stories-slide" aria-hidden="true"><h3>Every story has a plot. Here’s yours.</h3><p>Every film and show you log adds up to a profile: the genres you lean on, the hours you’ve put in, and the titles you keep going back to.</p></div>
-            <div class="stories-slide" aria-hidden="true"><h3 aria-label="Find out your compatibility based on cinema.">Find out your compatibility based on <s>science</s> cinema.</h3><p>A compatibility score built from the movies and shows you’ve both rated. Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.</p></div>
+            <div class="stories-slide" aria-hidden="true"><h3 aria-label="Find out your compatibility based on cinema.">Find out your compatibility based on <s>science</s> cinema.</h3><p>Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.</p></div>
             <div class="stories-slide" aria-hidden="true"><h3>Your Plot, your way.</h3><p>Light, dark or in between. Widgets for your home screen. Customize your Plot app interface and icon. Plot, the way you’d have made it.</p></div>
           </div>
           <div class="stories-steps" id="storiesSteps" role="group" aria-label="Premium benefits">
@@ -709,34 +743,70 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <!-- 2 · Watch together. Widow's Bay is in both watchlists. -->
           <div class="vis vis--together" aria-hidden="true" role="img" aria-label="Watch together: two watchlists share one title, Widow’s Bay. You both want to watch this.">
             <span class="vis-kicker">Watch together</span>
+            <div class="wt-board">
             <div class="wt-list"><div class="wt-label"><span class="av av-you">Y</span>Your watchlist</div><div class="wt-row"><img class="poster is-match" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
             <div class="wt-list"><div class="wt-label"><span class="av av-them">P</span>Priya’s watchlist</div><div class="wt-row"><img class="poster" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/s8Sr5BRjEzOnD6sxBvxUI4qrkrs.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster is-match" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
+            <span class="wt-ring" aria-hidden="true"></span>
+            <div class="wt-both" aria-hidden="true"><span class="av av-you">Y</span><span class="av av-them">P</span></div>
+            </div>
             <div class="wt-outcome"><div><strong>You both want to watch this.</strong><span class="vis-meta">Widow’s Bay · in both watchlists</span></div><span class="vis-pill">Start movie night</span></div>
           </div>
 
           <!-- 3 · Your watch profile. Illustrative numbers; they count up. -->
-          <div class="vis vis--profile" aria-hidden="true" role="img" aria-label="Your watch profile for 2026: 84 films, 31 shows, 212 hours. Thriller 38%, Comedy 22%, Drama 17%. Most rewatched: The Grand Budapest Hotel, 3 times.">
+          <div class="vis vis--profile" aria-hidden="true" role="img" aria-label="Your watch profile for 2026: five titles you rated five stars, 84 films, 31 shows, 212 hours. Thriller 38%, Comedy 22%, Drama 17%. Most rewatched: The Grand Budapest Hotel, 3 times.">
             <span class="vis-kicker">Your watch profile · 2026</span>
+            <div class="wp-top">
+              <div class="wp-posters" aria-hidden="true"><img class="poster" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:0"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:1"><img class="poster" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:2"><img class="poster" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:3"><img class="poster" src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:4"></div>
+              <span class="wp-top-label">Your five stars this year</span>
+            </div>
             <div class="wp-stats"><div class="wp-stat"><b data-count="84" data-delay="200">84</b><span>films</span></div><div class="wp-stat"><b data-count="31" data-delay="400">31</b><span>shows</span></div><div class="wp-stat"><b data-count="212" data-delay="600">212</b><span>hours</span></div></div>
             <div class="wp-bars"><div class="wp-bar">Thriller<i style="--w:88%;--d:0.9s"></i><em>38%</em></div><div class="wp-bar">Comedy<i style="--w:52%;--d:1.1s"></i><em>22%</em></div><div class="wp-bar">Drama<i style="--w:40%;--d:1.3s"></i><em>17%</em></div></div>
-            <div class="wp-taste"><span>Most rewatched</span><b class="wp-flip" aria-hidden="true"><span>Paddington 2 · 2×</span><span>Before Sunrise · 2×</span><span>The Grand Budapest Hotel · 3×</span></b><b class="sr-only">The Grand Budapest Hotel · 3×</b></div>
+            <div class="wp-taste"><img class="poster wp-thumb" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><span>Most rewatched</span><b class="wp-flip" aria-hidden="true"><span>Paddington 2 · 2×</span><span>Before Sunrise · 2×</span><span>The Grand Budapest Hotel · 3×</span></b><b class="sr-only">The Grand Budapest Hotel · 3×</b></div>
           </div>
 
           <!-- 4 · Taste match. Example numbers from /taste-match; the score counts up. -->
-          <div class="vis vis--taste" aria-hidden="true" role="img" aria-label="Taste match with Priya: 74%, based on 38 titles you’ve both rated. Three titles you both loved, your thriller share next to hers, and one title you disagree on.">
+          <div class="vis vis--taste" aria-hidden="true" role="img" aria-label="Taste match with Priya: 74%, based on 38 titles you’ve both rated. Three titles you both loved, four genres side by side, and the title you disagree on most: Dune: Part Two, two stars from you and five from Priya.">
             <span class="vis-kicker">Taste match</span>
             <div class="tm-top"><div class="tm-pair"><span class="av av-you">Y</span><span class="av av-them">P</span></div><div><b class="tm-num" data-count="74" data-delay="700" data-duration="1100" data-suffix="%">74%</b><span class="tm-cap">Based on 38 titles you’ve both rated</span></div></div>
             <div class="tm-row"><span class="tm-label">You both loved</span><div class="tm-posters"><img class="poster" style="--d:1.4s" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" style="--d:1.55s" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" style="--d:1.7s" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
-            <div class="tm-genres"><div class="wp-bar">Thriller<i style="--w:80%;--d:2s"></i><em>you</em></div><div class="wp-bar">Thriller<i class="is-them" style="--w:68%;--d:2.3s"></i><em>Priya</em></div></div>
-            <div class="tm-disagree"><span>Where you disagree</span><b>Widow’s Bay · you <span class="tm-stars" style="--d:3.1s">★★★★★</span> · Priya <span class="tm-stars" style="--d:3.4s">★★</span></b></div>
+            <div class="tm-genres">
+              <div class="tm-legend"><span><i class="is-you"></i>you</span><span><i class="is-them"></i>Priya</span></div>
+              <div class="tm-genre"><span>Thriller</span><i class="is-you" style="--w:80%;--d:2s"></i><i class="is-them" style="--w:68%;--d:2.15s"></i></div>
+              <div class="tm-genre"><span>Comedy</span><i class="is-you" style="--w:52%;--d:2.3s"></i><i class="is-them" style="--w:60%;--d:2.45s"></i></div>
+              <div class="tm-genre"><span>Drama</span><i class="is-you" style="--w:40%;--d:2.6s"></i><i class="is-them" style="--w:30%;--d:2.75s"></i></div>
+              <div class="tm-genre"><span>Horror</span><i class="is-you" style="--w:12%;--d:2.9s"></i><i class="is-them" style="--w:44%;--d:3.05s"></i></div>
+            </div>
+            <div class="tm-disagree">
+              <span class="tm-label">Where you disagree</span>
+              <b>Dune: Part Two</b>
+              <div class="tm-ratings"><span>you <em class="tm-stars" style="--d:3.6s">★★</em></span><span>Priya <em class="tm-stars" style="--d:3.9s">★★★★★</em></span></div>
+            </div>
           </div>
 
-          <!-- 5 · Make it yours. The card re-skins itself: Cream, Ink, Sage. -->
-          <div class="vis vis--yours" aria-hidden="true" role="img" aria-label="Make it yours: the card switches between Cream, Ink and Sage themes, with four app icons and an Up next home-screen widget.">
+          <!-- 5 · Make it yours. The card re-skins itself through the app's theme
+               families (packages/core/tokens.js themeFamilies, light mode): Cream (the
+               default), Sage, Mist, Blush, Plum. -->
+          <div class="vis vis--yours" aria-hidden="true" role="img" aria-label="Make it yours: the card switches between the Cream, Sage, Mist, Blush and Plum themes, with five matching app icons and two home-screen widgets, Up next and Watching.">
             <span class="vis-kicker">Make it yours</span>
-            <div class="my-themes"><div class="my-theme my-theme--cream"><i></i><i></i><i></i><small>Cream</small></div><div class="my-theme my-theme--ink"><i></i><i></i><i></i><small>Ink</small></div><div class="my-theme my-theme--sage"><i></i><i></i><i></i><small>Sage</small></div></div>
-            <div class="my-icons"><span class="my-icon my-icon--1">plot</span><span class="my-icon my-icon--2">plot</span><span class="my-icon my-icon--3">plot</span><span class="my-icon my-icon--4">plot</span><small>App icons</small></div>
-            <div class="my-widget"><div><b>Up next · Widow’s Bay</b><small>Out Friday · on your watchlist</small></div><span class="my-chip">Widget</span></div>
+            <div class="my-themes">
+              <div class="my-theme" style="--i:0;--t-bg:#F8F2EA;--t-fill:#FF88C8;--t-ink:#292924"><i></i><i></i><small>Cream</small></div>
+              <div class="my-theme" style="--i:1;--t-bg:#E3EACA;--t-fill:#BFDA5E;--t-ink:#20261A"><i></i><i></i><small>Sage</small></div>
+              <div class="my-theme" style="--i:2;--t-bg:#E1E8EE;--t-fill:#A8CBEE;--t-ink:#1B232A"><i></i><i></i><small>Mist</small></div>
+              <div class="my-theme" style="--i:3;--t-bg:#F6DCE3;--t-fill:#8FD6CB;--t-ink:#2B1A20"><i></i><i></i><small>Blush</small></div>
+              <div class="my-theme" style="--i:4;--t-bg:#E7E0F2;--t-fill:#F2C04F;--t-ink:#221B2E"><i></i><i></i><small>Plum</small></div>
+            </div>
+            <div class="my-icons">
+              <span class="my-icon" style="--i:0;--t-bg:#FF88C8;--t-ink:#292924">plot</span>
+              <span class="my-icon" style="--i:1;--t-bg:#BFDA5E;--t-ink:#20261A">plot</span>
+              <span class="my-icon" style="--i:2;--t-bg:#A8CBEE;--t-ink:#1B232A">plot</span>
+              <span class="my-icon" style="--i:3;--t-bg:#8FD6CB;--t-ink:#2B1A20">plot</span>
+              <span class="my-icon" style="--i:4;--t-bg:#F2C04F;--t-ink:#221B2E">plot</span>
+              <small>App icons</small>
+            </div>
+            <div class="my-widgets">
+              <div class="my-widget"><img class="poster" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><div><small>Up next</small><b>Widow’s Bay</b><small>Out Friday</small></div></div>
+              <div class="my-widget"><img class="poster" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><div><small>Watching</small><b>Peaky Blinders</b><small>S1 · E4 of 6</small></div></div>
+            </div>
           </div>
         </div>
 
@@ -822,11 +892,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="faq-group">
           <span class="eyebrow">Billing</span>
           <div class="faq-list">
-            <details class="faq-item"><summary>How does the free trial work?</summary><p>Start Premium and the first 7 days are free. You won’t be charged until the trial ends, we’ll email you 3 days before it does, and if you cancel during the trial you pay $0. The trial is for new subscribers.</p></details>
+            <details class="faq-item"><summary>How does the free trial work?</summary><p>Start Premium and the first 7 days are free. You won’t be charged until the trial ends, and if you cancel during the trial you pay $0. The trial is for new subscribers.</p></details>
             <details class="faq-item"><summary>Can I switch between monthly and annual?</summary><p>Yes, any time, from Manage subscription in Settings.</p></details>
             <details class="faq-item"><summary>Can I cancel anytime?</summary><p>Yes. Cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.</p></details>
             <details class="faq-item"><summary>Can I get a refund?</summary><p>The trial is there so you can try Premium before you pay, so charges after it aren’t refundable and we don’t refund partial months or years. If you think you were charged by mistake, email <a href="mailto:support@theplot.tv">support@theplot.tv</a> within 14 days and we’ll look into it. Your consumer-law rights still apply.</p></details>
-            <details class="faq-item"><summary>What currency am I charged in?</summary><p>Prices are in US dollars and include tax. Your total and billing currency are shown at checkout before you confirm.</p></details>
+            <details class="faq-item"><summary>What currency am I charged in?</summary><p>Prices are in US dollars and include tax. Checkout runs through Stripe, which shows your total in your local currency where it’s supported, so you see exactly what you’ll pay before you confirm.</p></details>
             <details class="faq-item"><summary>How do you take payment?</summary><p>Securely, through Stripe. Plot never sees or stores your card details.</p></details>
             <details class="faq-item"><summary>Something else?</summary><p>Email <a href="mailto:support@theplot.tv">support@theplot.tv</a> and a person will get back to you.</p></details>
           </div>
@@ -973,8 +1043,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           if (k === current) slide.removeAttribute('aria-hidden'); else slide.setAttribute('aria-hidden', 'true');
         });
         visuals.forEach(function (vis, k) {
-          vis.classList.toggle('is-active', k === current);
-          if (k === current) vis.removeAttribute('aria-hidden'); else vis.setAttribute('aria-hidden', 'true');
+          var wasActive = vis.classList.contains('is-active');
+          if (k === current) {
+            // Restart the card's own sequence (a display flip resets every
+            // descendant animation), then fade it in.
+            if (!wasActive) { vis.style.display = 'none'; void vis.offsetWidth; vis.style.display = ''; }
+            vis.classList.remove('is-leaving');
+            vis.classList.add('is-active');
+            vis.removeAttribute('aria-hidden');
+          } else {
+            vis.classList.remove('is-active');
+            vis.classList.toggle('is-leaving', wasActive);
+            vis.setAttribute('aria-hidden', 'true');
+          }
         });
         countUp(visuals[current]);
         clearTimeout(timer);
