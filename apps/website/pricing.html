@@ -128,7 +128,7 @@
     .hero {
       background: var(--ink);
       color: var(--bg);
-      padding: 84px 2rem 0;
+      padding: 84px 2rem 5rem;
       text-align: center;
     }
     .hero-inner {
@@ -191,7 +191,7 @@
       position: relative;
       z-index: 2;
       max-width: 860px;
-      margin: 3.5rem auto -7rem;
+      margin: 3.5rem auto 0;
       display: grid;
       grid-template-columns: 1fr 1.1fr;
       gap: 1.2rem;
@@ -292,8 +292,7 @@
     /* The home page's Premium section, told one benefit at a time: copy
        and a step switcher on the left, the matching product visual on the
        right. Steps auto-advance every 6s unless motion is reduced. */
-    .plans-tail { height: 9rem; }
-    .stories { background: var(--ink); color: var(--bg); }
+    .stories { background: var(--ink); color: var(--bg); padding-top: 2rem; }
     .stories .eyebrow { color: var(--fill); }
     .stories h2 { font-size: clamp(2.4rem, 4.2vw, 3.5rem); color: var(--bg); margin-bottom: 1.1rem; }
     .stories-inner {
@@ -365,7 +364,7 @@
     .pf-seg span { padding: 6px 12px; border-radius: var(--r-pill); background: var(--surface); font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); }
     .pf-seg .on { background: var(--fill); color: var(--text); animation: pf-chip 0.35s var(--ease) both; animation-delay: var(--d, 0s); }
     @keyframes pf-chip { from { background: var(--surface); color: var(--text-secondary); transform: scale(0.96); } 60% { transform: scale(1.04); } to { background: var(--fill); color: var(--text); transform: none; } }
-    .pf-pick { display: flex; gap: 14px; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule); }
+    .pf-pick { display: flex; gap: 14px; align-items: center; margin-top: 18px; }
     .pf-shuffle { position: relative; width: 68px; flex-shrink: 0; }
     .pf-shuffle .poster { width: 68px; }
     .pf-c { position: absolute; inset: 0; opacity: 0; animation: pf-card 0.9s var(--ease) both; animation-delay: calc(2s + var(--i) * 0.12s); }
@@ -378,14 +377,27 @@
     .pf-play { animation: pf-press 0.5s var(--ease) 3.8s both; }
     @keyframes pf-press { 0%, 100% { transform: none; } 40% { transform: scale(0.94); background: var(--ink-hover); } }
 
-    /* Watch together: the shared title gets its ring, then the outcome lands. */
+    /* Watch together: the two copies of the shared title travel out of
+       their rows and meet in the middle (as the old homepage did), a ring
+       lands around them, the rest of the rows dim, then the outcome lands. */
+    .wt-board { position: relative; }
     .wt-list + .wt-list { margin-top: 14px; }
     .wt-label { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 500; margin-bottom: 8px; }
     .wt-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .wt-row .poster { border-radius: 6px; }
-    .wt-row .is-match { outline: 2px solid var(--accent); outline-offset: 2px; animation: wt-ring 0.5s var(--ease) 1.1s both; }
-    @keyframes wt-ring { from { outline-color: transparent; transform: none; } 50% { transform: scale(1.06); } to { outline-color: var(--accent); transform: none; } }
-    .wt-outcome { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: var(--sage); animation: vis-rise 0.5s var(--ease) 1.7s both; }
+    .wt-row .poster:not(.is-match) { opacity: 0.45; animation: wt-dim 0.6s var(--ease) 1s both; }
+    @keyframes wt-dim { from { opacity: 1; } to { opacity: 0.45; } }
+    /* --dx/--dy: how far each copy travels to the meeting point, set per copy below. */
+    .wt-row .is-match { position: relative; z-index: 2; transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1.12); animation: wt-travel 0.9s var(--ease) 0.9s both; }
+    @keyframes wt-travel { from { transform: none; } to { transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1.12); } }
+    .wt-list:first-child .is-match { --dx: calc(200% + 16px - 7px); --dy: calc(50% + 24px); --r: -5deg; }
+    .wt-list:nth-child(2) .is-match { --dx: 7px; --dy: calc(-50% - 24px); --r: 5deg; }
+    .wt-ring { position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; border: 3px solid var(--accent); z-index: 1; pointer-events: none; animation: wt-ring 0.6s var(--ease) 1.7s both; }
+    @keyframes wt-ring { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+    .wt-both { position: absolute; left: 50%; top: 50%; z-index: 3; display: flex; transform: translate(-50%, 46px); animation: vis-rise 0.4s var(--ease) 2.1s both; }
+    .wt-both .av { border: 2px solid #fffaf3; }
+    .wt-both .av + .av { margin-left: -8px; }
+    .wt-outcome { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: var(--sage); animation: vis-rise 0.5s var(--ease) 2.4s both; }
     .wt-outcome strong { display: block; font-size: 0.92rem; }
     .wt-outcome .vis-meta { color: #3f4a1c; }
 
@@ -423,12 +435,22 @@
     .tm-label { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; }
     .tm-posters { display: flex; gap: 6px; }
     .tm-posters .poster { width: 56px; border-radius: 6px; animation: vis-rise 0.45s var(--ease) both; animation-delay: var(--d, 0s); }
-    .tm-genres { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-    .tm-genres .wp-bar i.is-them { background: var(--sage); }
-    .tm-disagree { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--surface); font-size: 0.8rem; animation: vis-rise 0.5s var(--ease) 2.8s both; }
-    .tm-disagree > span { color: var(--text-secondary); white-space: nowrap; }
-    .tm-disagree b { font-family: var(--display); font-weight: 700; font-size: 0.85rem; text-align: right; }
-    .tm-stars { display: inline-block; color: var(--accent); animation: tm-stars 0.4s var(--ease) both; animation-delay: var(--d, 0s); }
+    .tm-genres { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .tm-legend { display: flex; gap: 14px; justify-content: flex-end; font-size: 0.72rem; color: var(--text-secondary); }
+    .tm-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .tm-legend i { width: 10px; height: 10px; border-radius: 3px; }
+    .tm-genre { display: grid; grid-template-columns: 64px 1fr; grid-template-rows: auto auto; column-gap: 10px; row-gap: 3px; align-items: center; font-size: 0.8rem; }
+    .tm-genre span { grid-row: 1 / 3; }
+    .tm-genre i, .tm-legend i.is-you, .tm-legend i.is-them { display: block; }
+    .tm-genre i { height: 8px; border-radius: 4px; width: var(--w, 50%); transform-origin: left; animation: wp-grow 0.6s var(--ease) both; animation-delay: var(--d, 0s); }
+    .is-you { background: var(--fill); }
+    .is-them { background: var(--sage); }
+    .tm-disagree { display: grid; grid-template-columns: 1fr auto; row-gap: 2px; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--surface); font-size: 0.8rem; animation: vis-rise 0.5s var(--ease) 3.3s both; }
+    .tm-disagree .tm-label { grid-column: 1 / -1; margin-bottom: 2px; color: var(--text-secondary); }
+    .tm-disagree b { font-family: var(--display); font-weight: 700; font-size: 0.95rem; }
+    .tm-ratings { display: flex; gap: 12px; justify-content: flex-end; white-space: nowrap; }
+    .tm-ratings span { color: var(--text-secondary); }
+    .tm-stars { display: inline-block; font-style: normal; color: var(--accent); letter-spacing: 0.04em; animation: tm-stars 0.4s var(--ease) both; animation-delay: var(--d, 0s); }
     @keyframes tm-stars { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
     /* Make it yours: the whole card re-skins every 1.5s, Cream → Ink →
@@ -575,7 +597,6 @@
     @media (max-width: 640px) {
       .section { padding: 4.5rem 1.25rem; }
       .hero { padding-left: 1.25rem; padding-right: 1.25rem; }
-      .plans-tail { height: 8rem; }
       .plan-card { padding: 22px; }
       .plan-amount { font-size: 3.2rem; }
       .closer { padding: 5rem 1.25rem 3rem; }
@@ -657,9 +678,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
     </section>
 
-    <!-- The plan cards hang off the hero into this cream band. -->
-    <div class="plans-tail" aria-hidden="true"></div>
-
     <!-- Plot Premium: one benefit at a time, with the product beside it. -->
     <section class="section stories" aria-labelledby="storiesHeadline">
       <div class="inner stories-inner">
@@ -709,8 +727,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <!-- 2 · Watch together. Widow's Bay is in both watchlists. -->
           <div class="vis vis--together" aria-hidden="true" role="img" aria-label="Watch together: two watchlists share one title, Widow’s Bay. You both want to watch this.">
             <span class="vis-kicker">Watch together</span>
+            <div class="wt-board">
             <div class="wt-list"><div class="wt-label"><span class="av av-you">Y</span>Your watchlist</div><div class="wt-row"><img class="poster is-match" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
             <div class="wt-list"><div class="wt-label"><span class="av av-them">P</span>Priya’s watchlist</div><div class="wt-row"><img class="poster" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/s8Sr5BRjEzOnD6sxBvxUI4qrkrs.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster is-match" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
+            <span class="wt-ring" aria-hidden="true"></span>
+            <div class="wt-both" aria-hidden="true"><span class="av av-you">Y</span><span class="av av-them">P</span></div>
+            </div>
             <div class="wt-outcome"><div><strong>You both want to watch this.</strong><span class="vis-meta">Widow’s Bay · in both watchlists</span></div><span class="vis-pill">Start movie night</span></div>
           </div>
 
@@ -723,12 +745,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
 
           <!-- 4 · Taste match. Example numbers from /taste-match; the score counts up. -->
-          <div class="vis vis--taste" aria-hidden="true" role="img" aria-label="Taste match with Priya: 74%, based on 38 titles you’ve both rated. Three titles you both loved, your thriller share next to hers, and one title you disagree on.">
+          <div class="vis vis--taste" aria-hidden="true" role="img" aria-label="Taste match with Priya: 74%, based on 38 titles you’ve both rated. Three titles you both loved, four genres side by side, and the title you disagree on most: Dune: Part Two, two stars from you and five from Priya.">
             <span class="vis-kicker">Taste match</span>
             <div class="tm-top"><div class="tm-pair"><span class="av av-you">Y</span><span class="av av-them">P</span></div><div><b class="tm-num" data-count="74" data-delay="700" data-duration="1100" data-suffix="%">74%</b><span class="tm-cap">Based on 38 titles you’ve both rated</span></div></div>
             <div class="tm-row"><span class="tm-label">You both loved</span><div class="tm-posters"><img class="poster" style="--d:1.4s" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" style="--d:1.55s" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" style="--d:1.7s" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
-            <div class="tm-genres"><div class="wp-bar">Thriller<i style="--w:80%;--d:2s"></i><em>you</em></div><div class="wp-bar">Thriller<i class="is-them" style="--w:68%;--d:2.3s"></i><em>Priya</em></div></div>
-            <div class="tm-disagree"><span>Where you disagree</span><b>Widow’s Bay · you <span class="tm-stars" style="--d:3.1s">★★★★★</span> · Priya <span class="tm-stars" style="--d:3.4s">★★</span></b></div>
+            <div class="tm-genres">
+              <div class="tm-legend"><span><i class="is-you"></i>you</span><span><i class="is-them"></i>Priya</span></div>
+              <div class="tm-genre"><span>Thriller</span><i class="is-you" style="--w:80%;--d:2s"></i><i class="is-them" style="--w:68%;--d:2.15s"></i></div>
+              <div class="tm-genre"><span>Comedy</span><i class="is-you" style="--w:52%;--d:2.3s"></i><i class="is-them" style="--w:60%;--d:2.45s"></i></div>
+              <div class="tm-genre"><span>Drama</span><i class="is-you" style="--w:40%;--d:2.6s"></i><i class="is-them" style="--w:30%;--d:2.75s"></i></div>
+              <div class="tm-genre"><span>Horror</span><i class="is-you" style="--w:12%;--d:2.9s"></i><i class="is-them" style="--w:44%;--d:3.05s"></i></div>
+            </div>
+            <div class="tm-disagree">
+              <span class="tm-label">Where you disagree</span>
+              <b>Dune: Part Two</b>
+              <div class="tm-ratings"><span>you <em class="tm-stars" style="--d:3.6s">★★</em></span><span>Priya <em class="tm-stars" style="--d:3.9s">★★★★★</em></span></div>
+            </div>
           </div>
 
           <!-- 5 · Make it yours. The card re-skins itself: Cream, Ink, Sage. -->
