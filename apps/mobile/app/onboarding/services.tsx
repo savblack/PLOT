@@ -11,9 +11,12 @@ import { topRegionServices } from '@plot/core/onboardingSetup.js';
 import { REGIONS } from '@plot/core/regions.js';
 import { tmdb } from '../../lib/tmdb';
 import { Palette, fontFamily, fontSize, logoUrl, spacing, radii } from '../../lib/tokens';
+import { useImportJobs, importPillFor } from '@plot/core/importJobs.js';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAppData } from '../../contexts/AppDataContext';
 import { useOnboardingFlow, type PickedService } from '../../contexts/OnboardingFlowContext';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
+import { ImportPill } from '../../components/ImportSourceLanes';
 
 const F = ONBOARDING_FLOW;
 
@@ -23,6 +26,9 @@ export default function Services() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const flow = useOnboardingFlow();
   const { region, setServices } = flow;
+  // A background import started on step 1 keeps its one-line pill here.
+  const { user } = useAppData();
+  const jobs = useImportJobs(user?.id ?? null);
   const [list, setList] = useState<PickedService[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [picking, setPicking] = useState(false);
@@ -62,6 +68,7 @@ export default function Services() {
       onSkip={() => build(true)}
       error={flow.saveError}
     >
+      <ImportPill pill={importPillFor(jobs.current, jobs.queued)} />
       {failed ? (
         <Text style={styles.region}>{F.services.loadError}</Text>
       ) : !list ? (

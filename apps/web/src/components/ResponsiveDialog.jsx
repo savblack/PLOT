@@ -10,6 +10,8 @@ import './ResponsiveDialog.css';
  */
 export default function ResponsiveDialog({
   title,
+  /** The accessible name when `title` is an element rather than a string. */
+  label,
   onClose,
   onBack,
   action,
@@ -77,7 +79,7 @@ export default function ResponsiveDialog({
         className={`responsive-dialog${sizeClass}${tall ? ' responsive-dialog--tall' : ''}${surfaceClassName ? ` ${surfaceClassName}` : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-label={label || (typeof title === 'string' ? title : undefined)}
       >
         <div className="responsive-dialog-handle" aria-hidden="true" />
         <SheetHeader title={title} onClose={onClose} onBack={onBack} action={action} />

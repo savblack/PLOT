@@ -20,7 +20,8 @@ import { PEOPLE } from '@plot/core/copy/people.js';
 import { FINISHING_TOUCHES as T } from '../copy/finishingTouches.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { COMMON } from '../copy/common.js';
-import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
+import { availableImportSources } from '@plot/core/onboardingSetup.js';
+import { getConfig } from '@plot/core/config.js';
 import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useApp } from '../hooks/useApp.js';
@@ -120,7 +121,7 @@ export default function FinishingTouches() {
         <ResponsiveDialog title={T.importSheet.title} onClose={closeSheet} size="compact">
           <p className="ft-sheet-sub">{T.importSheet.sub}</p>
           <div className="ft-sources">
-            {IMPORT_SOURCES.map(src => (
+            {availableImportSources(getConfig()).map(src => (
               <button key={src.id} type="button" className="ft-source" onClick={() => {
                 createImportReporter({ entry: IMPORT_ENTRY_POINTS.FINISHING_TOUCHES }).selected(src.id);
                 navigate(`/import?source=${src.id}&from=${IMPORT_ENTRY_POINTS.FINISHING_TOUCHES}`);

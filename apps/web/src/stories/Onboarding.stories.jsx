@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import OnboardingScreen from '../pages/OnboardingScreen.jsx';
 import { buildingFan, buildingLines } from '@plot/core/onboardingSetup.js';
+import { importPillFor } from '@plot/core/importJobs.js';
+
+// A running Letterboxd job and a queued Netflix one, as import_jobs rows.
+const runningJob = { id: 'j1', source: 'letterboxd', kind: 'file', status: 'running', phase: 'resolve', progress_done: 620, progress_total: 1284 };
+const queuedJob = { id: 'j2', source: 'netflix', kind: 'file', status: 'queued', phase: 'parse', progress_done: 0, progress_total: 0 };
 
 // Fictional titles and services, no images. Ids are negative on purpose: they
 // are not TMDB ids (AGENTS.md: never guess one).
@@ -10,7 +15,7 @@ const services = ['Service One', 'Service Two', 'Service Three', 'Service Four',
   .map((name, i) => ({ id: -(i + 100), name, logo_path: null }));
 const noop = () => {};
 
-function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', lineIndex = 1, ticking = false, importSource = null, importPhase = 'pick', importError = null }) {
+function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', lineIndex = 1, ticking = false, importSource = null, importPhase = 'pick', importError = null, jobs = [], pendingFiles = null, pendingRows = null, connectedIds = [] }) {
   const [sel, setSel] = useState(selected);
   const [line, setLine] = useState(lineIndex);
   useEffect(() => {
@@ -33,13 +38,18 @@ function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 
         onToggle: (item) => setSel(s => (s.includes(item.id) ? s.filter(x => x !== item.id) : [...s, item.id])),
         onContinue: noop, onSwitch: noop,
       }}
-      onPickImport={noop}
       importStep={{
-        source: importSource, phase: importPhase, error: importError, accept: '.csv,.zip', formats: 'CSV or ZIP', connectedName: null,
-        plex: importSource === 'plex' && ['ready', 'starting'].includes(importPhase)
-          ? { servers: [{ clientIdentifier: 'a', name: 'Living room' }], profiles: [{ accountID: '1', name: 'Sam' }], serverId: 'a', selected: false, busy: false, error: null, choose: noop }
-          : null,
-        onFiles: noop, onConnect: noop, onStartImport: noop, onContinue: noop,
+        start: {
+          source: importSource, phase: importPhase, busy: false, error: importError, connectedAs: importSource === 'trakt' ? 'sam' : null,
+          queuedBehind: importPhase === 'queued' && jobs.length ? 'Letterboxd' : null,
+          pendingFiles, pendingRows, jobs, current: jobs[0] || null, queued: jobs.slice(1), connectedIds,
+          pill: importPillFor(jobs[0] || null, jobs.slice(1)),
+          plex: importSource === 'plex' && ['ready', 'starting'].includes(importPhase)
+            ? { servers: [{ clientIdentifier: 'a', name: 'Living room NAS', owned: true }, { clientIdentifier: 'b', name: 'Tom’s server', owned: false }], profiles: [{ accountID: '1', name: 'Sam' }, { accountID: '2', name: 'Kids' }], serverId: 'a', selected: false, selection: null, busy: false, error: null, choose: noop }
+            : null,
+          pick: noop, close: noop, attachFiles: noop, upload: noop, connect: noop, startJob: noop, addAnother: noop,
+        },
+        onContinue: noop, onLater: noop,
       }}
       services={{
         list: services, error: false, selectedIds: svc,
@@ -71,9 +81,15 @@ export const SwitchingAppsConnect = { render: () => <Screen step="import" import
 export const SwitchingAppsConnecting = { render: () => <Screen step="import" importSource="trakt" importPhase="connecting" /> };
 export const SwitchingAppsConnected = { render: () => <Screen step="import" importSource="trakt" importPhase="ready" /> };
 export const SwitchingAppsPlexPickServer = { render: () => <Screen step="import" importSource="plex" importPhase="ready" /> };
+export const SwitchingAppsFileAttached = { render: () => <Screen step="import" importSource="netflix" importPhase="file" pendingFiles={[{ name: 'NetflixViewingHistory.csv' }]} pendingRows={2106} /> };
 export const SwitchingAppsQueued = { render: () => <Screen step="import" importSource="letterboxd" importPhase="queued" /> };
+/** A second source picked while the first runs: its tile is held and the pill shows. */
+export const SwitchingAppsSecondPick = { render: () => <Screen step="import" jobs={[runningJob, queuedJob]} connectedIds={['trakt']} /> };
+export const SwitchingAppsQueuedBehind = { render: () => <Screen step="import" importSource="netflix" importPhase="queued" jobs={[runningJob, queuedJob]} /> };
 /** 2 · Where do you watch. */
 export const WhereDoYouWatch = { render: () => <Screen step="services" /> };
+/** The import pill rides along while the import runs. */
+export const WhereDoYouWatchImporting = { render: () => <Screen step="services" jobs={[runningJob, queuedJob]} /> };
 /** 2 · Nothing picked yet. */
 export const WhereDoYouWatchNonePicked = { render: () => <Screen step="services" picked={[]} /> };
 /** 3 · Building your Plot: the cards deal in, then shuffle with each line. */

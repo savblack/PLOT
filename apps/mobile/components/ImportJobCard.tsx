@@ -1,13 +1,15 @@
 /**
- * Home's card for a background import (import_jobs): progress while it runs,
- * the counts when it is done, and the way to finish what it left for review.
- * The job is read and polled by @plot/core/importJobs.js; this is the render.
- * Web: apps/web/src/components/ImportJobCard.jsx, on the same core hook.
+ * Home's cards for background imports (import_jobs): the running job with
+ * progress (and what waits behind it), then every finished job the user
+ * hasn't seen off, with the counts and the way to finish what it left for
+ * review. The jobs are read and polled by @plot/core/importJobs.js; this is
+ * the render. Web: apps/web/src/components/ImportJobCard.jsx, on the same
+ * core hook.
  */
 import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useImportJob, importJobTitle, importJobStatusLine, importJobActive, importJobFinished } from '@plot/core/importJobs.js';
+import { useRouter, type Href } from 'expo-router';
+import { useImportJobs, importJobTitle, importJobStatusLine, importJobActive, importJobFinished, importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { createImportReporter, IMPORT_FAILURE_REASONS } from '@plot/core/importPipeline.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
@@ -33,17 +35,33 @@ interface Props {
 }
 
 export default function ImportJobCard({ userId, onReview, onFinished }: Props) {
+  const { jobs, current, queued, cancel, dismiss } = useImportJobs(userId);
+  // The running job (with what waits behind it), then each finished job the
+  // user hasn't seen off. Queued jobs don't get a card of their own.
+  const shown = [current, ...jobs.filter((job: ImportJobRow) => importJobFinished(job) && !job.seen_at)].filter(Boolean) as ImportJobRow[];
+  if (!shown.length) return null;
+  return (
+    <>
+      {shown.map(job => (
+        <JobCard key={job.id} userId={userId} job={job} queued={job.id === current?.id ? queued : []} onReview={onReview} onFinished={onFinished} cancel={() => { void cancel(job.id); }} dismiss={() => { void dismiss(job.id); }} />
+      ))}
+    </>
+  );
+}
+
+function JobCard({ userId, job, queued, onReview, onFinished, cancel, dismiss }: {
+  userId: string; job: ImportJobRow; queued: { source: string }[]; onReview: Props['onReview']; onFinished?: Props['onFinished']; cancel: () => void; dismiss: () => void;
+}) {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { job: raw, active, cancel, dismiss } = useImportJob(userId);
-  const job = raw as ImportJobRow | null;
+  const active = importJobActive(job);
 
   // The first time a finished job is seen on this device: tick Finishing
   // touches and stand the first-win card down, as the modal import does.
   const noted = useRef<string | null>(null);
   useEffect(() => {
-    if (!job || !importJobFinished(job) || noted.current === job.id) return;
+    if (!importJobFinished(job) || noted.current === job.id) return;
     noted.current = job.id;
     // The same import_completed / import_failed the modal import reports.
     const reporter = createImportReporter({ entry: job.entry });
@@ -56,16 +74,15 @@ export default function ImportJobCard({ userId, onReview, onFinished }: Props) {
     onFinished?.(job);
   }, [userId, job, onFinished]);
 
-  if (!job || (importJobFinished(job) && job.seen_at)) return null;
-
   const pct = job.progress_total ? Math.min(100, Math.round((job.progress_done / job.progress_total) * 100)) : null;
-  const line = importJobStatusLine(job);
+  const line = [importJobStatusLine(job), queued.length ? C.thenNext(importSourceName(queued[0].source)) : null].filter(Boolean).join(' · ');
   const done = !active && job.status !== 'cancelled';
+  const sourceId = job.source === 'trakt-export' ? 'trakt' : job.source;
 
   return (
     <View style={[styles.card, !active && styles.cardDone, job.status === 'failed' && styles.cardFailed]} accessibilityLiveRegion="polite" accessibilityLabel={importJobTitle(job)}>
       <View style={styles.row}>
-        <ImportSourceIcon id={job.source === 'trakt-export' ? 'trakt' : job.source} name={job.source} size={32} />
+        <ImportSourceIcon id={sourceId} name={job.source} size={32} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={styles.title} accessibilityRole="header">{importJobTitle(job)}</Text>
           {line ? <Text style={styles.line}>{line}</Text> : null}
@@ -77,12 +94,15 @@ export default function ImportJobCard({ userId, onReview, onFinished }: Props) {
         </View>
       )}
       <View style={styles.actions}>
-        {importJobActive(job) && <TouchableOpacity onPress={cancel} accessibilityRole="button"><Text style={styles.link}>{C.cancel}</Text></TouchableOpacity>}
+        {active && <TouchableOpacity onPress={cancel} accessibilityRole="button"><Text style={styles.link}>{C.cancel}</Text></TouchableOpacity>}
         {done && job.review_count > 0 && (
           <TouchableOpacity style={styles.button} onPress={() => onReview(job)} accessibilityRole="button"><Text style={styles.buttonText}>{C.reviewCta}</Text></TouchableOpacity>
         )}
         {done && job.imported > 0 && job.review_count === 0 && (
-          <TouchableOpacity style={styles.buttonSecondary} onPress={() => { void dismiss(); router.push('/(app)/history' as never); }} accessibilityRole="button"><Text style={styles.buttonSecondaryText}>{C.historyCta}</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.buttonSecondary} onPress={() => { dismiss(); router.push('/(app)/history' as Href); }} accessibilityRole="button"><Text style={styles.buttonSecondaryText}>{C.historyCta}</Text></TouchableOpacity>
+        )}
+        {job.status === 'failed' && (
+          <TouchableOpacity style={styles.buttonSecondary} onPress={() => { dismiss(); router.push(`/(app)/settings?section=connections&source=${sourceId}` as Href); }} accessibilityRole="button"><Text style={styles.buttonSecondaryText}>{C.retryCta}</Text></TouchableOpacity>
         )}
         {!active && <TouchableOpacity onPress={dismiss} accessibilityRole="button"><Text style={styles.link}>{C.dismiss}</Text></TouchableOpacity>}
       </View>

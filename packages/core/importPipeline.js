@@ -73,6 +73,7 @@ export const IMPORT_ENTRY_POINTS = Object.freeze({
   ONBOARDING:        'onboarding',
   FINISHING_TOUCHES: 'finishing_touches',
   IMPORT_PAGE:       'import_page',
+  SETTINGS:          'settings',
 });
 
 /**
