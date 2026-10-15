@@ -122,7 +122,7 @@ export const PLANS_PAGE = {
         label: 'Billing',
         items: [
           { q: 'How does the free trial work?', a: 'Start Premium and the first 7 days are free. You won’t be charged until the trial ends, we’ll email you 3 days before it does, and if you cancel during the trial you pay $0. The trial is for new subscribers.' },
-          { q: 'Can I switch between monthly and annual?', a: 'Yes, any time, from Manage subscription in Settings. If you switch during your trial, the trial carries on.' },
+          { q: 'Can I switch between monthly and annual?', a: 'Yes, any time, from Manage subscription in Settings.' },
           { q: 'Can I cancel anytime?', a: 'Yes. Cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.' },
           { q: 'Can I get a refund?', a: 'The trial is there so you can try Premium before you pay, so charges after it aren’t refundable and we don’t refund partial months or years. If you think you were charged by mistake, email support@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.' },
           { q: 'What currency am I charged in?', a: 'Prices are in US dollars and include tax. Your total and billing currency are shown at checkout before you confirm.' },
