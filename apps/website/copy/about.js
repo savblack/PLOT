@@ -52,6 +52,7 @@ export const ABOUT_PAGE = {
           detail: "Follow friends and see what they thought in their own words, not a 2,000-word essay. Compare your taste with one number, then send it to someone. Nobody can resist finding out they're a 41. <a href=\"/taste-match\" data-cta=\"about-features\">Try Taste match</a>",
         },
       ],
+      switching: "Coming from Letterboxd, Trakt, Netflix or TMDB? Bring your history with you. You confirm every entry before it's saved. <a href=\"https://app.theplot.tv/signup\" data-cta=\"about-import\">Start your plot, free</a>",
       premiumNote: "All of it is free, with no credit card. Premium is US$3 a month or US$24 a year, with the first 7 days free, and adds Pick for Me, a live calendar subscription and unlimited lists. It's also the biggest way to keep Plot independent. <a href=\"/pricing\" data-cta=\"about-premium\">See what Premium adds</a>",
     },
     {
@@ -65,7 +66,7 @@ export const ABOUT_PAGE = {
       id: "solo",
       heading: "Built by one person",
       paragraphs: [
-        "Plot is built by one person, around a full-time job. There's no team, no investors and no corporate roadmap. It's shaped almost entirely by feedback from the people who use it, which means you. Any note, good or bad, any feature request or bug you spot, lands in my inbox and usually ends up in the app. Send one from Settings, or email <a href=\"mailto:contact@theplot.tv\" data-cta=\"about-email\">contact@theplot.tv</a>.",
+        "Plot is built by one person, around a full-time job. There's no team, no investors, no ads and no corporate roadmap, so the only thing that keeps Plot running is people choosing Premium. That's deliberate: nobody can tell me to sell your data or bury the app in ads, because there's nobody to answer to but the people who use it. It's shaped almost entirely by feedback from the people who use it, which means you. Any note, good or bad, any feature request or bug you spot, lands in my inbox and usually ends up in the app. Send one from Settings, or email <a href=\"mailto:contact@theplot.tv\" data-cta=\"about-email\">contact@theplot.tv</a>.",
         "Plot is still early, so if you're using it now, you're an early user too, bugs and all. <strong>I don't take that kind of patience lightly, and it's already more than enough.</strong> If you ever want to do more, Plot is on <a href=\"https://ko-fi.com/J7P123TYGK\" target=\"_blank\" rel=\"noopener\" data-cta=\"about-kofi\">Ko-fi</a>. Thank you for reading this, and for considering Plot.",
       ],
     },
