@@ -1658,7 +1658,15 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 : <div className="panel-poster panel-poster--empty" aria-hidden="true" />
               }
               <div className="panel-head-text">
-                <div className="panel-kicker">{isMovie ? MEDIA.movie : MEDIA.series}</div>
+                <div className="panel-kicker-row">
+                  <div className="panel-kicker">{isMovie ? MEDIA.movie : MEDIA.series}</div>
+                  <CustomizeArtwork
+                    mediaType={artworkSubject}
+                    tmdbId={itemId}
+                    seasonNumber={seasonForPoster == null ? undefined : seasonForPoster}
+                    defaults={{ poster: details?.poster_path, backdrop: details?.backdrop_path }}
+                  />
+                </div>
                 <h2 className="panel-title">{title}</h2>
                 <p className="panel-facts">
                   {factLine}
@@ -1670,12 +1678,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     {genreChips.map(g => <span className="panel-genre" key={g.id}>{g.name}</span>)}
                   </div>
                 )}
-                <CustomizeArtwork
-                  mediaType={artworkSubject}
-                  tmdbId={itemId}
-                  seasonNumber={seasonForPoster == null ? undefined : seasonForPoster}
-                  defaults={{ poster: details?.poster_path, backdrop: details?.backdrop_path }}
-                />
               </div>
             </div>
 
