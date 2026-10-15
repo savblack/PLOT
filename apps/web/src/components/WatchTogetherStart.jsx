@@ -1,24 +1,22 @@
-// Watch together for someone with nobody to watch with yet: one card to find
-// someone (search, the people they follow and what they have in common, an
-// example pairing, their invite link) beside a try-it demo, and a note for
-// people who were invited. Free members see the Premium prompt; everyone can
-// invite. Design: the "Watch together on Free" row of the canvas linked from
-// docs/design/watch-together/README.md. Rules: @plot/core watchTogether.js.
+// Watch together for someone with nobody to watch with yet: a dark hero to find
+// someone (search, invite link, an example pairing), the people they follow
+// with what they have in common, and a try-it demo. Free members get one
+// Premium card; Premium members get a dismissible welcome instead. Everyone can
+// invite. Design: Oct 2026 redesign, docs/design/watch-together/README.md. Rules: @plot/core watchTogether.js.
 // Mobile parity: apps/mobile/components/watch/WatchTogetherStart.tsx.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import { useApp } from '../hooks/useApp.js';
 import { personName, pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
-import { useWatchTogetherLink, useWatchTogetherExampleTitles, reportWatchTogether } from '@plot/core/useWatchTogether.js';
-import { buildWatchTogetherLinkUrl, SHARE_ORIGIN } from '@plot/core/sharing.js';
+import { useWatchTogetherExampleTitles } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { posterUrl } from '../utils/images.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
-import { isPreviewDeployment } from '../utils/previewDeployment.js';
-import { shareUrl } from '../utils/share.js';
+import { readStorage, writeStorage } from '../utils/storage.js';
 import { PersonAvatar } from './WatchTogetherParts.jsx';
+import { useInviteShare } from '../hooks/useInviteShare.js';
 import PlotLogo from './PlotLogo.jsx';
 
 const S = T.start;
@@ -29,33 +27,6 @@ const EXAMPLE_POSTERS = [1, 2, 3, 4, 5];
 
 export function Wordmark() {
   return <span className="wt-wordmark"><PlotLogo inherit /></span>;
-}
-
-/** Links point at the host you're on for previews (they use Staging's data). */
-function linkOrigin() {
-  return isPreviewDeployment() && typeof window !== 'undefined' ? window.location.origin : SHARE_ORIGIN;
-}
-
-/** The signed-in person's reusable invite link, with Share and Copy. */
-function useInviteShare() {
-  const { user, profile } = useApp();
-  const { key } = useWatchTogetherLink(user?.id);
-  const [copied, setCopied] = useState(false);
-  const url = buildWatchTogetherLinkUrl({ username: profile?.username || '', key: key || '', origin: linkOrigin() });
-  const name = personName(profile || {});
-  const display = url ? url.replace(/^https?:\/\//, '') : '';
-
-  const share = async () => {
-    if (!url) return;
-    const result = await shareUrl({ url, title: T.link.previewTitle(name), text: T.link.shareText });
-    if (result.ok) reportWatchTogether('link_shared', { method: result.method });
-    if (result.ok && result.method === 'copy') setCopied(true);
-  };
-  const copy = async () => {
-    if (!url) return;
-    try { await navigator.clipboard.writeText(url); setCopied(true); reportWatchTogether('link_shared', { method: 'copy' }); } catch { /* clipboard blocked */ }
-  };
-  return { url, display, copied, share, copy };
 }
 
 /** The invite link with Share and Copy, for the invite and landing pages. */
@@ -76,17 +47,8 @@ export function InviteLinkCard() {
   );
 }
 
-function PremiumPrompt({ label }) {
-  return (
-    <div className="wt-premium-prompt">
-      <Link to={premiumPlansPath('/together')} className="btn btn-primary">{label}</Link>
-      <span className="wt-note">{S.premiumNote(PLANS_PAGE.premium.priceSummary)}</span>
-    </div>
-  );
-}
-
 /** A row for someone you can invite: their name, a note, and Invite. */
-function PersonRow({ person, note, sent, onInvite }) {
+export function PersonRow({ person, note, sent, onInvite }) {
   return (
     <div className="wt-row">
       <PersonAvatar person={person} />
@@ -103,10 +65,11 @@ function PersonRow({ person, note, sent, onInvite }) {
 }
 
 /**
- * Search people by name or @username to invite. Until you type, it lists the
- * suggested people (when there are any) with how many titles you share.
+ * Search people by name or @username to invite. Results open under the box;
+ * with nothing typed it shows nothing, because the suggested people have
+ * their own list.
  */
-function FriendSearch({ people, sent, onInvite }) {
+export function FriendSearch({ sent, onInvite, onDark = false }) {
   const { user } = useApp();
   const [query, setQuery] = useState('');
   const [found, setFound] = useState(null);
@@ -129,24 +92,33 @@ function FriendSearch({ people, sent, onInvite }) {
     setFailed(false);
     if (!(await onInvite(person))) setFailed(true);
   };
-  const countNote = (p) => (typeof p.overlap_count === 'number'
-    ? <span className="wt-count">{S.inCommon(p.overlap_count)}</span>
-    : <span className="wt-note">{S.countLater}</span>);
 
   return (
-    <div className="wt-find">
+    <div className={`wt-find${onDark ? ' wt-find--dark' : ''}`}>
       <label className="wt-sr" htmlFor="wt-find-search">{S.findLabel}</label>
       <input id="wt-find-search" type="search" className="wt-search" placeholder={T.invite.search} value={query} onChange={e => setQuery(e.target.value)} autoComplete="off" />
       {failed && <p className="wt-error" role="alert">{T.errors.generic}</p>}
-      {searching && results && results.length === 0 && <p className="wt-note">{S.findNone}</p>}
-      {searching && results && results.map(p => <PersonRow key={p.id} person={p} sent={sent.has(p.id)} onInvite={invite} />)}
-      {!searching && people.length > 0 && (
-        <div className="wt-section">
-          <span className="wt-section-label">{T.invite.suggested}</span>
-          {people.map(p => <PersonRow key={p.id} person={p} note={countNote(p)} sent={sent.has(p.id)} onInvite={invite} />)}
+      {searching && results && (
+        <div className="wt-find-results">
+          {results.length === 0 && <p className="wt-note">{S.findNone}</p>}
+          {results.map(p => <PersonRow key={p.id} person={p} sent={sent.has(p.id)} onInvite={invite} />)}
         </div>
       )}
-      <p className="wt-note">{T.invite.mutualNote}</p>
+    </div>
+  );
+}
+
+/** Your reusable invite link as a pill, for the hero. */
+function InvitePill() {
+  const { url, display, copied, share, copy } = useInviteShare();
+  return (
+    <div className="wt-invite-pill">
+      <span className="wt-invite-pill-label">{S.notOnPlot}</span>
+      <span className="wt-invite-pill-link">
+        <span className="wt-invite-pill-url">{display}</span>
+        <button type="button" className="btn btn-sm wt-invite-pill-btn" onClick={copy} disabled={!url}>{copied ? T.link.copied : T.link.copy}</button>
+        <button type="button" className="btn btn-sm wt-invite-pill-btn wt-invite-pill-share" onClick={share} disabled={!url}>{T.link.share}</button>
+      </span>
     </div>
   );
 }
@@ -163,21 +135,77 @@ function PairPreview({ titles }) {
       <span className="wt-find-match">
         <svg className="wt-heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z" /></svg>
         {`${S.examplePair} · ${S.exampleCount}`}
-        <span className="wt-note">{S.example}</span>
+        <span className="wt-example-badge">{S.example}</span>
       </span>
     </div>
   );
 }
 
-/** Pick someone to pair up with: search or suggestions. */
-function FindCard({ titles, people, premium, sent, onInvite }) {
+/** The dark top card: one job, find someone to watch with. */
+function Hero({ titles, premium, sent, onInvite }) {
   return (
-    <section className="wt-card" aria-labelledby="wt-start-title">
+    <section className="wt-ink wt-hero" aria-labelledby="wt-start-title">
+      <div className="wt-hero-main">
+        <h2 className="wt-hero-title" id="wt-start-title">{premium ? S.premiumPitchTitle : S.pitchTitle}</h2>
+        <p className="wt-hero-body">{premium ? S.premiumPitchBody : S.pitchBody}</p>
+        <FriendSearch sent={sent} onInvite={onInvite} onDark />
+        <InvitePill />
+      </div>
       <PairPreview titles={titles} />
-      <h2 className="wt-card-title" id="wt-start-title">{S.pitchTitle}</h2>
-      <p className="wt-card-body">{S.pitchBody}</p>
-      <FriendSearch people={people} sent={sent} onInvite={onInvite} />
-      {!premium && <PremiumPrompt label={S.getPremium} />}
+    </section>
+  );
+}
+
+/** People you follow, ranked by overlap. Private profiles say when counts show. */
+function FollowingList({ people, sent, onInvite }) {
+  if (!people.length) return null;
+  const countNote = (p) => (typeof p.overlap_count === 'number'
+    ? <span className="wt-count">{S.inCommon(p.overlap_count)}</span>
+    : <span className="wt-note">{S.countLater}</span>);
+  return (
+    <section className="wt-section" aria-labelledby="wt-following">
+      <div className="wt-section-head">
+        <h2 className="wt-heading" id="wt-following">{S.peopleTitle}</h2>
+        <span className="wt-note">{S.peopleNote}</span>
+      </div>
+      <div className="wt-list">
+        {people.map(p => <PersonRow key={p.id} person={p} note={countNote(p)} sent={sent.has(p.id)} onInvite={onInvite} />)}
+      </div>
+      <p className="wt-note">{T.invite.mutualNote}</p>
+    </section>
+  );
+}
+
+/** Free: the one place that says what Premium is for. */
+function PremiumCard() {
+  return (
+    <section className="wt-card wt-premium-card">
+      <h2 className="wt-card-title">{S.premiumCardTitle}</h2>
+      <p className="wt-card-body">{S.premiumCardBody}</p>
+      <div className="wt-premium-prompt wt-premium-prompt--row">
+        <Link to={premiumPlansPath('/together')} className="btn btn-primary">{S.getPremium}</Link>
+        <span className="wt-note">{PLANS_PAGE.premium.priceSummary}</span>
+      </div>
+    </section>
+  );
+}
+
+const WELCOME_KEY = 'plot:watch-together:welcome-dismissed';
+
+/** "You're on Premium": stays until dismissed. */
+function Welcome() {
+  const [hidden, setHidden] = useState(() => readStorage(WELCOME_KEY) === '1');
+  if (hidden) return null;
+  const dismiss = () => { writeStorage(WELCOME_KEY, '1'); setHidden(true); };
+  return (
+    <section className="wt-welcome" role="status">
+      <svg className="wt-welcome-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+      <span className="wt-banner-text">
+        <span className="wt-welcome-body"><strong>{S.welcomeTitle}</strong> {S.welcomeBody}</span>
+      </span>
+      <button type="button" className="wt-welcome-close" onClick={dismiss} aria-label={T.hub.dismiss}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
     </section>
   );
 }
@@ -289,31 +317,19 @@ export default function WatchTogetherStart({ premium, suggested, onInvite }) {
   return (
     <div className="wt-start">
       <h1 className="wt-sr">{T.hub.title}</h1>
-      <div className="wt-start-top">
-        <FindCard titles={titles} people={suggested} premium={premium} sent={sent} onInvite={invite} />
-      </div>
-      <div className="wt-start-side">
-        <InviteLinkCard />
+      {premium && <Welcome />}
+      <Hero titles={titles} premium={premium} sent={sent} onInvite={invite} />
+      <FollowingList people={suggested} sent={sent} onInvite={invite} />
+      <div className={`wt-start-bottom${premium ? ' wt-start-bottom--solo' : ''}`}>
         <div className="wt-start-seeit">
           <div className="wt-person-text">
-            <h2 className="wt-card-title">{S.seeItTitle}</h2>
-            <span className="wt-note">{premium ? S.premiumSeeItBody : S.seeItDemoBody}</span>
+            <h2 className="wt-heading">{premium ? S.seeItTitle : S.tryTitle}</h2>
+            <span className="wt-note">{premium ? S.premiumSeeItBody : S.tryBody}</span>
           </div>
           <Demo key={titles.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={titles} />
         </div>
+        {!premium && <PremiumCard />}
       </div>
-      <ol className="wt-start-steps">
-        {S.steps.map((step, i) => (
-          <li key={step} className="wt-start-step"><span className="wt-step-n" aria-hidden="true">{i + 1}</span>{step}</li>
-        ))}
-      </ol>
-      {!premium && (
-        <div className="wt-start-note">
-          <div className="wt-banner wt-banner--plain">
-            <span className="wt-banner-text"><span className="wt-banner-title">{S.gotInviteTitle}</span><span className="wt-note">{S.gotInviteBody}</span></span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

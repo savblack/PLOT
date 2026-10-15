@@ -19,7 +19,8 @@ import { posterUrl } from '../utils/images.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { AcceptDialog, PersonAvatar, ShareListDialog, WatchTogetherTile } from './WatchTogetherParts.jsx';
-import WatchTogetherStart, { InviteLinkCard } from './WatchTogetherStart.jsx';
+import WatchTogetherStart, { InviteLinkCard, FriendSearch, PersonRow } from './WatchTogetherStart.jsx';
+import { useInviteShare } from '../hooks/useInviteShare.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import './WatchTogetherView.css';
@@ -69,12 +70,25 @@ function useUpgradeNews(wt, premium) {
   return { unlocked, dismiss };
 }
 
+/** The invite link as a pill with Copy, for the hub's side column. */
+function RailLink() {
+  const { url, display, copied, copy } = useInviteShare();
+  return (
+    <div className="wt-rail-link">
+      <span className="wt-rail-url">{display}</span>
+      <button type="button" className="btn btn-secondary btn-sm" onClick={copy} disabled={!url}>{copied ? T.link.copied : T.link.copy}</button>
+    </div>
+  );
+}
+
 function Hub({ wt, premium, profile }) {
   const navigate = useNavigate();
   const { user } = useApp();
   const { people: suggested, loading: suggestionsLoading, refresh: refreshSuggestions } = useWatchTogetherSuggestions(user?.id);
   const [reviewing, setReviewing] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState(/** @type {Set<string> | null} */ (null));
+  const [sent, setSent] = useState(() => new Set());
   const { partners, incoming, outgoing } = wt;
   const requestCount = incoming.length + outgoing.length;
   const news = useUpgradeNews(wt, premium);
@@ -102,8 +116,26 @@ function Hub({ wt, premium, profile }) {
     setReviewing(null);
   };
 
+  const decidable = partners.filter(p => p.can_decide !== false);
+  const locked = !decidable.length;
+  // The first partner starts selected so Decide works in one tap.
+  const pickedIds = picked ?? new Set(decidable.slice(0, 1).map(p => p.other_id));
+  const pickedPartners = decidable.filter(p => pickedIds.has(p.other_id));
+  const togglePick = (id) => setPicked(() => { const next = new Set(pickedIds); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  const go = async () => {
+    if (pickedPartners.length === 1) await decideWith(pickedPartners[0]);
+    else if (pickedPartners.length > 1) navigate(`/together/with/${pickedPartners.map(p => encodeURIComponent(p.username)).join(',')}`);
+  };
+  const decideLabel = pickedPartners.length === 1 ? T.hub.decideWith(personName(pickedPartners[0])) : pickedPartners.length > 1 ? T.overlap.groupAction : T.session.start;
+  const sendInvite = async (person) => {
+    const result = await wt.send(person.id);
+    if (result.ok) { setSent(prev => new Set(prev).add(person.id)); refreshSuggestions(); }
+    return result.ok;
+  };
+  const railPeople = suggested.filter(p => !sent.has(p.id)).slice(0, 3);
+
   return (
-    <div className="wt-page">
+    <div className="wt-page wt-page--wide">
       {/* The app header already shows the page title. */}
       <h1 className="wt-sr">{T.hub.title}</h1>
       {news.unlocked.length > 0 && (
@@ -119,63 +151,105 @@ function Hub({ wt, premium, profile }) {
         </section>
       )}
 
-      <section className="wt-card wt-decide">
-        <h2 className="wt-card-title">{T.hub.decideTitle}</h2>
-        <p className="wt-card-body">{T.hub.decideBody}</p>
-        <button type="button" className="btn btn-primary" onClick={() => navigate('/together/pick')} disabled={!partners.length}>{T.hub.whosWatching}</button>
-      </section>
+      <div className="wt-hub">
+        <div className="wt-hub-main">
+          {locked ? (
+            <section className="wt-ink wt-decide">
+              <h2 className="wt-hero-title">{T.hub.lockedHeading}</h2>
+              <p className="wt-hero-body">{T.hub.lockedBody(partners.map(personName))}</p>
+              <div className="wt-decide-actions">
+                <Link to={premiumPlansPath('/together')} className="btn btn-primary">{T.start.getPremium}</Link>
+                <span className="wt-ink-note">{PLANS_PAGE.premium.priceSummary}</span>
+              </div>
+            </section>
+          ) : (
+            <section className="wt-ink wt-decide">
+              <h2 className="wt-hero-title">{T.hub.whosWatching}</h2>
+              <div className="wt-pickwho" role="group" aria-label={T.hub.whosWatching}>
+                {decidable.map(p => (
+                  <button key={p.other_id} type="button" className="wt-pickwho-chip" aria-pressed={pickedIds.has(p.other_id)} onClick={() => togglePick(p.other_id)}>
+                    <PersonAvatar person={p} />{personName(p)}
+                  </button>
+                ))}
+              </div>
+              <div className="wt-decide-actions">
+                <button type="button" className="btn btn-primary" onClick={go} disabled={!pickedPartners.length}>{decideLabel}</button>
+                <span className="wt-ink-note">
+                  {[
+                    pickedPartners.length === 1 ? `${T.hub.bothSaved(pickedPartners[0].overlap_count ?? 0)}.` : '',
+                    decidable.length > 1 && pickedPartners.length < 2 ? T.hub.morePeople : '',
+                  ].filter(Boolean).join(' ')}
+                </span>
+              </div>
+            </section>
+          )}
 
-      {requestCount > 0 && (
-        <section className="wt-section" aria-labelledby="wt-requests">
-          <h2 className="wt-section-label" id="wt-requests">{T.hub.requests}</h2>
-          {incoming.map(p => (
-            <div key={p.other_id} className="wt-row">
-              <PersonAvatar person={p} />
-              <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{T.requests.wantsTo}</span></span>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => answer(p, false)} disabled={busy}>{T.requests.decline}</button>
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => setReviewing(p)} disabled={busy}>{T.requests.review}</button>
+          <section className="wt-section" aria-labelledby="wt-partners">
+            <div className="wt-section-head">
+              <h2 className="wt-heading" id="wt-partners">{T.hub.partners}</h2>
             </div>
-          ))}
-          {outgoing.map(p => (
-            <div key={p.other_id} className="wt-row">
-              <PersonAvatar person={p} />
-              <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{T.requests.sent}</span></span>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => wt.cancel(p.other_id)}>{T.requests.cancel}</button>
-            </div>
-          ))}
-        </section>
-      )}
+            {partners.length === 0
+              ? <div className="empty-state"><div className="empty-title">{T.hub.noPartnersTitle}</div><div className="empty-body">{T.hub.noPartnersBody}</div></div>
+              : (
+                <div className="wt-list">
+                  {partners.map(p => p.can_decide === false ? (
+                    <div key={p.other_id} className="wt-row">
+                      <PersonAvatar person={p} />
+                      <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{T.hub.bothSaved(p.overlap_count ?? 0)}</span></span>
+                      <span className="wt-chip">{T.hub.needsPremium}</span>
+                    </div>
+                  ) : (
+                    <Link key={p.other_id} to={`/together/with/${encodeURIComponent(p.username)}`} className="wt-row wt-row--link interactive-surface">
+                      <PersonAvatar person={p} />
+                      <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{T.hub.bothSaved(p.overlap_count ?? 0)}</span></span>
+                      {unlockedIds.has(p.other_id) && <span className="wt-chip wt-chip--ok">{T.hub.unlocked}</span>}
+                      <Chevron />
+                    </Link>
+                  ))}
+                </div>
+              )}
+          </section>
 
-      <section className="wt-section" aria-labelledby="wt-partners">
-        <div className="wt-section-head">
-          <h2 className="wt-section-label" id="wt-partners">{T.hub.partners}</h2>
-          <Link to="/together/invite" className="wt-link">{T.hub.invite}</Link>
+          {requestCount > 0 && (
+            <section className="wt-section" aria-labelledby="wt-requests">
+              <h2 className="wt-heading" id="wt-requests">{T.hub.requests}</h2>
+              <div className="wt-list">
+                {incoming.map(p => (
+                  <div key={p.other_id} className="wt-row">
+                    <PersonAvatar person={p} />
+                    <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{T.requests.wantsTo}</span></span>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => answer(p, false)} disabled={busy}>{T.requests.decline}</button>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={() => setReviewing(p)} disabled={busy}>{T.requests.review}</button>
+                  </div>
+                ))}
+                {outgoing.map(p => (
+                  <div key={p.other_id} className="wt-row">
+                    <PersonAvatar person={p} />
+                    <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{T.requests.sent}</span></span>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => wt.cancel(p.other_id)}>{T.requests.cancel}</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
-        {partners.length === 0
-          ? <div className="empty-state"><div className="empty-title">{T.hub.noPartnersTitle}</div><div className="empty-body">{T.hub.noPartnersBody}</div></div>
-          : partners.map(p => (
-            <Link key={p.other_id} to={`/together/with/${encodeURIComponent(p.username)}`} className="wt-row wt-row--link interactive-surface">
-              <PersonAvatar person={p} />
-              <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{p.can_decide === false ? T.hub.lockedNote : T.hub.bothSaved(p.overlap_count ?? 0)}</span></span>
-              {unlockedIds.has(p.other_id) && <span className="wt-chip wt-chip--ok">{T.hub.unlocked}</span>}
-              <Chevron />
-            </Link>
-          ))}
-      </section>
 
-      {suggested.length > 0 && (
-        <Link to="/together/invite" className="wt-banner interactive-surface">
-          <span className="wt-banner-text"><span className="wt-banner-title">{T.hub.suggested}</span><span className="wt-note">{T.hub.suggestedBody}</span></span>
-          <AvatarStack people={suggested} />
-          <Chevron />
-        </Link>
-      )}
-      {!premium && partners.some(p => p.can_decide === false) && (
-        <Link to={premiumPlansPath('/together')} className="wt-banner interactive-surface">
-          <span className="wt-banner-text"><span className="wt-banner-title">{T.locked.title}</span><span className="wt-note">{PLANS_PAGE.premium.priceSummary}</span></span>
-          <Chevron />
-        </Link>
-      )}
+        <aside className="wt-hub-rail">
+          <section className="wt-card wt-rail-invite">
+            <h2 className="wt-card-title wt-card-title--sm">{T.hub.inviteSomeone}</h2>
+            <FriendSearch sent={sent} onInvite={sendInvite} />
+            <RailLink />
+          </section>
+          {railPeople.length > 0 && (
+            <section className="wt-section" aria-labelledby="wt-suggested">
+              <h2 className="wt-section-label" id="wt-suggested">{T.hub.suggested}</h2>
+              <div className="wt-list">
+                {railPeople.map(p => <PersonRow key={p.id} person={p} sent={sent.has(p.id)} onInvite={sendInvite} />)}
+              </div>
+            </section>
+          )}
+        </aside>
+      </div>
 
       {reviewing && (
         <AcceptDialog person={reviewing} viewer={profile} busy={busy}
