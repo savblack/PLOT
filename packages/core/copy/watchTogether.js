@@ -7,8 +7,6 @@ export const WATCH_TOGETHER = Object.freeze({
 
   hub: {
     title: 'Watch together',
-    decideTitle: 'Decide what to watch',
-    decideBody: 'Choose who you’re watching with. Plot finds what you’ve all saved.',
     whosWatching: 'Who’s watching?',
     requests: 'Requests',
     requestsSummary: (incoming, outgoing) => {
@@ -23,8 +21,6 @@ export const WATCH_TOGETHER = Object.freeze({
     noPartnersTitle: 'Nobody here yet.',
     noPartnersBody: 'Invite someone to see what you’ve both saved.',
     suggested: 'Suggested',
-    suggestedBody: 'People you might watch together with',
-    freeTitle: 'Get Premium to watch together',
     lockedNote: 'One of you needs Premium to decide together',
     // Shown once, the first time the hub loads after upgrading.
     upgradedTitle: 'You’re on Premium',
@@ -46,7 +42,6 @@ export const WATCH_TOGETHER = Object.freeze({
     countLater: 'Shows once they accept',
     pitchTitle: 'Find something you both want to watch',
     pitchBody: 'Pair up with a friend and Plot shows what’s on both your watchlists. Swipe through them together until you both say yes.',
-    shareNote: 'Not on Plot yet? They can join for free from your link.',
     premiumPitchTitle: 'Who are you watching with?',
     premiumPitchBody: 'Invite someone. When they accept, Plot lines up what you’ve both saved and you swipe until you match.',
     notOnPlot: 'Not on Plot yet?',
@@ -58,13 +53,10 @@ export const WATCH_TOGETHER = Object.freeze({
     tryBody: 'Five titles from your own watchlist. Sam is an example partner.',
     welcomeTitle: 'You’re on Premium.',
     welcomeBody: 'Anyone you invite can decide with you right away. They don’t need Premium.',
-    steps: ['They get a request and join for free', 'See what you’ve both saved', 'Swipe until you match'],
     findLabel: 'Find a friend to invite',
     findNone: 'No one found. Try a name or @username, or send your invite link below.',
     getPremium: 'Get Premium',
-    premiumNote: (price) => `One of you needs Premium to decide together. ${price}.`,
     seeItTitle: 'See it in action',
-    seeItDemoBody: 'A quick try with your own watchlist.',
     example: 'Example',
     examplePair: 'You and Sam',
     exampleCount: '12 on both watchlists',
@@ -79,8 +71,6 @@ export const WATCH_TOGETHER = Object.freeze({
     demoYouSaid: (answer) => `You: ${answer}`,
     demoNoMatchTitle: 'No match this time',
     demoNoMatchBody: 'With a friend, you’d keep going through everything you’ve both saved until you both say yes.',
-    gotInviteTitle: 'Got an invite?',
-    gotInviteBody: 'Accepting is free. You can decide together as long as one of you has Premium.',
     // Premium, still nobody to watch with.
     premiumSeeItBody: 'A quick try with your own watchlist while you wait for someone to accept.',
   },
