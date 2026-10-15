@@ -27,9 +27,9 @@ available now, gated only on setup rather than on waiting for Apple.
 `docs/research/expo-push-notifications.md` and `apps/web/src/launchFeatures.js`
 over whether enrolment existed. The research doc was right.)
 
-### Seller: SUSUMU HOUSE, so the membership converts to Organization
+### Seller: SUSUMU HOUSE was the preference, but it is a trade name
 
-Decided 2026-10-14. An Individual membership publishes under the account
+Preferred 2026-10-14; found on 2026-10-15 that Apple only converts to Organization for a legal entity, which SUSUMU HOUSE is not. Options and the open decision are in [app-store-listing.md](app-store-listing.md). An Individual membership publishes under the account
 holder's own legal name, and every legal surface Plot ships (`TermsPage.jsx`,
 `PrivacyPage.jsx`, the marketing site's `terms.html` and `privacy.html`, the
 six Supabase auth email templates, the newsletter footer) says "a product of
@@ -231,8 +231,8 @@ disagrees with the one EAS is incrementing.
 3. In parallel: App Store Connect agreements, banking and tax, then the app
    record for `tv.theplot.app` and the `ascAppId` above. Agreements in
    particular block submission and are pure paperwork.
-4. Convert the membership to Organization (SUSUMU HOUSE) before the app
-   record exists. See [app-store-listing.md](app-store-listing.md).
+4. Settle the seller (Individual, or register a Pty Ltd and convert) before
+   the app record exists. See [app-store-listing.md](app-store-listing.md).
 5. Install Xcode when convenient, for the faster local loop.
 
 ## State on 2026-10-14

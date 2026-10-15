@@ -8,41 +8,44 @@ the app half-remembered.
 Written 2026-10-14. Bundle ID `tv.theplot.app`, marketing version in
 `apps/mobile/app.json`, build number owned by EAS (`appVersionSource: remote`).
 
-## Seller: SUSUMU HOUSE (decided 2026-10-14)
+## Seller: not settled (updated 2026-10-15)
 
 The Apple Developer account is an **Individual** membership (team
 `FXZRAA8927`, "Savannah Black"). Every legal surface Plot ships says "a
-product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann Street, Surry
-Hills, NSW 2010", so the listing should too. That means converting the
-membership to **Organization** before the app record is created.
+product of SUSUMU HOUSE", and the preference on 2026-10-14 was for the
+listing to say the same.
 
-What converting takes, in order:
+**That needs a company, and SUSUMU HOUSE is a business name.** Apple's
+Organization membership requires a legal entity with a D-U-N-S number, and
+Apple's own D-U-N-S page says trade names, DBAs and branches are not
+accepted. A registered business name on a personal ABN is a trade name;
+Dun & Bradstreet records it as a sole proprietorship and Apple's enrolment
+check fails on that status.
 
-1. **D-U-N-S number for SUSUMU HOUSE.** Check first at
-   <https://developer.apple.com/enroll/duns-lookup/>. If none exists, request
-   one through the same page; Apple says up to 5 business days (Australian
-   entities usually land in 1 to 2). Free. You need the legal entity name
-   exactly as registered, the registered office above, and an ABN helps.
-2. **Authority to sign.** Organization enrolment asks whether you have the
-   legal authority to bind the company. If you are the owner or a director,
-   answer yes; otherwise Apple wants a letter from someone who is.
-3. **Contact Apple Developer Support** to convert the existing membership
-   rather than enrolling again: <https://developer.apple.com/contact/>
-   ▸ Membership and Account ▸ "Convert to an organization". Converting keeps
-   the team ID, certificates and the EAS credentials; a fresh enrolment would
-   not. Apple verifies the D-U-N-S against the entity (a phone call is normal)
-   and typically completes in a few days to two weeks.
-4. **A website that shows the company**: theplot.tv's footer and legal pages
-   already name SUSUMU HOUSE, which is what Apple checks.
-5. After conversion, re-run `eas credentials` once so EAS re-syncs the team.
-   The team ID should not change.
+The three ways through, in order of speed:
 
-Until this is done: do not create the App Store Connect app record and do not
-run `eas submit`. Builds are fine.
+1. **Publish as Individual.** No wait. The seller shows "Savannah Black".
+   Change the legal copy (Terms, Privacy, the six auth email templates, the
+   newsletter footer, `terms.html` and `privacy.html` on the site) from
+   "a product of SUSUMU HOUSE" to "SUSUMU HOUSE is the trading name of
+   Savannah Black, ABN <number>", which is the accurate statement for a sole
+   trader. EU trader details under the DSA will be the personal name and
+   address.
+2. **Register a Pty Ltd, then convert.** ASIC registration (about a week),
+   D-U-N-S for the company (up to 5 business days), then Apple Developer
+   Support converts the membership keeping the team ID. Three to four weeks
+   before the app record can exist, plus the wider job of moving Stripe,
+   banking and the domain to the company over time.
+3. **Publish as Individual now, convert later** once a company exists. Apple
+   permits it; the seller name on the listing changes when it goes through.
 
-**EU trader status (DSA).** Organization accounts verify as a trader with the
-company's details, which is exactly what should be public. Done in App Store
-Connect ▸ Business ▸ Trader status, before the app can be sold in the EU.
+Whichever is chosen, the rest of this document is unchanged. Only the
+seller name on the listing and the legal copy differ.
+
+**EU trader status (DSA).** Required before the app can be sold in the EU.
+Done in App Store Connect ▸ Business ▸ Trader status. On an Individual
+account the verified details are personal; on an Organization they are the
+company's.
 
 ## Paperwork in App Store Connect (one afternoon)
 
@@ -236,7 +239,7 @@ so create the Max device type before capturing.
 
 ## Before pressing Submit
 
-- [ ] Membership converted to Organization; seller shows SUSUMU HOUSE.
+- [ ] Seller settled (Individual, or a Pty Ltd converted) and the legal copy agrees with it.
 - [ ] Paid Apps agreement active; banking and tax complete.
 - [ ] App record created; `ascAppId` in `eas.json`.
 - [ ] `EXPO_PUBLIC_SHOW_APPLE_LOGIN` is **not** set in the `production` EAS
