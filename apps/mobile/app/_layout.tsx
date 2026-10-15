@@ -30,6 +30,8 @@ import MediaPanel from '../components/MediaPanel';
 import CollectionPanel from '../components/CollectionPanel';
 import type { Session } from '@supabase/supabase-js';
 import UndoToast from '../components/UndoToast';
+import RateToast from '../components/RateToast';
+import useRateReminders from '../hooks/useRateReminders';
 import NoticeToast from '../components/NoticeToast';
 import { EpisodeAlertsPromptController, EpisodeAlertsPromptToast } from '../components/EpisodeAlertsPrompt';
 import { FollowToastHost } from '../components/people/FollowControls';
@@ -120,6 +122,11 @@ function AuthGuard({ session, onboardingComplete }: {
       ) : null}
     </View>
   );
+}
+
+function RateReminders() {
+  useRateReminders();
+  return null;
 }
 
 function RootDrawerMenu() {
@@ -379,6 +386,8 @@ function RootInner() {
             </OnboardingCompleteContext.Provider>
             {/* After the navigator so it draws on top. The panel has its own. */}
             <UndoToast />
+            <RateToast />
+            <RateReminders />
             <NoticeToast />
             <EpisodeAlertsPromptController />
             <EpisodeAlertsPromptToast />

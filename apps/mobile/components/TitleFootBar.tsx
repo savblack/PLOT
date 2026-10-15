@@ -10,28 +10,28 @@
  * This returns a fragment for that reason: the overlay has to be a sibling of
  * the bar so absoluteFill resolves against the panel body, not the bar.
  */
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   AccessibilityInfo, Animated, Easing, KeyboardAvoidingView, Platform, Pressable,
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
-import Svg, { ClipPath, Defs, Line, Path, Polygon, Polyline, Rect } from 'react-native-svg';
+import Svg, { Line, Path, Polygon, Polyline, Rect } from 'react-native-svg';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTitleFootBar, UNDO_MS, type FootBarField } from '@plot/core/useTitleFootBar.js';
 import type { usePrivateNotes } from '@plot/core/usePrivateNotes.js';
 import { PRIVATE_NOTE_LIMIT, noteLength } from '@plot/core/privateNotes.js';
 import { PRIVATE_NOTES } from '@plot/core/copy/privateNotes.js';
-import { REVIEW_MAX, STAR_COUNT, ratingToStars, starFillPercent } from '@plot/core/ratings.js';
+import { REVIEW_MAX, ratingToStars } from '@plot/core/ratings.js';
 import { formatWatchedOn, localDateStr } from '@plot/core/date.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { fontFamily, fontSize, radii, spacing, type Palette } from '../lib/tokens';
+import { clearPendingRate, noteWatchedUnrated } from '../lib/ratePrompt';
+import Stars from './Stars';
 
 const FOOT = MEDIA_PANEL.foot;
-const STAR_POINTS = '12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2';
-const STAR_W = 34;
 
 /** "YYYY-MM-DD" from a Date, read in local time (the picker returns the day tapped). */
 function ymd(date: Date): string {
@@ -55,53 +55,6 @@ const LockIcon = ({ color }: { color: string }) => (
 const StarMark = ({ color }: { color: string }) => (
   <Svg width={11} height={11} viewBox="0 0 24 24" fill={color}><Polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9" /></Svg>
 );
-
-/** One star, filled 0, 50 or 100 percent. The fill is the base star clipped to a rect. */
-function StarGlyph({ fillPercent, ghost }: { fillPercent: number; ghost: boolean }) {
-  const { colors } = useTheme();
-  const clipId = `fb${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
-  return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" pointerEvents="none">
-      <Defs><ClipPath id={clipId}><Rect x={0} y={0} width={(24 * fillPercent) / 100} height={24} /></ClipPath></Defs>
-      <Polygon points={STAR_POINTS} fill={colors.borderStrong} opacity={ghost ? 0.7 : 1} />
-      {fillPercent > 0 && (
-        <Polygon points={STAR_POINTS} fill={colors.rating} stroke={colors.rating} strokeWidth={1.8} strokeLinejoin="round" clipPath={`url(#${clipId})`} />
-      )}
-    </Svg>
-  );
-}
-
-/**
- * Five stars, each two half-width targets: the left half rates n - 0.5, the right
- * half rates n (stored 1-10, so 2n-1 and 2n). Two buttons rather than reading where
- * inside one the finger landed, because a press event's locationX is not reliable
- * across platforms, and each half then has its own label for a screen reader.
- */
-function Stars({ value, ghost = false, disabled, label, onPick }: {
-  value: number; ghost?: boolean; disabled: boolean; label: string; onPick: (rating: number) => void;
-}) {
-  return (
-    <View style={{ flexDirection: 'row', marginLeft: -4 }} accessibilityLabel={label}>
-      {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map((n) => (
-        <View key={n} style={{ width: STAR_W, height: 40, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.55 : 1 }}>
-          <StarGlyph fillPercent={starFillPercent(value, n)} ghost={ghost} />
-          <View style={[StyleSheet.absoluteFill, { flexDirection: 'row' }]}>
-            {[n * 2 - 1, n * 2].map((half) => (
-              <Pressable
-                key={half}
-                disabled={disabled}
-                onPress={() => onPick(half)}
-                accessibilityRole="button"
-                accessibilityLabel={FOOT.rateStars(half / 2)}
-                style={{ flex: 1 }}
-              />
-            ))}
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
 
 export type TitleFootBarProps = {
   itemId: number;
@@ -176,6 +129,15 @@ export default function TitleFootBar(props: TitleFootBarProps) {
 
   const disabled = busy || saving;
   const score = rating ? ratingToStars(rating) : 0;
+
+  // "I've watched" with no star: the rate toast asks once the panel closes
+  // (components/RateToast). A star, or Undo, withdraws the ask.
+  const markUnrated = async () => {
+    await bar.mark();
+    noteWatchedUnrated({ tmdbId: props.itemId, mediaType: itemType, title: props.title });
+  };
+  const rate = (value: number) => { clearPendingRate(props.itemId); return bar.rate(value); };
+  const undo = () => { clearPendingRate(props.itemId); return bar.undo(); };
   const chipLabel = fresh ? FOOT.watchedJustNow : dnf ? MEDIA_PANEL.didntFinish : FOOT.watchedOn(formatWatchedOn(watchedAt));
   const audience = isPublicProfile ? FOOT.reviewAudiencePublic : FOOT.reviewAudiencePrivate;
   const noteBusy = noteEditor.busy;
@@ -206,7 +168,7 @@ export default function TitleFootBar(props: TitleFootBarProps) {
 
   const ratingRow = (
     <View style={styles.rateRow}>
-      <Stars value={rating} ghost={!watched} disabled={disabled} label={MEDIA_PANEL.yourRating} onPick={bar.rate} />
+      <Stars value={rating} ghost={!watched} disabled={disabled} label={MEDIA_PANEL.yourRating} onPick={rate} />
       {score > 0 && <Text style={styles.score}>{score}</Text>}
     </View>
   );
@@ -220,7 +182,7 @@ export default function TitleFootBar(props: TitleFootBarProps) {
           {watched && (
             <View style={styles.headEnd}>
               {fresh && (
-                <TouchableOpacity disabled={disabled} onPress={bar.undo} accessibilityRole="button" style={styles.undo}>
+                <TouchableOpacity disabled={disabled} onPress={undo} accessibilityRole="button" style={styles.undo}>
                   <Text style={styles.undoText}>{FOOT.undo}</Text>
                 </TouchableOpacity>
               )}
@@ -248,7 +210,7 @@ export default function TitleFootBar(props: TitleFootBarProps) {
                   <Text style={styles.ghostText}>{FOOT.imWatching}</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity disabled={disabled} onPress={() => { void bar.mark(); }} accessibilityRole="button" style={[styles.primaryBtn, disabled && { opacity: 0.55 }]}>
+              <TouchableOpacity disabled={disabled} onPress={() => { void markUnrated(); }} accessibilityRole="button" style={[styles.primaryBtn, disabled && { opacity: 0.55 }]}>
                 <Text style={styles.primaryText}>{FOOT.iveWatched}</Text>
               </TouchableOpacity>
             </View>

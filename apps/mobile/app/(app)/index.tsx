@@ -15,7 +15,7 @@ import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, LayoutAnimation,
   UIManager, Platform, StyleSheet, Dimensions,
 } from 'react-native';
-import Svg, { Path, Polyline } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
@@ -37,7 +37,11 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
-import { ContinueWatchingShelf, YourPeopleShelf } from '../../components/people/HomeShelves';
+import { ContinueWatchingCard, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
+import { useContinueWatching } from '@plot/core/useHomeShelves.js';
+import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
+import RateCard from '../../components/RateCard';
+import TonightFab from '../../components/TonightFab';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { useRouter, type Href } from 'expo-router';
@@ -679,9 +683,14 @@ export default function HomeScreen() {
      ACTIVATED analytics, and left the shared store stale until app restart:
      save on Home, open the title's panel, and it still offered "Add to
      Watchlist". */
-  const { favorites, watchlist, userId, profile, user, customLists, refreshProfile } = useAppData();
+  const { favorites, watchlist, watching, history, userId, profile, user, customLists, refreshProfile } = useAppData();
   const homeLayout = useHomeLayout({ userId, saved: profile?.home_layout, onPersisted: refreshProfile });
   const router = useRouter();
+  // Up next: the shows with an episode out, then the saved titles, one shelf.
+  const continueWatching = useContinueWatching(watching.items ?? [], fetchContinueWatchingTv);
+  // The line under the greeting: nights logged in the last seven days.
+  const weekNights = useMemo(() => nightsThisWeek(history.entries ?? []), [history.entries]);
+  const bestStreak = useMemo(() => streaks(history.entries ?? []).best, [history.entries]);
   // First run: the titles just saved in onboarding lead Home, under the greeting
   // and the Finishing touches card. Everyone else keeps the rail at the bottom.
   const ft = useFinishingTouchesState(userId);
@@ -818,27 +827,60 @@ export default function HomeScreen() {
       }) as { item: MediaItem; badge: string }[]
     : [];
 
-  const savedRail = watchlistItems.length > 0 ? (
+  // Three trending titles stand in for Up next while nothing is saved, each
+  // with its bookmark, so the first saves happen where the shelf will be.
+  const starterPicks = trending.filter((t: MediaItem) => !savedIds.has(t.id ?? 0)).slice(0, 3);
+  const upNextRows: Array<{ kind: 'watching'; item: ContinueWatchingItem } | { kind: 'saved'; item: MediaItem }> = [
+    ...continueWatching.items.map((item: ContinueWatchingItem) => ({ kind: 'watching' as const, item })),
+    ...(firstRun ? watchlistItems.slice(0, 20) : watchlistItems).map((item: MediaItem) => ({ kind: 'saved' as const, item })),
+  ];
+  const upNextEmpty = upNextRows.length === 0 && !watchlist.loading && !continueWatching.loading;
+  const upNext = upNextRows.length > 0 ? (
     <View style={styles.section}>
-      <SectionHeader kicker="Your list" title={DISCOVER_VIEW.savedToWatch} />
+      <SectionHeader title={DISCOVER_VIEW.upNext} />
       <FlatList
         horizontal
-        data={firstRun ? watchlistItems.slice(0, 20) : watchlistItems}
-        keyExtractor={item => String(item.tmdb_id ?? item.id)}
-        renderItem={({ item }) => (
+        data={upNextRows}
+        keyExtractor={row => row.kind === 'watching' ? `w-${row.item.tmdbId}` : `s-${row.item.tmdb_id ?? row.item.id}`}
+        renderItem={({ item: row }) => row.kind === 'watching' ? (
+          <ContinueWatchingCard item={row.item} />
+        ) : (
           <PosterCard
-            item={{ ...item, id: item.tmdb_id ?? 0 }}
-            onPress={() => item.tmdb_id && openPanel(item.tmdb_id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+            item={{ ...row.item, id: row.item.tmdb_id ?? 0 }}
+            onPress={() => row.item.tmdb_id && openPanel(row.item.tmdb_id, (row.item.media_type === 'tv' ? 'tv' : 'movie'))}
             saved={true}
-            onSave={() => handleSave({ ...item, id: item.tmdb_id ?? 0 })}
-            isFav={favorites.isFavorite(item.tmdb_id ?? item.id ?? 0)}
-            onFavorite={() => toggleFav({ ...item, id: item.tmdb_id ?? item.id ?? 0 })}
+            onSave={() => handleSave({ ...row.item, id: row.item.tmdb_id ?? 0 })}
+            isFav={favorites.isFavorite(row.item.tmdb_id ?? row.item.id ?? 0)}
+            onFavorite={() => toggleFav({ ...row.item, id: row.item.tmdb_id ?? row.item.id ?? 0 })}
           />
         )}
         showsHorizontalScrollIndicator={false}
         nestedScrollEnabled
         contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
       />
+    </View>
+  ) : upNextEmpty && starterPicks.length > 0 ? (
+    <View style={styles.section}>
+      <SectionHeader title={DISCOVER_VIEW.upNext} />
+      <View style={styles.upNextEmpty}>
+        <Text style={styles.upNextEmptyBody}>{DISCOVER_VIEW.emptyUpNext.body}</Text>
+        <View style={styles.upNextEmptyRow}>
+          {starterPicks.map((item: MediaItem) => (
+            <PosterCard
+              key={`${item.media_type}-${item.id}`}
+              item={item}
+              onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+              saved={false}
+              onSave={() => handleSave(item)}
+              isFav={favorites.isFavorite(item.id ?? 0)}
+              onFavorite={() => toggleFav(item)}
+            />
+          ))}
+        </View>
+        <TouchableOpacity onPress={() => router.push('/(app)/search' as Href)} accessibilityRole="link" hitSlop={{ top: 8, bottom: 8 }}>
+          <Text style={styles.upNextEmptyLink}>{DISCOVER_VIEW.emptyUpNext.searchLink}</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   ) : null;
 
@@ -889,7 +931,10 @@ export default function HomeScreen() {
         )}
       </>
     ),
-    continue: () => <ContinueWatchingShelf />,
+    // Up next (Continue watching plus the saved titles) takes the slot the
+    // layout calls `continue`, so the viewer's order and hide apply to it. On
+    // the first run it sits above the shelves instead.
+    continue: () => (firstRun ? null : upNext),
     hot: () => (
       <>
         {hotRail.length > 0 && (
@@ -1037,10 +1082,35 @@ export default function HomeScreen() {
 
         {userId && importSource !== 'trakt' && importSource !== 'trakt-export' && <FirstWinCard userId={userId} />}
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
+        {!history.loading && (
+          <TouchableOpacity
+            style={styles.weekLine}
+            onPress={() => router.push('/(app)/history' as Href)}
+            accessibilityRole="link"
+            hitSlop={{ top: 6, bottom: 6 }}
+          >
+            {weekNights > 0 && <View style={styles.weekDot} />}
+            <Text style={styles.weekText}>{weekNights > 0 ? DISCOVER_VIEW.weekLine(weekNights, bestStreak) : DISCOVER_VIEW.weekEmpty}</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.searchField}
+          onPress={() => router.push('/(app)/search' as Href)}
+          accessibilityRole="search"
+          accessibilityLabel={MEDIA.searchPlaceholder}
+          activeOpacity={0.8}
+        >
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Circle cx={11} cy={11} r={7} />
+            <Line x1={16.5} y1={16.5} x2={21} y2={21} />
+          </Svg>
+          <Text style={styles.searchFieldText} numberOfLines={1}>{MEDIA.searchPlaceholder}</Text>
+        </TouchableOpacity>
         {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}
         <FinishingTouches state={ft.state} onState={ft.setState} />
+        {userId && <RateCard userId={userId} />}
 
-        {firstRun && savedRail}
+        {firstRun && upNext}
         {reviewJob && userId && (
           <ImportHistoryModal
             userId={userId}
@@ -1076,17 +1146,10 @@ export default function HomeScreen() {
           <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
         </TouchableOpacity>
 
-        {!firstRun && savedRail}
-
-        {watchlistItems.length === 0 && !loading && (
-          <View style={styles.emptyWatchlist}>
-            <Text style={styles.emptyTitle}>Your list is empty</Text>
-            <Text style={styles.emptyBody}>Tap the bookmark on any title above to save it here.</Text>
-          </View>
-        )}
-
       </ScrollView>
       )}
+
+      {tab === 'discover' && <TonightFab />}
 
       {openCurated && (
         <CuratedListPanel
@@ -1109,6 +1172,7 @@ export default function HomeScreen() {
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
         <ScreenHeaderBar
+          showSearch={false}
           center={
             <Text style={styles.dateLabel} pointerEvents="none">
               {new Date().toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
@@ -1467,8 +1531,23 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     marginTop: spacing.sm,
   },
 
-  // ── Empty ──
-  greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.lg, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
+  // ── Greeting block ──
+  greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.xs, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
+  weekLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl, marginBottom: spacing.md, minHeight: 24 },
+  weekDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accentSecondary },
+  weekText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  searchField: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    marginHorizontal: spacing.xl, marginBottom: spacing.lg,
+    minHeight: 44, paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface,
+  },
+  searchFieldText: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  // ── Up next, empty ──
+  upNextEmpty: { marginHorizontal: spacing.xl, padding: spacing.md, gap: spacing.md, borderRadius: radii.md, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.borderStrong },
+  upNextEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },
+  upNextEmptyRow: { flexDirection: 'row', gap: spacing.md },
+  upNextEmptyLink: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   customize: { alignSelf: 'center', marginTop: spacing.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.lg },
   customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
   emptyWatchlist: {

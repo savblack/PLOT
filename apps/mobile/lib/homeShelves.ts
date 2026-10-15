@@ -8,7 +8,9 @@ import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 
 export const HOME_SHELF_LABELS: Record<string, string> = {
   picks: DISCOVER_VIEW.picks.cardsLabel,
-  continue: PEOPLE.continueWatching.title,
+  // Mobile draws this slot as Up next (Continue watching plus the saved
+  // titles, see Home); web still draws Continue watching there.
+  continue: DISCOVER_VIEW.upNext,
   hot: 'Hot Right Now',
   weekly: 'Top 20 This Week',
   people: PEOPLE.shelf.title,
