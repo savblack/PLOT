@@ -22,6 +22,24 @@ export const DISCOVER_VIEW = {
     showCard: (n) => `Show card ${n}`,
   },
   releasedThisDay: (year) => `Released this day in ${year}.`,
+  // Customize Home: reorder or hide the shelves below the fixed cards.
+  customize: {
+    action: 'Customize',
+    title: 'Customize Home',
+    body: 'Drag shelves into the order you like, or hide the ones you never use. Up next and On this day always stay.',
+    // Mobile has no drag; the arrows are the whole affordance.
+    bodyArrows: 'Use the arrows to put shelves in the order you like, or hide the ones you never use.',
+    moveUp: (name) => `Move ${name} up`,
+    moveDown: (name) => `Move ${name} down`,
+    dragHandle: (name) => `Drag to reorder ${name}`,
+    show: (name) => `Show ${name}`,
+    hide: (name) => `Hide ${name}`,
+    hiddenTag: 'Hidden',
+    reset: 'Reset to default',
+    settingsHint: 'Reorder or hide the shelves on Home',
+    saveError: 'That change didn’t save. Try again.',
+    done: 'Done',
+  },
   // Home's saved-titles shelf: the bottom of mobile Home, and the top of web
   // Home during the first run.
   savedToWatch: 'Saved to watch',

@@ -143,6 +143,7 @@ function TabsLayout() {
       <Tabs.Screen name="tonight" options={{ href: null }} />
       <Tabs.Screen name="watchlist-visibility" options={{ href: null }} />
       <Tabs.Screen name="themes" options={{ href: null }} />
+      <Tabs.Screen name="home-layout" options={{ href: null }} />
       <Tabs.Screen name="app-icon" options={{ href: null }} />
       <Tabs.Screen name="smart-list/[id]" options={{ href: null }} />
       <Tabs.Screen name="together" options={{ href: null }} />

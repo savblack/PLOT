@@ -6472,6 +6472,10 @@ a.provider-chip--link:hover {
   background: transparent;
 }
 .home-page-nav { gap: 18px; padding: 20px 12px 12px; }
+.home-page-nav-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-right: 4px; }
+.home-page-nav-customize { border: 0; background: transparent; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+.home-page-nav-customize:hover { color: var(--accent-text); }
+.home-page-nav-customize:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .home-page-nav-title { padding: 0 4px; font-family: var(--font-display); font-size: 18px; letter-spacing: -0.02em; color: var(--text-primary); }
 .home-page-nav-list { display: flex; flex-direction: column; }
 .home-page-nav-row { width: 100%; min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; border-bottom: 1px solid var(--border); background: transparent; padding: 10px 4px; color: var(--text-primary); font: inherit; font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; }

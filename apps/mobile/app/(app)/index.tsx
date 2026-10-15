@@ -1,9 +1,10 @@
 /**
  * Home screen. Mirrors web DiscoverView.
- * Discover order: hero, Continue watching, Hot Right Now, Out Today,
- * Top 20 This Week, Your people, Most Binged, then releases and platforms.
+ * Shelf order comes from the viewer's Home layout (@plot/core/homeLayout.js);
+ * the default is picks, Continue watching, Hot Right Now, Top 20 This Week,
+ * Your people, releases (Out Today, recent, coming soon), Most Binged, platforms.
  */
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
 import HomeReleases, { formatDayLabel } from '../../components/HomeReleases';
@@ -49,6 +50,8 @@ import PicksCarousel from '../../components/PicksCarousel';
 import { currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.js';
 import { localDateStr } from '@plot/core/date.js';
 import { greetingFor } from '@plot/core/greeting.js';
+import { visibleHomeSections } from '@plot/core/homeLayout.js';
+import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
 import FirstWinCard from '../../components/FirstWinCard';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
@@ -676,7 +679,8 @@ export default function HomeScreen() {
      ACTIVATED analytics, and left the shared store stale until app restart:
      save on Home, open the title's panel, and it still offered "Add to
      Watchlist". */
-  const { favorites, watchlist, userId, profile, user, customLists } = useAppData();
+  const { favorites, watchlist, userId, profile, user, customLists, refreshProfile } = useAppData();
+  const homeLayout = useHomeLayout({ userId, saved: profile?.home_layout, onPersisted: refreshProfile });
   const router = useRouter();
   // First run: the titles just saved in onboarding lead Home, under the greeting
   // and the Finishing touches card. Everyone else keeps the rail at the bottom.
@@ -838,6 +842,148 @@ export default function HomeScreen() {
     </View>
   ) : null;
 
+  const renderShelf: Record<string, () => ReactNode> = {
+    picks: () => (
+      <>
+        {(hero || curated) && (
+          <View onLayout={e => { picksBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}>
+            <SectionHeader title={DISCOVER_VIEW.picks.cardsLabel} />
+            {(hero && curated) || otherPicks.length > 0 ? (
+              <PicksCarousel cardWidth={PICKS_CARD_W} inView={picksInView}>
+                {hero && (
+                  <HeroCard
+                    key="hero"
+                    item={hero}
+                    cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
+                    onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
+                    saved={savedIds.has(hero.id ?? 0)}
+                    onSave={() => handleSave(hero)}
+                  />
+                )}
+                {curated && <CuratedListCard key={curated.id} curated={curated} width={PICKS_CARD_W} height={HERO_H} onPress={() => setOpenCurated(curated)} />}
+                {otherPicks.map(({ item, badge }) => (
+                  <HeroCard
+                    key={`${item.media_type}-${item.id}`}
+                    item={item}
+                    badge={badge.toUpperCase()}
+                    cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
+                    onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                    saved={savedIds.has(item.id ?? 0)}
+                    onSave={() => handleSave(item)}
+                  />
+                ))}
+              </PicksCarousel>
+            ) : hero ? (
+              <HeroCard
+                item={hero}
+                onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
+                saved={savedIds.has(hero.id ?? 0)}
+                onSave={() => handleSave(hero)}
+              />
+            ) : curated && (
+              <View style={{ paddingHorizontal: spacing.xl }}>
+                <CuratedListCard curated={curated} width={SCREEN_W - spacing.xl * 2} height={HERO_H} onPress={() => setOpenCurated(curated)} />
+              </View>
+            )}
+          </View>
+        )}
+      </>
+    ),
+    continue: () => <ContinueWatchingShelf />,
+    hot: () => (
+      <>
+        {hotRail.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Trending today" title="Hot Right Now" />
+            <FlatList
+              horizontal
+              data={hotRail}
+              keyExtractor={item => String(item.id)}
+              renderItem={({ item }) => (
+                <PosterCard
+                  item={item}
+                  onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                  saved={savedIds.has(item.id ?? 0)}
+                  onSave={() => handleSave(item)}
+                  isFav={favorites.isFavorite(item.id ?? 0)}
+                  onFavorite={() => toggleFav(item)}
+                />
+              )}
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled
+              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+            />
+          </View>
+        )}
+      </>
+    ),
+    weekly: () => (
+      <>
+        {applyFilters(weekly).length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Global ranking" title="Top 20 This Week" />
+            {applyFilters(weekly).map((item, i) => (
+              <ChartRow
+                key={String(item.id)}
+                item={item}
+                rank={i + 1}
+                saved={savedIds.has(item.id ?? 0)}
+                onSave={() => handleSave(item)}
+                onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+              />
+            ))}
+          </View>
+        )}
+      </>
+    ),
+    people: () => <YourPeopleShelf />,
+    releases: () => <HomeReleases rails={['today', 'recent', 'comingSoon']} />,
+    binged: () => (
+      <>
+        {applyFilters(bingedShows).length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Popular TV" title="Most Binged Shows" />
+            <FlatList
+              horizontal
+              data={applyFilters(bingedShows)}
+              keyExtractor={item => String(item.id)}
+              renderItem={({ item }) => (
+                <BingeCard item={item} onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))} />
+              )}
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled
+              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+            />
+          </View>
+        )}
+      </>
+    ),
+    platforms: () => (
+      <>
+        {platforms.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Official charts" title="Top 10 by Platform" />
+            {platforms.map(platform => (
+              <PlatformSection
+                key={platform.id}
+                platform={platform}
+                saved={savedIds}
+                onSave={handleSave}
+                isFav={(id) => favorites.isFavorite(id)}
+                onFavorite={toggleFav}
+                onOpen={(item, type) => item.id && openPanel(item.id, type)}
+              />
+            ))}
+            <Text style={styles.platAttribution}>
+              Official Top 10 · Netflix and the Streaming Availability API.
+            </Text>
+          </View>
+        )}
+      </>
+    ),
+  };
+  const homeShelves = visibleHomeSections(homeLayout.layout, Object.keys(renderShelf));
+
   return (
     <View style={styles.screen}>
       {tab === 'guide' ? (
@@ -920,143 +1066,15 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* ── plot's Picks: the hero, and the plot list card beside it ── */}
-        {(hero || curated) && (
-          <View onLayout={e => { picksBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}>
-            <SectionHeader title={DISCOVER_VIEW.picks.cardsLabel} />
-            {(hero && curated) || otherPicks.length > 0 ? (
-              <PicksCarousel cardWidth={PICKS_CARD_W} inView={picksInView}>
-                {hero && (
-                  <HeroCard
-                    key="hero"
-                    item={hero}
-                    cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
-                    onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
-                    saved={savedIds.has(hero.id ?? 0)}
-                    onSave={() => handleSave(hero)}
-                  />
-                )}
-                {curated && <CuratedListCard key={curated.id} curated={curated} width={PICKS_CARD_W} height={HERO_H} onPress={() => setOpenCurated(curated)} />}
-                {otherPicks.map(({ item, badge }) => (
-                  <HeroCard
-                    key={`${item.media_type}-${item.id}`}
-                    item={item}
-                    badge={badge.toUpperCase()}
-                    cardStyle={{ width: PICKS_CARD_W, marginHorizontal: 0 }}
-                    onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
-                    saved={savedIds.has(item.id ?? 0)}
-                    onSave={() => handleSave(item)}
-                  />
-                ))}
-              </PicksCarousel>
-            ) : hero ? (
-              <HeroCard
-                item={hero}
-                onPress={() => hero.id && openPanel(hero.id, (hero.media_type === 'tv' ? 'tv' : 'movie'))}
-                saved={savedIds.has(hero.id ?? 0)}
-                onSave={() => handleSave(hero)}
-              />
-            ) : curated && (
-              <View style={{ paddingHorizontal: spacing.xl }}>
-                <CuratedListCard curated={curated} width={SCREEN_W - spacing.xl * 2} height={HERO_H} onPress={() => setOpenCurated(curated)} />
-              </View>
-            )}
-          </View>
-        )}
+        {/* ── Shelves, in the viewer's order (Customize Home). Fixed cards
+            above are not part of the layout; a hidden shelf is skipped. The
+            releases slot carries Out Today, recent and coming soon together.
+            Ids are shared with web (@plot/core/homeLayout.js). ── */}
+        {homeShelves.map(id => <View key={id}>{renderShelf[id]?.()}</View>)}
 
-        <ContinueWatchingShelf />
-
-        {/* ── Hot Right Now ── */}
-        {hotRail.length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Trending today" title="Hot Right Now" />
-            <FlatList
-              horizontal
-              data={hotRail}
-              keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <PosterCard
-                  item={item}
-                  onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
-                  saved={savedIds.has(item.id ?? 0)}
-                  onSave={() => handleSave(item)}
-                  isFav={favorites.isFavorite(item.id ?? 0)}
-                  onFavorite={() => toggleFav(item)}
-                />
-              )}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-            />
-          </View>
-        )}
-
-        {/* ── Out Today (wide release cards) ── */}
-        <HomeReleases rails={['today']} />
-
-        {/* ── Top 20 This Week ── */}
-        {applyFilters(weekly).length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Global ranking" title="Top 20 This Week" />
-            {applyFilters(weekly).map((item, i) => (
-              <ChartRow
-                key={String(item.id)}
-                item={item}
-                rank={i + 1}
-                saved={savedIds.has(item.id ?? 0)}
-                onSave={() => handleSave(item)}
-                onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
-              />
-            ))}
-          </View>
-        )}
-
-        <YourPeopleShelf />
-
-        {/* ── Most Binged Shows ── */}
-        {applyFilters(bingedShows).length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Popular TV" title="Most Binged Shows" />
-            <FlatList
-              horizontal
-              data={applyFilters(bingedShows)}
-              keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <BingeCard item={item} onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))} />
-              )}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-            />
-          </View>
-        )}
-
-        {/* ── Releases: recent + upcoming, below the chart ── */}
-        <HomeReleases rails={['recent', 'comingSoon']} />
-
-        {/* ── Top 10 by Platform ──
-            The platforms' real published charts, not TMDB popularity within
-            the user's own subscriptions: a fixed set, the same for everyone,
-            so it needs the attribution line web carries. */}
-        {platforms.length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Official charts" title="Top 10 by Platform" />
-            {platforms.map(platform => (
-              <PlatformSection
-                key={platform.id}
-                platform={platform}
-                saved={savedIds}
-                onSave={handleSave}
-                isFav={(id) => favorites.isFavorite(id)}
-                onFavorite={toggleFav}
-                onOpen={(item, type) => item.id && openPanel(item.id, type)}
-              />
-            ))}
-            <Text style={styles.platAttribution}>
-              Official Top 10 · Netflix and the Streaming Availability API.
-            </Text>
-          </View>
-        )}
+        <TouchableOpacity style={styles.customize} onPress={() => router.push('/(app)/home-layout' as Href)} accessibilityRole="button" accessibilityLabel={DISCOVER_VIEW.customize.title}>
+          <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
+        </TouchableOpacity>
 
         {!firstRun && savedRail}
 
@@ -1451,6 +1469,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   // ── Empty ──
   greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.lg, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
+  customize: { alignSelf: 'center', marginTop: spacing.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.lg },
+  customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
   emptyWatchlist: {
     marginHorizontal: spacing.xl,
     padding: spacing.xl,
