@@ -175,7 +175,7 @@ export default function ImportSourceDialog({ start, onContinue, continueLabel = 
   }
 
   return (
-    <ResponsiveDialog title={title} onClose={start.busy ? () => {} : start.close} size="compact" contentClassName="isp-dialog-content">
+    <ResponsiveDialog title={title} label={name} onClose={start.busy ? () => {} : start.close} size="compact" contentClassName="isp-dialog-content">
       {body}
     </ResponsiveDialog>
   );

@@ -131,7 +131,7 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
     tracking.control(integration.id, connection?.automatic_enabled ? 'disable_automatic' : 'enable_automatic');
   };
   return (
-    <ResponsiveDialog title={title} onClose={onClose} size="compact" tall>
+    <ResponsiveDialog title={title} label={src.name} onClose={onClose} size="compact" tall>
       <div className="ss-detail">
         <p className="ss-detail-status"><Chip kind={status.chip.kind}>{status.chip.text}</Chip>{status.line && <span>{status.line}</span>}</p>
         {src.lane === 'connect' && integration?.status === 'active' && (

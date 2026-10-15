@@ -34,6 +34,7 @@ class Query {
   select(cols) { this.selected = cols ?? '*'; return this; }
   eq(col, val) { this.filters.push([col, val]); return this; }
   in(col, vals) { this.filters.push([col, vals, 'in']); return this; }
+  gte(col, val) { this.filters.push([col, val, 'gte']); return this; }
   order(col, opts) { this.orderBy = [col, opts?.ascending !== false]; return this; }
   range(from, to) { this.rangeArgs = [from, to]; return this; }
   limit(n) { this.rangeArgs = [0, n - 1]; return this; }
@@ -42,7 +43,7 @@ class Query {
 
   matches(row) {
     return this.filters.every(([col, val, kind]) =>
-      kind === 'in' ? val.includes(row[col]) : row[col] === val);
+      kind === 'in' ? val.includes(row[col]) : kind === 'gte' ? row[col] >= val : row[col] === val);
   }
 
   rows() {
