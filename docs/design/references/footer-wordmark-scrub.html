@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Footer wordmark: scrub (shelved idea)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600&display=swap">
+<style>
+  /* Shelved footer idea, kept from the Oct 2026 wordmark motion round (Savannah,
+     2026-10-15). The pointer is the pen: dragging left to right across the mark
+     draws the outline stroke, dragging back unwrites it. Nothing plays on its own.
+     The foil sheen shipped instead; this file is a self-contained demo so the idea
+     can be picked up later without digging through chat history. Open it directly
+     in a browser. Markup and crop mirror apps/website/_partials/footer.html. */
+  :root { --bg: #f8f2ea; --surface: #f1e9dc; --ink: #292924; --muted: #5f5a52; --line: rgba(41, 41, 36, 0.12); --ease: cubic-bezier(0.23, 1, 0.32, 1); }
+  body { margin: 0; background: #ece4d6; color: var(--ink); font-family: 'DM Sans', system-ui, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 3rem 16px; }
+  p { max-width: 60ch; color: var(--muted); }
+  .foot { container-type: inline-size; position: relative; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; user-select: none; touch-action: none; }
+  .foot-row { display: flex; justify-content: space-between; padding: 1.5rem 2rem 0; font-size: 0.8rem; color: var(--muted); }
+  .wm { display: block; margin-top: 3.5rem; overflow: hidden; height: calc(108cqw * 681 / 1403 - 14.9cqw); }
+  .wm svg { display: block; width: 108cqw; height: auto; aspect-ratio: 1403 / 871; margin-left: -4cqw; }
+  .wm path { fill: var(--surface); fill-opacity: var(--fo, 1); stroke: var(--ink); stroke-width: 6; stroke-dasharray: var(--len); stroke-dashoffset: calc(var(--len) * (1 - var(--pr, 0))); stroke-opacity: var(--so, 0); transition: fill-opacity 0.4s var(--ease), stroke-opacity 0.4s var(--ease); }
+  .foot:hover path, .foot.touching path { --fo: 0.35; --so: 1; }
+  @media (prefers-reduced-motion: reduce) { .wm path { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p>Scrub: drag the pointer left to right across the letters to write the word, and back to unwrite it. Shelved idea from the footer wordmark motion round, October 2026.</p>
+  <div class="foot" id="foot">
+    <div class="foot-row"><span>&copy; 2026 Plot</span><span>Instagram · Threads · X</span></div>
+    <div class="wm"><svg id="wm" viewBox="52 -681 1403 871" aria-hidden="true"></svg></div>
+  </div>
+</div>
+<script>
+(function () {
+  // Glyphs as in packages/core/wordmark.js, tracked 55 units tighter per letter as in the footer.
+  const P = {
+    p: 'M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z',
+    l: 'M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5Z',
+    o: 'M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z',
+    t: 'M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z'
+  };
+  const shift = { p: 0, l: -55, o: -110, t: -165 };
+  // Horizontal span of each letter in viewBox units after the shift; progress is the pointer's position across it.
+  const spans = { p: [52, 548], l: [523, 855], o: [665, 1179], t: [1124, 1455] };
+  const svg = document.getElementById('wm'), foot = document.getElementById('foot');
+  svg.innerHTML = Object.keys(P).map(k => `<path class="${k}" transform="translate(${shift[k]},0)" d="${P[k]}"/>`).join('');
+  svg.querySelectorAll('path').forEach(p => p.style.setProperty('--len', Math.ceil(p.getTotalLength())));
+  const move = e => {
+    const pt = e.touches ? e.touches[0] : e, r = svg.getBoundingClientRect();
+    const x = 52 + ((pt.clientX - r.left) / r.width) * 1403;
+    for (const k in spans) { const [a, b] = spans[k]; svg.querySelector('path.' + k).style.setProperty('--pr', Math.min(1, Math.max(0, (x - a) / (b - a))).toFixed(3)); }
+  };
+  foot.addEventListener('pointermove', move);
+  foot.addEventListener('touchstart', e => { foot.classList.add('touching'); move(e); }, { passive: true });
+  foot.addEventListener('touchmove', move, { passive: true });
+  foot.addEventListener('touchend', () => foot.classList.remove('touching'));
+})();
+</script>
+</body>
+</html>
