@@ -149,7 +149,7 @@ const HOME_SECTION = {
   platforms: { id: 'home-platforms', label: 'Top 10 by Platform', navLabel: 'Top 10 By Platform' },
 };
 
-function HomePageNav({ sections, onCustomize }) {
+export function HomePageNav({ sections, onCustomize }) {
   const [activeId, setActiveId] = useState(sections[0]?.id);
   const currentId = sections.some(section => section.id === activeId) ? activeId : sections[0]?.id;
 
