@@ -27,6 +27,8 @@ export const DISCOVER_VIEW = {
     action: 'Customize',
     title: 'Customize Home',
     body: 'Drag shelves into the order you like, or hide the ones you never use. Up next and On this day always stay.',
+    // Mobile has no drag; the arrows are the whole affordance.
+    bodyArrows: 'Use the arrows to put shelves in the order you like, or hide the ones you never use.',
     moveUp: (name) => `Move ${name} up`,
     moveDown: (name) => `Move ${name} down`,
     dragHandle: (name) => `Drag to reorder ${name}`,

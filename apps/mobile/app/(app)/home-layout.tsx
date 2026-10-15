@@ -48,7 +48,7 @@ export default function HomeLayoutScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}>
-        <Text style={styles.intro}>{C.body}</Text>
+        <Text style={styles.intro}>{C.bodyArrows}</Text>
         {error ? <Text style={styles.error} accessibilityRole="alert">{C.saveError}</Text> : null}
         <View style={styles.list}>
           {layout.order.map((id, index) => {
