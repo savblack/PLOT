@@ -47,7 +47,7 @@ import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } fro
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from './ArtworkSheet';
-import ParentalGuide from './ParentalGuide';
+import ParentalGuide, { type ParentalGuideDetails } from './ParentalGuide';
 import { updateProfile } from '@plot/core/profile.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
@@ -566,7 +566,7 @@ interface CreditPerson {
   roles?: { character?: string }[];
 }
 
-interface TMDBDetails {
+interface TMDBDetails extends ParentalGuideDetails {
   id: number;
   title?: string;
   name?: string;

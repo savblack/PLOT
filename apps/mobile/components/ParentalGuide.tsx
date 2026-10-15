@@ -7,7 +7,9 @@ import { getTmdbRegion, tmdb } from '../lib/tmdb';
 import { fontFamily, fontSize, type Palette } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
-type Details = { release_dates?: Parameters<typeof movieGuide>[0] };
+export type ParentalGuideDetails = {
+  release_dates?: Parameters<typeof movieGuide>[0];
+};
 
 /**
  * Regional rating under the title facts. Advisories open on the rating.
@@ -23,7 +25,7 @@ export default function ParentalGuide({
 }: {
   mediaType: 'movie' | 'tv';
   tmdbId: number;
-  details: Details | null;
+  details: ParentalGuideDetails | null;
   signedIn: boolean;
   hidden: boolean;
   onSetShown: (shown: boolean) => Promise<boolean>;
