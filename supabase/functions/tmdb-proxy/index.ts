@@ -47,22 +47,26 @@ const ALLOWED_PATHS = [
   /^(movie|tv)\/\d+\/recommendations$/,
   /^(movie|tv)\/\d+\/watch\/providers$/,
   /^(movie|tv)\/\d+\/reviews$/,
+  // Alternate posters, backdrops, and logos for Customize artwork.
+  /^(movie|tv)\/\d+\/images$/,
   // Franchise sets ("Part of a collection" on the movie panel, and search).
   /^collection\/\d+$/,
   /^search\/collection$/,
   /^person\/\d+$/,
   /^person\/\d+\/combined_credits$/,
+  /^person\/\d+\/images$/,
   /^watch\/providers\/(movie|tv)$/,
   // Episode schedule endpoints (for Watching view + Calendar)
   /^tv\/\d+\/season\/\d+$/,
   /^tv\/\d+\/season\/\d+\/episode\/\d+$/,
+  /^tv\/\d+\/season\/\d+\/images$/,
   // Genre lists (for filters)
   /^genre\/(movie|tv)\/list$/,
 ];
 
 // Mirror of ALLOWED_PARAMS in apps/web/workers/tmdb-proxy/src/tmdb.js.
 const ALLOWED_PARAMS = new Set([
-  'language', 'region', 'page', 'query', 'include_adult', 'external_source',
+  'language', 'include_image_language', 'region', 'page', 'query', 'include_adult', 'external_source',
   'append_to_response', 'watch_region', 'sort_by', 'year', 'timezone',
   'primary_release_year', 'first_air_date_year',
   'with_genres', 'without_genres', 'with_keywords', 'with_watch_providers',

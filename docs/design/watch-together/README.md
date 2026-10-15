@@ -45,6 +45,25 @@ are fictional placeholders; posters are colour blocks, not TMDB artwork.
   by Sam and Priya too" → the picker. Only shown for people you already
   watch together with.
 
+## Free and Premium views (Oct 2026 redesign)
+
+Canvas: https://claude.ai/artifact/5eBwGMmLa6fQh7PWraSEuW (web and mobile boards
+for the start page and the hub, Free and Premium). Each screen has one dark
+"ink" card holding the one primary action, and grouped lists below it.
+- Start page (nobody to watch with yet): hero with search, invite link and
+  example pairing; "Start with people you follow" with overlap counts; the
+  demo. Free adds one Premium card; Premium gets a dismissible green welcome
+  instead. No "How it works" steps and no "Got an invite?" banner.
+- Hub (has partners): Free with everyone waiting shows "Decide what to
+  watch." and Get Premium; partners are tagged "Needs Premium" and aren't
+  links (the overlap page is locked). Premium shows Who's watching? chips
+  (first partner preselected) and Decide with Sam / See group matches. Side
+  column (stacked on mobile): invite search and link, up to 3 suggested.
+- Web: `WatchTogetherStart.jsx`, `WatchTogetherView.jsx`, `useInviteShare.js`;
+  stories `Watch together/Start` and `Watch together/Hub`. Mobile:
+  `components/watch/WatchTogetherStart.tsx`, `WatchHub.tsx`, ink pieces in
+  `WatchChrome.tsx`.
+
 ## Ways in
 
 - Nav item Watch together (`/together`) next to Pick for Me, with a Premium

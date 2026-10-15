@@ -182,7 +182,7 @@ export default function App() {
     const [{ data }, entitled] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, region, timezone, first_name, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links, home_layout')
+        .select('id, region, timezone, first_name, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links, home_layout, show_parental_guide')
         .eq('id', userId)
         .maybeSingle(),
       loadPremiumEntitlement(),

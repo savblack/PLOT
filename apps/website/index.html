@@ -114,6 +114,7 @@
   <link rel="stylesheet" href="/theme.css" />
   <link rel="stylesheet" href="/ui.css?v=5090e8ef" />
   <link rel="stylesheet" href="/nav.css?v=7c3320cc" />
+  <link rel="stylesheet" href="/premium-stories.css?v=7f04b82f" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1067,65 +1068,12 @@
     .ls-count { display: block; font-size: 0.9em; color: var(--text-secondary); }
     .ls-vis { flex-shrink: 0; padding: 0.3em 0.8em; border-radius: var(--r-pill); background: var(--surface); font-size: 0.85em; font-weight: 600; color: var(--text-secondary); }
 
-    /* Premium: what /pricing promises, the price and the trial, on ink. */
-    #premium { background: var(--ink); color: var(--bg); }
-    #premium .hx-eyebrow { color: var(--fill); }
-    #premium .hx-headline { color: var(--bg); }
-    #premium .hx-body { color: #d9d1c4; margin-bottom: 2rem; }
-    .pr-features { list-style: none; margin: 0 0 1.6rem; padding: 0; display: flex; flex-direction: column; gap: 1.4rem; }
-    .pr-feature { display: flex; gap: 16px; align-items: flex-start; }
-    .pr-icon { width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: rgba(255,136,200,0.16); color: var(--fill); display: flex; align-items: center; justify-content: center; }
-    .pr-icon svg { width: 22px; height: 22px; }
-    .pr-feature strong { display: block; font-family: var(--display); font-weight: 700; font-size: 1.3rem; letter-spacing: -0.02em; }
-    .pr-feature div span { display: block; margin-top: 4px; font-size: 0.95rem; line-height: 1.45; color: #d9d1c4; }
-    .pr-more { margin: 0; max-width: 520px; font-size: 0.95rem; line-height: 1.45; color: #d9d1c4; }
-    .pr-more a { color: var(--fill); font-weight: 600; text-underline-offset: 4px; }
-    .pr-card {
-      width: 100%;
-      max-width: 400px;
-      box-sizing: border-box;
-      padding: 28px;
-      background: var(--bg);
-      color: var(--text);
-      border-radius: 28px;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.35);
-    }
-    .pr-toggle { display: flex; padding: 4px; margin-bottom: 22px; background: var(--surface); border-radius: var(--r-pill); }
-    .pr-toggle button {
-      flex: 1;
-      padding: 9px 0;
-      border: 0;
-      border-radius: var(--r-pill);
-      background: transparent;
-      font: 600 0.88rem var(--sans);
-      color: var(--text-secondary);
-      cursor: pointer;
-    }
-    .pr-toggle button.is-active { background: #fff; color: var(--text); box-shadow: 0 2px 6px rgba(41,41,36,0.1); }
-    .pr-price { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
-    /* The annual saving, as loud as the price: Annual is preselected. */
-    .pr-save {
-      align-self: center;
-      margin-left: 12px;
-      padding: 8px 14px;
-      border-radius: var(--r-pill);
-      background: var(--accent-2);
-      color: #fff;
-      font-family: var(--display);
-      font-weight: 700;
-      font-size: 1.05rem;
-      letter-spacing: -0.01em;
-      white-space: nowrap;
-      transform: rotate(-3deg);
-      box-shadow: 0 6px 16px rgba(95,112,48,0.35);
-    }
-    .pr-save[hidden] { display: none; }
-    .pr-amount { font-family: var(--display); font-weight: 700; font-size: 4rem; letter-spacing: -0.04em; line-height: 1; }
-    .pr-per { font-size: 1.1rem; color: var(--text-secondary); }
-    .pr-billed { margin: 6px 0 22px; font-size: 0.88rem; color: var(--text-secondary); text-align: center; }
-    .pr-card .btn { width: 100%; justify-content: center; }
-    .pr-trial { margin: 14px 0 0; font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary); text-align: center; }
-    .pr-compare { display: block; margin-top: 14px; text-align: center; font-size: 0.88rem; font-weight: 600; color: var(--text); text-underline-offset: 4px; }
+    /* Premium: the /pricing stories on cream. Shared rules are in
+       premium-stories.css; these only fit them to the home page. */
+    #premium .stories-inner { max-width: 1180px; margin: 0 auto; }
+    .st-actions { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; }
+    .st-price { margin: 1rem 0 0; max-width: 460px; font-size: 0.88rem; line-height: 1.45; color: var(--text-secondary); }
+    .st-price strong { color: var(--text); }
 
     /* Plot mobile: coming soon, with the app's home screen in a phone. Same
        cream as the sections around it. */
@@ -1263,8 +1211,6 @@
       .hx-actions { flex-direction: column; align-items: stretch; gap: 0.75rem; text-align: center; }
       .hx-actions .btn { justify-content: center; }
       .hx-dbreak { display: none; }
-      .pr-features { margin-bottom: 0; }
-      .pr-features { gap: 1.1rem; margin-bottom: 1.2rem; }
       #indie .hx-body { margin-bottom: 1.6rem; }
       #indie .hx-actions { align-self: stretch; }
     }
@@ -1277,8 +1223,6 @@
       .ls-fan { width: 94%; aspect-ratio: 56 / 56; }
       .ls-card { font-size: 3.1cqw; }
       .ls-card--b { font-size: 3.3cqw; }
-      .pr-card { padding: 22px; }
-      .pr-amount { font-size: 3.2rem; }
       #indie { padding: 3.5rem 1.5rem 3rem; }
       #indie .hx-inner { row-gap: 0; }
       #indie .hx-headline { font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.025em; text-wrap: balance; }
@@ -1484,35 +1428,131 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </section>
 
   <!-- ── Premium ────────────────────────────────────────────────── -->
-  <!-- Features follow the in-app plans list (packages/core/copy/plansPage.js).
-       Prices and the checkout link match pricing.html; keep the two in step. -->
-  <section id="premium" class="hx" aria-labelledby="premiumHeadline">
-    <div class="hx-inner">
-      <div class="hx-copy reveal">
-        <span class="hx-eyebrow">Plot Premium</span>
-        <h2 class="hx-headline" id="premiumHeadline">Less deciding.<br>More watching.</h2>
-        <p class="hx-body">Everything in Free, plus:</p>
-        <ul class="pr-features">
-          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg></span><div><strong>Pick for me</strong><span>Stop scrolling. Answer four quick questions and you’ve got a shortlist tailored to you and your mood.</span></div></li>
-          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9.5" r="2.5"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5M16 14c3 0 5.5 2.4 5.5 6"/></svg></span><div><strong>Watch together</strong><span>Settle “what should we watch?” before the snacks are ready. Only one of you needs Premium.</span></div></li>
-          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M6 16v-5M11 16V6M16 16v-8"/></svg></span><div><strong>Your watch profile</strong><span>Get to know your watching habits, and settle who has the best taste.</span></div></li>
-          <li class="pr-feature"><span class="pr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></svg></span><div><strong>Make it yours</strong><span>Your Plot, your style. Get access to custom themes, widgets and app icons.</span></div></li>
-        </ul>
-        <p class="pr-more">Plus unlimited and smart lists, release dates in your calendar app, and actor and director alerts. <a href="/pricing" data-cta="premium-more">See everything in Premium</a></p>
-      </div>
-      <div class="hx-visual reveal">
-        <div class="pr-card">
-          <div class="pr-toggle" role="group" aria-label="Billing period">
-            <button type="button" id="prMonthly" aria-pressed="false">Monthly</button>
-            <button type="button" id="prAnnual" class="is-active" aria-pressed="true">Annual</button>
+  <!-- The same stories as /pricing (premium-stories.css / .js), on cream.
+       Copy and visuals live in pricing.html too; keep the two in step. -->
+  <section id="premium" class="hx stories stories--light" aria-labelledby="premiumHeadline">
+    <div class="stories-inner reveal">
+        <div class="stories-copy">
+          <span class="hx-eyebrow">Plot Premium</span>
+          <h2 class="hx-headline" id="premiumHeadline">Less deciding.<br>More watching.</h2>
+          <div class="stories-stage" id="storiesStage" aria-live="polite">
+            <div class="stories-slide is-active"><h3>Something to watch, in under a minute.</h3><p>How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.</p></div>
+            <div class="stories-slide" aria-hidden="true"><h3>Settle movie night before the snacks are ready.</h3><p>Watch together analyzes everyone’s Plot profiles to find movie and TV matches in your lists.</p></div>
+            <div class="stories-slide" aria-hidden="true"><h3>Every story has a plot. Here’s yours.</h3><p>Every film and show you log adds up to a profile: the genres you lean on, the hours you’ve put in, and the titles you keep going back to.</p></div>
+            <div class="stories-slide" aria-hidden="true"><h3 aria-label="Find out your compatibility based on cinema.">Find out your compatibility based on <s>science</s> cinema.</h3><p>Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.</p></div>
+            <div class="stories-slide" aria-hidden="true"><h3>Your Plot, your way.</h3><p>Light, dark or in between. Widgets for your home screen. Customize your Plot app interface and icon. Plot, the way you’d have made it.</p></div>
           </div>
-          <div class="pr-price"><span class="pr-amount" id="prAmount">$2</span><span class="pr-per">/mo</span><span class="pr-save" id="prSave">4 months free</span></div>
-          <p class="pr-billed" id="prBilled">Billed $24 once a year</p>
-          <a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-primary btn-large" id="prCta" data-cta="premium-home">Start 7-day free trial</a>
-          <p class="pr-trial">Commitment-free.<br>Cancel during the trial and you pay $0.</p>
-          <a href="/pricing" class="pr-compare" data-cta="premium-compare">Compare Free and Premium</a>
+          <div class="stories-steps" id="storiesSteps" role="group" aria-label="Premium benefits">
+            <button type="button" class="stories-step" aria-pressed="true"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Pick for me</span></button>
+            <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Watch together</span></button>
+            <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Your profile</span></button>
+            <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Taste match</span></button>
+            <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Make it yours</span></button>
+          </div>
+          <div class="st-actions"><a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-primary btn-large" data-premium="cta" data-cta="premium-home">Start 7-day free trial</a>
+          <a href="/pricing" class="hx-link" data-cta="premium-compare">See everything in Premium</a></div>
+          <p class="st-price"><strong>$2/mo</strong> billed yearly, 4 months free. Commitment-free: cancel during the 7-day trial and you pay $0.</p>
         </div>
-      </div>
+
+        <div class="stories-visuals" id="storiesVisuals">
+          <!-- Each card plays a short sequence when its step becomes active
+               (the animations restart because the card goes display:none
+               and back). Every keyframe ends on the resting state, and
+               reduced motion shows that state straight away. -->
+
+          <!-- 1 · Pick for me. Example verified on the old homepage: 120 min, Disney+, Comedy → The Grand Budapest Hotel. -->
+          <div class="vis vis--pick" role="img" aria-label="Pick for me: choose 120 minutes, Disney+ and Comedy. Tonight’s pick is The Grand Budapest Hotel, 100 minutes on Disney+.">
+            <span class="vis-kicker">Pick for me</span>
+            <div class="pf-q"><span class="pf-label">How much time?</span><div class="pf-seg"><span>30 min</span><span>60 min</span><span>90 min</span><span class="on" style="--d:0.3s">120 min</span></div></div>
+            <div class="pf-q"><span class="pf-label">Where do you watch?</span><div class="pf-seg"><span>Netflix</span><span class="on" style="--d:0.9s">Disney+</span><span>Prime Video</span><span>Apple TV+</span></div></div>
+            <div class="pf-q"><span class="pf-label">In the mood for?</span><div class="pf-seg"><span>Drama</span><span class="on" style="--d:1.5s">Comedy</span><span>Thriller</span><span>Romance</span></div></div>
+            <div class="pf-pick">
+              <div class="pf-shuffle" aria-hidden="true">
+                <img class="poster pf-c" style="--i:1" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278">
+                <img class="poster pf-c" style="--i:2" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278">
+                <img class="poster pf-c" style="--i:3" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278">
+                <img class="poster pf-final" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278">
+              </div>
+              <div class="pf-info"><strong>The Grand Budapest Hotel</strong><span class="vis-meta">Comedy · 100 min · Disney+</span><span class="vis-pill pf-play"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg>Play on Disney+</span></div>
+            </div>
+          </div>
+
+          <!-- 2 · Watch together. Widow's Bay is in both watchlists. -->
+          <div class="vis vis--together" aria-hidden="true" role="img" aria-label="Watch together: two watchlists share one title, Widow’s Bay. You both want to watch this.">
+            <span class="vis-kicker">Watch together</span>
+            <div class="wt-board">
+            <div class="wt-list"><div class="wt-label"><span class="av av-you">Y</span>Your watchlist</div><div class="wt-row"><img class="poster is-match" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
+            <div class="wt-list"><div class="wt-label"><span class="av av-them">P</span>Priya’s watchlist</div><div class="wt-row"><img class="poster" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/s8Sr5BRjEzOnD6sxBvxUI4qrkrs.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster is-match" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
+            <span class="wt-ring" aria-hidden="true"></span>
+            <div class="wt-both" aria-hidden="true"><span class="av av-you">Y</span><span class="av av-them">P</span></div>
+            </div>
+            <div class="wt-outcome"><div><strong>You both want to watch this.</strong><span class="vis-meta">Widow’s Bay · in both watchlists</span></div><span class="vis-pill">Start movie night</span></div>
+          </div>
+
+          <!-- 3 · Your watch profile. Illustrative numbers; they count up. -->
+          <div class="vis vis--profile" aria-hidden="true" role="img" aria-label="Your watch profile for 2026: five titles you rated five stars, 84 films, 31 shows, 212 hours. Thriller 38%, Comedy 22%, Drama 17%. Most rewatched: The Grand Budapest Hotel, 3 times.">
+            <span class="vis-kicker">Your watch profile · 2026</span>
+            <div class="wp-top">
+              <div class="wp-posters" aria-hidden="true"><img class="poster" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:0"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:1"><img class="poster" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:2"><img class="poster" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:3"><img class="poster" src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:4"></div>
+              <span class="wp-top-label">Your five stars this year</span>
+            </div>
+            <div class="wp-stats"><div class="wp-stat"><b data-count="84" data-delay="200">84</b><span>films</span></div><div class="wp-stat"><b data-count="31" data-delay="400">31</b><span>shows</span></div><div class="wp-stat"><b data-count="212" data-delay="600">212</b><span>hours</span></div></div>
+            <div class="wp-bars"><div class="wp-bar">Thriller<i style="--w:88%;--d:0.9s"></i><em>38%</em></div><div class="wp-bar">Comedy<i style="--w:52%;--d:1.1s"></i><em>22%</em></div><div class="wp-bar">Drama<i style="--w:40%;--d:1.3s"></i><em>17%</em></div></div>
+            <div class="wp-taste"><img class="poster wp-thumb" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><span>Most rewatched</span><b class="wp-flip" aria-hidden="true"><span>Paddington 2 · 2×</span><span>Before Sunrise · 2×</span><span>The Grand Budapest Hotel · 3×</span></b><b class="sr-only">The Grand Budapest Hotel · 3×</b></div>
+          </div>
+
+          <!-- 4 · Taste match. Example numbers from /taste-match; the score counts up. -->
+          <div class="vis vis--taste" aria-hidden="true" role="img" aria-label="Taste match with Priya: 74%, based on 38 titles you’ve both rated. Three titles you both loved, four genres side by side, and the title you disagree on most: Dune: Part Two, two stars from you and five from Priya.">
+            <span class="vis-kicker">Taste match</span>
+            <div class="tm-top"><div class="tm-pair"><span class="av av-you">Y</span><span class="av av-them">P</span></div><div><b class="tm-num" data-count="74" data-delay="700" data-duration="1100" data-suffix="%">74%</b><span class="tm-cap">Based on 38 titles you’ve both rated</span></div></div>
+            <div class="tm-row"><span class="tm-label">You both loved</span><div class="tm-posters"><img class="poster" style="--d:1.4s" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" style="--d:1.55s" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" style="--d:1.7s" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
+            <div class="tm-genres">
+              <div class="tm-legend"><span><i class="is-you"></i>you</span><span><i class="is-them"></i>Priya</span></div>
+              <div class="tm-genre"><span>Thriller</span><i class="is-you" style="--w:80%;--d:2s"></i><i class="is-them" style="--w:68%;--d:2.15s"></i></div>
+              <div class="tm-genre"><span>Comedy</span><i class="is-you" style="--w:52%;--d:2.3s"></i><i class="is-them" style="--w:60%;--d:2.45s"></i></div>
+              <div class="tm-genre"><span>Drama</span><i class="is-you" style="--w:40%;--d:2.6s"></i><i class="is-them" style="--w:30%;--d:2.75s"></i></div>
+              <div class="tm-genre"><span>Horror</span><i class="is-you" style="--w:12%;--d:2.9s"></i><i class="is-them" style="--w:44%;--d:3.05s"></i></div>
+            </div>
+            <div class="tm-disagree">
+              <span class="tm-label">Where you disagree</span>
+              <b>Dune: Part Two</b>
+              <div class="tm-ratings"><span>you <em class="tm-stars" style="--d:3.6s">★★</em></span><span>Priya <em class="tm-stars" style="--d:3.9s">★★★★★</em></span></div>
+            </div>
+          </div>
+
+          <!-- 5 · Make it yours. The card re-skins itself through the app's theme
+               families (packages/core/tokens.js themeFamilies, light mode): Cream (the
+               default), Sage, Mist, Blush, Plum. -->
+          <div class="vis vis--yours" aria-hidden="true" role="img" aria-label="Make it yours: the card switches between the Cream, Sage, Mist, Blush and Plum themes, with five matching app icons and two home-screen widgets, Up next and Watching.">
+            <span class="vis-kicker">Make it yours</span>
+            <div class="my-themes">
+              <div class="my-theme" style="--i:0;--t-bg:#F8F2EA;--t-fill:#FF88C8;--t-ink:#292924"><i></i><i></i><small>Cream</small></div>
+              <div class="my-theme" style="--i:1;--t-bg:#E3EACA;--t-fill:#BFDA5E;--t-ink:#20261A"><i></i><i></i><small>Sage</small></div>
+              <div class="my-theme" style="--i:2;--t-bg:#E1E8EE;--t-fill:#A8CBEE;--t-ink:#1B232A"><i></i><i></i><small>Mist</small></div>
+              <div class="my-theme" style="--i:3;--t-bg:#F6DCE3;--t-fill:#8FD6CB;--t-ink:#2B1A20"><i></i><i></i><small>Blush</small></div>
+              <div class="my-theme" style="--i:4;--t-bg:#E7E0F2;--t-fill:#F2C04F;--t-ink:#221B2E"><i></i><i></i><small>Plum</small></div>
+            </div>
+            <div class="my-icons">
+              <span class="my-icon" style="--i:0;--t-bg:#FF88C8;--t-ink:#292924">plot</span>
+              <span class="my-icon" style="--i:1;--t-bg:#BFDA5E;--t-ink:#20261A">plot</span>
+              <span class="my-icon" style="--i:2;--t-bg:#A8CBEE;--t-ink:#1B232A">plot</span>
+              <span class="my-icon" style="--i:3;--t-bg:#8FD6CB;--t-ink:#2B1A20">plot</span>
+              <span class="my-icon" style="--i:4;--t-bg:#F2C04F;--t-ink:#221B2E">plot</span>
+              <small>App icons</small>
+            </div>
+            <div class="my-widgets">
+              <div class="my-widget"><img class="poster" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><div><small>Up next</small><b>Widow’s Bay</b><small>Out Friday</small></div></div>
+              <div class="my-widget"><img class="poster" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><div><small>Watching</small><b>Peaky Blinders</b><small>S1 · E4 of 6</small></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stories-also">
+          <span class="stories-also-label">Also in Premium</span>
+          <span class="also-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/></svg>Unlimited and smart lists</span>
+          <span class="also-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18M8 3v4M16 3v4M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg>Release dates in your calendar app</span>
+          <span class="also-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg>Actor and director alerts</span>
+        </div>
     </div>
   </section>
 
@@ -2016,29 +2056,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       }).catch(function () {});
     })();
 
-    // Premium billing toggle — same prices and checkout intent as /pricing.
-    (function () {
-      var MONTHLY = 3, ANNUAL = 24;
-      var mo = document.getElementById('prMonthly');
-      var yr = document.getElementById('prAnnual');
-      if (!mo || !yr) return;
-      var amount = document.getElementById('prAmount');
-      var billed = document.getElementById('prBilled');
-      var save = document.getElementById('prSave');
-      var cta = document.getElementById('prCta');
-      function setBilling(annual) {
-        mo.classList.toggle('is-active', !annual);
-        yr.classList.toggle('is-active', annual);
-        mo.setAttribute('aria-pressed', String(!annual));
-        yr.setAttribute('aria-pressed', String(annual));
-        amount.textContent = '$' + (annual ? ANNUAL / 12 : MONTHLY);
-        billed.textContent = annual ? 'Billed $' + ANNUAL + ' once a year' : 'Billed monthly. Cancel anytime.';
-        save.hidden = !annual;
-        cta.href = 'https://app.theplot.tv/signup?intent=premium&plan=' + (annual ? 'yearly' : 'monthly');
-      }
-      mo.addEventListener('click', function () { setBilling(false); });
-      yr.addEventListener('click', function () { setBilling(true); });
-    })();
 
     // What's On closing section — poster wall (reuses the shared trending sets)
     (function () {
@@ -2250,6 +2267,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   </script>
 
+  <script src="js/premium-stories.js?v=f02929ae"></script>
   <script src="js/nav.js"></script>
 </body>
 </html>
