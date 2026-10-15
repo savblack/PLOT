@@ -1,16 +1,15 @@
 // Pure Notion-side planning for the What's On review database.
 //
 // The mirror writes pages. The sweep reads them back. The dangerous case is
-// treating the mirror's own write as a decision (Linear did this once, on
-// PLO-421, and unapproved a post the operator had just cleared). Notion's
+// treating the mirror's own write as a decision (a prior mirror did this once and unapproved a post the operator had just cleared). Notion's
 // webhook does not include the previous property value, so the sweep stores
 // the Status and Scheduled date it last wrote and treats a difference as the
 // only evidence of a human edit.
 //
 // No network and no Deno.env. marketing/tests/notion-review.test.mjs covers it.
 
-import { parseCommand, looksLikeAttempt, HELP_TEXT, WEEK_SCOPED, BOT_MARKER } from './linearCommands.js';
-import { dueDateFor } from './linearIssue.js';
+import { parseCommand, looksLikeAttempt, HELP_TEXT, WEEK_SCOPED, BOT_MARKER } from './reviewCommands.js';
+import { dueDateFor } from './reviewTitle.js';
 import { articleLink, reason } from './postSummary.js';
 import { commandForStatusName, guardIncomingStatus } from './reviewActions.js';
 
@@ -35,8 +34,7 @@ export const STATUS = {
 
 // Newest posts first, and only this many creates per sweep. The creation set
 // is every approved article that has no page yet, which on a first run is the
-// whole back catalogue. Opening all of them in one tick is how the Linear
-// mirror once filed 161 issues. The rest wait for the next tick.
+// whole back catalogue. Opening all of them in one tick is how an earlier mirror once filed 161 issues. The rest wait for the next tick.
 export const CREATE_LIMIT = 15;
 
 // How far around "now" an already-live article still has its comments polled
@@ -318,7 +316,7 @@ export const blocksForPost = (post, supabaseUrl) => {
 /**
  * Notion's Name property. The day and the post type already have Scheduled
  * and Post type, so the title is only the article title. The fallback matches
- * the subject Linear uses, without that prefix. A row with no title at all
+ * the old review subject, without that prefix. A row with no title at all
  * is called Article, so the Name property is never blank.
  */
 export const articleTitle = (post) => {

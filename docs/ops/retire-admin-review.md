@@ -51,9 +51,9 @@ still has the source, plus re-set the two secrets.
 
 | Check | Pass |
 | --- | --- |
-| Linear Content Automation | Opens; `/approve` only changes article status |
+| Private Notion review database | Verify one page and one approval after cutover |
 | Buffer | Queue opens |
-| Weekly email after next batch | Linear + Buffer buttons only |
+| Weekly email after next batch | Verify Notion + Buffer links after cutover |
 | theplot.tv / app.theplot.tv | Unchanged |
 | admin.theplot.tv | DNS fail, Cloudflare error, or 410. Not homepage / desk / 502 |
 | `…/functions/v1/admin-review` | 404 |
@@ -63,13 +63,12 @@ still has the source, plus re-set the two secrets.
 - `auth_fail_attempts` (signup-bypass and media-sync use it)
 - `marketing_review_events`, `marketing_posts`, `marketing_settings`
 - empty `operator_*` tables (`docs/ops/operator-desk-shelved.md`)
-- `GH_DISPATCH_TOKEN_CONTENT` (Linear `/generate` and `/regenerate`)
+- `GH_DISPATCH_TOKEN_CONTENT` (Notion `/generate` and `/regenerate`)
 
 ## History (why this existed)
 
 The desk was a password-gated HTML control room that could approve/reject and also
-rewrite publication rows (re-queue on approve, skip captions on reject). Linear was
-built to mirror it, then the Buffer split made Linear article-only. Using the desk
+rewrite publication rows (re-queue on approve, skip captions on reject). The old review board mirrored it, then the Buffer split made article review separate. Using the desk
 after that could double-post or suppress captions. Phase 1 stopped the docs and
 email from sending people there. This teardown removes the host and the function
 source; production undeploy closes the raw function URL.

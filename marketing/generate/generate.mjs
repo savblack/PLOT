@@ -11,9 +11,9 @@
 // Approval is the article gate, not the Buffer gate.
 //
 // Posts reaching 'needs_review' are picked up within five minutes by the
-// marketing-linear-mirror Edge Function, which opens the Linear issue the week
+// marketing-notion-mirror Edge Function, which opens the Notion page for the week
 // is reviewed on. That is a scheduled sweep rather than anything this script
-// calls, so the Linear credential lives only in Supabase and a Linear outage
+// calls, so the Notion credential lives only in Supabase and an outage
 // cannot fail a render run.
 import { getSupabase } from '../lib/supabase.mjs';
 import { renderCard, closeBrowser } from '../lib/render.mjs';

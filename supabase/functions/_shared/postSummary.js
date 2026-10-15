@@ -1,13 +1,7 @@
 // How a marketing post describes itself: the one-line "why it was planned", the
 // platforms it targets, and its article link.
 //
-// Shared because there are now two review surfaces reading the same rows — the
-// web desk (admin-review/index.ts) and the Linear mirror (marketing/lib/linear.mjs).
-// When these lived only in the desk, the mirror would have had to restate them,
-// and the day someone added a post type the two surfaces would have started
-// describing the same post differently. The "why" is the thing an operator
-// actually reads before approving, so it is exactly the wrong thing to fork.
-//
+// Shared by the review tools and planning flow.
 // Plain JS, no types and no imports, so Deno and Node can both take it as-is.
 
 export const SITE_URL = 'https://theplot.tv';
