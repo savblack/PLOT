@@ -33,7 +33,7 @@ const cardsFor = (media, channel) => media.filter((m) => !m.channels || m.channe
  * NOT `scheduled_for.slice(0, 10)`. An evening Eastern instant is already the
  * next UTC date, so slicing the UTC string names the day after the one the
  * post is for. This matches dueDateFor() in
- * supabase/functions/_shared/linearIssue.js, so the card and the Buffer post
+ * supabase/functions/_shared/reviewTitle.js, so the card and the Buffer post
  * agree about what day it is.
  */
 export const publishDay = (post) =>

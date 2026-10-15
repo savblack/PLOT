@@ -19,7 +19,7 @@ Copy is written by a CLI model worker (Claude Code in CI).
 or docs plans a product changelog, release-notes feed, or "what's new" post.
 The only "changelog" mentions are Dependabot's instruction to read a dependency
 changelog, and a research note about Expo. Confirm whether a changelog lives
-outside the repo (Linear, a doc, a manual Buffer post).
+outside the repo (a private note or a manual Buffer post).
 
 ---
 
@@ -33,11 +33,11 @@ outside the repo (Linear, a doc, a manual Buffer post).
    it again before the top-up, and will not queue the post on a raw TMDB still.
    Sunday evening Eastern, a separate job writes the trending snapshot the
    Monday chart reads.
-2. Within about five minutes, a database job opens one Linear card per website
-   article (team PLO, project Content Automation).
+2. Within about five minutes, a database job opens one private Notion page per website
+   article.
 3. You edit or delete the social captions in Buffer. Buffer sends them on the
    day the planner chose, at an hour Buffer's own schedule picked.
-4. You approve or reject the article in Linear. That
+4. You approve or reject the article in Notion. That
    decision is about theplot.tv only. It does not pull a post out of Buffer.
 5. On the article's day, if it was approved, it appears on
    [theplot.tv/whats-on](https://theplot.tv/whats-on).
@@ -55,7 +55,7 @@ The two halves do not gate each other. That is deliberate. See
 renders images, and starts the Buffer queue.
 
 **Trigger.** GitHub Actions schedule, plus manual "Run workflow", plus the
-Linear comment `/generate` (which dispatches this same workflow).
+Notion comment `/generate` (which dispatches this same workflow).
 
 **Schedule.** Cron `30 0 * * 0` in [`.github/workflows/marketing-weekly-batch.yml`](../../.github/workflows/marketing-weekly-batch.yml).
 That is 00:30 UTC Sunday, Saturday evening Eastern, and still before 9:00am ET
@@ -104,7 +104,7 @@ Resend.
 4. Claude reads [`marketing/copy/AGENT.md`](../../marketing/copy/AGENT.md) and each brief, searches the web for the article, and writes one JSON file per post. It runs in a temp folder so it cannot see `.env`.
 5. `save.mjs` checks the JSON against the copy contract. Bad copy is rejected and that post stays `planned`. Good copy is stored as both `copy` (what we will use) and `generated_copy` (what the model first wrote), and the row moves to `copy_ready`. A rejection does not stop the rest of the week. The workflow still fails at the end so the rejected files are visible. On 4 October 2026 this exit used to happen *before* rendering, which is why a week reached `copy_ready` with `media` null.
 6. Playwright screenshots the HTML card templates into portrait (1080x1350) and landscape JPEGs and uploads them to `marketing/<post id>/card-0-portrait.jpg` and `card-0-landscape.jpg`. The website hero is a plain TMDB still, not the branded card. Trending charts are the exception: the branded chart is the hero. `question` posts stay text-only. `guide` posts get no social card.
-7. The script emails you with links to Linear and Buffer when something new needs article review.
+7. The script emails you with links to Notion and Buffer when something new needs article review.
 8. It then pushes social copy into Buffer for posts whose cards exist. It does not wait for you to approve the article. It does not attach a TMDB still when the card is missing. Those rows stay `queued` and the daily job renders them again.
 
 Local equivalent: `pnpm run mkt:plan` through `mkt:generate` and `mkt:schedule`, or from `marketing/`: `pnpm run weekly`. Local runs default to Codex, not Claude. Pass `--copy-runner=claude` to match CI.
@@ -132,7 +132,7 @@ Nothing in this repo sends social posts itself anymore.
 
 1. The script reads posts in `needs_review` or `approved` that are not yet in Buffer, soonest day first. Article approval is not required. `needs_review` is enough.
 2. A post that has a card template and no portrait plus landscape file in `media` is not pushed. The publication stays `queued`, the post's `error` says the cards are missing, and the run fails after the other posts are handled so the miss is mailed. Questions are text-only and are pushed without an image. Guides are not given publication rows by the renderer.
-3. If `marketing_settings.publishing_paused` is true, it stops. Posts already in Buffer still go out. `/pause` in Linear sets that flag. It does not empty the queue.
+3. If `marketing_settings.publishing_paused` is true, it stops. Posts already in Buffer still go out. `/pause` in Notion sets that flag. It does not empty the queue.
 4. The day is fixed by the planner, because the caption talks about that day ("aired last night", "14 days until"). The planner stores 9:00am Eastern. The hour Buffer sends comes from that channel's posting schedule, applied as Eastern Time on the post's ET day. Any timezone Buffer reports is ignored. If a channel has no schedule that weekday, the fallback hour is 9:00am ET (`SEND_HOUR_ET` in `payload.mjs`).
 5. Buffer's plan holds about 10 scheduled posts per channel. A week is about 16 per channel, so the push fills a rolling window of roughly four days. The rest stay `queued` in the database until a later run.
 6. A full queue is normal. The job reports the leftover count instead of failing. Missing cards are not normal. That count fails the run.
@@ -170,115 +170,18 @@ Guides have no Buffer rows, so this job never sees them. IndexNow is not called 
 
 ---
 
-## 4. Linear mirror (open and file the article cards)
+## 4. Notion article review
 
-**What it is.** Keeps the Linear board matched to the database. One card per website article. Question posts (social only, no article) get no card.
+The private What's On review database is the article review surface. The
+`marketing-notion-mirror` cron creates and refreshes pages every five minutes;
+`marketing-notion-sync` handles signed webhook deliveries. Both use
+`supabase/functions/_shared/notionReview.js` and `reviewCommands.js`. The
+marketing database ID and `NOTION_TOKEN` are Supabase Edge secrets. See
+`marketing/REVIEW.md` for the schema, commands, and setup steps.
 
-**Trigger.** `pg_cron` job `marketing-linear-mirror`, every 5 minutes, calling the edge function over `pg_net`.
-
-**Schedule.** Defined in [`supabase/migrations/20260912090000_schedule_linear_mirror.sql`](../../supabase/migrations/20260912090000_schedule_linear_mirror.sql).
-
-**Entrypoints.** [`supabase/functions/marketing-linear-mirror/index.ts`](../../supabase/functions/marketing-linear-mirror/index.ts). Issue body HTML is built in [`supabase/functions/_shared/linearIssue.js`](../../supabase/functions/_shared/linearIssue.js).
-
-**Secrets (Supabase edge function secrets, not GitHub).** `LINEAR_API_KEY`, Vault secrets `edge_webhook_bearer` and `edge_webhook_base_url` (the cron uses these). Optional: `LINEAR_MARKETING_TEAM_ID`, `LINEAR_MARKETING_PROJECT_ID`, `LINEAR_REVIEW_STATE`, `LINEAR_SCHEDULED_STATE`, `LINEAR_REJECTED_STATE`, `LINEAR_PUBLISHED_STATE`, `GH_REPO`, `GH_DISPATCH_TOKEN_CONTENT`, `GH_DISPATCH_TOKEN_WEBSITE`, `GH_DISPATCH_TOKEN` (legacy fallback), `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`, `MARKETING_LINEAR_ENABLED`.
-
-`MARKETING_LINEAR_ENABLED` defaults to on. Set it to `off` (`0`, `false`, or `no` also count) only after the Notion database in section 5a has been used for a real week. Article create, refresh, and column moves stop. The Monday website-refresh PR card still gets filed.
-
-**Outputs.** Linear issues in team PLO, project Content Automation. States, by name: Review, Scheduled, Canceled, Published. A website-refresh card for the Monday timeline PR (section 8), marked urgent. `marketing_batch_runs` rows with `run_type = 'linear_mirror'`. `marketing_posts.linear_sync_error` when a card fails. Once a day (first sweep after 06:00 UTC) it probes the two GitHub tokens and emails if one is dead.
-
-**Dependencies.** Linear API, GitHub API (token probe and the timeline PR card), Resend.
-
-**How it works.**
-
-1. Every five minutes it looks for article posts that need a card, a refresh, or a column move.
-2. A new post lands in Review. Approving moves it to Scheduled. When the article's day has arrived and it was cleared, the card moves to Published. Rejected cards go to Canceled.
-3. Dragging to Scheduled or Canceled is the same as `/approve` and `/reject`. Dragging to Published does nothing. The sweep decides "live", not the board.
-4. It does not talk to Buffer.
-5. Idle sweeps are pruned after 24 hours. The newest row is kept, so a dead cron shows up as a stale timestamp rather than an empty table.
-
-Dry run (writes nothing):
-
-```sh
-curl -sX POST "$SUPABASE_URL/functions/v1/marketing-linear-mirror" \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-  -H 'Content-Type: application/json' -d '{"dry_run": true}'
-```
-
----
-
-## 5. Linear sync (your comments change the database)
-
-**What it is.** The other half of the board. Linear sends a webhook when you comment or drag a card. This function applies it.
-
-**Trigger.** Linear webhook on Comments and Issues, pointed at `<SUPABASE_URL>/functions/v1/marketing-linear-sync`.
-
-**Entrypoints.** [`supabase/functions/marketing-linear-sync/index.ts`](../../supabase/functions/marketing-linear-sync/index.ts), command parser [`supabase/functions/_shared/linearCommands.js`](../../supabase/functions/_shared/linearCommands.js).
-
-**Secrets.** `LINEAR_WEBHOOK_SECRET`, `LINEAR_API_KEY`, `LINEAR_OPERATOR_USER_IDS`, `GH_DISPATCH_TOKEN_CONTENT`, `GH_DISPATCH_TOKEN_WEBSITE`, `GH_DISPATCH_TOKEN` (legacy), `GH_REPO`. Set `LINEAR_OPERATOR_USER_IDS` to the comma-separated Linear user IDs permitted to make review decisions before deploying this function. Missing or unmatched IDs make comment commands and issue state decisions inert. The webhook HMAC authenticates Linear as sender; the operator list checks the comment author (`data.userId`) or the issue state-change actor. Gateway JWT check is off because Linear does not send a Supabase JWT. Pinned in [`supabase/config.toml`](../../supabase/config.toml).
-
-**Outputs.** Updates to `marketing_posts` (status, copy, day). Audit rows in `marketing_review_events` with actor `linear`. A bot reply on the issue. For `/generate`, `/publish-now`, and `/regenerate`, a GitHub workflow dispatch. For `/approve` and `/reject` on a timeline-refresh card, a merge or close of that PR.
-
-**Dependencies.** Linear, GitHub Actions, the copy schema (a `/copy` edit that fails validation is refused and nothing is saved).
-
-**How it works.** Comment on the card. The first line is the command.
-
-| Comment | Effect |
-| --- | --- |
-| `/approve` | Article may go live on its day. Card moves to Scheduled. |
-| `/reject` | Article will not go live. Social posts in Buffer are untouched. |
-| `/unapprove` | Back to needs review. |
-| `/reschedule YYYY-MM-DD` | Moves the article's day. An unpublished URL moves with it. A live URL stays. |
-| `/publish-now` | Approves and brings the article forward to today. |
-| `/regenerate` | Throws the copy away so the worker rewrites it. |
-| `/copy` then `title:` / `body:` / `cta:` | Edits the article. Social fields are not accepted here. |
-| `/pause` and `/resume` | Stops or resumes new posts entering Buffer. Does not empty Buffer. |
-| `/generate` | Dispatches the Sunday workflow now. |
-| `/help` | The list, in the issue. |
-
-Leaving a card untouched means the article does not go live. It does not stop the social posts.
-
-With `MARKETING_LINEAR_ENABLED` off, a comment on an article card gets a reply that review moved to Notion, and a column drag is ignored with no reply. `/pause`, `/resume`, `/generate`, and `/help` still run. Approve and reject on a website-refresh PR card still run, including the scope check that refuses anything that is not that Monday PR.
-
-The writes live in [`supabase/functions/_shared/reviewActions.js`](../../supabase/functions/_shared/reviewActions.js). Notion calls the same module.
-
----
-
-## 5a. Notion review (stand this up beside Linear)
-
-**What it is.** A second article board, in Notion, kept in step with `marketing_posts` the way section 4 keeps Linear. One page per article. Linear keeps working until you set `MARKETING_LINEAR_ENABLED` to `off`. That secret is the switch. Merging the migration does not flip it.
-
-**Trigger.** `pg_cron` job `marketing-notion-mirror`, every 5 minutes. An optional Notion webhook on `<SUPABASE_URL>/functions/v1/marketing-notion-sync` wakes the same comparison for one page.
-
-**Schedule.** Defined in [`supabase/migrations/20261005180000_marketing_notion_review.sql`](../../supabase/migrations/20261005180000_marketing_notion_review.sql). The cron can be scheduled before the Notion secrets exist. The function then answers 200 and writes nothing.
-
-**Entrypoints.** [`supabase/functions/marketing-notion-mirror/index.ts`](../../supabase/functions/marketing-notion-mirror/index.ts), [`supabase/functions/marketing-notion-sync/index.ts`](../../supabase/functions/marketing-notion-sync/index.ts). Page body and status mapping live in [`supabase/functions/_shared/notionReview.js`](../../supabase/functions/_shared/notionReview.js). The sweep is [`supabase/functions/_shared/notionMirror.js`](../../supabase/functions/_shared/notionMirror.js). Comments reuse [`linearCommands.js`](../../supabase/functions/_shared/linearCommands.js).
-
-**Why a sweep, not webhooks alone.** Notion's webhook does not include the previous property value. Acting on the current Status would re-apply the sweep's own write, which is how a Linear description refresh once unapproved a card (PLO-421). The sweep stores `notion_observed_status` and `notion_observed_date`. A difference is the decision. Status and the scheduled date are read for every page on every tick, so a missed webhook cannot drop an approval. Slash comments are listed for posts that are not yet live and for posts whose day is within 21 days, because a comment does not bump Notion's `last_edited_time`. Older comments need the webhook, or a page edit in the same window.
-
-**Secrets (Supabase edge function secrets).** `NOTION_TOKEN` (or `NOTION_API_KEY`), `NOTION_MARKETING_DATABASE_ID`. Optional `NOTION_WEBHOOK_SECRET`. `/generate` and `/regenerate` reuse `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN`, and `GH_REPO`. The cron reuses Vault `edge_webhook_bearer` and `edge_webhook_base_url`.
-
-**Create the database.** [`marketing/setup/notion-review-db.mjs`](../../marketing/setup/notion-review-db.mjs). Parent page comes from `NOTION_PARENT_PAGE_ID`. There is no default in the script. Savannah's Growth page, under 01 · Plot, is `3ed4f244-aec7-818c-8c18-c3f1228a4525`. Share that page with the integration, dry-run, then create:
-
-```sh
-DRY_RUN=1 node --env-file=.env marketing/setup/notion-review-db.mjs
-node --env-file=.env marketing/setup/notion-review-db.mjs
-```
-
-Properties: Name, Status (Review, Scheduled, Canceled, Published), Scheduled, Article URL, Post type, Social copy, Post id. Put the printed id in `NOTION_MARKETING_DATABASE_ID`. Full steps are in [`marketing/REVIEW.md`](../../marketing/REVIEW.md).
-
-**Outputs.** One Notion page per article row that has a slug. `marketing_posts.notion_page_id` and `notion_synced_at`. Audit rows with actor `notion`. `marketing_batch_runs` with `run_type = 'notion_mirror'`. A bot comment on the page when a command needs a reply. The first real sweeps create at most 15 pages each, newest day first.
-
-**What it does not do.** Weekly website-refresh PR cards stay on Linear. Approving does not touch Buffer or `marketing_post_publications`. Social copy on the page is reference text. Edits to the page body or that property are overwritten. The public site still shows `approved`, `published`, and `partially_published` only.
-
-Dry run, after the secrets exist and before you want pages created:
-
-```sh
-curl -sX POST "$SUPABASE_URL/functions/v1/marketing-notion-mirror" \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-  -H 'Content-Type: application/json' -d '{"dry_run": true}'
-```
-
-`would_create` is the number to read.
+The former mirror cron and webhook are retired by
+`20261015140000_private_notion_intake_and_retire_linear.sql`. Historical issue
+links and audit rows remain in the database.
 
 ---
 
@@ -319,7 +222,7 @@ curl -sX POST "$SUPABASE_URL/functions/v1/marketing-notion-mirror" \
 
 **Secrets.** `VITE_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `TMDB_API_KEY`, `OMDB_API_KEY`.
 
-**Outputs.** `marketing_posts` written straight to status `published`. They show on /whats-on immediately and skip Linear review. Copy in this script is hand-written against `VOICE.md`, not generated by Claude.
+**Outputs.** `marketing_posts` written straight to status `published`. They show on /whats-on immediately and skip Notion review. Copy in this script is hand-written against `VOICE.md`, not generated by Claude.
 
 **How it works.** The workflow defaults to a dry run. You pass a from/to date, read the printed posts, then run again with "Write for real". `--reset` (which deletes every backfill post) is deliberately not exposed on the workflow.
 
@@ -327,7 +230,7 @@ curl -sX POST "$SUPABASE_URL/functions/v1/marketing-notion-mirror" \
 
 ## 8. Homepage timeline and trending hero (retired)
 
-Retired on 2026-10-13. The homepage redesign removed the watch-history timeline and the "Everything. In one place." trending panel, so `.github/workflows/timeline-refresh.yml`, `scripts/refresh-timeline.mjs` and `apps/website/data/timeline.json` were deleted. The hero and the "Coming up" card now fill themselves from `/api/discover` in the browser, so nothing needs a weekly PR. The Linear mirror's timeline-refresh card handling is now unused.
+Retired on 2026-10-13. The homepage redesign removed the watch-history timeline and the "Everything. In one place." trending panel, so `.github/workflows/timeline-refresh.yml`, `scripts/refresh-timeline.mjs` and `apps/website/data/timeline.json` were deleted. The hero and the "Coming up" card now fill themselves from `/api/discover` in the browser, so nothing needs a weekly PR. No review card is created for this retired flow.
 
 ---
 
@@ -510,7 +413,7 @@ From [`marketing/planner/cadence.mjs`](../../marketing/planner/cadence.mjs) and 
 | Saturday | `hidden_gem` | Vote count has a floor and a ceiling so household names do not slip through. See `marketing/README.md`. |
 | Sunday | Lead question, then `on_this_day` | If the anniversary has no candidate, the fill mix. |
 
-Question posts are about a title that is already out. They are text-only, X and Threads, no article, no Linear card. If nothing released qualifies, the slot stays empty.
+Question posts are about a title that is already out. They are text-only, X and Threads, no article, no article page. If nothing released qualifies, the slot stays empty.
 
 Guides (`post_type = guide`) are extra, web-only, and not on this calendar. About four new evergreen topics per weekly run, skipped when that topic already exists.
 
@@ -530,10 +433,10 @@ There is no eval harness and no prompt registry. The Sunday learning loop that u
 | [`marketing/copy/brief.mjs`](../../marketing/copy/brief.mjs) | Turns one database row plus `VOICE.md` into the markdown brief the model sees. |
 | [`marketing/copy/enrich.mjs`](../../marketing/copy/enrich.mjs) | Research pack: TMDB, Wikipedia, OMDb ratings, starting URLs. The model may browse further for the article. Social copy is supposed to stay inside the brief's facts. |
 | [`marketing/copy/schema.mjs`](../../marketing/copy/schema.mjs) | Re-export of the shared validator. |
-| [`supabase/functions/_shared/copySchema.js`](../../supabase/functions/_shared/copySchema.js) | Field types and lengths. Used when saving model output and when applying a Linear `/copy`. |
+| [`supabase/functions/_shared/copySchema.js`](../../supabase/functions/_shared/copySchema.js) | Field types and lengths. Used when saving model output and when applying a Notion `/copy`. |
 | [`supabase/functions/_shared/articleRules.js`](../../supabase/functions/_shared/articleRules.js) | Regex rejects: em and en dashes, long quotations, "critics say" narration, British spelling in social and article copy (legal docs are exempt), audience scores, calling a rental "streaming", trivia asides, a ratings sentence as the closer, and a missing where-to-watch on streaming-type posts. |
 | [`marketing/templates/*.html`](../../marketing/templates/) plus `base.css` and `_helpers.js` | The look of the social cards, not the words. |
-| [`marketing/tests/`](../../marketing/tests/) | Unit tests for the validator, planner, Buffer payload, Linear commands, and IndexNow. These are regression checks, not scored tone evals. |
+| [`marketing/tests/`](../../marketing/tests/) | Unit tests for the validator, planner, Buffer payload, Notion commands, and IndexNow. These are regression checks, not scored tone evals. |
 
 The production prompt the CLI actually receives is short and lives in `codexPrompt` inside [`marketing/scripts/automation.mjs`](../../marketing/scripts/automation.mjs): read `AGENT.md`, write one JSON per brief, touch nothing else. The real tone instructions are inside the brief, which embeds `VOICE.md`.
 
@@ -546,37 +449,36 @@ CI installs Claude and passes `--copy-runner=claude`. A local `pnpm run weekly` 
 What you can already see:
 
 - **GitHub Actions** run history for the weekly batch, the daily reconcile, backfill, Brevo sync, and the timeline PR. Each marketing workflow emails `MARKETING_ADMIN_EMAIL` via Resend on failure, with a link to the run. The empty-queue warning is a separate email from a healthy daily run.
-- **`marketing_batch_runs`.** `generate`, `reconcile`, `linear_mirror`, and `notion_mirror` (including `idle`). These are the heartbeats for the five-minute sweeps. Query in `marketing/README.md`.
-- **`marketing_review_events`.** Approve, reject, edit, reschedule, with actor `web_desk`, `marketing_week_skill`, `linear`, or `notion`.
-- **`marketing_posts.error`, `linear_sync_error`, and `notion_sync_error`.** Per-post failure text.
+- **`marketing_batch_runs`.** `generate`, `reconcile`, and `notion_mirror` (including `idle`). The Notion mirror is the current five-minute heartbeat.
+- **`marketing_review_events`.** Approve, reject, edit, reschedule, with actor `marketing_week_skill` or `notion` (older actors remain in history).
+- **`marketing_posts.error` and `notion_sync_error`.** Per-post failure text.
 - **`sent_text` / `sent_payload` / `generated_copy`.** What the model wrote versus what Buffer sent. Nothing alerts on the diff.
-- **Linear** is still the place a person looks for articles until `MARKETING_LINEAR_ENABLED` is off. **Notion** is the board being stood up beside it (section 5a). The daily token probe emails you if `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN_WEBSITE` stops answering.
+- **Notion** is where a person reviews articles.
 - **Buffer** is the place a person looks for captions.
 - The old **admin desk** (`admin.theplot.tv`) is retired. See [`docs/ops/retire-admin-review.md`](retire-admin-review.md).
 - **Broadcast guide** (not content, listed under Adjacent) uploads a `broadcast-guide-health` artifact for 7 days. The content pipelines do not do that.
 
 Gaps:
 
-- No status page, dashboard, or Slack/Linear ping that says "Sunday batch succeeded, 14 posts in Buffer, 11 articles in Review". Success is the absence of an email.
+- No status page, dashboard, or chat ping that says "Sunday batch succeeded, 14 posts in Buffer, 11 articles in Review". Success is the absence of an email.
 - The Sunday job's own failure email cannot send if GitHub refuses it a runner. The daily queue check is the backup. That check is requested at 02:00 UTC and often starts hours later, still before 9:00am ET.
 - Cron comments and real start times disagree by several hours. Buffer sends at the Eastern hour it was given. The reconcile catching up is a later clock. A post stored at 9:00am ET can already be in Buffer at a different ET hour from that channel's schedule.
-- No alert when Linear mirror heartbeats stop, unless someone runs the SQL.
+- No alert when Notion mirror heartbeats stop, unless someone runs the SQL.
 - No alert when Claude's pinned CLI version breaks a flag. That class of failure has already taken down a batch. The preflight in `cli-runner.mjs` helps only once the job is running.
 - Social analytics are dark (section 13). You cannot see which tone is working from inside this system.
 - IndexNow failures are a log line, not an email. Guides never enter that path.
-- `marketing_review_events` once silently dropped every Linear action because the actor check rejected `linear`. The migration fixed it. The pattern (log write wrapped so it cannot fail the action) means a future logging bug stays invisible.
 
 ---
 
 ## Pain points for tone, correction, and evals
 
 1. **Tone changes only when a person edits a markdown file.** The automated loop that was supposed to learn from shipped copy never applied a single week. `generated_copy` and `sent_text` are write-only history.
-2. **Three places can change words, and only two are checked.** The model and a Linear `/copy` go through `articleRules.js`. A Buffer edit does not. The caption that ships can be one you typed in a hurry, and the next brief will not know you preferred it.
-3. **Rejecting an article does not stop the post.** Correcting tone on the website leaves the social caption live unless you also delete it in Buffer. The review email and the Linear card do not show the social copy, on purpose. The Notion page does, as read-only reference, and still cannot edit the caption.
+2. **Three places can change words, and only two are checked.** The model and a Notion `/copy` go through `articleRules.js`. A Buffer edit does not. The caption that ships can be one you typed in a hurry, and the next brief will not know you preferred it.
+3. **Rejecting an article does not stop the post.** Correcting tone on the website leaves the social caption live unless you also delete it in Buffer. The Notion page shows social copy as read-only reference; captions are edited in Buffer.
 4. **There is no eval set.** Tests lock regexes (no em dash, no "according to", where-to-watch present). They cannot tell a warm specific note from a flat one that happens to pass. There is no labelled set of good and bad posts, no score, and no "run the new prompt on last month's briefs and diff".
 5. **Two models.** CI is Claude (pinned CLI `2.1.226`). Local default is Codex. A prompt change tested locally is not the prompt that will run on Sunday unless you pass `--copy-runner=claude`.
 6. **Regenerate is all or nothing.** `/regenerate` throws the copy away. There is no "rewrite the closer, keep the rest" in the production path. `sweep-closer.mjs` and `rewrite-published.mjs` are one-off scripts for that kind of repair.
-7. **Guides and questions sit outside the review you see.** Guides have an article and a card but no social preview. Questions have social and no card. A tone pass that only reads Linear misses the questions. A pass that only reads Buffer misses the guides.
+7. **Guides and questions sit outside the review you see.** Guides have an article and a card but no social preview. Questions have social and no card. A tone pass that only reads Notion misses the questions. A pass that only reads Buffer misses the guides.
 8. **Nothing closes the loop.** The Learning prep chip is gone, and so is the workflow behind it. Shipped copy still does not teach the next week. That gap is intentional until an eval loop is actually built.
 
 ---
@@ -602,15 +504,15 @@ Documentation only. None of this is built here.
 ### a. Make the system understandable
 
 1. Treat this file plus `marketing/README.md` as the pair: map here, weekly operating steps there. When a workflow changes, update both.
-2. Add one diagram to the Sunday review email: article path (Linear to /whats-on) and social path (Buffer), and the sentence "rejecting the card does not delete the posts".
+2. Add one diagram to the Sunday review email: article path (Notion to /whats-on) and social path (Buffer), and the sentence "rejecting the card does not delete the posts".
 3. Decide where `/marketing-week` lives. The email tells you to run it. The repo only has `marketing/REVIEW.md`.
 4. The newsletter stays manual. The trending snapshot runs every Sunday evening Eastern (section 10).
 
 ### b. Standing health visibility
 
-1. One daily note, not another inbox rule to ignore: batch succeeded or not, posts queued per channel, articles sitting in Review, age of the newest `linear_mirror` heartbeat, whether the GitHub dispatch tokens probed ok. Email is enough. A dashboard can wait.
+1. One daily note, not another inbox rule to ignore: batch succeeded or not, posts queued per channel, articles sitting in Review, age of the newest `notion_mirror` heartbeat, whether the GitHub dispatch tokens probed ok. Email is enough. A dashboard can wait.
 2. Page that note off the daily reconcile, which is the job that still runs when Sunday cannot get a runner. State the real clock (requested at 02:00 UTC, often hours later, still before 9:00am ET) so the cron comment is not the only clock.
-3. Alert when the Linear heartbeat is older than about ten minutes. The SQL already exists. Nothing sends it.
+3. Alert when the Notion heartbeat is older than about ten minutes. The SQL already exists. Nothing sends it.
 4. Alert when IndexNow fails, and submit guide URLs when a guide's day arrives. Today they rely on the sitemap alone.
 
 ### c. Tone and an eval loop
@@ -618,7 +520,7 @@ Documentation only. None of this is built here.
 1. Keep `VOICE.md` as the source of truth. Do not revive an unattended rewriter. The last one prepared seven weeks and applied none.
 2. Start a small labelled set: 10 to 20 briefs with a human "ship / rewrite" and a one-line reason, checked into the repo next to the voice file. Run the pinned Claude CLI against them when the voice or the validator changes, and read the diff. That is the eval. Regex tests stay as the hard gate.
 3. Once a week, sample `sent_text` against `generated_copy` for posts you edited in Buffer. Those edits are the preference data the old loop wanted. Fold a rule into `VOICE.md` by hand when the same edit shows up twice.
-4. Run that sample on question posts too. They never appear on the Linear board, so they are the captions most likely to drift.
+4. Run that sample on question posts too. They never appear on the Notion board, so they are the captions most likely to drift.
 5. Pin the eval to `--copy-runner=claude` so it matches Sunday.
 
 ---
@@ -631,7 +533,6 @@ These are ambiguous from the repo alone.
 2. **Newsletter cadence.** The code is explicit that there is no schedule and that the product must not promise one. Is "I run it when I want an issue" still the plan?
 3. **Social analytics.** The Meta insights path is gone and the report script is manual. Should reach stay a Buffer-side glance, or is a replacement in scope?
 4. **`/marketing-week`.** The review email names it. The skill is not in the repo. Is it a local Claude command you still use, or is `marketing/REVIEW.md` the thing to point at?
-5. **Empty timeline notes.** The Monday PR auto-merges even when the new title has no joke. The Linear card is only a record. Is that still what you want?
 6. **Guide indexing.** Guides do not pass through Buffer, so IndexNow does not hear about them. Is the sitemap enough?
 
 ---

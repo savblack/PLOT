@@ -1,7 +1,7 @@
 // The copy contract lives in supabase/functions/_shared/copySchema.js so that
 // both runtimes share ONE definition: the Node pipeline (save.mjs, pull.mjs)
 // imports it through here, and the Deno edge function that applies copy edits
-// from Linear comments imports it directly.
+// from Notion comments imports it directly.
 //
 // It moved rather than being duplicated on purpose. schema.mjs has always been
 // "the validation boundary every worker's output must pass"; a second copy in

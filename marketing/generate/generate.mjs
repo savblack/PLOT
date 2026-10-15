@@ -11,9 +11,9 @@
 // Approval is the article gate, not the Buffer gate.
 //
 // Posts reaching 'needs_review' are picked up within five minutes by the
-// marketing-linear-mirror Edge Function, which opens the Linear issue the week
+// marketing-notion-mirror Edge Function, which opens the Notion page for the week
 // is reviewed on. That is a scheduled sweep rather than anything this script
-// calls, so the Linear credential lives only in Supabase and a Linear outage
+// calls, so the Notion credential lives only in Supabase and an outage
 // cannot fail a render run.
 import { getSupabase } from '../lib/supabase.mjs';
 import { renderCard, closeBrowser } from '../lib/render.mjs';
@@ -134,27 +134,23 @@ const applyAnnounceState = async (supabase, post) => {
   await supabase.from('marketing_tracked_titles').update(update).eq('id', announce.tracked_id);
 };
 
-// Team PLO, project Content Automation. Resolved from Linear, not guessed.
-// The mirror writes each post's linear_issue_url a few minutes after this
-// email, so the message links the project rather than a card that does not
-// exist yet. There is no per-organization Buffer queue URL in the database.
-const LINEAR_PROJECT_URL = 'https://linear.app/savblack/project/content-automation-2ce2d56ced11';
 const BUFFER_URL = 'https://publish.buffer.com';
+const NOTION_URL = process.env.NOTION_MARKETING_DATABASE_ID
+  ? `https://www.notion.so/${process.env.NOTION_MARKETING_DATABASE_ID.replace(/-/g, '')}`
+  : null;
 
-// Ping the admin that the week's posts are ready to review. Articles are
-// judged in Linear. Captions are judged in Buffer. The admin desk is not a
-// review link in this email.
 const notifyReview = async (count) => {
   if (!count) return;
+  const notionLink = NOTION_URL
+    ? `<a href="${NOTION_URL}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9999px;font-weight:600;display:inline-block;">Open articles in Notion</a>`
+    : '<span>Review articles in the private Notion database.</span>';
   const html = `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
     <h1 style="font-size:1.25rem;">${count} post${count > 1 ? 's' : ''} ready to review</h1>
     <p style="font-size:.95rem;line-height:1.6;">This week's articles and social posts are generated.</p>
-    <p style="margin:20px 0 8px;">
-      <a href="${LINEAR_PROJECT_URL}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9999px;font-weight:600;display:inline-block;">Open in Linear</a>
+    <p style="margin:20px 0 8px;">${notionLink}
       <a href="${BUFFER_URL}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9999px;font-weight:600;display:inline-block;margin-left:8px;">Open in Buffer</a>
     </p>
-    <p style="font-size:.95rem;line-height:1.6;">Articles show up in Linear within about five minutes, one card each, in <strong>Content Automation</strong>. Comment <code>/approve</code>, or <code>/copy</code> with the lines you want changed. Leaving a card untouched keeps that article off theplot.tv.</p>
-    <p style="font-size:.95rem;line-height:1.6;">Social posts are already in Buffer, dated for their Eastern Time day, as many as the queue will hold. Edit, move, or delete them there. Buffer sends them. Approving an article does not change the caption.</p>
+    <p style="font-size:.95rem;line-height:1.6;">Articles appear in Notion after the next review sweep. Approve or edit them there. Social posts are in Buffer; approving an article does not change the caption.</p>
   </div>`;
   try {
     await sendEmail({ to: ADMIN_EMAIL, subject: `Plot marketing: ${count} post(s) ready to review`, html });

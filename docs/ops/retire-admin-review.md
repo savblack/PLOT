@@ -1,6 +1,6 @@
 # Retire the admin desk
 
-Articles are reviewed in Linear. Social posts are reviewed in Buffer. The hosted
+After the Notion cutover, articles are reviewed in Notion. Social posts remain in Buffer. The hosted
 desk at `admin.theplot.tv` (`supabase/functions/admin-review`) is retired.
 
 **Status:** retired in production (2026-09-22). Code on `main` (#1018). Cutover
@@ -12,8 +12,8 @@ replacement from July 2026. Do not revive it.
 ## What already works without the desk
 
 1. `marketing-weekly-batch.yml` plans the week, writes copy, renders cards, and pushes social posts into Buffer.
-2. `marketing-linear-mirror` opens one Linear card per website article (team PLO, project Content Automation).
-3. `marketing-linear-sync` applies `/approve`, `/reject`, `/copy`, and the other slash commands.
+2. `marketing-notion-mirror` opens one private Notion page per website article.
+3. `marketing-notion-sync` applies `/approve`, `/reject`, `/copy`, and the other slash commands.
 4. Buffer holds captions as drafts and sends the ones you approve there.
 5. `marketing-publish.yml` reconciles Buffer and tops the queue up.
 6. `/pause` stops **new** posts entering Buffer. Drafts already there send only if approved in Buffer.
@@ -51,9 +51,9 @@ still has the source, plus re-set the two secrets.
 
 | Check | Pass |
 | --- | --- |
-| Linear Content Automation | Opens; `/approve` only changes article status |
+| Private Notion review database | Verify one page and one approval after cutover |
 | Buffer | Queue opens |
-| Weekly email after next batch | Linear + Buffer buttons only |
+| Weekly email after next batch | Verify Notion + Buffer links after cutover |
 | theplot.tv / app.theplot.tv | Unchanged |
 | admin.theplot.tv | DNS fail, Cloudflare error, or 410. Not homepage / desk / 502 |
 | `…/functions/v1/admin-review` | 404 |
@@ -63,13 +63,12 @@ still has the source, plus re-set the two secrets.
 - `auth_fail_attempts` (signup-bypass and media-sync use it)
 - `marketing_review_events`, `marketing_posts`, `marketing_settings`
 - empty `operator_*` tables (`docs/ops/operator-desk-shelved.md`)
-- `GH_DISPATCH_TOKEN_CONTENT` (Linear `/generate` and `/regenerate`)
+- `GH_DISPATCH_TOKEN_CONTENT` (Notion `/generate` and `/regenerate`)
 
 ## History (why this existed)
 
 The desk was a password-gated HTML control room that could approve/reject and also
-rewrite publication rows (re-queue on approve, skip captions on reject). Linear was
-built to mirror it, then the Buffer split made Linear article-only. Using the desk
+rewrite publication rows (re-queue on approve, skip captions on reject). The old review board mirrored it, then the Buffer split made article review separate. Using the desk
 after that could double-post or suppress captions. Phase 1 stopped the docs and
 email from sending people there. This teardown removes the host and the function
 source; production undeploy closes the raw function URL.

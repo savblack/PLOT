@@ -26,10 +26,9 @@ import {
   applyArticleAction,
   commandForStatusName,
   guardIncomingStatus,
-  linearArticlesEnabled,
   mergedCopyForEdit,
 } from '../../supabase/functions/_shared/reviewActions.js';
-import { buildTitle } from '../../supabase/functions/_shared/linearIssue.js';
+import { buildTitle } from '../../supabase/functions/_shared/reviewTitle.js';
 
 const NOW = new Date('2026-10-05T00:00:00.000Z');
 const FUTURE = '2026-10-08T12:00:00.000Z';
@@ -86,7 +85,7 @@ function fakeSupabase() {
   };
 }
 
-test('status names map the same way Linear columns do', () => {
+test('status names map to article actions', () => {
   assert.equal(commandForStatusName('Scheduled'), 'approve');
   assert.equal(commandForStatusName('Approved'), 'approve');
   assert.equal(commandForStatusName('Canceled'), 'reject');
@@ -273,18 +272,6 @@ test('approve, reject, and publish-now do not touch publication rows', async () 
   }
 });
 
-test('the linear edit reply stays the sentence the webhook already sends', async () => {
-  const db = fakeSupabase();
-  const result = await applyArticleAction(db, post(), {
-    command: 'edit',
-    fields: { page_title: 'A quieter headline for Warrior' },
-  }, { actor: 'linear', surface: 'linear' });
-  assert.equal(
-    result.reply,
-    'Updated **page_title**. The database has your text now; the issue body above catches up within five minutes.',
-  );
-});
-
 test('reschedule writes 9:00am Eastern and does not touch publications', async () => {
   const db = fakeSupabase();
   await applyArticleAction(db, post(), { command: 'reschedule', date: '2026-10-12' }, { actor: 'notion' });
@@ -317,15 +304,6 @@ test('comment polling stays on the open review set', () => {
   assert.equal(shouldPollComments(post(), NOW), true);
   assert.equal(shouldPollComments(post({ status: 'approved', scheduled_for: PAST }), NOW), false);
   assert.equal(shouldPollComments(post({ status: 'approved', scheduled_for: '2026-10-01T12:00:00.000Z' }), NOW), true);
-});
-
-test('Linear article review stays on unless the flag is explicitly off', () => {
-  assert.equal(linearArticlesEnabled(undefined), true);
-  assert.equal(linearArticlesEnabled(''), true);
-  assert.equal(linearArticlesEnabled('true'), true);
-  assert.equal(linearArticlesEnabled('false'), false);
-  assert.equal(linearArticlesEnabled('off'), false);
-  assert.equal(linearArticlesEnabled('0'), false);
 });
 
 test('the database schema is created from config, not a built-in parent page', () => {
@@ -422,7 +400,7 @@ test('a stored hash from the old title still repaints, and that is not a status 
   assert.equal(parsed.title, 'Warrior still hits harder than the poster');
   assert.equal(parsed.shape, BODY_SHAPE);
 
-  // The previous fingerprint used the Linear title and had no shape field.
+  // The previous fingerprint used a dated title and had no shape field.
   // The Commands block was not in the hash, so removing it alone would not
   // have moved this string.
   const previous = JSON.stringify({

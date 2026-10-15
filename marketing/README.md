@@ -10,27 +10,17 @@ Every post has two halves, and they are reviewed in different places.
 2. The social copy is pushed into **Buffer** as dated **drafts**. You review,
    edit and approve them there; Buffer sends what you approve. Nothing goes out
    on its own.
-3. The website article is reviewed in **Linear** — one issue per post, in team
-   PLO, project **Content Automation**. Approving a card puts the piece on
-   theplot.tv; rejecting keeps it off.
+3. The website article is reviewed in the private **Notion** database.
+   Approving it puts the piece on theplot.tv; rejecting keeps it off.
 
 **Neither half gates the other.** A rejected article does not pull its posts out
 of Buffer, and a failed send does not take the article off the site. This is
 deliberate: each surface controls what it can actually show you, and nothing
 claims a power it does not have.
 
-The split is the point. Buffer has the character counter, the preview and the
-calendar, so it is where a caption should be judged; it has no idea the article
-exists. Linear can render 600 words of prose, so it is where the writing should
-be judged; it cannot show you how a tweet will look.
-
-Articles are reviewed in Linear. A Notion database is being stood up beside
-that board (`marketing-notion-mirror`, documented in `docs/ops/gtm-automations.md`
-section 5a and `marketing/REVIEW.md`). Linear stays the live article board until
-the edge secret `MARKETING_LINEAR_ENABLED` is set to `off`. Social posts are
-reviewed in Buffer. The hosted desk at `admin.theplot.tv` is retired: see
-`docs/ops/retire-admin-review.md`. The database is what Linear, Notion, and
-Buffer all write.
+The split is the point. Buffer is where captions are judged. The private
+Notion What's On review database is where article writing is judged. The
+retired admin desk is documented in `docs/ops/retire-admin-review.md`.
 
 The voice and spec rules in `VOICE.md` and `copy/AGENT.md` are maintained by
 hand. An automated Sunday learning loop used to rewrite them from the previous
@@ -61,18 +51,12 @@ Sunday evening Eastern
      5:30pm ET during standard time)
   -> the Monday trending post and the chart page both read that row
 
-Every 5 minutes (pg_cron -> marketing-linear-mirror)
-  -> opens a Linear issue for each post's ARTICLE
-  -> re-renders issues whose post changed
-  -> files every card in the state its row says it belongs in,
-     including Done once the post is finished
+Every 5 minutes (pg_cron -> marketing-notion-mirror)
+  -> creates or updates one private Notion page per website article
+  -> applies status, date and slash-command comments to marketing_posts
 
 Any time, in Buffer
-  -> you edit, reschedule or delete the social posts themselves
-
-Any time, in Linear
-  -> you comment /approve, /copy, /reject ... on the issue
-  -> marketing-linear-sync applies it to marketing_posts
+  -> edit, reschedule or delete social posts
 
 Daily, before 9:00am ET
   -> marketing-publish.yml asks Buffer what happened and writes it down,
@@ -85,16 +69,9 @@ Nothing sends any more. Buffer sends. The daily run exists to find out what it
 did — Buffer has no webhook, so a post that went out, failed, was rewritten or
 was deleted reaches the database only because that run goes and asks.
 
-Nothing in the GitHub workflows talks to Linear. Both halves are Edge Functions,
-so the Linear credential exists once, as a Supabase secret — and a Linear outage
-can never fail a render or a publish run.
-
 ## Operator surfaces
 
-- **Articles:** Linear, team PLO, project **Content Automation**
-  (`https://linear.app/savblack/project/content-automation-2ce2d56ced11`).
-  Notion (What's On review) once `NOTION_MARKETING_DATABASE_ID` is set. Both
-  write the same row until Linear article cards are turned off.
+- **Articles:** private Notion What's On review database. See `marketing/REVIEW.md`.
 - **Social posts:** Buffer (`https://publish.buffer.com`)
 - **Primary automation layer:** GitHub Actions
 - **Primary copy worker:** Claude Code CLI in CI; Codex is the local/manual default
@@ -169,7 +146,7 @@ at the Eastern Time it was given. GitHub's scheduler on this repo starts crons
 hours after the line in the file. That lag only delays the reconcile and the
 queue top-up. A 5.5 hour lag on the 02:00 UTC job is about 3:30am ET, still
 before the 9:00am ET slot the planner stores.
-- Within five minutes the mirror sweep opens a Linear issue for each post's
+- Within five minutes the mirror sweep opens a Notion page for each post's
   article, in **Review**.
 - **Leaving a card untouched means the article does not go live.** The social
   posts are separate: they sit in Buffer as drafts and go out only once you
@@ -214,262 +191,18 @@ enforced on an edit you make there. Buffer has a character counter, so the 280
 limit looks after itself, but the rules a counter cannot see — no URLs on X, no
 "this Friday" on a post that runs a fortnight out — are yours to hold. That is
 the same trade the web desk already makes, and the reason a `/copy` comment in
-Linear is validated and a Buffer edit is not.
+Notion is validated and a Buffer edit is not.
 
 The reconcile run notices an edit and records the text that actually went out, so
 `sent_text` stays true even when it no longer matches the copy we generated.
 
-### Reviewing in Linear
+### Reviewing articles in Notion
 
-**The card is the article.** The headline, the body, the hero, the sources, and
-the reason this pick was made. The social copy is not on it — not folded away,
-not shown read-only, not there. Those posts are in Buffer and reviewed in Buffer;
-a card that reproduced them could not change them, and showing them only invited
-the belief that it could.
-
-**Social-only posts get no card.** `question` posts have no website article —
-they never get a slug and never appear on theplot.tv, they exist purely as
-conversation starters on social. Since the board stopped showing social copy,
-their card said "No article written yet." and nothing else: an approval prompt
-for a page that does not exist, three a week. The sweep now opens cards only for
-posts with a slug, which is exactly the set that has an article (across 226 posts
-the split is clean — `question` on one side, every other type on the other).
-
-Comment on the issue. The first line is the command:
-
-| Comment | What it does |
-| --- | --- |
-| `/approve` | The article goes live on its day — the card moves to **Scheduled** |
-| `/reject` | The article will not go live |
-| `/unapprove` | Back to needs_review |
-| `/reschedule 2026-09-18` | Moves the article's day. An unpublished post's URL moves with it; a live URL stays |
-| `/publish-now` | Approves and brings the article forward to today |
-| `/regenerate` | Throws the copy away; the worker rewrites it |
-| `/pause` · `/resume` | Stops posts entering the Buffer queue — every post, not just this one |
-| `/generate` | Build the coming week now, instead of waiting for Sunday |
-| `/help` | The list, in the issue |
-
-None of these reach into Buffer. `/approve` and `/reject` decide the website
-piece and nothing else; `/pause` stops new posts *entering* the queue but cannot
-empty it. Changing or dropping a post that is already scheduled is done in
-Buffer, on the post.
-
-`/retry` is gone. It re-queued failed publication rows, which is a question about
-sending. Use the `retry_failed` input on `marketing-publish.yml`.
-
-`/pause`, `/resume`, `/generate` and `/help` act on the whole pipeline rather
-than on one post, so you can comment them on any card in the project — including
-a finished one. That matters most for `/generate`, which exists for the moment
-when there is nothing on the board to comment on.
-
-`/generate` dispatches `marketing-weekly-batch.yml`, the same run Sunday's cron
-fires: planning, copy and rendering take a few minutes, then the cards appear
-within five minutes of that finishing. Safely repeatable — the workflow's
-concurrency group queues a second run rather than racing it, and the pipeline
-only fills posts that still need copy. Needs `GH_DISPATCH_TOKEN_CONTENT`; without it the
-bot says so rather than failing quietly.
-
-To edit the article, comment `/copy` and then only the lines you want changed —
-anything you leave out stays as it is:
-
-```text
-/copy
-title: the new article headline
-body:
-First paragraph.
-
-Second paragraph.
-```
-
-`title:`, `body:` and `cta:` are the whole vocabulary. `x:`, `instagram:`,
-`threads:`, `hashtags:` and `alt:` are not fields here and never resolve to one —
-a `/copy` that only names those answers "No fields to change." The parser used to
-recognise them in order to refuse them; it does not know the words at all now,
-which is the more honest version of the same answer.
-
-The board reads left to right as the post's life: **Review → Scheduled →
-Published**, with **Canceled** for anything rejected. Backlog and Triage are
-yours; the mirror never touches them.
-
-Dragging an issue to **Scheduled** or **Canceled** does the same as `/approve`
-and `/reject`. Dragging to **Published** deliberately does nothing: a card
-reaches Done when its article is actually live, which is a thing the sweep
-works out, not a thing the board may assert.
-
-Unlike the web desk — which writes what you type, because its editor has a live
-character counter — a comment edit is validated against `copy/schema.mjs` before
-it is saved. A rejected edit changes nothing and the bot replies with why.
-
-An accepted edit lands in the database immediately; the issue body catches up on
-the next mirror sweep, within five minutes.
-
-### The weekly website refresh
-
-`timeline-refresh.yml` opens a PR every Monday to refresh the marketing site's
-timeline and hero. It used to merge itself the moment CI went green, which meant
-the human it was opened *for* — a newly appended title lands with an empty note,
-and the notes are a person's job — never saw it.
-
-It still merges itself once CI is green — that has not changed. What is new is
-that it also appears on this board within five minutes as an **Urgent** card
-carrying the PR's own body, so a week's content change is visible somewhere you
-actually look rather than only in a PR list. The card lands in Published when the
-merge happens, or Canceled if the PR is closed.
-
-The card is a record, not a gate. `/approve` is there for a refresh the automerge
-left open — a run that went red and has since been fixed — and `/reject` closes
-one you do not want. Both re-read the PR at that moment rather than trusting the
-run from when the card was made, because a card can sit for a week while main
-moves underneath it.
-
-Both are held to the same two checks the automerge job uses: the branch must be a
-`timeline-refresh/` one and the PR must have been opened by the refresh bot. The
-PR a card points at comes from a Linear attachment, and attachments are editable
-by anyone who can edit the issue — without those checks, commenting `/approve` on
-a card you had re-pointed would merge an arbitrary pull request into main. A
-comment box is not an authorization boundary.
-
-The link between card and PR is a Linear attachment, so the PR shows on the card
-in the UI and the webhook finds it by URL — there is no table of ours pairing
-them. Two GitHub tokens, one per job, because the jobs need different powers and
-neither should carry the other's:
-
-| Secret | Permission | Used for |
-| --- | --- | --- |
-| `GH_DISPATCH_TOKEN_CONTENT` | Actions: Read and write | `/generate`, `/publish-now`, `/regenerate` |
-| `GH_DISPATCH_TOKEN_WEBSITE` | Pull requests: Read and write | the website-refresh card |
-
-Each is refused by GitHub if used for the other's work, which is the point: a
-token that can merge to main has no business also being the one a slash command
-hands to a workflow dispatcher. Both fall back to the single `GH_DISPATCH_TOKEN`
-they were split out of. The daily probe checks each against its own endpoint, so
-a token that answered 200 for the wrong one would read as over-granted rather
-than healthy.
-
-Without the WEBSITE token the card simply does not appear; the rest of the sweep
-is unaffected and the run record carries `counts.pr_mirror_error`.
-
-### Setting it up
-
-No GitHub Actions secret is involved. Everything below is a Supabase secret.
-
-1. Team PLO needs workflow states named **Review**, **Scheduled**, **Canceled**
-   and **Published**. Each is resolved by name with its previous name accepted as
-   a fallback (`In Review`, `Approved`, `Done`), so renaming a column in Linear
-   is not a breaking change — there is no way to land a rename and a deploy at
-   the same instant, and the sweep throws when it cannot find the review state.
-   If one is missing outright the mirror fails loudly and lists the team's real
-   states rather than guessing.
-2. Set `LINEAR_API_KEY` as an Edge Function secret.
-3. Deploy both halves:
-   ```sh
-   supabase functions deploy marketing-linear-mirror
-   supabase functions deploy marketing-linear-sync
-   ```
-4. Apply the migrations. `20260912090000_schedule_linear_mirror.sql` schedules the
-   sweep every 5 minutes; it reuses the Vault secrets the existing database
-   webhooks already depend on, and refuses to apply if they are missing.
-5. In Linear (Settings → API → Webhooks) point a webhook at
-   `<SUPABASE_URL>/functions/v1/marketing-linear-sync` subscribed to **Comments**
-   and **Issues**, and set the signing secret it shows you as the
-   `LINEAR_WEBHOOK_SECRET` Edge Function secret.
-6. Optional: `GH_DISPATCH_TOKEN_CONTENT` so `/publish-now` and `/regenerate` take effect
-   immediately instead of waiting for the next scheduled run.
-
-**Before changing which rows the sweep selects, dry-run it.** It reports what a
-real sweep would do and touches nothing — not Linear, not the database, not the
-run log:
-
-```sh
-curl -sX POST "$SUPABASE_URL/functions/v1/marketing-linear-mirror" \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-  -H 'Content-Type: application/json' -d '{"dry_run": true}'
-# {"ok":true,"dry_run":true,"would":{"created":0,"refreshed":0,"moved":0,"reported":0}}
-```
-
-This exists because adding `published` to the creation set once turned a sweep
-meant to move a handful of cards into one that opened 161 Linear issues — and,
-through team PLO's GitHub sync, 170 issues in the repo. The blast radius of this
-function is the size of `marketing_posts`, so the cheap check comes first.
-
-A card is **complete** when its article has done everything it is going to do:
-cleared to run, and its day arrived — so it is on `/whats-on`. That is the whole
-rule, and it deliberately ignores the publication rows.
-
-It used to consult them, and the reasons it stopped are worth keeping. A card
-that waited on a send was tracking something it does not show you; once deleting
-a post in Buffer became the ordinary way to drop one, it would have waited
-forever for a send you had personally cancelled; and a guide, which has no
-publication rows at all, needed a special case to escape the same trap. One
-date-and-status question replaces all three.
-
-The row is the source of truth in both directions: a post approved or rejected
-on the web desk drags its card to Approved or Canceled on the next sweep, rather
-than the two surfaces quietly disagreeing. If the webhook is down, a card dragged
-in Linear springs back — the drag never reached the database, and that is worth
-seeing rather than hiding.
-
-Optional overrides, all Edge Function secrets: `LINEAR_MARKETING_TEAM_ID` (PLO),
-`LINEAR_MARKETING_PROJECT_ID` (Content Automation), `LINEAR_REVIEW_STATE`
-(Review), `LINEAR_SCHEDULED_STATE`
-(Scheduled), `LINEAR_REJECTED_STATE` (Canceled), `LINEAR_PUBLISHED_STATE`
-(Published). A state
-that cannot be resolved is reported in the sweep's response as `unresolved`
-rather than failing it — those moves are skipped, not misfiled.
-
-Once a day (the first sweep after 06:00 UTC) the sweep also probes
-`GH_DISPATCH_TOKEN_CONTENT` and `GH_DISPATCH_TOKEN_WEBSITE` — the PATs that let `/generate`, `/publish-now` and
-`/regenerate` take effect immediately rather than on the next cron. It is a PAT,
-so it expires, and when it did nothing said so: every command fell back to "it'll
-go on the scheduled run", which reads exactly like normal behaviour. It sat dead
-long enough that the expiry was only found by firing `/generate` and reading a
-401 out of an error message that was itself wrong about the cause.
-
-A failed probe emails the operator and lands in the run record as
-`counts.dispatch_token`. Ask for it on demand — after rotating the token, say —
-with `{"check_token": true}`, which combines with `dry_run`:
-
-```sh
-curl -sX POST "$SUPABASE_URL/functions/v1/marketing-linear-mirror" \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-  -H 'Content-Type: application/json' -d '{"dry_run": true, "check_token": true}'
-# {"ok":true,"dry_run":true,"would":{...,"dispatch_token":"ok"}}
-```
- The probe reads a workflow rather than dispatching one —
-proving write access would mean starting a real run, and a daily surprise batch
-is a worse cure than the disease — so it catches an expired or revoked token
-(401) and a permissions change (403/404), but cannot prove the token still has
-`Actions: write`.
-
-It lives here, in the sweep, rather than in a workflow step because Supabase
-holds the token, not GitHub. A workflow would need its own copy, and duplicating
-a PAT in order to watch a PAT is worse than the problem.
-
-To check the sweep is running, read `marketing_batch_runs` — every sweep lands
-there, so the newest `linear_mirror` row's timestamp is the answer. Older than
-about ten minutes means the schedule has stopped:
-
-```sql
-select started_at, status, counts, error
-from marketing_batch_runs
-where run_type = 'linear_mirror'
-order by started_at desc limit 10;
-```
-
-`idle` is a sweep that found nothing to do — most of them. Those are pruned after
-24 hours by the sweep itself; runs that created, refreshed or closed an issue, and
-runs that failed, are kept. Nothing prunes the *last* heartbeat, so a dead
-schedule shows up as a stale newest row rather than as an empty table.
-
-The cron job itself, if you need to look at it directly (requires the SQL editor —
-the `cron` schema is not reachable over PostgREST):
-
-```sql
-select jobname, schedule, active from cron.job where jobname = 'marketing-linear-mirror';
-```
-
-A post that failed to mirror carries the reason in
-`marketing_posts.linear_sync_error`, and is retried on every subsequent tick.
+The marketing Notion mirror creates one page for each website article. Review
+Status and Scheduled date there, or use `/copy`, `/approve`, `/reject`, and
+other commands in comments. Social-only questions have no article page.
+See `marketing/REVIEW.md` for the full review procedure. Social captions stay
+in Buffer. The weekly website-refresh card was retired separately in #1306.
 
 ## Hidden gems have a ceiling, not just a floor
 
@@ -580,12 +313,12 @@ Code CLI (Codex is the local/manual default):
 Copy that names a day the post's own schedule contradicts is rejected: a
 countdown 14 days out cannot say "this Friday". `validateCopy` takes the post's
 `days_until` / `when_label` and checks the claim against them, so the rule holds
-whether the copy came from the worker or from a `/copy` comment in Linear.
+whether the copy came from the worker or from a `/copy` comment in Notion.
 
 The validation boundary is `supabase/functions/_shared/copySchema.js`, re-exported
 as `marketing/copy/schema.mjs` for the Node pipeline. It lives in the functions
 tree because both runtimes now enforce it: `copy/save.mjs` on the worker's output,
-and `marketing-linear-sync` on copy edited from a Linear comment.
+and `marketing-notion-sync` on copy edited from a Notion comment.
 
 ## Setup
 
