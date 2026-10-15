@@ -244,7 +244,13 @@
   fill: var(--surface, #f1e9dc);
   transition: fill 0.3s var(--ease, ease);
 }
-.footer-wordmark:hover svg { fill: var(--surface-hover, #eadfcf); }
+/* The foil: a pastel holographic sheen over the glyphs that fades in on hover
+   and tilts with the pointer (js/footer.js steers the #footer-foil gradient).
+   Without JS the hover still shows a still sheen. */
+.footer-foil { fill: url(#footer-foil); opacity: 0; transition: opacity 0.6s var(--ease, ease); }
+.footer-wordmark:hover .footer-foil,
+.footer-wordmark:focus-visible .footer-foil,
+.footer-wordmark.is-touching .footer-foil { opacity: 1; }
 .footer-wordmark:focus-visible { outline: 2px solid var(--ink, #292924); outline-offset: -4px; }
 
 /* Only the pill carries the CSS arrow (ui.css gives every a[data-cta] one;
@@ -284,7 +290,7 @@
   .footer-col ul { gap: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .footer-cta, .footer-wordmark svg, .site-footer .footer-cta::after { transition: none; }
+  .footer-cta, .footer-wordmark svg, .footer-foil, .site-footer .footer-cta::after { transition: none; }
 }
 /* footer-css:end */
 

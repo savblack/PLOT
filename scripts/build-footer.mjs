@@ -6,6 +6,7 @@
  * website/_partials/footer.css (styles).
  *
  * Consumers kept in sync from them:
+ *   0. The markup's <script src="/js/footer.js"> gets a ?v= hash of that file.
  *   1. Static pages (website/index|about|privacy|terms.html …) — the markup is
  *      injected between the `<!-- footer:start -->` / `<!-- footer:end -->`
  *      markers and committed, so Pages keeps serving raw static files.
@@ -67,7 +68,13 @@ const FOOTER_RE = /[^\S\n]*<footer\b[\s\S]*?<\/footer>/;
 
 const check = process.argv.includes('--check');
 
-const footer = readFileSync(PARTIAL, 'utf8').replace(/\s+$/, '');
+const version = (text) => createHash('sha256').update(text).digest('hex').slice(0, 8);
+// The partial loads /js/footer.js unstamped; every consumer gets it stamped
+// with a hash of the script, for the same reason ui.css is (see below).
+const footerJs = readFileSync(join(WEB, 'js', 'footer.js'), 'utf8');
+const footer = readFileSync(PARTIAL, 'utf8')
+  .replace(/\s+$/, '')
+  .replace(/src="\/js\/footer\.js(?:\?v=[^"]*)?"/, `src="/js/footer.js?v=${version(footerJs)}"`);
 const block = `${START}\n${footer}\n${END}`;
 const css = readFileSync(CSS_PARTIAL, 'utf8').replace(/\s+$/, '');
 const cssBlock = `${CSS_START}\n${css}\n${CSS_END}`;
@@ -129,7 +136,6 @@ if (!CSS_MARKER_RE.test(uiSrc)) {
   process.exit(1);
 }
 const uiNext = uiSrc.replace(CSS_MARKER_RE, () => cssBlock);
-const version = (text) => createHash('sha256').update(text).digest('hex').slice(0, 8);
 const STAMPS = [
   ['ui.css', version(uiNext)],
   ['nav.css', version(readFileSync(join(WEB, 'nav.css'), 'utf8'))],
