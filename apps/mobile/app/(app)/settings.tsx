@@ -59,6 +59,11 @@ import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
 import { broadcastRegionLabel } from '@plot/core/broadcastGuide.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
+import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
+import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
+import { REQUESTS_FROM_OPTIONS, personName } from '@plot/core/watchTogether.js';
+import { useWatchTogether, useWatchTogetherLink } from '@plot/core/useWatchTogether.js';
+import { Avatar } from '../../components/Avatar';
 import { favoriteWords } from '../../lib/spelling';
 import { buildCalendarEvents } from '@plot/core/calendar.js';
 import { generateICS } from '@plot/core/ics.js';
@@ -374,6 +379,130 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
         <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
           onPress={() => Alert.alert(PLANS_PAGE.comingSoon, PLANS_PAGE.mobileCheckoutMessage)} />
       </View>}
+    </SettingsGroup>
+  );
+}
+
+// Settings › Privacy › Watch together. Same controls as web
+// WatchTogetherSettings: who can send requests, the people you watch with
+// (stop, and share the full watchlist while it is not already public), and
+// reset the invite link. Writes go through updateProfile and the shared RPCs.
+function WatchTogetherPrivacy({
+  userId, watchlistVisibility, onWatchlistChange,
+}: {
+  userId: string | null;
+  watchlistVisibility: string;
+  onWatchlistChange: () => void;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const S = WATCH_TOGETHER.settings;
+  const L = WATCH_TOGETHER.link;
+  const { partners, loading, setShareFull, end } = useWatchTogether(SHOW_WATCH_TOGETHER ? userId : null);
+  const { key, reset } = useWatchTogetherLink(SHOW_WATCH_TOGETHER ? userId : null);
+  const [from, setFrom] = useState<string | null>(null);
+  const [resetDone, setResetDone] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!userId) return;
+    const { data } = await supabase.from('profiles').select('watch_together_requests_from').eq('id', userId).maybeSingle();
+    setFrom(data?.watch_together_requests_from ?? 'profile');
+  }, [userId]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load the saved setting once
+  useEffect(() => { void load(); }, [load]);
+
+  if (!SHOW_WATCH_TOGETHER || !userId) return null;
+
+  const labels: Record<string, string> = {
+    profile: S.fromProfile,
+    following: S.fromFollowing,
+    none: S.fromNone,
+  };
+  const dateFmt = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+
+  const choose = async (value: string) => {
+    setFrom(value);
+    const { error } = await updateProfile({ userId, patch: { watch_together_requests_from: value } });
+    if (error) void load();
+  };
+
+  return (
+    <SettingsGroup title={S.title}>
+      <View style={styles.wtBlock} accessibilityRole="radiogroup">
+        <Text style={styles.wtLabel}>{S.whoCanRequest}</Text>
+        {REQUESTS_FROM_OPTIONS.map(value => {
+          const checked = from === value;
+          return (
+            <TouchableOpacity
+              key={value}
+              style={styles.wtOption}
+              disabled={from === null}
+              onPress={() => { void choose(value); }}
+              accessibilityRole="radio"
+              accessibilityState={{ checked, disabled: from === null }}
+              accessibilityLabel={labels[value]}
+            >
+              <View style={[styles.wtRadio, checked && styles.wtRadioOn]}>
+                {checked ? <View style={styles.wtRadioDot} /> : null}
+              </View>
+              <Text style={styles.rowLabel}>{labels[value]}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <View style={styles.wtBlock}>
+        <Text style={styles.wtLabel}>{S.partners}</Text>
+        {!loading && partners.length === 0 ? <Text style={styles.wtNote}>{S.none}</Text> : null}
+        {partners.map((person, index) => {
+          const name = personName(person);
+          const when = person.accepted_at || person.created_at;
+          return (
+            <View key={person.other_id} style={[styles.wtPartner, index > 0 && styles.wtPartnerBorder]}>
+              <View style={styles.wtPerson}>
+                <Avatar url={person.avatar_url} name={name} size={36} colors={colors} />
+                <View style={styles.wtPersonText}>
+                  <Text style={styles.rowLabel} numberOfLines={1}>{name}</Text>
+                  {when ? <Text style={styles.wtNote}>{S.since(dateFmt.format(new Date(when)), person.overlap_count ?? 0)}</Text> : null}
+                </View>
+                <TouchableOpacity
+                  onPress={() => { void end(person.other_id); }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${S.stop} ${name}`}
+                >
+                  <Text style={styles.editAction}>{S.stop}</Text>
+                </TouchableOpacity>
+              </View>
+              {watchlistVisibility !== 'everyone' && (
+                <View style={styles.wtShare}>
+                  <Text style={styles.rowLabel}>{S.shareFull}</Text>
+                  <Switch
+                    value={!!person.i_share_full}
+                    onValueChange={(next) => { void setShareFull(person.other_id, next).then(() => onWatchlistChange()); }}
+                    trackColor={{ true: colors.accent }}
+                    accessibilityLabel={`${S.shareFull}: ${name}`}
+                  />
+                </View>
+              )}
+            </View>
+          );
+        })}
+        <Text style={styles.wtNote}>{S.stopNote}</Text>
+      </View>
+      <View style={styles.wtBlock}>
+        <Text style={styles.wtLabel}>{L.kicker}</Text>
+        <View style={styles.wtPerson}>
+          <Text style={[styles.wtNote, styles.wtPersonText]}>{L.resetNote}</Text>
+          <TouchableOpacity
+            disabled={!key || resetDone}
+            onPress={() => { void reset().then(result => { if (result.ok) setResetDone(true); }); }}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !key || resetDone }}
+            accessibilityLabel={L.reset}
+          >
+            <Text style={[styles.editAction, (!key || resetDone) && styles.wtMuted]}>{L.reset}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </SettingsGroup>
   );
 }
@@ -1614,6 +1743,11 @@ export default function SettingsScreen() {
         </>}
 
         {active.id === 'privacy' && <>
+        <WatchTogetherPrivacy
+          userId={userId}
+          watchlistVisibility={watchlistVisibility}
+          onWatchlistChange={refreshWatchlistVisibility}
+        />
         <BlockedAccounts viewerId={userId} />
         <SettingsGroup title={SETTINGS_VIEW.export.label}>
           <SettingsRow
@@ -1840,6 +1974,25 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowDescription: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
   rowValue: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, maxWidth: 160 },
+  wtBlock: {
+    paddingHorizontal: spacing.lg, paddingVertical: 14, gap: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
+  },
+  wtLabel: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textSecondary },
+  wtOption: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },
+  wtRadio: {
+    width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  wtRadioOn: { borderColor: colors.accent },
+  wtRadioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
+  wtNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, lineHeight: 18, color: colors.textMuted },
+  wtPerson: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  wtPersonText: { flex: 1, minWidth: 0 },
+  wtPartner: { gap: spacing.sm, paddingTop: spacing.sm },
+  wtPartnerBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  wtShare: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, minHeight: 44 },
+  wtMuted: { color: colors.textMuted },
 
   // Appearance segmented rail — mirrors web .settings-theme-tabs
   themeTabs: {
