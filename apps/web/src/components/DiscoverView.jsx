@@ -9,6 +9,7 @@ import { todayLongLabel } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import ScrollRail from './ScrollRail.jsx';
+import PlotLogo from './PlotLogo.jsx';
 import RailArrows from './RailArrows.jsx';
 import { useRailScroll } from '../hooks/useRailScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
@@ -902,7 +903,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   const renderSection = {
     picks: () => (
       <section key="picks" id={HOME_SECTION.picks.id} className="discover-section discover-featured-section">
-        <DiscoverSectionHeader title={HOME_SECTION.picks.label} />
+        <DiscoverSectionHeader title={<><PlotLogo inherit />&rsquo;s Picks</>} />
         {pickSlides.length > 1
           ? <PicksCarousel>{pickSlides}</PicksCarousel>
           : <div className="discover-hero-row">{pickSlides}</div>}
