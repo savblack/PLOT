@@ -31,9 +31,8 @@ function RiseLetter({ index, delay, color }: { index: number; delay: number; col
   const translateY = t.interpolate({ inputRange: [0, 1, 2], outputRange: [10, 0, -6] });
   const { path, x0, x1 } = WORDMARK_LETTERS[index];
   const width = x1 - x0;
-  const overlap = index ? WORDMARK_LETTERS[index - 1].x1 - x0 : 0;
   return (
-    <Animated.View style={{ marginLeft: -overlap * UNIT, opacity, transform: [{ translateY }] }}>
+    <Animated.View style={{ overflow: 'hidden', opacity, transform: [{ translateY }] }}>
       <Svg width={width * UNIT} height={WORDMARK_INK_HEIGHT * UNIT} viewBox={`${x0} ${WORDMARK_TOP} ${width} ${WORDMARK_INK_HEIGHT}`}>
         <Path d={path} fill={color} />
       </Svg>

@@ -39,15 +39,14 @@ export default function PlotLoader({
       {...ariaProps}
     >
       <span className="plot-loader__word">
-        {WORDMARK_LETTERS.map(({ letter, path, x0, x1 }, i) => {
+        {WORDMARK_LETTERS.map(({ letter, path, x0, x1 }) => {
           const width = x1 - x0;
-          const overlap = i ? WORDMARK_LETTERS[i - 1].x1 - x0 : 0;
           return (
             <svg
               key={letter}
               className="plot-loader__letter"
               viewBox={`${x0} ${WORDMARK_TOP} ${width} ${WORDMARK_INK_HEIGHT}`}
-              style={{ width: `${width / 1000}em`, height: `${WORDMARK_INK_HEIGHT / 1000}em`, marginLeft: `${-overlap / 1000}em` }}
+              style={{ width: `${width / 1000}em`, height: `${WORDMARK_INK_HEIGHT / 1000}em`, overflow: 'hidden' }}
               fill="currentColor"
               aria-hidden="true"
             >

@@ -13,15 +13,18 @@ export const WORDMARK_PATHS = Object.freeze([
 
 /**
  * Per-letter outlines with the horizontal slice each one occupies, for
- * letter-by-letter animation (PlotLoader). The l's slice runs to x=910 so its
- * foot reaches into the o: lay the letters side by side and give each one a
- * left margin of (x0 - previous x1) font units — negative for the o.
+ * letter-by-letter animation (PlotLoader). Draw each letter in an SVG whose
+ * viewBox is its slice, so anything outside is clipped, and lay the slices
+ * side by side. The slices don't overlap: the l stops at x=775 and the o's
+ * slice also draws the l's foot from there, so the joining piece moves with
+ * the o. Overlapping slices would show a darker patch wherever two
+ * half-faded letters sit on top of each other.
  */
 /** @type {ReadonlyArray<{ letter: string, path: string, x0: number, x1: number }>} */
 export const WORDMARK_LETTERS = Object.freeze([
   Object.freeze({ letter: 'p', path: WORDMARK_PATHS[0], x0: 52, x1: 563 }),
-  Object.freeze({ letter: 'l', path: WORDMARK_PATHS[1], x0: 563, x1: 910 }),
-  Object.freeze({ letter: 'o', path: WORDMARK_PATHS[2], x0: 775, x1: 1289 }),
+  Object.freeze({ letter: 'l', path: WORDMARK_PATHS[1], x0: 563, x1: 775 }),
+  Object.freeze({ letter: 'o', path: WORDMARK_PATHS[1] + WORDMARK_PATHS[2], x0: 775, x1: 1289 }),
   Object.freeze({ letter: 't', path: WORDMARK_PATHS[3], x0: 1289, x1: 1620 }),
 ]);
 
