@@ -12,10 +12,14 @@ const ALLOWED_PATHS = [
   /^discover\/(movie|tv)$/,
   /^(movie|tv)\/\d+$/,
   /^(movie|tv)\/\d+\/(recommendations|reviews|watch\/providers)$/,
+  // Alternate posters, backdrops, and logos for Customize artwork.
+  /^(movie|tv)\/\d+\/images$/,
   /^collection\/\d+$/,
   /^person\/\d+(\/combined_credits)?$/,
+  /^person\/\d+\/images$/,
   /^watch\/providers\/(movie|tv)$/,
   /^tv\/\d+\/season\/\d+(\/episode\/\d+)?$/,
+  /^tv\/\d+\/season\/\d+\/images$/,
   /^genre\/(movie|tv)\/list$/,
 ];
 
@@ -30,7 +34,7 @@ const ALLOWED_PATHS = [
 // produce is bounded by TMDB's own pagination. Mirror any addition in
 // supabase/functions/tmdb-proxy/index.ts and in packages/core/tmdb.js.
 export const ALLOWED_PARAMS = new Set([
-  'language', 'region', 'page', 'query', 'include_adult', 'external_source',
+  'language', 'include_image_language', 'region', 'page', 'query', 'include_adult', 'external_source',
   'append_to_response', 'watch_region', 'sort_by', 'year', 'timezone',
   'primary_release_year', 'first_air_date_year',
   'with_genres', 'without_genres', 'with_keywords', 'with_watch_providers',
