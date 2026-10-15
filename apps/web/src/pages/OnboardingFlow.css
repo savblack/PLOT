@@ -433,3 +433,7 @@
 }
 .ob-chip.is-on { border-color: var(--accent); background: var(--accent-dim); color: var(--accent-text); }
 .ob-chip:disabled { opacity: 0.6; cursor: default; }
+
+/* 1b (Oct 2026): the lanes, tiles, source dialog and pill live in
+   components/ImportSourcePicker.css, shared with Settings. */
+.ob-column--import { max-width: 720px; }

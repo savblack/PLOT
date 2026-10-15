@@ -19,7 +19,8 @@ import { usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
 import { deriveFinishingTouches, finishingTouchesVisible, firstWatchlistShow, type FinishingTouchesState, type WatchlistShow } from '@plot/core/finishingTouches.js';
 import { pointerAfterEpisode } from '@plot/core/watchingProgress.js';
 import { oncePerSession } from '@plot/core/oncePerSession.js';
-import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
+import { availableImportSources } from '@plot/core/onboardingSetup.js';
+import { getConfig } from '@plot/core/config.js';
 import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
 import { FINISHING_TOUCHES as T } from '@plot/core/copy/finishingTouches.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
@@ -351,7 +352,7 @@ function ImportSourceSheet({ userId, onImported, onClose }: { userId: string; on
   }
   return (
     <BottomSheet title={T.importSheet.title} sub={T.importSheet.sub} onClose={onClose}>
-      {IMPORT_SOURCES.map(src => (
+      {availableImportSources(getConfig()).map(src => (
         <TouchableOpacity
           key={src.id}
           style={styles.source}

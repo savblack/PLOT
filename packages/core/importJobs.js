@@ -64,6 +64,21 @@ export function importJobStatusLine(job) {
   }
 }
 
+/**
+ * The one-line progress pill shown through the rest of onboarding (and the
+ * line the Home card's queue mention is built from).
+ * @param {any} job the job the worker is on
+ * @param {any[]} [queued] what waits behind it
+ * @returns {{ source: string, name: string, title: string, line: string, pct: number | null } | null}
+ */
+export function importPillFor(job, queued = []) {
+  if (!job || !importJobActive(job)) return null;
+  const name = importSourceName(job.source);
+  const pct = job.progress_total ? Math.min(100, Math.round((job.progress_done / job.progress_total) * 100)) : null;
+  const line = [importJobStatusLine(job), queued.length ? IMPORT_JOBS.card.thenNext(importSourceName(queued[0].source)) : null].filter(Boolean).join(' · ');
+  return { source: job.source, name, title: IMPORT_JOBS.card.title(name), line, pct };
+}
+
 /** @param {any} job */
 export function importJobTitle(job) {
   const C = IMPORT_JOBS.card;
@@ -100,7 +115,9 @@ async function kickWorker(jobId) {
 
 function enqueueError(error) {
   if (!error) return null;
-  if (String(error.message || '').includes('import_in_progress')) return new Error(IMPORT_JOBS.onboarding.alreadyRunning);
+  const message = String(error.message || '');
+  if (message.includes('import_in_progress')) return new Error(IMPORT_JOBS.onboarding.alreadyRunning);
+  if (message.includes('import_queue_full')) return new Error(IMPORT_JOBS.onboarding.queueFull);
   return error instanceof Error ? error : new Error(String(error.message || error));
 }
 
@@ -189,6 +206,47 @@ export async function readLatestImportJob(userId) {
   return { job: data || null, error };
 }
 
+/**
+ * The account's imports that still matter: every active job (running or
+ * queued, oldest first, which is the order the worker takes them) and any
+ * finished job the user hasn't dismissed.
+ * @param {string} userId
+ * @param {{ limit?: number }} [opts]
+ */
+export async function readImportJobs(userId, { limit = 20, history = false } = {}) {
+  if (!userId) return { jobs: [], error: null };
+  const query = supabase.from('import_jobs').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(limit);
+  if (history) query.gte('created_at', new Date(Date.now() - HISTORY_DAYS * 86400000).toISOString());
+  const { data, error } = await query;
+  const rows = data || [];
+  const active = rows.filter(importJobActive).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+  // With history, dismissed jobs stay (Settings lists them); without, only
+  // the ones the user hasn't seen off (Home's card).
+  const finished = rows.filter(row => importJobFinished(row) && (history || !row.seen_at));
+  return { jobs: [...active, ...finished], error };
+}
+/** How far back Settings lists finished imports. */
+export const HISTORY_DAYS = 90;
+
+/**
+ * A source tile's state from the account's jobs: held while its job is still
+ * to run ('importing' or 'queued'), free again (null) once it finishes.
+ * @param {any[]} jobs
+ * @param {any} current the job the worker is on
+ * @param {string} id
+ */
+export function importTileState(jobs, current, id) {
+  const job = (jobs || []).find(j => j.source === id && importJobActive(j));
+  if (!job) return null;
+  return job.id === current?.id ? 'importing' : 'queued';
+}
+
+/** The job the worker is on (or about to start), and what waits behind it. */
+export function splitImportQueue(jobs) {
+  const active = (jobs || []).filter(importJobActive);
+  return { current: active[0] || null, queued: active.slice(1) };
+}
+
 /** @param {string} jobId */
 export async function readImportJob(jobId) {
   const { data, error } = await supabase.from('import_jobs').select('*').eq('id', jobId).maybeSingle();
@@ -210,6 +268,59 @@ export async function readImportJobReview(job) {
     const parsed = JSON.parse(await data.text());
     return Array.isArray(parsed) ? parsed : [];
   } catch { return []; }
+}
+
+/**
+ * Follow every import that still matters for this account (see
+ * readImportJobs): poll while any runs and nudge the worker along.
+ *
+ * @param {string | null | undefined} userId
+ * @returns {{ jobs: any[], current: any, queued: any[], loading: boolean, active: boolean, refresh: () => Promise<void>, cancel: (jobId: string) => Promise<void>, dismiss: (jobId: string) => Promise<void> }}
+ */
+export function useImportJobs(userId, { history = false } = {}) {
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(!!userId);
+  const scope = useRef(userId);
+  const hadActive = useRef(false);
+  useEffect(() => { scope.current = userId; return () => { scope.current = null; }; }, [userId]);
+
+  const refresh = useCallback(async () => {
+    if (!userId) { setJobs([]); setLoading(false); return; }
+    const { jobs: next } = await readImportJobs(userId, { history, limit: history ? 60 : 20 });
+    if (scope.current !== userId) return;
+    setJobs(next);
+    setLoading(false);
+    const anyActive = next.some(importJobActive);
+    if (hadActive.current && !anyActive && next.some(job => importJobFinished(job) && job.imported > 0)) emit(HISTORY_CHANGED_EVENT);
+    hadActive.current = anyActive;
+  }, [userId, history]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- the first read lands when the account is known
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const { current, queued } = splitImportQueue(jobs);
+  const active = !!current;
+  const currentId = current?.id || null;
+  const currentStatus = current?.status || null;
+  useEffect(() => {
+    if (!currentId) return undefined;
+    const id = setInterval(() => {
+      refresh();
+      if (currentStatus !== 'running') void kickWorker(currentId);
+    }, POLL_MS);
+    return () => clearInterval(id);
+  }, [currentId, currentStatus, refresh]);
+
+  const cancel = useCallback(async (jobId) => { if (jobId) { await cancelImportJob(jobId); await refresh(); } }, [refresh]);
+  const dismiss = useCallback(async (jobId) => {
+    if (!jobId) return;
+    await dismissImportJob(jobId);
+    setJobs(list => (history
+      ? list.map(job => (job.id === jobId ? { ...job, seen_at: new Date().toISOString() } : job))
+      : list.filter(job => job.id !== jobId)));
+  }, [history]);
+
+  return { jobs, current, queued, loading, active, refresh, cancel, dismiss };
 }
 
 /**
