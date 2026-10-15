@@ -119,8 +119,8 @@ After the button, on web:
 
 Client-side, from a shared card component: the same JSX the carousel previews is
 captured to a PNG (html-to-image on web, `react-native-view-shot` on mobile). Not
-the plot-og Worker, which cannot run Satori renders on Workers Free and would need
-signed URLs for private stats.
+the og-card Edge Function (the link-preview renderer), which would need signed
+URLs for private stats.
 
 ## Build order
 

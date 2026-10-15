@@ -26,6 +26,11 @@ verify_jwt = false
 [functions.newsletter-subscribe]
 verify_jwt = false
 
+# Share-link OG cards, fetched by link scrapers through app.theplot.tv/og
+# (functions/og.js), which sends no user JWT.
+[functions.og-card]
+verify_jwt = false
+
 # Exceptional signup path for browsers where Turnstile has persistently
 # failed — no session exists yet when this is called (that's the point), so
 # the gateway JWT check can't apply. Does its own bot mitigation (honeypot,

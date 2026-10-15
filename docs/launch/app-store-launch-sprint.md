@@ -97,7 +97,7 @@ empty for almost everyone, so it is a bet on the import flow rather than a
 sure thing.
 
 Two render paths, expressed from one template so they cannot drift: server-side via
-the existing `apps/web/workers/og/` Worker for web and link previews, and on-device
+the existing `supabase/functions/og-card` Edge Function for web and link previews, and on-device
 for the mobile share sheet, because a local render into the native sheet beats a
 server round-trip and is what makes sharing feel instant.
 

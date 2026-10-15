@@ -1247,7 +1247,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="16" title="Share & Social Cards">
         <p className="ds-section-note">
-          When a Plot link is shared, whether it is a title texted to a friend or a profile or list posted, the <code>og:image</code> is written by the Pages Function that serves the page. Titles point at their TMDB backdrop; profiles, lists and bare-domain links point at the static 1200×630 <code>og-image.png</code>. The branded cards below are the retired <code>plot-og</code> renderer's output, kept for reference in source only. Its deployment was deleted on 18 September 2026 because a Satori render costs ~25ms of CPU against the free plan's 10ms per-request ceiling, so it needs Workers Paid before anything can point at it again.
+          When a Plot link is shared, whether it is a title texted to a friend or a profile or list posted, the <code>og:image</code> is written by the Pages Function that serves the page. Titles, profiles and lists point at <code>app.theplot.tv/og?…</code>, a Pages Function that caches each card at the edge and proxies the <code>og-card</code> Supabase Edge Function, which draws it with Satori. Bare-domain and watch-with links use the static 1200×630 <code>og-image.png</code>, which is also the fallback when a render fails. (The renderer was a Cloudflare Worker until 15 October 2026; the free Workers plan's 10ms CPU ceiling killed every ~25ms render, so it moved to Supabase.)
         </p>
 
         <div className="ds-share-grid">
@@ -1255,21 +1255,21 @@ export default function DesignSystemPage() {
             <img src="/ds/share-title.jpg" alt="Title share card — Dune: Part Two" />
             <figcaption>
               <strong>Title card</strong>
-              <p>Sent when someone shares a movie or show. Backdrop + poster, "Found on PLOT" eyebrow, year · type · rating. <code>plot-og?type=movie&amp;id=…</code></p>
+              <p>Sent when someone shares a movie or show. Backdrop + poster, "Found on PLOT" eyebrow, year · type · rating. <code>/og?type=movie&amp;id=…</code></p>
             </figcaption>
           </figure>
           <figure className="ds-share-card">
             <img src="/ds/share-profile.jpg" alt="Profile share card" />
             <figcaption>
               <strong>Profile card</strong>
-              <p>Avatar, name, premium seal, and watch stats over a backdrop from a recent watch. <code>plot-og?u=…</code></p>
+              <p>Avatar, name, premium seal, and watch stats over a backdrop from a recent watch. <code>/og?u=…</code></p>
             </figcaption>
           </figure>
           <figure className="ds-share-card">
             <img src="/ds/share-list.jpg" alt="List share card" />
             <figcaption>
               <strong>List card</strong>
-              <p>List name, owner, and up to five posters. "PLOT LISTS" eyebrow. <code>plot-og?list=…</code></p>
+              <p>List name, owner, and up to five posters. "PLOT LISTS" eyebrow. <code>/og?list=…</code></p>
             </figcaption>
           </figure>
         </div>
@@ -1287,7 +1287,7 @@ export default function DesignSystemPage() {
             <div className="ds-note-list">
               <div className="ds-note-row"><strong>Canvas</strong><p>1200×630, brand dark, plot wordmark, accent eyebrow — <code>--accent</code> sourced from <code>core/tokens.js</code>.</p></div>
               <div className="ds-note-row"><strong>Type</strong><p>Gabarito titles (fluid 58–106px by length), DM Sans meta + labels. The same two families as every other surface.</p></div>
-              <div className="ds-note-row"><strong>Source</strong><p>Rendered from the retired <code>plot-og</code> Cloudflare Worker source (<code>apps/web/workers/og</code>). The Worker is not deployed and nothing currently points at it. These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
+              <div className="ds-note-row"><strong>Source</strong><p>Rendered from the <code>og-card</code> Edge Function's card builders (<code>supabase/functions/og-card</code>). These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
             </div>
           </RuleCard>
         </div>

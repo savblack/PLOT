@@ -52,7 +52,7 @@ See `docs/ops/package-manager.md`.
   data hooks (`useWatchlist.js`, `useHistory.js`, …), API access (`supabase.js`, `tmdb.js`),
   domain logic (`media.js`, `customLists.js`), `config.js`, `tokens.js`. No build step.
 - `apps/web/` (`@plot/web`) — Vite + React SPA → Cloudflare Pages (output `apps/web/dist`).
-  `src/`, `tests/`, `workers/tmdb-proxy/` + `workers/og/` (Cloudflare Workers). SSR routes
+  `src/`, `tests/`, `workers/tmdb-proxy/` (Cloudflare Worker). SSR routes
   are Pages Functions in the repo-root `functions/`, not under `apps/web/`.
 - `apps/mobile/` (`@plot/mobile`) — Expo / React Native, TypeScript, expo-router.
   Platform seams in `lib/`. **See `apps/mobile/AGENTS.md` before writing mobile code.**

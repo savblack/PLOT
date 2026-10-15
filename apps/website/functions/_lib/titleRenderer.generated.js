@@ -120,16 +120,13 @@ export function renderTitlePage(data, type, id, slug, region, footerHtml) {
     const poster = img(data.poster_path, 'w342');
     const backdrop = img(data.backdrop_path, 'w1280');
     const posterImage = img(data.poster_path, 'w780') || '';
-    // Link-preview image. This was the branded Plot card at /api/og on the app
-    // domain — a Vercel path that has not existed since the move to Cloudflare,
-    // so it resolved to the SPA shell as text/html and every title page unfurled
-    // with no image. Its Cloudflare replacement (the plot-og Worker) cannot
-    // render on the free plan either, so point at TMDB's own backdrop, exactly as
-    // app.theplot.tv/save now does — see functions/_lib/og-card.js. Titles with
-    // no backdrop take the static brand card; a 2:3 poster crops badly into a
-    // 1.91:1 slot.
-    const shareCard = backdrop || `${SITE}/og-image.png`;
-    const [shareW, shareH] = backdrop ? [1280, 720] : [1200, 630];
+    // Link-preview image: the branded title card, drawn by the og-card Edge
+    // Function and served through the app's edge-cached /og route, exactly as
+    // app.theplot.tv/save does — see functions/_lib/og-card.js. (Until
+    // 2026-10-15 this was TMDB's backdrop, because the card renderer was a
+    // Cloudflare Worker the free plan's CPU limit killed.)
+    const shareCard = `${APP}/og?type=${type}&id=${id}`;
+    const [shareW, shareH] = [1200, 630];
     const genres = (data.genres || []).map((g) => g.name).filter(Boolean);
     const overview = data.overview || '';
     const rating = typeof data.vote_average === 'number' && data.vote_average > 0 ? data.vote_average.toFixed(1) : null;

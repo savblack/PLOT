@@ -27,7 +27,7 @@ They are not duplicates — different consumers need different formats.
   (DM Sans: ~107 KB on the wire as TTF, ~87 KB as WOFF2).
 - **`.ttf` — everything that is not a browser.** Keep these:
   - `Gabarito-Bold.ttf`, `DMSans-Regular.ttf`, `DMSans-Medium.ttf` are fetched at
-    runtime by the OG image Worker (`apps/web/workers/og/`); Satori parses TTF/OTF
+    runtime by the og-card Edge Function (`supabase/functions/og-card/`); Satori parses TTF/OTF
     and cannot read WOFF2.
   - `Gabarito-Bold.ttf` and `DMSans-Variable.ttf` are read off disk and inlined as
     data URIs by `scripts/generate-og-image.mjs`.
