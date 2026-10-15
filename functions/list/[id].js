@@ -12,7 +12,7 @@ import { cachePage } from '../_lib/edgeCache.js';
 // other id yields a noindex "not found" page.
 //
 // Routing: file path functions/list/[id].js → /list/<id>.
-import { staticCard } from '../_lib/og-card.js';
+import { ogCard } from '../_lib/og-card.js';
 import { colors } from '../../packages/core/tokens.js';
 
 // Warm brand neutrals from the canonical token source, so this page can't drift
@@ -113,8 +113,8 @@ async function listPage({ request, params }) {
   }
 
   const url = `https://${host}/list/${encodeURIComponent(id)}`;
-  // The branded list card cannot render on the free plan — see _lib/og-card.js.
-  const ogImage = staticCard(host);
+  // The branded list card: name, owner, first five posters — see _lib/og-card.js.
+  const ogImage = ogCard(host, { list: id });
   const ownerLine = owner
     ? `<span class="by">by <a href="https://${host}/u/${encodeURIComponent(owner.username)}">@${esc(owner.username)}</a></span>`
     : '';

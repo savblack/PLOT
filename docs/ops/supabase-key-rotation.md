@@ -49,7 +49,7 @@ service rather than by reading the repo:
 | Vault (in the database) | `edge_webhook_bearer`, `notify_signup_service_role_key` |
 | GitHub Actions secrets | `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_ANON_KEY` |
 | Cloudflare Pages build vars | `VITE_SUPABASE_ANON_KEY`, production **and** preview |
-| Cloudflare Workers | inline constants — `plot-og` had one, but it was deleted on 2026-09-18 and is no longer deployed |
+| Cloudflare Workers | inline constants — `plot-og` had one; it was retired and its renderer now lives in `supabase/functions/og-card` (inline constant there too) and `functions/og.js` |
 | Tracked source | the six files above |
 
 The repo-root `.env.example` used to belong in that row and carried a publishable

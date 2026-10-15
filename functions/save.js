@@ -3,13 +3,13 @@
 //
 // The /save deep link is where shared title links point (see utils/share.js).
 // Serves the SPA shell but rewrites the OG/Twitter tags for the requested title,
-// with og:image pointing at the title's TMDB backdrop. The same lookup seeds
+// with og:image pointing at the title's branded card (/og). The same lookup seeds
 // the logged-out preview, so loading /save does not fetch it again from Supabase.
 // Crawlers read the share tags without indexing this action route.
 //
 // Routing: file path functions/save.js → /save (query string passes through).
 import { loadTitle } from './_lib/tmdb.js';
-import { staticCard, STATIC_CARD, TMDB_BACKDROP } from './_lib/og-card.js';
+import { ogCard, CARD } from './_lib/og-card.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const safeJson = (value) => JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (char) => ({
@@ -47,12 +47,11 @@ export async function onRequest({ request, env }) {
     const desc = title.overview
       ? (title.overview.length > 180 ? `${title.overview.slice(0, 177)}…` : title.overview)
       : `Save ${title.title} to your watchlist on plot.`;
-    // Artwork over a rendered card: see functions/_lib/og-card.js. Not every
-    // title has a backdrop — older and obscure ones often carry only a poster,
-    // and a 2:3 poster in a 1.91:1 slot crops badly — so those take the card.
-    const image = title.backdrop || staticCard(host);
-    const { width: imgW, height: imgH } = title.backdrop ? TMDB_BACKDROP : STATIC_CARD;
-    const imgAlt = title.backdrop ? `${title.title}${yearStr}` : 'plot';
+    // The branded title card: poster, backdrop, year and rating. See
+    // functions/_lib/og-card.js.
+    const image = ogCard(host, { type: title.type, id });
+    const { width: imgW, height: imgH } = CARD;
+    const imgAlt = `${title.title}${yearStr} on plot`;
     const url = `https://${host}/save?media_type=${title.type}&tmdb_id=${id}`;
     const tags =
       `<meta property="og:type" content="video.other"/>` +

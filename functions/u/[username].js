@@ -10,7 +10,7 @@
 // replaces #root on mount. Private/unknown handles get a noindex plain shell.
 //
 // Routing: file path functions/u/[username].js → /u/<username>.
-import { staticCard } from '../_lib/og-card.js';
+import { ogCard } from '../_lib/og-card.js';
 import { colors } from '../../packages/core/tokens.js';
 import { isSectionEnabled } from '../../packages/core/profileFields.js';
 import { cachePage } from '../_lib/edgeCache.js';
@@ -131,8 +131,8 @@ async function profilePage({ request, params }) {
     const desc = profile.watchCount
       ? `@${profile.username} has tracked ${profile.watchCount} film${profile.watchCount === 1 ? '' : 's'} & shows on plot${profile.followers ? `, with ${profile.followers} follower${profile.followers === 1 ? '' : 's'}` : ''}. See their taste.`
       : `See what @${profile.username} is watching — their film & TV taste on plot.`;
-    // The branded profile card cannot render on the free plan — see _lib/og-card.js.
-    const image = staticCard(host);
+    // The branded profile card: avatar, name, stats — see _lib/og-card.js.
+    const image = ogCard(host, { u: profile.username });
     const url = `https://${host}/u/${encodeURIComponent(profile.username)}`;
     const jsonLd = ldjson({
       '@context': 'https://schema.org',

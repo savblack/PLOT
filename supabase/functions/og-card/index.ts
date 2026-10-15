@@ -1,70 +1,83 @@
-// Cloudflare Worker that renders the share-link Open Graph cards (1200×630 PNG).
-//
-//   ?u=<username>          → profile card
-//   ?list=<uuid>           → list card
-//   ?post=<uuid>           → feed-post card
-//   ?type=movie&id=<id>    → title card
-//
-// NOT DEPLOYED. The deployment was deleted on 2026-09-18 because a Satori
-// render costs ~25ms of CPU against the Workers Free 10ms ceiling. Nothing in
-// production points here; callers choose TMDB backdrops or the static card in
-// functions/_lib/og-card.js. See README.md before restoring this Worker.
-//
-// This is a port of the former Vercel apps/web/api/og.js renderer. The card
-// builders are retained as the path back to branded cards; only the runtime
-// plumbing differs:
-//   - ImageResponse comes from `workers-og` (not `@vercel/og`)
-//   - secrets/config come from `env` (not process.env)
-//   - fonts are fetched from FONT_BASE (the Worker host doesn't serve /fonts)
-//
-// Restoring it requires Workers Paid first, then the TMDB_API_KEY secret and a
-// deploy. Verify every card variant before changing callers. See README.md.
-import { ImageResponse } from 'workers-og';
-import React from 'react';
-import { WORDMARK_EM, WORDMARK_PATH, WORDMARK_VIEWBOX } from '../../../../../packages/core/wordmark.js';
+/**
+ * og-card — the branded 1200×630 Open Graph cards for shared Plot links.
+ *
+ *   ?u=<username>          → profile card
+ *   ?list=<uuid>           → list card
+ *   ?post=<uuid>           → feed-post card
+ *   ?type=movie&id=<id>    → title card
+ *
+ * This is the plot-og Cloudflare Worker (apps/web/workers/og, retired) moved
+ * to a Supabase Edge Function. A Satori render costs ~25ms of CPU, which the
+ * Workers free plan (10ms per request) killed every time; the Supabase free
+ * tier allows far more per invocation, so the same render completes here.
+ * The card builders are the Worker's, unchanged; only the plumbing differs:
+ *   - Satori + resvg are called directly (no `workers-og` wrapper, no React —
+ *     Satori takes plain `{ type, props }` element trees).
+ *   - secrets come from Deno.env (TMDB_API_KEY is already set on the project).
+ *   - there is no edge rate-limit binding; the app proxy in front of this
+ *     function (functions/og.js) caches each card at Cloudflare's edge, so a
+ *     card renders once per data centre per week rather than per share.
+ *
+ * Nothing should link to this function directly: share tags point at
+ * https://app.theplot.tv/og?…, which is that proxy. Public function:
+ * verify_jwt = false in supabase/config.toml.
+ */
+import satori from 'npm:satori@0.33.5';
+import { initWasm, Resvg } from 'npm:@resvg/resvg-wasm@2.6.2';
+import { WORDMARK_EM, WORDMARK_PATH, WORDMARK_VIEWBOX } from './wordmark.generated.ts';
 
-const h = React.createElement;
+type Props = Record<string, unknown>;
+type El = { type: string; props: Props } | null;
+// React-free element factory. Satori accepts this shape directly.
+const h = (type: string, props: Props | null, ...children: unknown[]): El => ({
+  type,
+  props: { ...(props || {}), children: children.length === 1 ? children[0] : children },
+});
 
-// Set once from env on first request (env is constant for this Worker).
-let TMDB_KEY = '';
-let FONT_BASE = '';
+const TMDB_KEY = Deno.env.get('TMDB_API_KEY') || '';
+// Where the .ttf brand fonts are served from. The deployed app serves /fonts.
+const FONT_BASE = Deno.env.get('OG_FONT_BASE') || 'https://app.theplot.tv';
+const RESVG_WASM = 'https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm';
 
 const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
-// Publishable key — the same one the client ships. Replaces the legacy anon
-// JWT, which stops working when legacy API keys are disabled.
+// Publishable key — the same one the client ships.
 const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
 
 // Brand dark accent — mirrors @plot/core tokens.colors.dark.accent. Inlined so
-// the Worker bundle stays self-contained (no workspace resolution at deploy).
-// Keep in sync with @plot/core if the token changes.
+// the function bundle stays self-contained. Keep in sync with @plot/core.
 const ACCENT = '#F06A88'; // colors.dark.accent (the primary pink)
 const BG = '#0c0c0c'; // colors.dark.bg
 const MUTED = '#a8a69c'; // colors.dark.textSecondary
-// Cache hard at the edge: these cards are share previews, not live data. Short
-// TTLs are exactly what paused Vercel. 1-day browser, 7-day edge, SWR.
+// Cache hard: these cards are share previews, not live data. 1-day browser,
+// 7-day shared (the app proxy's edge cache honours s-maxage), SWR.
 const OG_CACHE = 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800';
-const TMDB_IMG = (p, s = 'w185') => (p ? `https://image.tmdb.org/t/p/${s}${p}` : null);
+const TMDB_IMG = (p: string | null | undefined, s = 'w185') => (p ? `https://image.tmdb.org/t/p/${s}${p}` : null);
 
 // Only avatars from our own public bucket are fetched into the image. The
 // value comes from the profile row, and a profile owner can set avatar_url to
-// any URL, so passing it straight to the renderer would make this Worker
+// any URL, so passing it straight to the renderer would make this function
 // fetch arbitrary hosts on the owner's behalf. Anything else renders without
-// an avatar. (This Worker is not deployed as of 2026-09-18; fixed before any
-// redeploy, per the 2026-10-13 security review.)
+// an avatar (2026-10-13 security review).
 const AVATAR_PREFIX = `${SUPABASE_URL}/storage/v1/object/public/avatars/`;
-const safeAvatar = (url) => (typeof url === 'string' && url.startsWith(AVATAR_PREFIX) ? url : null);
+const safeAvatar = (url: unknown) => (typeof url === 'string' && url.startsWith(AVATAR_PREFIX) ? url : null);
 
 // Handles are exact, case-insensitive matches. PostgREST's `ilike` treats `%`
-// and `_` as wildcards, so a lookup for `%` would have matched the first
-// profile in the table; the handle is restricted to the username alphabet
+// and `_` as wildcards, so the handle is restricted to the username alphabet
 // and `_` is escaped before it goes into the filter.
 const HANDLE_RE = /^[a-z0-9_.-]{1,40}$/;
-const ilikeHandle = (handle) => encodeURIComponent(handle.replace(/_/g, '\\_'));
-const sh = (a) => `0 2px 12px rgba(0,0,0,${a})`;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ilikeHandle = (handle: string) => encodeURIComponent(handle.replace(/_/g, '\\_'));
+const sh = (a: number) => `0 2px 12px rgba(0,0,0,${a})`;
+// Posters get a hairline edge, not a blurred drop shadow. resvg rasterises a
+// box-shadow as a Gaussian blur over the poster's area, and at 50px that one
+// filter was ~600ms of CPU — two thirds of the whole render, and enough to
+// trip Supabase's per-request compute limit (WORKER_RESOURCE_LIMIT) on the
+// title and post cards. The text shadows are cheap and stay.
+const POSTER_EDGE = '1px solid rgba(255,255,255,0.14)';
 // The plot wordmark as outlines (the l joins the o, which the font can't set).
 // `size` is the font size the live word used to be set at; `shadow` is the
 // text-shadow opacity, drawn as an SVG drop shadow since it's no longer text.
-const wordmark = (size, color, shadow = 0) => {
+const wordmark = (size: number, color: string, shadow = 0) => {
   const unit = 1000 / size;
   return h('svg', { width: size * WORDMARK_EM.width, height: size * WORDMARK_EM.height, viewBox: WORDMARK_VIEWBOX, style: { overflow: 'visible' } },
     shadow ? h('defs', null, h('filter', { id: 'wm-shadow', x: '-20%', y: '-40%', width: '140%', height: '180%' },
@@ -75,12 +88,14 @@ const STAR_RATING = 'M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1
 const STAR_BADGE = 'M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21l2.3-7.4-6-4.6h7.6z';
 const SEAL = 'M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z';
 
-// ── TMDB lookup (port of api/_tmdb.js loadTitle; key comes from env) ──────────
+// ── TMDB lookup ──────────────────────────────────────────────────────────────
 const TMDB = 'https://api.themoviedb.org/3';
-const posterUrl = (path, size = 'w500') => (path ? `https://image.tmdb.org/t/p/${size}${path}` : null);
-const normalizeType = (t) => (t === 'tv' || t === 'show' || t === 'series' ? 'tv' : 'movie');
+const posterUrl = (path: string | null | undefined, size = 'w500') => (path ? `https://image.tmdb.org/t/p/${size}${path}` : null);
+const normalizeType = (t: string | null) => (t === 'tv' || t === 'show' || t === 'series' ? 'tv' : 'movie');
 
-async function loadTitle(mediaType, tmdbId) {
+type Title = { type: string; title: string; year: string; poster: string | null; backdrop: string | null; rating: string | null; overview: string };
+
+async function loadTitle(mediaType: string | null, tmdbId: unknown): Promise<Title | null> {
   const id = Number(tmdbId);
   if (!Number.isInteger(id) || id <= 0) return null;
   if (!TMDB_KEY) return null;
@@ -88,10 +103,10 @@ async function loadTitle(mediaType, tmdbId) {
   const isV4 = TMDB_KEY.startsWith('eyJ'); // v4 read tokens are JWTs
   const url = `${TMDB}/${type}/${id}${isV4 ? '' : `?api_key=${encodeURIComponent(TMDB_KEY)}`}`;
   const init = isV4 ? { headers: { Authorization: `Bearer ${TMDB_KEY}` } } : undefined;
-  let res;
+  let res: Response;
   try { res = await fetch(url, init); } catch { return null; }
   if (!res.ok) return null;
-  let d;
+  let d: any;
   try { d = await res.json(); } catch { return null; }
   return {
     type,
@@ -104,13 +119,15 @@ async function loadTitle(mediaType, tmdbId) {
   };
 }
 
-async function loadProfile(handle) {
+const AUTH = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
+const JSON_AUTH = { ...AUTH, 'Content-Type': 'application/json' };
+
+async function loadProfile(handle: string) {
   if (!HANDLE_RE.test(handle)) return null;
-  const headers = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
   const pRes = await fetch(
     `${SUPABASE_URL}/rest/v1/public_profiles?username=ilike.${ilikeHandle(handle)}` +
     `&select=id,username,display_name,avatar_url,is_premium&limit=1`,
-    { headers },
+    { headers: AUTH },
   );
   const rows = await pRes.json();
   const profile = Array.isArray(rows) ? rows[0] : null;
@@ -118,27 +135,27 @@ async function loadProfile(handle) {
   profile.avatar_url = safeAvatar(profile.avatar_url);
 
   const [cRes, revRes, fRes, recentRes, ratedRes] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
-    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&note=not.is.null&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
+    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=id`, { headers: { ...AUTH, Prefer: 'count=exact', Range: '0-0' } }),
+    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&note=not.is.null&select=id`, { headers: { ...AUTH, Prefer: 'count=exact', Range: '0-0' } }),
     // follows rows are readable only by the two people in them; anon counts via the RPC.
-    fetch(`${SUPABASE_URL}/rest/v1/rpc/get_follow_counts`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_target: profile.id }) }),
-    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=tmdb_id,media_type,watched_at&order=watched_at.desc&limit=6`, { headers }),
-    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=rating&rating=not.is.null`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/get_follow_counts`, { method: 'POST', headers: JSON_AUTH, body: JSON.stringify({ p_target: profile.id }) }),
+    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=tmdb_id,media_type,watched_at&order=watched_at.desc&limit=6`, { headers: AUTH }),
+    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=rating&rating=not.is.null`, { headers: AUTH }),
   ]);
 
-  const count = (r) => parseInt((r.headers.get('content-range') || '0-0/0').split('/')[1], 10) || 0;
+  const count = (r: Response) => parseInt((r.headers.get('content-range') || '0-0/0').split('/')[1], 10) || 0;
   const watchCount = count(cRes);
   const reviews = count(revRes);
   const followers = Number((await fRes.json().catch(() => []))?.[0]?.followers) || 0;
 
   const recentRaw = await recentRes.json().catch(() => []);
-  const rated = await ratedRes.json().catch(() => []);
+  const rated: { rating: number }[] = await ratedRes.json().catch(() => []);
   const avgRating = Array.isArray(rated) && rated.length
     ? (rated.reduce((s, r) => s + r.rating, 0) / rated.length).toFixed(1)
     : null;
 
-  let backdrop = null;
-  const top = Array.isArray(recentRaw) ? recentRaw.find((r) => r.tmdb_id) : null;
+  let backdrop: string | null = null;
+  const top = Array.isArray(recentRaw) ? recentRaw.find((r: any) => r.tmdb_id) : null;
   if (top) {
     try { const d = await loadTitle(top.media_type, top.tmdb_id); backdrop = d ? d.backdrop : null; } catch { /* ignore */ }
   }
@@ -146,57 +163,33 @@ async function loadProfile(handle) {
   return { ...profile, watchCount, reviews, followers, avgRating, backdrop };
 }
 
-async function loadList(id) {
-  const h2 = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
+async function loadList(id: string) {
+  if (!UUID_RE.test(id)) return null;
   // One list by id; 'link' lists are only readable this way (20260926090000).
   const lRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_shared_list`, {
-    method: 'POST', headers: { ...h2, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_list_id: id }),
+    method: 'POST', headers: JSON_AUTH, body: JSON.stringify({ p_list_id: id }),
   });
   const rows = await lRes.json().catch(() => []);
   const list = Array.isArray(rows) ? rows[0] : null;
   if (!list) return null;
-  const items = Array.isArray(list.items) ? list.items.slice(0, 5) : [];
-  const oRes = await fetch(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username&limit=1`, { headers: h2 });
+  const items: any[] = Array.isArray(list.items) ? list.items.slice(0, 5) : [];
+  const oRes = await fetch(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username&limit=1`, { headers: AUTH });
   const owner = (await oRes.json().catch(() => []))?.[0] || null;
   return {
-    name: list.name,
-    owner: owner ? owner.username : null,
-    posters: (Array.isArray(items) ? items : []).map((i) => TMDB_IMG(i.poster_path, 'w185')).filter(Boolean),
+    name: list.name as string,
+    owner: owner ? (owner.username as string) : null,
+    posters: items.map((i) => TMDB_IMG(i.poster_path, 'w185')).filter(Boolean) as string[],
   };
-}
-
-function listCard(list, fonts) {
-  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } };
-  if (!list) {
-    return new ImageResponse(
-      h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Gabarito', fontWeight: 700 } },
-        h('div', { style: { display: 'flex' } }, wordmark(120, '#fafafa')),
-        h('div', { style: { display: 'flex', fontSize: 36, color: MUTED, marginTop: 10 } }, 'A list on plot')),
-      opts);
-  }
-  const n = (list.name || 'A list').length;
-  const nameSize = n <= 18 ? 96 : n <= 30 ? 76 : 60;
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#f0efe8', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
-    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70 } }, wordmark(58, '#fafafa')),
-    h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 28, color: ACCENT, letterSpacing: 4, textTransform: 'uppercase' } }, 'plot lists'),
-    h('div', { style: { display: 'flex', fontSize: nameSize, lineHeight: 1, color: '#fff', letterSpacing: -1, marginTop: 18, maxWidth: 1010 } }, list.name),
-    list.owner ? h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 34, color: MUTED, marginTop: 16 } }, '@' + list.owner) : null,
-    list.posters.length
-      ? h('div', { style: { display: 'flex', gap: 18, marginTop: 48 } },
-          ...list.posters.map((src, i) => h('img', { key: i, src, width: 150, height: 225, style: { borderRadius: 10, objectFit: 'cover', boxShadow: '0 12px 30px rgba(0,0,0,0.6)' } })))
-      : null,
-  );
-  return new ImageResponse(el, opts);
 }
 
 // Feed post: the post row (RLS: only public authors' posts are anon-readable),
 // its author from public_profiles, and poster/backdrop art from TMDB.
-async function loadPost(id) {
-  const headers = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
+async function loadPost(id: string) {
+  if (!UUID_RE.test(id)) return null;
   const r = await fetch(
     `${SUPABASE_URL}/rest/v1/feed_posts?id=eq.${encodeURIComponent(id)}` +
     `&select=author_id,source_type,rank,tmdb_id,media_type,title,poster_path,rating,note&limit=1`,
-    { headers },
+    { headers: AUTH },
   );
   const post = (await r.json().catch(() => []))?.[0];
   if (!post) return null;
@@ -204,49 +197,46 @@ async function loadPost(id) {
   const pRes = await fetch(
     `${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(post.author_id)}` +
     `&select=username,display_name,avatar_url,is_premium&limit=1`,
-    { headers },
+    { headers: AUTH },
   );
   const author = (await pRes.json().catch(() => []))?.[0] || null;
   if (author) author.avatar_url = safeAvatar(author.avatar_url);
 
   let poster = TMDB_IMG(post.poster_path, 'w500');
-  let backdrop = null;
+  let backdrop: string | null = null;
   try { const d = await loadTitle(post.media_type, post.tmdb_id); if (d) { backdrop = d.backdrop; if (!poster) poster = d.poster; } } catch { /* ignore */ }
 
   return { ...post, author, poster, backdrop };
 }
 
-async function loadFont(base, file) {
+// ── Fonts + rasteriser, loaded once per isolate ──────────────────────────────
+type Font = { name: string; data: ArrayBuffer; weight: 400 | 500 | 700; style: 'normal' };
+
+async function loadFont(file: string) {
   try {
-    // cacheEverything keeps the .ttf at the edge, so an isolate that does start
-    // cold pays a colo cache read rather than a round trip to the Pages origin.
-    const r = await fetch(`${base}/fonts/${file}`, { cf: { cacheTtl: 86400, cacheEverything: true } });
+    const r = await fetch(`${FONT_BASE}/fonts/${file}`);
     if (r.ok) return await r.arrayBuffer();
   } catch { /* missing font → Satori falls back */ }
   return null;
 }
-async function fetchFonts() {
+async function fetchFonts(): Promise<Font[]> {
   const [display, sansR, sansM] = await Promise.all([
-    loadFont(FONT_BASE, 'Gabarito-Bold.ttf'),
-    loadFont(FONT_BASE, 'DMSans-Regular.ttf'),
-    loadFont(FONT_BASE, 'DMSans-Medium.ttf'),
+    loadFont('Gabarito-Bold.ttf'),
+    loadFont('DMSans-Regular.ttf'),
+    loadFont('DMSans-Medium.ttf'),
   ]);
-  const fonts = [];
+  const fonts: Font[] = [];
   if (display) fonts.push({ name: 'Gabarito', data: display, weight: 700, style: 'normal' });
   if (sansR) fonts.push({ name: 'DM Sans', data: sansR, weight: 400, style: 'normal' });
   if (sansM) fonts.push({ name: 'DM Sans', data: sansM, weight: 500, style: 'normal' });
   return fonts;
 }
 
-// The fonts never change, so fetch and decode them once per isolate instead of
-// pulling ~215KB and re-parsing it on every render — that cost sat in the
-// request path of a Worker whose whole problem is CPU per invocation.
-//
-// The promise (not the resolved value) is memoized so concurrent first requests
-// share one fetch. A load that yields NO usable font is not memoized: that is a
-// transient origin failure, and pinning it would serve unstyled cards for the
-// life of the isolate rather than for one request.
-let fontsPromise = null;
+// The fonts never change, so fetch them once per isolate. The promise (not the
+// value) is memoized so concurrent first requests share one fetch. A load that
+// yields NO usable font is not memoized: that is a transient origin failure,
+// and pinning it would serve unstyled cards for the life of the isolate.
+let fontsPromise: Promise<Font[]> | null = null;
 function loadFonts() {
   if (!fontsPromise) {
     fontsPromise = fetchFonts()
@@ -259,19 +249,73 @@ function loadFonts() {
   return fontsPromise;
 }
 
-// ── Title card: backdrop + gradient scrim + serif title + DM Sans meta ──
-function titleCard(t, fonts) {
+// resvg's WASM is fetched from a pinned CDN URL and initialised once. Same
+// memoisation rule: a failed init is retried by the next request.
+let wasmPromise: Promise<void> | null = null;
+function loadWasm() {
+  if (!wasmPromise) {
+    wasmPromise = fetch(RESVG_WASM)
+      .then((r) => { if (!r.ok) throw new Error(`resvg wasm ${r.status}`); return initWasm(r); })
+      .catch((e) => { wasmPromise = null; throw e; });
+  }
+  return wasmPromise;
+}
+
+async function png(el: El, fonts: Font[]) {
+  const t0 = performance.now();
+  const svg = await satori(el as any, { width: 1200, height: 630, fonts: fonts as any });
+  const t1 = performance.now();
+  await loadWasm();
+  const t2 = performance.now();
+  const r = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
+  const rendered = r.render();
+  const t3 = performance.now();
+  const out = rendered.asPng();
+  const t4 = performance.now();
+  // Stage timings, so a WORKER_RESOURCE_LIMIT in the Supabase logs says where
+  // the budget went (satori includes fetching the card's images).
+  console.log(`og-card satori=${(t1 - t0).toFixed(0)}ms wasm=${(t2 - t1).toFixed(0)}ms raster=${(t3 - t2).toFixed(0)}ms png=${(t4 - t3).toFixed(0)}ms svg=${svg.length}B png=${out.length}B`);
+  // Copy into a fresh ArrayBuffer: Deno's Response body type rejects the
+  // ArrayBufferLike-backed view resvg returns.
+  return new Response(new Uint8Array(out).buffer as ArrayBuffer, {
+    headers: { 'content-type': 'image/png', 'cache-control': OG_CACHE },
+  });
+}
+
+// ── Cards. The trees are the Worker's, unchanged. ───────────────────────────
+function listCard(list: Awaited<ReturnType<typeof loadList>>) {
+  if (!list) {
+    return h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Gabarito', fontWeight: 700 } },
+      h('div', { style: { display: 'flex' } }, wordmark(120, '#fafafa')),
+      h('div', { style: { display: 'flex', fontSize: 36, color: MUTED, marginTop: 10 } }, 'A list on plot'));
+  }
+  const n = (list.name || 'A list').length;
+  const nameSize = n <= 18 ? 96 : n <= 30 ? 76 : 60;
+  return h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#f0efe8', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
+    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70 } }, wordmark(58, '#fafafa')),
+    h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 28, color: ACCENT, letterSpacing: 4, textTransform: 'uppercase' } }, 'plot lists'),
+    h('div', { style: { display: 'flex', fontSize: nameSize, lineHeight: 1, color: '#fff', letterSpacing: -1, marginTop: 18, maxWidth: 1010 } }, list.name),
+    list.owner ? h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 34, color: MUTED, marginTop: 16 } }, '@' + list.owner) : null,
+    list.posters.length
+      ? h('div', { style: { display: 'flex', gap: 18, marginTop: 48 } },
+          ...list.posters.map((src, i) => h('img', { key: i, src, width: 150, height: 225, style: { borderRadius: 10, objectFit: 'cover', border: POSTER_EDGE } })))
+      : null,
+  );
+}
+
+// ── Title card: backdrop + gradient scrim + display title + DM Sans meta ──
+function titleCard(t: Title | null) {
   const title = t && t.title ? t.title : 'plot';
   const metaBits = t ? [t.year, t.type === 'tv' ? 'Series' : 'Movie'].filter(Boolean).join('   ·   ') : 'Your film & TV companion';
   const n = title.length;
   const titleSize = n <= 15 ? 106 : n <= 24 ? 86 : n <= 36 ? 70 : 58;
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#f0efe8', fontFamily: 'Gabarito', fontWeight: 700 } },
+  return h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#f0efe8', fontFamily: 'Gabarito', fontWeight: 700 } },
     t && t.backdrop ? h('img', { src: t.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
     h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(7,6,10,0.9) 0%, rgba(7,6,10,0.76) 50%, rgba(7,6,10,0.4) 80%, rgba(7,6,10,0.08) 100%)' } }),
     h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(0deg, rgba(7,6,10,0.45) 0%, rgba(7,6,10,0) 42%)' } }),
     h('div', { style: { position: 'relative', display: 'flex', alignItems: 'center', width: '100%', height: '100%', padding: 70 } },
       t && t.poster
-        ? h('img', { src: t.poster, width: 300, height: 450, style: { borderRadius: 14, objectFit: 'cover', boxShadow: '0 18px 50px rgba(0,0,0,0.7)' } })
+        ? h('img', { src: t.poster, width: 300, height: 450, style: { borderRadius: 14, objectFit: 'cover', border: POSTER_EDGE } })
         : h('div', { style: { width: 300, height: 450, borderRadius: 14, background: '#1c1c21', border: `2px solid ${ACCENT}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 150, color: ACCENT } }, '★'),
       h('div', { style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', marginLeft: 60, maxWidth: 610 } },
         h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 30, color: ACCENT, letterSpacing: 6, textTransform: 'uppercase', marginBottom: 24, textShadow: '0 2px 14px rgba(0,0,0,0.95)' } }, 'Found on plot'),
@@ -288,16 +332,14 @@ function titleCard(t, fonts) {
     ),
     h('div', { style: { display: 'flex', position: 'absolute', bottom: 58, right: 74 } }, wordmark(60, '#ffffff', 0.9)),
   );
-  return new ImageResponse(el, { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } });
 }
 
 // ── Post card: poster + author + rating + review, for sharing a feed post ──
-function postCard(post, fonts) {
-  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } };
-  if (!post) return titleCard(null, fonts);
+function postCard(post: Awaited<ReturnType<typeof loadPost>>) {
+  if (!post) return titleCard(null);
 
   const author = post.author || {};
-  const name = (author.display_name || author.username || 'Someone').replace(/\b([a-z])/g, (m) => m.toUpperCase());
+  const name = String(author.display_name || author.username || 'Someone').replace(/\b([a-z])/g, (m: string) => m.toUpperCase());
   const verb = post.source_type === 'favourite' ? 'favorited'
     : post.source_type === 'top_list' ? 'added to their Top 5' : 'watched';
   const title = post.title || 'plot';
@@ -305,12 +347,12 @@ function postCard(post, fonts) {
   const titleSize = n <= 15 ? 92 : n <= 24 ? 76 : n <= 36 ? 62 : 52;
   const note = post.note ? (post.note.length > 150 ? post.note.slice(0, 147) + '…' : post.note) : null;
 
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#f0efe8', fontFamily: 'Gabarito', fontWeight: 700 } },
+  return h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#f0efe8', fontFamily: 'Gabarito', fontWeight: 700 } },
     post.backdrop ? h('img', { src: post.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
     h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(7,6,10,0.93) 0%, rgba(7,6,10,0.82) 55%, rgba(7,6,10,0.5) 100%)' } }),
     h('div', { style: { position: 'relative', display: 'flex', alignItems: 'center', width: '100%', height: '100%', padding: 70 } },
       post.poster
-        ? h('img', { src: post.poster, width: 300, height: 450, style: { borderRadius: 14, objectFit: 'cover', boxShadow: '0 18px 50px rgba(0,0,0,0.7)' } })
+        ? h('img', { src: post.poster, width: 300, height: 450, style: { borderRadius: 14, objectFit: 'cover', border: POSTER_EDGE } })
         : h('div', { style: { width: 300, height: 450, borderRadius: 14, background: '#1c1c21', border: `2px solid ${ACCENT}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 150, color: ACCENT } }, '★'),
       h('div', { style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', marginLeft: 60, maxWidth: 610 } },
         h('div', { style: { display: 'flex', alignItems: 'center', marginBottom: 22 } },
@@ -328,33 +370,27 @@ function postCard(post, fonts) {
     ),
     h('div', { style: { display: 'flex', position: 'absolute', bottom: 54, right: 72 } }, wordmark(56, '#ffffff', 0.6)),
   );
-  return new ImageResponse(el, opts);
 }
 
 // ── Profile card: avatar + name + @handle + stats, optional backdrop scrim ──
-function profileCard(profile, fonts) {
-  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } };
-
+function profileCard(profile: Awaited<ReturnType<typeof loadProfile>>) {
   if (!profile) {
-    return new ImageResponse(
-      h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Gabarito', fontWeight: 700 } },
-        h('div', { style: { display: 'flex' } }, wordmark(120, '#fafafa')),
-        h('div', { style: { display: 'flex', fontSize: 36, color: MUTED, marginTop: 10 } }, 'Your film & TV companion'),
-      ),
-      opts,
+    return h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Gabarito', fontWeight: 700 } },
+      h('div', { style: { display: 'flex' } }, wordmark(120, '#fafafa')),
+      h('div', { style: { display: 'flex', fontSize: 36, color: MUTED, marginTop: 10 } }, 'Your film & TV companion'),
     );
   }
 
-  const name = (profile.display_name || profile.username).replace(/\b([a-z])/g, (m) => m.toUpperCase());
+  const name = String(profile.display_name || profile.username).replace(/\b([a-z])/g, (m: string) => m.toUpperCase());
   const labelStyle = { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 28, color: '#a7a7af', letterSpacing: 3.5, textTransform: 'uppercase', marginTop: 16 };
   const stats = [
-    profile.followers > 0 && { n: String(profile.followers), l: 'Followers' },
-    profile.watchCount > 0 && { n: String(profile.watchCount), l: 'Watched' },
-    profile.reviews > 0 && { n: String(profile.reviews), l: 'Reviews' },
+    profile.followers > 0 && { n: String(profile.followers), l: 'Followers', star: false },
+    profile.watchCount > 0 && { n: String(profile.watchCount), l: 'Watched', star: false },
+    profile.reviews > 0 && { n: String(profile.reviews), l: 'Reviews', star: false },
     profile.avgRating && { n: profile.avgRating, l: 'Avg rating', star: true },
-  ].filter(Boolean);
+  ].filter(Boolean) as { n: string; l: string; star: boolean }[];
 
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#f0efe8', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
+  return h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#f0efe8', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
     profile.backdrop ? h('img', { src: profile.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
     profile.backdrop ? h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(11,10,14,0.97) 0%, rgba(11,10,14,0.9) 55%, rgba(11,10,14,0.66) 100%)' } }) : null,
     h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70 } }, wordmark(58, '#fafafa', 0.6)),
@@ -384,52 +420,51 @@ function profileCard(profile, fonts) {
           )))
       : h('div', { style: { position: 'relative', display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 46, color: MUTED, marginTop: 48 } }, 'Just joined plot!'),
   );
-  return new ImageResponse(el, opts);
 }
 
-const handler = {
-  async fetch(request, env) {
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
-      return new Response('Method not allowed', { status: 405 });
-    }
-    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const { success } = await env.RL.limit({ key: ip });
-    if (!success) return new Response('Rate limit exceeded', { status: 429 });
-    if (!TMDB_KEY) TMDB_KEY = env.TMDB_API_KEY || '';
-    if (!FONT_BASE) FONT_BASE = env.FONT_BASE || 'https://app.theplot.tv';
+async function card(searchParams: URLSearchParams): Promise<El> {
+  // List card — ?list=<uuid>
+  const listId = searchParams.get('list');
+  if (listId) {
+    let list = null;
+    try { list = await loadList(listId); } catch { /* branded fallback */ }
+    return listCard(list);
+  }
 
-    const { searchParams } = new URL(request.url);
+  // Post card — ?post=<uuid>
+  const postId = searchParams.get('post');
+  if (postId) {
+    let post = null;
+    try { post = await loadPost(postId); } catch { /* branded fallback */ }
+    return postCard(post);
+  }
 
-    // List card — ?list=<uuid>
-    const listId = searchParams.get('list');
-    if (listId) {
-      let list = null;
-      try { list = await loadList(listId); } catch { /* branded fallback */ }
-      return listCard(list, await loadFonts());
-    }
+  // Title card — ?type=movie&id=123
+  const id = searchParams.get('id');
+  if (id) {
+    let t = null;
+    try { t = await loadTitle(searchParams.get('type'), id); } catch { /* generic card */ }
+    return titleCard(t);
+  }
 
-    // Post card — ?post=<uuid>
-    const postId = searchParams.get('post');
-    if (postId) {
-      let post = null;
-      try { post = await loadPost(postId); } catch { /* branded fallback */ }
-      return postCard(post, await loadFonts());
-    }
+  // Profile card — ?u=username
+  const handle = (searchParams.get('u') || '').replace(/^@/, '').trim().toLowerCase();
+  let profile = null;
+  try { if (handle) profile = await loadProfile(handle); } catch { /* branded fallback */ }
+  return profileCard(profile);
+}
 
-    // Title card — ?type=movie&id=123
-    const id = searchParams.get('id');
-    if (id) {
-      let t = null;
-      try { t = await loadTitle(searchParams.get('type'), id); } catch { /* generic card */ }
-      return titleCard(t, await loadFonts());
-    }
-
-    // Profile card — ?u=username
-    const handle = (searchParams.get('u') || '').replace(/^@/, '').trim().toLowerCase();
-    let profile = null;
-    try { if (handle) profile = await loadProfile(handle); } catch { /* branded fallback */ }
-    return profileCard(profile, await loadFonts());
-  },
-};
-
-export default handler;
+Deno.serve(async (request) => {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return new Response('Method not allowed', { status: 405 });
+  }
+  const { searchParams } = new URL(request.url);
+  try {
+    const [el, fonts] = await Promise.all([card(searchParams), loadFonts()]);
+    return await png(el, fonts);
+  } catch (e) {
+    console.error('og-card render failed', e);
+    // Uncacheable, so the app proxy keeps its static fallback and retries later.
+    return new Response('Card unavailable', { status: 503, headers: { 'cache-control': 'no-store' } });
+  }
+});
