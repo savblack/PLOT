@@ -64,16 +64,17 @@ export const PLANS_PAGE = {
 
   // "Less deciding. More watching." — one benefit at a time with a product
   // visual beside it (the stories switcher). The three smaller benefits sit
-  // in pills beneath.
+  // in pills beneath. The Taste match heading carries an <s> strike-through
+  // ("science" struck, "cinema" stays); the HTML gives it an aria-label.
   premiumStories: {
     eyebrow: 'Plot Premium',
     h2: 'Less deciding. More watching.',
     steps: [
-      { label: 'Pick for me', h3: 'Find tonight’s movie in four taps', body: 'How long have you got, where do you watch, what are you in the mood for? Pick for me turns that into a shortlist, on the services you already pay for.' },
-      { label: 'Watch together', h3: 'Settle movie night before the snacks are ready', body: 'Watch together finds the overlap in your watchlists and gets everyone to a yes. Only one of you needs Premium.' },
-      { label: 'Your profile', h3: 'Get to know your taste', body: 'Your watch profile shows what you really watch, how much, and what you keep coming back to.' },
-      { label: 'Taste match', h3: 'How alike is your taste?', body: 'Compare ratings with a friend and get one number, plus the genres you share, what you both loved and where you disagree. They don’t need Premium.' },
-      { label: 'Make it yours', h3: 'Dress it up, or dress it down', body: 'Pick a theme, put Up next on your home screen, choose an app icon that suits you. Plot, the way you’d have made it.' },
+      { label: 'Pick for me', h3: 'Something to watch, in under a minute.', body: 'How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.' },
+      { label: 'Watch together', h3: 'Settle movie night before the snacks are ready.', body: 'Watch together analyzes everyone’s Plot profiles to find movie and TV matches in your lists.' },
+      { label: 'Your profile', h3: 'Every story has a plot. Here’s yours.', body: 'Every film and show you log adds up to a profile: the genres you lean on, the hours you’ve put in, and the titles you keep going back to.' },
+      { label: 'Taste match', h3: 'Find out your compatibility based on <s>science</s> cinema.', body: 'A compatibility score built from the movies and shows you’ve both rated. Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.' },
+      { label: 'Make it yours', h3: 'Your Plot, your way.', body: 'Light, dark or in between. Widgets for your home screen. Customize your Plot app interface and icon. Plot, the way you’d have made it.' },
     ],
     cta: 'Start 7-day free trial',
     alsoLabel: 'Also in Premium',
