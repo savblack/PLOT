@@ -45,11 +45,12 @@ export function cardQuery(url) {
 }
 
 async function fallback(host) {
-  const r = await fetch(staticCard(host));
-  return new Response(r.body, {
-    status: r.ok ? 200 : 503,
-    headers: { 'Content-Type': 'image/png', 'Cache-Control': 'no-store', 'X-Plot-Card': 'fallback' },
-  });
+  const headers = { 'Content-Type': 'image/png', 'Cache-Control': 'no-store', 'X-Plot-Card': 'fallback' };
+  try {
+    const r = await fetch(staticCard(host));
+    if (r.ok) return new Response(r.body, { status: 200, headers });
+  } catch { /* even the static card is unreachable */ }
+  return new Response(null, { status: 503, headers });
 }
 
 async function render(request) {
