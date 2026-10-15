@@ -10,6 +10,8 @@ won't have this memorized under pressure.
 See `docs/ops/db-restore.md` for recovering lost/corrupted **data**. This doc
 is for recovering from a bad **schema change** — a migration that breaks the
 app, locks a table, or drops something it shouldn't have.
+For the October 2026 Staging ledger and schema gap, use
+`docs/ops/staging-migration-drift.md` instead.
 
 ## 1. Confirm it's the migration
 
