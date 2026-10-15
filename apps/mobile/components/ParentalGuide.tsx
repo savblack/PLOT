@@ -81,8 +81,13 @@ export default function ParentalGuide({
     if (!signedIn) return null;
     return (
       <View style={styles.wrap}>
-        <TouchableOpacity onPress={() => setPreference(true)} accessibilityRole="button">
-          <Text style={styles.link}>{MEDIA_PANEL.showParentalGuide}</Text>
+        <TouchableOpacity
+          style={styles.action}
+          onPress={() => setPreference(true)}
+          accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={styles.actionText}>{MEDIA_PANEL.showParentalGuide}</Text>
         </TouchableOpacity>
         {error ? <Text style={styles.error}>{MEDIA_PANEL.couldNotUpdateParentalGuide}</Text> : null}
       </View>
@@ -94,24 +99,32 @@ export default function ParentalGuide({
 
   return (
     <View style={styles.wrap}>
-      <TouchableOpacity
-        onPress={() => setOpen(value => !value)}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-        accessibilityLabel={`${guide.certification}. ${MEDIA_PANEL.parentalGuide}`}
-      >
-        <Text style={styles.rating}>{guide.certification}</Text>
-      </TouchableOpacity>
+      <View style={styles.ratingRow}>
+        <TouchableOpacity
+          onPress={() => setOpen(value => !value)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          accessibilityLabel={`${guide.certification}. ${MEDIA_PANEL.parentalGuide}`}
+        >
+          <Text style={styles.rating}>{guide.certification}</Text>
+        </TouchableOpacity>
+        {open && signedIn ? (
+          <TouchableOpacity
+            style={styles.action}
+            onPress={() => setPreference(false)}
+            accessibilityRole="button"
+            accessibilityLabel={`${MEDIA_PANEL.hideParentalGuide} ${MEDIA_PANEL.parentalGuide}`}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.actionText}>{MEDIA_PANEL.hideParentalGuide}</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
       {open ? (
         <View style={styles.body}>
           <Text style={styles.region}>{regionName(region)}</Text>
           {meaning ? <Text style={styles.copy}>{meaning}</Text> : null}
           {descriptors ? <Text style={styles.copy}>{descriptors}</Text> : null}
-          {signedIn ? (
-            <TouchableOpacity onPress={() => setPreference(false)} accessibilityRole="button">
-              <Text style={styles.link}>{MEDIA_PANEL.hideParentalGuide}</Text>
-            </TouchableOpacity>
-          ) : null}
         </View>
       ) : null}
       {error ? <Text style={styles.error}>{MEDIA_PANEL.couldNotUpdateParentalGuide}</Text> : null}
@@ -122,15 +135,23 @@ export default function ParentalGuide({
 function makeStyles(colors: Palette) {
   return StyleSheet.create({
     wrap: { marginTop: 6, alignItems: 'flex-start' },
+    ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     rating: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
     body: { marginTop: 4, gap: 4, alignItems: 'flex-start' },
     region: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textMuted },
     copy: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 18, color: colors.textSecondary },
-    link: {
+    action: {
+      paddingVertical: 2,
+      paddingHorizontal: 8,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      borderRadius: 999,
+      backgroundColor: colors.surfaceSunken,
+    },
+    actionText: {
       fontFamily: fontFamily.sansBold,
-      fontSize: fontSize.sm,
-      color: colors.textSecondary,
-      textDecorationLine: 'underline',
+      fontSize: fontSize.xs,
+      color: colors.textMuted,
     },
     error: { marginTop: 4, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   });

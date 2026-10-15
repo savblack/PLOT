@@ -75,25 +75,32 @@ export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hi
   const descriptors = guide.descriptors.join(', ');
   return (
     <div className="parental-guide">
-      <button
-        type="button"
-        className="parental-guide-rating"
-        aria-expanded={open}
-        aria-label={`${guide.certification}. ${MEDIA_PANEL.parentalGuide}`}
-        onClick={() => setOpen(value => !value)}
-      >
-        {guide.certification}
-      </button>
+      <div className="parental-guide-rating-row">
+        <button
+          type="button"
+          className="parental-guide-rating"
+          aria-expanded={open}
+          aria-label={`${guide.certification}. ${MEDIA_PANEL.parentalGuide}`}
+          onClick={() => setOpen(value => !value)}
+        >
+          {guide.certification}
+        </button>
+        {open && signedIn && (
+          <button
+            type="button"
+            className="parental-guide-hide"
+            aria-label={`${MEDIA_PANEL.hideParentalGuide} ${MEDIA_PANEL.parentalGuide}`}
+            onClick={() => setPreference(false)}
+          >
+            {MEDIA_PANEL.hideParentalGuide}
+          </button>
+        )}
+      </div>
       {open && (
         <div className="parental-guide-body">
           <p className="parental-guide-region">{regionName(region)}</p>
           {meaning && <p className="parental-guide-meaning">{meaning}</p>}
           {descriptors && <p className="parental-guide-descriptors">{descriptors}</p>}
-          {signedIn && (
-            <button type="button" className="parental-guide-hide" onClick={() => setPreference(false)}>
-              {MEDIA_PANEL.hideParentalGuide}
-            </button>
-          )}
         </div>
       )}
       {error && <p className="parental-guide-error">{MEDIA_PANEL.couldNotUpdateParentalGuide}</p>}

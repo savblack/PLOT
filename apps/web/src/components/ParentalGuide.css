@@ -2,6 +2,12 @@
   margin-top: 0.35rem;
 }
 
+.parental-guide-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .parental-guide-rating {
   display: inline-flex;
   padding: 0;
@@ -43,23 +49,28 @@
 
 .parental-guide-hide,
 .parental-guide-show {
-  align-self: flex-start;
-  margin-top: 0.15rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--text-secondary);
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 0.18em;
+  line-height: 1.4;
   cursor: pointer;
 }
 
 .parental-guide-hide:hover,
 .parental-guide-show:hover {
   color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.parental-guide-hide:focus-visible,
+.parental-guide-show:focus-visible {
+  outline: 2px solid var(--text-muted);
+  outline-offset: 2px;
 }
 
 .parental-guide-error {

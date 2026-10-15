@@ -32,8 +32,8 @@ export const MEDIA_PANEL = {
   // title panel progress bar. Ends at sits beside the runtime.
   endsAt: (time) => `Ends at ${time}`,
   parentalGuide: 'Parental guide',
-  hideParentalGuide: 'Hide parental guide',
-  showParentalGuide: 'Show parental guide',
+  hideParentalGuide: 'Hide',
+  showParentalGuide: 'Show guide',
   couldNotUpdateParentalGuide: 'Could not update the parental guide. Try again.',
   timeLeft: (duration) => `${duration} left`,
   episodesLeft: (count) => (count === 1 ? '1 episode left' : `${count} episodes left`),
