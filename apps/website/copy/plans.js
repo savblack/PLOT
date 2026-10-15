@@ -107,38 +107,28 @@ export const PLANS_PAGE = {
 
   faq: {
     title: 'Questions',
-    items: [
+    lede: 'Short answers. Anything else, email us.',
+    groups: [
       {
-        q: 'Is the Free plan really free?',
-        a: 'Yes. No credit card and no trial clock. Track as much as you like on Free, for as long as you like.',
+        label: 'Plans',
+        items: [
+          { q: 'Is Free really free?', a: 'Yes. No card, no trial clock, no limit on what you track. Free keeps your watchlist, history, release calendar and up to five lists for as long as you like.' },
+          { q: 'What do I get with Premium?', a: 'Everything in Free, plus Pick for me, Watch together, your watch profile, Taste match, custom themes, widgets and app icons, unlimited and smart lists, release dates in your calendar app, and actor and director alerts. The table above has the full list.' },
+          { q: 'Does my friend need Premium too?', a: 'No. For Watch together and Taste match, only one of you needs Premium.' },
+          { q: 'What happens to my lists if I downgrade?', a: 'Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.' },
+        ],
       },
       {
-        q: 'Can I get Premium now?',
-        a: 'Yes. Choose Monthly or Annual and start your free trial in Plot. Premium is $3/month or $24/year with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
-      },
-      {
-        q: 'Can I cancel anytime?',
-        a: 'Yes. Cancel during the 7-day trial and you pay $0. After the trial, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.',
-      },
-      {
-        q: 'Can I get a refund?',
-        a: 'The 7-day free trial is there so you can try Premium before you pay, so charges after the trial aren’t refundable and we don’t refund partial months or years. Cancel anytime and keep Premium until the end of the period you’ve paid for. If you think you were charged by mistake, email support@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.',
-      },
-      {
-        q: 'What happens to my lists if I downgrade?',
-        a: 'Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.',
-      },
-      {
-        q: 'What currency am I charged in?',
-        a: 'Prices are in US dollars and include tax. Your total and billing currency are shown at checkout before you confirm.',
-      },
-      {
-        q: 'How do you take payment?',
-        a: 'Payments are processed securely by Stripe. Plot never sees or stores your card details.',
-      },
-      {
-        q: 'Something else?',
-        a: 'Email support@theplot.tv and a person will get back to you.',
+        label: 'Billing',
+        items: [
+          { q: 'How does the free trial work?', a: 'Start Premium and the first 7 days are free. You won’t be charged until the trial ends, we’ll email you 3 days before it does, and if you cancel during the trial you pay $0. The trial is for new subscribers.' },
+          { q: 'Can I switch between monthly and annual?', a: 'Yes, any time, from Manage subscription in Settings. If you switch during your trial, the trial carries on.' },
+          { q: 'Can I cancel anytime?', a: 'Yes. Cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.' },
+          { q: 'Can I get a refund?', a: 'The trial is there so you can try Premium before you pay, so charges after it aren’t refundable and we don’t refund partial months or years. If you think you were charged by mistake, email support@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.' },
+          { q: 'What currency am I charged in?', a: 'Prices are in US dollars and include tax. Your total and billing currency are shown at checkout before you confirm.' },
+          { q: 'How do you take payment?', a: 'Securely, through Stripe. Plot never sees or stores your card details.' },
+          { q: 'Something else?', a: 'Email support@theplot.tv and a person will get back to you.' },
+        ],
       },
     ],
   },
