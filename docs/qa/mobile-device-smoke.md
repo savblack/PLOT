@@ -398,13 +398,24 @@ build from branch `mobile-app-store`, Metro pointed at **Staging** (via
 - [x] **Force-quit and relaunch** (`xcrun simctl terminate`, then the dev
       client URL): still signed in as the smoke account, straight to the app,
       not back through onboarding.
-- [ ] Not looked at this run: the upgrade sheet itself (hit a Free limit to
-      open it) and Pick for Me's locked state, both gated by the same flag.
+- [x] **Pick for Me locked state and the upgrade sheet** (checked 2026-10-15
+      on the Free smoke account). Tapping Pick opens the locked screen: the
+      benefits list ends in "Premium isn't available in the app yet." with no
+      Upgrade button, price or trial note. Tapping a Premium theme (Sage) in
+      Settings opens the upgrade sheet with the same sentence where the price
+      block was. Both are gated by the same flag as Settings, but they are
+      separate render paths, so they needed their own look.
 
-**Metro trap, new this run.** Edits made after `expo start` were not picked
-up: a reload reported "Bundled 89ms (1 module)" and served the old Settings
-screen, even after a force-quit. `expo start --clear` and a relaunch fixed it.
-When a change you just made is not on screen, suspect this before the code.
+**Metro trap.** When a change you just made is not on screen, check which
+Metro the dev client is actually talking to before suspecting the code. On
+2026-10-15 the simulator was loading its bundle from another worktree's Metro
+(port 8089, `home-layout`), which has none of this branch's changes, and showed
+the pre-gate Pick for Me screen with an Upgrade button. The dev client
+remembers its last server. Find the serving process and its directory with
+`lsof -nP -iTCP:<port> -sTCP:LISTEN`, then `lsof -p <pid>` for `cwd`, and
+reopen the dev client with this branch's URL. The 2026-10-14 case, where a
+reload reported "Bundled 89ms (1 module)" and served the old Settings screen
+until `expo start --clear`, may have been the same cause; it was not checked.
 
 `touch_last_seen` warns on every launch against Staging ("Could not find the
 function public.touch_last_seen without parameters"): the Brevo last-seen RPC
