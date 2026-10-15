@@ -57,6 +57,7 @@ import { ALERT_EMAIL_ENABLED } from '@plot/core/features.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { AVATAR_MAX_MB } from '@plot/core/profileFields.js';
 import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
 import { broadcastRegionLabel } from '@plot/core/broadcastGuide.js';
@@ -1406,6 +1407,12 @@ export default function SettingsScreen() {
             label="App icon"
             description={premium ? 'Choose a color and logo for your Home Screen' : 'Premium colors and logos for your Home Screen'}
             onPress={() => router.push('/(app)/app-icon' as Href)}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={4} rx={1} /><Rect x={3} y={11} width={18} height={4} rx={1} /><Rect x={3} y={18} width={18} height={3} rx={1} /></Svg>}
+            label={DISCOVER_VIEW.customize.title}
+            description={DISCOVER_VIEW.customize.settingsHint}
+            onPress={() => router.push('/(app)/home-layout' as Href)}
           />
         </SettingsGroup>
         <SettingsGroup title={SETTINGS_VIEW.page.emailPreferences}>

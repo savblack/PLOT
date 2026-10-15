@@ -34,6 +34,7 @@ export const DISCOVER_VIEW = {
     hide: (name) => `Hide ${name}`,
     hiddenTag: 'Hidden',
     reset: 'Reset to default',
+    settingsHint: 'Reorder or hide the shelves on Home',
     saveError: 'That change didn’t save. Try again.',
     done: 'Done',
   },
