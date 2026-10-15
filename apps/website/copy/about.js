@@ -33,34 +33,26 @@ export const ABOUT_PAGE = {
       features: [
         {
           title: "Track everything you watch",
-          detail: "Movies and TV in one timeline, with ratings and short notes that stay yours.",
+          detail: "Movies and TV in one timeline, with ratings and notes that stay yours.",
         },
         {
           title: "A watchlist with a memory",
-          detail: "Save the movie your friend swore by, and see where it's streaming when you finally get to it.",
+          detail: "Save what a friend swore by. Plot shows where it's streaming when you finally get to it.",
         },
         {
-          title: "Your own release calendar",
-          detail: "Every new episode, season and film you care about, so there's always something to look forward to.",
+          title: "A release calendar",
+          detail: "Every episode, season and film you care about, in one place.",
         },
         {
           title: "What's On, daily",
-          detail: "What's new and trending across streaming platforms on one page. <a href=\"/whats-on\" data-cta=\"about-features\">Browse What's On</a>",
+          detail: "What's new and trending on every service, on one page. <a href=\"/whats-on\" data-cta=\"about-features\">Browse What's On</a>",
         },
         {
           title: "Friends and taste match",
-          detail: "Follow friends and see what they thought in their own words, not a 2,000-word essay. Compare your taste with one number, then send it to someone. Nobody can resist finding out they're a 41. <a href=\"/taste-match\" data-cta=\"about-features\">Try Taste match</a>",
+          detail: "Follow friends, read what they thought in their own words, and compare taste with one number. Nobody can resist finding out they're a 41. <a href=\"/taste-match\" data-cta=\"about-features\">Try Taste match</a>",
         },
       ],
-      switching: "Coming from Letterboxd, Trakt, Netflix or TMDB? Bring your history with you. You confirm every entry before it's saved. <a href=\"https://app.theplot.tv/signup\" data-cta=\"about-import\">Start your plot, free</a>",
-      premiumNote: "All of it is free, with no credit card. Premium is US$3 a month or US$24 a year, with the first 7 days free, and adds Pick for Me, a live calendar subscription and unlimited lists. It's also the biggest way to keep Plot independent. <a href=\"/pricing\" data-cta=\"about-premium\">See what Premium adds</a>",
-    },
-    {
-      id: "next",
-      heading: "What's next",
-      paragraphs: [
-        "Native apps for iPhone and Android. Alerts the moment something on your watchlist arrives on a service you use. Smarter recommendations. And watch together, so you and your friends can line up the same show and watch in real time, wherever you are. Everything that has already shipped is on the <a href=\"/changelog\" data-cta=\"about-changelog\">changelog</a>.",
-      ],
+      premiumNote: "Free, with no credit card. Moving from Letterboxd, Trakt, Netflix or TMDB? Bring your history with you, and confirm every entry before it's saved. Premium is US$3 a month or US$24 a year, with the first 7 days free, and adds Pick for Me, a live calendar subscription and unlimited lists. <a href=\"/pricing\" data-cta=\"about-premium\">See what Premium adds</a>",
     },
     {
       id: "solo",
@@ -89,10 +81,6 @@ export const ABOUT_PAGE = {
         {
           term: "Where it runs",
           detail: "Any browser, at <a href=\"https://app.theplot.tv\" data-cta=\"about-facts\">app.theplot.tv</a>. iPhone and Android are coming.",
-        },
-        {
-          term: "Who makes it",
-          detail: "Me. One person, around a full-time job. No team, no investors, no ads.",
         },
       ],
       ctas: [
@@ -148,7 +136,6 @@ export const ABOUT_PAGE = {
   },
   credits: {
     title: "Credits",
-    intro: "Plot is built on data from these sources.",
     items: [
       {
         name: "TMDB",

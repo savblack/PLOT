@@ -310,14 +310,17 @@
     }
     .feature-list { list-style: none; padding: 0; margin: 1.25rem 0 0; }
     .feature-list li {
+      display: grid;
+      grid-template-columns: 11rem 1fr;
+      gap: 1rem;
       padding: 0.9rem 0;
       border-top: 1px solid var(--rule);
       font-size: 0.95rem;
       line-height: 1.55;
       color: var(--text-secondary);
     }
-    .feature-list li strong { display: block; font-size: 1.02rem; color: var(--text); font-weight: 600; }
-    .feature-list li a { color: var(--text); font-weight: 500; }
+    .feature-list li strong { font-family: var(--display); font-size: 1.05rem; letter-spacing: var(--display-tracking); line-height: 1.3; color: var(--text); font-weight: 700; }
+    .feature-list li a { color: var(--text); font-weight: 500; white-space: nowrap; }
     .premium-note-inline { margin-top: 1.5rem; font-size: 0.95rem; color: var(--text-secondary); }
     .premium-note-inline a { color: var(--text); font-weight: 500; }
     .faq details {
@@ -352,8 +355,6 @@
     .faq details p { margin: 0.75rem 0 0; font-size: 0.95rem; max-width: 58ch; }
     .closer {
       margin-top: 4rem;
-      padding-top: 2.5rem;
-      border-top: 1px solid var(--rule);
       text-align: center;
     }
     .closer-headline {
@@ -368,7 +369,7 @@
     }
     .closer .cta-row { justify-content: center; margin: 0; }
     @media (max-width: 720px) {
-      .facts div { grid-template-columns: 1fr; gap: 0.15rem; }
+      .facts div, .feature-list li { grid-template-columns: 1fr; gap: 0.15rem; }
       .cta-row .btn { width: 100%; }
     }
     .credits-title {
@@ -453,21 +454,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <h2 id="features">What <svg class="wm" viewBox="0 0 1568 871" aria-hidden="true" focusable="false"><use href="#wm-plot"/></svg><span class="sr-only">plot</span> does</h2>
 
       <ul class="feature-list">
-        <li><strong>Track everything you watch</strong>Movies and TV in one timeline, with ratings and short notes that stay yours.</li>
-        <li><strong>A watchlist with a memory</strong>Save the movie your friend swore by, and see where it's streaming when you finally get to it.</li>
-        <li><strong>Your own release calendar</strong>Every new episode, season and film you care about, so there's always something to look forward to.</li>
-        <li><strong>What's On, daily</strong>What's new and trending across streaming platforms on one page. <a href="/whats-on" data-cta="about-features">Browse What's On</a></li>
-        <li><strong>Friends and taste match</strong>Follow friends and see what they thought in their own words, not a 2,000-word essay. Compare your taste with one number, then send it to someone. Nobody can resist finding out they're a 41. <a href="/taste-match" data-cta="about-features">Try Taste match</a></li>
+        <li><strong>Track everything you watch</strong><span>Movies and TV in one timeline, with ratings and notes that stay yours.</span></li>
+        <li><strong>A watchlist with a memory</strong><span>Save what a friend swore by. Plot shows where it's streaming when you finally get to it.</span></li>
+        <li><strong>A release calendar</strong><span>Every episode, season and film you care about, in one place.</span></li>
+        <li><strong>What's On, daily</strong><span>What's new and trending on every service, on one page. <a href="/whats-on" data-cta="about-features">Browse What's On</a></span></li>
+        <li><strong>Friends and taste match</strong><span>Follow friends, read what they thought in their own words, and compare taste with one number. Nobody can resist finding out they're a 41. <a href="/taste-match" data-cta="about-features">Try Taste match</a></span></li>
       </ul>
 
-      <p class="premium-note-inline">Coming from Letterboxd, Trakt, Netflix or TMDB? Bring your history with you. You confirm every entry before it's saved. <a href="https://app.theplot.tv/signup" data-cta="about-import">Start your plot, free</a></p>
-      <p class="premium-note-inline">All of it is free, with no credit card. Premium is US$3 a month or US$24 a year, with the first 7 days free, and adds Pick for Me, a live calendar subscription and unlimited lists. It's also the biggest way to keep Plot independent. <a href="/pricing" data-cta="about-premium">See what Premium adds</a></p>
-    </section>
-
-    <section class="about-section">
-      <h2 id="next">What's next</h2>
-
-      <p>Native apps for iPhone and Android. Alerts the moment something on your watchlist arrives on a service you use. Smarter recommendations. And watch together, so you and your friends can line up the same show and watch in real time, wherever you are. Everything that has already shipped is on the <a href="/changelog" data-cta="about-changelog">changelog</a>.</p>
+      <p class="premium-note-inline">Free, with no credit card. Moving from Letterboxd, Trakt, Netflix or TMDB? Bring your history with you, and confirm every entry before it's saved. Premium is US$3 a month or US$24 a year, with the first 7 days free, and adds Pick for Me, a live calendar subscription and unlimited lists. <a href="/pricing" data-cta="about-premium">See what Premium adds</a></p>
     </section>
 
     <section class="about-section">
@@ -485,7 +479,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div><dt>Who it's for</dt><dd>People who love movies and TV and don't need a word for it.</dd></div>
         <div><dt>What it costs</dt><dd>Nothing. Premium is US$3/month or US$24/year, with the first 7 days free.</dd></div>
         <div><dt>Where it runs</dt><dd>Any browser, at <a href="https://app.theplot.tv" data-cta="about-facts">app.theplot.tv</a>. iPhone and Android are coming.</dd></div>
-        <div class="facts-wide"><dt>Who makes it</dt><dd>Me. One person, around a full-time job. No team, no investors, no ads.</dd></div>
       </dl>
       <div class="cta-row">
         <a class="btn btn-primary btn-large" href="https://app.theplot.tv/signup" data-cta="about-glance">Start your plot, free</a>
@@ -521,7 +514,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </section>
 
     <section class="closer">
-      <p class="closer-headline">Your movies. Your shows.<br>Your plot.</p>
+      <p class="closer-headline">Your movies. Your shows.<br>Your <svg class="wm" viewBox="0 0 1568 871" aria-hidden="true" focusable="false"><use href="#wm-plot"/></svg><span class="sr-only">plot</span>.</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-large" href="https://app.theplot.tv/signup" data-cta="about-final">Start your plot, free</a>
         <a class="btn btn-ink btn-large" href="https://app.theplot.tv/login" data-cta="about-final">Log in</a>
@@ -532,7 +525,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
          an About or Credits surface rather than only in the legal pages. Keep in
          sync with copy/about.js and with the app's Settings credits group. -->
     <h2 class="credits-title">Credits</h2>
-    <p class="credits-intro">Plot is built on data from these sources.</p>
     <ul class="credits-list">
       <li><strong>TMDB:</strong> This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
       <li><strong>TVmaze:</strong> Episode air dates and the TV guide use the TVmaze API.</li>
