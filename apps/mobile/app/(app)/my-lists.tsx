@@ -702,7 +702,7 @@ export default function MyListsScreen() {
         {showWant && (
           <CollapsibleSection
             id="want"
-            label="Want to Watch"
+            label={CUSTOM_LISTS.wantToWatch}
             count={sortedSaved.length}
             open={sectionsOpen.want}
             onOpenChange={(next) => setSectionOpenFor('want', next)}

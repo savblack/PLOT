@@ -1,6 +1,8 @@
 import { FREE_CUSTOM_LIST_CAP } from '../premium.js';
 
 export const CUSTOM_LISTS = Object.freeze({
+  // The built-in watchlist's name: its My Lists section and Home's pinned shelf.
+  wantToWatch: 'Want to Watch',
   searchPlaceholder: 'Search my lists',
   searchThisList: 'Search this list',
   noMatch: 'No items match the current filter.',

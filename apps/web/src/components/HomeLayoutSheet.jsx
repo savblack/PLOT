@@ -1,44 +1,65 @@
-// Customize Home: the sheet behind the Jump to card's Customize action. One
-// row per shelf, in the viewer's order, with a drag handle, up/down buttons
-// (keyboard and touch), and a show/hide switch. Rules and persistence are in
-// @plot/core/homeLayout.js and useHomeLayout.js; this file only renders.
+// Customize Home: the sheet behind the Jump to card's Customize action.
+//   Look     density and card style (free), saved in profile.ui_prefs
+//   Pinned   shelves the viewer chose, at the top of Home (Premium)
+//   Shelves  the built-in shelves: reorder, hide, reset
+// Rules and persistence are in @plot/core (homeLayout.js, homePins.js,
+// uiPrefs.js and their hooks); this file only renders. Drag uses the browser's
+// native drag and drop, and every row also has buttons for keyboard and touch.
 //
-// Drag uses the browser's native drag and drop so there is no new dependency.
-// The buttons do the same job for anyone who cannot drag.
-//
-// Mobile parity: not shipped on mobile yet. Mobile Home has its own section
-// set, but the ids are shared, so a layout saved here already applies to the
-// shelves mobile does render once it reads profile.home_layout.
+// Mobile parity: app/(app)/home-layout.tsx draws the same sections.
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
+import { CARD_STYLES, UI_DENSITIES } from '@plot/core/uiPrefs.js';
+import { MAX_HOME_PINS } from '@plot/core/homeLayout.js';
 import SheetHeader from './SheetHeader.jsx';
-import { SettingsSwitch } from './SettingsPage.jsx';
+import ReorderRows, { Chevron } from './ReorderRows.jsx';
 import './HomeLayoutSheet.css';
 
 const C = DISCOVER_VIEW.customize;
 
-function GripIcon() {
+function Segmented({ label, value, options, names, onChange }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="currentColor">
-      <circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" />
-      <circle cx="9" cy="12" r="1.6" /><circle cx="15" cy="12" r="1.6" />
-      <circle cx="9" cy="18" r="1.6" /><circle cx="15" cy="18" r="1.6" />
-    </svg>
+    <div className="home-layout-seg-row">
+      <span className="home-layout-seg-label">{label}</span>
+      <div className="home-layout-seg" role="radiogroup" aria-label={label}>
+        {options.map(option => (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={value === option}
+            className={`home-layout-seg-btn${value === option ? ' is-active' : ''}`}
+            onClick={() => onChange(option)}
+          >
+            {names[option]}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
-function Chevron({ up }) {
+function PinPicker({ groups, onPick, onCancel }) {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      {up ? <path d="M6 15l6-6 6 6" /> : <path d="M6 9l6 6 6-6" />}
-    </svg>
+    <div className="home-layout-picker" role="group" aria-label={C.pinPickerTitle}>
+      {groups.length === 0 && <p className="home-layout-sheet-intro">{C.pinNothingToPin}</p>}
+      {groups.map(group => (
+        <div key={group.kind} className="home-layout-picker-group">
+          <span className="home-layout-picker-title">{group.label}</span>
+          {group.items.map(item => (
+            <button key={`${item.pin.kind}:${item.pin.id}`} type="button" className="home-layout-picker-item" onClick={() => onPick(item.pin)}>{item.label}</button>
+          ))}
+        </div>
+      ))}
+      <button type="button" className="btn btn-secondary home-layout-picker-cancel" onClick={onCancel}>{C.pinCancel}</button>
+    </div>
   );
 }
 
 /**
  * @param {{
- *   sections: { id: string, label: string }[],  every customizable shelf, in layout order
+ *   sections: { id: string, label: string }[],
  *   layout: import('@plot/core/homeLayout.js').HomeLayout,
  *   isDefault: boolean,
  *   error: any,
@@ -47,18 +68,25 @@ function Chevron({ up }) {
  *   onToggle: (id: string) => void,
  *   onReset: () => void,
  *   onClose: () => void,
+ *   prefs: import('@plot/core/uiPrefs.js').UiPrefs,
+ *   onDensity: (density: string) => void,
+ *   onCardStyle: (style: string) => void,
+ *   premium: boolean,
+ *   pins: { key: string, pin: { kind: string, id: string }, label: string }[],
+ *   pinGroups: ReturnType<typeof import('@plot/core/homePins.js').pinOptions>,
+ *   onPin: (pin: { kind: string, id: string }) => void,
+ *   onUnpin: (pin: { kind: string, id: string }) => void,
+ *   onNudgePin: (pin: { kind: string, id: string }, delta: -1 | 1) => void,
+ *   onUpgrade: () => void,
  * }} props
  */
-export default function HomeLayoutSheet({ sections, layout, isDefault, error, onMove, onNudge, onToggle, onReset, onClose }) {
-  const [dragId, setDragId] = useState(null);
-  const [overIndex, setOverIndex] = useState(null);
-
-  const endDrag = () => { setDragId(null); setOverIndex(null); };
-  const drop = (index, e) => {
-    const id = dragId ?? e.dataTransfer.getData('text/plain');
-    if (id) onMove(id, index);
-    endDrag();
-  };
+export default function HomeLayoutSheet({
+  sections, layout, isDefault, error, onMove, onNudge, onToggle, onReset, onClose,
+  prefs, onDensity, onCardStyle,
+  premium, pins, pinGroups, onPin, onUnpin, onNudgePin, onUpgrade,
+}) {
+  const [picking, setPicking] = useState(false);
+  const full = layout.pins.length >= MAX_HOME_PINS;
 
   return createPortal(
     <>
@@ -70,39 +98,44 @@ export default function HomeLayoutSheet({ sections, layout, isDefault, error, on
         <div className="home-layout-sheet-body">
           <p className="home-layout-sheet-intro">{C.body}</p>
           {error && <p className="home-layout-sheet-error" role="alert">{C.saveError}</p>}
-          <ol className="home-layout-list" onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOverIndex(null); }}>
-            {sections.map((section, index) => {
-              const hidden = layout.hidden.includes(section.id);
-              const cls = [
-                'home-layout-row',
-                hidden ? 'is-hidden' : '',
-                dragId === section.id ? 'is-dragging' : '',
-                overIndex === index && dragId && dragId !== section.id ? 'is-over' : '',
-              ].filter(Boolean).join(' ');
-              return (
-                <li
-                  key={section.id}
-                  className={cls}
-                  draggable
-                  onDragStart={e => { setDragId(section.id); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', section.id); }}
-                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (overIndex !== index) setOverIndex(index); }}
-                  onDrop={e => { e.preventDefault(); drop(index, e); }}
-                  onDragEnd={endDrag}
-                >
-                  <span className="home-layout-grip" aria-label={C.dragHandle(section.label)} title={C.dragHandle(section.label)}><GripIcon /></span>
-                  <span className="home-layout-label">
-                    <span>{section.label}</span>
-                    {hidden && <span className="home-layout-tag">{C.hiddenTag}</span>}
-                  </span>
+
+          <h3 className="home-layout-heading">{C.lookTitle}</h3>
+          <Segmented label={C.densityLabel} value={prefs.density} options={UI_DENSITIES} names={C.density} onChange={onDensity} />
+          <Segmented label={C.cardStyleLabel} value={prefs.cardStyle} options={CARD_STYLES} names={C.cardStyle} onChange={onCardStyle} />
+
+          <h3 className="home-layout-heading">{C.pinsTitle}</h3>
+          <p className="home-layout-sheet-intro home-layout-sub">{premium ? C.pinsBody : C.pinsLocked}</p>
+          {premium && pins.length === 0 && <p className="home-layout-empty">{C.pinsEmpty}</p>}
+          {premium && pins.length > 0 && (
+            <ol className="home-layout-list">
+              {pins.map((entry, index) => (
+                <li key={entry.key} className="home-layout-row no-grip no-switch">
+                  <span className="home-layout-label"><span>{entry.label}</span></span>
                   <span className="home-layout-nudge">
-                    <button type="button" className="home-layout-nudge-btn" aria-label={C.moveUp(section.label)} disabled={index === 0} onClick={() => onNudge(section.id, -1)}><Chevron up /></button>
-                    <button type="button" className="home-layout-nudge-btn" aria-label={C.moveDown(section.label)} disabled={index === sections.length - 1} onClick={() => onNudge(section.id, 1)}><Chevron /></button>
+                    <button type="button" className="home-layout-nudge-btn" aria-label={C.pinMoveUp(entry.label)} disabled={index === 0} onClick={() => onNudgePin(entry.pin, -1)}><Chevron up /></button>
+                    <button type="button" className="home-layout-nudge-btn" aria-label={C.pinMoveDown(entry.label)} disabled={index === pins.length - 1} onClick={() => onNudgePin(entry.pin, 1)}><Chevron /></button>
                   </span>
-                  <SettingsSwitch label={hidden ? C.show(section.label) : C.hide(section.label)} checked={!hidden} onChange={() => onToggle(section.id)} />
+                  <button type="button" className="home-layout-unpin" aria-label={C.unpin(entry.label)} onClick={() => onUnpin(entry.pin)}>×</button>
                 </li>
-              );
-            })}
-          </ol>
+              ))}
+            </ol>
+          )}
+          {premium && !picking && (
+            <button type="button" className="btn btn-secondary home-layout-pin-add" disabled={full} onClick={() => setPicking(true)}>
+              {full ? C.pinLimit(MAX_HOME_PINS) : C.pinAction}
+            </button>
+          )}
+          {premium && picking && <PinPicker groups={pinGroups} onPick={(pin) => { onPin(pin); setPicking(false); }} onCancel={() => setPicking(false)} />}
+          {!premium && <button type="button" className="btn btn-secondary home-layout-pin-add" onClick={onUpgrade}>{C.pinsUpgrade}</button>}
+
+          <h3 className="home-layout-heading">{C.shelvesTitle}</h3>
+          <ReorderRows
+            rows={sections.map(s => ({ id: s.id, label: s.label, hidden: layout.hidden.includes(s.id) }))}
+            onMove={onMove}
+            onNudge={onNudge}
+            onToggle={onToggle}
+            labels={{ moveUp: C.moveUp, moveDown: C.moveDown, drag: C.dragHandle, hiddenTag: C.hiddenTag, show: C.show, hide: C.hide }}
+          />
           <button type="button" className="btn btn-secondary home-layout-reset" onClick={onReset} disabled={isDefault}>{C.reset}</button>
         </div>
       </div>

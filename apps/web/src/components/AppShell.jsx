@@ -38,7 +38,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const mainRef = useRef(null);
 
   const { unread, refreshCount } = useNotifications(user?.id);
-  const { themeMode, themeFamily, setThemeMode, setThemeFamily } = useApp() ?? {};
+  const { themeMode, themeFamily, setThemeMode, setThemeFamily, uiPrefs } = useApp() ?? {};
   const [themeUpgrade, setThemeUpgrade] = useState(null); // Premium family a Free viewer tapped in the account menu
 
   // Warm the other pages' chunks while idle so navigating doesn't wait on them.
@@ -138,6 +138,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         user={user}
         unread={unread}
         collapsed={sidebarCollapsed}
+        sidebarOrder={uiPrefs?.prefs.sidebar}
         onToggleCollapsed={() => setSidebarCollapsed(collapsed => !collapsed)}
         onFeedback={() => user ? setFeedbackOpen(true) : navigate('/login')}
         onSignOut={() => navigate('/logout')}

@@ -579,7 +579,7 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
 
   return (
     <Frame
-      title="Want to Watch"
+      title={CUSTOM_LISTS.wantToWatch}
       count={count}
       headerRight={
         <>

@@ -1,5 +1,5 @@
 // Desktop web layout: the fixed rail and scroll regions use DOM/CSS. Mobile parity: https://github.com/savblack/PLOT/issues/920.
-import { APP_NAV_ITEMS, isActiveView } from '../navigation.js';
+import { APP_NAV_ITEMS, isActiveView, sidebarNavItems } from '../navigation.js';
 import PlotLogo from './PlotLogo.jsx';
 import AccountMenu from './AccountMenu.jsx';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -16,12 +16,9 @@ import { IconBell, NAV_ICONS } from './navIcons.jsx';
 
 // Search leads the desktop list. Settings is not in the rail: it lives in the
 // account menu the profile row opens (issue 1133). The list itself is shared
-// with mobile in @plot/core/navigation.js, so it is filtered here rather than
-// removed there; the phone drawer below 1024px keeps its own Settings row.
-const SIDEBAR_NAV_ITEMS = [
-  APP_NAV_ITEMS.find(item => item.id === 'search'),
-  ...APP_NAV_ITEMS.filter(item => item.id !== 'settings' && item.id !== 'search'),
-];
+// with mobile in @plot/core/navigation.js, so it is filtered in ../navigation.js
+// rather than removed there; the phone drawer below 1024px keeps its own
+// Settings row. The viewer may reorder the middle (Settings > Appearance).
 const SETTINGS_NAV_ITEM = APP_NAV_ITEMS.find(item => item.id === 'settings');
 
 /**
@@ -31,6 +28,7 @@ const SETTINGS_NAV_ITEM = APP_NAV_ITEMS.find(item => item.id === 'settings');
  * @param {object}   [props.user]            Auth user; gates the notifications row.
  * @param {number}   [props.unread]          Unread notification count.
  * @param {boolean}  [props.collapsed]       Whether the desktop rail is icon-only.
+ * @param {string[]} [props.sidebarOrder]   Saved ui_prefs.sidebar: nav ids in the viewer's order.
  * @param {Function} props.onToggleCollapsed Toggles the desktop rail width.
  * @param {Function} props.onNavigate        Called with a view id.
  * @param {Function} props.onFeedback        Opens the existing feedback composer.
@@ -50,6 +48,7 @@ export default function AppSidebar({
   user,
   unread = 0,
   collapsed = false,
+  sidebarOrder,
   onToggleCollapsed,
   onNavigate,
   onNavigateProfile,
@@ -96,7 +95,7 @@ export default function AppSidebar({
 
       <div className="app-sidebar-scroll">
         <nav className="app-sidebar-nav">
-          {SIDEBAR_NAV_ITEMS.map(({ id, label, premium }) => {
+          {sidebarNavItems(sidebarOrder).map(({ id, label, premium }) => {
             const Icon = NAV_ICONS[id];
             return (
               <button

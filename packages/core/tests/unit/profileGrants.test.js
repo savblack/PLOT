@@ -104,13 +104,17 @@ function objectKeys(src, open) {
   return keys;
 }
 
+/** Comments are not code: a doc comment that quotes a call must not count as one. */
+const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/[^\n]*/g, '$1');
+
 /**
  * Columns written by `updateProfile({ ..., patch })` calls in one source file.
  * Handles an inline `patch: { a, b: 1 }` and a `patch` variable built from an
  * object literal plus later `patch.x = …` assignments.
  * @returns {string[]}
  */
-export function profileColumnsWritten(source) {
+export function profileColumnsWritten(rawSource) {
+  const source = stripComments(rawSource);
   const cols = new Set();
   const calls = [...source.matchAll(/\bupdateProfile\s*\(\s*\{/g)];
   for (const call of calls) {
@@ -173,6 +177,15 @@ test('writes: a patch variable is read from its literal and later assignments', 
     const { error } = await updateProfile({ userId, patch });
   `;
   assert.deepEqual(profileColumnsWritten(src).sort(), ['bio', 'display_name', 'username']);
+});
+
+test('writes: comments that quote a call are ignored, URLs in strings are not mistaken for comments', () => {
+  const src = `
+    // updateProfile({ userId, patch: { nope: 1 } })
+    /* updateProfile({ userId, patch: { alsoNope: 1 } }) */
+    const url = 'https://example.com'; await updateProfile({ userId, patch: { region: 'x' } });
+  `;
+  assert.deepEqual(profileColumnsWritten(src), ['region']);
 });
 
 test('writes: files that never call updateProfile contribute nothing', () => {

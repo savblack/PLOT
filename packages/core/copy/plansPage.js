@@ -125,6 +125,13 @@ export const PLANS_PAGE = {
         body: 'Send a link and anyone can add titles to your list. Only you need Premium. Friends join with a free account.',
         also: ['together', 'lists'],
       },
+      // Opened from Customize Home when a Free viewer tries to pin a shelf.
+      pins: {
+        context: () => 'Pinned shelves are part of Premium',
+        title: 'Put what you care about first.',
+        body: 'Pin Want to Watch, a list, or someone you follow to the top of Home. Your shelves and their order stay free.',
+        also: ['pick', 'together'],
+      },
       alerts: {
         context: (_cap) => 'Following people is part of Premium',
         title: 'Follow the people you love watching.',
