@@ -1735,11 +1735,13 @@ Deno.serve(async (req) => {
     guide: 'Save from this guide',
     upcoming: 'Everything landing this week',
   };
-  const tailHead = TAIL_HEAD[typed.post_type];
+  // Any article that names more than one title gets the card, not just guides
+  // and the week ahead.
+  const tailHead = TAIL_HEAD[typed.post_type] || 'Save from this article';
   // The closing summary card. A guide lists every title it names, including
   // the ones a module already featured, so the reader can save the lot in one
   // place; other post types keep to what the modules did not show.
-  const summaryTitles = typed.post_type === 'guide' ? mentioned : rest;
+  const summaryTitles = typed.post_type === 'guide' || !TAIL_HEAD[typed.post_type] ? mentioned : rest;
   const titlesSection = tailHead && summaryTitles.length > 1
     ? `<section class="gt">
         <div class="gt-head">
