@@ -2,13 +2,13 @@
  * notify-report: email each abuse report and file it in a private Notion
  * database. The email is independent of Notion. Backfill accepts
  * {"backfill":true,"limit":25} from a service-role caller.
- * Required secrets: NOTION_TOKEN, NOTION_REPORTS_DATABASE_ID, SUPABASE_URL,
+ * Required secrets: NOTION_CONNECTION (falls back to NOTION_TOKEN, then NOTION_API_KEY), NOTION_REPORTS_DATABASE_ID, SUPABASE_URL,
  * SUPABASE_SERVICE_ROLE_KEY. RESEND_API_KEY enables the email alert.
  */
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
-import { createIntakePage } from '../_shared/notionIntake.js'
+import { createIntakePage, resolveNotionToken } from '../_shared/notionIntake.js'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = 'sav.black@outlook.com'
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
   let body: { record?: Record<string, unknown>, backfill?: unknown, limit?: unknown }
   try { body = await req.json() } catch { return new Response('Invalid JSON', { status: 400 }) }
 
-  const token = Deno.env.get('NOTION_TOKEN') || Deno.env.get('NOTION_API_KEY') || ''
+  const token = resolveNotionToken((k) => Deno.env.get(k))
   const databaseId = Deno.env.get('NOTION_REPORTS_DATABASE_ID') || ''
   const configured = Boolean(token && databaseId)
   const resendKey = Deno.env.get('RESEND_API_KEY')

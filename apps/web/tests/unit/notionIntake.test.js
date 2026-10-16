@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createIntakePage, intakePageBody } from '../../../../supabase/functions/_shared/notionIntake.js';
+import { createIntakePage, intakePageBody, resolveNotionToken } from '../../../../supabase/functions/_shared/notionIntake.js';
 
 const params = {
   databaseId: '11111111-1111-1111-1111-111111111111',
@@ -54,4 +54,12 @@ test('new intake record creates one page in the selected private database', asyn
     assert.equal(body.parent.database_id, params.databaseId);
     assert.equal(body.children[3].paragraph.rich_text[0].text.content, 'Private message');
   } finally { globalThis.fetch = original; }
+});
+
+test('resolveNotionToken prefers NOTION_CONNECTION, then NOTION_TOKEN, then NOTION_API_KEY', () => {
+  const env = (vars) => (k) => vars[k];
+  assert.equal(resolveNotionToken(env({ NOTION_CONNECTION: 'c', NOTION_TOKEN: 't', NOTION_API_KEY: 'a' })), 'c');
+  assert.equal(resolveNotionToken(env({ NOTION_TOKEN: 't', NOTION_API_KEY: 'a' })), 't');
+  assert.equal(resolveNotionToken(env({ NOTION_API_KEY: 'a' })), 'a');
+  assert.equal(resolveNotionToken(env({})), '');
 });
