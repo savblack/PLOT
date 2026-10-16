@@ -53,7 +53,9 @@ async function setup(page, initial = { market_id: 'Sydney', channel_ids: null })
   return { snapshot, failFeed: value => { failFeed = value; }, failSave: value => { failSave = value; }, getPreferences: () => preferences };
 }
 
-test('production Guide saves empty channels and preserves a failed draft', async ({ page }) => {
+test('production Guide saves empty channels and preserves a failed draft', async ({ page, viewport }) => {
+  // Phones edit channels in the Filters sheet; the next test covers that.
+  test.skip(viewport.width < 1024, 'desktop sidebar flow');
   const backend = await setup(page);
   await page.goto('/guide');
   await expect(page.getByRole('button', { name: /Test evening news/ })).toBeVisible();
@@ -70,6 +72,28 @@ test('production Guide saves empty channels and preserves a failed draft', async
   await expect(page.getByText('Choose some channels to build your guide.')).toBeVisible();
   expect(backend.getPreferences().channel_ids).toEqual([]);
   await page.reload();
+  await expect(page.getByText('Choose some channels to build your guide.')).toBeVisible();
+});
+
+test('phone Guide channels save from the Filters sheet and keep the tick after a failed save', async ({ page, viewport }) => {
+  test.skip(viewport.width >= 1024, 'phone sheet flow');
+  const backend = await setup(page);
+  await page.goto('/guide');
+  await expect(page.getByRole('button', { name: /Test evening news/ })).toBeVisible();
+  await page.locator('.mobile-controls-trigger').click();
+  const sheet = page.locator('dialog.mobile-controls-dialog');
+  const abc = sheet.getByRole('button', { name: 'Test ABC' });
+  const sbs = sheet.getByRole('button', { name: 'Test SBS' });
+  backend.failSave(true);
+  await abc.click();
+  await expect(abc).toHaveAttribute('aria-pressed', 'true');
+  backend.failSave(false);
+  await abc.click();
+  await sbs.click();
+  await expect(abc).toHaveAttribute('aria-pressed', 'false');
+  await expect(sbs).toHaveAttribute('aria-pressed', 'false');
+  expect(backend.getPreferences().channel_ids).toEqual([]);
+  await sheet.getByRole('button', { name: 'Close' }).click();
   await expect(page.getByText('Choose some channels to build your guide.')).toBeVisible();
 });
 

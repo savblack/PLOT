@@ -2,6 +2,7 @@
    affordance is the only new element. */
 .home-layout-sheet-head { position: sticky; top: 0; z-index: 2; background: var(--surface); }
 .home-layout-sheet-body { padding: 0 1rem 1.5rem; }
+.home-layout-intro-arrows { display: none; }
 .home-layout-sheet-intro { margin: 0.75rem 0 1rem; font-size: 0.85rem; line-height: 1.45; color: var(--text-secondary); }
 .home-layout-sheet-error { margin: 0 0 0.75rem; font-size: 0.82rem; color: var(--danger); }
 
@@ -38,6 +39,8 @@
 .home-layout-reset { margin-top: 1rem; width: 100%; }
 
 @media (pointer: coarse) {
+  .home-layout-intro-arrows { display: inline; }
+  .home-layout-intro-drag { display: none; }
   .home-layout-grip { display: none; }
   .home-layout-row { grid-template-columns: 1fr auto auto; padding-left: 12px; }
 }

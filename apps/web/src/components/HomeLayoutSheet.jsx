@@ -68,7 +68,7 @@ export default function HomeLayoutSheet({ sections, layout, isDefault, error, on
           <SheetHeader title={C.title} onClose={onClose} action={{ label: C.done, onClick: onClose }} />
         </div>
         <div className="home-layout-sheet-body">
-          <p className="home-layout-sheet-intro">{C.body}</p>
+          <p className="home-layout-sheet-intro"><span className="home-layout-intro-drag">{C.body}</span><span className="home-layout-intro-arrows">{C.bodyArrows}</span></p>
           {error && <p className="home-layout-sheet-error" role="alert">{C.saveError}</p>}
           <ol className="home-layout-list" onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOverIndex(null); }}>
             {sections.map((section, index) => {
