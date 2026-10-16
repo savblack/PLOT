@@ -1,3 +1,5 @@
+import { CUSTOM_LISTS } from './customLists.js';
+
 export const DISCOVER_VIEW = {
   mostAnticipatedTitle: 'Most Anticipated',
   mostAnticipatedSubtitle: 'Coming soon',
@@ -39,6 +41,31 @@ export const DISCOVER_VIEW = {
     settingsHint: 'Reorder or hide the shelves on Home',
     saveError: 'That change didn’t save. Try again.',
     done: 'Done',
+    shelvesTitle: 'Shelves',
+    // Look: density and card style (profile.ui_prefs). Free.
+    lookTitle: 'Look',
+    densityLabel: 'Density',
+    density: { comfy: 'Comfy', compact: 'Compact' },
+    cardStyleLabel: 'Cards',
+    cardStyle: { poster: 'Posters', list: 'List' },
+    // Pinned shelves (profile.home_layout.pins). Premium.
+    pinsTitle: 'Pinned',
+    pinsBody: 'Pinned shelves sit at the top of Home.',
+    pinsEmpty: 'Nothing pinned yet.',
+    pinAction: 'Pin a shelf',
+    pinPickerTitle: 'Pin a shelf',
+    pinKinds: { watchlist: CUSTOM_LISTS.wantToWatch, list: 'Your lists', person: 'People you follow' },
+    pinNothingToPin: 'Nothing left to pin.',
+    pinLimit: (n) => `You can pin up to ${n} shelves.`,
+    pinsLocked: 'Pinned shelves are part of Premium.',
+    pinsUpgrade: 'See Premium',
+    unpin: (name) => `Unpin ${name}`,
+    pinMoveUp: (name) => `Move ${name} up in pinned`,
+    pinMoveDown: (name) => `Move ${name} down in pinned`,
+    pinnedListEmpty: 'Nothing here yet.',
+    pinnedPersonEmpty: 'Nothing new from them lately.',
+    pinGone: 'No longer available',
+    pinCancel: 'Cancel',
   },
   // Home's saved-titles shelf: the bottom of mobile Home, and the top of web
   // Home during the first run.

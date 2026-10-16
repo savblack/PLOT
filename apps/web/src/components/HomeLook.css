@@ -1,0 +1,52 @@
+/* Home's Look setting (profile.ui_prefs): density and card style, set as data
+   attributes on .home-page by DiscoverView. Free for everyone. Comfy and
+   poster are the defaults and need no rules here.
+
+   Compact draws posters smaller and tightens the gaps. List turns the poster
+   rails (Saved, Continue watching, New Releases, Most Binged, Your people and
+   pinned shelves) into rows of a small poster beside the title, capped at
+   eight so a long rail does not become a long page. The wide backdrop cards,
+   the Top 20 chart and the platform charts keep their own layouts. */
+
+/* ── Density ── */
+.home-page[data-density="compact"] { --poster-w: 96px; }
+.home-page[data-density="compact"] .discover-sections { gap: 1.4rem; }
+.home-page[data-density="compact"] .rail-scroll { gap: 0.5rem; }
+.home-page[data-density="compact"] .media-card-title { font-size: 0.74rem; min-height: 2.5em; }
+.home-page[data-density="compact"] .discover-binge-card { flex-basis: clamp(200px, 58vw, 290px); }
+.home-page[data-density="compact"] .discover-chart-rail { grid-auto-columns: min(228px, 72vw); column-gap: 1.25rem; }
+.home-page[data-density="compact"] .discover-chart-card { min-height: 68px; padding-block: 0.3rem; }
+
+/* ── Card style: list ── */
+.home-page[data-card-style="list"] .rail-scroll {
+  flex-direction: column;
+  overflow: visible;
+  gap: 0.2rem;
+  cursor: default;
+  padding-bottom: 0.5rem;
+}
+.home-page[data-card-style="list"] .rail-scroll > .media-card { width: 100%; }
+.home-page[data-card-style="list"] .rail-scroll > .media-card:nth-child(n+9) { display: none; }
+.home-page[data-card-style="list"] .rail-scroll > .media-card:hover,
+.home-page[data-card-style="list"] .rail-scroll > .media-card:active { transform: none; }
+.home-page[data-card-style="list"] .rail-scroll > .media-card .media-card-hit {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  column-gap: 0.85rem;
+  align-items: center;
+  padding: 0.3rem 0.4rem;
+  border-radius: var(--radius-md);
+}
+.home-page[data-card-style="list"] .rail-scroll > .media-card .media-card-hit:hover { background: var(--surface-raised); }
+.home-page[data-card-style="list"] .rail-scroll > .media-card .media-card-hit > * { grid-column: 2; }
+.home-page[data-card-style="list"] .rail-scroll > .media-card .media-card-hit > .media-card-img {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  width: 44px;
+  margin: 0;
+}
+.home-page[data-card-style="list"] .rail-scroll > .media-card .media-card-title { min-height: 0; font-size: 0.85rem; -webkit-line-clamp: 1; }
+.home-page[data-card-style="list"] .rail-scroll > .media-card .continue-progress { grid-column: 2; order: 10; margin-top: 4px; }
+/* The save and favorite buttons sit over the poster's corner; on a 44px poster
+   they would cover it, so they move to the row's right edge. */
+.home-page[data-card-style="list"] .rail-scroll > .media-card .card-fav-btn { left: auto; right: 6px; top: 50%; transform: translateY(-50%); }

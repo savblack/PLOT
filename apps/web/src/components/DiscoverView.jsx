@@ -26,7 +26,11 @@ import { clampToSentences } from '@plot/core/sentences.js';
 import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
 import { visibleHomeSections } from '@plot/core/homeLayout.js';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
+import { usePinnedShelves } from '@plot/core/usePinnedShelves.js';
+import { pinLabel, pinOptions } from '@plot/core/homePins.js';
 import HomeLayoutSheet from './HomeLayoutSheet.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
+import './HomeLook.css';
 import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
 import { featuredCuratedList } from '@plot/core/curatedLists.js';
 import { CuratedListCard, CuratedListDialog } from './CuratedLists.jsx';
@@ -821,6 +825,20 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   const peopleShelf = useYourPeopleShelf();
   const [openCurated, setOpenCurated] = useState(null);
   const [customizing, setCustomizing] = useState(false);
+  const [pinUpgrade, setPinUpgrade] = useState(false);
+  const { user, profile, watching, customLists, uiPrefs } = useApp();
+  const premium = usePremium(profile);
+  // Pinned shelves (Premium): resolved against what the viewer has right now.
+  const pinned = usePinnedShelves({
+    userId: user?.id,
+    layout: homeLayout.layout,
+    premium: premium.isPremium,
+    watchlistItems: watchlist?.items ?? [],
+    watchingItems: watching?.items ?? [],
+    lists: customLists?.lists ?? [],
+    region: profile?.region || DEFAULT_REGION,
+    today: todayStr,
+  });
   const navigate = useNavigate();
   const { data, loading } = useDiscover();
   // Home only renders the recent rail. Loading every per-genre New Releases
@@ -885,8 +903,10 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     platforms: platformList.length > 0,
   };
   const orderedIds = visibleHomeSections(homeLayout.layout, Object.keys(available).filter(id => available[id]));
+  const pinId = (shelf) => `home-pin-${shelf.key.replace(':', '-')}`;
   const pageSections = [
     savedItems.length > 0 ? HOME_SECTION.saved : null,
+    ...pinned.shelves.map(shelf => ({ id: pinId(shelf), label: shelf.label, navLabel: shelf.label })),
     ...orderedIds.map(id => HOME_SECTION[id]),
   ].filter(Boolean);
   const customizable = homeLayout.layout.order.map(id => ({ id, label: HOME_SECTION[id].navLabel }));
@@ -982,6 +1002,17 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
           ))}
         </RailSection>
       )}
+      {pinned.shelves.map(shelf => (
+        <RailSection key={shelf.key} id={pinId(shelf)} title={shelf.label}>
+          {shelf.kind === 'person'
+            ? (shelf.people.length > 0
+              ? shelf.people.map(item => <PeopleShelfCard key={item.key} item={item} today={todayStr} onOpen={() => openPanel(item.tmdbId, item.mediaType)} />)
+              : <p className="discover-section-sub people-shelf-empty">{DISCOVER_VIEW.customize.pinnedPersonEmpty}</p>)
+            : (shelf.titles.length > 0
+              ? shelf.titles.map(item => <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} showMeta={false} openPanel={openPanel} watchlist={watchlist} />)
+              : <p className="discover-section-sub people-shelf-empty">{DISCOVER_VIEW.customize.pinnedListEmpty}</p>)}
+        </RailSection>
+      ))}
       {orderedIds.map(id => renderSection[id]())}
       </div>
       {customizing && (
@@ -995,8 +1026,23 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
           onToggle={(id) => homeLayout.setVisible(id)}
           onReset={homeLayout.reset}
           onClose={() => setCustomizing(false)}
+          prefs={uiPrefs.prefs}
+          onDensity={uiPrefs.chooseDensity}
+          onCardStyle={uiPrefs.chooseCardStyle}
+          premium={premium.isPremium}
+          pins={homeLayout.layout.pins.map(pin => ({
+            key: `${pin.kind}:${pin.id}`,
+            pin,
+            label: pinLabel(pin, { lists: customLists?.lists ?? [], follows: pinned.follows }) ?? DISCOVER_VIEW.customize.pinGone,
+          }))}
+          pinGroups={pinOptions({ layout: homeLayout.layout, lists: customLists?.lists ?? [], follows: pinned.follows })}
+          onPin={homeLayout.pin}
+          onUnpin={homeLayout.unpin}
+          onNudgePin={homeLayout.nudgePin}
+          onUpgrade={() => setPinUpgrade(true)}
         />
       )}
+      {pinUpgrade && <UpgradeSheet reason="pins" onClose={() => setPinUpgrade(false)} />}
       {openCurated && <CuratedListDialog curated={openCurated} onClose={() => setOpenCurated(null)} onOpenTitle={openPanel} />}
     </div>
   );
@@ -1013,7 +1059,7 @@ export default function DiscoverView() {
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
-  const { openPanel, openSearch, watchlist, watching, reminders, profile, user, refreshProfile } = app;
+  const { openPanel, openSearch, watchlist, watching, reminders, profile, user, refreshProfile, uiPrefs } = app;
   const homeLayout = useHomeLayout({ userId: user?.id, saved: profile?.home_layout, onPersisted: refreshProfile });
   const firstRun = useFirstRun();
   const online = useOnlineStatus();
@@ -1030,7 +1076,7 @@ export default function DiscoverView() {
   const personalState = homePersonalState({ offline: !online, loading: calendarLoading || !listsReady, error: calendarError, upNext, savedCount: watchlist.items.length, watchingCount: watching.items.length });
 
   return (
-    <div className="home-page">
+    <div className="home-page" data-density={uiPrefs?.prefs.density ?? 'comfy'} data-card-style={uiPrefs?.prefs.cardStyle ?? 'poster'}>
       <DiscoverToolbar
         typeFilters={typeFilters}
         setTypeFilters={setTypeFilters}

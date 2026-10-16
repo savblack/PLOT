@@ -221,6 +221,22 @@ export const SETTINGS_VIEW = {
 
   // Theme picker. Palette values and the Premium rule live in
   // @plot/core/tokens.js + themes.js. Mobile and web both read them.
+  // Sidebar order (web), profile.ui_prefs.sidebar. Free.
+  sidebar: {
+    rowLabel: 'Sidebar order',
+    rowHint: 'Choose the order of the menu on the left',
+    valueDefault: 'Default',
+    valueCustom: 'Custom',
+    title: 'Sidebar order',
+    body: 'Use the arrows to put the menu in the order you like. Search stays at the top and Settings at the bottom.',
+    moveUp: (name) => `Move ${name} up`,
+    moveDown: (name) => `Move ${name} down`,
+    drag: (name) => `Drag to reorder ${name}`,
+    reset: 'Reset order',
+    done: 'Done',
+    saveError: 'That change didn’t save. Try again.',
+  },
+
   appearance: {
     label: 'Appearance',
     optionsLabel: 'Appearance options',

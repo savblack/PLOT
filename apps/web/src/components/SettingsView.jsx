@@ -45,6 +45,7 @@ import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
 import SettingsThemeRows from './SettingsThemeRows.jsx';
+import SidebarOrderSheet from './SidebarOrderSheet.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import PremiumAlertsSettings from './PremiumAlertsSettings.jsx';
 import StreamingAlertsSettings from './StreamingAlertsSettings.jsx';
@@ -1112,7 +1113,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
    SettingsView
 ═══════════════════════════════════════ */
 export default function SettingsView() {
-  const { profile, user, themeMode, themeFamily, setThemeMode, setThemeFamily, refreshProfile, watchlist, watching, reminders, customLists } = useApp();
+  const { profile, user, themeMode, themeFamily, setThemeMode, setThemeFamily, refreshProfile, watchlist, watching, reminders, customLists, uiPrefs } = useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = SETTINGS_SECTIONS.some(item => item.id === searchParams.get('section')) ? searchParams.get('section') : 'account';
@@ -1136,6 +1137,7 @@ export default function SettingsView() {
   const [savingVisibility, setSavingVisibility] = useState(false);
   const [providerDraft,       setProviderDraft]       = useState(null);
   const [showGenres,          setShowGenres]          = useState(false);
+  const [showSidebarOrder,    setShowSidebarOrder]    = useState(false);
   const [savingGenres,        setSavingGenres]        = useState(false);
   const [genreDraft,          setGenreDraft]          = useState(null);
   const [showRegion,          setShowRegion]          = useState(false);
@@ -1824,6 +1826,22 @@ export default function SettingsView() {
           premiumBadge={<PremiumBadge />}
         />
         {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
+        <SettingsPreferenceRow
+          label={SETTINGS_VIEW.sidebar.rowLabel}
+          value={(uiPrefs?.prefs.sidebar.length ?? 0) === 0 ? SETTINGS_VIEW.sidebar.valueDefault : SETTINGS_VIEW.sidebar.valueCustom}
+          onEdit={() => setShowSidebarOrder(true)}
+        />
+        {showSidebarOrder && (
+          <SidebarOrderSheet
+            order={uiPrefs?.prefs.sidebar}
+            isDefault={(uiPrefs?.prefs.sidebar.length ?? 0) === 0}
+            error={uiPrefs?.error}
+            onNudge={uiPrefs?.nudgeSidebar}
+            onMove={uiPrefs?.moveSidebar}
+            onReset={uiPrefs?.resetSidebarOrder}
+            onClose={() => setShowSidebarOrder(false)}
+          />
+        )}
 
       </div>
       <div className="settings-group"><div className="settings-group-title">{SETTINGS_VIEW.page.emailPreferences}</div>
