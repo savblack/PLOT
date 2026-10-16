@@ -36,6 +36,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
 import { useHomePosterScale } from '../../lib/homeLook';
+import PosterRail, { useRowLayout } from '../../components/PosterRail';
+import ListRow from '../../components/ListRow';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
@@ -161,11 +163,49 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { profile } = useAppData();
+  const row = useRowLayout();
   const posterScale = useHomePosterScale();
   const art = useUserArtwork();
   const fw       = favoriteWords(profile?.region);
   const title    = item.title || item.name || '';
   const img      = posterUrl(displayPosterPath(art.apply(item)), 'w185');
+
+  if (row) {
+    const year = (item.release_date || item.first_air_date || '').slice(0, 4);
+    const kind = item.media_type === 'tv' ? MEDIA.tv : MEDIA.movie;
+    return (
+      <ListRow
+        posterUri={img}
+        title={title}
+        meta={[year, kind].filter(Boolean).join(' · ')}
+        onPress={onPress}
+        trailing={(
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            {FAVOURITES_ENABLED && (
+              <TouchableOpacity
+                onPress={onFavorite}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                style={{ padding: spacing.sm }}
+                accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
+                accessibilityRole="button"
+              >
+                <HeartIcon color={isFav ? colors.accent : colors.textMuted} filled={isFav} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={onSave}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              style={{ padding: spacing.sm }}
+              accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
+              accessibilityRole="button"
+            >
+              <BookmarkIcon size={16} color={saved ? colors.accent : colors.textMuted} strokeWidth={2.5} filled={saved} />
+            </TouchableOpacity>
+          </View>
+        )}
+      />
+    );
+  }
 
   return (
     <TouchableOpacity style={[styles.card, { width: CARD_W * posterScale }]} onPress={onPress} activeOpacity={0.8}>
@@ -841,8 +881,7 @@ export default function HomeScreen() {
   const upNext = upNextRows.length > 0 ? (
     <View style={styles.section}>
       <SectionHeader title={DISCOVER_VIEW.upNext} />
-      <FlatList
-        horizontal
+      <PosterRail
         data={upNextRows}
         keyExtractor={row => row.kind === 'watching' ? `w-${row.item.tmdbId}` : `s-${row.item.tmdb_id ?? row.item.id}`}
         renderItem={({ item: row }) => row.kind === 'watching' ? (
@@ -857,9 +896,6 @@ export default function HomeScreen() {
             onFavorite={() => toggleFav({ ...row.item, id: row.item.tmdb_id ?? row.item.id ?? 0 })}
           />
         )}
-        showsHorizontalScrollIndicator={false}
-        nestedScrollEnabled
-        contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
       />
     </View>
   ) : upNextEmpty && starterPicks.length > 0 ? (
@@ -943,8 +979,7 @@ export default function HomeScreen() {
         {hotRail.length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Trending today" title="Hot Right Now" />
-            <FlatList
-              horizontal
+            <PosterRail
               data={hotRail}
               keyExtractor={item => String(item.id)}
               renderItem={({ item }) => (
@@ -957,9 +992,6 @@ export default function HomeScreen() {
                   onFavorite={() => toggleFav(item)}
                 />
               )}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
             />
           </View>
         )}
