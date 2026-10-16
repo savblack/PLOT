@@ -3,6 +3,10 @@
 import { notionRequest } from './notionApi.js';
 import { notionId } from './notionReview.js';
 
+// Token precedence: dedicated intake connection, then marketing token, then legacy key.
+export const resolveNotionToken = (get) =>
+  get('NOTION_CONNECTION') || get('NOTION_TOKEN') || get('NOTION_API_KEY') || '';
+
 const richText = (value) => {
   const text = String(value ?? '');
   const parts = [];

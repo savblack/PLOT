@@ -2,11 +2,11 @@
  * notify-feedback: email each in-app submission and file it in a private Notion
  * database. A Notion failure never prevents the independent operator email.
  * Backfill accepts {"backfill":true,"limit":25} from a service-role caller.
- * Required secrets: NOTION_TOKEN, NOTION_FEEDBACK_DATABASE_ID, SUPABASE_URL,
+ * Required secrets: NOTION_CONNECTION (falls back to NOTION_TOKEN, then NOTION_API_KEY), NOTION_FEEDBACK_DATABASE_ID, SUPABASE_URL,
  * SUPABASE_SERVICE_ROLE_KEY. RESEND_API_KEY enables the email alert.
  */
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { createIntakePage, findIntakePage } from '../_shared/notionIntake.js'
+import { createIntakePage, findIntakePage, resolveNotionToken } from '../_shared/notionIntake.js'
 
 // Db is the *default* instantiation
 // (SupabaseClient<unknown, …, never, never>), so every row came back
@@ -311,7 +311,7 @@ Deno.serve(async (req) => {
   let body: { record?: Record<string, unknown>, backfill?: unknown, limit?: unknown }
   try { body = await req.json() } catch { return new Response('Invalid JSON', { status: 400 }) }
 
-  const token = Deno.env.get('NOTION_TOKEN') || Deno.env.get('NOTION_API_KEY') || ''
+  const token = resolveNotionToken((k) => Deno.env.get(k))
   const databaseId = Deno.env.get('NOTION_FEEDBACK_DATABASE_ID') || ''
   const resendKey = Deno.env.get('RESEND_API_KEY')
   const configured = Boolean(token && databaseId)
