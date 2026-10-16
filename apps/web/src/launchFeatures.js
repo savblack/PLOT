@@ -21,8 +21,7 @@ export const SHOW_APPLE_LOGIN = import.meta.env.VITE_SHOW_APPLE_LOGIN !== 'false
 export const SHOW_PRICING_PAGE = true;
 
 // Watch together (Premium), and the collaborative lists built on it. Their
-// migrations are live in production and the web UI is ready, so this is on
-// (PLO-515). Flip back to false to hide /together, shared lists and the related
-// surfaces. Mobile has no screen yet: apps/mobile/lib/launchFeatures.ts keeps
-// the flag false.
+// migrations are live in production and both apps show it (PLO-515). Flip
+// back to false to hide /together, shared lists and the related surfaces.
+// Mobile uses the same switch in apps/mobile/lib/launchFeatures.ts.
 export const SHOW_WATCH_TOGETHER = true;

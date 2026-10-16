@@ -6,7 +6,7 @@ const keywords = {
   viewing: 'streaming platforms providers channels broadcast guide market country region timezone genres kids alerts notifications mute',
   connections: 'plex trakt sync import watch history calendar feed ics',
   billing: 'premium subscription plan payment invoice checkout support tip ko-fi kofi',
-  privacy: 'public private profile blocked accounts share invite export json csv clear lists history delete',
+  privacy: 'public private profile blocked accounts share invite export json csv clear lists history delete watch together requests invite link',
   help: 'feedback bug support terms privacy policy credits tmdb tvmaze omdb',
 };
 
