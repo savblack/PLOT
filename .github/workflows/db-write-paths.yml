@@ -23,8 +23,8 @@
 # pull_request, so any collaborator's PR can edit the script it executes; the
 # credential that PR can reach should not be able to write to production. The
 # role is created by 20261014110000_ci_readonly_role.sql; set its password and
-# the secret as docs/ops/db-restore.md describes. Until the secret exists the
-# job falls back to SUPABASE_DB_URL with a warning so the check keeps running.
+# the secret as docs/ops/db-restore.md describes. There is no fallback to the
+# owner URL: if the secret is missing the job fails with a clear message.
 
 name: DB write paths (daily)
 
@@ -106,15 +106,12 @@ jobs:
       - name: Check write paths
         env:
           SUPABASE_DB_URL_READONLY: ${{ secrets.SUPABASE_DB_URL_READONLY }}
-          SUPABASE_DB_URL_OWNER: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          if [ -n "$SUPABASE_DB_URL_READONLY" ]; then
-            export SUPABASE_DB_URL="$SUPABASE_DB_URL_READONLY"
-          elif [ -n "$SUPABASE_DB_URL_OWNER" ]; then
-            echo "::warning::SUPABASE_DB_URL_READONLY is not set; using the owner URL. Create the plot_ci_readonly password and secret (docs/ops/db-restore.md)."
-            export SUPABASE_DB_URL="$SUPABASE_DB_URL_OWNER"
-          else
-            echo "Neither SUPABASE_DB_URL_READONLY nor SUPABASE_DB_URL is set — cannot check. Add it in Settings → Secrets → Actions." >&2
+          # Fail closed: this job never sees the owner SUPABASE_DB_URL, so a PR
+          # that edits the script can only ever reach the read-only role.
+          if [ -z "$SUPABASE_DB_URL_READONLY" ]; then
+            echo "::error::SUPABASE_DB_URL_READONLY is not set. Refusing to run: this check never falls back to the owner SUPABASE_DB_URL. Create the plot_ci_readonly password and secret (docs/ops/db-restore.md)." >&2
             exit 1
           fi
+          export SUPABASE_DB_URL="$SUPABASE_DB_URL_READONLY"
           pnpm run db:write-paths
