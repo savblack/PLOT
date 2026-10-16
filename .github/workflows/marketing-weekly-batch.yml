@@ -61,6 +61,8 @@ jobs:
           # The batch now ends by pushing the rendered week into Buffer, so the
           # generation job needs the publishing credential it never used to.
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          # Repo variable; unset means draft (the safe default in schedule.mjs).
+          BUFFER_PUSH_AS_DRAFT: ${{ vars.BUFFER_PUSH_AS_DRAFT }}
 
       - name: Alert on failure
         if: failure()
