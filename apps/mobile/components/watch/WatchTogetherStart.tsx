@@ -115,8 +115,8 @@ function Hero({ titles, premium, sent, onInvite }: {
       <InkTitle>{premium ? S.premiumPitchTitle : S.pitchTitle}</InkTitle>
       <InkText>{premium ? S.premiumPitchBody : S.pitchBody}</InkText>
       <FriendSearch sent={sent} onInvite={onInvite} />
+      <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: ink.note, textAlign: 'center' }}>{T.link.inviteBody}</Text>
       <PrimaryButton label={T.link.share} onPress={() => send('share')} disabled={!url} />
-      <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: ink.note, textAlign: 'center' }}>{S.notOnPlot}</Text>
     </InkCard>
   );
 }
