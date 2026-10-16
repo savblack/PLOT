@@ -23,7 +23,6 @@ import CollapsibleSection from '../../components/CollapsibleSection';
 import SectionToggleIcon from '../../components/SectionToggleIcon';
 import SelectCircle from '../../components/SelectCircle';
 import KebabMenu, { KebabMenuItem } from '../../components/KebabMenu';
-import SubTab from '../../components/SubTab';
 import SearchPickModal from '../../components/SearchPickModal';
 import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
@@ -106,6 +105,7 @@ type ListedTitle = {
 // diverge on which tabs exist or their order. Favourites is region-spelled
 // at the call site — it carries a null label here for exactly that reason.
 const TABS = MY_LISTS_TABS;
+const MY_LISTS_ALL_LABEL = 'All';
 
 // Release / streaming countdown chip — ports web countdownChip(); maps onto
 // the shared status-colour tokens (today / tomorrow / soon / muted).
@@ -634,8 +634,11 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     relevantSectionIds.forEach(id => setSectionOpen(id, next));
   };
 
+  // The Show choices: every list tab except History, which has its own screen. The
+  // favourites tab carries a null label in the shared list (region-spelled).
+  const listTabs = TABS.filter(t => t.id !== 'history').map(t => ({ id: t.id, label: t.label ?? fw.plural }));
   const searchPlaceholder = isHistory ? HISTORY_VIEW.searchPlaceholder : CUSTOM_LISTS.searchPlaceholder;
-  const HEADER_H = insets.top + 150;
+  const HEADER_H = insets.top + 136;
 
   return (
     <View style={styles.screen}>
@@ -942,26 +945,9 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         {/* Tabs and the filter/collapse controls share one row, as on web —
             the old second row of All/Movies/TV chips is gone. */}
         <View style={styles.tabsRow}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.subTabsRow}
-            style={styles.subTabsScroll}
-          >
-            {/* favourites carries a null label in the shared list — it is the one
-                tab whose wording is region-dependent (Favourites/Favorites). */}
-            {mode === 'history' ? null : TABS.filter(t => t.id !== 'history').map(t => (
-              <SubTab
-                key={t.id}
-                label={t.label ?? fw.plural}
-                active={viewTab === t.id}
-                onPress={() => {
-                  if (t.id !== 'history' && sharePreset) router.setParams({ share: '' });
-                  setTab(t.id);
-                }}
-              />
-            ))}
-          </ScrollView>
+          <Text style={styles.viewLabel} numberOfLines={1} accessibilityRole="header">
+            {isHistory ? HISTORY_VIEW.title : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}
+          </Text>
           <View style={styles.tabsRowActions}>
             {/* ‹ Mar 2026 › — jumps to the adjacent month that actually has
                 entries, so empty months are never a dead step. */}
@@ -994,12 +980,26 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             )}
             <GroupedFilterMenu
               accessibilityLabel="Filter lists"
-              groups={[{
-                heading: 'Type',
-                options: TYPE_OPTIONS,
-                value: typeFilters,
-                onChange: setTypeFilters,
-              }]}
+              groups={[
+                ...(mode === 'history' ? [] : [{
+                  heading: 'Show',
+                  mode: 'single' as const,
+                  options: listTabs.map(t => ({ id: t.id, label: t.label })),
+                  value: [tab],
+                  defaultValue: ['all'],
+                  onChange: ([next]: string[]) => {
+                    if (!next) return;
+                    if (sharePreset) router.setParams({ share: '' });
+                    setTab(next);
+                  },
+                }]),
+                {
+                  heading: 'Type',
+                  options: TYPE_OPTIONS,
+                  value: typeFilters,
+                  onChange: setTypeFilters,
+                },
+              ]}
             />
             {!searching && (relevantSectionIds.length > 0 || (isHistory && historyGroups.length > 0)) && (
               <TouchableOpacity
@@ -1367,6 +1367,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   // 44 leaves room for the tab label plus its underline; the previous height
   // clipped descenders on "Watching"/"Want to Watch".
+  viewLabel: { flex: 1, paddingHorizontal: spacing.xl, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
   subTabsScroll: { flex: 1, height: 44 },
   subTabsRow: { paddingHorizontal: spacing.xl, alignItems: 'center' },
   listSearch: {
