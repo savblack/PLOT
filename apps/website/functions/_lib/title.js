@@ -7,8 +7,8 @@ import { cacheable, tagged } from './edgeCache.js';
 import { FOOTER_HTML } from './footer.generated.js';
 import { renderTitlePage } from './titleRenderer.generated.js';
 
-// Bumped 2026-10-14 for the joined l-o wordmark (savblack/PLOT#1308).
-export const TITLE_CACHE_VERSION = 2;
+// Bumped 2026-10-16 so cached pages stop pointing at Supabase title cards.
+export const TITLE_CACHE_VERSION = 3;
 
 export { cacheable };
 
