@@ -15,6 +15,7 @@ import { upgradeSheetContent, type UpgradeReason } from '@plot/core/upgradeSheet
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import PremiumIcon from './PremiumIcon';
+import { usePremiumCheckout } from '../lib/usePremiumCheckout';
 
 const S = PLANS_PAGE.upgradeSheet;
 
@@ -33,11 +34,19 @@ export default function UpgradeSheet({
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const [showCheckoutNote, setShowCheckoutNote] = useState(false);
+  const checkout = usePremiumCheckout(visible);
   const content = upgradeSheetContent(reason, { family });
   if (!content) return null;
 
   const close = () => { setShowCheckoutNote(false); onClose(); };
   const compare = () => { close(); onCompare(); };
+  // Checkout open: Stripe in the browser. Closed: say so, as web does.
+  const upgrade = async () => {
+    if (checkout.closed) { setShowCheckoutNote(true); return; }
+    const result = await checkout.start('monthly');
+    if (result === 'closed') setShowCheckoutNote(true);
+    else if (result === 'opened') close();
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
@@ -69,10 +78,11 @@ export default function UpgradeSheet({
               <Text style={styles.trial}>{PLANS_PAGE.premium.trialNote}</Text>
             </View>
 
-            <TouchableOpacity style={styles.primary} onPress={() => setShowCheckoutNote(true)} accessibilityRole="button">
-              <Text style={styles.primaryText}>{PLANS_PAGE.upgradeAction}</Text>
+            <TouchableOpacity style={[styles.primary, checkout.busy && { opacity: 0.6 }]} onPress={upgrade} disabled={checkout.busy} accessibilityRole="button">
+              <Text style={styles.primaryText}>{checkout.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.upgradeAction}</Text>
             </TouchableOpacity>
-            {showCheckoutNote && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
+            {(showCheckoutNote || checkout.closed) && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
+            {!!checkout.error && <Text style={styles.note} accessibilityRole="alert">{checkout.error}</Text>}
 
             <Text style={styles.also}>{S.alsoIn}</Text>
             {content.also.map(row => (

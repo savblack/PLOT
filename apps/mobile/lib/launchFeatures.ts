@@ -26,10 +26,10 @@ export const SHOW_APPLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_APPLE_LOGIN === 'tr
 
 // Pricing page. Mobile has no /plans screen, so nothing reads this yet;
 // declared so the two flag sets stay comparable. The upgrade sheet
-// (components/UpgradeSheet) and Pick for Me's pop-up show the price, the
-// 7-day trial for new subscribers, and an Upgrade button that says checkout is
-// not open yet, matching web. Mobile never takes a payment in the app (Apple's
-// anti-steering rules keep purchases on the web app).
+// (components/UpgradeSheet) and Pick for Me's pop-up show the price and the
+// 7-day trial for new subscribers. While checkout is closed, Upgrade says so,
+// matching web. Mobile never takes a payment inside the app: once checkout is
+// open, Upgrade opens Stripe Checkout in the phone's browser.
 export const SHOW_PRICING_PAGE = false;
 
 // Watch together (PLO-515). On for every signed-in account, same as web
@@ -37,3 +37,11 @@ export const SHOW_PRICING_PAGE = false;
 // to hide the drawer row, profile tile, shared lists and the related alerts.
 // Deciding together still needs Premium on at least one side.
 export const SHOW_WATCH_TOGETHER = true;
+
+// Upgrade opens Stripe Checkout in the browser. Apple's rules allow a link out
+// to web payment on the US storefront (since May 2025); outside the US we found
+// nothing confirming it. Before the App Store submission, check Apple's current
+// App Review Guidelines 3.1.1 and 3.1.3 and, if needed, limit this to US
+// accounts (profile.region === 'US') or turn it off. See
+// docs/ops/app-store-listing.md.
+export const BROWSER_CHECKOUT_ENABLED = true;
