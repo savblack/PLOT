@@ -48,6 +48,7 @@ import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from './ArtworkSheet';
 import ParentalGuide, { type ParentalGuideDetails } from './ParentalGuide';
+import { EpisodeRatingsEntry } from './EpisodeRatingsSheet';
 import { updateProfile } from '@plot/core/profile.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
@@ -331,6 +332,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
 
   return (
     <View>
+      <EpisodeRatingsEntry tvId={tvId} details={details} />
       {/* Season pill and the bulk action share one line. The chip strip it
           replaces grew a row for every season. */}
       <View style={styles.seasonRow}>

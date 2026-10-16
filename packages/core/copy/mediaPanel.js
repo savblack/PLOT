@@ -140,4 +140,36 @@ export const MEDIA_PANEL = {
     watchedRemoved: 'Watched removed',
     deleted: 'Deleted',
   },
+
+  // The episode-ratings sheet above the season row. TMDB is the audience
+  // grid. Yours reads imported episode ratings and leaves the rest blank.
+  episodeRatingsTitle: 'Episode ratings',
+  episodeRatingsTmdb: 'TMDB',
+  episodeRatingsYours: 'Yours',
+  episodeRatingsNoneTmdb: 'No episode scores for this show yet.',
+  episodeRatingsNoneYours: "You haven't rated episodes of this show.",
+  episodeRatingsSignIn: 'Sign in to see your episode ratings.',
+  episodeRatingsLoadError: 'Could not load episode ratings. Try again.',
+  episodeRatingsRetry: 'Try again',
+  episodeRatingsClose: 'Close',
+  episodeRatingsEpisode: (episode) => `Episode ${episode}`,
+  episodeRatingsHolds: (season, through, episode, score, yours) => (
+    yours
+      ? `Season ${season} holds through episode ${through}. Your low point is episode ${episode}, at ${score}.`
+      : `Season ${season} holds through episode ${through}. The low point is episode ${episode}, at ${score}.`
+  ),
+  episodeRatingsLowPoint: (season, episode, score, yours) => (
+    yours
+      ? `Your low point is season ${season}, episode ${episode}, at ${score}.`
+      : `The low point is season ${season}, episode ${episode}, at ${score}.`
+  ),
+  episodeRatingsRated: (rated, total) => `You've rated ${rated} of ${total} episodes.`,
+  episodeRatingsVotes: (count) => `${count} votes`,
+  episodeRatingsUnrated: 'Unrated',
+  episodeRatingsCell: (season, episode, name, score) => `Season ${season}, episode ${episode}, ${name}, ${score}`,
+  episodeRatingsBandPeak: '9 and up',
+  episodeRatingsBandGood: '8',
+  episodeRatingsBandFine: '7',
+  episodeRatingsBandSoft: '6',
+  episodeRatingsBandFall: 'Under 6',
 };
