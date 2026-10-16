@@ -25,8 +25,10 @@ const TTLS = [
   // or artwork is replaced. Six hours is well inside how fast Plot needs to see
   // that, and it collapses the repeat views a popular title gets in a day.
   [/^(movie|tv)\/\d+$/, 21600],
-  [/^(movie|tv)\/\d+\/(recommendations|reviews|watch\/providers)$/, 21600],
+  [/^(movie|tv)\/\d+\/(recommendations|reviews|watch\/providers|images)$/, 21600],
+  [/^person\/\d+\/images$/, 21600],
   [/^tv\/\d+\/season\/\d+(\/episode\/\d+)?$/, 21600],
+  [/^tv\/\d+\/season\/\d+\/images$/, 21600],
   [/^trending\//, 3600],
   [/^(movie|tv)\/(now_playing|upcoming|top_rated|on_the_air|airing_today)$/, 3600],
   [/^discover\/(movie|tv)$/, 3600],
