@@ -437,9 +437,24 @@ export default function AuthPage({ initialMode = 'signup' }) {
     });
     if (!attemptIsCurrent(epoch)) return;
     if (error) {
-      setError(COMMON.genericError);
+      // supabase-js returns data: null for any non-2xx, so the function's
+      // structured { reason } only survives in error.context (the Response).
+      // Without reading it every failure, including a dead Resend key,
+      // collapsed into one opaque 'bypass_create_failed'.
+      let reason = null;
+      let status = null;
+      try {
+        status = error.context?.status ?? null;
+        const body = await error.context?.clone?.().json();
+        reason = typeof body?.reason === 'string' ? body.reason : null;
+      } catch { /* network error or non-JSON body */ }
+      if (!attemptIsCurrent(epoch)) return;
+      setError(bypassErrorMessage(reason));
       setLoading(false);
-      track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: 'bypass_create_failed' });
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, {
+        reason: reason ? `bypass_${reason}` : 'bypass_create_failed',
+        ...(status ? { status } : {}),
+      });
       return;
     }
     if (data?.error) {

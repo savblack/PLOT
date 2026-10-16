@@ -68,6 +68,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          # Repo variable; unset means draft (the safe default in schedule.mjs).
+          BUFFER_PUSH_AS_DRAFT: ${{ vars.BUFFER_PUSH_AS_DRAFT }}
         run: node marketing/publish/schedule.mjs --retry-failed
 
       - name: Reconcile the Buffer queue
@@ -112,6 +114,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          # Repo variable; unset means draft (the safe default in schedule.mjs).
+          BUFFER_PUSH_AS_DRAFT: ${{ vars.BUFFER_PUSH_AS_DRAFT }}
         run: node marketing/publish/schedule.mjs
 
       - name: Fail the job when card render failed
