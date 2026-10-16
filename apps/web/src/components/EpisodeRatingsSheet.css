@@ -1,0 +1,227 @@
+.episode-ratings-open {
+  display: inline-flex;
+  margin: 0 0 0.65rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.er-body {
+  padding: 0.85rem 1.1rem 0.35rem;
+}
+
+.er-loading {
+  display: flex;
+  justify-content: center;
+  padding: 2.5rem 0;
+}
+
+.er-message {
+  margin: 0.15rem 0 0.85rem;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.er-sources {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 0 0.85rem;
+}
+
+.er-source {
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.er-source[aria-pressed="true"] {
+  background: var(--text-primary);
+  color: var(--bg);
+  border-color: var(--text-primary);
+}
+
+.er-story {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: var(--font-display-tracking);
+  color: var(--text-primary);
+}
+
+.er-rated {
+  margin: 0 0 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.er-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin: 0 0 0.75rem;
+}
+
+.er-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.er-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.er-scroll {
+  overflow: auto;
+  max-height: min(52dvh, 28rem);
+  overscroll-behavior: contain;
+}
+
+.er-grid {
+  display: grid;
+  grid-template-columns: 1.7rem repeat(var(--cols), minmax(2.45rem, 1fr));
+  gap: 3px;
+  width: max(100%, calc(1.7rem + var(--cols) * 2.65rem));
+  padding-bottom: 0.2rem;
+}
+
+.er-corner,
+.er-label,
+.er-head {
+  position: sticky;
+  background: var(--surface);
+}
+
+.er-corner,
+.er-label { left: 0; z-index: 1; }
+.er-corner,
+.er-head { top: 0; z-index: 1; }
+.er-corner { z-index: 2; }
+
+.er-head,
+.er-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.35rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.er-label { justify-content: flex-start; }
+
+.er-cell {
+  border: 0;
+  border-radius: 6px;
+  min-height: 2rem;
+  padding: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans-tabular);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+}
+
+.er-cell:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
+}
+
+.er-cell--peak {
+  background: var(--accent-secondary-fill);
+  color: var(--on-accent-secondary-fill);
+}
+
+.er-cell--good {
+  background: color-mix(in srgb, var(--accent-secondary-fill) 58%, var(--surface));
+}
+
+.er-cell--fine { background: var(--surface-sunken); }
+
+.er-cell--soft {
+  background: color-mix(in srgb, var(--danger) 16%, var(--surface));
+}
+
+.er-cell--fall {
+  background: color-mix(in srgb, var(--danger) 34%, var(--surface));
+}
+
+.er-cell--empty {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.er-cell.is-selected {
+  box-shadow: inset 0 0 0 2px var(--text-primary);
+}
+
+.er-gap { min-height: 2rem; }
+
+.er-detail {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.er-detail-copy { min-width: 0; }
+
+.er-detail-id {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.er-detail-name {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.er-detail-votes {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.er-detail-score {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.er-detail-score.is-unrated {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--text-muted);
+}

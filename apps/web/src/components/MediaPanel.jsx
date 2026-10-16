@@ -53,6 +53,7 @@ import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb, networksFr
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
+import EpisodeRatingsEntry from './EpisodeRatingsSheet.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 import StarIcon from './StarIcon.jsx';
@@ -547,6 +548,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
 
   return (
     <div>
+      <EpisodeRatingsEntry tvId={tvId} details={details} />
       {/* Season picker and the season-level action share one line: the season
           as a pill you open, the bulk action as plain text on the right. The
           chip-per-season strip it replaces grew a row for every season. */}
