@@ -81,16 +81,15 @@ export default function CollapsibleSection({
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  section: { marginBottom: spacing.lg },
-  head: { flexDirection: 'row', alignItems: 'center' },
-  headToggle: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, gap: spacing.sm },
+  section: { marginBottom: spacing.xl },
+  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl },
+  headToggle: { flex: 1, flexDirection: 'row', alignItems: 'baseline', paddingVertical: spacing.md, gap: spacing.sm },
   headActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  // Display type on the page, like Home's shelf headings (was small grey capitals).
   label: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    fontFamily: fontFamily.display,
+    fontSize: fontSize.xl,
+    color: colors.textPrimary,
   },
   count: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 });
