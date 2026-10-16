@@ -271,10 +271,19 @@ It is retained in first-touch attribution and registered separately as the
 session property `current_article_slug`, so a signup can be analysed by both
 the person's original acquisition source and the article they acted on now.
 
-**The live gap:** almost nothing inbound carries a `utm_source` at all, so
-`$initial_utm_source` is empty for every person. The vanity links (`/ig`, `/x`,
-`/th`) cover the bio link; per-post social links are still untagged, and mobile
-has no acquisition attribution of any kind.
+The marketing URL builders accept `{ source, campaign, content }` and emit
+`utm_source=x|threads|instagram`, `utm_medium=social`, `utm_campaign` from
+`marketing_posts.post_type`, and `utm_content` from `marketing_posts.id`.
+The current planner stores `upcoming` and `trailer` for the weekly slate and
+trailer drop, so those are the campaign values until the post types change.
+Their older string argument still emits `utm_medium=organic_social` for callers
+outside this repo. Today, only Threads trending posts include a link, to
+`/whats-on/chart`. X copy must not contain a URL, and Instagram posts have no
+per-post link, so clicks from those posts cannot yet be measured by post ID.
+Savannah needs to decide whether to add links on those platforms.
+
+The vanity links (`/ig`, `/x`, `/th`) cover profile links. Mobile still has no
+acquisition attribution of its own.
 
 ## Error tracking
 

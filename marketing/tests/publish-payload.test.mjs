@@ -6,8 +6,10 @@ process.env.SUPABASE_URL ??= 'https://example.supabase.co';
 
 const { buildPayload, sendTimeFor, publishDay, weekdayKey, SERVICE, SEND_HOUR_ET } =
   await import('../publish/payload.mjs');
+const { entryUrl, chartUrl } = await import('../lib/feed.mjs');
 
 const post = {
+  id: 'post-123',
   topic_key: 'test',
   post_type: 'hidden_gem',
   // Tuesday, September 15, 2026, 9:00am Eastern.
@@ -143,9 +145,48 @@ test('a card limited to one channel is not sent to the others', () => {
 
 test('a trending post carries the chart link on Threads', () => {
   const trending = { ...post, post_type: 'trending' };
-  assert.match(buildPayload(trending, 'threads').text, /https?:\/\//);
+  const text = buildPayload(trending, 'threads').text;
+  const link = new URL(text.split('\n\n').at(-1));
+  assert.equal(link.pathname, '/whats-on/chart');
+  assert.deepEqual(Object.fromEntries(link.searchParams), {
+    utm_source: 'threads',
+    utm_medium: 'social',
+    utm_campaign: 'trending',
+    utm_content: post.id,
+  });
   // ...and never on X, where VOICE.md forbids URLs.
   assert.ok(!buildPayload(trending, 'x').text.includes('http'));
+  assert.ok(!buildPayload(trending, 'instagram').text.includes('http'));
+});
+
+test('both feed URLs use four encoded parameters for object tracking', () => {
+  const tracking = { source: 'x', campaign: 'trailer_drop', content: 'post 123&456' };
+  for (const url of [entryUrl('example-title', tracking), chartUrl(tracking)]) {
+    assert.deepEqual(Object.fromEntries(new URL(url).searchParams), {
+      utm_source: 'x',
+      utm_medium: 'social',
+      utm_campaign: 'trailer_drop',
+      utm_content: 'post 123&456',
+    });
+  }
+  assert.equal(new URL(entryUrl('example-title', tracking)).pathname, '/whats-on/example-title');
+  assert.equal(new URL(chartUrl(tracking)).pathname, '/whats-on/chart');
+});
+
+test('legacy string tracking keeps organic_social, and omitted tracking stays bare', () => {
+  assert.equal(entryUrl('example-title', 'x'),
+    'https://theplot.tv/whats-on/example-title?utm_source=x&utm_medium=organic_social');
+  assert.equal(chartUrl('threads'),
+    'https://theplot.tv/whats-on/chart?utm_source=threads&utm_medium=organic_social');
+  assert.equal(entryUrl('example-title'), 'https://theplot.tv/whats-on/example-title');
+  assert.equal(chartUrl(), 'https://theplot.tv/whats-on/chart');
+});
+
+test('object tracking requires the post source, type, and ID', () => {
+  assert.throws(() => entryUrl('example-title', { source: 'x', campaign: 'trending' }),
+    /source, campaign, and content/);
+  assert.throws(() => chartUrl({ source: 'threads', content: 'post-123' }),
+    /source, campaign, and content/);
 });
 
 test('every platform maps to a Buffer service', () => {

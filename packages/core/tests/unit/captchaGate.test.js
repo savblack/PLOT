@@ -46,8 +46,8 @@ test('login, reset, and magic link wait, then stop instead of posting an empty t
 });
 
 test('the wait is a few seconds, long enough for a healthy widget to win', () => {
-  assert.ok(CAPTCHA_TOKEN_WAIT_MS >= 2000);
-  assert.ok(CAPTCHA_TOKEN_WAIT_MS <= 8000);
+  assert.ok(CAPTCHA_TOKEN_WAIT_MS >= 4000);
+  assert.ok(CAPTCHA_TOKEN_WAIT_MS <= 10000);
 });
 
 test('a submit gets one retry before it gives up on the widget', () => {

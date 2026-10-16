@@ -13,6 +13,7 @@ import { DEFAULT_PUBLISH_TIME, PUBLISH_TZ, zonedInstant } from '../lib/dates.mjs
 
 /** Our platform name -> Buffer's service name. */
 export const SERVICE = { x: 'twitter', instagram: 'instagram', threads: 'threads' };
+const UTM_SOURCE_BY_SERVICE = { twitter: 'x', instagram: 'instagram', threads: 'threads' };
 
 /**
  * The hour, in Eastern Time, that a post goes out when a channel has no
@@ -111,7 +112,9 @@ export const buildPayload = (post, platform) => {
     text = hashtags ? `${copy.instagram}\n\n${hashtags}` : copy.instagram;
     imageUrls = cardsFor(media, 'instagram').map((m) => publicUrl(m.portrait_path));
   } else { // threads — trending uses the full chart image; no article links
-    const link = post.post_type === 'trending' ? chartUrl('threads') : null;
+    const link = post.post_type === 'trending'
+      ? chartUrl({ source: UTM_SOURCE_BY_SERVICE[service], campaign: post.post_type, content: post.id })
+      : null;
     text = link ? `${copy.threads}\n\n${link}` : copy.threads;
     imageUrls = cardsFor(media, 'threads').map((m) => publicUrl(m.landscape_path));
   }
