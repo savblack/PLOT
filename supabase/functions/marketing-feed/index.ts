@@ -29,7 +29,8 @@ import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
 import { ARTICLE_TABLE_CSS, articleExcerpt, isArticleTable, renderArticleBlock } from '../_shared/articleBody.js';
-import { articleSignupPromptHtml, insertPromptAfterSecondParagraph } from '../_shared/articleSignupPrompt.js';
+import { selectTmdbMatch } from '../_shared/tmdbMatch.js';
+import { articleSignupPromptHtml } from '../_shared/articleSignupPrompt.js';
 import { clampDescription, fitTitle } from '../_shared/seoText.ts';
 
 const SITE = 'https://theplot.tv';
@@ -68,6 +69,46 @@ const rankRefs = (body: string[], refs: TmdbRef[]) =>
       return t ? String(para || '').toLowerCase().includes(t) : false;
     }),
   }));
+
+// Articles written before titles were attached carry no tmdb_refs, so there is
+// nothing to hang a save button on. Where the copy states a title the way these
+// guides do ("Disclosure Day (Friday, October 9). ..."), read it from the prose
+// and resolve it on TMDB. Deliberately narrow: only a paragraph that opens with
+// a name followed by a date or year in brackets is a candidate, and a candidate
+// is kept only when TMDB has exactly one title of that name (the article's year
+// breaks a tie), so "A horror library refresh (Thursday, October 1)" resolves
+// to nothing rather than to a wrong film. A TMDB failure just yields no titles.
+const LEADING_TITLE = /^([^()\n]{2,70}?)\s+\((?:(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day|January|February|March|April|May|June|July|August|September|October|November|December|\d{4})\b[^)]*\)/;
+const resolveMentionedTitles = async (body: string[], year: number | null): Promise<TmdbRef[]> => {
+  const key = Deno.env.get('TMDB_API_KEY');
+  if (!key) return [];
+  const names = [...new Set(body
+    .map((text) => LEADING_TITLE.exec(String(text || '').trim())?.[1]?.trim())
+    .filter((name): name is string => Boolean(name)))].slice(0, 8);
+  const found = await Promise.all(names.map(async (name): Promise<TmdbRef | null> => {
+    try {
+      const r = await fetch(
+        `https://api.themoviedb.org/3/search/multi?api_key=${key}&language=en-US&include_adult=false&query=${encodeURIComponent(name)}`,
+        { signal: AbortSignal.timeout(2500) },
+      );
+      if (!r.ok) return null;
+      const { results } = await r.json();
+      const hit = selectTmdbMatch(results, { title: name, year });
+      return hit
+        ? { media_type: hit.media_type, id: hit.id, title: hit.title ?? hit.name ?? name, poster_path: hit.poster_path ?? null }
+        : null;
+    } catch {
+      return null;
+    }
+  }));
+  const seen = new Set<number>();
+  return found.filter((t): t is TmdbRef => {
+    const id = t ? refId(t) : null;
+    if (!t || !id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+};
 
 // Reads as prose in a sentence ("not streaming in the UK"). Mirrors the same
 // map in supabase/functions/title-page, so the two surfaces word it alike.
@@ -569,6 +610,44 @@ ${head}
   .tail-list a:hover { color: var(--mut); }
   .tail-list .meta { color: var(--mut); font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; padding-top: 3px; }
 
+  /* ── editorial list (Oct 2026) ──
+     The front page drops the cream-on-cream boxes: an image-led lead, stories
+     as hairline-ruled rows, sections headed by an ink rule, and the type label
+     as small kicker text instead of a pill. Scoped to .feed-grid so article
+     and filtered-list pages are untouched. The About card keeps its ink panel. */
+  .feed-grid { gap: 56px; }
+  .feed-main { gap: 0; }
+  .feed-side { gap: 36px; }
+  .feed-grid .kick { background: none; padding: 0; border-radius: 0; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #B83558; }
+  .feed-grid .rail-row .kick, .feed-grid .shelf-item .kick { color: var(--mut); }
+  .feed-grid .feature { display: block; padding: 0; background: none; border-radius: 0; margin-bottom: 8px; }
+  .feed-grid .f-media img, .feed-grid .f-media .ph { width: 100%; height: auto; aspect-ratio: 16 / 8; border-radius: 14px; margin-bottom: 20px; }
+  .feed-grid .f-text { gap: 8px; }
+  .feed-grid .feature h2 { font-size: clamp(1.9rem, 3.2vw, 2.4rem); line-height: 1.08; letter-spacing: -0.035em; max-width: 22ch; }
+  .feed-grid .feature .dek { max-width: 58ch; margin-bottom: 6px; }
+  .feed-grid .rail-row { background: none; border-radius: 0; padding: 16px 0; border-bottom: 1px solid var(--hair); gap: 24px; }
+  .feed-grid .feature + .rail-row { border-top: 1px solid var(--ink); margin-top: 28px; }
+  .feed-grid .rail-thumb { width: 72px; height: 72px; border-radius: 10px; }
+  .feed-grid .rail-t { font-size: 1.15rem; }
+  .feed-grid .rail-date { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.72rem; }
+  .feed-grid .sec-card { background: none; border-radius: 0; padding: 0; gap: 14px; }
+  .feed-main > .sec-card { margin: 36px 0 12px; }
+  .feed-grid .sec-head { padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+  .feed-grid .sec-dot { display: none; }
+  .feed-grid .sec-label { font-size: 1.25rem; }
+  .feed-grid .trend-row:first-child, .feed-grid .datecard:first-child, .feed-grid .tail-list a:first-child { border-top: none; }
+  .feed-grid .trend-rank.top { color: #B83558; }
+  @media (max-width: 900px) {
+    .feed-grid { gap: 32px; }
+    .feed-grid .feature { padding: 0; }
+  }
+  @media (max-width: 760px) {
+    .feed-grid .rail-row { padding: 14px 0; gap: 14px; }
+    .feed-grid .rail-thumb { width: 56px; height: 56px; }
+    .feed-grid .rail-t { font-size: 1.05rem; }
+    .feed-grid .sec-card { padding: 0; }
+  }
+
   /* filtered / paged list (unchanged structure, new type) */
   .group { display: grid; grid-template-columns: 170px 1fr; gap: 36px; padding-top: 34px; border-top: 1px solid var(--hair); }
   .g-date { padding-top: 22px; }
@@ -626,6 +705,12 @@ ${ARTICLE_TABLE_CSS}
   .gt-add { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--fill); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
   .gt-add:hover { background: var(--fill-hover); }
   .gt-add svg { width: 13px; height: 13px; display: block; }
+  /* A save line under the paragraph that first names a title. One per title,
+     quiet enough to read as part of the prose rather than an ad break. */
+  .post-body .save-line { display: flex; flex-wrap: wrap; gap: 8px; margin: -10px 0 22px; }
+  .save-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--hair); color: var(--ink); font-size: 0.82rem; font-weight: 600; text-decoration: none; transition: background 0.2s; }
+  .save-chip:hover { background: var(--fill); }
+  .save-chip svg { width: 20px; height: 20px; padding: 4px; border-radius: 50%; background: var(--fill); display: block; box-sizing: border-box; }
   @media (max-width: 640px) {
     .gt-card { flex-direction: column; gap: 0; padding: 6px 16px; }
     .gt-col:first-child .gt-row:last-child { border-bottom: 1px solid rgba(41,41,36,0.1); }
@@ -1478,6 +1563,12 @@ Deno.serve(async (req) => {
   // The poster grid belongs to long-form, multi-title guides. Ordinary article
   // pages use their single, combined title/save/watch module below instead.
   const refs = Array.isArray(typed.tmdb_refs) ? typed.tmdb_refs : [];
+  // What the copy names, for the save chips and the closing card. Attached refs
+  // when there are any; otherwise whatever the prose names that TMDB can place.
+  // The story modules and ordering below keep working from `refs` alone.
+  const mentioned = refs.length
+    ? refs
+    : await resolveMentionedTitles(body, Number(String(typed.scheduled_for || '').slice(0, 4)) || null);
   // The copy contract guarantees body[0] = intro, body[1..refs.length] = one
   // paragraph per ref in order, body[refs.length+1] = close — but only trust
   // that when the flag from validateGuide is set AND the length still matches,
@@ -1565,29 +1656,46 @@ Deno.serve(async (req) => {
   if (runnerUpHtml && runnerUp) shown.add(runnerUp.ref);
   const rest = refs.filter((r) => !shown.has(r));
   const TAIL_HEAD: Record<string, string> = {
-    guide: 'Also in this guide',
+    guide: 'Save from this guide',
     upcoming: 'Everything landing this week',
   };
   const tailHead = TAIL_HEAD[typed.post_type];
-  const titlesSection = tailHead && rest.length && !inlineTitles
+  // The closing summary card. A guide lists every title it names, including
+  // the ones a module already featured, so the reader can save the lot in one
+  // place; other post types keep to what the modules did not show.
+  const summaryTitles = typed.post_type === 'guide' ? mentioned : rest;
+  const titlesSection = tailHead && summaryTitles.length > 1
     ? `<section class="gt">
         <div class="gt-head">
           <h2>${esc(tailHead)}</h2>
-          <span class="gt-count">${rest.length}${typed.post_type === 'guide' ? ' more' : ' titles'}</span>
+          <span class="gt-count">${summaryTitles.length} titles</span>
         </div>
         <div class="gt-card">
-          <div class="gt-col">${restRows(rest.slice(0, Math.ceil(rest.length / 2)))}</div>
-          <div class="gt-col">${restRows(rest.slice(Math.ceil(rest.length / 2)))}</div>
+          <div class="gt-col">${restRows(summaryTitles.slice(0, Math.ceil(summaryTitles.length / 2)))}</div>
+          <div class="gt-col">${restRows(summaryTitles.slice(Math.ceil(summaryTitles.length / 2)))}</div>
         </div>
       </section>`
     : '';
 
-  // Second prose paragraph gets the signup prompt when the article continues
-  // past it. The end prompt is always there, so a short piece is not asked twice.
+  // One signup prompt per article, at the end. Nothing is inserted mid-body.
   const bodyChunks: { html: string; prose: boolean }[] = [];
+  // A save chip follows the first paragraph that names a title, for titles no
+  // module already carries a save button for. Each title is offered once.
+  const chipped = new Set<TmdbRef>();
+  const saveLine = (text: string) => {
+    const lower = text.toLowerCase();
+    const hits = mentioned.filter((r) => {
+      const t = String(r.title || '').toLowerCase().trim();
+      return refId(r) && t && !shown.has(r) && !chipped.has(r) && lower.includes(t);
+    }).slice(0, 3);
+    hits.forEach((r) => chipped.add(r));
+    if (!hits.length) return '';
+    return `<p class="save-line">${hits.map((r) => `<a class="save-chip" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&amp;tmdb_id=${refId(r)}&amp;src=whats_on_article" data-cta="article_save" aria-label="Save ${esc(r.title)} to your Plot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Save ${esc(r.title)}</a>`).join('')}</p>`;
+  };
   const pushProse = (text: string, html: string) => {
     if (!text) return;
-    bodyChunks.push({ html, prose: !isArticleTable(text) });
+    const prose = !isArticleTable(text);
+    bodyChunks.push({ html: prose ? html + saveLine(text) : html, prose });
   };
   if (body[0]) pushProse(body[0], bodyLede);
   if (storyHtml) bodyChunks.push({ html: storyHtml, prose: false });
@@ -1604,17 +1712,12 @@ Deno.serve(async (req) => {
   } else {
     body.slice(1).forEach((text) => pushProse(text, renderArticleBlock(text)));
   }
-  const inlinePrompt = articleSignupPromptHtml({
-    app: APP,
-    slug: typed.slug,
-    placement: 'whats_on_article_inline',
-  });
   const endPrompt = articleSignupPromptHtml({
     app: APP,
     slug: typed.slug,
     placement: 'whats_on_article_end',
   });
-  const bodyHtml = insertPromptAfterSecondParagraph(bodyChunks, inlinePrompt, Boolean(titlesSection));
+  const bodyHtml = bodyChunks.map((chunk) => chunk.html).join('');
 
   const docTitle = fitTitle([`${title} · Plot`, title]);
   return page(docTitle, head, `
