@@ -459,7 +459,7 @@ needs the PG17 binaries (also in the image) plus the optional DB secret above.
 - Writing post copy → follow `marketing/copy/AGENT.md`.
 - Tempted to rebuild a hosted marketing review UI? Read
   `docs/ops/retire-admin-review.md` and `docs/ops/operator-desk-shelved.md`
-  first. Articles are reviewed in Linear; social posts in Buffer.
+  first. Articles are reviewed in Notion; social posts in Buffer.
 
 Model-agnostic runbooks: run from repo root on `main` with `.env` present, never a paid API
 for copy, and **confirm before anything posts publicly.**

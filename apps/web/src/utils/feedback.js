@@ -19,18 +19,3 @@ export function buildFeedbackAttachmentPath(fileName, id = crypto.randomUUID()) 
 
   return `feedback/${id}${ext}`;
 }
-
-export function buildFeedbackLinearTitle(type, message) {
-  const prefix = feedbackTypeLabel(type);
-  const normalized = String(message || '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (!normalized) return `${prefix}: Untitled`;
-
-  const summary = normalized.length > 72
-    ? `${normalized.slice(0, 69).trimEnd()}...`
-    : normalized;
-
-  return `${prefix}: ${summary}`;
-}

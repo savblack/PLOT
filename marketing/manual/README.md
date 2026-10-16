@@ -5,11 +5,11 @@ This is the fallback/debug path for building a day's posts by hand.
 Primary production flow is:
 
 - GitHub prepares the week
-- Linear reviews the article (team PLO, project Content Automation)
+- Notion reviews the article in a private database
 - Buffer reviews and sends the social posts
 - An approved article goes on theplot.tv once its day arrives
 
-`admin.theplot.tv` is retired. Review is Linear and Buffer. See
+`admin.theplot.tv` is retired. Review is Notion and Buffer. See
 `docs/ops/retire-admin-review.md`.
 
 Use this manual flow only when you intentionally want a local, operator-led run.
