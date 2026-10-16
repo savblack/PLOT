@@ -377,7 +377,7 @@ const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false) =>
 // as the app and marketing site, with cross_subdomain_cookie so a visit here
 // joins the same landing → signup funnel. The ?v= is a cache bust: bump it
 // when either file changes.
-const WHATS_ON_JS_VERSION = '20261014';
+const WHATS_ON_JS_VERSION = '20261016';
 const ANALYTICS_SCRIPT = `<script src="${SITE}/js/whats-on-head.js?v=${WHATS_ON_JS_VERSION}"></script>`;
 const GTM_NOSCRIPT = `<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PC72PHBN" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`;
 
@@ -388,7 +388,7 @@ const SHORT_CACHE = 'public, s-maxage=3600, stale-while-revalidate=86400';
 // in the site audit.
 const ARTICLE_CACHE = 'public, s-maxage=86400, stale-while-revalidate=604800';
 
-const page = (title: string, head: string, body: string, status = 200, nav = 'whats-on', cacheControl = SHORT_CACHE) =>
+const page = (title: string, head: string, body: string, status = 200, nav = 'whats-on', cacheControl = SHORT_CACHE, after = '') =>
   new Response(
     `<!DOCTYPE html>
 <html lang="en">
@@ -759,6 +759,7 @@ ${GTM_NOSCRIPT}
 <div class="wrap">
 ${body}
 </div>
+${after}
 ${FOOTER_HTML}
 <script defer src="${SITE}/js/whats-on.js?v=${WHATS_ON_JS_VERSION}"></script>
 </body>
@@ -1081,6 +1082,29 @@ const subscribeForm = (placement: string) => `
   <div class="nlsub-msg" id="nlMsg" role="status"></div>
 </aside>`;
 
+// The closing banner at the foot of the What's On front page: signup first,
+// the newsletter as the quiet fallback, over a wall of trending posters that
+// /js/whats-on.js fills in (#wclWall). It carries #newsletter and the nlForm
+// ids, so the /newsletter redirects and the form wiring land here.
+const closerSection = (placement: string) => `
+<section class="wcl" id="newsletter">
+  <div class="wcl-wall" id="wclWall" aria-hidden="true"></div>
+  <div class="wcl-inner">
+    <h2 class="wcl-headline">Your next favorite <br class="wcl-br"><em>is out there.</em></h2>
+    <p class="wcl-sub">Free forever. Premium when you want more.</p>
+    <a class="wcl-cta" href="${APP}/signup?src=${esc(placement)}_closer" data-cta="${esc(placement)}_closer">Start tracking</a>
+    <div class="wcl-mail">
+      <span class="wcl-hint">Want more? Get movie and TV updates by email.</span>
+      <form class="wcl-form" id="nlForm" data-placement="${esc(placement)}_closer">
+        <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
+        <input type="text" name="website" class="nlsub-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit">Subscribe</button>
+      </form>
+      <div class="wcl-msg" id="nlMsg" role="status"></div>
+    </div>
+  </div>
+</section>`;
+
 // A short introduction to Plot with the two ways in. The full card sits above
 // the newsletter card on every list and article page. `compact` is a single
 // strip for tighter spots; nothing renders it yet. Actions are right-aligned
@@ -1147,6 +1171,34 @@ const SUBSCRIBE_CSS = `
   .nlsub-msg { margin-top: 10px; color: var(--mut); font-size: 0.86rem; min-height: 1.2em; }
   /* on list and article pages the card stands alone below the content */
   .wrap > .nlsub, .post-foot > .nlsub { margin-top: 44px; }
+
+  /* Closing banner over a poster wall (What's On front page). */
+  .wcl { position: relative; isolation: isolate; overflow: hidden; margin-top: -40px; padding: 9rem 24px 8rem; text-align: center; scroll-margin-top: 88px; }
+  .wcl-wall { position: absolute; inset: 0; z-index: -1; display: grid; grid-template-columns: repeat(9, 1fr); grid-auto-rows: min-content; align-content: start; gap: 12px; opacity: 0.15;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 78%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 78%, transparent 100%);
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+  .wcl-tile { aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; background: #e5e3db; }
+  .wcl-tile img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.6s var(--ease); }
+  .wcl-tile img.loaded { opacity: 1; }
+  .wcl-inner { max-width: 720px; margin: 0 auto; position: relative; display: flex; flex-direction: column; align-items: center; }
+  .wcl-headline { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: clamp(2.5rem, 5.5vw, 4.5rem); line-height: 0.86; margin-bottom: 1.1rem; }
+  .wcl-headline em { font-style: normal; }
+  .wcl-sub { font-size: 1.05rem; font-weight: 300; color: var(--mut); max-width: 44ch; margin: 0 auto 1.6rem; line-height: 1.5; }
+  .wcl-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 28px; border-radius: 9999px; background: var(--fill); color: var(--ink); font-weight: 600; font-size: 1rem; text-decoration: none; transition: background 0.2s; }
+  .wcl-cta:hover { background: var(--fill-hover); }
+  .wcl-mail { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; margin-top: 2.2rem; width: 100%; }
+  .wcl-hint { font-size: 0.8rem; font-weight: 300; color: var(--mut); }
+  .wcl-form { display: flex; align-items: center; border: 1px solid var(--ink); border-radius: 9999px; padding: 6px; height: 56px; width: 360px; max-width: 100%; }
+  .wcl-form input[type=email] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.88rem; padding: 0 6px 0 16px; color: var(--ink); }
+  .wcl-form input[type=email]::placeholder { color: var(--mut); }
+  .wcl-form button { height: 40px; padding: 0 18px; border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
+  .wcl-form button:hover:not(:disabled) { background: var(--fill-hover); }
+  .wcl-form button:disabled { opacity: 0.6; cursor: default; }
+  .wcl-msg { font-size: 0.78rem; color: var(--mut); min-height: 1.1em; }
+  .wcl + .site-footer { margin-top: 0; border-top: 0; }
+  @media (max-width: 820px) { .wcl-wall { grid-template-columns: repeat(6, 1fr); } }
+  @media (max-width: 600px) { .wcl { padding: 6rem 16px 5rem; } }
+  @media (pointer: coarse) { .wcl-form { height: 52px; } .wcl-form button, .wcl-form input[type=email] { min-height: 44px; } }
 `;
 const SUBSCRIBE_HEAD = `<style>${SUBSCRIBE_CSS}</style>`;
 
@@ -1259,7 +1311,7 @@ Deno.serve(async (req) => {
       const batch = (batchData || []) as FeedPost[];
 
       if (!batch.length) {
-        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>${aboutCard('whats_on')}${subscribeForm('whats_on')}`);
+        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>${aboutCard('whats_on')}`, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
       }
 
       // The lead plus a scan-list rail come straight off the top of the same
@@ -1300,7 +1352,6 @@ Deno.serve(async (req) => {
         chartItems.length ? sectionCard('Trending', `${FEED_PATH}/chart`, trendingTeaser(chartItems, chartPrior), true) : '',
         countdown.length ? sectionCard('Coming soon', `${FEED_PATH}?type=countdown`, comingSoonCards(countdown), true) : '',
         aboutCard('whats_on'),
-        subscribeForm('whats_on'),
       ].join('');
 
       // The front page shows the newest few dozen posts in sections; without
@@ -1313,7 +1364,7 @@ Deno.serve(async (req) => {
           <aside class="feed-side">${side}</aside>
         </div>
         <div class="older-row r4"><a class="older sc" href="${FEED_PATH}?page=2">Older updates &rarr;</a></div>
-      `);
+      `, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
     }
 
     const offset = (pageNum - 1) * PAGE_SIZE;
@@ -1344,8 +1395,7 @@ Deno.serve(async (req) => {
       ${empty}
       ${older}
       ${aboutCard('whats_on')}
-      ${subscribeForm('whats_on')}
-    `);
+    `, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
   }
 
   const { data: post } = await baseQuery().eq('slug', slug).maybeSingle();

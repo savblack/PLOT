@@ -122,8 +122,7 @@
     /* Brand tokens now live in /theme.css (shared with the app via @plot/core/tokens.js). */
 
     /* ── Display headlines: Gabarito bold ────────────────────── */
-    .hero-headline,
-    .woc-headline {
+    .hero-headline {
       font-family: var(--display);
       font-weight: 700;
       letter-spacing: var(--display-tracking);
@@ -712,91 +711,6 @@
     .ticker-section.on-dark .ticker-cat { color: #c2385d; }
 
     /* ── Footer ─────────────────────────────────────────────── */
-    /* What's On — closing CTA over a poster wall */
-    #whats-on-cta {
-      position: relative;
-      /* Fallback if the poster wall never loads — the same ground as the
-         section above it, so there's no visible seam */
-      background: var(--bg);
-      color: var(--text-dark);
-      padding: 11rem 2rem 9rem;
-      overflow: hidden;
-      isolation: isolate;
-      z-index: 3;
-    }
-
-    .woc-wall {
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      display: grid;
-      grid-template-columns: repeat(9, 1fr);
-      /* Rows keep their natural 2:3 height and stack from the top; the mask
-         below, not the section's clip edge, decides where they stop. */
-      grid-auto-rows: min-content;
-      align-content: start;
-      gap: 12px;
-      /* A true background weight. The wall used to sit at 0.3 under a radial
-         white wash that did the legibility work; without that wash 0.3 leaves
-         the headline hard to read, so the field itself has to be quieter. */
-      opacity: 0.15;
-      /* Fade the field out top and bottom instead of letting `overflow: hidden`
-         chop through poster art, which read as an unfinished layout. */
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 78%, transparent 100%);
-      mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 78%, transparent 100%);
-      /* The rows overflow this box, and a mask repeats by default — without
-         this a second copy of the fade would tile below, making the posters
-         reappear. The section's `overflow: hidden` happens to clip exactly at
-         the mask box today, so this only bites if the padding ever changes. */
-      -webkit-mask-repeat: no-repeat;
-      mask-repeat: no-repeat;
-    }
-
-    .woc-tile {
-      aspect-ratio: 2 / 3;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #e5e3db;
-    }
-
-    .woc-tile img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      opacity: 0;
-      transition: opacity 0.6s var(--ease);
-    }
-
-    .woc-tile img.loaded { opacity: 1; }
-
-    .woc-inner { max-width: 720px; margin: 0 auto; text-align: center; position: relative; }
-
-    .woc-headline {
-      font-size: clamp(2.5rem, 5.5vw, 4.5rem);
-      line-height: 0.86;
-      margin-bottom: 1.1rem;
-      color: var(--text-dark);
-    }
-    .woc-headline em { font-style: normal; }
-    .woc-cta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-bottom: 1.6rem; }
-
-    .woc-sub {
-      font-size: 1.05rem;
-      font-weight: 300;
-      color: var(--text-secondary);
-      max-width: 44ch;
-      margin: 0 auto 1.6rem;
-      line-height: 1.5;
-    }
-
-    .woc-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.95rem;
-    }
-
     .woc-sub-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
 
     .woc-form {
@@ -842,30 +756,18 @@
 
     /* Notify and Subscribe are each the primary action in their own section. */
 
-    /* One quiet line carries both secondary routes (browse, and the archive)
-       below the form, replacing the orphaned link that used to sit above it. */
-    .woc-hint { font-size: 0.8rem; font-weight: 300; color: var(--text-secondary); align-self: stretch; text-align: center; }
     .woc-msg { font-size: 0.78rem; color: var(--text-secondary); min-height: 1.1em; padding-left: 0.5rem; }
-    #whats-on-cta .woc-msg { padding-left: 0; text-align: center; }
 
     /* Honeypot: invisible to humans, tempting to bots */
     .woc-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
 
-    /* Homepage footer overrides: the poster wall meets it without a seam, and
+    /* Homepage footer overrides: it meets the section above without a seam, and
        the bottom padding clears the fixed ticker so the wordmark sits on it. */
     .site-footer {
       border-top: 0;
       padding-bottom: calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px));
       margin-top: 0;
     }
-
-    @media (max-width: 820px) { .woc-wall { grid-template-columns: repeat(6, 1fr); } }
-    @media (max-width: 600px) {
-      /* The 11rem/9rem desktop breathing room just pushes the form off the
-         fold on a phone. */
-      #whats-on-cta { padding: 7rem 1.5rem 6rem; }
-    }
-
 
     /* Short desktop viewports: tighten the hero so it still fits one screen. */
     @media (min-width: 1181px) and (max-height: 760px) {
@@ -1655,30 +1557,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </div>
 
-  <!-- ── What's On — closing CTA ──────────────────────────────── -->
-  <section id="whats-on-cta">
-    <div class="woc-wall" id="wocWall" aria-hidden="true"></div>
-    <div class="woc-inner">
-      <h2 class="woc-headline">Your next favorite <br class="woc-br"><em>is out there.</em></h2>
-      <p class="woc-sub">Free forever. Premium when you want more.</p>
-      <div class="woc-actions">
-        <div class="woc-cta-row">
-          <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="closer">Start tracking</a>
-          <a href="/whats-on" class="btn btn-outline btn-large" data-cta="whats-on-closer">Browse What’s On</a>
-        </div>
-        <div class="woc-sub-wrap">
-          <span class="woc-hint">Want more? Get movie and TV updates by email.</span>
-          <form class="woc-form" id="newsletterForm">
-            <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
-            <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <button type="submit">Subscribe</button>
-          </form>
-          <div class="woc-msg" id="newsletterMsg" role="status"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ── Footer ────────────────────────────────────────────────── -->
   <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
   <footer class="site-footer">
@@ -1754,7 +1632,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const TMDB_PROXY = '/api/discover';
     const NEWSLETTER_URL = '/api/newsletter';
 
-    // Email signup in the closer posts to the newsletter endpoint.
+    // The app waitlist form posts to the newsletter endpoint.
     (function () {
       function wire(form, msg, success, list) {
         if (!form || !msg) return;
@@ -1782,7 +1660,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           });
         });
       }
-      wire(document.getElementById('newsletterForm'), document.getElementById('newsletterMsg'), "You're in. We'll email you the next issue.", 'newsletter');
       wire(document.getElementById('appNotifyForm'), document.getElementById('appNotifyMsg'), "You're on the list — we'll email you the moment the app lands.", 'mobile-app');
     })();
     // Cache by full query string so identical calls across the page (e.g.
@@ -2056,43 +1933,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       }).catch(function () {});
     })();
 
-
-    // What's On closing section — poster wall (reuses the shared trending sets)
-    (function () {
-      var wall = document.getElementById('wocWall');
-      if (!wall) return;
-      var IMG = 'https://image.tmdb.org/t/p/w500';
-      var COUNT = 27;
-      fetchTrendingSets().then(function (sets) {
-        var seen = {}, urls = [];
-        // By title, not by poster path: the sets overlap, and two entries for the
-        // same title (a re-release, a series and its special) carry different art.
-        sets.forEach(function (s) {
-          unseen(((s && s.results) || []).filter(function (r) { return r.poster_path; }), seen)
-            .forEach(function (r) { urls.push(IMG + r.poster_path); });
-        });
-        if (!urls.length) return;
-        for (var i = urls.length - 1; i > 0; i--) {
-          var j = Math.floor(Math.random() * (i + 1));
-          var t = urls[i]; urls[i] = urls[j]; urls[j] = t;
-        }
-        // A short list makes a shorter wall rather than a repeating one: every
-        // tile here is on screen together, so a wrapped poster reads as a bug.
-        var tiles = Math.min(COUNT, urls.length);
-        for (var k = 0; k < tiles; k++) {
-          var tile = document.createElement('div');
-          tile.className = 'woc-tile';
-          var img = new Image();
-          img.loading = 'lazy';
-          img.decoding = 'async';
-          img.alt = '';
-          img.onload = (function (im) { return function () { im.classList.add('loaded'); }; })(img);
-          img.src = urls[k];
-          tile.appendChild(img);
-          wall.appendChild(tile);
-        }
-      }).catch(function () {});
-    })();
 
     // Navbar behaviour (scroll glass + mobile hamburger) is in /js/nav.js
 

@@ -6,7 +6,7 @@
 
 import { NAV, FOOTER, EMAIL_FORM } from '../copy/common.js';
 import {
-  META, HERO, MEMORIES, DROPS, IMPORT, LISTS, PREMIUM, INDIE, TICKER, CLOSER,
+  META, HERO, MEMORIES, DROPS, IMPORT, LISTS, PREMIUM, INDIE, TICKER,
 } from '../copy/index.js';
 import { ABOUT_PAGE } from '../copy/about.js';
 import { CHANGELOG_PAGE } from '../copy/changelog.js';
@@ -32,7 +32,6 @@ const MODULES = {
   'index.premium': PREMIUM,
   'index.indie': INDIE,
   'index.ticker': TICKER,
-  'index.closer': CLOSER,
   about: ABOUT_PAGE,
   changelog: CHANGELOG_PAGE,
   plans: PLANS_PAGE,
