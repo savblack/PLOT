@@ -154,16 +154,3 @@ export const TICKER = {
     topRatedTv: ['Adolescence', 'Severance', 'The White Lotus', 'Landman', 'Paradise'],
   },
 };
-
-// Closing section over the poster wall: account signup first, the newsletter
-// as the quiet fallback.
-export const CLOSER = {
-  headline: 'Your next favorite ',
-  headlineEm: 'is out there.',
-  sub: 'Free forever. Premium if you want more.',
-  cta: 'Start tracking',
-  browse: 'Browse What’s On',
-  newsletterHint: 'Want more? Get movie and TV updates by email.',
-  newsletterCta: 'Subscribe',
-  newsletterSuccess: "You're in. We'll email you the next issue.",
-};

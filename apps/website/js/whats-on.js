@@ -1,5 +1,6 @@
 // Behaviour for the server-rendered What's On pages (theplot.tv/whats-on):
-// the scrolled-nav class, the hamburger menu, and the newsletter form.
+// the scrolled-nav class, the hamburger menu, the newsletter form, and the
+// closing banner's poster wall.
 // Loaded deferred by supabase/functions/marketing-feed/index.ts; each block
 // returns early on a page that lacks its elements.
 //
@@ -54,4 +55,49 @@
         button.disabled = false;
       });
     });
+  })();
+
+  // Poster wall behind the closing banner: the same three TMDB sets the
+  // homepage used, through the same /api/discover proxy.
+  (function () {
+    var wall = document.getElementById('wclWall');
+    if (!wall) return;
+    var IMG = 'https://image.tmdb.org/t/p/w500';
+    var COUNT = 27;
+    var PATHS = ['trending/movie/week', 'movie/now_playing', 'trending/tv/week'];
+    Promise.all(PATHS.map(function (path) {
+      return fetch('/api/discover?path=' + encodeURIComponent(path))
+        .then(function (r) { return r.json(); })
+        .catch(function () { return {}; });
+    })).then(function (sets) {
+      // By title, not poster path: the sets overlap, and a re-release carries
+      // different art for the same title.
+      var seen = {}, urls = [];
+      sets.forEach(function (set) {
+        ((set && set.results) || []).forEach(function (r) {
+          var key = String(r.title || r.name || '').trim().toLowerCase();
+          if (!r.poster_path || !key || seen[key]) return;
+          seen[key] = 1;
+          urls.push(IMG + r.poster_path);
+        });
+      });
+      for (var i = urls.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = urls[i]; urls[i] = urls[j]; urls[j] = t;
+      }
+      // A short list makes a shorter wall rather than a repeating one.
+      var tiles = Math.min(COUNT, urls.length);
+      for (var k = 0; k < tiles; k++) {
+        var tile = document.createElement('div');
+        tile.className = 'wcl-tile';
+        var img = new Image();
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.alt = '';
+        img.onload = (function (im) { return function () { im.classList.add('loaded'); }; })(img);
+        img.src = urls[k];
+        tile.appendChild(img);
+        wall.appendChild(tile);
+      }
+    }).catch(function () {});
   })();
