@@ -143,6 +143,26 @@ test('the Supabase fallback allowlist includes the same artwork image routes', (
   }
 });
 
+test('allows series content ratings through both proxies', async () => {
+  const originalFetch = globalThis.fetch;
+  let fetchedUrl;
+  globalThis.fetch = async (url) => {
+    fetchedUrl = new URL(url);
+    return Response.json({ results: [] });
+  };
+  try {
+    const response = await fetchTMDB(new URL(
+      `https://proxy.example/?path=${encodeURIComponent('tv/288673/content_ratings')}`,
+    ), 'server-key', null);
+    assert.equal(response.status, 200);
+    assert.equal(fetchedUrl.pathname, '/3/tv/288673/content_ratings');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  const source = readFileSync(new URL('../../../../../supabase/functions/tmdb-proxy/index.ts', import.meta.url), 'utf8');
+  assert.ok(source.includes('/^tv\\/\\d+\\/content_ratings$/,'));
+});
+
 test('forwards only allow-listed parameters to TMDB', async () => {
   const originalFetch = globalThis.fetch;
   let fetchedUrl;
