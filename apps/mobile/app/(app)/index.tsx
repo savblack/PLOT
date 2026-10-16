@@ -7,7 +7,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
-import HomeReleases, { formatDayLabel } from '../../components/HomeReleases';
+import HomeReleases from '../../components/HomeReleases';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -20,10 +20,8 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
-import { DISCOVER_TABS } from '@plot/core/navigation.js';
 import { useNewReleases } from '@plot/core/useNewReleases.js';
 import { useGenres } from '@plot/core/useGenres.js';
-import { useUpcoming } from '@plot/core/useUpcoming.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '@plot/core/mediaFilters.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
@@ -74,20 +72,6 @@ const SCREEN_W = Dimensions.get('window').width;
 const CARD_W   = (SCREEN_W - spacing.xl * 2 - spacing.md * 2) / 3;
 const BINGE_W  = SCREEN_W * 0.62;
 const BINGE_H  = BINGE_W * 0.56;
-
-// ── Sub-tab (underline style) ─────────────────────────────────────────
-// Mirrors My Lists' sub-tabs so both headers read the same. Kept local for now;
-// worth extracting to components/ once My Lists is touched again.
-function SubTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  return (
-    <TouchableOpacity style={styles.subTab} onPress={onPress} activeOpacity={0.7}>
-      <Text style={[styles.subTabText, active && styles.subTabTextActive]}>{label}</Text>
-      <View style={[styles.subTabUnderline, active && styles.subTabUnderlineActive]} />
-    </TouchableOpacity>
-  );
-}
 
 // ── Types ────────────────────────────────────────────────────────────
 interface MediaItem {
@@ -564,85 +548,8 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
   );
 }
 
-// ── Upcoming tab content ──────────────────────────────────────────────
-// Reads the same feed web's Upcoming tab does, via @plot/core/useUpcoming.
-// Mounted only while the tab is active so the two TMDB calls aren't spent on
-// every app open.
-function UpcomingContent({ typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel }: {
-  typeFilters: string[];
-  genreFilters: number[];
-  savedIds: Set<number>;
-  onSave: (item: MediaItem) => void;
-  isFav: (id: number) => boolean;
-  onFavorite: (item: MediaItem) => void;
-  openPanel: (id: number, type: 'movie' | 'tv') => void;
-}) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { data, loading } = useUpcoming();
-
-  if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
-
-  const applyFilters = (items: MediaItem[]) => filterByGenre(filterByType(items, typeFilters), genreFilters) ?? [];
-
-  const today = applyFilters(data.today);
-  const groups = data.upcomingDates
-    .map((date: string) => ({ date, items: applyFilters(data.upcomingGrouped[date]) }))
-    .filter((g: { items: MediaItem[] }) => g.items.length > 0);
-
-  if (!today.length && !groups.length) {
-    const filtered = typeFilters.length < ALL_TYPES.length || genreFilters.length > 0;
-    return (
-      <View style={styles.section}>
-        <Text style={styles.emptyTitle}>{filtered ? CALENDAR_VIEW.empty.filtered : CALENDAR_VIEW.releasesEmpty.title}</Text>
-        <Text style={styles.emptyBody}>
-          {filtered ? CALENDAR_VIEW.empty.filteredBody : CALENDAR_VIEW.releasesEmpty.body}
-        </Text>
-      </View>
-    );
-  }
-
-  const rail = (items: MediaItem[]) => (
-    <FlatList
-      horizontal
-      data={items}
-      keyExtractor={item => `${item.media_type}-${item.id}`}
-      renderItem={({ item }) => (
-        <PosterCard
-          item={item}
-          onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
-          saved={savedIds.has(item.id ?? 0)}
-          onSave={() => onSave(item)}
-          isFav={isFav(item.id ?? 0)}
-          onFavorite={() => onFavorite(item)}
-        />
-      )}
-      showsHorizontalScrollIndicator={false}
-      nestedScrollEnabled
-      contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-    />
-  );
-
-  return (
-    <>
-      {today.length > 0 && (
-        <View style={styles.section}>
-          <SectionHeader kicker="Out now" title={MEDIA.today} />
-          {rail(today)}
-        </View>
-      )}
-      {groups.map((g: { date: string; items: MediaItem[] }) => (
-        <View key={g.date} style={styles.section}>
-          <SectionHeader kicker="Coming up" title={formatDayLabel(g.date)} />
-          {rail(g.items)}
-        </View>
-      ))}
-    </>
-  );
-}
-
 // ── Main screen ───────────────────────────────────────────────────────
-export default function HomeScreen() {
+function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   const insets = useSafeAreaInsets();
   const { open: openPanel } = useMediaPanel();
   const { colors, resolved } = useTheme();
@@ -657,7 +564,8 @@ export default function HomeScreen() {
   // identical for everyone, rather than TMDB popularity filtered to whatever
   // the user happens to subscribe to.
   const platforms = usePlatformCharts();
-  const [tab,          setTab]          = useState('discover');
+  // Home is one feed. New Releases is its own screen, as on web.
+  const tab = mode === 'new' ? 'new' : 'discover';
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(false);
   const [retryKey,     setRetryKey]     = useState(0);
@@ -782,24 +690,7 @@ export default function HomeScreen() {
   if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
   if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
 
-  // Sub-tabs nested under Home, ids and order from the shared nav list.
-  // ('feed' is not here because it is no longer in DISCOVER_TABS at all: the
-  // engagement layer, tab included, was deleted in #532.)
-  //
-  // Every DISCOVER_TABS id must appear in exactly one of these two sets.
-  // `npm run mobile:tabs` fails the build otherwise, because a tab that is in
-  // neither set silently does not render and nothing else can see it: that is
-  // how #587 left Upcoming fully implemented and unreachable on main, with
-  // tsc, eslint and CI green. MOBILE_DEFERRED being empty is the normal state
-  // and means nothing is held back; it is not dead code, it is the difference
-  // between "deliberately hidden" and "accidentally missing".
-  const MOBILE_READY    = new Set(['discover', 'new', 'releases', 'guide']);
-  const MOBILE_DEFERRED = new Set<string>([]); // id, with a comment saying why
-  const subTabs = DISCOVER_TABS.filter(
-    (t: { id: string }) => MOBILE_READY.has(t.id) && !MOBILE_DEFERRED.has(t.id),
-  );
-
-  const HEADER_H = insets.top + 100;
+  const HEADER_H = insets.top + 56;
   const applyFilters = (items: MediaItem[]) => filterByGenre(filterByType(items, typeFilters), genreFilters) ?? [];
   // Web hides the hero whenever a genre filter is on rather than testing the
   // single hero title against it — one card is not a rail.
@@ -836,7 +727,7 @@ export default function HomeScreen() {
   ];
   const upNextEmpty = upNextRows.length === 0 && !watchlist.loading && !continueWatching.loading;
   const upNext = upNextRows.length > 0 ? (
-    <View style={styles.section}>
+    <View style={[styles.section, { marginBottom: spacing.xl }]}>
       <SectionHeader title={DISCOVER_VIEW.upNext} />
       <FlatList
         horizontal
@@ -1031,27 +922,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.screen}>
-      {tab === 'guide' ? (
-        <View style={{ flex: 1, paddingTop: HEADER_H }}>
-          <GuideView />
-        </View>
-      ) : tab === 'releases' ? (
-        <ScrollView
-          style={styles.screen}
-          contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
-          showsVerticalScrollIndicator={false}
-        >
-          <UpcomingContent
-            typeFilters={typeFilters}
-            genreFilters={genreFilters}
-            savedIds={savedIds}
-            onSave={handleSave}
-            isFav={(id) => favorites.isFavorite(id)}
-            onFavorite={toggleFav}
-            openPanel={openPanel}
-          />
-        </ScrollView>
-      ) : tab === 'new' ? (
+      {tab === 'new' ? (
         <ScrollView
           style={styles.screen}
           contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
@@ -1081,6 +952,7 @@ export default function HomeScreen() {
       >
 
         {userId && importSource !== 'trakt' && importSource !== 'trakt-export' && <FirstWinCard userId={userId} />}
+        <Text style={styles.dateLine}>{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
         {!history.loading && (
           <TouchableOpacity
@@ -1172,28 +1044,12 @@ export default function HomeScreen() {
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
         <ScreenHeaderBar
+          title={mode === 'new' ? 'New Releases' : 'Home'}
           showSearch={false}
-          center={
-            <Text style={styles.dateLabel} pointerEvents="none">
-              {new Date().toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </Text>
-          }
-        />
-        <View style={styles.subTabsBar}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.subTabsRow}
-            style={styles.subTabsScroll}
-          >
-            {subTabs.map((t: { id: string; label: string }) => (
-              <SubTab key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
-            ))}
-          </ScrollView>
-          {(tab === 'discover' || tab === 'new' || tab === 'releases') && (
-            <View style={styles.subTabsFilter}>
+          rightExtra={
+            <View style={styles.headerFilter}>
               <GroupedFilterMenu
-                accessibilityLabel={tab === 'releases' ? 'Filter upcoming' : tab === 'new' ? 'Filter new releases' : 'Filter discover'}
+                accessibilityLabel={mode === 'new' ? 'Filter new releases' : 'Filter home'}
                 groups={[
                   {
                     heading: MEDIA.typeHeading,
@@ -1217,12 +1073,21 @@ export default function HomeScreen() {
                 ]}
               />
             </View>
-          )}
-        </View>
+          }
+        />
       </BlurView>
 
     </View>
   );
+}
+
+export default function HomeScreen() {
+  return <DiscoverScreen mode="home" />;
+}
+
+/** /(app)/new-releases: its own screen, as on web, rather than a Home sub-tab. */
+export function NewReleasesScreen() {
+  return <DiscoverScreen mode="new" />;
 }
 
 // ── Styles ────────────────────────────────────────────────────────────
@@ -1232,15 +1097,7 @@ const PICKS_CARD_W = SCREEN_W - spacing.xl * 2;
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  subTabsScroll: { maxHeight: 44 },
-  subTabsBar: { flexDirection: 'row', alignItems: 'flex-end' },
-  subTabsFilter: { paddingRight: spacing.xl, paddingBottom: spacing.xs },
-  subTabsRow: { paddingHorizontal: spacing.xl, gap: spacing.lg, alignItems: 'flex-end' },
-  subTab: { alignItems: 'center', paddingBottom: spacing.xs },
-  subTabText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
-  subTabTextActive: { fontFamily: fontFamily.sansMedium, color: colors.textPrimary },
-  subTabUnderline: { height: 2, width: '100%', marginTop: spacing.xs, backgroundColor: 'transparent' },
-  subTabUnderlineActive: { backgroundColor: colors.accent },
+  headerFilter: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
 
   fixedHeader: {
     position: 'absolute',
@@ -1252,11 +1109,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomColor: colors.border,
   },
 
-  dateLabel: {
-    fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
-    color: colors.textSecondary,
-  },
+  dateLine: { paddingHorizontal: spacing.xl, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 
   // ── Hero ──
   hero: {

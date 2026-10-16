@@ -62,7 +62,7 @@ the web nav strokes at 18px, including feedback, Support Plot, and an 18px
 profile avatar. The drawer width matches web `min(300px, 85vw)`.
 
 The onboarding and Finishing touches rows above passed `tsc`, ESLint,
-`copy:check` and `mobile:tabs`, and have **not been opened on a device**: it
+`copy:check`, and have **not been opened on a device**: it
 needs a fresh account to reach `/onboarding/seed`. Drive it once with a new
 sign-up: the seed grid, the Switching apps? row into import and services, the
 building fan and fade into Home, then the card (tiles tick from real data;
@@ -157,19 +157,9 @@ Lessons:
 - A feature-flag or allow-list set is exactly the kind of one-line gate that
   compiles perfectly while disabling the feature. After a rebase, re-read the
   gate, don't just re-run the build.
-- That specific gate is now guarded: `pnpm run mobile:tabs` fails the build if
-  any `DISCOVER_TABS` id is in neither `MOBILE_READY` nor `MOBILE_DEFERRED` in
-  `app/(app)/index.tsx`, so "missing" is no longer expressible. The rules and
-  the reconstruction of #587 are in
-  `apps/web/tests/unit/mobileTabChecks.test.js`. It is a static guard, not a
-  substitute for running the app: it cannot tell you a tab renders the *right*
-  content, only that it renders at all.
-- Where a screen cannot be run, prefer a **differential test** over
-  inspection. `packages/core/tests/unit/homeReleasesParity.test.js` runs the
-  pre-refactor algorithm beside the new composition and asserts `deepEqual`,
-  and a companion case asserts the regression it guards against actually
-  reproduces when the shared `seen` set is dropped — so the test cannot pass
-  for the wrong reason.
+- That gate no longer exists: Home has no sub-tabs now (one feed, New Releases at
+  `/(app)/new-releases`), so there is no `mobile:tabs` check. Reachability of each
+  screen is covered by `docs/qa/mobile-device-smoke.md`.
 
 ## Environment notes
 
