@@ -40,6 +40,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { usableRateCount } from '../_shared/securityGuards.js';
+import { deliverSignupLink } from '../_shared/signupMailer.ts';
 
 function allowedOrigin(origin: string | null) {
   if (!origin) return 'https://app.theplot.tv';
@@ -85,6 +86,22 @@ async function sendConfirmationEmail(email: string, actionLink: string) {
     }),
   });
   if (!res.ok) throw new Error(`Resend request failed (${res.status})`);
+}
+
+// Fallback when Resend fails: send through Supabase's own auth mailer (the
+// project's configured SMTP). The user already exists, so shouldCreateUser is
+// off. Uses an anon-key client so the service-role client's session is untouched.
+async function sendViaSupabaseMailer(email: string) {
+  const anon = Deno.env.get('SUPABASE_ANON_KEY');
+  if (!anon) throw new Error('SUPABASE_ANON_KEY is not configured');
+  const mailer = createClient(Deno.env.get('SUPABASE_URL')!, anon, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error } = await mailer.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false, emailRedirectTo: 'https://app.theplot.tv/auth/callback' },
+  });
+  if (error) throw new Error(`Supabase mailer failed (${error.status ?? 'unknown'})`);
 }
 
 // Deliberately fast — a real user reads the form and types for at least this
@@ -289,9 +306,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    await sendConfirmationEmail(email, linkData.properties.action_link);
+    await deliverSignupLink(
+      () => sendConfirmationEmail(email, linkData.properties.action_link),
+      () => sendViaSupabaseMailer(email),
+    );
   } catch (error) {
-    console.error('Could not send fallback signup confirmation:', (error as Error).message);
+    console.error('Could not send signup confirmation by any path:', (error as Error).message);
     await supabaseAdmin.auth.admin.deleteUser(created.user.id);
     return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
   }
