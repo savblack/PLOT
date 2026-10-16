@@ -1,7 +1,7 @@
 # Plot Premium: features to build (agent handoff)
 
 **Audience:** another agent picking up Premium product work.  
-**Status of this doc:** locked Free/Premium *positioning* as of 2026-09-23; build status updated 2026-09-28. **Pick for Me** (the tonight picker) is live on `main`. **Watch together** is live on web (`SHOW_WATCH_TOGETHER = true`, PLO-515). Mobile is not built yet. Most other Premium *product* features are not built yet. Checkout is hard-closed.  
+**Status of this doc:** locked Free/Premium *positioning* as of 2026-09-23; build status updated 2026-09-28. **Pick for Me** (the tonight picker) is live on `main`. **Watch together** is live on web and in the mobile app (`SHOW_WATCH_TOGETHER = true`, PLO-515, mobile PR 1345). Installed phones need a new build. Most other Premium *product* features are not built yet. Checkout is hard-closed.  
 **Canonical entitlement copy:** `packages/core/copy/plansPage.js` (never invent a second matrix).  
 **Prior decision thread:** [Premium upgrade journey](9766f334-4f25-4949-891a-ee18a19d4991).  
 **Research:** `docs/research/premium-positioning-2026-09-16.md`, `docs/research/premium-preview-merge-notes.md`.
@@ -34,7 +34,7 @@
 | Plex / Trakt sync | Edge functions return `premium_required` for non-Premium `sync`. **UI flag on:** `SHOW_MEDIA_SYNC_INTEGRATIONS = true` (web + mobile). Premium Settings shows Connect and Import watch history. Public copy does not call it automatic or two-way sync. Free Settings shows the Premium gate. Live OAuth still needs a Premium account smoke. |
 | Marketing homepage previews | Illustrative Tonight / Together / Following storyboards only. Not live product. |
 | Pick for Me (tonight picker) | **Live on `main`** (PR #1029, merged 2026-09-25; follow-up #1045, 2026-09-26). See §5.2. |
-| Watch together (overlap + shared lists) | **Live on web.** `SHOW_WATCH_TOGETHER = true` in `apps/web/src/launchFeatures.js` (PLO-515). Production has migrations `20260927100000` through `20260927140000`. Mobile flag is `false` (no screen yet). Decisions in `docs/design/watch-together/README.md`. |
+| Watch together (overlap + shared lists) | **Live on web and mobile.** `SHOW_WATCH_TOGETHER = true` in `apps/web/src/launchFeatures.js` and `apps/mobile/lib/launchFeatures.ts` (PLO-515, mobile PR 1345). Production has migrations `20260927100000` through `20260927140000`. Installed phones need a new build. Decisions in `docs/design/watch-together/README.md`. |
 | `/plans` rebuild | **In review:** PR #1031 (`agent/premium-plans-a2`), side-by-side plans at US$3/$24. |
 | One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free. Public copy does not list automatic sync as a Premium benefit. |
 | Following people + season-ready | **Built on web (PLO-521, round 2 design).** Follow from the title panel's Cast and Directed by rows, a person's page, Home and the Your people page (`/your-people`); Premium checked in RLS. Daily `premium-alerts` run keeps `people_feed` current and writes release-day notifications; `people-feed-refresh` fills a new follow straight away. Home also gained Continue watching (free). Whole-season alerts stay as built, secondary. Mobile shows the rows read-only; the rest is issue #1093. See §5.9 and §5.10. |
@@ -134,7 +134,7 @@ Also complete `docs/billing/stripe-launch.md` in live mode when going public: po
 Suggested priority for “Less deciding. More watching.” (matches plans stories + Reddit positioning):
 
 1. ~~Tonight’s movie picker~~ **Done: Pick for Me** (§5.2).
-2. **Watchlist overlap + host collaborative lists.** Live on web as Watch together (`/together`, flag on, PLO-515). Join stays Free. Mobile is not built.
+2. **Watchlist overlap + host collaborative lists.** Live on web and mobile as Watch together (`/together`, flag on, PLO-515, mobile PR 1345). Join stays Free. Installed phones need a new build.
 3. **Unlimited lists** — gated on both platforms. Hitting the 5-list cap (or a server-side cap rejection from a stale tab) opens the shared upgrade sheet on web and mobile (`UpgradeSheet`, content from `@plot/core/upgradeSheet.js`). When checkout opens, wire the sheet's Upgrade button to real checkout.
 4. **Live calendar subscription** — shipped (PLO-519). Premium URL on web and mobile. Free keeps a one-time snapshot. The feed returns an empty calendar when `is_premium()` is false.
 5. **Deeper stats** — define what “additional” means beyond today’s Free overview.
@@ -209,7 +209,7 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 ### 5.3 Watchlist overlap / “something you both want” — **Premium** (host)
 
-**Shipped on web (PLO-515):** Watch together at `/together`. `SHOW_WATCH_TOGETHER = true` in `apps/web/src/launchFeatures.js`. Mobile `SHOW_WATCH_TOGETHER = false` (no screen in this change). See `docs/design/watch-together/README.md`.
+**Shipped on web and mobile (PLO-515, mobile PR 1345):** Watch together at `/together`. `SHOW_WATCH_TOGETHER = true` in `apps/web/src/launchFeatures.js` and `apps/mobile/lib/launchFeatures.ts`. See `docs/design/watch-together/README.md`.
 
 **Intent:** Show titles on both people’s watchlists; help choose together. Not playback.
 
@@ -223,7 +223,7 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 ### 5.4 Create / host collaborative lists — **Premium**; join — **Free**
 
-**Shipped on web as part of Watch together** (shared lists, PLO-515). Mobile is not built. The sketch below is the original brief.
+**Shipped on web and mobile as part of Watch together** (shared lists, PLO-515, mobile PR 1345). The sketch below is the original brief.
 
 **Intent:** Host builds a shared list; invites Free friends to add titles.
 
@@ -398,7 +398,7 @@ From `docs/launch/app-store-launch-sprint.md` and billing docs:
 | `packages/core/copy/settingsView.js` | Settings Premium and sync gate strings |
 | `apps/web/src/hooks/usePremium.js` | Checkout stub + portal/tip |
 | `apps/web/src/launchFeatures.js` | `SHOW_PRICING_PAGE`, `SHOW_MEDIA_SYNC_INTEGRATIONS`, `SHOW_WATCH_TOGETHER` (true) |
-| `apps/mobile/lib/launchFeatures.ts` | Mobile flags. Pricing page off. Watch together off (no screen yet). |
+| `apps/mobile/lib/launchFeatures.ts` | Mobile flags. Pricing page off. Watch together on (PR 1345). |
 | `apps/web/src/pages/PlansPage.jsx` | Plans UI |
 | `apps/web/src/utils/premiumExplore.js` | Safe `/plans?from=` helper |
 | `supabase/functions/stripe-billing/index.ts` | Checkout 503 gate |
@@ -430,7 +430,7 @@ If starting cold, in order:
 2. Confirm **pricing** with Savannah (§2), then PLO-494.
 3. **PLO-493** — restore Checkout + smoke.
 4. ~~Tonight’s movie picker~~ **Done: Pick for Me, web + mobile** (§5.2).
-5. ~~Collaborative lists / Watch together~~ **Web flag on (PLO-515).** Mobile still to build.
+5. ~~Collaborative lists / Watch together~~ **Flag on for web and mobile (PLO-515, PR 1345).** Installed phones need a new build.
 6. Free **release notifications** in parallel if notification infra is ready (keeps Free tier competitive).
 
 ---
