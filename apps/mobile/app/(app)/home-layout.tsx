@@ -1,6 +1,6 @@
 /**
  * Customize Home — /(app)/home-layout (mirrors web's HomeLayoutSheet).
- *   Look     density (free). Card style "List" is web only for now.
+ *   Look     density and card style (free)
  *   Pinned   shelves the viewer chose, at the top of Home (Premium)
  *   Shelves  one row per shelf in the viewer's order: up/down and show/hide
  * Rules and persistence are shared with web in @plot/core (homeLayout.js,
@@ -20,7 +20,7 @@ import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { MAX_HOME_PINS } from '@plot/core/homeLayout.js';
 import { pinLabel, pinOptions } from '@plot/core/homePins.js';
-import { UI_DENSITIES } from '@plot/core/uiPrefs.js';
+import { CARD_STYLES, UI_DENSITIES } from '@plot/core/uiPrefs.js';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
@@ -78,6 +78,20 @@ export default function HomeLayoutScreen() {
               return (
                 <TouchableOpacity key={d} style={[styles.segBtn, on && styles.segBtnOn]} onPress={() => ui.chooseDensity(d)} accessibilityRole="radio" accessibilityState={{ checked: on }}>
                   <Text style={[styles.segText, on && styles.segTextOn]}>{C.density[d]}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.segRow}>
+          <Text style={styles.segLabel}>{C.cardStyleLabel}</Text>
+          <View style={styles.seg} accessibilityRole="radiogroup">
+            {(CARD_STYLES as readonly ('poster' | 'list')[]).map(c => {
+              const on = ui.prefs.cardStyle === c;
+              return (
+                <TouchableOpacity key={c} style={[styles.segBtn, on && styles.segBtnOn]} onPress={() => ui.chooseCardStyle(c)} accessibilityRole="radio" accessibilityState={{ checked: on }}>
+                  <Text style={[styles.segText, on && styles.segTextOn]}>{C.cardStyle[c]}</Text>
                 </TouchableOpacity>
               );
             })}
