@@ -33,7 +33,8 @@ export function feedCacheKey(url, slug) {
   const page = url.searchParams.get('page') || '';
   const type = url.searchParams.get('type') || '';
   const path = slug ? `/whats-on/${encodeURIComponent(slug)}` : '/whats-on';
-  return new Request(`${url.origin}${path}?page=${page}&type=${type}`, { method: 'GET' });
+  // v bumps when a deploy must not be answered from pages cached before it.
+  return new Request(`${url.origin}${path}?page=${page}&type=${type}&v=2`, { method: 'GET' });
 }
 
 /**

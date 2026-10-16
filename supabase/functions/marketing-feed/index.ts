@@ -411,9 +411,11 @@ const HOME_KIND_LABEL: Record<string, string> = { streaming: 'Now streaming', re
 
 // Kicker chips: sage everywhere except the featured (lead) story, which is
 // pink. The per-type tone colours in TYPE_META are not used for chips.
-const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false) => {
+const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false, showGuide = false) => {
   const m = TYPE_META[p.post_type];
   if (!m) return '';
+  // Every long-form piece is a guide, so the chip says nothing in a list.
+  if (p.post_type === 'guide' && !showGuide) return '';
   const label = (p.post_type === 'now_streaming' && HOME_KIND_LABEL[p.payload?.home_kind ?? '']) || m.label;
   return `<span class="kick${featured ? ' featured' : ''}">${esc(label)}</span>`;
 };
@@ -425,7 +427,7 @@ const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false) =>
 // as the app and marketing site, with cross_subdomain_cookie so a visit here
 // joins the same landing → signup funnel. The ?v= is a cache bust: bump it
 // when either file changes.
-const WHATS_ON_JS_VERSION = '20261016';
+const WHATS_ON_JS_VERSION = '20261017';
 const ANALYTICS_SCRIPT = `<script src="${SITE}/js/whats-on-head.js?v=${WHATS_ON_JS_VERSION}"></script>`;
 const GTM_NOSCRIPT = `<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PC72PHBN" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`;
 
@@ -527,15 +529,15 @@ ${head}
   h1.feed-title { font-family: var(--display); font-size: clamp(2.8rem, 6vw, 4rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
   h1.feed-title em { font-style: normal; font-weight: 500; color: var(--mut); }
 
-  .wsearch { display: flex; align-items: center; gap: 8px; margin: 22px 0 0; max-width: 520px; background: var(--paper); border-radius: 9999px; padding: 5px 5px 5px 18px; }
-  .wsearch input[type=search] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.95rem; color: var(--ink); padding: 8px 0; -webkit-appearance: none; appearance: none; }
+  .wsearch { display: flex; align-items: center; gap: 6px; flex: 0 1 300px; min-width: 0; margin-bottom: 8px; background: var(--paper); border-radius: 9999px; padding: 3px 3px 3px 16px; }
+  .wsearch input[type=search] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.95rem; color: var(--ink); padding: 6px 0; -webkit-appearance: none; appearance: none; }
   .wsearch input[type=search]::placeholder { color: var(--faint); }
-  .wsearch button { border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.85rem; font-weight: 600; padding: 9px 16px; cursor: pointer; transition: background 0.2s; }
+  .wsearch button { border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.8rem; font-weight: 600; padding: 7px 14px; cursor: pointer; transition: background 0.2s; }
   .wsearch button:hover { background: var(--fill-hover); }
   .wsearch:focus-within { box-shadow: 0 0 0 2px var(--ink); }
   .search-sum { margin: 28px 0 0; color: var(--mut); font-weight: 300; }
   .search-sum a { color: var(--ink); }
-  nav.dex { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-bottom: 1px solid var(--hair); margin: 28px 0 0; }
+  nav.dex { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; border-bottom: 1px solid var(--hair); margin: 28px 0 0; }
   .dex-links { display: flex; gap: 28px; flex-wrap: wrap; }
   .dex a { color: var(--mut); text-decoration: none; padding-bottom: 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
   .dex a:hover { color: var(--ink); }
@@ -676,9 +678,9 @@ ${head}
   .row-dek { display: block; color: var(--mut); font-size: 0.92rem; line-height: 1.45; margin-top: 8px; }
   .row img { width: 240px; aspect-ratio: 3/2; object-fit: cover; flex-shrink: 0; border-radius: 14px; }
   .row .ph { width: 240px; aspect-ratio: 3/2; flex-shrink: 0; background: var(--paper); border-radius: 14px; }
-  .older-row { border-top: 1px solid var(--hair); padding: 26px 0 0; text-align: center; }
-  .older { color: var(--mut); text-decoration: none; }
-  .older:hover { color: var(--ink); }
+  .older-row { border-top: 1px solid var(--hair); padding: 44px 0 0; text-align: center; }
+  .older { display: inline-flex; align-items: center; gap: 10px; padding: 18px 40px; border-radius: 9999px; background: var(--ink); color: var(--bg); font-size: 0.95rem; letter-spacing: 0.1em; text-decoration: none; transition: background 0.2s var(--ease), transform 0.2s var(--ease); }
+  .older:hover { background: #3d3d36; transform: translateY(-1px); }
 
   /* entry page */
   .crumbs { max-width: 680px; margin: 0 auto; padding-top: 40px; display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--mut); }
@@ -837,9 +839,10 @@ ${FOOTER_CSS}
     .row img, .row .ph { width: 150px; }
     .row-t { font-size: 1.15rem; }
     .row-dek { display: none; }
-    .dex { overflow-x: auto; scrollbar-width: none; }
-    .dex::-webkit-scrollbar { display: none; }
-    .dex-links { flex-wrap: nowrap; }
+    nav.dex { flex-direction: column; align-items: stretch; gap: 14px; }
+    .dex-links { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .dex-links::-webkit-scrollbar { display: none; }
+    .wsearch { flex: none; margin-bottom: 14px; }
   }
 </style>
 </head>
@@ -1078,7 +1081,8 @@ const renderChart = async (supabase: Db) => {
 const HOME_BATCH = 60;
 const HERO_RAIL_SIZE = 7;
 const STREAMING_SIZE = 4;
-const COUNTDOWN_SIZE = 2;
+const COUNTDOWN_SIZE = 6;
+const ON_THIS_DAY_SIZE = 4;
 const TRAILER_SIZE = 2;
 // Dedicated per-category queries fetch this many extra so a section can still
 // fill up even if every hero slot happens to land in that same category.
@@ -1142,6 +1146,18 @@ const trendingTeaser = (items: ChartItem[], prior: ChartItem[] | null) => `<ol c
 // update) — the only date FeedPost actually carries; not a claim about the
 // title's own release date, which this function has no source for.
 const comingSoonCards = (posts: FeedPost[]) => `<div class="datecards">${posts.map((p) => {
+  const img = postImage(p);
+  const { mon, day } = fmtBadge(p.scheduled_for);
+  return `<a class="datecard" href="${FEED_PATH}/${esc(p.slug)}">
+    <span class="date-badge">${esc(mon)}<span class="dd">${day}</span></span>
+    <div class="dc-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}</div>
+    <span class="dc-t">${esc(postTitle(p))}</span>
+  </a>`;
+}).join('')}</div>`;
+
+// On this day: anniversary pieces, each pinned to a calendar date, so the
+// headline leads and the post date sits on the left like Coming soon's.
+const onThisDayList = (posts: FeedPost[]) => `<div class="datecards">${posts.map((p) => {
   const img = postImage(p);
   const { mon, day } = fmtBadge(p.scheduled_for);
   return `<a class="datecard" href="${FEED_PATH}/${esc(p.slug)}">
@@ -1388,12 +1404,12 @@ Deno.serve(async (req) => {
           <div class="dateline sc">${esc(dateline)}</div>
         </div>
       </div>
-      <form class="wsearch r2" role="search" action="${FEED_PATH}" method="get">
-        <input type="search" name="q" value="${esc(rawQ)}" placeholder="Search What's On" maxlength="80" aria-label="Search What's On articles" autocomplete="off">
-        <button type="submit">Search</button>
-      </form>
       <nav class="dex r2">
         <div class="dex-links">${dexLinks}</div>
+        <form class="wsearch" role="search" action="${FEED_PATH}" method="get">
+          <input type="search" name="q" value="${esc(rawQ)}" placeholder="Search What's On" maxlength="80" aria-label="Search What's On articles" autocomplete="off">
+          <button type="submit">Search</button>
+        </form>
       </nav>`;
 
     // Search: ?q= over article titles and bodies, every word required. Served
@@ -1438,15 +1454,20 @@ Deno.serve(async (req) => {
         { data: streamingData },
         { data: countdownData },
         { data: trailerData },
+        { data: onThisDayData },
         { latest: chartLatest, prior: chartPrior },
       ] = await Promise.all([
         baseQuery().order('scheduled_for', { ascending: false }).limit(HOME_BATCH),
         baseQuery().eq('post_type', 'now_streaming').order('scheduled_for', { ascending: false }).limit(STREAMING_SIZE + CATEGORY_BUFFER),
         baseQuery().eq('post_type', 'countdown').order('scheduled_for', { ascending: false }).limit(COUNTDOWN_SIZE + CATEGORY_BUFFER),
         baseQuery().eq('post_type', 'trailer').order('scheduled_for', { ascending: false }).limit(TRAILER_SIZE + CATEGORY_BUFFER),
+        baseQuery().eq('post_type', 'on_this_day').order('scheduled_for', { ascending: false }).limit(ON_THIS_DAY_SIZE),
         fetchTrendingSnapshots(supabase),
       ]);
-      const batch = (batchData || []) as FeedPost[];
+      // Countdowns and On this day posts have their own sidebar sections, so
+      // they stay out of the feed column's lead, stories and More updates.
+      const SIDEBAR_ONLY = new Set(['countdown', 'on_this_day']);
+      const batch = ((batchData || []) as FeedPost[]).filter((p) => !SIDEBAR_ONLY.has(p.post_type));
 
       if (!batch.length) {
         return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>${aboutCard('whats_on')}`, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
@@ -1467,15 +1488,16 @@ Deno.serve(async (req) => {
       const heroSlugs = new Set([lead.slug, ...rail.map((p) => p.slug)]);
 
       const streaming = ((streamingData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, STREAMING_SIZE);
-      const countdown = ((countdownData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, COUNTDOWN_SIZE);
+      const countdown = ((countdownData || []) as FeedPost[]).slice(0, COUNTDOWN_SIZE);
+      const onThisDay = ((onThisDayData || []) as FeedPost[]).slice(0, ON_THIS_DAY_SIZE);
       const trailer = ((trailerData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, TRAILER_SIZE);
-      const used = new Set([...heroSlugs, ...streaming.map((p) => p.slug), ...countdown.map((p) => p.slug), ...trailer.map((p) => p.slug)]);
+      const used = new Set([...heroSlugs, ...streaming.map((p) => p.slug), ...trailer.map((p) => p.slug)]);
       const tail = rest.filter((p) => !used.has(p.slug)).slice(0, 6);
       const chartItems = ((chartLatest?.items as ChartItem[] | undefined) || []).slice(0, 5);
 
       // Feed column: lead, two stories, New at home, two more stories, First
       // look, the rest of the rail, More updates. Sidebar: Trending, Coming
-      // soon, the newsletter. Everything is a cream card on the cream ground.
+      // soon, On this day, About. Everything is a cream card on the cream ground.
       const stories = rail.map(railRow);
       const main = [
         featuredHero(lead),
@@ -1489,6 +1511,7 @@ Deno.serve(async (req) => {
       const side = [
         chartItems.length ? sectionCard('Trending', `${FEED_PATH}/chart`, trendingTeaser(chartItems, chartPrior), true) : '',
         countdown.length ? sectionCard('Coming soon', `${FEED_PATH}?type=countdown`, comingSoonCards(countdown), true) : '',
+        onThisDay.length ? sectionCard('On this day', `${FEED_PATH}?type=on_this_day`, onThisDayList(onThisDay), true) : '',
         aboutCard('whats_on'),
       ].join('');
 
@@ -1677,7 +1700,7 @@ Deno.serve(async (req) => {
     </div>`;
   }).join('');
 
-  const k = kicker(typed);
+  const k = kicker(typed, false, true);
   const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';
   // A guide earns up to two modules: the title its copy opens with, and the
   // planner's top remaining pick placed where the copy first names it. The rest

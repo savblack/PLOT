@@ -63,7 +63,7 @@
     var wall = document.getElementById('wclWall');
     if (!wall) return;
     var IMG = 'https://image.tmdb.org/t/p/w500';
-    var COUNT = 27;
+    var MAX = 72;
     var PATHS = ['trending/movie/week', 'movie/now_playing', 'trending/tv/week'];
     Promise.all(PATHS.map(function (path) {
       return fetch('/api/discover?path=' + encodeURIComponent(path))
@@ -85,8 +85,14 @@
         var j = Math.floor(Math.random() * (i + 1));
         var t = urls[i]; urls[i] = urls[j]; urls[j] = t;
       }
-      // A short list makes a shorter wall rather than a repeating one.
-      var tiles = Math.min(COUNT, urls.length);
+      // Enough rows to fill the banner top to bottom, so no bare band is left
+      // above the footer. A short list makes a shorter wall rather than a
+      // repeating one.
+      var cols = getComputedStyle(wall).gridTemplateColumns.split(' ').length || 9;
+      var gap = 12;
+      var tileH = ((wall.clientWidth - gap * (cols - 1)) / cols) * 1.5;
+      var rows = Math.ceil(wall.clientHeight / (tileH + gap)) + 1;
+      var tiles = Math.min(MAX, cols * rows, urls.length);
       for (var k = 0; k < tiles; k++) {
         var tile = document.createElement('div');
         tile.className = 'wcl-tile';
