@@ -35,9 +35,10 @@ import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
+import { useHomePosterScale } from '../../lib/homeLook';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
-import { ContinueWatchingCard, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
+import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
 import { useContinueWatching } from '@plot/core/useHomeShelves.js';
 import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
 import RateCard from '../../components/RateCard';
@@ -160,13 +161,14 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { profile } = useAppData();
+  const posterScale = useHomePosterScale();
   const art = useUserArtwork();
   const fw       = favoriteWords(profile?.region);
   const title    = item.title || item.name || '';
   const img      = posterUrl(displayPosterPath(art.apply(item)), 'w185');
 
   return (
-    <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={[styles.card, { width: CARD_W * posterScale }]} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.cardImg}>
         {img
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -445,6 +447,7 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const posterScale = useHomePosterScale();
   const { profile } = useAppData();
   const art = useUserArtwork();
   const fw        = favoriteWords(profile?.region);
@@ -452,7 +455,7 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
   const img       = posterUrl(displayPosterPath(art.apply(item)), 'w185');
 
   return (
-    <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={[styles.card, { width: CARD_W * posterScale }]} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.cardImg}>
         {img
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -1140,6 +1143,7 @@ export default function HomeScreen() {
             above are not part of the layout; a hidden shelf is skipped. The
             releases slot carries Out Today, recent and coming soon together.
             Ids are shared with web (@plot/core/homeLayout.js). ── */}
+        <PinnedShelves />
         {homeShelves.map(id => <View key={id}>{renderShelf[id]?.()}</View>)}
 
         <TouchableOpacity style={styles.customize} onPress={() => router.push('/(app)/home-layout' as Href)} accessibilityRole="button" accessibilityLabel={DISCOVER_VIEW.customize.title}>
