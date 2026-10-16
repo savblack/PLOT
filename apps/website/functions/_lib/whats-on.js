@@ -37,6 +37,17 @@ export function feedCacheKey(url, slug) {
 }
 
 /**
+ * The search term from ?q=: trimmed, whitespace collapsed, capped. Empty for a
+ * missing or blank term. Searches are never cached (every term is its own
+ * document and would grow the cache without bound).
+ *
+ * @param {URL} url
+ */
+export function searchTerm(url) {
+  return (url.searchParams.get('q') || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+}
+
+/**
  * @param {Request} request
  * @param {string|null} slug trailing path segment, or null for an index
  * @param {(promise: Promise<unknown>) => void} [waitUntil]
@@ -54,12 +65,14 @@ export async function marketingFeedPage(request, slug, waitUntil) {
     const value = url.searchParams.get(name);
     if (value) forwarded.set(name, value);
   }
+  const q = slug ? '' : searchTerm(url);
+  if (q) forwarded.set('q', q);
   const qs = forwarded.toString();
   const path = slug ? encodeURIComponent(slug) : '';
   const upstreamUrl = `${UPSTREAM}${path ? `/${path}` : ''}${qs ? `?${qs}` : ''}`;
 
   const method = request.method === 'HEAD' ? 'HEAD' : 'GET';
-  const cache = globalThis.caches && globalThis.caches.default;
+  const cache = !q && globalThis.caches && globalThis.caches.default;
   const cacheKey = feedCacheKey(url, slug);
   if (cache) {
     try {
@@ -81,7 +94,7 @@ export async function marketingFeedPage(request, slug, waitUntil) {
     status: upstream.status,
     headers: {
       ...PAGE_HEADERS,
-      'Cache-Control': upstream.status === 200
+      'Cache-Control': upstream.status === 200 && !q
         ? upstream.headers.get('cache-control') || SHAREABLE
         : 'no-store',
     },

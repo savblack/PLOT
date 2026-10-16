@@ -39,6 +39,13 @@ const FEED_TITLE = "What's On";
 const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – Plot";
 const FEED_PATH = '/whats-on';
 const PAGE_SIZE = 30;
+const SEARCH_LIMIT = 60;
+const SEARCH_TERMS = 5;
+
+// Words from a search box, safe to put inside a PostgREST or() filter: the
+// characters that delimit or wildcard a filter value become word breaks.
+const searchWords = (q: string) =>
+  q.replace(/[,()%_*\\"':;&|<>=]/g, ' ').split(/\s+/).filter((w) => w.length > 0).slice(0, SEARCH_TERMS);
 
 const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
@@ -520,6 +527,14 @@ ${head}
   h1.feed-title { font-family: var(--display); font-size: clamp(2.8rem, 6vw, 4rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
   h1.feed-title em { font-style: normal; font-weight: 500; color: var(--mut); }
 
+  .wsearch { display: flex; align-items: center; gap: 8px; margin: 22px 0 0; max-width: 520px; background: var(--paper); border-radius: 9999px; padding: 5px 5px 5px 18px; }
+  .wsearch input[type=search] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.95rem; color: var(--ink); padding: 8px 0; -webkit-appearance: none; appearance: none; }
+  .wsearch input[type=search]::placeholder { color: var(--faint); }
+  .wsearch button { border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.85rem; font-weight: 600; padding: 9px 16px; cursor: pointer; transition: background 0.2s; }
+  .wsearch button:hover { background: var(--fill-hover); }
+  .wsearch:focus-within { box-shadow: 0 0 0 2px var(--ink); }
+  .search-sum { margin: 28px 0 0; color: var(--mut); font-weight: 300; }
+  .search-sum a { color: var(--ink); }
   nav.dex { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-bottom: 1px solid var(--hair); margin: 28px 0 0; }
   .dex-links { display: flex; gap: 28px; flex-wrap: wrap; }
   .dex a { color: var(--mut); text-decoration: none; padding-bottom: 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
@@ -1342,6 +1357,7 @@ Deno.serve(async (req) => {
     const type = TYPE_META[url.searchParams.get('type') || ''] ? url.searchParams.get('type') : null;
     const pageNum = Math.min(Math.max(parseInt(url.searchParams.get('page') || '1', 10) || 1, 1), 100);
 
+    const rawQ = (url.searchParams.get('q') || '').replace(/\s+/g, ' ').trim().slice(0, 80);
     const dexLinks = FILTERS.map((f) => {
       const active = f.key === type;
       const href = f.key ? `${FEED_PATH}?type=${f.key}` : FEED_PATH;
@@ -1372,9 +1388,46 @@ Deno.serve(async (req) => {
           <div class="dateline sc">${esc(dateline)}</div>
         </div>
       </div>
+      <form class="wsearch r2" role="search" action="${FEED_PATH}" method="get">
+        <input type="search" name="q" value="${esc(rawQ)}" placeholder="Search What's On" maxlength="80" aria-label="Search What's On articles" autocomplete="off">
+        <button type="submit">Search</button>
+      </form>
       <nav class="dex r2">
         <div class="dex-links">${dexLinks}</div>
       </nav>`;
+
+    // Search: ?q= over article titles and bodies, every word required. Served
+    // un-cached and noindex (the Pages proxy skips its cache for q), canonical
+    // to the front page so a search never becomes a page of its own.
+    const words = searchWords(rawQ);
+    if (words.length) {
+      let query = baseQuery();
+      for (const w of words) {
+        query = query.or(`copy->>page_title.ilike.%${w}%,copy->>page_body.ilike.%${w}%`);
+      }
+      const { data: found } = await query.order('scheduled_for', { ascending: false }).limit(SEARCH_LIMIT);
+      const lower = words.map((w) => w.toLowerCase());
+      const inTitle = (p: FeedPost) => {
+        const t = postTitle(p).toLowerCase();
+        return lower.every((w) => t.includes(w));
+      };
+      const results = ((found || []) as FeedPost[])
+        .map((p, i) => ({ p, i, hit: inTitle(p) ? 0 : 1 }))
+        .sort((a, b) => a.hit - b.hit || a.i - b.i)
+        .map((r) => r.p);
+      const n = results.length;
+      const summary = n
+        ? `${n >= SEARCH_LIMIT ? `The ${SEARCH_LIMIT} newest` : n} ${n === 1 ? 'article' : 'articles'} for &ldquo;${esc(rawQ)}&rdquo;. <a href="${FEED_PATH}">Clear search</a>`
+        : `No articles match &ldquo;${esc(rawQ)}&rdquo;. Try fewer or different words, or <a href="${FEED_PATH}">browse What's On</a>.`;
+      const searchHead = `${SUBSCRIBE_HEAD}
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="${SITE}${FEED_PATH}">`;
+      return page(`${rawQ} – Search What's On – Plot`, searchHead, `
+        ${titleRow}
+        <p class="search-sum r3">${summary}</p>
+        ${results.length ? dailyWire(results) : ''}
+      `, 200, 'whats-on', 'no-store', closerSection('whats_on'));
+    }
 
     // Unfiltered first page: the sectioned front page. A ?type= filter or
     // page 2+ is a reader who already picked a category — that stays the
