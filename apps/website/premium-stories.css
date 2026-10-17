@@ -138,9 +138,10 @@
 .wp-bar em { font-style: normal; text-align: right; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .wp-taste { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 14px; background: var(--accent-dim); font-size: 0.85rem; }
 .wp-thumb { width: 30px; border-radius: 4px; flex-shrink: 0; }
-.wp-taste > span { flex: 1; }
+.wp-taste > span { flex: none; white-space: nowrap; }
 .wp-taste span { color: var(--text-secondary); }
-.wp-taste b { font-family: var(--display); font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; text-align: right; }
+.wp-taste b { flex: 1; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 0.95rem; letter-spacing: -0.02em; text-align: right; }
+.wp-taste .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; flex: none; }
 .wp-flip { position: relative; height: 1.3em; overflow: hidden; }
 .wp-flip span { display: block; height: 1.3em; line-height: 1.3em; white-space: nowrap; }
 .wp-flip span:first-child { animation: wp-flip 1.6s steps(1, end) 1.6s both; }
