@@ -63,18 +63,25 @@ export async function upsertProfile({ userId, patch }) {
   const { id: _id, ...fields } = patch ?? {};
   const update = () => supabase.from('profiles')
     .update(fields).eq('id', userId).select().maybeSingle();
-  let result = await update();
-
-  if (!result.error && !result.data) {
-    result = await supabase.from('profiles')
-      .insert({ id: userId, ...fields }).select().maybeSingle();
-    // The signup trigger or another onboarding request may have inserted the
-    // row after our update. In that case, save the intended fields to it.
-    if (result.error?.code === '23505') result = await update();
+  let result;
+  try {
+    result = await update();
+    if (!result.error && !result.data) {
+      result = await supabase.from('profiles')
+        .insert({ id: userId, ...fields }).select().maybeSingle();
+      // The signup trigger may create the profile between update and insert.
+      if (result.error?.code === '23505') result = await update();
+    }
+  } catch (error) {
+    // Both apps use the returned error to leave the saving state and offer retry.
+    result = { data: null, error };
   }
 
   const { data, error } = result;
-  if (error) reportActionFailure(FAILED_ACTIONS.PROFILE_UPDATE, error, { fields: Object.keys(fields) });
+  if (error || !data) {
+    reportActionFailure(FAILED_ACTIONS.PROFILE_UPDATE, error, { fields: Object.keys(fields) });
+    return { data: null, error: error || { message: 'Profile save returned no row' } };
+  }
 
   return { data, error };
 }

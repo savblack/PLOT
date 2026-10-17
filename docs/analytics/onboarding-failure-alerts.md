@@ -24,3 +24,14 @@ delivery. The project's test-account filter includes a behavioral bot cohort
 that PostHog's real-time destination filter cannot evaluate, so these
 destinations have `filter_test_accounts = false`. Treat a Slack alert as a lead
 and inspect the underlying event before attributing it to a real user.
+
+## Profile failure recovery
+
+`upsertProfile` returns an error for a rejected request or a final response with
+no saved row. Both apps already use that error to stop saving and show the retry
+message. These paths report `action_failed` with `action = profile_update` and
+`fields` containing `onboarding_complete`, so they match the profile alert above.
+A later successful retry does not emit another failure.
+
+The profile-write tests reproduce both cases without live user data. They do
+not prove browser rendering, device behavior, event ingestion, or Slack delivery.
