@@ -1,15 +1,11 @@
-// The subscriber digest. A designed HTML email:
-//   • a rich featured title (#1 on the chart) with ratings, cast, blurb, quote,
-//     and where to watch
-//   • the rest of the chart (ranks 2–5)
-//   • weekend watch — highly-rated recent streaming releases
-//   • new on streaming — titles that hit a platform in the last week
-// Titles are de-duped across sections; every row carries a poster + a platform.
+// Internal chart preview for the marketing week sheet. Dry-run only.
 //
-// Each issue covers a week of film and TV, but this script has no cron: it sends
-// only when someone runs `npm run newsletter`. That is why no opt-in surface
-// claims a frequency — see packages/core/copy/settingsView.js's marketingEmails
-// entry. Add a schedule before promising one.
+// the week is a separate letter. write-issue.mjs drafts it, render-issue.mjs
+// turns that file into the Substack post and the email. This chart is not that
+// letter, and it must not be mailed. See THE-WEEK.md.
+//
+// The preview is still a designed HTML email of the chart, a featured title,
+// weekend watch, and new on streaming. Nothing schedules it.
 import { getSupabase, supabaseUrl } from '../lib/supabase.mjs';
 import { sendBatch, FROM_MARKETING } from '../lib/email.mjs';
 import { recentSnapshots, withMovement } from '../lib/trending.mjs';
@@ -243,6 +239,10 @@ const buildHtml = ({ dateLabel, featured, kicker, chart, weekend, streaming }, u
 };
 
 const main = async () => {
+  if (process.env.DRY_RUN !== '1') {
+    console.error('Refusing to send the chart preview. the week is drafted by write-issue.mjs and posted on Substack. See marketing/newsletter/THE-WEEK.md');
+    process.exit(1);
+  }
   const supabase = getSupabase();
   const now = new Date();
 
