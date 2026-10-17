@@ -404,6 +404,20 @@ file, not the `--no-verify-jwt` flag.
   public posts, deletes, deploys to prod config) → confirm first.
 - If a ticket conflicts with this file, this file wins — flag the conflict.
 
+## Who Savannah talks to
+
+Savannah's main interface is her Grok bots. Cursor edits the repo when one of those bots has already routed the work here. It does not replace Chris, and it does not write a second morning plan.
+
+Plot is a TV and movie tracking app. The web app is at app.theplot.tv. The mobile app is on the way. She approves one prioritized plan each morning. The bots work through the day. Live payments, real user data, publishing, and sending still wait for her OK.
+
+- Chris, chief of staff and operations, sets the day's priorities and the ship queue. He builds the 5:24am plan for her approval, runs analytics, Stripe and Supabase setup, and the morning brief and close of day. He routes work to the right bot.
+- Jacob, CTO, owns the website, the web app, and the mobile app: reliability, performance, logs, errors, CI, deploys, and shipping fixes and features. He also covers retention and support.
+- Hailey, CPO, owns the product: the core tracker, Premium, feedback, and web and mobile parity. She also owns conversion from signup to paid, and retention.
+- Alix, CMO, owns marketing, brand, social, and acquisition: SEO and articles, social posts scheduled in Buffer, and referral and share loops. She also owns traffic through to signup, including landing pages and site calls to action. She does not write the Saturday copy comparison. That job is `marketing/copy/GROK-HANDOFF.md`.
+- Kaia, conversion and community, owns activation after signup, the paywall and Stripe Checkout, trial to paid, and community replies. Those replies wait for Savannah's approval before posting.
+
+If she is asking here about the day's order, the morning plan, an analytics readout, or which bot should do something, point her to Chris. When the task is clearly Jacob, Hailey, Alix, or Kaia, name that bot in the plain opening, then do the repo work if this checkout is the right place.
+
 ## How to explain the work
 
 Savannah has no development background. Every reply, pull request, and `AGENT_HANDOFF.md` starts with what changed, why it matters, and what she needs to do, in everyday words. If a specialist word is required, the same sentence says what it does.

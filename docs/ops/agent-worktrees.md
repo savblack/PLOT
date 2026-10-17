@@ -2,6 +2,8 @@
 
 One checkout, shared by every coding agent on this Mac. A second agent continues a task by reading the branch, not the chat.
 
+Savannah's main interface is her Grok bots. Who does what is in `AGENTS.md` under "Who Savannah talks to". Chris owns the morning plan. Cursor does not write a second one.
+
 The main checkout is `~/Developer/PLOT`. Each task is a folder under `~/Developer/PLOT-worktrees/`, next to it, never inside it. `~/Developer` is the home folder you already created. It is not `~/Library/Developer`, which is Xcode's cache.
 
 This file does not move the checkout. After you move it yourself, reopen the folder in each app. An app still pointed at `Sites/Cursor` keeps writing to the old place.
