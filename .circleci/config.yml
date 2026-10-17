@@ -101,6 +101,29 @@ jobs:
             ./scripts/scan-secrets.sh "$base_sha" HEAD
 
       - run:
+          name: Decide how much of the suite this diff needs
+          command: |
+            labels=""
+            if command -v gh >/dev/null 2>&1 && [ -n "${GH_TOKEN:-${GITHUB_TOKEN:-}}" ] && [ -n "${CIRCLE_PULL_REQUEST:-}" ]; then
+              number="$(basename "$CIRCLE_PULL_REQUEST")"
+              labels="$(gh pr view "$number" --repo savblack/PLOT --json labels --jq '[.labels[].name] | join(",")' || true)"
+            fi
+            message="$(git log -1 --format=%B)"
+            node scripts/ci-tier.mjs \
+              --branch "${CIRCLE_BRANCH:-}" \
+              --labels "$labels" \
+              --commit-message "$message" \
+              --write-env "$BASH_ENV"
+            # BASH_ENV is picked up by the next step. Source it here too so
+            # a docs-only diff can stop this job before the install.
+            # shellcheck disable=SC1090
+            [ -n "${BASH_ENV:-}" ] && . "$BASH_ENV"
+            if [ "${PLOT_CI_TIER:-fast}" = none ]; then
+              echo "Docs-only diff. Stopping before install."
+              circleci step halt
+            fi
+
+      - run:
           name: Set up pnpm 10.6.3
           command: |
             sudo corepack enable
@@ -176,21 +199,30 @@ jobs:
       - run:
           name: Build Storybooks
           command: |
-            # The web build emits --stats-json so the Chromatic step below can
-            # use TurboSnap and only snapshot the stories a change can reach.
+            if [ "${PLOT_CI_TIER:-fast}" != full ]; then
+              echo "Tier ${PLOT_CI_TIER:-fast}: skipping Storybook."
+              exit 0
+            fi
+            # The web build emits --stats-json so Chromatic can use TurboSnap.
             pnpm --filter @plot/web run build-storybook:stats
-            pnpm --filter @plot/website-storybook run build-storybook
-            pnpm --filter @plot/mobile run build-storybook
+            if [ "${PLOT_CI_WEBSITE_STORYBOOK:-0}" = 1 ]; then
+              pnpm --filter @plot/website-storybook run build-storybook
+            fi
+            if [ "${PLOT_CI_MOBILE_STORYBOOK:-0}" = 1 ]; then
+              pnpm --filter @plot/mobile run build-storybook
+            fi
 
       - run:
           name: Chromatic visual snapshots
           command: |
-            # Visual regression for the web Storybook, reusing the build above.
-            # Runs with --exit-zero-on-changes on purpose: nearly every design PR
-            # here changes pixels deliberately, and a check that goes red on every
-            # intended redesign is one nobody reads. A genuine failure (a story
-            # that throws, a broken build) still fails this step. Review the diffs
-            # in Chromatic, not here.
+            # Visual diffs do not fail the build (--exit-zero-on-changes).
+            # A story that throws still does. main records the baseline.
+            # A pull request uploads only when the diff is visual, or the
+            # commit says [visual].
+            if [ "${PLOT_CI_CHROMATIC:-0}" != 1 ]; then
+              echo "This diff does not need Chromatic."
+              exit 0
+            fi
             if [ -z "${CHROMATIC_PROJECT_TOKEN:-}" ]; then
               echo "CHROMATIC_PROJECT_TOKEN is not set; skipping visual snapshots."
               exit 0
@@ -209,7 +241,12 @@ jobs:
 
       - run:
           name: Install Playwright Chromium
-          command: pnpm --filter @plot/web exec playwright install chromium
+          command: |
+            if [ "${PLOT_CI_TIER:-fast}" != full ]; then
+              echo "Tier ${PLOT_CI_TIER:-fast}: skipping Playwright."
+              exit 0
+            fi
+            pnpm --filter @plot/web exec playwright install chromium
 
       - save_cache:
           key: playwright-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
@@ -218,11 +255,21 @@ jobs:
 
       - run:
           name: Storybook interaction and accessibility tests
-          command: pnpm run test-storybook:web
+          command: |
+            if [ "${PLOT_CI_TIER:-fast}" != full ]; then
+              echo "Tier ${PLOT_CI_TIER:-fast}: skipping Storybook interaction tests."
+              exit 0
+            fi
+            pnpm run test-storybook:web
 
       - run:
           name: Smoke tests
-          command: pnpm --filter @plot/web exec playwright test
+          command: |
+            if [ "${PLOT_CI_TIER:-fast}" != full ]; then
+              echo "Tier ${PLOT_CI_TIER:-fast}: skipping smoke tests."
+              exit 0
+            fi
+            pnpm --filter @plot/web exec playwright test
 
   marketing-reconcile:
     executor: node
