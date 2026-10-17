@@ -244,17 +244,21 @@ with a live importer still on `main`.
 repo, never nested inside it:
 
 ```
-Sites/Cursor/PLOT/                 ← this checkout
-Sites/Cursor/PLOT-worktrees/<task> ← worktrees live here
+~/Developer/PLOT/                         ← this checkout
+~/Developer/PLOT-worktrees/<YYYY-MM-DD-task> ← worktrees live here
 ```
 
-From the main checkout root:
+The branch name is `agent/<YYYY-MM-DD-task>`. The folder name does not include the `agent/` prefix, because a slash would nest a directory. Cloud Cursor still uses `cursor/<name>-ff25`. Leave that prefix alone. The handoff note carries the human title.
+
+From the main checkout root, prefer `pnpm run worktrees -- new <task>`. The manual form is:
 
 ```bash
 mkdir -p ../PLOT-worktrees
-git worktree add ../PLOT-worktrees/<task-name> \
-  -b agent/<task-name> origin/main
+git worktree add ../PLOT-worktrees/<YYYY-MM-DD-task> \
+  -b agent/<YYYY-MM-DD-task> origin/main
 ```
+
+A second agent may pick up a worktree only when `AGENT_HANDOFF.md` says `paused`, or the local lock is `active` and older than 12 hours with no new commit and a clean tree. Two writers at once are still forbidden. Delete `AGENT_HANDOFF.md` in the last commit before merge so it does not land on `main`. The local `.plot-session.json` stays gitignored. See `docs/ops/agent-worktrees.md`.
 
 Never use `.claude/worktrees/` or `.worktrees/` under this checkout. If a harness
 opens a nested worktree anyway, that is a **fallback only**: stop, tell the user,
@@ -400,9 +404,37 @@ file, not the `--no-verify-jwt` flag.
   public posts, deletes, deploys to prod config) → confirm first.
 - If a ticket conflicts with this file, this file wins — flag the conflict.
 
+## How to explain the work
+
+Savannah has no development background. Every reply, pull request, and `AGENT_HANDOFF.md` starts with what changed, why it matters, and what she needs to do, in everyday words. If a specialist word is required, the same sentence says what it does.
+
+Then keep the exact record the next agent needs. The plain paragraph does not replace it.
+
+Code, tests, names inside the code, and code comments stay at the current bar. Do not drop a check, skip a test, or blur a comment so the explanation is easier to write.
+
+## Change only what the task needs
+
+Touch only the files and fields the task needs. Do not tidy, rename, or widen a save while you are there.
+
+A save sends only the fields that action is allowed to change. It does not send the row's ID, Premium, or billing fields to make "create or update" easier. If the row is missing, create it. If it exists, update the allowed fields. If two creates race, retry the safe update. This is how onboarding broke on 2026-10-14: the database correctly refused an update of `profiles.id`, and the old upsert was still sending that id. `packages/core/tests/unit/profileGrants.test.js` is the guard. Extend it when a client write targets a table whose columns are granted one by one. Do not grant a column just to make a failing save pass.
+
+A new button or feature a person can use gets one PostHog event, named in `packages/core/analyticsEvents.js` and fired from the shared core path, so web and mobile count the same action once. Read `docs/analytics/README.md` before adding it. Do not invent a second activation event, and do not fire on a click that has not succeeded. If that save can fail, also send the existing `action_failed` event.
+
+## Accounts and secrets
+
+Do not ask Savannah to paste an API key, a token, or a password. Use the connector or plugin first. If it is missing, signed out, or has no access, read the value from the main checkout's `.env` (worktrees symlink it). Do not print it, commit it, or ask for it again. If neither the connector nor `.env` has it, start that connector's own login. That login screen is the only interruption.
+
+Before reading or changing a connected product, check the account. Stop if it is a different person, repository, or project. Say which account you found. Do not switch by typing a key.
+
+- GitHub user `savblack`, repository `savblack/PLOT` only.
+- Mail and logins `sav.black@outlook.com` and `savannah@theplot.tv`.
+- Supabase: `PLOT Staging` for ordinary work. Production only when she explicitly asked for production, and a write there still waits for a yes.
+- PostHog: the private project named Plot.
+- Linear: the `savblack` workspace, team PLO.
+
 ## Completion format & quality bar
 
-When you finish, report in this shape:
+When you finish, start with the plain-English paragraph from "How to explain the work". Then report in this shape:
 1. **What changed** — one line per file/area, as clickable `path:line` links.
 2. **How it was verified** — exact commands run and their result. If something failed or
    you skipped a step, say so plainly. Never claim "done" on unverified work.
@@ -471,7 +503,7 @@ Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills
 `new-feature` (Plot replaces isolate with a local skill). Typical flow:
 
 1. **Isolate** — `/plot-worktree`: sibling worktree at
-   `../PLOT-worktrees/<task>` (never nest under this checkout; nested harness
+   `~/Developer/PLOT-worktrees/<task>` (never nest under this checkout; nested harness
    trees are fallback-only, see CI sync-guards). Local skill; `npx skills update`
    does not touch it. Commands are also inlined under CI sync-guards above.
 2. **Build** — follow this file (shared logic in `@plot/core`, not a generic
