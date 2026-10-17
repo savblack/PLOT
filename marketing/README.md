@@ -10,8 +10,8 @@ Every post has two halves, and they are reviewed in different places.
 2. The social copy is pushed into **Buffer** as dated **drafts**. You review,
    edit and approve them there; Buffer sends what you approve. Nothing goes out
    on its own.
-3. The website article is reviewed in **Notion**, on What's On Articles
-   (under Growth). Status Review is a draft. Scheduled approves it. Canceled
+3. The website article is reviewed in **Notion**, on What's On Articles.
+   Status Review is a draft. Scheduled approves it. Canceled
    keeps it off theplot.tv.
 
 **Neither half gates the other.** A rejected article does not pull its posts out

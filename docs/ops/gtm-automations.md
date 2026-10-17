@@ -246,7 +246,7 @@ The writes live in [`supabase/functions/_shared/reviewActions.js`](../../supabas
 
 ## 5a. Notion review
 
-**What it is.** The article board. One Notion page per article, kept in step with `marketing_posts`. Production writes to What's On Articles under Growth: `https://app.notion.com/p/3f04f244aec781baaffbc1523b57ecb4` (database id `3f04f244-aec7-81ba-affb-c1523b57ecb4`). Status Review is a draft. Linear article cards are off.
+**What it is.** The article board. One Notion page per article, kept in step with `marketing_posts`. Production writes to What's On Articles: `https://app.notion.com/p/3f04f244aec781baaffbc1523b57ecb4` (database id `3f04f244-aec7-81ba-affb-c1523b57ecb4`). Status Review is a draft. Linear article cards are off.
 
 **Trigger.** `pg_cron` job `marketing-notion-mirror`, every 5 minutes. An optional Notion webhook on `<SUPABASE_URL>/functions/v1/marketing-notion-sync` wakes the same comparison for one page.
 
