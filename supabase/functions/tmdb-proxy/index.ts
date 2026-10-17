@@ -49,6 +49,8 @@ const ALLOWED_PATHS = [
   /^(movie|tv)\/\d+\/reviews$/,
   // Alternate posters, backdrops, and logos for Customize artwork.
   /^(movie|tv)\/\d+\/images$/,
+  // Regional age ratings for series on the title panel (ParentalGuide).
+  /^tv\/\d+\/content_ratings$/,
   // Franchise sets ("Part of a collection" on the movie panel, and search).
   /^collection\/\d+$/,
   /^search\/collection$/,
