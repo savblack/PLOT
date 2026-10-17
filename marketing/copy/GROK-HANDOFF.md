@@ -1,24 +1,22 @@
-# Saturday copy comparison for Alix
+# Saturday copy comparison for the coding Grok agent
 
-Alix is the CMO. This week she writes a second version of the Saturday posts so Savannah can compare it with the version the GitHub job already wrote. She does not publish, and she does not turn that job off.
+One writer books the week. One agent writes a second copy for comparison. Alix does not do this job, and nobody runs the weekly command a second time.
 
-A coding agent does not do this job. Do not hand this file to Cursor, Claude Code, or Codex and ask them to write the week's copy.
+## The one job that books the week
 
-## What stays running
+`.github/workflows/marketing-weekly-batch.yml` stays on its Saturday schedule. It plans the week, writes the briefs, asks Claude for the copy, checks it, draws the cards, and puts dated drafts in Buffer.
 
-The GitHub workflow `.github/workflows/marketing-weekly-batch.yml` stays on its Saturday schedule. It picks the titles, writes a brief for each post, asks Claude for the copy, checks it, draws the cards, and puts dated drafts in Buffer. That is the only writer allowed to book the week.
+Do not run `pnpm run weekly`, `node marketing/scripts/automation.mjs weekly`, `marketing/copy/save.mjs`, or `marketing/publish/schedule.mjs`. Do not create Buffer posts. Do not post. Do not turn the GitHub schedule off.
 
-## What Alix needs before she can start
+## What you do after that run finishes
 
-The briefs live on the Mac runner and are deleted when the job ends. After `marketing/copy/GROK-HANDOFF.md`'s workflow change is on `main`, the run keeps them for 14 days as the Actions artifact `weekly-copy-jobs`.
+Download the Actions artifact `weekly-copy-jobs` from the run named "Marketing — weekly batch". It holds the briefs Claude saw, `manifest.json`, and Claude's `<post_id>.copy.json`. Do not edit those files.
 
-Someone downloads that artifact and pastes each brief into Alix's task, or into the chat with her. The brief is the assignment Claude saw. Alix does not invent titles, and she does not plan a second week to get some.
+The artifact exists only after the workflow change in this file's pull request is on `main`. If the run has no artifact, stop. Do not plan a fresh week to obtain briefs.
 
-Until that artifact exists, there is nothing for her to answer.
+Copy `manifest.json` into a new folder outside the repo. For each brief, write your own `<post_id>.copy.json` there. Follow `marketing/copy/AGENT.md`, `marketing/VOICE.md`, and `marketing/copy/WHATSON_GUIDELINES.md`. American English. US dates, US streaming services. No em dashes and no en dashes. No spoilers. Social copy uses only facts from the brief.
 
-## What Alix writes
-
-For each brief, one answer with these fields:
+Fields:
 
 - `x`, `instagram`, `threads`
 - `hashtags` (3 to 5, no `#`)
@@ -27,14 +25,14 @@ For each brief, one answer with these fields:
 - `sources`
 - `cta_variant`: one of `track_it`, `whats_on_tonight`, `journal_it`, `none`
 
-She follows `marketing/copy/AGENT.md`, `marketing/VOICE.md`, and `marketing/copy/WHATSON_GUIDELINES.md`. American English. US dates, US streaming services. No em dashes and no en dashes. No spoilers. Social copy uses only facts from the brief.
+Then run this once:
 
-She does not run `pnpm run weekly`, `marketing/copy/save.mjs`, or anything that pushes Buffer. She does not post.
+```bash
+node marketing/copy/check.mjs /path/to/your/folder
+```
 
-## How Savannah compares
+Fix your JSON until it exits 0. Do not change the validator.
 
-Read Alix's answer next to Claude's `<post_id>.copy.json` from the same artifact. They will not match word for word. A match means Savannah would have shipped Alix's version for that post.
+## What you show Savannah
 
-`node marketing/copy/check.mjs` is a later check that the JSON would pass the same validator. Alix does not run it. A pass is not permission to switch the Saturday job.
-
-Alix ends with a short note: which posts she would ship, and any sentence she does not trust. Savannah decides whether a later Saturday may replace the Claude copy step.
+Put your JSON next to Claude's JSON from the artifact, post by post. Say which posts you would ship, and any sentence you do not trust. The two files will not match word for word. A validator pass is not permission to switch the Saturday job. Savannah decides.

@@ -96,4 +96,4 @@ For a permission change, a billing change, or a migration, the agent who wrote i
 
 ## Not in this change
 
-GitHub schedules that duplicate CircleCI are still on. Remove one only after the CircleCI run of that job has succeeded. The weekly marketing batch stays on the GitHub Mac runner until a Saturday of Alix's copy has been compared with it. Alix is the CMO bot. Her assignment is `marketing/copy/GROK-HANDOFF.md`. A coding agent does not write that copy. A second run of the weekly command would book the same week twice.
+GitHub schedules that duplicate CircleCI are still on. Remove one only after the CircleCI run of that job has succeeded. The weekly marketing batch stays on the GitHub Mac runner until a Saturday of copy from the coding Grok agent has been compared with it. That agent's assignment is `marketing/copy/GROK-HANDOFF.md`. It does not run the weekly command. Alix does not write this comparison. A second run of the weekly command would book the same week twice.
