@@ -352,7 +352,7 @@ unless they asked for the database to be created.
    set to `off`. Do not create a second database. A sweep creates at most 15
    pages, newest day first. Question posts have no page.
    The retired Linear mirror and webhook are removed by
-   `20261015140000_private_notion_intake_and_retire_linear.sql`.
+   `20261017120000_private_notion_intake_and_retire_linear.sql`.
 
 What is not the same as Linear:
 
