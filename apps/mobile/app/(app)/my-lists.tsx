@@ -279,6 +279,54 @@ function ListRow({ item, trailing, onPress, sel, status }: {
   );
 }
 
+/** What a poster caption can read off a saved title. */
+interface PosterCaptionItem {
+  added_by?: string | null;
+  current_season?: number | null;
+  current_episode?: number | null;
+  release_date?: string | null;
+  streaming_date?: string | null;
+}
+
+// "S01E03" for a series with a current episode, else null (poster captions).
+function episodeCode(item: { current_season?: number | null; current_episode?: number | null }): string | null {
+  if (item.current_season == null) return null;
+  return `S${String(item.current_season).padStart(2, '0')}E${String(item.current_episode ?? 0).padStart(2, '0')}`;
+}
+
+// The release or streaming countdown as a caption under a poster. A streaming
+// date wins over a release date when both are ahead ("Streaming in 3 days").
+// countdownChip only needs a palette for the chip colour, which captions skip.
+const noPalette = {} as Palette;
+function countdownPhrase(label: string): string {
+  if (/^\d+ days$/.test(label)) return `in ${label}`;
+  if (label === 'Today') return 'today';
+  if (label === 'Tomorrow') return 'tomorrow';
+  return label;
+}
+function releaseCaption(item: { release_date?: string | null; streaming_date?: string | null }): string | null {
+  const strm = countdownChip(item.streaming_date, noPalette);
+  if (strm) return `Streaming ${countdownPhrase(strm.label)}`;
+  const rel = countdownChip(item.release_date, noPalette);
+  return rel ? `Out ${countdownPhrase(rel.label)}` : null;
+}
+
+// One calm prompt for an empty section: says what belongs here and offers the
+// next step (NN/g: status, teach, direct path), instead of blank slots.
+function EmptyPrompt({ title, body, actionLabel, onPress }: { title: string; body: string; actionLabel: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  return (
+    <TouchableOpacity style={styles.emptyPrompt} onPress={onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`${title}. ${actionLabel}`}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.emptyPromptTitle}>{title}</Text>
+        <Text style={styles.emptyPromptBody}>{body}</Text>
+      </View>
+      <Text style={styles.emptyPromptAction}>{actionLabel}</Text>
+    </TouchableOpacity>
+  );
+}
+
 // ── Poster grid ───────────────────────────────────────────────────────
 function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel, caption, statusOf }: {
   items: any[];
@@ -290,7 +338,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
   onPress?: (item: any) => void;
   /** Present when the grid's section supports multi-select. */
   sel?: Selection;
-  caption?: (item: { added_by?: string | null }) => string | null;
+  caption?: (item: PosterCaptionItem) => string | null;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -692,9 +740,13 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
               />
             }
           >
-            {watchingList.map(item => (
-              <ListRow key={item.tmdb_id} item={{ ...item, media_type: 'tv' }} sel={watchingSel} onPress={() => openPanel(item.tmdb_id, 'tv')} />
-            ))}
+            <PosterGrid
+              horizontal
+              items={watchingList.map(item => ({ ...item, media_type: 'tv' }))}
+              sel={watchingSel}
+              caption={(item) => episodeCode(item)}
+              onPress={(item) => openPanel(item.tmdb_id, 'tv')}
+            />
           </CollapsibleSection>
         )}
         {viewTab === 'watching' && watching.items.length === 0 && (
@@ -728,41 +780,21 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
               />
             }
           >
-            {(
-              sortedSaved.length === 0 ? (
-                <View style={styles.empty}>
-                  <Text style={styles.emptyBody}>Tap the bookmark on any title to save it here.</Text>
-                </View>
-              ) : (
-                sortedSaved.map(item => {
-                  const rel  = countdownChip(item.release_date, colors);
-                  const strm = countdownChip(item.streaming_date, colors);
-                  return (
-                    <View key={item.id}>
-                    <ListRow
-                      item={item}
-                      sel={wantSel}
-                      onPress={() => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
-                      trailing={(rel || strm) ? (
-                        <View style={styles.statusChips}>
-                          {rel && (
-                            <View style={[styles.statusChip, { backgroundColor: rel.color + '1F', borderColor: rel.color + '55' }]}>
-                              <Text style={[styles.statusChipText, { color: rel.color }]}>{rel.label}</Text>
-                            </View>
-                          )}
-                          {strm && (
-                            <View style={[styles.statusChip, { backgroundColor: strm.color + '1F', borderColor: strm.color + '55' }]}>
-                              <Text style={[styles.statusChipText, { color: strm.color }]}>Streaming {strm.label.toLowerCase()}</Text>
-                            </View>
-                          )}
-                        </View>
-                      ) : undefined}
-                    />
-                    {!wantSel.editMode && <View style={{ marginLeft: 64 }}><PrivateNote id={item.tmdb_id} type={item.media_type === 'tv' ? 'tv' : 'movie'} title={item.title || item.name || ''} /></View>}
-                    </View>
-                  );
-                })
-              )
+            {sortedSaved.length === 0 ? (
+              <EmptyPrompt
+                title={CUSTOM_LISTS.emptyPrompts.want.title}
+                body={CUSTOM_LISTS.emptyPrompts.want.body}
+                actionLabel={CUSTOM_LISTS.emptyPrompts.want.action}
+                onPress={() => router.push('/(app)/search' as Href)}
+              />
+            ) : (
+              <PosterGrid
+                horizontal
+                items={sortedSaved}
+                sel={wantSel}
+                caption={(item) => releaseCaption(item)}
+                onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
+              />
             )}
           </CollapsibleSection>
         )}
@@ -865,12 +897,12 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                   </TouchableOpacity>
                 )}
                 {manualLists.length === 0 && (
-                  <View style={styles.empty}>
-                    <Text style={styles.emptyBody}>Create your first custom list.</Text>
-                    <TouchableOpacity style={styles.emptyAddBtn} onPress={requestCreateList} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Create list" accessibilityRole="button">
-                      <Text style={{ color: colors.textMuted, fontSize: 20 }}>+</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <EmptyPrompt
+                    title={CUSTOM_LISTS.emptyPrompts.lists.title}
+                    body={CUSTOM_LISTS.emptyPrompts.lists.body}
+                    actionLabel={CUSTOM_LISTS.emptyPrompts.lists.action}
+                    onPress={requestCreateList}
+                  />
                 )}
                 {manualLists.map((list: any) => (
                   <CustomListCard
@@ -1499,6 +1531,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterCaption: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
   sharedLine: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
 
+  emptyPrompt: {
+    marginHorizontal: spacing.xl, marginVertical: spacing.sm, padding: spacing.lg,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    borderRadius: radii.lg, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.borderStrong,
+  },
+  emptyPromptTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
+  emptyPromptBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
+  emptyPromptAction: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   empty: { padding: spacing.xl, alignItems: 'center' },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
