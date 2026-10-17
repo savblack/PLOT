@@ -293,10 +293,9 @@ function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: str
   );
 }
 
-function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string | null; isPremium: boolean; onCompare: () => void }) {
+function PushAlertsSettings({ userId }: { userId: string | null }) {
   const { colors } = useTheme();
   const push = usePushAlerts(userId);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [devices, setDevices] = useState(0);
   useEffect(() => {
@@ -307,7 +306,6 @@ function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string |
   }, [userId, push.enabled]);
 
   const enable = async () => {
-    if (!isPremium) { setUpgradeOpen(true); return; }
     Alert.alert(PUSH_ALERTS.permissionTitle, PUSH_ALERTS.permissionBody, [
       { text: PUSH_ALERTS.permissionNo, style: 'cancel' },
       { text: PUSH_ALERTS.permissionYes, onPress: () => { void (async () => {
@@ -320,8 +318,7 @@ function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string |
             return;
           }
           const result = await push.setEnabled(true);
-          if (result.error === 'premium_required') setUpgradeOpen(true);
-          else if (result.error) Alert.alert(PUSH_ALERTS.error);
+          if (result.error) Alert.alert(PUSH_ALERTS.error);
           else setDevices(d => Math.max(d, 1));
         } catch {
           Alert.alert(PUSH_ALERTS.error);
@@ -346,7 +343,6 @@ function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string |
         />
         {push.error ? <SettingsRow icon={null} label={PUSH_ALERTS.error} /> : null}
       </SettingsGroup>
-      <UpgradeSheet visible={upgradeOpen} reason="pushAlerts" onClose={() => setUpgradeOpen(false)} onCompare={() => { setUpgradeOpen(false); onCompare(); }} />
     </>
   );
 }
@@ -1629,7 +1625,7 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
         <StreamingAlertsSettings userId={userId} isPremium={!!profile?.is_premium} onCompare={() => { setSection('billing'); setPremiumExpanded(true); }} />
-        <PushAlertsSettings userId={userId} isPremium={!!profile?.is_premium} onCompare={() => { setSection('billing'); setPremiumExpanded(true); }} />
+        <PushAlertsSettings userId={userId} />
         <PeopleFollowSettings userId={userId} isPremium={!!profile?.is_premium} />
         </>}
 
