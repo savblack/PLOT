@@ -144,12 +144,6 @@ export const PLANS_PAGE = {
         body: 'Premium can also email you when a film on your watchlist lands on one of your services or becomes free to watch. Alerts in the app stay free.',
         also: ['pick', 'together'],
       },
-      pushAlerts: {
-        context: () => 'Push alerts are part of Premium',
-        title: 'Get title alerts on your lock screen.',
-        body: 'Premium brings new episode, movie release, and streaming alerts to your phone. Alerts in the app stay free.',
-        also: ['pick', 'together'],
-      },
     },
   },
   host: {
@@ -198,7 +192,8 @@ export const PLANS_PAGE = {
         { label: 'Actor and director alerts', free: false, premium: true },
         { label: 'Whole-season-ready alerts', free: false, premium: true },
         { label: 'Streaming alerts for your watchlist', free: true, premium: true, tag: 'In the app' },
-        { label: 'Push and email alerts', free: false, premium: true },
+        { label: 'Push notifications', free: true, premium: true },
+        { label: 'Email alerts', free: false, premium: true },
       ] },
       { title: 'Make it yours', rows: [
         { label: 'Themes', free: 'Default, light and dark', premium: 'Every theme' },
@@ -248,13 +243,12 @@ export const PLANS_PAGE = {
       description: 'Follow the people you love watching and hear about their new releases.' },
     { id: 'seasonReady', label: 'Whole-season-ready alerts', live: true,
       description: 'Know when every episode is verified available on your selected services in your region. Airing dates alone do not qualify.' },
-    // Not built: nothing sends push or email yet (no device tokens, and email
-    // needs an unsubscribe link and a registered address first; see
-    // docs/launch/app-store-launch-sprint.md). In-app streaming alerts are Free
-    // (see the comparison row); this is the Premium way to get them
-    // outside the app.
-    { id: 'pushAlerts', label: 'Push and email alerts',
-      description: 'Get your watchlist alerts on your phone and in your inbox, as well as in the app.' },
+    // Email is not live yet (it needs an unsubscribe link and a registered
+    // address first; see docs/launch/app-store-launch-sprint.md). In-app
+    // streaming alerts and push notifications are Free (see the comparison
+    // rows); this is the Premium way to also get alerts in your inbox.
+    { id: 'emailAlerts', label: 'Email alerts',
+      description: 'Get your watchlist alerts in your inbox, as well as in the app.' },
     { id: 'themes', label: 'Themes', live: true,
       description: 'Themes, each in light and dark with its own accent. The default look stays free in light, dark and system.' },
     { id: 'customize', label: 'Customize your plot', highlight: true,
@@ -278,7 +272,7 @@ export const PLANS_PAGE = {
     { q: 'How many lists are included in Free?', a: 'Free includes up to five custom lists.' },
     { q: 'Can I get a refund?', a: 'The 7-day free trial is there so you can try Premium before you pay, so charges after the trial aren’t refundable and we don’t refund partial months or years. Cancel anytime and keep Premium until the end of the period you’ve paid for. If you think you were charged by mistake, email support@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.' },
     { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
-    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Premium themes are available. Deeper stats, widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service. Streaming alerts for films on your watchlist are free and arrive in the app; getting them as push or email is planned for Premium.' },
+    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Premium themes are available. Deeper stats, widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service. Streaming alerts for films on your watchlist are free and arrive in the app. Push notifications on your phone are planned for everyone, and email alerts are planned for Premium.' },
   ],
   fineprint: 'Prices in US dollars, taxes included. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments are processed securely by Stripe. Need a hand? support@theplot.tv',
   terms: 'Terms',

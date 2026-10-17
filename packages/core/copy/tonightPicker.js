@@ -172,8 +172,8 @@ export const TONIGHT_PICKER = {
     label: 'plot Premium',
     brand: 'plot',
     premium: 'Premium',
-    title: 'Your request is ready. Unlock your picks.',
-    body: 'Less deciding, more watching. Just Decide does the scrolling for you.',
+    title: 'That was today’s free pick.',
+    body: 'Want another? Premium gives you a shortlist every time you ask. Less deciding, more watching.',
     benefits: [
       { title: 'A shortlist, every time you ask', body: 'Answer a few quick questions and get a shortlist that fits your mood.' },
       { title: 'Only what you can watch', body: 'Limit picks to your streaming services, your watchlist, or both.' },
@@ -185,6 +185,8 @@ export const TONIGHT_PICKER = {
     close: 'Close',
     locked: 'Premium feature',
   },
+  // Under the Go button for a Free viewer whose pick for the day is unused.
+  freePickNote: 'Free: one pick a day.',
 };
 
 // A feeling word per TMDB genre id, shown under the genre on question 3 and

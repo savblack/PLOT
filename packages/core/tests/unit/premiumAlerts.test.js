@@ -84,16 +84,21 @@ test('people and season-ready alerts are live Premium features; episode alerts a
   assert.doesNotMatch(faq, /People alerts.*still planned/);
 });
 
-test('streaming alerts on the watchlist are a live Free feature; push and email are Premium and not yet built', () => {
+test('streaming alerts on the watchlist are a live Free feature; push is Free and email is Premium, neither built yet', () => {
   const rows = PLANS_PAGE.comparison.groups.flatMap(g => g.rows);
   const inApp = rows.find(r => r.label === 'Streaming alerts for your watchlist');
   assert.deepEqual([inApp.free, inApp.premium, inApp.tag], [true, true, 'In the app']);
-  const push = rows.find(r => r.label === 'Push and email alerts');
-  assert.deepEqual([push.free, push.premium, push.tag], [false, true, undefined]);
-  // Push and email are not built: never listed as live.
-  const feature = PLANS_PAGE.premiumFeatures.find(f => f.id === 'pushAlerts');
+  const push = rows.find(r => r.label === 'Push notifications');
+  assert.deepEqual([push.free, push.premium, push.tag], [true, true, undefined]);
+  const email = rows.find(r => r.label === 'Email alerts');
+  assert.deepEqual([email.free, email.premium, email.tag], [false, true, undefined]);
+  assert.equal(rows.some(r => r.label === 'Push and email alerts'), false);
+  // Email is not built: never listed as live. Push is no longer a Premium feature.
+  const feature = PLANS_PAGE.premiumFeatures.find(f => f.id === 'emailAlerts');
   assert.ok(feature);
   assert.notEqual(feature.live, true);
+  assert.equal(PLANS_PAGE.premiumFeatures.some(f => f.id === 'pushAlerts'), false);
+  assert.equal(PLANS_PAGE.upgradeSheet.reasons.pushAlerts, undefined);
   // Live, so it is on Free's feature list (mobile Settings prints every label) and says "in the app".
   const free = PLANS_PAGE.freeFeatures.find(f => f.id === 'streamingAlerts');
   assert.ok(free);

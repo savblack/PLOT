@@ -40,16 +40,6 @@ async function preferences(db: Db) {
   }
 }
 
-async function premiumUsers(db: Db, ids: string[]) {
-  const out = new Set<string>();
-  for (const group of chunks(ids, 200)) {
-    const { data, error } = await db.rpc('premium_user_ids', { p_users: group });
-    if (error) throw new Error(`premium_user_ids failed: ${error.message}`);
-    for (const id of data ?? []) out.add(id);
-  }
-  return out;
-}
-
 async function tokens(db: Db, users: string[]) {
   const out = new Map<string, Token[]>();
   for (const group of chunks(users, 100)) {
@@ -146,8 +136,8 @@ Deno.serve(async req => {
   const since = new Date(started - PUSH_LOOK_BACK_DAYS * 86_400_000).toISOString();
   try {
     const prefs = await preferences(db);
-    const premium = await premiumUsers(db, [...prefs.keys()]);
-    const eligible = [...prefs.keys()].filter(id => premium.has(id));
+    // Push is Free: everyone who switched it on is eligible.
+    const eligible = [...prefs.keys()];
     const devices = await tokens(db, eligible);
     const rows = await notifications(db, eligible.filter(id => devices.has(id)), since);
     const mutes = await muted(db, rows);

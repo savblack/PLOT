@@ -390,11 +390,13 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
     <View>
       <View style={styles.resultsHead}>
         <Text style={styles.resultsTitle} accessibilityRole="header">{T.heading[pickerTimeOfDay()]}</Text>
-        <TouchableOpacity onPress={picker.toggleSaveSearch} style={[styles.btn, styles.btnSecondary, { minHeight: 38 }]} accessibilityRole="button"
-          accessibilityLabel={picker.isSaved ? T.savedLabel : T.saveLabel} accessibilityState={{ selected: picker.isSaved }}>
-          <Pin color={colors.textPrimary} filled={picker.isSaved} />
-          <Text style={styles.btnText}>{picker.isSaved ? T.saved : T.save}</Text>
-        </TouchableOpacity>
+        {picker.canSave && (
+          <TouchableOpacity onPress={picker.toggleSaveSearch} style={[styles.btn, styles.btnSecondary, { minHeight: 38 }]} accessibilityRole="button"
+            accessibilityLabel={picker.isSaved ? T.savedLabel : T.saveLabel} accessibilityState={{ selected: picker.isSaved }}>
+            <Pin color={colors.textPrimary} filled={picker.isSaved} />
+            <Text style={styles.btnText}>{picker.isSaved ? T.saved : T.save}</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <View style={{ gap: 12, marginTop: spacing.lg }}>
         {top && (() => {
@@ -595,11 +597,12 @@ export default function TonightScreen() {
           ) : (
             <>
               <Sentence parts={picker.sentence} styles={styles} />
+              {picker.freePickLeft && <Text style={styles.freeNote}>{T.freePickNote}</Text>}
               <View style={styles.barActions}>
                 {btn(T.surpriseMe, () => picker.go('surprise'), false, <Sparkle color={colors.textPrimary} />)}
                 <TouchableOpacity onPress={() => picker.go('five')} style={[styles.btn, styles.btnPrimary, { paddingHorizontal: 32 }]} accessibilityRole="button"
-                  accessibilityLabel={premium ? undefined : `${T.go}, ${T.gate.locked}`}>
-                  {!premium && <Lock color={colors.onAccentFill} />}
+                  accessibilityLabel={!premium && !picker.freePickLeft ? `${T.go}, ${T.gate.locked}` : picker.freePickLeft ? `${T.go}. ${T.freePickNote}` : undefined}>
+                  {!premium && !picker.freePickLeft && <Lock color={colors.onAccentFill} />}
                   <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{T.go}</Text>
                 </TouchableOpacity>
               </View>
@@ -695,6 +698,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.accentSecondaryFill, color: colors.onAccentFill, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
   },
 
+  freeNote: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
   locked: { position: 'relative', minHeight: 640 },
   placeholderLine: { height: 14, width: '80%', borderRadius: 999, backgroundColor: colors.borderStrong },
   unlock: {

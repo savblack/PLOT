@@ -24,6 +24,7 @@
  */
 import satori from 'npm:satori@0.33.5';
 import { initWasm, Resvg } from 'npm:@resvg/resvg-wasm@2.6.2';
+import jpeg from 'npm:jpeg-js@0.4.4';
 import { WORDMARK_EM, WORDMARK_PATH, WORDMARK_VIEWBOX } from './wordmark.generated.ts';
 
 type Props = Record<string, unknown>;
@@ -261,6 +262,13 @@ function loadWasm() {
   return wasmPromise;
 }
 
+// WhatsApp (and a few other scrapers) drop a link preview whose image is much
+// over ~300KB. A card with a photographic backdrop is ~1.2MB as PNG but ~150KB
+// as JPEG, while a flat text card is tiny as PNG and fuzzier as JPEG. So draw
+// PNG first and fall back to JPEG only when PNG is too big.
+const MAX_PNG_BYTES = 280 * 1024;
+const JPEG_QUALITY = 84;
+
 async function png(el: El, fonts: Font[]) {
   const t0 = performance.now();
   const svg = await satori(el as any, { width: 1200, height: 630, fonts: fonts as any });
@@ -270,15 +278,23 @@ async function png(el: El, fonts: Font[]) {
   const r = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
   const rendered = r.render();
   const t3 = performance.now();
-  const out = rendered.asPng();
+  const asPng = rendered.asPng();
   const t4 = performance.now();
+  let body: Uint8Array = asPng;
+  let type = 'image/png';
+  if (asPng.length > MAX_PNG_BYTES) {
+    // jpeg-js ignores alpha; every card paints an opaque background.
+    body = jpeg.encode({ data: rendered.pixels, width: rendered.width, height: rendered.height }, JPEG_QUALITY).data;
+    type = 'image/jpeg';
+  }
+  const t5 = performance.now();
   // Stage timings, so a WORKER_RESOURCE_LIMIT in the Supabase logs says where
   // the budget went (satori includes fetching the card's images).
-  console.log(`og-card satori=${(t1 - t0).toFixed(0)}ms wasm=${(t2 - t1).toFixed(0)}ms raster=${(t3 - t2).toFixed(0)}ms png=${(t4 - t3).toFixed(0)}ms svg=${svg.length}B png=${out.length}B`);
+  console.log(`og-card satori=${(t1 - t0).toFixed(0)}ms wasm=${(t2 - t1).toFixed(0)}ms raster=${(t3 - t2).toFixed(0)}ms png=${(t4 - t3).toFixed(0)}ms jpeg=${(t5 - t4).toFixed(0)}ms png=${asPng.length}B sent=${body.length}B ${type}`);
   // Copy into a fresh ArrayBuffer: Deno's Response body type rejects the
-  // ArrayBufferLike-backed view resvg returns.
-  return new Response(new Uint8Array(out).buffer as ArrayBuffer, {
-    headers: { 'content-type': 'image/png', 'cache-control': OG_CACHE },
+  // ArrayBufferLike-backed view the encoders return.
+  return new Response(new Uint8Array(body).buffer as ArrayBuffer, {
+    headers: { 'content-type': type, 'cache-control': OG_CACHE },
   });
 }
 

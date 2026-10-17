@@ -446,8 +446,7 @@ These exist, and they are easy to mistake for the homepage automation.
 | [`marketing/lib/images.mjs`](../../marketing/lib/images.mjs) | Picks the plain TMDB still used as the article hero | Same batch |
 | [`marketing/assets/render-png.mjs`](../../marketing/assets/render-png.mjs) | Rasterises Instagram profile SVGs to PNG | By hand |
 | [`marketing/assets/render-cover.mjs`](../../marketing/assets/render-cover.mjs) | Rasterises X header SVGs to PNG | By hand |
-| [`scripts/generate-og-image.mjs`](../../scripts/generate-og-image.mjs) | Builds `apps/website/og-image.png` (1200×630 share card) | By hand |
-| [`scripts/generate-app-og-image.mjs`](../../scripts/generate-app-og-image.mjs) | Rasterises the app share card to `apps/web/public/og-image.png` | By hand |
+| [`scripts/generate-og-image.mjs`](../../scripts/generate-og-image.mjs) | Builds the default 1200×630 share card (poster wall) into both `apps/website/og-image.png` and `apps/web/public/og-image.png`. Needs `TMDB_API_KEY` | By hand |
 
 The weekly homepage refresh is section 8, not these.
 
