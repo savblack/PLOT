@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Failure alert for scheduled workflows — emails the admin via Resend.
-# Inputs (env): RESEND_API_KEY, ADMIN_EMAIL, RUN_URL, WORKFLOW_NAME,
+# Inputs (env): ADMIN_EMAIL, RUN_URL, WORKFLOW_NAME,
+#               SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (preferred path),
+#               RESEND_API_KEY (used only when the project path is unset or down),
 #               FAILURE_NOTE (optional), ALERT_SUBJECT (optional)
 #
 # ALERT_SUBJECT exists because this is no longer marketing-only — db-backup uses
@@ -44,12 +46,14 @@ post_email() {
   return 1
 }
 
-if ! post_email "https://api.resend.com/emails" "${RESEND_API_KEY:-}" "$payload"; then
-  base="${SUPABASE_URL:-}"
-  base="${base%/}"
-  if [[ -n "$base" && -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then
-    post_email "${base}/functions/v1/marketing-notify" "$SUPABASE_SERVICE_ROLE_KEY" "$relay_payload"
-  else
-    exit 1
+base="${SUPABASE_URL:-}"
+base="${base%/}"
+if [[ -n "$base" && -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then
+  if post_email "${base}/functions/v1/marketing-notify" "$SUPABASE_SERVICE_ROLE_KEY" "$relay_payload"; then
+    exit 0
   fi
+fi
+
+if [[ -z "${RESEND_API_KEY:-}" ]] || ! post_email "https://api.resend.com/emails" "$RESEND_API_KEY" "$payload"; then
+  exit 1
 fi
