@@ -68,7 +68,7 @@ Website and mobile Storybook builds run only when their own story files change. 
 
 A commit message containing `[skip ci]` still skips the CircleCI pipeline entirely. Use that for a work-in-progress push that exists only so a cloud agent can resume. Do not open a pull request for that push.
 
-CircleCI project settings, Advanced, "Auto-cancel redundant workflows" should be on, so an older push on the same branch stops when a newer one starts.
+CircleCI project settings, Advanced, "Auto-cancel redundant workflows" is on as of October 17, 2026. An older push on the same branch stops when a newer one starts. Do not ask Savannah to turn it on again.
 
 A Cursor Automation that only comments does not change the tier. One that pushes a commit starts a new CircleCI run, classified from that new diff. A trigger on "CI completed" still fires when a docs-only job halted after the secret scan.
 
