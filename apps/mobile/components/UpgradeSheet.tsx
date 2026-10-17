@@ -5,7 +5,7 @@
  * the caller (mobile has no /plans page; callers open Settings' Premium
  * section). Content comes from @plot/core.
  */
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
@@ -33,19 +33,16 @@ export default function UpgradeSheet({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const [showCheckoutNote, setShowCheckoutNote] = useState(false);
   const checkout = usePremiumCheckout(visible);
   const content = upgradeSheetContent(reason, { family });
   if (!content) return null;
 
-  const close = () => { setShowCheckoutNote(false); onClose(); };
+  const close = onClose;
   const compare = () => { close(); onCompare(); };
-  // Checkout open: Stripe in the browser. Closed: say so, as web does.
+  // Checkout open: Stripe in the browser. Closed: the waitlist, as on web.
   const upgrade = async () => {
-    if (checkout.closed) { setShowCheckoutNote(true); return; }
-    const result = await checkout.start('monthly');
-    if (result === 'closed') setShowCheckoutNote(true);
-    else if (result === 'opened') close();
+    if (checkout.closed) { checkout.joinWaitlist(); return; }
+    if ((await checkout.start('monthly')) === 'opened') close();
   };
 
   return (
@@ -78,11 +75,14 @@ export default function UpgradeSheet({
               <Text style={styles.trial}>{PLANS_PAGE.premium.trialNote}</Text>
             </View>
 
-            <TouchableOpacity style={[styles.primary, checkout.busy && { opacity: 0.6 }]} onPress={upgrade} disabled={checkout.busy} accessibilityRole="button">
-              <Text style={styles.primaryText}>{checkout.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.upgradeAction}</Text>
-            </TouchableOpacity>
-            {(showCheckoutNote || checkout.closed) && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
-            {!!checkout.error && <Text style={styles.note} accessibilityRole="alert">{checkout.error}</Text>}
+            {checkout.allowed && (
+              <>
+                <TouchableOpacity style={[styles.primary, checkout.busy && { opacity: 0.6 }]} onPress={upgrade} disabled={checkout.busy} accessibilityRole="button">
+                  <Text style={styles.primaryText}>{checkout.label}</Text>
+                </TouchableOpacity>
+                {!!checkout.error && <Text style={styles.note} accessibilityRole="alert">{checkout.error}</Text>}
+              </>
+            )}
 
             <Text style={styles.also}>{S.alsoIn}</Text>
             {content.also.map(row => (

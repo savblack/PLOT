@@ -38,10 +38,11 @@ export const SHOW_PRICING_PAGE = false;
 // Deciding together still needs Premium on at least one side.
 export const SHOW_WATCH_TOGETHER = true;
 
-// Upgrade opens Stripe Checkout in the browser. Apple's rules allow a link out
-// to web payment on the US storefront (since May 2025); outside the US we found
-// nothing confirming it. Before the App Store submission, check Apple's current
-// App Review Guidelines 3.1.1 and 3.1.3 and, if needed, limit this to US
-// accounts (profile.region === 'US') or turn it off. See
-// docs/ops/app-store-listing.md.
+// Upgrade opens Stripe Checkout in the browser. Apple allows a link out to web
+// payment without an entitlement only on the US storefront (App Review
+// Guidelines 3.1.1(a), 3.1.3), so it is also limited to that storefront: the
+// button draws nothing elsewhere or when the storefront is unknown
+// (packages/core/purchaseLinkOut.js, read by modules/plot-storefront). This
+// flag is the master switch: false hides Upgrade everywhere. Re-read the
+// guidelines before each submission; see docs/launch/app-review-notes.md.
 export const BROWSER_CHECKOUT_ENABLED = true;
