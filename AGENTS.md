@@ -416,9 +416,23 @@ Plot is a TV and movie tracking app. The web app is at app.theplot.tv. The mobil
 - Alix, CMO, owns marketing, brand, social, and acquisition: SEO and articles, social posts scheduled in Buffer, and referral and share loops. She also owns traffic through to signup, including landing pages and site calls to action. She does not write the Saturday copy comparison. That job is `marketing/copy/GROK-HANDOFF.md`.
 - Kaia, conversion and community, owns activation after signup, the paywall and Stripe Checkout, trial to paid, and community replies. Those replies wait for Savannah's approval before posting.
 
-If she is asking here about the day's order, the morning plan, an analytics readout, or which bot should do something, point her to Chris. When the task is clearly Jacob, Hailey, Alix, or Kaia, name that bot in the plain opening, then do the repo work if this checkout is the right place.
+If she is asking here about the day's order, the morning plan, an analytics readout, or which bot should do something, point her to Chris when he is available. When the task is clearly Jacob, Hailey, Alix, or Kaia, name that bot in the plain opening, then do the repo work if this checkout is the right place. If Grok is unavailable or its usage allowance is exhausted, continue authorized work here from the saved record. Do not send Savannah back to a bot she cannot use or require a final handoff from it.
 
-Do not wait until the task is finished to commit. After a real change, commit and push a checkpoint with `[skip ci]` in the message, and do not open a pull request for that checkpoint. If this chat is about to run out of room, that checkpoint is the handoff. If a previous chat already died, look at `git status` in this same folder, commit what is there, and write Next from the diff. Do not open a second folder to recover it. A cloud session that never pushed cannot be recovered.
+### Keep work resumable
+
+Save progress during the task, after each meaningful result or decision and before switching tasks. Do not wait for a token warning or the end of the day. A fresh chat cannot read another chat's memory, and a new Grok chat may share the same exhausted usage allowance.
+
+Each active task needs one durable handoff outside the conversation, in its existing task or shared document. Coding tasks use the worktree's `AGENT_HANDOFF.md`. Record the goal, owner, completed work with evidence links, exact next action, blockers, approvals already given and still needed, and the last updated time. Coding handoffs also record the branch, worktree, latest pushed commit, and checks passed or still pending. Keep credentials and unnecessary personal data out of these notes.
+
+Chris keeps the active task list with a link to each handoff. Each bot updates its own task record directly; saving progress must not depend on Chris being available. If the shared record is unavailable, save a local handoff in the current worktree and tell Savannah where it is. Do not claim another bot has received instructions or that a shared document was updated unless that actually happened. These repo instructions apply to agents reading this file; configuring an external Grok bot to follow them is a separate step.
+
+After a real coding change, update the handoff, inspect the diff for unrelated work and secrets, and commit and push a checkpoint with `[skip ci]` in the message. Stage only the task's files. Do not open a pull request solely for a checkpoint. A checkpoint may be unfinished; record that clearly. A finished pull request still needs the required checks without `[skip ci]`. Remove `AGENT_HANDOFF.md` before merge as described in `docs/ops/agent-worktrees.md`.
+
+### Recover when a bot has already stopped
+
+Do not require the exhausted bot to write anything. Read the existing task record, linked artifacts, available conversation history, and current state in the relevant product. For coding, inspect the same worktree, its diff, recent commits, and remote branch before writing. Respect the worktree ownership and claim rules; never run two writers on the same task. Reconstruct a handoff from verified evidence, label unknowns, and continue the next authorized action. Ask Savannah only for missing information that blocks progress, not for a recap the saved work already answers.
+
+Preserve the original scope and approval boundaries. Do not infer permission from a bot's plan or mark attempted work complete without evidence. Merges, production changes, payments, public posts, and sending still need Savannah's approval. On this Mac, uncommitted edits may remain in the same worktree. For a cloud session, check its saved artifacts and remote branch before concluding work is lost; restart only the part that cannot be recovered.
 
 ## How to explain the work
 

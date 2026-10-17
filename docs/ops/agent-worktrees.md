@@ -60,11 +60,13 @@ Before merge, `pnpm run worktrees -- done` deletes `AGENT_HANDOFF.md`. Commit th
 
 ## When the chat runs out of tokens
 
-A finished task is not the only time to save. After a real change, commit and push, even if the work is not ready to review. Put `[skip ci]` in that commit message so CircleCI does not run the full check on a checkpoint. Do not open a pull request for it.
+Follow `AGENTS.md` under "Keep work resumable" and "Recover when a bot has already stopped". Save progress after each meaningful result, not only when a chat is almost full. Grok's usage allowance may stop all its bots at once, so recovery must work without asking any of them for a final message.
 
-On this Mac the files stay in the worktree folder when the chat dies. The conversation is gone. The edits are not. Open that same folder in a new chat and say: commit what is already here, write the Next line from `git diff`, and push. Do not start a second folder for the same task.
+For coding, update `AGENT_HANDOFF.md`, inspect the diff for unrelated work and secrets, then commit and push the task's files. Use `[skip ci]` for unfinished checkpoints. Do not open a pull request solely for a checkpoint; the finished pull request needs the required checks without that marker.
 
-A cloud agent that never pushed is different. That copy is gone. Start again from the last commit that did get pushed.
+If a chat has already stopped, inspect the same worktree, diff, recent commits, remote branch, and existing task record. Respect the ownership and claim rules above. Reconstruct the next step from evidence and continue authorized work in an available agent. Do not blindly commit everything in the folder or require Savannah to obtain a handoff from an unavailable bot.
+
+Local edits may still be in the worktree. Cloud work may have saved artifacts even without a push. Check before declaring anything lost, and restart only what cannot be recovered. Approval boundaries still apply.
 
 Only one worktree runs the app at a time. They share port 5177.
 
