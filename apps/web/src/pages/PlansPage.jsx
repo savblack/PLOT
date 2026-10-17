@@ -210,7 +210,6 @@ export default function PlansPage() {
           <div className="plans-compare-head">
             <div>
               <h2 id="compare-title" className="plans-h2">{CMP.title}</h2>
-              <p className="plans-compare-note">{CMP.note}</p>
             </div>
             <label className="plans-switch" htmlFor="plans-premium-only">
               <input

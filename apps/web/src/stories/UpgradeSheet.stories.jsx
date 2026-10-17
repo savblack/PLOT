@@ -48,7 +48,7 @@ export const UpgradeOffersPremium = {
   play: async () => {
     const body = within(document.body);
     await expect(body.getByRole('button', { name: PLANS_PAGE.upgradeAction })).toBeEnabled();
-    await expect(body.queryByText(PLANS_PAGE.comingSoon)).toBeNull();
+    await expect(body.queryByText('Coming soon')).toBeNull();
   },
 };
 
