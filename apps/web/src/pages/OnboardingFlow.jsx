@@ -14,6 +14,7 @@ import { track, EVENTS } from '../lib/analytics.js';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
 import { upsertProfile } from '@plot/core/profile.js';
+import { reportLoadFailure, FAILED_LOADS } from '@plot/core/actionFailures.js';
 import {
   ONBOARDING_PROGRESS, buildingFan, buildingLines, firstNameFromAuthUser, topRegionServices,
 } from '@plot/core/onboardingSetup.js';
@@ -209,12 +210,20 @@ export default function OnboardingFlow() {
     setServicesError(false);
     tmdb.getWatchProvidersForRegion('tv', region).then(data => {
       if (!alive) return;
-      if (!data?.results) { setServicesError(true); setServices([]); return; }
+      if (!data?.results) {
+        reportLoadFailure(FAILED_LOADS.ONBOARDING_SERVICES, null);
+        setServicesError(true); setServices([]); return;
+      }
       const top = topRegionServices(data.results);
       setServices(top);
       // A service that isn't offered in the new region can't stay selected.
       setSelectedServiceIds(ids => ids.filter(id => top.some(s => s.id === id)));
-    }).catch(() => { if (alive) setServicesError(true); });
+    }).catch(error => {
+      if (alive) {
+        reportLoadFailure(FAILED_LOADS.ONBOARDING_SERVICES, error);
+        setServicesError(true);
+      }
+    });
     return () => { alive = false; };
   }, [step, region]);
 
