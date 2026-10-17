@@ -108,7 +108,7 @@ function objectKeys(src, open) {
 const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/[^\n]*/g, '$1');
 
 /**
- * Columns written by `updateProfile({ ..., patch })` calls in one source file.
+ * Columns written by profile writer calls in one source file.
  * Handles an inline `patch: { a, b: 1 }` and a `patch` variable built from an
  * object literal plus later `patch.x = …` assignments.
  * @returns {string[]}
@@ -116,7 +116,7 @@ const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|
 export function profileColumnsWritten(rawSource) {
   const source = stripComments(rawSource);
   const cols = new Set();
-  const calls = [...source.matchAll(/\bupdateProfile\s*\(\s*\{/g)];
+  const calls = [...source.matchAll(/\b(?:updateProfile|upsertProfile)\s*\(\s*\{/g)];
   for (const call of calls) {
     const open = call.index + call[0].length - 1;
     const close = matchingBrace(source, open);
@@ -177,6 +177,14 @@ test('writes: a patch variable is read from its literal and later assignments', 
     const { error } = await updateProfile({ userId, patch });
   `;
   assert.deepEqual(profileColumnsWritten(src).sort(), ['bio', 'display_name', 'username']);
+});
+
+test('writes: onboarding upsert fields are checked against UPDATE grants', () => {
+  const src = `
+    const patch = { region, onboarding_complete: true };
+    await upsertProfile({ userId, patch });
+  `;
+  assert.deepEqual(profileColumnsWritten(src).sort(), ['onboarding_complete', 'region']);
 });
 
 test('writes: comments that quote a call are ignored, URLs in strings are not mistaken for comments', () => {
