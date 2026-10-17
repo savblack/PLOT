@@ -14,7 +14,6 @@ export const PLANS_PAGE = {
   eyebrow: 'plot Premium',
   title: 'Less deciding. More watching.',
   lede: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch. Make more of the time you set aside for it.',
-  comingSoon: 'Coming soon',
   pendingValidation: 'Pending validation',
   limited: 'Limited',
   previewAction: 'Explore Premium',
@@ -55,7 +54,7 @@ export const PLANS_PAGE = {
     trialNote: '7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
     monthlyBilled: 'US$3 billed monthly · taxes included',
     annualBilled: 'US$24 billed yearly · taxes included',
-    availability: 'Premium is available now. Features marked Coming soon are still on the way.',
+    availability: 'Premium is available now.',
     manageSubscription: 'Manage subscription',
     opening: 'Opening…',
   },
@@ -164,7 +163,6 @@ export const PLANS_PAGE = {
   // Every cell is true (tick), false (dash) or a short value. `tag` is an optional note after the label.
   comparison: {
     title: 'Compare every feature',
-    note: 'Features marked Coming soon are still on the way.',
     filter: 'Show only what Premium adds',
     featureHeader: 'Feature',
     freeHeader: 'Free',
@@ -200,11 +198,11 @@ export const PLANS_PAGE = {
         { label: 'Actor and director alerts', free: false, premium: true },
         { label: 'Whole-season-ready alerts', free: false, premium: true },
         { label: 'Streaming alerts for your watchlist', free: true, premium: true, tag: 'In the app' },
-        { label: 'Push and email alerts', free: false, premium: true, tag: 'Coming soon' },
+        { label: 'Push and email alerts', free: false, premium: true },
       ] },
       { title: 'Make it yours', rows: [
         { label: 'Themes', free: 'Default, light and dark', premium: 'Every theme' },
-        { label: 'Widgets and app icons', free: false, premium: true, tag: 'Coming soon' },
+        { label: 'Widgets and app icons', free: false, premium: true },
       ] },
     ],
   },

@@ -32,11 +32,11 @@ export default function UpgradeSheet({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const [comingSoon, setComingSoon] = useState(false);
+  const [showCheckoutNote, setShowCheckoutNote] = useState(false);
   const content = upgradeSheetContent(reason, { family });
   if (!content) return null;
 
-  const close = () => { setComingSoon(false); onClose(); };
+  const close = () => { setShowCheckoutNote(false); onClose(); };
   const compare = () => { close(); onCompare(); };
 
   return (
@@ -60,7 +60,6 @@ export default function UpgradeSheet({
               <View style={styles.offerTop}>
                 <View style={styles.offerName}>
                   <Text style={styles.offerNameText}>{PLANS_PAGE.premium.name}</Text>
-                  <View style={styles.pill}><Text style={styles.pillText}>{PLANS_PAGE.comingSoon}</Text></View>
                 </View>
                 <Text style={styles.price}>
                   <Text style={styles.amount}>{PLANS_PAGE.premium.price}</Text> {PLANS_PAGE.premium.period}
@@ -70,10 +69,10 @@ export default function UpgradeSheet({
               <Text style={styles.trial}>{PLANS_PAGE.premium.trialNote}</Text>
             </View>
 
-            <TouchableOpacity style={styles.primary} onPress={() => setComingSoon(true)} accessibilityRole="button">
+            <TouchableOpacity style={styles.primary} onPress={() => setShowCheckoutNote(true)} accessibilityRole="button">
               <Text style={styles.primaryText}>{PLANS_PAGE.upgradeAction}</Text>
             </TouchableOpacity>
-            {comingSoon && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
+            {showCheckoutNote && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
 
             <Text style={styles.also}>{S.alsoIn}</Text>
             {content.also.map(row => (
@@ -138,8 +137,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   offerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   offerName: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   offerNameText: { fontFamily: fontFamily.display, fontSize: fontSize.lg, letterSpacing: -0.34, color: colors.textPrimary },
-  pill: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 999, backgroundColor: colors.accentDim },
-  pillText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accentText },
   price: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   amount: { fontFamily: fontFamily.display, fontSize: 28, letterSpacing: -1.1, color: colors.textPrimary },
   alt: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },

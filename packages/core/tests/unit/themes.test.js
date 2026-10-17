@@ -220,7 +220,7 @@ test('the plans copy sells themes as live and widgets and app icons as coming', 
   assert.notEqual(customize.live, true);
   assert.doesNotMatch(customize.description, /themes/i);
   const rows = PLANS_PAGE.comparison.groups.flatMap(group => group.rows);
-  assert.equal(rows.find(row => row.label === 'Widgets and app icons').tag, 'Coming soon');
+  assert.equal(rows.find(row => row.label === 'Widgets and app icons').tag, undefined);
   assert.equal(rows.some(row => row.label === 'Widgets, app icons and themes'), false);
   const card = PLANS_PAGE.premiumCard.find(row => row.icon === 'customise');
   assert.match(card.note, /Widgets and app icons are coming/);

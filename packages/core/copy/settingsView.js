@@ -295,7 +295,7 @@ export const SETTINGS_VIEW = {
     activationPending: 'Your checkout is complete. We are waiting for payment confirmation. If Premium does not appear, refresh this page or contact support.',
     activeThankYou: 'Plot Premium is active. Thank you ♥',
     upsellLabel: 'Go Premium',
-    upsellBlurb: 'Find tonight’s movie, keep up with releases and choose together. Coming soon.',
+    upsellBlurb: 'Find tonight’s movie, keep up with releases and choose together.',
     upgradeButton: 'Explore Premium',
   },
 

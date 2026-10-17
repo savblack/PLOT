@@ -84,12 +84,12 @@ test('people and season-ready alerts are live Premium features; episode alerts a
   assert.doesNotMatch(faq, /People alerts.*still planned/);
 });
 
-test('streaming alerts on the watchlist are a live Free feature; push and email are Premium and coming soon', () => {
+test('streaming alerts on the watchlist are a live Free feature; push and email are Premium and not yet built', () => {
   const rows = PLANS_PAGE.comparison.groups.flatMap(g => g.rows);
   const inApp = rows.find(r => r.label === 'Streaming alerts for your watchlist');
   assert.deepEqual([inApp.free, inApp.premium, inApp.tag], [true, true, 'In the app']);
   const push = rows.find(r => r.label === 'Push and email alerts');
-  assert.deepEqual([push.free, push.premium, push.tag], [false, true, 'Coming soon']);
+  assert.deepEqual([push.free, push.premium, push.tag], [false, true, undefined]);
   // Push and email are not built: never listed as live.
   const feature = PLANS_PAGE.premiumFeatures.find(f => f.id === 'pushAlerts');
   assert.ok(feature);

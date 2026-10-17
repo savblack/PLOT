@@ -356,7 +356,7 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
   const [expanded, setExpanded] = useState(initialExpanded);
   return (
     <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
-      <SettingsRow icon={null} label={PLANS_PAGE.previewAction} value={PLANS_PAGE.comingSoon}
+      <SettingsRow icon={null} label={PLANS_PAGE.previewAction}
         onPress={() => setExpanded(!expanded)} />
       {expanded && <View style={{ padding: spacing.md, gap: spacing.md }}>
         <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.lede}</Text>
@@ -371,13 +371,13 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
         {PLANS_PAGE.premiumFeatures.map(feature => <View key={feature.id} style={{ gap: spacing.xs }}>
           <Text style={{ color: colors.textPrimary }}>{feature.label}</Text>
           <Text style={{ color: colors.textSecondary }}>{feature.description}</Text>
-          {('live' in feature && feature.live) ? null : (
-            <Text style={{ color: colors.textMuted }}>{('pendingValidation' in feature && feature.pendingValidation) ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
-          )}
+          {('pendingValidation' in feature && feature.pendingValidation) ? (
+            <Text style={{ color: colors.textMuted }}>{PLANS_PAGE.pendingValidation}</Text>
+          ) : null}
         </View>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
         <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
-          onPress={() => Alert.alert(PLANS_PAGE.comingSoon, PLANS_PAGE.mobileCheckoutMessage)} />
+          onPress={() => Alert.alert(PLANS_PAGE.premium.name, PLANS_PAGE.mobileCheckoutMessage)} />
       </View>}
     </SettingsGroup>
   );

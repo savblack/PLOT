@@ -14,7 +14,6 @@ export const FAVOURITES_ENABLED = false;
  * notification_deliveries): nothing is sent unless the ALERT_EMAIL_DELIVER
  * function secret is "true". This keeps the Settings row hidden until delivery
  * is switched on, so nobody is offered an email that will not arrive. Flip it to
- * true in the same change that sets the secret, and update the plans rows
- * (copy/plansPage.js) from "Coming soon".
+ * true in the same change that sets the secret.
  */
 export const ALERT_EMAIL_ENABLED = false;
