@@ -418,6 +418,8 @@ Plot is a TV and movie tracking app. The web app is at app.theplot.tv. The mobil
 
 If she is asking here about the day's order, the morning plan, an analytics readout, or which bot should do something, point her to Chris. When the task is clearly Jacob, Hailey, Alix, or Kaia, name that bot in the plain opening, then do the repo work if this checkout is the right place.
 
+Do not wait until the task is finished to commit. After a real change, commit and push a checkpoint with `[skip ci]` in the message, and do not open a pull request for that checkpoint. If this chat is about to run out of room, that checkpoint is the handoff. If a previous chat already died, look at `git status` in this same folder, commit what is there, and write Next from the diff. Do not open a second folder to recover it. A cloud session that never pushed cannot be recovered.
+
 ## How to explain the work
 
 Savannah has no development background. Every reply, pull request, and `AGENT_HANDOFF.md` starts with what changed, why it matters, and what she needs to do, in everyday words. If a specialist word is required, the same sentence says what it does.

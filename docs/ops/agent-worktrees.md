@@ -58,6 +58,14 @@ pnpm run worktrees -- claim --agent claude-code
 
 Before merge, `pnpm run worktrees -- done` deletes `AGENT_HANDOFF.md`. Commit that deletion. The note should not sit on `main`.
 
+## When the chat runs out of tokens
+
+A finished task is not the only time to save. After a real change, commit and push, even if the work is not ready to review. Put `[skip ci]` in that commit message so CircleCI does not run the full check on a checkpoint. Do not open a pull request for it.
+
+On this Mac the files stay in the worktree folder when the chat dies. The conversation is gone. The edits are not. Open that same folder in a new chat and say: commit what is already here, write the Next line from `git diff`, and push. Do not start a second folder for the same task.
+
+A cloud agent that never pushed is different. That copy is gone. Start again from the last commit that did get pushed.
+
 Only one worktree runs the app at a time. They share port 5177.
 
 ## What the agent may use
