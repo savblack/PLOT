@@ -47,8 +47,8 @@
 //   SUPABASE_DB_URL=… node scripts/check-db-write-paths.mjs   # CI, via psql
 //
 // Locally it uses SUPABASE_ACCESS_TOKEN + VITE_SUPABASE_URL from the root .env.
-// In CI it uses SUPABASE_DB_URL, the secret db-backup.yml already relies on, so
-// no new secret is needed. Read-only either way.
+// In CI it uses SUPABASE_DB_URL, which db-write-paths.yml sets from the read-only
+// SUPABASE_DB_URL_READONLY secret only (never the owner URL). Read-only either way.
 
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -63,7 +63,7 @@ import {
 
 // Two transports so this runs both locally and in CI without a new secret:
 //   SUPABASE_ACCESS_TOKEN → Supabase Management API (what the root .env has)
-//   SUPABASE_DB_URL       → psql (the secret db-backup.yml already uses)
+//   SUPABASE_DB_URL       → psql (CI passes the read-only plot_ci_readonly URL)
 // Read-only either way.
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 // Trimmed and unquoted before use. A secret pasted with surrounding quotes or a
