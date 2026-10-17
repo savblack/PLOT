@@ -31,6 +31,7 @@ const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; p
   { id: 'my-lists', label: 'My Lists',              path: '/(app)/my-lists', icon: 'lists' },
   { id: 'history',  label: titleForView('history'), path: '/(app)/history',  icon: 'history' },
   { id: 'guide',    label: titleForView('guide'),   path: '/(app)/guide',    icon: 'guide' },
+  { id: 'new-releases', label: titleForView('new-releases'), path: '/(app)/new-releases', icon: 'calendar' },
   { id: 'tonight',  label: titleForView('tonight'), path: '/(app)/tonight',  icon: 'tonight', premium: true },
   ...(SHOW_WATCH_TOGETHER ? [{ id: 'together', label: titleForView('together'), path: '/(app)/together', icon: 'together' as const, premium: true }] : []),
 ];

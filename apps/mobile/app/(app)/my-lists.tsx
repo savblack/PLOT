@@ -27,6 +27,7 @@ import SubTab from '../../components/SubTab';
 import SearchPickModal from '../../components/SearchPickModal';
 import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
+import { HISTORY_VIEW } from '@plot/core/copy/historyView.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
 import { filterByWatchStatus, isFinishedStatus, listProgress, listWatchStatus, LIST_STATUS_FILTER_IDS, type ListWatchStatus } from '@plot/core/listWatchStatus.js';
@@ -425,7 +426,8 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
 }
 
 // ── Main screen ───────────────────────────────────────────────────────
-export default function MyListsScreen() {
+/** `history` is the History tab's own screen: the same body with the list tabs left out. */
+export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }) {
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
@@ -435,7 +437,7 @@ export default function MyListsScreen() {
 
   const shareRaw = useLocalSearchParams<{ share?: string | string[] }>().share;
   const sharePreset = (Array.isArray(shareRaw) ? shareRaw[0] : shareRaw) || null;
-  const [tab,          setTab]          = useState('all');
+  const [tab,          setTab]          = useState(mode === 'history' ? 'history' : 'all');
   const [topDragging, setTopDragging]  = useState(false);
   // ?share=<card> opens History on that card. The param holds the tab on
   // History until the sheet closes, so a cold link does not land on All.
@@ -632,6 +634,7 @@ export default function MyListsScreen() {
     relevantSectionIds.forEach(id => setSectionOpen(id, next));
   };
 
+  const searchPlaceholder = isHistory ? HISTORY_VIEW.searchPlaceholder : CUSTOM_LISTS.searchPlaceholder;
   const HEADER_H = insets.top + 150;
 
   return (
@@ -935,7 +938,7 @@ export default function MyListsScreen() {
         tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        <ScreenHeaderBar title="My Lists" />
+        <ScreenHeaderBar title={mode === 'history' ? 'History' : 'My Lists'} />
         {/* Tabs and the filter/collapse controls share one row, as on web —
             the old second row of All/Movies/TV chips is gone. */}
         <View style={styles.tabsRow}>
@@ -947,7 +950,7 @@ export default function MyListsScreen() {
           >
             {/* favourites carries a null label in the shared list — it is the one
                 tab whose wording is region-dependent (Favourites/Favorites). */}
-            {TABS.map(t => (
+            {mode === 'history' ? null : TABS.filter(t => t.id !== 'history').map(t => (
               <SubTab
                 key={t.id}
                 label={t.label ?? fw.plural}
@@ -1023,9 +1026,9 @@ export default function MyListsScreen() {
             style={styles.listSearchInput}
             value={listQuery}
             onChangeText={setListQuery}
-            placeholder={CUSTOM_LISTS.searchPlaceholder}
+            placeholder={searchPlaceholder}
             placeholderTextColor={colors.textMuted}
-            accessibilityLabel={CUSTOM_LISTS.searchPlaceholder}
+            accessibilityLabel={searchPlaceholder}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
@@ -1535,3 +1538,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   createModalInput: { backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
   createModalBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: radii.md, alignItems: 'center' },
 });
+
+export default function MyListsRoute() {
+  return <MyListsScreen mode="lists" />;
+}

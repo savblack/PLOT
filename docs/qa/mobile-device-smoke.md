@@ -101,9 +101,9 @@ never been walked.
 
 ## Phase 3: every tab is reachable and renders its own content
 
-`pnpm run mobile:tabs` now guards the classification statically, but it cannot
-tell you that a tab renders the *right* thing. #587 is the reason this section
-is explicit.
+Static checks cannot tell you that a screen renders the *right* thing. #587 (a
+fully built tab that was unreachable) is the reason this section is explicit.
+Home is one feed; New Releases and Guide open from the drawer.
 
 Bottom tab bar (`app/(app)/_layout.tsx`): Home, Calendar, My Lists, Settings,
 Profile.

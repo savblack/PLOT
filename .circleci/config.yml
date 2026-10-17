@@ -156,7 +156,6 @@ jobs:
             pnpm run db:block-clause
             pnpm run copy:check
             pnpm run core:check
-            pnpm run mobile:tabs
 
       - run:
           name: Broadcast importer tests

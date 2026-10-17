@@ -996,6 +996,8 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
         <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
       </aside>
       <div className="discover-sections home-stream">
+      {/* The sidebar holding the Jump to card is hidden below 1024px, so phones get their own way in. */}
+      <div className="home-customize-bar"><button type="button" className="home-page-nav-customize" onClick={() => setCustomizing(true)}>{DISCOVER_VIEW.customize.action}</button></div>
       {savedItems.length > 0 && (
         <RailSection id={HOME_SECTION.saved.id} title={HOME_SECTION.saved.label}>
           {savedItems.map(item => (
