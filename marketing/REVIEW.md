@@ -10,17 +10,16 @@ reschedule, and publish-now. Do not re-queue publication rows or skip captions
 as a side effect of approve or reject. Those writes can push a second copy into
 Buffer or hold a caption back.
 
-> Three places, one database. **Linear** (team PLO, project Content Automation,
-> `https://linear.app/savblack/project/content-automation-2ce2d56ced11`) still
-> approves and edits articles. **Notion** is the review database being stood up
-> beside it. See "Notion review" below. Linear stays on until the edge secret
-> `MARKETING_LINEAR_ENABLED` is `off`. **Buffer** (`https://publish.buffer.com`)
-> is where a caption is edited, moved, or deleted. The old `admin.theplot.tv`
-> desk is gone (`docs/ops/retire-admin-review.md`). If the human asks for
-> something you can do here, write the database row, and say when it will show
-> up on Linear and on the Notion page. Each mirror sweep is about five minutes.
-> Do not approve the same article on both boards in one sitting. A second write
-> is a no-op when the row already has that status.
+> Two places, one database. **Notion** What's On Articles
+> (`https://app.notion.com/p/3f04f244aec781baaffbc1523b57ecb4`) is where an
+> article is approved or edited. Status Review is a draft. Scheduled approves
+> it. Canceled rejects it. **Buffer** (`https://publish.buffer.com`) is where a
+> caption is edited, moved, or deleted. Linear article cards are off
+> (`MARKETING_LINEAR_ENABLED=off`). The old `admin.theplot.tv` desk is gone
+> (`docs/ops/retire-admin-review.md`). If the human asks for something you can
+> do here, write the database row, and say when it will show up on the Notion
+> page. The sweep runs about every five minutes. A second write is a no-op
+> when the row already has that status.
 
 You load the week from the database, show the human everything, and apply their
 edits/approvals via the Supabase REST API. Everything is $0 and uses the repo's
@@ -307,9 +306,10 @@ Guards, same as Linear:
   A `/unapprove` comment still can.
 - Replies start with the bot marker and are not parsed as commands.
 
-Weekly website-refresh PR cards stay on Linear and GitHub. Notion does not merge
-or close them. `MARKETING_LINEAR_ENABLED=off` turns off Linear article cards only.
-Those PR cards, and `/pause`, `/resume`, `/generate`, `/help` on Linear, keep working.
+`MARKETING_LINEAR_ENABLED=off` is set in production. New article cards are not
+filed in Linear. The Monday website-refresh workflow was retired on 2026-10-13.
+`/pause`, `/resume`, `/generate`, and `/help` still run if someone comments on
+an old Linear card. Notion is the board to use.
 
 Chat still writes rows with actor `marketing_week_skill`. You do not comment on
 the Notion page unless the human is looking at it and asked you to. The mirror
@@ -358,14 +358,14 @@ unless they asked for the database to be created.
    Read `would_create`. Real sweeps create at most 15 pages each, newest
    `scheduled_for` first.
 
-6. Leave Linear on. After a real week in Notion, set the edge secret
-   `MARKETING_LINEAR_ENABLED` to `off` (`0`, `false`, and `no` also count).
-   Unset, empty, or anything else keeps Linear article cards on. That secret
-   is the switch. The migration does not flip it.
+6. Production already points `NOTION_MARKETING_DATABASE_ID` at
+   `3f04f244-aec7-81ba-affb-c1523b57ecb4` and has `MARKETING_LINEAR_ENABLED`
+   set to `off`. Do not create a second database. A sweep creates at most 15
+   pages, newest day first. Question posts have no page.
 
 What is not the same as Linear:
 
-- PR cards are Linear only.
+- The Monday website-refresh PR workflow was retired on 2026-10-13. Notion does not merge pull requests.
 - Comments on a page whose day was more than 21 days ago apply when the webhook
   fires, or if someone also edits the page. Status and the date are read every
   tick for every page in the database.

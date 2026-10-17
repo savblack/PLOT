@@ -60,7 +60,7 @@ Only one worktree runs the app at a time. They share port 5177.
 
 ## What the agent may use
 
-Do not ask for an API key. Use the connector. If the connector has no access, read `.env` in the main checkout. Do not print it. If both are missing, open that product's login. The accounts are `savblack` on GitHub (`savblack/PLOT` only), `sav.black@outlook.com`, `savannah@theplot.tv`, Supabase `PLOT Staging` unless production was explicitly requested, the PostHog project named Plot, and Linear workspace `savblack` team PLO.
+Do not ask for an API key. Use the connector. If the connector has no access, read `.env` in the main checkout. Do not print it. If both are missing, open that product's login. The accounts are `savblack` on GitHub (`savblack/PLOT` only), `sav.black@outlook.com`, `savannah@theplot.tv`, Supabase `PLOT Staging` unless production was explicitly requested, the PostHog project named Plot, and Notion What's On Articles for draft articles. GitHub issues are the tracker. Linear article cards are off.
 
 GitHub, Node, and pnpm are machine-wide. Cursor, Claude Code, and Codex each have their own "allow this command" switch. Turn on test and lint once in each app. Git cannot do that click.
 

@@ -134,15 +134,15 @@ const applyAnnounceState = async (supabase, post) => {
   await supabase.from('marketing_tracked_titles').update(update).eq('id', announce.tracked_id);
 };
 
-// Team PLO, project Content Automation. Resolved from Linear, not guessed.
-// The mirror writes each post's linear_issue_url a few minutes after this
-// email, so the message links the project rather than a card that does not
-// exist yet. There is no per-organization Buffer queue URL in the database.
-const LINEAR_PROJECT_URL = 'https://linear.app/savblack/project/content-automation-2ce2d56ced11';
+// What's On Articles, board view. The mirror writes each post's notion_page_url
+// a few minutes after this email, so the message links the board rather than
+// a page that does not exist yet. There is no per-organization Buffer queue
+// URL in the database.
+const NOTION_ARTICLES_URL = 'https://app.notion.com/p/3f04f244aec781baaffbc1523b57ecb4?v=3f04f244aec780b09a73000c1a2f6ba6';
 const BUFFER_URL = 'https://publish.buffer.com';
 
 // Ping the admin that the week's posts are ready to review. Articles are
-// judged in Linear. Captions are judged in Buffer. The admin desk is not a
+// judged in Notion. Captions are judged in Buffer. The admin desk is not a
 // review link in this email.
 const notifyReview = async (count) => {
   if (!count) return;
@@ -150,10 +150,10 @@ const notifyReview = async (count) => {
     <h1 style="font-size:1.25rem;">${count} post${count > 1 ? 's' : ''} ready to review</h1>
     <p style="font-size:.95rem;line-height:1.6;">This week's articles and social posts are generated.</p>
     <p style="margin:20px 0 8px;">
-      <a href="${LINEAR_PROJECT_URL}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9999px;font-weight:600;display:inline-block;">Open in Linear</a>
+      <a href="${NOTION_ARTICLES_URL}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9999px;font-weight:600;display:inline-block;">Open in Notion</a>
       <a href="${BUFFER_URL}" style="background:#1a1a1a;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9999px;font-weight:600;display:inline-block;margin-left:8px;">Open in Buffer</a>
     </p>
-    <p style="font-size:.95rem;line-height:1.6;">Articles show up in Linear within about five minutes, one card each, in <strong>Content Automation</strong>. Comment <code>/approve</code>, or <code>/copy</code> with the lines you want changed. Leaving a card untouched keeps that article off theplot.tv.</p>
+    <p style="font-size:.95rem;line-height:1.6;">Articles show up in Notion within about five minutes, one page each, on <strong>What's On Articles</strong>. Set Status to Scheduled to approve, or Canceled to keep it off theplot.tv. Leaving a page on Review keeps that article off the site.</p>
     <p style="font-size:.95rem;line-height:1.6;">Social posts are already in Buffer, dated for their Eastern Time day, as many as the queue will hold. Edit, move, or delete them there. Buffer sends them. Approving an article does not change the caption.</p>
   </div>`;
   try {

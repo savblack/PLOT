@@ -33,12 +33,13 @@ outside the repo (Linear, a doc, a manual Buffer post).
    it again before the top-up, and will not queue the post on a raw TMDB still.
    Sunday evening Eastern, a separate job writes the trending snapshot the
    Monday chart reads.
-2. Within about five minutes, a database job opens one Linear card per website
-   article (team PLO, project Content Automation).
+2. Within about five minutes, a database job opens one Notion page per website
+   article on What's On Articles. Status Review is a draft.
 3. You edit or delete the social captions in Buffer. Buffer sends them on the
    day the planner chose, at an hour Buffer's own schedule picked.
-4. You approve or reject the article in Linear. That
-   decision is about theplot.tv only. It does not pull a post out of Buffer.
+4. You approve or reject the article in Notion. Set Status to Scheduled to
+   approve, or Canceled to reject. That decision is about theplot.tv only. It
+   does not pull a post out of Buffer.
 5. On the article's day, if it was approved, it appears on
    [theplot.tv/whats-on](https://theplot.tv/whats-on).
 6. Once a day, GitHub asks Buffer what actually happened, writes that back to
@@ -104,7 +105,7 @@ Resend.
 4. Claude reads [`marketing/copy/AGENT.md`](../../marketing/copy/AGENT.md) and each brief, searches the web for the article, and writes one JSON file per post. It runs in a temp folder so it cannot see `.env`.
 5. `save.mjs` checks the JSON against the copy contract. Bad copy is rejected and that post stays `planned`. Good copy is stored as both `copy` (what we will use) and `generated_copy` (what the model first wrote), and the row moves to `copy_ready`. A rejection does not stop the rest of the week. The workflow still fails at the end so the rejected files are visible. On 4 October 2026 this exit used to happen *before* rendering, which is why a week reached `copy_ready` with `media` null.
 6. Playwright screenshots the HTML card templates into portrait (1080x1350) and landscape JPEGs and uploads them to `marketing/<post id>/card-0-portrait.jpg` and `card-0-landscape.jpg`. The website hero is a plain TMDB still, not the branded card. Trending charts are the exception: the branded chart is the hero. `question` posts stay text-only. `guide` posts get no social card.
-7. The script emails you with links to Linear and Buffer when something new needs article review.
+7. The script emails you with links to What's On Articles and Buffer when something new needs article review.
 8. It then pushes social copy into Buffer for posts whose cards exist. It does not wait for you to approve the article. It does not attach a TMDB still when the card is missing. Those rows stay `queued` and the daily job renders them again.
 
 Local equivalent: `pnpm run mkt:plan` through `mkt:generate` and `mkt:schedule`, or from `marketing/`: `pnpm run weekly`. Local runs default to Codex, not Claude. Pass `--copy-runner=claude` to match CI.
@@ -182,7 +183,7 @@ Guides have no Buffer rows, so this job never sees them. IndexNow is not called 
 
 **Secrets (Supabase edge function secrets, not GitHub).** `LINEAR_API_KEY`, Vault secrets `edge_webhook_bearer` and `edge_webhook_base_url` (the cron uses these). Optional: `LINEAR_MARKETING_TEAM_ID`, `LINEAR_MARKETING_PROJECT_ID`, `LINEAR_REVIEW_STATE`, `LINEAR_SCHEDULED_STATE`, `LINEAR_REJECTED_STATE`, `LINEAR_PUBLISHED_STATE`, `GH_REPO`, `GH_DISPATCH_TOKEN_CONTENT`, `GH_DISPATCH_TOKEN_WEBSITE`, `GH_DISPATCH_TOKEN` (legacy fallback), `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`, `MARKETING_LINEAR_ENABLED`.
 
-`MARKETING_LINEAR_ENABLED` defaults to on. Set it to `off` (`0`, `false`, or `no` also count) only after the Notion database in section 5a has been used for a real week. Article create, refresh, and column moves stop. The Monday website-refresh PR card still gets filed.
+`MARKETING_LINEAR_ENABLED` defaults to on in code. Production is set to `off`. Article create, refresh, and column moves do not run. The Monday website-refresh workflow was retired on 2026-10-13, so that card is unused too.
 
 **Outputs.** Linear issues in team PLO, project Content Automation. States, by name: Review, Scheduled, Canceled, Published. A website-refresh card for the Monday timeline PR (section 8), marked urgent. `marketing_batch_runs` rows with `run_type = 'linear_mirror'`. `marketing_posts.linear_sync_error` when a card fails. Once a day (first sweep after 06:00 UTC) it probes the two GitHub tokens and emails if one is dead.
 
@@ -243,9 +244,9 @@ The writes live in [`supabase/functions/_shared/reviewActions.js`](../../supabas
 
 ---
 
-## 5a. Notion review (stand this up beside Linear)
+## 5a. Notion review
 
-**What it is.** A second article board, in Notion, kept in step with `marketing_posts` the way section 4 keeps Linear. One page per article. Linear keeps working until you set `MARKETING_LINEAR_ENABLED` to `off`. That secret is the switch. Merging the migration does not flip it.
+**What it is.** The article board. One Notion page per article, kept in step with `marketing_posts`. Production writes to What's On Articles under Growth: `https://app.notion.com/p/3f04f244aec781baaffbc1523b57ecb4` (database id `3f04f244-aec7-81ba-affb-c1523b57ecb4`). Status Review is a draft. Linear article cards are off.
 
 **Trigger.** `pg_cron` job `marketing-notion-mirror`, every 5 minutes. An optional Notion webhook on `<SUPABASE_URL>/functions/v1/marketing-notion-sync` wakes the same comparison for one page.
 
@@ -268,7 +269,7 @@ Properties: Name, Status (Review, Scheduled, Canceled, Published), Scheduled, Ar
 
 **Outputs.** One Notion page per article row that has a slug. `marketing_posts.notion_page_id` and `notion_synced_at`. Audit rows with actor `notion`. `marketing_batch_runs` with `run_type = 'notion_mirror'`. A bot comment on the page when a command needs a reply. The first real sweeps create at most 15 pages each, newest day first.
 
-**What it does not do.** Weekly website-refresh PR cards stay on Linear. Approving does not touch Buffer or `marketing_post_publications`. Social copy on the page is reference text. Edits to the page body or that property are overwritten. The public site still shows `approved`, `published`, and `partially_published` only.
+**What it does not do.** Question posts have no page. Approving does not touch Buffer or `marketing_post_publications`. Social copy on the page is reference text. Edits to the page body or that property are overwritten. The public site still shows `approved`, `published`, and `partially_published` only.
 
 Dry run, after the secrets exist and before you want pages created:
 
@@ -549,7 +550,7 @@ What you can already see:
 - **`marketing_review_events`.** Approve, reject, edit, reschedule, with actor `web_desk`, `marketing_week_skill`, `linear`, or `notion`.
 - **`marketing_posts.error`, `linear_sync_error`, and `notion_sync_error`.** Per-post failure text.
 - **`sent_text` / `sent_payload` / `generated_copy`.** What the model wrote versus what Buffer sent. Nothing alerts on the diff.
-- **Linear** is still the place a person looks for articles until `MARKETING_LINEAR_ENABLED` is off. **Notion** is the board being stood up beside it (section 5a). The daily token probe emails you if `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN_WEBSITE` stops answering.
+- **Notion** What's On Articles is where a person looks for articles (section 5a). Linear article cards are off. The daily token probe emails you if `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN_WEBSITE` stops answering.
 - **Buffer** is the place a person looks for captions.
 - The old **admin desk** (`admin.theplot.tv`) is retired. See [`docs/ops/retire-admin-review.md`](retire-admin-review.md).
 - **Broadcast guide** (not content, listed under Adjacent) uploads a `broadcast-guide-health` artifact for 7 days. The content pipelines do not do that.
