@@ -2341,7 +2341,8 @@ var FAILED_LOADS = Object.freeze({
   WATCHING: "watching",
   FAVOURITES: "favourites",
   TONIGHT_PICKS: "tonight_picks",
-  SMART_LIST: "smart_list"
+  SMART_LIST: "smart_list",
+  ONBOARDING_SERVICES: "onboarding_services"
 });
 
 // packages/core/userMedia.js

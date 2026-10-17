@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
+import { reportLoadFailure, FAILED_LOADS } from '@plot/core/actionFailures.js';
 import { topRegionServices } from '@plot/core/onboardingSetup.js';
 import { REGIONS } from '@plot/core/regions.js';
 import { tmdb } from '../../lib/tmdb';
@@ -40,11 +41,19 @@ export default function Services() {
     setList(null);
     tmdb.getWatchProvidersForRegion('tv', region).then((data: { results?: unknown[] } | null) => {
       if (!alive) return;
-      if (!data?.results) { setFailed(true); setList([]); return; }
+      if (!data?.results) {
+        reportLoadFailure(FAILED_LOADS.ONBOARDING_SERVICES, null);
+        setFailed(true); setList([]); return;
+      }
       const top = topRegionServices(data.results as never);
       setList(top);
       setServices(top);
-    }).catch(() => { if (alive) { setFailed(true); setList([]); } });
+    }).catch(error => {
+      if (alive) {
+        reportLoadFailure(FAILED_LOADS.ONBOARDING_SERVICES, error);
+        setFailed(true); setList([]);
+      }
+    });
     return () => { alive = false; };
   }, [region, setServices]);
 
