@@ -55,6 +55,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** For components that also render outside the app shell (Storybook). Null there. */
+export function useOptionalAppData(): AppData | null {
+  return useContext(AppDataContext);
+}
+
 export function useAppData(): AppData {
   const ctx = useContext(AppDataContext);
   if (!ctx) throw new Error('useAppData must be used inside AppDataProvider');

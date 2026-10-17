@@ -86,6 +86,7 @@ import ImportHistoryModal from '../../components/ImportHistoryModal';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import ThemeChip from '../../components/ThemeChip';
 import UpgradeSheet from '../../components/UpgradeSheet';
+import { usePremiumCheckout } from '../../lib/usePremiumCheckout';
 
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 const A = SETTINGS_VIEW.appearance;
@@ -350,10 +351,11 @@ function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string |
   );
 }
 
-// Reuse the existing Settings surface; this preview never opens a purchase link.
+// The Premium summary in Settings. Upgrade opens Stripe Checkout in the browser once checkout is open.
 function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean }) {
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(initialExpanded);
+  const checkout = usePremiumCheckout(expanded);
   return (
     <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
       <SettingsRow icon={null} label={PLANS_PAGE.previewAction}
@@ -376,8 +378,13 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
           ) : null}
         </View>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
-        <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
-          onPress={() => Alert.alert(PLANS_PAGE.premium.name, PLANS_PAGE.mobileCheckoutMessage)} />
+        <SettingsRow icon={null} label={checkout.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.upgradeAction}
+          onPress={async () => {
+            if (checkout.closed) { Alert.alert(PLANS_PAGE.premium.name, PLANS_PAGE.mobileCheckoutMessage); return; }
+            const result = await checkout.start('monthly');
+            if (result === 'closed') Alert.alert(PLANS_PAGE.premium.name, PLANS_PAGE.mobileCheckoutMessage);
+          }} />
+        {!!checkout.error && <Text style={{ color: colors.textSecondary }} accessibilityRole="alert">{checkout.error}</Text>}
       </View>}
     </SettingsGroup>
   );
