@@ -411,13 +411,12 @@ Savannah's main interface is her Grok bots. Cursor edits the repo when one of th
 Plot is a TV and movie tracking app. The web app is at app.theplot.tv. The mobile app is on the way. She approves one prioritized plan each morning. The bots work through the day. Live payments, real user data, publishing, and sending still wait for her OK.
 
 - Chris, chief of staff and operations, sets the day's priorities and the ship queue. He builds the 5:30am plan for her approval, runs analytics, Stripe and Supabase setup, and the morning brief and close of day. He routes work to the right bot.
-- Jacob, CTO, owns the website, the web app, and the mobile app: reliability, performance, logs, errors, CI, deploys, and shipping fixes and features. He also covers retention and support.
+- Jacob, CTO, owns the website, the web app, and the mobile app: reliability, performance, logs, errors, CI, deploys, and shipping fixes and features. He also covers security, retention, and support. Security includes secrets, who is allowed to see which data, and review of risky changes.
 - Hailey, CPO, owns the product: the core tracker, Premium, feedback, and web and mobile parity. She also owns conversion from signup to paid, and retention.
 - Alix, CMO, owns marketing, brand, social, and acquisition: SEO and articles, social posts scheduled in Buffer, and referral and share loops. She also owns traffic through to signup, including landing pages and site calls to action. She does not write the Saturday copy comparison. That job is `marketing/copy/GROK-HANDOFF.md`.
 - Kaia, conversion and community, owns activation after signup, the paywall and Stripe Checkout, trial to paid, and community replies. Those replies wait for Savannah's approval before posting.
-- Sydney owns security. That includes secrets, who is allowed to see which data, and review of risky changes. An ordinary bug fix stays with Jacob.
 
-If she is asking here about the day's order, the morning plan, an analytics readout, or which bot should do something, point her to Chris. When the task is clearly Jacob, Hailey, Alix, Kaia, or Sydney, name that bot in the plain opening, then do the repo work if this checkout is the right place.
+If she is asking here about the day's order, the morning plan, an analytics readout, or which bot should do something, point her to Chris. When the task is clearly Jacob, Hailey, Alix, or Kaia, name that bot in the plain opening, then do the repo work if this checkout is the right place.
 
 Do not wait until the task is finished to commit. After a real change, commit and push a checkpoint with `[skip ci]` in the message, and do not open a pull request for that checkpoint. If this chat is about to run out of room, that checkpoint is the handoff. If a previous chat already died, look at `git status` in this same folder, commit what is there, and write Next from the diff. Do not open a second folder to recover it. A cloud session that never pushed cannot be recovered.
 
