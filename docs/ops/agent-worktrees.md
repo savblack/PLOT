@@ -80,7 +80,7 @@ A local model is the wrong tool for this cleanup. The script already knows the r
 
 CI tiers are in [actions-minutes.md](actions-minutes.md). A work-in-progress push that only exists so a cloud agent can resume should say `[skip ci]` in the commit message. Open one pull request when the task is ready.
 
-Greptile stays the cheap review. In Greptile's settings, keep the normal review (1 credit), set extra-credit spending to $0, and turn automatic review on only for a pull request that is ready. The free Starter plan is 50 credits a month for one developer. Do not run a reviewer inside GitHub Actions or CircleCI.
+Greptile is turned off. Do not ask it to review a pull request, and do not mention @greptile. Do not run a reviewer inside GitHub Actions or CircleCI.
 
 ## Cursor Automations
 
@@ -88,7 +88,7 @@ Cursor Automations are cloud agents. They do not see `~/Developer`. They see the
 
 Keep an automation that reviews this repo as comments only. Do not let it approve, merge, or open a second pull request for a task that already has one. Do not trigger it on every push and on CI completed for the same pull request. That pair spends a cloud-agent run twice, and a fix commit spends a third CircleCI run.
 
-Bugbot and the security reviewer on the Automations page are separate from Greptile, and each run is billed as cloud-agent usage. Leave them off unless you meant to pay for that review. If one is already on, it does not replace the Greptile settings above, and it should not push fixes onto the same branch.
+Bugbot and the security reviewer on the Automations page are billed as cloud-agent usage. Leave them off unless you meant to pay for that review. If one is already on, it should not push fixes onto the same branch.
 
 The worktree list already includes remote branches named `agent/` and `cursor/`. An automation that uses another prefix will not show up until the list is widened.
 

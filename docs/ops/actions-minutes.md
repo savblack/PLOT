@@ -68,6 +68,8 @@ Website and mobile Storybook builds run only when their own story files change. 
 
 A commit message containing `[skip ci]` still skips the CircleCI pipeline entirely. Use that for a work-in-progress push that exists only so a cloud agent can resume. Do not open a pull request for that push.
 
+CircleCI project settings, Advanced, "Auto-cancel redundant workflows" should be on, so an older push on the same branch stops when a newer one starts.
+
 A Cursor Automation that only comments does not change the tier. One that pushes a commit starts a new CircleCI run, classified from that new diff. A trigger on "CI completed" still fires when a docs-only job halted after the secret scan.
 
 GitHub schedules that duplicate a CircleCI task are still in the workflow files. Remove a `schedule` stanza only after that CircleCI task has succeeded once. Leave `workflow_dispatch`. The weekly marketing batch stays on the GitHub macOS runner until a Saturday of copy from the coding Grok agent has been compared with it. That agent's assignment is `marketing/copy/GROK-HANDOFF.md`. It downloads the run's artifact and runs `node marketing/copy/check.mjs` once. It does not run the weekly command. Alix does not write this comparison. This schedule stays on.
