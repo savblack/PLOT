@@ -14,9 +14,9 @@ export const CTA_VARIANTS = ['track_it', 'whats_on_tonight', 'journal_it', 'none
 // Field-by-field spec, rendered into every brief so the worker sees the exact
 // contract it must satisfy. Keep this in lockstep with validateCopy below.
 export const COPY_FIELDS = [
-  ['x', 'string', 'X post text. <=280 characters. NO URLs. No hashtags.'],
+  ['x', 'string', 'X post text. <=280 characters. No URLs except a YouTube trailer link on trailer-related posts. No hashtags.'],
   ['instagram', 'string', 'Instagram caption, 1-3 short paragraphs. Do NOT put the hashtags here — they go in the hashtags array.'],
-  ['threads', 'string', 'Threads post text, one conversational thought. NO URLs (the system appends the article link). No hashtags.'],
+  ['threads', 'string', 'Threads post text, one conversational thought. No URLs except a YouTube trailer link on trailer-related posts (the system also appends the article link). No hashtags.'],
   ['hashtags', 'string[]', '3-5 niche hashtags for Instagram only, WITHOUT the # prefix, no spaces (e.g. "A24", "mikeflanagan").'],
   ['alt_text', 'string', 'One-sentence literal description of the image for accessibility.'],
   ['cta_variant', `enum: ${CTA_VARIANTS.join(' | ')}`, 'Which approved CTA this post uses (or "none").'],
@@ -193,8 +193,16 @@ export const validateCopy = (raw, context = {}) => {
   }
 
   // Hard platform guarantees — the same ones the API path enforced.
-  if (hasUrl(copy.x)) errors.push('x contains a URL (never allowed on X)');
-  if (hasUrl(copy.threads)) errors.push('threads contains a URL (system appends the link)');
+  const trailerRelated = context.post_type === 'trailer'
+    || /\b(?:trailer|teaser)\b/i.test(`${copy.x} ${copy.instagram} ${copy.threads}`);
+  const youtubeLink = /https:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[A-Za-z0-9_-]+|youtu\.be\/[A-Za-z0-9_-]+)(?:&[^\s]*)?/g;
+  for (const field of ['x', 'instagram', 'threads']) {
+    const links = copy[field].match(youtubeLink) || [];
+    if (trailerRelated && links.length === 0) errors.push(`${field} needs the official YouTube trailer link`);
+    const remainder = trailerRelated ? copy[field].replace(youtubeLink, '') : copy[field];
+    if (field !== 'instagram' && hasUrl(remainder)) errors.push(`${field} contains a URL (only YouTube trailer links allowed on trailer-related posts)`);
+  }
+  if (trailerRelated && copy.x.length > 280) errors.push('x exceeds 280 characters; shorten the caption and keep the complete trailer link');
   if (/#\w/.test(copy.x)) errors.push('x contains a hashtag (not allowed on X)');
   if (/#\w/.test(copy.threads)) errors.push('threads contains a hashtag (not allowed on Threads)');
 
@@ -211,7 +219,7 @@ export const validateCopy = (raw, context = {}) => {
   errors.push(...socialErrors(copy, { home_kind: context.home_kind }));
 
   // Normalization that can't fail: keep X within the hard limit.
-  if (copy.x.length > 280) copy.x = `${copy.x.slice(0, 279)}…`;
+  if (!trailerRelated && copy.x.length > 280) copy.x = `${copy.x.slice(0, 279)}…`;
 
   return { valid: errors.length === 0, errors, copy };
 };

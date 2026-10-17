@@ -48,6 +48,9 @@ announced the wrong day, or called a classic a hidden gem.
 - Follow `marketing/copy/WHATSON_GUIDELINES.md` for website-article sourcing,
   structure and post-type guidance.
 - Use only the facts supplied in the brief for social copy.
+- Every trailer-related social caption must include the verified official YouTube
+  trailer link. Follow the trailer section in `marketing/VOICE.md`, including
+  its exception to the X and Threads URL bans and `cta_variant: none`.
 - The website article can use the brief's research pack plus live web research.
 - Always paraphrase in Plot's voice.
 - Never quote reviews verbatim.
@@ -57,8 +60,8 @@ announced the wrong day, or called a classic a hidden gem.
 
 ## Validator constraints
 
-- `x`: max 280 characters, no URLs, no hashtags
-- `threads`: no URLs, no hashtags
+- `x`: max 280 characters, no URLs except a YouTube trailer link on trailer-related posts, no hashtags
+- `threads`: no URLs except a YouTube trailer link on trailer-related posts, no hashtags
 - `hashtags`: 3 to 5 items, no `#` prefix
 - `cta_variant`: one of `track_it`, `whats_on_tonight`, `journal_it`, `none`
 

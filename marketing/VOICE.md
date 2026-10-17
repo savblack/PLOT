@@ -91,14 +91,14 @@ the platform out rather than naming another country.
 
 ## Platform constraints
 
-- **X**: ≤ 280 characters. **Never include a URL.** No hashtags. CTA built around
+- **X**: ≤ 280 characters. **No URLs except the YouTube trailer link required below.** No hashtags. CTA built around
   the product ("Save it to your watchlist with Plot"), never "link in bio".
 - **Instagram**: caption 1–3 short paragraphs max. 3–5 hashtags, niche over
   generic (#A24 beats #movies). The profile link is live, so point to it
   directly in the CTA ("at theplot.tv") rather than "link in bio". A director
   is welcome as one of the hashtags.
-- **Threads**: conversational, one thought. **Never include a URL** — the
-  system appends the theplot.tv article link automatically.
+- **Threads**: conversational, one thought. **No URLs except the YouTube trailer link required below.** The
+  system also appends the theplot.tv article link automatically.
 - **alt_text**: literal description of the image for accessibility, one sentence.
 - **Article (page_title + page_body)**: every post is originally published on
   theplot.tv/whats-on. Plain specific headline; a short-to-medium blog post of
@@ -111,6 +111,21 @@ the platform out rather than naming another country.
   reporting", "recent coverage", "sources say", or "according to" — the reader
   should never sense there was research behind it. It's an editorial take, not a
   summary of what the sources say.
+
+## Trailer-related social posts
+
+Every trailer-related post must include the direct YouTube link to the trailer
+in each social caption: X, Instagram, and Threads. This includes trailer drops
+and any other post about a trailer or teaser. Use the verified official video
+from the payload's `trailer_url`. Never invent a video ID or link to a search
+page, fan upload, or a different trailer. If the link is missing, resolve and
+verify the official trailer before writing the post; leave it for review if
+that cannot be verified.
+
+This is an exception to the X and Threads URL bans. Keep X within 280 characters,
+including the complete link; shorten the caption rather than cutting the URL.
+The YouTube link is the viewing destination, so do not add a competing Plot CTA
+or tell people to watch the trailer in Plot. Use `cta_variant: none`.
 
 ## Question posts (Threads & X)
 
@@ -173,7 +188,7 @@ bio", never "Log it in your journal". Approved variants (use the variant name in
 the `cta_variant` field):
 
 - `track_it` — countdowns and trailer drops. Countdown: "Save to your watchlist
-  and count down with the Plot." Trailer: "Check out the trailer in Plot."
+  and count down with the Plot." Trailer posts use `none` and the direct YouTube link.
 - `whats_on_tonight` — slates and now-streaming. Slate: "Figure out what to watch
   at theplot.tv." Now streaming: "Save to your watchlist at theplot.tv."
 - `journal_it` — anniversaries and trending. "One of your favorites? Log it in

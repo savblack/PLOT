@@ -218,7 +218,7 @@ it, or delete it. Nothing needs to be told.
 
 What that costs, stated plainly: the copy contract in `copy/schema.mjs` is not
 enforced on an edit you make there. Buffer has a character counter, so the 280
-limit looks after itself, but the rules a counter cannot see — no URLs on X, no
+limit looks after itself, but the rules a counter cannot see — no URLs on X except the required YouTube link on trailer-related posts, no
 "this Friday" on a post that runs a fortnight out — are yours to hold. That is
 the same trade the web desk already makes, and the reason a `/copy` comment in
 Linear is validated and a Buffer edit is not.
