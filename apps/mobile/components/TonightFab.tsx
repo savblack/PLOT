@@ -1,5 +1,5 @@
 /**
- * The round floating entry to Pick for Me: bottom right, above the glass tab
+ * The round floating entry to Just Decide: bottom right, above the glass tab
  * bar, a sparkle on the brand fill with a soft ring. It eases in on mount and
  * presses down under the finger; nothing loops. Home is the only screen that
  * shows it.

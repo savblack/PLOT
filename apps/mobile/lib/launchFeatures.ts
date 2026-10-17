@@ -26,7 +26,7 @@ export const SHOW_APPLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_APPLE_LOGIN === 'tr
 
 // Pricing page. Mobile has no /plans screen, so nothing reads this yet;
 // declared so the two flag sets stay comparable. The upgrade sheet
-// (components/UpgradeSheet) and Pick for Me's pop-up show the price and the
+// (components/UpgradeSheet) and Just Decide's pop-up show the price and the
 // 7-day trial for new subscribers. While checkout is closed, Upgrade says so,
 // matching web. Mobile never takes a payment inside the app: once checkout is
 // open, Upgrade opens Stripe Checkout in the phone's browser.

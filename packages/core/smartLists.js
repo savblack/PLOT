@@ -9,7 +9,7 @@
 //
 // Two kinds of source:
 //   - discover   new titles from TMDB /discover, minus what you've watched.
-//                The rules become Pick for Me's discover query, so a filter
+//                The rules become Just Decide's discover query, so a filter
 //                means the same thing in both places.
 //   - watchlist / history   your own saved or watched titles. Type, genre and
 //                year come from what is stored; score, length and services
@@ -62,7 +62,7 @@ export const SMART_LIST_MY_RATINGS = [null, 6, 8, 10];
 /** Own titles checked against details (score, length, services) per open. Newest first. */
 export const SMART_LIST_DETAIL_LIMIT = 60;
 
-// News, talk and soap: never offered as a TV rule, same as Pick for Me.
+// News, talk and soap: never offered as a TV rule, same as Just Decide.
 const TV_EXCLUDED_GENRES = new Set([10763, 10767, 10766]);
 
 /** @returns {SmartListRules} */
@@ -294,7 +294,7 @@ export async function loadLibraryMatches({
 }
 
 /**
- * The rules as Pick for Me options for one media type, so the discover query
+ * The rules as Just Decide options for one media type, so the discover query
  * is the one the picker already sends.
  * @param {SmartListRules} rules
  * @param {'movie'|'tv'} type
@@ -383,10 +383,10 @@ export function smartListSummary(rules, { genres = [] } = {}) {
   return parts.join(' · ');
 }
 
-// ── Pick for Me answers as rules (A1) ───────────────────────────────────────
+// ── Just Decide answers as rules (A1) ───────────────────────────────────────
 
 /**
- * Pick for Me's answers as smart list rules, so "Create smart list" saves the
+ * Just Decide's answers as smart list rules, so "Create smart list" saves the
  * request rather than the five picks. Keyword-backed genres (a show's
  * Thriller, Horror or Romance, negative ids in the picker) have no TMDB genre
  * id to store, so they are left out; the TV format and language answers have
