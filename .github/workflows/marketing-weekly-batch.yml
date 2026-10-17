@@ -64,6 +64,18 @@ jobs:
           # Repo variable; unset means draft (the safe default in schedule.mjs).
           BUFFER_PUSH_AS_DRAFT: ${{ vars.BUFFER_PUSH_AS_DRAFT }}
 
+      # The runner deletes marketing/copy/jobs when the job ends. Keep the
+      # briefs and Claude's JSON so a second model can be checked against the
+      # same week without planning or pushing Buffer again.
+      - name: Keep this week's briefs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: weekly-copy-jobs
+          path: marketing/copy/jobs/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Alert on failure
         if: failure()
         env:

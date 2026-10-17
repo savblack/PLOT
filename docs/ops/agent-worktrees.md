@@ -83,4 +83,4 @@ For a permission change, a billing change, or a migration, the agent who wrote i
 
 ## Not in this change
 
-GitHub schedules that duplicate CircleCI are still on. Remove one only after the CircleCI run of that job has succeeded. The weekly marketing batch stays on the GitHub Mac runner until a Saturday of Grok copy has been compared with it. Two writers will book the same week twice.
+GitHub schedules that duplicate CircleCI are still on. Remove one only after the CircleCI run of that job has succeeded. The weekly marketing batch stays on the GitHub Mac runner until a Saturday of Grok copy has been compared with it. The assignment for that comparison is `marketing/copy/GROK-HANDOFF.md`. A second run of the weekly command would book the same week twice.
