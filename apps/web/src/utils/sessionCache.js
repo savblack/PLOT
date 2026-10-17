@@ -27,6 +27,19 @@ export function writeCachedSession(userId, profile) {
   writeStorage(PROFILE_CACHE_KEY, JSON.stringify({ userId, profile }));
 }
 
+/**
+ * Record the confirmed completion write before navigating to an app route.
+ * ProtectedRoute can then start from the same positive fact while it
+ * revalidates the profile, rather than briefly sending the user back here.
+ */
+export function cacheOnboardingComplete(userId) {
+  const cached = readCachedSession();
+  writeCachedSession(userId, {
+    ...(cached?.userId === userId ? cached.profile : {}),
+    onboarding_complete: true,
+  });
+}
+
 export function clearCachedSession() {
   removeStorage(PROFILE_CACHE_KEY);
 }
