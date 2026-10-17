@@ -32,6 +32,7 @@ import { readPendingSave } from '../utils/pendingSave.js';
 import { writeOnboardingStash, takeOnboardingStash } from '../utils/onboardingStash.js';
 import { notifyOnboardingCompleted } from '@plot/core/brevoLifecycleClient.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
+import { cacheOnboardingComplete } from '../utils/sessionCache.js';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import {
   previousOnboardingComplete,
@@ -259,6 +260,9 @@ export default function OnboardingFlow() {
       setSaveError(F.saveError);
       return false;
     }
+    // Home mounts its own auth gate after this route unmounts. Keep its first
+    // decision aligned with the completion write while the profile revalidates.
+    cacheOnboardingComplete(user.id);
     // Sequential, not Promise.all: addToList's duplicate check reads React
     // state that only advances between awaited turns.
     for (const item of seeds) {
