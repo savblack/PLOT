@@ -7,12 +7,25 @@ The main checkout is `~/Developer/PLOT`. Each task is a folder under `~/Develope
 This file does not move the checkout. After you move it yourself, reopen the folder in each app. An app still pointed at `Sites/Cursor` keeps writing to the old place.
 
 ```bash
-# From the old checkout, with no other worktrees open:
+# Quit every app that has the repo open, then:
 mv ~/Sites/Cursor/PLOT ~/Developer/PLOT
-mkdir -p ~/Developer/PLOT-worktrees
 ```
 
-If a worktree was still attached during the move, run `git worktree repair` from `~/Developer/PLOT`.
+Do not create `~/Developer/PLOT-worktrees` first. If that folder already exists, `mv ~/Sites/Cursor/PLOT-worktrees ~/Developer/PLOT-worktrees` puts the task folders inside it, one level too deep, and the repair looks in the wrong place.
+
+```bash
+# Only if the task folders are still at the old path:
+mv ~/Sites/Cursor/PLOT-worktrees/* ~/Developer/PLOT-worktrees/
+rmdir ~/Sites/Cursor/PLOT-worktrees
+
+cd ~/Developer/PLOT
+for dir in ~/Developer/PLOT-worktrees/*/; do
+  git worktree repair "${dir%/}"
+done
+git worktree list
+```
+
+Lines that say `gitdir incorrect` or `gitdir unreadable` mean Git rewrote the pointer. The list should then show `~/Developer/PLOT` and every task folder under `~/Developer/PLOT-worktrees`.
 
 ## Everyday commands
 
