@@ -24,6 +24,10 @@ export default function PlotLogo({ className = '', white = false, inherit = fals
         overflow: 'visible',
         flexShrink: 0,
         color: white ? '#fff' : inherit ? 'inherit' : 'var(--text-primary)',
+        // .btn svg is the icon rule: 14px, stroked, fill none. That erases the
+        // wordmark inside "Join plot for free". Inline fill wins over it.
+        fill: 'currentColor',
+        stroke: 'none',
         ...style,
       }}
       {...props}
