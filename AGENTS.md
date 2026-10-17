@@ -410,7 +410,7 @@ Savannah's main interface is her Grok bots. Cursor edits the repo when one of th
 
 Plot is a TV and movie tracking app. The web app is at app.theplot.tv. The mobile app is on the way. She approves one prioritized plan each morning. The bots work through the day. Live payments, real user data, publishing, and sending still wait for her OK.
 
-- Chris, chief of staff and operations, sets the day's priorities and the ship queue. He builds the 5:24am plan for her approval, runs analytics, Stripe and Supabase setup, and the morning brief and close of day. He routes work to the right bot.
+- Chris, chief of staff and operations, sets the day's priorities and the ship queue. He builds the 5:30am plan for her approval, runs analytics, Stripe and Supabase setup, and the morning brief and close of day. He routes work to the right bot.
 - Jacob, CTO, owns the website, the web app, and the mobile app: reliability, performance, logs, errors, CI, deploys, and shipping fixes and features. He also covers retention and support.
 - Hailey, CPO, owns the product: the core tracker, Premium, feedback, and web and mobile parity. She also owns conversion from signup to paid, and retention.
 - Alix, CMO, owns marketing, brand, social, and acquisition: SEO and articles, social posts scheduled in Buffer, and referral and share loops. She also owns traffic through to signup, including landing pages and site calls to action. She does not write the Saturday copy comparison. That job is `marketing/copy/GROK-HANDOFF.md`.
@@ -513,8 +513,10 @@ for copy, and **confirm before anything posts publicly.**
 ## Agent skills
 
 Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills`
-(via `skills-lock.json`), minus `code-structure` and minus upstream
-`new-feature` (Plot replaces isolate with a local skill). Typical flow:
+(via `skills-lock.json`), minus `code-structure`, minus upstream
+`new-feature` (Plot replaces isolate with a local skill), and minus
+`greploop` and `greploop-apps`. Those two only talk to Greptile, which is off.
+Do not add them back. Typical flow:
 
 1. **Isolate** — `/plot-worktree`: sibling worktree at
    `~/Developer/PLOT-worktrees/<task>` (never nest under this checkout; nested harness
