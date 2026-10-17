@@ -14,6 +14,7 @@
 // a title on streaming in all three beats one in two beats US-only.
 import { tmdb } from '../../lib/tmdb.mjs';
 import { isoDate } from '../../lib/dates.mjs';
+import { getAwards } from '../../lib/omdb.mjs';
 import { recentlyUsed } from './_used.mjs';
 import { coverageTier, bestTier } from './_regions.mjs';
 
@@ -22,6 +23,26 @@ const YEAR_FLOOR = '1980-01-01';
 const MIN_VOTES = '1500';  // floor keeps picks well-established, not obscure
 const MAX_VOTES = '12000'; // ceiling keeps out the canon everyone has already seen
 const REGIONS = [['US', 'US'], ['UK', 'GB'], ['AU', 'AU']]; // label, TMDB code
+
+// The vote ceiling missed Unforgiven: about 5,000 TMDB votes, four Oscars.
+// Three or more Oscar wins is a household film even when the vote count is thin.
+// A missing awards string does not reject the pick. An OMDb miss must not empty Saturday.
+export const oscarCanon = (awards) => /\bWon\s+(?:[3-9]|\d{2,})\s+Oscars?\b/i.test(awards || '');
+
+const pickHiddenGem = async (pool) => {
+  const order = [...pool].sort(() => Math.random() - 0.5);
+  for (const entry of order.slice(0, 8)) {
+    const details = await tmdb.getDetails('movie', entry.item.id).catch(() => null);
+    const awards = await getAwards(details?.imdb_id);
+    if (oscarCanon(awards)) {
+      console.log(`Hidden gem skipped ${entry.item.title}: ${awards}`);
+      continue;
+    }
+    return entry.item;
+  }
+  console.log('Hidden gem: no pick in the sample was outside Oscar canon.');
+  return null;
+};
 
 export const evaluate = async (ctx) => {
   const used = await recentlyUsed(ctx.supabase, 'hidden_gem');
@@ -59,7 +80,8 @@ export const evaluate = async (ctx) => {
   const ranked = [...found.values()].map(e => ({ ...e, tier: coverageTier([...e.regions]) }));
   const pool = bestTier(ranked); // all-3 > any-2 > US-only
   if (!pool.length) return null;
-  const pick = pool[Math.floor(Math.random() * pool.length)].item; // random within the best tier
+  const pick = await pickHiddenGem(pool);
+  if (!pick) return null;
 
   const streaming = await tmdb.getStreamingRegions('movie', pick.id).catch(() => ({}));
   return {

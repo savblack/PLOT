@@ -35,3 +35,25 @@ export const getRatings = async (imdbId) => {
     return null;
   }
 };
+
+/**
+ * OMDb's Awards line, for planner filters that need a canon signal the vote
+ * count does not carry. "Won 4 Oscars. Another 43 wins & 45 nominations."
+ * Best-effort: null when the key, the id, or the field is missing.
+ *
+ * @param {string} imdbId
+ * @returns {Promise<string|null>}
+ */
+export const getAwards = async (imdbId) => {
+  const key = process.env.OMDB_API_KEY;
+  if (!key || !imdbId) return null;
+  try {
+    const res = await fetch(`${BASE}?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(imdbId)}`);
+    if (!res.ok) return null;
+    const d = await res.json().catch(() => null);
+    if (!d || d.Response === 'False') return null;
+    return d.Awards && d.Awards !== 'N/A' ? d.Awards : null;
+  } catch {
+    return null;
+  }
+};

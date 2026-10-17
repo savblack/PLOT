@@ -101,6 +101,9 @@ const resolveSubject = async (ctx, today, skip) => {
   if (outToday) {
     return {
       hook: 'out_today',
+      // A home date is not an opening day. The brief has to say which one it is
+      // so the question does not tell a September release that it came out today.
+      date_kind: outToday.release_date === today ? 'theatrical' : 'home',
       when_label: null,
       media_type: outToday.media_type,
       id: outToday.tmdb_id,
@@ -124,7 +127,17 @@ const resolveSubject = async (ctx, today, skip) => {
 export const evaluate = async (ctx, { exclude, subject } = {}) => {
   const today = isoDate(ctx.publishAt);
 
-  let pick = subject ? { hook: 'out_today', when_label: null, ...subject } : null;
+  // A forced subject is the day's home release, not proof of a theatrical opening.
+  let pick = subject
+    ? {
+      hook: 'out_today',
+      date_kind: 'home',
+      when_label: null,
+      media_type: subject.media_type,
+      id: subject.id,
+      title: subject.title,
+    }
+    : null;
   if (!pick) {
     const skip = new Set([
       ...(exclude || []),
@@ -141,7 +154,12 @@ export const evaluate = async (ctx, { exclude, subject } = {}) => {
     topic_key: `conversation:${today}`,
     tmdb_refs: [{ media_type: pick.media_type, id: pick.id, title: pick.title }],
     payload: {
-      topic: { mode: 'topical', hook: pick.hook, when_label: pick.when_label || null },
+      topic: {
+        mode: 'topical',
+        hook: pick.hook,
+        when_label: pick.when_label || null,
+        date_kind: pick.date_kind || null,
+      },
       // Never rendered — question posts are text-only (generate.mjs short-circuits
       // before POST_TYPES). This is here for the copy brief and the review desk.
       title: { tmdb_id: pick.id, media_type: pick.media_type, title: pick.title },

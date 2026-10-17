@@ -1,10 +1,15 @@
 # Marketing copy worker
 
-This is the production copy contract for Plot marketing. The production runner
-is the **Claude Code CLI** (`marketing-weekly-batch.yml` runs
-`--copy-runner=claude`). Codex is the local/manual default and still fully
-supported; other runners are fallback/debug only. This contract is
-model-agnostic; nothing here depends on which CLI is executing it.
+This is the production copy contract for Plot marketing. The weekly runner
+is the **Grok CLI** on this Mac when `grok` is on `PATH`
+(`marketing-weekly-batch.yml` runs `--copy-runner=grok`). The job uses the
+login already stored for this user and does not set an API key. If `grok` is
+missing, the workflow falls back to Claude and says so in the log. Codex
+remains available. Generation starts at 5:30am Monday Australia/Sydney. Every
+post is still dated 9:00am America/New_York. This contract is model-agnostic;
+nothing here depends on which CLI is executing it. A validator pass is not the
+bar. The copy has to be true, and better than a week that invented reviews,
+announced the wrong day, or called a classic a hidden gem.
 
 ## Job
 
@@ -73,10 +78,18 @@ rental "streaming" when the post's `home_kind` says it is rent or buy, and for
 calling a rental platform a "store" or "storefront". People rent in the app they
 already have: name the platforms, or say "on digital".
 
-Three things it cannot check, which are yours to get right: **no spoilers**,
-**no more than three names in a sentence**, and **every time-bound claim true
-on the publish date**. A person's name and a film title are the same shape to a
-regex, and only you know what the reader will already have seen.
+The validator also misses things it cannot see. These are yours:
+
+- Social captions, hashtags, and alt text use only the brief's social-facts JSON. Research-pack names, dates, and platforms stay out of them. A director hashtag is allowed. A cast hashtag is allowed only when that person's name is in the JSON.
+- Do not invent reception. No "reviews have", "early buzz", "critics noted", "best in years", or what audiences think. A null ratings block, or a film that is not out, means there is no score and no consensus.
+- US dates win. If TMDB's primary date and the US theatrical date disagree, write the US date. Say "today" only when that US date is the publish day. A false hook in the brief is a lead to check, not a sentence to repeat.
+- A trending X caption names number one and every other title on the chart. Do not invent why a title moved.
+- Name the US services in the payload, including fuboTV and MGM+. Do not add "video on demand" only so the where-to-watch check will pass.
+- A hidden gem that won three or more Oscars, or that a US reader already knows as a classic, is the wrong slot. Do not call it a discovery.
+- At most three people in a paragraph, and at most three in one sentence. No spoilers. Do not hang the piece on an awards-night anecdote.
+- Do not show the research. No "could not confirm", and no claim you did not load a page for: a first trailer, a director who stepped aside, a cancellation, a budget figure.
+
+A person's name and a film title are the same shape to a regex, and only you know what the reader will already have seen.
 
 ## Environment
 
@@ -85,8 +98,8 @@ regex, and only you know what the reader will already have seen.
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `TMDB_API_KEY`
 - `OMDB_API_KEY`
-- Claude Code CLI authenticated on the runner (production) or Codex CLI
-  authenticated on the Mac (local/manual)
+- Grok CLI on this Mac, already signed in (`~/.grok/auth.json`). The workflow does not set an API key.
+- Claude Code CLI or Codex CLI only when `grok` is not on PATH for that run
 
 ## Updating these rules
 
