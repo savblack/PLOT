@@ -97,24 +97,21 @@ export const LISTS = {
   note: 'Five lists free. Unlimited with Premium.',
 };
 
-// Premium: the same stories as /pricing (see copy/plans.js), on cream.
-// The visuals and their copy live in pricing.html and index.html; keep both
-// in step. The price line mirrors pricing.html.
+// Premium: headline and trial on one line, three feature tiles, one line for the
+// rest. The markup is in index.html; /pricing keeps the longer stories (copy/plans.js).
 export const PREMIUM = {
   eyebrow: 'Plot Premium',
   headline: 'Less deciding. More watching.',
-  stories: [
-    { step: 'Pick for me', title: 'Something to watch, in under a minute.' },
-    { step: 'Watch together', title: 'Settle movie night before the snacks are ready.' },
-    { step: 'Your profile', title: 'Every story has a plot. Here’s yours.' },
-    { step: 'Taste match', title: 'Find out your compatibility based on cinema.' },
-    { step: 'Make it yours', title: 'Your Plot, your way.' },
+  tiles: [
+    { title: 'Something to watch, in under a minute.', body: 'Tell Plot how long you’ve got and what you’re in the mood for.' },
+    { title: 'Find out your compatibility based on cinema.', body: 'The films you agree on, and the ones that are still a sore point.' },
+    { title: 'Every story has a plot. Here’s yours.', body: 'The genres you lean on, the hours you’ve put in, the titles you keep going back to.' },
   ],
   cta: 'Start 7-day free trial',
-  more: 'See everything in Premium',
-  price: '$2/mo billed yearly, 4 months free. Commitment-free: cancel during the 7-day trial and you pay $0.',
+  price: '$2/mo billed yearly, 4 months free.',
   alsoLabel: 'Also in Premium',
-  also: ['Unlimited and smart lists', 'Release dates in your calendar app', 'Actor and director alerts'],
+  also: 'watch together, themes and widgets, unlimited lists including smart lists, calendar dates, actor and director alerts.',
+  more: 'See everything',
 };
 
 // Plot mobile, coming soon: the app's home screen in a phone, and the launch
