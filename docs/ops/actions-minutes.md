@@ -68,6 +68,8 @@ Website and mobile Storybook builds run only when their own story files change. 
 
 A commit message containing `[skip ci]` still skips the CircleCI pipeline entirely. Use that for a work-in-progress push that exists only so a cloud agent can resume. Do not open a pull request for that push.
 
+A Cursor Automation that only comments does not change the tier. One that pushes a commit starts a new CircleCI run, classified from that new diff. A trigger on "CI completed" still fires when a docs-only job halted after the secret scan.
+
 GitHub schedules that duplicate a CircleCI task are still in the workflow files. Remove a `schedule` stanza only after that CircleCI task has succeeded once. Leave `workflow_dispatch`. The weekly marketing batch stays on the GitHub macOS runner until a Saturday of Grok copy has been compared with it.
 
 ## Guardrails

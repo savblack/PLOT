@@ -67,7 +67,17 @@ A local model is the wrong tool for this cleanup. The script already knows the r
 
 CI tiers are in [actions-minutes.md](actions-minutes.md). A work-in-progress push that only exists so a cloud agent can resume should say `[skip ci]` in the commit message. Open one pull request when the task is ready.
 
-Greptile is the only review bot. In Greptile's settings, keep the normal review (1 credit), set extra-credit spending to $0, and turn automatic review on only for a pull request that is ready. The free Starter plan is 50 credits a month for one developer. Do not add a second bot, and do not run a reviewer inside GitHub Actions or CircleCI.
+Greptile stays the cheap review. In Greptile's settings, keep the normal review (1 credit), set extra-credit spending to $0, and turn automatic review on only for a pull request that is ready. The free Starter plan is 50 credits a month for one developer. Do not run a reviewer inside GitHub Actions or CircleCI.
+
+## Cursor Automations
+
+Cursor Automations are cloud agents. They do not see `~/Developer`. They see the git branch, the same way any other cloud agent does. A draft pull request can start one on "draft opened". A later push can start it again. If the automation then pushes its own commit, CircleCI runs again. A docs-only halt still counts as CI finished, so a "CI completed" trigger will fire even when the suite stopped early.
+
+Keep an automation that reviews this repo as comments only. Do not let it approve, merge, or open a second pull request for a task that already has one. Do not trigger it on every push and on CI completed for the same pull request. That pair spends a cloud-agent run twice, and a fix commit spends a third CircleCI run.
+
+Bugbot and the security reviewer on the Automations page are separate from Greptile, and each run is billed as cloud-agent usage. Leave them off unless you meant to pay for that review. If one is already on, it does not replace the Greptile settings above, and it should not push fixes onto the same branch.
+
+The worktree list already includes remote branches named `agent/` and `cursor/`. An automation that uses another prefix will not show up until the list is widened.
 
 For a permission change, a billing change, or a migration, the agent who wrote it asks a different agent you already use to read the diff before the pull request opens. Ordinary docs skip that.
 
