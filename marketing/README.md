@@ -527,6 +527,7 @@ release post and the question are deliberately about the same title.
 
 ## Newsletter and metrics
 
+- The reviewed weekly letter follows [the newsletter editorial rules](newsletter/THE-WEEK.md), including source variety, artwork, box-office context, and Substack metadata.
 - Newsletter sends are logged as weekly issue snapshots in
   `marketing_newsletter_issues`. That log is internal only — the table is
   service-role and nothing serves it.
