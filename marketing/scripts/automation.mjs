@@ -105,6 +105,7 @@ const codexPrompt = [
   'Read ../AGENT.md for the copy contract and validation rules.',
   'Use the existing manifest.json and briefs in this directory.',
   'Write each missing <post_id>.copy.json exactly per its brief.',
+  'If a brief states a date or a hook you cannot verify from a page you loaded, write the true sentence. Do not repeat a false "today".',
   'Do not edit any other files.',
   'Do not run pull, do not run save, and do not dispatch anything.',
 ].join(' ');
@@ -149,6 +150,11 @@ const runClaudeCopyWriter = () => isolatedCopyWorkspace(({ jobsRoot, blockedPath
     cwd: jobsRoot, env: BASE_ENV, blockedPaths,
   }));
 
+const runGrokCopyWriter = () => isolatedCopyWorkspace(({ jobsRoot, blockedPaths }) =>
+  runCli('Write copy with Grok', 'grok', codexPrompt, {}, {
+    cwd: jobsRoot, env: BASE_ENV, blockedPaths,
+  }));
+
 const runCustomCopyWriter = (command) => {
   if (!command) throw new Error('No copy command provided.');
   throw new Error('--copy-command is no longer supported because it bypasses the copy-worker sandbox.');
@@ -164,7 +170,8 @@ const runWeekly = (args) => {
 
   const days = Math.max(1, Math.min(14, Number(args.get('--days', '7')) || 7));
   const copyCommand = args.get('--copy-command');
-  const copyRunner = args.get('--copy-runner', hasCommand('codex') ? 'codex' : 'none');
+  const defaultRunner = hasCommand('grok') ? 'grok' : (hasCommand('codex') ? 'codex' : 'none');
+  const copyRunner = args.get('--copy-runner', defaultRunner);
   if (args.has('--dangerous-codex')) {
     throw new Error('--dangerous-codex is no longer supported for research-backed copy generation.');
   }
@@ -182,12 +189,13 @@ const runWeekly = (args) => {
 
   if (jobs.length) {
     if (copyCommand) runCustomCopyWriter(copyCommand);
+    else if (copyRunner === 'grok') runGrokCopyWriter();
     else if (copyRunner === 'codex') runCodexCopyWriter(false);
     else if (copyRunner === 'claude') runClaudeCopyWriter();
     else {
       throw new Error(
         `Copy briefs are ready in marketing/copy/jobs/, but no runner is configured. ` +
-        `Use --copy-runner=codex, --copy-runner=claude, or --copy-command='your command'.`,
+        `Use --copy-runner=grok, --copy-runner=codex, or --copy-runner=claude.`,
       );
     }
 
@@ -278,6 +286,7 @@ const printDoctor = () => {
     ['Core env', getEnv('SUPABASE_URL', 'VITE_SUPABASE_URL') && getEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY') && getEnv('TMDB_API_KEY') ? 'ok' : 'missing'],
     ['Publish env', getEnv('BUFFER_API_KEY') ? 'ok' : 'missing BUFFER_API_KEY'],
     ['Newsletter env', getEnv('RESEND_API_KEY') ? 'ok' : 'missing RESEND_API_KEY'],
+    ['Grok runner', hasCommand('grok') ? 'available (weekly default)' : 'not found'],
     ['Codex runner', hasCommand('codex') ? 'available' : 'not found'],
     ['Claude runner', hasCommand('claude') ? 'available fallback' : 'not found'],
     ['Repo node_modules', existsSync(join(REPO_ROOT, 'node_modules')) ? 'present' : 'missing'],

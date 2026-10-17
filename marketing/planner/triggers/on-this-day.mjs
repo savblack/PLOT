@@ -10,19 +10,28 @@ const YEAR_MARKS = [50, 40, 30, 25, 20, 15, 10];
 // TMDB's primary_release_date is whichever release came first anywhere, which
 // for a US film is often its premiere a few days before it opened. Suicide
 // Squad ran two days early because of that. When the US theatrical date sits
-// within a fortnight of the primary date they are the same release wave and
-// the US date is the one the audience remembers, so the pick must match it. A
-// US date months later means the primary date is the film's real original
+// within the same season as the primary date, the US date is the one a US
+// reader remembers, so a post anchored to the other day is the wrong
+// anniversary. A fortnight was too short: Weekend's US opening was 30 days
+// before the primary date, the old window kept 23 October, and the copy had to
+// say the birthday had already passed. Sixty days is one release season. A US
+// date months later still means the primary date is the film's original
 // release (The Piano Teacher in France, Train to Busan in Korea) and stands.
-const SAME_WAVE_DAYS = 14;
+export const SAME_WAVE_DAYS = 60;
+
+export const keepsPrimaryAnniversary = (theatrical, day) => {
+  if (!theatrical || theatrical === day) return true;
+  const gap = Math.abs(Date.parse(`${theatrical}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) / 86400000;
+  if (!Number.isFinite(gap)) return true;
+  return gap > SAME_WAVE_DAYS;
+};
+
 const onTheDay = async (m, years, base) => {
   const target = new Date(base);
   target.setUTCFullYear(target.getUTCFullYear() - years);
   const day = target.toISOString().slice(0, 10);
   const { theatrical } = await tmdb.getReleaseDates(m.id).catch(() => ({}));
-  if (!theatrical || theatrical === day) return true;
-  const gap = Math.abs(Date.parse(`${theatrical}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) / 86400000;
-  return gap > SAME_WAVE_DAYS;
+  return keepsPrimaryAnniversary(theatrical, day);
 };
 
 export const evaluate = async (ctx, { minVotes = 1000 } = {}) => {

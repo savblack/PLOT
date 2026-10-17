@@ -1,10 +1,12 @@
-# Saturday copy comparison for the coding Grok agent
+# Weekly copy for the coding Grok agent
 
-One writer books the week. One agent writes a second copy for comparison. Alix does not do this job, and nobody runs the weekly command a second time.
+Savannah decided on 17 October 2026 that Grok takes the weekly writer. The weekly workflow runs on this Mac's self-hosted runner and calls `--copy-runner=grok` when `grok` is on PATH. It uses the logged-in Grok session and does not set an API key. If `grok` is missing, that run falls back to Claude and prints a warning. Generation starts at 5:30am Monday Australia/Sydney. Posts stay 9:00am America/New_York. Do not run the weekly command, `save.mjs`, or `schedule.mjs` to try the switch. A validator pass is still not the bar. The copy has to be true.
+
+The rest of this file is the comparison assignment that produced that decision. It is not a reason to keep Claude.
 
 ## The one job that books the week
 
-`.github/workflows/marketing-weekly-batch.yml` stays on its Saturday schedule. It plans the week, writes the briefs, asks Claude for the copy, checks it, draws the cards, and puts dated drafts in Buffer.
+`.github/workflows/marketing-weekly-batch.yml` plans the week, writes the briefs, asks Grok for the copy, checks it, draws the cards, and puts dated drafts in Buffer. The GitHub cron is 18:30 UTC Sunday. That is 5:30am Monday Sydney during daylight time and 4:30am during standard time, and a step waits out that hour. This Mac also dispatches the workflow at 5:30am Monday Sydney, because GitHub's scheduler often starts late. A later scheduled run skips the week when one run already succeeded. At 5:30am Monday Sydney, Sunday morning in the US has passed, so the seven posts run Monday through Sunday at 9:00am Eastern.
 
 Do not run `pnpm run weekly`, `node marketing/scripts/automation.mjs weekly`, `marketing/copy/save.mjs`, or `marketing/publish/schedule.mjs`. Do not create Buffer posts. Do not post. Do not turn the GitHub schedule off.
 
@@ -35,4 +37,4 @@ Fix your JSON until it exits 0. Do not change the validator.
 
 ## What you show Savannah
 
-Put your JSON next to Claude's JSON from the artifact, post by post. Say which posts you would ship, and any sentence you do not trust. The two files will not match word for word. A validator pass is not permission to switch the Saturday job. Savannah decides.
+Put your JSON next to Claude's JSON from the artifact, post by post. Say which posts you would ship, and any sentence you do not trust. The two files will not match word for word. That comparison is how the switch was judged. It is not a second writer.

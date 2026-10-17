@@ -39,9 +39,19 @@ const sourceList = (research) => {
 // `{topic: {mode: 'generic'}}` and no title — they still get a valid brief via
 // the generic fallback below, so a part-planned week doesn't break.
 const QUESTION_HOOKS = {
-  out_today: () => 'It came out today.',
-  just_out: (when) => (when ? `It came out on ${when}.` : 'It came out recently.'),
-  airing: (when) => (when ? `Its latest episode aired on ${when}.` : "It's airing right now."),
+  out_today: (_when, dateKind) => {
+    if (dateKind === 'theatrical') {
+      return 'The planner has the US theatrical opening as today. Say "today" only if a page you loaded confirms that US opening is the publish day. If the pages give a different US date, use that date. If you cannot confirm a date, do not name one.';
+    }
+    if (dateKind === 'home') {
+      return 'The planner has a US home date as today. The theatrical opening may have been earlier. Say it is available today only if a page you loaded confirms a US streaming or digital release on the publish day. If it opened in theaters earlier, say when, and do not call this opening day. If you cannot confirm a US platform and a date, do not invent either.';
+    }
+    return 'The planner booked this as out today. Confirm the US theatrical or streaming date on a page you loaded before you say today. If it opened earlier, say when. If you cannot confirm a date, do not name one.';
+  },
+  just_out: (when) => `${when ? `The planner dates the release to ${when}.` : 'The planner has it out recently.'} Repeat a date only if a page you loaded confirms it for the US. If the pages disagree, use the US date they state. If you cannot confirm a date, leave the day out.`,
+  airing: (when) => (when
+    ? `Its latest episode aired on ${when}. Repeat that only if a page you loaded confirms it.`
+    : "It's airing right now. Confirm that on a page you loaded before you say so."),
 };
 const DEFAULT_HOOK = () => "It's out now.";
 
@@ -59,8 +69,8 @@ export const buildConversationBrief = async (post) => {
     const kind = isTv ? 'TV show' : 'film';
     const angles = isTv
       ? 'how the latest episode landed, reviews, a renewal or cancellation, where the season is heading, a casting or cast-exit story'
-      : 'reviews and the critical split, box office, audience reaction, an awards push, a sequel or franchise story';
-    const hookLine = (QUESTION_HOOKS[topic.hook] || DEFAULT_HOOK)(topic.when_label);
+      : 'reviews and the critical split, box office, an awards push, a sequel or franchise story';
+    const hookLine = (QUESTION_HOOKS[topic.hook] || DEFAULT_HOOK)(topic.when_label, topic.date_kind);
     prompt = `One genuine question about **${name}** (${kind}). ${hookLine}
 
 It's out, so join the conversation that's already happening rather than
@@ -71,7 +81,9 @@ Name ${name} in the question so the hook is obvious.
 **Research it first.** Search the web for what's actually being said about
 ${name}: ${angles}. Use only what you can verify from a page you actually
 loaded. If nothing turns up, ask about the release plainly — never invent a plot
-point, a date, a cast member, a number or a review.`;
+point, a date, a cast member, a number or a review. Do not cite audience scores,
+and do not say what audiences think. Do not invent a consensus. If the hook
+above is wrong, write the true question instead of repeating it.`;
     if (tmdbId && mediaType) {
       sources = `
 ## Starting point
@@ -201,6 +213,14 @@ ${post.payload?.days_until != null ? `\n**This is ${post.payload.days_until} day
 \`\`\`json
 ${JSON.stringify(post.payload, null, 2)}
 \`\`\`
+
+## Rules the validator does not check
+- Social captions, hashtags, and alt text may state only what is in the JSON above. A name, date, platform, or "first trailer" that appears only in the research pack stays out of them. A director hashtag is allowed. A cast hashtag is allowed only when that person's name is in the JSON.
+- Do not invent reception. No "reviews have", "early buzz", "critics noted", "best in years", or what audiences think. If the title is not out, or the ratings block is null, there is no score and no consensus to report.
+- Dates are US dates. If a primary date and the US theatrical date disagree, write the US date. Say "today" only when that US date is the publish day.
+- On a trending chart, the X caption names number one and every other title. Do not invent why a title moved.
+- Name the US services from the payload in ordinary words, including fuboTV and MGM+ when they are the US services. Do not add "video on demand" or any other phrase only so a checker will pass.
+- At most three people in a paragraph, and at most three in one sentence. No spoilers, and do not hang the piece on an awards-night anecdote.
 
 ## Research pack for the article (extended TMDB + Wikipedia — free, pre-fetched)
 ${hasResearch
