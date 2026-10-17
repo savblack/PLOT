@@ -106,6 +106,9 @@ def main():
                 missing = sum(c['futureProgrammes'] == 0 for c in snapshot['channelHealth'])
                 result = {'market': market['id'], 'ok': True, 'missingChannels': missing,
                           'coverageEnd': snapshot['coverageEnd'], 'channels': snapshot['channelHealth']}
+                if missing:
+                    missing_ids = [c['channelId'] for c in snapshot['channelHealth'] if c['futureProgrammes'] == 0]
+                    print(f"Warning: {market['id']} has no future programmes for: {', '.join(missing_ids)}")
             except Exception as error:
                 # Never log requests/headers or credentials. Failed refreshes do
                 # not delete or overwrite the last successfully uploaded object.
@@ -113,7 +116,9 @@ def main():
             results.append(result)
             print(json.dumps({k: v for k, v in result.items() if k != 'channels'}))
     (output / 'health.json').write_text(json.dumps(results, indent=2))
-    if any(not r['ok'] or r.get('missingChannels') for r in results):
+    # MJH can advertise a channel with no listings. Keep the gap visible, but
+    # fail the job only when a market refresh itself failed.
+    if any(not r['ok'] for r in results):
         raise SystemExit(1)
 
 
