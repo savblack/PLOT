@@ -4,8 +4,9 @@
 // Stripe Adaptive Pricing shows the price in local currency at checkout. $24/year is exactly
 // four months free against monthly. On web the Upgrade button starts Stripe checkout when
 // billing-availability says checkout is open. When it is closed, that button is a waitlist
-// mailto instead of a failed checkout. Mobile has no purchase button because
-// in-app purchase is unresolved (PLO-526); it shows the plan and price only.
+// mailto instead of a failed checkout. There is no in-app purchase and there
+// will not be one (PLO-526, decided): Premium is bought on the web. Mobile's
+// Upgrade button opens that same web checkout in the browser.
 // The 7-day trial is requested by the stripe-billing checkout, not set on the Stripe Price. It is for
 // new subscribers only. Do not put Stripe price IDs in this file.
 export const PLANS_PAGE = {

@@ -75,19 +75,20 @@ amounts; regional checkout prices and tax were not independently verified.
    decline; renewal; failed renewal and recovery; cancel at period end; resume;
    plan switch; expiry; portal access after loss of entitlement. Prove list data
    survives downgrade and the calendar feed stops granting expired access.
-6. **Native payments (PLO-526):** not in this change. Mobile does not start a
-   purchase. `billing_customers.stripe_customer_id` is `NOT NULL` and
-   `is_premium()` reads that table, so a store receipt cannot grant Premium
-   until there is a place to write a non-Stripe subscription. Before any
-   in-app purchase work, Savannah needs: an App Store Connect subscription
-   group with monthly and yearly products at US$3 and US$24 and a 7-day
-   trial; the same products in Play Console; a RevenueCat project (or a
-   decision to validate StoreKit 2 and Play Billing without it) whose
-   entitlement maps onto `billing_customers`; an App Store Server API key
-   and a Google Play service account; and a current read of Apple guidelines
-   3.1.1 and 3.1.3. Linking iOS users out to web checkout is not a substitute
-   and was not added. Web checkout being open does not by itself make the
-   iOS or Android upgrade button take a payment.
+6. **Native payments (PLO-526): decided, there will be none.** Plot has no
+   in-app purchase route: no StoreKit, no Play Billing, no RevenueCat, and so no
+   App Store Connect or Play Console subscription products to set up.
+   Premium is bought on the web only. Mobile's Upgrade to Premium button (the
+   upgrade sheet and Settings > Premium) asks the same `stripe-billing`
+   function web does for a Stripe Checkout URL and opens it in the browser,
+   or becomes the waitlist while `billing-availability` says checkout is
+   closed (`packages/core/premiumCheckout.js`, `apps/mobile/hooks/usePremiumCheckout.ts`).
+   Entitlement stays in `billing_customers` / `is_premium()`, so no
+   non-Stripe subscription store is needed. **Open review risk:** Apple
+   guidelines 3.1.1 and 3.1.3 restrict linking out to external payment from an
+   iOS app. Re-read them against the current storefront rules before the
+   App Store submission; the Android button has the same shape under Play's
+   payments policy.
 7. **Operational setup:** configure live prices, portal, webhook, support details
    and licence; obtain launch approval; enable server checkout and public pricing
    together. Re-add marketing sitemap/llms entries only at launch.
