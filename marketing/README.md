@@ -10,9 +10,9 @@ Every post has two halves, and they are reviewed in different places.
 2. The social copy is pushed into **Buffer** as dated **drafts**. You review,
    edit and approve them there; Buffer sends what you approve. Nothing goes out
    on its own.
-3. The website article is reviewed in **Linear** — one issue per post, in team
-   PLO, project **Content Automation**. Approving a card puts the piece on
-   theplot.tv; rejecting keeps it off.
+3. The website article is reviewed in **Notion**, on What's On Articles.
+   Status Review is a draft. Scheduled approves it. Canceled
+   keeps it off theplot.tv.
 
 **Neither half gates the other.** A rejected article does not pull its posts out
 of Buffer, and a failed send does not take the article off the site. This is
@@ -20,17 +20,16 @@ deliberate: each surface controls what it can actually show you, and nothing
 claims a power it does not have.
 
 The split is the point. Buffer has the character counter, the preview and the
-calendar, so it is where a caption should be judged; it has no idea the article
-exists. Linear can render 600 words of prose, so it is where the writing should
-be judged; it cannot show you how a tweet will look.
+calendar, so it is where a caption should be judged. It has no idea the article
+exists. Notion holds the article. It cannot show you how a post will look.
 
-Articles are reviewed in Linear. A Notion database is being stood up beside
-that board (`marketing-notion-mirror`, documented in `docs/ops/gtm-automations.md`
-section 5a and `marketing/REVIEW.md`). Linear stays the live article board until
-the edge secret `MARKETING_LINEAR_ENABLED` is set to `off`. Social posts are
-reviewed in Buffer. The hosted desk at `admin.theplot.tv` is retired: see
-`docs/ops/retire-admin-review.md`. The database is what Linear, Notion, and
-Buffer all write.
+Articles are reviewed in Notion. The board is What's On Articles
+(`https://app.notion.com/p/3f04f244aec781baaffbc1523b57ecb4`). The sweep is
+`marketing-notion-mirror` (`docs/ops/gtm-automations.md` section 5a and
+`marketing/REVIEW.md`). Production has `MARKETING_LINEAR_ENABLED` set to `off`,
+so new article cards are not filed in Linear. Social posts are reviewed in
+Buffer. The hosted desk at `admin.theplot.tv` is retired: see
+`docs/ops/retire-admin-review.md`. The database is what Notion and Buffer write.
 
 The voice and spec rules in `VOICE.md` and `copy/AGENT.md` are maintained by
 hand. An automated Sunday learning loop used to rewrite them from the previous
@@ -91,10 +90,10 @@ can never fail a render or a publish run.
 
 ## Operator surfaces
 
-- **Articles:** Linear, team PLO, project **Content Automation**
-  (`https://linear.app/savblack/project/content-automation-2ce2d56ced11`).
-  Notion (What's On review) once `NOTION_MARKETING_DATABASE_ID` is set. Both
-  write the same row until Linear article cards are turned off.
+- **Articles:** Notion, What's On Articles
+  (`https://app.notion.com/p/3f04f244aec781baaffbc1523b57ecb4`).
+  Database id `3f04f244-aec7-81ba-affb-c1523b57ecb4`. Status Review is a draft.
+  Linear article cards are off.
 - **Social posts:** Buffer (`https://publish.buffer.com`)
 - **Primary automation layer:** GitHub Actions
 - **Primary copy worker:** Claude Code CLI in CI; Codex is the local/manual default

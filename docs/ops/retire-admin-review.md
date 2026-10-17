@@ -1,6 +1,6 @@
 # Retire the admin desk
 
-Articles are reviewed in Linear. Social posts are reviewed in Buffer. The hosted
+Articles are reviewed in Notion (What's On Articles). Social posts are reviewed in Buffer. The hosted
 desk at `admin.theplot.tv` (`supabase/functions/admin-review`) is retired.
 
 **Status:** retired in production (2026-09-22). Code on `main` (#1018). Cutover
@@ -12,8 +12,8 @@ replacement from July 2026. Do not revive it.
 ## What already works without the desk
 
 1. `marketing-weekly-batch.yml` plans the week, writes copy, renders cards, and pushes social posts into Buffer.
-2. `marketing-linear-mirror` opens one Linear card per website article (team PLO, project Content Automation).
-3. `marketing-linear-sync` applies `/approve`, `/reject`, `/copy`, and the other slash commands.
+2. `marketing-notion-mirror` opens one Notion page per website article on What's On Articles.
+3. Status and comments on that page apply `/approve`, `/reject`, `/copy`, and the other slash commands.
 4. Buffer holds captions as drafts and sends the ones you approve there.
 5. `marketing-publish.yml` reconciles Buffer and tops the queue up.
 6. `/pause` stops **new** posts entering Buffer. Drafts already there send only if approved in Buffer.
