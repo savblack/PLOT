@@ -27,6 +27,7 @@ import { localDateStr, setUserTimezone } from '@plot/core/date.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
+import PremiumPurchaseButton from '../../components/PremiumPurchaseButton';
 import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
 import { track, resetAnalytics, EVENTS } from '../../lib/analytics';
 import { deleteAccountAndSignOut } from '@plot/core/deleteAccount.js';
@@ -376,6 +377,7 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
           ) : null}
         </View>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
+        <PremiumPurchaseButton />
       </View>}
     </SettingsGroup>
   );

@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@plot/core/supabase.js';
-import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { loadCheckoutAvailability } from '@plot/core/checkoutAvailability.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useBillingStatus } from '@plot/core/useBillingStatus.js';
 import { billingAccess } from '@plot/core/billing.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
-import { checkoutErrorMessage, checkoutPlan, signupPathForPlan } from '../utils/premiumCheckout.js';
+import { checkoutErrorMessage, checkoutPlan, fetchBillingUrl, signupPathForPlan } from '../utils/premiumCheckout.js';
 
 /**
  * Plot Premium billing actions (web only — redirects to Stripe).
@@ -16,24 +15,7 @@ import { checkoutErrorMessage, checkoutPlan, signupPathForPlan } from '../utils/
  * Server-side gates (RLS + edge functions) are the authority; this hook just
  * previews upcoming subscriptions / opens the Stripe customer portal.
  */
-async function callBilling(action, body = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const url = edgeFunctionUrl('stripe-billing', { action });
-  if (!session || !url) throw new Error('Not signed in');
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data?.url) {
-    throw Object.assign(new Error(data?.error || 'Billing request failed'), { status: res.status, code: data?.code });
-  }
-  return data.url;
-}
+const callBilling = fetchBillingUrl;
 
 export function usePremium(profile) {
   const billing = useBillingStatus(profile?.id);

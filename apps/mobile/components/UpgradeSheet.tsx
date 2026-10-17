@@ -15,6 +15,7 @@ import { upgradeSheetContent, type UpgradeReason } from '@plot/core/upgradeSheet
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import PremiumIcon from './PremiumIcon';
+import PremiumPurchaseButton from './PremiumPurchaseButton';
 
 const S = PLANS_PAGE.upgradeSheet;
 
@@ -67,6 +68,8 @@ export default function UpgradeSheet({
               <Text style={styles.alt}>{PLANS_PAGE.premium.priceTerms}</Text>
               <Text style={styles.trial}>{PLANS_PAGE.premium.trialNote}</Text>
             </View>
+
+            <PremiumPurchaseButton />
 
             <Text style={styles.also}>{S.alsoIn}</Text>
             {content.also.map(row => (
