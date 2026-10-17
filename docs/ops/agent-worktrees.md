@@ -64,7 +64,7 @@ Follow `AGENTS.md` under "Keep work resumable" and "Recover when a bot has alrea
 
 For coding, update `AGENT_HANDOFF.md`, inspect the diff for unrelated work and secrets, then commit and push the task's files. Use `[skip ci]` for unfinished checkpoints. Do not open a pull request solely for a checkpoint; the finished pull request needs the required checks without that marker.
 
-If a chat has already stopped, inspect the same worktree, diff, recent commits, remote branch, and existing task record. Respect the ownership and claim rules above. Reconstruct the next step from evidence and continue authorized work in an available agent. Do not blindly commit everything in the folder or require Savannah to obtain a handoff from an unavailable bot.
+If a chat has already stopped, inspect the same worktree, diff, recent commits, remote branch, and the task's existing Notion records and Obsidian notes. Bot memory may become available when Grok returns, but recovery must not depend on access to it. Respect the ownership and claim rules above. Reconstruct the next step from evidence and continue authorized work in an available agent. Do not blindly commit everything in the folder or require Savannah to obtain a handoff from an unavailable bot.
 
 Local edits may still be in the worktree. Cloud work may have saved artifacts even without a push. Check before declaring anything lost, and restart only what cannot be recovered. Approval boundaries still apply.
 
