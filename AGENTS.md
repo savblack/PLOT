@@ -467,8 +467,10 @@ for copy, and **confirm before anything posts publicly.**
 ## Agent skills
 
 Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills`
-(via `skills-lock.json`), minus `code-structure` and minus upstream
-`new-feature` (Plot replaces isolate with a local skill). Typical flow:
+(via `skills-lock.json`), minus `code-structure`, minus upstream
+`new-feature` (Plot replaces isolate with a local skill), and minus
+`greploop` and `greploop-apps`. Greptile is not installed. Do not add it
+back or ask it to review. Typical flow:
 
 1. **Isolate** — `/plot-worktree`: sibling worktree at
    `../PLOT-worktrees/<task>` (never nest under this checkout; nested harness
@@ -483,15 +485,6 @@ Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills
    - [ ] Title and body through `/unslop`; body covers what changed, how
          verified, risks / follow-ups
    - [ ] `/before-and-after` only when there is a visible UI surface
-   - [ ] `/greploop` (or `/greploop-apps` for huge diffs) **only when the user
-         asks, or for larger / risky PRs** — not every tiny PR. Treat it as a
-         checklist item you invoke, not a merge gate.
-         - Cap the loop (`--max-iterations` low, default mindset: a few passes).
-         - Fix real bugs and AGENTS.md / design-system violations.
-         - Stop if Greptile is repeating style nits, disagreeing with this file,
-           or thrashing with no new substance. Report what is left; do not chase
-           5/5 for its own sake.
-         - Upstream greploop text says "until 5/5"; **this section wins**.
 5. **Write for humans** — `/unslop` on commit messages, PR title/body, and
    other prose you wrote (also: no em dashes in user-facing copy).
 
