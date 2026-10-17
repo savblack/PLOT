@@ -29,7 +29,8 @@ const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
 // Bump when the card artwork changes, so cached renders are not served for
 // up to a week after the change. 1: joined l-o wordmark (savblack/PLOT#1308).
 // 2: photo cards are sent as JPEG (~150KB), not PNG (~1.2MB), so WhatsApp shows them.
-export const CARD_VERSION = 2;
+// 3: drops blank fallback cards cached during a 2026-10-17 database blip.
+export const CARD_VERSION = 3;
 
 // Only these reach the function; the cache key is built from them too, so
 // attribution parameters on a shared link do not fragment the cache.
