@@ -70,7 +70,7 @@ A commit message containing `[skip ci]` still skips the CircleCI pipeline entire
 
 A Cursor Automation that only comments does not change the tier. One that pushes a commit starts a new CircleCI run, classified from that new diff. A trigger on "CI completed" still fires when a docs-only job halted after the secret scan.
 
-GitHub schedules that duplicate a CircleCI task are still in the workflow files. Remove a `schedule` stanza only after that CircleCI task has succeeded once. Leave `workflow_dispatch`. The weekly marketing batch stays on the GitHub macOS runner until a Saturday of Grok copy has been compared with it. The comparison assignment is `marketing/copy/GROK-HANDOFF.md`. It does not turn this schedule off.
+GitHub schedules that duplicate a CircleCI task are still in the workflow files. Remove a `schedule` stanza only after that CircleCI task has succeeded once. Leave `workflow_dispatch`. The weekly marketing batch stays on the GitHub macOS runner until a Saturday of Alix's copy has been compared with it. Alix is the CMO bot. Her assignment is `marketing/copy/GROK-HANDOFF.md`. A coding agent does not write that copy, and this schedule stays on.
 
 ## Guardrails
 
