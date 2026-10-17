@@ -39,20 +39,27 @@ week's shipped copy. That loop is gone: no workflow, no admin control, no
 A replacement eval loop is planned and not built. A rule changes only when
 someone edits those files.
 
-The production worker is **Claude Code CLI** (`marketing-weekly-batch.yml` runs
-`--copy-runner=claude`). Codex remains the default for local/manual runs and is
-still fully supported — it just isn't what CI actually invokes. Local/manual
-commands exist as fallback and debug tools, not the primary operating model.
+The production worker is the **Grok CLI** on this Mac. `marketing-weekly-batch.yml`
+runs on the self-hosted runner `plot-mac` and passes `--copy-runner=grok` when
+`grok` is on `PATH`. The job uses the login already stored for this user and
+does not set an API key. If `grok` is missing, that run installs Claude and
+passes `--copy-runner=claude`. A local `pnpm run weekly` uses Grok when `grok`
+is on `PATH`, and Codex otherwise. Codex and Claude remain available for a
+manual run.
 
 ## Primary flow
 
 ```text
-Saturday evening Eastern
+Monday 5:30am Sydney
   -> marketing-weekly-batch.yml generates the next week
-     (cron 00:30 UTC Sunday, which is Saturday evening ET)
+     (cron 30 18 * * 0: 5:30am Monday Sydney during daylight time,
+     4:30am during standard time, then the job waits until 5:30.
+     This Mac also starts the workflow at 5:30am, because GitHub
+     often starts the cron late.)
   -> and pushes as much of it into Buffer as the queue will hold.
-     Each post is dated for its Eastern Time day. The planner stores
-     9:00am ET. Buffer then uses that channel's hour on that ET day.
+     Each post is 9:00am America/New_York. 5:30am Monday Sydney is
+     Sunday afternoon in the US, so the week runs Monday through
+     Sunday Eastern. Buffer then uses that channel's hour on that ET day.
 
 Sunday evening Eastern
   -> marketing-trending-snapshot.yml writes this week's chart
@@ -96,7 +103,7 @@ can never fail a render or a publish run.
   Linear article cards are off.
 - **Social posts:** Buffer (`https://publish.buffer.com`)
 - **Primary automation layer:** GitHub Actions
-- **Primary copy worker:** Claude Code CLI in CI; Codex is the local/manual default
+- **Primary copy worker:** Grok CLI on this Mac. Claude only if `grok` is not on PATH. Codex remains available for a manual run.
 - **Fallback/debug only:** local commands from `marketing/`
 - The old `admin.theplot.tv` desk is retired: `docs/ops/retire-admin-review.md`
 
@@ -120,8 +127,9 @@ Notes:
 - `pnpm run schedule` pushes anything still queued. `--dry-run` reports what it
   would push and touches neither Buffer nor the database.
 - `pnpm run reconcile` reads Buffer back. It never writes to Buffer.
-- Codex is the default copy runner **for local runs only** — pass
-  `--copy-runner=claude` to match what CI actually uses in production.
+- A local `pnpm run weekly` uses Grok when `grok` is on PATH, otherwise Codex.
+  Pass `--copy-runner=claude` or `--copy-runner=codex` to force one. Production
+  on this Mac uses the same Grok default.
 - `--copy-command='...'` is still available for fallback/debug use.
 
 ## Review and publish
@@ -245,7 +253,7 @@ Comment on the issue. The first line is the command:
 | `/publish-now` | Approves and brings the article forward to today |
 | `/regenerate` | Throws the copy away; the worker rewrites it |
 | `/pause` · `/resume` | Stops posts entering the Buffer queue — every post, not just this one |
-| `/generate` | Build the coming week now, instead of waiting for Sunday |
+| `/generate` | Build the coming week now, instead of waiting for Monday 5:30am Sydney |
 | `/help` | The list, in the issue |
 
 None of these reach into Buffer. `/approve` and `/reject` decide the website
@@ -261,9 +269,9 @@ than on one post, so you can comment them on any card in the project — includi
 a finished one. That matters most for `/generate`, which exists for the moment
 when there is nothing on the board to comment on.
 
-`/generate` dispatches `marketing-weekly-batch.yml`, the same run Sunday's cron
-fires: planning, copy and rendering take a few minutes, then the cards appear
-within five minutes of that finishing. Safely repeatable — the workflow's
+`/generate` dispatches `marketing-weekly-batch.yml`, the same run the Monday
+Sydney cron fires. Planning, copy, and rendering take a few minutes, then the
+cards appear within five minutes of that finishing. Safely repeatable. The workflow's
 concurrency group queues a second run rather than racing it, and the pipeline
 only fills posts that still need copy. Needs `GH_DISPATCH_TOKEN_CONTENT`; without it the
 bot says so rather than failing quietly.
@@ -567,8 +575,8 @@ is no longer a co-equal operating path. See
 
 ## Copy contract
 
-The copy contract is model-agnostic, but the production runner is the Claude
-Code CLI (Codex is the local/manual default):
+The copy contract is model-agnostic. The production runner is the Grok CLI on
+this Mac. A local run uses Grok when `grok` is on PATH, and Codex otherwise:
 
 - `marketing/copy/pull.mjs` writes one brief per pending post
 - the worker writes one `<post_id>.copy.json` response per brief
@@ -589,16 +597,16 @@ and `marketing-linear-sync` on copy edited from a Linear comment.
 ## Setup
 
 1. Apply the Supabase migrations and deploy the functions.
-2. Set secrets for Supabase, TMDB, OMDb, Buffer, Resend, the admin email, and
-   `CODEX_AUTH` for the unattended GitHub Codex worker. `BUFFER_API_KEY` is now
-   needed by **both** `marketing-weekly-batch.yml` (which ends by pushing the
-   week into Buffer) and `marketing-publish.yml` (which reads it back) — the
-   batch job never needed it before.
+2. Set secrets for Supabase, TMDB, OMDb, Buffer, Resend, and the admin email.
+   `BUFFER_API_KEY` is needed by both `marketing-weekly-batch.yml` (which ends
+   by pushing the week into Buffer) and `marketing-publish.yml` (which reads it
+   back). The weekly job does not set an API key for Grok.
+   `CLAUDE_CODE_OAUTH_TOKEN` is used only when `grok` is missing.
 3. The admin desk is gone. Do not set `ADMIN_PASSWORD` / `ADMIN_TOKEN` for a
    review UI. See `docs/ops/retire-admin-review.md` if an old secret is still
    hanging around to unset.
-4. Ensure Codex CLI is installed on the Mac if you want to run the local
-   fallback commands (CI uses the Claude Code CLI).
+4. The weekly job uses the Grok CLI already signed in on this Mac (`~/.grok`).
+   Claude is installed on the runner only for a week where `grok` is not on PATH.
 5. Brevo contact sync (optional): set `BREVO_API_KEY`, run
    `DRY_RUN=1 node --env-file=.env marketing/setup/brevo-sync.mjs` first, then
    for real (note `DRY_RUN` skips the contact import, but still creates the
