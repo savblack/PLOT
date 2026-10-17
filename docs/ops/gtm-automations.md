@@ -194,9 +194,10 @@ The private What's On review database is the article review surface. The
 marketing database ID and `NOTION_TOKEN` are Supabase Edge secrets. See
 `marketing/REVIEW.md` for the schema, commands, and setup steps.
 
-The former mirror cron and webhook are retired by
+The Linear mirror cron and webhook are retired by
 `20261017120000_private_notion_intake_and_retire_linear.sql`. Historical issue
-links and audit rows remain in the database.
+links and audit rows remain in the database. Article pages still come from
+`marketing-notion-mirror`.
 
 ## 5a. Notion review
 
