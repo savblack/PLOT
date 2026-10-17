@@ -374,13 +374,13 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
           ) : null}
         </View>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
-        <SettingsRow icon={null} label={checkout.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.upgradeAction}
-          onPress={async () => {
-            if (checkout.closed) { Alert.alert(PLANS_PAGE.premium.name, PLANS_PAGE.mobileCheckoutMessage); return; }
-            const result = await checkout.start('monthly');
-            if (result === 'closed') Alert.alert(PLANS_PAGE.premium.name, PLANS_PAGE.mobileCheckoutMessage);
-          }} />
-        {!!checkout.error && <Text style={{ color: colors.textSecondary }} accessibilityRole="alert">{checkout.error}</Text>}
+        {checkout.allowed && (
+          <>
+            <SettingsRow icon={null} label={checkout.label}
+              onPress={() => { if (checkout.closed) checkout.joinWaitlist(); else void checkout.start('monthly'); }} />
+            {!!checkout.error && <Text style={{ color: colors.textSecondary }} accessibilityRole="alert">{checkout.error}</Text>}
+          </>
+        )}
       </View>}
     </SettingsGroup>
   );

@@ -14,7 +14,7 @@
 2. **Entitlement authority is the database**, not the client. `public.is_premium()` + edge-function `premium_required` / RLS. Client helpers in `packages/core/premium.js` are UX pre-checks only.
 3. **Never claim playback or synced watching in Plot.** Shared watch sessions help people *choose* a title; they watch on their streaming service.
 4. **Never promise personally tailored recommendations yet.** Free has “More like this” on a title page only. Tailored recs wait until Premium revenue can fund them.
-5. **iOS / mobile does not sell Premium in-app.** Web upgrade only. Mobile `SHOW_PRICING_PAGE = false`; no StoreKit / IAP surface. See `docs/launch/app-store-launch-sprint.md`.
+5. **There is no in-app purchase, and there will not be one** (PLO-526, decided). Premium is bought on the web. Mobile's Upgrade opens web checkout in the browser, on the US App Store storefront only; mobile `SHOW_PRICING_PAGE = false`; no StoreKit / IAP surface. See `docs/launch/app-store-launch-sprint.md`.
 6. **Ko-fi tips ≠ Premium.** `is_supporter` is recognition only. Do not wire tips into `is_premium()`.
 7. **Pricing decided:** **US$3/month or US$24/year**, taxes included, **7-day card-required free trial** (first charge 7 days after start; cancel in the trial is $0). USD primary, converted to local currency at checkout. Public checkout stays closed until PLO-493. See §2.
 8. **Plex + Trakt Settings UI is on (PLO-492).** `SHOW_MEDIA_SYNC_INTEGRATIONS` is `true` on web and mobile. Premium members see Connect and Import watch history. Public copy does not call that automatic or two-way sync. Free accounts get the Premium gate. Checkout stays closed (PLO-493). A human Premium account still has to smoke a real Plex PIN and Trakt OAuth on staging or production: this repo does not have those credentials, and production was last noted as missing `TRAKT_CLIENT_ID` / `TRAKT_CLIENT_SECRET`.
@@ -127,7 +127,7 @@ Do **not** reorder. Paying users must get working sync before the first charge.
 
 Also complete `docs/billing/stripe-launch.md` in live mode when going public: portal catalog, webhook events, secrets, one real low-value purchase test.
 
-**Out of scope for first charge:** Customer Portal polish (nice to have), mobile IAP.
+**Out of scope for first charge:** Customer Portal polish (nice to have). Mobile IAP will not be built.
 
 ### Phase B — Premium product features (after or in parallel with A, no charge required)
 
@@ -413,7 +413,7 @@ From `docs/launch/app-store-launch-sprint.md` and billing docs:
 
 - Do not put release notifications behind Premium (locked Free).
 - Do not market leaving-soon until data is validated.
-- Do not build IAP for first Premium ship.
+- Do not build IAP, for the first ship or later: decided.
 - Do not treat Ko-fi as entitlement.
 - Do not hardcode TMDB IDs in picker fixtures or demos.
 - Do not put Premium product logic only in `apps/web` if mobile should share it: put derivation in `@plot/core`.
