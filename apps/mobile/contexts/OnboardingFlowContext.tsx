@@ -46,7 +46,7 @@ interface OnboardingFlow {
   toggleSeed: (item: PickedTitle) => void;
   importSource: string | null;
   setImportSource: (id: string | null) => void;
-  /** The background import queued from step 1's import panel, if any. Home shows it. */
+  /** The background import queued from step 1's import lanes, if any. Home shows it. */
   importJob: { id: string } | null;
   setImportJob: (job: { id: string } | null) => void;
   region: string;
