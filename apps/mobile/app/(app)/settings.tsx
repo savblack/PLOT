@@ -376,8 +376,6 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
           ) : null}
         </View>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
-        <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
-          onPress={() => Alert.alert(PLANS_PAGE.premium.name, PLANS_PAGE.mobileCheckoutMessage)} />
       </View>}
     </SettingsGroup>
   );

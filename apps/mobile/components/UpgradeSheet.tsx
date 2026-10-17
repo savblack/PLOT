@@ -5,7 +5,7 @@
  * the caller (mobile has no /plans page; callers open Settings' Premium
  * section). Content comes from @plot/core.
  */
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
@@ -32,11 +32,10 @@ export default function UpgradeSheet({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const [showCheckoutNote, setShowCheckoutNote] = useState(false);
   const content = upgradeSheetContent(reason, { family });
   if (!content) return null;
 
-  const close = () => { setShowCheckoutNote(false); onClose(); };
+  const close = onClose;
   const compare = () => { close(); onCompare(); };
 
   return (
@@ -68,11 +67,6 @@ export default function UpgradeSheet({
               <Text style={styles.alt}>{PLANS_PAGE.premium.priceTerms}</Text>
               <Text style={styles.trial}>{PLANS_PAGE.premium.trialNote}</Text>
             </View>
-
-            <TouchableOpacity style={styles.primary} onPress={() => setShowCheckoutNote(true)} accessibilityRole="button">
-              <Text style={styles.primaryText}>{PLANS_PAGE.upgradeAction}</Text>
-            </TouchableOpacity>
-            {showCheckoutNote && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
 
             <Text style={styles.also}>{S.alsoIn}</Text>
             {content.also.map(row => (
@@ -141,9 +135,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   amount: { fontFamily: fontFamily.display, fontSize: 28, letterSpacing: -1.1, color: colors.textPrimary },
   alt: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   trial: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textPrimary },
-  primary: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl, borderRadius: 999, backgroundColor: colors.accentFill },
-  primaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.onAccentFill },
-  note: { padding: spacing.md, borderRadius: radii.md, backgroundColor: colors.surfaceSunken, fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textPrimary },
   also: { marginTop: spacing.xs, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, letterSpacing: 0.9, textTransform: 'uppercase', color: colors.textMuted },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   icon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSunken },

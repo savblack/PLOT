@@ -45,12 +45,9 @@ test('closed checkout is a waitlist, not the generic retry line', () => {
 test('a failed web checkout says so plainly, and mobile keeps the closed-checkout wording with the trial', () => {
   assert.match(PLANS_PAGE.checkoutMessage, /couldn’t start checkout/);
   assert.doesNotMatch(PLANS_PAGE.checkoutMessage, /not open yet|coming soon/i);
-  assert.match(PLANS_PAGE.mobileCheckoutMessage, /Checkout is not open yet/);
-  assert.match(PLANS_PAGE.mobileCheckoutMessage, /7-day free trial/);
-  assert.match(PLANS_PAGE.mobileCheckoutMessage, /won’t be charged until 7 days after you start/);
-  assert.doesNotMatch(PLANS_PAGE.mobileCheckoutMessage, /nothing to pay today/i);
-  assert.doesNotMatch(PLANS_PAGE.mobileCheckoutMessage, /does not start a payment/i);
-  assert.equal(SETTINGS_VIEW.billing.comingSoonMessage, PLANS_PAGE.mobileCheckoutMessage);
+  // Mobile has no purchase button, so there is no closed-checkout message to show.
+  assert.equal(PLANS_PAGE.mobileCheckoutMessage, undefined);
+  assert.equal(SETTINGS_VIEW.billing.comingSoonMessage, undefined);
   assert.match(SETTINGS_VIEW.billing.exploreHint, /7-day free trial/);
   assert.doesNotMatch(SETTINGS_VIEW.billing.exploreHint, /not open yet|needs a card/);
   assert.doesNotMatch(SETTINGS_VIEW.billing.exploreHint, /nothing to pay today/i);
