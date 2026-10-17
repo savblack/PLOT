@@ -135,3 +135,24 @@ The research pack does name Liam Neeson, Mark Vanselow, Marisa Tomei, Ving Rhame
 - No edit to the validator, the platform name list, or `GROK-HANDOFF.md`.
 - No article approval, on Linear or on Notion.
 - No cron change.
+
+## 7. Bugbot
+
+Checked 17 October 2026 at 17:59 on [From Cursor > Bugbot](https://cursor.com/automations/from-cursor/bugbot/organization/163397715).
+
+Settings on that page:
+
+- Repository Rules is a row with a chevron. It shows no on or off value.
+- Automatically Learn Rules is on. The subtitle says: Allow Bugbot to learn new rules based on PR activity.
+- Autofix is a heading, not a toggle. The subtitle says: Automatically create fixes for issues found by Bugbot.
+- Autofix Behavior is New Branch (Recommended). That is where fixes are applied.
+- Severity Threshold is Any. Those are the severity levels to fix automatically.
+- The repositories filter is All repos. Eleven repositories are listed. Only savblack/PLOT is enabled (green). These are off: cartini, cartini-platform, cartini-site, clair, dayzie, desktop-tutorial, model-portfolio, personal-portfolio, summ, and susumu-house.
+
+That page does not show Enable Bugbot, Trigger Mode, Effort, Review Draft PRs, PR Summaries, a risk score, an Autofix on/off control, or Incremental Review. Do not treat those missing rows as a current on or off value.
+
+This draft is on savblack/PLOT, the only repo Bugbot has enabled. The page does not say it skips drafts. Autofix, as printed, opens a new branch at severity Any. Do not treat a Bugbot branch as Savannah's decision, and do not merge it. Automatically Learn Rules is on, so Bugbot may learn rules from PR activity.
+
+## 8. Scanner
+
+The Cursor agent Slack connector can read #security-alerts (C0C9UQAP729) in the Savannah Black workspace. That read does not mean the Monday Vulnerability Scanner bot can post there until it is invited.
