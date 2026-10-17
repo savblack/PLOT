@@ -25,7 +25,7 @@ import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import './TonightView.css';
 import PlotLogo from './PlotLogo.jsx';
 
-/* Pick for Me. Phone: one column, a Filters panel that folds away, and a
+/* Just Decide. Phone: one column, a Filters panel that folds away, and a
    sticky bar with the sentence and Pick. Desktop (>=1024px): the same 264px
    side column of cards as History and Settings (your request, the four
    questions) beside the current question, with the same Filters panel under

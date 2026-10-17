@@ -76,7 +76,7 @@
 .av-them { background: var(--sage); }
 @keyframes vis-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-/* Pick for me: the three chips select in turn, the stack shuffles and
+/* Just Decide: the three chips select in turn, the stack shuffles and
    settles on tonight's pick, then the play pill presses. */
 .pf-q { margin-bottom: 10px; }
 .pf-label { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 5px; }

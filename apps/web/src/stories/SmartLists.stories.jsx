@@ -19,7 +19,7 @@ import { NotificationsPage } from '../components/NotificationsView.jsx';
 import TITLES from './smartListTitles.fixture.json';
 
 /* Smart lists, as chosen from the 28 Sep 2026 canvas: A1 (Create smart list
-   on the Pick for Me shortlist), B1 (New list asks which kind), A2 (name it:
+   on the Just Decide shortlist), B1 (New list asks which kind), A2 (name it:
    the answers become rule chips with a live count), B3 (the rules stay on the
    list page as chips), A4 (coming back: "2 new", new matches grouped first),
    C4 (one weekly roll-up), A5 and B5 (Free).
@@ -63,7 +63,7 @@ const seenClient = (row) => ({
 });
 const key = (t) => `${t.media_type}:${t.tmdb_id}`;
 
-/* ── Pick for Me ── */
+/* ── Just Decide ── */
 
 const THRILLER_ANSWERS = { ...defaultPickerOptions({ hasServices: true }), mediaType: 'movie', maxRuntime: 120, genreIds: [53, 9648] };
 const SHORTLIST = pick('Heretic', 'Companion', 'Blink Twice', 'The Menu', 'Longlegs').map(t => ({
@@ -140,7 +140,7 @@ export const A1ShortlistKeepFinding = {
   },
 };
 
-/** A2 from Pick for Me (and, at phone width, the swipe-up save sheet). */
+/** A2 from Just Decide (and, at phone width, the swipe-up save sheet). */
 export const A2NameItFromPickForMe = {
   render: () => <Tonight />,
   tags: ['interaction-test'],
@@ -335,7 +335,7 @@ export const C4WeeklyRollUp = {
 
 /* ── Free ── */
 
-/** A5: the Pick for Me gate gains one benefit line. */
+/** A5: the Just Decide gate gains one benefit line. */
 export const A5FreeGate = {
   parameters: { app: app(false) },
   render: () => <Tonight premium={false} />,

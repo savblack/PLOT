@@ -51,7 +51,7 @@ export const PLANS_PAGE = {
     trial: 'Commitment-free. Cancel during the trial and you pay $0.',
     tagline: 'Everything in Free, plus:',
     features: [
-      'Pick for me: a shortlist for tonight',
+      'Just Decide: a shortlist for tonight',
       'Watch together: settle what to watch',
       'Your watch profile',
       'Custom themes, widgets and app icons',
@@ -70,7 +70,7 @@ export const PLANS_PAGE = {
     eyebrow: 'Plot Premium',
     h2: 'Less deciding. More watching.',
     steps: [
-      { label: 'Pick for me', h3: 'Something to watch, in under a minute.', body: 'How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.' },
+      { label: 'Just Decide', h3: 'Something to watch, in under a minute.', body: 'How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.' },
       { label: 'Watch together', h3: 'Settle movie night before the snacks are ready.', body: 'Watch together analyzes everyone’s Plot profiles to find movie and TV matches in your lists.' },
       { label: 'Your profile', h3: 'Every story has a plot. Here’s yours.', body: 'Every film and show you log adds up to a profile: the genres you lean on, the hours you’ve put in, and the titles you keep going back to.' },
       { label: 'Taste match', h3: 'Find out your compatibility based on <s>science</s> cinema.', body: 'Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.' },
@@ -96,7 +96,7 @@ export const PLANS_PAGE = {
       { feature: 'Custom lists', free: 'Up to 5', premium: 'Unlimited' },
       { feature: 'Smart lists', free: false, premium: true },
       { feature: 'Release dates in your calendar app', free: false, premium: true },
-      { feature: 'Pick for me', free: false, premium: true },
+      { feature: 'Just Decide', free: false, premium: true },
       { feature: 'Watch together', free: false, premium: true },
       { feature: 'Your watch profile', free: 'Overview', premium: 'Full profile' },
       { feature: 'Taste match with a friend', free: false, premium: true },
@@ -113,7 +113,7 @@ export const PLANS_PAGE = {
         label: 'Plans',
         items: [
           { q: 'Is Free really free?', a: 'Yes. No card, no trial clock, no limit on what you track. Free keeps your watchlist, history, release calendar and up to five lists for as long as you like.' },
-          { q: 'What do I get with Premium?', a: 'Everything in Free, plus Pick for me, Watch together, your watch profile, Taste match, custom themes, widgets and app icons, unlimited and smart lists, release dates in your calendar app, and actor and director alerts. The table above has the full list.' },
+          { q: 'What do I get with Premium?', a: 'Everything in Free, plus Just Decide, Watch together, your watch profile, Taste match, custom themes, widgets and app icons, unlimited and smart lists, release dates in your calendar app, and actor and director alerts. The table above has the full list.' },
           { q: 'Does my friend need Premium too?', a: 'No. For Watch together and Taste match, only one of you needs Premium.' },
           { q: 'What happens to my lists if I downgrade?', a: 'Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.' },
         ],

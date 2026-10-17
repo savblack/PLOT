@@ -1,5 +1,5 @@
 /**
- * Pick for Me — /(app)/tonight (mirrors web TonightView's phone layout).
+ * Just Decide — /(app)/tonight (mirrors web TonightView's phone layout).
  * Premium. Four questions, a Filters panel, and a bar above the tab bar with
  * the sentence and Surprise me / Go. Options, the sentence, the draw and the
  * time-of-day heading all come from @plot/core/tonightPicker.js; this file

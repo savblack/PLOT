@@ -6,7 +6,7 @@ import { getConfig } from './config.js';
 import { reportLoadFailure, FAILED_LOADS } from './actionFailures.js';
 import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 
-// Pick for Me, the tonight picker (Premium). The viewer picks movie or TV first, then the
+// Just Decide, the tonight picker (Premium). The viewer picks movie or TV first, then the
 // options for that type (movie length, or TV format and episode length),
 // genres, era, score, language, and whether to stay within their services,
 // their watchlist, and away from kids and family titles. Go gives five
