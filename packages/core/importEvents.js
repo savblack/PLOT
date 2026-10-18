@@ -161,7 +161,7 @@ export function leftOutWatchSummary(entry) {
 
 /** @param {any} entry */
 export function needsDuplicateReview(entry) {
-  return entry.status === 'matched' && !!entry.duplicateCandidates?.length && entry.duplicateDecision !== 'keep';
+  return entry.status === 'matched' && !leftOutWatchSummary(entry) && !!entry.duplicateCandidates?.length && entry.duplicateDecision !== 'keep';
 }
 
 /** A Letterboxd watched summary is not evidence of another watch when a

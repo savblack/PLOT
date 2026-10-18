@@ -1800,7 +1800,7 @@ function leftOutWatchSummary(entry) {
   return entry.status === "matched" && !!entry.pendingDuplicates?.length && entry.duplicateDecision !== "keep";
 }
 function needsDuplicateReview(entry) {
-  return entry.status === "matched" && !!entry.duplicateCandidates?.length && entry.duplicateDecision !== "keep";
+  return entry.status === "matched" && !leftOutWatchSummary(entry) && !!entry.duplicateCandidates?.length && entry.duplicateDecision !== "keep";
 }
 function reviewPendingWatchSummaries(entries) {
   const diaries = /* @__PURE__ */ new Map();
