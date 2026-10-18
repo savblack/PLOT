@@ -183,6 +183,13 @@ export const EVENTS = Object.freeze({
   IMPORT_COMPLETED: 'import_completed',
   // Carries `reason`, an IMPORT_FAILURE_REASONS slug, never a parser message.
   IMPORT_FAILED: 'import_failed',
+  // Letterboxd's export lives on letterboxd.com, so the upload step is easy
+  // to leave. Start is import_source_selected, upload is import_started, and
+  // completion is import_completed, all with source letterboxd. These two
+  // cover the gap: the export link, and leaving or dismissing without a file.
+  // `reason` on abandonment is `left` or `dismissed`.
+  LETTERBOXD_EXPORT_OPENED: 'letterboxd_export_opened',
+  LETTERBOXD_IMPORT_ABANDONED: 'letterboxd_import_abandoned',
   // Home's first-run Finishing touches card.
   // finishing_touches_viewed: the card was on screen (`done_count`, `total`).
   // Once per app session, after the watchlist has loaded.

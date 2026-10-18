@@ -13,7 +13,7 @@ export const IMPORT_JOBS = {
     uploading: 'Uploading…',
     // The upload landed and the job is queued. Setup carries on.
     queued: (source) => `Got it. Your ${source} history is importing in the background.`,
-    queuedBody: 'Keep going. We’ll show the progress on Home and let you know when it’s done.',
+    queuedBody: 'Keep going. Your import will continue in the background, and we’ll let you know when it’s done.',
     connect: (source) => `Connect ${source}`,
     connecting: 'Waiting for you to finish in the other window…',
     connected: (source) => `${source} is connected.`,

@@ -39,6 +39,10 @@ import { fetchUserDataExport } from '@plot/core/exportData.js';
 import { shareDataExport, type ExportFormat } from '../../lib/shareDataExport';
 import { pickAndUploadAvatar, removeAvatar } from '../../lib/avatar';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
+import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
+import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
+import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../../lib/letterboxdImportPrompt';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
@@ -83,7 +87,6 @@ function generateCalendarToken(): string {
 }
 import { useTheme } from '../../contexts/ThemeContext';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
-import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import ThemeChip from '../../components/ThemeChip';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import { usePremiumCheckout } from '../../lib/usePremiumCheckout';
@@ -1022,6 +1025,8 @@ export default function SettingsScreen() {
   const [section, setSection] = useState(() => SETTINGS_SECTIONS.some(item => item.id === sectionParam) ? sectionParam! : 'account');
   const [query, setQuery] = useState('');
   const [themeUpgrade, setThemeUpgrade] = useState<string | null>(null);
+  const [showLetterboxdImport, setShowLetterboxdImport] = useState(false);
+  const [letterboxdPrompt, setLetterboxdPrompt] = useState(false);
   // Settings › Connections: a background import's leftovers to match, and
   // the source Home's "Try again" asked to open (?source=<id>).
   const [reviewJob, setReviewJob] = useState<{ id: string; user_id: string; source: string } | null>(null);
@@ -1067,6 +1072,16 @@ export default function SettingsScreen() {
   const { visibility: watchlistVisibility, refresh: refreshWatchlistVisibility } = useWatchlistVisibility(userId, isPublic);
   // The choice is made on its own screen; re-read it on the way back.
   useFocusEffect(useCallback(() => { refreshWatchlistVisibility(); }, [refreshWatchlistVisibility]));
+  const refreshLetterboxdPrompt = useCallback(() => {
+    readLetterboxdImportPrompt(userId).then(prompt => setLetterboxdPrompt(!!prompt));
+  }, [userId]);
+  useEffect(() => { refreshLetterboxdPrompt(); }, [refreshLetterboxdPrompt]);
+  useFocusEffect(useCallback(() => { refreshLetterboxdPrompt(); }, [refreshLetterboxdPrompt]));
+  const dismissLetterboxdImport = useCallback(async () => {
+    await clearLetterboxdImport(userId);
+    setLetterboxdPrompt(false);
+    createImportReporter({ entry: IMPORT_ENTRY_POINTS.IMPORT_PAGE }).abandoned(LETTERBOXD_IMPORT_ABANDON.DISMISSED);
+  }, [userId]);
 
   const toggleVisibility = async () => {
     if (!userId) return;
@@ -1664,6 +1679,25 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
+        <SettingsGroup title={SETTINGS_VIEW.integrations.importWatchHistoryLabel}>
+          {letterboxdPrompt ? (
+            <View>
+              <SettingsRow
+                icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><Polyline points="17 8 12 3 7 8"/><Line x1={12} y1={3} x2={12} y2={15}/></Svg>}
+                label={IMPORT_VIEW.letterboxdFinishTitle}
+                description={IMPORT_VIEW.letterboxdFinishSub}
+                onPress={() => setShowLetterboxdImport(true)}
+              />
+              <TouchableOpacity
+                onPress={() => { void dismissLetterboxdImport(); }}
+                accessibilityRole="button"
+                style={{ alignSelf: 'flex-start', paddingHorizontal: 16, paddingBottom: 12 }}
+              >
+                <Text style={{ color: colors.textMuted, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{IMPORT_VIEW.letterboxdFinishDismiss}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </SettingsGroup>
         {/* Your sources: accounts connected and files uploaded, each with its
             own status and history. One-off imports are free for everyone; the
             automatic toggle is the one Premium thing. */}
@@ -1837,6 +1871,14 @@ export default function SettingsScreen() {
       )}
       {feedbackType && userId && user && (
         <FeedbackModal userId={userId} userEmail={user.email ?? ''} initialType={feedbackType} onClose={() => setFeedbackType(null)} />
+      )}
+      {showLetterboxdImport && userId && (
+        <ImportHistoryModal
+          userId={userId}
+          entry={IMPORT_ENTRY_POINTS.IMPORT_PAGE}
+          initialPlatform="letterboxd"
+          onClose={() => { setShowLetterboxdImport(false); refreshLetterboxdPrompt(); }}
+        />
       )}
       {reviewJob && userId && (
         <ImportHistoryModal userId={userId} entry={IMPORT_ENTRY_POINTS.SETTINGS} reviewJob={reviewJob} onClose={() => setReviewJob(null)} />

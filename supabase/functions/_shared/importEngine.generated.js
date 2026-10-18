@@ -76,6 +76,7 @@ var IMPORT_VIEW = {
   listNotImported: (reason) => ({ free_list_limit: "List not imported: your five free custom lists are already in use.", deleted_in_plot: "List not imported: you previously deleted it in Plot.", not_selected: "List not imported: not selected.", not_available: "List imports are not available in this build.", invalid_list: "This list could not be imported." })[reason] || "This list could not be imported.",
   conflictingSourceRecords: "These files contain conflicting values for the same source entry. Import them separately and review the difference. Nothing was imported.",
   pendingWatchSummary: "A diary watch for this film is also selected. This watched-film summary may describe the same viewing. Leave the summary out unless it represents another watch.",
+  overlappingSummaryOmitted: "This watched-film summary overlaps a diary entry, so it is left out. This build keeps one watch per film.",
   possibleDuplicate: "A similar watch is already saved. Leave this entry out, or confirm it is a separate watch.",
   keepSeparateWatch: "Save as a separate watch",
   duplicateConfirmed: "Confirmed as a separate watch",
@@ -110,6 +111,7 @@ var IMPORT_VIEW = {
     timezone_unknown: "Watch time has no timezone. Only the calendar date will be imported.",
     followed_show_without_watches: "Followed show has no watched episodes. It will not be marked watched or added to your watchlist.",
     archive_file_unsupported: "This archive file is not imported. Supported files are reviewed separately.",
+    lists_unavailable: "List import is not available in this build. These films were left out.",
     duplicate_file: "Duplicate file selection was left out.",
     empty_list: "Empty list will not be imported."
   })[reason] || "This record needs review and will not be imported.",
@@ -120,7 +122,19 @@ var IMPORT_VIEW = {
   traktName: "Trakt saved export",
   traktHint: (annotations = false) => `Choose extracted JSON files or a ZIP with files at its root. Supported files: watched-history.json and lists-watchlist.json.${annotations ? " You can also import ratings-shows.json, ratings-episodes.json and comments-seasons.json as private source annotations." : ""} Available IMDb/TVDB identifiers are checked first. Missing identifiers use title/year matching; missing years require review. Watchlist notes and attached ratings are retained as source data without changing existing Plot edits. Other files are reported as unsupported.`,
   traktUnsupported: "Unsupported Trakt history file or record. Choose an individual-event history JSON with movie/show titles, episode numbers and valid watch dates (or null for unknown dates). No records were imported.",
-  letterboxdHint: (annotations = false) => `Letterboxd \u2192 Settings \u2192 Import & Export \u2192 Export your data. Extract diary.csv, watched.csv, watchlist.csv or an individual custom-list CSV.${annotations ? " Separate ratings.csv and reviews.csv files are also supported." : ""} Choose the extracted CSV files or their ZIP. Keep original filenames. Overlapping watched summaries require review when diary entries for the same film are selected.`,
+  letterboxdHint: (annotations = false) => `Letterboxd \u2192 Settings \u2192 Import & Export \u2192 Export your data. Extract diary.csv, watched.csv, watchlist.csv or an individual custom-list CSV.${annotations ? " Separate ratings.csv and reviews.csv files are also supported." : ""} Choose the extracted CSV files or their ZIP. Keep original filenames. A watched.csv row that overlaps a diary entry is left out.`,
+  letterboxdDropHint: "Your Letterboxd export ZIP",
+  letterboxdExportUrl: "https://letterboxd.com/settings/data/",
+  letterboxdExportLink: "Open Letterboxd export",
+  letterboxdSteps: [
+    "Open your Letterboxd data export.",
+    "Export your data and download the ZIP.",
+    "Come back here and upload the ZIP."
+  ],
+  letterboxdFinishTitle: "Finish your Letterboxd import",
+  letterboxdFinishSub: "Upload the ZIP when your export is ready.",
+  letterboxdFinishCta: "Upload export",
+  letterboxdFinishDismiss: "Dismiss",
   matchOption: (title, year, type) => `${title} (${year || "?"} \xB7 ${type === "tv" ? "TV" : "Movie"})`,
   chooseSource: "Choose where you want to import from.",
   accountImportSubtitle: "Import from your account",
@@ -1782,8 +1796,11 @@ function possibleWatchDuplicates(entry, knownEvents = []) {
   if (knownEvents.some((event) => event.source_key === ownKey)) return [];
   return knownEvents.filter((event) => event.source_key !== ownKey && !distinctSourceWatch(ownKey, event.source_key) && event.tmdb_id === entry.tmdbId && event.media_type === entry.mediaType && (event.season_number ?? null) === (entry.seasonNumber ?? null) && (event.episode_number ?? null) === (entry.episodeNumber ?? null) && (!event.watched_on || !entry.date || event.watched_on === entry.date.slice(0, 10)));
 }
+function leftOutWatchSummary(entry) {
+  return entry.status === "matched" && !!entry.pendingDuplicates?.length && entry.duplicateDecision !== "keep";
+}
 function needsDuplicateReview(entry) {
-  return entry.status === "matched" && !!(entry.duplicateCandidates?.length || entry.pendingDuplicates?.length) && entry.duplicateDecision !== "keep";
+  return entry.status === "matched" && !leftOutWatchSummary(entry) && !!entry.duplicateCandidates?.length && entry.duplicateDecision !== "keep";
 }
 function reviewPendingWatchSummaries(entries) {
   const diaries = /* @__PURE__ */ new Map();
@@ -2017,7 +2034,18 @@ function prepareImportFiles(platform, files) {
     for (const warning of parsed.warnings) document.warnings.push(warning);
     for (const omitted of parsed.notImported) document.notImported.push(omitted);
   }
-  return platform === "letterboxd" ? combineLetterboxdRecords(document) : document;
+  const combined = platform === "letterboxd" ? combineLetterboxdRecords(document) : document;
+  return omitUnavailableLists(platform, combined);
+}
+function omitUnavailableLists(platform, document) {
+  if (platform !== "letterboxd" || getConfig().importEventsEnabled) return document;
+  const names = [...new Set(document.entries.filter((row) => row.destination).map((row) => row.destination.name))];
+  if (!names.length) return document;
+  return {
+    ...document,
+    entries: document.entries.filter((row) => !row.destination),
+    notImported: [...document.notImported, ...names.map((title) => ({ title, reason: "lists_unavailable" }))]
+  };
 }
 function combineLetterboxdRecords(document) {
   const seen = /* @__PURE__ */ new Map();
@@ -2519,7 +2547,7 @@ async function readExistingHistory({ userId, tmdbIds = [] }) {
 }
 function buildImportRows({ userId, resolved = [] }) {
   return resolved.flatMap((r, index) => {
-    if (r.status !== "matched" || r.annotation) return [];
+    if (r.status !== "matched" || r.annotation || leftOutWatchSummary(r)) return [];
     const row = {
       user_id: userId,
       tmdb_id: r.tmdbId,
