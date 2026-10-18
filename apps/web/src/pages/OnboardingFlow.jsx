@@ -373,7 +373,7 @@ export default function OnboardingFlow() {
       }}
       importStep={{
         start: importStart,
-        onContinue: () => { completeStep('import'); importStart.close(); setStep('services'); },
+        onContinue: () => { completeStep('import'); importStart.close(); setStep('seed'); },
         onLater: () => { completeStep('import', { skipped: true }); setStep('services'); },
       }}
       services={{
