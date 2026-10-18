@@ -7,7 +7,8 @@ Checkout tracking is being updated so an unfinished session is separate from a p
 - Updated: 2026-10-18, Australia/Sydney.
 - Branch: agent/2026-10-18-checkout-outcomes.
 - Worktree: /Users/savannahblack/Developer/PLOT-worktrees/2026-10-18-checkout-outcomes.
-- Latest pushed checkpoint: 5d5dc1b10 (final review record follows on this branch).
+- Latest pushed implementation/review commit: f981c814b; this handoff-link update follows it.
+- Pull request: https://github.com/savblack/PLOT/pull/1408. CI is running on the checked branch; local validation is complete. No merge/deploy approval yet.
 - Verified: authenticated PostHog user sav.black@outlook.com, PLOT project 471234; Stripe connector lists PLOT live account. No live Stripe or Supabase writes made.
 - Existing alert: 01a0ddf2-0f01-0000-5f9f-d5fcd290051f; insight wrUVOkuf. Current daily alert fires below 100% conversion. Revenue dashboard 2203520.
 - Completed code: return session identity from shared checkout helper; stable PostHog UUIDs and source timestamps on session events; explicit paid/trial checkout completion; expiry remains historical premium_checkout_cancelled with reason=session_expired; asynchronous and invoice failures tracked separately. No entitlement or checkout-gate changes, no schema migration.
