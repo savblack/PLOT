@@ -14,7 +14,30 @@ function upstreamHeaders(request) {
   return headers;
 }
 
-export async function onRequest({ request }) {
+export async function onRequest({ request, env }) {
+  if (request.method === 'POST') {
+    // CF-Connecting-IP is supplied by Cloudflare. Never trust a visitor's
+    // X-Forwarded-For value for the admission key.
+    const ip = request.headers.get('CF-Connecting-IP');
+    const unavailable = () => Response.json({ error: 'Please try again later' }, {
+      status: 503, headers: { 'cache-control': 'no-store', 'retry-after': '60' },
+    });
+    if (!ip || !env?.NEWSLETTER_EDGE_LIMITER) return unavailable();
+    try {
+      const admission = await env.NEWSLETTER_EDGE_LIMITER.fetch(new Request('https://newsletter-limit.internal/check', {
+        method: 'POST', headers: { 'x-plot-client-ip': ip },
+      }));
+      if (admission.status === 429) {
+        return Response.json({ error: 'Too many requests' }, {
+          status: 429,
+          headers: { 'cache-control': 'no-store', 'retry-after': admission.headers.get('retry-after') || '600' },
+        });
+      }
+      if (!admission.ok || (await admission.json()).allowed !== true) return unavailable();
+    } catch {
+      return unavailable();
+    }
+  }
   const url = new URL(request.url);
   const upstream = new URL(UPSTREAM);
   upstream.search = url.search;
