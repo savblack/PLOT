@@ -21,6 +21,7 @@ import { CheckoutPendingError, subscriptionCheckout } from '../_shared/checkout.
 import { checkoutClosedToAll, checkoutConfigLog, checkoutConfigStatus, checkoutPlan, matchesPremiumPrice, billingSettingsUrl, hasStripeSubscription, mayStartCheckout } from '../_shared/billingPolicy.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
+import { checkoutEventUuid, checkoutSessionProperties } from '../_shared/checkoutAnalytics.ts';
 import { errorText, reportLog } from '../_shared/posthogLog.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
@@ -66,7 +67,9 @@ async function captureCheckoutFailure(userId: string, reason: string, plan: stri
     await capturePostHogEvent('premium_checkout_failed', userId, {
       channel: 'stripe',
       checkout_type: 'subscription',
+      livemode: /^(sk|rk)_live_/.test(Deno.env.get('STRIPE_SECRET_KEY') ?? ''),
       reason,
+      stage: reason === 'checkout_pending' ? 'pending' : reason === 'invalid_plan' ? 'validation' : 'creation',
       plan,
     });
   } catch (err) {
@@ -140,7 +143,10 @@ Deno.serve(async (req) => {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (billingError) return json({ error: 'Could not load billing account' }, 503);
+  if (billingError) {
+    if (action === 'checkout') await captureCheckoutFailure(user.id, 'billing_account_unavailable');
+    return json({ error: 'Could not load billing account' }, 503);
+  }
 
   if (action === 'checkout') {
     const plan = checkoutPlan(await req.json().catch(() => null));
@@ -171,13 +177,12 @@ Deno.serve(async (req) => {
       try {
         if (result.destination === 'checkout') {
           await capturePostHogEvent('premium_checkout_started', user.id, {
-            channel: 'stripe',
-            checkout_type: 'subscription',
+            ...checkoutSessionProperties(result.session),
             plan,
             price_id: configuredPrice.id,
             amount: typeof configuredPrice.unit_amount === 'number' ? configuredPrice.unit_amount / 100 : null,
             currency: normaliseCurrency(configuredPrice.currency),
-          });
+          }, new Date(result.session.created * 1000).toISOString(), await checkoutEventUuid('premium_checkout_started', result.session.id));
         }
       } catch (err) {
         reportLog('stripe-billing', 'error', `stripe-billing: PostHog capture failed for ${user.id}: ${errorText(err)}`, { distinctId: user.id });

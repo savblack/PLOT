@@ -10,7 +10,8 @@
  *   checkout.session.completed     first purchase — maps Stripe customer -> user
  *                                  and records paid one-time tips
  *   checkout.session.async_payment_succeeded  delayed-payment tips
- *   checkout.session.expired        abandoned Premium Checkout sessions
+ *   checkout.session.async_payment_failed  delayed-payment checkout failures
+ *   checkout.session.expired        expired Premium Checkout sessions
  *   customer.subscription.created  subscription exists; same snapshot path as updated
  *   customer.subscription.updated  renewals, plan switches, past_due, cancel_at_period_end
  *   customer.subscription.deleted  final cancellation
@@ -40,6 +41,7 @@ import { serviceKey } from '../_shared/serviceKey.ts';
 import { billingSettingsUrl, cancelsAtPeriodEnd } from '../_shared/billingPolicy.ts';
 import { reconcileBillingSnapshot } from '../_shared/billingSnapshot.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
+import { checkoutEventUuid, checkoutOutcome, paymentFailurePhase } from '../_shared/checkoutAnalytics.ts';
 import { errorText, reportLog } from '../_shared/posthogLog.ts';
 import { subscriptionIdFromInvoice, webhookAction } from '../_shared/stripeEvents.ts';
 import { TRIAL_REMINDER_FROM, TRIAL_REMINDER_REPLY_TO, buildTrialReminderEmail, planFromPrice } from '../_shared/trialReminderEmail.js';
@@ -141,24 +143,35 @@ async function capturePremiumConversion(userId: string, sub: Stripe.Subscription
   }
 }
 
-async function recordPremiumCheckoutCancellation(event: Stripe.Event) {
+async function captureCheckoutOutcome(event: Stripe.Event) {
   const session = event.data.object as Stripe.Checkout.Session;
-  if (session.mode !== 'subscription') return;
+  const outcome = checkoutOutcome(event.type, session);
   const userId = session.client_reference_id ?? session.metadata?.supabase_user_id;
-  if (!userId) return;
-  const { error: receiptError } = await admin().from('stripe_events').insert({ id: event.id, type: event.type });
-  if (receiptError?.code === '23505') return;
-  if (receiptError) throw receiptError;
+  if (!outcome || !userId) return;
   try {
-    await capturePostHogEvent('premium_checkout_cancelled', userId, {
+    await capturePostHogEvent(outcome.event, userId, outcome.properties,
+      new Date(event.created * 1000).toISOString(), await checkoutEventUuid(outcome.event, session.id));
+  } catch (err) {
+    // Telemetry cannot make Stripe retry an already-applied billing event.
+    reportLog('stripe-webhook', 'error', `Checkout outcome capture failed for ${event.id}: ${errorText(err)}`, { distinctId: userId, attributes: { stripe_event_id: event.id } });
+  }
+}
+
+async function capturePaymentFailure(userId: string, event: Stripe.Event) {
+  if (event.type !== 'invoice.payment_failed') return;
+  const invoice = event.data.object as Stripe.Invoice;
+  try {
+    await capturePostHogEvent('premium_payment_failed', userId, {
       channel: 'stripe',
       checkout_type: 'subscription',
-      reason: 'session_expired',
-    }, new Date(event.created * 1000).toISOString());
+      phase: paymentFailurePhase(invoice.billing_reason),
+      stripe_invoice_id: invoice.id,
+      stripe_subscription_id: subscriptionIdFromInvoice(invoice),
+      attempt_count: invoice.attempt_count,
+      livemode: event.livemode,
+    }, new Date(event.created * 1000).toISOString(), await checkoutEventUuid('premium_payment_failed', event.id));
   } catch (err) {
-    // The receipt makes the event idempotent. Analytics failure should not
-    // make Stripe retry an already-recorded expiry.
-    reportLog('stripe-webhook', 'error', `stripe-webhook: checkout cancellation capture failed for ${event.id}: ${errorText(err)}`, { distinctId: userId, attributes: { stripe_event_id: event.id } });
+    reportLog('stripe-webhook', 'error', `Payment failure capture failed for ${event.id}: ${errorText(err)}`, { distinctId: userId, attributes: { stripe_event_id: event.id } });
   }
 }
 
@@ -282,13 +295,16 @@ Deno.serve(async (req) => {
         const sub = await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
         const result = await syncSubscription({ userId, customerId, sub, event });
         if ((result as { applied?: boolean } | null)?.applied) await capturePremiumConversion(userId, sub, event);
+        await captureCheckoutOutcome(event);
         return json({ received: true, ...result });
       }
       case 'async_payment':
         await recordStripeTip(event);
+        await captureCheckoutOutcome(event);
         break;
+      case 'checkout_payment_failed':
       case 'checkout_expired':
-        await recordPremiumCheckoutCancellation(event);
+        await captureCheckoutOutcome(event);
         break;
       case 'sync_subscription':
       case 'sync_invoice': {
@@ -305,7 +321,9 @@ Deno.serve(async (req) => {
           reportLog('stripe-webhook', 'error', `${event.type}: no user for customer ${customerId}`, { attributes: { stripe_event_type: event.type, stripe_customer_id: customerId } });
           break;
         }
-        return json({ received: true, ...await syncSubscription({ userId, customerId, sub, event }) });
+        const result = await syncSubscription({ userId, customerId, sub, event });
+        await capturePaymentFailure(userId, event);
+        return json({ received: true, ...result });
       }
       case 'trial_ending':
         await sendTrialReminder(event);
