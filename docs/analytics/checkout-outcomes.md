@@ -50,3 +50,13 @@ Before calling the rollout complete:
 5. Confirm the deployed integration/guard result and first genuine live telemetry. Local typechecks do not prove Supabase's bundler deployed successfully.
 
 The PostHog charts and replacement alert are already saved. New server telemetry remains pending code deployment. Notification delivery was not force-tested because that would send an email.
+
+## Verification before review
+
+- Node 22.14.0; `pnpm install --frozen-lockfile` passed.
+- `pnpm run check` passed: zero lint errors, 178 existing mobile warnings, web build passed.
+- `pnpm run test:unit` passed: 527 web, 1161 core, 10 agent tests.
+- `pnpm run edge:check` passed: all 41 functions, 105 shared tests, edge lint clean.
+- Independent billing diff review completed with no blockers after replacement-session classification and error cleanup were fixed.
+- Saved PostHog insights were executed after creation; final definitions and alert state were read back. Ten dashboard tiles have no saved layout overlaps. New session/payment charts contain no live data yet, as expected before deployment.
+- Not verified: sandbox signed webhook delivery, production deployment/bundling, email delivery, or real payment collection. No production test charge or user-data write was made.
