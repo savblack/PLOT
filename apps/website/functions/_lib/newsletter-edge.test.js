@@ -64,3 +64,25 @@ for (const method of ['GET', 'HEAD', 'OPTIONS']) {
     assert.equal(calls.length, 1);
   });
 }
+
+for (const mode of ['missing', 'blocked', 'unavailable']) {
+  test(`POST unsubscribe bypasses ${mode} signup admission`, async t => {
+    const calls = upstream(t);
+    const req = new Request('https://theplot.tv/api/newsletter?action=unsubscribe&token=test', {
+      method: 'POST', body: 'List-Unsubscribe=One-Click',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    });
+    let limiterCalls = 0;
+    const env = mode === 'missing' ? {} : { NEWSLETTER_EDGE_LIMITER: { fetch: async () => {
+      limiterCalls++;
+      return new Response(null, { status: mode === 'blocked' ? 429 : 503 });
+    } } };
+    const response = await onRequest({ request: req, env });
+    assert.equal(response.status, 200);
+    assert.equal(limiterCalls, 0);
+    assert.equal(calls.length, 1);
+    assert.match(calls[0].url, /newsletter-subscribe\?action=unsubscribe&token=test$/);
+    assert.equal(calls[0].options.method, 'POST');
+    assert.equal(await new Response(calls[0].options.body).text(), 'List-Unsubscribe=One-Click');
+  });
+}

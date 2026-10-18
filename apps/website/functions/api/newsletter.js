@@ -15,7 +15,10 @@ function upstreamHeaders(request) {
 }
 
 export async function onRequest({ request, env }) {
-  if (request.method === 'POST') {
+  const url = new URL(request.url);
+  // Mail providers also POST one-click unsubscribe requests. Keep those
+  // outside signup admission, matching the upstream unsubscribe flow.
+  if (request.method === 'POST' && url.searchParams.get('action') !== 'unsubscribe') {
     // CF-Connecting-IP is supplied by Cloudflare. Never trust a visitor's
     // X-Forwarded-For value for the admission key.
     const ip = request.headers.get('CF-Connecting-IP');
@@ -38,7 +41,6 @@ export async function onRequest({ request, env }) {
       return unavailable();
     }
   }
-  const url = new URL(request.url);
   const upstream = new URL(UPSTREAM);
   upstream.search = url.search;
 

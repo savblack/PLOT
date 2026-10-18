@@ -11,7 +11,8 @@ raw addresses nor newsletter email/body values are stored or logged here.
 
 The website forwards Cloudflare's `CF-Connecting-IP` through a service binding.
 The Worker has no public route, workers.dev endpoint, or preview URL. GET/HEAD
-unsubscribe links and OPTIONS requests keep their existing upstream behavior.
+unsubscribe links, POST one-click unsubscribe requests, and OPTIONS requests keep
+their existing upstream behavior.
 POST fails closed with 503 if the binding, client address, or limiter is unavailable.
 The existing Supabase per-IP/global limits remain the backstop, including for
 requests made directly to the Supabase endpoint.
