@@ -20,25 +20,64 @@ async function encrypt(key: string, value: string): Promise<string> {
   return aesjs.utils.hex.fromBytes(encryptedBytes);
 }
 
-async function decrypt(key: string, value: string): Promise<string | null> {
-  const encryptionKeyHex = await SecureStore.getItemAsync(key);
-  if (!encryptionKeyHex) return null;
-
-  const cipher = new aesjs.ModeOfOperation.ctr(aesjs.utils.hex.toBytes(encryptionKeyHex), new aesjs.Counter(1));
-  const decryptedBytes = cipher.decrypt(aesjs.utils.hex.toBytes(value));
-
-  return aesjs.utils.utf8.fromBytes(decryptedBytes);
+// Log what failed, never the key or the session.
+function warn(what: string, error?: unknown) {
+  console.warn(`[secureStorage] ${what}`, error instanceof Error ? error.message : '');
 }
 
+async function decrypt(key: string, value: string): Promise<string | null> {
+  let encryptionKeyHex: string | null;
+  try {
+    encryptionKeyHex = await SecureStore.getItemAsync(key);
+  } catch (error) {
+    // Unsigned simulator builds throw errSecMissingEntitlement instead of
+    // returning null. Treat that as "no key" so the person signs in again.
+    warn('could not read the encryption key', error);
+    return null;
+  }
+  if (!encryptionKeyHex) {
+    warn('no encryption key for a stored session');
+    return null;
+  }
+
+  try {
+    const cipher = new aesjs.ModeOfOperation.ctr(aesjs.utils.hex.toBytes(encryptionKeyHex), new aesjs.Counter(1));
+    const decryptedBytes = cipher.decrypt(aesjs.utils.hex.toBytes(value));
+    return aesjs.utils.utf8.fromBytes(decryptedBytes);
+  } catch (error) {
+    warn('could not decrypt the stored session', error);
+    return null;
+  }
+}
+
+// A plaintext session is only ever written or read in development builds
+// (simulator and dev client), where the keychain can throw on an unsigned
+// build. A release build never writes one and deletes any it finds.
 export const secureSessionStorage = {
   async getItem(key: string) {
-    const encrypted = await AsyncStorage.getItem(key);
-    if (!encrypted) return null;
-    return decrypt(key, encrypted);
+    const stored = await AsyncStorage.getItem(key);
+    if (!stored) return null;
+    if (stored.startsWith('{')) {
+      if (!__DEV__) {
+        warn('removed a plaintext session in a release build');
+        await AsyncStorage.removeItem(key);
+        return null;
+      }
+      // Check before SecureStore, which can hang on an unsigned simulator build.
+      // The next setItem overwrites this with ciphertext once the keychain works.
+      return stored;
+    }
+    return decrypt(key, stored);
   },
   async setItem(key: string, value: string) {
-    const encrypted = await encrypt(key, value);
-    await AsyncStorage.setItem(key, encrypted);
+    try {
+      const encrypted = await encrypt(key, value);
+      await AsyncStorage.setItem(key, encrypted);
+    } catch (error) {
+      if (!__DEV__) throw error;
+      warn('keychain unavailable, storing the session in plaintext (development only)', error);
+      await AsyncStorage.setItem(key, value);
+    }
   },
   async removeItem(key: string) {
     await AsyncStorage.removeItem(key);
