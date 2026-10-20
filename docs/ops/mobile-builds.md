@@ -27,36 +27,21 @@ available now, gated only on setup rather than on waiting for Apple.
 `docs/research/expo-push-notifications.md` and `apps/web/src/launchFeatures.js`
 over whether enrolment existed. The research doc was right.)
 
-### The one thing to settle before publishing
+### Seller: SUSUMU HOUSE was the preference, but it is a trade name
 
-An Individual membership publishes under **your own legal name**. Every legal
-surface Plot already ships says something different:
+Preferred 2026-10-14; found on 2026-10-15 that Apple only converts to Organization for a legal entity, which SUSUMU HOUSE is not. Options and the open decision are in [app-store-listing.md](app-store-listing.md). An Individual membership publishes under the account
+holder's own legal name, and every legal surface Plot ships (`TermsPage.jsx`,
+`PrivacyPage.jsx`, the marketing site's `terms.html` and `privacy.html`, the
+six Supabase auth email templates, the newsletter footer) says "a product of
+SUSUMU HOUSE". The listing should agree with them, and EU trader details under
+the DSA should be the company's, not a person's. So: convert the existing
+membership (keeps team `FXZRAA8927` and the EAS credentials) rather than
+enrolling again. The steps, the D-U-N-S lookup and what Apple checks are in
+[app-store-listing.md](app-store-listing.md), along with the whole listing.
 
-> Plot is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann
-> Street, Surry Hills, NSW 2010
-
-That wording is in `TermsPage.jsx`, `PrivacyPage.jsx`, the marketing site's
-`terms.html` and `privacy.html`, all six Supabase auth email templates and the
-newsletter footer (#599). So the App Store listing would name a person as the
-seller while the thing it links to says you are contracting with a business.
-
-Two further consequences of the Individual type:
-
-- **EU distribution requires DSA trader verification**, and the verified trader
-  details are shown publicly on the listing. On an individual account those
-  default to the account holder's own details. Having SUSUMU HOUSE's registered
-  office already in use helps, but confirm in App Store Connect what will
-  actually be displayed before the listing goes public.
-- **Individual memberships cannot add team members** in App Store Connect. Not
-  a problem for a solo project, and App Store Connect **API keys are still
-  available**, so the `eas submit` automation below works either way.
-
-Publishing under SUSUMU HOUSE instead means an Organization membership, which
-needs a D-U-N-S number. Converting an existing individual account is possible
-but goes through Apple support, and it is materially easier to settle before an
-app is published than after. **This is a decision, not a bug** — publishing as
-an individual is perfectly legitimate, and plenty of good apps do. It just
-should be a choice, and the legal copy should agree with whatever is chosen.
+The app record already exists and was filled on 2026-10-15 under the
+Individual membership. Do not `eas submit` until the remaining items in
+[app-store-listing.md](app-store-listing.md) are done.
 
 ### Running locally on a simulator
 
@@ -213,15 +198,15 @@ Once the app record for `tv.theplot.app` exists, fill in:
   "production": {
     "ios": {
       "appleTeamId": "FXZRAA8927",
-      "ascAppId": "<App Store Connect app ID>"
+      "ascAppId": "6797167864"
     }
   }
 }
 ```
 
 `appleTeamId` is already filled in (read off the account, not a secret: team IDs
-ship inside every provisioning profile). Only `ascAppId` is outstanding, and it
-does not exist until the App Store Connect app record does.
+ship inside every provisioning profile). `ascAppId` is `6797167864`, the App
+Store Connect record for `tv.theplot.app`.
 
 An App Store Connect API key is the recommended authentication method over an
 Apple ID, per the research in `docs/research/expo-push-notifications.md`, which
@@ -247,5 +232,21 @@ disagrees with the one EAS is incrementing.
 3. In parallel: App Store Connect agreements, banking and tax, then the app
    record for `tv.theplot.app` and the `ascAppId` above. Agreements in
    particular block submission and are pure paperwork.
-4. Settle the seller-name question above before the listing is public.
+4. Settle the seller (Individual, or register a Pty Ltd and convert) before
+   the app record exists. See [app-store-listing.md](app-store-listing.md).
 5. Install Xcode when convenient, for the faster local loop.
+
+## State on 2026-10-14
+
+- Five EAS iOS builds exist, the newest from 2026-09-25 (`simulator` and
+  `development`, SDK 57) and a `production` store build from 2026-09-16,
+  build number 2. None submitted.
+- The `production` EAS environment has no `EXPO_PUBLIC_SHOW_APPLE_LOGIN`, so
+  no social sign-in ships and Sign in with Apple is not required.
+- `/save`, `/list` and unknown `app.theplot.tv` paths have routes
+  (`app/save.tsx`, `app/list.tsx`, `app/+not-found.tsx`); the black
+  "Unmatched Route" screen from the 2026-09-14 run is gone.
+- Upgrade and Manage subscription open Stripe in the phone's browser, only on
+  the US storefront (`BROWSER_CHECKOUT_ENABLED`, `purchaseLinkOut.js`). Outside
+  the US nothing is drawn, to stay inside App Review 3.1.1 during review.
+- Still never run on a device: a fresh sign-up through the new onboarding.

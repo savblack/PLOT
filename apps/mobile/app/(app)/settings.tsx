@@ -90,6 +90,7 @@ import ImportHistoryModal from '../../components/ImportHistoryModal';
 import ThemeChip from '../../components/ThemeChip';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import { usePremiumCheckout } from '../../lib/usePremiumCheckout';
+import { useBillingStatus } from '@plot/core/useBillingStatus.js';
 
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 const A = SETTINGS_VIEW.appearance;
@@ -351,6 +352,26 @@ function PushAlertsSettings({ userId }: { userId: string | null }) {
 }
 
 // The Premium summary in Settings. Upgrade opens Stripe Checkout in the browser once checkout is open.
+/** Cancel, payment method and invoices live in Stripe's portal, in the phone's browser. */
+function ManageSubscription({ userId }: { userId: string | null }) {
+  const { colors } = useTheme();
+  const billing = useBillingStatus(userId ?? undefined);
+  const checkout = usePremiumCheckout(true);
+  if (!checkout.allowed || !billing?.canManage) return null;
+  return (
+    <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
+      <Text style={{ color: colors.textSecondary }}>
+        {billing.status === 'past_due' || billing.status === 'unpaid' ? SETTINGS_VIEW.premium.paymentNeedsAttention
+          : billing.cancelAtPeriodEnd ? SETTINGS_VIEW.premium.cancellationScheduled
+          : SETTINGS_VIEW.billing.portalHint}
+      </Text>
+      <SettingsRow icon={null} label={checkout.busy ? SETTINGS_VIEW.premium.opening : SETTINGS_VIEW.premium.manageSubscription}
+        onPress={() => { void checkout.openPortal(); }} />
+      {!!checkout.error && <Text style={{ color: colors.textSecondary }} accessibilityRole="alert">{checkout.error}</Text>}
+    </SettingsGroup>
+  );
+}
+
 function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean }) {
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(initialExpanded);
@@ -1720,6 +1741,7 @@ export default function SettingsScreen() {
             />
           </SettingsGroup>
         )}
+        <ManageSubscription userId={userId} />
         {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
         <SettingsGroup title={SETTINGS_VIEW.billing.supportTitle}>
           <SettingsRow
