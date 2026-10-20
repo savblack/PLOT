@@ -1,4 +1,4 @@
-import TrackingSettings from './TrackingSettings.jsx';
+import SettingsSources from './SettingsSources.jsx';
 import BroadcastAccountSettings from './BroadcastAccountSettings.jsx';
 // Web settings use DOM panels, browser sharing and Stripe portal redirects.
 // Shared navigation/copy lives in core; native layout parity: GitHub issue 922.
@@ -13,9 +13,6 @@ import { logoUrl } from '../utils/images.js';
 import { tmdb, setTmdbRegion } from '@plot/core/tmdb.js';
 import { supabase } from '@plot/core/supabase.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
-import { useMediaSync } from '../hooks/useMediaSync.js';
-import { useTraktSync } from '../hooks/useTraktSync.js';
-import { useSimklSync } from '../hooks/useSimklSync.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -35,19 +32,21 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { IMPORT_VIEW } from '../copy/importView.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { MODERATION } from '../copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
 import SettingsThemeRows from './SettingsThemeRows.jsx';
+import SidebarOrderSheet from './SidebarOrderSheet.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import PremiumAlertsSettings from './PremiumAlertsSettings.jsx';
 import StreamingAlertsSettings from './StreamingAlertsSettings.jsx';
@@ -58,30 +57,11 @@ import Spinner from './Spinner.jsx';
 import { WatchTogetherSettings } from './WatchTogetherParts.jsx';
 import WatchlistVisibilitySetting from './WatchlistVisibilitySetting.jsx';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
+import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
+import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
+import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../utils/letterboxdImportPrompt.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// Integration row glyphs — stroke-based to match the other settings-row icons.
-// Plex reads as a media "play"; Trakt as a "tracked/watched" check.
-const PLEX_ICON = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="6 4 20 12 6 20 6 4" />
-  </svg>
-);
-const TRAKT_ICON = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <path d="M8 12.5l2.5 2.5L16 9" />
-  </svg>
-);
-const SIMKL_ICON = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 7h11" />
-    <path d="M13 4l3 3-3 3" />
-    <path d="M19 17H8" />
-    <path d="M11 14l-3 3 3 3" />
-  </svg>
-);
 
 /* ── Region picker modal ── */
 function RegionPicker({ current, onSave, onClose }) {
@@ -1137,7 +1117,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
    SettingsView
 ═══════════════════════════════════════ */
 export default function SettingsView() {
-  const { profile, user, themeMode, themeFamily, setThemeMode, setThemeFamily, refreshProfile, watchlist, watching, reminders, customLists } = useApp();
+  const { profile, user, themeMode, themeFamily, setThemeMode, setThemeFamily, refreshProfile, watchlist, watching, reminders, customLists, uiPrefs } = useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = SETTINGS_SECTIONS.some(item => item.id === searchParams.get('section')) ? searchParams.get('section') : 'account';
@@ -1145,9 +1125,6 @@ export default function SettingsView() {
     setActionError(null);
     setSearchParams(previous => { const next = new URLSearchParams(previous); next.set('section', section); return next; });
   };
-  const sync  = useMediaSync(user?.id);
-  const trakt = useTraktSync(user?.id);
-  const simkl = useSimklSync(user?.id);
   const premium = usePremium(profile);
   const [themeUpgrade, setThemeUpgrade] = useState(null); // Premium family a Free viewer tapped
   const { events: calEvents, loading: calLoading } = useCalendar(
@@ -1157,6 +1134,11 @@ export default function SettingsView() {
     reminders?.reminders ?? [],
   );
 
+  const [letterboxdPrompt, setLetterboxdPrompt] = useState(() => readLetterboxdImportPrompt(user?.id));
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- re-read the device reminder when the signed-in user changes
+    setLetterboxdPrompt(readLetterboxdImportPrompt(user?.id));
+  }, [user?.id]);
   const [showProviders,       setShowProviders]       = useState(false);
   const [savingProviders,     setSavingProviders]     = useState(false);
   const [savingMarketingEmails, setSavingMarketingEmails] = useState(false);
@@ -1164,6 +1146,7 @@ export default function SettingsView() {
   const [savingVisibility, setSavingVisibility] = useState(false);
   const [providerDraft,       setProviderDraft]       = useState(null);
   const [showGenres,          setShowGenres]          = useState(false);
+  const [showSidebarOrder,    setShowSidebarOrder]    = useState(false);
   const [savingGenres,        setSavingGenres]        = useState(false);
   const [genreDraft,          setGenreDraft]          = useState(null);
   const [showRegion,          setShowRegion]          = useState(false);
@@ -1255,11 +1238,7 @@ export default function SettingsView() {
 
   // Load integrations on mount
   // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
-  useEffect(() => { sync.loadIntegration(); }, [sync.loadIntegration]);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
-  useEffect(() => { trakt.loadIntegration(); }, [trakt.loadIntegration]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
-  useEffect(() => { simkl.loadIntegration(); }, [simkl.loadIntegration]);
 
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
   const marketingEmailsEnabled = !!profile?.marketing_emails;
@@ -1856,6 +1835,22 @@ export default function SettingsView() {
           premiumBadge={<PremiumBadge />}
         />
         {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
+        <SettingsPreferenceRow
+          label={SETTINGS_VIEW.sidebar.rowLabel}
+          value={(uiPrefs?.prefs.sidebar.length ?? 0) === 0 ? SETTINGS_VIEW.sidebar.valueDefault : SETTINGS_VIEW.sidebar.valueCustom}
+          onEdit={() => setShowSidebarOrder(true)}
+        />
+        {showSidebarOrder && (
+          <SidebarOrderSheet
+            order={uiPrefs?.prefs.sidebar}
+            isDefault={(uiPrefs?.prefs.sidebar.length ?? 0) === 0}
+            error={uiPrefs?.error}
+            onNudge={uiPrefs?.nudgeSidebar}
+            onMove={uiPrefs?.moveSidebar}
+            onReset={uiPrefs?.resetSidebarOrder}
+            onClose={() => setShowSidebarOrder(false)}
+          />
+        )}
 
       </div>
       <div className="settings-group"><div className="settings-group-title">{SETTINGS_VIEW.page.emailPreferences}</div>
@@ -1914,175 +1909,47 @@ export default function SettingsView() {
       <PremiumAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
         </>}
         {activeSection === 'connections' && <>
-      <TrackingSettings userId={user?.id} connect={trakt.connect} connectPlex={sync.startPlexAuth} plexPolling={sync.polling} connectionError={trakt.error || sync.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : sync.disconnect()} />
-      <div className="settings-group">
-        <div className="settings-group-title">{SETTINGS_VIEW.integrations.groupTitle}</div>
-        {SHOW_MEDIA_SYNC_INTEGRATIONS && premium.isPremium ? (
-          <>
-            <div className="settings-row" style={{ cursor: 'default' }}>
-              <div className="settings-row-left">
-                <div className="settings-row-icon">{PLEX_ICON}</div>
-                <div>
-                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.plexName}<PremiumBadge /></div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {sync.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.notConnected}
-                  </div>
-                </div>
+        {letterboxdPrompt && (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
               </div>
-              <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-                {sync.isConnected ? (
-                  <>
-                    <SettingsTextAction onClick={sync.sync} disabled={sync.syncing}>
-                      {sync.syncing ? SETTINGS_VIEW.integrations.importing : SETTINGS_VIEW.integrations.importWatchHistory}
-                    </SettingsTextAction>
-                    <SettingsTextAction onClick={sync.disconnect} tone="danger">
-                      {SETTINGS_VIEW.integrations.disconnect}
-                    </SettingsTextAction>
-                  </>
-                ) : (
-                  <SettingsTextAction onClick={sync.startPlexAuth}>
-                    {SETTINGS_VIEW.integrations.connectPlex}
-                  </SettingsTextAction>
-                )}
+              <div>
+                <div className="settings-row-label">{IMPORT_VIEW.letterboxdFinishTitle}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {IMPORT_VIEW.letterboxdFinishSub}
+                </div>
               </div>
             </div>
-            {sync.error && (
-              <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-                {sync.error}
-              </div>
-            )}
-
-            <div className="settings-row" style={{ cursor: 'default' }}>
-              <div className="settings-row-left">
-                <div className="settings-row-icon">{TRAKT_ICON}</div>
-                <div>
-                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.traktName}<PremiumBadge /></div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {trakt.isConnected
-                      ? SETTINGS_VIEW.integrations.connected
-                      : SETTINGS_VIEW.integrations.connectTraktToSync}
-                  </div>
-                </div>
-              </div>
-              <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-                {trakt.isConnected ? (
-                  <>
-                    <SettingsTextAction onClick={trakt.sync} disabled={trakt.syncing}>
-                      {trakt.syncing ? SETTINGS_VIEW.integrations.importing : SETTINGS_VIEW.integrations.importWatchHistory}
-                    </SettingsTextAction>
-                    <SettingsTextAction onClick={trakt.disconnect} tone="danger">
-                      {SETTINGS_VIEW.integrations.disconnect}
-                    </SettingsTextAction>
-                  </>
-                ) : (
-                  <SettingsTextAction onClick={trakt.connect}>
-                    {SETTINGS_VIEW.integrations.connectTrakt}
-                  </SettingsTextAction>
-                )}
-              </div>
+            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+              <button
+                type="button"
+                className="settings-text-action"
+                onClick={() => navigate(`/import?source=letterboxd&from=${IMPORT_ENTRY_POINTS.IMPORT_PAGE}`)}
+              >
+                {IMPORT_VIEW.letterboxdFinishCta}
+              </button>
+              <button
+                type="button"
+                className="settings-text-action"
+                onClick={() => {
+                  clearLetterboxdImport(user?.id);
+                  setLetterboxdPrompt(null);
+                  createImportReporter({ entry: IMPORT_ENTRY_POINTS.IMPORT_PAGE }).abandoned(LETTERBOXD_IMPORT_ABANDON.DISMISSED);
+                }}
+              >
+                {IMPORT_VIEW.letterboxdFinishDismiss}
+              </button>
             </div>
-            {trakt.error && (
-              <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-                {trakt.error}
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            {[
-              { name: SETTINGS_VIEW.integrations.plexName, blurb: SETTINGS_VIEW.integrations.plexBlurb, connected: sync.isConnected, disconnect: sync.disconnect, icon: PLEX_ICON },
-              { name: SETTINGS_VIEW.integrations.traktName, blurb: SETTINGS_VIEW.integrations.traktBlurb, connected: trakt.isConnected, disconnect: trakt.disconnect, icon: TRAKT_ICON },
-            ].map(row => (
-              <div key={row.name} className="settings-row">
-                <div className="settings-row-left">
-                  <div className="settings-row-icon">{row.icon}</div>
-                  <div><div className="settings-row-label">{row.name}<PremiumBadge /></div><p className="settings-selection">{row.connected && !premium.isPremium ? SETTINGS_VIEW.integrations.pausedNeedsPremium : row.blurb}</p></div>
-                </div>
-                <div className="settings-inline-actions">
-                  <SettingsTextAction onClick={() => showConfirm({
-                    title: SHOW_MEDIA_SYNC_INTEGRATIONS
-                      ? SETTINGS_VIEW.integrations.syncNeedsPremium
-                      : SETTINGS_VIEW.billing.syncComingSoon,
-                    message: SHOW_MEDIA_SYNC_INTEGRATIONS
-                      ? SETTINGS_VIEW.integrations.syncNeedsPremiumMessage
-                      : SETTINGS_VIEW.billing.syncComingSoonMessage,
-                    confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
-                    onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
-                  })}>
-                    {SETTINGS_VIEW.premium.upgradeButton}
-                  </SettingsTextAction>
-                  {row.connected && <SettingsTextAction onClick={row.disconnect} tone="danger">{SETTINGS_VIEW.integrations.disconnect}</SettingsTextAction>}
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">{SIMKL_ICON}</div>
-            <div>
-              <div className="settings-row-label">{SETTINGS_VIEW.integrations.simklName}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {simkl.isConnected
-                  ? SETTINGS_VIEW.integrations.connectedLastSynced(
-                      simkl.integration?.last_sync_at
-                        ? new Date(simkl.integration.last_sync_at).toLocaleDateString()
-                        : SETTINGS_VIEW.integrations.never
-                    )
-                  : SETTINGS_VIEW.integrations.simklBlurb}
-              </div>
-            </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            {simkl.isConnected ? (
-              <>
-                <SettingsTextAction onClick={simkl.sync} disabled={simkl.syncing}>
-                  {simkl.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
-                </SettingsTextAction>
-                <SettingsTextAction onClick={simkl.disconnect} tone="danger">
-                  {SETTINGS_VIEW.integrations.disconnect}
-                </SettingsTextAction>
-              </>
-            ) : (
-              <SettingsTextAction onClick={simkl.connect}>
-                {SETTINGS_VIEW.integrations.connectSimkl}
-              </SettingsTextAction>
-            )}
-          </div>
-        </div>
-        {simkl.error && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {simkl.error}
           </div>
         )}
 
-        {/* ── Import watch history ── */}
-        <div
-          className="settings-row interactive-surface"
-          onClick={() => navigate('/import')}
-          style={{ cursor: 'pointer' }}
-          {...getButtonLikeProps({ onPress: () => navigate('/import'), label: SETTINGS_VIEW.integrations.importWatchHistory })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-            </div>
-            <div>
-              <div className="settings-row-label">{SETTINGS_VIEW.integrations.importWatchHistoryLabel}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {SETTINGS_VIEW.integrations.importWatchHistoryHint}
-              </div>
-            </div>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </div>
-
-      </div>
+      <SettingsSources userId={user?.id} premium={premium} showConfirm={showConfirm} />
 
       {/* Calendar */}
       <div className="settings-group">

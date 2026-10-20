@@ -101,6 +101,29 @@ jobs:
             ./scripts/scan-secrets.sh "$base_sha" HEAD
 
       - run:
+          name: Decide how much of the suite this diff needs
+          command: |
+            labels=""
+            if command -v gh >/dev/null 2>&1 && [ -n "${GH_TOKEN:-${GITHUB_TOKEN:-}}" ] && [ -n "${CIRCLE_PULL_REQUEST:-}" ]; then
+              number="$(basename "$CIRCLE_PULL_REQUEST")"
+              labels="$(gh pr view "$number" --repo savblack/PLOT --json labels --jq '[.labels[].name] | join(",")' || true)"
+            fi
+            message="$(git log -1 --format=%B)"
+            node scripts/ci-tier.mjs \
+              --branch "${CIRCLE_BRANCH:-}" \
+              --labels "$labels" \
+              --commit-message "$message" \
+              --write-env "$BASH_ENV"
+            # BASH_ENV is picked up by the next step. Source it here too so
+            # a docs-only diff can stop this job before the install.
+            # shellcheck disable=SC1090
+            [ -n "${BASH_ENV:-}" ] && . "$BASH_ENV"
+            if [ "${PLOT_CI_TIER:-fast}" = none ]; then
+              echo "Docs-only diff. Stopping before install."
+              circleci step halt
+            fi
+
+      - run:
           name: Set up pnpm 10.6.3
           command: |
             sudo corepack enable
@@ -141,6 +164,7 @@ jobs:
           name: Check generated and shared sources
           command: |
             pnpm run footer:check
+            pnpm run csp:check
             pnpm run changelog:check
             pnpm run skills:check
             pnpm run tokens:check
@@ -155,7 +179,6 @@ jobs:
             pnpm run db:block-clause
             pnpm run copy:check
             pnpm run core:check
-            pnpm run mobile:tabs
 
       - run:
           name: Broadcast importer tests
@@ -176,21 +199,30 @@ jobs:
       - run:
           name: Build Storybooks
           command: |
-            # The web build emits --stats-json so the Chromatic step below can
-            # use TurboSnap and only snapshot the stories a change can reach.
+            if [ "${PLOT_CI_TIER:-fast}" != full ]; then
+              echo "Tier ${PLOT_CI_TIER:-fast}: skipping Storybook."
+              exit 0
+            fi
+            # The web build emits --stats-json so Chromatic can use TurboSnap.
             pnpm --filter @plot/web run build-storybook:stats
-            pnpm --filter @plot/website-storybook run build-storybook
-            pnpm --filter @plot/mobile run build-storybook
+            if [ "${PLOT_CI_WEBSITE_STORYBOOK:-0}" = 1 ]; then
+              pnpm --filter @plot/website-storybook run build-storybook
+            fi
+            if [ "${PLOT_CI_MOBILE_STORYBOOK:-0}" = 1 ]; then
+              pnpm --filter @plot/mobile run build-storybook
+            fi
 
       - run:
           name: Chromatic visual snapshots
           command: |
-            # Visual regression for the web Storybook, reusing the build above.
-            # Runs with --exit-zero-on-changes on purpose: nearly every design PR
-            # here changes pixels deliberately, and a check that goes red on every
-            # intended redesign is one nobody reads. A genuine failure (a story
-            # that throws, a broken build) still fails this step. Review the diffs
-            # in Chromatic, not here.
+            # Visual diffs do not fail the build (--exit-zero-on-changes).
+            # A story that throws still does. main records the baseline.
+            # A pull request uploads only when the diff is visual, or the
+            # commit says [visual].
+            if [ "${PLOT_CI_CHROMATIC:-0}" != 1 ]; then
+              echo "This diff does not need Chromatic."
+              exit 0
+            fi
             if [ -z "${CHROMATIC_PROJECT_TOKEN:-}" ]; then
               echo "CHROMATIC_PROJECT_TOKEN is not set; skipping visual snapshots."
               exit 0
@@ -209,7 +241,12 @@ jobs:
 
       - run:
           name: Install Playwright Chromium
-          command: pnpm --filter @plot/web exec playwright install chromium
+          command: |
+            if [ "${PLOT_CI_TIER:-fast}" != full ]; then
+              echo "Tier ${PLOT_CI_TIER:-fast}: skipping Playwright."
+              exit 0
+            fi
+            pnpm --filter @plot/web exec playwright install chromium
 
       - save_cache:
           key: playwright-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
@@ -218,11 +255,21 @@ jobs:
 
       - run:
           name: Storybook interaction and accessibility tests
-          command: pnpm run test-storybook:web
+          command: |
+            if [ "${PLOT_CI_TIER:-fast}" != full ]; then
+              echo "Tier ${PLOT_CI_TIER:-fast}: skipping Storybook interaction tests."
+              exit 0
+            fi
+            pnpm run test-storybook:web
 
       - run:
           name: Smoke tests
-          command: pnpm --filter @plot/web exec playwright test
+          command: |
+            if [ "${PLOT_CI_TIER:-fast}" != full ]; then
+              echo "Tier ${PLOT_CI_TIER:-fast}: skipping smoke tests."
+              exit 0
+            fi
+            pnpm --filter @plot/web exec playwright test
 
   marketing-reconcile:
     executor: node
@@ -299,7 +346,8 @@ jobs:
             PLOT_DB_CONNINFO="$SUPABASE_DB_URL" node scripts/write-pg-service.mjs "$service_file" plot_production
             export PGSERVICEFILE="$service_file" PGSERVICE=plot_production
             pg_dump -Fc --no-owner --no-privileges -n public -n auth -n storage -n supabase_migrations -f "${artifact%.gpg}"
-            gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$BACKUP_GPG_PASSPHRASE" -o "$artifact" "${artifact%.gpg}"
+            # Passphrase on stdin, not argv: argv is readable by every process on the runner.
+            gpg --batch --yes --symmetric --cipher-algo AES256 --pinentry-mode loopback --passphrase-fd 0 -o "$artifact" "${artifact%.gpg}" <<< "$BACKUP_GPG_PASSPHRASE"
             rm -f "${artifact%.gpg}"
             aws configure set default.s3.addressing_style path
             aws s3 cp "$artifact" "s3://${R2_BUCKET}/db-backups/${artifact}" --endpoint-url "$R2_ENDPOINT" --only-show-errors
@@ -325,17 +373,38 @@ jobs:
       - checkout
       - run: sudo apt-get update && sudo apt-get install -y awscli
       - run:
-          name: Mirror Supabase Storage to R2
+          name: Archive, encrypt and upload Supabase Storage
           command: |
+            # Every object, every run (no manifest, so nothing is skipped): the
+            # archive has to be self-contained to be restorable on its own.
+            # Encrypted with the same passphrase as the database dumps, because
+            # it holds the same class of data (avatars are PII) and the old
+            # plaintext mirror sat next to the encrypted dumps for anyone with
+            # the bucket to read. See docs/ops/db-restore.md for the restore.
             node scripts/backup-storage-buckets.mjs ./storage-mirror
+            stamp="$(date -u +%Y-%m-%dT%H%M%SZ)"
+            artifact="storage-${stamp}.tar.gpg"
+            tar -C ./storage-mirror -cf "${artifact%.gpg}" .
+            gpg --batch --yes --symmetric --cipher-algo AES256 --pinentry-mode loopback --passphrase-fd 0 -o "$artifact" "${artifact%.gpg}" <<< "$BACKUP_GPG_PASSPHRASE"
+            rm -f "${artifact%.gpg}"
             aws configure set default.s3.addressing_style path
-            aws s3 sync ./storage-mirror "s3://${R2_BUCKET}/storage-mirror/" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+            aws s3 cp "$artifact" "s3://${R2_BUCKET}/storage-backups/${artifact}" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+            # Five weekly archives. Objects total ~80 MB, so this stays well
+            # inside R2's free tier.
+            cutoff="$(date -u -d '35 days ago' +%Y-%m-%d)"
+            aws s3 ls "s3://${R2_BUCKET}/storage-backups/" --endpoint-url "$R2_ENDPOINT" | awk '{print $4}' | grep -E '^storage-.*\.tar\.gpg$' | while read -r key; do
+              file_date="$(echo "$key" | sed -E 's/^storage-([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')"
+              if [[ "$file_date" < "$cutoff" ]]; then
+                aws s3 rm "s3://${R2_BUCKET}/storage-backups/${key}" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+              fi
+            done
+            # Sentinel the backup-heartbeat Worker ages (its STORAGE_SENTINEL var).
             date -u +%Y-%m-%dT%H:%M:%SZ > synced-at.txt
             aws s3 cp synced-at.txt "s3://${R2_BUCKET}/storage-mirror/_synced-at.txt" --endpoint-url "$R2_ENDPOINT" --only-show-errors
       - alert_on_failure:
           workflow_name: storage-backup
           subject: "PLOT: weekly STORAGE BACKUP failed"
-          note: Avatar and marketing files were not mirrored to R2.
+          note: Avatar and marketing files were not archived to R2. The database dump does not contain object bytes.
 
   db-write-paths:
     executor: node

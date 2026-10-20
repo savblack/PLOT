@@ -16,6 +16,7 @@ import { useApp } from '../hooks/useApp.js';
 import {
   IconMenu, IconClose, IconSearch, IconArrowUp, IconBell, IconSettings, NAV_ICONS,
 } from './navIcons.jsx';
+import PlotLogo from './PlotLogo.jsx';
 
 /* ── SVG Icons ───────────────────────── */
 /* Shared with AppSidebar — see ./navIcons.jsx. */
@@ -37,7 +38,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const mainRef = useRef(null);
 
   const { unread, refreshCount } = useNotifications(user?.id);
-  const { themeMode, themeFamily, setThemeMode, setThemeFamily } = useApp() ?? {};
+  const { themeMode, themeFamily, setThemeMode, setThemeFamily, uiPrefs } = useApp() ?? {};
   const [themeUpgrade, setThemeUpgrade] = useState(null); // Premium family a Free viewer tapped in the account menu
 
   // Warm the other pages' chunks while idle so navigating doesn't wait on them.
@@ -137,6 +138,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         user={user}
         unread={unread}
         collapsed={sidebarCollapsed}
+        sidebarOrder={uiPrefs?.prefs.sidebar}
         onToggleCollapsed={() => setSidebarCollapsed(collapsed => !collapsed)}
         onFeedback={() => user ? setFeedbackOpen(true) : navigate('/login')}
         onSignOut={() => navigate('/logout')}
@@ -223,7 +225,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         aria-hidden={!drawerOpen}
       >
         <div className="nav-drawer-header">
-          <span className="nav-drawer-logo-text">plot</span>
+          <span className="nav-drawer-logo-text"><PlotLogo inherit /></span>
           <button type="button" className="icon-btn" onClick={closeDrawer} aria-label={APP_SHELL.closeMenu}>
             <IconClose />
           </button>

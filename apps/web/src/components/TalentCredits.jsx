@@ -1,4 +1,6 @@
 import { posterUrl } from '../utils/images.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { creditMeta, creditTitle, mediaType } from '../utils/talentCredits.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { shortDayMonth, localDateStr } from '@plot/core/date.js';
@@ -7,13 +9,14 @@ import './TalentCredits.css';
 import './PeopleFollow.css';
 
 export default function CreditsGrid({ credits, openPanel }) {
+  const art = useUserArtwork();
   if (!credits.length) return null;
   return (
     <div className="talent-credits-grid">
       {credits.map(credit => {
         const title = creditTitle(credit);
-        const image = posterUrl(credit.poster_path, 'w185');
         const type = mediaType(credit);
+        const image = posterUrl(displayPosterPath(art.apply({ ...credit, media_type: type })), 'w185');
         const role = credit.character || credit.roles?.[0]?.character;
         return (
           <button type="button" className="talent-credit" key={`${type}-${credit.id}`} onClick={() => openPanel(credit.id, type, 'talent_profile')}>
@@ -36,11 +39,12 @@ export default function CreditsGrid({ credits, openPanel }) {
  * credits grid, with the date (or an Out today chip) as the last line.
  */
 export function ComingUpGrid({ items, openPanel }) {
+  const art = useUserArtwork();
   if (!items.length) return null;
   return (
     <div className="talent-credits-grid">
       {items.map(item => {
-        const image = posterUrl(item.posterPath, 'w185');
+        const image = posterUrl(displayPosterPath(art.apply(item)), 'w185');
         return (
           <button type="button" className="talent-credit" key={`${item.mediaType}-${item.tmdbId}`} onClick={() => openPanel(item.tmdbId, item.mediaType, 'talent_profile')}>
             <div className="talent-credit-poster">

@@ -1,9 +1,10 @@
+import { WORDMARK_INK_HEIGHT, WORDMARK_LETTERS, WORDMARK_TOP } from '../core/wordmark.js';
 import './PlotLoader.css';
 
-// The wordmark loader: the lowercase word in Gabarito, each letter rising into
-// place in sequence, with a thin sage bar sweeping underneath. Loops until the
-// content lands. Takes the theme from data-theme on <html> unless told otherwise.
-const LETTERS = ['p', 'l', 'o', 't'];
+// The wordmark loader: the plot wordmark outlines (l joined to the o), each
+// letter rising into place in sequence, with a thin bar sweeping underneath.
+// Loops until the content lands. Takes the theme from data-theme on <html>
+// unless told otherwise.
 
 const SIZE_MAP = { xs: 10, sm: 14, md: 22, lg: 30, button: 10 };
 
@@ -38,9 +39,21 @@ export default function PlotLoader({
       {...ariaProps}
     >
       <span className="plot-loader__word">
-        {LETTERS.map((letter, i) => (
-          <span key={i} className="plot-loader__letter">{letter}</span>
-        ))}
+        {WORDMARK_LETTERS.map(({ letter, path, x0, x1 }) => {
+          const width = x1 - x0;
+          return (
+            <svg
+              key={letter}
+              className="plot-loader__letter"
+              viewBox={`${x0} ${WORDMARK_TOP} ${width} ${WORDMARK_INK_HEIGHT}`}
+              style={{ width: `${width / 1000}em`, height: `${WORDMARK_INK_HEIGHT / 1000}em`, overflow: 'hidden' }}
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d={path} />
+            </svg>
+          );
+        })}
       </span>
       <span className="plot-loader__bar" />
     </span>

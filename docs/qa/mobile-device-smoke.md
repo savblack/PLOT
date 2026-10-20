@@ -101,9 +101,9 @@ never been walked.
 
 ## Phase 3: every tab is reachable and renders its own content
 
-`pnpm run mobile:tabs` now guards the classification statically, but it cannot
-tell you that a tab renders the *right* thing. #587 is the reason this section
-is explicit.
+Static checks cannot tell you that a screen renders the *right* thing. #587 (a
+fully built tab that was unreachable) is the reason this section is explicit.
+Home is one feed; New Releases and Guide open from the drawer.
 
 Bottom tab bar (`app/(app)/_layout.tsx`): Home, Calendar, My Lists, Settings,
 Profile.
@@ -390,11 +390,11 @@ build from branch `mobile-app-store`, Metro pointed at **Staging** (via
       and `plot://whats-on/anything` land on Home via `+not-found.tsx`;
       `plot://save?media_type=movie&tmdb_id=27205` opens the Inception panel
       over Home. No Unmatched Route screen anywhere.
-- [x] **Settings ▸ Billing on the Free smoke account**: the Premium list
-      ends in "Premium isn't available in the app yet." with no price, trial
-      note or Upgrade row, and the Ko-fi group is gone (`SHOW_PREMIUM_PRICING`
-      and `SHOW_KOFI_LINK` both off). The Premium account shows no Ko-fi row
-      either.
+- [ ] **Settings ▸ Billing**: Free account shows the price, 7-day trial
+      note and Upgrade, which opens Stripe Checkout in the browser. A
+      subscribed account shows Manage subscription, which opens the Stripe
+      portal in the browser. On a non-US storefront none of this
+      shows. Re-run on a device (2026-10-20).
 - [x] **Force-quit and relaunch** (`xcrun simctl terminate`, then the dev
       client URL): still signed in as the smoke account, straight to the app,
       not back through onboarding.

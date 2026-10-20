@@ -23,6 +23,9 @@ export default defineConfig([
     // .wrangler/tmp/, so running `npm run dev:website` once leaves lint errors
     // behind in generated code that nobody wrote.
     '.wrangler', '**/.wrangler/**',
+    // Bundled from packages/core by scripts/build-import-engine.mjs; its
+    // sources are linted where they live.
+    'supabase/functions/_shared/importEngine.generated.js',
   ]),
   {
     files: ['**/*.{js,jsx}'],
@@ -43,6 +46,23 @@ export default defineConfig([
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]', destructuredArrayIgnorePattern: '^[A-Z_]' }],
       'react-hooks/set-state-in-effect': 'warn',
+    },
+  },
+  {
+    // Classic scripts loaded by <script src> before any bundle: the app's
+    // pre-React boot files and the marketing site's page scripts. They are
+    // the inline blocks the CSP work (2026-10-14) moved into files, so they
+    // keep their inline idiom: vendor snippets that assign `posthog`, `gtag`
+    // and `dataLayer` as page globals, and `try {} catch (e) {}` guards
+    // around storage access that may throw.
+    files: ['apps/web/public/boot/*.js', 'apps/website/js/whats-on*.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: { ...globals.browser, posthog: 'writable', gtag: 'writable', dataLayer: 'writable' },
+    },
+    rules: {
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-unused-vars': ['error', { caughtErrors: 'none', varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' }],
     },
   },
   {

@@ -17,6 +17,7 @@ import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js'
 import { signupFormTokenIsStale } from '../utils/signupFormToken.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
+import PlotLogo from '../components/PlotLogo.jsx';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -350,7 +351,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         track(EVENTS.LOGIN_SUBMIT_FAILED, { reason: errorReason(error.message) });
         setError(friendlyError(error.message)); setLoading(false); resetCaptcha();
       } else {
-        identifyUser(data.user.id, { email: data.user.email });
+        identifyUser(data.user.id);
         track(EVENTS.USER_LOGGED_IN);
         const plan = getPremiumCheckoutIntent();
         navigate(plan ? `/pricing?billing=${plan}` : takeReturnPath('/app'));
@@ -396,7 +397,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       else {
         // Identify on signup (not just login) so the anonymous pre-signup
         // session — carrying first-touch attribution — stitches to this user.
-        identifyUser(data.user?.id, { email: data.user?.email || submittedEmail });
+        identifyUser(data.user?.id);
         track(EVENTS.USER_SIGNED_UP, { method: 'email' });
         // Supabase returns an obfuscated user with no identities when the email
         // already exists. Only a genuinely new account may authorize the
@@ -436,9 +437,24 @@ export default function AuthPage({ initialMode = 'signup' }) {
     });
     if (!attemptIsCurrent(epoch)) return;
     if (error) {
-      setError(COMMON.genericError);
+      // supabase-js returns data: null for any non-2xx, so the function's
+      // structured { reason } only survives in error.context (the Response).
+      // Without reading it every failure, including a dead Resend key,
+      // collapsed into one opaque 'bypass_create_failed'.
+      let reason = null;
+      let status = null;
+      try {
+        status = error.context?.status ?? null;
+        const body = await error.context?.clone?.().json();
+        reason = typeof body?.reason === 'string' ? body.reason : null;
+      } catch { /* network error or non-JSON body */ }
+      if (!attemptIsCurrent(epoch)) return;
+      setError(bypassErrorMessage(reason));
       setLoading(false);
-      track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: 'bypass_create_failed' });
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, {
+        reason: reason ? `bypass_${reason}` : 'bypass_create_failed',
+        ...(status ? { status } : {}),
+      });
       return;
     }
     if (data?.error) {
@@ -593,7 +609,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <span className="auth-visual-logo">plot</span>
+          <span className="auth-visual-logo"><PlotLogo inherit /></span>
           <span className="auth-visual-tagline">Your movie &amp; TV companion</span>
         </div>
       </div>

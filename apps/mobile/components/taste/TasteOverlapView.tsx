@@ -22,6 +22,7 @@ import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { posterUrl, fontFamily, fontSize, spacing, radii, type Palette } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
+import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
 import { captureTasteCard, shareTasteImage, tasteCardText, tastePostText, TASTE_CARD_WIDTH, type TasteCardContent, type TasteOverlapModel } from '../../lib/tasteShare';
 import TasteShareCard, { type TasteTheme } from './TasteShareCard';
 import TasteShareSheet from './TasteShareSheet';
@@ -170,6 +171,9 @@ function TasteOverlapBody({
       genreName={genreName}
       onOpen={onOpen}
       onShare={() => setSharing(true)}
+      onWatchTogether={SHOW_WATCH_TOGETHER && (target?.username || username)
+        ? () => router.push(`/(app)/together/with/${encodeURIComponent(target?.username || username)}` as Href)
+        : undefined}
     />
   );
 
@@ -186,7 +190,7 @@ function TasteOverlapBody({
               <Path d="M15 18l-6-6 6-6" />
             </Svg>
           </TouchableOpacity>
-          <View style={styles.chip}><Text style={styles.chipText}>{T.premiumChip}</Text></View>
+          {!premium && <View style={styles.chip}><Text style={styles.chipText}>{T.premiumChip}</Text></View>}
           {premium && overlap && target ? (
             <TouchableOpacity
               style={styles.iconBtn}
@@ -283,8 +287,44 @@ function OverlapMessage({
   );
 }
 
+function WatchlistOverlap({
+  styles, colors, count, onPress,
+}: {
+  styles: ReturnType<typeof makeStyles>;
+  colors: Palette;
+  count: number;
+  onPress?: () => void;
+}) {
+  const copy = (
+    <>
+      <View style={styles.watchIcon}>
+        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.accentSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M3 5h18v12H3z" />
+          <Path d="M8 21h8" />
+          <Path d="M12 17v4" />
+        </Svg>
+      </View>
+      <View style={styles.watchCopy}>
+        <Text style={styles.watchText}>{T.watchlistOverlap(count)}</Text>
+        {onPress ? <Text style={styles.watchCta}>{T.watchTogether}</Text> : null}
+      </View>
+    </>
+  );
+  if (!onPress) return <View style={styles.watchlist}>{copy}</View>;
+  return (
+    <TouchableOpacity
+      style={styles.watchlist}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${T.watchlistOverlap(count)}. ${T.watchTogether}`}
+    >
+      {copy}
+    </TouchableOpacity>
+  );
+}
+
 function OverlapBody({
-  styles, colors, name, overlap, sharedWatchlist, genreName, onOpen, onShare,
+  styles, colors, name, overlap, sharedWatchlist, genreName, onOpen, onShare, onWatchTogether,
 }: {
   styles: ReturnType<typeof makeStyles>;
   colors: Palette;
@@ -294,6 +334,7 @@ function OverlapBody({
   genreName: Map<number, string>;
   onOpen: (id: number, mediaType: string) => void;
   onShare: () => void;
+  onWatchTogether?: () => void;
 }) {
   const o = overlap;
   const need = MIN_SHARED_RATINGS - o.sharedRated;
@@ -400,19 +441,13 @@ function OverlapBody({
         ))}
       </View>
 
-      {/* Watch together stays a count. Its route is gated by SHOW_WATCH_TOGETHER,
-          which launchFeatures.ts does not export on this branch. */}
       {sharedWatchlist != null && sharedWatchlist > 0 && (
-        <View style={styles.watchlist}>
-          <View style={styles.watchIcon}>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.accentSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M3 5h18v12H3z" />
-              <Path d="M8 21h8" />
-              <Path d="M12 17v4" />
-            </Svg>
-          </View>
-          <Text style={styles.watchText}>{T.watchlistOverlap(sharedWatchlist)}</Text>
-        </View>
+        <WatchlistOverlap
+          styles={styles}
+          colors={colors}
+          count={sharedWatchlist}
+          onPress={onWatchTogether}
+        />
       )}
 
       <TouchableOpacity style={styles.primary} onPress={onShare} accessibilityRole="button">
@@ -564,7 +599,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   watchIcon: {
     width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface,
   },
-  watchText: { flex: 1, fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.onAccentSecondaryFill },
+  watchCopy: { flex: 1, gap: 2 },
+  watchText: { fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.onAccentSecondaryFill },
+  watchCta: { fontFamily: fontFamily.sans, fontSize: 13, color: colors.onAccentSecondaryFill },
   primary: {
     alignSelf: 'center', minHeight: 44, paddingHorizontal: spacing.xl, borderRadius: radii.pill,
     backgroundColor: colors.accentFill, alignItems: 'center', justifyContent: 'center',

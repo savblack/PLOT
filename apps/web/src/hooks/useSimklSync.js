@@ -25,11 +25,11 @@ export function useSimklSync(userId) {
     return data;
   }, [userId]);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (returnTo) => {
     const clientId = getConfig().simklClientId;
     if (!clientId) return setError('Simkl is not configured yet.');
     try {
-      const state = createSimklState();
+      const state = createSimklState(typeof returnTo === 'string' ? returnTo : undefined);
       const result = await callSimkl('prepare', { redirect_uri: getSimklCallbackUrl(), state });
       track(EVENTS.SIMKL_CONNECT_STARTED, {});
       redirectToExternal(result.authorizeUrl);

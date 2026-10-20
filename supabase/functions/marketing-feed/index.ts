@@ -29,7 +29,8 @@ import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
 import { ARTICLE_TABLE_CSS, articleExcerpt, isArticleTable, renderArticleBlock } from '../_shared/articleBody.js';
-import { articleSignupPromptHtml, insertPromptAfterSecondParagraph } from '../_shared/articleSignupPrompt.js';
+import { selectTmdbMatch } from '../_shared/tmdbMatch.js';
+import { articleSignupPromptHtml } from '../_shared/articleSignupPrompt.js';
 import { clampDescription, fitTitle } from '../_shared/seoText.ts';
 
 const SITE = 'https://theplot.tv';
@@ -38,6 +39,13 @@ const FEED_TITLE = "What's On";
 const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – Plot";
 const FEED_PATH = '/whats-on';
 const PAGE_SIZE = 30;
+const SEARCH_LIMIT = 60;
+const SEARCH_TERMS = 5;
+
+// Words from a search box, safe to put inside a PostgREST or() filter: the
+// characters that delimit or wildcard a filter value become word breaks.
+const searchWords = (q: string) =>
+  q.replace(/[,()%_*\\"':;&|<>=]/g, ' ').split(/\s+/).filter((w) => w.length > 0).slice(0, SEARCH_TERMS);
 
 const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
@@ -68,6 +76,46 @@ const rankRefs = (body: string[], refs: TmdbRef[]) =>
       return t ? String(para || '').toLowerCase().includes(t) : false;
     }),
   }));
+
+// Articles written before titles were attached carry no tmdb_refs, so there is
+// nothing to hang a save button on. Where the copy states a title the way these
+// guides do ("Disclosure Day (Friday, October 9). ..."), read it from the prose
+// and resolve it on TMDB. Deliberately narrow: only a paragraph that opens with
+// a name followed by a date or year in brackets is a candidate, and a candidate
+// is kept only when TMDB has exactly one title of that name (the article's year
+// breaks a tie), so "A horror library refresh (Thursday, October 1)" resolves
+// to nothing rather than to a wrong film. A TMDB failure just yields no titles.
+const LEADING_TITLE = /^([^()\n]{2,70}?)\s+\((?:(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day|January|February|March|April|May|June|July|August|September|October|November|December|\d{4})\b[^)]*\)/;
+const resolveMentionedTitles = async (body: string[], year: number | null): Promise<TmdbRef[]> => {
+  const key = Deno.env.get('TMDB_API_KEY');
+  if (!key) return [];
+  const names = [...new Set(body
+    .map((text) => LEADING_TITLE.exec(String(text || '').trim())?.[1]?.trim())
+    .filter((name): name is string => Boolean(name)))].slice(0, 8);
+  const found = await Promise.all(names.map(async (name): Promise<TmdbRef | null> => {
+    try {
+      const r = await fetch(
+        `https://api.themoviedb.org/3/search/multi?api_key=${key}&language=en-US&include_adult=false&query=${encodeURIComponent(name)}`,
+        { signal: AbortSignal.timeout(2500) },
+      );
+      if (!r.ok) return null;
+      const { results } = await r.json();
+      const hit = selectTmdbMatch(results, { title: name, year });
+      return hit
+        ? { media_type: hit.media_type, id: hit.id, title: hit.title ?? hit.name ?? name, poster_path: hit.poster_path ?? null }
+        : null;
+    } catch {
+      return null;
+    }
+  }));
+  const seen = new Set<number>();
+  return found.filter((t): t is TmdbRef => {
+    const id = t ? refId(t) : null;
+    if (!t || !id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+};
 
 // Reads as prose in a sentence ("not streaming in the UK"). Mirrors the same
 // map in supabase/functions/title-page, so the two surfaces word it alike.
@@ -363,53 +411,24 @@ const HOME_KIND_LABEL: Record<string, string> = { streaming: 'Now streaming', re
 
 // Kicker chips: sage everywhere except the featured (lead) story, which is
 // pink. The per-type tone colours in TYPE_META are not used for chips.
-const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false) => {
+const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false, showGuide = false) => {
   const m = TYPE_META[p.post_type];
   if (!m) return '';
+  // Every long-form piece is a guide, so the chip says nothing in a list.
+  if (p.post_type === 'guide' && !showGuide) return '';
   const label = (p.post_type === 'now_streaming' && HOME_KIND_LABEL[p.payload?.home_kind ?? '']) || m.label;
   return `<span class="kick${featured ? ' featured' : ''}">${esc(label)}</span>`;
 };
 
-// PostHog snippet for the server-rendered /whats-on pages. Same project token
-// as the app and marketing site (phc_uS3J…) with cross_subdomain_cookie so a
-// visit here joins the same landing → signup funnel; the delegated click
-// listener fires signup_cta_clicked / login_click to match website/js/config.js.
-const POSTHOG = `<script>
-if (['theplot.tv','www.theplot.tv','app.theplot.tv'].indexOf(location.hostname)>-1) {
-!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-/* Report unhandled errors and promise rejections to PostHog Error Tracking.
-   Only the app had this; these server-rendered pages ship real JavaScript to
-   real visitors and produced no error signal at all. The host gate above is
-   the dev gate, same as it is for pageviews.
-   dropOpaqueException discards the browser's opaque cross-origin "Script
-   error." — no message, no filename, no stack, so it can only ever be closed,
-   never diagnosed. Mirrors isOpaqueBrowserException in
-   apps/web/src/utils/opaqueException.js: an entry qualifies only when it is
-   BOTH synthetic and frameless, so a real throw is never dropped. Four copies
-   of this live in the tree (here, the other two rendered surfaces, and
-   apps/website/js/config.js) because none of them can import. Keep in step. */
-function dropOpaqueException(e){if(!e||e.event!=='$exception')return e;var L=e.properties&&e.properties.$exception_list;if(!Array.isArray(L)||!L.length)return e;return L.every(function(x){if(!x||typeof x!=='object')return false;if(!x.mechanism||x.mechanism.synthetic!==true)return false;var F=x.stacktrace&&x.stacktrace.frames;return !(F&&F.length>0);})?null:e;}
-posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U',{api_host:'https://a.theplot.tv',ui_host:'https://us.posthog.com',person_profiles:'identified_only',persistence:'localStorage+cookie',cross_subdomain_cookie:true,capture_pageview:true,autocapture:true,capture_exceptions:true,before_send:dropOpaqueException});
-document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="app.theplot.tv/"]');if(!a)return;var path;try{path=new URL(a.href).pathname;}catch(e){return;}var action=path.indexOf('/signup')===0?'signup_cta_clicked':path.indexOf('/login')===0?'login_click':path.indexOf('/save')===0?'save_cta_clicked':null;if(!action)return;posthog.capture(action,{placement:a.getAttribute('data-cta')||'whats_on',source:'whats_on'});},true);
-/* Forward this visit's real acquisition params onto the app links, so a
-   visitor who arrived here from social or search keeps their true source
-   across the hop. Mirrors forwardAttribution in apps/website/js/config.js.
-   Existing params win, so each page's own ?src= identity survives. */
-document.addEventListener('DOMContentLoaded',function(){var K=['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid','fbclid','msclkid','ref','src'],H=new URLSearchParams(location.search),C=new URLSearchParams();K.forEach(function(k){if(H.get(k))C.set(k,H.get(k));});try{var R=document.referrer&&new URL(document.referrer).hostname;if(R&&R!==location.hostname)C.set('referrer',R);}catch(e){}if(C.toString()){document.querySelectorAll('a[href*="app.theplot.tv/"],a[href^="/signup"],a[href^="/login"]').forEach(function(a){try{var u=new URL(a.href,location.origin);C.forEach(function(v,k){if(!u.searchParams.has(k))u.searchParams.set(k,v);});a.href=u.toString();}catch(e){}});}});
-}
-</script>`;
-
-// Google tag (gtag.js) + Google Tag Manager — mirrors apps/website/index.html,
-// crossOrigin included: without it the browser masks anything Google's scripts
-// throw to the opaque "Script error." (see apps/web/src/utils/opaqueException.js).
-const GA_GTM = `<script>
-if (['theplot.tv','www.theplot.tv','app.theplot.tv'].indexOf(location.hostname)>-1) {
-window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
-gtag('js',new Date());gtag('config','G-PYLHY9JMK1');
-var g=document.createElement('script');g.async=true;g.crossOrigin='anonymous';g.src='https://www.googletagmanager.com/gtag/js?id=G-PYLHY9JMK1';document.head.appendChild(g);
-(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.crossOrigin='anonymous';j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PC72PHBN');
-}
-</script>`;
+// Analytics (PostHog, gtag and GTM) and page behaviour for these pages live in
+// static files on the marketing site, apps/website/js/whats-on-head.js and
+// whats-on.js. The site's CSP allows no un-hashed inline script, and a page
+// rendered here has no build step to hash against. Same PostHog project token
+// as the app and marketing site, with cross_subdomain_cookie so a visit here
+// joins the same landing → signup funnel. The ?v= is a cache bust: bump it
+// when either file changes.
+const WHATS_ON_JS_VERSION = '20261017';
+const ANALYTICS_SCRIPT = `<script src="${SITE}/js/whats-on-head.js?v=${WHATS_ON_JS_VERSION}"></script>`;
 const GTM_NOSCRIPT = `<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PC72PHBN" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`;
 
 const SHORT_CACHE = 'public, s-maxage=3600, stale-while-revalidate=86400';
@@ -419,7 +438,7 @@ const SHORT_CACHE = 'public, s-maxage=3600, stale-while-revalidate=86400';
 // in the site audit.
 const ARTICLE_CACHE = 'public, s-maxage=86400, stale-while-revalidate=604800';
 
-const page = (title: string, head: string, body: string, status = 200, nav = 'whats-on', cacheControl = SHORT_CACHE) =>
+const page = (title: string, head: string, body: string, status = 200, nav = 'whats-on', cacheControl = SHORT_CACHE, after = '') =>
   new Response(
     `<!DOCTYPE html>
 <html lang="en">
@@ -428,8 +447,7 @@ const page = (title: string, head: string, body: string, status = 200, nav = 'wh
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <link rel="icon" type="image/svg+xml" href="${SITE}/favicon.svg">
-${POSTHOG}
-${GA_GTM}
+${ANALYTICS_SCRIPT}
 ${head}
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
@@ -511,7 +529,15 @@ ${head}
   h1.feed-title { font-family: var(--display); font-size: clamp(2.8rem, 6vw, 4rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
   h1.feed-title em { font-style: normal; font-weight: 500; color: var(--mut); }
 
-  nav.dex { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-bottom: 1px solid var(--hair); margin: 28px 0 0; }
+  .wsearch { display: flex; align-items: center; gap: 6px; flex: 0 1 300px; min-width: 0; margin-bottom: 8px; background: var(--paper); border-radius: 9999px; padding: 3px 3px 3px 16px; }
+  .wsearch input[type=search] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.95rem; color: var(--ink); padding: 6px 0; -webkit-appearance: none; appearance: none; }
+  .wsearch input[type=search]::placeholder { color: var(--faint); }
+  .wsearch button { border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.8rem; font-weight: 600; padding: 7px 14px; cursor: pointer; transition: background 0.2s; }
+  .wsearch button:hover { background: var(--fill-hover); }
+  .wsearch:focus-within { box-shadow: 0 0 0 2px var(--ink); }
+  .search-sum { margin: 28px 0 0; color: var(--mut); font-weight: 300; }
+  .search-sum a { color: var(--ink); }
+  nav.dex { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; border-bottom: 1px solid var(--hair); margin: 28px 0 0; }
   .dex-links { display: flex; gap: 28px; flex-wrap: wrap; }
   .dex a { color: var(--mut); text-decoration: none; padding-bottom: 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
   .dex a:hover { color: var(--ink); }
@@ -601,6 +627,44 @@ ${head}
   .tail-list a:hover { color: var(--mut); }
   .tail-list .meta { color: var(--mut); font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; padding-top: 3px; }
 
+  /* ── editorial list (Oct 2026) ──
+     The front page drops the cream-on-cream boxes: an image-led lead, stories
+     as hairline-ruled rows, sections headed by an ink rule, and the type label
+     as small kicker text instead of a pill. Scoped to .feed-grid so article
+     and filtered-list pages are untouched. The About card keeps its ink panel. */
+  .feed-grid { gap: 56px; }
+  .feed-main { gap: 0; }
+  .feed-side { gap: 36px; }
+  .feed-grid .kick { background: none; padding: 0; border-radius: 0; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #B83558; }
+  .feed-grid .rail-row .kick, .feed-grid .shelf-item .kick { color: var(--mut); }
+  .feed-grid .feature { display: block; padding: 0; background: none; border-radius: 0; margin-bottom: 8px; }
+  .feed-grid .f-media img, .feed-grid .f-media .ph { width: 100%; height: auto; aspect-ratio: 16 / 8; border-radius: 14px; margin-bottom: 20px; }
+  .feed-grid .f-text { gap: 8px; }
+  .feed-grid .feature h2 { font-size: clamp(1.9rem, 3.2vw, 2.4rem); line-height: 1.08; letter-spacing: -0.035em; max-width: 22ch; }
+  .feed-grid .feature .dek { max-width: 58ch; margin-bottom: 6px; }
+  .feed-grid .rail-row { background: none; border-radius: 0; padding: 16px 0; border-bottom: 1px solid var(--hair); gap: 24px; }
+  .feed-grid .feature + .rail-row { border-top: 1px solid var(--ink); margin-top: 28px; }
+  .feed-grid .rail-thumb { width: 72px; height: 72px; border-radius: 10px; }
+  .feed-grid .rail-t { font-size: 1.15rem; }
+  .feed-grid .rail-date { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.72rem; }
+  .feed-grid .sec-card { background: none; border-radius: 0; padding: 0; gap: 14px; }
+  .feed-main > .sec-card { margin: 36px 0 12px; }
+  .feed-grid .sec-head { padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+  .feed-grid .sec-dot { display: none; }
+  .feed-grid .sec-label { font-size: 1.25rem; }
+  .feed-grid .trend-row:first-child, .feed-grid .datecard:first-child, .feed-grid .tail-list a:first-child { border-top: none; }
+  .feed-grid .trend-rank.top { color: #B83558; }
+  @media (max-width: 900px) {
+    .feed-grid { gap: 32px; }
+    .feed-grid .feature { padding: 0; }
+  }
+  @media (max-width: 760px) {
+    .feed-grid .rail-row { padding: 14px 0; gap: 14px; }
+    .feed-grid .rail-thumb { width: 56px; height: 56px; }
+    .feed-grid .rail-t { font-size: 1.05rem; }
+    .feed-grid .sec-card { padding: 0; }
+  }
+
   /* filtered / paged list (unchanged structure, new type) */
   .group { display: grid; grid-template-columns: 170px 1fr; gap: 36px; padding-top: 34px; border-top: 1px solid var(--hair); }
   .g-date { padding-top: 22px; }
@@ -614,9 +678,9 @@ ${head}
   .row-dek { display: block; color: var(--mut); font-size: 0.92rem; line-height: 1.45; margin-top: 8px; }
   .row img { width: 240px; aspect-ratio: 3/2; object-fit: cover; flex-shrink: 0; border-radius: 14px; }
   .row .ph { width: 240px; aspect-ratio: 3/2; flex-shrink: 0; background: var(--paper); border-radius: 14px; }
-  .older-row { border-top: 1px solid var(--hair); padding: 26px 0 0; text-align: center; }
-  .older { color: var(--mut); text-decoration: none; }
-  .older:hover { color: var(--ink); }
+  .older-row { border-top: 1px solid var(--hair); padding: 44px 0 0; text-align: center; }
+  .older { display: inline-flex; align-items: center; gap: 10px; padding: 18px 40px; border-radius: 9999px; background: var(--ink); color: var(--bg); font-size: 0.95rem; letter-spacing: 0.1em; text-decoration: none; transition: background 0.2s var(--ease), transform 0.2s var(--ease); }
+  .older:hover { background: #3d3d36; transform: translateY(-1px); }
 
   /* entry page */
   .crumbs { max-width: 680px; margin: 0 auto; padding-top: 40px; display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--mut); }
@@ -658,6 +722,12 @@ ${ARTICLE_TABLE_CSS}
   .gt-add { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--fill); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
   .gt-add:hover { background: var(--fill-hover); }
   .gt-add svg { width: 13px; height: 13px; display: block; }
+  /* A save line under the paragraph that first names a title. One per title,
+     quiet enough to read as part of the prose rather than an ad break. */
+  .post-body .save-line { display: flex; flex-wrap: wrap; gap: 8px; margin: -10px 0 22px; }
+  .save-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--hair); color: var(--ink); font-size: 0.82rem; font-weight: 600; text-decoration: none; transition: background 0.2s; }
+  .save-chip:hover { background: var(--fill); }
+  .save-chip svg { width: 20px; height: 20px; padding: 4px; border-radius: 50%; background: var(--fill); display: block; box-sizing: border-box; }
   @media (max-width: 640px) {
     .gt-card { flex-direction: column; gap: 0; padding: 6px 16px; }
     .gt-col:first-child .gt-row:last-child { border-bottom: 1px solid rgba(41,41,36,0.1); }
@@ -769,16 +839,17 @@ ${FOOTER_CSS}
     .row img, .row .ph { width: 150px; }
     .row-t { font-size: 1.15rem; }
     .row-dek { display: none; }
-    .dex { overflow-x: auto; scrollbar-width: none; }
-    .dex::-webkit-scrollbar { display: none; }
-    .dex-links { flex-wrap: nowrap; }
+    nav.dex { flex-direction: column; align-items: stretch; gap: 14px; }
+    .dex-links { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .dex-links::-webkit-scrollbar { display: none; }
+    .wsearch { flex: none; margin-bottom: 14px; }
   }
 </style>
 </head>
 <body>
 ${GTM_NOSCRIPT}
 <nav class="topnav" id="topnav">
-  <a href="${SITE}" class="nav-logo" aria-label="Plot">plot</a>
+  <a href="${SITE}" class="nav-logo" aria-label="plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
   <ul class="nav-links" id="navLinks">
     <li><a href="${FEED_PATH}"${nav === 'whats-on' ? ' class="current"' : ''}>What's On</a></li>
     <li><a href="${APP}/login?src=whats_on_nav" data-cta="nav">Log in</a></li>
@@ -791,29 +862,9 @@ ${GTM_NOSCRIPT}
 <div class="wrap">
 ${body}
 </div>
+${after}
 ${FOOTER_HTML}
-<script>
-  (function () {
-    var nav = document.getElementById('topnav');
-    var update = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
-    window.addEventListener('scroll', update, { passive: true });
-    update();
-    var hamburger = document.getElementById('hamburger');
-    var navLinks = document.getElementById('navLinks');
-    if (hamburger && navLinks) {
-      var setOpen = function (open) {
-        navLinks.classList.toggle('open', open);
-        hamburger.classList.toggle('open', open);
-        nav.classList.toggle('nav-open', open);
-        hamburger.setAttribute('aria-expanded', String(open));
-      };
-      hamburger.addEventListener('click', function () { setOpen(!navLinks.classList.contains('open')); });
-      navLinks.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { setOpen(false); }); });
-      document.addEventListener('click', function (e) { if (navLinks.classList.contains('open') && !e.target.closest('nav') && !e.target.closest('.nav-links')) { setOpen(false); } });
-      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && navLinks.classList.contains('open')) { setOpen(false); hamburger.focus(); } });
-    }
-  })();
-</script>
+<script defer src="${SITE}/js/whats-on.js?v=${WHATS_ON_JS_VERSION}"></script>
 </body>
 </html>`,
     {
@@ -1030,7 +1081,8 @@ const renderChart = async (supabase: Db) => {
 const HOME_BATCH = 60;
 const HERO_RAIL_SIZE = 7;
 const STREAMING_SIZE = 4;
-const COUNTDOWN_SIZE = 2;
+const COUNTDOWN_SIZE = 6;
+const ON_THIS_DAY_SIZE = 4;
 const TRAILER_SIZE = 2;
 // Dedicated per-category queries fetch this many extra so a section can still
 // fill up even if every hero slot happens to land in that same category.
@@ -1103,6 +1155,18 @@ const comingSoonCards = (posts: FeedPost[]) => `<div class="datecards">${posts.m
   </a>`;
 }).join('')}</div>`;
 
+// On this day: anniversary pieces, each pinned to a calendar date, so the
+// headline leads and the post date sits on the left like Coming soon's.
+const onThisDayList = (posts: FeedPost[]) => `<div class="datecards">${posts.map((p) => {
+  const img = postImage(p);
+  const { mon, day } = fmtBadge(p.scheduled_for);
+  return `<a class="datecard" href="${FEED_PATH}/${esc(p.slug)}">
+    <span class="date-badge">${esc(mon)}<span class="dd">${day}</span></span>
+    <div class="dc-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}</div>
+    <span class="dc-t">${esc(postTitle(p))}</span>
+  </a>`;
+}).join('')}</div>`;
+
 const firstLookCards = (posts: FeedPost[]) => `<div class="wide-grid">${posts.map((p) => {
   const img = postImage(p);
   return `<a class="wide-card" href="${FEED_PATH}/${esc(p.slug)}">
@@ -1132,38 +1196,30 @@ const subscribeForm = (placement: string) => `
     <button type="submit">Subscribe</button>
   </form>
   <div class="nlsub-msg" id="nlMsg" role="status"></div>
-</aside>
-<script>
-  (function () {
-    var form = document.getElementById('nlForm');
-    var msg = document.getElementById('nlMsg');
-    if (!form || !msg) return;
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var button = form.querySelector('button');
-      button.disabled = true;
-      msg.textContent = '';
-      fetch('/api/newsletter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: form.elements.email.value,
-          website: form.elements.website.value,
-          list: 'newsletter',
-        }),
-      }).then(function (r) {
-        if (!r.ok) throw new Error('bad status');
-        msg.textContent = "You're in. The next issue lands in your inbox.";
-        form.reset();
-        if (window.posthog) posthog.capture('newsletter_subscribed', { placement: form.dataset.placement });
-      }).catch(function () {
-        msg.textContent = 'Something went wrong — try again in a minute.';
-      }).finally(function () {
-        button.disabled = false;
-      });
-    });
-  })();
-</script>`;
+</aside>`;
+
+// The closing banner at the foot of the What's On front page: signup first,
+// the newsletter as the quiet fallback, over a wall of trending posters that
+// /js/whats-on.js fills in (#wclWall). It carries #newsletter and the nlForm
+// ids, so the /newsletter redirects and the form wiring land here.
+const closerSection = (placement: string) => `
+<section class="wcl" id="newsletter">
+  <div class="wcl-wall" id="wclWall" aria-hidden="true"></div>
+  <div class="wcl-inner">
+    <h2 class="wcl-headline">Your next favorite <br class="wcl-br"><em>is out there.</em></h2>
+    <p class="wcl-sub">Free forever. Premium when you want more.</p>
+    <a class="wcl-cta" href="${APP}/signup?src=${esc(placement)}_closer" data-cta="${esc(placement)}_closer">Start tracking</a>
+    <div class="wcl-mail">
+      <span class="wcl-hint">Want more? Get movie and TV updates by email.</span>
+      <form class="wcl-form" id="nlForm" data-placement="${esc(placement)}_closer">
+        <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
+        <input type="text" name="website" class="nlsub-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit">Subscribe</button>
+      </form>
+      <div class="wcl-msg" id="nlMsg" role="status"></div>
+    </div>
+  </div>
+</section>`;
 
 // A short introduction to Plot with the two ways in. The full card sits above
 // the newsletter card on every list and article page. `compact` is a single
@@ -1178,7 +1234,7 @@ const aboutCard = (placement: string, compact = false) => {
     return `
 <aside class="about about-compact card r4" aria-label="About Plot">
   <div class="about-compact-copy">
-    <p class="about-title">New to <span class="about-wordmark">plot</span>?</p>
+    <p class="about-title">New to <span class="about-wordmark"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" role="img" aria-label="plot" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></span>?</p>
     <p class="about-sub">Track what you watch and know what's coming next.</p>
   </div>
   ${actions}
@@ -1186,7 +1242,7 @@ const aboutCard = (placement: string, compact = false) => {
   }
   return `
 <aside class="about card r4" aria-label="About Plot">
-  <span class="about-logo" aria-hidden="true">plot</span>
+  <span class="about-logo" aria-hidden="true"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></span>
   <p class="about-title">Everything you've watched. Everything you want to watch.</p>
   <p class="about-sub">Plot is your personal movie and TV companion. Track what you've seen, save what's next and know what's streaming, trending and landing soon, all in one place.</p>
   ${actions}
@@ -1231,6 +1287,34 @@ const SUBSCRIBE_CSS = `
   .nlsub-msg { margin-top: 10px; color: var(--mut); font-size: 0.86rem; min-height: 1.2em; }
   /* on list and article pages the card stands alone below the content */
   .wrap > .nlsub, .post-foot > .nlsub { margin-top: 44px; }
+
+  /* Closing banner over a poster wall (What's On front page). */
+  .wcl { position: relative; isolation: isolate; overflow: hidden; margin-top: -40px; padding: 9rem 24px 8rem; text-align: center; scroll-margin-top: 88px; }
+  .wcl-wall { position: absolute; inset: 0; z-index: -1; display: grid; grid-template-columns: repeat(9, 1fr); grid-auto-rows: min-content; align-content: start; gap: 12px; opacity: 0.15;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 78%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 78%, transparent 100%);
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+  .wcl-tile { aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; background: #e5e3db; }
+  .wcl-tile img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.6s var(--ease); }
+  .wcl-tile img.loaded { opacity: 1; }
+  .wcl-inner { max-width: 720px; margin: 0 auto; position: relative; display: flex; flex-direction: column; align-items: center; }
+  .wcl-headline { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: clamp(2.5rem, 5.5vw, 4.5rem); line-height: 0.86; margin-bottom: 1.1rem; }
+  .wcl-headline em { font-style: normal; }
+  .wcl-sub { font-size: 1.05rem; font-weight: 300; color: var(--mut); max-width: 44ch; margin: 0 auto 1.6rem; line-height: 1.5; }
+  .wcl-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 28px; border-radius: 9999px; background: var(--fill); color: var(--ink); font-weight: 600; font-size: 1rem; text-decoration: none; transition: background 0.2s; }
+  .wcl-cta:hover { background: var(--fill-hover); }
+  .wcl-mail { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; margin-top: 2.2rem; width: 100%; }
+  .wcl-hint { font-size: 0.8rem; font-weight: 300; color: var(--mut); }
+  .wcl-form { display: flex; align-items: center; border: 1px solid var(--ink); border-radius: 9999px; padding: 6px; height: 56px; width: 360px; max-width: 100%; }
+  .wcl-form input[type=email] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.88rem; padding: 0 6px 0 16px; color: var(--ink); }
+  .wcl-form input[type=email]::placeholder { color: var(--mut); }
+  .wcl-form button { height: 40px; padding: 0 18px; border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
+  .wcl-form button:hover:not(:disabled) { background: var(--fill-hover); }
+  .wcl-form button:disabled { opacity: 0.6; cursor: default; }
+  .wcl-msg { font-size: 0.78rem; color: var(--mut); min-height: 1.1em; }
+  .wcl + .site-footer { margin-top: 0; border-top: 0; }
+  @media (max-width: 820px) { .wcl-wall { grid-template-columns: repeat(6, 1fr); } }
+  @media (max-width: 600px) { .wcl { padding: 6rem 16px 5rem; } }
+  @media (pointer: coarse) { .wcl-form { height: 52px; } .wcl-form button, .wcl-form input[type=email] { min-height: 44px; } }
 `;
 const SUBSCRIBE_HEAD = `<style>${SUBSCRIBE_CSS}</style>`;
 
@@ -1289,6 +1373,7 @@ Deno.serve(async (req) => {
     const type = TYPE_META[url.searchParams.get('type') || ''] ? url.searchParams.get('type') : null;
     const pageNum = Math.min(Math.max(parseInt(url.searchParams.get('page') || '1', 10) || 1, 1), 100);
 
+    const rawQ = (url.searchParams.get('q') || '').replace(/\s+/g, ' ').trim().slice(0, 80);
     const dexLinks = FILTERS.map((f) => {
       const active = f.key === type;
       const href = f.key ? `${FEED_PATH}?type=${f.key}` : FEED_PATH;
@@ -1321,7 +1406,44 @@ Deno.serve(async (req) => {
       </div>
       <nav class="dex r2">
         <div class="dex-links">${dexLinks}</div>
+        <form class="wsearch" role="search" action="${FEED_PATH}" method="get">
+          <input type="search" name="q" value="${esc(rawQ)}" placeholder="Search What's On" maxlength="80" aria-label="Search What's On articles" autocomplete="off">
+          <button type="submit">Search</button>
+        </form>
       </nav>`;
+
+    // Search: ?q= over article titles and bodies, every word required. Served
+    // un-cached and noindex (the Pages proxy skips its cache for q), canonical
+    // to the front page so a search never becomes a page of its own.
+    const words = searchWords(rawQ);
+    if (words.length) {
+      let query = baseQuery();
+      for (const w of words) {
+        query = query.or(`copy->>page_title.ilike.%${w}%,copy->>page_body.ilike.%${w}%`);
+      }
+      const { data: found } = await query.order('scheduled_for', { ascending: false }).limit(SEARCH_LIMIT);
+      const lower = words.map((w) => w.toLowerCase());
+      const inTitle = (p: FeedPost) => {
+        const t = postTitle(p).toLowerCase();
+        return lower.every((w) => t.includes(w));
+      };
+      const results = ((found || []) as FeedPost[])
+        .map((p, i) => ({ p, i, hit: inTitle(p) ? 0 : 1 }))
+        .sort((a, b) => a.hit - b.hit || a.i - b.i)
+        .map((r) => r.p);
+      const n = results.length;
+      const summary = n
+        ? `${n >= SEARCH_LIMIT ? `The ${SEARCH_LIMIT} newest` : n} ${n === 1 ? 'article' : 'articles'} for &ldquo;${esc(rawQ)}&rdquo;. <a href="${FEED_PATH}">Clear search</a>`
+        : `No articles match &ldquo;${esc(rawQ)}&rdquo;. Try fewer or different words, or <a href="${FEED_PATH}">browse What's On</a>.`;
+      const searchHead = `${SUBSCRIBE_HEAD}
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="${SITE}${FEED_PATH}">`;
+      return page(`${rawQ} – Search What's On – Plot`, searchHead, `
+        ${titleRow}
+        <p class="search-sum r3">${summary}</p>
+        ${results.length ? dailyWire(results) : ''}
+      `, 200, 'whats-on', 'no-store', closerSection('whats_on'));
+    }
 
     // Unfiltered first page: the sectioned front page. A ?type= filter or
     // page 2+ is a reader who already picked a category — that stays the
@@ -1332,18 +1454,23 @@ Deno.serve(async (req) => {
         { data: streamingData },
         { data: countdownData },
         { data: trailerData },
+        { data: onThisDayData },
         { latest: chartLatest, prior: chartPrior },
       ] = await Promise.all([
         baseQuery().order('scheduled_for', { ascending: false }).limit(HOME_BATCH),
         baseQuery().eq('post_type', 'now_streaming').order('scheduled_for', { ascending: false }).limit(STREAMING_SIZE + CATEGORY_BUFFER),
         baseQuery().eq('post_type', 'countdown').order('scheduled_for', { ascending: false }).limit(COUNTDOWN_SIZE + CATEGORY_BUFFER),
         baseQuery().eq('post_type', 'trailer').order('scheduled_for', { ascending: false }).limit(TRAILER_SIZE + CATEGORY_BUFFER),
+        baseQuery().eq('post_type', 'on_this_day').order('scheduled_for', { ascending: false }).limit(ON_THIS_DAY_SIZE),
         fetchTrendingSnapshots(supabase),
       ]);
-      const batch = (batchData || []) as FeedPost[];
+      // Countdowns and On this day posts have their own sidebar sections, so
+      // they stay out of the feed column's lead, stories and More updates.
+      const SIDEBAR_ONLY = new Set(['countdown', 'on_this_day']);
+      const batch = ((batchData || []) as FeedPost[]).filter((p) => !SIDEBAR_ONLY.has(p.post_type));
 
       if (!batch.length) {
-        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>${aboutCard('whats_on')}${subscribeForm('whats_on')}`);
+        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>${aboutCard('whats_on')}`, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
       }
 
       // The lead plus a scan-list rail come straight off the top of the same
@@ -1361,15 +1488,16 @@ Deno.serve(async (req) => {
       const heroSlugs = new Set([lead.slug, ...rail.map((p) => p.slug)]);
 
       const streaming = ((streamingData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, STREAMING_SIZE);
-      const countdown = ((countdownData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, COUNTDOWN_SIZE);
+      const countdown = ((countdownData || []) as FeedPost[]).slice(0, COUNTDOWN_SIZE);
+      const onThisDay = ((onThisDayData || []) as FeedPost[]).slice(0, ON_THIS_DAY_SIZE);
       const trailer = ((trailerData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, TRAILER_SIZE);
-      const used = new Set([...heroSlugs, ...streaming.map((p) => p.slug), ...countdown.map((p) => p.slug), ...trailer.map((p) => p.slug)]);
+      const used = new Set([...heroSlugs, ...streaming.map((p) => p.slug), ...trailer.map((p) => p.slug)]);
       const tail = rest.filter((p) => !used.has(p.slug)).slice(0, 6);
       const chartItems = ((chartLatest?.items as ChartItem[] | undefined) || []).slice(0, 5);
 
       // Feed column: lead, two stories, New at home, two more stories, First
       // look, the rest of the rail, More updates. Sidebar: Trending, Coming
-      // soon, the newsletter. Everything is a cream card on the cream ground.
+      // soon, On this day, About. Everything is a cream card on the cream ground.
       const stories = rail.map(railRow);
       const main = [
         featuredHero(lead),
@@ -1383,8 +1511,8 @@ Deno.serve(async (req) => {
       const side = [
         chartItems.length ? sectionCard('Trending', `${FEED_PATH}/chart`, trendingTeaser(chartItems, chartPrior), true) : '',
         countdown.length ? sectionCard('Coming soon', `${FEED_PATH}?type=countdown`, comingSoonCards(countdown), true) : '',
+        onThisDay.length ? sectionCard('On this day', `${FEED_PATH}?type=on_this_day`, onThisDayList(onThisDay), true) : '',
         aboutCard('whats_on'),
-        subscribeForm('whats_on'),
       ].join('');
 
       // The front page shows the newest few dozen posts in sections; without
@@ -1397,7 +1525,7 @@ Deno.serve(async (req) => {
           <aside class="feed-side">${side}</aside>
         </div>
         <div class="older-row r4"><a class="older sc" href="${FEED_PATH}?page=2">Older updates &rarr;</a></div>
-      `);
+      `, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
     }
 
     const offset = (pageNum - 1) * PAGE_SIZE;
@@ -1428,8 +1556,7 @@ Deno.serve(async (req) => {
       ${empty}
       ${older}
       ${aboutCard('whats_on')}
-      ${subscribeForm('whats_on')}
-    `);
+    `, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
   }
 
   const { data: post } = await baseQuery().eq('slug', slug).maybeSingle();
@@ -1512,6 +1639,12 @@ Deno.serve(async (req) => {
   // The poster grid belongs to long-form, multi-title guides. Ordinary article
   // pages use their single, combined title/save/watch module below instead.
   const refs = Array.isArray(typed.tmdb_refs) ? typed.tmdb_refs : [];
+  // What the copy names, for the save chips and the closing card. Attached refs
+  // when there are any; otherwise whatever the prose names that TMDB can place.
+  // The story modules and ordering below keep working from `refs` alone.
+  const mentioned = refs.length
+    ? refs
+    : await resolveMentionedTitles(body, Number(String(typed.scheduled_for || '').slice(0, 4)) || null);
   // The copy contract guarantees body[0] = intro, body[1..refs.length] = one
   // paragraph per ref in order, body[refs.length+1] = close — but only trust
   // that when the flag from validateGuide is set AND the length still matches,
@@ -1567,7 +1700,7 @@ Deno.serve(async (req) => {
     </div>`;
   }).join('');
 
-  const k = kicker(typed);
+  const k = kicker(typed, false, true);
   const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';
   // A guide earns up to two modules: the title its copy opens with, and the
   // planner's top remaining pick placed where the copy first names it. The rest
@@ -1599,29 +1732,48 @@ Deno.serve(async (req) => {
   if (runnerUpHtml && runnerUp) shown.add(runnerUp.ref);
   const rest = refs.filter((r) => !shown.has(r));
   const TAIL_HEAD: Record<string, string> = {
-    guide: 'Also in this guide',
+    guide: 'Save from this guide',
     upcoming: 'Everything landing this week',
   };
-  const tailHead = TAIL_HEAD[typed.post_type];
-  const titlesSection = tailHead && rest.length && !inlineTitles
+  // Any article that names more than one title gets the card, not just guides
+  // and the week ahead.
+  const tailHead = TAIL_HEAD[typed.post_type] || 'Save from this article';
+  // The closing summary card. A guide lists every title it names, including
+  // the ones a module already featured, so the reader can save the lot in one
+  // place; other post types keep to what the modules did not show.
+  const summaryTitles = typed.post_type === 'guide' || !TAIL_HEAD[typed.post_type] ? mentioned : rest;
+  const titlesSection = tailHead && summaryTitles.length > 1
     ? `<section class="gt">
         <div class="gt-head">
           <h2>${esc(tailHead)}</h2>
-          <span class="gt-count">${rest.length}${typed.post_type === 'guide' ? ' more' : ' titles'}</span>
+          <span class="gt-count">${summaryTitles.length} titles</span>
         </div>
         <div class="gt-card">
-          <div class="gt-col">${restRows(rest.slice(0, Math.ceil(rest.length / 2)))}</div>
-          <div class="gt-col">${restRows(rest.slice(Math.ceil(rest.length / 2)))}</div>
+          <div class="gt-col">${restRows(summaryTitles.slice(0, Math.ceil(summaryTitles.length / 2)))}</div>
+          <div class="gt-col">${restRows(summaryTitles.slice(Math.ceil(summaryTitles.length / 2)))}</div>
         </div>
       </section>`
     : '';
 
-  // Second prose paragraph gets the signup prompt when the article continues
-  // past it. The end prompt is always there, so a short piece is not asked twice.
+  // One signup prompt per article, at the end. Nothing is inserted mid-body.
   const bodyChunks: { html: string; prose: boolean }[] = [];
+  // A save chip follows the first paragraph that names a title, for titles no
+  // module already carries a save button for. Each title is offered once.
+  const chipped = new Set<TmdbRef>();
+  const saveLine = (text: string) => {
+    const lower = text.toLowerCase();
+    const hits = mentioned.filter((r) => {
+      const t = String(r.title || '').toLowerCase().trim();
+      return refId(r) && t && !shown.has(r) && !chipped.has(r) && lower.includes(t);
+    }).slice(0, 3);
+    hits.forEach((r) => chipped.add(r));
+    if (!hits.length) return '';
+    return `<p class="save-line">${hits.map((r) => `<a class="save-chip" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&amp;tmdb_id=${refId(r)}&amp;src=whats_on_article" data-cta="article_save" aria-label="Save ${esc(r.title)} to your Plot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Save ${esc(r.title)}</a>`).join('')}</p>`;
+  };
   const pushProse = (text: string, html: string) => {
     if (!text) return;
-    bodyChunks.push({ html, prose: !isArticleTable(text) });
+    const prose = !isArticleTable(text);
+    bodyChunks.push({ html: prose ? html + saveLine(text) : html, prose });
   };
   if (body[0]) pushProse(body[0], bodyLede);
   if (storyHtml) bodyChunks.push({ html: storyHtml, prose: false });
@@ -1638,17 +1790,12 @@ Deno.serve(async (req) => {
   } else {
     body.slice(1).forEach((text) => pushProse(text, renderArticleBlock(text)));
   }
-  const inlinePrompt = articleSignupPromptHtml({
-    app: APP,
-    slug: typed.slug,
-    placement: 'whats_on_article_inline',
-  });
   const endPrompt = articleSignupPromptHtml({
     app: APP,
     slug: typed.slug,
     placement: 'whats_on_article_end',
   });
-  const bodyHtml = insertPromptAfterSecondParagraph(bodyChunks, inlinePrompt, Boolean(titlesSection));
+  const bodyHtml = bodyChunks.map((chunk) => chunk.html).join('');
 
   const docTitle = fitTitle([`${title} · Plot`, title]);
   return page(docTitle, head, `

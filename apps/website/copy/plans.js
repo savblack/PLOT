@@ -8,14 +8,14 @@
 export const PLANS_PAGE = {
   meta: {
     title: 'Plans & Pricing — plot',
-    description: 'plot is free to use, forever. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers.',
-    ogDescription: 'Free to use, forever. Premium is US$3/month or US$24/year with a 7-day free trial for new subscribers.',
+    description: 'plot is free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
+    ogDescription: 'Free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
   },
 
   hero: {
     pageLabel: 'Plans',
-    h1: 'Do more with everything you watch',
-    lede: 'Start free and keep every movie and show in one place. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial. It adds unlimited lists, a live release calendar in your calendar app and Pick for Me.',
+    h1: 'Free forever. Premium when you want more.',
+    lede: 'Free keeps track. Premium helps you decide what to watch next. Skip the endless scroll, the first week is on us.',
   },
 
   billingToggle: {
@@ -36,30 +36,54 @@ export const PLANS_PAGE = {
       'Up to 5 custom lists',
       'Follow friends & share your profile',
     ],
-    cta: 'Get started free',
+    cta: 'Start tracking',
   },
 
   premiumPlan: {
     name: 'Premium',
     // Amount/billed line are recalculated by JS when the billing toggle
     // changes; these are the initial (annual) values rendered in the HTML.
-    amount: 'US$2',
+    amount: '$2',
     per: '/mo',
-    billed: 'US$24 billed yearly · taxes included',
-    billedMonthly: 'US$3 billed monthly · taxes included',
-    trial: '7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
+    billed: 'Billed $24 once a year',
+    billedMonthly: 'Billed monthly. Cancel anytime.',
+    flag: '7-day free trial',
+    trial: 'Commitment-free. Cancel during the trial and you pay $0.',
     tagline: 'Everything in Free, plus:',
     features: [
-      'Unlimited custom lists',
-      'Live release calendar in your calendar app',
-      'Pick for Me: a shortlist for tonight',
+      'Pick for me: a shortlist for tonight',
+      'Watch together: settle what to watch',
+      'Your watch profile',
+      'Custom themes, widgets and app icons',
+      'Unlimited and smart lists',
+      'Release dates in your calendar app',
+      'Actor and director alerts',
     ],
-    cta: 'Explore Premium',
+    cta: 'Start 7-day free trial',
+  },
+
+  // "Less deciding. More watching." — one benefit at a time with a product
+  // visual beside it (the stories switcher). The three smaller benefits sit
+  // in pills beneath. The Taste match heading carries an <s> strike-through
+  // ("science" struck, "cinema" stays); the HTML gives it an aria-label.
+  premiumStories: {
+    eyebrow: 'Plot Premium',
+    h2: 'Less deciding. More watching.',
+    steps: [
+      { label: 'Pick for me', h3: 'Something to watch, in under a minute.', body: 'How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.' },
+      { label: 'Watch together', h3: 'Settle movie night before the snacks are ready.', body: 'Watch together analyzes everyone’s Plot profiles to find movie and TV matches in your lists.' },
+      { label: 'Your profile', h3: 'Every story has a plot. Here’s yours.', body: 'Every film and show you log adds up to a profile: the genres you lean on, the hours you’ve put in, and the titles you keep going back to.' },
+      { label: 'Taste match', h3: 'Find out your compatibility based on <s>science</s> cinema.', body: 'Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.' },
+      { label: 'Make it yours', h3: 'Your Plot, your way.', body: 'Light, dark or in between. Widgets for your home screen. Customize your Plot app interface and icon. Plot, the way you’d have made it.' },
+    ],
+    cta: 'Start 7-day free trial',
+    alsoLabel: 'Also in Premium',
+    also: ['Unlimited and smart lists', 'Release dates in your calendar app', 'Actor and director alerts'],
   },
 
   comparison: {
     title: 'Compare plans',
-    note: 'Features marked Coming soon are still on the way.',
+    note: 'Nothing is deleted if you downgrade. Your lists stay exactly as they are.',
     columns: { feature: 'Feature', free: 'Free', premium: 'Premium' },
     rows: [
       { feature: 'Track movies & TV', free: true, premium: true },
@@ -70,32 +94,43 @@ export const PLANS_PAGE = {
       { feature: 'Follow friends & share profile', free: true, premium: true },
       { feature: 'Where to watch', free: true, premium: true },
       { feature: 'Custom lists', free: 'Up to 5', premium: 'Unlimited' },
-      { feature: 'Live calendar subscription', free: false, premium: true },
-      { feature: 'Pick for Me', free: false, premium: true },
+      { feature: 'Smart lists', free: false, premium: true },
+      { feature: 'Release dates in your calendar app', free: false, premium: true },
+      { feature: 'Pick for me', free: false, premium: true },
+      { feature: 'Watch together', free: false, premium: true },
+      { feature: 'Your watch profile', free: 'Overview', premium: 'Full profile' },
+      { feature: 'Taste match with a friend', free: false, premium: true },
+      { feature: 'Custom themes, widgets & app icons', free: false, premium: true },
+      { feature: 'Actor & director alerts', free: false, premium: true },
     ],
   },
 
   faq: {
     title: 'Questions',
-    items: [
+    lede: 'Short answers. Anything else, email us.',
+    groups: [
       {
-        q: 'Is the Free plan really free?',
-        a: 'Yes. No credit card and no trial clock. Track as much as you like on Free, for as long as you like.',
+        label: 'Plans',
+        items: [
+          { q: 'Is Free really free?', a: 'Yes. No card, no trial clock, no limit on what you track. Free keeps your watchlist, history, release calendar and up to five lists for as long as you like.' },
+          { q: 'What do I get with Premium?', a: 'Everything in Free, plus Pick for me, Watch together, your watch profile, Taste match, custom themes, widgets and app icons, unlimited and smart lists, release dates in your calendar app, and actor and director alerts. The table above has the full list.' },
+          { q: 'Does my friend need Premium too?', a: 'No. For Watch together and Taste match, only one of you needs Premium.' },
+          { q: 'What happens to my lists if I downgrade?', a: 'Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.' },
+        ],
       },
       {
-        q: 'Can I get Premium now?',
-        a: 'Yes. Choose Monthly or Yearly and start your free trial in plot. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
-      },
-      {
-        q: 'Can I cancel anytime?',
-        a: 'Yes. Cancel during the 7-day trial and you pay $0. After the trial, cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.',
-      },
-      {
-        q: 'What happens to my lists if I downgrade?',
-        a: 'Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.',
+        label: 'Billing',
+        items: [
+          { q: 'How does the free trial work?', a: 'Start Premium and the first 7 days are free. You won’t be charged until the trial ends, and if you cancel during the trial you pay $0. The trial is for new subscribers.' },
+          { q: 'Can I switch between monthly and annual?', a: 'Yes, any time, from Manage subscription in Settings.' },
+          { q: 'Can I cancel anytime?', a: 'Yes. Cancel from Manage subscription in Settings and keep Premium until the end of the period you’ve paid for.' },
+          { q: 'Can I get a refund?', a: 'The trial is there so you can try Premium before you pay, so charges after it aren’t refundable and we don’t refund partial months or years. If you think you were charged by mistake, email support@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.' },
+          { q: 'What currency am I charged in?', a: 'Prices are in US dollars and include tax. Checkout runs through Stripe, which shows your total in your local currency where it’s supported, so you see exactly what you’ll pay before you confirm.' },
+          { q: 'How do you take payment?', a: 'Securely, through Stripe. Plot never sees or stores your card details.' },
+          { q: 'Something else?', a: 'Email support@theplot.tv and a person will get back to you.' },
+        ],
       },
     ],
   },
 
-  fineprint: 'Prices are in US dollars and include tax. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. Your total and billing currency are shown at checkout. Payments are processed securely by Stripe. Need a hand? contact@theplot.tv',
 };

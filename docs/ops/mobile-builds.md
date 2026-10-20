@@ -246,6 +246,7 @@ disagrees with the one EAS is incrementing.
 - `/save`, `/list` and unknown `app.theplot.tv` paths have routes
   (`app/save.tsx`, `app/list.tsx`, `app/+not-found.tsx`); the black
   "Unmatched Route" screen from the 2026-09-14 run is gone.
-- `SHOW_PREMIUM_PRICING` in `lib/launchFeatures.ts` is off: the iOS build
-  shows no price, trial note or Upgrade button (App Review 3.1.1).
+- Upgrade and Manage subscription open Stripe in the phone's browser, only on
+  the US storefront (`BROWSER_CHECKOUT_ENABLED`, `purchaseLinkOut.js`). Outside
+  the US nothing is drawn, to stay inside App Review 3.1.1 during review.
 - Still never run on a device: a fresh sign-up through the new onboarding.

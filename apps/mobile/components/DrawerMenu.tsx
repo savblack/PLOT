@@ -15,14 +15,15 @@ import { useAppData } from '../contexts/AppDataContext';
 import Svg, { Circle, Path, Polyline } from 'react-native-svg';
 import { Avatar } from './Avatar';
 import NavGlyph, { NavIconName } from './NavIcons';
-import { SHOW_KOFI_LINK, SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
+import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
+import PlotWordmark from './PlotWordmark';
 
 // Web's drawer is min(300px, 85vw). The old 58% width was sized for bare labels.
 const DRAWER_W = Math.min(300, Dimensions.get('window').width * 0.85);
 
 // Same order as the web phone drawer, with Search kept at the top because
-// the desktop rail leads with it. Settings stays pinned. Watch together
-// stays out while its launch flag is off. Follow requests live in Settings.
+// the desktop rail leads with it. Settings stays pinned. Watch together is
+// included while SHOW_WATCH_TOGETHER is on. Follow requests live in Settings.
 const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; premium?: boolean }[] = [
   { id: 'search',   label: APP_SHELL.search,       path: '/(app)/search',   icon: 'search' },
   { id: 'index',    label: 'Home',                  path: '/(app)/',         icon: 'home' },
@@ -30,6 +31,7 @@ const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; p
   { id: 'my-lists', label: 'My Lists',              path: '/(app)/my-lists', icon: 'lists' },
   { id: 'history',  label: titleForView('history'), path: '/(app)/history',  icon: 'history' },
   { id: 'guide',    label: titleForView('guide'),   path: '/(app)/guide',    icon: 'guide' },
+  { id: 'new-releases', label: titleForView('new-releases'), path: '/(app)/new-releases', icon: 'calendar' },
   { id: 'tonight',  label: titleForView('tonight'), path: '/(app)/tonight',  icon: 'tonight', premium: true },
   ...(SHOW_WATCH_TOGETHER ? [{ id: 'together', label: titleForView('together'), path: '/(app)/together', icon: 'together' as const, premium: true }] : []),
 ];
@@ -155,7 +157,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
       >
         <View style={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
           <View style={styles.brandRow}>
-            <Text style={styles.wordmark}>plot</Text>
+            <PlotWordmark size={37} color={colors.textPrimary} />
             <Text style={styles.beta} accessibilityLabel={APP_SHELL.beta}>{APP_SHELL.beta}</Text>
           </View>
 
@@ -213,7 +215,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                 <View style={styles.menuDivider} />
                 <Text style={styles.helpTitle}>{APP_SHELL.helpBuild}</Text>
                 {FEEDBACK_ITEMS.map(item => (menuRow({ key: item.type, label: item.label, icon: 'feedback', onPress: () => openFeedback(item.type) })))}
-                {SHOW_KOFI_LINK && (menuRow({ label: SETTINGS_VIEW.support.supportPlot, icon: 'support', link: true, onPress: openSupport }))}
+                {menuRow({ label: SETTINGS_VIEW.support.supportPlot, icon: 'support', link: true, onPress: openSupport })}
               </View>
             )}
             {profile?.username && (
@@ -282,12 +284,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     gap: 12,
     paddingHorizontal: 20,
     height: 80,
-  },
-  wordmark: {
-    fontFamily: fontFamily.display,
-    fontSize: 37,
-    color: colors.textPrimary,
-    letterSpacing: -1,
   },
   beta: {
     overflow: 'hidden',

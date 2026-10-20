@@ -14,6 +14,7 @@ interface Profile {
   guide_channels?: Array<{ id: number; name: string; logo_path?: string | null }>;
   calendar_token?: string | null;
   is_premium?: boolean;
+  show_parental_guide?: boolean;
 }
 
 export function useCurrentUser() {

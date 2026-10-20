@@ -1,6 +1,9 @@
-import { useEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
+import { useEpisodeWatches, useSpecialEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import { getEpisodeGuideState } from '@plot/core/episodeProgress.js';
 import StreamingAlertsCard from './StreamingAlertsCard';
+import EpisodeAlertsCard from './EpisodeAlertsCard';
+import StreamingArrivalAsk from './StreamingArrivalAsk';
+import { showStreamingArrivalAsk } from '@plot/core/useStreamingAlerts.js';
 import TitleFootBar from './TitleFootBar';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
@@ -35,9 +38,18 @@ import {
   getLastSeasonNumber,
   getSeasonToggleProgress,
   getSeasonWatchState,
+  guideSeasonSelection,
+  guideSeasons,
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
+import CustomizeArtwork from './ArtworkSheet';
+import ParentalGuide, { type ParentalGuideDetails } from './ParentalGuide';
+import { EpisodeRatingsEntry } from './EpisodeRatingsSheet';
+import { updateProfile } from '@plot/core/profile.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import UpgradeSheet from './UpgradeSheet';
@@ -56,6 +68,8 @@ import { TrailerPlayer } from './TrailerPlayer';
 import CollectionCard from './CollectionCard';
 import { MEDIA } from '@plot/core/copy/media.js';
 import UndoToast from './UndoToast';
+import NoticeToast from './NoticeToast';
+import { EpisodeAlertsPromptToast } from './EpisodeAlertsPrompt';
 import { clearUndo } from '@plot/core/undo.js';
 
 
@@ -156,17 +170,21 @@ function IconBookmark({ saved }: { saved: boolean }) {
   );
 }
 // ── Episode guide ─────────────────────────────────────────────────────
-function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }> }) {
+function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onSeasonChange }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }>; onSeasonChange?: (season: number) => void }) {
   const { colors } = useTheme();
   const { userId } = useAppData();
   const sparse = useEpisodeWatches(userId, tvId);
+  const specials = useSpecialEpisodeWatches(userId, tvId);
+  const episodeStates = { ...specials.states, ...sparse.states };
   const isTracking = !!progress || sparse.hasEpisodes;
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const seasons = (details?.seasons || []).filter((s: any) => s.season_number > 0 || (s.season_number === 0 && Object.keys(sparse.states).some(key => key.startsWith('0:'))));
+  const seasons = guideSeasons(details, episodeStates);
   const [selSeason, setSelSeason] = useState(progress?.current_season || 1);
+  const guideSeason = guideSeasonSelection(seasons, selSeason);
+  useEffect(() => { onSeasonChange?.(guideSeason); }, [guideSeason, onSeasonChange]);
   const [episodes,  setEpisodes]  = useState<any[]>([]);
   const [loading,   setLoading]   = useState(false);
-  const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || loading;
+  const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || specials.loading || specials.refreshing || specials.error || loading;
   const [toggling,  setToggling]  = useState<number | null>(null);
   const [actionError, setActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
@@ -175,7 +193,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
   useEffect(() => {
     setLoading(true);
     let cancelled = false;
-    tmdb.getSeason(tvId, selSeason).then((data: any) => {
+    tmdb.getSeason(tvId, guideSeason).then((data: any) => {
       if (cancelled) return;
       setEpisodes(data?.episodes ?? []);
       setLoading(false);
@@ -186,13 +204,13 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [tvId, selSeason]);
+  }, [tvId, guideSeason]);
 
   const curSeason = progress?.current_season || 0;
   const curEp     = progress?.current_episode || 0;
   const episodeState = (episodeNumber: number) => getEpisodeGuideState({
-    currentSeason: curSeason, currentEpisode: curEp, selectedSeason: selSeason,
-    episodeNumber, episodeStates: sparse.states,
+    currentSeason: curSeason, currentEpisode: curEp, selectedSeason: guideSeason,
+    episodeNumber, episodeStates,
   });
 
   /* ── Finish the series when progress rolls past its final season ──
@@ -219,8 +237,16 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
     setToggling(ep.episode_number);
     setActionError('');
     const watched = episodeState(ep.episode_number).isWatched;
+    if (guideSeason === 0) {
+      const ok = specials.delegates
+        ? await sparse.setWatched(0, [ep.episode_number], !watched)
+        : await specials.setWatched([ep.episode_number], !watched);
+      if (!ok) setActionError(MEDIA_PANEL.couldNotUpdateWatchStatus);
+      setToggling(null);
+      return;
+    }
     if (sparse.hasEpisodes) {
-      const ok = await sparse.setWatched(selSeason, [ep.episode_number], !watched);
+      const ok = await sparse.setWatched(guideSeason, [ep.episode_number], !watched);
       if (!ok) setActionError(MEDIA_PANEL.couldNotUpdateWatchStatus);
       setToggling(null);
       return;
@@ -232,7 +258,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
          branches below write history: that row means the title is watched,
          and finishSeriesIfComplete logs it once the series is done. Mirrors
          web's MediaPanel. */
-      if (selSeason === curSeason && ep.episode_number === curEp) {
+      if (guideSeason === curSeason && ep.episode_number === curEp) {
         const result = await watching.markEpisodeWatched(tvId, { undo: true });
         if (!result?.ok) {
           setActionError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
@@ -242,13 +268,13 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
           await finishSeriesIfComplete(result.data?.current_season);
         }
       } else if (ep.episode_number < episodes.length) {
-        await watching.setProgress(tvId, selSeason, ep.episode_number + 1, { undo: true });
+        await watching.setProgress(tvId, guideSeason, ep.episode_number + 1, { undo: true });
       } else {
-        await watching.setProgress(tvId, selSeason + 1, 1, { undo: true });
-        await finishSeriesIfComplete(selSeason + 1);
+        await watching.setProgress(tvId, guideSeason + 1, 1, { undo: true });
+        await finishSeriesIfComplete(guideSeason + 1);
       }
     } else {
-      await watching.setProgress(tvId, selSeason, ep.episode_number, { undo: true });
+      await watching.setProgress(tvId, guideSeason, ep.episode_number, { undo: true });
     }
     setToggling(null);
   };
@@ -259,23 +285,34 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
     currentSeason: curSeason,
     episodeCount: episodes.length,
     episodeNumbers: episodes.map(ep => ep.episode_number),
-    episodeStates: sparse.states,
-    selectedSeason: selSeason,
+    episodeStates,
+    selectedSeason: guideSeason,
   });
 
   const handleToggleSeason = async () => {
     if (!isTracking || progressBlocked || seasonPending || toggling !== null) return;
+    if (guideSeason === 0) {
+      setSeasonPending(true);
+      setActionError('');
+      const numbers = episodes.map(ep => ep.episode_number);
+      const ok = specials.delegates
+        ? await sparse.setWatched(0, numbers, !seasonState.isComplete)
+        : await specials.setWatched(numbers, !seasonState.isComplete);
+      if (!ok) setActionError(MEDIA_PANEL.couldNotUpdateSeason);
+      setSeasonPending(false);
+      return;
+    }
     if (sparse.hasEpisodes) {
       setSeasonPending(true);
       setActionError('');
-      const ok = await sparse.setWatched(selSeason, episodes.map(ep => ep.episode_number), !seasonState.isComplete);
+      const ok = await sparse.setWatched(guideSeason, episodes.map(ep => ep.episode_number), !seasonState.isComplete);
       if (!ok) setActionError(MEDIA_PANEL.couldNotUpdateSeason);
       setSeasonPending(false);
       return;
     }
     const target = getSeasonToggleProgress({
       isComplete: seasonState.isComplete,
-      selectedSeason: selSeason,
+      selectedSeason: guideSeason,
     });
     if (!target.ok) {
       setActionError(target.error!);
@@ -295,6 +332,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
 
   return (
     <View>
+      <EpisodeRatingsEntry tvId={tvId} details={details} />
       {/* Season pill and the bulk action share one line. The chip strip it
           replaces grew a row for every season. */}
       <View style={styles.seasonRow}>
@@ -307,7 +345,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
               accessibilityState={{ expanded: seasonMenuOpen }}
               accessibilityLabel={MEDIA_PANEL.chooseSeason}
             >
-              <Text style={styles.seasonPillText}>{MEDIA_PANEL.seasonLabel(selSeason)}</Text>
+              <Text style={styles.seasonPillText}>{MEDIA_PANEL.seasonListLabel(guideSeason)}</Text>
               <IconChevron dir={seasonMenuOpen ? 'up' : 'down'} />
             </TouchableOpacity>
             {seasonMenuOpen && (
@@ -319,8 +357,8 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
                     onPress={() => { setSelSeason(s.season_number); setSeasonMenuOpen(false); }}
                     accessibilityRole="button"
                   >
-                    <Text style={[styles.seasonMenuText, s.season_number === selSeason && { color: colors.accentText }]}>
-                      {MEDIA_PANEL.seasonLabel(s.season_number)}
+                    <Text style={[styles.seasonMenuText, s.season_number === guideSeason && { color: colors.accentText }]}>
+                      {MEDIA_PANEL.seasonListLabel(s.season_number)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -329,7 +367,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
           </View>
         ) : (
           <View style={styles.seasonPill}>
-            <Text style={styles.seasonPillText}>{MEDIA_PANEL.seasonLabel(selSeason)}</Text>
+            <Text style={styles.seasonPillText}>{MEDIA_PANEL.seasonListLabel(guideSeason)}</Text>
           </View>
         )}
         {isTracking && episodes.length > 0 && (
@@ -343,31 +381,31 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
               {seasonPending
                 ? MEDIA_PANEL.updating
                 : seasonState.isComplete
-                  ? MEDIA_PANEL.unmarkSeasonWatched
-                  : MEDIA_PANEL.markSeasonWatched}
+                  ? (guideSeason === 0 ? MEDIA_PANEL.unmarkSpecialsWatched : MEDIA_PANEL.unmarkSeasonWatched)
+                  : (guideSeason === 0 ? MEDIA_PANEL.markSpecialsWatched : MEDIA_PANEL.markSeasonWatched)}
             </Text>
           </TouchableOpacity>
         )}
       </View>
 
       {sparse.hasEpisodes && <Text style={styles.seasonBulkCount}>{MEDIA_PANEL.sparseEpisodeProgress}</Text>}
-      {sparse.error && (
+      {(sparse.error || specials.error) && (
         <View>
           <Text style={styles.epActionError}>{MEDIA_PANEL.episodeProgressLoadError}</Text>
-          <TouchableOpacity onPress={sparse.reload} accessibilityRole="button" style={styles.seasonBulkBtn}>
+          <TouchableOpacity onPress={() => { sparse.reload(); specials.reload(); }} accessibilityRole="button" style={styles.seasonBulkBtn}>
             <Text style={styles.seasonBulkBtnText}>{MEDIA_PANEL.retryEpisodeProgress}</Text>
           </TouchableOpacity>
         </View>
       )}
       {actionError ? <Text style={styles.epActionError}>{actionError}</Text> : null}
 
-      {loading || sparse.loading ? (
+      {loading || sparse.loading || specials.loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.lg }} />
       ) : (
         episodes.map(ep => {
           const { isWatched: watched, isCurrent: current } = episodeState(ep.episode_number);
           const isToggling = toggling === ep.episode_number;
-          const epCode = `S${String(selSeason).padStart(2,'0')}E${String(ep.episode_number).padStart(2,'0')}`;
+          const epCode = `S${String(guideSeason).padStart(2,'0')}E${String(ep.episode_number).padStart(2,'0')}`;
           return (
             <View key={ep.id} style={[styles.epRow, current && styles.epRowCurrent, watched && styles.epRowWatched]}>
               <Text style={[styles.epCode, current && styles.epCodeCurrent]}>
@@ -407,7 +445,7 @@ type UpNextOffer = { provider_name?: string };
 
 function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }: {
   tvId: number;
-  details: { status?: string };
+  details: TMDBDetails;
   progress?: { current_season?: number; current_episode?: number } | null;
   whereToWatch: { streaming: UpNextOffer[]; rentBuy: UpNextOffer[] };
   onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }>;
@@ -437,8 +475,16 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }:
   const seasonTotal = episodes.length;
   const offer = whereToWatch.streaming[0] || whereToWatch.rentBuy[0] || null;
   const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
-  const runtime = episode?.runtime ? MEDIA_PANEL.episodeRuntime(episode.runtime) : '';
-  const where = [offer?.provider_name, runtime].filter(Boolean).join(' · ');
+  const episodeMinutes = episode?.runtime && episode.runtime > 0 ? episode.runtime : fallbackEpisodeRuntime(details);
+  const runtime = episodeMinutes ? MEDIA_PANEL.episodeRuntime(episodeMinutes) : '';
+  const ends = episodeMinutes ? endsAtTime(episodeMinutes) : null;
+  const where = [offer?.provider_name, runtime, ends ? MEDIA_PANEL.endsAt(ends) : ''].filter(Boolean).join(' · ');
+  const leftCaption = timeLeftCaption(showTimeLeft({
+    details,
+    season,
+    episode: episodeNumber,
+    knownEpisodes: episodes.map(item => ({ ...item, season_number: season })),
+  }));
 
   const markWatched = async () => {
     if (pending) return;
@@ -487,6 +533,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }:
           <View style={[styles.upNextFill, { width: `${Math.round((watchedInSeason / seasonTotal) * 100)}%` }]} />
         </View>
       )}
+      {!!leftCaption && <Text style={styles.upNextLeft}>{leftCaption}</Text>}
       {!!error && <Text style={styles.epActionError}>{error}</Text>}
     </View>
   );
@@ -498,11 +545,13 @@ interface TMDBNextEpisode {
   name?: string;
   episode_number?: number;
   season_number?: number;
+  runtime?: number | null;
 }
 
 interface TMDBSeason {
   season_number: number;
   name: string;
+  episode_count?: number;
 }
 
 interface TMDBGenre {
@@ -519,7 +568,7 @@ interface CreditPerson {
   roles?: { character?: string }[];
 }
 
-interface TMDBDetails {
+interface TMDBDetails extends ParentalGuideDetails {
   id: number;
   title?: string;
   name?: string;
@@ -535,9 +584,11 @@ interface TMDBDetails {
   vote_count?: number;
   genres?: TMDBGenre[];
   runtime?: number;
+  episode_run_time?: number[];
   number_of_seasons?: number;
   seasons?: TMDBSeason[];
   next_episode_to_air?: TMDBNextEpisode | null;
+  last_episode_to_air?: TMDBNextEpisode | null;
   status?: string;
   videos?: { results: Array<{ site: string; type: string; key: string; name?: string }> };
   external_ids?: { imdb_id?: string | null };
@@ -746,7 +797,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { userId, profile, watchlist, watching, favorites, history, customLists, topLists, privateNotes } = useAppData();
+  const { userId, profile, refreshProfile, watchlist, watching, favorites, history, customLists, topLists, privateNotes } = useAppData();
+  const art = useUserArtwork();
   const { open: openTitle } = useMediaPanel();
   const router = useRouter();
   const followPerson = useFollowPerson();
@@ -766,6 +818,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const [statusPending, setStatusPending] = useState('');
   // True while a watched or watching change started from the foot bar is in flight.
   const [footBusy, setFootBusy] = useState(false);
+  const [pickedSeason, setPickedSeason] = useState<number | null>(null);
+  const [seasonItemId, setSeasonItemId] = useState(itemId);
+  if (seasonItemId !== itemId) {
+    setSeasonItemId(itemId);
+    setPickedSeason(null);
+  }
 
   const slideY = useRef(new Animated.Value(PANEL_H)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -964,6 +1022,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           inCinemas = det.status === 'Released' && days >= 0 && days <= 90 && streaming.length === 0 && rentBuy.length === 0;
         }
         setWhereToWatch({ streaming, rentBuy, inCinemas, region, justwatchLink: verified?.title_url || regionData.link || null });
+        const hasOffers = streaming.length > 0 || rentBuy.length > 0 || inCinemas;
+        if (showStreamingArrivalAsk(itemType, hasOffers)) setWatchOpen(true);
         // Critic score + audience quote depend on the imdb_id this same call just
         // returned, so they can't join the Promise.all above. Fire-and-forget
         // rather than block the panel on a third-party lookup.
@@ -1007,7 +1067,18 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     : (details?.number_of_seasons
         ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
         : '');
-  const factLine = [year, runtimeText].filter(Boolean).join(' · ');
+  const movieRuntime = isMovie ? details?.runtime : undefined;
+  const movieEnds = movieRuntime != null && movieRuntime > 0 ? endsAtTime(movieRuntime) : null;
+  const factLine = [year, runtimeText, movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''].filter(Boolean).join(' · ');
+  const artworkSubject = isMovie ? 'movie' : 'tv';
+  const fromProgress = progress?.current_season;
+  const seasonForPoster = isMovie
+    ? null
+    : (pickedSeason ?? (Number.isInteger(fromProgress) ? fromProgress : null));
+  const seasonPoster = seasonForPoster == null ? null : art.path('season', itemId, 'poster', seasonForPoster);
+  const posterPath = seasonPoster || art.path(artworkSubject, itemId, 'poster') || details?.poster_path || null;
+  const backdropPath = art.path(artworkSubject, itemId, 'backdrop') || details?.backdrop_path || null;
+  const logoPath = art.path(artworkSubject, itemId, 'logo');
   const author = isMovie
     ? details?.credits?.crew?.find(person => person.job === 'Director')?.name
     : details?.created_by?.[0]?.name;
@@ -1079,13 +1150,16 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         >
           {/* Backdrop image */}
           <View style={styles.backdropWrap}>
-            {details?.backdrop_path
-              ? <Image source={{ uri: backdropUrl(details.backdrop_path) ?? '' }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-              : details?.poster_path
-              ? <Image source={{ uri: posterUrl(details.poster_path, 'w780') ?? '' }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            {backdropPath
+              ? <Image source={{ uri: backdropUrl(backdropPath) ?? '' }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              : posterPath
+              ? <Image source={{ uri: posterUrl(posterPath, 'w780') ?? '' }} style={StyleSheet.absoluteFill} resizeMode="cover" />
               : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
             }
             <View style={styles.backdropGradient} />
+            {logoPath ? (
+              <Image source={{ uri: logoUrl(logoPath, 'w300') ?? '' }} style={styles.titleLogo} resizeMode="contain" accessibilityElementsHidden />
+            ) : null}
             <TouchableOpacity style={styles.closeBtn} onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
               <IconX />
             </TouchableOpacity>
@@ -1107,11 +1181,21 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
               <>
                 {/* Head: poster over the cover band, facts beside it. */}
                 <View style={styles.head}>
-                  {details?.poster_path
-                    ? <Image source={{ uri: posterUrl(details.poster_path, 'w342') ?? '' }} style={styles.poster} />
+                  {posterPath
+                    ? <Image source={{ uri: posterUrl(posterPath, 'w342') ?? '' }} style={styles.poster} />
                     : <View style={styles.poster} />}
                   <View style={styles.headText}>
-                    <Text style={styles.kicker}>{isMovie ? MEDIA.movie : MEDIA.series}</Text>
+                    <View style={styles.kickerRow}>
+                      <Text style={styles.kicker}>{isMovie ? MEDIA.movie : MEDIA.series}</Text>
+                      <CustomizeArtwork
+                        mediaType={artworkSubject}
+                        tmdbId={itemId}
+                        seasonNumber={seasonForPoster == null ? undefined : seasonForPoster}
+                        defaults={{ poster: details?.poster_path, backdrop: details?.backdrop_path }}
+                        onLeave={close}
+                        inline
+                      />
+                    </View>
                     <Text style={styles.title}>{title}</Text>
                     {!!factLine && (
                       <Text style={styles.facts}>
@@ -1119,6 +1203,20 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         {author ? `\n${author}` : ''}
                       </Text>
                     )}
+                    <ParentalGuide
+                      key={`${itemType}-${itemId}`}
+                      mediaType={isMovie ? 'movie' : 'tv'}
+                      tmdbId={itemId}
+                      details={details}
+                      signedIn={!!userId}
+                      hidden={profile?.show_parental_guide === false}
+                      onSetShown={async (shown) => {
+                        if (!userId) return false;
+                        const { error } = await updateProfile({ userId, patch: { show_parental_guide: shown } });
+                        if (!error) refreshProfile();
+                        return !error;
+                      }}
+                    />
                     {genreChips.length > 0 && (
                       <View style={styles.genreRow}>
                         {genreChips.map(genre => (
@@ -1229,6 +1327,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </View>
                 </View>
 
+                {!isMovie && details && (inList || isWatching) && (
+                  <EpisodeAlertsCard show={details} />
+                )}
+
                 {!isMovie && isWatching && details && (
                   <UpNextCard
                     tvId={itemId}
@@ -1318,6 +1420,17 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                             <Text style={styles.providersEmpty}>
                               {watchRegionName ? `Not streaming in ${watchRegionName} yet.` : 'Not streaming anywhere yet.'}
                             </Text>
+                            {showStreamingArrivalAsk(itemType, hasWatchOffers) && details?.title && (
+                              <StreamingArrivalAsk
+                                userId={userId}
+                                movie={{ id: details.id, title: details.title }}
+                                inList={inList}
+                                onAdd={() => watchlist.addToList(
+                                  { ...details, id: itemId, media_type: 'movie' },
+                                  { source: 'streaming_arrival_ask' },
+                                )}
+                              />
+                            )}
                           </>
                         )}
                         {hasWatchOffers && (
@@ -1435,6 +1548,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       details={details}
                       watching={watching}
                       onSeriesFinished={handleSeriesFinished}
+                      onSeasonChange={setPickedSeason}
                     />
                   </>
                 )}
@@ -1455,7 +1569,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         const year = releaseDateFromItem(item)?.slice(0, 4) || '';
                         return (
                           <TouchableOpacity key={`${type}-${item.id}`} style={styles.similarCard} activeOpacity={0.7} onPress={() => openTitle(item.id, type)} accessibilityRole="button" accessibilityLabel={titleFromItem(item)}>
-                            <Image source={{ uri: posterUrl(item.poster_path, 'w185') ?? '' }} style={styles.similarPoster} />
+                            <Image source={{ uri: posterUrl(displayPosterPath(art.apply(item)), 'w185') ?? '' }} style={styles.similarPoster} />
                             <Text style={styles.similarName} numberOfLines={1}>{titleFromItem(item)}</Text>
                             <Text style={styles.similarMeta} numberOfLines={1}>{[year, type === 'tv' ? 'TV' : 'Movie'].filter(Boolean).join(' · ')}</Text>
                           </TouchableOpacity>
@@ -1499,6 +1613,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         </KeyboardAvoidingView>
       </Animated.View>
       <UndoToast placement="panel" />
+      <NoticeToast placement="panel" />
+      <EpisodeAlertsPromptToast placement="panel" />
     </Modal>
 
     {showListSheet && details && (
@@ -1550,8 +1666,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6,
   },
   headText: { flex: 1, minWidth: 0, paddingTop: spacing.md },
-  kicker: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.accent, marginBottom: 4 },
+  kickerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm, marginBottom: 4 },
+  kicker: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.accent },
   title: { fontFamily: fontFamily.display, fontSize: 24, letterSpacing: -0.6, color: colors.textPrimary, lineHeight: 26, marginBottom: 4 },
+  titleLogo: {
+    position: 'absolute', left: 148, right: 56, bottom: 10, height: 36, zIndex: 2,
+  },
   facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
   genreChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.badge, backgroundColor: colors.accentSecondaryFill },
@@ -1611,6 +1731,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   upNextBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.onAccentFill },
   upNextTrack: { height: 5, borderRadius: radii.pill, backgroundColor: colors.border, marginTop: spacing.md, overflow: 'hidden' },
+  upNextLeft: { marginTop: spacing.sm, fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted },
   upNextFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.statusWatching },
   watchCard: { marginBottom: spacing.lg },
   watchHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },

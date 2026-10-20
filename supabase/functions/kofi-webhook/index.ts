@@ -30,6 +30,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { capturePostHogEvent, normaliseCurrency, normaliseMajorAmount } from '../_shared/posthog.ts';
+import { errorText, reportLog } from '../_shared/posthogLog.ts';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -54,7 +55,7 @@ async function captureSupportConversion(payload: Record<string, unknown>, userId
   } catch (err) {
     // Analytics must never break the webhook ack. Log the transaction id
     // only, matching the rest of this file's logging discipline.
-    console.error(`kofi-webhook: PostHog capture failed for ${txn}: ${(err as Error).message}`);
+    reportLog('kofi-webhook', 'error', `kofi-webhook: PostHog capture failed for ${txn}: ${errorText(err)}`, { distinctId: userId, attributes: { kofi_transaction_id: txn } });
   }
 }
 
@@ -74,7 +75,7 @@ Deno.serve(async (req) => {
 
   const expected = Deno.env.get('KOFI_VERIFICATION_TOKEN');
   if (!expected) {
-    console.error('KOFI_VERIFICATION_TOKEN is not set — refusing all deliveries');
+    reportLog('kofi-webhook', 'error', 'KOFI_VERIFICATION_TOKEN is not set — refusing all deliveries');
     return json({ error: 'Not configured' }, 500);
   }
 
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
   if (!(await safeEqual(token, expected))) {
     // No detail in the response and no payload in the log — an attacker who
     // guesses the endpoint URL learns nothing beyond "rejected".
-    console.warn('kofi-webhook: bad verification token');
+    reportLog('kofi-webhook', 'warn', 'kofi-webhook: bad verification token');
     return json({ error: 'Unauthorized' }, 401);
   }
 
@@ -116,7 +117,7 @@ Deno.serve(async (req) => {
   if (error) {
     // 500 makes Ko-fi retry. Log the transaction id only — never the donor's
     // email, name or message.
-    console.error(`kofi-webhook: record_kofi_tip failed for ${txn}: ${error.message}`);
+    reportLog('kofi-webhook', 'error', `kofi-webhook: record_kofi_tip failed for ${txn}: ${error.message}`, { attributes: { kofi_transaction_id: txn } });
     return json({ error: 'Failed to record tip' }, 500);
   }
 

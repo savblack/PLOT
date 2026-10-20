@@ -15,6 +15,7 @@ import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import { on, PERSON_FOLLOWED_EVENT } from '@plot/core/events.js';
 import { PEOPLE as P } from '@plot/core/copy/people.js';
 import { profileUrl } from '../utils/images.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import './PeopleFollow.css';
 
 export const PlusIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
@@ -26,7 +27,8 @@ export const TickIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><polyl
  * hover or focus, phones always; a followed person keeps the accent tick.
  */
 export function CastFollowCard({ person, following, busy, onOpen, onToggle, showFollow = true }) {
-  const image = profileUrl(person.profile_path);
+  const art = useUserArtwork();
+  const image = profileUrl(art.path('person', person.id, 'profile') || person.profile_path);
   const role = person.character || person.roles?.[0]?.character;
   return (
     <div className={`panel-cast-card cast-follow${following ? ' cast-follow--on' : ''}`}>
@@ -59,7 +61,8 @@ export function CastFollowCard({ person, following, busy, onOpen, onToggle, show
 
 /** "Directed by" / "Created by": headshot, name, role, and Follow to the right. */
 export function CrewFollowRow({ person, roleLabel, following, busy, onOpen, onToggle, showFollow = true }) {
-  const image = profileUrl(person.profile_path);
+  const art = useUserArtwork();
+  const image = profileUrl(art.path('person', person.id, 'profile') || person.profile_path);
   return (
     <div className="crew-follow-row">
       <button type="button" className="crew-follow-open" onClick={onOpen} aria-label={P.viewLabel(person.name)}>

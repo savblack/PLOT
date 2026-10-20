@@ -18,6 +18,7 @@ export default function ScreenHeaderBar({
   showSearch = true,
   onSearchPress,
   showNotifications = true,
+  rightExtra,
 }: {
   title?: string;
   center?: ReactNode;
@@ -25,6 +26,8 @@ export default function ScreenHeaderBar({
   onSearchPress?: () => void;
   /** Screens that are themselves the notifications view hide the bell. */
   showNotifications?: boolean;
+  /** Fills the slot after the bell when the screen has no search button (Home's filter). */
+  rightExtra?: ReactNode;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -84,7 +87,7 @@ export default function ScreenHeaderBar({
         </TouchableOpacity>
       ) : (
         // Keeps the title centered when there's no search button on the right.
-        <View style={styles.iconBtn} />
+        rightExtra ?? <View style={styles.iconBtn} />
       )}
       </View>
     </View>

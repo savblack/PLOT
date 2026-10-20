@@ -7,6 +7,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as WebBrowser from 'expo-web-browser';
+import Svg, { Path } from 'react-native-svg';
 import * as Crypto from 'expo-crypto';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -21,7 +23,18 @@ import { authErrorReason } from '@plot/core/authErrors.js';
 import { CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, captchaSubmitPlan } from '@plot/core/captchaGate.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { AUTH_PAGE } from '@plot/core/copy/authPage.js';
-import { SHOW_APPLE_LOGIN } from '../../lib/launchFeatures';
+import { SHOW_APPLE_LOGIN, SHOW_GOOGLE_LOGIN } from '../../lib/launchFeatures';
+import { hasSignedInBefore } from '../../lib/signedInBefore';
+import PlotWordmark from '../../components/PlotWordmark';
+
+// The panel's fixed palette (see the note on the tokens import): charcoal ink
+// and zinc greys picked against the dark poster wall, named once so the
+// colour-literal ratchet (scripts/check-color-literals.mjs) sees one each.
+const INK = '#09090B';
+const PAPER = '#FAFAFA';
+const MUTED = '#71717A';
+const QUIET = '#A1A1AA';
+const PLACEHOLDER = '#898989';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -109,19 +122,47 @@ function ScrollingColumn({ paths, offset, duration }: { paths: string[]; offset:
   );
 }
 
-type Mode = 'signin' | 'signup' | 'forgot';
+// 'inbox' is the step after an email sign-up or a magic-link request: the
+// email carries a link that opens the app and a six-digit code, and this
+// screen takes the code. It replaces the old "Almost there!" alert.
+type Mode = 'signin' | 'signup' | 'forgot' | 'inbox';
+type InboxKind = 'signup' | 'magic';
+
+function GoogleIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 18 18" aria-hidden>
+      <Path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
+      <Path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.583-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
+      <Path fill="#FBBC05" d="M3.964 10.705a5.41 5.41 0 0 1-.282-1.705c0-.593.102-1.17.282-1.705V4.963H.957A8.997 8.997 0 0 0 0 9c0 1.452.348 2.827.957 4.037l3.007-2.332z" />
+      <Path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.963L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" />
+    </Svg>
+  );
+}
+
+// Read the session Supabase hands back on an OAuth redirect. The mobile client
+// has detectSessionInUrl off (lib/configureCore.ts), so the implicit flow's
+// `#access_token=…&refresh_token=…` fragment is parsed here by hand.
+function sessionFromRedirect(url: string) {
+  const hash = url.split('#')[1] ?? '';
+  const params = new URLSearchParams(hash);
+  const access_token = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  return access_token && refresh_token ? { access_token, refresh_token } : null;
+}
 
 // Cloudflare Turnstile — the Supabase project enforces captcha on auth, so
 // every sign-in / sign-up / magic-link must carry a token (mirrors web AuthPage).
 const TURNSTILE_SITE_KEY = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY;
 
-// Password-reset + confirmation links resolve on the web app (there's no
-// native set-new-password screen yet), so point them at the web callback.
+// Password-reset links resolve on the web app (there's no native
+// set-new-password screen yet), so point them at the web callback.
 const AUTH_WEB_CALLBACK = 'https://app.theplot.tv/auth/callback';
 
-// Magic links sign the user straight into a session — unlike reset/confirm,
-// there's nothing that needs a browser, so send them back into the app via
-// the plot:// deep link that app/(auth)/callback.tsx already listens for.
+// Magic links and sign-up confirmations sign the user straight into a session,
+// so they come back into the app via the plot:// deep link that
+// app/(auth)/callback.tsx listens for. A link opened on another device cannot
+// open this app, which is why the same email also carries a six-digit code
+// (see the 'inbox' mode below).
 // PRODUCTION REQUIREMENT: this resolves to plot://auth/callback — add that
 // exact URL to Supabase Dashboard → Authentication → URL Configuration →
 // Redirect URLs, or signInWithOtp will reject it and fall back to erroring.
@@ -131,7 +172,7 @@ const AUTH_APP_CALLBACK = Linking.createURL('/auth/callback');
 function friendlyAuthError(msg?: string) {
   if (!msg) return COMMON.genericError;
   if (msg.includes('Invalid login credentials'))   return AUTH_PAGE.incorrectCredentials;
-  if (msg.includes('Email not confirmed'))         return 'Almost in! Your activation email is waiting in your inbox.';
+  if (msg.includes('Email not confirmed'))         return AUTH_PAGE.activationEmailWaiting.replace(/^__warning__/, '');
   if (msg.includes('User already registered'))     return AUTH_PAGE.accountAlreadyExists;
   if (msg.includes('Password should be at least')) return AUTH_PAGE.weakPassword;
   // Empty password reaching GoTrue — same user-facing fix as a short password.
@@ -144,11 +185,19 @@ function friendlyAuthError(msg?: string) {
 
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<Mode>('signin');
+  // Sign up for a fresh install; Sign in once this device has held a session.
+  const [mode, setMode] = useState<Mode>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [inboxKind, setInboxKind] = useState<InboxKind>('signup');
+  const [code, setCode] = useState('');
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [resendNote, setResendNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
   const [posterPaths, setPosterPaths] = useState<string[]>(FALLBACK_PATHS);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to drop a used token
@@ -233,6 +282,28 @@ export default function AuthScreen() {
   };
 
   useEffect(() => {
+    let mounted = true;
+    hasSignedInBefore().then((before) => { if (mounted && before) setMode('signin'); });
+    return () => { mounted = false; };
+  }, []);
+
+  const switchMode = (next: Mode) => {
+    setEmailError(null);
+    setPasswordError(null);
+    setCodeError(null);
+    setResendNote(null);
+    setMode(next);
+  };
+
+  const openInbox = (kind: InboxKind) => {
+    setInboxKind(kind);
+    setCode('');
+    setCodeError(null);
+    setResendNote(null);
+    setMode('inbox');
+  };
+
+  useEffect(() => {
     tmdb.getTrending('all', 'week').then((data) => {
       const paths = data?.results
         ?.filter((item: any) => item.poster_path)
@@ -254,9 +325,24 @@ export default function AuthScreen() {
 
   const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
+  // Field-level checks, shown under the field rather than as an alert. Server
+  // errors (wrong password, rate limit, captcha) still come as alerts.
+  const checkEmail = () => {
+    const bad = !isValidEmail(email);
+    setEmailError(bad ? AUTH_PAGE.invalidEmail : null);
+    return !bad;
+  };
+  const checkPassword = () => {
+    const bad = password.length < 6;
+    setPasswordError(bad ? AUTH_PAGE.weakPassword : null);
+    return !bad;
+  };
+
   const handleSignIn = async () => {
-    if (!email || !password) return;
-    if (!isValidEmail(email)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
+    const emailOk = checkEmail();
+    if (!password) { setPasswordError(AUTH_PAGE.weakPassword); }
+    if (!emailOk || !password) return;
+    setPasswordError(null);
     setLoading(true);
     const captchaToken = await takeCaptchaToken('login');
     if (captchaToken === false) {
@@ -272,37 +358,64 @@ export default function AuthScreen() {
     if (!error) track(EVENTS.USER_LOGGED_IN, { method: 'password' });
     if (error) {
       track(EVENTS.LOGIN_SUBMIT_FAILED, { reason: authErrorReason(error.message) });
-      // Offer to resend the confirmation email when the account isn't verified.
+      // An unconfirmed account goes to the inbox step, where the confirmation
+      // can be resent and the code entered.
       if (error.message.includes('Email not confirmed')) {
-        Alert.alert(friendlyAuthError(error.message), undefined, [
-          { text: 'Resend email', onPress: handleResend },
-          { text: 'OK', style: 'cancel' },
-        ]);
+        openInbox('signup');
       } else {
         Alert.alert(friendlyAuthError(error.message));
       }
     }
   };
 
+  // Resend whatever the inbox step is waiting on.
   const handleResend = async () => {
     const e = email.trim();
-    if (!e || !isValidEmail(e)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
-    const captchaToken = await takeCaptchaToken('signup');
+    if (!e || !isValidEmail(e)) { setResendNote(AUTH_PAGE.invalidEmail); return; }
+    setResendNote(null);
+    const captchaToken = await takeCaptchaToken(inboxKind === 'signup' ? 'signup' : 'magic');
     if (captchaToken === false) {
-      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      setResendNote(AUTH_PAGE.verificationUnavailable);
       return;
     }
-    const { error } = await supabase.auth.resend({
-      type: 'signup', email: e,
-      options: { emailRedirectTo: AUTH_WEB_CALLBACK, captchaToken: captchaToken ?? undefined },
-    });
+    const { error } = inboxKind === 'signup'
+      ? await supabase.auth.resend({
+          type: 'signup', email: e,
+          options: { emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
+        })
+      : await supabase.auth.signInWithOtp({
+          email: e,
+          options: { shouldCreateUser: true, emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
+        });
     refreshCaptcha();
-    Alert.alert(error ? friendlyAuthError(error.message) : 'Confirmation email resent.');
+    setResendNote(error ? friendlyAuthError(error.message) : AUTH_PAGE.inbox.resent);
+  };
+
+  // The six-digit code from the email. Signup confirmations verify as
+  // 'signup'; a magic-link code verifies as 'email'. Neither needs captcha.
+  const handleVerifyCode = async () => {
+    const token = code.replace(/\D/g, '');
+    if (token.length !== 6) { setCodeError(AUTH_PAGE.inbox.invalidCode); return; }
+    setCodeError(null);
+    setLoading(true);
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim(), token, type: inboxKind === 'signup' ? 'signup' : 'email',
+    });
+    setLoading(false);
+    if (error) {
+      const expired = /expired/i.test(error.message);
+      track(inboxKind === 'signup' ? EVENTS.SIGNUP_SUBMIT_FAILED : EVENTS.LOGIN_SUBMIT_FAILED, {
+        method: 'email_code', reason: expired ? 'expired' : authErrorReason(error.message),
+      });
+      setCodeError(expired ? AUTH_PAGE.inbox.expiredCode : AUTH_PAGE.inbox.invalidCode);
+      return;
+    }
+    // A signup already fired user_signed_up at submit; a magic-link code is a sign-in.
+    if (inboxKind === 'magic') track(EVENTS.USER_LOGGED_IN, { method: 'magic_link' });
   };
 
   const handleForgot = async () => {
-    if (!email) return;
-    if (!isValidEmail(email)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
+    if (!checkEmail()) return;
     setLoading(true);
     const captchaToken = await takeCaptchaToken('forgot');
     if (captchaToken === false) {
@@ -325,9 +438,9 @@ export default function AuthScreen() {
 
   const handleSignUp = async () => {
     noteSignupStarted();
-    if (!email || !password) return;
-    if (!isValidEmail(email)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
-    if (password.length < 6) { Alert.alert(AUTH_PAGE.weakPassword); return; }
+    const emailOk = checkEmail();
+    const passwordOk = checkPassword();
+    if (!emailOk || !passwordOk) return;
     setLoading(true);
     track(EVENTS.SIGNUP_SUBMIT_CLICKED);
     const captchaToken = await takeCaptchaToken('signup');
@@ -337,29 +450,28 @@ export default function AuthScreen() {
       return;
     }
     const { error } = await supabase.auth.signUp({
-      email: email.trim(), password, options: { captchaToken: captchaToken ?? undefined },
+      email: email.trim(), password,
+      // The confirmation link opens the app (see AUTH_APP_CALLBACK).
+      options: { emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
     });
     setLoading(false);
     refreshCaptcha();
     if (error) {
       track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: authErrorReason(error.message) });
-      Alert.alert(friendlyAuthError(error.message));
+      if (error.message.includes('User already registered')) setEmailError(AUTH_PAGE.accountAlreadyExists);
+      else Alert.alert(friendlyAuthError(error.message));
     }
     else {
       // Web fires this on the same step (account created, confirmation pending);
       // mobile never did, so signup funnels were web-only.
       track(EVENTS.USER_SIGNED_UP, { method: 'password' });
-      Alert.alert(AUTH_PAGE.almostThereTitle, `We sent a confirmation link to ${email.trim()}.`, [
-        { text: 'Resend', onPress: handleResend },
-        { text: 'OK', style: 'cancel' },
-      ]);
+      openInbox('signup');
     }
   };
 
   const handleMagicLink = async () => {
     noteSignupStarted();
-    if (!email) return;
-    if (!isValidEmail(email)) { Alert.alert(AUTH_PAGE.invalidEmail); return; }
+    if (!checkEmail()) return;
     setLoading(true);
     const captchaToken = await takeCaptchaToken('magic');
     if (captchaToken === false) {
@@ -377,7 +489,41 @@ export default function AuthScreen() {
       track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'magic_link', reason: authErrorReason(error.message) });
       Alert.alert(friendlyAuthError(error.message));
     } else {
-      Alert.alert('Magic link sent.', 'Check your inbox to sign in.');
+      openInbox('magic');
+    }
+  };
+
+  // Google through the system browser: Supabase builds the provider URL, the
+  // auth session returns to plot://auth/callback with the tokens in the
+  // fragment, and the session is set from those. Mirrors web's beginOAuth,
+  // including the synchronous re-entry latch (a double tap used to leave two
+  // /authorize calls behind there).
+  const handleGoogleSignIn = async () => {
+    if (googleLoading) return;
+    noteSignupStarted();
+    setGoogleLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: AUTH_APP_CALLBACK, skipBrowserRedirect: true },
+      });
+      if (error) throw error;
+      if (!data.url) throw new Error('Google sign-in returned no URL');
+      const result = await WebBrowser.openAuthSessionAsync(data.url, AUTH_APP_CALLBACK);
+      if (result.type !== 'success') return; // cancelled or dismissed
+      const tokens = sessionFromRedirect(result.url);
+      if (!tokens) throw new Error('Google sign-in returned no session');
+      const { data: set, error: setError } = await supabase.auth.setSession(tokens);
+      if (setError) throw setError;
+      const createdMs = set.user?.created_at ? Date.parse(set.user.created_at) : 0;
+      const isNew = createdMs > 0 && Date.now() - createdMs < 60_000;
+      track(isNew ? EVENTS.USER_SIGNED_UP : EVENTS.USER_LOGGED_IN, { method: 'google' });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '';
+      track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'google', reason: authErrorReason(message) });
+      Alert.alert(AUTH_PAGE.googleSignInFailed);
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -444,11 +590,24 @@ export default function AuthScreen() {
 
   const handleSubmit = () => {
     if (mode === 'forgot') handleForgot();
+    else if (mode === 'inbox') handleVerifyCode();
     else if (mode === 'signin') handleSignIn();
     else handleSignUp();
   };
 
-  const submitLabel = mode === 'signin' ? 'Sign in' : mode === 'signup' ? AUTH_PAGE.submitLabel.signup : AUTH_PAGE.submitLabel.forgot;
+  const submitLabel = mode === 'signin' ? AUTH_PAGE.submitLabel.login
+    : mode === 'signup' ? AUTH_PAGE.submitLabel.signup
+    : mode === 'inbox' ? AUTH_PAGE.inbox.confirm
+    : AUTH_PAGE.submitLabel.forgot;
+  const heading = mode === 'signin' ? AUTH_PAGE.heading.login
+    : mode === 'signup' ? AUTH_PAGE.heading.signup
+    : mode === 'inbox' ? AUTH_PAGE.inbox.title
+    : AUTH_PAGE.heading.forgot;
+  const subheading = mode === 'signin' ? AUTH_PAGE.subheading.login
+    : mode === 'signup' ? AUTH_PAGE.subheading.signup
+    : mode === 'inbox' ? null
+    : AUTH_PAGE.subheading.forgot;
+  const social = mode === 'signin' || mode === 'signup';
 
   return (
     <View style={styles.root}>
@@ -468,7 +627,7 @@ export default function AuthScreen() {
 
         {/* Dark vignette overlay */}
         <LinearGradient
-          colors={['rgba(9,9,11,0.3)', 'rgba(9,9,11,0.55)', 'rgba(9,9,11,0.85)', '#09090B']}
+          colors={['rgba(9,9,11,0.3)', 'rgba(9,9,11,0.55)', 'rgba(9,9,11,0.85)', INK]}
           locations={[0, 0.3, 0.6, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -481,7 +640,7 @@ export default function AuthScreen() {
       >
         {/* Wordmark at top */}
         <View style={[styles.wordmarkWrap, { paddingTop: insets.top + spacing.xl }]}>
-          <Text style={styles.wordmark}>plot</Text>
+          <PlotWordmark size={52} color={PAPER} />
           <Text style={styles.tagline}>Your personal movie & TV companion</Text>
         </View>
 
@@ -496,26 +655,46 @@ export default function AuthScreen() {
               style={styles.panelInner}
             >
               {/* Heading */}
-              <Text style={styles.panelTitle}>
-                {mode === 'signin' ? AUTH_PAGE.heading.login : mode === 'signup' ? AUTH_PAGE.heading.signup : AUTH_PAGE.heading.forgot}
-              </Text>
-              <Text style={styles.panelSub}>
-                {mode === 'signin' ? AUTH_PAGE.subheading.login
-                  : mode === 'signup' ? AUTH_PAGE.subheading.signup
-                  : AUTH_PAGE.subheading.forgot}
-              </Text>
+              <Text style={styles.panelTitle} accessibilityRole="header">{heading}</Text>
+              {subheading ? <Text style={styles.panelSub}>{subheading}</Text> : null}
+              {mode === 'inbox' ? (
+                <Text style={styles.panelSub}>
+                  {inboxKind === 'signup' ? AUTH_PAGE.inbox.signupBefore : AUTH_PAGE.inbox.magicBefore}
+                  <Text style={styles.panelSubStrong}>{email.trim()}</Text>
+                  {AUTH_PAGE.inbox.after}
+                </Text>
+              ) : null}
 
-              {appleAvailable && mode !== 'forgot' ? (
+              {social && (appleAvailable || SHOW_GOOGLE_LOGIN) ? (
                 <>
-                  <View style={styles.appleButtonWrap} pointerEvents={appleLoading ? 'none' : 'auto'}>
-                    <AppleAuthentication.AppleAuthenticationButton
-                      buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-                      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                      cornerRadius={radii.pill}
-                      style={[styles.appleButton, appleLoading && styles.appleButtonLoading]}
-                      onPress={handleAppleSignIn}
-                    />
-                  </View>
+                  {appleAvailable ? (
+                    <View style={styles.appleButtonWrap} pointerEvents={appleLoading ? 'none' : 'auto'}>
+                      <AppleAuthentication.AppleAuthenticationButton
+                        buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                        buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                        cornerRadius={radii.pill}
+                        style={[styles.appleButton, appleLoading && styles.appleButtonLoading]}
+                        onPress={handleAppleSignIn}
+                      />
+                    </View>
+                  ) : null}
+                  {SHOW_GOOGLE_LOGIN ? (
+                    <TouchableOpacity
+                      style={[styles.googleButton, googleLoading && styles.appleButtonLoading]}
+                      onPress={handleGoogleSignIn}
+                      disabled={googleLoading}
+                      accessibilityRole="button"
+                      accessibilityState={{ busy: googleLoading }}
+                      activeOpacity={0.85}
+                    >
+                      {googleLoading ? <ActivityIndicator color={INK} /> : (
+                        <>
+                          <GoogleIcon />
+                          <Text style={styles.googleText}>{AUTH_PAGE.continueWithGoogle}</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  ) : null}
                   <View style={styles.socialDivider}>
                     <View style={styles.socialDividerLine} />
                     <Text style={styles.socialDividerText}>{AUTH_PAGE.socialDivider}</Text>
@@ -526,39 +705,67 @@ export default function AuthScreen() {
 
               {/* Fields */}
               <View style={styles.fields}>
-                <View style={styles.inputWrap}>
-                  <Text style={styles.inputLabel}>Email</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="your@email.com"
-                    placeholderTextColor="#898989"
-                    value={email}
-                    onChangeText={(t) => { setEmail(t); noteSignupStarted(); }}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    autoComplete="email"
-                    returnKeyType="next"
-                    onSubmitEditing={undefined}
-                  />
-                </View>
-
-                {mode !== 'forgot' && (
+                {mode === 'inbox' ? (
                   <View style={styles.inputWrap}>
-                    <Text style={styles.inputLabel}>Password</Text>
+                    <Text style={styles.inputLabel}>{AUTH_PAGE.inbox.codeLabel}</Text>
                     <TextInput
-                      style={styles.input}
-                      placeholder="••••••••"
-                      placeholderTextColor="#898989"
+                      style={[styles.input, styles.codeInput, codeError ? styles.inputInvalid : null]}
+                      placeholder={AUTH_PAGE.inbox.codePlaceholder}
+                      placeholderTextColor={PLACEHOLDER}
+                      value={code}
+                      onChangeText={(t) => { setCode(t.replace(/\D/g, '').slice(0, 6)); setCodeError(null); }}
+                      keyboardType="number-pad"
+                      // iOS offers the code from Mail above the keyboard.
+                      textContentType="oneTimeCode"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      returnKeyType="go"
+                      onSubmitEditing={handleSubmit}
+                      accessibilityLabel={AUTH_PAGE.inbox.codeLabel}
+                    />
+                    {codeError ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{codeError}</Text> : null}
+                  </View>
+                ) : (
+                  <View style={styles.inputWrap}>
+                    <Text style={styles.inputLabel}>{AUTH_PAGE.emailLabel}</Text>
+                    <TextInput
+                      style={[styles.input, emailError ? styles.inputInvalid : null]}
+                      placeholder="your@email.com"
+                      placeholderTextColor={PLACEHOLDER}
+                      value={email}
+                      onChangeText={(t) => { setEmail(t); setEmailError(null); noteSignupStarted(); }}
+                      onBlur={() => { if (email) checkEmail(); }}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      autoComplete="email"
+                      returnKeyType="next"
+                      onSubmitEditing={undefined}
+                      accessibilityLabel={AUTH_PAGE.emailLabel}
+                    />
+                    {emailError ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{emailError}</Text> : null}
+                  </View>
+                )}
+
+                {social && (
+                  <View style={styles.inputWrap}>
+                    <Text style={styles.inputLabel}>{AUTH_PAGE.passwordLabel}</Text>
+                    <TextInput
+                      style={[styles.input, passwordError ? styles.inputInvalid : null]}
+                      placeholder={mode === 'signup' ? AUTH_PAGE.passwordPlaceholder.signup : AUTH_PAGE.passwordPlaceholder.login}
+                      placeholderTextColor={PLACEHOLDER}
                       value={password}
-                      onChangeText={(t) => { setPassword(t); noteSignupStarted(); }}
+                      onChangeText={(t) => { setPassword(t); setPasswordError(null); noteSignupStarted(); }}
+                      onBlur={() => { if (mode === 'signup' && password) checkPassword(); }}
                       secureTextEntry
                       autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                       returnKeyType="go"
                       onSubmitEditing={handleSubmit}
+                      accessibilityLabel={AUTH_PAGE.passwordLabel}
                     />
+                    {passwordError ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{passwordError}</Text> : null}
                     {mode === 'signin' && (
-                      <TouchableOpacity onPress={() => setMode('forgot')} style={styles.forgotUnder}>
-                        <Text style={styles.forgotText}>Forgot password?</Text>
+                      <TouchableOpacity onPress={() => switchMode('forgot')} style={styles.forgotUnder} accessibilityRole="button">
+                        <Text style={styles.forgotText}>{AUTH_PAGE.forgotPassword}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -597,24 +804,41 @@ export default function AuthScreen() {
               {/* Mode switcher — show only the opposite mode, like web .auth-toggle */}
               {mode === 'forgot' ? (
                 <View style={styles.modeRow}>
-                  <TouchableOpacity onPress={() => setMode('signin')}>
-                    <Text style={styles.modeLink}>Back to sign in</Text>
+                  <TouchableOpacity onPress={() => switchMode('signin')} accessibilityRole="button">
+                    <Text style={styles.modeLink}>{AUTH_PAGE.backToSignIn}</Text>
                   </TouchableOpacity>
                 </View>
+              ) : mode === 'inbox' ? (
+                <>
+                  <View style={styles.modeRow}>
+                    <Text style={styles.modePrompt}>{AUTH_PAGE.resendPrompt} </Text>
+                    <TouchableOpacity onPress={handleResend} accessibilityRole="button">
+                      <Text style={styles.modeLink}>{AUTH_PAGE.resendState.idle}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {resendNote ? <Text style={styles.resendNote} accessibilityLiveRegion="polite">{resendNote}</Text> : null}
+                  <TouchableOpacity
+                    onPress={() => switchMode(inboxKind === 'signup' ? 'signup' : 'signin')}
+                    style={styles.magicLinkBtn}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.magicLinkText}>{AUTH_PAGE.inbox.differentEmail}</Text>
+                  </TouchableOpacity>
+                </>
               ) : (
                 <>
                   <View style={styles.modeRow}>
                     <Text style={styles.modePrompt}>
-                      {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+                      {mode === 'signin' ? AUTH_PAGE.noAccountYet : AUTH_PAGE.alreadyHaveAccount}{' '}
                     </Text>
-                    <TouchableOpacity onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
-                      <Text style={styles.modeLink}>{mode === 'signin' ? 'Sign up' : 'Sign in'}</Text>
+                    <TouchableOpacity onPress={() => switchMode(mode === 'signin' ? 'signup' : 'signin')} accessibilityRole="button">
+                      <Text style={styles.modeLink}>{mode === 'signin' ? AUTH_PAGE.signUp : AUTH_PAGE.signIn}</Text>
                     </TouchableOpacity>
                   </View>
 
                   {/* Magic link */}
-                  <TouchableOpacity onPress={handleMagicLink} style={styles.magicLinkBtn}>
-                    <Text style={styles.magicLinkText}>Send a magic link instead</Text>
+                  <TouchableOpacity onPress={handleMagicLink} style={styles.magicLinkBtn} accessibilityRole="button">
+                    <Text style={styles.magicLinkText}>{AUTH_PAGE.magicLinkInstead}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -629,7 +853,7 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#09090B',
+    backgroundColor: INK,
   },
   mosaic: {
     flexDirection: 'row',
@@ -648,12 +872,6 @@ const styles = StyleSheet.create({
   wordmarkWrap: {
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
-  },
-  wordmark: {
-    fontFamily: fontFamily.display,
-    fontSize: 52,
-    color: '#FAFAFA',
-    letterSpacing: -1,
   },
   tagline: {
     fontFamily: fontFamily.sans,
@@ -680,16 +898,20 @@ const styles = StyleSheet.create({
     // Editorial display headline, matching web .auth-header h1 (var(--font-display)).
     fontFamily: fontFamily.display,
     fontSize: fontSize.xxl,
-    color: '#09090B',
+    color: INK,
     marginBottom: 4,
     textAlign: 'center',
   },
   panelSub: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
-    color: '#71717A',
+    color: MUTED,
     marginBottom: spacing.xl,
     textAlign: 'center',
+  },
+  panelSubStrong: {
+    fontFamily: fontFamily.sansMedium,
+    color: INK,
   },
   fields: {
     gap: spacing.md,
@@ -705,6 +927,24 @@ const styles = StyleSheet.create({
   },
   appleButtonLoading: {
     opacity: 0.7,
+  },
+  // Same pill as the Apple button, outlined: the web .auth-social-btn.
+  googleButton: {
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    marginBottom: spacing.md,
+  },
+  googleText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.md,
+    color: INK,
   },
   socialDivider: {
     flexDirection: 'row',
@@ -728,7 +968,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.xs,
-    color: '#71717A',
+    color: MUTED,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -736,7 +976,7 @@ const styles = StyleSheet.create({
   forgotText: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
-    color: '#71717A',
+    color: MUTED,
   },
   input: {
     backgroundColor: 'rgba(0,0,0,0.04)',
@@ -747,7 +987,28 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.md,
-    color: '#09090B',
+    color: INK,
+  },
+  inputInvalid: {
+    borderColor: colors.danger,
+  },
+  fieldError: {
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    color: colors.danger,
+  },
+  codeInput: {
+    fontFamily: fontFamily.sansTabular,
+    fontSize: fontSize.xl,
+    letterSpacing: 6,
+    textAlign: 'center',
+  },
+  resendNote: {
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    color: MUTED,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   ctaWrap: {
     marginBottom: spacing.lg,
@@ -761,7 +1022,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cta: {
-    backgroundColor: '#09090B',
+    backgroundColor: INK,
     borderRadius: radii.pill,
     paddingVertical: 15,
     alignItems: 'center',
@@ -780,12 +1041,12 @@ const styles = StyleSheet.create({
   modePrompt: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
-    color: '#71717A',
+    color: MUTED,
   },
   modeLink: {
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.sm,
-    color: '#09090B',
+    color: INK,
   },
   magicLinkBtn: {
     alignItems: 'center',
@@ -794,6 +1055,6 @@ const styles = StyleSheet.create({
   magicLinkText: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
-    color: '#A1A1AA',
+    color: QUIET,
   },
 });

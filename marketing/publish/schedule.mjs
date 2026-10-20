@@ -11,9 +11,16 @@
 // This replaces the old send. The gate used to be approval: a post sat at
 // 'needs_review' until someone approved it, and the daily job sent whatever had
 // been cleared. Social review now happens in Buffer instead — the week lands in
-// the queue as soon as it is rendered, and adjusting or dropping a post is
+// Buffer as soon as it is rendered, and adjusting or dropping a post is
 // something you do there, on the post itself, with a character counter and a
 // preview in front of you.
+//
+// It lands as a DRAFT, dated and timed, not as a queued post. The copy is
+// written by a model with live web access, and a draft is the difference
+// between "nothing goes out until someone has read it" and "it goes out unless
+// someone deletes it in time". Approving a draft in Buffer is one click on the
+// post you are already looking at. BUFFER_PUSH_AS_DRAFT=0 restores the queued
+// push for a run that has been reviewed some other way.
 //
 // Linear keeps the half Buffer cannot show: the website article. Approving or
 // rejecting a card governs whether the piece goes live on theplot.tv, and
@@ -30,6 +37,7 @@ import { PUBLISH_TZ } from '../lib/dates.mjs';
 import { queueBlockReason } from '../lib/pipelineGate.mjs';
 
 const DRY_RUN = process.env.DRY_RUN === '1';
+const PUSH_AS_DRAFT = process.env.BUFFER_PUSH_AS_DRAFT !== '0';
 
 const bufferTime = (date) =>
   date.toLocaleString('en-US', {
@@ -214,7 +222,7 @@ const scheduleOne = async (supabase, post, pub, budget, schedules, taken, flagge
 
   if (DRY_RUN) {
     taken[slotKey] = (taken[slotKey] || 0) + 1;
-    console.log(`[DRY_RUN] ${pub.platform} -> ${bufferTime(dueAt, schedules[service])}: ${payload.text.slice(0, 60)}`);
+    console.log(`[DRY_RUN] ${pub.platform} -> ${bufferTime(dueAt, schedules[service])}${PUSH_AS_DRAFT ? ' (draft)' : ''}: ${payload.text.slice(0, 60)}`);
     return 'scheduled';
   }
 
@@ -230,6 +238,7 @@ const scheduleOne = async (supabase, post, pub, budget, schedules, taken, flagge
       imageUrls: payload.imageUrls,
       altText: payload.altText,
       scheduledAt: dueAt,
+      draft: PUSH_AS_DRAFT,
     });
 
     await updatePublication(supabase, pub.id, {
@@ -250,7 +259,7 @@ const scheduleOne = async (supabase, post, pub, budget, schedules, taken, flagge
       },
     });
     taken[slotKey] = (taken[slotKey] || 0) + 1;
-    console.log(`${post.topic_key} ${pub.platform}: scheduled for ${bufferTime(dueAt, schedules[service])}`);
+    console.log(`${post.topic_key} ${pub.platform}: ${PUSH_AS_DRAFT ? 'drafted in Buffer' : 'scheduled'} for ${bufferTime(dueAt, schedules[service])}`);
     return 'scheduled';
   } catch (err) {
     if (budget.room) budget.room[service] += 1; // the slot was never taken

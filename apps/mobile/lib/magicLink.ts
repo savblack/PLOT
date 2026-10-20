@@ -6,14 +6,14 @@
 import * as Linking from 'expo-linking';
 import { supabase } from './supabase';
 
-let consumed = false;
+let consumedUrl: string | null = null;
 
 export async function consumeMagicLink(url: string | null) {
-  if (!url || consumed || !url.includes('token_hash=')) return;
+  if (!url || consumedUrl === url || !url.includes('token_hash=')) return;
   const parsed = Linking.parse(url);
   const tokenHash = (parsed.queryParams?.token_hash ?? parsed.queryParams?.token) as string | undefined;
   const type = parsed.queryParams?.type as string | undefined;
   if (!tokenHash || type !== 'magiclink') return;
-  consumed = true;
+  consumedUrl = url;
   await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'magiclink' });
 }

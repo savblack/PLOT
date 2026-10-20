@@ -44,8 +44,33 @@ export function pointerAfterEpisode(season, episodeNumber, episodeCount) {
   return { season: seasonNum + 1, episode: 1 };
 }
 
-/* Where the pointer lands when the season-level control is used. Marking rolls
-   past the season; unmarking rewinds to its first episode. */
+/**
+ * Tick "the last episode I've seen" when there is no progress row yet.
+ * Starting watching lands on season 1 episode 1 (watching_started). The
+ * pointer then moves past the ticked episode (episode_watched). Callers
+ * start watching here, on the tick, so opening the list does not count.
+ *
+ * @param {{
+ *   startWatching: (item: object) => Promise<unknown>,
+ *   setProgress: (id: number, season: number, episode: number, opts?: object) => Promise<{ ok?: boolean } | null | undefined>,
+ *   show: { id?: number, tmdb_id?: number, media_type?: string, title?: string, name?: string, poster_path?: string | null },
+ *   season: number,
+ *   episodeNumber: number,
+ *   episodeCount: number,
+ * }} args
+ * @returns {Promise<{ ok: boolean }>}
+ */
+export async function logLastEpisodeSeen({ startWatching, setProgress, show, season, episodeNumber, episodeCount }) {
+  const id = Number(show?.id ?? show?.tmdb_id);
+  if (!id) return { ok: false };
+  const started = await startWatching({ ...show, id, media_type: 'tv' });
+  if (!started) return { ok: false };
+  const next = pointerAfterEpisode(season, episodeNumber, episodeCount);
+  if (!next) return { ok: false };
+  const saved = await setProgress(id, next.season, next.episode, { reason: 'episode', undo: true });
+  return { ok: saved?.ok === true };
+}
+
 /* Is this pointer write a rewind?
  *
  * Progress is a single pointer, so un-ticking an episode and un-marking a
@@ -65,6 +90,8 @@ export function isRewind(before, season, episode) {
   return Number(episode) < fromEpisode;
 }
 
+/* Where the pointer lands when the season-level control is used. Marking rolls
+   past the season; unmarking rewinds to its first episode. */
 export function getSeasonToggleProgress({ isComplete = false, selectedSeason = 0 } = {}) {
   if (!selectedSeason || selectedSeason < 1) {
     return {
@@ -96,6 +123,42 @@ export function getLastSeasonNumber(details) {
 
   const count = Number(details?.number_of_seasons);
   return Number.isInteger(count) && count > 0 ? count : 0;
+}
+
+/** Seasons for the episode guide. Numbered seasons stay in ascending order.
+ *  Season 0 is listed last, and only when it has episodes or the person
+ *  already has a special marked. It never counts as the last season.
+ *  @param {any} details
+ *  @param {Record<string, boolean>} [episodeStates]
+ */
+export function guideSeasons(details, episodeStates = {}) {
+  const numbered = [];
+  let special = null;
+  const hasSpecial = Object.keys(episodeStates).some(key => key.startsWith('0:'));
+  for (const season of details?.seasons ?? []) {
+    if (season?.season_number == null || season.season_number === '') continue;
+    const number = Number(season.season_number);
+    if (!Number.isInteger(number) || number < 0) continue;
+    if (number === 0) {
+      if ((Number(season?.episode_count) || 0) > 0 || hasSpecial) special = season;
+    } else {
+      numbered.push(season);
+    }
+  }
+  numbered.sort((a, b) => Number(a.season_number) - Number(b.season_number));
+  return special ? [...numbered, special] : numbered;
+}
+
+/** Season the episode guide should show. A specials-only show opens on
+ *  Specials. A selection that is already in the list stays put.
+ *  @param {any[]} seasons
+ *  @param {number} selected
+ */
+export function guideSeasonSelection(seasons, selected) {
+  const current = Number(selected);
+  if ((seasons ?? []).some(season => Number(season?.season_number) === current)) return current;
+  if (seasons?.length === 1 && Number(seasons[0]?.season_number) === 0) return 0;
+  return Number.isInteger(current) ? current : 1;
 }
 
 /* Whether landing the pointer on `nextSeason` means the whole series is done:

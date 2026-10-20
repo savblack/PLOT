@@ -3,11 +3,14 @@ import test from 'node:test';
 
 import {
   getLastSeasonNumber,
+  guideSeasonSelection,
+  guideSeasons,
   getNextEpisodeProgress,
   getSeasonToggleProgress,
   getSeasonWatchState,
   isSeriesComplete,
   isRewind,
+  logLastEpisodeSeen,
   pointerAfterEpisode,
 } from '../../watchingProgress.js';
 
@@ -148,6 +151,37 @@ test('takes the highest season number and ignores the specials bucket', () => {
   assert.equal(getLastSeasonNumber(details), 3);
 });
 
+test('lists specials after the numbered seasons and hides an empty bucket', () => {
+  const details = {
+    seasons: [
+      { season_number: 0, episode_count: 2, name: 'Specials' },
+      { season_number: 2, episode_count: 10 },
+      { season_number: 1, episode_count: 8 },
+    ],
+  };
+  assert.deepEqual(guideSeasons(details).map(season => season.season_number), [1, 2, 0]);
+  assert.deepEqual(guideSeasons({ seasons: [{ season_number: 0, episode_count: 0 }, { season_number: 1, episode_count: 8 }] }).map(season => season.season_number), [1]);
+  assert.deepEqual(
+    guideSeasons({ seasons: [{ season_number: 0, episode_count: 0 }] }, { '0:1': true }).map(season => season.season_number),
+    [0],
+  );
+  assert.deepEqual(
+    guideSeasons(
+      { seasons: [{ season_number: 0, episode_count: 0 }, { season_number: 10, episode_count: 1 }] },
+      { '10:1': true },
+    ).map(season => season.season_number),
+    [10],
+  );
+  assert.deepEqual(
+    guideSeasons({ seasons: [{ season_number: null }, { season_number: '' }, { season_number: 1, episode_count: 1 }] })
+      .map(season => season.season_number),
+    [1],
+  );
+  assert.equal(guideSeasonSelection([{ season_number: 1 }, { season_number: 0 }], 1), 1);
+  assert.equal(guideSeasonSelection([{ season_number: 0, episode_count: 2 }], 1), 0);
+  assert.equal(guideSeasonSelection([], 3), 3);
+});
+
 test('falls back to number_of_seasons when the season list has not loaded', () => {
   assert.equal(getLastSeasonNumber({ number_of_seasons: 5 }), 5);
   assert.equal(getLastSeasonNumber({ seasons: [{ season_number: 0 }], number_of_seasons: 5 }), 5);
@@ -221,8 +255,40 @@ test('ticking the last episode seen moves the pointer to the next one', () => {
   assert.deepEqual(pointerAfterEpisode(1, 3, 8), { season: 1, episode: 4 });
   assert.deepEqual(pointerAfterEpisode(2, 10, 10), { season: 3, episode: 1 });
   assert.equal(pointerAfterEpisode(1, 0, 8), null);
-  assert.equal(pointerAfterEpisode(1, 9, 8), null);
   assert.equal(pointerAfterEpisode(0, 1, 8), null);
+  assert.equal(pointerAfterEpisode(1, 9, 8), null);
+  assert.equal(pointerAfterEpisode(1, 1, 0), null);
+});
+
+test('ticking the last episode seen starts the show, then moves the pointer past it', async () => {
+  const calls = [];
+  const result = await logLastEpisodeSeen({
+    startWatching: async (show) => { calls.push(['start', show.id, show.media_type]); return { tmdb_id: show.id }; },
+    setProgress: async (id, season, episode, opts) => { calls.push(['progress', id, season, episode, opts]); return { ok: true }; },
+    show: { id: 11, title: 'North' },
+    season: 1,
+    episodeNumber: 3,
+    episodeCount: 8,
+  });
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls, [
+    ['start', 11, 'tv'],
+    ['progress', 11, 1, 4, { reason: 'episode', undo: true }],
+  ]);
+});
+
+test('a failed start does not move the pointer', async () => {
+  let progressed = false;
+  const result = await logLastEpisodeSeen({
+    startWatching: async () => null,
+    setProgress: async () => { progressed = true; return { ok: true }; },
+    show: { id: 11 },
+    season: 1,
+    episodeNumber: 1,
+    episodeCount: 8,
+  });
+  assert.equal(result.ok, false);
+  assert.equal(progressed, false);
 });
 
 test('a first write with no prior row counts as forward', () => {

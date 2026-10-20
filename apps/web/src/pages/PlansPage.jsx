@@ -12,6 +12,7 @@ import { PLANS_PAGE } from '../copy/plansPage.js';
 import { safeAppReturnPath } from '../utils/premiumExplore.js';
 import PremiumIcon from '../components/PremiumIcon.jsx';
 import PremiumPurchaseAction from '../components/PremiumPurchaseAction.jsx';
+import PlotLogo from '../components/PlotLogo.jsx';
 
 const { comparison: CMP } = PLANS_PAGE;
 
@@ -31,7 +32,7 @@ function Tick() {
 // "plot" in a label is the brand, so it takes the wordmark's face and tracking.
 function withWordmark(label) {
   const parts = label.split(/\b(plot)\b/);
-  return parts.map((part, i) => (i % 2 ? <span key={i} className="plans-wordmark-inline">{part}</span> : part));
+  return parts.map((part, i) => (i % 2 ? <span key={i} className="plans-wordmark-inline"><PlotLogo inherit /></span> : part));
 }
 
 function FeatureRows({ items, className = '' }) {
@@ -113,7 +114,7 @@ export default function PlansPage() {
       <div className="plans-shell">
         <header className="plans-head">
           <Link to={backTo} className="plans-back">{backLabel}</Link>
-          <span className="plans-wordmark">plot</span>
+          <span className="plans-wordmark"><PlotLogo inherit /></span>
         </header>
 
         <div className="plans-hero">
@@ -209,7 +210,6 @@ export default function PlansPage() {
           <div className="plans-compare-head">
             <div>
               <h2 id="compare-title" className="plans-h2">{CMP.title}</h2>
-              <p className="plans-compare-note">{CMP.note}</p>
             </div>
             <label className="plans-switch" htmlFor="plans-premium-only">
               <input
@@ -255,7 +255,7 @@ export default function PlansPage() {
             <p>{PLANS_PAGE.requests.description}</p>
           </div>
           <div className="plans-request-action">
-            <a className="btn btn-primary" href={`mailto:contact@theplot.tv?subject=${encodeURIComponent(PLANS_PAGE.requests.subject)}`}>
+            <a className="btn btn-primary" href={`mailto:support@theplot.tv?subject=${encodeURIComponent(PLANS_PAGE.requests.subject)}`}>
               {PLANS_PAGE.requests.action} <span aria-hidden="true">↗</span>
             </a>
             <p>{PLANS_PAGE.requests.hint}</p>

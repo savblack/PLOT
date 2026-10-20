@@ -542,6 +542,87 @@ export type Database = {
         }
         Relationships: []
       }
+      import_jobs: {
+        Row: {
+          attempts: number
+          available_at: string
+          checkpoint: Json
+          created_at: string
+          duplicates: number
+          entry: string
+          failed: number
+          files: string[]
+          finished_at: string | null
+          id: string
+          imported: number
+          kind: string
+          last_error: string | null
+          lease_token: string | null
+          lease_until: string | null
+          phase: string
+          progress_done: number
+          progress_total: number
+          review_count: number
+          seen_at: string | null
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          checkpoint?: Json
+          created_at?: string
+          duplicates?: number
+          entry?: string
+          failed?: number
+          files?: string[]
+          finished_at?: string | null
+          id?: string
+          imported?: number
+          kind: string
+          last_error?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          phase?: string
+          progress_done?: number
+          progress_total?: number
+          review_count?: number
+          seen_at?: string | null
+          source: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          checkpoint?: Json
+          created_at?: string
+          duplicates?: number
+          entry?: string
+          failed?: number
+          files?: string[]
+          finished_at?: string | null
+          id?: string
+          imported?: number
+          kind?: string
+          last_error?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          phase?: string
+          progress_done?: number
+          progress_total?: number
+          review_count?: number
+          seen_at?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       imported_lists: {
         Row: {
           id: string
@@ -2497,6 +2578,27 @@ export type Database = {
           media_type?: string
           title?: string
           tmdb_id?: number
+        }
+        Relationships: []
+      }
+      title_sitemap_cache: {
+        Row: {
+          generated_at: string
+          id: number
+          url_count: number
+          xml: string
+        }
+        Insert: {
+          generated_at?: string
+          id?: number
+          url_count?: number
+          xml: string
+        }
+        Update: {
+          generated_at?: string
+          id?: number
+          url_count?: number
+          xml?: string
         }
         Relationships: []
       }

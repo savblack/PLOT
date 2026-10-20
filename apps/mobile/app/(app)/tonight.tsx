@@ -31,9 +31,9 @@ import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { titleForView } from '@plot/core/navigation.js';
 import { TONIGHT_PICKER as T } from '@plot/core/copy/tonightPicker.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
-import { SHOW_PREMIUM_PRICING } from '../../lib/launchFeatures';
 import { Palette, fontFamily, fontSize, spacing, posterUrl, backdropUrl } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
+import PlotWordmark from '../../components/PlotWordmark';
 
 type Styles = ReturnType<typeof makeStyles>;
 
@@ -390,11 +390,13 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
     <View>
       <View style={styles.resultsHead}>
         <Text style={styles.resultsTitle} accessibilityRole="header">{T.heading[pickerTimeOfDay()]}</Text>
-        <TouchableOpacity onPress={picker.toggleSaveSearch} style={[styles.btn, styles.btnSecondary, { minHeight: 38 }]} accessibilityRole="button"
-          accessibilityLabel={picker.isSaved ? T.savedLabel : T.saveLabel} accessibilityState={{ selected: picker.isSaved }}>
-          <Pin color={colors.textPrimary} filled={picker.isSaved} />
-          <Text style={styles.btnText}>{picker.isSaved ? T.saved : T.save}</Text>
-        </TouchableOpacity>
+        {picker.canSave && (
+          <TouchableOpacity onPress={picker.toggleSaveSearch} style={[styles.btn, styles.btnSecondary, { minHeight: 38 }]} accessibilityRole="button"
+            accessibilityLabel={picker.isSaved ? T.savedLabel : T.saveLabel} accessibilityState={{ selected: picker.isSaved }}>
+            <Pin color={colors.textPrimary} filled={picker.isSaved} />
+            <Text style={styles.btnText}>{picker.isSaved ? T.saved : T.save}</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <View style={{ gap: 12, marginTop: spacing.lg }}>
         {top && (() => {
@@ -478,7 +480,7 @@ function Locked({ picker, onUpgrade, styles, colors, dark }: {
           <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round"><Path d="M18 6 6 18M6 6l12 12" /></Svg>
         </TouchableOpacity>
         <View style={styles.unlockBadge} accessible accessibilityLabel={T.gate.label}>
-          <Text style={styles.unlockBrand}>{T.gate.brand}</Text>
+          <PlotWordmark size={16} color={colors.onAccentFill} label={T.gate.brand} style={styles.unlockBrand} />
           <Text style={styles.unlockPremium}>{T.gate.premium}</Text>
         </View>
         <Text style={styles.unlockTitle} accessibilityRole="header">{T.gate.title}</Text>
@@ -494,17 +496,11 @@ function Locked({ picker, onUpgrade, styles, colors, dark }: {
             </View>
           ))}
         </View>
-        {SHOW_PREMIUM_PRICING ? (
-          <>
-            <TouchableOpacity onPress={onUpgrade} style={[styles.btn, styles.btnPrimary, styles.unlockCta]} accessibilityRole="button">
-              <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{PLANS_PAGE.upgradeAction}</Text>
-            </TouchableOpacity>
-            <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.priceTerms}</Text>
-            <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.trialNote}</Text>
-          </>
-        ) : (
-          <Text style={styles.unlockPrice}>{PLANS_PAGE.inAppUnavailable}</Text>
-        )}
+        <TouchableOpacity onPress={onUpgrade} style={[styles.btn, styles.btnPrimary, styles.unlockCta]} accessibilityRole="button">
+          <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{PLANS_PAGE.upgradeAction}</Text>
+        </TouchableOpacity>
+        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.priceTerms}</Text>
+        <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.trialNote}</Text>
       </View>
     </View>
   );
@@ -601,11 +597,12 @@ export default function TonightScreen() {
           ) : (
             <>
               <Sentence parts={picker.sentence} styles={styles} />
+              {picker.freePickLeft && <Text style={styles.freeNote}>{T.freePickNote}</Text>}
               <View style={styles.barActions}>
                 {btn(T.surpriseMe, () => picker.go('surprise'), false, <Sparkle color={colors.textPrimary} />)}
                 <TouchableOpacity onPress={() => picker.go('five')} style={[styles.btn, styles.btnPrimary, { paddingHorizontal: 32 }]} accessibilityRole="button"
-                  accessibilityLabel={premium ? undefined : `${T.go}, ${T.gate.locked}`}>
-                  {!premium && <Lock color={colors.onAccentFill} />}
+                  accessibilityLabel={!premium && !picker.freePickLeft ? `${T.go}, ${T.gate.locked}` : picker.freePickLeft ? `${T.go}. ${T.freePickNote}` : undefined}>
+                  {!premium && !picker.freePickLeft && <Lock color={colors.onAccentFill} />}
                   <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{T.go}</Text>
                 </TouchableOpacity>
               </View>
@@ -701,6 +698,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.accentSecondaryFill, color: colors.onAccentFill, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
   },
 
+  freeNote: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
   locked: { position: 'relative', minHeight: 640 },
   placeholderLine: { height: 14, width: '80%', borderRadius: 999, backgroundColor: colors.borderStrong },
   unlock: {
@@ -713,7 +711,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'baseline', gap: 3,
     paddingHorizontal: 12, paddingTop: 4, paddingBottom: 5, borderRadius: 999, backgroundColor: colors.accentFill,
   },
-  unlockBrand: { fontFamily: fontFamily.display, fontSize: 16, letterSpacing: -0.48, color: colors.onAccentFill },
+  // Outlines have no text baseline: drop the descender so the ink sits on Premium's baseline.
+  unlockBrand: { transform: [{ translateY: 16 * 0.19 }] },
   unlockPremium: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.onAccentFill },
   unlockTitle: { fontFamily: fontFamily.display, fontSize: 26, lineHeight: 28, color: colors.textPrimary, paddingRight: 32 },
   unlockBody: { fontFamily: fontFamily.sans, fontSize: 15, lineHeight: 23, color: colors.textSecondary },

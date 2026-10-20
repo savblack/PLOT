@@ -34,9 +34,12 @@
  * Brevo silently drops unrecognized attribute keys. `marketing/setup/brevo-sync.mjs`
  * creates it (and all three lists); run that once before relying on this.
  */
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import type { Database } from '../_shared/database.types.ts';
 import { upsertBrevoContact, removeContactFromList } from '../_shared/brevo.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { errorText, reportLog } from '../_shared/posthogLog.ts';
+import { usableRateCount } from '../_shared/securityGuards.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -59,22 +62,46 @@ const waitlistSource = (raw?: string): string => {
   return SOURCE_RE.test(source) ? source : 'website';
 };
 
-// Best-effort in-memory per-IP throttle on subscribe POSTs — raises the cost of
-// list-pollution / bulk address injection (the honeypot only stops naive bots).
-// Warm-isolate state; a burst from one IP keeps the isolate warm, which is when
-// the limit matters. Not applied to the unsubscribe flow.
-const SUB_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const SUB_MAX = 10;                   // subscribe attempts per IP per window
-const subHits = new Map<string, { count: number; first: number }>();
+// Per-IP and global throttle on subscribe POSTs. DB-backed and atomic via the
+// auth_note_fail RPC (supabase/migrations/20260728000000_auth_fail_attempts.sql),
+// shared with signup-bypass and media-sync under their own scopes. The earlier
+// in-memory Map here was per isolate: Supabase spreads a burst across isolates
+// with independent counters, so 400 concurrent subscribes all passed (the same
+// finding signup-bypass records). Subscribing an address here adds it to a
+// Brevo list that then mails it, so bulk injection is a real cost to third
+// parties, not just to us. Not applied to the unsubscribe flow.
+//
+// The global bucket caps what any number of addresses can do in an hour. A
+// legitimate day is a handful of signups; a launch spike is tens, not hundreds.
+const RATE_SCOPE = 'newsletter-subscribe';
+const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_MAX_PER_IP = 10;
+const RATE_MAX_GLOBAL = 300;
 // Only accept a platform-provided connection header. `X-Forwarded-For` is
 // caller controlled when this public Edge Function is invoked directly.
-const clientIp = (req: Request): string => req.headers.get('cf-connecting-ip') || 'unknown';
-function subRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const rec = subHits.get(ip);
-  if (!rec || now - rec.first > SUB_WINDOW_MS) { subHits.set(ip, { count: 1, first: now }); return false; }
-  rec.count += 1;
-  return rec.count > SUB_MAX;
+// No header means no per-IP bucket, so every caller would share one and the
+// limit would either fail open (keyed on a constant) or lock everyone out at
+// once. Returning null makes the caller refuse the request instead.
+const clientIp = (req: Request): string | null => req.headers.get('cf-connecting-ip') || null;
+/**
+ * true = over a limit, false = allowed, null = the limiter itself failed (the
+ * caller answers 503 rather than letting an outage of the limiter open the gate).
+ */
+async function subscribeRateLimited(
+  supabase: SupabaseClient<Database>,
+  ip: string,
+): Promise<boolean | null> {
+  const [perIp, global] = await Promise.all([
+    supabase.rpc('auth_note_fail', { p_scope: RATE_SCOPE, p_ip: ip, p_window_ms: RATE_WINDOW_MS }),
+    supabase.rpc('auth_note_fail', { p_scope: `${RATE_SCOPE}-all`, p_ip: 'global', p_window_ms: RATE_WINDOW_MS }),
+  ]);
+  const ipCount = usableRateCount(perIp);
+  const globalCount = usableRateCount(global);
+  if (ipCount === null || globalCount === null) {
+    reportLog('newsletter-subscribe', 'error', `Newsletter rate check failed: ${errorText(perIp.error ?? global.error ?? 'invalid attempt count')}`);
+    return null;
+  }
+  return ipCount > RATE_MAX_PER_IP || globalCount > RATE_MAX_GLOBAL;
 }
 
 const json = (body: unknown, status = 200) =>
@@ -86,7 +113,7 @@ const json = (body: unknown, status = 200) =>
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     Deno.env.get('SUPABASE_URL')!,
     serviceKey(),
   );
@@ -127,7 +154,7 @@ Deno.serve(async (req) => {
         await upsertBrevoContact({ apiKey: brevoKey, email: sub.email, attributes: { OPT_IN: false } });
         await removeContactFromList({ apiKey: brevoKey, listId: Number(brevoMarketingListId), email: sub.email });
       } catch (error) {
-        console.error('Failed to sync unsubscribe to Brevo:', error instanceof Error ? error.message : error);
+        reportLog('newsletter-subscribe', 'error', `Failed to sync unsubscribe to Brevo: ${errorText(error)}`);
       }
     }
     return json({ ok: true });
@@ -136,7 +163,14 @@ Deno.serve(async (req) => {
   // ── Subscribe flow ──
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  if (subRateLimited(clientIp(req))) {
+  const ip = clientIp(req);
+  if (!ip) {
+    reportLog('newsletter-subscribe', 'error', '[newsletter-subscribe] no cf-connecting-ip header; refusing rather than sharing one rate bucket');
+    return json({ error: 'Something went wrong' }, 503);
+  }
+  const limited = await subscribeRateLimited(supabase, ip);
+  if (limited === null) return json({ error: 'Something went wrong' }, 503);
+  if (limited) {
     return new Response(JSON.stringify({ error: 'Too many requests' }), {
       status: 429,
       headers: { 'Content-Type': 'application/json', 'Retry-After': '3600', ...CORS },
@@ -163,7 +197,7 @@ Deno.serve(async (req) => {
       .from('app_waitlist')
       .upsert({ email, source: waitlistSource(body.source) }, { onConflict: 'email', ignoreDuplicates: true });
     if (error) {
-      console.error('Waitlist failed:', error.message);
+      reportLog('newsletter-subscribe', 'error', `Waitlist failed: ${error.message}`);
       return json({ error: 'Something went wrong' }, 500);
     }
 
@@ -194,7 +228,7 @@ Deno.serve(async (req) => {
           listIds: [Number(brevoWaitlistListId)],
         });
       } catch (error) {
-        console.error('Failed to sync waitlist signup to Brevo:', error instanceof Error ? error.message : error);
+        reportLog('newsletter-subscribe', 'error', `Failed to sync waitlist signup to Brevo: ${errorText(error)}`);
       }
     }
 
@@ -207,7 +241,7 @@ Deno.serve(async (req) => {
     .from('marketing_subscribers')
     .upsert({ email, status: 'active' }, { onConflict: 'email', ignoreDuplicates: true });
   if (error) {
-    console.error('Subscribe failed:', error.message);
+    reportLog('newsletter-subscribe', 'error', `Subscribe failed: ${error.message}`);
     return json({ error: 'Something went wrong' }, 500);
   }
 
@@ -231,7 +265,7 @@ Deno.serve(async (req) => {
         listIds: optedIn ? [Number(brevoMarketingListId)] : undefined,
       });
     } catch (error) {
-      console.error('Failed to sync subscribe to Brevo:', error instanceof Error ? error.message : error);
+      reportLog('newsletter-subscribe', 'error', `Failed to sync subscribe to Brevo: ${errorText(error)}`);
     }
   }
 

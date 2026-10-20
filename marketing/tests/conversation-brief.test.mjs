@@ -16,7 +16,7 @@ test('topical brief names the subject and when it came out', async () => {
   const brief = await buildConversationBrief(topicalPost());
 
   assert.match(brief, /A Real Film/);
-  assert.match(brief, /came out on 14 August/);
+  assert.match(brief, /The planner dates the release to 14 August/);
   assert.doesNotMatch(brief, /GENERIC question/i);
 });
 
@@ -51,7 +51,7 @@ test('a tv subject is described as a TV show, not a film', async () => {
   }));
 
   assert.match(brief, /\*\*A Real Show\*\* \(TV show\)/);
-  assert.match(brief, /It came out today/);
+  assert.match(brief, /booked this as out today/);
 });
 
 // Rows planned before questions went topical are still sitting in the DB with a

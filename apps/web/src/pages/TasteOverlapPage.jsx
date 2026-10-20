@@ -259,7 +259,7 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
     <div className="to-view">
       <div className="to-top">
         <BackButton to={profilePath} />
-        <span className="to-chip">{T.premiumChip}</span>
+        {!premium && <span className="to-chip">{T.premiumChip}</span>}
         {premium && overlap && target
           ? <TasteShareMenu overlap={overlap} target={target} genreName={genreName} onCustomise={() => setSharing(true)} />
           : <span className="to-top-spacer" aria-hidden="true" />}

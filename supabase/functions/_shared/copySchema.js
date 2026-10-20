@@ -14,9 +14,9 @@ export const CTA_VARIANTS = ['track_it', 'whats_on_tonight', 'journal_it', 'none
 // Field-by-field spec, rendered into every brief so the worker sees the exact
 // contract it must satisfy. Keep this in lockstep with validateCopy below.
 export const COPY_FIELDS = [
-  ['x', 'string', 'X post text. <=280 characters. NO URLs. No hashtags.'],
+  ['x', 'string', 'X post text. <=280 characters. No URLs except a YouTube trailer link on trailer-related posts. No hashtags.'],
   ['instagram', 'string', 'Instagram caption, 1-3 short paragraphs. Do NOT put the hashtags here — they go in the hashtags array.'],
-  ['threads', 'string', 'Threads post text, one conversational thought. NO URLs (the system appends the article link). No hashtags.'],
+  ['threads', 'string', 'Threads post text, one conversational thought. No URLs except a YouTube trailer link on trailer-related posts (the system also appends the article link). No hashtags.'],
   ['hashtags', 'string[]', '3-5 niche hashtags for Instagram only, WITHOUT the # prefix, no spaces (e.g. "A24", "mikeflanagan").'],
   ['alt_text', 'string', 'One-sentence literal description of the image for accessibility.'],
   ['cta_variant', `enum: ${CTA_VARIANTS.join(' | ')}`, 'Which approved CTA this post uses (or "none").'],
@@ -37,16 +37,16 @@ export const POST_TYPE_BRIEFS = {
     'A countdown post. The payload says how many days remain until the release. Lead with the anticipation; ' +
     'the big number is on the image. Name the release using the payload\'s `when_label` in full, US date order ' +
     '("Friday, September 25"), NEVER a relative day and never day-month order. "This Friday" on a T-14 countdown points at the wrong ' +
-    'Friday, contradicts the article it links to, and is rejected by the validator.',
+    'Friday, contradicts the article it links to, and is rejected by the validator. Do not describe reviews of a film that is not out. A null ratings block means there is no score to cite.',
   now_streaming: 'This title is available to watch at home starting today. The payload\'s `home_kind` says how: "streaming" means lead with the US subscription provider from `streaming.US`; "rental" means it can now be rented or bought at home after its cinema run, so say that and name the US platforms from `digital.US` ("to rent or buy on Prime Video and Apple TV"). Never name a UK or Australian service, even if those lists are filled in. Never call a rental "streaming", and never guess a platform that isn\'t in the US list. People rent on the apps they already use, so never write "stores", "digital stores" or "storefronts"; name the platforms, or just say "on digital". If the title had a cinema run (`from_label`), the hook is the home arrival, not the end of the run.',
   trending:
     'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
-    'X gets the full top-10 chart as its single image. ' +
+    'X gets the full top-10 chart as its single image, and the X caption names number one and every other title on the chart. Do not invent why a title moved. ' +
     'Instagram and Threads get a carousel: chart 1-5, chart 6-10, then detail cards for the top 3.',
-  trailer: 'A new official trailer just dropped for this title, which is still unreleased (`when_label` is the release date). React to the trailer existing; never describe scenes you haven\'t been given, and never treat footage as proof the film works.',
-  on_this_day: 'A release anniversary. The payload says how many years, counted from the original theatrical release (for a US film, its US opening, not the premiere). Invite reflection or a rewatch; no spoilers, and make a title-specific critical point rather than a birthday calculation.',
+  trailer: 'A new official trailer just dropped for this title, which is still unreleased (`when_label` is the release date). React to the trailer existing; never describe scenes you haven\'t been given, and never treat footage as proof the film works. Do not call it the first trailer unless a page you loaded says no earlier official trailer exists. Do not claim who was going to direct unless a page you loaded says so.',
+  on_this_day: 'A release anniversary. The payload says how many years, counted from the original theatrical release (for a US film, its US opening, not the premiere). Invite reflection or a rewatch; no spoilers, and make a title-specific critical point rather than a birthday calculation. Say "today" only when the US theatrical opening is the publish day. When that opening and TMDB\'s primary date disagree, the US opening is the anniversary, and a different publish day is not a birthday.',
   watch_tonight: 'A "what to watch tonight" pick — a title streaming right now. Make a quick, genuine case for tonight, and ALWAYS name the US platform from `streaming.US`. Do not name a UK or Australian service.',
-  hidden_gem: 'A "hidden gem" — an older film (1980s onwards) that is well made but outside the obvious picks, streamable now. Say who it will reward and why it has been overlooked; ALWAYS name the US platform from `streaming.US`. Do not name a UK or Australian service. No spoilers.',
+  hidden_gem: 'A "hidden gem" — an older film (1980s onwards) that is well made but outside the obvious picks, streamable now. Say who it will reward and why it has been overlooked; ALWAYS name the US platform from `streaming.US`. Do not name a UK or Australian service. No spoilers. A film that won three or more Oscars, or that a US reader already knows as a classic, is the wrong slot: do not call it a discovery. fuboTV and MGM+ are US services when they appear in `streaming.US`. Name those services. Do not add a phrase only so a checker will pass.',
 };
 
 // ── Guides: web-only long-form SEO articles (post_type 'guide') ──
@@ -121,8 +121,12 @@ const PLATFORM_REQUIRED = new Set(['now_streaming', 'watch_tonight', 'hidden_gem
 
 // A named service, a named platform, or the plain words for a paid digital
 // release. "Plus" spelled out counts: Plot writes both Disney+ and Disney Plus.
+// fuboTV and MGM+ are US services the watch payload actually returns. A body
+// that names them has said where to watch. MGM+ has no trailing word boundary:
+// the plus sign is not a word character, so `\b` after it never matches.
 const NAMES_A_PLATFORM = new RegExp(
-  '\\b(?:Netflix|HBO Max|Max|Disney\\s?(?:\\+|Plus)|Hulu|Peacock|Paramount\\s?(?:\\+|Plus)|Prime Video|Apple TV|Fandango|Shudder|Starz|Google Play|YouTube|Criterion|Mubi|Vudu|BritBox|AMC\\s?(?:\\+|Plus)|Tubi|Plex|Sky|Stan|Binge|Kanopy|Netflix)\\b'
+  '\\b(?:Netflix|HBO Max|Max|Disney\\s?(?:\\+|Plus)|Hulu|Peacock|Paramount\\s?(?:\\+|Plus)|Prime Video|Apple TV|Fandango|Shudder|Starz|Google Play|YouTube|Criterion|Mubi|Vudu|BritBox|AMC\\s?(?:\\+|Plus)|Tubi|Plex|Sky|Stan|Binge|Kanopy|fubo(?:TV)?)\\b'
+  + '|\\bMGM\\s?\\+'
   + '|\\b(?:rent or buy|to rent|rental|premium video|video on demand|digital(?:ly)? (?:release|purchase|rental))\\b',
   'i',
 );
@@ -189,8 +193,16 @@ export const validateCopy = (raw, context = {}) => {
   }
 
   // Hard platform guarantees — the same ones the API path enforced.
-  if (hasUrl(copy.x)) errors.push('x contains a URL (never allowed on X)');
-  if (hasUrl(copy.threads)) errors.push('threads contains a URL (system appends the link)');
+  const trailerRelated = context.post_type === 'trailer'
+    || /\b(?:trailer|teaser)\b/i.test(`${copy.x} ${copy.instagram} ${copy.threads}`);
+  const youtubeLink = /https:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[A-Za-z0-9_-]+|youtu\.be\/[A-Za-z0-9_-]+)(?:&[^\s]*)?/g;
+  for (const field of ['x', 'instagram', 'threads']) {
+    const links = copy[field].match(youtubeLink) || [];
+    if (trailerRelated && links.length === 0) errors.push(`${field} needs the official YouTube trailer link`);
+    const remainder = trailerRelated ? copy[field].replace(youtubeLink, '') : copy[field];
+    if (field !== 'instagram' && hasUrl(remainder)) errors.push(`${field} contains a URL (only YouTube trailer links allowed on trailer-related posts)`);
+  }
+  if (trailerRelated && copy.x.length > 280) errors.push('x exceeds 280 characters; shorten the caption and keep the complete trailer link');
   if (/#\w/.test(copy.x)) errors.push('x contains a hashtag (not allowed on X)');
   if (/#\w/.test(copy.threads)) errors.push('threads contains a hashtag (not allowed on Threads)');
 
@@ -207,7 +219,7 @@ export const validateCopy = (raw, context = {}) => {
   errors.push(...socialErrors(copy, { home_kind: context.home_kind }));
 
   // Normalization that can't fail: keep X within the hard limit.
-  if (copy.x.length > 280) copy.x = `${copy.x.slice(0, 279)}…`;
+  if (!trailerRelated && copy.x.length > 280) copy.x = `${copy.x.slice(0, 279)}…`;
 
   return { valid: errors.length === 0, errors, copy };
 };
@@ -267,6 +279,8 @@ export const validateConversation = (raw) => {
   const errors = [];
   const question = String(raw?.question ?? raw?.x ?? '').trim();
   if (!question) errors.push('question is empty');
+  if (question && !/\?\s*$/.test(question)) errors.push('question must end on a question mark');
+  if (/\bno wrong answers\b/i.test(question)) errors.push('question uses the retired closer "No wrong answers"');
   if (hasUrl(question)) errors.push('question contains a URL (not allowed)');
   if (/#\w/.test(question)) errors.push('question contains a hashtag (not allowed)');
   errors.push(...socialErrors({ x: question }));

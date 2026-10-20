@@ -13,10 +13,9 @@ const SHAREABLE = 'public, s-maxage=3600, stale-while-revalidate=86400';
 const PAGE_HEADERS = {
   'Content-Type': 'text/html; charset=utf-8',
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
-  // The upstream feed is a complete server-rendered document with inline
-  // presentation and navigation scripts. Keep this aligned with _headers:
-  // Pages Functions replace the static-header policy for this route.
-  'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://image.tmdb.org https://theplot.tv https://a.theplot.tv; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline' https://a.theplot.tv https://www.googletagmanager.com; connect-src 'self' https://a.theplot.tv https://www.googletagmanager.com; frame-src https://www.googletagmanager.com; worker-src 'self' blob:; form-action 'self'; upgrade-insecure-requests",
+  // Content-Security-Policy is set by functions/_middleware.js on every HTML
+  // response (the generated policy in _lib/csp.generated.js), so it is not
+  // repeated here.
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -34,7 +33,19 @@ export function feedCacheKey(url, slug) {
   const page = url.searchParams.get('page') || '';
   const type = url.searchParams.get('type') || '';
   const path = slug ? `/whats-on/${encodeURIComponent(slug)}` : '/whats-on';
-  return new Request(`${url.origin}${path}?page=${page}&type=${type}`, { method: 'GET' });
+  // v bumps when a deploy must not be answered from pages cached before it.
+  return new Request(`${url.origin}${path}?page=${page}&type=${type}&v=2`, { method: 'GET' });
+}
+
+/**
+ * The search term from ?q=: trimmed, whitespace collapsed, capped. Empty for a
+ * missing or blank term. Searches are never cached (every term is its own
+ * document and would grow the cache without bound).
+ *
+ * @param {URL} url
+ */
+export function searchTerm(url) {
+  return (url.searchParams.get('q') || '').replace(/\s+/g, ' ').trim().slice(0, 80);
 }
 
 /**
@@ -43,15 +54,26 @@ export function feedCacheKey(url, slug) {
  * @param {(promise: Promise<unknown>) => void} [waitUntil]
  */
 export async function marketingFeedPage(request, slug, waitUntil) {
-  // Forward the index's query params (page, type, utm_*). The slug is a path
+  // Forward only the params the renderer reads (page, type). The cache key
+  // below ignores everything else, so forwarding more would let one visitor's
+  // arbitrary query string be rendered and then served to everyone on that
+  // page if the renderer ever reflected a parameter. utm_* is a browser-side
+  // concern and never reached the Edge Function's output. The slug is a path
   // segment on Pages, so it isn't in searchParams.
   const url = new URL(request.url);
-  const qs = url.searchParams.toString();
+  const forwarded = new URLSearchParams();
+  for (const name of ['page', 'type']) {
+    const value = url.searchParams.get(name);
+    if (value) forwarded.set(name, value);
+  }
+  const q = slug ? '' : searchTerm(url);
+  if (q) forwarded.set('q', q);
+  const qs = forwarded.toString();
   const path = slug ? encodeURIComponent(slug) : '';
   const upstreamUrl = `${UPSTREAM}${path ? `/${path}` : ''}${qs ? `?${qs}` : ''}`;
 
   const method = request.method === 'HEAD' ? 'HEAD' : 'GET';
-  const cache = globalThis.caches && globalThis.caches.default;
+  const cache = !q && globalThis.caches && globalThis.caches.default;
   const cacheKey = feedCacheKey(url, slug);
   if (cache) {
     try {
@@ -73,7 +95,7 @@ export async function marketingFeedPage(request, slug, waitUntil) {
     status: upstream.status,
     headers: {
       ...PAGE_HEADERS,
-      'Cache-Control': upstream.status === 200
+      'Cache-Control': upstream.status === 200 && !q
         ? upstream.headers.get('cache-control') || SHAREABLE
         : 'no-store',
     },

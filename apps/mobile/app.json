@@ -97,6 +97,67 @@
             "enableSceneSupport": true
           }
         }
+      ],
+      [
+        "expo-alternate-app-icons",
+        [
+          {
+            "name": "WordmarkCharcoal",
+            "ios": "./assets/alternate-icons/WordmarkCharcoal.png",
+            "android": {
+              "foregroundImage": "./assets/alternate-icons/WordmarkCharcoal-foreground.png",
+              "backgroundColor": "#292924"
+            }
+          },
+          {
+            "name": "MarkCream",
+            "ios": "./assets/alternate-icons/MarkCream.png",
+            "android": {
+              "foregroundImage": "./assets/alternate-icons/MarkCream-foreground.png",
+              "backgroundColor": "#F8F2EA"
+            }
+          },
+          {
+            "name": "WordmarkCream",
+            "ios": "./assets/alternate-icons/WordmarkCream.png",
+            "android": {
+              "foregroundImage": "./assets/alternate-icons/WordmarkCream-foreground.png",
+              "backgroundColor": "#F8F2EA"
+            }
+          },
+          {
+            "name": "MarkPink",
+            "ios": "./assets/alternate-icons/MarkPink.png",
+            "android": {
+              "foregroundImage": "./assets/alternate-icons/MarkPink-foreground.png",
+              "backgroundColor": "#FF88C8"
+            }
+          },
+          {
+            "name": "WordmarkPink",
+            "ios": "./assets/alternate-icons/WordmarkPink.png",
+            "android": {
+              "foregroundImage": "./assets/alternate-icons/WordmarkPink-foreground.png",
+              "backgroundColor": "#FF88C8"
+            }
+          },
+          {
+            "name": "MarkSage",
+            "ios": "./assets/alternate-icons/MarkSage.png",
+            "android": {
+              "foregroundImage": "./assets/alternate-icons/MarkSage-foreground.png",
+              "backgroundColor": "#DBE1B0"
+            }
+          },
+          {
+            "name": "WordmarkSage",
+            "ios": "./assets/alternate-icons/WordmarkSage.png",
+            "android": {
+              "foregroundImage": "./assets/alternate-icons/WordmarkSage-foreground.png",
+              "backgroundColor": "#DBE1B0"
+            }
+          }
+        ]
       ]
     ],
     "extra": {

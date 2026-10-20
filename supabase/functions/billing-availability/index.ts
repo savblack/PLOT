@@ -23,7 +23,7 @@ function allowedOrigin(origin: string | null) {
   try {
     const { hostname, protocol } = new URL(origin);
     if (protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) return origin;
-    if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv') || hostname.endsWith('.vercel.app')) return origin;
+    if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv')) return origin;
   } catch { /* use canonical origin */ }
   return 'https://app.theplot.tv';
 }

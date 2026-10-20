@@ -23,6 +23,7 @@ import { MEDIA } from '../copy/media.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import './TonightView.css';
+import PlotLogo from './PlotLogo.jsx';
 
 /* Pick for Me. Phone: one column, a Filters panel that folds away, and a
    sticky bar with the sentence and Pick. Desktop (>=1024px): the same 264px
@@ -120,7 +121,7 @@ function UnlockDialog({ picker, navigate }) {
       onKeyDown={(e) => { if (e.key === 'Escape') picker.closeLock(); }}>
       <button type="button" className="tonight-unlock-close" aria-label={T.gate.close} onClick={picker.closeLock}><IconClose /></button>
       <span className="tonight-unlock-badge" aria-label={T.gate.label}>
-        <span className="tonight-unlock-brand" aria-hidden="true">{T.gate.brand}</span>
+        <span className="tonight-unlock-brand" aria-hidden="true"><PlotLogo inherit /></span>
         <span aria-hidden="true">{T.gate.premium}</span>
       </span>
       <h2 id="tonight-unlock-title" className="tonight-unlock-title">{T.gate.title}</h2>
@@ -296,10 +297,13 @@ function Question({ picker }) {
 }
 
 function PickButton({ picker, premium, className = '' }) {
+  // A Free viewer's first pick of the day is real, so the lock only shows once it is used.
+  const locked = !premium && !picker.freePickLeft;
   return (
     <button type="button" className={`btn btn-primary tonight-go ${className}`} onClick={() => picker.go('five')}
-      aria-label={premium ? undefined : `${T.go}, ${T.gate.locked}`}>
-      {!premium && <IconLock />}{T.go}
+      aria-label={locked ? `${T.go}, ${T.gate.locked}` : picker.freePickLeft ? `${T.go}. ${T.freePickNote}` : undefined}
+      title={picker.freePickLeft ? T.freePickNote : undefined}>
+      {locked && <IconLock />}{T.go}
     </button>
   );
 }
@@ -563,10 +567,12 @@ function Results({ picker, onOpen, reveal, actions, onKeepFinding }) {
         <div className="tonight-results-actions">
           {/* A1: save the answers as a smart list, beside Save search (the snapshot). */}
           {onKeepFinding && <span className="tonight-keep-hint">{T.createSmartListHint}</span>}
-          <button type="button" className={`btn btn-secondary btn-sm tonight-save${picker.isSaved ? ' saved' : ''}`}
-            aria-pressed={picker.isSaved} aria-label={picker.isSaved ? T.savedLabel : T.saveLabel} onClick={picker.toggleSaveSearch}>
-            <IconPin filled={picker.isSaved} />{picker.isSaved ? T.saved : T.save}
-          </button>
+          {picker.canSave && (
+            <button type="button" className={`btn btn-secondary btn-sm tonight-save${picker.isSaved ? ' saved' : ''}`}
+              aria-pressed={picker.isSaved} aria-label={picker.isSaved ? T.savedLabel : T.saveLabel} onClick={picker.toggleSaveSearch}>
+              <IconPin filled={picker.isSaved} />{picker.isSaved ? T.saved : T.save}
+            </button>
+          )}
           {onKeepFinding && (
             <button type="button" className="btn btn-primary btn-sm tonight-keep" onClick={onKeepFinding}>
               <IconKeepFinding />{T.createSmartList}
@@ -673,6 +679,7 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions, smartL
           ) : (
             <>
               <Sentence parts={picker.sentence} />
+              {picker.freePickLeft && <p className="tonight-free-note">{T.freePickNote}</p>}
               <div className="tonight-bar-actions">
                 <button type="button" className="btn btn-secondary tonight-surprise" onClick={() => picker.go('surprise')}><IconSparkle />{T.surpriseMe}</button>
                 <PickButton picker={picker} premium={premium} />

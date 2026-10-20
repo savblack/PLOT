@@ -40,6 +40,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { usableRateCount } from '../_shared/securityGuards.js';
+import { deliverSignupLink } from '../_shared/signupMailer.ts';
 
 function allowedOrigin(origin: string | null) {
   if (!origin) return 'https://app.theplot.tv';
@@ -87,6 +88,22 @@ async function sendConfirmationEmail(email: string, actionLink: string) {
   if (!res.ok) throw new Error(`Resend request failed (${res.status})`);
 }
 
+// Fallback when Resend fails: send through Supabase's own auth mailer (the
+// project's configured SMTP). The user already exists, so shouldCreateUser is
+// off. Uses an anon-key client so the service-role client's session is untouched.
+async function sendViaSupabaseMailer(email: string) {
+  const anon = Deno.env.get('SUPABASE_ANON_KEY');
+  if (!anon) throw new Error('SUPABASE_ANON_KEY is not configured');
+  const mailer = createClient(Deno.env.get('SUPABASE_URL')!, anon, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error } = await mailer.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false, emailRedirectTo: 'https://app.theplot.tv/auth/callback' },
+  });
+  if (error) throw new Error(`Supabase mailer failed (${error.status ?? 'unknown'})`);
+}
+
 // Deliberately fast — a real user reads the form and types for at least this
 // long; a script that fills+submits immediately doesn't.
 const MIN_SUBMIT_MS = 1200;
@@ -104,10 +121,18 @@ const MAX_TOKEN_AGE_MS = 15 * 60 * 1000;
 const RATE_SCOPE = 'signup-bypass';
 const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const RATE_MAX_ATTEMPTS = 3;
+// Across all callers. The per-IP limit is cheap to sidestep from a pool of
+// addresses; this bounds what the whole pool can do in an hour (each attempt
+// here creates an unconfirmed account and sends an email). A real hour of
+// bypass signups is in the single digits.
+const RATE_MAX_GLOBAL = 60;
 
 // Only accept a platform-provided connection header — X-Forwarded-For is
 // caller-controlled when this public function is invoked directly.
-const clientIp = (req: Request): string => req.headers.get('cf-connecting-ip') || 'unknown';
+// No header means no per-IP bucket, so every caller would share one and the
+// limit would either fail open (keyed on a constant) or lock everyone out at
+// once. Returning null makes the caller refuse the request instead.
+const clientIp = (req: Request): string | null => req.headers.get('cf-connecting-ip') || null;
 
 // This function only ever needs elevated privileges (creating a user who
 // doesn't exist yet, with no session to act on behalf of) — unlike functions
@@ -117,20 +142,32 @@ const SERVICE_ROLE_KEY = serviceKey();
 const supabaseAdmin = createClient<Database>(Deno.env.get('SUPABASE_URL')!, SERVICE_ROLE_KEY);
 
 // --- Signed form-timing token ------------------------------------------
-// HMAC-SHA256 over a base64url-encoded {iat} payload, keyed by the
-// service-role key — a secret the client never has access to, so it can't
-// forge or backdate a token. Deliberately reuses that existing secret
-// rather than provisioning a new one just for this.
+// HMAC-SHA256 over a base64url-encoded {iat} payload. The key is
+// SIGNUP_FORM_TOKEN_SECRET when set, otherwise a purpose-specific key derived
+// from the service key with HKDF. Until 2026-10-14 the service key itself was
+// the HMAC key; a secret that authenticates the whole project should not
+// double as a signing key for form tokens, because any weakness in one use is
+// a weakness in the other. Deriving keeps the deploy free of a new secret
+// while separating the two. Changing either input invalidates tokens already
+// issued, which only costs a visitor one 15-minute form window.
 let hmacKeyPromise: Promise<CryptoKey> | null = null;
 function getHmacKey(): Promise<CryptoKey> {
   if (!hmacKeyPromise) {
-    hmacKeyPromise = crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(SERVICE_ROLE_KEY),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign', 'verify'],
-    );
+    hmacKeyPromise = (async () => {
+      const enc = new TextEncoder();
+      const dedicated = Deno.env.get('SIGNUP_FORM_TOKEN_SECRET');
+      if (dedicated) {
+        return crypto.subtle.importKey('raw', enc.encode(dedicated), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+      }
+      const ikm = await crypto.subtle.importKey('raw', enc.encode(SERVICE_ROLE_KEY), 'HKDF', false, ['deriveKey']);
+      return crypto.subtle.deriveKey(
+        { name: 'HKDF', hash: 'SHA-256', salt: enc.encode('plot-signup-bypass'), info: enc.encode('form-timing-token-v1') },
+        ikm,
+        { name: 'HMAC', hash: 'SHA-256', length: 256 },
+        false,
+        ['sign', 'verify'],
+      );
+    })();
   }
   return hmacKeyPromise;
 }
@@ -216,17 +253,21 @@ Deno.serve(async (req) => {
   // login throttle and media-sync's companion-token auth, kept independent
   // via `scope`.
   const ip = clientIp(req);
-  const { data: rateCount, error: rateError } = await supabaseAdmin.rpc('auth_note_fail', {
-    p_scope: RATE_SCOPE,
-    p_ip: ip,
-    p_window_ms: RATE_WINDOW_MS,
-  });
-  const attempts = usableRateCount({ data: rateCount, error: rateError });
-  if (attempts === null) {
-    console.error('Signup rate check failed:', rateError ?? 'invalid attempt count');
+  if (!ip) {
+    console.error('[signup-bypass] no cf-connecting-ip header; refusing rather than sharing one rate bucket');
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 503);
   }
-  if (attempts > RATE_MAX_ATTEMPTS) {
+  const [perIp, global] = await Promise.all([
+    supabaseAdmin.rpc('auth_note_fail', { p_scope: RATE_SCOPE, p_ip: ip, p_window_ms: RATE_WINDOW_MS }),
+    supabaseAdmin.rpc('auth_note_fail', { p_scope: `${RATE_SCOPE}-all`, p_ip: 'global', p_window_ms: RATE_WINDOW_MS }),
+  ]);
+  const attempts = usableRateCount(perIp);
+  const globalAttempts = usableRateCount(global);
+  if (attempts === null || globalAttempts === null) {
+    console.error('Signup rate check failed:', perIp.error ?? global.error ?? 'invalid attempt count');
+    return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 503);
+  }
+  if (attempts > RATE_MAX_ATTEMPTS || globalAttempts > RATE_MAX_GLOBAL) {
     return json(
       { error: 'Too many attempts. Please wait a moment and try again.', reason: 'rate_limited' },
       origin,
@@ -243,14 +284,15 @@ Deno.serve(async (req) => {
     email_confirm: false,
   });
   if (createError) {
+    // An address that already has an account gets the same answer as a new
+    // one, and no email. Saying "already registered" here let anyone confirm
+    // whether an address is a Plot member, three guesses an hour per IP and
+    // as many as they had IPs. The normal path (supabase.auth.signUp with
+    // enumeration protection on) answers the same way, and a real owner who
+    // forgot they signed up reaches the account through "forgot password".
     const already = /already|exists|registered/i.test(createError.message || '');
-    return json(
-      already
-        ? { error: 'An account with this email already exists. Try signing in instead.', reason: 'already_registered' }
-        : { error: 'Something went wrong. Please try again.', reason: 'unknown' },
-      origin,
-      already ? 409 : 400,
-    );
+    if (already) return json({ ok: true, requires_email_confirmation: true }, origin);
+    return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 400);
   }
 
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -264,9 +306,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    await sendConfirmationEmail(email, linkData.properties.action_link);
+    await deliverSignupLink(
+      () => sendConfirmationEmail(email, linkData.properties.action_link),
+      () => sendViaSupabaseMailer(email),
+    );
   } catch (error) {
-    console.error('Could not send fallback signup confirmation:', (error as Error).message);
+    console.error('Could not send signup confirmation by any path:', (error as Error).message);
     await supabaseAdmin.auth.admin.deleteUser(created.user.id);
     return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
   }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 
 /**
- * The server-side Premium push preference. A missing row means off. Native
+ * The server-side push preference (Free for everyone). A missing row means off. Native
  * permission and Expo token registration stay in mobile; core owns the data.
  * @param {string | null} userId
  */
@@ -21,7 +21,7 @@ export function usePushAlerts(userId) {
     setState(s => ({ ...s, busy: true, error: null }));
     const { error } = await supabase.from('notification_preferences')
       .upsert({ user_id: userId, push_enabled: enabled, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-    const code = error?.code === '42501' ? 'premium_required' : error ? 'write_failed' : null;
+    const code = error ? 'write_failed' : null;
     setState(s => ({ ...s, enabled: code ? s.enabled : enabled, busy: false, error: code }));
     return { error: code };
   }, [userId]);

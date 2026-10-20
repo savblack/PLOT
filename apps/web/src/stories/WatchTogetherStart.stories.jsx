@@ -7,8 +7,9 @@ import WatchTogetherStart from '../components/WatchTogetherStart.jsx';
 import { AcceptDialog, WatchTogetherTile } from '../components/WatchTogetherParts.jsx';
 
 /* The Watch together start page for someone with nobody to watch with yet:
-   one card with an example pairing, friend search, suggested people (when
-   there are any) and the invite link, beside the demo. People are fictional;
+   a dark hero (friend search, invite link, example pairing), the people they
+   follow when there are any, and the demo; Free adds one Premium card and
+   Premium a dismissible welcome. People are fictional;
    a stub Supabase client answers search_users, so nothing here reads or
    writes account data. */
 

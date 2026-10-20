@@ -116,13 +116,13 @@ Plot is free to use. Premium adds themes, smart lists, collaborative lists and m
 Film and TV data from TMDB. Streaming availability from JustWatch.
 ```
 
-The Premium line is deliberately price-free. The iOS build hides every price,
-trial note and Upgrade button behind `SHOW_PREMIUM_PRICING` in
-`apps/mobile/lib/launchFeatures.ts`, because App Review Guideline 3.1.1
-rejects a price or a call to action for a subscription the app does not sell
-through in-app purchase, and Plot sells Premium on the web. Do not add a
-price, "cheaper on the web", or a checkout link anywhere in the listing or
-the app until in-app purchase exists. Mentioning that Premium exists is fine.
+The Premium line stays price-free; the listing only says Premium exists. The
+app shows the price, 7-day trial and Upgrade, which opens Stripe Checkout in the
+browser (Manage subscription opens the Stripe portal). Limited to the US
+storefront (Apple's Guideline 3.1.1 allows an external purchase link without an
+entitlement only there), so Upgrade and Manage subscription draw nothing
+elsewhere during App Review. Revisit the limit in `purchaseLinkOut.js` after
+approval; see `docs/launch/app-review-notes.md`.
 
 **What's New** for 1.0: `First release.` Nobody reads it on a first version.
 

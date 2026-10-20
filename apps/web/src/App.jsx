@@ -29,6 +29,7 @@ import { useFavorites }    from './hooks/useFavorites.js';
 import { useCustomLists }  from './hooks/useCustomLists.js';
 import UndoToast from './components/UndoToast.jsx';
 import NoticeToast from './components/NoticeToast.jsx';
+import EpisodeAlertsPrompt from './components/EpisodeAlertsPrompt.jsx';
 import StreakToast from './components/StreakToast.jsx';
 import { FollowToastHost } from './components/PeopleFollow.jsx';
 import ShareCardHost from './components/ShareCardHost.jsx';
@@ -40,10 +41,12 @@ import { markKnownAccountBrowser } from './utils/accountRecognition.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 import { touchLastSeen } from '@plot/core/brevoLifecycleClient.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
+import { useUiPrefs } from '@plot/core/useUiPrefs.js';
 import { onPendingWatchQueued } from '@plot/core/watchQueued.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { loadPremiumEntitlement } from '@plot/core/billing.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
+import { ArtworkProvider } from '@plot/core/useUserArtwork.js';
 import { AppContext, useApp } from './hooks/useApp.js';
 import { SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 
@@ -180,7 +183,7 @@ export default function App() {
     const [{ data }, entitled] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, region, timezone, first_name, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
+        .select('id, region, timezone, first_name, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links, home_layout, show_parental_guide, ui_prefs')
         .eq('id', userId)
         .maybeSingle(),
       loadPremiumEntitlement(),
@@ -349,6 +352,10 @@ export default function App() {
     if (user?.id) loadProfile(user.id);
   }, [user, loadProfile]);
 
+  // Density, card style and sidebar order. Held here, once, so the sidebar,
+  // Home and Settings all read and change the same value.
+  const uiPrefs = useUiPrefs({ userId: user?.id, saved: profile?.ui_prefs, onPersisted: refreshProfile });
+
   if (loading) {
     return (
       <div className="app-boot-loader">
@@ -377,10 +384,12 @@ export default function App() {
     favorites,
     customLists,
     refreshProfile,
+    uiPrefs,
   };
 
   return (
     <AppContext.Provider value={ctx}>
+      <ArtworkProvider userId={user?.id ?? null} premium={!!profile && isPremiumProfile(profile)}>
       {/* panelOpen drops on the first frame of the close animation so the
           content column and the outgoing panel travel together. */}
       <AppShell
@@ -436,6 +445,7 @@ export default function App() {
 
       <UndoToast />
       <NoticeToast />
+      <EpisodeAlertsPrompt userId={user?.id} />
       <StreakToast />
       <FollowToastHost />
       <ShareCardHost />
@@ -447,6 +457,7 @@ export default function App() {
           onDismiss={handleTzDismiss}
         />
       )}
+      </ArtworkProvider>
     </AppContext.Provider>
   );
 }

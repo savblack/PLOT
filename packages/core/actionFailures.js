@@ -81,6 +81,7 @@ export const FAILED_LOADS = Object.freeze({
   FAVOURITES:   'favourites',
   TONIGHT_PICKS: 'tonight_picks',
   SMART_LIST:   'smart_list',
+  ONBOARDING_SERVICES: 'onboarding_services',
 });
 
 /**
@@ -144,7 +145,7 @@ function errorIdentity(error) {
  * @param {string} action one of FAILED_ACTIONS
  * @param {any} error the Supabase error, or null when the call returned no row
  * @param {{ tmdb_id?: number, media_type?: string, list_id?: string, fields?: string[],
- *   progress_action?: string, undone_action?: string, kind?: FailureKind }} [context] ids and field
+ *   progress_action?: string, undone_action?: string, source?: string, kind?: FailureKind }} [context] ids and field
  *   *names* only, the same props the matching success event carries. `kind`
  *   overrides classification for failures that never reached the server.
  */

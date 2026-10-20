@@ -42,16 +42,30 @@ test('unknown runner name fails loudly instead of silently doing nothing', () =>
   );
 });
 
+test('grok invocation puts the prompt right after -p and limits the tools', () => {
+  const { command, args } = buildInvocation('grok', 'PROMPT');
+  assert.equal(command, 'grok');
+  assert.deepEqual(args, [
+    '-p', 'PROMPT',
+    '--permission-mode', 'bypassPermissions',
+    '--tools', 'read_file,write,search_replace,web_search,web_fetch',
+  ]);
+  assert.equal(args[1], 'PROMPT');
+  assert.equal(args.at(-2), '--tools');
+});
+
 test('copy worker environment excludes production and publishing credentials', () => {
   assert.deepEqual(copyWorkerEnv({
     PATH: '/bin',
     CLAUDE_CODE_OAUTH_TOKEN: 'model-token',
+    XAI_API_KEY: 'grok-token',
     SUPABASE_SERVICE_ROLE_KEY: 'database-secret',
     BUFFER_API_KEY: 'publisher-secret',
     RESEND_API_KEY: 'email-secret',
   }), {
     CLAUDE_CODE_OAUTH_TOKEN: 'model-token',
     PATH: '/bin',
+    XAI_API_KEY: 'grok-token',
   });
 });
 

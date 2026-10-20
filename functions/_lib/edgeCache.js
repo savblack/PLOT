@@ -1,7 +1,9 @@
-// Cache API helpers for app.theplot.tv Pages Functions. The app middleware adds a
-// fresh CSP nonce to every HTML response, so Cloudflare's automatic response
-// cache must remain off. These helpers cache a route's pre-middleware response,
-// then let the middleware rewrite each hit with a new nonce.
+// Cache API helpers for app.theplot.tv Pages Functions. Cloudflare does not
+// cache Function responses by itself, so without a store every public profile
+// or list view is a render and a Supabase round trip. These helpers cache a
+// route's pre-middleware response; the middleware then sets the (static)
+// Content-Security-Policy on each hit. Nothing in a cached body varies per
+// request: the pages carry no inline script, so there is no nonce to go stale.
 
 /** @param {number} status @param {string | null} cacheControl */
 export function cacheable(status, cacheControl) {

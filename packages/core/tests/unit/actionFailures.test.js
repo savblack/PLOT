@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { configure } from '../../config.js';
 import {
-  classifyFailure, reportActionFailure, historyFailureAction, FAILED_ACTIONS,
+  classifyFailure, reportActionFailure, reportLoadFailure, historyFailureAction, FAILED_ACTIONS, FAILED_LOADS,
 } from '../../actionFailures.js';
 import { updateProfile } from '../../profile.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
@@ -77,6 +77,12 @@ test('reportActionFailure lets a caller name the kind for a failure that never r
   reportActionFailure(FAILED_ACTIONS.WATCH_PROGRESS, null, { tmdb_id: 1, kind: 'client_state' });
   assert.equal(events[0].error_kind, 'client_state');
   assert.equal('kind' in events[0], false);
+});
+
+test('onboarding seed failures carry their source without exposing error detail', () => {
+  const events = capture();
+  reportActionFailure(FAILED_ACTIONS.WATCHLIST_SAVE, { code: '42501', message: 'private row value' }, { source: 'onboarding' });
+  assert.deepEqual(events, [{ action: 'watchlist_save', error_kind: 'permission', error_code: '42501', source: 'onboarding' }]);
 });
 
 test('reportActionFailure never throws, even when the seam does', () => {
@@ -185,16 +191,19 @@ test('clearSavedAndWatching reports a failed clear instead of passing it off as 
   assert.equal(events.length, 1);
 });
 
-test('reportLoadFailure uses its own seam, so a failed read never counts as a failed action', async () => {
-  const { reportLoadFailure, FAILED_LOADS } = await import('../../actionFailures.js');
+test('reportLoadFailure uses its own seam, so a failed read never counts as a failed action', () => {
   const actions = capture();
   const loads = [];
   configure({ onLoadFailed: (p) => loads.push(p) });
 
   reportLoadFailure(FAILED_LOADS.HISTORY, { code: 'PGRST301', message: 'JWT expired', details: 'secret' });
+  reportLoadFailure(FAILED_LOADS.ONBOARDING_SERVICES, null);
 
   assert.deepEqual(actions, []);
-  assert.deepEqual(loads, [{ resource: 'history', error_kind: 'auth', error_code: 'PGRST301' }]);
+  assert.deepEqual(loads, [
+    { resource: 'history', error_kind: 'auth', error_code: 'PGRST301' },
+    { resource: 'onboarding_services', error_kind: 'no_data' },
+  ]);
   configure({ onLoadFailed: () => { throw new Error('boom'); } });
   assert.doesNotThrow(() => reportLoadFailure(FAILED_LOADS.WATCHING, null));
   configure({ onLoadFailed: undefined });

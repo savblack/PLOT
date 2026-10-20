@@ -13,6 +13,8 @@ import { HistoryEntry } from '../hooks/useHistory';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../lib/tokens';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { historyRatingLabel } from '@plot/core/history.js';
 
 export default function HistoryRow({ entry }: { entry: HistoryEntry }) {
@@ -20,7 +22,8 @@ export default function HistoryRow({ entry }: { entry: HistoryEntry }) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { open: openPanel } = useMediaPanel();
   const [expanded, setExpanded] = useState(false);
-  const img   = posterUrl(entry.poster_path, 'w92');
+  const art = useUserArtwork();
+  const img   = posterUrl(displayPosterPath(art.apply(entry)), 'w92');
   const type  = entry.media_type === 'tv' ? 'Series' : 'Movie';
   const date  = entry.watched_at
     ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })

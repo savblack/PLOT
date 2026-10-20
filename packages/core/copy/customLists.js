@@ -1,6 +1,18 @@
 import { FREE_CUSTOM_LIST_CAP } from '../premium.js';
 
 export const CUSTOM_LISTS = Object.freeze({
+  // The built-in watchlist's name: its My Lists section and Home's pinned shelf.
+  wantToWatch: 'Want to Watch',
+  // One calm prompt per empty My Lists section: what belongs here and the next step.
+  emptyPrompts: Object.freeze({
+    want: Object.freeze({ title: 'Nothing saved yet', body: 'Tap the bookmark on any title and it lands here.', action: 'Find something to watch' }),
+    lists: Object.freeze({ title: 'No lists yet', body: 'Make one for a mood, a genre or a friend.', action: 'Create a list' }),
+    topFive: Object.freeze({
+      title: (label) => `Your Top 5 ${label}`,
+      body: 'Start with the one you would pick over everything else.',
+      action: 'Add',
+    }),
+  }),
   searchPlaceholder: 'Search my lists',
   searchThisList: 'Search this list',
   noMatch: 'No items match the current filter.',

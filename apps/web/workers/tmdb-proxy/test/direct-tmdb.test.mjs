@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import handler from '../src/index.js';
 import { fetchTMDB } from '../src/tmdb.js';
@@ -99,5 +100,88 @@ test('keeps the existing Supabase path available when the Worker key is absent',
   } finally {
     globalThis.fetch = originalFetch;
     globalThis.caches = originalCaches;
+  }
+});
+
+test('allows the artwork image routes and forwards include_image_language', async () => {
+  const originalFetch = globalThis.fetch;
+  const paths = [
+    'movie/550/images',
+    'tv/1396/images',
+    'person/287/images',
+    'tv/1396/season/0/images',
+  ];
+  try {
+    for (const path of paths) {
+      let fetchedUrl;
+      globalThis.fetch = async (url) => {
+        fetchedUrl = new URL(url);
+        return Response.json({ posters: [] });
+      };
+      const response = await fetchTMDB(new URL(
+        `https://proxy.example/?path=${encodeURIComponent(path)}&include_image_language=en,null&junk=1`,
+      ), 'server-key', null);
+      assert.equal(response.status, 200, path);
+      assert.equal(fetchedUrl.pathname, `/3/${path}`);
+      assert.equal(fetchedUrl.searchParams.get('include_image_language'), 'en,null');
+      assert.equal(fetchedUrl.searchParams.has('junk'), false);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('the Supabase fallback allowlist includes the same artwork image routes', () => {
+  const source = readFileSync(new URL('../../../../../supabase/functions/tmdb-proxy/index.ts', import.meta.url), 'utf8');
+  for (const piece of [
+    '/^(movie|tv)\\/\\d+\\/images$/,',
+    '/^person\\/\\d+\\/images$/,',
+    '/^tv\\/\\d+\\/season\\/\\d+\\/images$/,',
+    "'include_image_language'",
+  ]) {
+    assert.ok(source.includes(piece), piece);
+  }
+});
+
+test('allows series content ratings through both proxies', async () => {
+  const originalFetch = globalThis.fetch;
+  let fetchedUrl;
+  globalThis.fetch = async (url) => {
+    fetchedUrl = new URL(url);
+    return Response.json({ results: [] });
+  };
+  try {
+    const response = await fetchTMDB(new URL(
+      `https://proxy.example/?path=${encodeURIComponent('tv/288673/content_ratings')}`,
+    ), 'server-key', null);
+    assert.equal(response.status, 200);
+    assert.equal(fetchedUrl.pathname, '/3/tv/288673/content_ratings');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  const source = readFileSync(new URL('../../../../../supabase/functions/tmdb-proxy/index.ts', import.meta.url), 'utf8');
+  assert.ok(source.includes('/^tv\\/\\d+\\/content_ratings$/,'));
+});
+
+test('forwards only allow-listed parameters to TMDB', async () => {
+  const originalFetch = globalThis.fetch;
+  let fetchedUrl;
+  globalThis.fetch = async (url) => {
+    fetchedUrl = new URL(url);
+    return Response.json({ results: [] });
+  };
+  try {
+    const response = await fetchTMDB(new URL(
+      'https://proxy.example/?path=discover/movie&with_genres=27&junk=1&utm_source=x&page=9999&sort_by=popularity.desc',
+    ), 'server-key', null);
+    assert.equal(response.status, 200);
+    assert.equal(fetchedUrl.searchParams.get('with_genres'), '27');
+    assert.equal(fetchedUrl.searchParams.get('sort_by'), 'popularity.desc');
+    assert.equal(fetchedUrl.searchParams.get('page'), '500');
+    assert.equal(fetchedUrl.searchParams.has('junk'), false);
+    assert.equal(fetchedUrl.searchParams.has('utm_source'), false);
+    assert.equal(fetchedUrl.searchParams.has('path'), false);
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 });

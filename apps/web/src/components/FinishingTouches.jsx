@@ -18,14 +18,18 @@ import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { favoriteWords } from '@plot/core/spelling.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { FINISHING_TOUCHES as T } from '../copy/finishingTouches.js';
+import { IMPORT_VIEW } from '../copy/importView.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { COMMON } from '../copy/common.js';
-import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
+import { availableImportSources } from '@plot/core/onboardingSetup.js';
+import { getConfig } from '@plot/core/config.js';
 import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
+import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useApp } from '../hooks/useApp.js';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import { closeFinishingTouches, hideFinishingTouchesFor, readFinishingTouches } from '../utils/finishingTouchesState.js';
+import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../utils/letterboxdImportPrompt.js';
 import { profileUrl } from '../utils/images.js';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import FinishingTouchesCard from './FinishingTouchesCard.jsx';
@@ -42,10 +46,16 @@ export default function FinishingTouches() {
   const [state, setState] = useState(() => readFinishingTouches(user?.id));
   const [expanded, setExpanded] = useState(wideScreen);
   const [sheet, setSheet] = useState(null);
+  const [letterboxdPrompt, setLetterboxdPrompt] = useState(() => readLetterboxdImportPrompt(user?.id));
   const follows = useFollows(user?.id, user?.id);
   const people = usePeopleFollows(user?.id);
   const fav = favoriteWords(profile?.region);
   const show = firstWatchlistShow(watchlist?.items);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- re-read the device reminder when the signed-in user changes
+    setLetterboxdPrompt(readLetterboxdImportPrompt(user?.id));
+  }, [user?.id]);
 
   const savedCount = watchlist?.items?.length ?? 0;
   const progressDone = (watching?.items?.length ?? 0) > 0
@@ -83,6 +93,15 @@ export default function FinishingTouches() {
       return { ...base, title: T.steps.friends.title, sub: step.done ? T.steps.friends.doneSub(follows.following) : T.steps.friends.sub, cta: T.steps.friends.cta };
     }
     if (step.id === 'import') {
+      if (letterboxdPrompt && !step.done) {
+        return {
+          ...base,
+          title: IMPORT_VIEW.letterboxdFinishTitle,
+          sub: IMPORT_VIEW.letterboxdFinishSub,
+          cta: IMPORT_VIEW.letterboxdFinishCta,
+          dismiss: IMPORT_VIEW.letterboxdFinishDismiss,
+        };
+      }
       return { ...base, title: T.steps.import.title, sub: step.done ? T.steps.import.doneSub : T.steps.import.sub, cta: T.steps.import.cta };
     }
     const first = people.follows[0]?.name;
@@ -97,6 +116,7 @@ export default function FinishingTouches() {
   const closeSheet = () => {
     setSheet(null);
     follows.refresh();
+    setLetterboxdPrompt(readLetterboxdImportPrompt(user.id));
   };
 
   return (
@@ -110,7 +130,20 @@ export default function FinishingTouches() {
         onToggle={() => setExpanded(open => !open)}
         onHide={() => { track(EVENTS.FINISHING_TOUCHES_HIDDEN, { done_count: doneCount }); setState(hideFinishingTouchesFor(user.id)); }}
         onClose={() => setState(closeFinishingTouches(user.id))}
-        onAction={(id) => { track(EVENTS.FINISHING_TOUCH_OPENED, { step: id }); setSheet(id); }}
+        onAction={(id) => {
+          track(EVENTS.FINISHING_TOUCH_OPENED, { step: id });
+          if (id === 'import' && letterboxdPrompt && !state?.importDone) {
+            navigate(`/import?source=letterboxd&from=${IMPORT_ENTRY_POINTS.FINISHING_TOUCHES}`);
+            return;
+          }
+          setSheet(id);
+        }}
+        onDismiss={(id) => {
+          if (id !== 'import' || !letterboxdPrompt) return;
+          clearLetterboxdImport(user.id);
+          setLetterboxdPrompt(null);
+          createImportReporter({ entry: IMPORT_ENTRY_POINTS.FINISHING_TOUCHES }).abandoned(LETTERBOXD_IMPORT_ABANDON.DISMISSED);
+        }}
       />
       {sheet === 'progress' && show && (
         <UpToSheet show={show} watching={watching} onClose={closeSheet} />
@@ -120,7 +153,7 @@ export default function FinishingTouches() {
         <ResponsiveDialog title={T.importSheet.title} onClose={closeSheet} size="compact">
           <p className="ft-sheet-sub">{T.importSheet.sub}</p>
           <div className="ft-sources">
-            {IMPORT_SOURCES.map(src => (
+            {availableImportSources(getConfig()).map(src => (
               <button key={src.id} type="button" className="ft-source" onClick={() => {
                 createImportReporter({ entry: IMPORT_ENTRY_POINTS.FINISHING_TOUCHES }).selected(src.id);
                 navigate(`/import?source=${src.id}&from=${IMPORT_ENTRY_POINTS.FINISHING_TOUCHES}`);

@@ -6,7 +6,7 @@
 
 import { NAV, FOOTER, EMAIL_FORM } from '../copy/common.js';
 import {
-  META, HERO, MEMORIES, GUIDE_DEMO, TIMELINE, CALENDAR_DEMO, LISTS_DEMO, APP_SOON, TICKER, WHATS_ON_CTA,
+  META, HERO, MEMORIES, DROPS, IMPORT, LISTS, PREMIUM, INDIE, TICKER,
 } from '../copy/index.js';
 import { ABOUT_PAGE } from '../copy/about.js';
 import { CHANGELOG_PAGE } from '../copy/changelog.js';
@@ -26,13 +26,12 @@ const MODULES = {
   'index.meta': META,
   'index.hero': HERO,
   'index.memories': MEMORIES,
-  'index.guideDemo': GUIDE_DEMO,
-  'index.timeline': TIMELINE,
-  'index.calendarDemo': CALENDAR_DEMO,
-  'index.listsDemo': LISTS_DEMO,
-  'index.appSoon': APP_SOON,
+  'index.drops': DROPS,
+  'index.import': IMPORT,
+  'index.lists': LISTS,
+  'index.premium': PREMIUM,
+  'index.indie': INDIE,
   'index.ticker': TICKER,
-  'index.whatsOnCta': WHATS_ON_CTA,
   about: ABOUT_PAGE,
   changelog: CHANGELOG_PAGE,
   plans: PLANS_PAGE,

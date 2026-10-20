@@ -1,0 +1,149 @@
+#!/usr/bin/env node
+/**
+ * Generate the marketing site's Content-Security-Policy.
+ *
+ * WHY: theplot.tv used to ship `script-src 'unsafe-inline'`, which makes the
+ * policy no defence against injected script at all. The site has no build
+ * step, and its pages carry inline <script> blocks on purpose (analytics
+ * gating, the homepage demos), so the way to keep those running without
+ * 'unsafe-inline' is to allow each one by hash: CSP accepts
+ * 'sha256-<base64>' of a script's exact text. This script computes those
+ * hashes from the HTML and writes the policy to the two places it is served
+ * from:
+ *
+ *   apps/website/_headers                       static pages (Cloudflare Pages)
+ *   apps/website/functions/_lib/csp.generated.js  Pages Function responses
+ *                                               (/whats-on, /movie, /tv …),
+ *                                               which _headers never reaches
+ *
+ * Inline event handlers (onclick="…") are not covered by hashes and stay
+ * blocked; use addEventListener. Pages rendered by Edge Functions (What's On,
+ * title pages) must load their scripts from files for the same reason.
+ *
+ * Usage:  node scripts/build-csp.mjs          write both files
+ *         node scripts/build-csp.mjs --check  fail if either is stale (CI)
+ */
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const SITE = resolve(__dirname, '..', 'apps', 'website');
+const HEADERS_PATH = join(SITE, '_headers');
+const MODULE_PATH = join(SITE, 'functions', '_lib', 'csp.generated.js');
+
+// Everything but script-src. Keep in step with what the pages actually load.
+const DIRECTIVES = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "img-src 'self' data: https://image.tmdb.org https://theplot.tv https://a.theplot.tv https://www.google.com https://www.google.com.au https://*.google-analytics.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
+  "connect-src 'self' https://a.theplot.tv https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://cloudflareinsights.com",
+  "frame-src https://www.googletagmanager.com",
+  "worker-src 'self' blob:",
+  "form-action 'self'",
+  'upgrade-insecure-requests',
+];
+
+// Script hosts. No 'unsafe-inline': inline blocks are admitted by hash only.
+// static.cloudflareinsights.com is the beacon Cloudflare injects as an
+// external <script src>, so a host entry covers it.
+const SCRIPT_HOSTS = [
+  "'self'",
+  'https://a.theplot.tv',
+  'https://www.googletagmanager.com',
+  'https://static.cloudflareinsights.com',
+];
+
+/**
+ * Inline JavaScript blocks in one HTML document: no src attribute, and no
+ * type or a JavaScript one. JSON-LD and other data blocks are not executed, so
+ * CSP does not gate them and they need no hash.
+ * @param {string} html
+ * @returns {string[]} the exact text between the tags, which is what CSP hashes
+ */
+export function inlineScripts(html) {
+  const out = [];
+  for (const [, attrs = '', body] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+    if (/\bsrc\s*=/i.test(attrs)) continue;
+    const type = attrs.match(/\btype\s*=\s*["']?([^"'\s>]+)/i)?.[1]?.toLowerCase();
+    if (type && type !== 'text/javascript' && type !== 'module' && type !== 'application/javascript') continue;
+    out.push(body);
+  }
+  return out;
+}
+
+/** @param {string} script */
+export function hashOf(script) {
+  return `'sha256-${createHash('sha256').update(script, 'utf8').digest('base64')}'`;
+}
+
+/** @param {string[]} hashes */
+export function policy(hashes) {
+  return [...DIRECTIVES.slice(0, 7), `script-src ${[...SCRIPT_HOSTS, ...hashes].join(' ')}`, ...DIRECTIVES.slice(7)].join('; ');
+}
+
+export function build() {
+  const pages = readdirSync(SITE).filter((f) => f.endsWith('.html')).sort();
+  const hashes = new Set();
+  const sources = new Map(); // hash -> first page it came from, for the comment
+  for (const page of pages) {
+    for (const script of inlineScripts(readFileSync(join(SITE, page), 'utf8'))) {
+      const h = hashOf(script);
+      if (!hashes.has(h)) sources.set(h, page);
+      hashes.add(h);
+    }
+  }
+  return { csp: policy([...hashes].sort()), hashes: [...hashes].sort(), sources, pages };
+}
+
+function renderHeaders(current, csp) {
+  const line = `  Content-Security-Policy: ${csp}`;
+  const re = /^  Content-Security-Policy: .*$/m;
+  if (!re.test(current)) throw new Error('_headers has no Content-Security-Policy line to replace');
+  return current.replace(re, line);
+}
+
+function renderModule({ csp, hashes, sources }) {
+  const list = hashes.map((h) => ` *   ${h}  (${sources.get(h)})`).join('\n');
+  return `// GENERATED by scripts/build-csp.mjs — do not edit. \`pnpm run csp\` rewrites
+// it; \`pnpm run csp:check\` fails CI when it is stale.
+//
+// The marketing site's Content-Security-Policy, for Pages Function responses
+// (functions/_middleware.js sets it on every HTML response). Identical to the
+// line in apps/website/_headers, which only reaches static assets. script-src
+// admits inline blocks by hash, one per distinct <script> body in the HTML:
+/*
+${list}
+ */
+export const CONTENT_SECURITY_POLICY = ${JSON.stringify(csp)};
+`;
+}
+
+const isCli = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
+if (isCli) {
+  const built = build();
+  const headersCurrent = readFileSync(HEADERS_PATH, 'utf8');
+  const headersNext = renderHeaders(headersCurrent, built.csp);
+  let moduleCurrent = '';
+  try { moduleCurrent = readFileSync(MODULE_PATH, 'utf8'); } catch { /* first run */ }
+  const moduleNext = renderModule(built);
+  const stale = [headersNext !== headersCurrent && '_headers', moduleNext !== moduleCurrent && 'csp.generated.js'].filter(Boolean);
+
+  if (process.argv.includes('--check')) {
+    if (stale.length) {
+      console.error(`✗ ${stale.join(' and ')} out of date with the inline scripts in apps/website/*.html.`);
+      console.error('  Run `pnpm run csp` and commit the result.');
+      process.exit(1);
+    }
+    console.log(`✓ CSP in sync (${built.hashes.length} inline script hashes across ${built.pages.length} pages)`);
+  } else {
+    writeFileSync(HEADERS_PATH, headersNext);
+    writeFileSync(MODULE_PATH, moduleNext);
+    console.log(`✓ wrote CSP with ${built.hashes.length} inline script hashes (${stale.length ? stale.join(', ') + ' changed' : 'no change'})`);
+  }
+}

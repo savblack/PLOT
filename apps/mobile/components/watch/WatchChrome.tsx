@@ -11,6 +11,7 @@ import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import { useTheme } from '../../contexts/ThemeContext';
 import { WtPerson } from './watchModel';
+import PlotWordmark from '../PlotWordmark';
 
 export function PersonFace({ person, size = 40 }: { person: { display_name?: string | null; username?: string | null; avatar_url?: string | null }; size?: number }) {
   const { colors } = useTheme();
@@ -128,7 +129,7 @@ export function WatchPage({ children, backTo, backLabel, hideBack, scroll = true
 
 export function Wordmark() {
   const { colors } = useTheme();
-  return <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.6, color: colors.textPrimary }}>plot</Text>;
+  return <PlotWordmark size={fontSize.xl} color={colors.textPrimary} />;
 }
 
 export function ErrorNote({ children }: { children: string }) {
@@ -193,6 +194,77 @@ export function PersonRow({ person, note, onPress, trailing }: { person: WtPerso
   return (
     <TouchableOpacity onPress={onPress} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm }}>
       {body}
+    </TouchableOpacity>
+  );
+}
+
+/** The dark top card: one per screen, holds the one primary action. Dark in both themes. */
+export function useInk() {
+  const { resolved } = useTheme();
+  const dark = resolved === 'dark';
+  return {
+    bg: dark ? '#1d1d1a' : '#292924',
+    raised: dark ? '#2b2b27' : '#3a3a34',
+    line: dark ? '#46463f' : '#55554d',
+    text: '#f8f2ea',
+    muted: '#d9d2c4',
+    note: '#b9b2a4',
+  };
+}
+
+export function InkCard({ children }: { children: ReactNode }) {
+  const ink = useInk();
+  return <View style={{ backgroundColor: ink.bg, borderRadius: radii.lg, padding: spacing.xl, gap: spacing.md }}>{children}</View>;
+}
+
+export function InkTitle({ children }: { children: string }) {
+  const ink = useInk();
+  return <Text style={{ fontFamily: fontFamily.display, fontSize: 34, lineHeight: 36, letterSpacing: -1, color: ink.text }}>{children}</Text>;
+}
+
+export function InkText({ children, tone = 'muted' }: { children: string; tone?: 'muted' | 'note' }) {
+  const ink = useInk();
+  return <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 21, color: tone === 'muted' ? ink.muted : ink.note }}>{children}</Text>;
+}
+
+/** Rows grouped on one surface with hairlines between them. */
+export function ListCard({ children }: { children: ReactNode }) {
+  const { colors } = useTheme();
+  const rows = (Array.isArray(children) ? children : [children]).filter(Boolean) as ReactNode[];
+  return (
+    <View style={{ backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radii.lg, paddingHorizontal: spacing.md }}>
+      {rows.map((row, i) => (
+        <View key={i} style={i ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border } : undefined}>{row}</View>
+      ))}
+    </View>
+  );
+}
+
+export function Chip({ label, tone = 'plain' }: { label: string; tone?: 'plain' | 'ok' }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radii.pill, backgroundColor: tone === 'ok' ? colors.accentSecondaryFill : colors.surfaceSunken }}>
+      <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: tone === 'ok' ? colors.onAccentSecondaryFill : colors.textPrimary }}>{label}</Text>
+    </View>
+  );
+}
+
+/** A partner toggle on the ink card. */
+export function WhoChip({ person, on, onPress }: { person: WtPerson; on: boolean; onPress: () => void }) {
+  const { colors } = useTheme();
+  const ink = useInk();
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+      style={{
+        flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44, paddingLeft: 4, paddingRight: spacing.md,
+        borderRadius: radii.pill, borderWidth: 1.5, borderColor: on ? colors.accentFill : ink.line, backgroundColor: on ? colors.accentFill : 'transparent',
+      }}
+    >
+      <PersonFace person={person} size={34} />
+      <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: on ? colors.onAccentFill : ink.text }}>{personName(person)}</Text>
     </TouchableOpacity>
   );
 }

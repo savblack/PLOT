@@ -4,8 +4,8 @@ import './UndoToast.css';
 
 /* A short confirmation ("You'll get notified when…"): anything can show one
    with emit(NOTICE_EVENT, { message }). Same place and look as the undo toast;
-   it has no action, so it just fades after a few seconds. Mobile parity: the
-   notice toast is web-only for now, tracked with the Episode alerts card. */
+   it has no action, so it just fades after a few seconds. Mobile listens in
+   apps/mobile/components/NoticeToast.tsx. */
 
 const SHOW_MS = 4000;
 

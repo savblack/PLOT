@@ -60,8 +60,7 @@ jobs:
       AWS_RESPONSE_CHECKSUM_VALIDATION:  when_required
     steps:
       - name: Check out backup tooling
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Install pg_dump 17 (match server major version)
         run: |
           set -euo pipefail
@@ -98,8 +97,9 @@ jobs:
           pg_dump -Fc --no-owner --no-privileges \
             -n public -n auth -n storage -n supabase_migrations \
             -f "$FILE"
-          gpg --batch --yes --symmetric --cipher-algo AES256 \
-            --passphrase "$BACKUP_GPG_PASSPHRASE" -o "${FILE}.gpg" "$FILE"
+          # Passphrase on stdin, not argv: argv is readable by every process on the runner.
+          gpg --batch --yes --symmetric --cipher-algo AES256 --pinentry-mode loopback \
+            --passphrase-fd 0 -o "${FILE}.gpg" "$FILE" <<< "$BACKUP_GPG_PASSPHRASE"
           rm -f "$FILE"
           echo "ARTIFACT=${FILE}.gpg" >> "$GITHUB_ENV"
           ls -lh "${FILE}.gpg"
@@ -134,6 +134,8 @@ jobs:
         if: failure()
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW_NAME: db-backup

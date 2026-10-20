@@ -17,6 +17,8 @@ import { MEDIA } from '@plot/core/copy/media.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { posterUrl, profileUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -82,14 +84,14 @@ function readRecent(raw: string | null): string[] {
   }
 }
 
-function rowFacts(item: Hit, genres: { id: number; name: string }[]) {
+function rowFacts(item: Hit, genres: { id: number; name: string }[], art: ReturnType<typeof useUserArtwork>) {
   const { kind, data } = item;
   if (kind === 'library') {
     return {
       title: data.title || MEDIA.unknown,
       meta: '',
       kindLabel: (data.status && STATUS_LABEL[data.status]) || (data.media_type === 'tv' ? SEARCH_PALETTE.kind.tv : SEARCH_PALETTE.kind.movie),
-      thumb: posterUrl(data.poster_path, 'w92'),
+      thumb: posterUrl(displayPosterPath(art.apply(data)), 'w92'),
       round: false,
       own: true,
     };
@@ -103,7 +105,7 @@ function rowFacts(item: Hit, genres: { id: number; name: string }[]) {
       title: data.title || data.name || MEDIA.unknown,
       meta,
       kindLabel: data.media_type === 'tv' ? SEARCH_PALETTE.kind.tv : SEARCH_PALETTE.kind.movie,
-      thumb: posterUrl(data.poster_path, 'w92'),
+      thumb: posterUrl(displayPosterPath(art.apply(data)), 'w92'),
       round: false,
       own: false,
     };
@@ -124,7 +126,7 @@ function rowFacts(item: Hit, genres: { id: number; name: string }[]) {
       title: data.name || '',
       meta: [data.known_for_department, knownFor].filter(Boolean).join(' · '),
       kindLabel: SEARCH_PALETTE.kind.person,
-      thumb: profileUrl(data.profile_path, 'w185'),
+      thumb: profileUrl(art.path('person', data.id, 'profile') || data.profile_path, 'w185'),
       round: true,
       own: false,
     };
@@ -146,6 +148,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const { open: openPanel } = useMediaPanel();
   const { userId, watchlist, history, watching } = useAppData();
+  const art = useUserArtwork();
   const { genres } = useGenres();
   const inputRef = useRef<TextInput>(null);
   const [query, setQuery] = useState('');
@@ -278,7 +281,7 @@ export default function SearchScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ padding: spacing.sm, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
           renderItem={({ item }) => {
-            const facts = rowFacts(item, genres || []);
+            const facts = rowFacts(item, genres || [], art);
             const mediaType = item.data.media_type === 'tv' ? 'tv' : 'movie';
             const titleId = Number(item.data.id);
             const inList = item.kind === 'title' && Number.isFinite(titleId) && watchlist.isInList(titleId);

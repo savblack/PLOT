@@ -1,12 +1,13 @@
 /**
  * Home screen. Mirrors web DiscoverView.
- * Discover order: hero, Continue watching, Hot Right Now, Out Today,
- * Top 20 This Week, Your people, Most Binged, then releases and platforms.
+ * Shelf order comes from the viewer's Home layout (@plot/core/homeLayout.js);
+ * the default is picks, Continue watching, Hot Right Now, Top 20 This Week,
+ * Your people, releases (Out Today, recent, coming soon), Most Binged, platforms.
  */
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
-import HomeReleases, { formatDayLabel } from '../../components/HomeReleases';
+import HomeReleases from '../../components/HomeReleases';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -14,27 +15,35 @@ import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, LayoutAnimation,
   UIManager, Platform, StyleSheet, Dimensions,
 } from 'react-native';
-import Svg, { Path, Polyline } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
-import { DISCOVER_TABS } from '@plot/core/navigation.js';
 import { useNewReleases } from '@plot/core/useNewReleases.js';
 import { useGenres } from '@plot/core/useGenres.js';
-import { useUpcoming } from '@plot/core/useUpcoming.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '@plot/core/mediaFilters.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
+import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
+import { useHomePosterScale } from '../../lib/homeLook';
+import PosterRail, { useRowLayout } from '../../components/PosterRail';
+import ListRow from '../../components/ListRow';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
-import { ContinueWatchingShelf, YourPeopleShelf } from '../../components/people/HomeShelves';
+import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
+import { useContinueWatching } from '@plot/core/useHomeShelves.js';
+import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
+import RateCard from '../../components/RateCard';
+import WatchTogetherHomeCard from '../../components/WatchTogetherHomeCard';
+import TonightFab from '../../components/TonightFab';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { useRouter, type Href } from 'expo-router';
@@ -47,9 +56,14 @@ import PicksCarousel from '../../components/PicksCarousel';
 import { currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.js';
 import { localDateStr } from '@plot/core/date.js';
 import { greetingFor } from '@plot/core/greeting.js';
+import { visibleHomeSections } from '@plot/core/homeLayout.js';
+import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
+import FirstWinCard from '../../components/FirstWinCard';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
+import ImportJobCard, { type ImportJobRow } from '../../components/ImportJobCard';
 import { markImportDone } from '../../lib/finishingTouches';
+import { suppressFirstWinForImport } from '../../lib/firstWinCard';
 import { takePendingImportSource } from '../../lib/pendingImport';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 
@@ -62,20 +76,6 @@ const SCREEN_W = Dimensions.get('window').width;
 const CARD_W   = (SCREEN_W - spacing.xl * 2 - spacing.md * 2) / 3;
 const BINGE_W  = SCREEN_W * 0.62;
 const BINGE_H  = BINGE_W * 0.56;
-
-// ── Sub-tab (underline style) ─────────────────────────────────────────
-// Mirrors My Lists' sub-tabs so both headers read the same. Kept local for now;
-// worth extracting to components/ once My Lists is touched again.
-function SubTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  return (
-    <TouchableOpacity style={styles.subTab} onPress={onPress} activeOpacity={0.7}>
-      <Text style={[styles.subTabText, active && styles.subTabTextActive]}>{label}</Text>
-      <View style={[styles.subTabUnderline, active && styles.subTabUnderlineActive]} />
-    </TouchableOpacity>
-  );
-}
 
 // ── Types ────────────────────────────────────────────────────────────
 interface MediaItem {
@@ -148,12 +148,52 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { profile } = useAppData();
+  const row = useRowLayout();
+  const posterScale = useHomePosterScale();
+  const art = useUserArtwork();
   const fw       = favoriteWords(profile?.region);
   const title    = item.title || item.name || '';
-  const img      = posterUrl(item.poster_path, 'w185');
+  const img      = posterUrl(displayPosterPath(art.apply(item)), 'w185');
+
+  if (row) {
+    const year = (item.release_date || item.first_air_date || '').slice(0, 4);
+    const kind = item.media_type === 'tv' ? MEDIA.tv : MEDIA.movie;
+    return (
+      <ListRow
+        posterUri={img}
+        title={title}
+        meta={[year, kind].filter(Boolean).join(' · ')}
+        onPress={onPress}
+        trailing={(
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            {FAVOURITES_ENABLED && (
+              <TouchableOpacity
+                onPress={onFavorite}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                style={{ padding: spacing.sm }}
+                accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
+                accessibilityRole="button"
+              >
+                <HeartIcon color={isFav ? colors.accent : colors.textMuted} filled={isFav} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={onSave}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              style={{ padding: spacing.sm }}
+              accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
+              accessibilityRole="button"
+            >
+              <BookmarkIcon size={16} color={saved ? colors.accent : colors.textMuted} strokeWidth={2.5} filled={saved} />
+            </TouchableOpacity>
+          </View>
+        )}
+      />
+    );
+  }
 
   return (
-    <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={[styles.card, { width: CARD_W * posterScale }]} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.cardImg}>
         {img
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -191,8 +231,10 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
 function BingeCard({ item, onPress }: { item: MediaItem; onPress: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
+  const shown = art.apply(item);
   const title    = item.name || item.title || '';
-  const backdrop = backdropUrl(item.backdrop_path, 'w780') || posterUrl(item.poster_path, 'w342');
+  const backdrop = backdropUrl(displayBackdropPath(shown), 'w780') || posterUrl(displayPosterPath(shown), 'w342');
   const year     = (item.first_air_date || '').slice(0, 4);
 
   return (
@@ -220,8 +262,9 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
   const title = item.title || item.name || '';
-  const img   = posterUrl(item.poster_path, 'w92');
+  const img   = posterUrl(displayPosterPath(art.apply(item)), 'w92');
   const type  = item.media_type === 'tv' ? 'TV' : 'Movie';
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
   const glow  = rank <= 10;
@@ -267,8 +310,10 @@ function HeroCard({ item, onPress, saved, onSave, cardStyle, badge = 'TRENDING #
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const art = useUserArtwork();
+  const shown = art.apply(item);
   const title    = item.title || item.name || '';
-  const backdrop = backdropUrl(item.backdrop_path) || posterUrl(item.poster_path, 'w780');
+  const backdrop = backdropUrl(displayBackdropPath(shown)) || posterUrl(displayPosterPath(shown), 'w780');
 
   return (
     <TouchableOpacity style={[styles.hero, cardStyle]} onPress={onPress} activeOpacity={0.9}>
@@ -427,13 +472,15 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const posterScale = useHomePosterScale();
   const { profile } = useAppData();
+  const art = useUserArtwork();
   const fw        = favoriteWords(profile?.region);
   const title     = item.title || item.name || '';
-  const img       = posterUrl(item.poster_path, 'w185');
+  const img       = posterUrl(displayPosterPath(art.apply(item)), 'w185');
 
   return (
-    <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={[styles.card, { width: CARD_W * posterScale }]} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.cardImg}>
         {img
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -545,85 +592,8 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
   );
 }
 
-// ── Upcoming tab content ──────────────────────────────────────────────
-// Reads the same feed web's Upcoming tab does, via @plot/core/useUpcoming.
-// Mounted only while the tab is active so the two TMDB calls aren't spent on
-// every app open.
-function UpcomingContent({ typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel }: {
-  typeFilters: string[];
-  genreFilters: number[];
-  savedIds: Set<number>;
-  onSave: (item: MediaItem) => void;
-  isFav: (id: number) => boolean;
-  onFavorite: (item: MediaItem) => void;
-  openPanel: (id: number, type: 'movie' | 'tv') => void;
-}) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { data, loading } = useUpcoming();
-
-  if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
-
-  const applyFilters = (items: MediaItem[]) => filterByGenre(filterByType(items, typeFilters), genreFilters) ?? [];
-
-  const today = applyFilters(data.today);
-  const groups = data.upcomingDates
-    .map((date: string) => ({ date, items: applyFilters(data.upcomingGrouped[date]) }))
-    .filter((g: { items: MediaItem[] }) => g.items.length > 0);
-
-  if (!today.length && !groups.length) {
-    const filtered = typeFilters.length < ALL_TYPES.length || genreFilters.length > 0;
-    return (
-      <View style={styles.section}>
-        <Text style={styles.emptyTitle}>{filtered ? CALENDAR_VIEW.empty.filtered : CALENDAR_VIEW.releasesEmpty.title}</Text>
-        <Text style={styles.emptyBody}>
-          {filtered ? CALENDAR_VIEW.empty.filteredBody : CALENDAR_VIEW.releasesEmpty.body}
-        </Text>
-      </View>
-    );
-  }
-
-  const rail = (items: MediaItem[]) => (
-    <FlatList
-      horizontal
-      data={items}
-      keyExtractor={item => `${item.media_type}-${item.id}`}
-      renderItem={({ item }) => (
-        <PosterCard
-          item={item}
-          onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
-          saved={savedIds.has(item.id ?? 0)}
-          onSave={() => onSave(item)}
-          isFav={isFav(item.id ?? 0)}
-          onFavorite={() => onFavorite(item)}
-        />
-      )}
-      showsHorizontalScrollIndicator={false}
-      nestedScrollEnabled
-      contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-    />
-  );
-
-  return (
-    <>
-      {today.length > 0 && (
-        <View style={styles.section}>
-          <SectionHeader kicker="Out now" title={MEDIA.today} />
-          {rail(today)}
-        </View>
-      )}
-      {groups.map((g: { date: string; items: MediaItem[] }) => (
-        <View key={g.date} style={styles.section}>
-          <SectionHeader kicker="Coming up" title={formatDayLabel(g.date)} />
-          {rail(g.items)}
-        </View>
-      ))}
-    </>
-  );
-}
-
 // ── Main screen ───────────────────────────────────────────────────────
-export default function HomeScreen() {
+function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   const insets = useSafeAreaInsets();
   const { open: openPanel } = useMediaPanel();
   const { colors, resolved } = useTheme();
@@ -638,7 +608,8 @@ export default function HomeScreen() {
   // identical for everyone, rather than TMDB popularity filtered to whatever
   // the user happens to subscribe to.
   const platforms = usePlatformCharts();
-  const [tab,          setTab]          = useState('discover');
+  // Home is one feed. New Releases is its own screen, as on web.
+  const tab = mode === 'new' ? 'new' : 'discover';
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(false);
   const [retryKey,     setRetryKey]     = useState(0);
@@ -664,14 +635,23 @@ export default function HomeScreen() {
      ACTIVATED analytics, and left the shared store stale until app restart:
      save on Home, open the title's panel, and it still offered "Add to
      Watchlist". */
-  const { favorites, watchlist, userId, profile, user, customLists } = useAppData();
+  const { favorites, watchlist, watching, history, userId, profile, user, customLists, refreshProfile } = useAppData();
+  const homeLayout = useHomeLayout({ userId, saved: profile?.home_layout, onPersisted: refreshProfile });
   const router = useRouter();
+  // Up next: the shows with an episode out, then the saved titles, one shelf.
+  const continueWatching = useContinueWatching(watching.items ?? [], fetchContinueWatchingTv);
+  // The line under the greeting: nights logged in the last seven days.
+  const weekNights = useMemo(() => nightsThisWeek(history.entries ?? []), [history.entries]);
+  const bestStreak = useMemo(() => streaks(history.entries ?? []).best, [history.entries]);
   // First run: the titles just saved in onboarding lead Home, under the greeting
   // and the Finishing touches card. Everyone else keeps the rail at the bottom.
   const ft = useFinishingTouchesState(userId);
   const firstRun = ft.visible;
   // Onboarding's "Switching apps?" pick: setup finished first, so the import opens now.
   const [importSource, setImportSource] = useState<string | null>(takePendingImportSource);
+  // A finished background import left entries to match: the modal opens on them.
+  const [reviewJob, setReviewJob] = useState<ImportJobRow | null>(null);
+  const onImportFinished = useCallback(() => { ft.reload(); }, [ft]);
   const watchlistItems: MediaItem[] = watchlist.items;
   useEffect(() => {
     if (tab !== 'discover' || !ft.ready || watchlist.loading || watchlistItems.length === 0) return;
@@ -754,24 +734,7 @@ export default function HomeScreen() {
   if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
   if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
 
-  // Sub-tabs nested under Home, ids and order from the shared nav list.
-  // ('feed' is not here because it is no longer in DISCOVER_TABS at all: the
-  // engagement layer, tab included, was deleted in #532.)
-  //
-  // Every DISCOVER_TABS id must appear in exactly one of these two sets.
-  // `npm run mobile:tabs` fails the build otherwise, because a tab that is in
-  // neither set silently does not render and nothing else can see it: that is
-  // how #587 left Upcoming fully implemented and unreachable on main, with
-  // tsc, eslint and CI green. MOBILE_DEFERRED being empty is the normal state
-  // and means nothing is held back; it is not dead code, it is the difference
-  // between "deliberately hidden" and "accidentally missing".
-  const MOBILE_READY    = new Set(['discover', 'new', 'releases', 'guide']);
-  const MOBILE_DEFERRED = new Set<string>([]); // id, with a comment saying why
-  const subTabs = DISCOVER_TABS.filter(
-    (t: { id: string }) => MOBILE_READY.has(t.id) && !MOBILE_DEFERRED.has(t.id),
-  );
-
-  const HEADER_H = insets.top + 100;
+  const HEADER_H = insets.top + 56;
   const applyFilters = (items: MediaItem[]) => filterByGenre(filterByType(items, typeFilters), genreFilters) ?? [];
   // Web hides the hero whenever a genre filter is on rather than testing the
   // single hero title against it — one card is not a rail.
@@ -799,96 +762,62 @@ export default function HomeScreen() {
       }) as { item: MediaItem; badge: string }[]
     : [];
 
-  const savedRail = watchlistItems.length > 0 ? (
-    <View style={styles.section}>
-      <SectionHeader kicker="Your list" title={DISCOVER_VIEW.savedToWatch} />
-      <FlatList
-        horizontal
-        data={firstRun ? watchlistItems.slice(0, 20) : watchlistItems}
-        keyExtractor={item => String(item.tmdb_id ?? item.id)}
-        renderItem={({ item }) => (
+  // Three trending titles stand in for Up next while nothing is saved, each
+  // with its bookmark, so the first saves happen where the shelf will be.
+  const starterPicks = trending.filter((t: MediaItem) => !savedIds.has(t.id ?? 0)).slice(0, 3);
+  const upNextRows: Array<{ kind: 'watching'; item: ContinueWatchingItem } | { kind: 'saved'; item: MediaItem }> = [
+    ...continueWatching.items.map((item: ContinueWatchingItem) => ({ kind: 'watching' as const, item })),
+    ...(firstRun ? watchlistItems.slice(0, 20) : watchlistItems).map((item: MediaItem) => ({ kind: 'saved' as const, item })),
+  ];
+  const upNextEmpty = upNextRows.length === 0 && !watchlist.loading && !continueWatching.loading;
+  const upNext = upNextRows.length > 0 ? (
+    <View style={[styles.section, { marginBottom: spacing.xl }]}>
+      <SectionHeader title={DISCOVER_VIEW.upNext} />
+      <PosterRail
+        data={upNextRows}
+        keyExtractor={row => row.kind === 'watching' ? `w-${row.item.tmdbId}` : `s-${row.item.tmdb_id ?? row.item.id}`}
+        renderItem={({ item: row }) => row.kind === 'watching' ? (
+          <ContinueWatchingCard item={row.item} />
+        ) : (
           <PosterCard
-            item={{ ...item, id: item.tmdb_id ?? 0 }}
-            onPress={() => item.tmdb_id && openPanel(item.tmdb_id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+            item={{ ...row.item, id: row.item.tmdb_id ?? 0 }}
+            onPress={() => row.item.tmdb_id && openPanel(row.item.tmdb_id, (row.item.media_type === 'tv' ? 'tv' : 'movie'))}
             saved={true}
-            onSave={() => handleSave({ ...item, id: item.tmdb_id ?? 0 })}
-            isFav={favorites.isFavorite(item.tmdb_id ?? item.id ?? 0)}
-            onFavorite={() => toggleFav({ ...item, id: item.tmdb_id ?? item.id ?? 0 })}
+            onSave={() => handleSave({ ...row.item, id: row.item.tmdb_id ?? 0 })}
+            isFav={favorites.isFavorite(row.item.tmdb_id ?? row.item.id ?? 0)}
+            onFavorite={() => toggleFav({ ...row.item, id: row.item.tmdb_id ?? row.item.id ?? 0 })}
           />
         )}
-        showsHorizontalScrollIndicator={false}
-        nestedScrollEnabled
-        contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
       />
+    </View>
+  ) : upNextEmpty && starterPicks.length > 0 ? (
+    <View style={styles.section}>
+      <SectionHeader title={DISCOVER_VIEW.upNext} />
+      <View style={styles.upNextEmpty}>
+        <Text style={styles.upNextEmptyBody}>{DISCOVER_VIEW.emptyUpNext.body}</Text>
+        <View style={styles.upNextEmptyRow}>
+          {starterPicks.map((item: MediaItem) => (
+            <PosterCard
+              key={`${item.media_type}-${item.id}`}
+              item={item}
+              onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+              saved={false}
+              onSave={() => handleSave(item)}
+              isFav={favorites.isFavorite(item.id ?? 0)}
+              onFavorite={() => toggleFav(item)}
+            />
+          ))}
+        </View>
+        <TouchableOpacity onPress={() => router.push('/(app)/search' as Href)} accessibilityRole="link" hitSlop={{ top: 8, bottom: 8 }}>
+          <Text style={styles.upNextEmptyLink}>{DISCOVER_VIEW.emptyUpNext.searchLink}</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   ) : null;
 
-  return (
-    <View style={styles.screen}>
-      {tab === 'guide' ? (
-        <View style={{ flex: 1, paddingTop: HEADER_H }}>
-          <GuideView />
-        </View>
-      ) : tab === 'releases' ? (
-        <ScrollView
-          style={styles.screen}
-          contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
-          showsVerticalScrollIndicator={false}
-        >
-          <UpcomingContent
-            typeFilters={typeFilters}
-            genreFilters={genreFilters}
-            savedIds={savedIds}
-            onSave={handleSave}
-            isFav={(id) => favorites.isFavorite(id)}
-            onFavorite={toggleFav}
-            openPanel={openPanel}
-          />
-        </ScrollView>
-      ) : tab === 'new' ? (
-        <ScrollView
-          style={styles.screen}
-          contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
-          showsVerticalScrollIndicator={false}
-        >
-          <NewReleasesContent
-            hideKids={hideKids}
-            typeFilters={typeFilters}
-            genreFilters={genreFilters}
-            savedIds={savedIds}
-            onSave={handleSave}
-            isFav={(id) => favorites.isFavorite(id)}
-            onFavorite={toggleFav}
-            openPanel={openPanel}
-          />
-        </ScrollView>
-      ) : (
-      <ScrollView
-        style={styles.screen}
-        contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
-        showsVerticalScrollIndicator={false}
-          scrollEventThrottle={100}
-          onScroll={e => {
-            const inView = e.nativeEvent.contentOffset.y < picksBottom.current;
-            setPicksInView(prev => (prev === inView ? prev : inView));
-          }}
-      >
-
-        <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
-        <FinishingTouches state={ft.state} onState={ft.setState} />
-
-        {firstRun && savedRail}
-        {importSource && userId && (
-          <ImportHistoryModal
-            userId={userId}
-            entry={IMPORT_ENTRY_POINTS.ONBOARDING}
-            initialPlatform={importSource as never}
-            onImported={async (source, count) => ft.setState(await markImportDone(userId, source, count))}
-            onClose={() => setImportSource(null)}
-          />
-        )}
-
-        {/* ── plot's Picks: the hero, and the plot list card beside it ── */}
+  const renderShelf: Record<string, () => ReactNode> = {
+    picks: () => (
+      <>
         {(hero || curated) && (
           <View onLayout={e => { picksBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}>
             <SectionHeader title={DISCOVER_VIEW.picks.cardsLabel} />
@@ -931,15 +860,18 @@ export default function HomeScreen() {
             )}
           </View>
         )}
-
-        <ContinueWatchingShelf />
-
-        {/* ── Hot Right Now ── */}
+      </>
+    ),
+    // Up next (Continue watching plus the saved titles) takes the slot the
+    // layout calls `continue`, so the viewer's order and hide apply to it. On
+    // the first run it sits above the shelves instead.
+    continue: () => (firstRun ? null : upNext),
+    hot: () => (
+      <>
         {hotRail.length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Trending today" title="Hot Right Now" />
-            <FlatList
-              horizontal
+            <PosterRail
               data={hotRail}
               keyExtractor={item => String(item.id)}
               renderItem={({ item }) => (
@@ -952,17 +884,13 @@ export default function HomeScreen() {
                   onFavorite={() => toggleFav(item)}
                 />
               )}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
             />
           </View>
         )}
-
-        {/* ── Out Today (wide release cards) ── */}
-        <HomeReleases rails={['today']} />
-
-        {/* ── Top 20 This Week ── */}
+      </>
+    ),
+    weekly: () => (
+      <>
         {applyFilters(weekly).length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Global ranking" title="Top 20 This Week" />
@@ -978,10 +906,12 @@ export default function HomeScreen() {
             ))}
           </View>
         )}
-
-        <YourPeopleShelf />
-
-        {/* ── Most Binged Shows ── */}
+      </>
+    ),
+    people: () => <YourPeopleShelf />,
+    releases: () => <HomeReleases rails={['today', 'recent', 'comingSoon']} />,
+    binged: () => (
+      <>
         {applyFilters(bingedShows).length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Popular TV" title="Most Binged Shows" />
@@ -998,14 +928,10 @@ export default function HomeScreen() {
             />
           </View>
         )}
-
-        {/* ── Releases: recent + upcoming, below the chart ── */}
-        <HomeReleases rails={['recent', 'comingSoon']} />
-
-        {/* ── Top 10 by Platform ──
-            The platforms' real published charts, not TMDB popularity within
-            the user's own subscriptions: a fixed set, the same for everyone,
-            so it needs the attribution line web carries. */}
+      </>
+    ),
+    platforms: () => (
+      <>
         {platforms.length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Official charts" title="Top 10 by Platform" />
@@ -1025,18 +951,115 @@ export default function HomeScreen() {
             </Text>
           </View>
         )}
+      </>
+    ),
+  };
+  const homeShelves = visibleHomeSections(homeLayout.layout, Object.keys(renderShelf));
 
-        {!firstRun && savedRail}
+  return (
+    <View style={styles.screen}>
+      {tab === 'new' ? (
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+          showsVerticalScrollIndicator={false}
+        >
+          <NewReleasesContent
+            hideKids={hideKids}
+            typeFilters={typeFilters}
+            genreFilters={genreFilters}
+            savedIds={savedIds}
+            onSave={handleSave}
+            isFav={(id) => favorites.isFavorite(id)}
+            onFavorite={toggleFav}
+            openPanel={openPanel}
+          />
+        </ScrollView>
+      ) : (
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+        showsVerticalScrollIndicator={false}
+          scrollEventThrottle={100}
+          onScroll={e => {
+            const inView = e.nativeEvent.contentOffset.y < picksBottom.current;
+            setPicksInView(prev => (prev === inView ? prev : inView));
+          }}
+      >
 
-        {watchlistItems.length === 0 && !loading && (
-          <View style={styles.emptyWatchlist}>
-            <Text style={styles.emptyTitle}>Your list is empty</Text>
-            <Text style={styles.emptyBody}>Tap the bookmark on any title above to save it here.</Text>
-          </View>
+        {userId && importSource !== 'trakt' && importSource !== 'trakt-export' && <FirstWinCard userId={userId} />}
+        <Text style={styles.dateLine}>{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+        <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
+        {!history.loading && (
+          <TouchableOpacity
+            style={styles.weekLine}
+            onPress={() => router.push('/(app)/history' as Href)}
+            accessibilityRole="link"
+            hitSlop={{ top: 6, bottom: 6 }}
+          >
+            {weekNights > 0 && <View style={styles.weekDot} />}
+            <Text style={styles.weekText}>{weekNights > 0 ? DISCOVER_VIEW.weekLine(weekNights, bestStreak) : DISCOVER_VIEW.weekEmpty}</Text>
+          </TouchableOpacity>
         )}
+        <TouchableOpacity
+          style={styles.searchField}
+          onPress={() => router.push('/(app)/search' as Href)}
+          accessibilityRole="search"
+          accessibilityLabel={MEDIA.searchPlaceholder}
+          activeOpacity={0.8}
+        >
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Circle cx={11} cy={11} r={7} />
+            <Line x1={16.5} y1={16.5} x2={21} y2={21} />
+          </Svg>
+          <Text style={styles.searchFieldText} numberOfLines={1}>{MEDIA.searchPlaceholder}</Text>
+        </TouchableOpacity>
+        {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}
+        <FinishingTouches state={ft.state} onState={ft.setState} />
+        {userId && <RateCard userId={userId} />}
+        <WatchTogetherHomeCard />
+
+        {firstRun && upNext}
+        {reviewJob && userId && (
+          <ImportHistoryModal
+            userId={userId}
+            entry={IMPORT_ENTRY_POINTS.ONBOARDING}
+            reviewJob={reviewJob}
+            onImported={async (source, count) => {
+              ft.setState(await markImportDone(userId, source, count));
+              await suppressFirstWinForImport(userId, source);
+            }}
+            onClose={() => setReviewJob(null)}
+          />
+        )}
+        {importSource && userId && (
+          <ImportHistoryModal
+            userId={userId}
+            entry={IMPORT_ENTRY_POINTS.ONBOARDING}
+            initialPlatform={importSource as never}
+            onImported={async (source, count) => {
+              ft.setState(await markImportDone(userId, source, count));
+              await suppressFirstWinForImport(userId, source);
+            }}
+            onClose={() => setImportSource(null)}
+          />
+        )}
+
+        {/* ── Shelves, in the viewer's order (Customize Home). Fixed cards
+            above are not part of the layout; a hidden shelf is skipped. The
+            releases slot carries Out Today, recent and coming soon together.
+            Ids are shared with web (@plot/core/homeLayout.js). ── */}
+        <PinnedShelves />
+        {homeShelves.map(id => <View key={id}>{renderShelf[id]?.()}</View>)}
+
+        <TouchableOpacity style={styles.customize} onPress={() => router.push('/(app)/home-layout' as Href)} accessibilityRole="button" accessibilityLabel={DISCOVER_VIEW.customize.title}>
+          <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
+        </TouchableOpacity>
 
       </ScrollView>
       )}
+
+      {tab === 'discover' && <TonightFab />}
 
       {openCurated && (
         <CuratedListPanel
@@ -1059,27 +1082,12 @@ export default function HomeScreen() {
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
         <ScreenHeaderBar
-          center={
-            <Text style={styles.dateLabel} pointerEvents="none">
-              {new Date().toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </Text>
-          }
-        />
-        <View style={styles.subTabsBar}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.subTabsRow}
-            style={styles.subTabsScroll}
-          >
-            {subTabs.map((t: { id: string; label: string }) => (
-              <SubTab key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
-            ))}
-          </ScrollView>
-          {(tab === 'discover' || tab === 'new' || tab === 'releases') && (
-            <View style={styles.subTabsFilter}>
+          title={mode === 'new' ? 'New Releases' : 'Home'}
+          showSearch={false}
+          rightExtra={
+            <View style={styles.headerFilter}>
               <GroupedFilterMenu
-                accessibilityLabel={tab === 'releases' ? 'Filter upcoming' : tab === 'new' ? 'Filter new releases' : 'Filter discover'}
+                accessibilityLabel={mode === 'new' ? 'Filter new releases' : 'Filter home'}
                 groups={[
                   {
                     heading: MEDIA.typeHeading,
@@ -1103,12 +1111,21 @@ export default function HomeScreen() {
                 ]}
               />
             </View>
-          )}
-        </View>
+          }
+        />
       </BlurView>
 
     </View>
   );
+}
+
+export default function HomeScreen() {
+  return <DiscoverScreen mode="home" />;
+}
+
+/** /(app)/new-releases: its own screen, as on web, rather than a Home sub-tab. */
+export function NewReleasesScreen() {
+  return <DiscoverScreen mode="new" />;
 }
 
 // ── Styles ────────────────────────────────────────────────────────────
@@ -1118,15 +1135,7 @@ const PICKS_CARD_W = SCREEN_W - spacing.xl * 2;
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  subTabsScroll: { maxHeight: 44 },
-  subTabsBar: { flexDirection: 'row', alignItems: 'flex-end' },
-  subTabsFilter: { paddingRight: spacing.xl, paddingBottom: spacing.xs },
-  subTabsRow: { paddingHorizontal: spacing.xl, gap: spacing.lg, alignItems: 'flex-end' },
-  subTab: { alignItems: 'center', paddingBottom: spacing.xs },
-  subTabText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
-  subTabTextActive: { fontFamily: fontFamily.sansMedium, color: colors.textPrimary },
-  subTabUnderline: { height: 2, width: '100%', marginTop: spacing.xs, backgroundColor: 'transparent' },
-  subTabUnderlineActive: { backgroundColor: colors.accent },
+  headerFilter: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
 
   fixedHeader: {
     position: 'absolute',
@@ -1138,11 +1147,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomColor: colors.border,
   },
 
-  dateLabel: {
-    fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
-    color: colors.textSecondary,
-  },
+  dateLine: { paddingHorizontal: spacing.xl, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 
   // ── Hero ──
   hero: {
@@ -1417,8 +1422,25 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     marginTop: spacing.sm,
   },
 
-  // ── Empty ──
-  greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.lg, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
+  // ── Greeting block ──
+  greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.xs, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
+  weekLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl, marginBottom: spacing.md, minHeight: 24 },
+  weekDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accentSecondary },
+  weekText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  searchField: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    marginHorizontal: spacing.xl, marginBottom: spacing.lg,
+    minHeight: 44, paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface,
+  },
+  searchFieldText: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  // ── Up next, empty ──
+  upNextEmpty: { marginHorizontal: spacing.xl, padding: spacing.md, gap: spacing.md, borderRadius: radii.md, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.borderStrong },
+  upNextEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },
+  upNextEmptyRow: { flexDirection: 'row', gap: spacing.md },
+  upNextEmptyLink: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
+  customize: { alignSelf: 'center', marginTop: spacing.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.lg },
+  customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
   emptyWatchlist: {
     marginHorizontal: spacing.xl,
     padding: spacing.xl,

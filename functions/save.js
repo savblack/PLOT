@@ -9,7 +9,7 @@
 //
 // Routing: file path functions/save.js → /save (query string passes through).
 import { loadTitle } from './_lib/tmdb.js';
-import { staticCard, STATIC_CARD, TMDB_BACKDROP } from './_lib/og-card.js';
+import { staticCard, CARD } from './_lib/og-card.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const safeJson = (value) => JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (char) => ({
@@ -47,11 +47,10 @@ export async function onRequest({ request, env }) {
     const desc = title.overview
       ? (title.overview.length > 180 ? `${title.overview.slice(0, 177)}…` : title.overview)
       : `Save ${title.title} to your watchlist on plot.`;
-    // Artwork over a rendered card: see functions/_lib/og-card.js. Not every
-    // title has a backdrop — older and obscure ones often carry only a poster,
-    // and a 2:3 poster in a 1.91:1 slot crops badly — so those take the card.
+    // A 2:3 poster crops badly in a wide preview. Use the static brand card
+    // when TMDB has no backdrop, without rendering a card through Supabase.
     const image = title.backdrop || staticCard(host);
-    const { width: imgW, height: imgH } = title.backdrop ? TMDB_BACKDROP : STATIC_CARD;
+    const [imgW, imgH] = title.backdrop ? [1280, 720] : [CARD.width, CARD.height];
     const imgAlt = title.backdrop ? `${title.title}${yearStr}` : 'plot';
     const url = `https://${host}/save?media_type=${title.type}&tmdb_id=${id}`;
     const tags =
@@ -76,7 +75,8 @@ export async function onRequest({ request, env }) {
       .replace(/\s*<meta[^>]+property="og:[^"]*"[^>]*>/g, '')
       .replace(/\s*<meta[^>]+name="twitter:[^"]*"[^>]*>/g, '')
       .replace(/\s*<title>[^<]*<\/title>/i, '')
-      .replace('</head>', `${tags}</head>`);
+      // Function replacer: a string replacement would interpret `$` patterns in the title.
+      .replace('</head>', () => `${tags}</head>`);
   }
 
   return new Response(html, {

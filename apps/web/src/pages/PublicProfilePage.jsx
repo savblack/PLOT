@@ -36,6 +36,7 @@ import {
   SOCIAL_LINKS, PROFILE_SECTIONS, ALL_SECTION_KEYS, isSectionEnabled,
   USERNAME_RE, validateAvatarFile, isDuplicateUsernameError,
 } from '@plot/core/profileFields.js';
+import { toAvatarJpeg } from '../utils/avatarImage.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
@@ -368,7 +369,10 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
     if (pendingFile) {
       try {
         const path = `${userId}/avatar.jpg`;
-        const { error: upErr } = await supabase.storage.from('avatars').upload(path, pendingFile, { upsert: true, contentType: pendingFile.type || 'image/jpeg', cacheControl: '31536000' });
+        // Always JPEG, whatever was picked: the bucket only accepts raster
+        // types, and the raw file's own type is what let an SVG in before.
+        const blob = await toAvatarJpeg(pendingFile);
+        const { error: upErr } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
         if (upErr) throw upErr;
         const { data } = supabase.storage.from('avatars').getPublicUrl(path);
         patch.avatar_url = `${data.publicUrl}?v=${Date.now()}`;

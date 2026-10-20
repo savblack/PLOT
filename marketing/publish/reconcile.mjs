@@ -17,14 +17,16 @@ const DRY_RUN = process.env.DRY_RUN === '1';
 // Buffer's PostStatus, mapped to ours.
 //   sent            -> it went out; take the permalink and the real send time
 //   error           -> Buffer tried and failed; it carries the reason
-//   draft           -> you moved it back to drafts in Buffer; it will not send
-//                      on its own, so it is no longer pending as far as we care
+//   draft           -> waiting for someone to approve it in Buffer. Posts are
+//                      pushed as drafts (schedule.mjs), so this is the normal
+//                      resting state of a week that nobody has read yet, and it
+//                      stays pending. A draft that is never approved simply
+//                      never sends; its day passing is visible in Buffer.
 //   needs_approval  -> same: parked behind a human step inside Buffer
 //   scheduled       -> still waiting. Leave it exactly as it is.
 //   sending         -> mid-flight. Leave it; the next run will see the result.
 const TERMINAL = { sent: 'published', error: 'failed' };
-const PARKED = new Set(['draft', 'needs_approval']);
-const PENDING = new Set(['scheduled', 'sending']);
+const PENDING = new Set(['scheduled', 'sending', 'draft', 'needs_approval']);
 
 const updatePublication = async (supabase, id, patch) => {
   const { error } = await supabase.from('marketing_post_publications').update(patch).eq('id', id);
@@ -55,17 +57,6 @@ const reconcileOne = async (supabase, post, pub) => {
   }
 
   if (PENDING.has(remote.status)) return null;
-
-  if (PARKED.has(remote.status)) {
-    if (!DRY_RUN) {
-      await updatePublication(supabase, pub.id, {
-        status: 'canceled',
-        error: `Moved to ${remote.status} in Buffer`,
-      });
-    }
-    console.log(`${post.topic_key} ${pub.platform}: parked in Buffer (${remote.status})`);
-    return 'canceled';
-  }
 
   const status = TERMINAL[remote.status];
   if (!status) {

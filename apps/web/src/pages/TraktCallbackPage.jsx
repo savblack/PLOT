@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import { callAuthenticatedFunction, edgeFunctionUrl } from '@plot/core/functions.js';
-import { consumeTraktReturnTo, consumeTraktState, getTraktCallbackUrl } from '../utils/redirects.js';
+import { consumeTraktReturnTo, consumeTraktState, getTraktCallbackUrl, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 import { TRAKT_CALLBACK_PAGE } from '../copy/traktCallbackPage.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -52,7 +52,14 @@ export default function TraktCallbackPage() {
 
       // The exchange succeeded, so the integration genuinely exists now.
       track(EVENTS.TRAKT_CONNECTED, {});
-      navigate(consumeTraktReturnTo(), { replace: true });
+      const returnTo = consumeTraktReturnTo();
+      // Opened as a popup by onboarding: tell that page and get out of the
+      // way, so its picks survive the connect.
+      if (window.opener && !window.opener.closed) {
+        try { window.opener.postMessage({ type: TRAKT_POPUP_MESSAGE }, window.location.origin); } catch { /* cross-origin opener: fall through */ }
+        window.close();
+      }
+      navigate(returnTo, { replace: true });
     };
 
     handle();

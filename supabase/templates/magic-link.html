@@ -38,6 +38,10 @@
     </td>
   </tr>
 </table>
+<p style="margin: 28px 0 0; font-family: 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #6B655D; text-align: center;">In the app? Enter this code instead:</p>
+<p style="margin: 8px 0 0; text-align: center;">
+  <span style="font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 26px; letter-spacing: 8px; color: #292924;">{{ .Token }}</span>
+</p>
 <p style="margin: 28px 0 0; font-family: 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #6B655D; text-align: center;">
   Prefer to paste the link manually?<br>
   <a href="{{ if .RedirectTo }}{{ .RedirectTo }}{{ else }}{{ .SiteURL }}/auth/callback{{ end }}?token_hash={{ .TokenHash }}&amp;type=magiclink" target="_blank" style="color: #6B655D; text-decoration: underline; word-break: break-all;">{{ if .RedirectTo }}{{ .RedirectTo }}{{ else }}{{ .SiteURL }}/auth/callback{{ end }}?token_hash={{ .TokenHash }}&amp;type=magiclink</a>

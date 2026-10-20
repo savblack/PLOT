@@ -10,7 +10,7 @@ export default function PrivacyPage() {
         <p className="legal-label">Legal</p>
         <h1>Privacy Policy</h1>
         <p className="legal-owner">A product of SUSUMU HOUSE</p>
-        <p className="legal-meta">Last updated: June 2026</p>
+        <p className="legal-meta">Last updated: October 2026</p>
 
         <h2>1. Agreement to This Policy</h2>
         <p><strong>By creating an account or using Plot in any way, you acknowledge that you have read, understood, and agree to this Privacy Policy in full. If you do not agree, you must not use the Service.</strong></p>
@@ -44,6 +44,7 @@ export default function PrivacyPage() {
         <p>The Service relies on third-party infrastructure and data providers. By using Plot, you acknowledge and accept that your data may be processed by these third parties under their own policies, over which SUSUMU HOUSE has no control:</p>
         <ul>
           <li><strong>Supabase</strong>: authentication, database, storage, and edge functions</li>
+          <li><strong>Stripe</strong>: payment processing for Plot Premium. When you subscribe, Stripe receives your email address, billing country and payment details and acts as the merchant of record for the purchase under its own privacy policy. Plot stores a Stripe customer reference and your subscription status, never your full card number.</li>
           <li><strong>The Movie Database (TMDB)</strong>: movie and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
           <li><strong>JustWatch</strong>: streaming availability ("where to watch") data, delivered via the TMDB API.</li>
           <li><strong>Cloudflare</strong>: website and application hosting and content delivery. Your requests are routed through Cloudflare's infrastructure.</li>

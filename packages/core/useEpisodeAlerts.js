@@ -2,6 +2,26 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 
 /**
+ * Alerts are on unless a mute row exists. Accepting the first-episode prompt
+ * deletes that row when one is there, and is a no-op write when alerts are
+ * already on. The caller still reports episode_alerts_toggled.
+ *
+ * @param {string | null | undefined} userId
+ * @param {number | null | undefined} tmdbId
+ * @returns {Promise<{ ok: boolean }>}
+ */
+export async function enableEpisodeAlerts(userId, tmdbId) {
+  const id = Number(tmdbId);
+  if (!userId || !Number.isInteger(id) || id < 1) return { ok: false };
+  const { error } = await supabase
+    .from('episode_alert_mutes')
+    .delete()
+    .eq('user_id', userId)
+    .eq('tmdb_id', id);
+  return { ok: !error };
+}
+
+/**
  * Episode alerts for one show: on unless the person turned them off. Following
  * a show (a list or watching progress) is what subscribes someone to its
  * new-episode notifications; a row in episode_alert_mutes is the off switch,

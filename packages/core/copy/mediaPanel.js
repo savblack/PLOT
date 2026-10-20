@@ -17,6 +17,10 @@ export const MEDIA_PANEL = {
   // The TV-season bulk action, rendered above the episode list on both
   // platforms.
   seasonLabel: (season) => `Season ${season}`,
+  // Season 0 in the episode guide. Not "Season 0".
+  seasonListLabel: (season) => (Number(season) === 0 ? 'Specials' : `Season ${season}`),
+  markSpecialsWatched: 'Mark specials watched',
+  unmarkSpecialsWatched: 'Unmark specials',
   seasonWatchedCount: (watched, total) => `${watched} of ${total} watched`,
   markSeasonWatched: 'Mark season watched',
   // The mid-watch summary card: what a series you are part-way through is
@@ -24,6 +28,18 @@ export const MEDIA_PANEL = {
   upNext: 'Up next',
   seasonEpisode: (season, episode) => `Season ${season} · Episode ${episode}`,
   episodeRuntime: (minutes) => `${minutes} min`,
+  // Free. "3h 12m left" on Continue watching, and the series total under the
+  // title panel progress bar. Ends at sits beside the runtime.
+  endsAt: (time) => `Ends at ${time}`,
+  parentalGuide: 'Parental guide',
+  hideParentalGuide: 'Hide',
+  showParentalGuide: 'Show guide',
+  couldNotUpdateParentalGuide: 'Could not update the parental guide. Try again.',
+  timeLeft: (duration) => `${duration} left`,
+  episodesLeft: (count) => (count === 1 ? '1 episode left' : `${count} episodes left`),
+  episodesAndTimeLeft: (count, duration) => (
+    count === 1 ? `1 episode · ${duration} left` : `${count} episodes · ${duration} left`
+  ),
   chooseSeason: 'Choose a season',
   unmarkSeasonWatched: 'Unmark season',
   couldNotUpdateSeason: 'Could not update this season right now. Please try again.',
@@ -124,4 +140,36 @@ export const MEDIA_PANEL = {
     watchedRemoved: 'Watched removed',
     deleted: 'Deleted',
   },
+
+  // The episode-ratings sheet above the season row. TMDB is the audience
+  // grid. Yours reads imported episode ratings and leaves the rest blank.
+  episodeRatingsTitle: 'Episode ratings',
+  episodeRatingsTmdb: 'TMDB',
+  episodeRatingsYours: 'Yours',
+  episodeRatingsNoneTmdb: 'No episode scores for this show yet.',
+  episodeRatingsNoneYours: "You haven't rated episodes of this show.",
+  episodeRatingsSignIn: 'Sign in to see your episode ratings.',
+  episodeRatingsLoadError: 'Could not load episode ratings. Try again.',
+  episodeRatingsRetry: 'Try again',
+  episodeRatingsClose: 'Close',
+  episodeRatingsEpisode: (episode) => `Episode ${episode}`,
+  episodeRatingsHolds: (season, through, episode, score, yours) => (
+    yours
+      ? `Season ${season} holds through episode ${through}. Your low point is episode ${episode}, at ${score}.`
+      : `Season ${season} holds through episode ${through}. The low point is episode ${episode}, at ${score}.`
+  ),
+  episodeRatingsLowPoint: (season, episode, score, yours) => (
+    yours
+      ? `Your low point is season ${season}, episode ${episode}, at ${score}.`
+      : `The low point is season ${season}, episode ${episode}, at ${score}.`
+  ),
+  episodeRatingsRated: (rated, total) => `You've rated ${rated} of ${total} episodes.`,
+  episodeRatingsVotes: (count) => `${count} votes`,
+  episodeRatingsUnrated: 'Unrated',
+  episodeRatingsCell: (season, episode, name, score) => `Season ${season}, episode ${episode}, ${name}, ${score}`,
+  episodeRatingsBandPeak: '9 and up',
+  episodeRatingsBandGood: '8',
+  episodeRatingsBandFine: '7',
+  episodeRatingsBandSoft: '6',
+  episodeRatingsBandFall: 'Under 6',
 };

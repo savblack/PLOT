@@ -51,7 +51,7 @@ for (const connected of [false, true]) test(`Free imports offer Plex source sele
   await expect(page.getByRole('button', { name: /Plex Connected account/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Trakt Connected account/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Simkl Manual two-way sync/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Letterboxd CSV export/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Letterboxd ZIP export/ })).toBeVisible();
   // Saved IMDb/Trakt exports require the event-store rollout flag.
   await expect(page.getByRole('button', { name: /IMDb CSV export/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Trakt JSON export/ })).toHaveCount(0);

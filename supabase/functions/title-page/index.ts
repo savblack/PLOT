@@ -20,6 +20,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { hasServiceKeyBearer } from '../_shared/serviceBearer.ts';
 import { clampDescription, fitTitle } from '../_shared/seoText.ts';
 
 const SITE = 'https://theplot.tv';
@@ -78,7 +79,7 @@ ${head}
 <body>
 ${GTM_NOSCRIPT}
 <nav class="topnav" id="topnav">
-  <a href="${SITE}" class="nav-logo" aria-label="plot">plot</a>
+  <a href="${SITE}" class="nav-logo" aria-label="plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
   <ul class="nav-links" id="navLinks">
     <li><a href="${SITE}/whats-on">What's On</a></li>
     <li><a href="${APP}/login?src=title_page_nav" data-cta="nav">Log in</a></li>
@@ -132,16 +133,27 @@ type SitemapTitle = {
 };
 
 // Seed the sitemap from Plot's tracked catalogue plus TMDB's current discovery
-// feeds. Fetching the live feeds here means newly popular and newly released
-// titles become crawlable within the sitemap's one-day cache window, without
-// hardcoding opaque TMDB IDs or creating thin duplicate pages.
+// feeds. Fetching the live feeds means newly popular and newly released titles
+// become crawlable within a day, without hardcoding opaque TMDB IDs or
+// creating thin duplicate pages.
+//
+// Built once a day, not per request. This function is public (verify_jwt is
+// off so the Pages proxy can fetch it), and a live build is 21 TMDB fetches,
+// up to 45 index pages and a service-role upsert, so serving it on demand was
+// an amplifier for anyone who added a query parameter the proxy's cache did
+// not key on. pg_cron (run_title_sitemap_refresh, migration 20261014090200)
+// calls `?sitemap=refresh` with the service bearer; `?sitemap=1` serves the
+// stored copy. The one exception is an empty cache, before the first refresh
+// has run: that request builds and stores the sitemap so it is never missing.
 const admin = () => createClient<Database>(Deno.env.get('SUPABASE_URL')!, serviceKey());
 
 // A sitemap file may hold 50,000 URLs; leave room for the seeded sources.
 const INDEX_LIMIT = 45000;
 const INDEX_PAGE = 1000; // PostgREST's default max rows per request
 
-async function titlesSitemap(): Promise<Response> {
+const SITEMAP_CACHE = 'public, s-maxage=86400, stale-while-revalidate=604800';
+
+async function buildTitlesSitemap(): Promise<{ xml: string; count: number }> {
   const supabase = admin();
   const urls = new Map<string, string>(); // "type:id" -> loc (dedupes)
   const add = (mt: unknown, rawId: unknown, t: unknown) => {
@@ -211,16 +223,45 @@ async function titlesSitemap(): Promise<Response> {
     await Promise.all(requests);
   }
 
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${[...urls.values()].map((loc) => `<url><loc>${esc(loc)}</loc><changefreq>weekly</changefreq></url>`).join('\n')}
 </urlset>`;
-  return new Response(body, {
-    headers: {
-      'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
-    },
+  return { xml, count: urls.size };
+}
+
+async function storeTitlesSitemap(): Promise<{ xml: string; count: number }> {
+  const built = await buildTitlesSitemap();
+  const { error } = await admin()
+    .from('title_sitemap_cache')
+    .upsert({ id: 1, xml: built.xml, url_count: built.count, generated_at: new Date().toISOString() }, { onConflict: 'id' });
+  if (error) console.error('title_sitemap_cache write failed:', error.message);
+  return built;
+}
+
+const sitemapResponse = (xml: string) =>
+  new Response(xml, {
+    headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': SITEMAP_CACHE },
   });
+
+async function titlesSitemap(req: Request, mode: string): Promise<Response> {
+  if (mode === 'refresh') {
+    if (req.method !== 'POST' || !hasServiceKeyBearer(req)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const { count } = await storeTitlesSitemap();
+    return new Response(JSON.stringify({ ok: true, url_count: count }), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+
+  const { data } = await admin().from('title_sitemap_cache').select('xml').eq('id', 1).maybeSingle();
+  if (data?.xml) return sitemapResponse(data.xml);
+  // Bootstrap: nothing stored yet. Build once, store, serve.
+  return sitemapResponse((await storeTitlesSitemap()).xml);
 }
 
 type IndexedTitle = { media_type: 'movie' | 'tv'; tmdb_id: number; title: string };
@@ -243,7 +284,8 @@ function recordTitles(rows: IndexedTitle[]) {
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  if (url.searchParams.get('sitemap') === '1') return titlesSitemap();
+  const sitemapMode = url.searchParams.get('sitemap');
+  if (sitemapMode === '1' || sitemapMode === 'refresh') return titlesSitemap(req, sitemapMode);
   const type = url.searchParams.get('type') === 'tv' ? 'tv' : url.searchParams.get('type') === 'movie' ? 'movie' : null;
   const slug = url.searchParams.get('slug') || '';
   const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';
@@ -291,14 +333,8 @@ Deno.serve(async (req) => {
   const poster = img(data.poster_path, 'w342');
   const backdrop = img(data.backdrop_path, 'w1280');
   const posterImage = img(data.poster_path, 'w780') || '';
-  // Link-preview image. This was the branded Plot card at /api/og on the app
-  // domain — a Vercel path that has not existed since the move to Cloudflare,
-  // so it resolved to the SPA shell as text/html and every title page unfurled
-  // with no image. Its Cloudflare replacement (the plot-og Worker) cannot
-  // render on the free plan either, so point at TMDB's own backdrop, exactly as
-  // app.theplot.tv/save now does — see functions/_lib/og-card.js. Titles with
-  // no backdrop take the static brand card; a 2:3 poster crops badly into a
-  // 1.91:1 slot.
+  // A 2:3 poster crops badly in a wide preview. Use the static brand card
+  // when TMDB has no backdrop, without rendering a card through Supabase.
   const shareCard = backdrop || `${SITE}/og-image.png`;
   const [shareW, shareH] = backdrop ? [1280, 720] : [1200, 630];
   const genres = (data.genres || []).map((g: any) => g.name).filter(Boolean);

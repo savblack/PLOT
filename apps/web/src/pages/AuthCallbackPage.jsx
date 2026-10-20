@@ -58,7 +58,7 @@ function consumeAuthMethod() {
 function reportAuth(session, method) {
   const user = session?.user;
   if (!method || !user) return;
-  identifyUser(user.id, { email: user.email });
+  identifyUser(user.id);
   const createdMs = user.created_at ? Date.parse(user.created_at) : 0;
   const isNew = createdMs > 0 && (Date.now() - createdMs) < 60_000;
   if (isNew) markSignupReferralPending(user.email);

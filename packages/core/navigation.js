@@ -9,15 +9,15 @@ export const APP_NAV_ITEMS = [
   // Own page on web. Mobile keeps the My Lists tab and also opens this from
   // the drawer and the tab bar. MY_LISTS_TABS below keeps its 'history' entry.
   { id: 'history', label: 'History', path: '/history', primary: true },
-  // Own nav item on web. Mobile keeps the Home sub-tab (DISCOVER_TABS) and
-  // also lists it in the drawer. Not primary, so it stays out of the tab bar.
+  // Own nav item on web and mobile (opened from the drawer). Not primary, so it
+  // stays out of the tab bar.
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   // Pick for Me, the tonight picker (Premium). Free viewers land on the Premium gate,
   // never on fake results. Mobile lists it in its drawer (DrawerMenu.tsx).
   { id: 'tonight', label: 'Pick for Me', path: '/tonight', primary: false, premium: true },
-  // Premium. On for web (SHOW_WATCH_TOGETHER, PLO-515). Mobile has no
-  // screen yet, so apps/mobile/lib/launchFeatures.ts keeps the flag false
-  // and the drawer omits this item. `feature` still lets web hide it.
+  // Watch together. On for web and mobile (SHOW_WATCH_TOGETHER, PLO-515).
+  // `feature` still lets an app hide it. The Premium mark stays: deciding
+  // together needs Premium on at least one side.
   { id: 'together', label: WATCH_TOGETHER.navLabel, path: '/together', primary: false, premium: true, feature: 'watchTogether' },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
@@ -82,20 +82,6 @@ export function viewFromPath(pathname) {
   const navItem = APP_NAV_ITEMS.find(item => item.path === path);
   return navItem?.id ?? fallbackView;
 }
-
-/* Sub-tabs nested under Home on MOBILE. Web no longer has them: Home is one
-   scroll, Guide is a nav item, Upcoming is a Calendar view and New Releases
-   has its own route. Mobile renders these ids in its Discover header and
-   scripts/check-mobile-tabs.mjs reads this list, so it stays. A `feed` tab used to lead
-   this list, gated by SHOW_SOCIAL_FEED; the social feed was dropped in favour of
-   profiles, so it and its flag are gone. The feed_posts activity substrate is
-   still recording, unsurfaced, if an activity stream is ever wanted. */
-export const DISCOVER_TABS = [
-  { id: 'discover', label: 'Discover' },
-  { id: 'new',      label: 'New Releases' },
-  { id: 'releases', label: 'Upcoming' },
-  { id: 'guide',    label: 'Guide' },
-];
 
 /* Sub-tabs nested under My Lists on MOBILE. Web no longer has them: My Lists
    is one scroll of every list and History has its own route (/history). */

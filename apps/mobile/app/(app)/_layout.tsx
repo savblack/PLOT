@@ -6,6 +6,7 @@ import Svg, { Path, Rect, Line, Polyline, Circle } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
 import { spacing } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
+import AppIconEntitlement from '../../components/AppIconEntitlement';
 
 function IconHome({ color }: { color: string | any }) {
   return (
@@ -75,10 +76,13 @@ function TabsLayout() {
   const { colors } = useTheme();
 
   return (
-    <Tabs
+    <>
+      <AppIconEntitlement />
+      <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: { fontSize: 10, marginTop: 2 },
         // Floating glass pill — detached from the edges, content scrolls
         // behind it (screens clear it via TAB_BAR_CLEARANCE).
         tabBarStyle: {
@@ -97,11 +101,8 @@ function TabsLayout() {
         },
         tabBarItemStyle: {
           height: TAB_BAR_HEIGHT,
-          paddingTop: 0,
-          paddingBottom: 0,
-        },
-        tabBarIconStyle: {
-          flex: 1,
+          paddingTop: 8,
+          paddingBottom: 6,
         },
         tabBarBackground: () => <TabBarBackground />,
         tabBarActiveTintColor: colors.accent,
@@ -110,15 +111,15 @@ function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ tabBarIcon: ({ color }) => <IconHome color={color} /> }}
+        options={{ title: 'Home', tabBarIcon: ({ color }) => <IconHome color={color} /> }}
       />
       <Tabs.Screen
         name="calendar"
-        options={{ tabBarIcon: ({ color }) => <IconCalendar color={color} /> }}
+        options={{ title: 'Calendar', tabBarIcon: ({ color }) => <IconCalendar color={color} /> }}
       />
       <Tabs.Screen
         name="my-lists"
-        options={{ tabBarIcon: ({ color }) => <IconLists color={color} /> }}
+        options={{ title: 'My Lists', tabBarIcon: ({ color }) => <IconLists color={color} /> }}
       />
       {/* Fourth primary destination, same order as web: Home, Calendar,
           My Lists, History. Profile stays in the drawer. */}
@@ -131,6 +132,7 @@ function TabsLayout() {
       />
       <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen name="guide" options={{ href: null }} />
+      <Tabs.Screen name="new-releases" options={{ href: null }} />
       <Tabs.Screen name="u/[username]" options={{ href: null }} />
       <Tabs.Screen name="compare" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
@@ -140,12 +142,15 @@ function TabsLayout() {
       <Tabs.Screen name="tonight" options={{ href: null }} />
       <Tabs.Screen name="watchlist-visibility" options={{ href: null }} />
       <Tabs.Screen name="themes" options={{ href: null }} />
+      <Tabs.Screen name="home-layout" options={{ href: null }} />
+      <Tabs.Screen name="app-icon" options={{ href: null }} />
       <Tabs.Screen name="smart-list/[id]" options={{ href: null }} />
       <Tabs.Screen name="together" options={{ href: null }} />
       <Tabs.Screen name="profile-section" options={{ href: null }} />
       <Tabs.Screen name="person/[personId]" options={{ href: null }} />
       <Tabs.Screen name="your-people" options={{ href: null }} />
-    </Tabs>
+      </Tabs>
+    </>
   );
 }
 

@@ -15,7 +15,7 @@ export const SETTINGS_VIEW = {
     sections: {
       account: { title: 'Profile & account', description: 'Your identity, appearance and email preferences.' },
       viewing: { title: 'Viewing', description: 'Shape what you see, and where you can watch it.' },
-      connections: { title: 'Connections', description: 'Bring your watch history and calendar together.' },
+      connections: { title: 'Connections', description: 'Your sources and your calendar.' },
       billing: { title: 'Billing', description: 'Your plan, your subscription, and a little support.' },
       privacy: { title: 'Data & privacy', description: 'Control your visibility and take your data with you.' },
       help: { title: 'Help & about', description: 'Help with plot, and the people behind the data.' },
@@ -51,8 +51,6 @@ export const SETTINGS_VIEW = {
     yearly: 'Yearly',
     checkout: 'Explore Premium',
     comingSoon: 'plot Premium',
-    // Same closed-checkout wording as the plans page, so Settings cannot deny the trial.
-    comingSoonMessage: PLANS_PAGE.mobileCheckoutMessage,
     exploreHint: 'New subscribers get a 7-day free trial. You won’t be charged until 7 days after you start.',
     portalHint: 'Update payment details, view invoices or cancel your subscription.',
     supportTitle: 'A little support goes a long way.',
@@ -221,6 +219,22 @@ export const SETTINGS_VIEW = {
 
   // Theme picker. Palette values and the Premium rule live in
   // @plot/core/tokens.js + themes.js. Mobile and web both read them.
+  // Sidebar order (web), profile.ui_prefs.sidebar. Free.
+  sidebar: {
+    rowLabel: 'Sidebar order',
+    rowHint: 'Choose the order of the menu on the left',
+    valueDefault: 'Default',
+    valueCustom: 'Custom',
+    title: 'Sidebar order',
+    body: 'Use the arrows to put the menu in the order you like. Search stays at the top and Settings at the bottom.',
+    moveUp: (name) => `Move ${name} up`,
+    moveDown: (name) => `Move ${name} down`,
+    drag: (name) => `Drag to reorder ${name}`,
+    reset: 'Reset order',
+    done: 'Done',
+    saveError: 'That change didn’t save. Try again.',
+  },
+
   appearance: {
     label: 'Appearance',
     optionsLabel: 'Appearance options',
@@ -279,8 +293,68 @@ export const SETTINGS_VIEW = {
     activationPending: 'Your checkout is complete. We are waiting for payment confirmation. If Premium does not appear, refresh this page or contact support.',
     activeThankYou: 'Plot Premium is active. Thank you ♥',
     upsellLabel: 'Go Premium',
-    upsellBlurb: 'Find tonight’s movie, keep up with releases and choose together. Coming soon.',
+    upsellBlurb: 'Find tonight’s movie, keep up with releases and choose together.',
     upgradeButton: 'Explore Premium',
+  },
+
+  // Settings › Connections › Your sources (Oct 2026): accounts you connected
+  // and files you uploaded, one row each, with their own history.
+  sources: {
+    groupTitle: 'Your sources',
+    intro: 'Bring your watch history in from the apps you’ve used. Imports never change what’s already in Plot.',
+    addSource: 'Add a source',
+    addSourceTitle: 'Add a source',
+    addSourceSub: 'Your ratings, watch dates and lists come with it.',
+    emptyTitle: 'Bring your history over',
+    emptyBody: 'Connect Trakt, Plex or Simkl, or upload an export from Letterboxd, Netflix, Prime Video, Disney+, Max, Apple TV+ or IMDb.',
+    foot: 'Imports never change what’s already in Plot. Titles stay if you remove a source.',
+    // Status chips.
+    chipConnected: 'Connected',
+    chipImporting: 'Importing',
+    chipQueued: 'Queued',
+    chipNeedsServer: 'Needs a server',
+    chipToMatch: (n) => `${n} to match`,
+    chipStopped: 'Stopped',
+    chipDone: 'Done',
+    chipCancelled: 'Cancelled',
+    // Status line parts.
+    connectedAs: (name) => `as ${name}`,
+    checksDaily: 'Checks daily',
+    lastImport: (date, count) => `Last import ${date}, ${count}`,
+    imported: (date, count) => `Imported ${date} · ${count}`,
+    previousImport: (date, count) => `Previous import ${date}, ${count}`,
+    pickServer: 'Pick a server and profile to import',
+    startsAfter: (name) => `Starts after ${name}`,
+    titles: (n) => `${Number(n).toLocaleString()} ${n === 1 ? 'title' : 'titles'}`,
+    // Row actions.
+    chooseServer: 'Choose server',
+    finishMatching: 'Finish matching',
+    tryAgain: 'Try again',
+    importAgain: 'Import again',
+    cancel: 'Cancel',
+    review: 'Review',
+    open: (name) => `Open ${name}`,
+    // Detail sheet.
+    automaticLabel: 'Keep importing new watches',
+    automaticHint: (name) => `Checks ${name} every day. Included with Premium.`,
+    automaticNeedsPremium: 'Automatic imports are Premium',
+    automaticNeedsPremiumMessage: 'Plot checks your account every day and brings new watches in by itself. One-off imports stay free.',
+    importHistory: 'Import history and watchlist',
+    importFromProfile: 'Import from this profile',
+    importNewerExport: 'Import a newer export',
+    importNewerHint: 'Only new entries are added.',
+    history: 'History',
+    noHistory: 'No imports yet.',
+    running: 'running',
+    duplicateWatch: 'Possible duplicate watch',
+    keepWatch: 'Keep as a separate watch',
+    skipWatch: 'Skip this watch',
+    remove: (name) => `Remove ${name}`,
+    removeTitle: (name) => `Remove ${name}?`,
+    removeMessage: (name, count) => `Plot stops checking ${name}. ${count ? `The ${count} already imported stay in your history.` : 'Everything already imported stays in your history.'}`,
+    removeConfirm: 'Remove',
+    stays: 'Everything already imported stays in Plot.',
+    done: 'Done',
   },
 
   calendarFeed: {

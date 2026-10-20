@@ -1,4 +1,4 @@
-import TrackingSettings from '../../components/TrackingSettings';
+import SettingsSources from '../../components/SettingsSources';
 import { BroadcastRegionSheet } from '../../components/BroadcastSettings';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
@@ -26,9 +26,6 @@ import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { localDateStr, setUserTimezone } from '@plot/core/date.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
-import { useTraktSync } from '../../hooks/useTraktSync';
-import { useMediaSync } from '../../hooks/useMediaSync';
-import { useSimklSync } from '../../hooks/useSimklSync';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
 import { track, resetAnalytics, EVENTS } from '../../lib/analytics';
@@ -41,8 +38,11 @@ import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { fetchUserDataExport } from '@plot/core/exportData.js';
 import { shareDataExport, type ExportFormat } from '../../lib/shareDataExport';
 import { pickAndUploadAvatar, removeAvatar } from '../../lib/avatar';
-import { SHOW_KOFI_LINK, SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PREMIUM_PRICING } from '../../lib/launchFeatures';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
+import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
+import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
+import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../../lib/letterboxdImportPrompt';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
@@ -57,11 +57,17 @@ import { ALERT_EMAIL_ENABLED } from '@plot/core/features.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { AVATAR_MAX_MB } from '@plot/core/profileFields.js';
 import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
 import { broadcastRegionLabel } from '@plot/core/broadcastGuide.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
+import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
+import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
+import { REQUESTS_FROM_OPTIONS, personName } from '@plot/core/watchTogether.js';
+import { useWatchTogether, useWatchTogetherLink } from '@plot/core/useWatchTogether.js';
+import { Avatar } from '../../components/Avatar';
 import { favoriteWords } from '../../lib/spelling';
 import { buildCalendarEvents } from '@plot/core/calendar.js';
 import { generateICS } from '@plot/core/ics.js';
@@ -83,6 +89,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
 import ThemeChip from '../../components/ThemeChip';
 import UpgradeSheet from '../../components/UpgradeSheet';
+import { usePremiumCheckout } from '../../lib/usePremiumCheckout';
+import { useBillingStatus } from '@plot/core/useBillingStatus.js';
 
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 const A = SETTINGS_VIEW.appearance;
@@ -289,10 +297,9 @@ function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: str
   );
 }
 
-function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string | null; isPremium: boolean; onCompare: () => void }) {
+function PushAlertsSettings({ userId }: { userId: string | null }) {
   const { colors } = useTheme();
   const push = usePushAlerts(userId);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [devices, setDevices] = useState(0);
   useEffect(() => {
@@ -303,7 +310,6 @@ function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string |
   }, [userId, push.enabled]);
 
   const enable = async () => {
-    if (!isPremium) { setUpgradeOpen(true); return; }
     Alert.alert(PUSH_ALERTS.permissionTitle, PUSH_ALERTS.permissionBody, [
       { text: PUSH_ALERTS.permissionNo, style: 'cancel' },
       { text: PUSH_ALERTS.permissionYes, onPress: () => { void (async () => {
@@ -311,12 +317,12 @@ function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string |
         try {
           const registration = await registerPushToken(true);
           if (registration !== 'ok') {
-            Alert.alert(registration === 'denied' ? PUSH_ALERTS.permissionDenied : PUSH_ALERTS.permissionUnavailable);
+            Alert.alert(registration === 'denied' ? PUSH_ALERTS.permissionDenied
+              : registration === 'in_use' ? PUSH_ALERTS.inUse : PUSH_ALERTS.permissionUnavailable);
             return;
           }
           const result = await push.setEnabled(true);
-          if (result.error === 'premium_required') setUpgradeOpen(true);
-          else if (result.error) Alert.alert(PUSH_ALERTS.error);
+          if (result.error) Alert.alert(PUSH_ALERTS.error);
           else setDevices(d => Math.max(d, 1));
         } catch {
           Alert.alert(PUSH_ALERTS.error);
@@ -341,18 +347,38 @@ function PushAlertsSettings({ userId, isPremium, onCompare }: { userId: string |
         />
         {push.error ? <SettingsRow icon={null} label={PUSH_ALERTS.error} /> : null}
       </SettingsGroup>
-      <UpgradeSheet visible={upgradeOpen} reason="pushAlerts" onClose={() => setUpgradeOpen(false)} onCompare={() => { setUpgradeOpen(false); onCompare(); }} />
     </>
   );
 }
 
-// Reuse the existing Settings surface; this preview never opens a purchase link.
+// The Premium summary in Settings. Upgrade opens Stripe Checkout in the browser once checkout is open.
+/** Cancel, payment method and invoices live in Stripe's portal, in the phone's browser. */
+function ManageSubscription({ userId }: { userId: string | null }) {
+  const { colors } = useTheme();
+  const billing = useBillingStatus(userId ?? undefined);
+  const checkout = usePremiumCheckout(true);
+  if (!checkout.allowed || !billing?.canManage) return null;
+  return (
+    <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
+      <Text style={{ color: colors.textSecondary }}>
+        {billing.status === 'past_due' || billing.status === 'unpaid' ? SETTINGS_VIEW.premium.paymentNeedsAttention
+          : billing.cancelAtPeriodEnd ? SETTINGS_VIEW.premium.cancellationScheduled
+          : SETTINGS_VIEW.billing.portalHint}
+      </Text>
+      <SettingsRow icon={null} label={checkout.busy ? SETTINGS_VIEW.premium.opening : SETTINGS_VIEW.premium.manageSubscription}
+        onPress={() => { void checkout.openPortal(); }} />
+      {!!checkout.error && <Text style={{ color: colors.textSecondary }} accessibilityRole="alert">{checkout.error}</Text>}
+    </SettingsGroup>
+  );
+}
+
 function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean }) {
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(initialExpanded);
+  const checkout = usePremiumCheckout(expanded);
   return (
     <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
-      <SettingsRow icon={null} label={PLANS_PAGE.previewAction} value={PLANS_PAGE.comingSoon}
+      <SettingsRow icon={null} label={PLANS_PAGE.previewAction}
         onPress={() => setExpanded(!expanded)} />
       {expanded && <View style={{ padding: spacing.md, gap: spacing.md }}>
         <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.lede}</Text>
@@ -362,25 +388,148 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
         </Text>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.customLists(FREE_CUSTOM_LIST_CAP)}</Text>
         <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansMedium }}>{PLANS_PAGE.premium.name}</Text>
-        {SHOW_PREMIUM_PRICING && <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.premium.priceTerms}</Text>}
-        {SHOW_PREMIUM_PRICING && <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.trialNote}</Text>}
+        <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.premium.priceTerms}</Text>
+        <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.trialNote}</Text>
         {PLANS_PAGE.premiumFeatures.map(feature => <View key={feature.id} style={{ gap: spacing.xs }}>
           <Text style={{ color: colors.textPrimary }}>{feature.label}</Text>
           <Text style={{ color: colors.textSecondary }}>{feature.description}</Text>
-          {('live' in feature && feature.live) ? null : (
-            <Text style={{ color: colors.textMuted }}>{('pendingValidation' in feature && feature.pendingValidation) ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
-          )}
+          {('pendingValidation' in feature && feature.pendingValidation) ? (
+            <Text style={{ color: colors.textMuted }}>{PLANS_PAGE.pendingValidation}</Text>
+          ) : null}
         </View>)}
-        {SHOW_PREMIUM_PRICING ? (
+        <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
+        {checkout.allowed && (
           <>
-            <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
-            <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
-              onPress={() => Alert.alert(PLANS_PAGE.comingSoon, PLANS_PAGE.mobileCheckoutMessage)} />
+            <SettingsRow icon={null} label={checkout.label}
+              onPress={() => { if (checkout.closed) checkout.joinWaitlist(); else void checkout.start('monthly'); }} />
+            {!!checkout.error && <Text style={{ color: colors.textSecondary }} accessibilityRole="alert">{checkout.error}</Text>}
           </>
-        ) : (
-          <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.inAppUnavailable}</Text>
         )}
       </View>}
+    </SettingsGroup>
+  );
+}
+
+// Settings › Privacy › Watch together. Same controls as web
+// WatchTogetherSettings: who can send requests, the people you watch with
+// (stop, and share the full watchlist while it is not already public), and
+// reset the invite link. Writes go through updateProfile and the shared RPCs.
+function WatchTogetherPrivacy({
+  userId, watchlistVisibility, onWatchlistChange,
+}: {
+  userId: string | null;
+  watchlistVisibility: string;
+  onWatchlistChange: () => void;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const S = WATCH_TOGETHER.settings;
+  const L = WATCH_TOGETHER.link;
+  const { partners, loading, setShareFull, end } = useWatchTogether(SHOW_WATCH_TOGETHER ? userId : null);
+  const { key, reset } = useWatchTogetherLink(SHOW_WATCH_TOGETHER ? userId : null);
+  const [from, setFrom] = useState<string | null>(null);
+  const [resetDone, setResetDone] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!userId) return;
+    const { data } = await supabase.from('profiles').select('watch_together_requests_from').eq('id', userId).maybeSingle();
+    setFrom(data?.watch_together_requests_from ?? 'profile');
+  }, [userId]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load the saved setting once
+  useEffect(() => { void load(); }, [load]);
+
+  if (!SHOW_WATCH_TOGETHER || !userId) return null;
+
+  const labels: Record<string, string> = {
+    profile: S.fromProfile,
+    following: S.fromFollowing,
+    none: S.fromNone,
+  };
+  const dateFmt = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+
+  const choose = async (value: string) => {
+    setFrom(value);
+    const { error } = await updateProfile({ userId, patch: { watch_together_requests_from: value } });
+    if (error) void load();
+  };
+
+  return (
+    <SettingsGroup title={S.title}>
+      <View style={styles.wtBlock} accessibilityRole="radiogroup">
+        <Text style={styles.wtLabel}>{S.whoCanRequest}</Text>
+        {REQUESTS_FROM_OPTIONS.map(value => {
+          const checked = from === value;
+          return (
+            <TouchableOpacity
+              key={value}
+              style={styles.wtOption}
+              disabled={from === null}
+              onPress={() => { void choose(value); }}
+              accessibilityRole="radio"
+              accessibilityState={{ checked, disabled: from === null }}
+              accessibilityLabel={labels[value]}
+            >
+              <View style={[styles.wtRadio, checked && styles.wtRadioOn]}>
+                {checked ? <View style={styles.wtRadioDot} /> : null}
+              </View>
+              <Text style={styles.rowLabel}>{labels[value]}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <View style={styles.wtBlock}>
+        <Text style={styles.wtLabel}>{S.partners}</Text>
+        {!loading && partners.length === 0 ? <Text style={styles.wtNote}>{S.none}</Text> : null}
+        {partners.map((person, index) => {
+          const name = personName(person);
+          const when = person.accepted_at || person.created_at;
+          return (
+            <View key={person.other_id} style={[styles.wtPartner, index > 0 && styles.wtPartnerBorder]}>
+              <View style={styles.wtPerson}>
+                <Avatar url={person.avatar_url} name={name} size={36} colors={colors} />
+                <View style={styles.wtPersonText}>
+                  <Text style={styles.rowLabel} numberOfLines={1}>{name}</Text>
+                  {when ? <Text style={styles.wtNote}>{S.since(dateFmt.format(new Date(when)), person.overlap_count ?? 0)}</Text> : null}
+                </View>
+                <TouchableOpacity
+                  onPress={() => { void end(person.other_id); }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${S.stop} ${name}`}
+                >
+                  <Text style={styles.editAction}>{S.stop}</Text>
+                </TouchableOpacity>
+              </View>
+              {watchlistVisibility !== 'everyone' && (
+                <View style={styles.wtShare}>
+                  <Text style={styles.rowLabel}>{S.shareFull}</Text>
+                  <Switch
+                    value={!!person.i_share_full}
+                    onValueChange={(next) => { void setShareFull(person.other_id, next).then(() => onWatchlistChange()); }}
+                    trackColor={{ true: colors.accent }}
+                    accessibilityLabel={`${S.shareFull}: ${name}`}
+                  />
+                </View>
+              )}
+            </View>
+          );
+        })}
+        <Text style={styles.wtNote}>{S.stopNote}</Text>
+      </View>
+      <View style={styles.wtBlock}>
+        <Text style={styles.wtLabel}>{L.kicker}</Text>
+        <View style={styles.wtPerson}>
+          <Text style={[styles.wtNote, styles.wtPersonText]}>{L.resetNote}</Text>
+          <TouchableOpacity
+            disabled={!key || resetDone}
+            onPress={() => { void reset().then(result => { if (result.ok) setResetDone(true); }); }}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !key || resetDone }}
+            accessibilityLabel={L.reset}
+          >
+            <Text style={[styles.editAction, (!key || resetDone) && styles.wtMuted]}>{L.reset}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </SettingsGroup>
   );
 }
@@ -891,13 +1040,18 @@ export default function SettingsScreen() {
   const [showRegion,     setShowRegion]     = useState(false);
   const [showBroadcast, setShowBroadcast]   = useState(false);
   const [showTimezone,   setShowTimezone]   = useState(false);
-  const { feedback: feedbackParam, premium: premiumParam, section: sectionParam } = useLocalSearchParams<{ feedback?: string; premium?: string; section?: string }>();
+  const { feedback: feedbackParam, premium: premiumParam, section: sectionParam, source: sourceParam } = useLocalSearchParams<{ feedback?: string; premium?: string; section?: string; source?: string }>();
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
   const [premiumExpanded, setPremiumExpanded] = useState(premiumParam === '1');
   const [section, setSection] = useState(() => SETTINGS_SECTIONS.some(item => item.id === sectionParam) ? sectionParam! : 'account');
   const [query, setQuery] = useState('');
   const [themeUpgrade, setThemeUpgrade] = useState<string | null>(null);
-  const [showImport,     setShowImport]     = useState(false);
+  const [showLetterboxdImport, setShowLetterboxdImport] = useState(false);
+  const [letterboxdPrompt, setLetterboxdPrompt] = useState(false);
+  // Settings › Connections: a background import's leftovers to match, and
+  // the source Home's "Try again" asked to open (?source=<id>).
+  const [reviewJob, setReviewJob] = useState<{ id: string; user_id: string; source: string } | null>(null);
+  const [openSource] = useState<string | null>(() => sourceParam || null);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [clearingHist,   setClearingHist]   = useState(false);
   const [clearingList,   setClearingList]   = useState(false);
@@ -922,7 +1076,7 @@ export default function SettingsScreen() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSection(sectionParam);
     setQuery('');
-    router.setParams({ section: undefined });
+    router.setParams({ section: undefined, source: undefined });
   }, [sectionParam, router]);
 
   const providers     = profile?.streaming_providers || [];
@@ -939,6 +1093,16 @@ export default function SettingsScreen() {
   const { visibility: watchlistVisibility, refresh: refreshWatchlistVisibility } = useWatchlistVisibility(userId, isPublic);
   // The choice is made on its own screen; re-read it on the way back.
   useFocusEffect(useCallback(() => { refreshWatchlistVisibility(); }, [refreshWatchlistVisibility]));
+  const refreshLetterboxdPrompt = useCallback(() => {
+    readLetterboxdImportPrompt(userId).then(prompt => setLetterboxdPrompt(!!prompt));
+  }, [userId]);
+  useEffect(() => { refreshLetterboxdPrompt(); }, [refreshLetterboxdPrompt]);
+  useFocusEffect(useCallback(() => { refreshLetterboxdPrompt(); }, [refreshLetterboxdPrompt]));
+  const dismissLetterboxdImport = useCallback(async () => {
+    await clearLetterboxdImport(userId);
+    setLetterboxdPrompt(false);
+    createImportReporter({ entry: IMPORT_ENTRY_POINTS.IMPORT_PAGE }).abandoned(LETTERBOXD_IMPORT_ABANDON.DISMISSED);
+  }, [userId]);
 
   const toggleVisibility = async () => {
     if (!userId) return;
@@ -1058,43 +1222,6 @@ export default function SettingsScreen() {
     } finally {
       setSharingIcs(false);
     }
-  };
-
-  // ── Media integrations (Plex / Trakt) ────────────────────────────
-  const trakt = useTraktSync(userId);
-  const plex  = useMediaSync(userId);
-  const simkl = useSimklSync(userId);
-
-  const syncedLabel = (iso?: string | null) =>
-    SETTINGS_VIEW.integrations.connectedLastSynced(
-      iso ? new Date(iso).toLocaleDateString() : SETTINGS_VIEW.integrations.never,
-    );
-
-  const openIntegrationMenu = (
-    name: string,
-    i: { sync: () => void; disconnect: () => void; syncing: boolean },
-    actionLabel = SETTINGS_VIEW.integrations.syncNow,
-    busyLabel = COMMON.syncing,
-  ) => {
-    Alert.alert(name, undefined, [
-      { text: i.syncing ? busyLabel : actionLabel, onPress: () => i.sync() },
-      { text: 'Disconnect', style: 'destructive', onPress: () => i.disconnect() },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
-
-  // Free accounts can see the rows. Connect stays on Premium.
-  // Explore Premium opens the in-app preview. Mobile does not link out to pay.
-  const openPremiumSyncGate = (connected: boolean, disconnect: () => void) => {
-    Alert.alert(
-      SETTINGS_VIEW.integrations.syncNeedsPremium,
-      SETTINGS_VIEW.integrations.syncNeedsPremiumMessage,
-      [
-        { text: SETTINGS_VIEW.premium.upgradeButton, onPress: () => setPremiumExpanded(true) },
-        ...(connected ? [{ text: SETTINGS_VIEW.integrations.disconnect, style: 'destructive' as const, onPress: disconnect }] : []),
-        { text: COMMON.cancel, style: 'cancel' as const },
-      ],
-    );
   };
 
   const saveProviders = async (newProviders: any[]) => {
@@ -1406,6 +1533,18 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             )}
           </View>
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2}><Rect x={3} y={3} width={18} height={18} rx={4} /><Circle cx={9} cy={9} r={1} /><Circle cx={15} cy={9} r={1} /><Circle cx={9} cy={15} r={1} /><Circle cx={15} cy={15} r={1} /></Svg>}
+            label="App icon"
+            description={premium ? 'Choose a color and logo for your Home Screen' : 'Premium colors and logos for your Home Screen'}
+            onPress={() => router.push('/(app)/app-icon' as Href)}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={4} rx={1} /><Rect x={3} y={11} width={18} height={4} rx={1} /><Rect x={3} y={18} width={18} height={3} rx={1} /></Svg>}
+            label={DISCOVER_VIEW.customize.title}
+            description={DISCOVER_VIEW.customize.settingsHint}
+            onPress={() => router.push('/(app)/home-layout' as Href)}
+          />
         </SettingsGroup>
         <SettingsGroup title={SETTINGS_VIEW.page.emailPreferences}>
           <SettingsRow
@@ -1522,7 +1661,7 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
         <StreamingAlertsSettings userId={userId} isPremium={!!profile?.is_premium} onCompare={() => { setSection('billing'); setPremiumExpanded(true); }} />
-        <PushAlertsSettings userId={userId} isPremium={!!profile?.is_premium} onCompare={() => { setSection('billing'); setPremiumExpanded(true); }} />
+        <PushAlertsSettings userId={userId} />
         <PeopleFollowSettings userId={userId} isPremium={!!profile?.is_premium} />
         </>}
 
@@ -1561,62 +1700,35 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
-        {/* Plex and Trakt are Premium. Simkl is a free, manual connection.
-            Checkout stays closed. Nothing here starts a payment. */}
-        <SettingsGroup title={SETTINGS_VIEW.integrations.groupTitle}>
-          {SHOW_MEDIA_SYNC_INTEGRATIONS && profile?.is_premium && (<>
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={`${SETTINGS_VIEW.integrations.plexName} · ${APP_SHELL.premium}`}
-            value={plex.isConnected ? SETTINGS_VIEW.integrations.connected : (plex.polling ? 'Waiting for approval…' : undefined)}
-            onPress={plex.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.plexName, plex, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => plex.startPlexAuth()}
-            trailing={plex.isConnected ? undefined
-              : <Text style={{ color: plex.polling ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{plex.polling ? 'Waiting…' : 'Connect'}</Text>}
-          />
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={`${SETTINGS_VIEW.integrations.traktName} · ${APP_SHELL.premium}`}
-            value={trakt.isConnected ? SETTINGS_VIEW.integrations.connected : SETTINGS_VIEW.integrations.connectTraktToSync}
-            onPress={trakt.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.traktName, trakt, SETTINGS_VIEW.integrations.importWatchHistory, SETTINGS_VIEW.integrations.importing) : () => trakt.connect()}
-            trailing={trakt.isConnected ? undefined
-              : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Connect</Text>}
-          />
-          </>)}
-          {SHOW_MEDIA_SYNC_INTEGRATIONS && !profile?.is_premium && (<>
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={`${SETTINGS_VIEW.integrations.plexName} · ${APP_SHELL.premium}`}
-            value={plex.isConnected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : SETTINGS_VIEW.integrations.plexBlurb}
-            onPress={() => openPremiumSyncGate(plex.isConnected, () => { void plex.disconnect(); })}
-            trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
-          />
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
-            label={`${SETTINGS_VIEW.integrations.traktName} · ${APP_SHELL.premium}`}
-            value={trakt.isConnected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : SETTINGS_VIEW.integrations.traktBlurb}
-            onPress={() => openPremiumSyncGate(trakt.isConnected, () => { void trakt.disconnect(); })}
-            trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
-          />
-          </>)}
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M5 7h11"/><Path d="M13 4l3 3-3 3"/><Path d="M19 17H8"/><Path d="M11 14l-3 3 3 3"/></Svg>}
-            label={SETTINGS_VIEW.integrations.simklName}
-            value={simkl.isConnected ? syncedLabel(simkl.integration?.last_sync_at) : SETTINGS_VIEW.integrations.simklBlurb}
-            onPress={simkl.isConnected ? () => openIntegrationMenu(SETTINGS_VIEW.integrations.simklName, simkl) : () => simkl.connect()}
-            trailing={simkl.isConnected ? undefined
-              : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.integrations.connectSimkl}</Text>}
-          />
-        </SettingsGroup>
-
-        <TrackingSettings userId={userId} connect={trakt.connect} connectPlex={plex.startPlexAuth} plexPolling={plex.polling} connectionError={trakt.error || plex.error} disconnect={provider => provider === 'trakt' ? trakt.disconnect() : plex.disconnect()} />
         <SettingsGroup title={SETTINGS_VIEW.integrations.importWatchHistoryLabel}>
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><Polyline points="16,17 21,12 16,7"/><Line x1={21} y1={12} x2={9} y2={12}/></Svg>}
-            label={SETTINGS_VIEW.integrations.importWatchHistory}
-            description={SETTINGS_VIEW.integrations.importWatchHistoryHint}
-            onPress={() => setShowImport(true)}
-          />
+          {letterboxdPrompt ? (
+            <View>
+              <SettingsRow
+                icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><Polyline points="17 8 12 3 7 8"/><Line x1={12} y1={3} x2={12} y2={15}/></Svg>}
+                label={IMPORT_VIEW.letterboxdFinishTitle}
+                description={IMPORT_VIEW.letterboxdFinishSub}
+                onPress={() => setShowLetterboxdImport(true)}
+              />
+              <TouchableOpacity
+                onPress={() => { void dismissLetterboxdImport(); }}
+                accessibilityRole="button"
+                style={{ alignSelf: 'flex-start', paddingHorizontal: 16, paddingBottom: 12 }}
+              >
+                <Text style={{ color: colors.textMuted, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{IMPORT_VIEW.letterboxdFinishDismiss}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
         </SettingsGroup>
+        {/* Your sources: accounts connected and files uploaded, each with its
+            own status and history. One-off imports are free for everyone; the
+            automatic toggle is the one Premium thing. */}
+        <SettingsSources
+          userId={userId}
+          isPremium={!!profile?.is_premium}
+          onPremium={() => { setSection('billing'); setPremiumExpanded(true); }}
+          onFinish={setReviewJob}
+          initialOpen={openSource}
+        />
         </>}
 
         {active.id === 'billing' && <>
@@ -1629,15 +1741,16 @@ export default function SettingsScreen() {
             />
           </SettingsGroup>
         )}
+        <ManageSubscription userId={userId} />
         {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
-        {SHOW_KOFI_LINK && <SettingsGroup title={SETTINGS_VIEW.billing.supportTitle}>
+        <SettingsGroup title={SETTINGS_VIEW.billing.supportTitle}>
           <SettingsRow
             icon={null}
             label={SETTINGS_VIEW.billing.supportAction}
             description={`${SETTINGS_VIEW.billing.supportHint} ${SETTINGS_VIEW.billing.supportNote}`}
             onPress={() => { void Linking.openURL(KOFI_URL).catch(() => {}); }}
           />
-        </SettingsGroup>}
+        </SettingsGroup>
         </>}
 
         {active.id === 'help' && <>
@@ -1689,6 +1802,11 @@ export default function SettingsScreen() {
         </>}
 
         {active.id === 'privacy' && <>
+        <WatchTogetherPrivacy
+          userId={userId}
+          watchlistVisibility={watchlistVisibility}
+          onWatchlistChange={refreshWatchlistVisibility}
+        />
         <BlockedAccounts viewerId={userId} />
         <SettingsGroup title={SETTINGS_VIEW.export.label}>
           <SettingsRow
@@ -1776,8 +1894,16 @@ export default function SettingsScreen() {
       {feedbackType && userId && user && (
         <FeedbackModal userId={userId} userEmail={user.email ?? ''} initialType={feedbackType} onClose={() => setFeedbackType(null)} />
       )}
-      {showImport && userId && (
-        <ImportHistoryModal userId={userId} onClose={() => setShowImport(false)} />
+      {showLetterboxdImport && userId && (
+        <ImportHistoryModal
+          userId={userId}
+          entry={IMPORT_ENTRY_POINTS.IMPORT_PAGE}
+          initialPlatform="letterboxd"
+          onClose={() => { setShowLetterboxdImport(false); refreshLetterboxdPrompt(); }}
+        />
+      )}
+      {reviewJob && userId && (
+        <ImportHistoryModal userId={userId} entry={IMPORT_ENTRY_POINTS.SETTINGS} reviewJob={reviewJob} onClose={() => setReviewJob(null)} />
       )}
       {showDeleteAccount && (
         <ConfirmPhraseModal
@@ -1915,6 +2041,25 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowDescription: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
   rowValue: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, maxWidth: 160 },
+  wtBlock: {
+    paddingHorizontal: spacing.lg, paddingVertical: 14, gap: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
+  },
+  wtLabel: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textSecondary },
+  wtOption: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },
+  wtRadio: {
+    width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  wtRadioOn: { borderColor: colors.accent },
+  wtRadioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
+  wtNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, lineHeight: 18, color: colors.textMuted },
+  wtPerson: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  wtPersonText: { flex: 1, minWidth: 0 },
+  wtPartner: { gap: spacing.sm, paddingTop: spacing.sm },
+  wtPartnerBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  wtShare: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, minHeight: 44 },
+  wtMuted: { color: colors.textMuted },
 
   // Appearance segmented rail — mirrors web .settings-theme-tabs
   themeTabs: {

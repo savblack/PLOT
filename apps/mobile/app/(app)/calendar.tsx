@@ -16,6 +16,8 @@ import { useCalendarEvents, CalendarEvent } from '../../hooks/useCalendarEvents'
 import { dateToLocalStr, localDateStr } from '@plot/core/date.js';
 import { getCalendarRelativeLabel, msUntilNextLocalMidnight } from '@plot/core/calendar.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { displayPosterPath } from '@plot/core/artwork.js';
+import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -73,7 +75,8 @@ const EVENT_LABELS: Record<string, string> = {
 function EventRow({ event, onPress }: { event: CalendarEvent; onPress?: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const img    = posterUrl(event.item.poster_path, 'w92');
+  const art = useUserArtwork();
+  const img    = posterUrl(displayPosterPath(art.apply(event.item)), 'w92');
   const title  = event.item.title || 'Unknown';
   const chip   = event.label || EVENT_LABELS[event.type] || event.type;
   const chipBg = EVENT_COLORS(colors)[event.type] || colors.textMuted;

@@ -45,6 +45,25 @@ are fictional placeholders; posters are colour blocks, not TMDB artwork.
   by Sam and Priya too" → the picker. Only shown for people you already
   watch together with.
 
+## Free and Premium views (Oct 2026 redesign)
+
+Canvas: https://claude.ai/artifact/5eBwGMmLa6fQh7PWraSEuW (web and mobile boards
+for the start page and the hub, Free and Premium). Each screen has one dark
+"ink" card holding the one primary action, and grouped lists below it.
+- Start page (nobody to watch with yet): hero with search, invite link and
+  example pairing; "Start with people you follow" with overlap counts; the
+  demo. Free adds one Premium card; Premium gets a dismissible green welcome
+  instead. No "How it works" steps and no "Got an invite?" banner.
+- Hub (has partners): Free with everyone waiting shows "Decide what to
+  watch." and Get Premium; partners are tagged "Needs Premium" and aren't
+  links (the overlap page is locked). Premium shows Who's watching? chips
+  (first partner preselected) and Decide with Sam / See group matches. Side
+  column (stacked on mobile): invite search and link, up to 3 suggested.
+- Web: `WatchTogetherStart.jsx`, `WatchTogetherView.jsx`, `useInviteShare.js`;
+  stories `Watch together/Start` and `Watch together/Hub`. Mobile:
+  `components/watch/WatchTogetherStart.tsx`, `WatchHub.tsx`, ink pieces in
+  `WatchChrome.tsx`.
+
 ## Ways in
 
 - Nav item Watch together (`/together`) next to Pick for Me, with a Premium
@@ -167,7 +186,7 @@ Shared lists (from A)
 
 ## Implementation status
 
-Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
+Web and mobile, behind `SHOW_WATCH_TOGETHER`. Both flags are true. Web has been on since PLO-515. Mobile turned on in PR 1345 (squash `588dcbfcd`, 2026-10-16).
 
 - Phase 1 (`20260927100000_watch_together.sql`): requests, pairings, share
   full watchlist, shared titles for two people or a group, Suggested, hub,
@@ -224,4 +243,4 @@ Web only, behind `SHOW_WATCH_TOGETHER` in `apps/web/src/launchFeatures.js`.
   `add_shared_list_member` now also needs a Premium owner. Web:
   `CollaborativeListParts.jsx`, `ListInvitePage.jsx`; rules in
   `packages/core/listInvites.js`. No owner notification on join yet.
-- Not built yet: mobile.
+- Mobile (PR 1345): drawer, profile tile, shared lists, related alerts, the compare link, and Settings › Data & privacy. That privacy group is who can send requests, stop, share the full watchlist, and reset the invite link. Inviting and pairing stay free. Deciding still needs Premium on at least one side. There is no Expo OTA, so phones already installed show this after the next build. Home shows a dismissible Watch together card until that device dismisses it. A two-account pass is still open.

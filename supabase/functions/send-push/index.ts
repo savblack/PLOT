@@ -7,6 +7,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
+import { errorText, reportLog } from '../_shared/posthogLog.ts';
 import { PUSH_LOOK_BACK_DAYS, PUSH_TYPES, pushAction, pushBlocked, pushMessage } from '../_shared/pushDelivery.js';
 
 type Db = SupabaseClient<Database>;
@@ -37,16 +38,6 @@ async function preferences(db: Db) {
     for (const row of data ?? []) out.set(row.user_id, row);
     if (!data || data.length < PAGE) return out;
   }
-}
-
-async function premiumUsers(db: Db, ids: string[]) {
-  const out = new Set<string>();
-  for (const group of chunks(ids, 200)) {
-    const { data, error } = await db.rpc('premium_user_ids', { p_users: group });
-    if (error) throw new Error(`premium_user_ids failed: ${error.message}`);
-    for (const id of data ?? []) out.add(id);
-  }
-  return out;
 }
 
 async function tokens(db: Db, users: string[]) {
@@ -145,8 +136,8 @@ Deno.serve(async req => {
   const since = new Date(started - PUSH_LOOK_BACK_DAYS * 86_400_000).toISOString();
   try {
     const prefs = await preferences(db);
-    const premium = await premiumUsers(db, [...prefs.keys()]);
-    const eligible = [...prefs.keys()].filter(id => premium.has(id));
+    // Push is Free: everyone who switched it on is eligible.
+    const eligible = [...prefs.keys()];
     const devices = await tokens(db, eligible);
     const rows = await notifications(db, eligible.filter(id => devices.has(id)), since);
     const mutes = await muted(db, rows);
@@ -181,7 +172,7 @@ Deno.serve(async req => {
         tickets = Array.isArray(body?.data) ? body.data : [];
         if (tickets.length !== claimed.length) throw new Error('Expo ticket count mismatch');
       } catch (error) {
-        console.error('send-push request failed:', error instanceof Error ? error.message : 'unknown error');
+        reportLog('send-push', 'error', `send-push request failed: ${errorText(error)}`);
         for (const c of claimed) await db.from('push_deliveries').update({ status: 'failed', error: 'provider request failed' })
           .eq('notification_id', c.notification.id).eq('token', c.token.token);
         failed += claimed.length;
@@ -207,7 +198,7 @@ Deno.serve(async req => {
     }
     return json({ ok: true, candidates: candidates.length, selected: chosen.length, sent, failed, disabled });
   } catch (error) {
-    console.error('send-push failed:', error);
+    reportLog('send-push', 'error', `send-push failed: ${errorText(error)}`);
     return json({ ok: false, error: 'Push delivery failed' }, 500);
   }
 });

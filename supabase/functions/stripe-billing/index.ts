@@ -21,6 +21,8 @@ import { CheckoutPendingError, subscriptionCheckout } from '../_shared/checkout.
 import { checkoutClosedToAll, checkoutConfigLog, checkoutConfigStatus, checkoutPlan, matchesPremiumPrice, billingSettingsUrl, hasStripeSubscription, mayStartCheckout } from '../_shared/billingPolicy.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
+import { checkoutEventUuid, checkoutSessionProperties } from '../_shared/checkoutAnalytics.ts';
+import { errorText, reportLog } from '../_shared/posthogLog.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
 // arbitrary email clients and marketing embeds), this is only ever called
@@ -31,7 +33,7 @@ function allowedOrigin(origin: string | null) {
   try {
     const { hostname, protocol } = new URL(origin);
     if (protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) return origin;
-    if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv') || hostname.endsWith('.vercel.app')) return origin;
+    if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv')) return origin;
   } catch { /* use canonical origin */ }
   return 'https://app.theplot.tv';
 }
@@ -65,13 +67,15 @@ async function captureCheckoutFailure(userId: string, reason: string, plan: stri
     await capturePostHogEvent('premium_checkout_failed', userId, {
       channel: 'stripe',
       checkout_type: 'subscription',
+      livemode: /^(sk|rk)_live_/.test(Deno.env.get('STRIPE_SECRET_KEY') ?? ''),
       reason,
+      stage: reason === 'checkout_pending' ? 'pending' : reason === 'invalid_plan' ? 'validation' : 'creation',
       plan,
     });
   } catch (err) {
     // Analytics must never change the billing response or cause a Stripe
     // checkout attempt to be retried.
-    console.error(`stripe-billing: checkout failure capture failed for ${userId}: ${(err as Error).message}`);
+    reportLog('stripe-billing', 'error', `stripe-billing: checkout failure capture failed for ${userId}: ${errorText(err)}`, { distinctId: userId });
   }
 }
 
@@ -139,7 +143,10 @@ Deno.serve(async (req) => {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (billingError) return json({ error: 'Could not load billing account' }, 503);
+  if (billingError) {
+    if (action === 'checkout') await captureCheckoutFailure(user.id, 'billing_account_unavailable');
+    return json({ error: 'Could not load billing account' }, 503);
+  }
 
   if (action === 'checkout') {
     const plan = checkoutPlan(await req.json().catch(() => null));
@@ -170,16 +177,15 @@ Deno.serve(async (req) => {
       try {
         if (result.destination === 'checkout') {
           await capturePostHogEvent('premium_checkout_started', user.id, {
-            channel: 'stripe',
-            checkout_type: 'subscription',
+            ...checkoutSessionProperties(result.session),
             plan,
             price_id: configuredPrice.id,
             amount: typeof configuredPrice.unit_amount === 'number' ? configuredPrice.unit_amount / 100 : null,
             currency: normaliseCurrency(configuredPrice.currency),
-          });
+          }, new Date(result.session.created * 1000).toISOString(), await checkoutEventUuid('premium_checkout_started', result.session.id));
         }
       } catch (err) {
-        console.error(`stripe-billing: PostHog capture failed for ${user.id}: ${(err as Error).message}`);
+        reportLog('stripe-billing', 'error', `stripe-billing: PostHog capture failed for ${user.id}: ${errorText(err)}`, { distinctId: user.id });
       }
       return json({ url: result.url });
     } catch (err) {
@@ -188,7 +194,7 @@ Deno.serve(async (req) => {
         return json({ error: err.message }, 409);
       }
       await captureCheckoutFailure(user.id, 'stripe_error', plan);
-      console.error('Checkout session failed:', (err as Error).message);
+      reportLog('stripe-billing', 'error', `Checkout session failed: ${errorText(err)}`, { distinctId: user.id });
       return json({ error: 'Could not start checkout' }, 500);
     }
   }
@@ -200,7 +206,7 @@ Deno.serve(async (req) => {
     try {
       return json({ url: await createPortalUrl(billing.stripe_customer_id) });
     } catch (err) {
-      console.error('Portal session failed:', (err as Error).message);
+      reportLog('stripe-billing', 'error', `Portal session failed: ${errorText(err)}`, { distinctId: user.id });
       return json({ error: 'Could not open billing portal' }, 500);
     }
   }
@@ -242,7 +248,7 @@ Deno.serve(async (req) => {
       });
       return json({ url: session.url });
     } catch (err) {
-      console.error('Tip checkout session failed:', (err as Error).message);
+      reportLog('stripe-billing', 'error', `Tip checkout session failed: ${errorText(err)}`, { distinctId: user.id });
       return json({ error: 'Could not start tip checkout' }, 500);
     }
   }

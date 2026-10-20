@@ -1,11 +1,10 @@
-import { ReactNode, useEffect, useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { personName, unlockedPartners } from '@plot/core/watchTogether.js';
 import { useWatchTogetherSuggestions, startWatchTogetherSession } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
-import { SHOW_PREMIUM_PRICING } from '../../lib/launchFeatures';
 import { COMMON } from '@plot/core/copy/common.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { supabase } from '@plot/core/supabase.js';
@@ -14,10 +13,10 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { readStorage, writeStorage, removeStorage } from '../../lib/storage';
 import WatchTogetherStart from './WatchTogetherStart';
-import { InviteLinkCard } from './InviteLinkCard';
+import { InviteLinkCard, useInviteShare } from './InviteLinkCard';
 import { AcceptSheet } from './AcceptSheet';
 import {
-  ButtonRow, ErrorNote, Note, PageTitle, PersonFace, PersonRow, PrimaryButton, SecondaryButton, SectionLabel, WatchPage, openPremium,
+  ButtonRow, Chip, ErrorNote, InkCard, InkText, InkTitle, ListCard, Note, PageTitle, PersonRow, PrimaryButton, SecondaryButton, SectionLabel, WatchPage, WhoChip, openPremium,
 } from './WatchChrome';
 import { TogetherApi, WtPerson, asPeople, asResult, errorText, sessionIdFrom, useTogether } from './watchModel';
 
@@ -34,6 +33,9 @@ export function WatchHub() {
   const news = useUpgradeNews(together.partners, together.loading, premium);
   const [reviewing, setReviewing] = useState<WtPerson | null>(null);
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<string[] | null>(null);
+  const [sent, setSent] = useState<string[]>([]);
+  const { url: linkUrl, send: shareLink } = useInviteShare();
   const requestCount = together.incoming.length + together.outgoing.length;
 
   if (together.loading || suggestions.loading) {
@@ -66,81 +68,128 @@ export function WatchHub() {
     setBusy(false);
     setReviewing(null);
   };
+  const decidable = together.partners.filter(p => p.can_decide);
+  const locked = !decidable.length;
+  // The first partner starts selected so Decide works in one tap.
+  const pickedIds = picked ?? decidable.slice(0, 1).map(p => p.id);
+  const chosen = decidable.filter(p => pickedIds.includes(p.id));
+  const togglePick = (id: string) => setPicked(pickedIds.includes(id) ? pickedIds.filter(x => x !== id) : [...pickedIds, id]);
+  const go = async () => {
+    if (chosen.length === 1) await decideWith(chosen[0]);
+    else if (chosen.length > 1) router.push(`/(app)/together/with/${chosen.map(p => encodeURIComponent(p.username)).join(',')}` as Href);
+  };
+  const decideLabel = chosen.length === 1 ? T.hub.decideWith(personName(chosen[0])) : chosen.length > 1 ? T.overlap.groupAction : T.session.start;
+  const sendInvite = async (person: WtPerson) => {
+    const result = await together.send(person.id);
+    if (result.ok) { setSent(prev => [...prev, person.id]); void suggestions.refresh(); }
+  };
+  const railPeople = suggested.filter(p => !sent.includes(p.id)).slice(0, 3);
+  const heading = (text: string) => (
+    <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.6, color: colors.textPrimary }}>{text}</Text>
+  );
 
   return (
     <WatchPage>
       <PageTitle>{T.hub.title}</PageTitle>
       {news.unlocked.length > 0 && (
-        <View style={{ gap: spacing.sm }}>
-          <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary }}>{T.hub.upgradedTitle}</Text>
-          <Note>{T.hub.upgradedBody(news.unlocked.map(personName))}</Note>
+        <View style={{ gap: spacing.sm, padding: spacing.md, borderRadius: radii.md, backgroundColor: colors.accentSecondaryFill }}>
+          <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.onAccentSecondaryFill }}>{T.hub.upgradedTitle}</Text>
+          <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.onAccentSecondaryFill }}>{T.hub.upgradedBody(news.unlocked.map(personName))}</Text>
           <ButtonRow>
             <PrimaryButton label={T.hub.decideWith(personName(news.unlocked[0]))} onPress={() => decideWith(news.unlocked[0])} />
             <SecondaryButton label={T.hub.dismiss} onPress={news.dismiss} />
           </ButtonRow>
         </View>
       )}
-      <View style={{ gap: spacing.sm }}>
-        <PageTitle>{T.hub.decideTitle}</PageTitle>
-        <Note>{T.hub.decideBody}</Note>
-        <PrimaryButton label={T.hub.whosWatching} onPress={() => router.push('/(app)/together/pick' as Href)} disabled={!together.partners.length} />
-      </View>
-      {requestCount > 0 && (
-        <View style={{ gap: spacing.sm }}>
-          <SectionLabel>{T.hub.requests}</SectionLabel>
-          {together.incoming.map(person => (
-            <PersonRow
-              key={person.id}
-              person={person}
-              note={T.requests.wantsTo}
-              trailing={(
-                <ButtonRow>
-                  <SecondaryButton label={T.requests.decline} onPress={() => answer(person, false)} disabled={busy} />
-                  <PrimaryButton label={T.requests.review} onPress={() => setReviewing(person)} disabled={busy} />
-                </ButtonRow>
-              )}
-            />
-          ))}
-          {together.outgoing.map(person => (
-            <PersonRow
-              key={person.id}
-              person={person}
-              note={T.requests.sent}
-              trailing={<SecondaryButton label={T.requests.cancel} onPress={() => together.cancel(person.id)} />}
-            />
-          ))}
-        </View>
+      {locked ? (
+        <InkCard>
+          <InkTitle>{T.hub.lockedHeading}</InkTitle>
+          <InkText>{T.hub.lockedBody(together.partners.map(personName))}</InkText>
+          <PrimaryButton label={T.start.getPremium} onPress={() => openPremium(router)} />
+          <InkText tone="note">{PLANS_PAGE.premium.priceSummary}</InkText>
+        </InkCard>
+      ) : (
+        <InkCard>
+          <InkTitle>{T.hub.whosWatching}</InkTitle>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {decidable.map(person => <WhoChip key={person.id} person={person} on={pickedIds.includes(person.id)} onPress={() => togglePick(person.id)} />)}
+          </View>
+          <PrimaryButton label={decideLabel} onPress={go} disabled={!chosen.length} />
+          <InkText tone="note">{[
+            chosen.length === 1 ? `${T.hub.bothSaved(chosen[0].overlap_count ?? 0)}.` : '',
+            decidable.length > 1 && chosen.length < 2 ? T.hub.morePeople : '',
+          ].filter(Boolean).join(' ')}</InkText>
+        </InkCard>
       )}
       <View style={{ gap: spacing.sm }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <SectionLabel>{T.hub.partners}</SectionLabel>
-          <SecondaryButton label={T.hub.invite} onPress={() => router.push('/(app)/together/invite' as Href)} />
-        </View>
+        {heading(T.hub.partners)}
         {together.partners.length === 0 ? (
           <View style={{ gap: spacing.xs }}>
             <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary }}>{T.hub.noPartnersTitle}</Text>
             <Note>{T.hub.noPartnersBody}</Note>
           </View>
-        ) : together.partners.map(person => (
-          <PersonRow
-            key={person.id}
-            person={person}
-            note={person.can_decide ? T.hub.bothSaved(person.overlap_count ?? 0) : T.hub.lockedNote}
-            onPress={() => router.push(`/(app)/together/with/${encodeURIComponent(person.username)}` as Href)}
-            trailing={news.unlocked.some(p => p.id === person.id) ? <SectionLabel>{T.hub.unlocked}</SectionLabel> : undefined}
-          />
-        ))}
+        ) : (
+          <ListCard>
+            {together.partners.map(person => person.can_decide ? (
+              <PersonRow
+                key={person.id}
+                person={person}
+                note={T.hub.bothSaved(person.overlap_count ?? 0)}
+                onPress={() => router.push(`/(app)/together/with/${encodeURIComponent(person.username)}` as Href)}
+                trailing={news.unlocked.some(p => p.id === person.id) ? <Chip label={T.hub.unlocked} tone="ok" /> : undefined}
+              />
+            ) : (
+              <PersonRow key={person.id} person={person} note={T.hub.bothSaved(person.overlap_count ?? 0)} trailing={<Chip label={T.hub.needsPremium} />} />
+            ))}
+          </ListCard>
+        )}
       </View>
-      {suggested.length > 0 && (
-        <Banner
-          title={T.hub.suggested}
-          note={T.hub.suggestedBody}
-          onPress={() => router.push('/(app)/together/invite' as Href)}
-          trailing={<FaceStack people={suggested} />}
-        />
+      {requestCount > 0 && (
+        <View style={{ gap: spacing.sm }}>
+          {heading(T.hub.requests)}
+          <ListCard>
+            {[
+              ...together.incoming.map(person => (
+                <PersonRow
+                  key={person.id}
+                  person={person}
+                  note={T.requests.wantsTo}
+                  trailing={(
+                    <ButtonRow>
+                      <SecondaryButton label={T.requests.decline} onPress={() => answer(person, false)} disabled={busy} />
+                      <PrimaryButton label={T.requests.review} onPress={() => setReviewing(person)} disabled={busy} />
+                    </ButtonRow>
+                  )}
+                />
+              )),
+              ...together.outgoing.map(person => (
+                <PersonRow
+                  key={person.id}
+                  person={person}
+                  note={T.requests.sent}
+                  trailing={<SecondaryButton label={T.requests.cancel} onPress={() => together.cancel(person.id)} />}
+                />
+              )),
+            ]}
+          </ListCard>
+        </View>
       )}
-      {!premium && together.partners.some(p => !p.can_decide) && (
-        <Banner title={T.locked.title} note={SHOW_PREMIUM_PRICING ? PLANS_PAGE.premium.priceSummary : T.hub.lockedNote} onPress={() => openPremium(router)} />
+      <View style={{ gap: spacing.sm, padding: spacing.lg, borderRadius: radii.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface }}>
+        <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.lg, letterSpacing: -0.4, color: colors.textPrimary }}>{T.hub.inviteSomeone}</Text>
+        <ButtonRow>
+          <SecondaryButton label={T.invite.search} onPress={() => router.push('/(app)/together/invite' as Href)} flex />
+          <SecondaryButton label={T.link.share} onPress={() => void shareLink('share')} disabled={!linkUrl} />
+        </ButtonRow>
+      </View>
+      {railPeople.length > 0 && (
+        <View style={{ gap: spacing.sm }}>
+          <SectionLabel>{T.hub.suggested}</SectionLabel>
+          <ListCard>
+            {railPeople.map(person => (
+              <PersonRow key={person.id} person={person} trailing={<SecondaryButton label={T.invite.invite} onPress={() => sendInvite(person)} />} />
+            ))}
+          </ListCard>
+        </View>
       )}
       {reviewing && (
         <AcceptSheet
@@ -152,31 +201,6 @@ export function WatchHub() {
         />
       )}
     </WatchPage>
-  );
-}
-
-function Banner({ title, note, onPress, trailing }: { title: string; note: string; onPress: () => void; trailing?: ReactNode }) {
-  const { colors } = useTheme();
-  return (
-    <TouchableOpacity onPress={onPress} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm }}>
-      <View style={{ flex: 1, gap: spacing.xs }}>
-        <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary }}>{title}</Text>
-        <Note>{note}</Note>
-      </View>
-      {trailing}
-    </TouchableOpacity>
-  );
-}
-
-function FaceStack({ people }: { people: WtPerson[] }) {
-  return (
-    <View style={{ flexDirection: 'row' }}>
-      {people.slice(0, 3).map((person, index) => (
-        <View key={person.id} style={{ marginLeft: index === 0 ? 0 : -8 }}>
-          <PersonFace person={person} size={28} />
-        </View>
-      ))}
-    </View>
   );
 }
 

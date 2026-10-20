@@ -7,13 +7,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
+import { reportLoadFailure, FAILED_LOADS } from '@plot/core/actionFailures.js';
 import { topRegionServices } from '@plot/core/onboardingSetup.js';
 import { REGIONS } from '@plot/core/regions.js';
 import { tmdb } from '../../lib/tmdb';
 import { Palette, fontFamily, fontSize, logoUrl, spacing, radii } from '../../lib/tokens';
+import { useImportJobs, importPillFor } from '@plot/core/importJobs.js';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAppData } from '../../contexts/AppDataContext';
 import { useOnboardingFlow, type PickedService } from '../../contexts/OnboardingFlowContext';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
+import { ImportPill } from '../../components/ImportSourceLanes';
 
 const F = ONBOARDING_FLOW;
 
@@ -23,6 +27,9 @@ export default function Services() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const flow = useOnboardingFlow();
   const { region, setServices } = flow;
+  // A background import started on step 1 keeps its one-line pill here.
+  const { user } = useAppData();
+  const jobs = useImportJobs(user?.id ?? null);
   const [list, setList] = useState<PickedService[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [picking, setPicking] = useState(false);
@@ -34,11 +41,19 @@ export default function Services() {
     setList(null);
     tmdb.getWatchProvidersForRegion('tv', region).then((data: { results?: unknown[] } | null) => {
       if (!alive) return;
-      if (!data?.results) { setFailed(true); setList([]); return; }
+      if (!data?.results) {
+        reportLoadFailure(FAILED_LOADS.ONBOARDING_SERVICES, null);
+        setFailed(true); setList([]); return;
+      }
       const top = topRegionServices(data.results as never);
       setList(top);
       setServices(top);
-    }).catch(() => { if (alive) { setFailed(true); setList([]); } });
+    }).catch(error => {
+      if (alive) {
+        reportLoadFailure(FAILED_LOADS.ONBOARDING_SERVICES, error);
+        setFailed(true); setList([]);
+      }
+    });
     return () => { alive = false; };
   }, [region, setServices]);
 
@@ -62,6 +77,7 @@ export default function Services() {
       onSkip={() => build(true)}
       error={flow.saveError}
     >
+      <ImportPill pill={importPillFor(jobs.current, jobs.queued)} />
       {failed ? (
         <Text style={styles.region}>{F.services.loadError}</Text>
       ) : !list ? (

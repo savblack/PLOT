@@ -2,11 +2,12 @@ import { usePlexSource } from '@plot/core/usePlexSource.js';
 import { TRACKING } from '@plot/core/copy/tracking.js';
 import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
-import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
-import { useState, useCallback, useMemo } from 'react';
+import { needsDuplicateReview, leftOutWatchSummary, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
+import { letterboxdLeaveDecision } from '@plot/core/letterboxdImportPrompt.js';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  Modal, Alert, ActivityIndicator, StyleSheet, FlatList,
+  Modal, Alert, ActivityIndicator, StyleSheet, FlatList, Linking, AppState,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -19,7 +20,11 @@ import {
   resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, chooseImportMatch, reviewImportDuplicates,
   createImportReporter, IMPORT_ENTRY_POINTS, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
+import { suppressFirstWinForImport } from '../lib/firstWinCard';
+import { readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
+import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
+import { clearLetterboxdImport, rememberLetterboxdImport } from '../lib/letterboxdImportPrompt';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useMediaSync } from '../hooks/useMediaSync';
@@ -168,6 +173,8 @@ interface Props {
   entry?: string;
   /** Open straight on this platform's source step (onboarding's switching-apps pick). */
   initialPlatform?: Platform;
+  /** Finish a background import: open the preview on the entries it left for review. */
+  reviewJob?: { id: string; user_id: string; source: string } | null;
   /** An import finished, so the first-run card can tick. `importedCount` is
    *  the number of history rows written. The platform id is `trakt` or
    *  `trakt-export` when that history came from Trakt. */
@@ -179,7 +186,7 @@ export default function ImportHistoryModal(props: Props) {
   return <AccountImportHistoryModal key={props.userId} {...props} />;
 }
 
-function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, initialPlatform, onImported }: Props) {
+function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, initialPlatform, reviewJob, onImported }: Props) {
   const importReport = useMemo(() => createImportReporter({ entry }), [entry]);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -215,16 +222,74 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
   const [documentReport, setDocumentReport] = useState([] as string[]);
   const [alreadyCount, setAlreadyCount] = useState(0);
   const [pushedCount, setPushedCount] = useState(0);
+  const letterboxdVisit = useRef({ active: false, uploaded: false, exportOpened: false, reported: false });
+  const letterboxdLeaveToken = useRef(0);
+  const letterboxdPicking = useRef(false);
+  // A background import's leftovers (no confident match, or a possible
+  // duplicate) go straight to the preview step.
+  useEffect(() => {
+    if (!reviewJob) return undefined;
+    let alive = true;
+    readImportJobReview(reviewJob).then(entries => {
+      if (!alive) return;
+      if (!entries.length) { Alert.alert(IMPORT_JOBS.review.title(importSourceName(reviewJob.source)), IMPORT_JOBS.review.missing); return; }
+      setPlatform(reviewJob.source as Platform);
+      setExistingRows([]);
+      setResolved(entries as ResolvedEntry[]);
+      setStep('preview');
+    });
+    return () => { alive = false; };
+  }, [reviewJob]);
 
   const handleSelectPlatform = (p: Platform) => {
+    importReport.selected(p);
     setPlatform(p);
     setStep(availablePlatforms.find(item => item.id === p)?.kind === 'connection' ? 'connection' : 'pick-file');
+  };
+
+  useEffect(() => {
+    const onStep = step === 'pick-file' && platform === 'letterboxd';
+    if (!onStep) return undefined;
+    if (!letterboxdVisit.current.active && !letterboxdVisit.current.uploaded) {
+      letterboxdVisit.current = { active: true, uploaded: false, exportOpened: false, reported: false };
+    }
+    letterboxdVisit.current.active = true;
+    if (!letterboxdVisit.current.uploaded) void rememberLetterboxdImport(userId);
+    const token = ++letterboxdLeaveToken.current;
+    const sub = AppState.addEventListener('change', next => {
+      if (next !== 'background' || letterboxdPicking.current) return;
+      const decision = letterboxdLeaveDecision(letterboxdVisit.current);
+      if (!decision) return;
+      letterboxdVisit.current.reported = true;
+      importReport.abandoned(decision);
+    });
+    return () => {
+      sub.remove();
+      const tokenAtLeave = token;
+      setTimeout(() => {
+        // A StrictMode remount bumps the token before this runs. The read has to see that.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- compare against the latest visit, not this effect's token
+        if (letterboxdLeaveToken.current !== tokenAtLeave) return;
+        letterboxdVisit.current.active = false;
+        const decision = letterboxdLeaveDecision(letterboxdVisit.current);
+        if (!decision) return;
+        letterboxdVisit.current.reported = true;
+        importReport.abandoned(decision);
+      }, 0);
+    };
+  }, [step, platform, userId, importReport]);
+
+  const openLetterboxdExport = () => {
+    letterboxdVisit.current.exportOpened = true;
+    importReport.exportOpened();
+    void Linking.openURL(IMPORT_VIEW.letterboxdExportUrl);
   };
 
   const handlePickFile = useCallback(async () => {
     if (!platform) return;
     const cfg = PLATFORMS.find(p => p.id === platform)!;
     let started = false;
+    letterboxdPicking.current = true;
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: cfg.accept ?? '*/*',
@@ -232,12 +297,14 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
         multiple: ['tvtime', 'trakt-export', 'letterboxd'].includes(platform),
       });
       if (result.canceled || !result.assets?.[0]) return;
+      if (platform === 'letterboxd') letterboxdVisit.current.uploaded = true;
 
       const files = result.assets.map(asset => {
         const file = new FileSystem.File(asset.uri);
         return { name: asset.name, size: asset.size, text: () => file.text(), arrayBuffer: () => file.arrayBuffer() };
       });
       const document = await readImportSelection(platform === 'trakt-export' ? 'trakt' : platform, files);
+      if (platform === 'letterboxd') void clearLetterboxdImport(userId);
       const raw = document.entries;
       setDocumentReport(importReportMessages(document));
       if (!raw.length && (document.warnings.length || document.notImported.length)) { setResolved([]); setStep('preview'); return; }
@@ -303,6 +370,8 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
         reason: started ? IMPORT_FAILURE_REASONS.MATCH_FAILED : IMPORT_FAILURE_REASONS.UNREADABLE_FILE,
       });
       setStep('pick-file');
+    } finally {
+      letterboxdPicking.current = false;
     }
   }, [platform, userId, importReport]);
 
@@ -335,7 +404,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
   }, [rowByIndex, plannedRows]);
 
   const matched = useMemo(
-    () => resolved.filter((r: ResolvedEntry) => r.status === 'matched' && r.listSelected !== false),
+    () => resolved.filter((r: ResolvedEntry) => r.status === 'matched' && r.listSelected !== false && !leftOutWatchSummary(r)),
     [resolved],
   );
 
@@ -348,7 +417,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
       return;
     }
 
-    setImportTotal(getConfig().importEventsEnabled ? resolved.filter(r => r.status === 'matched').length : rows.length);
+    setImportTotal(getConfig().importEventsEnabled ? resolved.filter(r => r.status === 'matched' && !leftOutWatchSummary(r)).length : rows.length);
     setImportDone(0);
     setStep('importing');
 
@@ -367,9 +436,14 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     if (failed) {
       Alert.alert(IMPORT_VIEW.partialFailureHeading, IMPORT_VIEW.partialFailure(failed));
     }
-    if (inserted > 0 && platform) onImported?.(platform, inserted);
+    if (inserted > 0 && platform) {
+      onImported?.(platform, inserted);
+      if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
+    }
+    // A background job's leftovers are done with: drop the review file.
+    if (reviewJob) await finishImportJobReview(reviewJob);
     setStep('done');
-  }, [plan, resolved, userId, platform, importReport, onImported]);
+  }, [plan, resolved, userId, platform, importReport, onImported, reviewJob]);
 
   const connection = platform === 'plex' ? plex : platform === 'trakt' ? trakt : platform === 'simkl' ? simkl : null;
   const connectionName = platform === 'plex' ? 'Plex' : platform === 'trakt' ? 'Trakt' : 'Simkl';
@@ -388,8 +462,9 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     setAlreadyCount(result.alreadyCount || 0);
     setPushedCount(result.pushedCount || 0);
     onImported?.(platform, result.importedCount || 0);
+    if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
     setStep('done');
-  }, [connection, platform, importReport, onImported]);
+  }, [connection, platform, importReport, onImported, userId]);
 
   const reset = () => {
     setStep('pick-platform');
@@ -508,7 +583,18 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
             <Text style={styles.stepTitle}>{PLATFORMS.find(p => p.id === platform)!.name}</Text>
             <View style={styles.hintBox}>
               <Text style={styles.hintLabel}>How to export your data</Text>
-              <Text style={styles.hintText}>{PLATFORMS.find(p => p.id === platform)!.hint}</Text>
+              {platform === 'letterboxd' ? (
+                <>
+                  {IMPORT_VIEW.letterboxdSteps.map((item, index) => (
+                    <Text key={item} style={styles.hintText}>{index + 1}. {item}</Text>
+                  ))}
+                  <TouchableOpacity onPress={openLetterboxdExport} accessibilityRole="link" style={styles.exportLink}>
+                    <Text style={styles.exportLinkText}>{IMPORT_VIEW.letterboxdExportLink}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={styles.hintText}>{PLATFORMS.find(p => p.id === platform)!.hint}</Text>
+              )}
             </View>
             <TouchableOpacity style={styles.filePicker} onPress={handlePickFile} activeOpacity={0.8}>
               <Svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -546,6 +632,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
             </View>
             <FlatList
               ListHeaderComponent={<View>
+            {reviewJob && <View style={styles.reviewBanner}><Text style={styles.previewTitle}>{IMPORT_JOBS.review.title(importSourceName(reviewJob.source))}</Text><Text style={styles.previewMeta}>{IMPORT_JOBS.review.body(resolved.length)}</Text></View>}
             {importListSelections(resolved).map(list => <View key={list.destination.key}>
               <Text style={styles.previewMeta}>{IMPORT_VIEW.listPreview(list.destination)}</Text>
               <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: list.listSelected !== false }} onPress={() => setResolved(rows => rows.map(row => row.destination?.key === list.destination.key ? { ...row, listSelected: list.listSelected === false } : row))}><Text style={styles.previewTitle}>{list.listSelected !== false ? '☑ ' : '☐ '}{IMPORT_VIEW.selectList}</Text></TouchableOpacity>
@@ -563,13 +650,13 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
                     <Text style={styles.previewTitle}>{item.tmdbTitle || item.title}</Text>
                     <Text style={styles.previewMeta}>{item.annotation ? IMPORT_VIEW.annotationLabel(item) : item.date || IMPORT_VIEW.unknownDate}</Text>
                     {!item.annotation && item.episodeNumber != null && <Text style={styles.previewMeta}>{IMPORT_VIEW.episodeLabel(item.seasonNumber, item.episodeNumber)}</Text>}
-                    <Text style={styles.previewMeta}>{item.status !== 'matched' ? IMPORT_VIEW.notMatched : (getConfig().importEventsEnabled ? alreadyImportedEvent(item) : !isNew(index)) ? (item.annotation ? IMPORT_VIEW.annotationAlreadySaved : IMPORT_VIEW.alreadyInHistory) : IMPORT_VIEW.newBadge}</Text>
+                    {!leftOutWatchSummary(item) && <Text style={styles.previewMeta}>{item.status !== 'matched' ? IMPORT_VIEW.notMatched : (getConfig().importEventsEnabled ? alreadyImportedEvent(item) : !isNew(index)) ? (item.annotation ? IMPORT_VIEW.annotationAlreadySaved : IMPORT_VIEW.alreadyInHistory) : IMPORT_VIEW.newBadge}</Text>}
                     {item.reason === 'episode_identity_required' && <Text style={styles.previewMeta}>{IMPORT_VIEW.episodeIdentityRequired}</Text>}
-                    {needsDuplicateReview(item) && <View>
-                      <Text style={styles.previewMeta}>{item.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</Text>
-                      <TouchableOpacity accessibilityRole="button" onPress={() => setResolved(current => current.map((entry, i) => i === index ? { ...entry, duplicateDecision: 'keep' } : entry))}>
+                    {(needsDuplicateReview(item) || leftOutWatchSummary(item)) && <View>
+                      <Text style={styles.previewMeta}>{leftOutWatchSummary(item) && !getConfig().importEventsEnabled ? IMPORT_VIEW.overlappingSummaryOmitted : item.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</Text>
+                      {(needsDuplicateReview(item) || getConfig().importEventsEnabled) && <TouchableOpacity accessibilityRole="button" onPress={() => setResolved(current => current.map((entry, i) => i === index ? { ...entry, duplicateDecision: 'keep' } : entry))}>
                         <Text style={[styles.previewMeta, { color: colors.accent, paddingVertical: spacing.sm }]}>{IMPORT_VIEW.keepSeparateWatch}</Text>
-                      </TouchableOpacity>
+                      </TouchableOpacity>}
                     </View>}
                     {item.duplicateDecision === 'keep' && <Text style={styles.previewMeta}>{IMPORT_VIEW.duplicateConfirmed}</Text>}
                     {!!item.candidates?.length && (
@@ -721,6 +808,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   hintLabel: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textSecondary },
   hintText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
+  exportLink: { alignSelf: 'flex-start', marginTop: spacing.sm },
+  exportLinkText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.danger, lineHeight: 20, marginBottom: spacing.md },
 
   filePicker: {
@@ -766,6 +855,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   previewPosterFallback: {},
   previewTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   previewMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  reviewBanner: { padding: spacing.md, marginBottom: spacing.sm, borderRadius: radii.md, backgroundColor: colors.accentSecondaryDim },
   alreadyBadge: {
     backgroundColor: colors.surfaceSunken, borderRadius: radii.pill,
     paddingHorizontal: spacing.sm, paddingVertical: 3,
