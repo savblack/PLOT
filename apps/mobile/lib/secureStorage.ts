@@ -21,24 +21,41 @@ async function encrypt(key: string, value: string): Promise<string> {
 }
 
 async function decrypt(key: string, value: string): Promise<string | null> {
-  const encryptionKeyHex = await SecureStore.getItemAsync(key);
+  let encryptionKeyHex: string | null;
+  try {
+    encryptionKeyHex = await SecureStore.getItemAsync(key);
+  } catch {
+    // Unsigned simulator builds throw errSecMissingEntitlement instead of
+    // returning null. Treat that as "no key" so a plaintext session can load.
+    return null;
+  }
   if (!encryptionKeyHex) return null;
 
-  const cipher = new aesjs.ModeOfOperation.ctr(aesjs.utils.hex.toBytes(encryptionKeyHex), new aesjs.Counter(1));
-  const decryptedBytes = cipher.decrypt(aesjs.utils.hex.toBytes(value));
-
-  return aesjs.utils.utf8.fromBytes(decryptedBytes);
+  try {
+    const cipher = new aesjs.ModeOfOperation.ctr(aesjs.utils.hex.toBytes(encryptionKeyHex), new aesjs.Counter(1));
+    const decryptedBytes = cipher.decrypt(aesjs.utils.hex.toBytes(value));
+    return aesjs.utils.utf8.fromBytes(decryptedBytes);
+  } catch {
+    return null;
+  }
 }
 
 export const secureSessionStorage = {
   async getItem(key: string) {
-    const encrypted = await AsyncStorage.getItem(key);
-    if (!encrypted) return null;
-    return decrypt(key, encrypted);
+    const stored = await AsyncStorage.getItem(key);
+    if (!stored) return null;
+    // Plaintext JSON is the fallback written when the keychain throws.
+    // Check it before SecureStore, which can hang on an unsigned simulator build.
+    if (stored.startsWith('{')) return stored;
+    return decrypt(key, stored);
   },
   async setItem(key: string, value: string) {
-    const encrypted = await encrypt(key, value);
-    await AsyncStorage.setItem(key, encrypted);
+    try {
+      const encrypted = await encrypt(key, value);
+      await AsyncStorage.setItem(key, encrypted);
+    } catch {
+      await AsyncStorage.setItem(key, value);
+    }
   },
   async removeItem(key: string) {
     await AsyncStorage.removeItem(key);
