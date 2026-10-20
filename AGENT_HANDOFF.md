@@ -7,7 +7,7 @@ Owner: Codex, Jacob reliability scope
 Updated: 2026-10-20, Australia/Sydney
 Branch: agent/2026-10-20-new
 Worktree: /Users/savannahblack/Developer/PLOT-worktrees/2026-10-20-new
-Latest pushed checkpoint: 5ac43a2f2. Final review commit records the same verified code without skipping CI.
+Latest pushed implementation/review commit: c2c159806. Checkpoint: 5ac43a2f2. Final review commit records the same verified code without skipping CI.
 
 ## Goal and evidence
 
@@ -24,7 +24,7 @@ No shared core, mobile, schema, real user data, or production settings changed.
 
 ## Next action
 
-PR preparation is complete. Open and attach the PR, then link it to the PostHog report. Keep the report unresolved until the fix merges. Remove AGENT_HANDOFF.md before merge. Savannah must approve merging.
+PR https://github.com/savblack/PLOT/pull/1414 is open and attached to this chat and the PostHog report. PostHog confirms in_review. Required CI was pending at the last check. Next: wait for CI and Savannah's merge approval. Keep the report unresolved until the fix merges. Remove AGENT_HANDOFF.md before merge. Savannah must approve merging.
 
 ## Verification
 
