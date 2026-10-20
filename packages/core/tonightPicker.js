@@ -30,8 +30,6 @@ import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 // gate. The allowance lives in the app's own storage, like the rest of the
 // picker, so it is a nudge rather than a server-enforced limit.
 
-export const PICKER_MEDIA_TYPES = ['movie', 'tv'];
-
 /** Movie length budgets, in minutes. `null` means any length. */
 export const PICKER_RUNTIMES = [90, 120, 150, null];
 
