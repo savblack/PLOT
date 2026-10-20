@@ -8,6 +8,7 @@
 import 'react-native-get-random-values';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { captureException } from './analytics';
 import {
   KEY_BYTES,
   NONCE_BYTES,
@@ -27,7 +28,11 @@ async function encrypt(key: string, value: string): Promise<string> {
   const nonce = crypto.getRandomValues(new Uint8Array(NONCE_BYTES));
   const encrypted = encryptGcm(encryptionKey, key, value, nonce);
 
-  await SecureStore.setItemAsync(key, bytesToHex(encryptionKey));
+  // AFTER_FIRST_UNLOCK so background token refreshes can still write while the
+  // device is locked (the default, WHEN_UNLOCKED, rejects those writes).
+  await SecureStore.setItemAsync(key, bytesToHex(encryptionKey), {
+    keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+  });
 
   return encrypted;
 }
@@ -35,6 +40,11 @@ async function encrypt(key: string, value: string): Promise<string> {
 // Log what failed, never the key or the session.
 function warn(what: string, error?: unknown) {
   console.warn(`[secureStorage] ${what}`, error instanceof Error ? error.message : '');
+}
+
+// Keychain failures must not escape as unhandled rejections; report them.
+function report(error: unknown, action: string) {
+  captureException(error, { surface: 'secure_storage', action });
 }
 
 async function decrypt(key: string, value: string): Promise<string | null> {
@@ -45,6 +55,7 @@ async function decrypt(key: string, value: string): Promise<string | null> {
     // Unsigned simulator builds throw errSecMissingEntitlement instead of
     // returning null. Treat that as "no key" so the person signs in again.
     warn('could not read the encryption key', error);
+    report(error, 'get');
     return null;
   }
   if (!encryptionKeyHex) {
@@ -77,6 +88,7 @@ async function decrypt(key: string, value: string): Promise<string | null> {
     return decryptLegacyCtr(hexToBytes(encryptionKeyHex), value);
   } catch (error) {
     warn('could not decrypt the stored session', error);
+    report(error, 'decrypt');
     return null;
   }
 }
@@ -105,7 +117,10 @@ export const secureSessionStorage = {
       const encrypted = await encrypt(key, value);
       await AsyncStorage.setItem(key, encrypted);
     } catch (error) {
-      if (!__DEV__) throw error;
+      report(error, 'set');
+      // A release build never stores a plaintext session: skip persisting and
+      // let the person sign in again rather than throwing into the auth refresh loop.
+      if (!__DEV__) return;
       warn('keychain unavailable, storing the session in plaintext (development only)', error);
       await AsyncStorage.setItem(key, value);
     }
