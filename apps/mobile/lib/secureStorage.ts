@@ -1,23 +1,35 @@
 // Supabase session storage adapter for native. SecureStore (iOS Keychain /
 // Android Keystore) caps individual values at 2048 bytes, too small for a
-// Supabase session blob (access + refresh JWT + user metadata). So we AES-256
+// Supabase session blob (access + refresh JWT + user metadata). So we AES-256-GCM
 // encrypt the session with a per-key random key, keep the key in SecureStore,
 // and store only the (small, fixed-size) encrypted key and larger ciphertext
 // blob in AsyncStorage. This is Supabase's documented pattern for Expo:
 // https://supabase.com/docs/guides/auth/quickstarts/react-native
 import 'react-native-get-random-values';
 import * as SecureStore from 'expo-secure-store';
-import * as aesjs from 'aes-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  KEY_BYTES,
+  NONCE_BYTES,
+  bytesToHex,
+  decryptGcm,
+  decryptLegacyCtr,
+  encryptGcm,
+  hexToBytes,
+  isGcmEntry,
+  isLegacyCtrEntry,
+} from './sessionCipher.js';
 
+// New writes are AES-256-GCM (authenticated, so a modified entry is detected).
+// A fresh key and nonce are generated for every write.
 async function encrypt(key: string, value: string): Promise<string> {
-  const encryptionKey = crypto.getRandomValues(new Uint8Array(256 / 8));
-  const cipher = new aesjs.ModeOfOperation.ctr(encryptionKey, new aesjs.Counter(1));
-  const encryptedBytes = cipher.encrypt(aesjs.utils.utf8.toBytes(value));
+  const encryptionKey = crypto.getRandomValues(new Uint8Array(KEY_BYTES));
+  const nonce = crypto.getRandomValues(new Uint8Array(NONCE_BYTES));
+  const encrypted = encryptGcm(encryptionKey, key, value, nonce);
 
-  await SecureStore.setItemAsync(key, aesjs.utils.hex.fromBytes(encryptionKey));
+  await SecureStore.setItemAsync(key, bytesToHex(encryptionKey));
 
-  return aesjs.utils.hex.fromBytes(encryptedBytes);
+  return encrypted;
 }
 
 // Log what failed, never the key or the session.
@@ -40,10 +52,29 @@ async function decrypt(key: string, value: string): Promise<string | null> {
     return null;
   }
 
+  if (isGcmEntry(value)) {
+    try {
+      return decryptGcm(hexToBytes(encryptionKeyHex), key, value);
+    } catch (error) {
+      // Tag mismatch: the entry was modified or does not belong to this key.
+      // Drop it so the person is signed out cleanly instead of stuck.
+      warn('stored session failed authentication, removing it', error);
+      await AsyncStorage.removeItem(key);
+      await SecureStore.deleteItemAsync(key).catch(() => {});
+      return null;
+    }
+  }
+
+  if (!isLegacyCtrEntry(value)) {
+    warn('stored session has an unrecognized format');
+    return null;
+  }
+
+  // Sessions written before v2 (AES-CTR). Read here; the next setItem, which
+  // Supabase calls on every token refresh, rewrites it as GCM. Not rewritten
+  // from getItem, where it could race with a newer setItem.
   try {
-    const cipher = new aesjs.ModeOfOperation.ctr(aesjs.utils.hex.toBytes(encryptionKeyHex), new aesjs.Counter(1));
-    const decryptedBytes = cipher.decrypt(aesjs.utils.hex.toBytes(value));
-    return aesjs.utils.utf8.fromBytes(decryptedBytes);
+    return decryptLegacyCtr(hexToBytes(encryptionKeyHex), value);
   } catch (error) {
     warn('could not decrypt the stored session', error);
     return null;
