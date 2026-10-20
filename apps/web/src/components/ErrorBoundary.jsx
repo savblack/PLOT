@@ -3,6 +3,15 @@ import { captureException } from '../lib/analytics.js';
 import { isChunkError, recentlyReloaded, markChunkReload } from '../utils/chunkError.js';
 import PlotLogo from './PlotLogo.jsx';
 
+// Web-only recovery: translators/extensions can change React-owned DOM nodes.
+// Native rendering has no insertBefore/removeChild DOM operations to recover.
+function isDomMutationError(error) {
+  if (error?.name !== 'NotFoundError') return false;
+  const detail = `${error.message || ''}\n${error.stack || ''}`;
+  return /insertBefore|removeChild/.test(detail)
+    || error.message === 'The object can not be found here.';
+}
+
 // Dark, centered, minimal error design — matches the marketing site's
 // website/404.html so the app and theplot.tv share one error aesthetic.
 const styles = `
@@ -135,6 +144,7 @@ function CrashScreen() {
 
 export default class ErrorBoundary extends Component {
   state = { hasError: false, error: null };
+  domRecoveryAttempted = false;
 
   static getDerivedStateFromError(error) {
     // Keep this lifecycle pure. React may invoke it more than once while
@@ -155,6 +165,12 @@ export default class ErrorBoundary extends Component {
     }
     console.error('Plot error:', error, info);
     captureException(error, { extra: info });
+    if (isDomMutationError(error) && !this.domRecoveryAttempted) {
+      // The failed subtree has committed as null, so this mounts fresh nodes.
+      // Spend the attempt before mounting, including if recovery itself fails.
+      this.domRecoveryAttempted = true;
+      this.setState({ hasError: false, error: null });
+    }
   }
 
   componentDidUpdate(prevProps) {
@@ -167,6 +183,7 @@ export default class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      if (isDomMutationError(this.state.error) && !this.domRecoveryAttempted) return null;
       // Hide the failed frame while componentDidCatch starts the guarded
       // refresh. If the budget is already exhausted, surface the honest error
       // screen instead of creating a reload loop.
