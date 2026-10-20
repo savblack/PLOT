@@ -2,12 +2,12 @@
 
 Plot now attempts one automatic page remount after the specific DOM error in the PostHog report, so an affected visitor can continue without a manual reload. All local checks passed, including eight browser regression tests. Savannah still needs to approve merging and release.
 
-Status: active
+Status: paused
 Owner: Codex, Jacob reliability scope
 Updated: 2026-10-20, Australia/Sydney
 Branch: agent/2026-10-20-new
 Worktree: /Users/savannahblack/Developer/PLOT-worktrees/2026-10-20-new
-Latest pushed commit: pending first checkpoint
+Latest pushed checkpoint: 5ac43a2f2. Final review commit records the same verified code without skipping CI.
 
 ## Goal and evidence
 
@@ -24,12 +24,12 @@ No shared core, mobile, schema, real user data, or production settings changed.
 
 ## Next action
 
-Open and attach the PR, then link it to the PostHog report. Keep the report unresolved until the fix merges. Remove AGENT_HANDOFF.md before merge. Savannah must approve merging.
+PR preparation is complete. Open and attach the PR, then link it to the PostHog report. Keep the report unresolved until the fix merges. Remove AGENT_HANDOFF.md before merge. Savannah must approve merging.
 
 ## Verification
 
 Node 22.23.3. pnpm install --frozen-lockfile passed.
-pnpm run check passed, lint and production build.
+pnpm run check passed, lint and production build, zero errors and 178 pre-existing warnings.
 pnpm run test:unit passed, 531 web + 1166 core + 14 agent tests.
 pnpm --filter @plot/web exec playwright test tests/smoke/dom-error-recovery.spec.js --workers=1 passed, 8 Chromium tests, including a real insertBefore failure after external node replacement.
 Targeted ESLint passed after the final test edit. git diff --check passed. Diff reviewed for unrelated work and secrets.
