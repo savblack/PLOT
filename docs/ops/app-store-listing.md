@@ -42,6 +42,10 @@ The three ways through, in order of speed:
 Whichever is chosen, the rest of this document is unchanged. Only the
 seller name on the listing and the legal copy differ.
 
+On 2026-10-15 the existing app record was filled on this Individual
+membership. The seller name on the store is Savannah Black until a company
+conversion. Legal copy still says "a product of SUSUMU HOUSE".
+
 **EU trader status (DSA).** Required before the app can be sold in the EU.
 Done in App Store Connect ▸ Business ▸ Trader status. On an Individual
 account the verified details are personal; on an Organization they are the
@@ -241,17 +245,56 @@ so create the Max device type before capturing.
 
 - [ ] Seller settled (Individual, or a Pty Ltd converted) and the legal copy agrees with it.
 - [ ] Paid Apps agreement active; banking and tax complete.
-- [ ] App record created; `ascAppId` in `eas.json`.
-- [ ] `EXPO_PUBLIC_SHOW_APPLE_LOGIN` is **not** set in the `production` EAS
+- [x] App record created; `ascAppId` in `eas.json` (`6797167864`).
+- [x] `EXPO_PUBLIC_SHOW_APPLE_LOGIN` is **not** set in the `production` EAS
       environment (confirmed 2026-10-14), so no social sign-in ships and
       Sign in with Apple is not required by Guideline 4.8. If Google is ever
       turned on for iOS, Apple must be too.
 - [ ] Release build drives the smoke list in
       [../qa/mobile-device-smoke.md](../qa/mobile-device-smoke.md), including
       a fresh sign-up and the demo account login.
-- [ ] Encryption: `ITSAppUsesNonExemptEncryption` is `false` in `app.json`
+- [x] Encryption: `ITSAppUsesNonExemptEncryption` is `false` in `app.json`
       (HTTPS only), so no export compliance form appears per build.
-- [ ] Content rights: tick "yes, I have rights" for TMDB and JustWatch data,
-      and name TMDB in the description (its API terms require attribution).
-- [ ] Release option: Manual release, so the web, newsletter and the App Store
-      go live on the same day.
+- [x] Content rights: `USES_THIRD_PARTY_CONTENT`, and the description names TMDB.
+- [x] Release option: Manual release.
+
+## Entered in App Store Connect (2026-10-15)
+
+The app record already existed (SKU `plot-ios`, primary language English
+(Australia), version 1.0, state Prepare for Submission). It was filled from
+the tables above on the Individual account, so the seller name is Savannah
+Black.
+
+- Name, subtitle, keywords, promotional text, description, support URL,
+  marketing URL, privacy policy URL, copyright, categories (Entertainment,
+  Lifestyle), and manual release are set.
+- Age rating questionnaire matches the table above. Apple computed **9+**.
+  The earlier guess of 12+ was high. Leave it unless review asks otherwise.
+- Privacy nutrition label matches the table above and is published. The
+  previous draft declared contacts, crash data, location, device ID and
+  purchase history. Those rows are gone.
+- What's New stays empty. Apple rejects `whatsNew` on the first version.
+- Review notes are filled. The demo login is `savannah+appreview@theplot.tv`
+  (`plotreview`). `@plotreader` (`savannah+appreview2@theplot.tv`) follows it.
+  The password is only in App Store Connect and was not committed.
+- Six screenshots are uploaded for the 6.9" slot (1320×2868, `APP_IPHONE_67`)
+  and the 6.5" slot (1284×2778, `APP_IPHONE_65`): Home, the Inception title
+  panel, My Lists, Calendar, New Releases, and the plotreview profile. They
+  are not submitted. iOS 27 needs the UIScene lifecycle. `apps/mobile` is on
+  Expo 57.0.29 with `ios.enableSceneSupport`. The `ios/` tree is gitignored,
+  so EAS prebuild generates the AppDelegate on the builder.
+- Production build 3 (`d27afc63-52ea-439c-8bc6-d00be0f1b969`) failed because
+  the App Store profile had no Push Notifications or Sign in with Apple.
+  Push is enabled on `tv.theplot.app`, the profile `P24BP4HULR` was
+  regenerated (active, `aps-environment` production), and
+  `expo-notifications` mode is `production` so the binary matches it.
+  Build 4 is `b13803bd-21b4-49ed-9b28-4f02e183d9cf` (build number 4). It
+  finished and was not submitted. It was built with the legacy anon JWT,
+  which production now rejects, so it cannot load account data. The
+  production EAS variable `EXPO_PUBLIC_SUPABASE_ANON_KEY` is the publishable
+  key. Build 4 should not be the binary that goes to review.
+- The updated Developer Program license is accepted, and the Free Apps
+  agreement is the current contract (version 5032, in effect). The Paid Apps
+  agreement is still New: agreeing needs a fresh Apple 2FA challenge, and
+  banking and tax are empty. EU trader status is still unset. No App Store
+  Connect API key has been created.

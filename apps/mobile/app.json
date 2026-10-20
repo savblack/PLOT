@@ -3,7 +3,7 @@
     "name": "plot",
     "slug": "plot",
     "scheme": "plot",
-    "version": "0.10.0",
+    "version": "1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -68,7 +68,12 @@
       "expo-router",
       "expo-font",
       "expo-status-bar",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "mode": "production"
+        }
+      ],
       "expo-secure-store",
       "expo-apple-authentication",
       "@react-native-community/datetimepicker",
@@ -83,6 +88,14 @@
         {
           "photosPermission": "Allow Plot to save share cards to your photos.",
           "savePhotosPermission": "Allow Plot to save share cards to your photos."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
         }
       ]
     ],

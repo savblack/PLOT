@@ -19,6 +19,7 @@ import { initAnalytics, identifyUser, resetAnalytics, setPersonProps } from '../
 import { hydrateSectionOpenState } from '../lib/sectionOpenState';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { consumeSimklState, exchangeSimklCode } from '../hooks/useSimklSync';
+import { consumeMagicLink } from '../lib/magicLink';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider, useAppData } from '../contexts/AppDataContext';
 import { OnboardingCompleteContext, OnboardingRefreshContext } from '../contexts/OnboardingContext';
@@ -327,6 +328,15 @@ function RootInner() {
     };
     Linking.getInitialURL().then(handle);
     const sub = Linking.addEventListener('url', ({ url }) => handle(url));
+    return () => sub.remove();
+  }, []);
+
+  // Magic-link cold starts. The scene delegate puts the URL in launch options,
+  // which Linking.getInitialURL() reads, but the router does not, so the
+  // callback screen often never mounts.
+  useEffect(() => {
+    Linking.getInitialURL().then(url => { void consumeMagicLink(url); });
+    const sub = Linking.addEventListener('url', ({ url }) => { void consumeMagicLink(url); });
     return () => sub.remove();
   }, []);
 

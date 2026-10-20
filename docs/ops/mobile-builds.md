@@ -39,8 +39,9 @@ membership (keeps team `FXZRAA8927` and the EAS credentials) rather than
 enrolling again. The steps, the D-U-N-S lookup and what Apple checks are in
 [app-store-listing.md](app-store-listing.md), along with the whole listing.
 
-Until the conversion completes: build freely, but do not create the App Store
-Connect app record and do not `eas submit`.
+The app record already exists and was filled on 2026-10-15 under the
+Individual membership. Do not `eas submit` until the remaining items in
+[app-store-listing.md](app-store-listing.md) are done.
 
 ### Running locally on a simulator
 
@@ -197,15 +198,15 @@ Once the app record for `tv.theplot.app` exists, fill in:
   "production": {
     "ios": {
       "appleTeamId": "FXZRAA8927",
-      "ascAppId": "<App Store Connect app ID>"
+      "ascAppId": "6797167864"
     }
   }
 }
 ```
 
 `appleTeamId` is already filled in (read off the account, not a secret: team IDs
-ship inside every provisioning profile). Only `ascAppId` is outstanding, and it
-does not exist until the App Store Connect app record does.
+ship inside every provisioning profile). `ascAppId` is `6797167864`, the App
+Store Connect record for `tv.theplot.app`.
 
 An App Store Connect API key is the recommended authentication method over an
 Apple ID, per the research in `docs/research/expo-push-notifications.md`, which
