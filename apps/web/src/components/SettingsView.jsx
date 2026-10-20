@@ -1236,10 +1236,6 @@ export default function SettingsView() {
     setSavingGenres(false);
   }, [profile?.genres, genreDraft]);
 
-  // Load integrations on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
-
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
   const marketingEmailsEnabled = !!profile?.marketing_emails;
   const genres         = genreDraft ?? profile?.genres ?? [];

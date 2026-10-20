@@ -2774,33 +2774,6 @@ svg { stroke-width: 1.5; }
 
 /* Blocks inside a section: one custom list, one Top 5 list. */
 .mylists-sub + .mylists-sub { margin-top: 1.25rem; }
-.mylists-sub-head {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 34px;
-  padding: 0 var(--gut) 0.4rem;
-}
-.mylists-sub-label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.mylists-sub-count {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  font-family: var(--font-sans-tabular);
-}
-.mylists-sub-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-left: auto;
-  flex-shrink: 0;
-}
 .mylists-public-badge {
   font-size: 0.6rem;
   font-weight: 600;

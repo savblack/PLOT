@@ -1,7 +1,3 @@
-export const FILTER_SHEET_COLLAPSED_RATIO = 0.5;
-export const FILTER_SHEET_EXPANDED_RATIO = 0.67;
-export const MEDIA_SHEET_COLLAPSED_RATIO = 0.67;
-
 export function groupIsActive(group) {
   const defaults = group.defaultValue ?? (group.mode === 'single' ? group.value : []);
   if (group.mode === 'single') return group.value !== defaults;
