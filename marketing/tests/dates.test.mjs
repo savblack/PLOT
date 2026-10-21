@@ -22,6 +22,16 @@ test('mondayOfWeekInTz snaps a Sunday evening Eastern run back to that week Mond
   );
 });
 
+test('5:30am Monday Sydney still publishes at 9:00am Eastern, starting the next US Monday', () => {
+  // 18:30 UTC Sunday is 5:30am Monday Sydney during daylight time, and 2:30pm Sunday in New York.
+  assert.equal(nextPublishAt(new Date('2026-10-18T18:30:00Z')).toISOString(), '2026-10-19T13:00:00.000Z');
+  // The standard-time wait ends an hour later in UTC. Sunday afternoon in New York has still passed.
+  assert.equal(nextPublishAt(new Date('2026-10-18T19:30:00Z')).toISOString(), '2026-10-19T13:00:00.000Z');
+  // 18:30 UTC Sunday in January is 5:30am Monday Sydney only after the wait. The next US slot is 9:00am Eastern standard time.
+  assert.equal(nextPublishAt(new Date('2027-01-17T18:30:00Z')).toISOString(), '2027-01-18T14:00:00.000Z');
+  assert.equal(nextPublishAt(new Date('2027-01-17T19:30:00Z')).toISOString(), '2027-01-18T14:00:00.000Z');
+});
+
 test('nextPublishAt is 9:00am Eastern, including across daylight time', () => {
   // Monday, June 15, 2026, 8:00am Eastern. The same morning's 9:00am is still ahead.
   assert.equal(nextPublishAt(new Date('2026-06-15T12:00:00Z')).toISOString(), '2026-06-15T13:00:00.000Z');

@@ -111,11 +111,19 @@ export function useWatchlist(userId) {
   const addToList = useCallback(async (item, opts) => {
     if (!listId || !userId) {
       if (getConfig().isDev) console.warn('[useWatchlist] addToList: not ready', { listId, userId });
+      if (opts?.source === 'onboarding') {
+        reportActionFailure(FAILED_ACTIONS.WATCHLIST_SAVE, null, { source: 'onboarding', kind: 'client_state' });
+      }
       return null;
     }
 
     const tmdb_id = tmdbIdFromItem(item);
-    if (!tmdb_id) return null;
+    if (!tmdb_id) {
+      if (opts?.source === 'onboarding') {
+        reportActionFailure(FAILED_ACTIONS.WATCHLIST_SAVE, null, { source: 'onboarding', kind: 'client_state' });
+      }
+      return null;
+    }
     if (isInList(tmdb_id)) return null;
 
     // Extract provider IDs for the user's current region
@@ -140,8 +148,14 @@ export function useWatchlist(userId) {
       console.error('[useWatchlist] INSERT list_items failed:', error);
       reportActionFailure(FAILED_ACTIONS.WATCHLIST_SAVE, error, {
         tmdb_id, media_type: row?.media_type ?? item.media_type,
+        ...(opts?.source ? { source: opts.source } : {}),
       });
       return null;
+    }
+    if (!data && opts?.source === 'onboarding') {
+      reportActionFailure(FAILED_ACTIONS.WATCHLIST_SAVE, null, {
+        tmdb_id, media_type: row?.media_type ?? item.media_type, source: 'onboarding',
+      });
     }
     if (data) {
       setItems(prev => [data, ...prev]);

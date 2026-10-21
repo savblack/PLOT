@@ -18,6 +18,8 @@ import {
   pickerFiltersSummary,
   pickerAnswers,
   _resetPickerCache,
+  freePickKey,
+  freePickAvailable,
   savedRequestKey,
   serialiseSavedRequest,
   parseSavedRequest,
@@ -440,4 +442,16 @@ test('watchlist shows match a keyword genre through their keywords', () => {
   const base = { id: 5, media_type: 'tv', title: 'T', genre_ids: [80], runtime: 45, seasons: 2, miniseries: false, vote_average: 7, release_date: '2020-01-01', providers: [] };
   assert.equal(matchesOptions({ ...base, keyword_ids: [9010] }, options, []), true);
   assert.equal(matchesOptions({ ...base, keyword_ids: [1] }, options, []), false);
+});
+
+test('a Free viewer gets one pick a day, renewed on the next local date', () => {
+  assert.equal(freePickAvailable(null, '2026-10-16'), true);
+  assert.equal(freePickAvailable(undefined, '2026-10-16'), true);
+  assert.equal(freePickAvailable('2026-10-15', '2026-10-16'), true);
+  assert.equal(freePickAvailable('2026-10-16', '2026-10-16'), false);
+});
+
+test('the free pick is stored per viewer, never shared between accounts', () => {
+  assert.notEqual(freePickKey('a'), freePickKey('b'));
+  assert.equal(freePickKey(null), freePickKey(undefined));
 });

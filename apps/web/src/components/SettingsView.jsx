@@ -32,6 +32,7 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { IMPORT_VIEW } from '../copy/importView.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { MODERATION } from '../copy/moderation.js';
@@ -45,6 +46,7 @@ import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
 import SettingsThemeRows from './SettingsThemeRows.jsx';
+import SidebarOrderSheet from './SidebarOrderSheet.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import PremiumAlertsSettings from './PremiumAlertsSettings.jsx';
 import StreamingAlertsSettings from './StreamingAlertsSettings.jsx';
@@ -55,6 +57,9 @@ import Spinner from './Spinner.jsx';
 import { WatchTogetherSettings } from './WatchTogetherParts.jsx';
 import WatchlistVisibilitySetting from './WatchlistVisibilitySetting.jsx';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
+import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
+import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
+import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../utils/letterboxdImportPrompt.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -1112,7 +1117,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
    SettingsView
 ═══════════════════════════════════════ */
 export default function SettingsView() {
-  const { profile, user, themeMode, themeFamily, setThemeMode, setThemeFamily, refreshProfile, watchlist, watching, reminders, customLists } = useApp();
+  const { profile, user, themeMode, themeFamily, setThemeMode, setThemeFamily, refreshProfile, watchlist, watching, reminders, customLists, uiPrefs } = useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = SETTINGS_SECTIONS.some(item => item.id === searchParams.get('section')) ? searchParams.get('section') : 'account';
@@ -1129,6 +1134,11 @@ export default function SettingsView() {
     reminders?.reminders ?? [],
   );
 
+  const [letterboxdPrompt, setLetterboxdPrompt] = useState(() => readLetterboxdImportPrompt(user?.id));
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- re-read the device reminder when the signed-in user changes
+    setLetterboxdPrompt(readLetterboxdImportPrompt(user?.id));
+  }, [user?.id]);
   const [showProviders,       setShowProviders]       = useState(false);
   const [savingProviders,     setSavingProviders]     = useState(false);
   const [savingMarketingEmails, setSavingMarketingEmails] = useState(false);
@@ -1136,6 +1146,7 @@ export default function SettingsView() {
   const [savingVisibility, setSavingVisibility] = useState(false);
   const [providerDraft,       setProviderDraft]       = useState(null);
   const [showGenres,          setShowGenres]          = useState(false);
+  const [showSidebarOrder,    setShowSidebarOrder]    = useState(false);
   const [savingGenres,        setSavingGenres]        = useState(false);
   const [genreDraft,          setGenreDraft]          = useState(null);
   const [showRegion,          setShowRegion]          = useState(false);
@@ -1224,10 +1235,6 @@ export default function SettingsView() {
     setGenreDraft(null);
     setSavingGenres(false);
   }, [profile?.genres, genreDraft]);
-
-  // Load integrations on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
 
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
   const marketingEmailsEnabled = !!profile?.marketing_emails;
@@ -1824,6 +1831,22 @@ export default function SettingsView() {
           premiumBadge={<PremiumBadge />}
         />
         {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
+        <SettingsPreferenceRow
+          label={SETTINGS_VIEW.sidebar.rowLabel}
+          value={(uiPrefs?.prefs.sidebar.length ?? 0) === 0 ? SETTINGS_VIEW.sidebar.valueDefault : SETTINGS_VIEW.sidebar.valueCustom}
+          onEdit={() => setShowSidebarOrder(true)}
+        />
+        {showSidebarOrder && (
+          <SidebarOrderSheet
+            order={uiPrefs?.prefs.sidebar}
+            isDefault={(uiPrefs?.prefs.sidebar.length ?? 0) === 0}
+            error={uiPrefs?.error}
+            onNudge={uiPrefs?.nudgeSidebar}
+            onMove={uiPrefs?.moveSidebar}
+            onReset={uiPrefs?.resetSidebarOrder}
+            onClose={() => setShowSidebarOrder(false)}
+          />
+        )}
 
       </div>
       <div className="settings-group"><div className="settings-group-title">{SETTINGS_VIEW.page.emailPreferences}</div>
@@ -1882,6 +1905,46 @@ export default function SettingsView() {
       <PremiumAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
         </>}
         {activeSection === 'connections' && <>
+        {letterboxdPrompt && (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <div>
+                <div className="settings-row-label">{IMPORT_VIEW.letterboxdFinishTitle}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {IMPORT_VIEW.letterboxdFinishSub}
+                </div>
+              </div>
+            </div>
+            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+              <button
+                type="button"
+                className="settings-text-action"
+                onClick={() => navigate(`/import?source=letterboxd&from=${IMPORT_ENTRY_POINTS.IMPORT_PAGE}`)}
+              >
+                {IMPORT_VIEW.letterboxdFinishCta}
+              </button>
+              <button
+                type="button"
+                className="settings-text-action"
+                onClick={() => {
+                  clearLetterboxdImport(user?.id);
+                  setLetterboxdPrompt(null);
+                  createImportReporter({ entry: IMPORT_ENTRY_POINTS.IMPORT_PAGE }).abandoned(LETTERBOXD_IMPORT_ABANDON.DISMISSED);
+                }}
+              >
+                {IMPORT_VIEW.letterboxdFinishDismiss}
+              </button>
+            </div>
+          </div>
+        )}
+
       <SettingsSources userId={user?.id} premium={premium} showConfirm={showConfirm} />
 
       {/* Calendar */}

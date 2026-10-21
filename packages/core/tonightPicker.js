@@ -3,6 +3,7 @@ import { TV_KEYWORD_GENRES, tvKeywordIds, _resetKeywordGenreCache } from './keyw
 import { tmdb, excludeKidsContent, KIDS_GENRE_IDS } from './tmdb.js';
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
+import { localDateStr } from './date.js';
 import { reportLoadFailure, FAILED_LOADS } from './actionFailures.js';
 import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 
@@ -24,10 +25,10 @@ import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 // Availability is re-read live rather than trusted from list_items.provider_ids,
 // which is a snapshot from save time and often empty.
 //
-// Entitlement is not checked here: the surface gates on Premium and never
-// calls go() for Free viewers.
-
-export const PICKER_MEDIA_TYPES = ['movie', 'tv'];
+// Entitlement: Premium viewers get a shortlist every time. A Free viewer gets
+// one real pick a day (the 'surprise' draw, a single title), then the upgrade
+// gate. The allowance lives in the app's own storage, like the rest of the
+// picker, so it is a nudge rather than a server-enforced limit.
 
 /** Movie length budgets, in minutes. `null` means any length. */
 export const PICKER_RUNTIMES = [90, 120, 150, null];
@@ -197,6 +198,23 @@ export function defaultPickerOptions({ hasServices = false } = {}) {
 // mechanism is the platform's (web localStorage, mobile AsyncStorage); the key
 // and the encoding live here so both platforms read the same thing.
 export const SAVED_REQUEST_TTL_MS = 24 * 60 * 60 * 1000;
+
+// A Free viewer's one pick a day. The key holds the local date the pick was
+// last used, so the allowance renews at midnight on the viewer's own clock.
+
+/** @param {string|null|undefined} userId */
+export function freePickKey(userId) {
+  return `plot.pickForMe.freePick.${userId || 'anon'}`;
+}
+
+/**
+ * @param {string|null|undefined} storedDay The date the free pick was last used, as stored.
+ * @param {string} [today] Local date, YYYY-MM-DD.
+ * @returns {boolean} True when today's free pick is still unused.
+ */
+export function freePickAvailable(storedDay, today = localDateStr()) {
+  return storedDay !== today;
+}
 
 /** @param {string|null|undefined} userId */
 export function savedRequestKey(userId) {
@@ -960,6 +978,21 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   const [resume, setResume] = useState(/** @type {'five'|'surprise'|null} */ (null));
   const [restoredKey, setRestoredKey] = useState(/** @type {string|null} */ (storage ? null : storageKey));
   const [saved, setSaved] = useState(/** @type {SavedSearch[]} */ ([]));
+  // The local date a Free viewer's one pick was used, once known. Premium
+  // viewers never read or write it.
+  const freeKey = freePickKey(userId);
+  const [freeDay, setFreeDay] = useState(/** @type {string|null} */ (null));
+  const [today, setToday] = useState(() => localDateStr());
+  useEffect(() => {
+    if (!storage) return undefined;
+    let alive = true;
+    Promise.resolve().then(() => storage.getItem(freeKey)).catch(() => null)
+      .then((value) => { if (alive) { setFreeDay(value || null); setToday(localDateStr()); } });
+    return () => { alive = false; };
+  }, [storage, freeKey]);
+  const freePickLeft = !enabled && freePickAvailable(freeDay, today);
+  // Free viewers see today's pick after drawing it; Premium viewers always see theirs.
+  const viewing = enabled || freeDay === today;
   // Picks already on screen when a session or saved search opens, so the
   // next Regenerate shows something new.
   const restoredSeen = useRef(/** @type {number[]} */ ([]));
@@ -1075,15 +1108,25 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   // others" are separable; everything else about the draw is identical.
   const go = useCallback(async (nextMode = 'five', { reroll = false } = {}) => {
     const version = ++drawVersion.current;
-    setMode(nextMode);
+    let freeDraw = false;
     if (!enabled) {
-      setPhase('locked');
-      if (storage) {
-        Promise.resolve(storage.setItem(storageKey, serialiseSavedRequest({ options, step, mode: nextMode })))
-          .catch(() => {});
+      // Read the stored day fresh: another tab may have used today's pick.
+      const day = storage ? await Promise.resolve().then(() => storage.getItem(freeKey)).catch(() => null) : freeDay;
+      const nowDay = localDateStr();
+      if (!freePickAvailable(day, nowDay)) {
+        setMode(nextMode);
+        setPhase('locked');
+        if (storage) {
+          Promise.resolve(storage.setItem(storageKey, serialiseSavedRequest({ options, step, mode: nextMode })))
+            .catch(() => {});
+        }
+        return;
       }
-      return;
+      // The free pick is a single title, whichever button was pressed.
+      nextMode = 'surprise';
+      freeDraw = true;
     }
+    setMode(nextMode);
     setResume(null);
     if (storage) Promise.resolve(storage.removeItem(storageKey)).catch(() => {});
     setResultsOwner(userId);
@@ -1103,14 +1146,22 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     if (wait > 0) await sleep(wait);
     if (version !== drawVersion.current) return;
     setResults(picked);
-    setCanSpinAgain(more);
+    // A free pick that shows a title uses the day's allowance; a failed or
+    // empty draw does not, and "again" is the upgrade gate for a Free viewer.
+    setCanSpinAgain(freeDraw ? picked.length > 0 : more);
+    if (freeDraw && !failed && picked.length) {
+      const day = localDateStr();
+      setFreeDay(day);
+      setToday(day);
+      if (storage) Promise.resolve(storage.setItem(freeKey, day)).catch(() => {});
+    }
     setPhase(failed ? 'error' : picked.length ? 'results' : 'empty');
     if (failed) {
       reportLoadFailure(FAILED_LOADS.TONIGHT_PICKS, failure);
     } else {
       report('drawn', pickerDrawPayload(options, { mode: nextMode, resultCount: picked.length, reroll, hasServices }));
     }
-  }, [enabled, draw, storage, storageKey, options, step, userId, report, hasServices]);
+  }, [enabled, draw, storage, storageKey, freeKey, freeDay, options, step, userId, report, hasServices]);
 
   // Back from upgrading with a kept request: draw it without another tap.
   useEffect(() => {
@@ -1147,14 +1198,14 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
 
   const sentence = useMemo(() => pickerSentence(options, { genres, hasServices }), [options, genres, hasServices]);
 
-  const visibleResults = useMemo(() => (enabled && resultsOwner === userId ? results : []), [enabled, resultsOwner, userId, results]);
+  const visibleResults = useMemo(() => (viewing && resultsOwner === userId ? results : []), [viewing, resultsOwner, userId, results]);
   const savedSig = useMemo(() => new Set(saved.map(i => savedSearchSignature(i.results))), [saved]);
   const isSaved = visibleResults.length > 0 && savedSig.has(savedSearchSignature(visibleResults));
   const saveSearch = useCallback(() => {
-    if (!visibleResults.length) return;
+    if (!enabled || !visibleResults.length) return;
     writeSaved(addSavedSearch(saved, { label: savedSearchLabel(sentence), options, mode, results: visibleResults }));
     report('search_saved', { mode, result_count: visibleResults.length });
-  }, [visibleResults, saved, sentence, options, mode, writeSaved, report]);
+  }, [enabled, visibleResults, saved, sentence, options, mode, writeSaved, report]);
   const removeSavedSearch = useCallback((id) => writeSaved(saved.filter(i => i.id !== id)), [saved, writeSaved]);
   // The results' Save button: saves, or un-saves picks already saved.
   const toggleSaveSearch = useCallback(() => {
@@ -1192,7 +1243,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   const filtersSummary = useMemo(() => pickerFiltersSummary(options, { hasServices }), [options, hasServices]);
   const answers = useMemo(() => pickerAnswers(options, { genres }), [options, genres]);
 
-  const visible = visiblePickerState({ enabled, phase, resultsOwner, userId, results, canSpinAgain });
+  const visible = visiblePickerState({ enabled: viewing, phase, resultsOwner, userId, results, canSpinAgain });
   return {
     options, setOption, toggleGenre, genres,
     hasServices, hasWatchlist,
@@ -1201,6 +1252,8 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     step, goToStep, nextStep, prevStep,
     sentence, filtersSummary, answers,
     go, spinAgain, backToOptions, closeLock, openPick,
+    // Free viewers: today's one pick is unused / saving a search is Premium.
+    freePickLeft, canSave: enabled,
     savedSearches: enabled ? saved : [], isSaved, toggleSaveSearch, removeSavedSearch, openSavedSearch,
   };
 }

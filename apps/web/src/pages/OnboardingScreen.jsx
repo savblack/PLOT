@@ -86,6 +86,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
               <h1 className="ob-title">{F.seed.title(firstName)}</h1>
               <p className="ob-sub">{F.seed.subtitle}</p>
             </div>
+            <ImportPill pill={importStep.start.pill} />
             <button type="button" className="ob-switch" onClick={seed.onSwitch}>
               <span className="ob-switch-marks" aria-hidden="true">{['letterboxd', 'netflix', 'trakt'].map(id => findImportSource(id)).filter(Boolean).map(src => <span key={src.id}><ImportSourceIcon id={src.id} name={src.name} size={26} /></span>)}</span>
               <span className="ob-switch-text"><strong>{F.seed.switchingLead}</strong> {F.seed.switchingBody}</span>

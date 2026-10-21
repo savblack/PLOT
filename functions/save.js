@@ -3,13 +3,13 @@
 //
 // The /save deep link is where shared title links point (see utils/share.js).
 // Serves the SPA shell but rewrites the OG/Twitter tags for the requested title,
-// with og:image pointing at the title's branded card (/og). The same lookup seeds
+// with og:image pointing at the title's TMDB backdrop. The same lookup seeds
 // the logged-out preview, so loading /save does not fetch it again from Supabase.
 // Crawlers read the share tags without indexing this action route.
 //
 // Routing: file path functions/save.js → /save (query string passes through).
 import { loadTitle } from './_lib/tmdb.js';
-import { ogCard, CARD } from './_lib/og-card.js';
+import { staticCard, CARD } from './_lib/og-card.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const safeJson = (value) => JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (char) => ({
@@ -47,11 +47,11 @@ export async function onRequest({ request, env }) {
     const desc = title.overview
       ? (title.overview.length > 180 ? `${title.overview.slice(0, 177)}…` : title.overview)
       : `Save ${title.title} to your watchlist on plot.`;
-    // The branded title card: poster, backdrop, year and rating. See
-    // functions/_lib/og-card.js.
-    const image = ogCard(host, { type: title.type, id });
-    const { width: imgW, height: imgH } = CARD;
-    const imgAlt = `${title.title}${yearStr} on plot`;
+    // A 2:3 poster crops badly in a wide preview. Use the static brand card
+    // when TMDB has no backdrop, without rendering a card through Supabase.
+    const image = title.backdrop || staticCard(host);
+    const [imgW, imgH] = title.backdrop ? [1280, 720] : [CARD.width, CARD.height];
+    const imgAlt = title.backdrop ? `${title.title}${yearStr}` : 'plot';
     const url = `https://${host}/save?media_type=${title.type}&tmdb_id=${id}`;
     const tags =
       `<meta property="og:type" content="video.other"/>` +

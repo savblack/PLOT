@@ -4,6 +4,7 @@ import { configure } from '@plot/core/config.js';
 import { notifyPendingWatchQueued } from '@plot/core/watchQueued.js';
 import { captureAttribution, currentArticleAttribution } from './utils/attribution.js';
 import { analyticsAllowed } from './utils/analyticsHost.js';
+import { isSaveBotFingerprint } from './utils/saveBotFingerprint.js';
 import { isChunkError, markChunkReload, recentlyReloaded } from './utils/chunkError.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { isOpaqueBrowserException } from './utils/opaqueException.js';
@@ -131,7 +132,14 @@ configure({
   },
   onReview: (payload) => track(EVENTS.REVIEW_WRITTEN, payload),
   onImport: ({ stage, ...props }) => {
-    const name = { selected: EVENTS.IMPORT_SOURCE_SELECTED, started: EVENTS.IMPORT_STARTED, completed: EVENTS.IMPORT_COMPLETED, failed: EVENTS.IMPORT_FAILED }[stage];
+    const name = {
+      selected: EVENTS.IMPORT_SOURCE_SELECTED,
+      started: EVENTS.IMPORT_STARTED,
+      completed: EVENTS.IMPORT_COMPLETED,
+      failed: EVENTS.IMPORT_FAILED,
+      export_opened: EVENTS.LETTERBOXD_EXPORT_OPENED,
+      abandoned: EVENTS.LETTERBOXD_IMPORT_ABANDONED,
+    }[stage];
     if (name) track(name, props);
   },
   // The undo toast reversed a removal. Never a committed action.
@@ -146,9 +154,8 @@ if (new URLSearchParams(window.location.search).get('dnt') === '1') {
 const isDnt = /(?:^|; )plot_dnt=1/.test(document.cookie);
 
 // analyticsAllowed() keeps localhost, preview builds and CI out of the one
-// production project. Gating the TOKEN (rather than filtering in before_send)
-// means posthog-js is never even imported off-production: no cookie, no
-// session, no replay started before the first event gets judged.
+// production project. Gating the TOKEN means posthog-js is never imported
+// off-production: no cookie, session or replay starts there.
 const posthogToken = !isDnt && analyticsAllowed() && import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
 
 // Read the acquisition attribution the marketing site forwarded onto this link
@@ -226,6 +233,16 @@ if (posthogToken) {
       // properties on every event before it leaves the browser.
       before_send: (event) => {
         const props = event?.properties;
+        // Drop only the October 2026 direct /save fingerprint. Check the route
+        // for each event so a real visitor continuing to signup is still counted.
+        if (isSaveBotFingerprint({
+          hostname: window.location.hostname,
+          pathname: props?.$pathname || window.location.pathname,
+          userAgent: navigator.userAgent,
+          referrer: document.referrer,
+          screenWidth: window.screen?.width,
+          screenHeight: window.screen?.height,
+        })) return null;
         // An exception the browser masked to "Script error." carries no
         // message, filename or stack, so it can only ever be closed, never
         // diagnosed. Drop it rather than let it open an Error Tracking issue.

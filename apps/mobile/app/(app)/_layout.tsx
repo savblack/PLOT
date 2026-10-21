@@ -81,7 +81,8 @@ function TabsLayout() {
       <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: { fontSize: 10, marginTop: 2 },
         // Floating glass pill — detached from the edges, content scrolls
         // behind it (screens clear it via TAB_BAR_CLEARANCE).
         tabBarStyle: {
@@ -100,11 +101,8 @@ function TabsLayout() {
         },
         tabBarItemStyle: {
           height: TAB_BAR_HEIGHT,
-          paddingTop: 0,
-          paddingBottom: 0,
-        },
-        tabBarIconStyle: {
-          flex: 1,
+          paddingTop: 8,
+          paddingBottom: 6,
         },
         tabBarBackground: () => <TabBarBackground />,
         tabBarActiveTintColor: colors.accent,
@@ -113,15 +111,15 @@ function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ tabBarIcon: ({ color }) => <IconHome color={color} /> }}
+        options={{ title: 'Home', tabBarIcon: ({ color }) => <IconHome color={color} /> }}
       />
       <Tabs.Screen
         name="calendar"
-        options={{ tabBarIcon: ({ color }) => <IconCalendar color={color} /> }}
+        options={{ title: 'Calendar', tabBarIcon: ({ color }) => <IconCalendar color={color} /> }}
       />
       <Tabs.Screen
         name="my-lists"
-        options={{ tabBarIcon: ({ color }) => <IconLists color={color} /> }}
+        options={{ title: 'My Lists', tabBarIcon: ({ color }) => <IconLists color={color} /> }}
       />
       {/* Fourth primary destination, same order as web: Home, Calendar,
           My Lists, History. Profile stays in the drawer. */}
@@ -134,6 +132,7 @@ function TabsLayout() {
       />
       <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen name="guide" options={{ href: null }} />
+      <Tabs.Screen name="new-releases" options={{ href: null }} />
       <Tabs.Screen name="u/[username]" options={{ href: null }} />
       <Tabs.Screen name="compare" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />

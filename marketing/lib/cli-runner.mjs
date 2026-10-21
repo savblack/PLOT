@@ -14,8 +14,8 @@ const hasCommand = (command) => spawnSync('which', [command], { stdio: 'ignore' 
 // to start the selected model CLI, never database, email or publishing secrets.
 const SAFE_ENV_KEYS = [
   'ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', 'CODEX_HOME', 'HOME', 'LANG',
-  'LC_ALL', 'PATH', 'SHELL', 'TERM', 'TMPDIR', 'USER', 'XDG_CACHE_HOME',
-  'XDG_CONFIG_HOME', 'XDG_DATA_HOME',
+  'LC_ALL', 'PATH', 'SHELL', 'TERM', 'TMPDIR', 'USER', 'XAI_API_KEY',
+  'XDG_CACHE_HOME', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME',
 ];
 
 export const copyWorkerEnv = (env = process.env) => Object.fromEntries(
@@ -45,6 +45,18 @@ const RUNNERS = {
       '--permission-mode', 'dontAsk',
       '--no-session-persistence',
       '--allowedTools', 'Read,Write,WebSearch,WebFetch', // variadic; keep last
+    ],
+  },
+  // Weekly copy. bypassPermissions because the weekly job cannot stop to ask.
+  // The tool list is the limit: read the brief, search the web, write the JSON.
+  grok: {
+    command: 'grok',
+    helpArgs: ['--help'],
+    flags: () => ['--permission-mode', '--tools'],
+    buildArgs: (prompt) => [
+      '-p', prompt,
+      '--permission-mode', 'bypassPermissions',
+      '--tools', 'read_file,write,search_replace,web_search,web_fetch',
     ],
   },
 };

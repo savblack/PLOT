@@ -74,6 +74,11 @@ verify_jwt = false
 [functions.marketing-notion-mirror]
 verify_jwt = true
 
+# Operational mail for the weekly job and failure alerts. Uses the project
+# RESEND_API_KEY. Callers send the service-role bearer. verify_jwt stays true.
+[functions.marketing-notify]
+verify_jwt = true
+
 # Notion webhook. Notion signs the body and sends no Supabase JWT, so the
 # gateway has to let the delivery through. The HMAC inside the function is
 # the auth. Unsigned traffic is refused except for the one-time verification

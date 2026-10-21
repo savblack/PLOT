@@ -9,7 +9,7 @@
 // The card itself is drawn by the og-card Supabase Edge Function (Satori +
 // resvg, ~25ms of CPU — more than a Cloudflare Worker gets on the free plan,
 // which is why the old plot-og Worker was retired). This route is the only
-// thing that should call it: it keeps each rendered PNG in the per-data-centre
+// thing that should call it: it keeps each rendered card in the per-data-centre
 // Cache API for the s-maxage the function sends (7 days), so a card is drawn
 // once per colo per week, not once per share. Share tags point here, never at
 // the function directly.
@@ -28,7 +28,9 @@ const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
 
 // Bump when the card artwork changes, so cached renders are not served for
 // up to a week after the change. 1: joined l-o wordmark (savblack/PLOT#1308).
-export const CARD_VERSION = 1;
+// 2: photo cards are sent as JPEG (~150KB), not PNG (~1.2MB), so WhatsApp shows them.
+// 3: drops blank fallback cards cached during a 2026-10-17 database blip.
+export const CARD_VERSION = 3;
 
 // Only these reach the function; the cache key is built from them too, so
 // attribution parameters on a shared link do not fragment the cache.
@@ -64,13 +66,15 @@ async function render(request) {
   } catch {
     return fallback(host);
   }
-  if (!upstream.ok || !(upstream.headers.get('content-type') || '').startsWith('image/png')) {
+  // The function sends PNG for flat cards and JPEG for photographic ones.
+  const type = (upstream.headers.get('content-type') || '').split(';')[0].trim();
+  if (!upstream.ok || (type !== 'image/png' && type !== 'image/jpeg')) {
     return fallback(host);
   }
   return new Response(upstream.body, {
     status: 200,
     headers: {
-      'Content-Type': 'image/png',
+      'Content-Type': type,
       'Cache-Control': upstream.headers.get('cache-control') || 'public, max-age=86400, s-maxage=604800',
       'X-Plot-Card': 'rendered',
     },

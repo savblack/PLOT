@@ -46,11 +46,11 @@ export async function updateProfile({ userId, patch }) {
 }
 
 /**
- * Create or replace a profile row.
+ * Save onboarding fields to an existing profile, or create a missing row.
  *
- * Onboarding needs this rather than updateProfile: the row may not exist yet,
- * and `.update()` against a missing row succeeds while changing nothing, which
- * would silently drop the user's first name and region.
+ * The signup trigger normally creates the row. A merge upsert sends `id` in
+ * its UPDATE clause, but signed-in users deliberately cannot update that
+ * column. Keep the missing-row fallback without requiring that privilege.
  *
  * @param {{ userId: string, patch: Record<string, any> }} args
  * @returns {Promise<{ data: any, error: any }>}
@@ -58,11 +58,30 @@ export async function updateProfile({ userId, patch }) {
 export async function upsertProfile({ userId, patch }) {
   if (!userId) return { data: null, error: null };
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .upsert({ id: userId, ...patch })
-    .select()
-    .maybeSingle();
+  // The row key is never an editable onboarding field, even if a caller
+  // accidentally includes it in a patch.
+  const { id: _id, ...fields } = patch ?? {};
+  const update = () => supabase.from('profiles')
+    .update(fields).eq('id', userId).select().maybeSingle();
+  let result;
+  try {
+    result = await update();
+    if (!result.error && !result.data) {
+      result = await supabase.from('profiles')
+        .insert({ id: userId, ...fields }).select().maybeSingle();
+      // The signup trigger may create the profile between update and insert.
+      if (result.error?.code === '23505') result = await update();
+    }
+  } catch (error) {
+    // Both apps use the returned error to leave the saving state and offer retry.
+    result = { data: null, error };
+  }
+
+  const { data, error } = result;
+  if (error || !data) {
+    reportActionFailure(FAILED_ACTIONS.PROFILE_UPDATE, error, { fields: Object.keys(fields) });
+    return { data: null, error: error || { message: 'Profile save returned no row' } };
+  }
 
   return { data, error };
 }

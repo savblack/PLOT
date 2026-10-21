@@ -397,19 +397,6 @@ export function Empty({ children, onAdd, addLabel }) {
   );
 }
 
-/* Header label + count + actions for a block inside a section (one Top 5
-   list, one custom list). */
-export function SubHead({ label, count, badge, children }) {
-  return (
-    <div className="mylists-sub-head">
-      <span className="mylists-sub-label">{label}</span>
-      {count != null && <span className="mylists-sub-count">{count}</span>}
-      {badge}
-      <div className="mylists-sub-actions">{children}</div>
-    </div>
-  );
-}
-
 export function HeaderIconButton({ label, onClick, danger = false, success = false, children }) {
   return (
     <button
@@ -579,7 +566,7 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
 
   return (
     <Frame
-      title="Want to Watch"
+      title={CUSTOM_LISTS.wantToWatch}
       count={count}
       headerRight={
         <>

@@ -24,29 +24,3 @@ export function articleSignupPromptHtml({ app, slug, placement }) {
   <a class="cta" href="${escAttr(href)}" data-cta="${escAttr(placement)}">${PROMPT_BUTTON}</a>
 </aside>`;
 }
-
-/**
- * Insert the prompt after the second prose block, and only when something
- * still follows it. A story or trailer module is not a paragraph. When the
- * second paragraph is already the end of the article, the caller places one
- * prompt at the end instead of two in a row.
- *
- * @param {Array<{ html: string, prose?: boolean }>} chunks
- * @param {string} promptHtml
- * @param {boolean} [moreAfter] true when a titles section follows the body
- */
-export function insertPromptAfterSecondParagraph(chunks, promptHtml, moreAfter = false) {
-  const html = [];
-  let proseSeen = 0;
-  let inserted = false;
-  chunks.forEach((chunk, index) => {
-    html.push(chunk.html);
-    if (!chunk.prose) return;
-    proseSeen += 1;
-    if (inserted || proseSeen !== 2) return;
-    const moreFollows = index < chunks.length - 1 || moreAfter;
-    if (moreFollows) html.push(promptHtml);
-    inserted = true;
-  });
-  return html.join('');
-}

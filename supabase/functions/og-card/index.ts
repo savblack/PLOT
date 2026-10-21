@@ -24,6 +24,7 @@
  */
 import satori from 'npm:satori@0.33.5';
 import { initWasm, Resvg } from 'npm:@resvg/resvg-wasm@2.6.2';
+import jpeg from 'npm:jpeg-js@0.4.4';
 import { WORDMARK_EM, WORDMARK_PATH, WORDMARK_VIEWBOX } from './wordmark.generated.ts';
 
 type Props = Record<string, unknown>;
@@ -51,6 +52,9 @@ const MUTED = '#a8a69c'; // colors.dark.textSecondary
 // Cache hard: these cards are share previews, not live data. 1-day browser,
 // 7-day shared (the app proxy's edge cache honours s-maxage), SWR.
 const OG_CACHE = 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800';
+// For the generic card shown when the profile, list, post or title was not
+// found: it can start existing (a new account, a list made public).
+const OG_CACHE_MISS = 'public, max-age=300, s-maxage=300';
 const TMDB_IMG = (p: string | null | undefined, s = 'w185') => (p ? `https://image.tmdb.org/t/p/${s}${p}` : null);
 
 // Only avatars from our own public bucket are fetched into the image. The
@@ -98,16 +102,15 @@ type Title = { type: string; title: string; year: string; poster: string | null;
 async function loadTitle(mediaType: string | null, tmdbId: unknown): Promise<Title | null> {
   const id = Number(tmdbId);
   if (!Number.isInteger(id) || id <= 0) return null;
-  if (!TMDB_KEY) return null;
+  if (!TMDB_KEY) throw new Error('TMDB_API_KEY is not set');
   const type = normalizeType(mediaType);
   const isV4 = TMDB_KEY.startsWith('eyJ'); // v4 read tokens are JWTs
   const url = `${TMDB}/${type}/${id}${isV4 ? '' : `?api_key=${encodeURIComponent(TMDB_KEY)}`}`;
   const init = isV4 ? { headers: { Authorization: `Bearer ${TMDB_KEY}` } } : undefined;
-  let res: Response;
-  try { res = await fetch(url, init); } catch { return null; }
-  if (!res.ok) return null;
-  let d: any;
-  try { d = await res.json(); } catch { return null; }
+  const res = await fetch(url, init);
+  if (res.status === 404) return null; // no such title
+  if (!res.ok) throw new Error(`TMDB ${res.status} for ${type}/${id}`);
+  const d: any = await res.json();
   return {
     type,
     title: d.title || d.name || '',
@@ -122,42 +125,54 @@ async function loadTitle(mediaType: string | null, tmdbId: unknown): Promise<Tit
 const AUTH = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
 const JSON_AUTH = { ...AUTH, 'Content-Type': 'application/json' };
 
+// A lookup that FAILS must not look like a lookup that found NOTHING. "Found
+// nothing" gets a (briefly cached) generic card; "failed" must throw, so the
+// handler answers 503 no-store and the app proxy serves the static card and
+// retries next time. Before this, a PostgREST blip (PGRST002, 2026-10-17)
+// rendered the blank fallback card with a 7-day s-maxage, and the edge kept
+// serving it for every profile after the database had recovered.
+async function rest(url: string, init?: RequestInit): Promise<Response> {
+  const res = await fetch(url, init);
+  if (!res.ok) throw new Error(`Supabase ${res.status} for ${new URL(url).pathname}`);
+  return res;
+}
+
 async function loadProfile(handle: string) {
   if (!HANDLE_RE.test(handle)) return null;
-  const pRes = await fetch(
+  const pRes = await rest(
     `${SUPABASE_URL}/rest/v1/public_profiles?username=ilike.${ilikeHandle(handle)}` +
     `&select=id,username,display_name,avatar_url,is_premium&limit=1`,
     { headers: AUTH },
   );
-  const rows = await pRes.json();
-  const profile = Array.isArray(rows) ? rows[0] : null;
+  const profile = ((await pRes.json()) as any[])[0];
   if (!profile) return null;
   profile.avatar_url = safeAvatar(profile.avatar_url);
 
   const [cRes, revRes, fRes, recentRes, ratedRes] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=id`, { headers: { ...AUTH, Prefer: 'count=exact', Range: '0-0' } }),
-    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&note=not.is.null&select=id`, { headers: { ...AUTH, Prefer: 'count=exact', Range: '0-0' } }),
+    rest(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=id`, { headers: { ...AUTH, Prefer: 'count=exact', Range: '0-0' } }),
+    rest(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&note=not.is.null&select=id`, { headers: { ...AUTH, Prefer: 'count=exact', Range: '0-0' } }),
     // follows rows are readable only by the two people in them; anon counts via the RPC.
-    fetch(`${SUPABASE_URL}/rest/v1/rpc/get_follow_counts`, { method: 'POST', headers: JSON_AUTH, body: JSON.stringify({ p_target: profile.id }) }),
-    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=tmdb_id,media_type,watched_at&order=watched_at.desc&limit=6`, { headers: AUTH }),
-    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=rating&rating=not.is.null`, { headers: AUTH }),
+    rest(`${SUPABASE_URL}/rest/v1/rpc/get_follow_counts`, { method: 'POST', headers: JSON_AUTH, body: JSON.stringify({ p_target: profile.id }) }),
+    rest(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=tmdb_id,media_type,watched_at&order=watched_at.desc&limit=6`, { headers: AUTH }),
+    rest(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=rating&rating=not.is.null`, { headers: AUTH }),
   ]);
 
   const count = (r: Response) => parseInt((r.headers.get('content-range') || '0-0/0').split('/')[1], 10) || 0;
   const watchCount = count(cRes);
   const reviews = count(revRes);
-  const followers = Number((await fRes.json().catch(() => []))?.[0]?.followers) || 0;
+  const followers = Number(((await fRes.json()) as any[])?.[0]?.followers) || 0;
 
-  const recentRaw = await recentRes.json().catch(() => []);
-  const rated: { rating: number }[] = await ratedRes.json().catch(() => []);
-  const avgRating = Array.isArray(rated) && rated.length
+  const recentRaw: any[] = await recentRes.json();
+  const rated: { rating: number }[] = await ratedRes.json();
+  const avgRating = rated.length
     ? (rated.reduce((s, r) => s + r.rating, 0) / rated.length).toFixed(1)
     : null;
 
   let backdrop: string | null = null;
-  const top = Array.isArray(recentRaw) ? recentRaw.find((r: any) => r.tmdb_id) : null;
+  const top = recentRaw.find((r: any) => r.tmdb_id);
   if (top) {
-    try { const d = await loadTitle(top.media_type, top.tmdb_id); backdrop = d ? d.backdrop : null; } catch { /* ignore */ }
+    const d = await loadTitle(top.media_type, top.tmdb_id);
+    backdrop = d ? d.backdrop : null;
   }
 
   return { ...profile, watchCount, reviews, followers, avgRating, backdrop };
@@ -166,15 +181,14 @@ async function loadProfile(handle: string) {
 async function loadList(id: string) {
   if (!UUID_RE.test(id)) return null;
   // One list by id; 'link' lists are only readable this way (20260926090000).
-  const lRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_shared_list`, {
+  const lRes = await rest(`${SUPABASE_URL}/rest/v1/rpc/get_shared_list`, {
     method: 'POST', headers: JSON_AUTH, body: JSON.stringify({ p_list_id: id }),
   });
-  const rows = await lRes.json().catch(() => []);
-  const list = Array.isArray(rows) ? rows[0] : null;
+  const list = ((await lRes.json()) as any[])[0];
   if (!list) return null;
   const items: any[] = Array.isArray(list.items) ? list.items.slice(0, 5) : [];
-  const oRes = await fetch(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username&limit=1`, { headers: AUTH });
-  const owner = (await oRes.json().catch(() => []))?.[0] || null;
+  const oRes = await rest(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username&limit=1`, { headers: AUTH });
+  const owner = ((await oRes.json()) as any[])[0] || null;
   return {
     name: list.name as string,
     owner: owner ? (owner.username as string) : null,
@@ -186,25 +200,26 @@ async function loadList(id: string) {
 // its author from public_profiles, and poster/backdrop art from TMDB.
 async function loadPost(id: string) {
   if (!UUID_RE.test(id)) return null;
-  const r = await fetch(
+  const r = await rest(
     `${SUPABASE_URL}/rest/v1/feed_posts?id=eq.${encodeURIComponent(id)}` +
     `&select=author_id,source_type,rank,tmdb_id,media_type,title,poster_path,rating,note&limit=1`,
     { headers: AUTH },
   );
-  const post = (await r.json().catch(() => []))?.[0];
+  const post = ((await r.json()) as any[])[0];
   if (!post) return null;
 
-  const pRes = await fetch(
+  const pRes = await rest(
     `${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(post.author_id)}` +
     `&select=username,display_name,avatar_url,is_premium&limit=1`,
     { headers: AUTH },
   );
-  const author = (await pRes.json().catch(() => []))?.[0] || null;
+  const author = ((await pRes.json()) as any[])[0] || null;
   if (author) author.avatar_url = safeAvatar(author.avatar_url);
 
   let poster = TMDB_IMG(post.poster_path, 'w500');
   let backdrop: string | null = null;
-  try { const d = await loadTitle(post.media_type, post.tmdb_id); if (d) { backdrop = d.backdrop; if (!poster) poster = d.poster; } } catch { /* ignore */ }
+  const d = await loadTitle(post.media_type, post.tmdb_id);
+  if (d) { backdrop = d.backdrop; if (!poster) poster = d.poster; }
 
   return { ...post, author, poster, backdrop };
 }
@@ -216,7 +231,7 @@ async function loadFont(file: string) {
   try {
     const r = await fetch(`${FONT_BASE}/fonts/${file}`);
     if (r.ok) return await r.arrayBuffer();
-  } catch { /* missing font → Satori falls back */ }
+  } catch { /* fetchFonts rejects incomplete sets so the next request retries */ }
   return null;
 }
 async function fetchFonts(): Promise<Font[]> {
@@ -225,6 +240,7 @@ async function fetchFonts(): Promise<Font[]> {
     loadFont('DMSans-Regular.ttf'),
     loadFont('DMSans-Medium.ttf'),
   ]);
+  if (!display || !sansR || !sansM) throw new Error('brand fonts unavailable');
   const fonts: Font[] = [];
   if (display) fonts.push({ name: 'Gabarito', data: display, weight: 700, style: 'normal' });
   if (sansR) fonts.push({ name: 'DM Sans', data: sansR, weight: 400, style: 'normal' });
@@ -234,7 +250,7 @@ async function fetchFonts(): Promise<Font[]> {
 
 // The fonts never change, so fetch them once per isolate. The promise (not the
 // value) is memoized so concurrent first requests share one fetch. A load that
-// yields NO usable font is not memoized: that is a transient origin failure,
+// cannot load every required font is not memoized: that is a transient origin failure,
 // and pinning it would serve unstyled cards for the life of the isolate.
 let fontsPromise: Promise<Font[]> | null = null;
 function loadFonts() {
@@ -261,7 +277,14 @@ function loadWasm() {
   return wasmPromise;
 }
 
-async function png(el: El, fonts: Font[]) {
+// WhatsApp (and a few other scrapers) drop a link preview whose image is much
+// over ~300KB. A card with a photographic backdrop is ~1.2MB as PNG but ~150KB
+// as JPEG, while a flat text card is tiny as PNG and fuzzier as JPEG. So draw
+// PNG first and fall back to JPEG only when PNG is too big.
+const MAX_PNG_BYTES = 280 * 1024;
+const JPEG_QUALITY = 84;
+
+async function png(el: El, fonts: Font[], cacheControl: string) {
   const t0 = performance.now();
   const svg = await satori(el as any, { width: 1200, height: 630, fonts: fonts as any });
   const t1 = performance.now();
@@ -270,15 +293,23 @@ async function png(el: El, fonts: Font[]) {
   const r = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
   const rendered = r.render();
   const t3 = performance.now();
-  const out = rendered.asPng();
+  const asPng = rendered.asPng();
   const t4 = performance.now();
+  let body: Uint8Array = asPng;
+  let type = 'image/png';
+  if (asPng.length > MAX_PNG_BYTES) {
+    // jpeg-js ignores alpha; every card paints an opaque background.
+    body = jpeg.encode({ data: rendered.pixels, width: rendered.width, height: rendered.height }, JPEG_QUALITY).data;
+    type = 'image/jpeg';
+  }
+  const t5 = performance.now();
   // Stage timings, so a WORKER_RESOURCE_LIMIT in the Supabase logs says where
   // the budget went (satori includes fetching the card's images).
-  console.log(`og-card satori=${(t1 - t0).toFixed(0)}ms wasm=${(t2 - t1).toFixed(0)}ms raster=${(t3 - t2).toFixed(0)}ms png=${(t4 - t3).toFixed(0)}ms svg=${svg.length}B png=${out.length}B`);
+  console.log(`og-card satori=${(t1 - t0).toFixed(0)}ms wasm=${(t2 - t1).toFixed(0)}ms raster=${(t3 - t2).toFixed(0)}ms png=${(t4 - t3).toFixed(0)}ms jpeg=${(t5 - t4).toFixed(0)}ms png=${asPng.length}B sent=${body.length}B ${type}`);
   // Copy into a fresh ArrayBuffer: Deno's Response body type rejects the
-  // ArrayBufferLike-backed view resvg returns.
-  return new Response(new Uint8Array(out).buffer as ArrayBuffer, {
-    headers: { 'content-type': 'image/png', 'cache-control': OG_CACHE },
+  // ArrayBufferLike-backed view the encoders return.
+  return new Response(new Uint8Array(body).buffer as ArrayBuffer, {
+    headers: { 'content-type': type, 'cache-control': cacheControl },
   });
 }
 
@@ -422,36 +453,34 @@ function profileCard(profile: Awaited<ReturnType<typeof loadProfile>>) {
   );
 }
 
-async function card(searchParams: URLSearchParams): Promise<El> {
+// `miss` marks a generic card drawn because the thing does not exist (or is
+// private): cached for minutes, not a week, since it can start existing.
+async function card(searchParams: URLSearchParams): Promise<{ el: El; miss: boolean }> {
   // List card — ?list=<uuid>
   const listId = searchParams.get('list');
   if (listId) {
-    let list = null;
-    try { list = await loadList(listId); } catch { /* branded fallback */ }
-    return listCard(list);
+    const list = await loadList(listId);
+    return { el: listCard(list), miss: !list };
   }
 
   // Post card — ?post=<uuid>
   const postId = searchParams.get('post');
   if (postId) {
-    let post = null;
-    try { post = await loadPost(postId); } catch { /* branded fallback */ }
-    return postCard(post);
+    const post = await loadPost(postId);
+    return { el: postCard(post), miss: !post };
   }
 
   // Title card — ?type=movie&id=123
   const id = searchParams.get('id');
   if (id) {
-    let t = null;
-    try { t = await loadTitle(searchParams.get('type'), id); } catch { /* generic card */ }
-    return titleCard(t);
+    const t = await loadTitle(searchParams.get('type'), id);
+    return { el: titleCard(t), miss: !t };
   }
 
   // Profile card — ?u=username
   const handle = (searchParams.get('u') || '').replace(/^@/, '').trim().toLowerCase();
-  let profile = null;
-  try { if (handle) profile = await loadProfile(handle); } catch { /* branded fallback */ }
-  return profileCard(profile);
+  const profile = handle ? await loadProfile(handle) : null;
+  return { el: profileCard(profile), miss: !profile };
 }
 
 Deno.serve(async (request) => {
@@ -460,8 +489,10 @@ Deno.serve(async (request) => {
   }
   const { searchParams } = new URL(request.url);
   try {
-    const [el, fonts] = await Promise.all([card(searchParams), loadFonts()]);
-    return await png(el, fonts);
+    const [{ el, miss }, fonts] = await Promise.all([card(searchParams), loadFonts()]);
+    // Unstyled cards must not be cached either.
+    if (!fonts.length) throw new Error('brand fonts unavailable');
+    return await png(el, fonts, miss ? OG_CACHE_MISS : OG_CACHE);
   } catch (e) {
     console.error('og-card render failed', e);
     // Uncacheable, so the app proxy keeps its static fallback and retries later.

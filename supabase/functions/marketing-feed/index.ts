@@ -29,7 +29,8 @@ import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
 import { ARTICLE_TABLE_CSS, articleExcerpt, isArticleTable, renderArticleBlock } from '../_shared/articleBody.js';
-import { articleSignupPromptHtml, insertPromptAfterSecondParagraph } from '../_shared/articleSignupPrompt.js';
+import { selectTmdbMatch } from '../_shared/tmdbMatch.js';
+import { articleSignupPromptHtml } from '../_shared/articleSignupPrompt.js';
 import { clampDescription, fitTitle } from '../_shared/seoText.ts';
 
 const SITE = 'https://theplot.tv';
@@ -38,6 +39,13 @@ const FEED_TITLE = "What's On";
 const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – Plot";
 const FEED_PATH = '/whats-on';
 const PAGE_SIZE = 30;
+const SEARCH_LIMIT = 60;
+const SEARCH_TERMS = 5;
+
+// Words from a search box, safe to put inside a PostgREST or() filter: the
+// characters that delimit or wildcard a filter value become word breaks.
+const searchWords = (q: string) =>
+  q.replace(/[,()%_*\\"':;&|<>=]/g, ' ').split(/\s+/).filter((w) => w.length > 0).slice(0, SEARCH_TERMS);
 
 const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
@@ -68,6 +76,46 @@ const rankRefs = (body: string[], refs: TmdbRef[]) =>
       return t ? String(para || '').toLowerCase().includes(t) : false;
     }),
   }));
+
+// Articles written before titles were attached carry no tmdb_refs, so there is
+// nothing to hang a save button on. Where the copy states a title the way these
+// guides do ("Disclosure Day (Friday, October 9). ..."), read it from the prose
+// and resolve it on TMDB. Deliberately narrow: only a paragraph that opens with
+// a name followed by a date or year in brackets is a candidate, and a candidate
+// is kept only when TMDB has exactly one title of that name (the article's year
+// breaks a tie), so "A horror library refresh (Thursday, October 1)" resolves
+// to nothing rather than to a wrong film. A TMDB failure just yields no titles.
+const LEADING_TITLE = /^([^()\n]{2,70}?)\s+\((?:(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day|January|February|March|April|May|June|July|August|September|October|November|December|\d{4})\b[^)]*\)/;
+const resolveMentionedTitles = async (body: string[], year: number | null): Promise<TmdbRef[]> => {
+  const key = Deno.env.get('TMDB_API_KEY');
+  if (!key) return [];
+  const names = [...new Set(body
+    .map((text) => LEADING_TITLE.exec(String(text || '').trim())?.[1]?.trim())
+    .filter((name): name is string => Boolean(name)))].slice(0, 8);
+  const found = await Promise.all(names.map(async (name): Promise<TmdbRef | null> => {
+    try {
+      const r = await fetch(
+        `https://api.themoviedb.org/3/search/multi?api_key=${key}&language=en-US&include_adult=false&query=${encodeURIComponent(name)}`,
+        { signal: AbortSignal.timeout(2500) },
+      );
+      if (!r.ok) return null;
+      const { results } = await r.json();
+      const hit = selectTmdbMatch(results, { title: name, year });
+      return hit
+        ? { media_type: hit.media_type, id: hit.id, title: hit.title ?? hit.name ?? name, poster_path: hit.poster_path ?? null }
+        : null;
+    } catch {
+      return null;
+    }
+  }));
+  const seen = new Set<number>();
+  return found.filter((t): t is TmdbRef => {
+    const id = t ? refId(t) : null;
+    if (!t || !id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+};
 
 // Reads as prose in a sentence ("not streaming in the UK"). Mirrors the same
 // map in supabase/functions/title-page, so the two surfaces word it alike.
@@ -363,9 +411,11 @@ const HOME_KIND_LABEL: Record<string, string> = { streaming: 'Now streaming', re
 
 // Kicker chips: sage everywhere except the featured (lead) story, which is
 // pink. The per-type tone colours in TYPE_META are not used for chips.
-const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false) => {
+const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false, showGuide = false) => {
   const m = TYPE_META[p.post_type];
   if (!m) return '';
+  // Every long-form piece is a guide, so the chip says nothing in a list.
+  if (p.post_type === 'guide' && !showGuide) return '';
   const label = (p.post_type === 'now_streaming' && HOME_KIND_LABEL[p.payload?.home_kind ?? '']) || m.label;
   return `<span class="kick${featured ? ' featured' : ''}">${esc(label)}</span>`;
 };
@@ -377,7 +427,7 @@ const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, featured = false) =>
 // as the app and marketing site, with cross_subdomain_cookie so a visit here
 // joins the same landing → signup funnel. The ?v= is a cache bust: bump it
 // when either file changes.
-const WHATS_ON_JS_VERSION = '20261014';
+const WHATS_ON_JS_VERSION = '20261017';
 const ANALYTICS_SCRIPT = `<script src="${SITE}/js/whats-on-head.js?v=${WHATS_ON_JS_VERSION}"></script>`;
 const GTM_NOSCRIPT = `<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PC72PHBN" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`;
 
@@ -388,7 +438,7 @@ const SHORT_CACHE = 'public, s-maxage=3600, stale-while-revalidate=86400';
 // in the site audit.
 const ARTICLE_CACHE = 'public, s-maxage=86400, stale-while-revalidate=604800';
 
-const page = (title: string, head: string, body: string, status = 200, nav = 'whats-on', cacheControl = SHORT_CACHE) =>
+const page = (title: string, head: string, body: string, status = 200, nav = 'whats-on', cacheControl = SHORT_CACHE, after = '') =>
   new Response(
     `<!DOCTYPE html>
 <html lang="en">
@@ -479,7 +529,15 @@ ${head}
   h1.feed-title { font-family: var(--display); font-size: clamp(2.8rem, 6vw, 4rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
   h1.feed-title em { font-style: normal; font-weight: 500; color: var(--mut); }
 
-  nav.dex { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-bottom: 1px solid var(--hair); margin: 28px 0 0; }
+  .wsearch { display: flex; align-items: center; gap: 6px; flex: 0 1 300px; min-width: 0; margin-bottom: 8px; background: var(--paper); border-radius: 9999px; padding: 3px 3px 3px 16px; }
+  .wsearch input[type=search] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.95rem; color: var(--ink); padding: 6px 0; -webkit-appearance: none; appearance: none; }
+  .wsearch input[type=search]::placeholder { color: var(--faint); }
+  .wsearch button { border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.8rem; font-weight: 600; padding: 7px 14px; cursor: pointer; transition: background 0.2s; }
+  .wsearch button:hover { background: var(--fill-hover); }
+  .wsearch:focus-within { box-shadow: 0 0 0 2px var(--ink); }
+  .search-sum { margin: 28px 0 0; color: var(--mut); font-weight: 300; }
+  .search-sum a { color: var(--ink); }
+  nav.dex { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; border-bottom: 1px solid var(--hair); margin: 28px 0 0; }
   .dex-links { display: flex; gap: 28px; flex-wrap: wrap; }
   .dex a { color: var(--mut); text-decoration: none; padding-bottom: 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
   .dex a:hover { color: var(--ink); }
@@ -569,6 +627,44 @@ ${head}
   .tail-list a:hover { color: var(--mut); }
   .tail-list .meta { color: var(--mut); font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; padding-top: 3px; }
 
+  /* ── editorial list (Oct 2026) ──
+     The front page drops the cream-on-cream boxes: an image-led lead, stories
+     as hairline-ruled rows, sections headed by an ink rule, and the type label
+     as small kicker text instead of a pill. Scoped to .feed-grid so article
+     and filtered-list pages are untouched. The About card keeps its ink panel. */
+  .feed-grid { gap: 56px; }
+  .feed-main { gap: 0; }
+  .feed-side { gap: 36px; }
+  .feed-grid .kick { background: none; padding: 0; border-radius: 0; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #B83558; }
+  .feed-grid .rail-row .kick, .feed-grid .shelf-item .kick { color: var(--mut); }
+  .feed-grid .feature { display: block; padding: 0; background: none; border-radius: 0; margin-bottom: 8px; }
+  .feed-grid .f-media img, .feed-grid .f-media .ph { width: 100%; height: auto; aspect-ratio: 16 / 8; border-radius: 14px; margin-bottom: 20px; }
+  .feed-grid .f-text { gap: 8px; }
+  .feed-grid .feature h2 { font-size: clamp(1.9rem, 3.2vw, 2.4rem); line-height: 1.08; letter-spacing: -0.035em; max-width: 22ch; }
+  .feed-grid .feature .dek { max-width: 58ch; margin-bottom: 6px; }
+  .feed-grid .rail-row { background: none; border-radius: 0; padding: 16px 0; border-bottom: 1px solid var(--hair); gap: 24px; }
+  .feed-grid .feature + .rail-row { border-top: 1px solid var(--ink); margin-top: 28px; }
+  .feed-grid .rail-thumb { width: 72px; height: 72px; border-radius: 10px; }
+  .feed-grid .rail-t { font-size: 1.15rem; }
+  .feed-grid .rail-date { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.72rem; }
+  .feed-grid .sec-card { background: none; border-radius: 0; padding: 0; gap: 14px; }
+  .feed-main > .sec-card { margin: 36px 0 12px; }
+  .feed-grid .sec-head { padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+  .feed-grid .sec-dot { display: none; }
+  .feed-grid .sec-label { font-size: 1.25rem; }
+  .feed-grid .trend-row:first-child, .feed-grid .datecard:first-child, .feed-grid .tail-list a:first-child { border-top: none; }
+  .feed-grid .trend-rank.top { color: #B83558; }
+  @media (max-width: 900px) {
+    .feed-grid { gap: 32px; }
+    .feed-grid .feature { padding: 0; }
+  }
+  @media (max-width: 760px) {
+    .feed-grid .rail-row { padding: 14px 0; gap: 14px; }
+    .feed-grid .rail-thumb { width: 56px; height: 56px; }
+    .feed-grid .rail-t { font-size: 1.05rem; }
+    .feed-grid .sec-card { padding: 0; }
+  }
+
   /* filtered / paged list (unchanged structure, new type) */
   .group { display: grid; grid-template-columns: 170px 1fr; gap: 36px; padding-top: 34px; border-top: 1px solid var(--hair); }
   .g-date { padding-top: 22px; }
@@ -582,9 +678,9 @@ ${head}
   .row-dek { display: block; color: var(--mut); font-size: 0.92rem; line-height: 1.45; margin-top: 8px; }
   .row img { width: 240px; aspect-ratio: 3/2; object-fit: cover; flex-shrink: 0; border-radius: 14px; }
   .row .ph { width: 240px; aspect-ratio: 3/2; flex-shrink: 0; background: var(--paper); border-radius: 14px; }
-  .older-row { border-top: 1px solid var(--hair); padding: 26px 0 0; text-align: center; }
-  .older { color: var(--mut); text-decoration: none; }
-  .older:hover { color: var(--ink); }
+  .older-row { border-top: 1px solid var(--hair); padding: 44px 0 0; text-align: center; }
+  .older { display: inline-flex; align-items: center; gap: 10px; padding: 18px 40px; border-radius: 9999px; background: var(--ink); color: var(--bg); font-size: 0.95rem; letter-spacing: 0.1em; text-decoration: none; transition: background 0.2s var(--ease), transform 0.2s var(--ease); }
+  .older:hover { background: #3d3d36; transform: translateY(-1px); }
 
   /* entry page */
   .crumbs { max-width: 680px; margin: 0 auto; padding-top: 40px; display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--mut); }
@@ -626,6 +722,12 @@ ${ARTICLE_TABLE_CSS}
   .gt-add { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--fill); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
   .gt-add:hover { background: var(--fill-hover); }
   .gt-add svg { width: 13px; height: 13px; display: block; }
+  /* A save line under the paragraph that first names a title. One per title,
+     quiet enough to read as part of the prose rather than an ad break. */
+  .post-body .save-line { display: flex; flex-wrap: wrap; gap: 8px; margin: -10px 0 22px; }
+  .save-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--hair); color: var(--ink); font-size: 0.82rem; font-weight: 600; text-decoration: none; transition: background 0.2s; }
+  .save-chip:hover { background: var(--fill); }
+  .save-chip svg { width: 20px; height: 20px; padding: 4px; border-radius: 50%; background: var(--fill); display: block; box-sizing: border-box; }
   @media (max-width: 640px) {
     .gt-card { flex-direction: column; gap: 0; padding: 6px 16px; }
     .gt-col:first-child .gt-row:last-child { border-bottom: 1px solid rgba(41,41,36,0.1); }
@@ -737,9 +839,10 @@ ${FOOTER_CSS}
     .row img, .row .ph { width: 150px; }
     .row-t { font-size: 1.15rem; }
     .row-dek { display: none; }
-    .dex { overflow-x: auto; scrollbar-width: none; }
-    .dex::-webkit-scrollbar { display: none; }
-    .dex-links { flex-wrap: nowrap; }
+    nav.dex { flex-direction: column; align-items: stretch; gap: 14px; }
+    .dex-links { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .dex-links::-webkit-scrollbar { display: none; }
+    .wsearch { flex: none; margin-bottom: 14px; }
   }
 </style>
 </head>
@@ -759,6 +862,7 @@ ${GTM_NOSCRIPT}
 <div class="wrap">
 ${body}
 </div>
+${after}
 ${FOOTER_HTML}
 <script defer src="${SITE}/js/whats-on.js?v=${WHATS_ON_JS_VERSION}"></script>
 </body>
@@ -977,7 +1081,8 @@ const renderChart = async (supabase: Db) => {
 const HOME_BATCH = 60;
 const HERO_RAIL_SIZE = 7;
 const STREAMING_SIZE = 4;
-const COUNTDOWN_SIZE = 2;
+const COUNTDOWN_SIZE = 6;
+const ON_THIS_DAY_SIZE = 4;
 const TRAILER_SIZE = 2;
 // Dedicated per-category queries fetch this many extra so a section can still
 // fill up even if every hero slot happens to land in that same category.
@@ -1050,6 +1155,18 @@ const comingSoonCards = (posts: FeedPost[]) => `<div class="datecards">${posts.m
   </a>`;
 }).join('')}</div>`;
 
+// On this day: anniversary pieces, each pinned to a calendar date, so the
+// headline leads and the post date sits on the left like Coming soon's.
+const onThisDayList = (posts: FeedPost[]) => `<div class="datecards">${posts.map((p) => {
+  const img = postImage(p);
+  const { mon, day } = fmtBadge(p.scheduled_for);
+  return `<a class="datecard" href="${FEED_PATH}/${esc(p.slug)}">
+    <span class="date-badge">${esc(mon)}<span class="dd">${day}</span></span>
+    <div class="dc-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}</div>
+    <span class="dc-t">${esc(postTitle(p))}</span>
+  </a>`;
+}).join('')}</div>`;
+
 const firstLookCards = (posts: FeedPost[]) => `<div class="wide-grid">${posts.map((p) => {
   const img = postImage(p);
   return `<a class="wide-card" href="${FEED_PATH}/${esc(p.slug)}">
@@ -1080,6 +1197,29 @@ const subscribeForm = (placement: string) => `
   </form>
   <div class="nlsub-msg" id="nlMsg" role="status"></div>
 </aside>`;
+
+// The closing banner at the foot of the What's On front page: signup first,
+// the newsletter as the quiet fallback, over a wall of trending posters that
+// /js/whats-on.js fills in (#wclWall). It carries #newsletter and the nlForm
+// ids, so the /newsletter redirects and the form wiring land here.
+const closerSection = (placement: string) => `
+<section class="wcl" id="newsletter">
+  <div class="wcl-wall" id="wclWall" aria-hidden="true"></div>
+  <div class="wcl-inner">
+    <h2 class="wcl-headline">Your next favorite <br class="wcl-br"><em>is out there.</em></h2>
+    <p class="wcl-sub">Free forever. Premium when you want more.</p>
+    <a class="wcl-cta" href="${APP}/signup?src=${esc(placement)}_closer" data-cta="${esc(placement)}_closer">Start tracking</a>
+    <div class="wcl-mail">
+      <span class="wcl-hint">Want more? Get movie and TV updates by email.</span>
+      <form class="wcl-form" id="nlForm" data-placement="${esc(placement)}_closer">
+        <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
+        <input type="text" name="website" class="nlsub-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit">Subscribe</button>
+      </form>
+      <div class="wcl-msg" id="nlMsg" role="status"></div>
+    </div>
+  </div>
+</section>`;
 
 // A short introduction to Plot with the two ways in. The full card sits above
 // the newsletter card on every list and article page. `compact` is a single
@@ -1147,6 +1287,34 @@ const SUBSCRIBE_CSS = `
   .nlsub-msg { margin-top: 10px; color: var(--mut); font-size: 0.86rem; min-height: 1.2em; }
   /* on list and article pages the card stands alone below the content */
   .wrap > .nlsub, .post-foot > .nlsub { margin-top: 44px; }
+
+  /* Closing banner over a poster wall (What's On front page). */
+  .wcl { position: relative; isolation: isolate; overflow: hidden; margin-top: -40px; padding: 9rem 24px 8rem; text-align: center; scroll-margin-top: 88px; }
+  .wcl-wall { position: absolute; inset: 0; z-index: -1; display: grid; grid-template-columns: repeat(9, 1fr); grid-auto-rows: min-content; align-content: start; gap: 12px; opacity: 0.15;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 78%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 78%, transparent 100%);
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+  .wcl-tile { aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; background: #e5e3db; }
+  .wcl-tile img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.6s var(--ease); }
+  .wcl-tile img.loaded { opacity: 1; }
+  .wcl-inner { max-width: 720px; margin: 0 auto; position: relative; display: flex; flex-direction: column; align-items: center; }
+  .wcl-headline { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: clamp(2.5rem, 5.5vw, 4.5rem); line-height: 0.86; margin-bottom: 1.1rem; }
+  .wcl-headline em { font-style: normal; }
+  .wcl-sub { font-size: 1.05rem; font-weight: 300; color: var(--mut); max-width: 44ch; margin: 0 auto 1.6rem; line-height: 1.5; }
+  .wcl-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 28px; border-radius: 9999px; background: var(--fill); color: var(--ink); font-weight: 600; font-size: 1rem; text-decoration: none; transition: background 0.2s; }
+  .wcl-cta:hover { background: var(--fill-hover); }
+  .wcl-mail { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; margin-top: 2.2rem; width: 100%; }
+  .wcl-hint { font-size: 0.8rem; font-weight: 300; color: var(--mut); }
+  .wcl-form { display: flex; align-items: center; border: 1px solid var(--ink); border-radius: 9999px; padding: 6px; height: 56px; width: 360px; max-width: 100%; }
+  .wcl-form input[type=email] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.88rem; padding: 0 6px 0 16px; color: var(--ink); }
+  .wcl-form input[type=email]::placeholder { color: var(--mut); }
+  .wcl-form button { height: 40px; padding: 0 18px; border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
+  .wcl-form button:hover:not(:disabled) { background: var(--fill-hover); }
+  .wcl-form button:disabled { opacity: 0.6; cursor: default; }
+  .wcl-msg { font-size: 0.78rem; color: var(--mut); min-height: 1.1em; }
+  .wcl + .site-footer { margin-top: 0; border-top: 0; }
+  @media (max-width: 820px) { .wcl-wall { grid-template-columns: repeat(6, 1fr); } }
+  @media (max-width: 600px) { .wcl { padding: 6rem 16px 5rem; } }
+  @media (pointer: coarse) { .wcl-form { height: 52px; } .wcl-form button, .wcl-form input[type=email] { min-height: 44px; } }
 `;
 const SUBSCRIBE_HEAD = `<style>${SUBSCRIBE_CSS}</style>`;
 
@@ -1205,6 +1373,7 @@ Deno.serve(async (req) => {
     const type = TYPE_META[url.searchParams.get('type') || ''] ? url.searchParams.get('type') : null;
     const pageNum = Math.min(Math.max(parseInt(url.searchParams.get('page') || '1', 10) || 1, 1), 100);
 
+    const rawQ = (url.searchParams.get('q') || '').replace(/\s+/g, ' ').trim().slice(0, 80);
     const dexLinks = FILTERS.map((f) => {
       const active = f.key === type;
       const href = f.key ? `${FEED_PATH}?type=${f.key}` : FEED_PATH;
@@ -1237,7 +1406,44 @@ Deno.serve(async (req) => {
       </div>
       <nav class="dex r2">
         <div class="dex-links">${dexLinks}</div>
+        <form class="wsearch" role="search" action="${FEED_PATH}" method="get">
+          <input type="search" name="q" value="${esc(rawQ)}" placeholder="Search What's On" maxlength="80" aria-label="Search What's On articles" autocomplete="off">
+          <button type="submit">Search</button>
+        </form>
       </nav>`;
+
+    // Search: ?q= over article titles and bodies, every word required. Served
+    // un-cached and noindex (the Pages proxy skips its cache for q), canonical
+    // to the front page so a search never becomes a page of its own.
+    const words = searchWords(rawQ);
+    if (words.length) {
+      let query = baseQuery();
+      for (const w of words) {
+        query = query.or(`copy->>page_title.ilike.%${w}%,copy->>page_body.ilike.%${w}%`);
+      }
+      const { data: found } = await query.order('scheduled_for', { ascending: false }).limit(SEARCH_LIMIT);
+      const lower = words.map((w) => w.toLowerCase());
+      const inTitle = (p: FeedPost) => {
+        const t = postTitle(p).toLowerCase();
+        return lower.every((w) => t.includes(w));
+      };
+      const results = ((found || []) as FeedPost[])
+        .map((p, i) => ({ p, i, hit: inTitle(p) ? 0 : 1 }))
+        .sort((a, b) => a.hit - b.hit || a.i - b.i)
+        .map((r) => r.p);
+      const n = results.length;
+      const summary = n
+        ? `${n >= SEARCH_LIMIT ? `The ${SEARCH_LIMIT} newest` : n} ${n === 1 ? 'article' : 'articles'} for &ldquo;${esc(rawQ)}&rdquo;. <a href="${FEED_PATH}">Clear search</a>`
+        : `No articles match &ldquo;${esc(rawQ)}&rdquo;. Try fewer or different words, or <a href="${FEED_PATH}">browse What's On</a>.`;
+      const searchHead = `${SUBSCRIBE_HEAD}
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="${SITE}${FEED_PATH}">`;
+      return page(`${rawQ} – Search What's On – Plot`, searchHead, `
+        ${titleRow}
+        <p class="search-sum r3">${summary}</p>
+        ${results.length ? dailyWire(results) : ''}
+      `, 200, 'whats-on', 'no-store', closerSection('whats_on'));
+    }
 
     // Unfiltered first page: the sectioned front page. A ?type= filter or
     // page 2+ is a reader who already picked a category — that stays the
@@ -1248,18 +1454,23 @@ Deno.serve(async (req) => {
         { data: streamingData },
         { data: countdownData },
         { data: trailerData },
+        { data: onThisDayData },
         { latest: chartLatest, prior: chartPrior },
       ] = await Promise.all([
         baseQuery().order('scheduled_for', { ascending: false }).limit(HOME_BATCH),
         baseQuery().eq('post_type', 'now_streaming').order('scheduled_for', { ascending: false }).limit(STREAMING_SIZE + CATEGORY_BUFFER),
         baseQuery().eq('post_type', 'countdown').order('scheduled_for', { ascending: false }).limit(COUNTDOWN_SIZE + CATEGORY_BUFFER),
         baseQuery().eq('post_type', 'trailer').order('scheduled_for', { ascending: false }).limit(TRAILER_SIZE + CATEGORY_BUFFER),
+        baseQuery().eq('post_type', 'on_this_day').order('scheduled_for', { ascending: false }).limit(ON_THIS_DAY_SIZE),
         fetchTrendingSnapshots(supabase),
       ]);
-      const batch = (batchData || []) as FeedPost[];
+      // Countdowns and On this day posts have their own sidebar sections, so
+      // they stay out of the feed column's lead, stories and More updates.
+      const SIDEBAR_ONLY = new Set(['countdown', 'on_this_day']);
+      const batch = ((batchData || []) as FeedPost[]).filter((p) => !SIDEBAR_ONLY.has(p.post_type));
 
       if (!batch.length) {
-        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>${aboutCard('whats_on')}${subscribeForm('whats_on')}`);
+        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>${aboutCard('whats_on')}`, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
       }
 
       // The lead plus a scan-list rail come straight off the top of the same
@@ -1277,15 +1488,16 @@ Deno.serve(async (req) => {
       const heroSlugs = new Set([lead.slug, ...rail.map((p) => p.slug)]);
 
       const streaming = ((streamingData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, STREAMING_SIZE);
-      const countdown = ((countdownData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, COUNTDOWN_SIZE);
+      const countdown = ((countdownData || []) as FeedPost[]).slice(0, COUNTDOWN_SIZE);
+      const onThisDay = ((onThisDayData || []) as FeedPost[]).slice(0, ON_THIS_DAY_SIZE);
       const trailer = ((trailerData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, TRAILER_SIZE);
-      const used = new Set([...heroSlugs, ...streaming.map((p) => p.slug), ...countdown.map((p) => p.slug), ...trailer.map((p) => p.slug)]);
+      const used = new Set([...heroSlugs, ...streaming.map((p) => p.slug), ...trailer.map((p) => p.slug)]);
       const tail = rest.filter((p) => !used.has(p.slug)).slice(0, 6);
       const chartItems = ((chartLatest?.items as ChartItem[] | undefined) || []).slice(0, 5);
 
       // Feed column: lead, two stories, New at home, two more stories, First
       // look, the rest of the rail, More updates. Sidebar: Trending, Coming
-      // soon, the newsletter. Everything is a cream card on the cream ground.
+      // soon, On this day, About. Everything is a cream card on the cream ground.
       const stories = rail.map(railRow);
       const main = [
         featuredHero(lead),
@@ -1299,8 +1511,8 @@ Deno.serve(async (req) => {
       const side = [
         chartItems.length ? sectionCard('Trending', `${FEED_PATH}/chart`, trendingTeaser(chartItems, chartPrior), true) : '',
         countdown.length ? sectionCard('Coming soon', `${FEED_PATH}?type=countdown`, comingSoonCards(countdown), true) : '',
+        onThisDay.length ? sectionCard('On this day', `${FEED_PATH}?type=on_this_day`, onThisDayList(onThisDay), true) : '',
         aboutCard('whats_on'),
-        subscribeForm('whats_on'),
       ].join('');
 
       // The front page shows the newest few dozen posts in sections; without
@@ -1313,7 +1525,7 @@ Deno.serve(async (req) => {
           <aside class="feed-side">${side}</aside>
         </div>
         <div class="older-row r4"><a class="older sc" href="${FEED_PATH}?page=2">Older updates &rarr;</a></div>
-      `);
+      `, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
     }
 
     const offset = (pageNum - 1) * PAGE_SIZE;
@@ -1344,8 +1556,7 @@ Deno.serve(async (req) => {
       ${empty}
       ${older}
       ${aboutCard('whats_on')}
-      ${subscribeForm('whats_on')}
-    `);
+    `, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
   }
 
   const { data: post } = await baseQuery().eq('slug', slug).maybeSingle();
@@ -1428,6 +1639,12 @@ Deno.serve(async (req) => {
   // The poster grid belongs to long-form, multi-title guides. Ordinary article
   // pages use their single, combined title/save/watch module below instead.
   const refs = Array.isArray(typed.tmdb_refs) ? typed.tmdb_refs : [];
+  // What the copy names, for the save chips and the closing card. Attached refs
+  // when there are any; otherwise whatever the prose names that TMDB can place.
+  // The story modules and ordering below keep working from `refs` alone.
+  const mentioned = refs.length
+    ? refs
+    : await resolveMentionedTitles(body, Number(String(typed.scheduled_for || '').slice(0, 4)) || null);
   // The copy contract guarantees body[0] = intro, body[1..refs.length] = one
   // paragraph per ref in order, body[refs.length+1] = close — but only trust
   // that when the flag from validateGuide is set AND the length still matches,
@@ -1483,7 +1700,7 @@ Deno.serve(async (req) => {
     </div>`;
   }).join('');
 
-  const k = kicker(typed);
+  const k = kicker(typed, false, true);
   const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';
   // A guide earns up to two modules: the title its copy opens with, and the
   // planner's top remaining pick placed where the copy first names it. The rest
@@ -1515,29 +1732,48 @@ Deno.serve(async (req) => {
   if (runnerUpHtml && runnerUp) shown.add(runnerUp.ref);
   const rest = refs.filter((r) => !shown.has(r));
   const TAIL_HEAD: Record<string, string> = {
-    guide: 'Also in this guide',
+    guide: 'Save from this guide',
     upcoming: 'Everything landing this week',
   };
-  const tailHead = TAIL_HEAD[typed.post_type];
-  const titlesSection = tailHead && rest.length && !inlineTitles
+  // Any article that names more than one title gets the card, not just guides
+  // and the week ahead.
+  const tailHead = TAIL_HEAD[typed.post_type] || 'Save from this article';
+  // The closing summary card. A guide lists every title it names, including
+  // the ones a module already featured, so the reader can save the lot in one
+  // place; other post types keep to what the modules did not show.
+  const summaryTitles = typed.post_type === 'guide' || !TAIL_HEAD[typed.post_type] ? mentioned : rest;
+  const titlesSection = tailHead && summaryTitles.length > 1
     ? `<section class="gt">
         <div class="gt-head">
           <h2>${esc(tailHead)}</h2>
-          <span class="gt-count">${rest.length}${typed.post_type === 'guide' ? ' more' : ' titles'}</span>
+          <span class="gt-count">${summaryTitles.length} titles</span>
         </div>
         <div class="gt-card">
-          <div class="gt-col">${restRows(rest.slice(0, Math.ceil(rest.length / 2)))}</div>
-          <div class="gt-col">${restRows(rest.slice(Math.ceil(rest.length / 2)))}</div>
+          <div class="gt-col">${restRows(summaryTitles.slice(0, Math.ceil(summaryTitles.length / 2)))}</div>
+          <div class="gt-col">${restRows(summaryTitles.slice(Math.ceil(summaryTitles.length / 2)))}</div>
         </div>
       </section>`
     : '';
 
-  // Second prose paragraph gets the signup prompt when the article continues
-  // past it. The end prompt is always there, so a short piece is not asked twice.
+  // One signup prompt per article, at the end. Nothing is inserted mid-body.
   const bodyChunks: { html: string; prose: boolean }[] = [];
+  // A save chip follows the first paragraph that names a title, for titles no
+  // module already carries a save button for. Each title is offered once.
+  const chipped = new Set<TmdbRef>();
+  const saveLine = (text: string) => {
+    const lower = text.toLowerCase();
+    const hits = mentioned.filter((r) => {
+      const t = String(r.title || '').toLowerCase().trim();
+      return refId(r) && t && !shown.has(r) && !chipped.has(r) && lower.includes(t);
+    }).slice(0, 3);
+    hits.forEach((r) => chipped.add(r));
+    if (!hits.length) return '';
+    return `<p class="save-line">${hits.map((r) => `<a class="save-chip" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&amp;tmdb_id=${refId(r)}&amp;src=whats_on_article" data-cta="article_save" aria-label="Save ${esc(r.title)} to your Plot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Save ${esc(r.title)}</a>`).join('')}</p>`;
+  };
   const pushProse = (text: string, html: string) => {
     if (!text) return;
-    bodyChunks.push({ html, prose: !isArticleTable(text) });
+    const prose = !isArticleTable(text);
+    bodyChunks.push({ html: prose ? html + saveLine(text) : html, prose });
   };
   if (body[0]) pushProse(body[0], bodyLede);
   if (storyHtml) bodyChunks.push({ html: storyHtml, prose: false });
@@ -1554,17 +1790,12 @@ Deno.serve(async (req) => {
   } else {
     body.slice(1).forEach((text) => pushProse(text, renderArticleBlock(text)));
   }
-  const inlinePrompt = articleSignupPromptHtml({
-    app: APP,
-    slug: typed.slug,
-    placement: 'whats_on_article_inline',
-  });
   const endPrompt = articleSignupPromptHtml({
     app: APP,
     slug: typed.slug,
     placement: 'whats_on_article_end',
   });
-  const bodyHtml = insertPromptAfterSecondParagraph(bodyChunks, inlinePrompt, Boolean(titlesSection));
+  const bodyHtml = bodyChunks.map((chunk) => chunk.html).join('');
 
   const docTitle = fitTitle([`${title} · Plot`, title]);
   return page(docTitle, head, `

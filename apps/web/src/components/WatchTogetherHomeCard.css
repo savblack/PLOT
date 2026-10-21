@@ -1,0 +1,66 @@
+/* Watch together on Home. Hairline card, same quiet Premium mark as the nav. */
+
+.wt-home {
+  margin: 0 var(--gut) 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.wt-home-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.wt-home-row { display: flex; align-items: center; gap: 8px; max-width: 100%; }
+.wt-home-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+.wt-home-pill {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent-text);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+.wt-home-body,
+.wt-home-note {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+.wt-home-dismiss {
+  flex-shrink: 0;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.wt-home-dismiss:hover { color: var(--text-primary); }

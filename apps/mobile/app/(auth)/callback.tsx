@@ -9,6 +9,7 @@ import { ActivityIndicator, View } from 'react-native';
 import * as Linking from 'expo-linking';
 import type { EmailOtpType } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
+import { consumeMagicLink } from '../../lib/magicLink';
 import { useTheme } from '../../contexts/ThemeContext';
 
 // The email types whose links come back into the app (see
@@ -28,6 +29,8 @@ export default function AuthCallback() {
       const tokenHash = (parsed.queryParams?.token_hash ?? parsed.queryParams?.token) as string | undefined;
       const type = parsed.queryParams?.type as string | undefined;
 
+      // The root layout may already have verified this link on cold start.
+      if (type === 'magiclink') { await consumeMagicLink(url); return; }
       if (tokenHash && type && APP_EMAIL_TYPES.includes(type as EmailOtpType)) {
         await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as EmailOtpType });
         return;

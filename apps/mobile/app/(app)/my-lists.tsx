@@ -23,10 +23,10 @@ import CollapsibleSection from '../../components/CollapsibleSection';
 import SectionToggleIcon from '../../components/SectionToggleIcon';
 import SelectCircle from '../../components/SelectCircle';
 import KebabMenu, { KebabMenuItem } from '../../components/KebabMenu';
-import SubTab from '../../components/SubTab';
 import SearchPickModal from '../../components/SearchPickModal';
 import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
+import { HISTORY_VIEW } from '@plot/core/copy/historyView.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
 import { filterByWatchStatus, isFinishedStatus, listProgress, listWatchStatus, LIST_STATUS_FILTER_IDS, type ListWatchStatus } from '@plot/core/listWatchStatus.js';
@@ -105,6 +105,7 @@ type ListedTitle = {
 // diverge on which tabs exist or their order. Favourites is region-spelled
 // at the call site — it carries a null label here for exactly that reason.
 const TABS = MY_LISTS_TABS;
+const MY_LISTS_ALL_LABEL = 'All';
 
 // Release / streaming countdown chip — ports web countdownChip(); maps onto
 // the shared status-colour tokens (today / tomorrow / soon / muted).
@@ -278,6 +279,54 @@ function ListRow({ item, trailing, onPress, sel, status }: {
   );
 }
 
+/** What a poster caption can read off a saved title. */
+interface PosterCaptionItem {
+  added_by?: string | null;
+  current_season?: number | null;
+  current_episode?: number | null;
+  release_date?: string | null;
+  streaming_date?: string | null;
+}
+
+// "S01E03" for a series with a current episode, else null (poster captions).
+function episodeCode(item: { current_season?: number | null; current_episode?: number | null }): string | null {
+  if (item.current_season == null) return null;
+  return `S${String(item.current_season).padStart(2, '0')}E${String(item.current_episode ?? 0).padStart(2, '0')}`;
+}
+
+// The release or streaming countdown as a caption under a poster. A streaming
+// date wins over a release date when both are ahead ("Streaming in 3 days").
+// countdownChip only needs a palette for the chip colour, which captions skip.
+const noPalette = {} as Palette;
+function countdownPhrase(label: string): string {
+  if (/^\d+ days$/.test(label)) return `in ${label}`;
+  if (label === 'Today') return 'today';
+  if (label === 'Tomorrow') return 'tomorrow';
+  return label;
+}
+function releaseCaption(item: { release_date?: string | null; streaming_date?: string | null }): string | null {
+  const strm = countdownChip(item.streaming_date, noPalette);
+  if (strm) return `Streaming ${countdownPhrase(strm.label)}`;
+  const rel = countdownChip(item.release_date, noPalette);
+  return rel ? `Out ${countdownPhrase(rel.label)}` : null;
+}
+
+// One calm prompt for an empty section: says what belongs here and offers the
+// next step (NN/g: status, teach, direct path), instead of blank slots.
+function EmptyPrompt({ title, body, actionLabel, onPress }: { title: string; body: string; actionLabel: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  return (
+    <TouchableOpacity style={styles.emptyPrompt} onPress={onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`${title}. ${actionLabel}`}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.emptyPromptTitle}>{title}</Text>
+        <Text style={styles.emptyPromptBody}>{body}</Text>
+      </View>
+      <Text style={styles.emptyPromptAction}>{actionLabel}</Text>
+    </TouchableOpacity>
+  );
+}
+
 // ── Poster grid ───────────────────────────────────────────────────────
 function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel, caption, statusOf }: {
   items: any[];
@@ -289,7 +338,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
   onPress?: (item: any) => void;
   /** Present when the grid's section supports multi-select. */
   sel?: Selection;
-  caption?: (item: { added_by?: string | null }) => string | null;
+  caption?: (item: PosterCaptionItem) => string | null;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -425,7 +474,8 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
 }
 
 // ── Main screen ───────────────────────────────────────────────────────
-export default function MyListsScreen() {
+/** `history` is the History tab's own screen: the same body with the list tabs left out. */
+export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }) {
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
@@ -435,7 +485,7 @@ export default function MyListsScreen() {
 
   const shareRaw = useLocalSearchParams<{ share?: string | string[] }>().share;
   const sharePreset = (Array.isArray(shareRaw) ? shareRaw[0] : shareRaw) || null;
-  const [tab,          setTab]          = useState('all');
+  const [tab,          setTab]          = useState(mode === 'history' ? 'history' : 'all');
   const [topDragging, setTopDragging]  = useState(false);
   // ?share=<card> opens History on that card. The param holds the tab on
   // History until the sheet closes, so a cold link does not land on All.
@@ -632,7 +682,11 @@ export default function MyListsScreen() {
     relevantSectionIds.forEach(id => setSectionOpen(id, next));
   };
 
-  const HEADER_H = insets.top + 150;
+  // The Show choices: every list tab except History, which has its own screen. The
+  // favourites tab carries a null label in the shared list (region-spelled).
+  const listTabs = TABS.filter(t => t.id !== 'history').map(t => ({ id: t.id, label: t.label ?? fw.plural }));
+  const searchPlaceholder = isHistory ? HISTORY_VIEW.searchPlaceholder : CUSTOM_LISTS.searchPlaceholder;
+  const HEADER_H = insets.top + 136;
 
   return (
     <View style={styles.screen}>
@@ -686,9 +740,13 @@ export default function MyListsScreen() {
               />
             }
           >
-            {watchingList.map(item => (
-              <ListRow key={item.tmdb_id} item={{ ...item, media_type: 'tv' }} sel={watchingSel} onPress={() => openPanel(item.tmdb_id, 'tv')} />
-            ))}
+            <PosterGrid
+              horizontal
+              items={watchingList.map(item => ({ ...item, media_type: 'tv' }))}
+              sel={watchingSel}
+              caption={(item) => episodeCode(item)}
+              onPress={(item) => openPanel(item.tmdb_id, 'tv')}
+            />
           </CollapsibleSection>
         )}
         {viewTab === 'watching' && watching.items.length === 0 && (
@@ -702,7 +760,7 @@ export default function MyListsScreen() {
         {showWant && (
           <CollapsibleSection
             id="want"
-            label="Want to Watch"
+            label={CUSTOM_LISTS.wantToWatch}
             count={sortedSaved.length}
             open={sectionsOpen.want}
             onOpenChange={(next) => setSectionOpenFor('want', next)}
@@ -722,41 +780,21 @@ export default function MyListsScreen() {
               />
             }
           >
-            {(
-              sortedSaved.length === 0 ? (
-                <View style={styles.empty}>
-                  <Text style={styles.emptyBody}>Tap the bookmark on any title to save it here.</Text>
-                </View>
-              ) : (
-                sortedSaved.map(item => {
-                  const rel  = countdownChip(item.release_date, colors);
-                  const strm = countdownChip(item.streaming_date, colors);
-                  return (
-                    <View key={item.id}>
-                    <ListRow
-                      item={item}
-                      sel={wantSel}
-                      onPress={() => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
-                      trailing={(rel || strm) ? (
-                        <View style={styles.statusChips}>
-                          {rel && (
-                            <View style={[styles.statusChip, { backgroundColor: rel.color + '1F', borderColor: rel.color + '55' }]}>
-                              <Text style={[styles.statusChipText, { color: rel.color }]}>{rel.label}</Text>
-                            </View>
-                          )}
-                          {strm && (
-                            <View style={[styles.statusChip, { backgroundColor: strm.color + '1F', borderColor: strm.color + '55' }]}>
-                              <Text style={[styles.statusChipText, { color: strm.color }]}>Streaming {strm.label.toLowerCase()}</Text>
-                            </View>
-                          )}
-                        </View>
-                      ) : undefined}
-                    />
-                    {!wantSel.editMode && <View style={{ marginLeft: 64 }}><PrivateNote id={item.tmdb_id} type={item.media_type === 'tv' ? 'tv' : 'movie'} title={item.title || item.name || ''} /></View>}
-                    </View>
-                  );
-                })
-              )
+            {sortedSaved.length === 0 ? (
+              <EmptyPrompt
+                title={CUSTOM_LISTS.emptyPrompts.want.title}
+                body={CUSTOM_LISTS.emptyPrompts.want.body}
+                actionLabel={CUSTOM_LISTS.emptyPrompts.want.action}
+                onPress={() => router.push('/(app)/search' as Href)}
+              />
+            ) : (
+              <PosterGrid
+                horizontal
+                items={sortedSaved}
+                sel={wantSel}
+                caption={(item) => releaseCaption(item)}
+                onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
+              />
             )}
           </CollapsibleSection>
         )}
@@ -859,12 +897,12 @@ export default function MyListsScreen() {
                   </TouchableOpacity>
                 )}
                 {manualLists.length === 0 && (
-                  <View style={styles.empty}>
-                    <Text style={styles.emptyBody}>Create your first custom list.</Text>
-                    <TouchableOpacity style={styles.emptyAddBtn} onPress={requestCreateList} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Create list" accessibilityRole="button">
-                      <Text style={{ color: colors.textMuted, fontSize: 20 }}>+</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <EmptyPrompt
+                    title={CUSTOM_LISTS.emptyPrompts.lists.title}
+                    body={CUSTOM_LISTS.emptyPrompts.lists.body}
+                    actionLabel={CUSTOM_LISTS.emptyPrompts.lists.action}
+                    onPress={requestCreateList}
+                  />
                 )}
                 {manualLists.map((list: any) => (
                   <CustomListCard
@@ -935,30 +973,13 @@ export default function MyListsScreen() {
         tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        <ScreenHeaderBar title="My Lists" />
+        <ScreenHeaderBar title={mode === 'history' ? 'History' : 'My Lists'} />
         {/* Tabs and the filter/collapse controls share one row, as on web —
             the old second row of All/Movies/TV chips is gone. */}
         <View style={styles.tabsRow}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.subTabsRow}
-            style={styles.subTabsScroll}
-          >
-            {/* favourites carries a null label in the shared list — it is the one
-                tab whose wording is region-dependent (Favourites/Favorites). */}
-            {TABS.map(t => (
-              <SubTab
-                key={t.id}
-                label={t.label ?? fw.plural}
-                active={viewTab === t.id}
-                onPress={() => {
-                  if (t.id !== 'history' && sharePreset) router.setParams({ share: '' });
-                  setTab(t.id);
-                }}
-              />
-            ))}
-          </ScrollView>
+          <Text style={styles.viewLabel} numberOfLines={1} accessibilityRole="header">
+            {isHistory ? HISTORY_VIEW.title : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}
+          </Text>
           <View style={styles.tabsRowActions}>
             {/* ‹ Mar 2026 › — jumps to the adjacent month that actually has
                 entries, so empty months are never a dead step. */}
@@ -991,12 +1012,26 @@ export default function MyListsScreen() {
             )}
             <GroupedFilterMenu
               accessibilityLabel="Filter lists"
-              groups={[{
-                heading: 'Type',
-                options: TYPE_OPTIONS,
-                value: typeFilters,
-                onChange: setTypeFilters,
-              }]}
+              groups={[
+                ...(mode === 'history' ? [] : [{
+                  heading: 'Show',
+                  mode: 'single' as const,
+                  options: listTabs.map(t => ({ id: t.id, label: t.label })),
+                  value: [tab],
+                  defaultValue: ['all'],
+                  onChange: ([next]: string[]) => {
+                    if (!next) return;
+                    if (sharePreset) router.setParams({ share: '' });
+                    setTab(next);
+                  },
+                }]),
+                {
+                  heading: 'Type',
+                  options: TYPE_OPTIONS,
+                  value: typeFilters,
+                  onChange: setTypeFilters,
+                },
+              ]}
             />
             {!searching && (relevantSectionIds.length > 0 || (isHistory && historyGroups.length > 0)) && (
               <TouchableOpacity
@@ -1023,9 +1058,9 @@ export default function MyListsScreen() {
             style={styles.listSearchInput}
             value={listQuery}
             onChangeText={setListQuery}
-            placeholder={CUSTOM_LISTS.searchPlaceholder}
+            placeholder={searchPlaceholder}
             placeholderTextColor={colors.textMuted}
-            accessibilityLabel={CUSTOM_LISTS.searchPlaceholder}
+            accessibilityLabel={searchPlaceholder}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
@@ -1364,6 +1399,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   // 44 leaves room for the tab label plus its underline; the previous height
   // clipped descenders on "Watching"/"Want to Watch".
+  viewLabel: { flex: 1, paddingHorizontal: spacing.xl, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
   subTabsScroll: { flex: 1, height: 44 },
   subTabsRow: { paddingHorizontal: spacing.xl, alignItems: 'center' },
   listSearch: {
@@ -1495,6 +1531,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterCaption: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
   sharedLine: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
 
+  emptyPrompt: {
+    marginHorizontal: spacing.xl, marginVertical: spacing.sm, padding: spacing.lg,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    borderRadius: radii.lg, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.borderStrong,
+  },
+  emptyPromptTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
+  emptyPromptBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
+  emptyPromptAction: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   empty: { padding: spacing.xl, alignItems: 'center' },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
@@ -1535,3 +1579,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   createModalInput: { backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
   createModalBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: radii.md, alignItems: 'center' },
 });
+
+export default function MyListsRoute() {
+  return <MyListsScreen mode="lists" />;
+}

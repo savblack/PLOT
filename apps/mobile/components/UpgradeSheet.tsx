@@ -5,7 +5,7 @@
  * the caller (mobile has no /plans page; callers open Settings' Premium
  * section). Content comes from @plot/core.
  */
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
@@ -15,6 +15,7 @@ import { upgradeSheetContent, type UpgradeReason } from '@plot/core/upgradeSheet
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import PremiumIcon from './PremiumIcon';
+import { usePremiumCheckout } from '../lib/usePremiumCheckout';
 
 const S = PLANS_PAGE.upgradeSheet;
 
@@ -32,12 +33,17 @@ export default function UpgradeSheet({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const [comingSoon, setComingSoon] = useState(false);
+  const checkout = usePremiumCheckout(visible);
   const content = upgradeSheetContent(reason, { family });
   if (!content) return null;
 
-  const close = () => { setComingSoon(false); onClose(); };
+  const close = onClose;
   const compare = () => { close(); onCompare(); };
+  // Checkout open: Stripe in the browser. Closed: the waitlist, as on web.
+  const upgrade = async () => {
+    if (checkout.closed) { checkout.joinWaitlist(); return; }
+    if ((await checkout.start('monthly')) === 'opened') close();
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
@@ -60,7 +66,6 @@ export default function UpgradeSheet({
               <View style={styles.offerTop}>
                 <View style={styles.offerName}>
                   <Text style={styles.offerNameText}>{PLANS_PAGE.premium.name}</Text>
-                  <View style={styles.pill}><Text style={styles.pillText}>{PLANS_PAGE.comingSoon}</Text></View>
                 </View>
                 <Text style={styles.price}>
                   <Text style={styles.amount}>{PLANS_PAGE.premium.price}</Text> {PLANS_PAGE.premium.period}
@@ -70,10 +75,14 @@ export default function UpgradeSheet({
               <Text style={styles.trial}>{PLANS_PAGE.premium.trialNote}</Text>
             </View>
 
-            <TouchableOpacity style={styles.primary} onPress={() => setComingSoon(true)} accessibilityRole="button">
-              <Text style={styles.primaryText}>{PLANS_PAGE.upgradeAction}</Text>
-            </TouchableOpacity>
-            {comingSoon && <Text style={styles.note} accessibilityLiveRegion="polite">{PLANS_PAGE.mobileCheckoutMessage}</Text>}
+            {checkout.allowed && (
+              <>
+                <TouchableOpacity style={[styles.primary, checkout.busy && { opacity: 0.6 }]} onPress={upgrade} disabled={checkout.busy} accessibilityRole="button">
+                  <Text style={styles.primaryText}>{checkout.label}</Text>
+                </TouchableOpacity>
+                {!!checkout.error && <Text style={styles.note} accessibilityRole="alert">{checkout.error}</Text>}
+              </>
+            )}
 
             <Text style={styles.also}>{S.alsoIn}</Text>
             {content.also.map(row => (
@@ -138,8 +147,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   offerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   offerName: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   offerNameText: { fontFamily: fontFamily.display, fontSize: fontSize.lg, letterSpacing: -0.34, color: colors.textPrimary },
-  pill: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 999, backgroundColor: colors.accentDim },
-  pillText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accentText },
   price: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   amount: { fontFamily: fontFamily.display, fontSize: 28, letterSpacing: -1.1, color: colors.textPrimary },
   alt: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },

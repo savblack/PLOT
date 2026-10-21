@@ -54,10 +54,29 @@ or scheduler mistake from creating a silent backup or publishing gap.
 GitHub billing reference:
 https://docs.github.com/en/billing/reference/actions-runner-pricing
 
+## How much of the suite runs
+
+`scripts/ci-tier.mjs` prints `none`, `fast`, or `full` from the diff against `origin/main`. CircleCI stops before install on `none`. `fast` runs lint, unit tests, the contract checks, the production build, and the mobile typecheck. `full` adds the web Storybook build, Storybook interaction tests, and Playwright.
+
+| Tier | When | What runs |
+| --- | --- | --- |
+| `none` | `docs/**`, root `*.md`, and `marketing/**/*.md` only | Secret scan, then stop |
+| `fast` | Everything else that is not visual, including `packages/core`, Supabase, and scripts | Lint, tests, contract checks, build, mobile typecheck |
+| `full` | `apps/web`, `apps/website`, `apps/mobile`, `packages/ui`, token files, `*.stories.*`, a `full-ci` label, or `[full-ci]` in the commit message | Fast, plus web Storybook, interaction tests, and Playwright |
+
+Website and mobile Storybook builds run only when their own story files change. Chromatic runs on `main` when the tier is `full`, and on a pull request when the diff touches stories, web CSS, or `packages/ui`, or the commit contains `[visual]`, or the PR has the `visual` label. A label is read only when `gh` has a token. `[full-ci]` and `[visual]` in the commit message work without one.
+
+A commit message containing `[skip ci]` still skips the CircleCI pipeline entirely. Use that for a work-in-progress push that exists only so a cloud agent can resume. Do not open a pull request for that push.
+
+CircleCI project settings, Advanced, "Auto-cancel redundant workflows" is on as of October 17, 2026. An older push on the same branch stops when a newer one starts. Do not ask Savannah to turn it on again.
+
+A Cursor Automation that only comments does not change the tier. One that pushes a commit starts a new CircleCI run, classified from that new diff. A trigger on "CI completed" still fires when a docs-only job halted after the secret scan.
+
+GitHub schedules that duplicate a CircleCI task are still in the workflow files. Remove a `schedule` stanza only after that CircleCI task has succeeded once. Leave `workflow_dispatch`. The weekly marketing batch stays on the GitHub macOS runner until a Saturday of copy from the coding Grok agent has been compared with it. That agent's assignment is `marketing/copy/GROK-HANDOFF.md`. It downloads the run's artifact and runs `node marketing/copy/check.mjs` once. It does not run the weekly command. Alix does not write this comparison. This schedule stays on.
+
 ## Guardrails
 
-- PRs and `main` pushes run the complete suite on CircleCI, including the three
-  Storybook builds and Storybook interaction/accessibility tests.
+- PRs and `main` pushes run CircleCI at the tier above. A docs-only push does not install or build. An app change on `main` still runs the full tier, because that push deploys.
 - Dependabot and timeline-refresh automerge workflows listen only for the
   successful `ci/circleci: check` commit status and re-resolve the exact open PR
   by the tested commit SHA before merging.

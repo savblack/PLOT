@@ -1,8 +1,8 @@
 // Watch together pieces shown outside /together: the tile on someone's
 // profile, the accept dialog (profile, notifications and the hub) and the
 // Settings › Privacy section. Rules and data live in @plot/core
-// (watchTogether.js, useWatchTogether.js). Mobile parity: not built yet;
-// tracked in the Watch together PR.
+// (watchTogether.js, useWatchTogether.js). Mobile draws the same privacy
+// controls in WatchTogetherPrivacy (apps/mobile/app/(app)/settings.tsx).
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ResponsiveDialog from './ResponsiveDialog.jsx';

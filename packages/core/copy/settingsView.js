@@ -51,8 +51,6 @@ export const SETTINGS_VIEW = {
     yearly: 'Yearly',
     checkout: 'Explore Premium',
     comingSoon: 'plot Premium',
-    // Same closed-checkout wording as the plans page, so Settings cannot deny the trial.
-    comingSoonMessage: PLANS_PAGE.mobileCheckoutMessage,
     exploreHint: 'New subscribers get a 7-day free trial. You won’t be charged until 7 days after you start.',
     portalHint: 'Update payment details, view invoices or cancel your subscription.',
     supportTitle: 'A little support goes a long way.',
@@ -221,6 +219,22 @@ export const SETTINGS_VIEW = {
 
   // Theme picker. Palette values and the Premium rule live in
   // @plot/core/tokens.js + themes.js. Mobile and web both read them.
+  // Sidebar order (web), profile.ui_prefs.sidebar. Free.
+  sidebar: {
+    rowLabel: 'Sidebar order',
+    rowHint: 'Choose the order of the menu on the left',
+    valueDefault: 'Default',
+    valueCustom: 'Custom',
+    title: 'Sidebar order',
+    body: 'Use the arrows to put the menu in the order you like. Search stays at the top and Settings at the bottom.',
+    moveUp: (name) => `Move ${name} up`,
+    moveDown: (name) => `Move ${name} down`,
+    drag: (name) => `Drag to reorder ${name}`,
+    reset: 'Reset order',
+    done: 'Done',
+    saveError: 'That change didn’t save. Try again.',
+  },
+
   appearance: {
     label: 'Appearance',
     optionsLabel: 'Appearance options',
@@ -279,7 +293,7 @@ export const SETTINGS_VIEW = {
     activationPending: 'Your checkout is complete. We are waiting for payment confirmation. If Premium does not appear, refresh this page or contact support.',
     activeThankYou: 'Plot Premium is active. Thank you ♥',
     upsellLabel: 'Go Premium',
-    upsellBlurb: 'Find tonight’s movie, keep up with releases and choose together. Coming soon.',
+    upsellBlurb: 'Find tonight’s movie, keep up with releases and choose together.',
     upgradeButton: 'Explore Premium',
   },
 

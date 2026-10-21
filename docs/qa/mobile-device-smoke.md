@@ -101,9 +101,9 @@ never been walked.
 
 ## Phase 3: every tab is reachable and renders its own content
 
-`pnpm run mobile:tabs` now guards the classification statically, but it cannot
-tell you that a tab renders the *right* thing. #587 is the reason this section
-is explicit.
+Static checks cannot tell you that a screen renders the *right* thing. #587 (a
+fully built tab that was unreachable) is the reason this section is explicit.
+Home is one feed; New Releases and Guide open from the drawer.
 
 Bottom tab bar (`app/(app)/_layout.tsx`): Home, Calendar, My Lists, Settings,
 Profile.
@@ -368,6 +368,58 @@ Still not repointed: `EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN` and
 `preview`. Those are already per-environment variables, so they are safe to
 change; whether test builds should fire into the production PostHog project is a
 separate decision from database safety.
+
+### 2026-10-14 — fresh sign-up, deep-link routes, App Store gating
+
+iOS Simulator, iPhone 17 Pro on iOS 26.5, local `expo run:ios` development
+build from branch `mobile-app-store`, Metro pointed at **Staging** (via
+`eas env:pull --environment development`).
+
+- [x] **Phase 2 fresh sign-up, first time ever.** Email + password sign-up
+      as `smoke-20261014@plot-staging.test` (a Staging-only test account).
+      Landed on onboarding step 1 with the "Almost there! We sent a
+      confirmation link" alert over it; the session is live without the
+      confirmation, so onboarding proceeds. Picked one trending title,
+      step 2 services (Netflix), step 3 ran on its own, arrived on Home with
+      "Good morning" (no name: email sign-up has none), the Finishing touches
+      card at 1 of 5, and the pick in the Saved to watch rail. No red box.
+      One wrinkle: iOS offers its Strong Password sheet on focusing the
+      password field, which hides the form until dismissed. Expected
+      behaviour on a real device too, not a bug.
+- [x] **Phase 6 routes.** `plot://list` opens My Lists; `plot://list/abc`
+      and `plot://whats-on/anything` land on Home via `+not-found.tsx`;
+      `plot://save?media_type=movie&tmdb_id=27205` opens the Inception panel
+      over Home. No Unmatched Route screen anywhere.
+- [ ] **Settings ▸ Billing**: Free account shows the price, 7-day trial
+      note and Upgrade, which opens Stripe Checkout in the browser. A
+      subscribed account shows Manage subscription, which opens the Stripe
+      portal in the browser. On a non-US storefront none of this
+      shows. Re-run on a device (2026-10-20).
+- [x] **Force-quit and relaunch** (`xcrun simctl terminate`, then the dev
+      client URL): still signed in as the smoke account, straight to the app,
+      not back through onboarding.
+- [x] **Pick for Me locked state and the upgrade sheet** (checked 2026-10-15
+      on the Free smoke account). Tapping Pick opens the locked screen: the
+      benefits list ends in "Premium isn't available in the app yet." with no
+      Upgrade button, price or trial note. Tapping a Premium theme (Sage) in
+      Settings opens the upgrade sheet with the same sentence where the price
+      block was. Both are gated by the same flag as Settings, but they are
+      separate render paths, so they needed their own look.
+
+**Metro trap.** When a change you just made is not on screen, check which
+Metro the dev client is actually talking to before suspecting the code. On
+2026-10-15 the simulator was loading its bundle from another worktree's Metro
+(port 8089, `home-layout`), which has none of this branch's changes, and showed
+the pre-gate Pick for Me screen with an Upgrade button. The dev client
+remembers its last server. Find the serving process and its directory with
+`lsof -nP -iTCP:<port> -sTCP:LISTEN`, then `lsof -p <pid>` for `cwd`, and
+reopen the dev client with this branch's URL. The 2026-10-14 case, where a
+reload reported "Bundled 89ms (1 module)" and served the old Settings screen
+until `expo start --clear`, may have been the same cause; it was not checked.
+
+`touch_last_seen` warns on every launch against Staging ("Could not find the
+function public.touch_last_seen without parameters"): the Brevo last-seen RPC
+is not migrated on Staging. Harmless for the app, worth a Staging migration.
 
 ## When you are done
 

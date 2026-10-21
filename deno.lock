@@ -11,6 +11,7 @@
     "npm:@supabase/realtime-js@2.112.3": "2.112.3",
     "npm:@supabase/storage-js@2.112.3": "2.112.3",
     "npm:@supabase/supabase-js@2": "2.112.3",
+    "npm:jpeg-js@0.4.4": "0.4.4",
     "npm:satori@0.33.5": "0.33.5",
     "npm:stripe@22.3.2": "22.3.2",
     "npm:stripe@22.6.0": "22.6.0"
@@ -139,6 +140,9 @@
     },
     "iceberg-js@0.8.1": {
       "integrity": "sha512-1dhVQZXhcHje7798IVM+xoo/1ZdVfzOMIc8/rgVSijRK38EDqOJoGula9N/8ZI5RD8QTxNQtK/Gozpr+qUqRRA=="
+    },
+    "jpeg-js@0.4.4": {
+      "integrity": "sha512-WZzeDOEtTOBK4Mdsar0IqEU5sMr3vSV2RqkAIzUEV2BHnUfKGyswWFPFwK5EeDo93K3FohSHbLAjj0s1Wzd+dg=="
     },
     "linebreak@1.1.0": {
       "integrity": "sha512-MHp03UImeVhB7XZtjd0E4n6+3xr5Dq/9xI/5FptGk5FrbDR3zagPa2DS6U8ks/3HjbKWG9Q1M2ufOzxV2qLYSQ==",

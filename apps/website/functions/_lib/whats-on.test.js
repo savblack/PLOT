@@ -112,3 +112,33 @@ test('a fetch failure returns the fallback and caches nothing', async () => {
     if (realCaches === undefined) delete globalThis.caches; else globalThis.caches = realCaches;
   }
 });
+
+test('a search is forwarded, never cached, and sent no-store', async () => {
+  await withCache(async ({ get, cache, calls, settle }) => {
+    const first = await get('https://theplot.tv/whats-on?q=%20dune%20%20part%20two%20&utm_source=x');
+    await settle();
+    assert.equal(calls[0].searchParams.get('q'), 'dune part two');
+    assert.equal(calls[0].searchParams.get('utm_source'), null);
+    assert.equal(first.headers.get('cache-control'), 'no-store');
+    assert.equal(cache.store.size, 0);
+    await get('https://theplot.tv/whats-on?q=dune%20part%20two');
+    assert.equal(calls.length, 2);
+  });
+});
+
+test('a blank search is the cached front page', async () => {
+  await withCache(async ({ get, calls, settle }) => {
+    await get('https://theplot.tv/whats-on?q=%20%20');
+    await settle();
+    assert.equal(calls[0].searchParams.has('q'), false);
+    const again = await get('https://theplot.tv/whats-on');
+    assert.equal(again.headers.get('x-plot-cache'), 'hit');
+  });
+});
+
+test('a search term is capped at 80 characters', async () => {
+  await withCache(async ({ get, calls }) => {
+    await get(`https://theplot.tv/whats-on?q=${'a'.repeat(200)}`);
+    assert.equal(calls[0].searchParams.get('q').length, 80);
+  });
+});

@@ -7,3 +7,6 @@ dist/
 ios/
 android/
 .storybook/storybook.requires.ts
+
+# Local native modules keep their own ios/ folder (prebuild output is the app-level /ios).
+!/modules/**/ios/

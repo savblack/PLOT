@@ -97,29 +97,21 @@ export const LISTS = {
   note: 'Five lists free. Unlimited with Premium.',
 };
 
-// Premium: taste, deciding together, stats and personalisation lead (from the
-// in-app plans list); `more` sums up the rest. Prices and the checkout link
-// mirror pricing.html (and copy/plans.js); change them together.
+// Premium: headline and trial on one line, three feature tiles, one line for the
+// rest. The markup is in index.html; /pricing keeps the longer stories (copy/plans.js).
 export const PREMIUM = {
   eyebrow: 'Plot Premium',
   headline: 'Less deciding. More watching.',
-  intro: 'Everything in Free, plus:',
-  features: [
-    { title: 'Pick for me', body: 'Stop scrolling. Answer four quick questions and you’ve got a shortlist tailored to you and your mood.' },
-    { title: 'Watch together', body: 'Settle “what should we watch?” before the snacks are ready. Only one of you needs Premium.' },
-    { title: 'Your watch profile', body: 'Get to know your watching habits, and settle who has the best taste.' },
-    { title: 'Make it yours', body: 'Your Plot, your style. Get access to custom themes, widgets and app icons.' },
+  tiles: [
+    { title: 'Something to watch, in under a minute.', body: 'Tell Plot how long you’ve got and what you’re in the mood for.' },
+    { title: 'Find out your compatibility based on cinema.', body: 'The films you agree on, and the ones that are still a sore point.' },
+    { title: 'Every story has a plot. Here’s yours.', body: 'The genres you lean on, the hours you’ve put in, the titles you keep going back to.' },
   ],
-  more: 'Plus unlimited and smart lists, release dates in your calendar app, and actor and director alerts.',
-  moreLink: 'See everything in Premium',
-  monthly: 'Monthly',
-  annual: 'Annual',
-  annualBadge: '4 months free',
-  billedYearly: 'Billed $24 once a year',
-  billedMonthly: 'Billed monthly. Cancel anytime.',
   cta: 'Start 7-day free trial',
-  trial: 'Commitment-free. Cancel during the trial and you pay $0.',
-  compare: 'Compare Free and Premium',
+  price: '$2/mo billed yearly, 4 months free.',
+  alsoLabel: 'Also in Premium',
+  also: 'watch together, themes and widgets, unlimited lists including smart lists, calendar dates, actor and director alerts.',
+  more: 'See everything',
 };
 
 // Plot mobile, coming soon: the app's home screen in a phone, and the launch
@@ -158,17 +150,4 @@ export const TICKER = {
     comingSoon: ['Mission: Impossible – The Final Reckoning', 'Lilo & Stitch', 'Jurassic World Rebirth'],
     topRatedTv: ['Adolescence', 'Severance', 'The White Lotus', 'Landman', 'Paradise'],
   },
-};
-
-// Closing section over the poster wall: account signup first, the newsletter
-// as the quiet fallback.
-export const CLOSER = {
-  headline: 'Your next favorite ',
-  headlineEm: 'is out there.',
-  sub: 'Free forever. Premium if you want more.',
-  cta: 'Start tracking',
-  browse: 'Browse What’s On',
-  newsletterHint: 'Want more? Get movie and TV updates by email.',
-  newsletterCta: 'Subscribe',
-  newsletterSuccess: "You're in. We'll email you the next issue.",
 };

@@ -1,22 +1,24 @@
 /**
- * Filter button + grouped checkbox menu — the RN counterpart of web's
- * apps/web/src/components/GroupedFilterMenu.jsx.
- *
- * Replaces the inline All/Movies/TV chips mobile used, which were a different
- * control with different semantics: the chips were single-select with an "All"
- * option, web's menu is multi-select where an empty selection means no filter.
- * Filtering itself goes through @plot/core's filterByType so both platforms
- * agree on the awkward part — `cinema` is a client-side flag, not a TMDB
- * media_type, so `movie` has to explicitly exclude it.
+ * Filter button + bottom Filters sheet, the RN counterpart of web's phone
+ * MobilePageControls (apps/web/src/components/MobilePageControls.jsx): a grab
+ * handle, a Filters heading, one section per group with a tick on each chosen
+ * row, and Reset / Done at the foot. Groups are multi-select by default, where
+ * an empty selection means no filter; `mode: 'single'` makes one pick stand
+ * (My Lists' Show). Filtering itself goes through @plot/core's filterByType so
+ * both platforms agree on the awkward part: `cinema` is a client-side flag,
+ * not a TMDB media_type, so `movie` has to explicitly exclude it.
  *
  * The trigger picks up an active tint whenever a group differs from its
  * default, so a filter left on somewhere off-screen is still visible.
  */
 import { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
-import Svg, { Path, Polyline } from 'react-native-svg';
+import { View, Text, TouchableOpacity, Pressable, ScrollView, StyleSheet, Modal, useWindowDimensions } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { COMMON } from '@plot/core/copy/common.js';
+import { MOBILE_CONTROLS } from '@plot/core/copy/mobileControls.js';
 import { useTheme } from '../contexts/ThemeContext';
-import { Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../lib/tokens';
+import { Palette, fontFamily, fontSize, spacing, iconButtonSize } from '../lib/tokens';
 
 export interface FilterOption { id: string; label: string }
 export interface FilterGroup {
@@ -26,6 +28,8 @@ export interface FilterGroup {
   onChange: (next: string[]) => void;
   /** Selection that counts as "unfiltered". Defaults to empty. */
   defaultValue?: string[];
+  /** `single` keeps exactly one option chosen (a view switch). Default `multi`. */
+  mode?: 'single' | 'multi';
 }
 
 function FilterIcon({ color }: { color: string }) {
@@ -48,6 +52,8 @@ export default function GroupedFilterMenu({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
 
   const visibleGroups = groups.filter(g => g.options.length > 0);
   if (!visibleGroups.length) return null;
@@ -61,8 +67,12 @@ export default function GroupedFilterMenu({
   };
   const hasActiveFilters = visibleGroups.some(isGroupActive);
 
-  const toggleValue = (id: string, g: FilterGroup) =>
+  const choose = (id: string, g: FilterGroup) => {
+    if (g.mode === 'single') return g.onChange([id]);
     g.onChange(g.value.includes(id) ? g.value.filter(v => v !== id) : [...g.value, id]);
+  };
+  const reset = () => visibleGroups.forEach(g => g.onChange(g.defaultValue ?? []));
+  const close = () => setOpen(false);
 
   return (
     <>
@@ -77,40 +87,60 @@ export default function GroupedFilterMenu({
         <FilterIcon color={hasActiveFilters ? colors.accent : colors.textMuted} />
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        {/* Dismiss catcher — mirrors web's outside-click handler. */}
-        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setOpen(false)}>
-          <View style={styles.panel}>
-            {visibleGroups.map(group => (
-              <View key={group.heading} style={styles.group}>
-                <Text style={styles.heading}>{group.heading}</Text>
-                {group.options.map(opt => {
-                  const checked = group.value.includes(opt.id);
-                  return (
-                    <TouchableOpacity
-                      key={opt.id}
-                      style={styles.option}
-                      onPress={() => toggleValue(opt.id, group)}
-                      activeOpacity={0.7}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked }}
-                      accessibilityLabel={opt.label}
-                    >
-                      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-                        {checked && (
-                          <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                            <Polyline points="20,6 9,17 4,12" />
-                          </Svg>
-                        )}
-                      </View>
-                      <Text style={styles.optionText}>{opt.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ))}
+      <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
+        <View style={styles.overlay}>
+          {/* Tapping the dimmed page dismisses, as on web. */}
+          <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel={COMMON.close} />
+          <View style={[styles.sheet, { maxHeight: height * 0.75, paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+            <View style={styles.handle} />
+            <View style={styles.headingRow}>
+              <Text style={styles.heading} accessibilityRole="header">{MOBILE_CONTROLS.filters}</Text>
+              <TouchableOpacity onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={COMMON.close}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
+                  <Path d="M6 6l12 12M18 6L6 18" />
+                </Svg>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} bounces={false}>
+              {visibleGroups.map(group => (
+                <View key={group.heading} style={styles.group}>
+                  <Text style={styles.groupHeading}>{group.heading}</Text>
+                  {group.options.map((opt, index) => {
+                    const chosen = group.value.includes(opt.id);
+                    return (
+                      <TouchableOpacity
+                        key={opt.id}
+                        style={[styles.row, index > 0 && styles.rowDivider]}
+                        onPress={() => choose(opt.id, group)}
+                        activeOpacity={0.7}
+                        accessibilityRole={group.mode === 'single' ? 'radio' : 'checkbox'}
+                        accessibilityState={group.mode === 'single' ? { selected: chosen } : { checked: chosen }}
+                        accessibilityLabel={opt.label}
+                      >
+                        <Text style={[styles.rowText, chosen && styles.rowTextChosen]}>{opt.label}</Text>
+                        <View style={styles.tick}>
+                          {chosen && (
+                            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                              <Path d="M20 6L9 17l-5-5" />
+                            </Svg>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))}
+            </ScrollView>
+            <View style={styles.footer}>
+              <TouchableOpacity onPress={reset} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button">
+                <Text style={styles.reset}>{MOBILE_CONTROLS.reset}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.done} onPress={close} accessibilityRole="button">
+                <Text style={styles.doneText}>{COMMON.done}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </>
   );
@@ -124,41 +154,35 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     justifyContent: 'center',
   },
   triggerActive: {},
-  backdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.35)' },
-  panel: {
-    minWidth: 220,
+  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
+  sheet: {
     backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: spacing.xl,
   },
-  group: { paddingVertical: spacing.xs },
-  heading: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 10,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xs,
+  handle: { alignSelf: 'center', width: 32, height: 3, borderRadius: 3, backgroundColor: colors.borderStrong, marginTop: 10, marginBottom: 5 },
+  headingRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    minHeight: 56, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+  heading: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary },
+  scroll: { flexGrow: 0 },
+  group: { paddingTop: spacing.lg },
+  groupHeading: {
+    fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.6,
+    textTransform: 'uppercase', color: colors.textMuted, paddingBottom: spacing.xs,
   },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
+  row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  rowText: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textSecondary },
+  rowTextChosen: { fontFamily: fontFamily.sansMedium, color: colors.textPrimary },
+  tick: { width: 22, alignItems: 'center' },
+  footer: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingTop: spacing.lg, marginTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
   },
-  checkboxChecked: { backgroundColor: colors.accent, borderColor: colors.accent },
-  optionText: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary },
+  reset: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  done: { minHeight: 44, paddingHorizontal: spacing.xl, borderRadius: 22, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  doneText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: '#fff' },
 });
