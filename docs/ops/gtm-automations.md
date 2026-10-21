@@ -6,14 +6,14 @@ is still [`marketing/README.md`](../../marketing/README.md). This file is the
 map: what runs, what starts it, where the words and pictures come from, and
 where they land.
 
-Last reviewed against the tree on October 12, 2026. If a workflow, script, or
+Last reviewed against the tree on October 17, 2026. If a workflow, script, or
 edge function named below disappears or changes trigger, update this file in
 the same change.
 
 There is no Inngest, Trigger.dev, Temporal, or third-party CMS. Articles are
 rows in Supabase (`marketing_posts`), rendered by the `marketing-feed` edge
 function, and proxied onto theplot.tv. Social posts are scheduled in Buffer.
-Copy is written by a CLI model worker (Claude Code in CI).
+Copy is written by the Grok CLI on this Mac. Claude runs only when `grok` is not on PATH.
 
 **Changelog posts: not found.** Nothing in workflows, scripts, edge functions,
 or docs plans a product changelog, release-notes feed, or "what's new" post.
@@ -25,20 +25,22 @@ outside the repo (Linear, a doc, a manual Buffer post).
 
 ## How a normal week works
 
-1. Saturday evening Eastern, GitHub Actions plans the coming week, asks Claude to write
+1. Monday 5:30am Sydney, GitHub Actions on this Mac plans the coming week, asks Grok to write
    the copy, renders social cards, and pushes as many posts as Buffer will hold.
-   Each post is dated for its Eastern Time day. The planner stores 9:00am ET.
-   Buffer then uses that channel's hour on that ET day. A rejected copy file
+   Each post is 9:00am America/New_York. 5:30am Monday Sydney is Sunday afternoon
+   in the US, so the week runs Monday through Sunday Eastern. Buffer then uses
+   that channel's hour on that ET day. A rejected copy file
    does not skip that render. If a card is still missing, the daily job renders
    it again before the top-up, and will not queue the post on a raw TMDB still.
    Sunday evening Eastern, a separate job writes the trending snapshot the
    Monday chart reads.
-2. Within about five minutes, a database job opens one Linear card per website
-   article (team PLO, project Content Automation).
+2. Within about five minutes, a database job opens one Notion page per website
+   article on What's On Articles. Status Review is a draft.
 3. You edit or delete the social captions in Buffer. Buffer sends them on the
    day the planner chose, at an hour Buffer's own schedule picked.
-4. You approve or reject the article in Linear. That
-   decision is about theplot.tv only. It does not pull a post out of Buffer.
+4. You approve or reject the article in Notion. Set Status to Scheduled to
+   approve, or Canceled to reject. That decision is about theplot.tv only. It
+   does not pull a post out of Buffer.
 5. On the article's day, if it was approved, it appears on
    [theplot.tv/whats-on](https://theplot.tv/whats-on).
 6. Once a day, GitHub asks Buffer what actually happened, writes that back to
@@ -54,14 +56,23 @@ The two halves do not gate each other. That is deliberate. See
 **What it is.** The production content factory. Plans posts, writes copy,
 renders images, and starts the Buffer queue.
 
-**Trigger.** GitHub Actions schedule, plus manual "Run workflow", plus the
+**Trigger.** GitHub Actions schedule on the self-hosted macOS runner `plot-mac`
+(this Mac, running as savannahblack), plus manual "Run workflow", plus the
 Linear comment `/generate` (which dispatches this same workflow).
 
-**Schedule.** Cron `30 0 * * 0` in [`.github/workflows/marketing-weekly-batch.yml`](../../.github/workflows/marketing-weekly-batch.yml).
-That is 00:30 UTC Sunday, Saturday evening Eastern, and still before 9:00am ET
-Sunday even when GitHub starts the job hours late (measured on the daily job;
-see section 3). Treat the cron line as the request. The week is planned before
-the first 9:00am ET post.
+**Schedule.** Cron `30 18 * * 0` in [`.github/workflows/marketing-weekly-batch.yml`](../../.github/workflows/marketing-weekly-batch.yml).
+That is 5:30am Monday Sydney during daylight time (AEDT, UTC+11) and 4:30am
+Monday during standard time (AEST, UTC+10). A step waits until 5:30 when the
+clock is still early. GitHub cron is UTC and does not follow Sydney daylight
+time, and this repo's scheduler often starts the job hours after the cron line.
+A LaunchAgent on this Mac dispatches the same workflow at 5:30am Monday Sydney.
+If that run already succeeded, the later scheduled start exits without planning
+the week again.
+
+Posts stay 9:00am America/New_York. 5:30am Monday Sydney is Sunday afternoon in
+the US, so the seven-day plan starts the next US Monday and runs through the
+following Sunday. A start that slips past Monday 9:00am Eastern skips that
+Monday's post.
 
 **Entrypoints.**
 
@@ -70,15 +81,18 @@ the first 9:00am ET post.
 - Then, in order: [`marketing/planner/plan.mjs`](../../marketing/planner/plan.mjs),
   [`marketing/planner/guides.mjs`](../../marketing/planner/guides.mjs),
   [`marketing/copy/pull.mjs`](../../marketing/copy/pull.mjs),
-  the Claude CLI (isolated copy of the briefs),
+  the Grok CLI (isolated copy of the briefs),
   [`marketing/copy/save.mjs`](../../marketing/copy/save.mjs),
   [`marketing/generate/generate.mjs`](../../marketing/generate/generate.mjs),
   [`marketing/publish/schedule.mjs`](../../marketing/publish/schedule.mjs)
 
 **Secrets (names only).** `CLAUDE_CODE_OAUTH_TOKEN`, `VITE_SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY`, `TMDB_API_KEY`, `OMDB_API_KEY`, `RESEND_API_KEY`,
-`MARKETING_ADMIN_EMAIL`, `BUFFER_API_KEY`. The copy worker itself is given a
-stripped environment (no database or Buffer key). See
+`MARKETING_ADMIN_EMAIL`, `BUFFER_API_KEY`. The workflow does not set
+`XAI_API_KEY`. Grok uses the login in `~/.grok` on this Mac.
+`CLAUDE_CODE_OAUTH_TOKEN` is for the week where `grok` is missing. The copy
+worker itself is given a stripped environment (no database or Buffer key) plus
+`HOME`, so it can read that login. See
 [`marketing/lib/cli-runner.mjs`](../../marketing/lib/cli-runner.mjs).
 
 **Outputs.**
@@ -92,22 +106,23 @@ stripped environment (no database or Buffer key). See
 - A `marketing_batch_runs` row with `run_type = 'generate'`.
 - Buffer scheduled posts, as many as each channel's cap allows.
 
-**Dependencies.** Claude Code CLI pinned to `@anthropic-ai/claude-code@2.1.226`,
-Playwright Chromium, TMDB, OMDb, Wikipedia (research pack), Supabase, Buffer,
-Resend.
+**Dependencies.** The Grok CLI already installed at `~/.grok/bin` on this Mac,
+signed in. Claude Code CLI `@anthropic-ai/claude-code@2.1.226` only when `grok`
+is not on PATH. Playwright Chromium, TMDB, OMDb, Wikipedia (research pack),
+Supabase, Buffer, Resend.
 
 **How it works.**
 
 1. The planner looks at the next seven days and inserts post rows that do not already exist. The day decides the type (see Cadence below). Thin days simply get fewer posts.
 2. A second planner adds up to four web-only SEO guides ("best of" and "if you liked"). Those never go to social.
 3. Each post that still needs words gets a markdown brief under `marketing/copy/jobs/`.
-4. Claude reads [`marketing/copy/AGENT.md`](../../marketing/copy/AGENT.md) and each brief, searches the web for the article, and writes one JSON file per post. It runs in a temp folder so it cannot see `.env`.
+4. Grok reads [`marketing/copy/AGENT.md`](../../marketing/copy/AGENT.md) and each brief, searches the web for the article, and writes one JSON file per post. It runs in a temp folder so it cannot see `.env`. The same checker in `save.mjs` accepts or rejects that JSON.
 5. `save.mjs` checks the JSON against the copy contract. Bad copy is rejected and that post stays `planned`. Good copy is stored as both `copy` (what we will use) and `generated_copy` (what the model first wrote), and the row moves to `copy_ready`. A rejection does not stop the rest of the week. The workflow still fails at the end so the rejected files are visible. On 4 October 2026 this exit used to happen *before* rendering, which is why a week reached `copy_ready` with `media` null.
 6. Playwright screenshots the HTML card templates into portrait (1080x1350) and landscape JPEGs and uploads them to `marketing/<post id>/card-0-portrait.jpg` and `card-0-landscape.jpg`. The website hero is a plain TMDB still, not the branded card. Trending charts are the exception: the branded chart is the hero. `question` posts stay text-only. `guide` posts get no social card.
-7. The script emails you with links to Linear and Buffer when something new needs article review.
+7. The script emails you with links to What's On Articles and Buffer when something new needs article review.
 8. It then pushes social copy into Buffer for posts whose cards exist. It does not wait for you to approve the article. It does not attach a TMDB still when the card is missing. Those rows stay `queued` and the daily job renders them again.
 
-Local equivalent: `pnpm run mkt:plan` through `mkt:generate` and `mkt:schedule`, or from `marketing/`: `pnpm run weekly`. Local runs default to Codex, not Claude. Pass `--copy-runner=claude` to match CI.
+Local equivalent: `pnpm run mkt:plan` through `mkt:generate` and `mkt:schedule`, or from `marketing/`: `pnpm run weekly`. A local weekly run uses Grok when `grok` is on PATH, otherwise Codex. That matches production on this Mac. Pass `--copy-runner=claude` or `--copy-runner=codex` to force a different writer.
 
 ---
 
@@ -163,7 +178,7 @@ You review, edit, reschedule, and delete in Buffer. Those edits are not checked 
 2. For every publication still marked scheduled, ask Buffer for its status and write the answer down.
 3. Render cards for any post that has copy and still has no media. An approved article stays approved. A question is left text-only.
 4. Push the next queued posts into whatever slots that freed. A card post that still has no image is left `queued` and the job fails.
-5. If the next three days have nothing queued, email you. This check lives on the daily job on purpose: when the Sunday batch cannot get a runner (billing), its own failure email cannot run either. The daily job is the watchdog.
+5. If the next three days have nothing queued, email you. This check lives on the daily job on purpose: when the weekly batch cannot get this Mac's runner, its own failure email cannot run either. The daily job is the watchdog.
 6. The watchdog email says /whats-on will go stale. Social posts already sitting in Buffer can still go out. The two problems are different.
 
 Guides have no Buffer rows, so this job never sees them. IndexNow is not called for a guide that only exists as a website article. The article sitemap (`marketing-feed?sitemap=1`, proxied at `/sitemap-articles.xml`) is the other way search engines find pages.
@@ -182,7 +197,7 @@ Guides have no Buffer rows, so this job never sees them. IndexNow is not called 
 
 **Secrets (Supabase edge function secrets, not GitHub).** `LINEAR_API_KEY`, Vault secrets `edge_webhook_bearer` and `edge_webhook_base_url` (the cron uses these). Optional: `LINEAR_MARKETING_TEAM_ID`, `LINEAR_MARKETING_PROJECT_ID`, `LINEAR_REVIEW_STATE`, `LINEAR_SCHEDULED_STATE`, `LINEAR_REJECTED_STATE`, `LINEAR_PUBLISHED_STATE`, `GH_REPO`, `GH_DISPATCH_TOKEN_CONTENT`, `GH_DISPATCH_TOKEN_WEBSITE`, `GH_DISPATCH_TOKEN` (legacy fallback), `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`, `MARKETING_LINEAR_ENABLED`.
 
-`MARKETING_LINEAR_ENABLED` defaults to on. Set it to `off` (`0`, `false`, or `no` also count) only after the Notion database in section 5a has been used for a real week. Article create, refresh, and column moves stop. The Monday website-refresh PR card still gets filed.
+`MARKETING_LINEAR_ENABLED` defaults to on in code. Production is set to `off`. Article create, refresh, and column moves do not run. The Monday website-refresh workflow was retired on 2026-10-13, so that card is unused too.
 
 **Outputs.** Linear issues in team PLO, project Content Automation. States, by name: Review, Scheduled, Canceled, Published. A website-refresh card for the Monday timeline PR (section 8), marked urgent. `marketing_batch_runs` rows with `run_type = 'linear_mirror'`. `marketing_posts.linear_sync_error` when a card fails. Once a day (first sweep after 06:00 UTC) it probes the two GitHub tokens and emails if one is dead.
 
@@ -232,7 +247,7 @@ curl -sX POST "$SUPABASE_URL/functions/v1/marketing-linear-mirror" \
 | `/regenerate` | Throws the copy away so the worker rewrites it. |
 | `/copy` then `title:` / `body:` / `cta:` | Edits the article. Social fields are not accepted here. |
 | `/pause` and `/resume` | Stops or resumes new posts entering Buffer. Does not empty Buffer. |
-| `/generate` | Dispatches the Sunday workflow now. |
+| `/generate` | Dispatches the weekly batch now. |
 | `/help` | The list, in the issue. |
 
 Leaving a card untouched means the article does not go live. It does not stop the social posts.
@@ -243,9 +258,9 @@ The writes live in [`supabase/functions/_shared/reviewActions.js`](../../supabas
 
 ---
 
-## 5a. Notion review (stand this up beside Linear)
+## 5a. Notion review
 
-**What it is.** A second article board, in Notion, kept in step with `marketing_posts` the way section 4 keeps Linear. One page per article. Linear keeps working until you set `MARKETING_LINEAR_ENABLED` to `off`. That secret is the switch. Merging the migration does not flip it.
+**What it is.** The article board. One Notion page per article, kept in step with `marketing_posts`. Production writes to What's On Articles: `https://app.notion.com/p/3f04f244aec781baaffbc1523b57ecb4` (database id `3f04f244-aec7-81ba-affb-c1523b57ecb4`). Status Review is a draft. Linear article cards are off.
 
 **Trigger.** `pg_cron` job `marketing-notion-mirror`, every 5 minutes. An optional Notion webhook on `<SUPABASE_URL>/functions/v1/marketing-notion-sync` wakes the same comparison for one page.
 
@@ -268,7 +283,7 @@ Properties: Name, Status (Review, Scheduled, Canceled, Published), Scheduled, Ar
 
 **Outputs.** One Notion page per article row that has a slug. `marketing_posts.notion_page_id` and `notion_synced_at`. Audit rows with actor `notion`. `marketing_batch_runs` with `run_type = 'notion_mirror'`. A bot comment on the page when a command needs a reply. The first real sweeps create at most 15 pages each, newest day first.
 
-**What it does not do.** Weekly website-refresh PR cards stay on Linear. Approving does not touch Buffer or `marketing_post_publications`. Social copy on the page is reference text. Edits to the page body or that property are overwritten. The public site still shows `approved`, `published`, and `partially_published` only.
+**What it does not do.** Question posts have no page. Approving does not touch Buffer or `marketing_post_publications`. Social copy on the page is reference text. Edits to the page body or that property are overwritten. The public site still shows `approved`, `published`, and `partially_published` only.
 
 Dry run, after the secrets exist and before you want pages created:
 
@@ -442,7 +457,7 @@ These exist, and they are easy to mistake for the homepage automation.
 
 | Script | What it does | When it runs |
 | --- | --- | --- |
-| [`marketing/lib/render.mjs`](../../marketing/lib/render.mjs) plus [`marketing/templates/`](../../marketing/templates/) | Screenshots social cards (1080×1350 and 1600×900) during the weekly batch | Every Sunday batch |
+| [`marketing/lib/render.mjs`](../../marketing/lib/render.mjs) plus [`marketing/templates/`](../../marketing/templates/) | Screenshots social cards (1080×1350 and 1600×900) during the weekly batch | Every weekly batch |
 | [`marketing/lib/images.mjs`](../../marketing/lib/images.mjs) | Picks the plain TMDB still used as the article hero | Same batch |
 | [`marketing/assets/render-png.mjs`](../../marketing/assets/render-png.mjs) | Rasterises Instagram profile SVGs to PNG | By hand |
 | [`marketing/assets/render-cover.mjs`](../../marketing/assets/render-cover.mjs) | Rasterises X header SVGs to PNG | By hand |
@@ -534,9 +549,9 @@ There is no eval harness and no prompt registry. The Sunday learning loop that u
 | [`marketing/templates/*.html`](../../marketing/templates/) plus `base.css` and `_helpers.js` | The look of the social cards, not the words. |
 | [`marketing/tests/`](../../marketing/tests/) | Unit tests for the validator, planner, Buffer payload, Linear commands, and IndexNow. These are regression checks, not scored tone evals. |
 
-The production prompt the CLI actually receives is short and lives in `codexPrompt` inside [`marketing/scripts/automation.mjs`](../../marketing/scripts/automation.mjs): read `AGENT.md`, write one JSON per brief, touch nothing else. The real tone instructions are inside the brief, which embeds `VOICE.md`.
+The production prompt the CLI actually receives is short and lives in `codexPrompt` inside [`marketing/scripts/automation.mjs`](../../marketing/scripts/automation.mjs): read `AGENT.md`, write one JSON per brief, touch nothing else. The function name is historical. Grok, Codex, and Claude all use it. The real tone instructions are inside the brief, which embeds `VOICE.md`.
 
-CI installs Claude and passes `--copy-runner=claude`. A local `pnpm run weekly` uses Codex if the `codex` binary is on the machine. The two runners can drift in tone even when the files match.
+The weekly job uses the Grok CLI already on this Mac and passes `--copy-runner=grok`. It does not reinstall Grok and it does not set an API key. A local `pnpm run weekly` uses Grok when `grok` is on PATH, otherwise Codex. Claude runs only when the weekly job cannot find `grok`.
 
 ---
 
@@ -549,18 +564,18 @@ What you can already see:
 - **`marketing_review_events`.** Approve, reject, edit, reschedule, with actor `web_desk`, `marketing_week_skill`, `linear`, or `notion`.
 - **`marketing_posts.error`, `linear_sync_error`, and `notion_sync_error`.** Per-post failure text.
 - **`sent_text` / `sent_payload` / `generated_copy`.** What the model wrote versus what Buffer sent. Nothing alerts on the diff.
-- **Linear** is still the place a person looks for articles until `MARKETING_LINEAR_ENABLED` is off. **Notion** is the board being stood up beside it (section 5a). The daily token probe emails you if `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN_WEBSITE` stops answering.
+- **Notion** What's On Articles is where a person looks for articles (section 5a). Linear article cards are off. The daily token probe emails you if `GH_DISPATCH_TOKEN_CONTENT` or `GH_DISPATCH_TOKEN_WEBSITE` stops answering.
 - **Buffer** is the place a person looks for captions.
 - The old **admin desk** (`admin.theplot.tv`) is retired. See [`docs/ops/retire-admin-review.md`](retire-admin-review.md).
 - **Broadcast guide** (not content, listed under Adjacent) uploads a `broadcast-guide-health` artifact for 7 days. The content pipelines do not do that.
 
 Gaps:
 
-- No status page, dashboard, or Slack/Linear ping that says "Sunday batch succeeded, 14 posts in Buffer, 11 articles in Review". Success is the absence of an email.
-- The Sunday job's own failure email cannot send if GitHub refuses it a runner. The daily queue check is the backup. That check is requested at 02:00 UTC and often starts hours later, still before 9:00am ET.
+- No status page, dashboard, or Slack/Linear ping that says "weekly batch succeeded, 14 posts in Buffer, 11 articles in Review". Success is the absence of an email.
+- The weekly job's own failure email cannot send if this Mac's runner is offline. The daily queue check is the backup. That check is requested at 02:00 UTC and often starts hours later, still before 9:00am ET.
 - Cron comments and real start times disagree by several hours. Buffer sends at the Eastern hour it was given. The reconcile catching up is a later clock. A post stored at 9:00am ET can already be in Buffer at a different ET hour from that channel's schedule.
 - No alert when Linear mirror heartbeats stop, unless someone runs the SQL.
-- No alert when Claude's pinned CLI version breaks a flag. That class of failure has already taken down a batch. The preflight in `cli-runner.mjs` helps only once the job is running.
+- No alert when the Grok CLI on this Mac changes a flag the weekly job relies on. The preflight in `cli-runner.mjs` helps only once the job is running. The Claude fallback is still pinned to `@anthropic-ai/claude-code@2.1.226`.
 - Social analytics are dark (section 13). You cannot see which tone is working from inside this system.
 - IndexNow failures are a log line, not an email. Guides never enter that path.
 - `marketing_review_events` once silently dropped every Linear action because the actor check rejected `linear`. The migration fixed it. The pattern (log write wrapped so it cannot fail the action) means a future logging bug stays invisible.
@@ -573,7 +588,7 @@ Gaps:
 2. **Three places can change words, and only two are checked.** The model and a Linear `/copy` go through `articleRules.js`. A Buffer edit does not. The caption that ships can be one you typed in a hurry, and the next brief will not know you preferred it.
 3. **Rejecting an article does not stop the post.** Correcting tone on the website leaves the social caption live unless you also delete it in Buffer. The review email and the Linear card do not show the social copy, on purpose. The Notion page does, as read-only reference, and still cannot edit the caption.
 4. **There is no eval set.** Tests lock regexes (no em dash, no "according to", where-to-watch present). They cannot tell a warm specific note from a flat one that happens to pass. There is no labelled set of good and bad posts, no score, and no "run the new prompt on last month's briefs and diff".
-5. **Two models.** CI is Claude (pinned CLI `2.1.226`). Local default is Codex. A prompt change tested locally is not the prompt that will run on Sunday unless you pass `--copy-runner=claude`.
+5. **One weekly writer.** Production and a local run both use Grok when `grok` is on PATH. Codex is the local fallback when Grok is not installed. Claude runs only if the weekly job cannot find `grok`. A prompt tried with a different `--copy-runner` is not the prompt Monday will use.
 6. **Regenerate is all or nothing.** `/regenerate` throws the copy away. There is no "rewrite the closer, keep the rest" in the production path. `sweep-closer.mjs` and `rewrite-published.mjs` are one-off scripts for that kind of repair.
 7. **Guides and questions sit outside the review you see.** Guides have an article and a card but no social preview. Questions have social and no card. A tone pass that only reads Linear misses the questions. A pass that only reads Buffer misses the guides.
 8. **Nothing closes the loop.** The Learning prep chip is gone, and so is the workflow behind it. Shipped copy still does not teach the next week. That gap is intentional until an eval loop is actually built.
@@ -608,17 +623,17 @@ Documentation only. None of this is built here.
 ### b. Standing health visibility
 
 1. One daily note, not another inbox rule to ignore: batch succeeded or not, posts queued per channel, articles sitting in Review, age of the newest `linear_mirror` heartbeat, whether the GitHub dispatch tokens probed ok. Email is enough. A dashboard can wait.
-2. Page that note off the daily reconcile, which is the job that still runs when Sunday cannot get a runner. State the real clock (requested at 02:00 UTC, often hours later, still before 9:00am ET) so the cron comment is not the only clock.
+2. Page that note off the daily reconcile, which is the job that still runs when the weekly batch cannot get this Mac's runner. State the real clock (requested at 02:00 UTC, often hours later, still before 9:00am ET) so the cron comment is not the only clock.
 3. Alert when the Linear heartbeat is older than about ten minutes. The SQL already exists. Nothing sends it.
 4. Alert when IndexNow fails, and submit guide URLs when a guide's day arrives. Today they rely on the sitemap alone.
 
 ### c. Tone and an eval loop
 
 1. Keep `VOICE.md` as the source of truth. Do not revive an unattended rewriter. The last one prepared seven weeks and applied none.
-2. Start a small labelled set: 10 to 20 briefs with a human "ship / rewrite" and a one-line reason, checked into the repo next to the voice file. Run the pinned Claude CLI against them when the voice or the validator changes, and read the diff. That is the eval. Regex tests stay as the hard gate.
+2. Start a small labelled set: 10 to 20 briefs with a human "ship / rewrite" and a one-line reason, checked into the repo next to the voice file. Run them with `--copy-runner=grok` when the voice or the validator changes, and read the diff. That is the eval. Regex tests stay as the hard gate.
 3. Once a week, sample `sent_text` against `generated_copy` for posts you edited in Buffer. Those edits are the preference data the old loop wanted. Fold a rule into `VOICE.md` by hand when the same edit shows up twice.
 4. Run that sample on question posts too. They never appear on the Linear board, so they are the captions most likely to drift.
-5. Pin the eval to `--copy-runner=claude` so it matches Sunday.
+5. Pin the eval to `--copy-runner=grok` so it matches the weekly job.
 
 ---
 

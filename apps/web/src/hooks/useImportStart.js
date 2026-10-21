@@ -9,6 +9,7 @@
 // what is running and what waits.
 import { useCallback, useEffect, useState } from 'react';
 import { createImportReporter } from '@plot/core/importPipeline.js';
+import { rememberLetterboxdImport, clearLetterboxdImport } from '../utils/letterboxdImportPrompt.js';
 import { startFileImport, startConnectionImport, useImportJobs, importJobActive, importSourceName, importPillFor } from '@plot/core/importJobs.js';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
 import { usePlexSource } from '@plot/core/usePlexSource.js';
@@ -108,6 +109,7 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     if (!src || busy) return;
     if (jobs.jobs.some(job => job.source === id && importJobActive(job))) return;
     reporter().selected(id);
+    if (id === 'letterboxd' && userId) void rememberLetterboxdImport(userId);
     setSource(id);
     setError(null);
     setPendingFiles(null);
@@ -118,7 +120,7 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     } else {
       setPhase('file');
     }
-  }, [busy, jobs.jobs, reporter, trakt, plex, simkl]);
+  }, [busy, jobs.jobs, reporter, trakt, plex, simkl, userId]);
 
   const close = useCallback(() => {
     if (busy) return;
@@ -154,6 +156,7 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     setError(null);
     const { job, error: failure } = await startFileImport({ userId, source, entry, files });
     if (failure) { setError(failure.message); setPhase('file'); return null; }
+    if (source === 'letterboxd') void clearLetterboxdImport(userId);
     reporter().report('started', { source, count: pendingRows || 0 });
     setPendingFiles(null);
     setPendingRows(null);

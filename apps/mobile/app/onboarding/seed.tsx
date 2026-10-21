@@ -89,8 +89,7 @@ export default function Seed() {
   const { setImportSource, setImportJob } = flow;
   const onStarted = useCallback((id: string, job: { id: string }) => { setImportSource(id); setImportJob(job); }, [setImportSource, setImportJob]);
   const start = useImportStart({ userId, entry: IMPORT_ENTRY_POINTS.ONBOARDING, onStarted });
-  // A job exists (running, queued or just finished): the step's Continue leads
-  // on to services, and the title switches to adding another.
+  // After queueing an import, Continue returns to title picks with progress visible.
   const queued = start.jobs.length > 0;
   const running = start.current;
   const selected = flow.seeds;
@@ -184,7 +183,7 @@ export default function Seed() {
   const continueFromImport = () => {
     start.close();
     flow.completeStep('import');
-    router.push('/onboarding/services');
+    setShowSources(false);
   };
   const laterFromImport = () => {
     flow.completeStep('import', { skipped: true });
@@ -225,9 +224,9 @@ export default function Seed() {
         </Text>
       </TouchableOpacity>
 
+      <ImportPill pill={start.pill} />
       {showSources ? (
         <>
-          <ImportPill pill={start.pill} />
           <ScrollView style={styles.lanes} showsVerticalScrollIndicator={false}>
             <ImportSourceLanes jobs={start.jobs} current={running} connectedIds={start.connectedIds} onPick={pickSource} />
             <Text style={styles.note}>{running ? F.importSources.queuedNote(importSourceName(running.source)) : F.importSources.note}</Text>

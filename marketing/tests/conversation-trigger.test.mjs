@@ -36,7 +36,17 @@ test('a title out today wins, and the payload names it', async () => {
   assert.deepEqual(c.tmdb_refs, [{ media_type: 'movie', id: 100, title: 'Out Today' }]);
   assert.equal(c.payload.topic.mode, 'topical');
   assert.equal(c.payload.topic.hook, 'out_today');
+  assert.equal(c.payload.topic.date_kind, 'home');
   assert.equal(c.payload.title.title, 'Out Today');
+});
+
+test('a theatrical opening today is not described as a home date', async () => {
+  const c = await evaluate(ctx([
+    tracked({ release_date: TODAY, digital_date: null, title: 'Opening Day' }),
+  ]));
+
+  assert.equal(c.payload.topic.hook, 'out_today');
+  assert.equal(c.payload.topic.date_kind, 'theatrical');
 });
 
 test('the most popular of several out today is chosen', async () => {
@@ -71,6 +81,7 @@ test('subject forces the title and bypasses resolution', async () => {
 
   assert.deepEqual(c.tmdb_refs, [{ media_type: 'tv', id: 42, title: 'The Big Release' }]);
   assert.equal(c.payload.topic.hook, 'out_today');
+  assert.equal(c.payload.topic.date_kind, 'home');
 });
 
 // ── Trending, released only ──────────────────────────────────────────────

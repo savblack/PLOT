@@ -57,6 +57,10 @@ scripts/guide/__pycache__/
 # Local package-manager cache.
 .pnpm-store/
 
+# Who holds a worktree on this machine. The committed handoff note is
+# AGENT_HANDOFF.md, which other agents can read from the branch.
+.plot-session.json
+
 # Local Deno module cache and agent working files. Both are disposable outputs
 # of validation, never source files.
 .deno-cache/

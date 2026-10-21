@@ -244,17 +244,21 @@ with a live importer still on `main`.
 repo, never nested inside it:
 
 ```
-Sites/Cursor/PLOT/                 ← this checkout
-Sites/Cursor/PLOT-worktrees/<task> ← worktrees live here
+~/Developer/PLOT/                         ← this checkout
+~/Developer/PLOT-worktrees/<YYYY-MM-DD-task> ← worktrees live here
 ```
 
-From the main checkout root:
+The branch name is `agent/<YYYY-MM-DD-task>`. The folder name does not include the `agent/` prefix, because a slash would nest a directory. Cloud Cursor still uses `cursor/<name>-ff25`. Leave that prefix alone. The handoff note carries the human title.
+
+From the main checkout root, prefer `pnpm run worktrees -- new <task>`. The manual form is:
 
 ```bash
 mkdir -p ../PLOT-worktrees
-git worktree add ../PLOT-worktrees/<task-name> \
-  -b agent/<task-name> origin/main
+git worktree add ../PLOT-worktrees/<YYYY-MM-DD-task> \
+  -b agent/<YYYY-MM-DD-task> origin/main
 ```
+
+A second agent may pick up a worktree only when `AGENT_HANDOFF.md` says `paused`, or the local lock is `active` and older than 12 hours with no new commit and a clean tree. Two writers at once are still forbidden. Delete `AGENT_HANDOFF.md` in the last commit before merge so it does not land on `main`. The local `.plot-session.json` stays gitignored. See `docs/ops/agent-worktrees.md`.
 
 Never use `.claude/worktrees/` or `.worktrees/` under this checkout. If a harness
 opens a nested worktree anyway, that is a **fallback only**: stop, tell the user,
@@ -389,7 +393,7 @@ file, not the `--no-verify-jwt` flag.
 
 ## Git & PRs
 
-- Branch off `main`; don't commit to `main` directly. Commit/push only when asked.
+- Branch off `main`; don't commit to `main` directly.
 - Keep changes scoped to the ticket — no unrelated refactors or file churn.
 - Conventional-commit style prefixes (`feat(...)`, `fix(...)`, `refactor(...)`) as in history.
 
@@ -400,9 +404,69 @@ file, not the `--no-verify-jwt` flag.
   public posts, deletes, deploys to prod config) → confirm first.
 - If a ticket conflicts with this file, this file wins — flag the conflict.
 
+## Who Savannah talks to
+
+Savannah's main interface is her Grok bots. Cursor edits the repo when one of those bots has already routed the work here. It does not replace Chris, and it does not write a second morning plan.
+
+Plot is a TV and movie tracking app. The web app is at app.theplot.tv. The mobile app is on the way. She approves one prioritized plan each morning. The bots work through the day. Live payments, real user data, publishing, and sending still wait for her OK.
+
+- Chris, chief of staff and operations, sets the day's priorities and the ship queue. He builds the 5:30am plan for her approval, runs analytics, Stripe and Supabase setup, and the morning brief and close of day. He routes work to the right bot.
+- Jacob, CTO, owns the website, the web app, and the mobile app: reliability, performance, logs, errors, CI, deploys, and shipping fixes and features. He also covers security, retention, and support. Security includes secrets, who is allowed to see which data, and review of risky changes.
+- Hailey, CPO, owns the product: the core tracker, Premium, feedback, and web and mobile parity. She also owns conversion from signup to paid, and retention.
+- Alix, CMO, owns marketing, brand, social, and acquisition: SEO and articles, social posts scheduled in Buffer, and referral and share loops. She also owns traffic through to signup, including landing pages and site calls to action. She does not write the Saturday copy comparison. That job is `marketing/copy/GROK-HANDOFF.md`.
+- Kaia, conversion and community, owns activation after signup, the paywall and Stripe Checkout, trial to paid, and community replies. Those replies wait for Savannah's approval before posting.
+
+If she is asking here about the day's order, the morning plan, an analytics readout, or which bot should do something, point her to Chris when he is available. When the task is clearly Jacob, Hailey, Alix, or Kaia, name that bot in the plain opening, then do the repo work if this checkout is the right place. If Grok is unavailable or its usage allowance is exhausted, continue authorized work here from the saved record. Do not send Savannah back to a bot she cannot use or require a final handoff from it.
+
+### Keep work resumable
+
+Save progress during the task, after each meaningful result or decision and before switching tasks. Do not wait for a token warning or the end of the day. A fresh chat cannot read another chat's memory, and a new Grok chat may share the same exhausted usage allowance.
+
+Each active task needs one durable handoff outside the conversation, in its existing Notion task or Obsidian note. Keep that existing home rather than creating a second tracker, and link related records when both tools are used. Coding tasks use the worktree's `AGENT_HANDOFF.md`. Record the goal, owner, completed work with evidence links, exact next action, blockers, approvals already given and still needed, and the last updated time. Coding handoffs also record the branch, worktree, latest pushed commit, and checks passed or still pending. Keep credentials and unnecessary personal data out of these notes.
+
+The Grok bots also save context in their own memory. That memory can help when Grok is available, but another agent must not assume it can read it. Save the progress, next action, and approval record needed to continue in Notion or Obsidian as well.
+
+Chris keeps the active task list with a link to each handoff. Each bot updates its own task record directly; saving progress must not depend on Chris being available. If the shared record is unavailable, save a local handoff in the current worktree and tell Savannah where it is. Do not claim another bot has received instructions or that a shared document was updated unless that actually happened. These repo instructions apply to agents reading this file; configuring an external Grok bot to follow them is a separate step.
+
+After a real coding change, update the handoff, inspect the diff for unrelated work and secrets, and commit and push a checkpoint with `[skip ci]` in the message. Stage only the task's files. Do not open a pull request solely for a checkpoint. A checkpoint may be unfinished; record that clearly. A finished pull request still needs the required checks without `[skip ci]`. Remove `AGENT_HANDOFF.md` before merge as described in `docs/ops/agent-worktrees.md`.
+
+### Recover when a bot has already stopped
+
+Do not require the exhausted bot to write anything. Read the existing Notion records, Obsidian notes, linked artifacts, available conversation history, and current state in the relevant product. Compare timestamps and supporting evidence when records disagree; do not silently treat the newest note as proof that an action succeeded. For coding, inspect the same worktree, its diff, recent commits, and remote branch before writing. Respect the worktree ownership and claim rules; never run two writers on the same task. Reconstruct a handoff from verified evidence, label unknowns, and continue the next authorized action. Ask Savannah only for missing information that blocks progress, not for a recap the saved work already answers.
+
+Preserve the original scope and approval boundaries. Do not infer permission from a bot's plan or mark attempted work complete without evidence. Merges, production changes, payments, public posts, and sending still need Savannah's approval. On this Mac, uncommitted edits may remain in the same worktree. For a cloud session, check its saved artifacts and remote branch before concluding work is lost; restart only the part that cannot be recovered.
+
+## How to explain the work
+
+Savannah has no development background. Every reply, pull request, and `AGENT_HANDOFF.md` starts with what changed, why it matters, and what she needs to do, in everyday words. If a specialist word is required, the same sentence says what it does.
+
+Then keep the exact record the next agent needs. The plain paragraph does not replace it.
+
+Code, tests, names inside the code, and code comments stay at the current bar. Do not drop a check, skip a test, or blur a comment so the explanation is easier to write.
+
+## Change only what the task needs
+
+Touch only the files and fields the task needs. Do not tidy, rename, or widen a save while you are there.
+
+A save sends only the fields that action is allowed to change. It does not send the row's ID, Premium, or billing fields to make "create or update" easier. If the row is missing, create it. If it exists, update the allowed fields. If two creates race, retry the safe update. This is how onboarding broke on 2026-10-14: the database correctly refused an update of `profiles.id`, and the old upsert was still sending that id. `packages/core/tests/unit/profileGrants.test.js` is the guard. Extend it when a client write targets a table whose columns are granted one by one. Do not grant a column just to make a failing save pass.
+
+A new button or feature a person can use gets one PostHog event, named in `packages/core/analyticsEvents.js` and fired from the shared core path, so web and mobile count the same action once. Read `docs/analytics/README.md` before adding it. Do not invent a second activation event, and do not fire on a click that has not succeeded. If that save can fail, also send the existing `action_failed` event.
+
+## Accounts and secrets
+
+Do not ask Savannah to paste an API key, a token, or a password. Use the connector or plugin first. If it is missing, signed out, or has no access, read the value from the main checkout's `.env` (worktrees symlink it). Do not print it, commit it, or ask for it again. If neither the connector nor `.env` has it, start that connector's own login. That login screen is the only interruption.
+
+Before reading or changing a connected product, check the account. Stop if it is a different person, repository, or project. Say which account you found. Do not switch by typing a key.
+
+- GitHub user `savblack`, repository `savblack/PLOT` only.
+- Mail and logins `sav.black@outlook.com` and `savannah@theplot.tv`.
+- Supabase: `PLOT Staging` for ordinary work. Production only when she explicitly asked for production, and a write there still waits for a yes.
+- PostHog: the private project named Plot.
+- Linear: the `savblack` workspace, team PLO.
+
 ## Completion format & quality bar
 
-When you finish, report in this shape:
+When you finish, start with the plain-English paragraph from "How to explain the work". Then report in this shape:
 1. **What changed** — one line per file/area, as clickable `path:line` links.
 2. **How it was verified** — exact commands run and their result. If something failed or
    you skipped a step, say so plainly. Never claim "done" on unverified work.
@@ -459,7 +523,7 @@ needs the PG17 binaries (also in the image) plus the optional DB secret above.
 - Writing post copy → follow `marketing/copy/AGENT.md`.
 - Tempted to rebuild a hosted marketing review UI? Read
   `docs/ops/retire-admin-review.md` and `docs/ops/operator-desk-shelved.md`
-  first. Articles are reviewed in Linear; social posts in Buffer.
+  first. Articles are reviewed in Notion (What's On Articles). Social posts are reviewed in Buffer. GitHub issues are the tracker. Linear article cards are off.
 
 Model-agnostic runbooks: run from repo root on `main` with `.env` present, never a paid API
 for copy, and **confirm before anything posts publicly.**
@@ -467,11 +531,13 @@ for copy, and **confirm before anything posts publicly.**
 ## Agent skills
 
 Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills`
-(via `skills-lock.json`), minus `code-structure` and minus upstream
-`new-feature` (Plot replaces isolate with a local skill). Typical flow:
+(via `skills-lock.json`), minus `code-structure`, minus upstream
+`new-feature` (Plot replaces isolate with a local skill), and minus
+`greploop` and `greploop-apps`. Those two only talk to Greptile, which is off.
+Do not add them back. Typical flow:
 
 1. **Isolate** — `/plot-worktree`: sibling worktree at
-   `../PLOT-worktrees/<task>` (never nest under this checkout; nested harness
+   `~/Developer/PLOT-worktrees/<task>` (never nest under this checkout; nested harness
    trees are fallback-only, see CI sync-guards). Local skill; `npx skills update`
    does not touch it. Commands are also inlined under CI sync-guards above.
 2. **Build** — follow this file (shared logic in `@plot/core`, not a generic
@@ -483,15 +549,9 @@ Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills
    - [ ] Title and body through `/unslop`; body covers what changed, how
          verified, risks / follow-ups
    - [ ] `/before-and-after` only when there is a visible UI surface
-   - [ ] `/greploop` (or `/greploop-apps` for huge diffs) **only when the user
-         asks, or for larger / risky PRs** — not every tiny PR. Treat it as a
-         checklist item you invoke, not a merge gate.
-         - Cap the loop (`--max-iterations` low, default mindset: a few passes).
-         - Fix real bugs and AGENTS.md / design-system violations.
-         - Stop if Greptile is repeating style nits, disagreeing with this file,
-           or thrashing with no new substance. Report what is left; do not chase
-           5/5 for its own sake.
-         - Upstream greploop text says "until 5/5"; **this section wins**.
+   - [ ] For a permission change, a billing change, or a migration, ask a
+         different agent you already use to read the diff before the pull
+         request opens. Ordinary docs skip that.
 5. **Write for humans** — `/unslop` on commit messages, PR title/body, and
    other prose you wrote (also: no em dashes in user-facing copy).
 

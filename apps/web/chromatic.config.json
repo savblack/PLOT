@@ -1,0 +1,12 @@
+{
+  "onlyChanged": true,
+  "externals": [
+    "docs/**",
+    "marketing/**",
+    "supabase/**",
+    ".github/**",
+    "pnpm-lock.yaml",
+    "scripts/**",
+    "AGENT_HANDOFF.md"
+  ]
+}

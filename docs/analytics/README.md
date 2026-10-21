@@ -380,6 +380,8 @@ the import page's `?from=` param.
 | `import_started` | The file parsed, or the account import began | `source`, `entry`, `count` (file rows) |
 | `import_completed` | The write finished and saved something. A Trakt account import uses the same event | `source`, `entry`, `count` when the result includes how many rows were written, `failed_count`, `duration_ms`, `write_ms` for file imports |
 | `import_failed` | The import stopped, or saved nothing | `source`, `entry`, `reason` (an `IMPORT_FAILURE_REASONS` slug), `failed_count`, `duration_ms` once it had started |
+| `letterboxd_export_opened` | They opened Letterboxd's data export from the upload step | `source` (`letterboxd`), `entry` |
+| `letterboxd_import_abandoned` | They left the upload step without a file, or dismissed the reminder | `source` (`letterboxd`), `entry`, `reason` (`left` or `dismissed`) |
 | `onboarding_completed` | Setup saved | `region`, `seed_titles_added`, `services_added`, `import_source` (null unless they took the switching-apps step), `skipped` |
 | `finishing_touches_viewed` | The Finishing touches card was on screen | `done_count`, `total`. Once per app session, after the watchlist has loaded |
 | `finishing_touch_opened` | A Finishing touches step's action was opened | `step` (`progress` / `friends` / `import` / `people`) |
@@ -398,6 +400,14 @@ from the confirm tap. Picked-but-never-uploaded is `import_source_selected`
 without a later `import_started` for the same person and source. An import
 picked in onboarding opens after setup, so its `import_source_selected` comes
 before `onboarding_completed` and its `import_started` after.
+
+Letterboxd's five moments reuse that funnel where it already means the same
+thing. Start is `import_source_selected` with `source: letterboxd`. Upload is
+`import_started`. Completion is `import_completed`. The export link is
+`letterboxd_export_opened`. Abandonment is `letterboxd_import_abandoned`.
+Opening the export page and then leaving is not abandonment: that is the
+path the link is for. A file that fails to parse is `import_failed`, and the
+reminder stays until a file is accepted or they dismiss it.
 
 ## Episode alerts (title panel)
 

@@ -2,7 +2,7 @@
 name: plot-worktree
 description: >-
   Start any new Plot feature, fix, or task in an isolated sibling Git worktree
-  at ../PLOT-worktrees. Use before writing code when branching off main, when
+  at ~/Developer/PLOT-worktrees. Use before writing code when branching off main, when
   another agent may be working in parallel, or when something mentions
   new-feature / worktrees. Never nest worktrees under the Plot checkout.
 ---
@@ -13,24 +13,26 @@ Plot-owned skill (not from `npx skills`). Survives `npx skills update`.
 Canonical summary also lives in `AGENTS.md` (that file wins on conflict).
 
 Every task gets its own worktree and branch from `origin/main`. Never build on
-`main`. Never reuse another agent's worktree, branch, or uncommitted work.
+`main`. Another agent may claim a worktree only when `AGENT_HANDOFF.md` says
+`paused`, or the local lock is stale (active, older than 12 hours, clean tree,
+no newer commit). Two writers at once are forbidden.
 
 ## Location (required)
 
 ```
-Sites/Cursor/
+~/Developer/
   PLOT/                 ← main checkout
   PLOT-worktrees/       ← all agent worktrees
-    <task-name>/
+    <YYYY-MM-DD-task>/  ← branch agent/<YYYY-MM-DD-task>
 ```
 
 From the **main checkout** root:
 
 ```bash
-mkdir -p ../PLOT-worktrees
-git worktree add ../PLOT-worktrees/<task-name> \
-  -b agent/<task-name> origin/main
+pnpm run worktrees -- new <short-task-name>
 ```
+
+That creates `../PLOT-worktrees/<YYYY-MM-DD-task>`, branch `agent/<YYYY-MM-DD-task>`, symlinks the main `.env`, and writes `AGENT_HANDOFF.md`. Cloud Cursor branches stay `cursor/<name>-ff25`. Attach one with `pnpm run worktrees -- attach <branch>`.
 
 **Never** create worktrees under `.claude/worktrees/`, `.worktrees/`, or any
 other path inside `PLOT/`. Nested trees make TypeScript walk up into the parent
@@ -71,38 +73,45 @@ the default isolate step.
    If this task needs files another open PR is editing, **stop and ask**. Also
    check for uncommitted work in shared checkouts.
 
-3. **Name the task**: lowercase-with-hyphens plus a short unique suffix
-   (e.g. `user-auth-0816a`). On name collision, pick a new name. Never force
-   or reuse.
+3. **Name the task**: lowercase-with-hyphens, no date. The script adds the date.
+   On name collision, pick a new name. Never force or reuse.
 
-4. **Create** (from main checkout root):
-
-   ```bash
-   mkdir -p ../PLOT-worktrees
-   git worktree add ../PLOT-worktrees/<task-name> \
-     -b agent/<task-name> origin/main
-   ```
+4. **Create** (from main checkout root): `pnpm run worktrees -- new <short-task-name>`.
 
 5. **Enter and verify**:
 
    ```bash
-   cd ../PLOT-worktrees/<task-name>
-   git branch --show-current   # must print agent/<task-name>, not main
-   pnpm install                # worktrees do not share node_modules
+   cd ../PLOT-worktrees/<YYYY-MM-DD-task>
+   git branch --show-current   # must print agent/<YYYY-MM-DD-task>, not main
+   pnpm install                # hardlinks into the shared pnpm store
    ```
 
-   Confirm Node 22 before running anything.
+   Confirm Node 22 before running anything. Only one worktree runs the app. They share port 5177.
+
+## Pause and claim
+
+When you stop, including because you are out of tokens:
+
+```bash
+pnpm run worktrees -- pause --next "One plain sentence about what to do next."
+```
+
+Commit `AGENT_HANDOFF.md` and push the branch. Do not open a pull request just to pause. The note must not contain a password, a token, or a value from `.env`.
+
+The next agent fetches and, inside that worktree, runs `pnpm run worktrees -- claim --agent <name>`. It reads the note and continues from `next` plus the last commit.
+
+Before the pull request merges, run `pnpm run worktrees -- done` and commit the removal of `AGENT_HANDOFF.md`.
 
 ## Cleanup (after merge or close)
 
-From the main checkout:
+From the main checkout, only when the session is `done` or the pull request is merged, and the tree is clean:
 
 ```bash
-git worktree remove ../PLOT-worktrees/<task-name>
-git branch -D agent/<task-name>
+git worktree remove ../PLOT-worktrees/<YYYY-MM-DD-task>
+git branch -D agent/<YYYY-MM-DD-task>
 ```
 
-`-D` is expected after squash/rebase merges.
+`-D` is expected after squash/rebase merges. Do not remove an `active` or dirty worktree.
 
 ## Remember
 

@@ -4,8 +4,10 @@
 // Stripe Adaptive Pricing shows the price in local currency at checkout. $24/year is exactly
 // four months free against monthly. On web the Upgrade button starts Stripe checkout when
 // billing-availability says checkout is open. When it is closed, that button is a waitlist
-// mailto instead of a failed checkout. Mobile still shows mobileCheckoutMessage because
-// in-app purchase is unresolved (PLO-526).
+// mailto instead of a failed checkout; mobile's Upgrade does the same. There is no
+// in-app purchase and there will not be one (PLO-526, decided): Premium is bought
+// on the web, and mobile's Upgrade opens that web checkout in the browser, only
+// where Apple allows a link out (purchaseLinkOut.js).
 // The 7-day trial is requested by the stripe-billing checkout, not set on the Stripe Price. It is for
 // new subscribers only. Do not put Stripe price IDs in this file.
 export const PLANS_PAGE = {
@@ -30,8 +32,6 @@ export const PLANS_PAGE = {
   waitlistHint: 'We’ll email you when checkout opens.',
   // Price config or a billing-account lookup failed. Not the same as a closed launch switch.
   checkoutUnavailable: 'Checkout isn’t available right now. Please try again later.',
-  // Mobile never takes a payment in the app, so it keeps the closed-checkout wording.
-  mobileCheckoutMessage: 'Checkout is not open yet. When Premium opens, it is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.',
   free: {
     name: 'Free',
     price: '$0',

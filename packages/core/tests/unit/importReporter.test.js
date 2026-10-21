@@ -62,3 +62,17 @@ test('a failure before anything started carries no duration, and timing never go
   assert.equal('write_ms' in events[2], false);
   configure({ onImport: undefined });
 });
+
+test('Letterboxd export and abandonment are their own stages and do not time a write', () => {
+  const events = capture();
+  const r = createImportReporter({ entry: 'import_page', now: () => 10 });
+  r.exportOpened();
+  r.abandoned('left');
+  r.abandoned('dismissed');
+  assert.deepEqual(events, [
+    { stage: 'export_opened', source: 'letterboxd', entry: 'import_page' },
+    { stage: 'abandoned', source: 'letterboxd', entry: 'import_page', reason: 'left' },
+    { stage: 'abandoned', source: 'letterboxd', entry: 'import_page', reason: 'dismissed' },
+  ]);
+  configure({ onImport: undefined });
+});

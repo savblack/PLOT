@@ -3,14 +3,26 @@ name: Marketing — weekly batch
 # Generates the coming week from the voice/spec rules as they stand in the repo.
 on:
   schedule:
-    # 00:30 UTC Sunday. Saturday evening Eastern, and still before 9:00am ET
-    # Sunday even with this repo's scheduler lag, so the week is planned
-    # before the first post.
-    - cron: '30 0 * * 0'
+    # 18:30 UTC Sunday.
+    # Sydney daylight time (AEDT, UTC+11): 5:30am Monday.
+    # Sydney standard time (AEST, UTC+10): 4:30am Monday. The wait step holds
+    # that hour so a scheduled run still begins at 5:30.
+    # GitHub cron is UTC and does not follow Sydney daylight time.
+    # This repo's scheduler has been starting the job several hours after the
+    # cron line. A LaunchAgent on this Mac dispatches the same workflow at
+    # 5:30am Monday Sydney. When that run has already succeeded, the later
+    # scheduled start exits without planning another week.
+    #
+    # Posts stay 9:00am America/New_York. 5:30am Monday Sydney is Sunday
+    # afternoon in the US, so the seven-day plan starts the next US Monday
+    # and runs through the following Sunday. A start that slips past Monday
+    # 9:00am Eastern skips that Monday's post.
+    - cron: '30 18 * * 0'
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: marketing-weekly-batch
@@ -18,38 +30,137 @@ concurrency:
 
 jobs:
   batch:
-    # macOS, not Ubuntu: the copy worker runs Claude inside sandbox-exec
-    # (marketing/lib/cli-runner.mjs) and refuses to start anywhere else, so an
-    # Ubuntu runner fails every week at the copy step.
-    runs-on: macos-latest
+    # This Mac, running as savannahblack. The copy worker needs sandbox-exec,
+    # and the Grok login lives in this user's ~/.grok. A GitHub-hosted runner
+    # cannot see that login. The macOS label keeps a Linux runner off this job.
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.1.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      # workflow_dispatch always continues, including the 5:30am dispatch from
+      # this Mac. Only the UTC cron bails out after a success in the last five
+      # days, which is how the late GitHub start avoids booking the week twice.
+      - name: Skip a scheduled rerun after this week already succeeded
+        id: week
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          THIS_RUN: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          node --input-type=module <<'EOF'
+          import { appendFileSync } from 'node:fs';
+          const write = (skip) => appendFileSync(process.env.GITHUB_OUTPUT, `skip=${skip}\n`);
+          if (process.env.EVENT_NAME !== 'schedule') {
+            write('false');
+            console.log(`${process.env.EVENT_NAME} always runs.`);
+            process.exit(0);
+          }
+          const res = await fetch(`https://api.github.com/repos/${process.env.REPO}/actions/workflows/marketing-weekly-batch.yml/runs?per_page=20`, {
+            headers: {
+              Authorization: `Bearer ${process.env.GH_TOKEN}`,
+              Accept: 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'User-Agent': 'plot-marketing-weekly',
+            },
+          });
+          if (!res.ok) {
+            console.log(`Could not list recent runs (${res.status}). Continuing.`);
+            write('false');
+            process.exit(0);
+          }
+          const data = await res.json();
+          const cutoff = Date.now() - 5 * 24 * 60 * 60 * 1000;
+          const prior = (data.workflow_runs || []).find((run) => {
+            if (String(run.id) === String(process.env.THIS_RUN)) return false;
+            if (run.conclusion !== 'success') return false;
+            return Date.parse(run.created_at) >= cutoff;
+          });
+          if (prior) {
+            console.log(`Run ${prior.id} already succeeded at ${prior.created_at}. Skipping.`);
+            write('true');
+          } else {
+            console.log('No successful run in the last five days.');
+            write('false');
+          }
+          EOF
 
-      # Pinned, not @latest: 31f4d72 is what an unpinned CLI install costs you
-      # here — a flag this workflow relied on was removed upstream and broke
-      # every run until someone noticed. Bump this version deliberately, in
-      # its own PR, not automatically.
-      - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code@2.1.226
+      - name: Wait until 5:30am Sydney
+        if: steps.week.outputs.skip != 'true' && github.event_name == 'schedule'
+        run: |
+          node --input-type=module <<'EOF'
+          const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Australia/Sydney',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hourCycle: 'h23',
+          }).formatToParts(new Date());
+          const num = (type) => {
+            const value = Number(parts.find((part) => part.type === type).value);
+            return type === 'hour' && value === 24 ? 0 : value;
+          };
+          const hour = num('hour');
+          const minute = num('minute');
+          const second = num('second');
+          const waitMs = ((5 * 60 + 30 - (hour * 60 + minute)) * 60 - second) * 1000;
+          const clock = [hour, minute, second].map((part) => String(part).padStart(2, '0')).join(':');
+          const maxWaitMs = 2 * 60 * 60 * 1000;
+          if (waitMs > 0 && waitMs <= maxWaitMs) {
+            console.log(`Sydney is ${clock}. Waiting ${Math.round(waitMs / 1000)}s for 05:30.`);
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
+          } else {
+            console.log(`Sydney is ${clock}. Starting now.`);
+          }
+          EOF
+
+      - name: Install dependencies
+        if: steps.week.outputs.skip != 'true'
+        run: pnpm install --frozen-lockfile
+
+      # The runner's own PATH does not include ~/.grok/bin. GITHUB_PATH applies
+      # to the following steps. Do not reinstall the CLI over the logged-in copy.
+      - name: Put the logged-in Grok CLI on PATH
+        if: steps.week.outputs.skip != 'true'
+        run: |
+          echo "$HOME/.grok/bin" >> "$GITHUB_PATH"
+          echo "HOME=$HOME"
+
+      - name: Install a fallback writer when Grok is missing
+        if: steps.week.outputs.skip != 'true'
+        run: |
+          if command -v grok >/dev/null 2>&1; then
+            echo "Using $(command -v grok)"
+            grok --version || true
+          else
+            echo "::warning::grok is not on PATH. Installing Claude for this run."
+            npm install -g @anthropic-ai/claude-code@2.1.226
+          fi
 
       - name: Install Playwright browser
+        if: steps.week.outputs.skip != 'true'
         run: npx playwright install --with-deps chromium
 
-      - name: Generate the week with Claude Code
+      - name: Generate the week
+        if: steps.week.outputs.skip != 'true'
         run: |
-          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
-            echo "Missing CLAUDE_CODE_OAUTH_TOKEN secret."
-            exit 1
+          if command -v grok >/dev/null 2>&1; then
+            node marketing/scripts/automation.mjs weekly --copy-runner=grok
+          else
+            echo "::warning::grok is not on PATH. This week is Claude."
+            if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+              echo "Missing CLAUDE_CODE_OAUTH_TOKEN secret."
+              exit 1
+            fi
+            node marketing/scripts/automation.mjs weekly --copy-runner=claude
           fi
-          node marketing/scripts/automation.mjs weekly --copy-runner=claude
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -64,10 +175,24 @@ jobs:
           # Repo variable; unset means draft (the safe default in schedule.mjs).
           BUFFER_PUSH_AS_DRAFT: ${{ vars.BUFFER_PUSH_AS_DRAFT }}
 
+      # The runner deletes marketing/copy/jobs when the job ends. Keep the
+      # briefs and the writer's JSON so another pass can be checked against the
+      # same week without planning or pushing Buffer again.
+      - name: Keep this week's briefs
+        if: always() && steps.week.outputs.skip != 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: weekly-copy-jobs
+          path: marketing/copy/jobs/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Alert on failure
-        if: failure()
+        if: failure() && steps.week.outputs.skip != 'true'
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW_NAME: weekly batch

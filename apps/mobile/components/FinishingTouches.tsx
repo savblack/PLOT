@@ -22,7 +22,9 @@ import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { availableImportSources } from '@plot/core/onboardingSetup.js';
 import { getConfig } from '@plot/core/config.js';
 import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
+import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
 import { FINISHING_TOUCHES as T } from '@plot/core/copy/finishingTouches.js';
+import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -33,6 +35,7 @@ import { favoriteWords } from '../lib/spelling';
 import {
   closeFinishingTouches, hideFinishingTouchesFor, markImportDone, readFinishingTouches,
 } from '../lib/finishingTouches';
+import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../lib/letterboxdImportPrompt';
 import { suppressFirstWinForImport } from '../lib/firstWinCard';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -92,7 +95,14 @@ export default function FinishingTouches({ state, onState }: {
   const followPerson = useFollowPerson();
   const [expanded, setExpanded] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
+  const [letterboxdPrompt, setLetterboxdPrompt] = useState(false);
+  const [letterboxdImport, setLetterboxdImport] = useState(false);
   const fav = favoriteWords(profile?.region);
+
+  const refreshLetterboxd = useCallback(() => {
+    readLetterboxdImportPrompt(userId).then(prompt => setLetterboxdPrompt(!!prompt));
+  }, [userId]);
+  useEffect(() => { refreshLetterboxd(); }, [refreshLetterboxd]);
 
   const savedCount = watchlist?.items?.length ?? 0;
   const show = firstWatchlistShow(watchlist?.items);
@@ -131,7 +141,16 @@ export default function FinishingTouches({ state, onState }: {
       return { ...step, title: T.steps.friends.title, sub: step.done ? T.steps.friends.doneSub(follows.following) : T.steps.friends.sub, cta: T.steps.friends.cta };
     }
     if (step.id === 'import') {
-      return { ...step, title: T.steps.import.title, sub: step.done ? T.steps.import.doneSub : T.steps.import.sub, cta: T.steps.import.cta };
+      if (letterboxdPrompt && !step.done) {
+        return {
+          ...step,
+          title: IMPORT_VIEW.letterboxdFinishTitle,
+          sub: IMPORT_VIEW.letterboxdFinishSub,
+          cta: IMPORT_VIEW.letterboxdFinishCta,
+          dismiss: IMPORT_VIEW.letterboxdFinishDismiss,
+        };
+      }
+      return { ...step, title: T.steps.import.title, sub: step.done ? T.steps.import.doneSub : T.steps.import.sub, cta: T.steps.import.cta, dismiss: undefined };
     }
     return {
       ...step,
@@ -144,6 +163,7 @@ export default function FinishingTouches({ state, onState }: {
   const closeSheet = () => {
     setSheet(null);
     follows.refresh();
+    refreshLetterboxd();
   };
 
   if (allDone) {
@@ -215,12 +235,30 @@ export default function FinishingTouches({ state, onState }: {
                   style={styles.tileCta}
                   onPress={() => {
                     track(EVENTS.FINISHING_TOUCH_OPENED, { step: tile.id });
+                    if (tile.id === 'import' && letterboxdPrompt && !state?.importDone) {
+                      setLetterboxdImport(true);
+                      return;
+                    }
                     setSheet(tile.id as Sheet);
                   }}
                   accessibilityRole="button"
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <Text style={styles.tileCtaText}>{tile.cta} →</Text>
+                </TouchableOpacity>
+              )}
+              {!tile.done && 'dismiss' in tile && tile.dismiss && (
+                <TouchableOpacity
+                  style={styles.tileDismiss}
+                  onPress={async () => {
+                    await clearLetterboxdImport(userId);
+                    setLetterboxdPrompt(false);
+                    createImportReporter({ entry: IMPORT_ENTRY_POINTS.FINISHING_TOUCHES }).abandoned(LETTERBOXD_IMPORT_ABANDON.DISMISSED);
+                  }}
+                  accessibilityRole="button"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.tileDismissText}>{tile.dismiss}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -241,6 +279,15 @@ export default function FinishingTouches({ state, onState }: {
             await suppressFirstWinForImport(userId, source);
           }}
           onClose={closeSheet}
+        />
+      )}
+      {letterboxdImport && !!userId && (
+        <ImportHistoryModal
+          userId={userId}
+          entry={IMPORT_ENTRY_POINTS.FINISHING_TOUCHES}
+          initialPlatform="letterboxd"
+          onImported={async () => onState(await markImportDone(userId))}
+          onClose={() => { setLetterboxdImport(false); refreshLetterboxd(); }}
         />
       )}
       {followPerson.sheet}
@@ -538,6 +585,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   tileSub: { marginLeft: 28, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   tileCta: { marginLeft: 28, marginTop: spacing.xs, alignSelf: 'flex-start' },
   tileCtaText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accent },
+  tileDismiss: { marginLeft: 28, alignSelf: 'flex-start' },
+  tileDismissText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textMuted },
 
   ready: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginHorizontal: spacing.xl, marginBottom: spacing.xl, padding: spacing.lg, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   readyMark: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentFill },

@@ -39,6 +39,10 @@ import { fetchUserDataExport } from '@plot/core/exportData.js';
 import { shareDataExport, type ExportFormat } from '../../lib/shareDataExport';
 import { pickAndUploadAvatar, removeAvatar } from '../../lib/avatar';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
+import { IMPORT_ENTRY_POINTS, createImportReporter } from '@plot/core/importPipeline.js';
+import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
+import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../../lib/letterboxdImportPrompt';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { PREMIUM_ALERTS } from '@plot/core/copy/premiumAlerts.js';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
@@ -83,10 +87,10 @@ function generateCalendarToken(): string {
 }
 import { useTheme } from '../../contexts/ThemeContext';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
-import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import ThemeChip from '../../components/ThemeChip';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import { usePremiumCheckout } from '../../lib/usePremiumCheckout';
+import { useBillingStatus } from '@plot/core/useBillingStatus.js';
 
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 const A = SETTINGS_VIEW.appearance;
@@ -348,6 +352,26 @@ function PushAlertsSettings({ userId }: { userId: string | null }) {
 }
 
 // The Premium summary in Settings. Upgrade opens Stripe Checkout in the browser once checkout is open.
+/** Cancel, payment method and invoices live in Stripe's portal, in the phone's browser. */
+function ManageSubscription({ userId }: { userId: string | null }) {
+  const { colors } = useTheme();
+  const billing = useBillingStatus(userId ?? undefined);
+  const checkout = usePremiumCheckout(true);
+  if (!checkout.allowed || !billing?.canManage) return null;
+  return (
+    <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
+      <Text style={{ color: colors.textSecondary }}>
+        {billing.status === 'past_due' || billing.status === 'unpaid' ? SETTINGS_VIEW.premium.paymentNeedsAttention
+          : billing.cancelAtPeriodEnd ? SETTINGS_VIEW.premium.cancellationScheduled
+          : SETTINGS_VIEW.billing.portalHint}
+      </Text>
+      <SettingsRow icon={null} label={checkout.busy ? SETTINGS_VIEW.premium.opening : SETTINGS_VIEW.premium.manageSubscription}
+        onPress={() => { void checkout.openPortal(); }} />
+      {!!checkout.error && <Text style={{ color: colors.textSecondary }} accessibilityRole="alert">{checkout.error}</Text>}
+    </SettingsGroup>
+  );
+}
+
 function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean }) {
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(initialExpanded);
@@ -374,13 +398,13 @@ function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean
           ) : null}
         </View>)}
         <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
-        <SettingsRow icon={null} label={checkout.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.upgradeAction}
-          onPress={async () => {
-            if (checkout.closed) { Alert.alert(PLANS_PAGE.premium.name, PLANS_PAGE.mobileCheckoutMessage); return; }
-            const result = await checkout.start('monthly');
-            if (result === 'closed') Alert.alert(PLANS_PAGE.premium.name, PLANS_PAGE.mobileCheckoutMessage);
-          }} />
-        {!!checkout.error && <Text style={{ color: colors.textSecondary }} accessibilityRole="alert">{checkout.error}</Text>}
+        {checkout.allowed && (
+          <>
+            <SettingsRow icon={null} label={checkout.label}
+              onPress={() => { if (checkout.closed) checkout.joinWaitlist(); else void checkout.start('monthly'); }} />
+            {!!checkout.error && <Text style={{ color: colors.textSecondary }} accessibilityRole="alert">{checkout.error}</Text>}
+          </>
+        )}
       </View>}
     </SettingsGroup>
   );
@@ -1022,6 +1046,8 @@ export default function SettingsScreen() {
   const [section, setSection] = useState(() => SETTINGS_SECTIONS.some(item => item.id === sectionParam) ? sectionParam! : 'account');
   const [query, setQuery] = useState('');
   const [themeUpgrade, setThemeUpgrade] = useState<string | null>(null);
+  const [showLetterboxdImport, setShowLetterboxdImport] = useState(false);
+  const [letterboxdPrompt, setLetterboxdPrompt] = useState(false);
   // Settings › Connections: a background import's leftovers to match, and
   // the source Home's "Try again" asked to open (?source=<id>).
   const [reviewJob, setReviewJob] = useState<{ id: string; user_id: string; source: string } | null>(null);
@@ -1067,6 +1093,16 @@ export default function SettingsScreen() {
   const { visibility: watchlistVisibility, refresh: refreshWatchlistVisibility } = useWatchlistVisibility(userId, isPublic);
   // The choice is made on its own screen; re-read it on the way back.
   useFocusEffect(useCallback(() => { refreshWatchlistVisibility(); }, [refreshWatchlistVisibility]));
+  const refreshLetterboxdPrompt = useCallback(() => {
+    readLetterboxdImportPrompt(userId).then(prompt => setLetterboxdPrompt(!!prompt));
+  }, [userId]);
+  useEffect(() => { refreshLetterboxdPrompt(); }, [refreshLetterboxdPrompt]);
+  useFocusEffect(useCallback(() => { refreshLetterboxdPrompt(); }, [refreshLetterboxdPrompt]));
+  const dismissLetterboxdImport = useCallback(async () => {
+    await clearLetterboxdImport(userId);
+    setLetterboxdPrompt(false);
+    createImportReporter({ entry: IMPORT_ENTRY_POINTS.IMPORT_PAGE }).abandoned(LETTERBOXD_IMPORT_ABANDON.DISMISSED);
+  }, [userId]);
 
   const toggleVisibility = async () => {
     if (!userId) return;
@@ -1664,6 +1700,25 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
+        <SettingsGroup title={SETTINGS_VIEW.integrations.importWatchHistoryLabel}>
+          {letterboxdPrompt ? (
+            <View>
+              <SettingsRow
+                icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><Polyline points="17 8 12 3 7 8"/><Line x1={12} y1={3} x2={12} y2={15}/></Svg>}
+                label={IMPORT_VIEW.letterboxdFinishTitle}
+                description={IMPORT_VIEW.letterboxdFinishSub}
+                onPress={() => setShowLetterboxdImport(true)}
+              />
+              <TouchableOpacity
+                onPress={() => { void dismissLetterboxdImport(); }}
+                accessibilityRole="button"
+                style={{ alignSelf: 'flex-start', paddingHorizontal: 16, paddingBottom: 12 }}
+              >
+                <Text style={{ color: colors.textMuted, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{IMPORT_VIEW.letterboxdFinishDismiss}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </SettingsGroup>
         {/* Your sources: accounts connected and files uploaded, each with its
             own status and history. One-off imports are free for everyone; the
             automatic toggle is the one Premium thing. */}
@@ -1686,6 +1741,7 @@ export default function SettingsScreen() {
             />
           </SettingsGroup>
         )}
+        <ManageSubscription userId={userId} />
         {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
         <SettingsGroup title={SETTINGS_VIEW.billing.supportTitle}>
           <SettingsRow
@@ -1837,6 +1893,14 @@ export default function SettingsScreen() {
       )}
       {feedbackType && userId && user && (
         <FeedbackModal userId={userId} userEmail={user.email ?? ''} initialType={feedbackType} onClose={() => setFeedbackType(null)} />
+      )}
+      {showLetterboxdImport && userId && (
+        <ImportHistoryModal
+          userId={userId}
+          entry={IMPORT_ENTRY_POINTS.IMPORT_PAGE}
+          initialPlatform="letterboxd"
+          onClose={() => { setShowLetterboxdImport(false); refreshLetterboxdPrompt(); }}
+        />
       )}
       {reviewJob && userId && (
         <ImportHistoryModal userId={userId} entry={IMPORT_ENTRY_POINTS.SETTINGS} reviewJob={reviewJob} onClose={() => setReviewJob(null)} />

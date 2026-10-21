@@ -52,6 +52,8 @@ const NARRATED_RESEARCH = [
   /\bcritics (?:have|had|kept|generally|largely|mostly|widely|praised|called|described|identified|noted|agreed|were|are)\b/i,
   /\breviews? (?:have|has|landed|were|are|out of|described|praised|called)\b/i,
   /\bwhat critics\b/i,
+  /\bcritics\b(?:\s+\w+){1,6}\s+noted\b/i,
+  /\bearly buzz\b/i,
   /\bcritical (?:reception|consensus) (?:proved|was|has been|is)\b/i,
 ];
 
@@ -66,6 +68,9 @@ const EXPOSED_RESEARCH = [
 // Only the brief's pre-fetched block (IMDb, Rotten Tomatoes, Metacritic) may be
 // cited. An audience score is neither reliable nor ours to quote.
 const AUDIENCE_SCORE = /\baudience (?:score|rating)\b|\bpopcornmeter\b|\bverified hot\b/i;
+// "audiences are nowhere near agreement" cites a reaction the page cannot know.
+// It is not a score, and it is still not ours to report.
+const AUDIENCE_REACTION = /\baudience(?:s)? are\b/i;
 
 // The post type is a label the site renders; repeating it in Title Case at the
 // front of the headline is both duplication and a house-style break. "On This
@@ -220,6 +225,8 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, opts = {
     }
     const audience = AUDIENCE_SCORE.exec(text);
     if (audience) errors.push(`${field} cites an audience score ("${audience[0]}"); only the brief's IMDb, Rotten Tomatoes and Metacritic figures may be used`);
+    const reaction = AUDIENCE_REACTION.exec(text);
+    if (reaction) errors.push(`${field} cites what audiences think ("${reaction[0]}"); say what Plot thinks, or ask the reader`);
     const spelling = spellingError(field, text, opts);
     if (spelling) errors.push(spelling);
     const store = STORE_JARGON.exec(text);
@@ -281,12 +288,14 @@ export const socialErrors = (copy = {}, opts = {}) => {
     if (DASH_RE.test(text)) {
       errors.push(`${field} contains an em or en dash; use a comma, colon or full stop`);
     }
-    for (const re of NARRATED_RESEARCH.slice(0, 6)) {
+    for (const re of NARRATED_RESEARCH) {
       const hit = re.exec(text);
       if (hit) { errors.push(`${field} narrates research ("${hit[0]}"); state it as Plot's own`); break; }
     }
     const audience = AUDIENCE_SCORE.exec(text);
     if (audience) errors.push(`${field} cites an audience score ("${audience[0]}")`);
+    const reaction = AUDIENCE_REACTION.exec(text);
+    if (reaction) errors.push(`${field} cites what audiences think ("${reaction[0]}"); say what Plot thinks, or ask the reader`);
     const spelling = spellingError(field, text, opts);
     if (spelling) errors.push(spelling);
     const store = STORE_JARGON.exec(text);

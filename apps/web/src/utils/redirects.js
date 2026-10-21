@@ -57,14 +57,6 @@ export function consumeSimklReturnTo() {
   return value?.startsWith('/') ? value : '/import?source=simkl';
 }
 
-export function buildSimklAuthorizeUrl(clientId, state) {
-  const params = new URLSearchParams({
-    response_type: 'code', client_id: clientId,
-    redirect_uri: getSimklCallbackUrl(), state,
-  });
-  return `https://simkl.com/oauth/authorize?${params}`;
-}
-
 // The Trakt callback page posts this to the window that opened it (onboarding
 // connects in a popup so the step's picks survive).
 export const TRAKT_POPUP_MESSAGE = 'plot:trakt-connected';

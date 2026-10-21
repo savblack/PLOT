@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { articleErrors, socialErrors } from '../../supabase/functions/_shared/articleRules.js';
 import { formatWeekRange } from '../lib/dates.mjs';
-import { validateCopy, validateGuide } from '../copy/schema.mjs';
+import { validateCopy, validateConversation, validateGuide } from '../copy/schema.mjs';
 import { rescheduledSlug } from '../../supabase/functions/_shared/postSlug.js';
 
 const body = (...paras) => ({ page_title: 'A headline', page_body: paras });
@@ -42,6 +42,8 @@ test('rejects narrated research and reception', () => {
     'What critics kept coming back to was the setting.',
     'Reviews landed mixed, with several comparing it to Speed.',
     'Critics have been much harder on the film itself.',
+    'Critics at the time noted how much got lost in the move.',
+    'Early buzz has framed the film as a sure thing.',
   ]) {
     const e = articleErrors(body(s));
     assert.equal(e.length, 1, s);
@@ -149,6 +151,8 @@ test('a watchable post must say where to watch', () => {
   const withService = { ...base, page_body: ['It is now streaming on Netflix.', 'Two.', 'Three.'] };
   const withStore = { ...base, page_body: ['It is available to rent or buy from today.', 'Two.', 'Three.'] };
   const spelledOut = { ...base, page_body: ['It is on Disney Plus from today.', 'Two.', 'Three.'] };
+  const fubo = { ...base, page_body: ['You can watch it on fuboTV.', 'Two.', 'Three.'] };
+  const mgm = { ...base, page_body: ['It is streaming now on the MGM+ Amazon Channel.', 'Two.', 'Three.'] };
 
   const err = (copy, post_type) => validateCopy(copy, { post_type }).errors.filter(e => /where to watch/.test(e));
   assert.equal(err(noPlatform, 'now_streaming').length, 1);
@@ -158,7 +162,21 @@ test('a watchable post must say where to watch', () => {
   // which type it is keeps working unchanged.
   assert.deepEqual(err(noPlatform, 'on_this_day'), []);
   assert.deepEqual(err(noPlatform, undefined), []);
-  for (const c of [withService, withStore, spelledOut]) assert.deepEqual(err(c, 'now_streaming'), []);
+  for (const c of [withService, withStore, spelledOut, fubo, mgm]) assert.deepEqual(err(c, 'hidden_gem'), []);
+});
+
+test('a question has to end on a question mark and cannot cite audiences', () => {
+  const bad = validateConversation({ question: 'Critics and audiences are nowhere near agreement on Matchbox.' });
+  assert.equal(bad.valid, false);
+  assert.ok(bad.errors.some((e) => /question mark/.test(e)));
+  assert.ok(bad.errors.some((e) => /audiences/.test(e)));
+
+  const closer = validateConversation({ question: 'Did the chase earn it? No wrong answers.' });
+  assert.equal(closer.valid, false);
+  assert.ok(closer.errors.some((e) => /No wrong answers/.test(e)));
+
+  const ok = validateConversation({ question: 'Did the chase earn it?' });
+  assert.equal(ok.valid, true);
 });
 
 test('a rental is never called a store, but a real shop is left alone', () => {

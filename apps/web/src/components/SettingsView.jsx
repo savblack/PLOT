@@ -32,6 +32,7 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { IMPORT_VIEW } from '../copy/importView.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { MODERATION } from '../copy/moderation.js';
@@ -56,6 +57,9 @@ import Spinner from './Spinner.jsx';
 import { WatchTogetherSettings } from './WatchTogetherParts.jsx';
 import WatchlistVisibilitySetting from './WatchlistVisibilitySetting.jsx';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
+import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
+import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
+import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../utils/letterboxdImportPrompt.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -1130,6 +1134,11 @@ export default function SettingsView() {
     reminders?.reminders ?? [],
   );
 
+  const [letterboxdPrompt, setLetterboxdPrompt] = useState(() => readLetterboxdImportPrompt(user?.id));
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- re-read the device reminder when the signed-in user changes
+    setLetterboxdPrompt(readLetterboxdImportPrompt(user?.id));
+  }, [user?.id]);
   const [showProviders,       setShowProviders]       = useState(false);
   const [savingProviders,     setSavingProviders]     = useState(false);
   const [savingMarketingEmails, setSavingMarketingEmails] = useState(false);
@@ -1226,10 +1235,6 @@ export default function SettingsView() {
     setGenreDraft(null);
     setSavingGenres(false);
   }, [profile?.genres, genreDraft]);
-
-  // Load integrations on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
 
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
   const marketingEmailsEnabled = !!profile?.marketing_emails;
@@ -1900,6 +1905,46 @@ export default function SettingsView() {
       <PremiumAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
         </>}
         {activeSection === 'connections' && <>
+        {letterboxdPrompt && (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <div>
+                <div className="settings-row-label">{IMPORT_VIEW.letterboxdFinishTitle}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {IMPORT_VIEW.letterboxdFinishSub}
+                </div>
+              </div>
+            </div>
+            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+              <button
+                type="button"
+                className="settings-text-action"
+                onClick={() => navigate(`/import?source=letterboxd&from=${IMPORT_ENTRY_POINTS.IMPORT_PAGE}`)}
+              >
+                {IMPORT_VIEW.letterboxdFinishCta}
+              </button>
+              <button
+                type="button"
+                className="settings-text-action"
+                onClick={() => {
+                  clearLetterboxdImport(user?.id);
+                  setLetterboxdPrompt(null);
+                  createImportReporter({ entry: IMPORT_ENTRY_POINTS.IMPORT_PAGE }).abandoned(LETTERBOXD_IMPORT_ABANDON.DISMISSED);
+                }}
+              >
+                {IMPORT_VIEW.letterboxdFinishDismiss}
+              </button>
+            </div>
+          </div>
+        )}
+
       <SettingsSources userId={user?.id} premium={premium} showConfirm={showConfirm} />
 
       {/* Calendar */}

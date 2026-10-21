@@ -106,7 +106,7 @@
  *   reportWatchTogether for the share button), plus collaborative list
  *   invites from useListInvites. Shapes only: never user ids, usernames,
  *   list ids or invite link keys.
- * @property {(payload: { stage: 'started' | 'completed' | 'failed', source: string, count?: number, failed_count?: number, reason?: string }) => void} [onImport]
+ * @property {(payload: { stage: 'selected' | 'started' | 'completed' | 'failed' | 'export_opened' | 'abandoned', source: string, count?: number, failed_count?: number, reason?: string, entry?: string }) => void} [onImport]
  *   Analytics seam — a history import's lifecycle, via reportImport in
  *   importPipeline.js. `reason` is an IMPORT_FAILURE_REASONS slug, never the
  *   parser's message (it can quote file contents).
