@@ -285,7 +285,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
         <div className="panel-upnext-actions">
           <button className="panel-pill panel-pill--primary" onClick={markWatched} disabled={pending}>
             <CheckIcon />
-            {pending ? MEDIA_PANEL.updating : MEDIA.markWatched}
+            <span className="panel-pill-label">{pending ? MEDIA_PANEL.updating : MEDIA.markWatched}</span>
           </button>
         </div>
       </div>
@@ -1710,7 +1710,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 onClick={handleSaveFromPanel}
               >
                 {inList ? <CheckIcon /> : <BookmarkIcon />}
-                {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
+                <span className="panel-pill-label">{inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}</span>
               </button>
 
               <div className="panel-status" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
