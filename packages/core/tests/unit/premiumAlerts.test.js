@@ -68,7 +68,7 @@ test('the alerts upgrade sheet leads with alerts and has no Free cap meter', () 
   assert.equal(content.title, 'Follow the people you love watching.');
   assert.equal(content.body, 'Hear when they have something new.');
   assert.doesNotMatch(content.body + content.title, /season/i);
-  assert.deepEqual(content.also.map(r => r.label), ['Pick for Me', 'Find something you both want']);
+  assert.deepEqual(content.also.map(r => r.label), ['Just Decide', 'Find something you both want']);
 });
 
 test('people and season-ready alerts are live Premium features; episode alerts are live on Free', () => {

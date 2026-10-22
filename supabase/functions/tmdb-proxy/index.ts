@@ -36,7 +36,7 @@ const ALLOWED_PATHS = [
   // Type-scoped title search — see tmdb.searchTitles in @plot/core.
   /^search\/(movie|tv)$/,
   // Keyword lookup by name: Horror / Romance / Thriller for shows (TMDB's TV
-  // catalog has no such genres) in Pick for Me and New Releases. See
+  // catalog has no such genres) in Just Decide and New Releases. See
   // packages/core/keywordGenres.js.
   /^search\/keyword$/,
   /^trending\/(all|movie|tv)\/(day|week)$/,

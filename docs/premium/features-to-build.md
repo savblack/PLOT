@@ -1,7 +1,7 @@
 # Plot Premium: features to build (agent handoff)
 
 **Audience:** another agent picking up Premium product work.  
-**Status of this doc:** locked Free/Premium *positioning* as of 2026-09-23; build status updated 2026-09-28. **Pick for Me** (the tonight picker) is live on `main`. **Watch together** is live on web and in the mobile app (`SHOW_WATCH_TOGETHER = true`, PLO-515, mobile PR 1345). Installed phones need a new build. Most other Premium *product* features are not built yet. Checkout is hard-closed.  
+**Status of this doc:** locked Free/Premium *positioning* as of 2026-09-23; build status updated 2026-09-28. **Just Decide** (the tonight picker) is live on `main`. **Watch together** is live on web and in the mobile app (`SHOW_WATCH_TOGETHER = true`, PLO-515, mobile PR 1345). Installed phones need a new build. Most other Premium *product* features are not built yet. Checkout is hard-closed.  
 **Canonical entitlement copy:** `packages/core/copy/plansPage.js` (never invent a second matrix).  
 **Prior decision thread:** [Premium upgrade journey](9766f334-4f25-4949-891a-ee18a19d4991).  
 **Research:** `docs/research/premium-positioning-2026-09-16.md`, `docs/research/premium-preview-merge-notes.md`.
@@ -33,7 +33,7 @@
 | Live calendar feed | Premium URL on web and mobile. Free gets a one-time `.ics`. `calendar-feed` returns an empty calendar when `is_premium()` is false. |
 | Plex / Trakt sync | Edge functions return `premium_required` for non-Premium `sync`. **UI flag on:** `SHOW_MEDIA_SYNC_INTEGRATIONS = true` (web + mobile). Premium Settings shows Connect and Import watch history. Public copy does not call it automatic or two-way sync. Free Settings shows the Premium gate. Live OAuth still needs a Premium account smoke. |
 | Marketing homepage previews | Illustrative Tonight / Together / Following storyboards only. Not live product. |
-| Pick for Me (tonight picker) | **Live on `main`** (PR #1029, merged 2026-09-25; follow-up #1045, 2026-09-26). See §5.2. |
+| Just Decide (tonight picker) | **Live on `main`** (PR #1029, merged 2026-09-25; follow-up #1045, 2026-09-26). See §5.2. |
 | Watch together (overlap + shared lists) | **Live on web and mobile.** `SHOW_WATCH_TOGETHER = true` in `apps/web/src/launchFeatures.js` and `apps/mobile/lib/launchFeatures.ts` (PLO-515, mobile PR 1345). Production has migrations `20260927100000` through `20260927140000`. Installed phones need a new build. Decisions in `docs/design/watch-together/README.md`. |
 | `/plans` rebuild | **In review:** PR #1031 (`agent/premium-plans-a2`), side-by-side plans at US$3/$24. |
 | One-off Plex / Trakt / IMDb history imports | Merged (PRs #1035, #1037). Manual imports stay Free. Public copy does not list automatic sync as a Premium benefit. |
@@ -44,7 +44,7 @@
 
 ## 2. Pricing (resolve before charging)
 
-**Decided (Savannah, 2026-09-24/25, trial locked with PLO-494):** **US$3/month or US$24/year**, taxes included, plus a **7-day card-required free trial**. The first charge is 7 days after the trial starts. Cancel during the trial and the charge is $0. The earlier A$5/A$40 plans copy and the US$25/year figure are both superseded. `packages/core/copy/plansPage.js` is the price and trial copy. Settings, the upgrade sheet, and Pick for Me read `priceTerms` and `trialNote`. Watch together still reads the shorter `priceSummary`. Nothing in the app fetches prices from Stripe, so everyone sees USD until checkout. Adaptive Pricing still shows local currency there. Public checkout stays closed until PLO-493.
+**Decided (Savannah, 2026-09-24/25, trial locked with PLO-494):** **US$3/month or US$24/year**, taxes included, plus a **7-day card-required free trial**. The first charge is 7 days after the trial starts. Cancel during the trial and the charge is $0. The earlier A$5/A$40 plans copy and the US$25/year figure are both superseded. `packages/core/copy/plansPage.js` is the price and trial copy. Settings, the upgrade sheet, and Just Decide read `priceTerms` and `trialNote`. Watch together still reads the shorter `priceSummary`. Nothing in the app fetches prices from Stripe, so everyone sees USD until checkout. Adaptive Pricing still shows local currency there. Public checkout stays closed until PLO-493.
 
 USD is primary; buyers outside the US see it converted at checkout. The intended Stripe mechanism is **Adaptive Pricing** on Checkout (one USD price; Stripe shows and charges local currency, buyer pays the FX margin). The alternative is fixed per-currency `currency_options` (round local prices, manual upkeep). **Still to confirm:** that Adaptive Pricing covers subscriptions on this account. Showing a real local price *inside* the app would need a small endpoint reading the price and its currency options from Stripe; not built.
 
@@ -89,7 +89,7 @@ Source of truth: `packages/core/copy/plansPage.js` (decisions locked in the Prem
 
 Lead stories (positioning priority, not a statistical ranking):
 
-1. **Pick for Me**, the tonight picker (movie or show, time, services → shortlist / Surprise me). **Built.**
+1. **Just Decide**, the tonight picker (movie or show, time, services → shortlist / Surprise me). **Built.**
 2. Watchlist overlap / “something you both want”
 3. Create / host collaborative lists
 4. Automatic Plex and Trakt syncing. **Do not list this in public copy.** Savannah may not ship it. Manual import stays Free.
@@ -133,7 +133,7 @@ Also complete `docs/billing/stripe-launch.md` in live mode when going public: po
 
 Suggested priority for “Less deciding. More watching.” (matches plans stories + Reddit positioning):
 
-1. ~~Tonight’s movie picker~~ **Done: Pick for Me** (§5.2).
+1. ~~Tonight’s movie picker~~ **Done: Just Decide** (§5.2).
 2. **Watchlist overlap + host collaborative lists.** Live on web and mobile as Watch together (`/together`, flag on, PLO-515, mobile PR 1345). Join stays Free. Installed phones need a new build.
 3. **Unlimited lists** — gated on both platforms. Hitting the 5-list cap (or a server-side cap rejection from a stale tab) opens the shared upgrade sheet on web and mobile (`UpgradeSheet`, content from `@plot/core/upgradeSheet.js`). When checkout opens, wire the sheet's Upgrade button to real checkout.
 4. **Live calendar subscription** — shipped (PLO-519). Premium URL on web and mobile. Free keeps a one-time snapshot. The feed returns an empty calendar when `is_premium()` is false.
@@ -175,9 +175,9 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 **Related (out of first-paid scope):** Plex → Overseerr/Sonarr/Radarr requests design in `docs/superpowers/specs/2026-08-23-plex-sonarr-radarr-requests-design.md`. Personal/homelab; productisation later. Fix `processOutbox` action filter before adding `media_request` actions.
 
-### 5.2 Pick for Me (tonight picker) — **Premium**, live
+### 5.2 Just Decide (tonight picker) — **Premium**, live
 
-**Shipped:** PR #1029, merged 2026-09-25 (`bec75da6`); follow-up PR #1045, merged 2026-09-26 (`4b7ad370`). Web `/tonight`, mobile `/(app)/tonight`. Nav label "Pick for Me" with a Premium pill for Free viewers; web icon is a starred list. Internal id and route stay `tonight`.
+**Shipped:** PR #1029, merged 2026-09-25 (`bec75da6`); follow-up PR #1045, merged 2026-09-26 (`4b7ad370`). Web `/tonight`, mobile `/(app)/tonight`. Nav label "Just Decide" with a Premium pill for Free viewers; web icon is a starred list. Internal id and route stay `tonight`.
 
 **How it works:**
 - Four questions, one at a time: movie or show → length (movie runtime, or TV format + episode length) → what kind (genres with a mood word; 9 tiles on desktop, 10 on phone, alphabetical, "Show all") → how new, how good (era, TMDB score). Choosing never auto-advances; the viewer presses Next.
@@ -203,7 +203,7 @@ Each brief: intent, acceptance sketch, existing hooks, constraints. Expand into 
 
 **Still to do:**
 - Test the mobile screen on a device or simulator (type-checks only so far), especially the Finding fade and the saved-searches list.
-- Horror, Romance and Thriller for shows come from TMDB keywords (TMDB's TV catalog has none), shared with New Releases in `packages/core/keywordGenres.js`; needs `search/keyword` allowed in `tmdb-proxy` (PR #1052). News, Talk and Soap stay out of Pick for Me.
+- Horror, Romance and Thriller for shows come from TMDB keywords (TMDB's TV catalog has none), shared with New Releases in `packages/core/keywordGenres.js`; needs `search/keyword` allowed in `tmdb-proxy` (PR #1052). News, Talk and Soap stay out of Just Decide.
 - Test "come back after upgrading" end to end once Checkout opens (or by granting Premium on Staging mid-flow).
 - GitHub's "Code scanning AI findings" check fails on every PR with "requested model is not supported" (GitHub-side, not code); not a required check.
 
@@ -429,7 +429,7 @@ If starting cold, in order:
 1. **PLO-492** — enable + verify Plex/Trakt for Premium (blocks charge).
 2. Confirm **pricing** with Savannah (§2), then PLO-494.
 3. **PLO-493** — restore Checkout + smoke.
-4. ~~Tonight’s movie picker~~ **Done: Pick for Me, web + mobile** (§5.2).
+4. ~~Tonight’s movie picker~~ **Done: Just Decide, web + mobile** (§5.2).
 5. ~~Collaborative lists / Watch together~~ **Flag on for web and mobile (PLO-515, PR 1345).** Installed phones need a new build.
 6. Free **release notifications** in parallel if notification infra is ready (keeps Free tier competitive).
 
@@ -440,5 +440,5 @@ If starting cold, in order:
 1. ~~Final currency and price~~ **Decided: US$3/month or US$24/year, USD primary, converted locally** (see §2). Still open: Adaptive Pricing vs fixed per-currency prices.
 2. What concrete **deeper stats** belong in v1 Premium?
 3. Collaborative lists: invite model (link vs follow-only), edit permissions, max members?
-4. ~~Picker v1 pool~~ **Decided 2026-09-24: watchlist + discover.** Shipped as Pick for Me (§5.2).
+4. ~~Picker v1 pool~~ **Decided 2026-09-24: watchlist + discover.** Shipped as Just Decide (§5.2).
 5. Is **Customize your plot** in first Premium ship or a later supporting drop?
