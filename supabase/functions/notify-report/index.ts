@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
   let body: { record?: Record<string, unknown>, backfill?: unknown, limit?: unknown }
   try { body = await req.json() } catch { return new Response('Invalid JSON', { status: 400 }) }
 
-  const token = resolveNotionToken((k) => Deno.env.get(k))
+  const token = resolveNotionToken((k: string) => Deno.env.get(k))
   const databaseId = Deno.env.get('NOTION_REPORTS_DATABASE_ID') || ''
   const configured = Boolean(token && databaseId)
   const resendKey = Deno.env.get('RESEND_API_KEY')
