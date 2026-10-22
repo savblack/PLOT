@@ -12,8 +12,8 @@ import { validateReport } from './moderation.js';
  * arrived — so the caller renders an acknowledgement off this rather than
  * closing silently on success.
  *
- * The row insert is all this does. The operator route (email plus a Linear
- * issue) hangs off a database trigger, so it cannot be skipped by a client that
+ * The row insert is all this does. The operator route (email plus a private Notion
+ * page) hangs off a database trigger, so it cannot be skipped by a client that
  * forgets, and it keeps every credential out of the app.
  */
 export function useReport(viewerId) {

@@ -1,64 +1,18 @@
 /**
- * notify-feedback
- *
- * Triggered by a Supabase Database Webhook on INSERT to public.feedback.
- * Emails sav.black@outlook.com so a human sees every submission, and mirrors the
- * feedback into Linear issues using anonymized reporter metadata, preserving
- * archived attachment copies even if the originating user later deletes their
- * account.
- *
- * The email does not depend on the mirror. In-app feedback is the primary
- * support intake, so a mirror-side failure has to degrade to "email sent, sync
- * marked failed" rather than silence. Two separate outages have proved why: a
- * revoked LINEAR_API_KEY stopped every notification on 2026-08-22, and the
- * GitHub mirror that replaced it was deployed on 2026-08-23 with its API
- * credential never set, so it filed nothing at all and nobody found out until
- * a test submission on 2026-09-11 surfaced the banner.
- *
- * PRIVACY: the issue carries the reporter's own words and links to their
- * archived attachments, so it must land in a workspace only the operator can
- * read. LINEAR_FEEDBACK_TEAM_ID must point at a team in a PRIVATE workspace —
- * never a shared or company one. Anything else discloses user feedback to
- * people who never agreed to receive it.
- *
- * Backfill: POST {"backfill": true, "limit": 25} with the service-role bearer
- * to retry rows that have no issue and a recorded sync error, from either era
- * (linear_sync_error, or the github_sync_error left behind by the mirror that
- * was never configured). Limit defaults to 25, capped at 100. It re-mirrors
- * only; those rows were already emailed at intake.
- *
- *   curl -X POST "$SUPABASE_URL/functions/v1/notify-feedback" \
- *     -H "Authorization: Bearer $SB_SECRET_KEY" \
- *     -H 'Content-Type: application/json' \
- *     -d '{"backfill": true}'
- *
- * Required secrets:
- *   SUPABASE_URL
- *   SUPABASE_SERVICE_ROLE_KEY
- *   LINEAR_API_KEY            - a personal API key from the operator's own
- *                               workspace (Linear Settings > Security & access >
- *                               Personal API keys). Sent raw, not as a Bearer.
- *   LINEAR_FEEDBACK_TEAM_ID   - accepts a team UUID, key (for example PLOT), or
- *                               exact team name. See PRIVACY above.
- *
- * Optional secrets:
- *   LINEAR_FEEDBACK_PROJECT_ID - a project UUID or exact name (for example
- *                                "User feedback") to file into. Deliberately has
- *                                NO default: the previous one was hardcoded to a
- *                                project in a different workspace, which is
- *                                exactly the mistake PRIVACY above warns about.
- *                                Unset simply files into the team's backlog.
- *   RESEND_API_KEY             - unset disables the notification email entirely
+ * notify-feedback: email each in-app submission and file it in a private Notion
+ * database. A Notion failure never prevents the independent operator email.
+ * Backfill accepts {"backfill":true,"limit":25} from a service-role caller.
+ * Required secrets: NOTION_CONNECTION (falls back to NOTION_TOKEN, then NOTION_API_KEY), NOTION_FEEDBACK_DATABASE_ID, SUPABASE_URL,
+ * SUPABASE_SERVICE_ROLE_KEY. RESEND_API_KEY enables the email alert.
  */
-
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import type { Database } from '../_shared/database.types.ts'
+import { createIntakePage, findIntakePage, resolveNotionToken } from '../_shared/notionIntake.js'
 
 // Db is the *default* instantiation
 // (SupabaseClient<unknown, …, never, never>), so every row came back
 // `never` and the real client was not even assignable to it. Bind it to
 // the schema instead.
-type Db = SupabaseClient<Database>
+type Db = SupabaseClient
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
 
@@ -74,8 +28,6 @@ const RESEND_API_URL = 'https://api.resend.com/emails'
 // FROM_EMAIL stays on theplot.tv: Resend will only send from a verified domain.
 const TO_EMAIL = 'sav.black@outlook.com'
 const FROM_EMAIL = 'Plot Feedback <feedback@theplot.tv>'
-const LINEAR_API_URL = 'https://api.linear.app/graphql'
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 // Backfill caps. A retry run walks rows one at a time against a rate-limited
 // key, so the ceiling keeps one invocation inside the function timeout.
 const BACKFILL_DEFAULT_LIMIT = 25
@@ -94,7 +46,7 @@ function anonymizedFeedbackReporter({ userId, userEmail }: { userId: string | nu
   return userId || userEmail ? 'Signed-in Plot user' : 'Anonymous visitor'
 }
 
-function buildFeedbackLinearTitle(type: string, message: string) {
+function buildFeedbackNotionTitle(type: string, message: string) {
   const prefix = feedbackTypeLabel(type)
   const normalized = String(message || '').replace(/\s+/g, ' ').trim()
   if (!normalized) return `${prefix}: Untitled`
@@ -144,7 +96,7 @@ function formatSubmittedAt(value: unknown) {
 async function updateFeedbackSyncState(
   supabaseAdmin: Db,
   feedbackId: string,
-  updates: Database['public']['Tables']['feedback']['Update'],
+  updates: Record<string, unknown>,
 ) {
   const { error } = await supabaseAdmin
     .from('feedback')
@@ -152,7 +104,7 @@ async function updateFeedbackSyncState(
     .eq('id', feedbackId)
 
   if (error) {
-    console.error('Failed to update feedback sync state:', error.message)
+    throw new Error(`Failed to update feedback sync state: ${error.message}`)
   }
 }
 
@@ -186,210 +138,6 @@ async function archiveAttachments(supabaseAdmin: Db, feedbackId: string, attachm
   return archivedUrls
 }
 
-function buildLinearDescription({
-  type,
-  message,
-  createdAt,
-  archivedUrls,
-  reporterLabel,
-  feedbackId,
-}: {
-  type: string
-  message: string
-  createdAt: unknown
-  archivedUrls: string[]
-  reporterLabel: string
-  feedbackId: string
-}) {
-  const sections = [
-    '## Intake',
-    `- Type: ${feedbackTypeLabel(type)}`,
-    `- Reporter: ${reporterLabel}`,
-    `- Submitted: ${formatSubmittedAt(createdAt)}`,
-    `- Source: In-app feedback form`,
-    `- Feedback record: ${feedbackId}`,
-    '',
-    '## Message',
-    message.trim() || '(empty message)',
-  ]
-
-  if (archivedUrls.length > 0) {
-    sections.push('', '## Archived attachments')
-    archivedUrls.forEach((url, index) => {
-      sections.push(`- [Attachment ${index + 1}](${url})`)
-    })
-  }
-
-  return sections.join('\n')
-}
-
-/**
- * Accepts a UUID, a team key, or an exact team name, so the secret can be set
- * to whatever the operator can actually see in the Linear UI without having to
- * dig a UUID out of the API first.
- */
-async function resolveLinearTeamId({ apiKey, teamRef }: { apiKey: string, teamRef: string }) {
-  const normalizedRef = teamRef.trim()
-  if (UUID_PATTERN.test(normalizedRef)) return normalizedRef
-
-  const res = await fetch(LINEAR_API_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      query: `
-        query TeamLookup {
-          teams {
-            nodes {
-              id
-              key
-              name
-            }
-          }
-        }
-      `,
-    }),
-  })
-
-  const payload = await res.json().catch(() => null)
-  const errors = payload?.errors
-  const teams = payload?.data?.teams?.nodes
-
-  if (!res.ok || errors?.length || !Array.isArray(teams)) {
-    const message = errors?.map((entry: { message?: string }) => entry.message).filter(Boolean).join('; ')
-      || `Linear team lookup failed with status ${res.status}`
-    throw new Error(message)
-  }
-
-  const lowerRef = normalizedRef.toLowerCase()
-  const match = teams.find((team: { id?: string, key?: string, name?: string }) => {
-    const key = String(team.key ?? '').toLowerCase()
-    const name = String(team.name ?? '').toLowerCase()
-    return key === lowerRef || name === lowerRef
-  })
-
-  if (!match?.id) {
-    throw new Error(`No Linear team matched "${teamRef}"`)
-  }
-
-  return match.id
-}
-
-/**
- * Accepts a UUID or an exact project name, mirroring resolveLinearTeamId, so the
- * secret can be set to what the operator sees in Linear. The project URL is no
- * help here — it ends in a short hex suffix, not the UUID the API wants.
- *
- * An ambiguous name is an error rather than a silent pick: two projects called
- * the same thing in different teams is precisely the case where guessing wrong
- * files private user feedback somewhere unintended.
- */
-async function resolveLinearProjectId({ apiKey, projectRef }: { apiKey: string, projectRef: string }) {
-  const normalizedRef = projectRef.trim()
-  if (UUID_PATTERN.test(normalizedRef)) return normalizedRef
-
-  const res = await fetch(LINEAR_API_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      query: `
-        query ProjectLookup {
-          projects {
-            nodes {
-              id
-              name
-            }
-          }
-        }
-      `,
-    }),
-  })
-
-  const payload = await res.json().catch(() => null)
-  const errors = payload?.errors
-  const projects = payload?.data?.projects?.nodes
-
-  if (!res.ok || errors?.length || !Array.isArray(projects)) {
-    const message = errors?.map((entry: { message?: string }) => entry.message).filter(Boolean).join('; ')
-      || `Linear project lookup failed with status ${res.status}`
-    throw new Error(message)
-  }
-
-  const lowerRef = normalizedRef.toLowerCase()
-  const matches = projects.filter((project: { id?: string, name?: string }) =>
-    String(project.name ?? '').toLowerCase() === lowerRef)
-
-  if (matches.length === 0) {
-    throw new Error(`No Linear project matched "${projectRef}"`)
-  }
-
-  if (matches.length > 1) {
-    throw new Error(`"${projectRef}" matched ${matches.length} Linear projects — set LINEAR_FEEDBACK_PROJECT_ID to a UUID instead`)
-  }
-
-  return String(matches[0].id)
-}
-
-async function createLinearIssue({
-  apiKey,
-  teamId,
-  projectId,
-  title,
-  description,
-}: {
-  apiKey: string
-  teamId: string
-  projectId: string | null
-  title: string
-  description: string
-}) {
-  const res = await fetch(LINEAR_API_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      query: `
-        mutation CreateIssue($input: IssueCreateInput!) {
-          issueCreate(input: $input) {
-            success
-            issue {
-              id
-              identifier
-              url
-            }
-          }
-        }
-      `,
-      // projectId is omitted rather than sent null: Linear rejects an explicit
-      // null for it, and "no project" is a legitimate configuration here.
-      variables: {
-        input: projectId
-          ? { teamId, projectId, title, description }
-          : { teamId, title, description },
-      },
-    }),
-  })
-
-  const payload = await res.json().catch(() => null)
-  const errors = payload?.errors
-  const issue = payload?.data?.issueCreate?.issue
-
-  if (!res.ok || errors?.length || !issue?.id) {
-    const message = errors?.map((entry: { message?: string }) => entry.message).filter(Boolean).join('; ')
-      || `Linear request failed with status ${res.status}`
-    throw new Error(message)
-  }
-
-  return { id: String(issue.id), url: String(issue.url ?? '') }
-}
-
 /**
  * The operator notification. Deliberately does not throw: a Resend outage or a
  * network blip should not turn a successful mirror into a 500, and the caller
@@ -402,7 +150,7 @@ async function sendFeedbackEmail({
   reporterLabel,
   createdAt,
   feedbackId,
-  issueUrl,
+  pageUrl,
   syncError,
 }: {
   resendKey: string
@@ -411,18 +159,19 @@ async function sendFeedbackEmail({
   reporterLabel: string
   createdAt: unknown
   feedbackId: string
-  issueUrl: string | null
+  pageUrl: string | null
   syncError: string | null
 }) {
-  // Triage needs to know that this one has no issue, otherwise a mirroring
+  // Triage needs to know that this one has no page, otherwise a filing
   // outage looks exactly like a working day from the inbox.
   const statusBlock = syncError
     ? `<p style="margin: 0 0 16px; padding: 10px 12px; background: #fdf1e7; border-radius: 8px; font-size: 0.82rem; color: #8a4b1d; line-height: 1.5;">
-        Mirroring to Linear failed, so there is no issue for this one yet. Reason: ${escapeHtml(syncError)}<br>
+        ${pageUrl ? 'The Notion page exists, but its link could not be saved on the feedback row.' : 'Filing in Notion failed, so there is no review page yet.'} Reason: ${escapeHtml(syncError)}<br>
+        ${pageUrl ? `<a href="${escapeHtml(pageUrl)}">View the private Notion page</a><br>` : ''}
         Feedback record: ${escapeHtml(feedbackId)}
       </p>`
-    : issueUrl
-      ? `<p style="margin: 0 0 16px; font-size: 0.82rem;"><a href="${escapeHtml(issueUrl)}" style="color: #1a1a1a;">View the issue in Linear</a></p>`
+    : pageUrl
+      ? `<p style="margin: 0 0 16px; font-size: 0.82rem;"><a href="${escapeHtml(pageUrl)}" style="color: #1a1a1a;">View the private Notion page</a></p>`
       : ''
 
   const html = `
@@ -435,7 +184,7 @@ async function sendFeedbackEmail({
   `
 
   const subject = syncError
-    ? `Plot feedback (Linear sync failed): ${feedbackTypeLabel(type)}`
+    ? `Plot feedback (Notion sync failed): ${feedbackTypeLabel(type)}`
     : `Plot feedback mirrored: ${feedbackTypeLabel(type)}`
 
   try {
@@ -454,51 +203,29 @@ async function sendFeedbackEmail({
     })
 
     if (!res.ok) {
-      const err = await res.text()
-      // Truncated: some APIs echo request fields back in validation errors, and
-      // this request body includes the reporter's feedback message.
-      console.error('Resend error:', res.status, err.slice(0, 200))
+      // Resend validation errors can echo feedback text. Log only the status.
+      console.error('Resend error:', res.status)
       return false
     }
 
     return true
-  } catch (error) {
-    console.error('Resend request failed:', error instanceof Error ? error.message : error)
+  } catch {
+    console.error('Resend request failed')
     return false
   }
 }
 
 type MirrorResult =
-  | { ok: true, issue: { id: string, url: string } }
-  | { ok: false, error: string }
+  | { ok: true, page: { id: string, url: string } }
+  | { ok: false, error: string, pageUrl?: string }
 
-/**
- * Mirrors one feedback row into a Linear issue and records the outcome on the
- * row.
- *
- * Returns the failure instead of throwing it. Every mirror-side failure mode
- * (revoked key, outage, rate limit, a team that moved) used to escape as an
- * exception that skipped sendFeedbackEmail entirely, so a mirror problem
- * silently stopped every feedback alert while feedback kept landing in the
- * table unseen. Mirroring is the secondary job here; telling a human is the
- * primary one.
- */
-async function mirrorFeedbackToLinear({
-  supabaseAdmin,
-  apiKey,
-  teamRef,
-  projectRef,
-  feedbackId,
-  type,
-  message,
-  reporterLabel,
-  createdAt,
-  attachments,
+async function mirrorFeedbackToNotion({
+  supabaseAdmin, token, databaseId, feedbackId, type, message,
+  reporterLabel, createdAt, attachments,
 }: {
   supabaseAdmin: Db
-  apiKey: string
-  teamRef: string
-  projectRef: string | null
+  token: string
+  databaseId: string
   feedbackId: string
   type: string
   message: string
@@ -506,190 +233,105 @@ async function mirrorFeedbackToLinear({
   createdAt: unknown
   attachments: unknown
 }): Promise<MirrorResult> {
+  let page: { id: string, url: string } | null = null
   try {
-    const archivedUrls = await archiveAttachments(supabaseAdmin, feedbackId, attachments)
-    const teamId = await resolveLinearTeamId({ apiKey, teamRef })
-    const resolvedProjectId = projectRef
-      ? await resolveLinearProjectId({ apiKey, projectRef })
-      : null
-    const issue = await createLinearIssue({
-      apiKey,
-      teamId,
-      projectId: resolvedProjectId,
-      title: buildFeedbackLinearTitle(type, message),
-      description: buildLinearDescription({
-        type,
-        message,
-        createdAt,
-        archivedUrls,
-        reporterLabel,
-        feedbackId,
-      }),
+    const existing = await findIntakePage(token, databaseId, feedbackId)
+    const archivedUrls = existing ? [] : await archiveAttachments(supabaseAdmin, feedbackId, attachments)
+    page = existing ?? await createIntakePage(token, {
+      databaseId,
+      recordId: feedbackId,
+      title: buildFeedbackNotionTitle(type, message),
+      submittedAt: String(createdAt || new Date().toISOString()),
+      fields: [
+        ['Type', feedbackTypeLabel(type)],
+        ['Reporter', reporterLabel],
+        ['Source', 'In-app feedback form'],
+        ['Feedback record', feedbackId],
+      ],
+      detail: message.trim() || '(empty message)',
+      links: archivedUrls,
     })
-
+    if (!page) throw new Error('Notion returned no page')
     await updateFeedbackSyncState(supabaseAdmin, feedbackId, {
-      linear_issue_id: issue.id,
-      linear_issue_url: issue.url,
-      linear_synced_at: new Date().toISOString(),
-      linear_sync_error: null,
+      notion_page_id: page.id,
+      notion_page_url: page.url,
+      notion_synced_at: new Date().toISOString(),
+      notion_sync_error: null,
     })
-
-    return { ok: true, issue }
+    return { ok: true, page }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown feedback sync error'
-    await updateFeedbackSyncState(supabaseAdmin, feedbackId, { linear_sync_error: errorMessage })
-    console.error('Failed to mirror feedback:', errorMessage, { feedbackId })
-    return { ok: false, error: errorMessage }
+    // API errors can echo the submitted text. Keep PII out of logs and sync state.
+    const message = error instanceof Error && error.message.startsWith('Failed to update feedback sync state:')
+      ? 'Could not save the Notion page link on the feedback row'
+      : 'Could not file feedback in the private Notion database'
+    console.error(message, { feedbackId })
+    try {
+      await updateFeedbackSyncState(supabaseAdmin, feedbackId, { notion_sync_error: message })
+    } catch { /* Already logged above. The Notion query makes the next retry safe. */ }
+    return { ok: false, error: message, pageUrl: page?.url }
   }
 }
 
-/**
- * Re-mirrors rows a previous run left behind: no issue anywhere, but a sync
- * error recorded from either era. linear_sync_error covers this function's own
- * failures and the rows stranded when the Linear key was revoked;
- * github_sync_error covers every row the GitHub mirror rejected while it sat
- * deployed without a token.
- *
- * Rows that never reached this function at all (no issue, no error) are
- * deliberately out of scope — that set also contains every feedback row
- * predating the mirror, and a backfill over it would open hundreds of stale
- * issues. Rows already tracked in GitHub are skipped for the same reason: they
- * have somewhere to live, even if it is not Linear.
- *
- * No email here. The notification for these rows already went out at intake;
- * this only closes the mirror gap.
- *
- * Sequential on purpose: these runs are small, and Linear rate-limits per key.
- */
-async function retryFailedMirrors({
-  supabaseAdmin,
-  apiKey,
-  teamRef,
-  projectRef,
-  limit,
-}: {
+async function retryFailedMirrors({ supabaseAdmin, token, databaseId, limit }: {
   supabaseAdmin: Db
-  apiKey: string
-  teamRef: string
-  projectRef: string | null
+  token: string
+  databaseId: string
   limit: number
 }) {
-  const { data, error } = await supabaseAdmin
-    .from('feedback')
+  const { data, error } = await supabaseAdmin.from('feedback')
     .select('id, type, message, created_at, attachments, user_id, user_email')
+    .is('notion_page_id', null)
     .is('linear_issue_id', null)
     .is('github_issue_number', null)
-    .or('linear_sync_error.not.is.null,github_sync_error.not.is.null')
+    .or('notion_sync_error.not.is.null,linear_sync_error.not.is.null,github_sync_error.not.is.null')
     .order('created_at', { ascending: true })
     .limit(limit)
-
-  if (error) {
-    console.error('Failed to load feedback awaiting a Linear issue:', error.message)
-    return { ok: false, error: error.message, attempted: 0, synced: 0, failed: 0 }
-  }
-
-  const rows = data ?? []
-  const results: { feedbackId: string, ok: boolean, issueUrl?: string, error?: string }[] = []
-
-  for (const row of rows) {
-    const result = await mirrorFeedbackToLinear({
-      supabaseAdmin,
-      apiKey,
-      teamRef,
-      projectRef,
+  if (error) return { ok: false, error: 'Feedback retry query failed', attempted: 0, synced: 0, failed: 0 }
+  const results = []
+  for (const row of data ?? []) {
+    const result = await mirrorFeedbackToNotion({
+      supabaseAdmin, token, databaseId,
       feedbackId: row.id,
       type: String(row.type ?? 'general'),
       message: String(row.message ?? ''),
-      reporterLabel: anonymizedFeedbackReporter({
-        userId: row.user_id,
-        userEmail: row.user_email,
-      }),
+      reporterLabel: anonymizedFeedbackReporter({ userId: row.user_id, userEmail: row.user_email }),
       createdAt: row.created_at,
       attachments: row.attachments,
     })
-
-    results.push(result.ok
-      ? { feedbackId: row.id, ok: true, issueUrl: result.issue.url }
-      : { feedbackId: row.id, ok: false, error: result.error })
+    results.push({ feedbackId: row.id, ok: result.ok })
   }
-
   const synced = results.filter((entry) => entry.ok).length
-  const failed = results.length - synced
-
-  return { ok: failed === 0, attempted: results.length, synced, failed, results }
+  return { ok: synced === results.length, attempted: results.length, synced, failed: results.length - synced, results }
 }
 
 Deno.serve(async (req) => {
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
-  }
-
-  if (!hasServiceRoleBearer(req)) {
-    return new Response('Forbidden', { status: 403 })
-  }
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
+  if (!hasServiceRoleBearer(req)) return new Response('Forbidden', { status: 403 })
 
   let body: { record?: Record<string, unknown>, backfill?: unknown, limit?: unknown }
-  try {
-    body = await req.json()
-  } catch {
-    return new Response('Invalid JSON', { status: 400 })
-  }
+  try { body = await req.json() } catch { return new Response('Invalid JSON', { status: 400 }) }
 
-  const linearApiKey = Deno.env.get('LINEAR_API_KEY')
-  const linearTeamRef = Deno.env.get('LINEAR_FEEDBACK_TEAM_ID')
-  const linearProjectRef = Deno.env.get('LINEAR_FEEDBACK_PROJECT_ID') || null
+  const token = resolveNotionToken((k: string) => Deno.env.get(k))
+  const databaseId = Deno.env.get('NOTION_FEEDBACK_DATABASE_ID') || ''
   const resendKey = Deno.env.get('RESEND_API_KEY')
-  const notConfiguredMessage = 'Linear feedback mirroring is not configured.'
-  const mirrorConfigured = Boolean(linearApiKey && linearTeamRef)
-
-  const supabaseAdmin = createClient<Database>(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    serviceKey()
-  )
+  const configured = Boolean(token && databaseId)
+  const notConfiguredMessage = 'Private Notion feedback intake is not configured.'
+  const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL') ?? '', serviceKey())
 
   if (body?.backfill) {
-    if (!mirrorConfigured) {
-      console.error(notConfiguredMessage)
-      return new Response(JSON.stringify({ ok: false, error: notConfiguredMessage }), {
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
+    if (!configured) return Response.json({ ok: false, error: notConfiguredMessage })
     const requestedLimit = Number(body.limit)
     const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
-      ? Math.min(Math.floor(requestedLimit), BACKFILL_MAX_LIMIT)
-      : BACKFILL_DEFAULT_LIMIT
-
-    const summary = await retryFailedMirrors({
-      supabaseAdmin,
-      apiKey: linearApiKey as string,
-      teamRef: linearTeamRef as string,
-      projectRef: linearProjectRef,
-      limit,
-    })
-
-    return new Response(JSON.stringify(summary), {
-      headers: { 'Content-Type': 'application/json' },
-    })
+      ? Math.min(Math.floor(requestedLimit), BACKFILL_MAX_LIMIT) : BACKFILL_DEFAULT_LIMIT
+    return Response.json(await retryFailedMirrors({ supabaseAdmin, token, databaseId, limit }))
   }
 
   const record = body?.record
-  if (!record) {
-    return new Response('No record in payload', { status: 400 })
-  }
-
+  if (!record) return new Response('No record in payload', { status: 400 })
   const feedbackId = record.id ? String(record.id) : ''
-  if (!feedbackId) {
-    return new Response('Feedback record is missing an id', { status: 400 })
-  }
-
-  // Tracked anywhere is tracked: a redelivered webhook for a row that already
-  // has a Linear issue, or one of the rows that did reach GitHub, should not
-  // open a duplicate.
-  if (record.linear_issue_id || record.github_issue_number) {
-    return new Response(JSON.stringify({ ok: true, skipped: 'already-synced' }), {
-      headers: { 'Content-Type': 'application/json' },
-    })
+  if (!feedbackId) return new Response('Feedback record is missing an id', { status: 400 })
+  if (record.notion_page_id || record.linear_issue_id || record.github_issue_number) {
+    return Response.json({ ok: true, skipped: 'already-synced' })
   }
 
   const type = String(record.type ?? 'general')
@@ -698,57 +340,26 @@ Deno.serve(async (req) => {
     userId: record.user_id ? String(record.user_id) : null,
     userEmail: record.user_email ? String(record.user_email) : null,
   })
-
-  let mirror: MirrorResult
-  if (mirrorConfigured) {
-    mirror = await mirrorFeedbackToLinear({
-      supabaseAdmin,
-      apiKey: linearApiKey as string,
-      teamRef: linearTeamRef as string,
-      projectRef: linearProjectRef,
-      feedbackId,
-      type,
-      message,
-      reporterLabel,
-      createdAt: record.created_at,
-      attachments: record.attachments,
+  const mirror = configured
+    ? await mirrorFeedbackToNotion({
+      supabaseAdmin, token, databaseId, feedbackId, type, message, reporterLabel,
+      createdAt: record.created_at, attachments: record.attachments,
     })
-  } else {
-    await updateFeedbackSyncState(supabaseAdmin, feedbackId, { linear_sync_error: notConfiguredMessage })
-    console.error(notConfiguredMessage)
-    mirror = { ok: false, error: notConfiguredMessage }
+    : { ok: false as const, error: notConfiguredMessage }
+  if (!configured) {
+    try { await updateFeedbackSyncState(supabaseAdmin, feedbackId, { notion_sync_error: notConfiguredMessage }) }
+    catch { console.error('Could not record feedback Notion configuration error', { feedbackId }) }
   }
 
-  // Unconditional, and after the mirror so the email can report the outcome.
-  // Whether the mirror worked has no bearing on whether a human hears about
-  // this.
-  let emailed = false
-  if (resendKey) {
-    emailed = await sendFeedbackEmail({
-      resendKey,
-      type,
-      message,
-      reporterLabel,
-      createdAt: record.created_at,
-      feedbackId,
-      issueUrl: mirror.ok ? mirror.issue.url : null,
-      syncError: mirror.ok ? null : mirror.error,
-    })
-  } else {
-    console.error('RESEND_API_KEY is not set — no feedback notification was sent.', { feedbackId })
-  }
-
-  if (!mirror.ok) {
-    return new Response(JSON.stringify({ ok: false, error: mirror.error, emailed }), {
-      // An unconfigured mirror is a deliberate state, not an outage: 200, as
-      // before. A failed Linear call still answers 500 so it shows up as a
-      // failure in the function logs.
-      status: mirrorConfigured ? 500 : 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-
-  return new Response(JSON.stringify({ ok: true, issueUrl: mirror.issue.url, emailed }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
+  // Email is independent of the Notion write.
+  const emailed = resendKey ? await sendFeedbackEmail({
+    resendKey, type, message, reporterLabel, createdAt: record.created_at, feedbackId,
+    pageUrl: mirror.ok ? mirror.page.url : ('pageUrl' in mirror ? mirror.pageUrl ?? null : null),
+    syncError: mirror.ok ? null : mirror.error,
+  }) : false
+  if (!resendKey) console.error('RESEND_API_KEY is not set; no feedback email was sent', { feedbackId })
+  return Response.json({
+    ok: mirror.ok, emailed,
+    ...(mirror.ok ? { pageUrl: mirror.page.url } : { error: mirror.error, ...('pageUrl' in mirror && mirror.pageUrl ? { pageUrl: mirror.pageUrl } : {}) }),
+  }, { status: mirror.ok || !configured ? 200 : 500 })
 })

@@ -1,7 +1,7 @@
-// The effects of a marketing-review command, shared by Linear and Notion.
+// The effects of a Notion marketing-review command.
 //
-// Both surfaces parse the same comment text (linearCommands.js) and both must
-// write the same columns. Approving here sets marketing_posts.status and
+// The Notion sweep parses comment text with reviewCommands.js and writes the
+// same columns as a manual review. Approving here sets marketing_posts.status and
 // nothing else: publication rows are Buffer's, and re-queueing them pushes a
 // second copy of a post that is already scheduled.
 //
@@ -11,7 +11,7 @@
 
 import { validateCopy, validateGuide, validateConversation } from './copySchema.js';
 import { rescheduledSlug } from './postSlug.js';
-import { HELP_TEXT } from './linearCommands.js';
+import { HELP_TEXT } from './reviewCommands.js';
 import { etPublishInstant } from './etTime.js';
 
 const ET_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -23,7 +23,7 @@ const etDateLabel = (isoDate) => {
 const nowIso = () => new Date().toISOString();
 
 /**
- * Linear column names and Notion Status options, lowercased.
+ * Notion Status options, lowercased.
  * 'Published' / 'Done' are absent on purpose: a human does not assert that
  * the article went live by moving a card. The sweep does that from the row.
  *
@@ -39,7 +39,7 @@ export const commandForStatusName = (name) => {
 };
 
 /**
- * Whether a status-property change (a Linear drag, or a Notion Status edit)
+ * Whether a Notion Status edit
  * may be written onto the row.
  *
  * stateChanged must be true only when THIS event changed the status. A mirror
@@ -66,20 +66,8 @@ export const guardIncomingStatus = ({ currentStatus, command, stateChanged }) =>
 };
 
 /**
- * MARKETING_LINEAR_ENABLED defaults on. Article mirroring and article sync
- * stop only when this is explicitly off. The weekly website-refresh PR cards
- * are a separate path and do not read this flag.
- *
- * @param {string | null | undefined} raw
- */
-export const linearArticlesEnabled = (raw) => {
-  const value = String(raw ?? 'true').trim().toLowerCase();
-  return value !== '0' && value !== 'false' && value !== 'off' && value !== 'no';
-};
-
-/**
- * Merge a /copy patch into the row and run the same validators the Linear
- * webhook uses. Nothing is written here.
+ * Merge a /copy patch into the row and run the same copy validators the Notion
+ * review uses. Nothing is written here.
  *
  * @param {Record<string, any>} post
  * @param {Record<string, unknown>} fields
@@ -124,26 +112,21 @@ const logEvent = async (supabase, actor, entry) => {
   }
 };
 
-const editReply = (changed, surface) => {
-  const where = surface === 'notion'
-    ? 'This page catches up within five minutes.'
-    : 'the issue body above catches up within five minutes.';
-  return `Updated **${changed.join(', ')}**. The database has your text now; ${where}`;
-};
+const editReply = (changed) =>
+  `Updated **${changed.join(', ')}**. The database has your text now; this page catches up within five minutes.`;
 
 /**
- * Apply one post-scoped command. Returns the reply text either surface posts
+ * Apply one post-scoped command. Returns the reply text Notion posts
  * back. Does not touch marketing_post_publications.
  *
  * @param {object} supabase
  * @param {Record<string, any>} post
  * @param {{ command: string, fields?: Record<string, unknown>, date?: string }} intent
- * @param {{ actor: string, surface?: 'linear' | 'notion', dispatchWorkflow?: (name: string) => Promise<{ ok: boolean, reason?: string }> }} opts
+ * @param {{ actor: string, dispatchWorkflow?: (name: string) => Promise<{ ok: boolean, reason?: string }> }} opts
  */
 export const applyArticleAction = async (supabase, post, intent, opts) => {
   const actor = opts?.actor;
   if (!actor) throw new Error('applyArticleAction requires an actor');
-  const surface = opts?.surface ?? 'linear';
   const id = post.id;
 
   switch (intent.command) {
@@ -164,7 +147,7 @@ export const applyArticleAction = async (supabase, post, intent, opts) => {
         before: merged.before,
         after: { changed: merged.changed },
       });
-      return { ok: true, reply: editReply(merged.changed, surface) };
+      return { ok: true, reply: editReply(merged.changed) };
     }
 
     case 'approve': {

@@ -1,18 +1,13 @@
-// Parser for the slash commands you type into a Linear issue comment to drive
-// the marketing review — the Linear equivalent of the buttons and the copy
-// editor on the web desk (supabase/functions/admin-review/index.ts).
+// Parser for slash commands in Notion marketing review comments.
 //
-// Pure and runtime-agnostic on purpose: the edge function that receives Linear
-// webhooks imports it, and marketing/tests/linear-commands.test.mjs exercises it
+// Pure and runtime-agnostic: the Notion review sweep imports it, and tests exercise it
 // under `node --test`. It only ever turns text into an intent — no network, no
 // database, no decisions about what an intent is allowed to do.
 //
 // A comment is a command only if its first non-blank line starts with `/`.
 // That single rule is also the loop guard: every comment this system posts back
 // starts with the BOT_MARKER below, never a slash, so the webhook it triggers
-// parses to null and stops there. (The Linear key authenticates as the operator
-// rather than a bot user, so replies are indistinguishable by author — the
-// shape of the text is what has to carry it.)
+// parses to null and stops there.
 
 import { keepsParagraphBreaks } from './articleBody.js';
 
@@ -54,7 +49,7 @@ const SIMPLE_COMMANDS = {
 
 const EDIT_COMMANDS = new Set(['copy', 'edit']);
 
-// Linear renders markdown, and a comment typed on mobile often arrives wrapped
+// Notion renders markdown, and a comment typed on mobile can arrive wrapped
 // in formatting the operator never meant as content. Strip the wrappers that
 // carry no meaning here, so `**x:** new text` is the same command as `x: text`.
 const unwrap = (line) =>
@@ -119,7 +114,7 @@ const parseParagraphs = (value) =>
 export const WEEK_SCOPED = new Set(['pause', 'resume', 'generate', 'help']);
 
 /**
- * Parse one Linear comment body into an intent.
+ * Parse one review comment body into an intent.
  *
  * @param {string} body raw comment markdown
  * @returns {null | {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCommand, BOT_MARKER, WEEK_SCOPED, HELP_TEXT, looksLikeAttempt } from '../../supabase/functions/_shared/linearCommands.js';
+import { parseCommand, BOT_MARKER, WEEK_SCOPED, HELP_TEXT, looksLikeAttempt } from '../../supabase/functions/_shared/reviewCommands.js';
 
 test('ignores an ordinary comment', () => {
   assert.equal(parseCommand('looks good to me, ship it'), null);
@@ -27,7 +27,7 @@ test('is case- and whitespace-insensitive about the command', () => {
   assert.deepEqual(parseCommand('\n\n/Approve'), { command: 'approve' });
 });
 
-test('survives the markdown Linear adds on mobile', () => {
+test('survives the markdown Notion adds on mobile', () => {
   assert.deepEqual(parseCommand('**/approve**'), { command: 'approve' });
   assert.deepEqual(parseCommand('- /approve'), { command: 'approve' });
 });
