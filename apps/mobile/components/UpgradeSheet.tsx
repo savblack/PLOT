@@ -5,13 +5,13 @@
  * the caller (mobile has no /plans page; callers open Settings' Premium
  * section). Content comes from @plot/core.
  */
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { familySwatch, type ThemeFamily } from '@plot/core/themes.js';
-import { upgradeSheetContent, type UpgradeReason } from '@plot/core/upgradeSheet.js';
+import { reportUpgradeSheetGateHit, upgradeSheetContent, type UpgradeReason } from '@plot/core/upgradeSheet.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import PremiumIcon from './PremiumIcon';
@@ -34,6 +34,9 @@ export default function UpgradeSheet({
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const checkout = usePremiumCheckout(visible);
+  useEffect(() => {
+    if (visible) reportUpgradeSheetGateHit(reason);
+  }, [visible, reason]);
   const content = upgradeSheetContent(reason, { family });
   if (!content) return null;
 

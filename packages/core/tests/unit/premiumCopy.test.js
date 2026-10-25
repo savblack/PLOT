@@ -85,9 +85,14 @@ test('public copy does not sell automatic Plex or Trakt sync as Premium', () => 
     SETTINGS_VIEW.integrations.plexBlurb,
     SETTINGS_VIEW.integrations.traktBlurb,
     SETTINGS_VIEW.integrations.connectTraktToSync,
+    SETTINGS_VIEW.sources.removeMessage('Trakt', '12 titles'),
+    SETTINGS_VIEW.sources.removeMessage('Plex', ''),
   ]) {
     assert.doesNotMatch(line, /automatic|two-way|outgoing|sync/i, line);
   }
+  assert.equal(SETTINGS_VIEW.sources.removeMessage('Trakt', '12 titles'), 'This disconnects Trakt. The 12 titles already imported stay in your history.');
+  assert.equal(SETTINGS_VIEW.sources.removeMessage('Plex', ''), 'This disconnects Plex. Everything already imported stays in your history.');
+  assert.doesNotMatch(SETTINGS_VIEW.sources.removeMessage('Trakt', '12 titles'), /check|poll|automatic|sync/i);
   for (const pattern of [
     /automatic plex/i,
     /plex and trakt sync/i,

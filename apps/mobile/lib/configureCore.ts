@@ -4,10 +4,12 @@
 import 'react-native-url-polyfill/auto';
 import { configure } from '@plot/core/config.js';
 import { notifyPendingWatchQueued } from '@plot/core/watchQueued.js';
+import { onUpgradeSheetGateHit } from '@plot/core/upgradeSheet.js';
 import { secureSessionStorage } from './secureStorage';
 import { initAnalytics, track, EVENTS } from './analytics';
 
 initAnalytics();
+onUpgradeSheetGateHit((feature) => track(EVENTS.PREMIUM_GATE_HIT, { feature }));
 
 configure({
   trackingJobsEnabled: process.env.EXPO_PUBLIC_TRACKING_JOBS_ENABLED === 'true',

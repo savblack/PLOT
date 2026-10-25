@@ -351,7 +351,7 @@ export const SETTINGS_VIEW = {
     skipWatch: 'Skip this watch',
     remove: (name) => `Remove ${name}`,
     removeTitle: (name) => `Remove ${name}?`,
-    removeMessage: (name, count) => `Plot stops checking ${name}. ${count ? `The ${count} already imported stay in your history.` : 'Everything already imported stays in your history.'}`,
+    removeMessage: (name, count) => `This disconnects ${name}. ${count ? `The ${count} already imported stay in your history.` : 'Everything already imported stays in your history.'}`,
     removeConfirm: 'Remove',
     stays: 'Everything already imported stays in Plot.',
     done: 'Done',

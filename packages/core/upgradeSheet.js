@@ -48,3 +48,52 @@ export function upgradeSheetContent(reason, { family, kept = false } = {}) {
       : null,
   };
 }
+
+const UNTRACKED_GATE_FEATURES = {
+  themes: 'themes',
+  pins: 'pins',
+  alerts: 'people_alerts',
+  alertEmail: 'alert_email',
+};
+
+/**
+ * The `premium_gate_hit` feature slug for sheet reasons whose callers do not
+ * already emit `premium_gate_hit` (`lists`, `smartLists`, and
+ * `collaborativeLists` emit at their action site).
+ *
+ * @param {UpgradeReason} reason
+ * @returns {string | null}
+ */
+export function upgradeSheetGateFeature(reason) {
+  return UNTRACKED_GATE_FEATURES[reason] ?? null;
+}
+
+/** @type {Set<(feature: string) => void>} */
+const gateHitListeners = new Set();
+
+/**
+ * Subscribe to `premium_gate_hit` events from UpgradeSheet (wired in
+ * configureCore.ts so mobile UpgradeSheet stays free of posthog-react-native
+ * in Storybook).
+ *
+ * @param {(feature: string) => void} fn
+ * @returns {() => void}
+ */
+export function onUpgradeSheetGateHit(fn) {
+  gateHitListeners.add(fn);
+  return () => { gateHitListeners.delete(fn); };
+}
+
+/**
+ * Emit `premium_gate_hit` for sheet reasons whose callers do not already emit
+ * at their action site (`lists`, `smartLists`, `collaborativeLists`).
+ *
+ * @param {UpgradeReason} reason
+ */
+export function reportUpgradeSheetGateHit(reason) {
+  const feature = upgradeSheetGateFeature(reason);
+  if (!feature) return;
+  for (const fn of gateHitListeners) {
+    try { fn(feature); } catch { /* analytics must never break the sheet */ }
+  }
+}
