@@ -16,6 +16,7 @@
  * @param {string | null | undefined} msg Raw error message from Supabase Auth,
  *   or the literal 'no-session' sentinel that resolveAuthCallback returns.
  * @returns {'already_registered'|'weak_password'|'invalid_email'|'rate_limited'
+ *   |'email_not_confirmed'|'invalid_credentials'|'captcha_failed'
  *   |'pkce_verifier_missing'|'pkce_verifier_mismatch'|'flow_state_expired'
  *   |'otp_expired'|'no_session'|'unknown'}
  */
@@ -32,6 +33,13 @@ export function authErrorReason(msg) {
   if (msg.includes('Anonymous sign-ins are disabled'))  return 'weak_password';
   if (msg.includes('Unable to validate email'))     return 'invalid_email';
   if (msg.includes('rate limit') || msg.includes('too many')) return 'rate_limited';
+  // GoTrue: "Email not confirmed". Case-insensitive so a gateway prefix
+  // ("email not confirmed") still groups with the canonical wording.
+  if (/email not confirmed/i.test(msg))             return 'email_not_confirmed';
+  if (msg.includes('Invalid login credentials'))    return 'invalid_credentials';
+  // Turnstile failures arrive as several sentences. The shared token is
+  // "captcha", in either case.
+  if (/captcha/i.test(msg))                         return 'captcha_failed';
 
   // PKCE code-exchange failures, split because they have different causes and
   // different fixes. Mismatch means a verifier was present but belonged to a

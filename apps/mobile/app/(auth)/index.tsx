@@ -20,7 +20,7 @@ import { colors, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import Turnstile from '../../components/Turnstile';
 import { track, EVENTS } from '../../lib/analytics';
 import { authErrorReason } from '@plot/core/authErrors.js';
-import { CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, captchaSubmitPlan } from '@plot/core/captchaGate.js';
+import { CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, captchaSubmitPlan, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { AUTH_PAGE } from '@plot/core/copy/authPage.js';
 import { SHOW_APPLE_LOGIN, SHOW_GOOGLE_LOGIN } from '../../lib/launchFeatures';
@@ -204,6 +204,7 @@ export default function AuthScreen() {
   const [captchaExecute, setCaptchaExecute] = useState(0); // bump to run the challenge
   const captchaTokenRef = useRef<string | null>(null);
   const captchaBlockedRef = useRef(false);
+  const captchaErroredRef = useRef(false);
 
   // The widget stays mounted and does not run until submit. Web can still
   // create the account through signup-bypass when the widget never returns a
@@ -220,6 +221,7 @@ export default function AuthScreen() {
   const handleCaptchaError = () => {
     captchaTokenRef.current = null;
     captchaBlockedRef.current = true;
+    captchaErroredRef.current = true;
   };
 
   // One attempt. A widget error ends the wait early so the retry can run.
@@ -231,7 +233,7 @@ export default function AuthScreen() {
       const started = Date.now();
       const id = setInterval(() => {
         const token = captchaTokenRef.current;
-        const failedNow = captchaBlockedRef.current && !blockedAtStart;
+        const failedNow = captchaErroredRef.current || (captchaBlockedRef.current && !blockedAtStart);
         if (token || failedNow || Date.now() - started >= ms) {
           clearInterval(id);
           resolve(token);
@@ -249,9 +251,14 @@ export default function AuthScreen() {
   // finished without a token. Do not post that request to GoTrue.
   const takeCaptchaToken = async (authMode: 'signup' | 'login' | 'forgot' | 'magic') => {
     if (!TURNSTILE_SITE_KEY) return null;
+    let widgetErrored = false;
     for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
-      requestCaptcha();
+      // A timeout must not reset() an interactive challenge that is still
+      // on screen. Only a widget error starts a fresh attempt.
+      if (shouldResetCaptcha({ attempt, widgetErrored })) requestCaptcha();
+      captchaErroredRef.current = false;
       const token = await waitForCaptchaAttempt(CAPTCHA_TOKEN_WAIT_MS);
+      widgetErrored = captchaErroredRef.current;
       const plan = captchaSubmitPlan({
         siteKey: TURNSTILE_SITE_KEY,
         token,
@@ -445,6 +452,10 @@ export default function AuthScreen() {
     track(EVENTS.SIGNUP_SUBMIT_CLICKED);
     const captchaToken = await takeCaptchaToken('signup');
     if (captchaToken === false) {
+      if (!captchaBlockedRef.current) {
+        track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt: 0, reason: 'timeout' });
+      }
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: 'captcha_unavailable' });
       setLoading(false);
       Alert.alert(AUTH_PAGE.verificationUnavailable);
       return;
