@@ -259,8 +259,13 @@ person, and `identify()` on signup merges the anonymous pre-signup history onto
 the account. That chain works: signups carry 20 to 176 pre-signup events.
 
 Super properties are registered under `first_*` names. Registering raw `utm_*`
-would stamp each person's first-touch source onto every event they ever fire,
-overwriting the campaign the event actually happened under.
+for the life of the person would stamp their first-touch source onto every
+event they ever fire, overwriting the campaign the event actually happened under.
+
+The params on the URL that opened this visit are a separate question. They are
+read at boot, before a sign-in redirect can replace the address, and registered
+with `register_for_session` under the raw `utm_*` names. That session ends when
+they close the tab. A later visit with a different link registers its own.
 
 Every surface forwards the visitor's real `utm_*`, click ids, `ref`, `src` and
 referrer host onto app links, with existing params winning so each page keeps

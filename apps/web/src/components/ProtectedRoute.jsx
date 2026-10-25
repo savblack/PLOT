@@ -6,7 +6,7 @@ import {
   onboardingGuardDecision,
   readOnboardingUntilDecided,
 } from '@plot/core/onboardingGate.js';
-import LoginRedirect from './LoginRedirect.jsx';
+import LoginRedirect, { OnboardingRedirect } from './LoginRedirect.jsx';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import { readCachedSession, clearCachedSession } from '../utils/sessionCache.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
@@ -142,6 +142,6 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
   if (isPublic) return children;
 
   if (decision === 'login') return <LoginRedirect />;
-  if (decision === 'onboarding') return <Navigate to="/onboarding" replace />;
+  if (decision === 'onboarding') return <OnboardingRedirect />;
   return children;
 }

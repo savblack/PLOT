@@ -43,6 +43,7 @@ import { touchLastSeen } from '@plot/core/brevoLifecycleClient.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
 import { useUiPrefs } from '@plot/core/useUiPrefs.js';
 import { onPendingWatchQueued } from '@plot/core/watchQueued.js';
+import { CALENDAR_SUGGESTIONS_SOURCE } from '@plot/core/upcomingSuggestions.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { loadPremiumEntitlement } from '@plot/core/billing.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -310,7 +311,10 @@ export default function App() {
   useEffect(() => {
     panelItemRef.current = panelItem;
   }, [panelItem]);
-  useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type }) => {
+  useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type, source }) => {
+    // Adds from the release-calendar sheet stay in that sheet. Opening the
+    // title panel here would cover it.
+    if (source === CALENDAR_SUGGESTIONS_SOURCE) return;
     const open = panelItemRef.current;
     if (open && Number(open.id) === Number(tmdb_id) && open.type === media_type) return;
     openPanel(tmdb_id, media_type, 'engagement_prompt');

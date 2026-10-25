@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { takeReturnPath } from '../utils/authReturn.js';
+import { pathAfterOnboarding, peekReturnPath, takeReturnPath } from '../utils/authReturn.js';
 import { supabase } from '@plot/core/supabase.js';
 import { tmdb } from '@plot/core/tmdb.js';
 // This route renders outside the App-shell layout, but reuses a few of its
@@ -295,10 +295,15 @@ export default function OnboardingFlow() {
       const started = await premium.startCheckout(plan, 'premium_signup');
       return started ? null : `/pricing?billing=${plan}`;
     }
-    // Switching apps: queued imports run in the background and Home shows
-    // them. A source picked but never started still opens the import page.
-    if (importSource && !importJob && importStart.phase !== 'pick') return `/import?source=${importSource}&from=${IMPORT_ENTRY_POINTS.ONBOARDING}`;
-    return takeReturnPath('/home');
+    // A link they clicked (the founding-users email, a shared page) wins.
+    // Otherwise a source picked here but never started still opens import.
+    const importContinuation = importSource && !importJob && importStart.phase !== 'pick'
+      ? `/import?source=${importSource}&from=${IMPORT_ENTRY_POINTS.ONBOARDING}`
+      : null;
+    const remembered = peekReturnPath();
+    const path = pathAfterOnboarding({ remembered, importContinuation });
+    if (remembered) takeReturnPath('/home');
+    return path;
   };
 
   const skipToHome = async () => {

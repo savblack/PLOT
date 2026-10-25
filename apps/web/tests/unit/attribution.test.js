@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { captureAttribution, currentArticleAttribution } from '../../src/utils/attribution.js';
+import { captureAttribution, currentArticleAttribution, currentCampaignAttribution } from '../../src/utils/attribution.js';
 
 function withBrowser(search, fn) {
   const store = new Map();
@@ -24,6 +24,23 @@ test('What’s On article entry captures the slug as both first touch and curren
     assert.equal(first.utm_content, 'widows-bay-rewrites-the-emmy-record-book-2026-09-16');
     assert.deepEqual(currentArticleAttribution(), {
       current_article_slug: 'widows-bay-rewrites-the-emmy-record-book-2026-09-16',
+    });
+  });
+});
+
+test('the current visit keeps its own campaign params', () => {
+  const email = '?utm_source=email&utm_medium=email&utm_campaign=founding_users&utm_content=release_calendar';
+  withBrowser('?utm_source=instagram&utm_campaign=launch', () => {
+    captureAttribution();
+    window.location.search = email;
+    const first = captureAttribution();
+    assert.equal(first.utm_source, 'instagram');
+    assert.equal(first.utm_campaign, 'launch');
+    assert.deepEqual(currentCampaignAttribution(), {
+      utm_source: 'email',
+      utm_medium: 'email',
+      utm_campaign: 'founding_users',
+      utm_content: 'release_calendar',
     });
   });
 });

@@ -10,3 +10,17 @@ export default function LoginRedirect() {
   }, [location.pathname, location.search]);
   return <Navigate to="/login" replace />;
 }
+
+/**
+ * Send a signed-in visitor who still needs setup to /onboarding, remembering
+ * the page they asked for. Login already stored that path, then consumed it
+ * on the way back. This writes it again so finishing setup returns there,
+ * query string included.
+ */
+export function OnboardingRedirect() {
+  const location = useLocation();
+  useEffect(() => {
+    rememberReturnPath(`${location.pathname}${location.search}`);
+  }, [location.pathname, location.search]);
+  return <Navigate to="/onboarding" replace />;
+}
