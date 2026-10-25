@@ -113,7 +113,8 @@
   line-height: 1.4;
 }
 
-.uss-row .btn { flex: 0 0 auto; width: auto; }
+/* Add, Saving, and Added share one width so the row does not shift when the label changes. */
+.uss-row .btn { flex: 0 0 5rem; width: 5rem; }
 
 .uss-status {
   margin: 0.4rem 0 0;
