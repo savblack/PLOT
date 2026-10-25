@@ -12,12 +12,14 @@ import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../util
 import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE, captchaFailureCopy } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
-import { captchaSubmitPlan, CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS } from '@plot/core/captchaGate.js';
+import { captchaSubmitPlan, CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js';
 import { signupFormTokenIsStale } from '../utils/signupFormToken.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 import PlotLogo from '../components/PlotLogo.jsx';
+import { loginNeedsConfirmation, shouldMagicLinkViaBypass, shouldResendViaBypass } from '../utils/authBypass.js';
+import { rememberPendingBypassSignup, rememberSignupTracked } from '../utils/authCallbackReport.js';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -80,6 +82,20 @@ function bypassErrorMessage(reason) {
   return COMMON.genericError;
 }
 
+function browserStore() {
+  return {
+    get: (key) => {
+      try { return localStorage.getItem(key); } catch { return null; }
+    },
+    set: (key, value) => {
+      try { localStorage.setItem(key, value); } catch { /* private mode */ }
+    },
+    remove: (key) => {
+      try { localStorage.removeItem(key); } catch { /* private mode */ }
+    },
+  };
+}
+
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 18 18" aria-hidden="true">
@@ -115,6 +131,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // the short wait, without waiting for another render.
   const captchaTokenRef = useRef(null);
   const captchaBlockedRef = useRef(false);
+  // Set when the widget itself errors during the current attempt. A timeout
+  // leaves this false so the next wait does not call turnstile.reset().
+  const captchaErroredRef = useRef(false);
   const [formStarted, setFormStarted] = useState(false);
   const [website, setWebsite] = useState(''); // honeypot — real users never see or fill this
   // Signed {iat} token from signup-bypass's GET endpoint — a server-observed
@@ -171,7 +190,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       const started = Date.now();
       const id = setInterval(() => {
         const token = captchaTokenRef.current;
-        const failedNow = captchaBlockedRef.current && !blockedAtStart;
+        const failedNow = captchaErroredRef.current || (captchaBlockedRef.current && !blockedAtStart);
         if (token || failedNow || Date.now() - started >= ms) {
           clearInterval(id);
           resolve(token);
@@ -226,9 +245,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
       return captchaSubmitPlan({ siteKey: TURNSTILE_SITE_KEY, token: null, mode: authMode });
     }
     let plan = 'wait';
+    let widgetErrored = false;
     for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
-      requestCaptcha();
+      // Reset only after a widget error. A timeout means someone may still
+      // be solving the challenge, and reset() throws that away.
+      if (shouldResetCaptcha({ attempt, widgetErrored })) requestCaptcha();
+      captchaErroredRef.current = false;
       const token = await waitForCaptchaAttempt(CAPTCHA_TOKEN_WAIT_MS);
+      widgetErrored = captchaErroredRef.current;
       plan = captchaSubmitPlan({
         siteKey: TURNSTILE_SITE_KEY,
         token,
@@ -313,6 +337,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
     const epoch = beginAuthAttempt();
     setLoading(true);
+    // Before the Turnstile wait. Closing the tab during those seconds used
+    // to drop the click, so the funnel could not tell a wait from a bounce.
+    if (submittedMode === 'signup') track(EVENTS.SIGNUP_SUBMIT_CLICKED);
     const plan = await resolveCaptchaPlan(submittedMode);
     if (!attemptIsCurrent(epoch)) return;
     if (plan === 'unavailable') {
@@ -349,7 +376,18 @@ export default function AuthPage({ initialMode = 'signup' }) {
         // Sign-in failures are their own funnel — deliberately not folded into
         // signup_submit_failed, which would inflate every signup-attempt metric.
         track(EVENTS.LOGIN_SUBMIT_FAILED, { reason: errorReason(error.message) });
-        setError(friendlyError(error.message)); setLoading(false); resetCaptcha();
+        setLoading(false);
+        resetCaptcha();
+        // An unconfirmed bypass account that hits Back to sign in used to
+        // stop on the warning, with no way to send the email again.
+        if (loginNeedsConfirmation(error.message)) {
+          setError(null);
+          setResendStatus(null);
+          setMode('signup');
+          setSuccess(true);
+        } else {
+          setError(friendlyError(error.message));
+        }
       } else {
         identifyUser(data.user.id);
         track(EVENTS.USER_LOGGED_IN);
@@ -357,8 +395,6 @@ export default function AuthPage({ initialMode = 'signup' }) {
         navigate(plan ? `/pricing?billing=${plan}` : takeReturnPath('/app'));
       }
     } else {
-      track(EVENTS.SIGNUP_SUBMIT_CLICKED);
-
       // No Turnstile token. signup-bypass creates the account without one.
       // A healthy widget still takes the signUp() call below: a token
       // resolves the plan to 'ready' before we get here.
@@ -399,6 +435,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
         // session — carrying first-touch attribution — stitches to this user.
         identifyUser(data.user?.id);
         track(EVENTS.USER_SIGNED_UP, { method: 'email' });
+        // The confirmation click must not count this person a second time.
+        if (data.user?.id) rememberSignupTracked(data.user.id, browserStore());
         // Supabase returns an obfuscated user with no identities when the email
         // already exists. Only a genuinely new account may authorize the
         // referral follow mutation after signup.
@@ -473,9 +511,45 @@ export default function AuthPage({ initialMode = 'signup' }) {
       setSuccess(true);
       return;
     }
+    // The account is unconfirmed. user_signed_up fires on /auth/callback,
+    // when the confirmation link is opened, including a different tab.
     markSignupReferralPending(submittedEmail);
+    rememberPendingBypassSignup(submittedEmail, browserStore());
+    try { sessionStorage.setItem('plot_auth_method', 'email'); } catch { /* ignore */ }
     setLoading(false);
     setSuccess(true);
+  };
+
+  // Resend and magic link share this. The function rate-limits and sends
+  // through Resend. A fake { ok: true } (honeypot, or a submit that was too
+  // fast) is still success on purpose.
+  const sendBypassAuthLink = async (action, submittedEmail, epoch, { confirmSignup = false } = {}) => {
+    const formToken = await ensureFormToken();
+    if (!attemptIsCurrent(epoch)) return { ok: false, reason: 'superseded' };
+    if (!formToken) return { ok: false, reason: 'bypass_no_form_token', message: COMMON.genericError };
+    await waitOutMinimum(formTokenAtRef.current, BYPASS_MIN_PAGE_MS);
+    if (!attemptIsCurrent(epoch)) return { ok: false, reason: 'superseded' };
+    const supabase = await loadSupabase();
+    const { data, error } = await supabase.functions.invoke('signup-bypass', {
+      method: 'POST',
+      body: {
+        email: submittedEmail,
+        website,
+        formToken: formTokenRef.current,
+        action,
+        confirmSignup,
+      },
+    });
+    if (!attemptIsCurrent(epoch)) return { ok: false, reason: 'superseded' };
+    if (error || data?.error) {
+      let reason = data?.reason || null;
+      try {
+        const body = await error?.context?.clone?.().json();
+        if (typeof body?.reason === 'string') reason = body.reason;
+      } catch { /* non-JSON */ }
+      return { ok: false, reason: reason || 'bypass_email_failed', message: bypassErrorMessage(reason) };
+    }
+    return { ok: true };
   };
 
   // OAuth: hand off to the provider. We can't fire the signup/login event here
@@ -530,6 +604,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
   // Passwordless: email a one-time sign-in link. Works for new and returning
   // users alike; the callback completes auth and reports the method.
+  // When Turnstile times out, or GoTrue's mailer fails the captcha / SMTP
+  // check, signup-bypass sends the same link through Resend.
   const sendMagicLink = async () => {
     if (mode === 'signup') markFormStarted();
     // Same autofill caveat as handleSubmit — read the live email field.
@@ -544,22 +620,52 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setError(null);
     const plan = await resolveCaptchaPlan('magic');
     if (!attemptIsCurrent(epoch)) return;
-    if (plan === 'unavailable') {
-      setError(AUTH_PAGE.verificationUnavailable);
-      setLoading(false);
-      return;
-    }
+    const captchaRequired = Boolean(TURNSTILE_SITE_KEY);
+    const token = captchaTokenRef.current;
     try { sessionStorage.setItem('plot_auth_method', 'magic_link'); } catch { /* ignore */ }
-    const supabase = await loadSupabase();
-    if (!attemptIsCurrent(epoch)) return;
-    const { error } = await supabase.auth.signInWithOtp({
-      email: submittedEmail,
-      options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: captchaTokenRef.current },
-    });
+    let otpError = null;
+    if (!shouldMagicLinkViaBypass({ captchaRequired, captchaToken: token, plan })) {
+      const supabase = await loadSupabase();
+      if (!attemptIsCurrent(epoch)) return;
+      const { error } = await supabase.auth.signInWithOtp({
+        email: submittedEmail,
+        options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: token },
+      });
+      if (!attemptIsCurrent(epoch)) return;
+      if (!error) {
+        setLoading(false);
+        setMagicSent(true);
+        return;
+      }
+      otpError = error;
+      if (!shouldMagicLinkViaBypass({ captchaRequired, captchaToken: token, plan, error })) {
+        track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'magic_link', reason: errorReason(error.message) });
+        setError(friendlyError(error.message));
+        setLoading(false);
+        resetCaptcha();
+        try { sessionStorage.removeItem('plot_auth_method'); } catch { /* ignore */ }
+        return;
+      }
+    }
+    const bypass = await sendBypassAuthLink('magiclink', submittedEmail, epoch, { confirmSignup: mode === 'signup' });
     if (!attemptIsCurrent(epoch)) return;
     setLoading(false);
-    if (error) { setError(friendlyError(error.message)); resetCaptcha(); }
-    else setMagicSent(true);
+    if (bypass.ok) {
+      if (mode === 'signup') {
+        rememberPendingBypassSignup(submittedEmail, browserStore());
+        try { sessionStorage.setItem('plot_auth_method', 'email'); } catch { /* ignore */ }
+      }
+      setMagicSent(true);
+      return;
+    }
+    if (bypass.reason === 'superseded') return;
+    track(EVENTS.LOGIN_SUBMIT_FAILED, {
+      method: 'magic_link',
+      reason: otpError ? errorReason(otpError.message) : (bypass.reason || 'captcha_failed'),
+    });
+    setError(bypass.message || (otpError ? friendlyError(otpError.message) : COMMON.genericError));
+    resetCaptcha();
+    try { sessionStorage.removeItem('plot_auth_method'); } catch { /* ignore */ }
   };
 
   const switchMode = (next) => {
@@ -581,13 +687,27 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const handleResend = async () => {
     if (resendStatus === 'sending' || resendStatus === 'sent') return;
     setResendStatus('sending');
-    const supabase = await loadSupabase();
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: captchaTokenRef.current },
-    });
-    setResendStatus(error ? 'error' : 'sent');
+    const epoch = beginAuthAttempt();
+    const captchaRequired = Boolean(TURNSTILE_SITE_KEY);
+    const token = captchaTokenRef.current;
+    // A token still goes to GoTrue first. No token, or a captcha / SMTP
+    // failure, goes through signup-bypass so the inbox actually gets a link.
+    if (!shouldResendViaBypass({ captchaRequired, captchaToken: token })) {
+      const supabase = await loadSupabase();
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: token },
+      });
+      if (!error) { setResendStatus('sent'); return; }
+      if (!shouldResendViaBypass({ captchaRequired, captchaToken: token, error })) {
+        setResendStatus('error');
+        return;
+      }
+    }
+    const bypass = await sendBypassAuthLink('resend', email, epoch);
+    if (!attemptIsCurrent(epoch)) return;
+    setResendStatus(bypass.ok ? 'sent' : 'error');
   };
 
   const scrollPosters = [...HERO_POSTERS, ...HERO_POSTERS];
@@ -770,9 +890,11 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   executeSignal={captchaExecute}
                   failureMessage={captchaCopy.failed}
                   blockedMessage={captchaCopy.blocked}
-                  onBlocked={mode === 'signup'
-                    ? (attempt) => track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt })
-                    : undefined}
+                  onBlocked={(attempt) => {
+                    captchaErroredRef.current = true;
+                    captchaBlockedRef.current = true;
+                    if (mode === 'signup') track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt });
+                  }}
                   onPersistentlyBlocked={mode === 'signup' ? handleCaptchaPersistentlyBlocked : undefined}
                 />
 

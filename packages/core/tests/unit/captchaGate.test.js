@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, captchaSubmitPlan } from '../../captchaGate.js';
+import { CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, captchaSubmitPlan, shouldResetCaptcha } from '../../captchaGate.js';
 
 test('captcha is a no-op when no site key is configured', () => {
   assert.equal(captchaSubmitPlan({ siteKey: '', token: null, mode: 'signup' }), 'ready');
@@ -52,4 +52,10 @@ test('the wait is a few seconds, long enough for a healthy widget to win', () =>
 
 test('a submit gets one retry before it gives up on the widget', () => {
   assert.equal(CAPTCHA_SUBMIT_ATTEMPTS, 2);
+});
+
+test('a timeout does not reset an interactive challenge; a widget error does', () => {
+  assert.equal(shouldResetCaptcha({ attempt: 1, widgetErrored: false }), true);
+  assert.equal(shouldResetCaptcha({ attempt: 2, widgetErrored: false }), false);
+  assert.equal(shouldResetCaptcha({ attempt: 2, widgetErrored: true }), true);
 });
