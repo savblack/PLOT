@@ -37,14 +37,40 @@ export function rememberReturnPath(path, { storage, now = Date.now() } = {}) {
  * @param {string} fallback where to go when nothing (valid) is remembered
  * @param {{ storage?: Storage, now?: number }} [opts]
  */
+function readSavedPath(store, now) {
+  if (!store) return null;
+  let saved;
+  try { saved = JSON.parse(store.getItem(KEY) || 'null'); } catch { return null; }
+  if (!saved || typeof saved.at !== 'number' || now - saved.at > MAX_AGE_MS) return null;
+  return safeAppReturnPath(saved.path, null);
+}
+
+/**
+ * The remembered path, if it is still valid. Does not clear it.
+ * @param {{ storage?: Storage, now?: number }} [opts]
+ * @returns {string | null}
+ */
+export function peekReturnPath({ storage, now = Date.now() } = {}) {
+  return readSavedPath(session(storage), now);
+}
+
 export function takeReturnPath(fallback, { storage, now = Date.now() } = {}) {
   const store = session(storage);
   if (!store) return fallback;
-  let saved;
-  try {
-    saved = JSON.parse(store.getItem(KEY) || 'null');
-    store.removeItem(KEY);
-  } catch { return fallback; }
-  if (!saved || typeof saved.at !== 'number' || now - saved.at > MAX_AGE_MS) return fallback;
-  return safeAppReturnPath(saved.path, fallback);
+  const path = readSavedPath(store, now);
+  try { store.removeItem(KEY); } catch { return fallback; }
+  return path || fallback;
+}
+
+/**
+ * Where onboarding sends someone who just finished.
+ * A link they were trying to open wins over an import they picked and
+ * never started. With neither, they go home.
+ *
+ * @param {{ remembered?: string | null, importContinuation?: string | null, fallback?: string }} [opts]
+ */
+export function pathAfterOnboarding({ remembered = null, importContinuation = null, fallback = '/home' } = {}) {
+  if (remembered) return remembered;
+  if (importContinuation) return importContinuation;
+  return fallback;
 }

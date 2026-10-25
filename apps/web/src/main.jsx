@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { configure } from '@plot/core/config.js';
 import { notifyPendingWatchQueued } from '@plot/core/watchQueued.js';
-import { captureAttribution, currentArticleAttribution } from './utils/attribution.js';
+import { captureAttribution, currentArticleAttribution, currentCampaignAttribution } from './utils/attribution.js';
 import { analyticsAllowed } from './utils/analyticsHost.js';
 import { isSaveBotFingerprint } from './utils/saveBotFingerprint.js';
 import { isChunkError, markChunkReload, recentlyReloaded } from './utils/chunkError.js';
@@ -163,6 +163,9 @@ const posthogToken = !isDnt && analyticsAllowed() && import.meta.env.VITE_PUBLIC
 // so signup / activation stay traceable to their source. First-touch wins.
 const attribution = captureAttribution();
 const currentArticle = currentArticleAttribution();
+// This visit's utm_* and click ids, read before a sign-in redirect replaces
+// the URL. Session scope only, so an older first-touch source stays on first_*.
+const currentCampaign = currentCampaignAttribution();
 
 // posthog-js is the single largest chunk in the app —
 // bigger than React itself — so it's dynamically imported after the app has
@@ -295,6 +298,9 @@ if (posthogToken) {
     // whose original acquisition source came from somewhere else.
     if (Object.keys(currentArticle).length > 0) {
       posthog.register_for_session(currentArticle);
+    }
+    if (Object.keys(currentCampaign).length > 0) {
+      posthog.register_for_session(currentCampaign);
     }
     _setPostHogClient(posthog);
   });

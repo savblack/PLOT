@@ -2066,6 +2066,7 @@ svg { stroke-width: 1.5; }
 }
 .cal-scope-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .cal-toolbar-controls { gap: 12px; }
+.cal-suggest-btn { width: fit-content; flex: 0 0 auto; }
 .cal-search { width: min(280px, 26vw); }
 
 .cal-body {
@@ -7990,6 +7991,12 @@ a.provider-chip--link:hover {
   .page-toolbar-date { display: none; }
   .page-toolbar, .page-toolbar.cal-toolbar { padding: 0; height: 0; margin: 0; }
   .page-toolbar.cal-toolbar--search { height: 0; padding: 0; }
+  .page-toolbar.cal-toolbar--search:has(.cal-suggest-btn) {
+    height: auto;
+    padding: 0 var(--gut) 12px;
+    margin: 0;
+    justify-content: flex-start;
+  }
   .cal-toolbar-controls { width: 100%; }
   /* A list's own page keeps its search on a phone: the bottom sheet has no
      search field, and .list-page-search already lays it out full width. */

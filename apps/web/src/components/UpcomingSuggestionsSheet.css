@@ -1,0 +1,132 @@
+/* Quick-add sheet for the release calendar. Overlay follows ConfirmModal.
+   The pink fill is only on Add, the same place Save uses it. */
+
+@keyframes ussFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ussSlideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.uss-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: ussFadeIn 0.15s ease;
+}
+
+.uss {
+  width: 100%;
+  max-width: 520px;
+  max-height: min(720px, calc(100vh - 2rem));
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  overflow: hidden;
+  animation: ussSlideUp 0.18s var(--ease);
+}
+
+.uss-head > div {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.uss-scroll {
+  overflow: auto;
+  padding: 0 1.15rem 1.25rem;
+}
+
+.uss-intro {
+  margin: 0.15rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.uss-section { margin-top: 1.2rem; }
+
+.uss-section h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: var(--font-display-tracking);
+  color: var(--text-primary);
+}
+
+.uss-section > p {
+  margin: 0.2rem 0 0.65rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.uss-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.uss-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.uss-row img {
+  width: 42px;
+  height: 63px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+  flex-shrink: 0;
+}
+
+.uss-copy { min-width: 0; flex: 1; }
+
+.uss-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.uss-meta {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.uss-error {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--danger);
+  line-height: 1.4;
+}
+
+/* Add, Saving, and Added share one width so the row does not shift when the label changes. */
+.uss-row .btn { flex: 0 0 5rem; width: 5rem; }
+
+.uss-status {
+  margin: 0.4rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.uss-status .btn { margin-top: 0.65rem; width: auto; }
+
+.uss-head button:focus-visible,
+.uss-row button:focus-visible,
+.uss-status button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
