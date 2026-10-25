@@ -2,19 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { runAccountCleanup } from './cleanup.js'
 import { deleteBrevoContact } from '../_shared/brevo.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
-
-function attachmentPathsFrom(value: unknown) {
-  if (!Array.isArray(value)) return []
-
-  return value.flatMap((entry) => {
-    if (typeof entry !== 'string') return []
-    const marker = '/storage/v1/object/public/feedback-attachments/'
-    const index = entry.indexOf(marker)
-    if (index === -1) return []
-    const path = decodeURIComponent(entry.slice(index + marker.length))
-    return /^feedback\/[0-9a-f-]{36}(?:\.[a-z0-9]{1,10})?$/i.test(path) ? [path] : []
-  })
-}
+import { attachmentPathsFrom } from '../_shared/feedbackAttachments.ts'
 
 function jsonError(message: string, status = 500, extra: Record<string, unknown> = {}) {
   return new Response(JSON.stringify({ error: message, ...extra }), {
