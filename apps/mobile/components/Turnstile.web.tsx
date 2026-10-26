@@ -58,7 +58,6 @@ export default function Turnstile({
   const executeSignalRef = useRef(0);
   const lastExecutedRef = useRef(0);
   const runExecuteRef = useRef(() => {});
-  const widgetErroredRef = useRef(false);
 
   useEffect(() => { onTokenRef.current = onToken; }, [onToken]);
   useEffect(() => { onErrorRef.current = onError; }, [onError]);
@@ -70,10 +69,7 @@ export default function Turnstile({
       const id = widgetIdRef.current;
       if (!id || !window.turnstile?.execute) return;
       lastExecutedRef.current = signal;
-      if (widgetErroredRef.current) {
-        widgetErroredRef.current = false;
-        try { window.turnstile.reset(id); } catch { /* widget already gone */ }
-      }
+      try { window.turnstile.reset(id); } catch { /* widget already gone */ }
       onTokenRef.current?.(null);
       try { window.turnstile.execute(id); } catch { /* widget already gone */ }
     };
@@ -93,13 +89,9 @@ export default function Turnstile({
           appearance: 'interaction-only',
           execution: 'execute',
           retry: 'never',
-          callback: (token: string) => {
-            widgetErroredRef.current = false;
-            onTokenRef.current?.(token);
-          },
+          callback: (token: string) => onTokenRef.current?.(token),
           'expired-callback': () => onTokenRef.current?.(null),
           'error-callback': () => {
-            widgetErroredRef.current = true;
             onTokenRef.current?.(null);
             onErrorRef.current?.();
           },
@@ -107,7 +99,6 @@ export default function Turnstile({
         runExecuteRef.current();
       })
       .catch(() => {
-        widgetErroredRef.current = true;
         onTokenRef.current?.(null);
         onErrorRef.current?.();
       });

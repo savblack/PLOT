@@ -244,6 +244,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
     if (!TURNSTILE_SITE_KEY) {
       return captchaSubmitPlan({ siteKey: TURNSTILE_SITE_KEY, token: null, mode: authMode });
     }
+    // A challenge may finish after the previous submit stopped waiting.
+    if (captchaTokenRef.current) return 'ready';
     let plan = 'wait';
     let widgetErrored = false;
     for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {

@@ -251,6 +251,8 @@ export default function AuthScreen() {
   // finished without a token. Do not post that request to GoTrue.
   const takeCaptchaToken = async (authMode: 'signup' | 'login' | 'forgot' | 'magic') => {
     if (!TURNSTILE_SITE_KEY) return null;
+    // Keep a token that arrived after the previous submit stopped waiting.
+    if (captchaTokenRef.current) return captchaTokenRef.current;
     let widgetErrored = false;
     for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
       // A timeout must not reset() an interactive challenge that is still

@@ -41,13 +41,13 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { usableRateCount } from '../_shared/securityGuards.js';
 import { deliverSignupLink } from '../_shared/signupMailer.ts';
+import { deliverMagicLink, type LinkResult } from '../_shared/signupMagicLink.ts';
 import {
   allowedOrigin,
   authCallbackRedirect,
   authLinkMail,
   bypassAction,
   isExistingAccountError,
-  isMissingUserError,
   type BypassAction,
 } from '../_shared/signupBypass.ts';
 
@@ -103,8 +103,6 @@ async function sendViaSupabaseMailer(email: string, redirectTo: string) {
   if (error) throw new Error(`Supabase mailer failed (${error.status ?? 'unknown'})`);
 }
 
-type LinkResult = 'sent' | 'absent' | 'failed';
-
 async function mailLink(email: string, actionLink: string, action: BypassAction, redirectTo: string): Promise<LinkResult> {
   try {
     await deliverSignupLink(
@@ -116,49 +114,6 @@ async function mailLink(email: string, actionLink: string, action: BypassAction,
     console.error('[signup-bypass] could not send auth link:', (error as Error).message);
     return 'failed';
   }
-}
-
-// Magic link for an address that already has an account, or a resend of the
-// signup confirmation. The response the caller returns must not say whether
-// the address exists. `absent` means generateLink could not find a user and
-// this action is not allowed to create one.
-async function deliverMagicLink(
-  email: string,
-  origin: string | null,
-  action: BypassAction,
-  confirmSignup: boolean,
-): Promise<LinkResult> {
-  const redirectTo = authCallbackRedirect(origin, action, confirmSignup);
-  const generated = await supabaseAdmin.auth.admin.generateLink({
-    type: 'magiclink',
-    email,
-    options: { redirectTo },
-  });
-  if (!generated.error && generated.data?.properties?.action_link) {
-    const mailAction: BypassAction = confirmSignup && action === 'magiclink' ? 'signup' : action;
-    return mailLink(email, generated.data.properties.action_link, mailAction, redirectTo);
-  }
-  if (action === 'magiclink' && isMissingUserError(generated.error?.message)) {
-    const created = await supabaseAdmin.auth.admin.createUser({
-      email,
-      email_confirm: false,
-    });
-    if (created.error && !isExistingAccountError(created.error.message)) {
-      console.error('[signup-bypass] could not create user for magic link');
-      return 'failed';
-    }
-    const signupRedirect = authCallbackRedirect(origin, 'signup', true);
-    const again = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: { redirectTo: signupRedirect },
-    });
-    if (again.error || !again.data?.properties?.action_link) return 'failed';
-    return mailLink(email, again.data.properties.action_link, 'signup', signupRedirect);
-  }
-  if (isMissingUserError(generated.error?.message)) return 'absent';
-  console.error('[signup-bypass] generateLink failed');
-  return 'failed';
 }
 
 // Deliberately fast — a real user reads the form and types for at least this
@@ -348,7 +303,7 @@ Deno.serve(async (req) => {
   // send a magic link through Resend, inside the same rate limit. A missing
   // account gets the same success body so this route is not an address oracle.
   if (action !== 'signup') {
-    const sent = await deliverMagicLink(email, origin, action, body.confirmSignup === true);
+    const sent = await deliverMagicLink(supabaseAdmin.auth.admin, mailLink, email, origin, action, body.confirmSignup === true);
     if (sent === 'failed') {
       return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
     }
@@ -370,7 +325,7 @@ Deno.serve(async (req) => {
     // A magic link confirms an unconfirmed account and signs in a confirmed
     // one, and the response stays identical either way.
     if (isExistingAccountError(createError.message)) {
-      const sent = await deliverMagicLink(email, origin, 'signup', true);
+      const sent = await deliverMagicLink(supabaseAdmin.auth.admin, mailLink, email, origin, 'signup', true);
       if (sent === 'failed') {
         return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
       }

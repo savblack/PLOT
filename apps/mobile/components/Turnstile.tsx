@@ -51,7 +51,6 @@ const html = (siteKey: string) => `<!DOCTYPE html><html><head>
       execution: 'execute',
       retry: 'never',
       callback: function(t){
-        window.__errored = false;
         // Hide the confirmation UI the instant we have a token — it's just a
         // "done" flash at this point, not an active prompt, so there's nothing
         // left for the visitor to see or do.
@@ -59,7 +58,7 @@ const html = (siteKey: string) => `<!DOCTYPE html><html><head>
         post({ type:'token', token:t });
       },
       'expired-callback': function(){ post({ type:'token', token:null }); },
-      'error-callback': function(){ window.__errored = true; post({ type:'error' }); }
+      'error-callback': function(){ post({ type:'error' }); }
     });
     if (window.__pending) window.__execute(window.__pending);
   }
@@ -72,12 +71,8 @@ const html = (siteKey: string) => `<!DOCTYPE html><html><head>
     if (window.__last === signal) return;
     window.__last = signal;
     post({ type:'token', token:null });
-    // reset() wipes an interactive challenge. Only do it after a widget error.
-    if (window.__errored) {
-      window.__errored = false;
-      try { window.turnstile.reset(window.__wid); } catch (e) {}
-      if (cf) cf.style.display = 'flex';
-    }
+    try { window.turnstile.reset(window.__wid); } catch (e) {}
+    if (cf) cf.style.display = 'flex';
     try { window.turnstile.execute(window.__wid); } catch (e) {}
   };
   render();
