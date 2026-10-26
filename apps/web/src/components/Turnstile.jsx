@@ -76,9 +76,6 @@ export default function Turnstile({
   const executeSignalRef = useRef(0);
   const lastExecutedRef = useRef(0);
   const runExecuteRef = useRef(() => {});
-  // reset() during an interactive challenge throws away the solve. Only a
-  // widget error earns a reset. A timeout leaves the challenge on screen.
-  const widgetErroredRef = useRef(false);
 
   // Keep the latest callbacks without re-running the render effect below.
   useEffect(() => { onTokenRef.current = onToken; }, [onToken]);
@@ -92,10 +89,7 @@ export default function Turnstile({
       const id = widgetIdRef.current;
       if (!id || !window.turnstile?.execute) return;
       lastExecutedRef.current = signal;
-      if (widgetErroredRef.current) {
-        widgetErroredRef.current = false;
-        try { window.turnstile.reset(id); } catch { /* widget already gone */ }
-      }
+      try { window.turnstile.reset(id); } catch { /* widget already gone */ }
       onTokenRef.current?.(null);
       try { window.turnstile.execute(id); } catch { /* widget already gone */ }
     };
@@ -107,7 +101,6 @@ export default function Turnstile({
     let cancelled = false;
     const reportFailure = () => {
       if (cancelled) return;
-      widgetErroredRef.current = true;
       setFailCount((n) => {
         const next = n + 1;
         onBlockedRef.current?.(next);
@@ -127,7 +120,6 @@ export default function Turnstile({
           execution: 'execute',
           retry: 'never',
           callback: (token) => {
-            widgetErroredRef.current = false;
             onTokenRef.current?.(token);
             if (cancelled) return;
             setFailCount((n) => { if (n >= PERSISTENT_FAILURE_THRESHOLD) onPersistentlyBlockedRef.current?.(false); return 0; });
