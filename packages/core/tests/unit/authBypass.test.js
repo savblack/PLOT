@@ -5,7 +5,7 @@ import {
   loginNeedsConfirmation,
   shouldMagicLinkViaBypass,
   shouldResendViaBypass,
-} from '../../src/utils/authBypass.js';
+} from '../../authBypass.js';
 
 test('resend uses signup-bypass when Turnstile never returned a token', () => {
   assert.equal(shouldResendViaBypass({ captchaRequired: true, captchaToken: null }), true);
