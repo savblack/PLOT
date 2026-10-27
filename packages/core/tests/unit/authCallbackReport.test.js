@@ -8,7 +8,7 @@ import {
   rememberPendingBypassSignup,
   rememberSignupTracked,
   signupAlreadyTracked,
-} from '../../src/utils/authCallbackReport.js';
+} from '../../authCallbackReport.js';
 
 function memoryStore(seed = {}) {
   const data = { ...seed };
