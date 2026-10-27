@@ -28,3 +28,5 @@ Savannah requested removing homepage CTAs except hero, mobile signup, independen
 Verification: pnpm run check with pinned pnpm 10.6.3 passed; 83 website tests passed; footer and CSP sync checks passed; diff whitespace check passed. Desktop local browser accessibility tree confirms remaining actions only in permitted sections. Visually checked Premium without CTAs, retained mobile form, independent section and footer. Screenshot: /tmp/plot-homepage-ctas-removed.png. Logs: /tmp/plot-home-ctas-check.log and /tmp/plot-home-ctas-tests.log. Latest phone visual check applies to the earlier eyebrow change only; phone CTA visual check remains pending.
 
 Review: https://github.com/savblack/PLOT/pull/1441. Source changes approved by request; merge and publishing still pending. Next: review the combined changes, remove this handoff before approved merge, then verify deployment. Check branch HEAD for latest pushed follow-up checkpoint.
+
+Latest pushed CTA checkpoint: c79e41b.
