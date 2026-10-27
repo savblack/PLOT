@@ -112,7 +112,7 @@
   <link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=5090e8ef" />
+  <link rel="stylesheet" href="/ui.css?v=11e85ea6" />
   <link rel="stylesheet" href="/nav.css?v=7c3320cc" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
@@ -444,8 +444,8 @@
     }
 
     /* ── Review, rate, remember ─────────────────────────────── */
-    /* One screen straight after the hero: the pitch and a signup CTA on the
-       left, three diary cards on the right (a review on each, a private note
+    /* One screen straight after the hero: the pitch on the left,
+       three diary cards on the right (a review on each, a private note
        on the front one). The cards scale with their container, so phones get
        the same composition, just smaller. */
     #memories {
@@ -460,8 +460,8 @@
       margin: 0 auto;
       display: grid;
       grid-template-columns: minmax(0, 580px) 560px;
-      grid-template-rows: 1fr auto auto 1fr;
-      grid-template-areas: ". diary" "copy diary" "actions diary" ". diary";
+      grid-template-rows: 1fr auto 1fr;
+      grid-template-areas: ". diary" "copy diary" ". diary";
       justify-content: space-between;
       column-gap: 3rem;
     }
@@ -485,8 +485,6 @@
       color: var(--text-secondary);
     }
     .mem-sub strong { font-weight: 600; color: var(--text); }
-    .mem-actions { grid-area: actions; display: flex; align-items: center; gap: 1.4rem; }
-    .mem-note { margin: 0; font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); }
 
     .mem-diary {
       grid-area: diary;
@@ -767,7 +765,7 @@
       .up-next { transform: scale(0.88); transform-origin: center; }
     }
 
-    /* Review, rate, remember: stack the copy, the diary and the CTA in one
+    /* Review, rate, remember: stack the copy and the diary in one
        column below 1100px, where the side-by-side layout runs out of room. */
     @media (max-width: 1100px) {
       #memories { padding: 6rem 1.5rem 5rem; }
@@ -775,14 +773,11 @@
         max-width: 600px;
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: auto;
-        grid-template-areas: "copy" "diary" "actions";
+        grid-template-areas: "copy" "diary";
         row-gap: 2.5rem;
       }
       .mem-sub { margin-bottom: 0; }
       .mem-diary { max-width: 560px; justify-self: center; }
-      .mem-actions { flex-direction: column; align-items: stretch; gap: 0.75rem; text-align: center; }
-      .mem-actions .btn { justify-content: center; }
-      .mem-dbreak { display: none; }
     }
 
     @media (max-width: 600px) {
@@ -833,8 +828,8 @@
     }
 
     /* ── Rest of the page ─────────────────────────────────────── */
-    /* Four sections share one layout: copy and CTA on one side, a product
-       visual on the other. Below 1100px they stack as copy, visual, CTA. */
+    /* Feature sections pair copy with a product visual. The mobile section
+       also has a signup form. Below 1100px the content stacks. */
     .hx {
       position: relative;
       z-index: 2;
@@ -846,11 +841,12 @@
       margin: 0 auto;
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      grid-template-rows: 1fr auto auto 1fr;
-      grid-template-areas: ". visual" "copy visual" "actions visual" ". visual";
+      grid-template-rows: 1fr auto 1fr;
+      grid-template-areas: ". visual" "copy visual" ". visual";
       column-gap: 5rem;
     }
-    .hx--flip .hx-inner { grid-template-areas: "visual ." "visual copy" "visual actions" "visual ."; }
+    .hx--flip .hx-inner { grid-template-areas: "visual ." "visual copy" "visual ."; }
+    #app .hx-inner { grid-template-rows: 1fr auto auto 1fr; grid-template-areas: ". visual" "copy visual" "actions visual" ". visual"; }
     .hx-copy { grid-area: copy; max-width: 520px; }
     .hx-visual { grid-area: visual; display: flex; justify-content: center; align-items: center; }
     .hx-actions { grid-area: actions; display: flex; align-items: center; gap: 1.4rem; }
@@ -864,7 +860,6 @@
       color: var(--text);
     }
     .hx-body { margin: 0 0 2.1rem; font-size: 1.2rem; line-height: 1.45; color: var(--text-secondary); }
-    .hx-note { margin: 0; font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); }
     .hx-card {
       width: 100%;
       max-width: 480px;
@@ -951,12 +946,11 @@
     .ls-count { display: block; font-size: 0.9em; color: var(--text-secondary); }
     .ls-vis { flex-shrink: 0; padding: 0.3em 0.8em; border-radius: var(--r-pill); background: var(--surface); font-size: 0.85em; font-weight: 600; color: var(--text-secondary); }
 
-    /* Premium: headline and trial, three tiles, one line. The tiles share rows
+    /* Premium: headline and price, three tiles, one line. The tiles share rows
        (subgrid) so titles, text and panels line up; spacing scales with width. */
     .pm { max-width: 1120px; margin: 0 auto; }
     .pm-head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: clamp(20px, 3vw, 32px) 40px; margin-bottom: clamp(28px, 5vw, 48px); }
     .pm-head .hx-headline { margin-bottom: 0; }
-    .pm-cta { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
     .pm-price { margin: 0; font-size: 0.9rem; color: var(--text-secondary); }
     .pm-price strong { color: var(--text); }
     .pm-grid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: clamp(14px, 2vw, 20px); row-gap: 0; margin-bottom: calc(-1 * clamp(14px, 2vw, 20px)); }
@@ -1115,13 +1109,13 @@
         max-width: 600px;
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: auto;
-        grid-template-areas: "copy" "visual" "actions";
+        grid-template-areas: "copy" "visual";
         row-gap: 2.25rem;
       }
+      #app .hx-inner { grid-template-rows: auto; grid-template-areas: "copy" "visual" "actions"; }
       .hx-body { margin-bottom: 0; }
       .hx-actions { flex-direction: column; align-items: stretch; gap: 0.75rem; text-align: center; }
       .hx-actions .btn { justify-content: center; }
-      .hx-dbreak { display: none; }
       #indie .hx-body { margin-bottom: 1.6rem; }
       #indie .hx-actions { align-self: stretch; }
     }
@@ -1156,8 +1150,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
       <li><a href="/pricing">Pricing</a></li>
-      <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
-      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
     </ul>
     <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
@@ -1243,10 +1235,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </figcaption>
         </figure>
       </div>
-      <div class="mem-actions reveal">
-        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="memories">Start your Plot</a>
-        <p class="mem-note">Free forever. <br class="mem-dbreak">No credit card required.</p>
-      </div>
     </div>
   </section>
 
@@ -1269,10 +1257,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <li class="dr-row"><span class="dr-date"><span class="dr-dow">Out</span><span class="dr-day">now</span></span><img class="dr-poster" src="https://image.tmdb.org/t/p/w185/dJPT2Uf12X6aFg8i5N67NTpIZ9t.jpg" alt="" loading="lazy" decoding="async" width="44" height="66"><span class="dr-meta"><span class="dr-name">Street Fighter</span><span class="dr-kind">In theaters now</span></span><span class="dr-chip">+ Save</span></li>
           </ol>
         </div>
-      </div>
-      <div class="hx-actions reveal">
-        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="drops">Start tracking</a>
-        <p class="hx-note">Free in-app calendar. <br class="hx-dbreak">Premium integrates with your calendar app.</p>
       </div>
     </div>
   </section>
@@ -1304,10 +1288,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="im-done"><span class="im-done-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><strong>1,284 titles are on your Plot</strong><span>412 ratings · 96 reviews · 58 on your watchlist</span></div></div>
         </div>
       </div>
-      <div class="hx-actions reveal">
-        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="import">Import my history</a>
-        <p class="hx-note">Free forever. <br class="hx-dbreak">No credit card required.</p>
-      </div>
     </div>
   </section>
 
@@ -1327,10 +1307,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <figure class="ls-card ls-card--b" data-src="trending"><div class="ls-grid"><img src="https://image.tmdb.org/t/p/w185/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"><img src="https://image.tmdb.org/t/p/w185/AdYr4DjOgXvDUMwu6vEhZy1Rnxk.jpg" alt="" loading="lazy" decoding="async" width="185" height="231"></div><figcaption><span><span class="ls-name">This week’s must-sees</span><span class="ls-count">23 titles</span></span><span class="ls-vis">Public</span></figcaption></figure>
         </div>
       </div>
-      <div class="hx-actions reveal">
-        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="lists">Start a list</a>
-        <p class="hx-note">Five lists free. <br class="hx-dbreak">Unlimited with Premium.</p>
-      </div>
     </div>
   </section>
 
@@ -1342,7 +1318,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="pm reveal">
       <div class="pm-head">
         <div><h2 class="hx-headline" id="premiumHeadline">Less deciding.<br>More watching.</h2></div>
-        <div class="pm-cta"><a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-primary btn-large" data-premium="cta" data-cta="premium-home">Start 7-day free trial</a><p class="pm-price"><strong>$2/mo</strong> billed yearly, 4 months free.</p></div>
+        <p class="pm-price"><strong>$2/mo</strong> billed yearly, 4 months free.</p>
       </div>
       <div class="pm-grid">
         <div class="pm-tile"><h3>Something to watch, in under a minute.</h3><p>Tell Plot how long you’ve got and what you’re in the mood for.</p>
@@ -1352,7 +1328,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="pm-tile"><h3>Every story has a plot. Here’s yours.</h3><p>The genres you lean on, the hours you’ve put in, the titles you keep going back to.</p>
           <div class="pm-vis" role="img" aria-label="Your watch profile: 84 films, 31 shows, 212 hours. Thriller 38%, Comedy 22%."><div class="pm-nums"><div><b>84</b><small>films</small></div><div><b>31</b><small>shows</small></div><div><b>212</b><small>hours</small></div></div><div class="pm-bars"><div class="pm-bar">Thriller<i style="width:88%"></i><em>38%</em></div><div class="pm-bar">Comedy<i style="width:52%"></i><em>22%</em></div></div></div></div>
       </div>
-      <p class="pm-also"><b>Also in Premium:</b> watch together, themes and widgets, unlimited lists including smart lists, calendar dates, actor and director alerts. <a href="/pricing" data-cta="premium-compare">See everything &rarr;</a></p>
+      <p class="pm-also"><b>Also in Premium:</b> watch together, themes and widgets, unlimited lists including smart lists, calendar dates, actor and director alerts.</p>
     </div>
   </section>
 
