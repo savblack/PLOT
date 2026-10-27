@@ -3,7 +3,6 @@
    step switcher on one side, the matching product visual on the other. */
 /* Steps auto-advance every 6s unless motion is reduced. */
 .stories { background: var(--ink); color: var(--bg); padding-top: 2rem; }
-.stories .eyebrow { color: var(--fill); }
 .stories h2 { font-size: clamp(2.4rem, 4.2vw, 3.5rem); color: var(--bg); margin-bottom: 1.1rem; }
 .stories-inner {
   display: grid;
@@ -67,7 +66,6 @@
 /* The product visuals: one cream card each. Every animation below
    ends on the card's resting state; reduced motion skips straight to it. */
 .vis { width: 100%; max-width: 440px; padding: 20px 22px; background: #fffaf3; color: var(--text); border-radius: 24px; font-size: 0.9rem; font-weight: 400; }
-.vis-kicker { display: block; margin-bottom: 14px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); }
 .vis-meta { display: block; font-size: 0.8rem; color: var(--text-secondary); }
 .vis-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-pill); background: var(--ink); color: var(--bg); font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
 .poster { display: block; width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 8px; background: var(--surface); }
@@ -193,7 +191,6 @@
   80% { background: #F0EBF8; color: #221B2E; --skin-fill: #F2C04F; --skin-surface: #E7E0F2; }
 }
 .vis--yours { --skin-fill: #FF88C8; --skin-surface: #F1E9DC; }
-.vis--yours .vis-kicker { color: inherit; opacity: 0.6; }
 .my-themes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px; }
 .my-theme { border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 5px; border: 2px solid transparent; background: var(--t-bg); color: var(--t-ink); animation: my-ring 7.5s steps(1, end) 1s infinite; animation-delay: calc(1s + var(--i) * 1.5s); }
 .my-theme i { display: block; height: 6px; border-radius: 3px; background: rgba(0,0,0,0.08); }

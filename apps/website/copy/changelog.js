@@ -8,7 +8,6 @@ export const CHANGELOG_PAGE = {
     title: 'Changelog — plot',
     description: 'What is new, improved, and fixed in plot. Dated release notes for the movie and TV companion.',
   },
-  pageLabel: 'Product',
   h1: 'Changelog',
   pageMeta: 'What shipped in plot, newest first.',
   intro:

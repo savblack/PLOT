@@ -12,7 +12,6 @@ export const META = {
 };
 
 export const HERO = {
-  eyebrow: 'Your movie and TV tracker',
   headline: 'Always know what to watch.',
   sub: 'All the movies and shows you’ve seen, saved and are counting down to. Finally in one place. That’s Plot.',
   cta: 'Start tracking',
@@ -29,14 +28,12 @@ export const HERO = {
   },
 };
 
-// The one-screen section after the hero: headline, sub, CTA, and the sample
+// The one-screen section after the hero: headline, sub, and the sample
 // diary cards beside it. "remember" is the pink word in the headline.
 export const MEMORIES = {
   headline: 'Review, rate, remember.',
   sub: 'Reviews for the thoughts worth sharing. Private notes just for you.',
   subStrong: 'Plot keeps both safe, and always yours.',
-  cta: 'Start your Plot',
-  note: 'Free forever. No credit card required.',
   privateNoteLabel: 'Private note',
   // Sample diary content on the cards (illustrative, not a real user's).
   // Three diary states: rating only, rating + review, and review + private note.
@@ -56,7 +53,6 @@ export const MEMORIES = {
 
 // Never miss a drop: the "Coming up" card fills from /api/discover movie/upcoming.
 export const DROPS = {
-  eyebrow: 'Never miss a drop',
   headline: 'Every release date, in your calendar.',
   body: 'Save what you’re waiting for and Plot tells you when it’s out, in theaters or streaming.',
   cardTitle: 'Coming up',
@@ -65,13 +61,10 @@ export const DROPS = {
   save: '+ Save',
   inTheatersNow: 'In theaters now',
   inTheatersOn: 'In theaters {date}',
-  cta: 'Start tracking',
-  note: 'Free in-app calendar. Premium integrates with your calendar app.',
 };
 
 // Bring your history: the import sources the app supports today.
 export const IMPORT = {
-  eyebrow: 'Switching is easy',
   headline: 'Bring your whole history with you.',
   body: 'Coming from Letterboxd, Trakt, TV Time or IMDb? Import your ratings, reviews, watchlist and watch history. It’s free on every plan.',
   cardTitle: 'Your watch history',
@@ -79,12 +72,9 @@ export const IMPORT = {
   // Sample result on the card (illustrative).
   resultTitle: '1,284 titles are on your Plot',
   resultSub: '412 ratings · 96 reviews · 58 on your watchlist',
-  cta: 'Import my history',
-  note: 'Free forever. No credit card required.',
 };
 
 export const LISTS = {
-  eyebrow: 'Lists',
   headline: 'Lists only you could make.',
   body: 'By decade, director, mood or the person you watch with. Share them, or keep them just for you.',
   // Each name matches the TMDB set that fills its cover (data-src in index.html).
@@ -93,31 +83,25 @@ export const LISTS = {
     { name: 'This week’s must-sees', count: '23 titles', visibility: 'Public', source: 'Trending this week' },
     { name: 'Horror night', count: '9 titles', visibility: 'Shared', source: 'Top-rated horror' },
   ],
-  cta: 'Start a list',
-  note: 'Five lists free. Unlimited with Premium.',
 };
 
-// Premium: headline and trial on one line, three feature tiles, one line for the
+// Premium: headline and price on one line, three feature tiles, one line for the
 // rest. The markup is in index.html; /pricing keeps the longer stories (copy/plans.js).
 export const PREMIUM = {
-  eyebrow: 'Plot Premium',
   headline: 'Less deciding. More watching.',
   tiles: [
     { title: 'Something to watch, in under a minute.', body: 'Tell Plot how long you’ve got and what you’re in the mood for.' },
     { title: 'Find out your compatibility based on cinema.', body: 'The films you agree on, and the ones that are still a sore point.' },
     { title: 'Every story has a plot. Here’s yours.', body: 'The genres you lean on, the hours you’ve put in, the titles you keep going back to.' },
   ],
-  cta: 'Start 7-day free trial',
   price: '$2/mo billed yearly, 4 months free.',
   alsoLabel: 'Also in Premium',
   also: 'watch together, themes and widgets, unlimited lists including smart lists, calendar dates, actor and director alerts.',
-  more: 'See everything',
 };
 
 // Plot mobile, coming soon: the app's home screen in a phone, and the launch
 // waitlist (posts with list: 'mobile-app').
 export const APP = {
-  eyebrow: 'Plot mobile',
   pill: 'Coming soon',
   headline: 'plot, in your pocket.',
   body: 'Everything you love about Plot: discover, track, curate and share. Be the first to know when the app launches.',
@@ -127,7 +111,6 @@ export const APP = {
 
 // Replaces "Built by a solo developer" and its Ko-fi button.
 export const INDIE = {
-  eyebrow: 'Behind the scenes',
   headline: 'Made by an independent developer, not a studio or streaming platform.',
   body: 'Plot answers to the people who use it, not advertisers or investors. Premium keeps it that way.',
   pills: ['No ads', 'Independent', 'Free plan, forever'],
