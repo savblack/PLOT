@@ -17,6 +17,6 @@ Evidence: /tmp/plot-no-eyebrows-home.png and /tmp/plot-no-eyebrows-pricing.png. 
 Approvals: source change requested by Savannah. Merge and production publishing still need approval. No live data touched.
 
 Next: review PR; after approval remove this handoff before merge, then merge and verify production.
-Latest pushed commit: pending checkpoint push; read branch HEAD for exact commit after push.
+Latest pushed code checkpoint: 36f1d91. Later handoff-only commits do not change the tested website source.
 
 Environment: PLOT-main is a source snapshot without .git. Used real repository /Users/savannah/Developer/PLOT to create isolated sibling worktree. Global pnpm is 11; use /tmp/plot-pnpm10-bin/pnpm or pinned /Users/savannah/.cache/node/corepack/v1/pnpm/10.6.3/bin/pnpm.cjs. No dependency files changed.
