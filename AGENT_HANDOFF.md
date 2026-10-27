@@ -1,32 +1,33 @@
-The signup PR still needs fixes before it can safely ship. Two review findings are open: captcha retry state and failed magic-link account creation. Savannah asked Codex to review and finish the existing PRs. No merge or production change has been performed.
+Signup recovery fixes are pushed and verified. Captcha retries now recover, late tokens are preserved, and failed magic-link delivery cleans up only newly created accounts. Savannah approved database verification and publication of the mobile follow-up, which is now issue #1437. Do not merge yet: the full database restore tests and Staging policy/device checks remain unfinished.
 
-Status: active
+Status: paused
 Owner: Codex
-Updated: 2026-10-27 Australia/Sydney
+Updated: 2026-10-27T00:48:33.929162+00:00
+Goal: Finish existing signup/auth/feedback PR #1435.
+PR: https://github.com/savblack/PLOT/pull/1435
 Branch: cursor/signup-auth-feedback-fixes-cfdc
 Worktree: /Users/savannah/Developer/PLOT-worktrees/2026-10-27-signup-review
-Git common directory recovered from GitHub: /private/tmp/plot-pr-recovery.git
-Latest pushed commit: 704a6e586ce4264ce41fa6037d62b241e2cc7013
-PR: https://github.com/savblack/PLOT/pull/1435
+Main checkout: /Users/savannah/Developer/PLOT
+Git common directory: /Users/savannah/Developer/PLOT/.git
+Latest pushed code and CI-tested commit: 589fa3d0209d2e826d5341cdaff74102ccec8938
 
-Verified: GitHub account savblack. Existing Cursor cloud task is completed. No original local worktrees are available at Developer, Sites/Cursor, or .cursor/worktrees/PLOT in this session. The supplied PLOT-main folder is a source archive without .git, dependencies, or .env. Recovered the actual existing PR branch in a sibling worktree. CircleCI is green on the original head; two Bugbot review threads remain unresolved.
+Completed:
+- Restored the existing remote branch; original Cursor cloud task had completed and no original local worktree or lock was available.
+- Reproduced the native captcha retry failure and four magic-link failure cases before fixing them. Five captcha regressions and six new server cases pass afterward.
+- Preserved late tokens on web/mobile, restored reset before a fresh widget execution, and left the challenge running between waits within one submit.
+- Extracted server magic-link delivery for testing. GoTrue verification_type=signup identifies implicitly created accounts; failed delivery or follow-up generation removes only that owned account. Existing accounts are retained.
+- Moved pure auth decisions and file-signing logic into packages/core with existing web re-export paths.
+- pnpm run check passed, 0 lint errors and 175 existing warnings. Unit suites passed 542 web, 1202 core, 14 scripts. Mobile typecheck passed. edge:check passed 39 functions, 121 shared tests and edge lint. Static migration, copy, and core import guards passed.
+- Eight Chromium auth/widget smoke tests passed. A computer-use check of the real web component using mocked Cloudflare behavior showed a fresh retry receiving a token. No real captcha was solved and no real account or email operation ran.
+- GitHub and CircleCI confirm successful CI on the code commit above. Both original Bugbot findings are resolved/outdated; no open review thread was present on recheck.
+- Published https://github.com/savblack/PLOT/issues/1437 after Savannah's explicit approval, using gh because the connector returned 403.
+- Installed PostgreSQL 17. Attempted approved db:migration-test and db:drift; both stopped before connecting because no production DB password/connection string or main .env is available. No restore occurred.
+- Existing Supabase CLI login verified PLOT Production and PLOT Staging project identities. Read-only production queries found 174 migration rows and the Brevo backfill version; both Brevo function bodies match PR #1431 and ACLs grant only postgres/service_role. No secret values or user rows were queried. Later Keychain access timed out, so additional schema checks stopped.
 
-Next: reproduce both failures, fix shared captcha lifecycle and magic-link failure handling, run unit suites, check, mobile typecheck, edge:check, and record real runtime-test limitations. Required database checks need credentials and local Postgres; no credentials are present in the source archive.
+Exact next action:
+Restore the author's existing database connection configuration through its normal secure login/storage flow, without asking for a secret in chat or resetting a database password. Run pnpm run db:migration-test and pnpm run db:drift on this branch. Verify the feedback owner-read policy in a rollback-only Staging test, including another user's denial. Finish real Staging email and iOS runtime checks, and retain the saved Kaia review gate. Mobile fallback parity is tracked in #1437 and is not implemented by this PR. Remove AGENT_HANDOFF.md in the last commit before merge.
 
-Review queue: #1434 premium copy/telemetry; #1433 guide warning plus stale documentation; #1431 production Brevo migration backfill; #1428 App Store version; dependency PRs #1413 and #1430. Existing iOS smoke task from Grok mentions smoke-aes-gcm-170960 and smoke-old-4d62a07c3, preserve both if recovered. Do not delete simulator data or change SMTP credentials.
+Approvals:
+Savannah explicitly approved database verification, including production-data read/local restore, and publishing the mobile follow-up on 2026-10-27. No merge, production write, credential reset, payment, or deployment is authorized. Earlier automatic review rejections were followed by that approval; the remaining blocker is missing secure database configuration, not missing approval.
 
-Approvals: finish branch work and push checkpoints authorized. Merges, production changes, public posts, and sending still need Savannah approval. Grok UI shows a submitted answer to merge #1431/#1433/#1434 and wait for Kaia on #1435, but no merge action has been taken here. Recheck that approval against current heads before any merge.
-
-Progress: Reproduced native retry failure, 1 failing / 1 passing before fix; reproduced implicit-account mail failures, 4 failing / 2 passing. Fixed all three widget wrappers to reset on a new execution request while the form still leaves the challenge alone between waits. Web and mobile preserve late tokens. Extracted deliverMagicLink to a testable server helper and use GoTrue verification_type=signup to identify implicit new accounts for failed-mail cleanup. Existing accounts are never deleted by this helper. All 5 captcha regression tests and 6 magic-link tests pass. Evidence is local in .artifacts/signup-review/. No live account was created, emailed, or deleted.
-
-Full check/unit/mobile/edge suites are running. Installation used corepack pnpm 10.6.3; bundled pnpm 11 failed against the unchanged lockfile. For all later commands prepend PATH=/private/tmp/plot-tools:/Users/savannah/.local/bin:$PATH so nested pnpm calls stay pinned.
-
-Shared-core review complete: authBypass.js and authCallbackReport.js now live in packages/core, with web re-export shims. Their tests moved to core; file-signing logic is shared in packages/core/feedbackAttachments.js. Final checks after that move pass: 542 web tests, 1202 core tests, 14 script tests, pnpm run check with 0 errors and 175 pre-existing warnings, mobile typecheck, 8 Chromium auth/widget smoke checks. Earlier edge:check passed 39 functions, 121 shared server tests and edge lint. The real web widget was also clicked through the local mocked fixture via computer use: first submit waited, second submit returned retry-token. No real Cloudflare challenge was solved. Video recording was unavailable because ffmpeg/ffprobe were missing.
-
-BLOCKERS: automatic approval review rejected db:migration-test and db:drift because they may restore/read production data locally without Savannah's specific approval. Do not retry indirectly. No PostgreSQL 17 or .env is available here either. PR #1431 needs db:migration-test, db:function-diff, and db:drift; #1435 needs db:migration-test and db:drift, plus a Staging ownership-policy check. No database check has been claimed as passed.
-
-Mobile fallback parity is still missing, as the original PR acknowledged. Tried to file the required GitHub parity issue; automatic approval review rejected it as a public post requiring Savannah approval. It was NOT created. Keep this follow-up here and in the PR description until issue approval is resolved.
-
-Connected Notion account is Savannah's work account rather than the Plot accounts listed in AGENTS.md. Stopped without reading or changing task pages. Handoffs remain in the coding branches instead.
-
-Final code validation complete. Next required action is Savannah approval for database verification and the public mobile-parity issue. Keep #1435 as draft until these gates and the Staging ownership-policy proof are complete. Also retain the original Kaia review requirement from the saved Grok record. The tests run on fake users and mocked delivery only; real Staging email delivery and an iOS device were not exercised.
+Evidence: .artifacts/signup-review/ and .artifacts/database-review/ in this worktree. Do not commit or publish token-bearing session files. Use PATH=/private/tmp/plot-tools:/Users/savannah/.local/bin:$PATH for pinned pnpm 10.6.3 and Deno. The recovered main checkout and all seven sibling worktrees now use permanent Git metadata, not /tmp.
