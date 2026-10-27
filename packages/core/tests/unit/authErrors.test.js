@@ -21,6 +21,14 @@ test('authErrorReason recognises each known Supabase message, as a substring mat
   assert.equal(authErrorReason('too many requests, slow down'), 'rate_limited');
 });
 
+test('authErrorReason names unconfirmed email, bad passwords, and captcha failures', () => {
+  assert.equal(authErrorReason('Email not confirmed'), 'email_not_confirmed');
+  assert.equal(authErrorReason('email not confirmed'), 'email_not_confirmed');
+  assert.equal(authErrorReason('Invalid login credentials'), 'invalid_credentials');
+  assert.equal(authErrorReason('captcha verification process failed'), 'captcha_failed');
+  assert.equal(authErrorReason('Captcha token is missing'), 'captcha_failed');
+});
+
 test('authErrorReason falls back to unknown for an unrecognised message', () => {
   assert.equal(authErrorReason('something unexpected happened'), 'unknown');
 });

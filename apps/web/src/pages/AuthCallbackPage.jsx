@@ -10,6 +10,13 @@ import { AUTH_CALLBACK_PAGE } from '../copy/authCallbackPage.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
 import { takeReturnPath } from '../utils/authReturn.js';
 import { authCallbackRoute, readOnboardingUntilDecided } from '@plot/core/onboardingGate.js';
+import {
+  clearPendingBypassSignup,
+  pendingBypassMatches,
+  planAuthCallbackReport,
+  rememberSignupTracked,
+  signupAlreadyTracked,
+} from '../utils/authCallbackReport.js';
 
 // Report a sign-in that died here. Unlike reportAuth this fires even with no
 // method marker: an expired confirmation link opened in a fresh tab has none, and
@@ -51,18 +58,46 @@ function consumeAuthMethod() {
   } catch { return null; }
 }
 
-// Report a social / magic-link auth exactly once. Email+password already fires
-// its event at form submit, so we only report when AuthPage stashed a method
-// marker before redirecting (OAuth / magic link). New-vs-returning is inferred
-// from how recently the account was created.
-function reportAuth(session, method) {
+function callbackStorage() {
+  return {
+    get: (key) => {
+      try { return localStorage.getItem(key); }
+      catch { return null; }
+    },
+    set: (key, value) => {
+      try { localStorage.setItem(key, value); }
+      catch { /* private mode */ }
+    },
+    remove: (key) => {
+      try { localStorage.removeItem(key); }
+      catch { /* private mode */ }
+    },
+  };
+}
+
+// Report the auth that just finished. OAuth and magic link still stash a
+// method in sessionStorage. Bypass confirmation links also carry
+// ?from=signup&via=bypass, which survives a different tab and a slow inbox.
+// user_signed_up is recorded once per user in this browser.
+function reportAuth(session, method, search) {
   const user = session?.user;
-  if (!method || !user) return;
+  const storage = callbackStorage();
+  const plan = planAuthCallbackReport({
+    user,
+    sessionMethod: method,
+    search,
+    pendingBypass: pendingBypassMatches(user?.email, storage),
+    alreadyTracked: signupAlreadyTracked(user?.id, storage),
+  });
+  if (!plan.identify || !user?.id) return;
   identifyUser(user.id);
-  const createdMs = user.created_at ? Date.parse(user.created_at) : 0;
-  const isNew = createdMs > 0 && (Date.now() - createdMs) < 60_000;
-  if (isNew) markSignupReferralPending(user.email);
-  track(isNew ? EVENTS.USER_SIGNED_UP : EVENTS.USER_LOGGED_IN, { method });
+  if (plan.rememberSignup) {
+    rememberSignupTracked(user.id, storage);
+    clearPendingBypassSignup(storage);
+  }
+  if (plan.markReferral) markSignupReferralPending(user.email);
+  if (plan.event === 'user_signed_up') track(EVENTS.USER_SIGNED_UP, plan.props);
+  else if (plan.event === 'user_logged_in') track(EVENTS.USER_LOGGED_IN, plan.props);
 }
 
 export default function AuthCallbackPage() {
@@ -85,6 +120,7 @@ export default function AuthCallbackPage() {
       // marker is single-use, and clearAuthParamsFromUrl strips the credential
       // out of the URL further down.
       const method = consumeAuthMethod();
+      const search = window.location.search;
       const credential = credentialKind(window.location.search, window.location.hash);
       try {
         // Read straight from window.location — resolveAuthCallback needs the hash
@@ -99,7 +135,7 @@ export default function AuthCallbackPage() {
         // in the URL and in browser history.
         clearAuthParamsFromUrl();
         if (err) { reportAuthFailure(err, method, credential); setError(err); return; }
-        reportAuth(session, method);
+        reportAuth(session, method, search);
         // resolveAuthCallback guarantees a confirmed session before returning a
         // path, so we never land the user in the app logged-out.
         let dest = path || '/onboarding';

@@ -25,7 +25,7 @@ import {
   AVATAR_MAX_MB, validateAvatarFile, isDuplicateUsernameError,
 } from '@plot/core/profileFields.js';
 import { fetchUserDataExport, downloadDataExport, downloadCsvExport } from '../utils/exportData.js';
-import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
+import { buildFeedbackAttachmentPath, feedbackAttachmentSignedUrl } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
 import { setUserTimezone } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -954,8 +954,12 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
       }
 
       attachmentPaths.push(path);
-      const { data } = supabase.storage.from('feedback-attachments').getPublicUrl(path);
-      attachmentUrls.push(data.publicUrl);
+      // Private bucket: getPublicUrl 403s. A signed URL is what Notion and
+      // the feedback row can open. If the browser cannot mint one, store the
+      // storage path. notify-feedback signs the archived copy with the
+      // service role, and that path is still something it can parse.
+      const signed = await feedbackAttachmentSignedUrl(supabase.storage, path);
+      attachmentUrls.push(signed.url || path);
     }
 
     const { error } = await supabase.from('feedback').insert({

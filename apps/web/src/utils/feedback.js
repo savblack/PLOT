@@ -12,6 +12,8 @@ export function anonymizedFeedbackReporter({ userId, userEmail } = {}) {
   return userId || userEmail ? 'Signed-in Plot user' : 'Anonymous visitor';
 }
 
+export { FEEDBACK_ATTACHMENT_URL_TTL_SECONDS, feedbackAttachmentSignedUrl } from '@plot/core/feedbackAttachments.js';
+
 export function buildFeedbackAttachmentPath(fileName, id = crypto.randomUUID()) {
   const ext = typeof fileName === 'string' && fileName.includes('.')
     ? `.${fileName.split('.').pop().toLowerCase()}`
