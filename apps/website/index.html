@@ -242,14 +242,6 @@
       flex-direction: column;
       align-items: flex-start;
     }
-    .hero-eyebrow {
-      color: var(--fill);
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-bottom: 1.25rem;
-    }
     .hero-headline {
       font-size: 4.75rem;
       line-height: 0.93;
@@ -800,7 +792,6 @@
          ticker is dropped on phones. */
       #hero { padding: 80px 1.5rem 2rem; gap: 0.5rem; }
       .hero-copy { align-items: stretch; text-align: left; }
-      .hero-eyebrow { font-size: 0.75rem; margin-bottom: 0.9rem; }
       .hero-headline { font-size: 2.75rem; margin-bottom: 0.9rem; }
       .hero-sub { font-size: 1rem; margin-bottom: 1.25rem; }
       .hero-cta { justify-content: center; }
@@ -863,15 +854,6 @@
     .hx-copy { grid-area: copy; max-width: 520px; }
     .hx-visual { grid-area: visual; display: flex; justify-content: center; align-items: center; }
     .hx-actions { grid-area: actions; display: flex; align-items: center; gap: 1.4rem; }
-    .hx-eyebrow {
-      display: block;
-      margin-bottom: 1rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
     .hx-headline {
       margin: 0 0 1.1rem;
       font-family: var(--display);
@@ -1008,7 +990,6 @@
     /* Plot mobile: coming soon, with the app's home screen in a phone. Same
        cream as the sections around it. */
     .app-kicker { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
-    .app-kicker .hx-eyebrow { margin-bottom: 0; }
     .app-soon-pill { padding: 4px 10px; border-radius: var(--r-pill); background: var(--sage); color: var(--text); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; }
     #app .woc-sub-wrap { align-items: flex-start; }
     /* iPhone PNG mockup wrapper
@@ -1190,7 +1171,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div id="opening">
   <section id="hero">
     <div class="hero-copy">
-      <span class="hero-eyebrow">Your movie and TV tracker</span>
       <h1 class="hero-headline">Always know what to watch.</h1>
       <p class="hero-sub">All the movies and shows you’ve seen, saved and are counting down to. Finally in one place. That’s Plot.</p>
       <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large hero-cta" data-cta="hero">Start tracking</a>
@@ -1277,7 +1257,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="drops" class="hx hx--flip" aria-labelledby="dropsHeadline">
     <div class="hx-inner">
       <div class="hx-copy reveal">
-        <span class="hx-eyebrow">Never miss a drop</span>
         <h2 class="hx-headline" id="dropsHeadline">Every release date, in your calendar.</h2>
         <p class="hx-body">Save what you’re waiting for and Plot tells you when it’s out, in theaters or streaming.</p>
       </div>
@@ -1302,7 +1281,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="import" class="hx" aria-labelledby="importHeadline">
     <div class="hx-inner">
       <div class="hx-copy reveal">
-        <span class="hx-eyebrow">Switching is easy</span>
         <h2 class="hx-headline" id="importHeadline">Bring your whole history with you.</h2>
         <p class="hx-body">Coming from Letterboxd, Trakt, TV Time or IMDb? Import your ratings, reviews, watchlist and watch history. It’s free on every plan.</p>
       </div>
@@ -1339,7 +1317,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="lists" class="hx hx--flip" aria-labelledby="listsHeadline">
     <div class="hx-inner">
       <div class="hx-copy reveal">
-        <span class="hx-eyebrow">Lists</span>
         <h2 class="hx-headline" id="listsHeadline">Lists only you could make.</h2>
         <p class="hx-body">By decade, director, mood or the person you watch with. Share them, or keep them just for you.</p>
       </div>
@@ -1364,7 +1341,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="premium" class="hx" aria-labelledby="premiumHeadline">
     <div class="pm reveal">
       <div class="pm-head">
-        <div><span class="hx-eyebrow">Plot Premium</span><h2 class="hx-headline" id="premiumHeadline">Less deciding.<br>More watching.</h2></div>
+        <div><h2 class="hx-headline" id="premiumHeadline">Less deciding.<br>More watching.</h2></div>
         <div class="pm-cta"><a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-primary btn-large" data-premium="cta" data-cta="premium-home">Start 7-day free trial</a><p class="pm-price"><strong>$2/mo</strong> billed yearly, 4 months free.</p></div>
       </div>
       <div class="pm-grid">
@@ -1385,7 +1362,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="app" class="hx" aria-labelledby="appHeadline">
     <div class="hx-inner">
       <div class="hx-copy reveal">
-        <div class="app-kicker"><span class="hx-eyebrow">Plot mobile</span><span class="app-soon-pill">Coming soon</span></div>
+        <div class="app-kicker"><span class="app-soon-pill">Coming soon</span></div>
         <h2 class="hx-headline" id="appHeadline">plot, in your pocket.</h2>
         <p class="hx-body">Everything you love about Plot: discover, track, curate and share. Be the first to know when the app launches.</p>
       </div>
@@ -1452,7 +1429,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="indie" class="hx" aria-labelledby="indieHeadline">
     <div class="hx-inner reveal">
       <div class="hx-copy">
-        <span class="hx-eyebrow">Behind the scenes</span>
         <h2 class="hx-headline" id="indieHeadline">Made by an independent developer, not a studio or streaming platform.</h2>
         <p class="hx-body">Plot answers to the people who use it, not advertisers or investors. Premium keeps it that way.</p>
       </div>

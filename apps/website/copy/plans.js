@@ -67,7 +67,6 @@ export const PLANS_PAGE = {
   // in pills beneath. The Taste match heading carries an <s> strike-through
   // ("science" struck, "cinema" stays); the HTML gives it an aria-label.
   premiumStories: {
-    eyebrow: 'Plot Premium',
     h2: 'Less deciding. More watching.',
     steps: [
       { label: 'Just Decide', h3: 'Something to watch, in under a minute.', body: 'How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.' },

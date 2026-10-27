@@ -102,15 +102,6 @@
     /* Buttons live in /ui.css (shared with every page). */
 
     /* ── Type shared by the sections (matches the home page's .hx-*) ── */
-    .eyebrow {
-      display: block;
-      margin-bottom: 1rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
     h1, h2 {
       font-family: var(--display);
       font-weight: 700;
@@ -140,7 +131,6 @@
       align-items: center;
       padding-top: 4rem;
     }
-    .hero .eyebrow { color: var(--fill); }
     .hero h1 {
       font-size: clamp(2.6rem, 5vw, 4.25rem);
       color: var(--bg);
@@ -343,7 +333,6 @@
 
     /* ── FAQ ────────────────────────────────────────────────── */
     .faq-groups { display: flex; flex-direction: column; gap: 3rem; }
-    .faq-group .eyebrow { margin-bottom: 0.6rem; }
     .faq-list { border-top: 1px solid var(--rule); }
     .faq-item { border-bottom: 1px solid var(--rule); }
     .faq-item summary {
@@ -421,7 +410,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <main>
     <section class="hero">
       <div class="hero-inner">
-        <p class="eyebrow">Plans</p>
         <h1>Free forever. Premium when you want more.</h1>
         <p class="hero-lede">Free keeps track. Premium helps you decide what to watch next. Skip the endless scroll, the first week is on us.</p>
 
@@ -476,7 +464,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <section class="section stories" aria-labelledby="storiesHeadline">
       <div class="inner stories-inner">
         <div class="stories-copy">
-          <span class="eyebrow">Plot Premium</span>
           <h2 id="storiesHeadline">Less deciding.<br>More watching.</h2>
           <div class="stories-stage" id="storiesStage" aria-live="polite">
             <div class="stories-slide is-active"><h3>Something to watch, in under a minute.</h3><p>How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.</p></div>
@@ -503,7 +490,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
           <!-- 1 · Just Decide. Example verified on the old homepage: 120 min, Disney+, Comedy → The Grand Budapest Hotel. -->
           <div class="vis vis--pick" role="img" aria-label="Just Decide: choose 120 minutes, Disney+ and Comedy. Tonight’s pick is The Grand Budapest Hotel, 100 minutes on Disney+.">
-            <span class="vis-kicker">Just Decide</span>
             <div class="pf-q"><span class="pf-label">How much time?</span><div class="pf-seg"><span>30 min</span><span>60 min</span><span>90 min</span><span class="on" style="--d:0.3s">120 min</span></div></div>
             <div class="pf-q"><span class="pf-label">Where do you watch?</span><div class="pf-seg"><span>Netflix</span><span class="on" style="--d:0.9s">Disney+</span><span>Prime Video</span><span>Apple TV+</span></div></div>
             <div class="pf-q"><span class="pf-label">In the mood for?</span><div class="pf-seg"><span>Drama</span><span class="on" style="--d:1.5s">Comedy</span><span>Thriller</span><span>Romance</span></div></div>
@@ -520,7 +506,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
           <!-- 2 · Watch together. Widow's Bay is in both watchlists. -->
           <div class="vis vis--together" aria-hidden="true" role="img" aria-label="Watch together: two watchlists share one title, Widow’s Bay. You both want to watch this.">
-            <span class="vis-kicker">Watch together</span>
             <div class="wt-board">
             <div class="wt-list"><div class="wt-label"><span class="av av-you">Y</span>Your watchlist</div><div class="wt-row"><img class="poster is-match" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
             <div class="wt-list"><div class="wt-label"><span class="av av-them">P</span>Priya’s watchlist</div><div class="wt-row"><img class="poster" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/s8Sr5BRjEzOnD6sxBvxUI4qrkrs.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster is-match" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
@@ -532,7 +517,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
           <!-- 3 · Your watch profile. Illustrative numbers; they count up. -->
           <div class="vis vis--profile" aria-hidden="true" role="img" aria-label="Your watch profile for 2026: five titles you rated five stars, 84 films, 31 shows, 212 hours. Thriller 38%, Comedy 22%, Drama 17%. Most rewatched: The Grand Budapest Hotel, 3 times.">
-            <span class="vis-kicker">Your watch profile · 2026</span>
             <div class="wp-top">
               <div class="wp-posters" aria-hidden="true"><img class="poster" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:0"><img class="poster" src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:1"><img class="poster" src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:2"><img class="poster" src="https://image.tmdb.org/t/p/w185/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:3"><img class="poster" src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i:4"></div>
               <span class="wp-top-label">Your five stars this year</span>
@@ -544,7 +528,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
           <!-- 4 · Taste match. Example numbers from /taste-match; the score counts up. -->
           <div class="vis vis--taste" aria-hidden="true" role="img" aria-label="Taste match with Priya: 74%, based on 38 titles you’ve both rated. Three titles you both loved, four genres side by side, and the title you disagree on most: Dune: Part Two, two stars from you and five from Priya.">
-            <span class="vis-kicker">Taste match</span>
             <div class="tm-top"><div class="tm-pair"><span class="av av-you">Y</span><span class="av av-them">P</span></div><div><b class="tm-num" data-count="74" data-delay="700" data-duration="1100" data-suffix="%">74%</b><span class="tm-cap">Based on 38 titles you’ve both rated</span></div></div>
             <div class="tm-row"><span class="tm-label">You both loved</span><div class="tm-posters"><img class="poster" style="--d:1.4s" src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" style="--d:1.55s" src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"><img class="poster" style="--d:1.7s" src="https://image.tmdb.org/t/p/w185/bOVr292mwn3jxr1e0NmUPM1rcjo.jpg" alt="" loading="lazy" decoding="async" width="185" height="278"></div></div>
             <div class="tm-genres">
@@ -565,7 +548,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                families (packages/core/tokens.js themeFamilies, light mode): Cream (the
                default), Sage, Mist, Blush, Plum. -->
           <div class="vis vis--yours" aria-hidden="true" role="img" aria-label="Make it yours: the card switches between the Cream, Sage, Mist, Blush and Plum themes, with five matching app icons and two home-screen widgets, Up next and Watching.">
-            <span class="vis-kicker">Make it yours</span>
             <div class="my-themes">
               <div class="my-theme" style="--i:0;--t-bg:#F8F2EA;--t-fill:#FF88C8;--t-ink:#292924"><i></i><i></i><small>Cream</small></div>
               <div class="my-theme" style="--i:1;--t-bg:#E3EACA;--t-fill:#BFDA5E;--t-ink:#20261A"><i></i><i></i><small>Sage</small></div>
@@ -659,7 +641,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="section-head"><h2 id="faqHeadline">Questions</h2><p>Short answers. Anything else, email us.</p></div>
         <div class="faq-groups">
         <div class="faq-group">
-          <span class="eyebrow">Plans</span>
           <div class="faq-list">
             <details class="faq-item" open><summary>Is Free really free?</summary><p>Yes. No card, no trial clock, no limit on what you track. Free keeps your watchlist, history, release calendar and up to five lists for as long as you like.</p></details>
             <details class="faq-item"><summary>What do I get with Premium?</summary><p>Everything in Free, plus Just Decide, Watch together, your watch profile, Taste match, custom themes, widgets and app icons, unlimited and smart lists, release dates in your calendar app, and actor and director alerts. The table above has the full list.</p></details>
@@ -668,7 +649,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
         </div>
         <div class="faq-group">
-          <span class="eyebrow">Billing</span>
           <div class="faq-list">
             <details class="faq-item"><summary>How does the free trial work?</summary><p>Start Premium and the first 7 days are free. You won’t be charged until the trial ends, and if you cancel during the trial you pay $0. The trial is for new subscribers.</p></details>
             <details class="faq-item"><summary>Can I switch between monthly and annual?</summary><p>Yes, any time, from Manage subscription in Settings.</p></details>

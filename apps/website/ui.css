@@ -313,8 +313,6 @@
 .chip-sage { background: var(--sage); }
 .chip-plain { text-transform: none; letter-spacing: 0.02em; font-weight: 500; font-size: 0.66rem; }
 
-/* Section eyebrow — a chip that sits above a headline */
-.section-eyebrow { display: inline-flex; margin-bottom: 1.4rem; }
 
 /* Cards and panels — the deeper cream, 20px radius, no border, no shadow */
 .card {
