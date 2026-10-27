@@ -27,4 +27,6 @@ BLOCKERS: automatic approval review rejected db:migration-test and db:drift beca
 
 Mobile fallback parity is still missing, as the original PR acknowledged. Tried to file the required GitHub parity issue; automatic approval review rejected it as a public post requiring Savannah approval. It was NOT created. Keep this follow-up here and in the PR description until issue approval is resolved.
 
-Connected Notion account is Savannah's work address, savannah@cryptotaxcalculator.io, rather than the Plot accounts listed in AGENTS.md. Stopped without reading or changing task pages. Handoffs remain in the coding branches instead.
+Connected Notion account is Savannah's work account rather than the Plot accounts listed in AGENTS.md. Stopped without reading or changing task pages. Handoffs remain in the coding branches instead.
+
+Final code validation complete. Next required action is Savannah approval for database verification and the public mobile-parity issue. Keep #1435 as draft until these gates and the Staging ownership-policy proof are complete. Also retain the original Kaia review requirement from the saved Grok record. The tests run on fake users and mocked delivery only; real Staging email delivery and an iOS device were not exercised.
