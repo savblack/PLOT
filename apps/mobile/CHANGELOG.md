@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/savblack/PLOT/compare/mobile-v1.1.0...mobile-v1.1.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* **premium:** clarify source disconnect copy and complete gate telemetry ([#1434](https://github.com/savblack/PLOT/issues/1434)) ([136da69](https://github.com/savblack/PLOT/commit/136da69722c68146a619e005171ede866f357113))
+
 ## [1.1.0](https://github.com/savblack/PLOT/compare/mobile-v1.0.0...mobile-v1.1.0) (2026-10-22)
 
 
