@@ -20,6 +20,17 @@ export function bypassAction(value: unknown): BypassAction {
   return 'signup';
 }
 
+// Signup, resend, and magic link used to share one 3/hour IP bucket. A person
+// who created an account, resent the email, then asked for a magic link was
+// rejected on the next try. Each action keeps its own 3/hour bucket. Signup
+// stays at 3 because that call creates an account. The global bucket is still
+// one counter for every action.
+export function rateScopeFor(action: BypassAction): string {
+  return `signup-bypass:${action}`;
+}
+
+export const SIGNUP_BYPASS_GLOBAL_SCOPE = 'signup-bypass-all';
+
 export function isExistingAccountError(message: string | null | undefined): boolean {
   return /already|exists|registered/i.test(message || '');
 }

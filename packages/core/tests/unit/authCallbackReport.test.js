@@ -25,7 +25,7 @@ const NOW = Date.parse('2026-10-25T18:00:00Z');
 function user(overrides = {}) {
   return {
     id: 'user-1',
-    email: 'allanto1@gmail.com',
+    email: 'user@example.com',
     created_at: new Date(NOW - 2 * 60 * 60 * 1000).toISOString(),
     email_confirmed_at: new Date(NOW - 5_000).toISOString(),
     ...overrides,
@@ -61,8 +61,8 @@ test('the same user does not fire user_signed_up a second time', () => {
 
 test('a bypass link opened in the same browser still counts when the query string was stripped', () => {
   const store = memoryStore();
-  rememberPendingBypassSignup('Allanto1@gmail.com', store, NOW - 60_000);
-  assert.equal(pendingBypassMatches('allanto1@gmail.com', store, NOW), true);
+  rememberPendingBypassSignup('User@example.com', store, NOW - 60_000);
+  assert.equal(pendingBypassMatches('user@example.com', store, NOW), true);
   const plan = planAuthCallbackReport({
     user: user(),
     sessionMethod: null,

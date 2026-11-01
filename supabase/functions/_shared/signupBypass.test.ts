@@ -5,6 +5,8 @@ import {
   bypassAction,
   isExistingAccountError,
   isMissingUserError,
+  rateScopeFor,
+  SIGNUP_BYPASS_GLOBAL_SCOPE,
 } from './signupBypass.ts';
 
 Deno.test('signup and resend links tell the callback this is a bypass signup', () => {
@@ -49,6 +51,14 @@ Deno.test('unknown actions stay on the signup path', () => {
   assertEquals(bypassAction('magiclink'), 'magiclink');
   assertEquals(bypassAction('drop-table'), 'signup');
   assertEquals(bypassAction(undefined), 'signup');
+});
+
+Deno.test('signup, resend, and magic link do not share one IP rate bucket', () => {
+  assertEquals(rateScopeFor('signup'), 'signup-bypass:signup');
+  assertEquals(rateScopeFor('resend'), 'signup-bypass:resend');
+  assertEquals(rateScopeFor('magiclink'), 'signup-bypass:magiclink');
+  assertEquals(new Set([rateScopeFor('signup'), rateScopeFor('resend'), rateScopeFor('magiclink')]).size, 3);
+  assertEquals(SIGNUP_BYPASS_GLOBAL_SCOPE, 'signup-bypass-all');
 });
 
 Deno.test('signup mail confirms the account and a magic link signs in', () => {

@@ -41,13 +41,15 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { usableRateCount } from '../_shared/securityGuards.js';
 import { deliverSignupLink } from '../_shared/signupMailer.ts';
-import { deliverMagicLink, type LinkResult } from '../_shared/signupMagicLink.ts';
+import { deliverMagicLink, findAuthUserByEmail, type LinkResult, type SignupLinkAdmin } from '../_shared/signupMagicLink.ts';
 import {
   allowedOrigin,
   authCallbackRedirect,
   authLinkMail,
   bypassAction,
   isExistingAccountError,
+  rateScopeFor,
+  SIGNUP_BYPASS_GLOBAL_SCOPE,
   type BypassAction,
 } from '../_shared/signupBypass.ts';
 
@@ -130,13 +132,14 @@ const MAX_TOKEN_AGE_MS = 15 * 60 * 1000;
 
 // Deliberately low — this is an exceptional path (Turnstile already failed
 // for this browser), not the general signup rate.
-const RATE_SCOPE = 'signup-bypass';
+// Per IP, each action has its own 3/hour bucket (see rateScopeFor). Sharing
+// one bucket made signup + resend + magic link + one more retry a 429 for a
+// real person. Signup stays at 3/hour because it creates an account.
 const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const RATE_MAX_ATTEMPTS = 3;
-// Across all callers. The per-IP limit is cheap to sidestep from a pool of
-// addresses; this bounds what the whole pool can do in an hour (each attempt
-// here creates an unconfirmed account and sends an email). A real hour of
-// bypass signups is in the single digits.
+// Across all callers and actions. The per-IP limit is cheap to sidestep from
+// a pool of addresses; this bounds what the whole pool can do in an hour.
+// A real hour of bypass signups is in the single digits.
 const RATE_MAX_GLOBAL = 60;
 
 // Only accept a platform-provided connection header — X-Forwarded-For is
@@ -151,7 +154,18 @@ const clientIp = (req: Request): string | null => req.headers.get('cf-connecting
 // that split anon (user-context) vs service-role (admin) clients, there is
 // no anon/user-context case here at all.
 const SERVICE_ROLE_KEY = serviceKey();
-const supabaseAdmin = createClient<Database>(Deno.env.get('SUPABASE_URL')!, SERVICE_ROLE_KEY);
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const supabaseAdmin = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+function magicLinkAdmin(): SignupLinkAdmin {
+  const admin = supabaseAdmin.auth.admin;
+  return {
+    generateLink: (args) => admin.generateLink(args),
+    deleteUser: (id) => admin.deleteUser(id),
+    updateUserById: (id, attrs) => admin.updateUserById(id, attrs),
+    findUserByEmail: (email) => findAuthUserByEmail(SUPABASE_URL, SERVICE_ROLE_KEY, email),
+  };
+}
 
 // --- Signed form-timing token ------------------------------------------
 // HMAC-SHA256 over a base64url-encoded {iat} payload. The key is
@@ -281,8 +295,8 @@ Deno.serve(async (req) => {
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 503);
   }
   const [perIp, global] = await Promise.all([
-    supabaseAdmin.rpc('auth_note_fail', { p_scope: RATE_SCOPE, p_ip: ip, p_window_ms: RATE_WINDOW_MS }),
-    supabaseAdmin.rpc('auth_note_fail', { p_scope: `${RATE_SCOPE}-all`, p_ip: 'global', p_window_ms: RATE_WINDOW_MS }),
+    supabaseAdmin.rpc('auth_note_fail', { p_scope: rateScopeFor(action), p_ip: ip, p_window_ms: RATE_WINDOW_MS }),
+    supabaseAdmin.rpc('auth_note_fail', { p_scope: SIGNUP_BYPASS_GLOBAL_SCOPE, p_ip: 'global', p_window_ms: RATE_WINDOW_MS }),
   ]);
   const attempts = usableRateCount(perIp);
   const globalAttempts = usableRateCount(global);
@@ -303,7 +317,7 @@ Deno.serve(async (req) => {
   // send a magic link through Resend, inside the same rate limit. A missing
   // account gets the same success body so this route is not an address oracle.
   if (action !== 'signup') {
-    const sent = await deliverMagicLink(supabaseAdmin.auth.admin, mailLink, email, origin, action, body.confirmSignup === true);
+    const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, action, body.confirmSignup === true);
     if (sent === 'failed') {
       return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
     }
@@ -323,9 +337,11 @@ Deno.serve(async (req) => {
     // address is a Plot member. The earlier version also sent no email, so
     // an unconfirmed person sat on "check your inbox" with nothing coming.
     // A magic link confirms an unconfirmed account and signs in a confirmed
-    // one, and the response stays identical either way.
+    // one, and the response stays identical either way. deliverMagicLink
+    // replaces the password on an unconfirmed row before it sends, so a
+    // password chosen by someone else does not survive confirmation.
     if (isExistingAccountError(createError.message)) {
-      const sent = await deliverMagicLink(supabaseAdmin.auth.admin, mailLink, email, origin, 'signup', true);
+      const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, 'signup', true);
       if (sent === 'failed') {
         return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
       }
