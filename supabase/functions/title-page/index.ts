@@ -22,6 +22,7 @@ import { FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceKeyBearer } from '../_shared/serviceBearer.ts';
 import { clampDescription, fitTitle } from '../_shared/seoText.ts';
+import { scheduleTitleIndexWrite, type IndexedTitle } from '../_shared/titlePageIndex.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -178,7 +179,10 @@ async function buildTitlesSitemap(): Promise<{ xml: string; count: number }> {
   for (const it of ((snaps?.[0]?.items as unknown[] | null) || [])) add((it as any).media_type, (it as any).tmdb_id, (it as any).title);
 
   // Every title a title page has rendered or linked to, most recently seen
-  // first (see recordTitles below and migration 20261013180000).
+  // first. last_seen_at moves at most once a day unless the stored title
+  // changed (record_title_page_index). This sitemap is rebuilt once a day and
+  // is the only reader, so that granularity matches it. The 45,000 cap is
+  // still above the table, so a day of staleness does not drop a URL.
   for (let from = 0; from < INDEX_LIMIT; from += INDEX_PAGE) {
     const { data: seen, error } = await supabase
       .from('title_page_index')
@@ -264,22 +268,16 @@ async function titlesSitemap(req: Request, mode: string): Promise<Response> {
   return sitemapResponse((await storeTitlesSitemap()).xml);
 }
 
-type IndexedTitle = { media_type: 'movie' | 'tv'; tmdb_id: number; title: string };
-
 // Remember a rendered page and the related titles it links, so the sitemap
-// names the pages crawlers reach through "More like this". Only runs on a
-// cache miss (the Pages proxy keeps a page for a day), and never holds up the
-// response: a failed write just means the sitemap learns of it next time.
+// names the pages crawlers reach through "More like this". Never holds up
+// the response: the write is handed to EdgeRuntime.waitUntil, and a failed
+// write just means the sitemap learns of the title next time.
 function recordTitles(rows: IndexedTitle[]) {
-  // One upsert may not touch the same key twice, so drop repeats first.
-  const unique = [...new Map(rows.map((r) => [`${r.media_type}:${r.tmdb_id}`, r])).values()];
-  const seenAt = new Date().toISOString();
-  const write = Promise.resolve(admin()
-    .from('title_page_index')
-    .upsert(unique.map((r) => ({ ...r, last_seen_at: seenAt })), { onConflict: 'media_type,tmdb_id' })
-    .then(() => {}, () => {}));
   const runtime = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
-  if (runtime) runtime.waitUntil(write);
+  scheduleTitleIndexWrite(rows, async (unique) => {
+    const { error } = await admin().rpc('record_title_page_index', { p_rows: unique });
+    if (error) console.error('title_page_index write failed:', error.message);
+  }, runtime ? (promise) => runtime.waitUntil(promise) : undefined);
 }
 
 Deno.serve(async (req) => {

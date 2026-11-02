@@ -14,7 +14,7 @@
     "og-wordmark": "node scripts/build-og-wordmark.mjs",
     "import-engine": "node scripts/build-import-engine.mjs",
     "check": "pnpm run lint && pnpm run build",
-    "test:unit": "pnpm --filter @plot/web run test:unit && pnpm --filter @plot/core run test:unit && node --test scripts/agent/*.test.mjs",
+    "test:unit": "pnpm --filter @plot/web run test:unit && pnpm --filter @plot/core run test:unit && node --test scripts/agent/*.test.mjs scripts/tests/titlePageIndexWrite.test.mjs",
     "worktrees": "node scripts/worktrees.mjs",
     "agent-disk": "node scripts/agent-disk.mjs",
     "ci-tier": "node scripts/ci-tier.mjs",
