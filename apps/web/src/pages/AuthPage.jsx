@@ -79,6 +79,7 @@ const errorReason = authErrorReason;
 function bypassErrorMessage(reason) {
   if (reason === 'rate_limited') return AUTH_PAGE.rateLimited;
   if (reason === 'already_registered') return AUTH_PAGE.accountAlreadyExists;
+  if (reason === 'link_withdrawn') return AUTH_PAGE.linkWithdrawn;
   return COMMON.genericError;
 }
 

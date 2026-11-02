@@ -10,6 +10,8 @@ export const AUTH_PAGE = {
   weakPassword: 'Password must be at least 6 characters.',
   invalidEmail: 'Please enter a valid email address.',
   rateLimited: 'Too many attempts. Please wait a moment and try again.',
+  // Same sentence as LINK_WITHDRAWN_ERROR in supabase/functions/_shared/signupMagicLink.ts.
+  linkWithdrawn: 'We emailed a sign-in link, then had to cancel it because we could not secure the account. Please try again.',
 
   heading: {
     signup: 'Create your account',

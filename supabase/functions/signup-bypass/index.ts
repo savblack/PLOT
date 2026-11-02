@@ -41,7 +41,7 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { usableRateCount } from '../_shared/securityGuards.js';
 import { deliverSignupLink } from '../_shared/signupMailer.ts';
-import { deliverMagicLink, findAuthUserByEmail, type LinkResult, type SignupLinkAdmin } from '../_shared/signupMagicLink.ts';
+import { deliverMagicLink, findAuthUserByEmail, linkDeliveryError, type LinkResult, type SignupLinkAdmin } from '../_shared/signupMagicLink.ts';
 import {
   allowedOrigin,
   authCallbackRedirect,
@@ -318,9 +318,8 @@ Deno.serve(async (req) => {
   // account gets the same success body so this route is not an address oracle.
   if (action !== 'signup') {
     const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, action, body.confirmSignup === true);
-    if (sent === 'failed') {
-      return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
-    }
+    const failure = linkDeliveryError(sent);
+    if (failure) return json({ error: failure.error, reason: failure.reason }, origin, failure.status);
     return json({ ok: true, requires_email_confirmation: true }, origin);
   }
 
@@ -342,9 +341,8 @@ Deno.serve(async (req) => {
     // accepts the link, so a failed send leaves the owner's password alone.
     if (isExistingAccountError(createError.message)) {
       const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, 'signup', true);
-      if (sent === 'failed') {
-        return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
-      }
+      const failure = linkDeliveryError(sent);
+      if (failure) return json({ error: failure.error, reason: failure.reason }, origin, failure.status);
       return json({ ok: true, requires_email_confirmation: true }, origin);
     }
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 400);

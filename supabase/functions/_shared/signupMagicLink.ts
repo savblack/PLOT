@@ -2,7 +2,20 @@ import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from './database.types.ts';
 import { authCallbackRedirect, isMissingUserError, type BypassAction } from './signupBypass.ts';
 
-export type LinkResult = 'sent' | 'absent' | 'failed';
+export type LinkResult = 'sent' | 'absent' | 'failed' | 'withdrawn';
+
+// Shown when the mailer accepted the link and both password updates then
+// failed, so the emailed link was cancelled. Same sentence as
+// AUTH_PAGE.linkWithdrawn. This function cannot import the app catalog.
+export const LINK_WITHDRAWN_ERROR = 'We emailed a sign-in link, then had to cancel it because we could not secure the account. Please try again.';
+
+export function linkDeliveryError(result: LinkResult): { error: string; reason: string; status: number } | null {
+  if (result === 'withdrawn') return { error: LINK_WITHDRAWN_ERROR, reason: 'link_withdrawn', status: 503 };
+  if (result === 'failed') {
+    return { error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed', status: 503 };
+  }
+  return null;
+}
 export type AuthAccount = { id: string; confirmed: boolean };
 
 type GenerateLink = SupabaseClient<Database>['auth']['admin']['generateLink'];
@@ -34,12 +47,49 @@ export function exactAuthUser(users: ListedUser[], email: string): AuthAccount |
   return { id: match.id, confirmed: Boolean(match.email_confirmed_at || match.confirmed_at) };
 }
 
+const PASSWORD_UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const PASSWORD_LOWER = 'abcdefghijklmnopqrstuvwxyz';
+const PASSWORD_DIGITS = '0123456789';
+const PASSWORD_SYMBOLS = '!@#$%^&*_-+=';
+const PASSWORD_LENGTH = 32;
+
+function randomIndex(max: number): number {
+  if (max <= 1) return 0;
+  const bound = Math.floor(0x100000000 / max) * max;
+  const buf = new Uint32Array(1);
+  let value = 0;
+  do {
+    crypto.getRandomValues(buf);
+    value = buf[0];
+  } while (value >= bound);
+  return value % max;
+}
+
+function pickFrom(alphabet: string): string {
+  return alphabet[randomIndex(alphabet.length)];
+}
+
+// GoTrue rejects an admin password update that misses a required character
+// class (checkPasswordStrength). Base64 of random bytes misses '-' and '_'
+// about a quarter of the time, so a symbol requirement failed those updates.
+// Every password includes one of each class, then the rest is shuffled in.
+// 32 characters stays under bcrypt's 72-character limit.
 export function replacementPassword(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  let bin = '';
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+  const alphabet = PASSWORD_UPPER + PASSWORD_LOWER + PASSWORD_DIGITS + PASSWORD_SYMBOLS;
+  const chars = [
+    pickFrom(PASSWORD_UPPER),
+    pickFrom(PASSWORD_LOWER),
+    pickFrom(PASSWORD_DIGITS),
+    pickFrom(PASSWORD_SYMBOLS),
+  ];
+  while (chars.length < PASSWORD_LENGTH) chars.push(pickFrom(alphabet));
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randomIndex(i + 1);
+    const swap = chars[i];
+    chars[i] = chars[j];
+    chars[j] = swap;
+  }
+  return chars.join('');
 }
 
 // Look the address up before generateLink. generateLink inserts a row when
@@ -113,10 +163,28 @@ export async function deliverMagicLink(
     // with a password they never saw. A failed send leaves the old password
     // in place. A confirmed member is never rotated.
     if (existing && !existing.confirmed) {
-      const { error } = await admin.updateUserById(existing.id, { password: replacementPassword() });
-      if (error) {
-        console.error('[signup-bypass] could not replace unconfirmed password after the link was accepted');
-        return 'failed';
+      let rotated = false;
+      for (let attempt = 0; attempt < 2 && !rotated; attempt++) {
+        const { error } = await admin.updateUserById(existing.id, { password: replacementPassword() });
+        if (!error) rotated = true;
+        else console.error('[signup-bypass] could not replace unconfirmed password after the link was accepted');
+      }
+      if (!rotated) {
+        // The emailed link is still valid until its recovery token is replaced.
+        // GoTrue's adminGenerateLink for type magiclink writes a new
+        // recovery_token and CreateOneTimeToken deletes the previous
+        // recovery_token row first (internal/api/mail.go,
+        // internal/models/one_time_token.go). Verify looks that hash up, so
+        // the link already emailed no longer matches. This call is not mailed.
+        try {
+          const withdrawn = await admin.generateLink({ type: 'magiclink', email, options: { redirectTo } });
+          if (withdrawn.error || !withdrawn.data?.properties?.action_link) {
+            console.error('[signup-bypass] could not withdraw the emailed magic link');
+          }
+        } catch {
+          console.error('[signup-bypass] could not withdraw the emailed magic link');
+        }
+        return 'withdrawn';
       }
     }
     return 'sent';

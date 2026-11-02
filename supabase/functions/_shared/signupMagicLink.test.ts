@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from 'jsr:@std/assert@1';
-import { deliverMagicLink, exactAuthUser, findAuthUserByEmail, type AuthAccount, type LinkResult } from './signupMagicLink.ts';
+import { deliverMagicLink, exactAuthUser, findAuthUserByEmail, linkDeliveryError, replacementPassword, type AuthAccount, type LinkResult } from './signupMagicLink.ts';
 
 type Admin = Parameters<typeof deliverMagicLink>[0];
 
@@ -8,13 +8,13 @@ function fixture({
   missing = false,
   mailResult = 'sent' as LinkResult,
   existing,
-  updateFails = false,
+  updateFailures = 0,
 }: {
   generatedNew?: boolean;
   missing?: boolean;
   mailResult?: LinkResult;
   existing?: AuthAccount | null;
-  updateFails?: boolean;
+  updateFailures?: number;
 } = {}) {
   const deleted: string[] = [];
   const redirects: string[] = [];
@@ -25,6 +25,7 @@ function fixture({
     ? existing
     : (generatedNew || missing ? null : { id: 'existing-user', confirmed: true });
   let calls = 0;
+  let updates = 0;
   const admin = {
     findUserByEmail: () => {
       order.push('lookup');
@@ -32,8 +33,10 @@ function fixture({
     },
     updateUserById: (id: string, attrs: { password?: string }) => {
       order.push('update');
+      updates += 1;
       passwords.push({ id, password: String(attrs.password || '') });
-      return Promise.resolve(updateFails
+      const fail = updates <= updateFailures;
+      return Promise.resolve(fail
         ? { data: { user: null }, error: { message: 'update failed' } }
         : { data: { user: { id } }, error: null });
     },
@@ -139,12 +142,41 @@ Deno.test('a confirmed account keeps its password', async () => {
   assertEquals(f.order, ['lookup', 'generate', 'mail']);
 });
 
-Deno.test('a failed password replacement still required the link to be accepted first', async () => {
-  const f = fixture({ existing: { id: 'pending-user', confirmed: false }, updateFails: true });
-  assertEquals(await deliverMagicLink(f.admin, f.mail, 'pending@example.test', null, 'signup', true), 'failed');
-  assertEquals(f.order, ['lookup', 'generate', 'mail', 'update']);
+Deno.test('a failed password update is retried once and then the link is sent', async () => {
+  const f = fixture({ existing: { id: 'pending-user', confirmed: false }, updateFailures: 1 });
+  assertEquals(await deliverMagicLink(f.admin, f.mail, 'pending@example.test', null, 'signup', true), 'sent');
+  assertEquals(f.order, ['lookup', 'generate', 'mail', 'update', 'update']);
+  assertEquals(f.passwords.length, 2);
+  assertEquals(f.passwords[0].password === f.passwords[1].password, false);
   assertEquals(f.mailed, ['signup']);
   assertEquals(f.deleted, []);
+});
+
+Deno.test('two failed password updates withdraw the emailed magic link', async () => {
+  const f = fixture({ existing: { id: 'pending-user', confirmed: false }, updateFailures: 2 });
+  assertEquals(await deliverMagicLink(f.admin, f.mail, 'pending@example.test', null, 'resend', true), 'withdrawn');
+  assertEquals(f.order, ['lookup', 'generate', 'mail', 'update', 'update', 'generate']);
+  assertEquals(f.mailed, ['resend']);
+  assertEquals(f.deleted, []);
+  const failure = linkDeliveryError('withdrawn');
+  assertEquals(failure?.reason, 'link_withdrawn');
+  assertEquals(failure?.error.includes('could not send'), false);
+  assertEquals(failure?.error.includes('We emailed a sign-in link'), true);
+  assertEquals(linkDeliveryError('failed')?.reason, 'email_failed');
+});
+
+Deno.test('replacement passwords always contain every character class', () => {
+  const seen = new Set<string>();
+  for (let i = 0; i < 200; i++) {
+    const password = replacementPassword();
+    assertEquals(password.length, 32);
+    assertEquals(/[A-Z]/.test(password), true);
+    assertEquals(/[a-z]/.test(password), true);
+    assertEquals(/[0-9]/.test(password), true);
+    assertEquals(/[!@#$%^&*_\-+=]/.test(password), true);
+    seen.add(password);
+  }
+  assertEquals(seen.size > 1, true);
 });
 
 Deno.test('exact email match ignores a longer address that contains it', () => {
