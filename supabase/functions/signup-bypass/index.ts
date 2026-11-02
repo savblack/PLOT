@@ -338,8 +338,8 @@ Deno.serve(async (req) => {
     // an unconfirmed person sat on "check your inbox" with nothing coming.
     // A magic link confirms an unconfirmed account and signs in a confirmed
     // one, and the response stays identical either way. deliverMagicLink
-    // replaces the password on an unconfirmed row before it sends, so a
-    // password chosen by someone else does not survive confirmation.
+    // replaces the password on an unconfirmed row only after the mailer
+    // accepts the link, so a failed send leaves the owner's password alone.
     if (isExistingAccountError(createError.message)) {
       const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, 'signup', true);
       if (sent === 'failed') {

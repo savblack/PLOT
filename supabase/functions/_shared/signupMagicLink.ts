@@ -89,17 +89,6 @@ export async function deliverMagicLink(
     // `absent` is reported to the browser as the same success as a sent link.
     if (!existing && action !== 'magiclink') return 'absent';
 
-    // A confirming link leaves whatever password is already on the row.
-    // An unconfirmed row may have been created by someone else. Replace that
-    // password before the link goes out. A confirmed member keeps theirs.
-    if (existing && !existing.confirmed) {
-      const { error } = await admin.updateUserById(existing.id, { password: replacementPassword() });
-      if (error) {
-        console.error('[signup-bypass] could not replace unconfirmed password');
-        return 'failed';
-      }
-    }
-
     const redirectTo = !existing
       ? authCallbackRedirect(origin, 'signup', true)
       : authCallbackRedirect(origin, action, confirmSignup);
@@ -117,7 +106,20 @@ export async function deliverMagicLink(
       ? 'signup'
       : action;
     delivered = await mailLink(email, generated.data.properties.action_link, mailAction, redirectTo) === 'sent';
-    return delivered ? 'sent' : 'failed';
+    if (!delivered) return 'failed';
+
+    // Rotate only after the mailer has accepted the message. Doing it earlier
+    // locked a real owner out when the bypass send then failed, and left them
+    // with a password they never saw. A failed send leaves the old password
+    // in place. A confirmed member is never rotated.
+    if (existing && !existing.confirmed) {
+      const { error } = await admin.updateUserById(existing.id, { password: replacementPassword() });
+      if (error) {
+        console.error('[signup-bypass] could not replace unconfirmed password after the link was accepted');
+        return 'failed';
+      }
+    }
+    return 'sent';
   } catch {
     console.error('[signup-bypass] auth link delivery failed');
     return 'failed';

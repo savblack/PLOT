@@ -55,6 +55,7 @@ function fixture({
     deleteUser: (id: string) => { deleted.push(id); return Promise.resolve({ data: { user: null }, error: null }); },
   } as unknown as Admin;
   const mail = (_email: string, _link: string, action: string) => {
+    order.push('mail');
     mailed.push(action);
     return Promise.resolve(mailResult);
   };
@@ -104,38 +105,45 @@ Deno.test('a missing-user response from generateLink stays generic and does not 
   assertEquals(f.mailed, []);
 });
 
-Deno.test('an unconfirmed existing account gets a new password before the link is sent', async () => {
+Deno.test('a failed confirmation email does not rotate an unconfirmed password', async () => {
+  const f = fixture({ existing: { id: 'pending-user', confirmed: false }, mailResult: 'failed' });
+  assertEquals(await deliverMagicLink(f.admin, f.mail, 'pending@example.test', null, 'resend', true), 'failed');
+  assertEquals(f.order, ['lookup', 'generate', 'mail']);
+  assertEquals(f.passwords, []);
+  assertEquals(f.mailed, ['resend']);
+  assertEquals(f.deleted, []);
+});
+
+Deno.test('an accepted confirmation email rotates an unconfirmed password afterwards', async () => {
   const f = fixture({ existing: { id: 'pending-user', confirmed: false } });
   assertEquals(await deliverMagicLink(f.admin, f.mail, 'pending@example.test', null, 'signup', true), 'sent');
+  assertEquals(f.order, ['lookup', 'generate', 'mail', 'update']);
   assertEquals(f.passwords.length, 1);
   assertEquals(f.passwords[0].id, 'pending-user');
   assertEquals(f.passwords[0].password.length >= 32, true);
-  assertEquals(f.order, ['lookup', 'update', 'generate']);
   assertEquals(f.mailed, ['signup']);
   assertEquals(f.deleted, []);
 });
 
-Deno.test('resend for an unconfirmed account also replaces the password before confirming', async () => {
+Deno.test('resend for an unconfirmed account rotates only after the mailer accepts the link', async () => {
   const f = fixture({ existing: { id: 'pending-user', confirmed: false } });
   assertEquals(await deliverMagicLink(f.admin, f.mail, 'pending@example.test', null, 'resend', true), 'sent');
+  assertEquals(f.order, ['lookup', 'generate', 'mail', 'update']);
   assertEquals(f.passwords.length, 1);
-  assertEquals(f.order[0], 'lookup');
-  assertEquals(f.order[1], 'update');
-  assertEquals(f.order[2], 'generate');
 });
 
 Deno.test('a confirmed account keeps its password', async () => {
   const f = fixture({ existing: { id: 'member', confirmed: true } });
   assertEquals(await deliverMagicLink(f.admin, f.mail, 'member@example.test', null, 'signup', true), 'sent');
   assertEquals(f.passwords, []);
-  assertEquals(f.order, ['lookup', 'generate']);
+  assertEquals(f.order, ['lookup', 'generate', 'mail']);
 });
 
-Deno.test('a failed password replacement sends no link', async () => {
+Deno.test('a failed password replacement still required the link to be accepted first', async () => {
   const f = fixture({ existing: { id: 'pending-user', confirmed: false }, updateFails: true });
   assertEquals(await deliverMagicLink(f.admin, f.mail, 'pending@example.test', null, 'signup', true), 'failed');
-  assertEquals(f.order, ['lookup', 'update']);
-  assertEquals(f.mailed, []);
+  assertEquals(f.order, ['lookup', 'generate', 'mail', 'update']);
+  assertEquals(f.mailed, ['signup']);
   assertEquals(f.deleted, []);
 });
 
