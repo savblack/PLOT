@@ -9,18 +9,21 @@ function fixture({
   mailResult = 'sent' as LinkResult,
   existing,
   updateFailures = 0,
+  withdrawFails = false,
 }: {
   generatedNew?: boolean;
   missing?: boolean;
   mailResult?: LinkResult;
   existing?: AuthAccount | null;
   updateFailures?: number;
+  withdrawFails?: boolean;
 } = {}) {
   const deleted: string[] = [];
   const redirects: string[] = [];
   const mailed: string[] = [];
   const passwords: { id: string; password: string }[] = [];
   const order: string[] = [];
+  const linkTypes: string[] = [];
   const account = existing !== undefined
     ? existing
     : (generatedNew || missing ? null : { id: 'existing-user', confirmed: true });
@@ -40,12 +43,16 @@ function fixture({
         ? { data: { user: null }, error: { message: 'update failed' } }
         : { data: { user: { id } }, error: null });
     },
-    generateLink: ({ options }: { options: { redirectTo: string } }) => {
+    generateLink: ({ type, options }: { type?: string; options: { redirectTo: string } }) => {
       order.push('generate');
+      linkTypes.push(type ?? '');
       redirects.push(options.redirectTo);
       calls++;
       if (missing && calls === 1) {
         return Promise.resolve({ data: null, error: { message: 'User with this email not found' } });
+      }
+      if (withdrawFails && calls > 1) {
+        return Promise.resolve({ data: null, error: { message: 'withdraw failed' } });
       }
       return Promise.resolve({ data: {
         user: { id: generatedNew || missing ? 'new-user' : account?.id || 'existing-user' },
@@ -62,7 +69,7 @@ function fixture({
     mailed.push(action);
     return Promise.resolve(mailResult);
   };
-  return { admin, mail, deleted, redirects, mailed, passwords, order };
+  return { admin, mail, deleted, redirects, mailed, passwords, order, linkTypes };
 }
 
 Deno.test('a failed email removes the account created implicitly by generateLink', async () => {
@@ -156,6 +163,7 @@ Deno.test('two failed password updates withdraw the emailed magic link', async (
   const f = fixture({ existing: { id: 'pending-user', confirmed: false }, updateFailures: 2 });
   assertEquals(await deliverMagicLink(f.admin, f.mail, 'pending@example.test', null, 'resend', true), 'withdrawn');
   assertEquals(f.order, ['lookup', 'generate', 'mail', 'update', 'update', 'generate']);
+  assertEquals(f.linkTypes, ['magiclink', 'magiclink']);
   assertEquals(f.mailed, ['resend']);
   assertEquals(f.deleted, []);
   const failure = linkDeliveryError('withdrawn');
@@ -163,6 +171,20 @@ Deno.test('two failed password updates withdraw the emailed magic link', async (
   assertEquals(failure?.error.includes('could not send'), false);
   assertEquals(failure?.error.includes('We emailed a sign-in link'), true);
   assertEquals(linkDeliveryError('failed')?.reason, 'email_failed');
+});
+
+Deno.test('a failed withdrawal does not claim the emailed link was cancelled', async () => {
+  const f = fixture({ existing: { id: 'pending-user', confirmed: false }, updateFailures: 2, withdrawFails: true });
+  assertEquals(await deliverMagicLink(f.admin, f.mail, 'pending@example.test', null, 'signup', true), 'withdraw_failed');
+  assertEquals(f.linkTypes, ['magiclink', 'magiclink']);
+  assertEquals(f.order, ['lookup', 'generate', 'mail', 'update', 'update', 'generate']);
+  assertEquals(f.mailed, ['signup']);
+  assertEquals(f.deleted, []);
+  const failure = linkDeliveryError('withdraw_failed');
+  assertEquals(failure?.reason, 'link_withdraw_failed');
+  assertEquals(failure?.error.includes('cancelled'), false);
+  assertEquals(failure?.error.includes('could not'), true);
+  assertEquals(failure?.error.includes('Do not open it'), true);
 });
 
 Deno.test('replacement passwords always contain every character class', () => {

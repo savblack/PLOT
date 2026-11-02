@@ -2,15 +2,20 @@ import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from './database.types.ts';
 import { authCallbackRedirect, isMissingUserError, type BypassAction } from './signupBypass.ts';
 
-export type LinkResult = 'sent' | 'absent' | 'failed' | 'withdrawn';
+export type LinkResult = 'sent' | 'absent' | 'failed' | 'withdrawn' | 'withdraw_failed';
 
 // Shown when the mailer accepted the link and both password updates then
 // failed, so the emailed link was cancelled. Same sentence as
 // AUTH_PAGE.linkWithdrawn. This function cannot import the app catalog.
 export const LINK_WITHDRAWN_ERROR = 'We emailed a sign-in link, then had to cancel it because we could not secure the account. Please try again.';
 
+// Shown when that cancellation also failed. The emailed link is still live.
+// Same sentence as AUTH_PAGE.linkWithdrawFailed.
+export const LINK_WITHDRAW_FAILED_ERROR = 'We emailed a sign-in link, but we could not secure the account or cancel that link. Do not open it.';
+
 export function linkDeliveryError(result: LinkResult): { error: string; reason: string; status: number } | null {
   if (result === 'withdrawn') return { error: LINK_WITHDRAWN_ERROR, reason: 'link_withdrawn', status: 503 };
+  if (result === 'withdraw_failed') return { error: LINK_WITHDRAW_FAILED_ERROR, reason: 'link_withdraw_failed', status: 503 };
   if (result === 'failed') {
     return { error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed', status: 503 };
   }
@@ -179,10 +184,13 @@ export async function deliverMagicLink(
         try {
           const withdrawn = await admin.generateLink({ type: 'magiclink', email, options: { redirectTo } });
           if (withdrawn.error || !withdrawn.data?.properties?.action_link) {
-            console.error('[signup-bypass] could not withdraw the emailed magic link');
+            console.error('[signup-bypass] ALERT emailed magic link is still live: generateLink did not replace the recovery token');
+            return 'withdraw_failed';
           }
-        } catch {
-          console.error('[signup-bypass] could not withdraw the emailed magic link');
+        } catch (err) {
+          const detail = err instanceof Error ? err.message : 'generateLink threw';
+          console.error(`[signup-bypass] ALERT emailed magic link is still live: ${detail}`);
+          return 'withdraw_failed';
         }
         return 'withdrawn';
       }
