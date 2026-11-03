@@ -322,6 +322,9 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
   // A boolean, not the season list. The episode callbacks memoize on this.
   const specialsOnly = guideSeason === 0 && !seasons.some(season => Number(season?.season_number) === Number(selSeason));
   const [episodes,  setEpisodes]  = useState([]);
+  // The season `episodes` belongs to. A jump from search must wait for this
+  // to match, or it targets the same episode number in the old season.
+  const [episodesSeason, setEpisodesSeason] = useState(null);
   const [epLoading, setEpLoading] = useState(false);
   const [epError,   setEpError]   = useState(false);
   const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || specials.loading || specials.refreshing || specials.error || epLoading || epError;
@@ -360,9 +363,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     setEpisodeQuery('');
     setFoundEp({ season: result.season_number, episode: result.episode_number });
   };
-  const foundHere = foundEp && foundEp.season === guideSeason && !epLoading ? foundEp.episode : null;
-  // Re-runs when the episodes change: a cached season can arrive without the
-  // loading flag ever flipping, so the first run may still see the old list.
+  const foundHere = foundEp && foundEp.season === guideSeason && episodesSeason === guideSeason && !epLoading ? foundEp.episode : null;
   useEffect(() => {
     if (foundHere == null) return undefined;
     const row = listRef.current?.querySelector(`[data-episode="${foundHere}"]`);
@@ -370,7 +371,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     row.scrollIntoView?.({ block: 'center' });
     const timer = setTimeout(() => setFoundEp(null), 2400);
     return () => clearTimeout(timer);
-  }, [foundHere, episodes]);
+  }, [foundHere]);
 
   // Auto-follow to new season when progress advances (e.g. after checking last ep)
   useEffect(() => {
@@ -393,10 +394,12 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
         setEpisodes([]);
         setEpError(!data);
       }
+      setEpisodesSeason(guideSeason);
       setEpLoading(false);
     }).catch(() => {
       if (cancelled) return;
       setEpisodes([]);
+      setEpisodesSeason(guideSeason);
       setEpError(true);
       setEpLoading(false);
     });

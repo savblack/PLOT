@@ -21,7 +21,7 @@ import { useEffect, useState, useRef, useMemo, type RefObject } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
   StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Linking, Alert,
-  Platform, KeyboardAvoidingView,
+  Platform, KeyboardAvoidingView, Keyboard, type HostInstance,
 } from 'react-native';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -184,6 +184,9 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
   const guideSeason = guideSeasonSelection(seasons, selSeason);
   useEffect(() => { onSeasonChange?.(guideSeason); }, [guideSeason, onSeasonChange]);
   const [episodes,  setEpisodes]  = useState<any[]>([]);
+  // The season `episodes` belongs to. A jump from search must wait for this
+  // to match, or it targets the same episode number in the old season.
+  const [episodesSeason, setEpisodesSeason] = useState<number | null>(null);
   const [loading,   setLoading]   = useState(false);
   const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || specials.loading || specials.refreshing || specials.error || loading;
   const [toggling,  setToggling]  = useState<number | null>(null);
@@ -197,10 +200,12 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
     tmdb.getSeason(tvId, guideSeason).then((data: any) => {
       if (cancelled) return;
       setEpisodes(data?.episodes ?? []);
+      setEpisodesSeason(guideSeason);
       setLoading(false);
     }).catch(() => {
       if (cancelled) return;
       setEpisodes([]);
+      setEpisodesSeason(guideSeason);
       setActionError(MEDIA_PANEL.episodesLoadError);
       setLoading(false);
     });
@@ -224,22 +229,26 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
   });
   const openSearchResult = (result: EpisodeSearchResult, position: number) => {
     search.reportOpened(result, position);
+    // The field keeps focus after the tap (keyboardShouldPersistTaps), and the
+    // keyboard would cover the row this scrolls to.
+    Keyboard.dismiss();
     setSelSeason(result.season_number);
     setSeasonMenuOpen(false);
     setEpisodeQuery('');
     setFoundEp({ season: result.season_number, episode: result.episode_number });
   };
-  const foundHere = foundEp && foundEp.season === guideSeason && !loading ? foundEp.episode : null;
-  // Re-runs when the episodes change: a cached season can arrive without the
-  // loading flag ever flipping, so the first run may still see the old list.
+  const foundHere = foundEp && foundEp.season === guideSeason && episodesSeason === guideSeason && !loading ? foundEp.episode : null;
   useEffect(() => {
     if (foundHere == null || !rowRefs.current.has(foundHere)) return undefined;
     // Wait a frame so the new season's rows have laid out before measuring.
     const frame = requestAnimationFrame(() => {
       const row = rowRefs.current.get(foundHere);
-      // The content view, so y counts from the top of everything scrolled.
-      const content: number | null = scrollRef?.current?.getInnerViewNode?.() ?? null;
-      if (!row || content == null) return;
+      // The content view, so y counts from the top of everything scrolled. A
+      // ref, not getInnerViewNode's numeric tag, which Fabric's measureLayout
+      // does not accept. getInnerViewRef is public but missing from RN's types.
+      const scroller = scrollRef?.current as (ScrollView & { getInnerViewRef?: () => HostInstance | null }) | null | undefined;
+      const content = scroller?.getInnerViewRef?.() ?? null;
+      if (!row || !content) return;
       row.measureLayout(
         content,
         (_x, y) => scrollRef?.current?.scrollTo({ y: Math.max(0, y - 160), animated: true }),
@@ -248,7 +257,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
     });
     const timer = setTimeout(() => setFoundEp(null), 2400);
     return () => { cancelAnimationFrame(frame); clearTimeout(timer); };
-  }, [foundHere, scrollRef, episodes]);
+  }, [foundHere, scrollRef]);
 
   const episodeState = (episodeNumber: number) => getEpisodeGuideState({
     currentSeason: curSeason, currentEpisode: curEp, selectedSeason: guideSeason,

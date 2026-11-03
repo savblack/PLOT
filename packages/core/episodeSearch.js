@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FAILED_LOADS, reportLoadFailure } from './actionFailures.js';
 import { getConfig } from './config.js';
 import { getEpisodeGuideState } from './episodeProgress.js';
-import { tmdb } from './tmdb.js';
+import { fetchFromTMDBResolved } from './tmdb.js';
 
 /** Shorter queries match nearly every episode and are not worth the requests. */
 export const EPISODE_SEARCH_MIN_QUERY = 2;
@@ -167,6 +167,19 @@ export async function loadSeasonsPaced(seasonNumbers, {
 }
 
 /**
+ * The shape classifyFailure reads, from a resolved TMDB read that failed. No
+ * status means the request never got a response: a network failure. A thrown
+ * fetch arrives here as null and counts the same way.
+ *
+ * @param {{ ok?: boolean, status?: number | null } | null | undefined} result
+ * @returns {{ status?: number, message: string }}
+ */
+export function seasonFailure(result) {
+  const status = Number(result?.status) || 0;
+  return status ? { status, message: '' } : { message: 'network' };
+}
+
+/**
  * @typedef {object} EpisodeSearch
  * @property {boolean} active True once the query is long enough to search.
  * @property {EpisodeSearchResult[]} results
@@ -207,17 +220,21 @@ export function useEpisodeSearch({ tvId, seasonNumbers, query, progress }) {
     const wanted = seasonKey.split(',').map(Number).filter(n => !requested.current.seasons.has(n));
     if (!wanted.length) return undefined;
     let cancelled = false;
-    let failures = 0;
+    /** @type {any} */
+    let firstFailure = null;
     const started = new Set();
     loadSeasonsPaced(wanted, {
       fetchSeason: (season) => {
         started.add(season);
         record.seasons.add(season);
-        return tmdb.getSeason(id, season);
+        // The same endpoint and cache as tmdb.getSeason, but it keeps the
+        // status, so a failure can say rate limit, not found or network.
+        return fetchFromTMDBResolved(`/tv/${id}/season/${season}`);
       },
-      onSeason: (season, data) => {
+      onSeason: (season, result) => {
         record.arrived.add(season);
-        if (!data) failures += 1;
+        const data = result?.ok ? result.data : null;
+        if (!data && !firstFailure) firstFailure = seasonFailure(result);
         setStore(prev => {
           const base = prev.id === id ? prev.seasons : {};
           return { id, seasons: { ...base, [season]: data ? searchableEpisodes(season, data) : null } };
@@ -227,7 +244,7 @@ export function useEpisodeSearch({ tvId, seasonNumbers, query, progress }) {
     }).then(() => {
       // Once per search, not per season: a 250-season show behind a rate limit
       // would otherwise send hundreds of identical events.
-      if (!cancelled && failures > 0) reportLoadFailure(FAILED_LOADS.EPISODE_SEARCH, null);
+      if (!cancelled && firstFailure) reportLoadFailure(FAILED_LOADS.EPISODE_SEARCH, firstFailure);
     });
     return () => {
       cancelled = true;

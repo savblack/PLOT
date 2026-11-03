@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { classifyFailure } from '../../actionFailures.js';
 import {
   EPISODE_SEARCH_LIMIT,
   loadSeasonsPaced,
   matchEpisodes,
   normalizeEpisodeText,
   searchableEpisodes,
+  seasonFailure,
   withEpisodeWatchState,
 } from '../../episodeSearch.js';
 
@@ -141,4 +143,12 @@ test('cancelling stops further requests and drops late results', async () => {
   });
   assert.deepEqual(fetched, [1, 2]);
   assert.deepEqual(got, [1]);
+});
+
+test('a failed season keeps its cause for load_failed', () => {
+  assert.deepEqual(seasonFailure({ ok: false, status: 429 }), { status: 429, message: '' });
+  assert.equal(classifyFailure(seasonFailure({ ok: false, status: 404 })), 'not_found');
+  assert.equal(classifyFailure(seasonFailure({ ok: false, status: 503 })), 'server');
+  assert.equal(classifyFailure(seasonFailure({ ok: false, status: null })), 'network');
+  assert.equal(classifyFailure(seasonFailure(null)), 'network');
 });
