@@ -1,6 +1,6 @@
 # Delete account: stop billing and clean up storage
 
-Status: paused (draft PR open, waiting on db:migration-test)
+Status: paused (draft PR open, all checks passed, waiting on merge approval)
 Branch: agent/delete-account-history-board-1012a
 Worktree: /Users/savannahblack/Developer/PLOT-worktrees/delete-account-history-board-1012a-dev
 Owner: Jacob (CTO) / Savannah approves
@@ -32,10 +32,11 @@ A separate agent found no way to reach another user's data or subscription. Fixe
 - `pnpm run edge:check`: 39 functions typecheck and lint clean.
 - `pnpm run migrations:check`: clean.
 - `pnpm run staging:feedback-attachment-owner-test`: 6 of 6 on Staging (owner, bystander, anonymous, re-apply), rolled back.
+- `pnpm run db:migration-test` (run by Savannah, 2026-11-03): production at 174 migrations; the 1 pending migration PASS. Needed `unset SUPABASE_DB_URL` because that .env value holds a bare password, not a connection string.
 
 ## Next action
 
-1. Savannah runs `pnpm run db:migration-test` from this worktree (see PR for the command).
+1. Done: migration test passed.
 2. Not covered: a live end-to-end delete with a real Stripe test subscription on Staging (needs a Staging deploy of the function). Optional before merge.
 3. Merge only with Savannah's OK. The migration applies to Production on merge.
 4. Delete this file in the last commit before merge.
