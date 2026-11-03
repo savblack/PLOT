@@ -20,6 +20,13 @@ export const CUSTOM_LISTS = Object.freeze({
   sortList: 'Sort list',
   titleAscending: 'Title A to Z',
   titleDescending: 'Title Z to A',
+  // The Watching list's sort menu (watchingOrder.js WATCHING_SORTS).
+  sortWatching: 'Sort watching',
+  watchingSort: Object.freeze({
+    last_watched: 'Last watched',
+    next_air_date: 'Next episode air date',
+    recently_added: 'Recently added',
+  }),
   backToMyLists: 'My Lists',
   yourLists: 'Your lists',
   gridView: 'Grid view',
