@@ -78,12 +78,49 @@ test('removeAvatarObjects clears the user folder before auth deletion', async ()
         assert.equal(folder, 'user-123');
         return { data: removed.length ? [] : [{ id: 'object-1', name: 'avatar.jpg' }], error: null };
       },
-      async remove(paths) { removed.push(...paths); return { error: null }; },
+      async remove(paths) { removed.push(...paths); return { data: paths.map((name) => ({ name })), error: null }; },
     };
   } } };
 
   assert.equal(await removeAvatarObjects(admin, 'user-123'), null);
   assert.deepEqual(removed, ['user-123/avatar.jpg']);
+});
+
+test('removeAvatarObjects walks subfolders instead of blocking deletion', async () => {
+  const objects = new Set(['user-123/avatar.jpg', 'user-123/x/y.jpg']);
+  const admin = { storage: { from() {
+    return {
+      async list(folder) {
+        const children = new Map();
+        for (const path of objects) {
+          if (!path.startsWith(`${folder}/`)) continue;
+          const [name, ...rest] = path.slice(folder.length + 1).split('/');
+          children.set(name, rest.length ? null : `id-${name}`);
+        }
+        return { data: [...children].map(([name, id]) => ({ id, name })), error: null };
+      },
+      async remove(paths) {
+        paths.forEach((path) => objects.delete(path));
+        return { data: paths.map((name) => ({ name })), error: null };
+      },
+    };
+  } } };
+
+  assert.equal(await removeAvatarObjects(admin, 'user-123'), null);
+  assert.equal(objects.size, 0);
+});
+
+test('removeAvatarObjects stops when storage reports success but removes nothing', async () => {
+  let lists = 0;
+  const admin = { storage: { from() {
+    return {
+      async list() { lists++; return { data: [{ id: 'object-1', name: 'odd name.jpg' }], error: null }; },
+      async remove() { return { data: [], error: null }; },
+    };
+  } } };
+
+  assert.match((await removeAvatarObjects(admin, 'user-123'))?.message, /could not be deleted/);
+  assert.equal(lists, 1);
 });
 
 test('removeAvatarObjects stops when storage deletion fails', async () => {

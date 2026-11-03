@@ -77,15 +77,6 @@ Deno.serve(async (req) => {
     serviceKey()
   )
 
-  try {
-    await stopAccountBilling(supabaseAdmin, () => new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-      httpClient: Stripe.createFetchHttpClient(),
-    }), userId)
-  } catch (error) {
-    console.error('delete-account: billing cleanup failed:', error instanceof Error ? error.message : error)
-    return jsonError('Could not stop account billing. Please try again.', 503)
-  }
-
   const { data: feedbackRows, error: feedbackError } = await supabaseAdmin
     .from('feedback')
     .select('attachments')
@@ -113,6 +104,17 @@ Deno.serve(async (req) => {
 
   const avatarError = await removeAvatarObjects(supabaseAdmin, userId)
   if (avatarError) return jsonError(avatarError.message || 'Failed to delete profile photos.')
+
+  // Billing stops after every storage step that can fail, so a failed attempt
+  // never leaves a live account whose subscription is already canceled.
+  try {
+    await stopAccountBilling(supabaseAdmin, () => new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+      httpClient: Stripe.createFetchHttpClient(),
+    }), userId)
+  } catch (error) {
+    console.error('delete-account: billing cleanup failed:', error instanceof Error ? error.message : error)
+    return jsonError('Could not stop account billing. Please try again.', 503)
+  }
 
   const cleanupError = await runAccountCleanup(supabaseAdmin, userId)
   if (cleanupError) {

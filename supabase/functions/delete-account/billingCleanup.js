@@ -13,8 +13,17 @@ export async function stopAccountBilling(admin, getStripe, userId) {
   const stripe = getStripe();
   let customerId = billing?.stripe_customer_id;
 
+  let session = null;
   if (attempt?.session_id) {
-    const session = await stripe.checkout.sessions.retrieve(attempt.session_id);
+    try {
+      session = await stripe.checkout.sessions.retrieve(attempt.session_id);
+    } catch (error) {
+      // A session Stripe no longer knows about has nothing left to expire.
+      if (error?.code !== 'resource_missing') throw error;
+    }
+  }
+
+  if (session) {
     if (session.client_reference_id !== userId) throw new Error('Checkout session belongs to another account');
     const sessionCustomer = typeof session.customer === 'string' ? session.customer : session.customer?.id;
     if (customerId && sessionCustomer && customerId !== sessionCustomer) throw new Error('Checkout customer mismatch');

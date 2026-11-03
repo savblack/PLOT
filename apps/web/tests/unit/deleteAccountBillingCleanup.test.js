@@ -58,6 +58,21 @@ test('Stripe cancellation failure prevents account deletion from continuing', as
   );
 });
 
+test('a checkout session Stripe no longer has does not block deletion', async () => {
+  const calls = [];
+  const stripe = {
+    checkout: { sessions: {
+      async retrieve() { throw Object.assign(new Error('No such checkout.session'), { code: 'resource_missing' }); },
+    } },
+    subscriptions: {
+      async *list() { calls.push('list'); yield { id: 'sub_active', status: 'active' }; },
+      async cancel(id) { calls.push(`cancel:${id}`); },
+    },
+  };
+  await stopAccountBilling(adminFor({ stripe_customer_id: 'cus_123' }, { session_id: 'cs_gone' }), () => stripe, 'user-123');
+  assert.deepEqual(calls, ['list', 'cancel:sub_active']);
+});
+
 test('a checkout session for another user cannot be expired', async () => {
   const stripe = { checkout: { sessions: {
     async retrieve() { return { id: 'cs_123', status: 'open', customer: 'cus_123', client_reference_id: 'other-user' }; },
