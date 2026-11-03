@@ -210,7 +210,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
   const curSeason = progress?.current_season || 0;
   const curEp     = progress?.current_episode || 0;
 
-  // Title search across every season (#1445), same matcher as web. Opening a
+  // Title search across every season (issue 1445), same matcher as web. Opening a
   // result switches to its season and scrolls to the row, where ticking and
   // rating already work.
   const [episodeQuery, setEpisodeQuery] = useState('');

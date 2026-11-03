@@ -41,7 +41,7 @@ export const MEDIA_PANEL = {
     count === 1 ? `1 episode · ${duration} left` : `${count} episodes · ${duration} left`
   ),
   chooseSeason: 'Choose a season',
-  // Episode search above the season picker (#1445). Matches titles across
+  // Episode search above the season picker (issue 1445). Matches titles across
   // every season, which load as the person types.
   searchEpisodesLabel: 'Search episodes by title',
   searchEpisodesPlaceholder: 'Search episode titles',

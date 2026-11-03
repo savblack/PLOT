@@ -1,4 +1,4 @@
-// Find an episode by its title across every season of a show (#1445). The
+// Find an episode by its title across every season of a show (issue 1445). The
 // episode guide loads one season at a time, so this loads the rest on demand,
 // keeps them for as long as the guide is open, and matches titles in memory.
 // Shared so web and mobile match the same way. Rendering stays in each app.

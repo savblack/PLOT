@@ -373,7 +373,7 @@ ids. The picker is Premium, so free viewers only ever produce
 
 ## Episode search
 
-The title panel's episode search (#1445) finds an episode by its title across
+The title panel's episode search (issue 1445) finds an episode by its title across
 every season. Fired from `useEpisodeSearch` in core through the
 `onEpisodeSearch` seam, so both apps report identically:
 

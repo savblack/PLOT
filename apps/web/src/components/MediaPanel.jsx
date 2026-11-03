@@ -337,7 +337,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
   // TVMaze air times keyed by "season-episode"
   const [tvmazeTimes, setTvmazeTimes] = useState({});
 
-  // Title search across every season (#1445). Opening a result switches to
+  // Title search across every season (issue 1445). Opening a result switches to
   // its season and points at the row, where ticking and rating already work.
   const [episodeQuery, setEpisodeQuery] = useState('');
   const [foundEp, setFoundEp] = useState(null); // { season, episode }

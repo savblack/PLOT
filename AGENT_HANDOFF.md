@@ -4,7 +4,7 @@ Status: paused (PR open, waiting for review)
 Branch: agent/2026-11-03-episode-search
 Worktree: ~/Developer/PLOT-worktrees/2026-11-03-episode-search
 Owner: Hailey (product, web and mobile parity). Built by Claude Code.
-Updated: 2026-11-03
+Updated: 2026-11-04
 
 ## In plain words
 
@@ -38,6 +38,12 @@ Issue #1445: search a show's episodes by title across all seasons.
 - Mobile typecheck: pass. Mobile lint warnings unchanged (38).
 - Web checked in Storybook (Panels/MediaPanel, With providers): search, jump
   across seasons, highlight, no-match note, Escape clears.
+
+- CI fix 2026-11-04: `colors:check` read "#1445" in comments as a hex colour;
+  comments now say "issue 1445". Also ran locally: all CircleCI steps,
+  `test-storybook:web` (52 passed), Playwright smoke (82 passed).
+- "Check trigger write paths" failed on a database connection timeout
+  (`authentication did not complete within 15000ms`), not on this code.
 
 ## Not verified
 
