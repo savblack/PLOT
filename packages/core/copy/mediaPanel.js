@@ -41,6 +41,19 @@ export const MEDIA_PANEL = {
     count === 1 ? `1 episode · ${duration} left` : `${count} episodes · ${duration} left`
   ),
   chooseSeason: 'Choose a season',
+  // Episode search above the season picker (#1445). Matches titles across
+  // every season, which load as the person types.
+  searchEpisodesLabel: 'Search episodes by title',
+  searchEpisodesPlaceholder: 'Search episode titles',
+  clearEpisodeSearch: 'Clear episode search',
+  episodeSearchProgress: (searched, total) => `Searching ${searched} of ${total} seasons…`,
+  episodeSearchNoMatches: 'No episode titles match that.',
+  episodeSearchSomeFailed: 'Some seasons could not load, so a match may be missing.',
+  episodeSearchLimit: (limit) => `Showing the first ${limit} matches. Add another word to narrow it down.`,
+  episodeSearchCode: (season, episode) => (
+    Number(season) === 0 ? `Special ${episode}` : `S${season} · E${episode}`
+  ),
+  openEpisodeResult: (code, name) => `Go to ${code}, ${name}`,
   unmarkSeasonWatched: 'Unmark season',
   couldNotUpdateSeason: 'Could not update this season right now. Please try again.',
   topFiveTvShows: 'Top 5 TV Shows',

@@ -371,6 +371,22 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
 
+## Episode search
+
+The title panel's episode search (#1445) finds an episode by its title across
+every season. Fired from `useEpisodeSearch` in core through the
+`onEpisodeSearch` seam, so both apps report identically:
+
+| Event | When | Props |
+|---|---|---|
+| `episode_search_result_opened` | A matching episode was opened (the guide jumps to it) | `tmdb_id`, `season`, `episode`, `position` (1-based), `result_count`, `query_length`, `total_seasons` |
+
+Typing alone fires nothing; only an opened result counts, so this measures
+searches that found what the person wanted. The query text is never sent, only
+its length. Seasons that would not load are one `load_failed` per search with
+`resource: episode_search`. Logging the episode afterwards is the usual
+`episode_watched`, so the path from search to log is these two in order.
+
 ## Imports and onboarding
 
 Every import event goes through `createImportReporter()` in
@@ -555,7 +571,7 @@ follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
 ### `load_failed`
 
 A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
-`watching`, `favourites`, `smart_list`) fires `load_failed` via `reportLoadFailure()`, with
+`watching`, `favourites`, `smart_list`, `episode_search`) fires `load_failed` via `reportLoadFailure()`, with
 the same `error_kind` / `error_code` / `http_status` props. It is a separate
 event on purpose: a page that fails to load is not a failed user action, and
 counting it as `action_failed` would skew every failed-write rate.

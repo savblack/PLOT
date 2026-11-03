@@ -1,4 +1,6 @@
 import { useEpisodeWatches, useSpecialEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
+import { EPISODE_SEARCH_LIMIT, useEpisodeSearch } from '@plot/core/episodeSearch.js';
+import { IconSearch } from './navIcons.jsx';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from './ArtworkSheet.jsx';
@@ -335,6 +337,41 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
   // TVMaze air times keyed by "season-episode"
   const [tvmazeTimes, setTvmazeTimes] = useState({});
 
+  // Title search across every season (#1445). Opening a result switches to
+  // its season and points at the row, where ticking and rating already work.
+  const [episodeQuery, setEpisodeQuery] = useState('');
+  const [foundEp, setFoundEp] = useState(null); // { season, episode }
+  const listRef = useRef(null);
+  const search = useEpisodeSearch({
+    tvId,
+    seasonNumbers: seasons.map(s => Number(s.season_number)),
+    query: episodeQuery,
+    progress: {
+      currentSeason: currentProgress?.current_season || 0,
+      currentEpisode: currentProgress?.current_episode || 0,
+      episodeStates,
+    },
+  });
+  const openSearchResult = (result, position) => {
+    search.reportOpened(result, position);
+    userChangedSeason.current = true;
+    setSelSeason(result.season_number);
+    setSeasonMenuOpen(false);
+    setEpisodeQuery('');
+    setFoundEp({ season: result.season_number, episode: result.episode_number });
+  };
+  const foundHere = foundEp && foundEp.season === guideSeason && !epLoading ? foundEp.episode : null;
+  // Re-runs when the episodes change: a cached season can arrive without the
+  // loading flag ever flipping, so the first run may still see the old list.
+  useEffect(() => {
+    if (foundHere == null) return undefined;
+    const row = listRef.current?.querySelector(`[data-episode="${foundHere}"]`);
+    if (!row) return undefined;
+    row.scrollIntoView?.({ block: 'center' });
+    const timer = setTimeout(() => setFoundEp(null), 2400);
+    return () => clearTimeout(timer);
+  }, [foundHere, episodes]);
+
   // Auto-follow to new season when progress advances (e.g. after checking last ep)
   useEffect(() => {
     if (!userChangedSeason.current && currentProgress?.current_season) {
@@ -549,6 +586,22 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
   return (
     <div>
       <EpisodeRatingsEntry tvId={tvId} details={details} />
+      {seasons.length > 1 && (
+        <label className="hist-search ep-search">
+          <IconSearch />
+          <input
+            type="search"
+            value={episodeQuery}
+            onChange={e => setEpisodeQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape' && episodeQuery) { e.stopPropagation(); setEpisodeQuery(''); } }}
+            placeholder={MEDIA_PANEL.searchEpisodesPlaceholder}
+            aria-label={MEDIA_PANEL.searchEpisodesLabel}
+          />
+        </label>
+      )}
+      {search.active ? (
+        <EpisodeSearchResults search={search} onOpen={openSearchResult} />
+      ) : (<>
       {/* Season picker and the season-level action share one line: the season
           as a pill you open, the bulk action as plain text on the right. The
           chip-per-season strip it replaces grew a row for every season. */}
@@ -633,7 +686,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
           {epError ? MEDIA_PANEL.episodesLoadError : MEDIA_PANEL.noEpisodesAvailable}
         </div>
       ) : (
-        <div className="episode-list">
+        <div className="episode-list" ref={listRef}>
           {episodes.map(ep => {
             const { isActive, isCurrent, isWatched: watched } = getEpisodeGuideState({
               currentEpisode: currentEp,
@@ -651,7 +704,8 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
             return (
               <div
                 key={ep.episode_number}
-                className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}`}
+                data-episode={ep.episode_number}
+                className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}${foundHere === ep.episode_number ? ' ep-found' : ''}`}
                 onClick={isTracking && !progressBlocked && !seasonPending && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
@@ -694,6 +748,54 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
             );
           })}
         </div>
+      )}
+      </>)}
+    </div>
+  );
+}
+
+/* ── Matches from every season, shown in place of the season list ── */
+function EpisodeSearchResults({ search, onOpen }) {
+  const { results, loading, searchedSeasons, totalSeasons, failedSeasons } = search;
+  return (
+    <div className="ep-search-results">
+      {loading && (
+        <p className="ep-search-note" role="status">{MEDIA_PANEL.episodeSearchProgress(searchedSeasons, totalSeasons)}</p>
+      )}
+      {results.length > 0 ? (
+        <div className="episode-list">
+          {results.map((result, index) => {
+            const code = MEDIA_PANEL.episodeSearchCode(result.season_number, result.episode_number);
+            return (
+              <button
+                type="button"
+                key={`${result.season_number}-${result.episode_number}`}
+                className={`ep-row ep-search-row${result.isWatched ? ' watched' : ''}`}
+                onClick={() => onOpen(result, index)}
+                aria-label={MEDIA_PANEL.openEpisodeResult(code, result.name)}
+              >
+                <span className="ep-num">{code}</span>
+                <span className="ep-info">
+                  <span className="ep-title">{result.name}</span>
+                  {result.air_date && <span className="ep-air">{formatDate(result.air_date)}</span>}
+                </span>
+                {result.isWatched && (
+                  <span className="ep-search-watched" title={MEDIA.watched}>
+                    <CheckCircleIcon filled />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ) : !loading && (
+        <p className="ep-search-note">{MEDIA_PANEL.episodeSearchNoMatches}</p>
+      )}
+      {results.length >= EPISODE_SEARCH_LIMIT && (
+        <p className="ep-search-note">{MEDIA_PANEL.episodeSearchLimit(EPISODE_SEARCH_LIMIT)}</p>
+      )}
+      {!loading && failedSeasons > 0 && (
+        <p className="ep-search-note">{MEDIA_PANEL.episodeSearchSomeFailed}</p>
       )}
     </div>
   );
