@@ -89,7 +89,9 @@ async function syncSubscription({ userId, customerId, sub, event }: SyncArgs) {
     .select('user_id').eq('user_id', userId).maybeSingle();
   if (mappingError) throw mappingError;
   if (!mapping) {
-    const { data: { user }, error: userError } = await admin().auth.admin.getUserById(userId);
+    // data can be null for a missing user, so don't destructure through it.
+    const { data, error: userError } = await admin().auth.admin.getUserById(userId);
+    const user = data?.user;
     if (userError?.status === 404 || userError?.code === 'user_not_found' || !user && !userError) {
       // A checkout that completed after deletion would keep charging a deleted
       // account. Raise it so the subscription gets canceled by hand.
