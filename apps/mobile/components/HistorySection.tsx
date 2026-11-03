@@ -11,7 +11,7 @@
  * is labelled.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import CollapsibleSection from './CollapsibleSection';
 import HistoryInsights from './HistoryInsights';
@@ -20,6 +20,9 @@ import { HistoryEntry } from '../hooks/useHistory';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { monthLabel } from '@plot/core/history.js';
+import { useGenres } from '@plot/core/useGenres.js';
+import { DRILLDOWN_STATS, type Drilldown } from '@plot/core/historyDrilldown.js';
+import { HISTORY_VIEW as T } from '@plot/core/copy/historyView.js';
 import { TASTE_OVERLAP } from '@plot/core/copy/tasteOverlap.js';
 
 export interface MonthGroup {
@@ -68,6 +71,7 @@ function HistoryMonthGroup({
 
 export default function HistorySection({
   groups, hasAnyEntries, expandSignal, sharePreset = null, onSharePresetUsed,
+  drilldown = null, onDrilldown, onClearDrilldown,
 }: {
   groups: MonthGroup[];
   hasAnyEntries: boolean;
@@ -75,9 +79,20 @@ export default function HistorySection({
   /** Card id from `?share=`, when a link opened this screen on a card. */
   sharePreset?: string | null;
   onSharePresetUsed?: () => void;
+  /** Premium only. The filter a stat row set, the setter for one, and its remover. */
+  drilldown?: Drilldown | null;
+  onDrilldown?: (d: Drilldown) => void;
+  onClearDrilldown?: () => void;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { genres } = useGenres();
+  const drillLabel = !drilldown ? null
+    : drilldown.stat === DRILLDOWN_STATS.GENRE
+      ? T.drilldownGenre(genres.find((g: { id: number; name: string }) => g.id === drilldown.genre)?.name ?? '')
+      : drilldown.stat === DRILLDOWN_STATS.WEEKDAY
+        ? T.drilldownWeekday(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][drilldown.weekday ?? 0])
+        : T.drilldownTitles(drilldown.year);
 
   // Two different empties, as on web: nothing ever watched reads differently
   // from "your filters excluded everything".
@@ -94,8 +109,13 @@ export default function HistorySection({
 
   return (
     <View>
-      <HistoryInsights sharePreset={sharePreset} onSharePresetUsed={onSharePresetUsed} />
+      <HistoryInsights sharePreset={sharePreset} onSharePresetUsed={onSharePresetUsed} onDrilldown={onDrilldown} />
       <HistoryComparePrompt />
+      {drilldown && drillLabel && (
+        <Pressable accessibilityRole="button" accessibilityLabel={T.drilldownRemove(drillLabel)} onPress={onClearDrilldown} style={styles.chip}>
+          <Text style={styles.chipText}>{drillLabel}  ×</Text>
+        </Pressable>
+      )}
       {groups.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>No matches</Text>
@@ -131,6 +151,18 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   empty: { paddingVertical: spacing.xl * 2, paddingHorizontal: spacing.xl, alignItems: 'center' },
   emptyTitle: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  chip: {
+    alignSelf: 'flex-start',
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.md,
+    minHeight: 32,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  chipText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
   prompt: {
     marginHorizontal: spacing.xl,
     marginTop: spacing.md,

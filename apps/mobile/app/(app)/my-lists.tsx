@@ -40,6 +40,8 @@ import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import HistorySection from '../../components/HistorySection';
 import { groupEntriesByMonth, monthLabel } from '@plot/core/history.js';
+import { filterEntries } from '@plot/core/historyStats.js';
+import { drilldownParams, parseDrilldown, drilldownFilter, drilldownEventProps, type Drilldown } from '@plot/core/historyDrilldown.js';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -485,6 +487,20 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
 
   const shareRaw = useLocalSearchParams<{ share?: string | string[] }>().share;
   const sharePreset = (Array.isArray(shareRaw) ? shareRaw[0] : shareRaw) || null;
+  // A History stat row sets stat/year/genre/weekday here, so the filtered list
+  // can arrive from a link as well as a tap. Premium only.
+  const router = useRouter();
+  const routeParams = (useLocalSearchParams() as Record<string, string | string[] | undefined>);
+  const premium = isPremiumProfile(profile);
+  const drilldown = useMemo(
+    () => (premium ? parseDrilldown({ get: (k: string) => (Array.isArray(routeParams[k]) ? routeParams[k]?.[0] : routeParams[k] as string | undefined) }) : null),
+    [premium, routeParams],
+  );
+  const setDrilldown = (d: Drilldown) => {
+    track(EVENTS.HISTORY_STAT_DRILLDOWN, drilldownEventProps(d, 'mobile'));
+    router.setParams(drilldownParams(d));
+  };
+  const clearDrilldown = () => router.setParams({ stat: '', year: '', genre: '', weekday: '' });
   const [tab,          setTab]          = useState(mode === 'history' ? 'history' : 'all');
   const [topDragging, setTopDragging]  = useState(false);
   // ?share=<card> opens History on that card. The param holds the tab on
@@ -506,8 +522,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   // widget's year/month is only "which month did we last jump to" — it does
   // not filter what renders, exactly as on web.
   const historyGroups = useMemo(
-    () => groupEntriesByMonth(byType(history.entries || [])) as any[],
-    [history.entries, typeFilters], // eslint-disable-line react-hooks/exhaustive-deps
+    () => groupEntriesByMonth(filterEntries(byType(history.entries || []), drilldownFilter(drilldown))) as any[],
+    [history.entries, typeFilters, drilldown], // eslint-disable-line react-hooks/exhaustive-deps
   );
   // Section ids match web's ALL_LIST_SECTION_IDS so a section means the same
   // thing on both platforms and shares the `plot.section.<id>` storage key.
@@ -531,11 +547,9 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const [smartDraft,     setSmartDraft]     = useState<{ name: string; rules: SmartRules } | null>(null);
   const [rulesKept,     setRulesKept]      = useState(false);
   const [showAddToList,  setShowAddToList]  = useState<string | null>(null);
-  const router = useRouter();
   const pathname = usePathname();
   const pathRef = useRef(pathname);
   useEffect(() => { pathRef.current = pathname; }, [pathname]);
-  const premium = isPremiumProfile(profile);
   const smartRows = ((customLists.smartLists || []) as unknown[]).flatMap((row) => {
     const smart = asSmartRow(row);
     return smart ? [smart] : [];
@@ -872,6 +886,9 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             hasAnyEntries={(history.entries || []).length > 0}
             expandSignal={historyExpand}
             sharePreset={sharePreset}
+            drilldown={drilldown}
+            onDrilldown={premium ? setDrilldown : undefined}
+            onClearDrilldown={clearDrilldown}
             onSharePresetUsed={() => {
               setTab('history');
               router.setParams({ share: '' });
