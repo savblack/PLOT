@@ -26,6 +26,8 @@ import { STAR_COUNT } from '../utils/ratings.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS, captureException } from '../lib/analytics.js';
 import { TalentWork } from './TalentCredits.jsx';
+import { BROWSE } from '@plot/core/copy/browse.js';
+import { browseTapProps, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
 import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
@@ -1116,7 +1118,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   );
 }
 
-export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose }) {
+export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose, onBrowse }) {
   const { watchlist, watching, user, profile, favorites, customLists, openPanel, refreshProfile } = useApp();
   const art = useUserArtwork();
   const followPerson = useFollowPerson();
@@ -1427,6 +1429,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     ? (details?.credits?.crew || []).find(c => c.job === 'Director')?.name
     : (details?.created_by || [])[0]?.name;
   const genreChips = (details?.genres || []).slice(0, 2);
+  const keywordChips = topKeywords(details, itemType);
+  // Without onBrowse (Storybook) the chips stay plain labels.
+  const browse = (kind, id, name, path) => {
+    track(EVENTS.BROWSE_TAPPED, browseTapProps({ kind, id, name, mediaType: itemType, source: 'title_panel' }));
+    onBrowse(path);
+  };
 
   // ── The logos the collapsed Where to watch card shows in place of its rows ──
   // With no offers anywhere it falls back to the networks, so the card still
@@ -1693,7 +1701,18 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 {(genreChips.length > 0 || (chip && chip.cls !== 'chip-muted')) && (
                   <div className="panel-genres">
                     {chip && chip.cls !== 'chip-muted' && <span className={`chip ${chip.cls}`}>{chip.label}</span>}
-                    {genreChips.map(g => <span className="panel-genre" key={g.id}>{g.name}</span>)}
+                    {genreChips.map(g => onBrowse ? (
+                      <button type="button" className="panel-genre panel-genre--link" key={g.id} aria-label={BROWSE.genreLink(g.name)}
+                        onClick={() => browse('genre', g.id, g.name, `/home?${new URLSearchParams(genreBrowseParams({ mediaType: itemType, genreId: g.id }))}`)}>{g.name}</button>
+                    ) : <span className="panel-genre" key={g.id}>{g.name}</span>)}
+                  </div>
+                )}
+                {onBrowse && keywordChips.length > 0 && (
+                  <div className="panel-genres panel-keywords" role="group" aria-label={BROWSE.keywordsLabel}>
+                    {keywordChips.map(k => (
+                      <button type="button" className="panel-keyword" key={k.id} aria-label={BROWSE.keywordLink(k.name)}
+                        onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}>{k.name}</button>
+                    ))}
                   </div>
                 )}
               </div>

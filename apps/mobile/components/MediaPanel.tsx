@@ -52,6 +52,8 @@ import { EpisodeRatingsEntry } from './EpisodeRatingsSheet';
 import { updateProfile } from '@plot/core/profile.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
+import { BROWSE } from '@plot/core/copy/browse.js';
+import { browseTapProps, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
 import UpgradeSheet from './UpgradeSheet';
 import { useRouter, type Href } from 'expo-router';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -583,6 +585,7 @@ interface TMDBDetails extends ParentalGuideDetails {
   vote_average?: number;
   vote_count?: number;
   genres?: TMDBGenre[];
+  keywords?: { keywords?: { id: number; name: string }[]; results?: { id: number; name: string }[] };
   runtime?: number;
   episode_run_time?: number[];
   number_of_seasons?: number;
@@ -1094,6 +1097,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     ).values()]
     : (details?.created_by || []).filter((person): person is CreditPerson => !!person?.id && !!person?.name)
   ).slice(0, 3);
+  const keywordChips = topKeywords(details, isMovie ? 'movie' : 'tv');
+  // Genre chips open Home with that genre set; keywords open their own list.
+  const browse = (kind: 'genre' | 'keyword', id: number, name: string, href: Href) => {
+    track(EVENTS.BROWSE_TAPPED, browseTapProps({ kind, id, name, mediaType: isMovie ? 'movie' : 'tv', source: 'title_panel' }));
+    onClose();
+    router.push(href);
+  };
   const openPerson = (id: number) => {
     onClose();
     router.push(`/(app)/person/${id}` as Href);
@@ -1220,9 +1230,30 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     {genreChips.length > 0 && (
                       <View style={styles.genreRow}>
                         {genreChips.map(genre => (
-                          <View key={genre.id} style={styles.genreChip}>
+                          <TouchableOpacity
+                            key={genre.id}
+                            style={styles.genreChip}
+                            accessibilityRole="link"
+                            accessibilityLabel={BROWSE.genreLink(genre.name)}
+                            onPress={() => browse('genre', genre.id, genre.name, { pathname: '/(app)', params: genreBrowseParams({ mediaType: isMovie ? 'movie' : 'tv', genreId: genre.id }) })}
+                          >
                             <Text style={styles.genreChipText}>{genre.name}</Text>
-                          </View>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                    {keywordChips.length > 0 && (
+                      <View style={styles.genreRow} accessibilityLabel={BROWSE.keywordsLabel}>
+                        {keywordChips.map(k => (
+                          <TouchableOpacity
+                            key={k.id}
+                            style={styles.keywordChip}
+                            accessibilityRole="link"
+                            accessibilityLabel={BROWSE.keywordLink(k.name)}
+                            onPress={() => browse('keyword', k.id, k.name, { pathname: '/(app)/browse', params: keywordBrowseParams({ mediaType: isMovie ? 'movie' : 'tv', keywordId: k.id, name: k.name }) })}
+                          >
+                            <Text style={styles.keywordChipText}>{k.name}</Text>
+                          </TouchableOpacity>
                         ))}
                       </View>
                     )}
@@ -1675,6 +1706,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
   genreChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.badge, backgroundColor: colors.accentSecondaryFill },
+  keywordChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.badge, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  keywordChipText: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textSecondary },
   genreChipText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.onAccentSecondaryFill },
   scoresRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,

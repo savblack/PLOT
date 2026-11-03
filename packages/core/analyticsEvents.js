@@ -54,6 +54,11 @@ export const EVENTS = Object.freeze({
   // and are not comparable to the cohort.
   ACTIVATED: 'activated',
   TITLE_SHARED: 'title_shared',
+  // A genre or keyword chip on a title page was tapped to browse more like it.
+  // Carries { kind: 'genre' | 'keyword', id, name, media_type, source }, built
+  // by browseTapProps in browse.js so both apps send the same shape. Fires on
+  // the tap, which always navigates, so there is no failure case to count.
+  BROWSE_TAPPED: 'browse_tapped',
   LIST_SHARED: 'list_shared',
   PROFILE_SHARED: 'profile_shared',
   // Share cards (docs/design/share-cards.md). `opened` carries { source, card }

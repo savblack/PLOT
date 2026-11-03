@@ -4153,6 +4153,35 @@ svg { stroke-width: 1.5; }
   font-weight: 600;
 }
 
+/* Genre and keyword chips that open Discover or the keyword page. Same size
+   as the plain label; only hover and focus change. */
+.panel-genre--link {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.panel-genre--link:hover,
+.panel-keyword:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.panel-genre--link:focus-visible,
+.panel-keyword:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.panel-keyword {
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-badge);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 .panel-overview {
   font-size: 0.84rem;
   color: var(--text-secondary);
