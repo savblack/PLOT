@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from './database.types.ts';
-import { authCallbackRedirect, isMissingUserError, type BypassAction } from './signupBypass.ts';
+import { authCallbackRedirect, isMissingUserError, type BypassAction, type BypassClient } from './signupBypass.ts';
 
 export type LinkResult = 'sent' | 'absent' | 'failed' | 'withdrawn' | 'withdraw_failed';
 
@@ -135,6 +135,7 @@ export async function deliverMagicLink(
   origin: string | null,
   action: BypassAction,
   confirmSignup: boolean,
+  client: BypassClient = 'web',
 ): Promise<LinkResult> {
   let createdId: string | undefined;
   let delivered = false;
@@ -145,8 +146,8 @@ export async function deliverMagicLink(
     if (!existing && action !== 'magiclink') return 'absent';
 
     const redirectTo = !existing
-      ? authCallbackRedirect(origin, 'signup', true)
-      : authCallbackRedirect(origin, action, confirmSignup);
+      ? authCallbackRedirect(origin, 'signup', true, client)
+      : authCallbackRedirect(origin, action, confirmSignup, client);
     const generated = await admin.generateLink({ type: 'magiclink', email, options: { redirectTo } });
     if (generated.error) {
       if (isMissingUserError(generated.error.message)) return 'absent';

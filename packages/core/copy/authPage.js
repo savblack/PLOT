@@ -66,6 +66,8 @@ export const AUTH_PAGE = {
     signupBefore: 'We sent a confirmation link to ',
     magicBefore: 'We sent a sign-in link to ',
     after: '. Open it on this phone and you are straight in, or enter the code from the email below.',
+    // After a signup-bypass email, which has a link and no code.
+    linkOnlyAfter: '. Open the link in that email on this phone to finish.',
     codeLabel: 'Code from the email',
     codePlaceholder: '6-digit code',
     confirm: 'Confirm',

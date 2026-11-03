@@ -3,6 +3,15 @@
 // tests can run without standing up a request.
 
 export type BypassAction = 'signup' | 'resend' | 'magiclink';
+export type BypassClient = 'web' | 'app';
+
+// The native app's deep link (apps/mobile/app/(auth)/index.tsx AUTH_APP_CALLBACK).
+// It is already on the project's Redirect URLs for GoTrue signup and magic
+// links. Sent bare, with no query: an allow-list entry without a wildcard only
+// matches the exact URL, and GoTrue falls back to the Site URL (the web app)
+// when a redirect does not match. The app tells a bypass signup apart with
+// its own stored flag instead of ?from=signup.
+export const APP_AUTH_CALLBACK = 'plot://auth/callback';
 
 export function allowedOrigin(origin: string | null): string {
   if (!origin) return 'https://app.theplot.tv';
@@ -13,6 +22,11 @@ export function allowedOrigin(origin: string | null): string {
     if (protocol === 'https:' && hostname.endsWith('.plot-5wr.pages.dev')) return origin;
   } catch { /* use canonical origin */ }
   return 'https://app.theplot.tv';
+}
+
+// Only the mobile app sends client: 'app'. Anything else keeps the web callback.
+export function bypassClient(value: unknown): BypassClient {
+  return value === 'app' ? 'app' : 'web';
 }
 
 export function bypassAction(value: unknown): BypassAction {
@@ -46,7 +60,13 @@ export function isMissingUserError(message: string | null | undefined): boolean 
  * is already a member stays a sign-in unless the caller says this click is
  * how a new account finishes signup.
  */
-export function authCallbackRedirect(origin: string | null, action: BypassAction, confirmSignup = false): string {
+export function authCallbackRedirect(
+  origin: string | null,
+  action: BypassAction,
+  confirmSignup = false,
+  client: BypassClient = 'web',
+): string {
+  if (client === 'app') return APP_AUTH_CALLBACK;
   const url = new URL('/auth/callback', allowedOrigin(origin));
   const asSignup = action !== 'magiclink' || confirmSignup;
   if (asSignup) {
