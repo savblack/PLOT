@@ -8,7 +8,7 @@ Updated: 2026-11-03
 
 ## In plain words
 
-On History, a Premium viewer can now tap the "titles" count, the "your night" weekday, or a new "See your <genre> titles" link, and get the list of exactly those titles with a chip above it that removes the filter. The filter lives in the web address, so the link can be shared. Free viewers see History exactly as before. Nothing to do yet except decide the two questions under Next.
+On History, a Premium viewer can now tap the "titles" count, the "your night" weekday, or a new "See your <genre> titles" link, and get the list of exactly those titles with a chip above it that removes the filter. The filter lives in the web address, so the link can be shared. Free viewers see the same tiles with a small Premium marker, and tapping one opens the upgrade page (agreed with Savannah 2026-11-03). Nothing to do yet except try it once in a browser.
 
 ## Done (verified)
 
@@ -19,7 +19,7 @@ On History, a Premium viewer can now tap the "titles" count, the "your night" we
 
 ## Next
 
-1. Decide: free viewers currently see plain tiles. Send them to the upgrade page on tap instead?
+1. Done: free tap goes to plans page (web) / Premium settings (mobile); no drill-down event fires for it.
 2. Network and person drill-downs wait on #1269 (not built).
 3. Add `history_stat_drilldown` to the PostHog Tier 1 action if wanted (not done, PostHog not touched).
 4. Not tried on a device or in the browser with a real Premium account. Run `pnpm run dev` and check once.

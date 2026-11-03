@@ -22,6 +22,7 @@ import { DRILLDOWN_STATS, type Drilldown } from '@plot/core/historyDrilldown.js'
 import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
 import { HISTORY_VIEW as T } from '@plot/core/copy/historyView.js';
 import { SHARE_CARDS } from '@plot/core/copy/shareCards.js';
+import { APP_SHELL } from '@plot/core/copy/appShell.js';
 import ShareCardSheet from './share/ShareCardSheet';
 import type { ShareCardModel } from './share/ShareCardView';
 
@@ -57,12 +58,14 @@ function ShareIcon({ what, ready, onPress, colors }: {
 }
 
 export default function HistoryInsights({
-  sharePreset, onSharePresetUsed, onDrilldown,
+  sharePreset, onSharePresetUsed, onDrilldown, drilldownLocked = false,
 }: {
   sharePreset?: string | null;
   onSharePresetUsed?: () => void;
   /** Premium only: set, a stat row opens the titles behind it. Unset, the rows are text. */
   onDrilldown?: (d: Drilldown) => void;
+  /** Free viewer: the rows look the same but carry a Premium marker, and onDrilldown opens the upgrade screen. */
+  drilldownLocked?: boolean;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -137,15 +140,15 @@ export default function HistoryInsights({
         </View>
         <Stat label={T.titles} value={String(yearEntries.length)} styles={styles}
           onPress={onDrilldown && yearEntries.length ? () => onDrilldown({ stat: DRILLDOWN_STATS.TITLES, year }) : undefined}
-          a11y={T.drilldownOpen(T.drilldownTitles(year))} />
+          a11y={T.drilldownOpen(T.drilldownTitles(year))} locked={drilldownLocked} />
         <Stat label={T.watchingMovies} value={mins.counted ? formatDuration(mins.minutes) : '–'} styles={styles} />
         <Stat label={T.yourNight} value={wd && wd.total >= 3 ? wd.name : '–'} styles={styles} last
           onPress={onDrilldown && wd && wd.total >= 3 ? () => onDrilldown({ stat: DRILLDOWN_STATS.WEEKDAY, year, weekday: wd.weekday }) : undefined}
-          a11y={wd ? T.drilldownOpen(T.drilldownWeekday(wd.name)) : undefined} />
+          a11y={wd ? T.drilldownOpen(T.drilldownWeekday(wd.name)) : undefined} locked={drilldownLocked} />
         {!!sentence && <Text style={styles.sentence}>{sentence}</Text>}
         {onDrilldown && topGenre != null && !!genreName(topGenre) && (
           <Pressable accessibilityRole="link" onPress={() => onDrilldown({ stat: DRILLDOWN_STATS.GENRE, year, genre: topGenre })}>
-            <Text style={styles.drillLink}>{T.drilldownOpen(T.drilldownGenre(genreName(topGenre) as string))}</Text>
+            <Text style={styles.drillLink}>{T.drilldownOpen(T.drilldownGenre(genreName(topGenre) as string))}{drilldownLocked ? `  ${APP_SHELL.premium}` : ''}</Text>
           </Pressable>
         )}
       </View>
@@ -262,14 +265,14 @@ export default function HistoryInsights({
   );
 }
 
-function Stat({ label, value, last, styles, onPress, a11y }: {
+function Stat({ label, value, last, styles, onPress, a11y, locked }: {
   label: string; value: string; last?: boolean; styles: ReturnType<typeof makeStyles>;
-  onPress?: () => void; a11y?: string;
+  onPress?: () => void; a11y?: string; locked?: boolean;
 }) {
   const body = (
     <>
       <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statLabel}>{label}{locked ? `  ${APP_SHELL.premium}` : ''}</Text>
     </>
   );
   if (!onPress) return <View style={[styles.stat, last && styles.statLast]}>{body}</View>;

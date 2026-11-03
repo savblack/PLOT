@@ -7666,6 +7666,7 @@ a.provider-chip--link:hover {
   text-underline-offset: 3px;
 }
 .hist-drill-link:hover, .hist-drill-link:focus-visible { color: var(--accent); }
+.hist-drill-premium { margin-left: 8px; }
 .hist-drill-chip {
   display: inline-flex;
   align-items: center;

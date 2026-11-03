@@ -32,6 +32,8 @@ import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
 import { useTopLists } from '../hooks/useTopLists.js';
 import { useSharePreset } from '../hooks/useSharePreset.js';
 import { MEDIA } from '../copy/media.js';
+import { APP_SHELL } from '../copy/appShell.js';
+import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 
 /* History is its own page: the poster shelf, one month at a time, with a
@@ -76,12 +78,14 @@ function NoteIcon() {
 /* ── Side cards ── */
 
 /* `drill` is { to, label, onFollow } for a Premium viewer when the number has
-   titles behind it: the whole tile becomes the link. Otherwise it is text. */
+   titles behind it: the whole tile becomes the link. A Free viewer gets the
+   same tile with a Premium marker, and the link goes to the plans page. */
 function Stat({ value, label, drill = null }) {
   const body = (
     <>
       <span className="hist-stat-value">{value}</span>
       <span className="hist-stat-label">{label}</span>
+      {drill?.locked && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
     </>
   );
   if (!drill) return <div className="hist-stat">{body}</div>;
@@ -147,7 +151,11 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
       {sentence && <p className="hist-sentence">{sentence}</p>}
       {topGenre != null && genreName(topGenre) && (() => {
         const drill = drillFor?.({ stat: DRILLDOWN_STATS.GENRE, year, genre: topGenre }, T.drilldownGenre(genreName(topGenre)));
-        return drill && <Link className="hist-drill-link" to={drill.to} onClick={drill.onFollow}>{T.drilldownOpen(drill.label)}</Link>;
+        return drill && (
+          <Link className="hist-drill-link" to={drill.to} onClick={drill.onFollow}>
+            {T.drilldownOpen(drill.label)}{drill.locked && <span className="app-nav-premium hist-drill-premium">{APP_SHELL.premium}</span>}
+          </Link>
+        );
       })()}
     </div>
   );
@@ -381,13 +389,11 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
     [yearEntries, types, genres, reviewed, dnf, query, drill],
   );
   // Where a tile goes: the same page with the filter in the URL.
-  const drillFor = premium
-    ? (d, label) => ({
-      to: `/history?${new URLSearchParams(drilldownParams(d))}`,
-      label,
-      onFollow: () => onDrilldown?.(d),
-    })
-    : null;
+  // A Free viewer's tile goes to the plans page instead, and fires no
+  // drill-down event: nothing was drilled into.
+  const drillFor = (d, label) => (premium
+    ? { to: `/history?${new URLSearchParams(drilldownParams(d))}`, label, onFollow: () => onDrilldown?.(d) }
+    : { to: premiumPlansPath('/history'), label, locked: true });
   const drillLabel = drill && (
     drill.stat === DRILLDOWN_STATS.GENRE ? T.drilldownGenre(genreName(drill.genre) ?? '')
       : drill.stat === DRILLDOWN_STATS.WEEKDAY ? T.drilldownWeekday(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][drill.weekday])
