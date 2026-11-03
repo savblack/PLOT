@@ -8,7 +8,7 @@ Updated: 2026-11-03
 
 ## In plain words
 
-Today, deleting a Plot account on `main` does not cancel the person's Stripe subscription, so they could keep being billed. It also leaves their profile photos behind. This branch fixes both. Everything is tested except the migration test against a copy of production, which Savannah has to run (the agent's permission guard blocks production reads).
+Today, deleting a Plot account on `main` does not cancel the person's Stripe subscription, so they could keep being billed. It also leaves their profile photos behind. This branch fixes both. Every check has passed, including the migration test against a copy of production. It is waiting only on Savannah's OK to merge.
 
 ## What changed
 
