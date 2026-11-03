@@ -19,11 +19,16 @@ Updated: 2026-11-03
 ## Checks
 
 Passed: `pnpm run check`, `pnpm run test:unit`, mobile typecheck, `migrations:check`, `copy:check`, `core:check`.
-Pending (need review / credentials): `pnpm run db:migration-test`, `pnpm run db:function-diff`, `pnpm run db:drift`, screenshots in the running apps.
+Run 2026-11-03 with Savannah's OK (local production copy, torn down after):
+- `db:migration-test`: PASS, both pending migrations apply cleanly (20261102120000 from main, and ours).
+- `db:function-diff`: only `update_watching_progress_updated_at` changes; the one removed line is the unconditional `now()`, now inside the condition. search_path kept.
+- `db:drift`: FAILS on pre-existing drift, none from this branch. Our version 20261103120000 is not taken on either project. Production never recorded 20261102120000 (main, merged 2026-11-02); production has 20261025102415 with no file on main; Staging is 4 behind and differs in objects.
+- Note: `.env`'s `SUPABASE_DB_URL` is not a connection string (it holds a short password-like value), so the scripts were run with it unset to use `PLOT_PRODUCTION_DB_PASSWORD`.
+Pending: second-agent read of the migration, screenshots, a Staging test for the trigger.
 
 ## Next
 
-Reviewer runs the pending DB checks, then a different agent reads the migration diff. Delete this file in the last commit before merge.
+A different agent reads the migration diff. Fix the 20261102120000 production apply separately before or alongside merge. Delete this file in the last commit before merge.
 
 ## Approvals
 
