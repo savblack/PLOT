@@ -380,6 +380,8 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   const [reviewed, setReviewed] = useState(false);
   const [dnf, setDnf] = useState(false);
   const [query, setQuery] = useState('');
+  const genreName = (id) => genreList.find(g => g.id === id)?.name ?? null;
+
   // A tile's filter is Premium's: a free viewer who opens a shared link sees
   // the plain page. It replaces the side genre filter while it is on, so the
   // chip and the list never disagree.
@@ -406,8 +408,6 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   // Snap the mini month back to the newest month whenever the year or the
   // filters change what's there.
   useEffect(() => { setMonthIndex(0); }, [activeYear, monthGroups.length]); // eslint-disable-line react-hooks/set-state-in-effect
-
-  const genreName = (id) => genreList.find(g => g.id === id)?.name ?? null;
 
   // The share sheet: which card it opened on, or null when closed. A preset
   // from the URL (?share=<card>) opens it once on arrival.
