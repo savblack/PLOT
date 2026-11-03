@@ -82,6 +82,17 @@ type SyncArgs = {
 };
 
 async function syncSubscription({ userId, customerId, sub, event }: SyncArgs) {
+  // Account deletion removes the mapping row before Stripe's cancellation
+  // webhook may arrive. A deleted account must not be recreated or retried.
+  const { data: mapping, error: mappingError } = await admin().from('billing_customers')
+    .select('user_id').eq('user_id', userId).maybeSingle();
+  if (mappingError) throw mappingError;
+  if (!mapping) {
+    const { data: { user }, error: userError } = await admin().auth.admin.getUserById(userId);
+    if (userError?.status === 404 || userError?.code === 'user_not_found' || !user && !userError) return { ignored: true };
+    if (userError) throw userError;
+  }
+
   return await reconcileBillingSnapshot(
     async () => {
       const { data, error } = await admin().from('billing_customers').select('revision').eq('user_id', userId).maybeSingle();
