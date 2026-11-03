@@ -1,11 +1,17 @@
 /**
- * Resolves a critic score (Rotten Tomatoes %, via OMDb) for a title by IMDb id.
+ * Resolves a critic score (Rotten Tomatoes %, via OMDb) for a title by IMDb id,
+ * plus OMDb's Awards text (e.g. "Won 4 Oscars. 159 wins & 220 nominations
+ * total") from the same record.
  *
  * OMDb's free tier is capped at ~1,000 req/day and RT scores rarely change, so
  * every lookup checks the `critic_scores` cache table first and only calls
  * OMDb on a miss or a stale (30+ day old) row. Best-effort: with no key, no
  * IMDb id, or an OMDb miss, this returns `{ criticScore: null }` rather than
  * an error — the panel simply omits the critic score.
+ *
+ * Awards ride on the same cached row and the same OMDb call, so they cost no
+ * extra quota. Rows cached before the `awards` column existed read as null
+ * until their normal TTL expires; this deliberately does not refetch them early.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { serviceKey } from '../_shared/serviceKey.ts'
@@ -64,17 +70,17 @@ Deno.serve(async (req) => {
 
   const { data: cached } = await admin
     .from('critic_scores')
-    .select('critic_score, source, fetched_at')
+    .select('critic_score, source, awards, fetched_at')
     .eq('imdb_id', imdbId)
     .maybeSingle();
 
   const cacheTtl = cached?.critic_score == null ? NEGATIVE_CACHE_TTL_MS : CACHE_TTL_MS;
   if (cached && Date.now() - new Date(cached.fetched_at).getTime() < cacheTtl) {
-    return json({ criticScore: cached.critic_score, source: cached.source }, origin);
+    return json({ criticScore: cached.critic_score, source: cached.source, awards: cached.awards }, origin);
   }
 
   const key = Deno.env.get('OMDB_API_KEY');
-  if (!key) return json({ criticScore: cached?.critic_score ?? null, source: cached?.source ?? null }, origin);
+  if (!key) return json({ criticScore: cached?.critic_score ?? null, source: cached?.source ?? null, awards: cached?.awards ?? null }, origin);
 
   // One database transaction admits both the caller and the global daily
   // budget. It also bounds/prunes caller buckets so address rotation cannot
@@ -88,11 +94,12 @@ Deno.serve(async (req) => {
     p_caller_bucket: bucket,
   });
   if (quotaError || !allowed) {
-    return json({ criticScore: cached?.critic_score ?? null, source: cached?.source ?? null, rateLimited: true }, origin);
+    return json({ criticScore: cached?.critic_score ?? null, source: cached?.source ?? null, awards: cached?.awards ?? null, rateLimited: true }, origin);
   }
 
   let criticScore: number | null = null;
   let source: string | null = null;
+  let awards: string | null = null;
   let providerResponded = false;
   try {
     const res = await fetch(`${OMDB_BASE}?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(imdbId)}&tomatoes=true`);
@@ -105,6 +112,9 @@ Deno.serve(async (req) => {
         criticScore = parsed;
         source = 'Rotten Tomatoes';
       }
+      // OMDb uses the literal 'N/A' for "none"; store that as null.
+      const awardsText = typeof data.Awards === 'string' ? data.Awards.trim() : '';
+      if (awardsText && awardsText !== 'N/A') awards = awardsText.slice(0, 300);
     }
   } catch {
     // Preserve a stale valid score and retry transient provider failures later.
@@ -113,11 +123,12 @@ Deno.serve(async (req) => {
   if (providerResponded) {
     await admin
       .from('critic_scores')
-      .upsert({ imdb_id: imdbId, critic_score: criticScore, source, fetched_at: new Date().toISOString() });
+      .upsert({ imdb_id: imdbId, critic_score: criticScore, source, awards, fetched_at: new Date().toISOString() });
   }
 
   return json({
     criticScore: providerResponded ? criticScore : cached?.critic_score ?? null,
     source: providerResponded ? source : cached?.source ?? null,
+    awards: providerResponded ? awards : cached?.awards ?? null,
   }, origin);
 });
