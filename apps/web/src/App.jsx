@@ -436,7 +436,6 @@ export default function App() {
           collectionId={panelItem.id}
           closing={panelClosing}
           onClose={closePanel}
-          onBrowse={handleBrowse}
         />
       )}
 
@@ -447,6 +446,7 @@ export default function App() {
           initialListOpen={panelItem.initialListOpen}
           closing={panelClosing}
           onClose={closePanel}
+          onBrowse={handleBrowse}
         />
       )}
 
