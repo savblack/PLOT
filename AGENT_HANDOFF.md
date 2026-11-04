@@ -1,11 +1,11 @@
 # omdb-awards
 
-Status: paused (code done, checkpoint pushed, no PR yet)
+Status: paused (PR open, waiting on CI and Savannah's merge OK)
 Owner: Hailey (product, title panel parity); Jacob reviews the migration
 Branch: agent/2026-11-03-omdb-awards
 Worktree: ~/Developer/PLOT-worktrees/2026-11-03-omdb-awards
 Issue: https://github.com/savblack/PLOT/issues/1273
-Updated: 2026-11-03
+Updated: 2026-11-04
 
 ## In plain words
 
@@ -25,6 +25,7 @@ Savannah: nothing is live. Merging adds one empty database column on production
 - `critic-score` edge function reads `data.Awards` (OMDb `N/A` stored as null, capped at 300 chars), caches and returns `awards` on every path.
 - `database.types.ts` hand-edited to add `awards`. Regenerate with `pnpm run gen:db-types` after the migration applies; the output should match.
 - `@plot/core/reviews.js` `fetchCriticScore` now returns `{ criticScore|null, source|null, awards|null }`, or null when it has neither. Tests added.
+- Second-agent review (2026-11-04) found two edge-function risks, both fixed: an unreadable cache now returns nulls without calling OMDb (covers deploying the function before the migration), and OMDb error replies (quota, bad key) no longer overwrite a good cached row.
 - Web + mobile MediaPanel: score pill keyed on `hasCriticScore`; new awards row under the scores. Copy `MEDIA_PANEL.awards`.
 
 ## Checks
@@ -44,8 +45,8 @@ Savannah: nothing is live. Merging adds one empty database column on production
 ## Next
 
 1. Run `pnpm run db:migration-test`, then apply the migration and deploy `critic-score` to PLOT Staging and check a well-known awarded film in the panel.
-2. Open the PR (needs a second-agent read of the migration diff per AGENTS.md). Delete this file in the last commit before merge.
-3. Deploy order: the migration must apply before the new `critic-score` deploys. Otherwise the select on `awards` fails, the cache reads as empty, and every lookup calls OMDb.
+2. PR is open. Delete this file in the last commit before merge.
+3. Deploy order: apply the migration before deploying `critic-score`. If the function goes first it now fails safe (no critic scores or awards until the column exists), but it does not burn OMDb quota.
 
 ## Approvals
 

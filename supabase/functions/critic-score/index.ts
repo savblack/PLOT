@@ -68,11 +68,18 @@ Deno.serve(async (req) => {
   const serviceRole = serviceKey();
   const admin = createClient(supabaseUrl, serviceRole);
 
-  const { data: cached } = await admin
+  const { data: cached, error: cacheError } = await admin
     .from('critic_scores')
     .select('critic_score, source, awards, fetched_at')
     .eq('imdb_id', imdbId)
     .maybeSingle();
+  // An unreadable cache (an outage, or this code deployed before the `awards`
+  // column migration applied) must not turn every panel open into an OMDb
+  // call: the write below would fail too, so nothing would ever be cached.
+  if (cacheError) {
+    console.error('[critic-score] cache read failed; skipping OMDb', cacheError.message);
+    return json({ criticScore: null, source: null, awards: null }, origin);
+  }
 
   const cacheTtl = cached?.critic_score == null ? NEGATIVE_CACHE_TTL_MS : CACHE_TTL_MS;
   if (cached && Date.now() - new Date(cached.fetched_at).getTime() < cacheTtl) {
@@ -104,7 +111,11 @@ Deno.serve(async (req) => {
   try {
     const res = await fetch(`${OMDB_BASE}?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(imdbId)}&tomatoes=true`);
     const data = res.ok ? await res.json().catch(() => null) : null;
-    providerResponded = Boolean(data);
+    // OMDb answers quota and key failures with 200 + Response 'False'. Only a
+    // real "no such title" may overwrite the cache; anything else keeps the
+    // last good score and awards.
+    const providerError = data?.Response === 'False' ? String(data.Error ?? '') : '';
+    providerResponded = Boolean(data) && (!providerError || /not found|incorrect imdb id/i.test(providerError));
     if (data && data.Response !== 'False') {
       const rt = data.Ratings?.find((r: { Source: string }) => r.Source === 'Rotten Tomatoes')?.Value;
       const parsed = rt ? parseInt(rt, 10) : NaN;
