@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   JUST_CONFIRMED_WINDOW_MS,
+  authReportStorageKeys,
   clearPendingBypassSignup,
   pendingBypassMatches,
   planAuthCallbackReport,
@@ -149,3 +150,12 @@ test('signup dedupe and the pending bypass flag round-trip through storage', () 
 function PENDING_STALE() {
   return 8 * 24 * 60 * 60 * 1000;
 }
+
+test('authReportStorageKeys lists what pending and tracked checks read', () => {
+  const written = [];
+  const store = { set: (key) => written.push(key), get: () => null, remove: () => {} };
+  rememberPendingBypassSignup('user@example.com', store);
+  rememberSignupTracked('user-1', store);
+  assert.deepEqual(authReportStorageKeys('user-1').sort(), written.sort());
+  assert.deepEqual(authReportStorageKeys(null), [written[0]]);
+});

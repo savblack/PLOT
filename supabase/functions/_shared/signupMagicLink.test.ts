@@ -87,6 +87,16 @@ Deno.test('new magic-link signup uses the signup callback and retains a delivere
   assertEquals(f.order.filter((step) => step === 'generate').length, 1);
 });
 
+Deno.test('an app request sends the app deep link for new and existing accounts', async () => {
+  const fresh = fixture({ generatedNew: true });
+  assertEquals(await deliverMagicLink(fresh.admin, fresh.mail, 'new@example.test', null, 'magiclink', true, 'app'), 'sent');
+  assertEquals(fresh.redirects, ['plot://auth/callback']);
+
+  const member = fixture({});
+  assertEquals(await deliverMagicLink(member.admin, member.mail, 'member@example.test', null, 'magiclink', false, 'app'), 'sent');
+  assertEquals(member.redirects.every((url) => url === 'plot://auth/callback'), true);
+});
+
 Deno.test('failed mail never deletes an existing account', async () => {
   const f = fixture({ mailResult: 'failed' });
   assertEquals(await deliverMagicLink(f.admin, f.mail, 'member@example.test', null, 'magiclink', false), 'failed');

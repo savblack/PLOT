@@ -51,6 +51,18 @@ export function rememberSignupTracked(userId, storage) {
 }
 
 /**
+ * Every key the helpers below read for this user. The storage they take is
+ * synchronous; mobile's AsyncStorage is not, so it reads these first and
+ * hands over a snapshot.
+ *
+ * @param {string | null | undefined} userId
+ * @returns {string[]}
+ */
+export function authReportStorageKeys(userId) {
+  return userId ? [PENDING_KEY, SIGNUP_TRACKED_PREFIX + userId] : [PENDING_KEY];
+}
+
+/**
  * @param {string} email
  * @param {{ set: (key: string, value: string) => void }} storage
  * @param {number} [now]

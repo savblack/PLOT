@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './AuthPage.css';
 import { track, identifyUser, EVENTS } from '../lib/analytics.js';
@@ -14,7 +14,7 @@ import { AUTH_PAGE, captchaFailureCopy } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
 import { captchaSubmitPlan, CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js';
-import { signupFormTokenIsStale } from '../utils/signupFormToken.js';
+import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 import PlotLogo from '../components/PlotLogo.jsx';
@@ -57,32 +57,11 @@ function readAuthFormFields(form) {
   };
 }
 
-// signup-bypass rejects posts younger than its server minimum, measured from
-// form-token issuance. Waiting here keeps a fast click from landing on a
-// success screen for an account the server never created.
-function waitOutMinimum(startedAt, minMs) {
-  if (!startedAt) return Promise.resolve();
-  const since = Date.now() - startedAt;
-  if (since >= minMs) return Promise.resolve();
-  return new Promise((resolve) => setTimeout(resolve, minMs - since));
-}
-
 // Short, stable slugs for signup_submit_failed — group failures in PostHog
 // without leaking the raw (occasionally wordy) Supabase error message.
 // Stable analytics slugs live in core so web and mobile group failures the
 // same way — see @plot/core/authErrors.js.
 const errorReason = authErrorReason;
-
-// Friendly copy for the signup-bypass Edge Function's structured error
-// reasons (distinct from friendlyError/errorReason above, which parse raw
-// Supabase Auth messages — the bypass path returns its own reason strings).
-function bypassErrorMessage(reason) {
-  if (reason === 'rate_limited') return AUTH_PAGE.rateLimited;
-  if (reason === 'already_registered') return AUTH_PAGE.accountAlreadyExists;
-  if (reason === 'link_withdrawn') return AUTH_PAGE.linkWithdrawn;
-  if (reason === 'link_withdraw_failed') return AUTH_PAGE.linkWithdrawFailed;
-  return COMMON.genericError;
-}
 
 function browserStore() {
   return {
@@ -138,20 +117,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const captchaErroredRef = useRef(false);
   const [formStarted, setFormStarted] = useState(false);
   const [website, setWebsite] = useState(''); // honeypot — real users never see or fill this
-  // Signed {iat} token from signup-bypass's GET endpoint — a server-observed
-  // clock the bypass path checks submission timing against, since a raw
-  // client-supplied timestamp could just be claimed, not proven.
-  const formTokenRef = useRef(null);
-  // When the current form token was issued. signup-bypass rejects (as a fake
-  // success) anything posted sooner than its server-side minimum, measured
-  // from that issuance. A fast click has to wait out the window or the
-  // success screen would describe an account that was never created.
-  // The same timestamp decides when the token is too old to reuse. Past
-  // signup-bypass's 15-minute cap the function again returns { ok: true }
-  // and creates nothing.
-  const formTokenAtRef = useRef(0);
-  // Bumped on every fetch so a slow GET cannot overwrite a newer token.
-  const formTokenFetchGen = useRef(0);
+  // Form token, minimum form age, and the POSTs to signup-bypass. Shared
+  // with mobile (see @plot/core/signupBypassClient.js).
+  const [bypassClient] = useState(() => createSignupBypassClient({ getSupabase: loadSupabase }));
   // Password submit, magic link, OAuth, and mode switches all advance this.
   // An attempt that loses the epoch must not keep going after an await.
   const authEpochRef = useRef(0);
@@ -204,35 +172,6 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const requestCaptcha = () => {
     captchaTokenRef.current = null;
     setCaptchaExecute((n) => n + 1);
-  };
-
-  // signup-bypass's MIN_SUBMIT_MS is 1200. Stay above it so a real person
-  // who clicks immediately is not shown a success screen for an account
-  // the server declined to create.
-  const BYPASS_MIN_PAGE_MS = 1500;
-
-  const loadFormToken = useCallback(async () => {
-    const gen = ++formTokenFetchGen.current;
-    try {
-      const supabase = await loadSupabase();
-      const { data } = await supabase.functions.invoke('signup-bypass', { method: 'GET' });
-      if (gen !== formTokenFetchGen.current || !data?.formToken) return formTokenRef.current;
-      formTokenRef.current = data.formToken;
-      formTokenAtRef.current = Date.now();
-    } catch { /* bypass simply won't be available if this fails */ }
-    return formTokenRef.current;
-  }, []);
-
-  const ensureFormToken = async () => {
-    if (formTokenRef.current && !signupFormTokenIsStale(formTokenAtRef.current)) {
-      return formTokenRef.current;
-    }
-    // Drop the expired token before the fetch. A failed refresh must not
-    // fall back to it and paint a confirmation for an account that was
-    // never created.
-    formTokenRef.current = null;
-    formTokenAtRef.current = 0;
-    return loadFormToken();
   };
 
   const beginAuthAttempt = () => {
@@ -305,9 +244,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
       // Fetched unconditionally (not just once Turnstile fails) so the token's
       // age reflects real time-on-page even if bypass turns out to be needed
       // later. No side effects server-side. Safe to call every visit.
-      loadFormToken();
+      bypassClient.loadFormToken();
     }
-  }, [mode, hasSession, loadFormToken]);
+  }, [mode, hasSession, bypassClient]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -408,16 +347,6 @@ export default function AuthPage({ initialMode = 'signup' }) {
           setError(AUTH_PAGE.verificationFailedSignup);
         }
         track(EVENTS.SIGNUP_BYPASS_OFFERED);
-        const formToken = await ensureFormToken();
-        if (!attemptIsCurrent(epoch)) return;
-        if (!formToken) {
-          setError(COMMON.genericError);
-          setLoading(false);
-          track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: 'bypass_no_form_token' });
-          return;
-        }
-        await waitOutMinimum(formTokenAtRef.current, BYPASS_MIN_PAGE_MS);
-        if (!attemptIsCurrent(epoch)) return;
         await submitViaBypass(submittedEmail, submittedPassword, epoch);
         return;
       }
@@ -466,50 +395,27 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // bypassing the need for a Turnstile token. On success it hands back a
   // confirmation link delivered only to the supplied mailbox.
   const submitViaBypass = async (submittedEmail, submittedPassword, epoch) => {
-    const supabase = await loadSupabase();
-    if (!attemptIsCurrent(epoch)) return;
-    const { data, error } = await supabase.functions.invoke('signup-bypass', {
-      method: 'POST',
-      body: {
-        email: submittedEmail,
-        password: submittedPassword,
-        website,
-        formToken: formTokenRef.current,
-      },
+    const result = await bypassClient.signUp({
+      email: submittedEmail,
+      password: submittedPassword,
+      website,
+      isCurrent: () => attemptIsCurrent(epoch),
     });
-    if (!attemptIsCurrent(epoch)) return;
-    if (error) {
-      // supabase-js returns data: null for any non-2xx, so the function's
-      // structured { reason } only survives in error.context (the Response).
-      // Without reading it every failure, including a dead Resend key,
-      // collapsed into one opaque 'bypass_create_failed'.
-      let reason = null;
-      let status = null;
-      try {
-        status = error.context?.status ?? null;
-        const body = await error.context?.clone?.().json();
-        reason = typeof body?.reason === 'string' ? body.reason : null;
-      } catch { /* network error or non-JSON body */ }
-      if (!attemptIsCurrent(epoch)) return;
-      setError(bypassErrorMessage(reason));
+    if (!result.ok && result.superseded) return;
+    if (!result.ok) {
+      setError(result.message);
       setLoading(false);
       track(EVENTS.SIGNUP_SUBMIT_FAILED, {
-        reason: reason ? `bypass_${reason}` : 'bypass_create_failed',
-        ...(status ? { status } : {}),
+        reason: result.analyticsReason,
+        ...(result.status ? { status: result.status } : {}),
       });
       return;
     }
-    if (data?.error) {
-      setError(bypassErrorMessage(data.reason));
-      setLoading(false);
-      track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: `bypass_${data.reason || 'unknown'}` });
-      return;
-    }
-    if (!data?.requires_email_confirmation) {
+    if (!result.created) {
       // Honeypot, or a submit that arrived sooner than the server minimum.
       // signup-bypass answers { ok: true } and creates nothing, so those
       // cases look like success on purpose. An expired form token used to
-      // land here too. ensureFormToken refreshes before that 15-minute cap,
+      // land here too. The client refreshes before that 15-minute cap,
       // and a failed refresh does not post the old token.
       setLoading(false);
       setSuccess(true);
@@ -527,34 +433,15 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Resend and magic link share this. The function rate-limits and sends
   // through Resend. A fake { ok: true } (honeypot, or a submit that was too
   // fast) is still success on purpose.
-  const sendBypassAuthLink = async (action, submittedEmail, epoch, { confirmSignup = false } = {}) => {
-    const formToken = await ensureFormToken();
-    if (!attemptIsCurrent(epoch)) return { ok: false, reason: 'superseded' };
-    if (!formToken) return { ok: false, reason: 'bypass_no_form_token', message: COMMON.genericError };
-    await waitOutMinimum(formTokenAtRef.current, BYPASS_MIN_PAGE_MS);
-    if (!attemptIsCurrent(epoch)) return { ok: false, reason: 'superseded' };
-    const supabase = await loadSupabase();
-    const { data, error } = await supabase.functions.invoke('signup-bypass', {
-      method: 'POST',
-      body: {
-        email: submittedEmail,
-        website,
-        formToken: formTokenRef.current,
-        action,
-        confirmSignup,
-      },
-    });
-    if (!attemptIsCurrent(epoch)) return { ok: false, reason: 'superseded' };
-    if (error || data?.error) {
-      let reason = data?.reason || null;
-      try {
-        const body = await error?.context?.clone?.().json();
-        if (typeof body?.reason === 'string') reason = body.reason;
-      } catch { /* non-JSON */ }
-      return { ok: false, reason: reason || 'bypass_email_failed', message: bypassErrorMessage(reason) };
-    }
-    return { ok: true };
-  };
+  const sendBypassAuthLink = (action, submittedEmail, epoch, { confirmSignup = false } = {}) => (
+    bypassClient.sendLink({
+      action,
+      email: submittedEmail,
+      website,
+      confirmSignup,
+      isCurrent: () => attemptIsCurrent(epoch),
+    })
+  );
 
   // OAuth: hand off to the provider. We can't fire the signup/login event here
   // (the page redirects away), so we stash the method in sessionStorage and let
@@ -676,7 +563,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     // Invalidates a submit that is still waiting on Turnstile, and drops any
     // form token so the next signup view fetches a new one.
     authEpochRef.current = advanceAuthEpoch(authEpochRef.current);
-    formTokenFetchGen.current += 1;
+    bypassClient.reset();
     setMode(next);
     setError(null);
     setSuccess(false);
@@ -684,8 +571,6 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setResendStatus(null);
     setFormStarted(false);
     setLoading(false);
-    formTokenRef.current = null;
-    formTokenAtRef.current = 0;
   };
 
   const handleResend = async () => {
