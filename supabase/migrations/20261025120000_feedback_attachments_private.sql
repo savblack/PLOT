@@ -13,12 +13,16 @@ update storage.buckets
   set public = false
   where id = 'feedback-attachments';
 
+-- Same body as main's 20261103130000_feedback_attachment_owner_select, which
+-- production applied first. Keep the (select ...) wrapper: it evaluates
+-- auth.uid() once per query instead of once per row, and this migration
+-- replaces the live policy when it runs.
 drop policy if exists "Owners can read feedback attachments" on storage.objects;
 create policy "Owners can read feedback attachments"
   on storage.objects for select to authenticated
   using (
     bucket_id = 'feedback-attachments'
-    and owner_id = auth.uid()::text
+    and owner_id = (select auth.uid()::text)
   );
 
 do $guard$
