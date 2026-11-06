@@ -1136,6 +1136,77 @@
       .in-pills li { gap: 6px; padding: 7px 12px 7px 8px; font-size: 0.8125rem; white-space: nowrap; }
       .in-pills svg { width: 18px; height: 18px; }
     }
+
+    /* ── Boxed sections ───────────────────────────────────────── */
+    /* Each section is a rounded panel inset from the page edge, with a small
+       gap between panels and a soft tint per panel. The components inside
+       each section are unchanged. Kept last so it wins over the section
+       rules above. */
+    :root {
+      --box-inset: 12px;
+      --box-gap: 14px;
+      --box-radius: 28px;
+      --box-pink: #ffd3ea;
+      --box-white: #fffaf3;
+    }
+    @media (max-width: 760px) {
+      :root { --box-inset: 8px; --box-gap: 10px; --box-radius: 22px; }
+    }
+
+    /* Hero: the dark screen becomes the first panel. */
+    #opening {
+      margin: var(--box-inset) var(--box-inset) 0;
+      border-radius: var(--box-radius);
+      overflow: hidden;
+    }
+    /* Only the two-column hero fills the screen; below 1181px it stacks and
+       shrinks to its content (the min-height: 0 rule above). */
+    @media (min-width: 1181px) {
+      #opening { min-height: calc(100svh - var(--box-inset) * 2); }
+    }
+
+    /* Nav: at the top of the page it sits inside the hero panel, lower and further
+       in from the edges. Once the page scrolls (nav.js adds .scrolled) it glides up
+       to the usual 64px bar. An open mobile menu snaps it there too, so the menu
+       panel (fixed at top: 64px) meets it. */
+    :root { --nav-drop: 22px; --nav-inset: 2rem; }
+    @media (max-width: 760px) { :root { --nav-drop: 12px; } }
+    #navbar {
+      padding-inline: calc(var(--nav-inset) + var(--box-inset) * 1.5);
+      transform: translateY(var(--nav-drop));
+      transition: transform 0.45s var(--ease), padding 0.45s var(--ease),
+                  background 0.3s var(--ease), backdrop-filter 0.3s var(--ease);
+    }
+    #navbar.scrolled,
+    #navbar.nav-open {
+      padding-inline: var(--nav-inset);
+      transform: none;
+    }
+
+    /* Feature sections: one panel each. */
+    #memories,
+    .hx {
+      margin: var(--box-gap) var(--box-inset) 0;
+      border-radius: var(--box-radius);
+      overflow: clip;
+    }
+    #memories { background: var(--surface); }
+    #drops    { background: var(--box-pink); }
+    #import   { background: var(--box-white); }
+    #lists    { background: var(--sage); }
+    #premium  { background: var(--surface); }
+    #app      { background: var(--box-pink); }
+    #indie    { background: var(--box-white); }
+
+    /* Breathing room between the last panel and the footer. */
+    #indie { margin-bottom: var(--box-gap); }
+
+    /* The import card is the same white as its panel; sit it on sand instead,
+       as the Lobby does. */
+    #import .im-card { background: var(--surface); }
+
+    /* The indie pills used the sand surface; keep them visible on a light panel. */
+    #indie .in-pills li { background: var(--surface); }
   </style>
 </head>
 <body>
@@ -1150,6 +1221,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
       <li><a href="/pricing">Pricing</a></li>
+      <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
+      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
     </ul>
     <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
