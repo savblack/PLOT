@@ -1702,6 +1702,10 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     return !error;
                   }}
                 />
+              </div>
+              {/* Genres and keywords run the full width under the poster, so a
+                  long keyword list never leaves blank space beside it. */}
+              <div className="panel-head-tags">
                 {(genreChips.length > 0 || (chip && chip.cls !== 'chip-muted')) && (
                   <div className="panel-genres">
                     {chip && chip.cls !== 'chip-muted' && <span className={`chip ${chip.cls}`}>{chip.label}</span>}

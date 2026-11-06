@@ -4069,7 +4069,7 @@ svg { stroke-width: 1.5; }
 
 .panel-head {
   display: grid;
-  grid-template-columns: 132px 1fr;
+  grid-template-columns: 150px 1fr;
   align-items: start;
   gap: 1rem;
   margin-bottom: 1.1rem;
@@ -4080,9 +4080,9 @@ svg { stroke-width: 1.5; }
      it back in front of the artwork it overlaps. */
   position: relative;
   z-index: 1;
-  width: 132px;
-  height: 198px;
-  margin-top: -40px;
+  width: 150px;
+  height: 225px;
+  margin-top: -48px;
   object-fit: cover;
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
@@ -4093,6 +4093,9 @@ svg { stroke-width: 1.5; }
 /* The kicker needs air under the band; the poster grows by the same amount
    so its foot still lands below the text column. */
 .panel-head-text { min-width: 0; padding-top: 0.8rem; }
+/* Second grid row, under both columns. */
+.panel-head-tags { grid-column: 1 / -1; min-width: 0; margin-top: -0.4rem; }
+.panel-head-tags > :first-child { margin-top: 0; }
 
 /* Kind stays on the left. Customize artwork shares that line and sits at the
    right edge of the head, so a long title cannot push it down under the genres. */
@@ -4453,8 +4456,8 @@ svg { stroke-width: 1.5; }
    in components/TitleFootBar.css. */
 
 @media (max-width: 560px) {
-  .panel-poster { width: 112px; height: 168px; margin-top: -32px; }
-  .panel-head { grid-template-columns: 112px 1fr; }
+  .panel-poster { width: 120px; height: 180px; margin-top: -36px; }
+  .panel-head { grid-template-columns: 120px 1fr; }
   .panel-head-text { padding-top: 0.6rem; }
   .panel-title { font-size: 1.5rem; }
   /* Two labelled pills and three icons don't fit a phone's width, and
