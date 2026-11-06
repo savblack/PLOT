@@ -1,6 +1,6 @@
 # omdb-awards
 
-Status: paused (PR #1458 open; Staging verified; production migration test blocked by pooler timeouts)
+Status: paused (PR #1458 ready for Savannah's merge OK; all checks green)
 Owner: Hailey (product, title panel parity); Jacob reviews the migration
 Branch: agent/2026-11-03-omdb-awards
 Worktree: ~/Developer/PLOT-worktrees/2026-11-03-omdb-awards
@@ -21,7 +21,7 @@ Savannah: nothing is live. Merging adds one empty database column on production
 
 ## Done
 
-- Migration `20261103120000_critic_scores_awards.sql`: nullable `awards text` on `critic_scores`.
+- Migration `20261106120000_critic_scores_awards.sql` (renamed from `20261103120000` on 2026-11-06 so it sorts after main's `20261103130000`, which production already applied; Staging's ledger row renamed to match): nullable `awards text` on `critic_scores`.
 - `critic-score` edge function reads `data.Awards` (OMDb `N/A` stored as null, capped at 300 chars), caches and returns `awards` on every path.
 - `database.types.ts` hand-edited to add `awards`. Regenerate with `pnpm run gen:db-types` after the migration applies; the output should match.
 - `@plot/core/reviews.js` `fetchCriticScore` now returns `{ criticScore|null, source|null, awards|null }`, or null when it has neither. Tests added.
@@ -35,7 +35,9 @@ Savannah: nothing is live. Merging adds one empty database column on production
 - `pnpm run edge:check` passed
 - `pnpm run migrations:check` passed
 - Staging (2026-11-06, Savannah said "Yes, run them"): migration applied in one transaction with its `schema_migrations` row; `critic-score` deployed to Staging only. Staging has no `OMDB_API_KEY`, so one real OMDb lookup for Parasite (2019, resolved via TMDB search, imdb tt6751668) was made locally and written to Staging `critic_scores` (99 / "Won 4 Oscars. 309 wins & 261 nominations total"). The deployed Staging function returned it, and the web panel (local dev from this branch, signed in via `staging:session`) showed the Awards row under the scores. That cache row is left on Staging as harmless test data.
-- `pnpm run db:migration-test`: NOT completed. Three attempts on 2026-11-06 failed before any SQL ran: production's session pooler (aws-1-ap-south-1, port 5432) returned ECHECKOUTTIMEOUT twice and an auth timeout once. Sandbox torn down each time. Retry before merge; if it keeps failing, Jacob should check production's session-pool usage.
+- `pnpm run db:migration-test`: PASSED on 2026-11-06 after production's database came back (earlier three attempts hit pooler timeouts). Re-run after the rename and the merge of main: production has 176 applied, 1 pending (`20261106120000`), applied cleanly.
+- After merging origin/main (2026-11-06): `check`, `test:unit`, `edge:check`, `migrations:check` (177 scanned) all passed again. CI "Check trigger write paths" re-run passed.
+- `pnpm run db:drift`: production side clean (only `20261106120000` new, expected). Staging drift predates this PR: 6 unrecorded migrations (`20261016120000`, `20261016140000`, `20261017120000`, `20261025102415`, `20261102120000`, `20261103130000`) and ~25 schema differences. `critic_scores.awards` shows as Staging-only until this merges.
 - Mobile panel not checked visually (no simulator run); typecheck and lint pass.
 
 ## Decisions
@@ -45,9 +47,8 @@ Savannah: nothing is live. Merging adds one empty database column on production
 
 ## Next
 
-1. Retry `pnpm run db:migration-test` before merge (see Checks).
-2. On Savannah's merge OK: delete this file in the last commit, merge, then deploy `critic-score` to production after the migration applies.
-3. Staging drift, not this PR: Staging was missing `20261017120000`, `20261025102415` and `20261102120000` from main on 2026-11-06. `pnpm run db:drift` will flag it.
+1. On Savannah's merge OK: delete this file in the last commit, merge, then deploy `critic-score` to production after the migration applies.
+2. Staging drift, not this PR: see the drift line under Checks.
 
 ## Approvals
 
