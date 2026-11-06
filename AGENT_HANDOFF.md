@@ -1,7 +1,7 @@
 # Handoff: mobile signup-bypass fallback (issue #1437)
 
-**Status:** paused. Code done and checked locally; Staging device checks not run.
-**Last updated:** 2026-11-03
+**Status:** paused. Draft PR #1461 open (stacked on #1435). Staging device checks not run.
+**Last updated:** 2026-11-06
 **Owner:** Hailey (web and mobile parity). Jacob reviews the edge function change.
 
 ## In plain words
@@ -12,7 +12,8 @@ When the security check (captcha) on the mobile app times out, sign-up, "resend 
 
 - Branch: `agent/2026-11-03-mobile-signup-bypass`, built on top of PR #1435 (`cursor/signup-auth-feedback-fixes-cfdc` at `d6d54282e`). It must land after #1435, or be retargeted onto it.
 - Worktree: `~/Developer/PLOT-worktrees/2026-11-03-mobile-signup-bypass`
-- Latest pushed commit: see `git log -1` on the branch (checkpoint, `[skip ci]`).
+- PR: https://github.com/savblack/PLOT/pull/1461 (draft, base `cursor/signup-auth-feedback-fixes-cfdc`; retarget to `main` after #1435 merges).
+- Latest pushed commit: see `git log -1` on the branch.
 
 ### What changed
 
@@ -44,8 +45,8 @@ When the security check (captcha) on the mobile app times out, sign-up, "resend 
 
 ### Approvals
 
-- Given: none beyond the ticket.
-- Needed: opening a PR; Staging deploy; merge (after #1435).
+- Given: open a draft PR (Savannah, 2026-11-06).
+- Needed: Staging deploy; merge (after #1435).
 
 ### Follow-ups
 
