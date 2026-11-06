@@ -1158,7 +1158,11 @@
       margin: var(--box-inset) var(--box-inset) 0;
       border-radius: var(--box-radius);
       overflow: hidden;
-      min-height: calc(100svh - var(--box-inset) * 2);
+    }
+    /* Only the two-column hero fills the screen; below 1181px it stacks and
+       shrinks to its content (the min-height: 0 rule above). */
+    @media (min-width: 1181px) {
+      #opening { min-height: calc(100svh - var(--box-inset) * 2); }
     }
 
     /* Nav: at the top of the page it sits inside the hero panel, lower and further
