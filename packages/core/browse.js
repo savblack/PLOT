@@ -5,6 +5,19 @@ import { tmdb } from './tmdb.js';
 
 /** Keywords shown under a title: TMDB lists them by relevance, so the first few are the best. */
 export const MAX_KEYWORD_CHIPS = 8;
+/** How many show before "+N more": about one row, so the header stays short. */
+export const COLLAPSED_KEYWORD_CHIPS = 4;
+
+/**
+ * @template T
+ * @param {T[]} keywords
+ * @param {boolean} expanded
+ * @returns {{ visible: T[], hidden: number }}
+ */
+export function collapseKeywords(keywords, expanded) {
+  if (expanded || keywords.length <= COLLAPSED_KEYWORD_CHIPS) return { visible: keywords, hidden: 0 };
+  return { visible: keywords.slice(0, COLLAPSED_KEYWORD_CHIPS), hidden: keywords.length - COLLAPSED_KEYWORD_CHIPS };
+}
 
 /**
  * @param {any} details A TMDB movie or TV details response fetched with `keywords` appended.

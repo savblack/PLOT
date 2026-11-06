@@ -1,5 +1,7 @@
 export const BROWSE = {
   keywordsLabel: 'Keywords',
+  moreKeywords: (n) => `+${n} more`,
+  fewerKeywords: 'Show fewer',
   genreLink: (name) => `Browse ${name}`,
   keywordLink: (name) => `Browse ${name}`,
   keywordTitle: (name) => name,

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  browseTapProps, discoverByKeyword, genreBrowseParams, keywordBrowseParams,
+  browseTapProps, collapseKeywords, discoverByKeyword, genreBrowseParams, keywordBrowseParams,
   parseGenreBrowse, parseKeywordBrowse, topKeywords, typeFiltersFor,
 } from '../../browse.js';
 
@@ -50,4 +50,11 @@ test('discoverByKeyword asks TMDB for the keyword and tags media_type', async ()
   assert.deepEqual(await discoverByKeyword('movie', 77, client), [{ id: 1, media_type: 'movie' }]);
   assert.equal(seen.with_keywords, 77);
   assert.equal(await discoverByKeyword('tv', 5, { discoverTV: async () => null }), null);
+});
+
+test('collapseKeywords shows one row and counts the rest', () => {
+  const ks = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, name: `k${i}` }));
+  assert.deepEqual(collapseKeywords(ks, false), { visible: ks.slice(0, 4), hidden: 3 });
+  assert.deepEqual(collapseKeywords(ks, true), { visible: ks, hidden: 0 });
+  assert.deepEqual(collapseKeywords(ks.slice(0, 4), false), { visible: ks.slice(0, 4), hidden: 0 });
 });

@@ -4181,6 +4181,11 @@ svg { stroke-width: 1.5; }
   font-weight: 500;
   cursor: pointer;
 }
+/* Toggle reads as a link, not a keyword. */
+.panel-keyword--toggle {
+  border-style: dashed;
+  color: var(--text-muted);
+}
 
 .panel-overview {
   font-size: 0.84rem;

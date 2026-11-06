@@ -53,7 +53,7 @@ import { updateProfile } from '@plot/core/profile.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import { BROWSE } from '@plot/core/copy/browse.js';
-import { browseTapProps, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
+import { browseTapProps, collapseKeywords, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
 import UpgradeSheet from './UpgradeSheet';
 import { useRouter, type Href } from 'expo-router';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -809,6 +809,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
   const [showListSheet, setShowListSheet] = useState(false);
   const [details,   setDetails]   = useState<TMDBDetails | null>(null);
+  const [keywordsOpen, setKeywordsOpen] = useState(false);
   const [whereToWatch, setWhereToWatch] = useState<{ streaming: any[]; rentBuy: any[]; inCinemas: boolean; region: string; justwatchLink: string | null }>({ streaming: [], rentBuy: [], inCinemas: false, region: 'US', justwatchLink: null });
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(false);
@@ -1097,7 +1098,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     ).values()]
     : (details?.created_by || []).filter((person): person is CreditPerson => !!person?.id && !!person?.name)
   ).slice(0, 3);
-  const keywordChips = topKeywords(details, isMovie ? 'movie' : 'tv');
+  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, isMovie ? 'movie' : 'tv'), keywordsOpen);
   // Genre chips open Home with that genre set; keywords open their own list.
   const browse = (kind: 'genre' | 'keyword', id: number, name: string, href: Href) => {
     track(EVENTS.BROWSE_TAPPED, browseTapProps({ kind, id, name, mediaType: isMovie ? 'movie' : 'tv', source: 'title_panel' }));
@@ -1255,6 +1256,16 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                             <Text style={styles.keywordChipText}>{k.name}</Text>
                           </TouchableOpacity>
                         ))}
+                        {(hiddenKeywords > 0 || keywordsOpen) && (
+                          <TouchableOpacity
+                            style={[styles.keywordChip, { borderStyle: 'dashed' }]}
+                            accessibilityRole="button"
+                            accessibilityState={{ expanded: keywordsOpen }}
+                            onPress={() => setKeywordsOpen(o => !o)}
+                          >
+                            <Text style={styles.keywordChipText}>{keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)}</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     )}
                   </View>
