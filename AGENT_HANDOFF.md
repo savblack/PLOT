@@ -1,11 +1,11 @@
 # omdb-awards
 
-Status: paused (PR open, waiting on CI and Savannah's merge OK)
+Status: paused (PR #1458 open; Staging verified; production migration test blocked by pooler timeouts)
 Owner: Hailey (product, title panel parity); Jacob reviews the migration
 Branch: agent/2026-11-03-omdb-awards
 Worktree: ~/Developer/PLOT-worktrees/2026-11-03-omdb-awards
 Issue: https://github.com/savblack/PLOT/issues/1273
-Updated: 2026-11-04
+Updated: 2026-11-06
 
 ## In plain words
 
@@ -34,8 +34,9 @@ Savannah: nothing is live. Merging adds one empty database column on production
 - `pnpm run test:unit` passed (all suites, 0 fail)
 - `pnpm run edge:check` passed
 - `pnpm run migrations:check` passed
-- Not run: `pnpm run db:migration-test` (restores a production copy with real user data). Run it before merge.
-- Not run: visual check in the browser. Staging's function will not return awards until the migration and function are deployed there.
+- Staging (2026-11-06, Savannah said "Yes, run them"): migration applied in one transaction with its `schema_migrations` row; `critic-score` deployed to Staging only. Staging has no `OMDB_API_KEY`, so one real OMDb lookup for Parasite (2019, resolved via TMDB search, imdb tt6751668) was made locally and written to Staging `critic_scores` (99 / "Won 4 Oscars. 309 wins & 261 nominations total"). The deployed Staging function returned it, and the web panel (local dev from this branch, signed in via `staging:session`) showed the Awards row under the scores. That cache row is left on Staging as harmless test data.
+- `pnpm run db:migration-test`: NOT completed. Three attempts on 2026-11-06 failed before any SQL ran: production's session pooler (aws-1-ap-south-1, port 5432) returned ECHECKOUTTIMEOUT twice and an auth timeout once. Sandbox torn down each time. Retry before merge; if it keeps failing, Jacob should check production's session-pool usage.
+- Mobile panel not checked visually (no simulator run); typecheck and lint pass.
 
 ## Decisions
 
@@ -44,11 +45,11 @@ Savannah: nothing is live. Merging adds one empty database column on production
 
 ## Next
 
-1. Run `pnpm run db:migration-test`, then apply the migration and deploy `critic-score` to PLOT Staging and check a well-known awarded film in the panel.
-2. PR is open. Delete this file in the last commit before merge.
-3. Deploy order: apply the migration before deploying `critic-score`. If the function goes first it now fails safe (no critic scores or awards until the column exists), but it does not burn OMDb quota.
+1. Retry `pnpm run db:migration-test` before merge (see Checks).
+2. On Savannah's merge OK: delete this file in the last commit, merge, then deploy `critic-score` to production after the migration applies.
+3. Staging drift, not this PR: Staging was missing `20261017120000`, `20261025102415` and `20261102120000` from main on 2026-11-06. `pnpm run db:drift` will flag it.
 
 ## Approvals
 
-- Given: none beyond the ticket.
+- Given: Staging migration, Staging deploy and the migration test (2026-11-06).
 - Still needed: merge (applies a production migration).
