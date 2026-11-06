@@ -809,7 +809,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
   const [showListSheet, setShowListSheet] = useState(false);
   const [details,   setDetails]   = useState<TMDBDetails | null>(null);
-  const [keywordsOpen, setKeywordsOpen] = useState(false);
+  // Which title has its keywords expanded, so opening another title starts collapsed.
+  const [keywordsOpenFor, setKeywordsOpenFor] = useState<string | null>(null);
+  const titleKey = `${itemType}:${itemId}`;
+  const keywordsOpen = keywordsOpenFor === titleKey;
   const [whereToWatch, setWhereToWatch] = useState<{ streaming: any[]; rentBuy: any[]; inCinemas: boolean; region: string; justwatchLink: string | null }>({ streaming: [], rentBuy: [], inCinemas: false, region: 'US', justwatchLink: null });
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(false);
@@ -1261,7 +1264,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                             style={[styles.keywordChip, { borderStyle: 'dashed' }]}
                             accessibilityRole="button"
                             accessibilityState={{ expanded: keywordsOpen }}
-                            onPress={() => setKeywordsOpen(o => !o)}
+                            onPress={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}
                           >
                             <Text style={styles.keywordChipText}>{keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)}</Text>
                           </TouchableOpacity>

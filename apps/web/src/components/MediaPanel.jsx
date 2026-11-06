@@ -1188,7 +1188,10 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const { shareTitle, copied: shareCopied } = useShareTitle();
 
   const [details,      setDetails]      = useState(null);
-  const [keywordsOpen, setKeywordsOpen] = useState(false);
+  // Which title has its keywords expanded, so opening another title starts collapsed.
+  const [keywordsOpenFor, setKeywordsOpenFor] = useState(null);
+  const titleKey = `${itemType}:${itemId}`;
+  const keywordsOpen = keywordsOpenFor === titleKey;
   const [whereToWatch, setWhereToWatch] = useState({ streaming: [], rentBuy: [], inCinemas: false, justwatchLink: null, region: null });
   const [loading,      setLoading]      = useState(true);
   const [detailsError, setDetailsError] = useState(false);
@@ -1715,7 +1718,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                         onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}>{k.name}</button>
                     ))}
                     {(hiddenKeywords > 0 || keywordsOpen) && (
-                      <button type="button" className="panel-keyword panel-keyword--toggle" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpen(o => !o)}>
+                      <button type="button" className="panel-keyword panel-keyword--toggle" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}>
                         {keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)}
                       </button>
                     )}
