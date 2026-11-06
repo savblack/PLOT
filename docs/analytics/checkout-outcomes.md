@@ -60,3 +60,11 @@ The PostHog charts and replacement alert are already saved. New server telemetry
 - Independent billing diff review completed with no blockers after replacement-session classification and error cleanup were fixed.
 - Saved PostHog insights were executed after creation; final definitions and alert state were read back. Ten dashboard tiles have no saved layout overlaps. New session/payment charts contain no live data yet, as expected before deployment.
 - Not verified: sandbox signed webhook delivery, production deployment/bundling, email delivery, or real payment collection. No production test charge or user-data write was made.
+
+## Browser handoff
+
+`premium_checkout_redirect_attempted` fires on the web immediately before browser navigation to Stripe. It carries `plan` and, when present in Stripe's hosted URL path, `checkout_session_id`. It uses immediate beacon delivery. Analytics remains best-effort, including when the analytics client has not loaded yet. This event proves a navigation attempt. Stripe page rendering and interactions on its hosted page remain outside Plot's browser tracking.
+
+`premium_checkout_browser_failed` records a caught URL-request or navigation error with `stage`, a coarse `error_kind`, and optional `http_status`. A redirect error also carries the session ID when available. Raw error messages, checkout URLs, URL fragments, and payment details are excluded. Closed-checkout and already-pending responses are excluded. A successful redirect can later fail outside Plot's page without a catchable error.
+
+Join these events to server checkout events by session ID. An expired session with a redirect attempt remains an unfinished checkout with an unknown reason. These browser events do not change expiry reporting or create alerts. The shared handoff helper can be used by native navigation, whose integration is tracked in a mobile parity issue.
