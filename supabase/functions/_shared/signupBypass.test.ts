@@ -1,8 +1,10 @@
 import { assertEquals } from 'jsr:@std/assert@1';
 import {
+  APP_AUTH_CALLBACK,
   authCallbackRedirect,
   authLinkMail,
   bypassAction,
+  bypassClient,
   isExistingAccountError,
   isMissingUserError,
   rateScopeFor,
@@ -36,6 +38,22 @@ Deno.test('a magic link stays a sign-in unless this click finishes signup', () =
 Deno.test('an unknown origin cannot choose the redirect host', () => {
   const url = new URL(authCallbackRedirect('https://evil.example', 'signup'));
   assertEquals(url.origin, 'https://app.theplot.tv');
+});
+
+Deno.test('the app gets its bare deep link for every action', () => {
+  assertEquals(APP_AUTH_CALLBACK, 'plot://auth/callback');
+  assertEquals(authCallbackRedirect(null, 'signup', false, 'app'), APP_AUTH_CALLBACK);
+  assertEquals(authCallbackRedirect(null, 'resend', false, 'app'), APP_AUTH_CALLBACK);
+  assertEquals(authCallbackRedirect('https://app.theplot.tv', 'magiclink', true, 'app'), APP_AUTH_CALLBACK);
+});
+
+Deno.test('only client app selects the app callback', () => {
+  assertEquals(bypassClient('app'), 'app');
+  assertEquals(bypassClient(undefined), 'web');
+  assertEquals(bypassClient('plot://evil'), 'web');
+  assertEquals(bypassClient('APP'), 'web');
+  const web = new URL(authCallbackRedirect(null, 'signup', false, bypassClient('https://evil.example')));
+  assertEquals(web.origin, 'https://app.theplot.tv');
 });
 
 Deno.test('existing-account and missing-user errors are distinguished', () => {

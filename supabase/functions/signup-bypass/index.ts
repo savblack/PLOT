@@ -47,6 +47,7 @@ import {
   authCallbackRedirect,
   authLinkMail,
   bypassAction,
+  bypassClient,
   isExistingAccountError,
   rateScopeFor,
   SIGNUP_BYPASS_GLOBAL_SCOPE,
@@ -260,6 +261,7 @@ Deno.serve(async (req) => {
     formToken?: string;
     action?: string;
     confirmSignup?: boolean;
+    client?: string;
   };
   try {
     body = await req.json();
@@ -278,6 +280,8 @@ Deno.serve(async (req) => {
   if (issuedAt === null || Date.now() - issuedAt < MIN_SUBMIT_MS) return json({ ok: true }, origin);
 
   const action = bypassAction(body.action);
+  // The mobile app asks for a link that opens the app instead of the web callback.
+  const client = bypassClient(body.client);
   const email = String(body.email || '').trim().toLowerCase();
   const password = String(body.password || '');
   if (!EMAIL_RE.test(email)) return json({ error: 'Please enter a valid email address.', reason: 'invalid_email' }, origin, 400);
@@ -317,7 +321,7 @@ Deno.serve(async (req) => {
   // send a magic link through Resend, inside the same rate limit. A missing
   // account gets the same success body so this route is not an address oracle.
   if (action !== 'signup') {
-    const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, action, body.confirmSignup === true);
+    const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, action, body.confirmSignup === true, client);
     const failure = linkDeliveryError(sent);
     if (failure) return json({ error: failure.error, reason: failure.reason }, origin, failure.status);
     return json({ ok: true, requires_email_confirmation: true }, origin);
@@ -340,7 +344,7 @@ Deno.serve(async (req) => {
     // replaces the password on an unconfirmed row only after the mailer
     // accepts the link, so a failed send leaves the owner's password alone.
     if (isExistingAccountError(createError.message)) {
-      const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, 'signup', true);
+      const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, 'signup', true, client);
       const failure = linkDeliveryError(sent);
       if (failure) return json({ error: failure.error, reason: failure.reason }, origin, failure.status);
       return json({ ok: true, requires_email_confirmation: true }, origin);
@@ -348,7 +352,7 @@ Deno.serve(async (req) => {
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 400);
   }
 
-  const redirectTo = authCallbackRedirect(origin, 'signup');
+  const redirectTo = authCallbackRedirect(origin, 'signup', false, client);
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
     type: 'magiclink',
     email,
