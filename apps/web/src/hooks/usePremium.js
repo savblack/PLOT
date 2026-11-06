@@ -1,3 +1,4 @@
+// Browser navigation and beacon transport are web-specific. Native parity: https://github.com/savblack/PLOT/issues/1459.
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@plot/core/supabase.js';
 import { loadCheckoutAvailability } from '@plot/core/checkoutAvailability.js';
@@ -5,7 +6,7 @@ import { track, EVENTS } from '../lib/analytics.js';
 import { useBillingStatus } from '@plot/core/useBillingStatus.js';
 import { billingAccess } from '@plot/core/billing.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
-import { checkoutErrorMessage, checkoutPlan, requestBillingUrl, signupPathForPlan } from '../utils/premiumCheckout.js';
+import { checkoutErrorMessage, checkoutPlan, redirectToCheckout, requestBillingUrl, signupPathForPlan } from '../utils/premiumCheckout.js';
 
 /**
  * Plot Premium billing actions (web only — redirects to Stripe).
@@ -52,7 +53,15 @@ export function usePremium(profile) {
     setBusy(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      window.location.assign(session ? await callBilling('checkout', { plan: chosen }) : signupPathForPlan(chosen));
+      if (session) {
+        await redirectToCheckout(chosen, {
+          request: callBilling,
+          navigate: url => window.location.assign(url),
+          track: (event, props) => track(event, props, { transport: 'sendBeacon', send_instantly: true }),
+        });
+      } else {
+        window.location.assign(signupPathForPlan(chosen));
+      }
       return true;
     } catch (e) {
       if (e?.code === 'premium_coming_soon') {
