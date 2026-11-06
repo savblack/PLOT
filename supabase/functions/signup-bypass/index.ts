@@ -73,10 +73,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const RESEND_API_URL = 'https://api.resend.com/emails';
 const CONFIRM_FROM = 'Plot <hello@theplot.tv>';
 
-async function sendAuthEmail(email: string, actionLink: string, action: BypassAction) {
+async function sendAuthEmail(email: string, actionLink: string, action: BypassAction, code?: string) {
   const resendKey = Deno.env.get('RESEND_API_KEY');
   if (!resendKey) throw new Error('RESEND_API_KEY is not configured');
-  const mail = authLinkMail(action, actionLink);
+  const mail = authLinkMail(action, actionLink, code);
   const res = await fetch(RESEND_API_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
@@ -106,10 +106,16 @@ async function sendViaSupabaseMailer(email: string, redirectTo: string) {
   if (error) throw new Error(`Supabase mailer failed (${error.status ?? 'unknown'})`);
 }
 
-async function mailLink(email: string, actionLink: string, action: BypassAction, redirectTo: string): Promise<LinkResult> {
+async function mailLink(
+  email: string,
+  actionLink: string,
+  action: BypassAction,
+  redirectTo: string,
+  code?: string,
+): Promise<LinkResult> {
   try {
     await deliverSignupLink(
-      () => sendAuthEmail(email, actionLink, action),
+      () => sendAuthEmail(email, actionLink, action, code),
       () => sendViaSupabaseMailer(email, redirectTo),
     );
     return 'sent';
@@ -363,7 +369,8 @@ Deno.serve(async (req) => {
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 500);
   }
 
-  const mailed = await mailLink(email, linkData.properties.action_link, 'signup', redirectTo);
+  const code = client === 'app' ? linkData.properties.email_otp || undefined : undefined;
+  const mailed = await mailLink(email, linkData.properties.action_link, 'signup', redirectTo, code);
   if (mailed !== 'sent') {
     await supabaseAdmin.auth.admin.deleteUser(created.user.id);
     return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
