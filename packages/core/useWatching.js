@@ -6,11 +6,16 @@ import { getNextEpisodeProgress, isRewind } from './watchingProgress.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, reportLoadFailure, FAILED_ACTIONS, FAILED_LOADS } from './actionFailures.js';
 import { registerUndo, restoreRow, UNDO_ACTIONS } from './undo.js';
-import { on, emit, WATCHING_CHANGED_EVENT } from './events.js';
+import { on, emit, WATCHING_CHANGED_EVENT, HISTORY_CHANGED_EVENT, EPISODES_CHANGED_EVENT } from './events.js';
 import { episodeAlertsPromptForTick, noteEpisodeAlertsCandidate } from './episodeAlertsPrompt.js';
+import { sortWatching, withLastActivity } from './watchingOrder.js';
+import { readWatchingActivity } from './watchingActivity.js';
 
-/** Put a show's episode pointer back where it was (undo toast). */
-async function restorePointer(userId, before) {
+/** Put a show's episode pointer back where it was (undo toast). The old
+ * updated_at goes back too, so undoing a tick does not move the show to the
+ * front: the table's trigger keeps a timestamp the caller supplies
+ * (20261103120000) and only stamps now() when the caller leaves it alone. */
+export async function restorePointer(userId, before) {
   const { error } = await supabase
     .from('watching_progress')
     .update({
@@ -25,7 +30,21 @@ async function restorePointer(userId, before) {
 }
 
 /**
- * Currently-watching shows + episode progress for a user.
+ * Swap one show's row for the server's fresh copy, keeping the activity read
+ * from the other sources, and put the list back in last-watched order.
+ * @template {{ tmdb_id: number, last_activity_at?: string | null }} T
+ * @param {T[]} rows @param {number} tmdbId @param {T} data
+ * @returns {T[]}
+ */
+export function replaceWatchingRow(rows, tmdbId, data) {
+  return sortWatching(rows.map(i => i.tmdb_id === Number(tmdbId)
+    ? { ...data, last_activity_at: i.last_activity_at ?? null }
+    : i));
+}
+
+/**
+ * Currently-watching shows + episode progress for a user, last watched first
+ * (see watchingOrder.js).
  * @param {string|null|undefined} userId
  * @returns {{
  *   items: any[];
@@ -46,6 +65,8 @@ export function useWatching(userId) {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
   const seasonCache = useRef({}); // keyed by "tmdbId-sN" — useRef avoids re-creating fetchSeason on every write
+  const itemsRef = useRef(items);
+  useEffect(() => { itemsRef.current = items; }, [items]);
 
   /* ── Load all watching_progress rows ── */
   const loadWatching = useCallback(async () => {
@@ -59,7 +80,9 @@ export function useWatching(userId) {
         .eq('user_id', userId)
         .order('updated_at', { ascending: false });
       if (selErr) throw selErr;
-      setItems(data || []);
+      const rows = data || [];
+      const activity = await readWatchingActivity(userId, rows.map(r => r.tmdb_id));
+      setItems(sortWatching(withLastActivity(rows, activity)));
     } catch (e) {
       console.error('[useWatching] load failed', e);
       setError(true);
@@ -72,6 +95,25 @@ export function useWatching(userId) {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
   useEffect(() => { loadWatching(); }, [loadWatching]);
   useEffect(() => on(WATCHING_CHANGED_EVENT, loadWatching), [loadWatching]);
+
+  /* ── Re-read activity when an episode or show is logged elsewhere ── */
+  // History, the title page's episode grid and imports never write the
+  // pointer, so without this a show logged there would not move up until the
+  // next full load. Only the order changes; no loading state.
+  const refreshActivity = useCallback(async () => {
+    const ids = itemsRef.current.map(r => r.tmdb_id);
+    if (!userId || !ids.length) return;
+    const activity = await readWatchingActivity(userId, ids);
+    setItems(prev => sortWatching(withLastActivity(
+      prev.map(({ last_activity_at: _stale, ...row }) => row),
+      activity,
+    )));
+  }, [userId]);
+  useEffect(() => {
+    const offHistory = on(HISTORY_CHANGED_EVENT, refreshActivity);
+    const offEpisodes = on(EPISODES_CHANGED_EVENT, refreshActivity);
+    return () => { offHistory(); offEpisodes(); };
+  }, [refreshActivity]);
 
   /* ── Fetch season data (ref-cached — stable identity, no re-render on write) ── */
   const fetchSeason = useCallback(async (tmdbId, seasonNum) => {
@@ -104,7 +146,7 @@ export function useWatching(userId) {
       .single();
 
     if (!error && data) {
-      setItems(prev => [data, ...prev.filter(i => i.tmdb_id !== tmdb_id)]);
+      setItems(prev => sortWatching([data, ...prev.filter(i => i.tmdb_id !== tmdb_id)]));
       // Analytics seam (platform-injected; see config.js). Series progress is
       // reported from these canonical spots so both apps get it for free.
       getConfig().onWatchProgress?.({ tmdb_id, action: 'started' });
@@ -162,7 +204,7 @@ export function useWatching(userId) {
       };
     }
 
-    setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
+    setItems(prev => replaceWatchingRow(prev, tmdbId, data));
     getConfig().onWatchProgress?.({
       tmdb_id: Number(tmdbId),
       action: 'episode',
@@ -219,7 +261,7 @@ export function useWatching(userId) {
       .select()
       .single();
     if (data) {
-      setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
+      setItems(prev => replaceWatchingRow(prev, tmdbId, data));
       const action = rewinding
         ? (reason === 'season' ? 'season_undone' : 'episode_undone')
         : reason;
