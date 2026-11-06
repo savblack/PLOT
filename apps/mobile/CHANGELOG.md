@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.0](https://github.com/savblack/PLOT/compare/mobile-v1.1.0...mobile-v1.2.0) (2026-11-06)
+
+
+### Features
+
+* **auth:** fall back to signup-bypass on mobile captcha timeout ([#1461](https://github.com/savblack/PLOT/issues/1461)) ([5fea4bf](https://github.com/savblack/PLOT/commit/5fea4bfb2e46e15791de7d62bb5f7527350a4ab7))
+* **browse:** tap genres and keywords on a title to browse ([#1454](https://github.com/savblack/PLOT/issues/1454)) ([10aa412](https://github.com/savblack/PLOT/commit/10aa41269486626757e006453e9b2adb91f8473c))
+* **watch-together:** green fill for the Home card ([#1462](https://github.com/savblack/PLOT/issues/1462)) ([8a793bd](https://github.com/savblack/PLOT/commit/8a793bd9917a56c28a8d75e98139d026464b306d))
+
+
+### Bug Fixes
+
+* **auth:** count bypass signups and sign private feedback files ([#1435](https://github.com/savblack/PLOT/issues/1435)) ([72c09c7](https://github.com/savblack/PLOT/commit/72c09c7caccd0436260a589a529b6cf8076e28c8))
+* **premium:** clarify source disconnect copy and complete gate telemetry ([#1434](https://github.com/savblack/PLOT/issues/1434)) ([136da69](https://github.com/savblack/PLOT/commit/136da69722c68146a619e005171ede866f357113))
+
 ## [1.1.0](https://github.com/savblack/PLOT/compare/mobile-v1.0.0...mobile-v1.1.0) (2026-10-22)
 
 
