@@ -12,5 +12,5 @@ Completed: shared helper, web wiring with immediate beacon delivery, event catal
 
 Approval: Savannah authorized implementation and proceeding despite open-PR overlap. Merge and deployment approval remain pending.
 Checks: frozen dependency installation, focused tests, pnpm run check and pnpm run test:unit passed under Node 22. Independent review found no blockers. Existing initial auth-session lookup happens before the helper and retains its existing error behavior without the new event.
-Latest pushed commit: pending checkpoint.
+Latest pushed checkpoint: 795b9dd95. Final review commit follows.
 Next: review the PR, then obtain merge approval. Remove this handoff before merge.
