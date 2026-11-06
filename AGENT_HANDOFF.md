@@ -50,6 +50,12 @@ Savannah: nothing is live. Merging adds one empty database column on production
 1. On Savannah's merge OK: delete this file in the last commit, merge, then deploy `critic-score` to production after the migration applies.
 2. Staging drift, not this PR: see the drift line under Checks.
 
+## Side task: Staging drift repair (2026-11-06, done here at Savannah's request)
+
+- Applied the six migrations Staging was missing, oldest first, each in one transaction with its `schema_migrations` row: `20261016120000`, `20261016140000`, `20261017120000`, `20261025102415`, `20261102120000`, `20261103130000`. All succeeded. They also removed the Staging-only `enforce_push_premium` trigger and the `marketing_linear_mirror` lease/functions/cron, exactly as production already had.
+- `pnpm run db:drift` after: Staging 177/177 recorded. Remaining: `critic_scores.awards` Staging-only (this PR, expected until merge), and 4 objects defined differently: `bucket:feedback-attachments`, `cron:brevo-lifecycle-sync`, `cron:marketing-notion-mirror`, `cron:plot-import-worker`.
+- Those 4 on Staging match the repo's migrations exactly (bucket public, 5 MB, `image/*`; crons `17 3 * * *`, `*/5 * * * *`, `* * * * *`, all active). So production was changed outside migrations. Reading production's definitions directly was blocked by a permission rule, so the difference is unknown. Not changed on Staging. Needs someone with production access to compare (e.g. a job paused during the 2026-11-03..06 connection outage) and either land a migration or restore production.
+
 ## Approvals
 
 - Given: Staging migration, Staging deploy and the migration test (2026-11-06).
