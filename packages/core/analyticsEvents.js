@@ -67,6 +67,10 @@ export const EVENTS = Object.freeze({
   // instagram on web and share | save on mobile.
   SHARE_CARD_OPENED: 'share_card_opened',
   SHARE_CARD_SENT: 'share_card_sent',
+  // A Premium viewer tapped a History stat tile and landed on the titles
+  // behind it. Carries { stat: 'titles' | 'genre' | 'weekday', source }.
+  // Fires only once the filtered list is on screen. Tier 1 at most.
+  HISTORY_STAT_DRILLDOWN: 'history_stat_drilldown',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_REDIRECT_ATTEMPTED: 'premium_checkout_redirect_attempted',

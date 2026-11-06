@@ -41,6 +41,18 @@ test('filterEntries: types and genres narrow, reviewed/dnf are OR-ed, query matc
   assert.deepEqual(filterEntries(es), es);
 });
 
+test('filterEntries: year and weekday narrow by the watch date, undated rows never match', () => {
+  const a = row('2026-01-01'); // Thursday
+  const b = row('2025-12-31'); // Wednesday
+  const c = row('2026-01-07'); // Wednesday
+  const d = row(null);
+  const es = [a, b, c, d];
+  assert.deepEqual(filterEntries(es, { year: 2026 }), [a, c]);
+  assert.deepEqual(filterEntries(es, { weekday: 3 }), [b, c]);
+  assert.deepEqual(filterEntries(es, { year: 2026, weekday: 3 }), [c]);
+  assert.deepEqual(filterEntries(es, { weekday: 0 }), []);
+});
+
 test('genreCounts is most-common first', () => {
   const es = [row('2026-01-01', { genre_ids: [18, 27] }), row('2026-01-02', { genre_ids: [18] })];
   assert.deepEqual(genreCounts(es), [{ id: 18, count: 2 }, { id: 27, count: 1 }]);
@@ -73,7 +85,7 @@ test('streaks: best run, current run survives until a day is missed', () => {
 
 test('favouriteWeekday', () => {
   const es = ['2026-09-06', '2026-09-13', '2026-09-14'].map(d => row(d)); // Sun, Sun, Mon
-  assert.deepEqual(favouriteWeekday(es), { name: 'Sunday', count: 2, total: 3 });
+  assert.deepEqual(favouriteWeekday(es), { name: 'Sunday', weekday: 0, count: 2, total: 3 });
   assert.equal(favouriteWeekday([]), null);
 });
 
