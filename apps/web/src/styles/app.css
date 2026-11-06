@@ -4451,6 +4451,23 @@ svg { stroke-width: 1.5; }
   color: var(--text-muted);
 }
 .panel-consensus { flex: 1; min-width: 0; margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); }
+.panel-awards {
+  margin: 0 0 1.1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.panel-awards span {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
 
 /* The foot bar (Watched it? / Thoughts?, stars, Review and Private note) lives
    in components/TitleFootBar.css. */

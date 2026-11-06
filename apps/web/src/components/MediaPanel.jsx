@@ -1399,7 +1399,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const similar = recommendationsFromDetails(details);
 
   const audienceScore = audienceScoreFromDetails(details);
-  const consensusLine = criticScore
+  const hasCriticScore = Number.isFinite(criticScore?.criticScore);
+  const consensusLine = hasCriticScore
     ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
     : null;
   const hasWatchOffers = whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas;
@@ -1976,15 +1977,15 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 The two numbers read as a pair, with a real audience review in
                 the space beside them rather than a consensus sentence on its
                 own line. ── */}
-            {(criticScore || Number.isFinite(audienceScore)) && (
+            {(hasCriticScore || Number.isFinite(audienceScore)) && (
               <div className="panel-scores">
-                {criticScore && (
+                {hasCriticScore && (
                   <div className="panel-score">
                     <b>{criticScore.criticScore}%</b>
                     <span>{MEDIA_PANEL.critics}</span>
                   </div>
                 )}
-                {criticScore && Number.isFinite(audienceScore) && <span className="panel-score-rule" />}
+                {hasCriticScore && Number.isFinite(audienceScore) && <span className="panel-score-rule" />}
                 {Number.isFinite(audienceScore) && (
                   <div className="panel-score">
                     <b>{audienceScore}%</b>
@@ -2000,6 +2001,14 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                   <p className="panel-consensus">{consensusLine}</p>
                 ) : null}
               </div>
+            )}
+
+            {/* Awards and nominations, as OMDb words them. Hidden when OMDb has none. */}
+            {criticScore?.awards && (
+              <p className="panel-awards">
+                <span>{MEDIA_PANEL.awards}</span>
+                {criticScore.awards}
+              </p>
             )}
 
             {/* Overview */}
