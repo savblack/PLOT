@@ -305,6 +305,21 @@ Retired on 2026-10-13. The homepage redesign removed the watch-history timeline 
 
 Signup itself is section 12.
 
+**Substack articles board (Notion).** The Monday paste into Substack is tracked
+on its own Notion database, separate from the What's On review board. Nothing
+syncs to or from it. One row per issue: Name, Status (Draft, Ready to send,
+Sent, Skipped), Send date, Substack URL, Notes. Create it with
+[`marketing/setup/notion-substack-db.mjs`](../../marketing/setup/notion-substack-db.mjs),
+same parent page as section 5a but its own integration token,
+`NOTION_TOKEN_PLOT_SUBSTACK` in the local `.env` (the review board's token is
+only in Supabase secrets). Share the parent page with that integration first.
+The API creates a table; add the Board view grouped by Status by hand.
+
+```bash
+DRY_RUN=1 node --env-file=.env marketing/setup/notion-substack-db.mjs
+node --env-file=.env marketing/setup/notion-substack-db.mjs
+```
+
 ---
 
 ## 10. Trending chart snapshot
