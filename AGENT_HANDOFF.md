@@ -5,7 +5,7 @@ Owner: Hailey (product, title panel parity); Jacob reviews the migration
 Branch: agent/2026-11-03-omdb-awards
 Worktree: ~/Developer/PLOT-worktrees/2026-11-03-omdb-awards
 Issue: https://github.com/savblack/PLOT/issues/1273
-Updated: 2026-11-06
+Updated: 2026-11-07
 
 ## In plain words
 
@@ -54,7 +54,15 @@ Savannah: nothing is live. Merging adds one empty database column on production
 
 - Applied the six migrations Staging was missing, oldest first, each in one transaction with its `schema_migrations` row: `20261016120000`, `20261016140000`, `20261017120000`, `20261025102415`, `20261102120000`, `20261103130000`. All succeeded. They also removed the Staging-only `enforce_push_premium` trigger and the `marketing_linear_mirror` lease/functions/cron, exactly as production already had.
 - `pnpm run db:drift` after: Staging 177/177 recorded. Remaining: `critic_scores.awards` Staging-only (this PR, expected until merge), and 4 objects defined differently: `bucket:feedback-attachments`, `cron:brevo-lifecycle-sync`, `cron:marketing-notion-mirror`, `cron:plot-import-worker`.
-- Those 4 on Staging match the repo's migrations exactly (bucket public, 5 MB, `image/*`; crons `17 3 * * *`, `*/5 * * * *`, `* * * * *`, all active). So production was changed outside migrations. Reading production's definitions directly was blocked by a permission rule, so the difference is unknown. Not changed on Staging. Needs someone with production access to compare (e.g. a job paused during the 2026-11-03..06 connection outage) and either land a migration or restore production.
+- 2026-11-07, read-only look at production (Savannah approved; `begin transaction read only` ... `rollback`):
+  - `feedback-attachments`: production private. That comes from `20261025120000_feedback_attachments_private.sql`, which landed on main with #1435 on 2026-11-06 and production applied. Applied it on Staging with its ledger row, so the bucket now matches.
+  - Three cron jobs run LESS often on production than the repo defines, with no migration, PR or issue on record:
+    - `brevo-lifecycle-sync`: production `17 * * * *` (hourly); repo `17 3 * * *` (daily, `20261013190000`). Production is on the pre-`20261013190000` schedule.
+    - `marketing-notion-mirror`: production `*/15 * * * *`; repo `*/5 * * * *` (`20261005180000`).
+    - `plot-import-worker`: production `*/5 * * * *`; repo `* * * * *` (`20261015090000`).
+    - Commands and `active` match; only the schedules differ. Nothing changed on either project.
+  - Decision needed (Savannah or Jacob): keep production's schedules and land a migration that records them (then Staging follows), or reset production to the repo's. Note: hourly Brevo sync is 24x the repo's daily rate, opposite to the other two.
+- Branch synced with main again (`8eda4572f`). Checks, `db:migration-test` (production 177 applied, only `20261106120000` pending, PASS) and `db:drift` re-run: only the 3 crons and the expected `critic_scores.awards` remain.
 
 ## Approvals
 
