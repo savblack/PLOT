@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ACCOUNT_CLEANUP_STEPS, runAccountCleanup } from '../../../../supabase/functions/delete-account/cleanup.js';
+import { ACCOUNT_CLEANUP_STEPS, removeAvatarObjects, runAccountCleanup } from '../../../../supabase/functions/delete-account/cleanup.js';
 
-function createDeleteClient(failingTable = null) {
+function createDeleteClient(failingTable = null, errorCode = null) {
   const calls = [];
 
   const client = {
@@ -13,13 +13,13 @@ function createDeleteClient(failingTable = null) {
             async eq(column, value) {
               calls.push({ table, method: 'eq', column, value });
               return failingTable === table
-                ? { error: { message: `failed:${table}` } }
+                ? { error: { message: `failed:${table}`, code: errorCode } }
                 : { error: null };
             },
             async or(filter) {
               calls.push({ table, method: 'or', filter });
               return failingTable === table
-                ? { error: { message: `failed:${table}` } }
+                ? { error: { message: `failed:${table}`, code: errorCode } }
                 : { error: null };
             },
           };
@@ -53,4 +53,83 @@ test('runAccountCleanup stops before deleting the auth profile when an earlier t
   assert.equal(error?.table, 'feedback');
   assert.equal(error?.error?.message, 'failed:feedback');
   assert.equal(calls.some((call) => call.table === 'profiles'), false);
+});
+
+test('runAccountCleanup skips a missing legacy history board', async () => {
+  const { client, calls } = createDeleteClient('history_board', 'PGRST205');
+
+  assert.equal(await runAccountCleanup(client, 'user-123'), null);
+  assert.equal(calls.at(-1)?.table, 'profiles');
+});
+
+test('runAccountCleanup reports other legacy history board errors', async () => {
+  const { client, calls } = createDeleteClient('history_board', '42501');
+
+  assert.equal((await runAccountCleanup(client, 'user-123'))?.table, 'history_board');
+  assert.equal(calls.some((call) => call.table === 'profiles'), false);
+});
+
+test('removeAvatarObjects clears the user folder before auth deletion', async () => {
+  const removed = [];
+  const admin = { storage: { from(bucket) {
+    assert.equal(bucket, 'avatars');
+    return {
+      async list(folder) {
+        assert.equal(folder, 'user-123');
+        return { data: removed.length ? [] : [{ id: 'object-1', name: 'avatar.jpg' }], error: null };
+      },
+      async remove(paths) { removed.push(...paths); return { data: paths.map((name) => ({ name })), error: null }; },
+    };
+  } } };
+
+  assert.equal(await removeAvatarObjects(admin, 'user-123'), null);
+  assert.deepEqual(removed, ['user-123/avatar.jpg']);
+});
+
+test('removeAvatarObjects walks subfolders instead of blocking deletion', async () => {
+  const objects = new Set(['user-123/avatar.jpg', 'user-123/x/y.jpg']);
+  const admin = { storage: { from() {
+    return {
+      async list(folder) {
+        const children = new Map();
+        for (const path of objects) {
+          if (!path.startsWith(`${folder}/`)) continue;
+          const [name, ...rest] = path.slice(folder.length + 1).split('/');
+          children.set(name, rest.length ? null : `id-${name}`);
+        }
+        return { data: [...children].map(([name, id]) => ({ id, name })), error: null };
+      },
+      async remove(paths) {
+        paths.forEach((path) => objects.delete(path));
+        return { data: paths.map((name) => ({ name })), error: null };
+      },
+    };
+  } } };
+
+  assert.equal(await removeAvatarObjects(admin, 'user-123'), null);
+  assert.equal(objects.size, 0);
+});
+
+test('removeAvatarObjects stops when storage reports success but removes nothing', async () => {
+  let lists = 0;
+  const admin = { storage: { from() {
+    return {
+      async list() { lists++; return { data: [{ id: 'object-1', name: 'odd name.jpg' }], error: null }; },
+      async remove() { return { data: [], error: null }; },
+    };
+  } } };
+
+  assert.match((await removeAvatarObjects(admin, 'user-123'))?.message, /could not be deleted/);
+  assert.equal(lists, 1);
+});
+
+test('removeAvatarObjects stops when storage deletion fails', async () => {
+  const admin = { storage: { from() {
+    return {
+      async list() { return { data: [{ id: 'object-1', name: 'avatar.jpg' }], error: null }; },
+      async remove() { return { error: { message: 'storage failed' } }; },
+    };
+  } } };
+
+  assert.equal((await removeAvatarObjects(admin, 'user-123'))?.message, 'storage failed');
 });
