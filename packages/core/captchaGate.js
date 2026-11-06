@@ -12,13 +12,36 @@
  * no token. Login, password reset, and magic link have no bypass. They
  * wait the same amount of time, then the caller shows an error instead of
  * posting an empty token.
+ *
+ * The second attempt is a retry after the widget reports an error. A
+ * timeout is not an error: resetting then would wipe an interactive
+ * challenge while the person is still solving it. Callers must ask
+ * shouldResetCaptcha before calling turnstile.reset().
  */
 
 /** How long to wait for a Turnstile token before giving up on this attempt. */
 export const CAPTCHA_TOKEN_WAIT_MS = 8000;
 
-/** How many times a submit runs the widget before bypass or the error. */
+/**
+ * How many times a submit runs the widget before bypass or the error.
+ * Attempt 1 starts the challenge. Attempt 2 runs only as a fresh challenge
+ * when attempt 1 ended in a widget error. A timeout keeps waiting on the
+ * same challenge instead of resetting it.
+ */
 export const CAPTCHA_SUBMIT_ATTEMPTS = 2;
+
+/**
+ * Whether this attempt should call turnstile.reset() before waiting.
+ * The first attempt starts the challenge. A later attempt resets only
+ * after the widget reported an error.
+ *
+ * @param {{ attempt: number, widgetErrored?: boolean }} opts
+ * @returns {boolean}
+ */
+export function shouldResetCaptcha({ attempt, widgetErrored = false }) {
+  if (attempt <= 1) return true;
+  return Boolean(widgetErrored);
+}
 
 /**
  * @param {object} opts
