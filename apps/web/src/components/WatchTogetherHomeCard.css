@@ -1,14 +1,13 @@
-/* Watch together on Home. Sage fill (the secondary accent, as on watched
-   chips) so the promo stands apart from the cream cards around it. Text uses
-   the on-fill ink, which every palette defines for contrast on this fill. */
+/* Watch together on Home. Green outline with a see-through green tint (the
+   secondary accent) so the promo stands apart from the cream cards around
+   it. The tint is light enough that the normal text colors still read. */
 
 .wt-home {
   margin: 0 var(--gut) 16px;
   padding: 12px 14px;
   border-radius: var(--radius-md);
-  background: var(--accent-secondary-fill);
-  border: 1px solid var(--accent-secondary-fill);
-  color: var(--on-accent-secondary-fill);
+  background: var(--accent-secondary-dim);
+  border: 1px solid var(--accent-secondary);
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -35,7 +34,7 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.25;
-  color: var(--on-accent-secondary-fill);
+  color: var(--text-primary);
 }
 .wt-home-pill {
   flex-shrink: 0;
@@ -53,17 +52,17 @@
 .wt-home-note {
   font-size: 13px;
   line-height: 1.4;
-  color: color-mix(in srgb, var(--on-accent-secondary-fill) 78%, transparent);
+  color: var(--text-secondary);
 }
 .wt-home-dismiss {
   flex-shrink: 0;
   padding: 2px 0;
   border: none;
   background: none;
-  color: color-mix(in srgb, var(--on-accent-secondary-fill) 78%, transparent);
+  color: var(--text-secondary);
   font: inherit;
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
 }
-.wt-home-dismiss:hover { color: var(--on-accent-secondary-fill); }
+.wt-home-dismiss:hover { color: var(--text-primary); }
