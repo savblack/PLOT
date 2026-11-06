@@ -23,6 +23,7 @@ import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/
 import { useNewReleases } from '@plot/core/useNewReleases.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '@plot/core/mediaFilters.js';
+import { parseGenreBrowse } from '@plot/core/browse.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
 import GuideView from '../../components/GuideView';
@@ -46,7 +47,7 @@ import WatchTogetherHomeCard from '../../components/WatchTogetherHomeCard';
 import TonightFab from '../../components/TonightFab';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
-import { useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import { track, EVENTS } from '../../lib/analytics';
 import { oncePerSession } from '@plot/core/oncePerSession.js';
@@ -620,8 +621,21 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   // Discover/New Releases filters. Empty genre selection means "no filter";
   // type defaults to everything selected. Both go through @plot/core's
   // filterByType/filterByGenre so the semantics match web exactly.
-  const [typeFilters,  setTypeFilters]  = useState<string[]>(ALL_TYPES);
-  const [genreFilters, setGenreFilters] = useState<number[]>([]);
+  // A genre chip on a title opens Home with ?type=tv&genre=18. Applied again
+  // whenever the params change, since Home stays mounted behind the panel.
+  const routeParams = useLocalSearchParams<{ type?: string; genre?: string }>();
+  const startFilters = parseGenreBrowse({ get: (k: string) => (routeParams as Record<string, string | undefined>)[k] ?? null });
+  const routeKey = `${routeParams.type ?? ''}:${routeParams.genre ?? ''}`;
+  const [appliedRouteKey, setAppliedRouteKey] = useState(routeKey);
+  const [typeFilters,  setTypeFilters]  = useState<string[]>(startFilters.typeFilters ?? ALL_TYPES);
+  const [genreFilters, setGenreFilters] = useState<number[]>(startFilters.genreFilters ?? []);
+  if (routeKey !== appliedRouteKey) {
+    setAppliedRouteKey(routeKey);
+    if (startFilters.typeFilters && startFilters.genreFilters) {
+      setTypeFilters(startFilters.typeFilters);
+      setGenreFilters(startFilters.genreFilters);
+    }
+  }
   const [openCurated, setOpenCurated] = useState<ReturnType<typeof featuredCuratedList> | null>(null);
   // Whether the Picks row is still on screen, so its rotation can stop once it is scrolled away.
   const [picksInView, setPicksInView] = useState(true);
