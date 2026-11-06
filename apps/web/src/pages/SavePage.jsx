@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import { tmdb } from '@plot/core/tmdb.js';
-import { writePendingSave } from '../utils/pendingSave.js';
+import { writePendingSave, skipsSavePreview } from '../utils/pendingSave.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { SAVE_PAGE } from '../copy/savePage.js';
 import { isKnownAccountBrowser } from '../utils/accountRecognition.js';
@@ -94,7 +94,14 @@ export default function SavePage() {
         navigate('/home', { replace: true });
         return;
       }
-      setReturning(isKnownAccountBrowser());
+      const knownAccount = isKnownAccountBrowser();
+      // They just read this title on its own page, so skip the repeat preview.
+      // The intent is already stored and survives the signup or sign-in trip.
+      if (skipsSavePreview(src)) {
+        navigate(knownAccount ? '/login' : signupHref, { replace: true });
+        return;
+      }
+      setReturning(knownAccount);
       const initialTitle = serverTitle(intent);
       if (initialTitle) {
         setTitle(initialTitle);
@@ -112,7 +119,7 @@ export default function SavePage() {
       setReturning(isKnownAccountBrowser());
       setPhase('preview');
     });
-  }, [params, navigate, src]);
+  }, [params, navigate, src, signupHref]);
 
   if (phase !== 'preview') {
     return (
