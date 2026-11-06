@@ -84,8 +84,10 @@ function Stat({ value, label, drill = null }) {
   const body = (
     <>
       <span className="hist-stat-value">{value}</span>
-      <span className="hist-stat-label">{label}</span>
-      {drill?.locked && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
+      <span className="hist-stat-meta">
+        <span className="hist-stat-label">{label}</span>
+        {drill?.locked && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
+      </span>
     </>
   );
   if (!drill) return <div className="hist-stat">{body}</div>;

@@ -7655,6 +7655,8 @@ a.provider-chip--link:hover {
 }
 /* A Premium viewer's stat tile: the whole row opens the titles behind it. */
 .hist-stat--link { color: inherit; text-decoration: none; }
+.hist-stat-meta { display: inline-flex; align-items: baseline; gap: 8px; }
+.hist-stat-meta .app-nav-premium { margin-left: 0; }
 .hist-stat--link:hover .hist-stat-label,
 .hist-stat--link:focus-visible .hist-stat-label { color: var(--accent); }
 .hist-drill-link {
@@ -7670,6 +7672,8 @@ a.provider-chip--link:hover {
 .hist-drill-chip {
   display: inline-flex;
   align-items: center;
+  align-self: flex-start;
+  width: fit-content;
   gap: 8px;
   margin-bottom: 16px;
   padding: 4px 12px;
