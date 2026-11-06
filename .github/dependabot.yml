@@ -35,6 +35,7 @@ updates:
     ignore:
       - dependency-name: "expo"
       - dependency-name: "expo-*"
+      - dependency-name: "@expo/*"
       - dependency-name: "react-native"
       - dependency-name: "react-native-*"
       - dependency-name: "@react-native-async-storage/*"
