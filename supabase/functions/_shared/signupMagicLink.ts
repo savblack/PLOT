@@ -34,7 +34,7 @@ export type SignupLinkAdmin = {
   findUserByEmail: (email: string) => Promise<AuthAccount | null>;
 };
 
-type SendLink = (email: string, link: string, action: BypassAction, redirect: string) => Promise<LinkResult>;
+type SendLink = (email: string, link: string, action: BypassAction, redirect: string, code?: string) => Promise<LinkResult>;
 
 type ListedUser = {
   id?: string;
@@ -161,7 +161,9 @@ export async function deliverMagicLink(
     const mailAction: BypassAction = !existing || action === 'signup' || (confirmSignup && action === 'magiclink')
       ? 'signup'
       : action;
-    delivered = await mailLink(email, generated.data.properties.action_link, mailAction, redirectTo) === 'sent';
+    // Only the app has a code field. The code verifies as type 'email'.
+    const code = client === 'app' ? generated.data.properties.email_otp || undefined : undefined;
+    delivered = await mailLink(email, generated.data.properties.action_link, mailAction, redirectTo, code) === 'sent';
     if (!delivered) return 'failed';
 
     // Rotate only after the mailer has accepted the message. Doing it earlier
