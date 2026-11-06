@@ -7,6 +7,7 @@
  */
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createIntakePage, findIntakePage, resolveNotionToken } from '../_shared/notionIntake.js'
+import { attachmentPathsFrom, signedFeedbackUrl } from '../_shared/feedbackAttachments.ts'
 
 // Db is the *default* instantiation
 // (SupabaseClient<unknown, …, never, never>), so every row came back
@@ -51,29 +52,6 @@ function buildFeedbackNotionTitle(type: string, message: string) {
   const normalized = String(message || '').replace(/\s+/g, ' ').trim()
   if (!normalized) return `${prefix}: Untitled`
   return `${prefix}: ${normalized.length > 72 ? `${normalized.slice(0, 69).trimEnd()}...` : normalized}`
-}
-
-function attachmentPathsFrom(value: unknown) {
-  if (!Array.isArray(value)) return []
-
-  return value.flatMap((entry) => {
-    if (typeof entry !== 'string') return []
-    const marker = '/storage/v1/object/public/feedback-attachments/'
-    const index = entry.indexOf(marker)
-    if (index === -1) return []
-    const path = decodeURIComponent(entry.slice(index + marker.length))
-    // Matches the validation in delete-account/index.ts — without this, an
-    // attacker-crafted path (e.g. containing "../" or pointing at another
-    // user's feedback/<uuid> object) would be copied verbatim by
-    // storage.copy() below into the archive prefix, which could exfiltrate
-    // another user's private attachment.
-    return /^feedback\/[0-9a-f-]{36}(?:\.[a-z0-9]{1,10})?$/i.test(path) ? [path] : []
-  })
-}
-
-function publicUrlFor(path: string) {
-  const baseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-  return `${baseUrl}/storage/v1/object/public/feedback-attachments/${encodeURI(path)}`
 }
 
 function escapeHtml(value: string) {
@@ -132,7 +110,10 @@ async function archiveAttachments(supabaseAdmin: Db, feedbackId: string, attachm
       throw new Error(`Failed to archive feedback attachment: ${error.message}`)
     }
 
-    archivedUrls.push(publicUrlFor(archivedPath))
+    // The bucket is private. A /object/public URL 403s, so Notion gets a
+    // signed URL for the archived copy. The path check in attachmentPathsFrom
+    // is what stops a crafted attachment string from being copied.
+    archivedUrls.push(await signedFeedbackUrl(supabaseAdmin, archivedPath))
   }
 
   return archivedUrls
