@@ -64,6 +64,8 @@ export const EVENTS = Object.freeze({
   SHARE_CARD_SENT: 'share_card_sent',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
+  PREMIUM_CHECKOUT_REDIRECT_ATTEMPTED: 'premium_checkout_redirect_attempted',
+  PREMIUM_CHECKOUT_BROWSER_FAILED: 'premium_checkout_browser_failed',
   PREMIUM_CHECKOUT_STARTED: 'premium_checkout_started',
   PREMIUM_CHECKOUT_FAILED: 'premium_checkout_failed',
   // Historical name: this means Stripe session expiry, not clicking Back.
