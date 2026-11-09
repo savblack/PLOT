@@ -1,11 +1,13 @@
-/* Watch together on Home. Hairline card, same quiet Premium mark as the nav. */
+/* Watch together on Home. Green outline with a see-through green tint (the
+   secondary accent) so the promo stands apart from the cream cards around
+   it. The tint is light enough that the normal text colors still read. */
 
 .wt-home {
   margin: 0 var(--gut) 16px;
   padding: 12px 14px;
   border-radius: var(--radius-md);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--accent-secondary-dim);
+  border: 1px solid var(--accent-secondary);
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -38,8 +40,8 @@
   flex-shrink: 0;
   padding: 2px 7px;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  color: var(--accent-text);
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
   font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.08em;

@@ -54,6 +54,11 @@ export const EVENTS = Object.freeze({
   // and are not comparable to the cohort.
   ACTIVATED: 'activated',
   TITLE_SHARED: 'title_shared',
+  // A genre or keyword chip on a title page was tapped to browse more like it.
+  // Carries { kind: 'genre' | 'keyword', id, name, media_type, source }, built
+  // by browseTapProps in browse.js so both apps send the same shape. Fires on
+  // the tap, which always navigates, so there is no failure case to count.
+  BROWSE_TAPPED: 'browse_tapped',
   LIST_SHARED: 'list_shared',
   PROFILE_SHARED: 'profile_shared',
   // Share cards (docs/design/share-cards.md). `opened` carries { source, card }
@@ -62,6 +67,10 @@ export const EVENTS = Object.freeze({
   // instagram on web and share | save on mobile.
   SHARE_CARD_OPENED: 'share_card_opened',
   SHARE_CARD_SENT: 'share_card_sent',
+  // A Premium viewer tapped a History stat tile and landed on the titles
+  // behind it. Carries { stat: 'titles' | 'genre' | 'weekday', source }.
+  // Fires only once the filtered list is on screen. Tier 1 at most.
+  HISTORY_STAT_DRILLDOWN: 'history_stat_drilldown',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_REDIRECT_ATTEMPTED: 'premium_checkout_redirect_attempted',
@@ -133,6 +142,11 @@ export const EVENTS = Object.freeze({
   EPISODE_WATCHED: 'episode_watched',
   SEASON_WATCHED: 'season_watched',
   SERIES_COMPLETED: 'series_completed',
+  // Episode search on the title panel (issue 1445): the person opened a matching
+  // episode, which takes them to it in its season. Fired from useEpisodeSearch
+  // via the onEpisodeSearch seam. Props: tmdb_id, season, episode, position,
+  // result_count, query_length, total_seasons. Never the query text.
+  EPISODE_SEARCH_RESULT_OPENED: 'episode_search_result_opened',
   WATCHING_STARTED: 'watching_started',
   WATCHING_STOPPED: 'watching_stopped',
   // Undo signals. A user unlogging a watch or clearing history is a real

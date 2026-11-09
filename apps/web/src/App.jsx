@@ -320,6 +320,12 @@ export default function App() {
     openPanel(tmdb_id, media_type, 'engagement_prompt');
   }), [openPanel]);
 
+  // Genre and keyword chips on a title: close the panel and open the browse page.
+  const handleBrowse = useCallback((path) => {
+    closePanel();
+    navigate(path);
+  }, [closePanel, navigate]);
+
   /* ── Navigation ── */
   const navigateTo = useCallback((view) => navigate(pathForView(view)), [navigate]);
 
@@ -440,6 +446,7 @@ export default function App() {
           initialListOpen={panelItem.initialListOpen}
           closing={panelClosing}
           onClose={closePanel}
+          onBrowse={handleBrowse}
         />
       )}
 

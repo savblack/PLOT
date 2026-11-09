@@ -1,0 +1,6 @@
+.browse-page { max-width: 1100px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+.browse-header { margin: 1rem 0 1.25rem; }
+.browse-kicker { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.browse-header h1 { margin: 0.2rem 0 0; font-size: 1.6rem; text-transform: capitalize; }
+.browse-note { color: var(--text-muted); }
+.browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; }

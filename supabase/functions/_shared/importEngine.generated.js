@@ -36,6 +36,7 @@ var defaults = {
   onReview: void 0,
   onTonightPicker: void 0,
   onWatchTogether: void 0,
+  onEpisodeSearch: void 0,
   onImport: void 0,
   onUndo: void 0
 };
@@ -2370,7 +2371,9 @@ var FAILED_LOADS = Object.freeze({
   FAVOURITES: "favourites",
   TONIGHT_PICKS: "tonight_picks",
   SMART_LIST: "smart_list",
-  ONBOARDING_SERVICES: "onboarding_services"
+  ONBOARDING_SERVICES: "onboarding_services",
+  // Seasons the episode title search could not load (episodeSearch.js).
+  EPISODE_SEARCH: "episode_search"
 });
 
 // packages/core/userMedia.js

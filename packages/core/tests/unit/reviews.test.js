@@ -35,7 +35,7 @@ test('fetchCriticScore builds the request URL and auth headers, and returns the 
 
   const result = await fetchCriticScore('tt7654321');
 
-  assert.deepEqual(result, { criticScore: 87, source: 'Rotten Tomatoes' });
+  assert.deepEqual(result, { criticScore: 87, source: 'Rotten Tomatoes', awards: null });
   assert.equal(capturedUrl.toString(), 'https://example.test/critic?imdb_id=tt7654321');
   assert.deepEqual(capturedHeaders, { Authorization: 'Bearer anon1', apikey: 'anon1' });
 });
@@ -59,6 +59,26 @@ test('fetchCriticScore returns null when the response is not ok, the score is no
 
   globalThis.fetch = async () => { throw new Error('down'); };
   assert.equal(await fetchCriticScore('tt1'), null);
+});
+
+test('fetchCriticScore returns awards alongside the score, and on their own when there is no score', async () => {
+  configure({ criticScoreUrl: 'https://example.test/critic' });
+
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ criticScore: 91, source: 'Rotten Tomatoes', awards: '  Won 2 Oscars. 40 wins total ' }) });
+  assert.deepEqual(await fetchCriticScore('tt1'), { criticScore: 91, source: 'Rotten Tomatoes', awards: 'Won 2 Oscars. 40 wins total' });
+
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ criticScore: null, source: null, awards: 'Nominated for 1 Emmy' }) });
+  assert.deepEqual(await fetchCriticScore('tt1'), { criticScore: null, source: null, awards: 'Nominated for 1 Emmy' });
+});
+
+test('fetchCriticScore treats blank or non-string awards as none', async () => {
+  configure({ criticScoreUrl: 'https://example.test/critic' });
+
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ criticScore: null, awards: '   ' }) });
+  assert.equal(await fetchCriticScore('tt1'), null);
+
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ criticScore: 60, source: 'Rotten Tomatoes', awards: 3 }) });
+  assert.deepEqual(await fetchCriticScore('tt1'), { criticScore: 60, source: 'Rotten Tomatoes', awards: null });
 });
 
 test('pickAudienceQuote returns null with no response, no results, or no review long enough', () => {
