@@ -39,7 +39,7 @@ intentional).
 
 ## What not to post
 
-- Ticket / PR / Linear IDs, commit hashes, file paths, table or RPC names
+- Ticket and PR IDs, commit hashes, file paths, table or RPC names
 - Links into the GitHub repo (avoid them now; they break once the repo is private)
 - Security details that help an attacker: auth bypasses, RLS holes, rate-limit
   gaps, "fixed injection in X"
@@ -60,7 +60,7 @@ intentional).
 | Security fix | "Made sign-in more reliable" / "Hardened account recovery" — never the vulnerability |
 | Design polish | Bundle small ones; only solo-post if a member would notice |
 
-Keep an internal ship log in Linear or private notes if you need eng detail.
+Keep an internal ship log in private notes if you need eng detail.
 Do not point people at source for "more detail."
 
 ## Entry shape

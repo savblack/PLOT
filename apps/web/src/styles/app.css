@@ -160,7 +160,7 @@ svg { stroke-width: 1.5; }
    the sidebar breakpoint, where the app header still carries the title. */
 .app-page-heading.app-page-heading--with-subtitle { margin-bottom: .5rem; }
 .app-page-heading.app-page-heading--guide { margin-bottom: 0; }
-/* Pick for Me drops its subline on phone, where the questions need the room. */
+/* Just Decide drops its subline on phone, where the questions need the room. */
 .app-page-subtitle--desktop-only { display: none; }
 .app-page-subtitle {
   margin: 0;
@@ -2066,6 +2066,7 @@ svg { stroke-width: 1.5; }
 }
 .cal-scope-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .cal-toolbar-controls { gap: 12px; }
+.cal-suggest-btn { width: fit-content; flex: 0 0 auto; }
 .cal-search { width: min(280px, 26vw); }
 
 .cal-body {
@@ -2774,33 +2775,6 @@ svg { stroke-width: 1.5; }
 
 /* Blocks inside a section: one custom list, one Top 5 list. */
 .mylists-sub + .mylists-sub { margin-top: 1.25rem; }
-.mylists-sub-head {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 34px;
-  padding: 0 var(--gut) 0.4rem;
-}
-.mylists-sub-label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.mylists-sub-count {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  font-family: var(--font-sans-tabular);
-}
-.mylists-sub-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-left: auto;
-  flex-shrink: 0;
-}
 .mylists-public-badge {
   font-size: 0.6rem;
   font-weight: 600;
@@ -3809,6 +3783,23 @@ svg { stroke-width: 1.5; }
 }
 .season-bulk-link:disabled { opacity: 0.6; cursor: default; }
 
+/* ── Episode title search, above the season line (issue 1445) ── */
+.hist-search.ep-search { width: 100%; height: 36px; margin-bottom: 0.75rem; }
+.ep-search-note { margin: 0 0 0.6rem; font-size: 0.75rem; color: var(--text-muted); }
+.ep-search-results .episode-list { margin-bottom: 0.6rem; }
+.ep-row.ep-search-row {
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+.ep-row.ep-search-row .ep-num { min-width: 3.6rem; }
+.ep-row.ep-search-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ep-search-watched { display: inline-flex; color: var(--accent); flex-shrink: 0; }
+/* The episode a search result opened, until the highlight fades. */
+.ep-row.ep-found { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); opacity: 1; }
+
 @media (max-width: 560px) {
   .panel-upnext-row { flex-wrap: wrap; }
   .panel-upnext-actions { flex-direction: row; width: 100%; justify-content: flex-start; }
@@ -4095,7 +4086,7 @@ svg { stroke-width: 1.5; }
 
 .panel-head {
   display: grid;
-  grid-template-columns: 132px 1fr;
+  grid-template-columns: 190px 1fr;
   align-items: start;
   gap: 1rem;
   margin-bottom: 1.1rem;
@@ -4106,9 +4097,9 @@ svg { stroke-width: 1.5; }
      it back in front of the artwork it overlaps. */
   position: relative;
   z-index: 1;
-  width: 132px;
-  height: 198px;
-  margin-top: -40px;
+  width: 190px;
+  height: 285px;
+  margin-top: -56px;
   object-fit: cover;
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
@@ -4119,6 +4110,9 @@ svg { stroke-width: 1.5; }
 /* The kicker needs air under the band; the poster grows by the same amount
    so its foot still lands below the text column. */
 .panel-head-text { min-width: 0; padding-top: 0.8rem; }
+/* Second grid row, under both columns. */
+.panel-head-tags { grid-column: 1 / -1; min-width: 0; margin-top: -0.4rem; }
+.panel-head-tags > :first-child { margin-top: 0; }
 
 /* Kind stays on the left. Customize artwork shares that line and sits at the
    right edge of the head, so a long title cannot push it down under the genres. */
@@ -4177,6 +4171,40 @@ svg { stroke-width: 1.5; }
   color: var(--on-accent-secondary-fill);
   font-size: 0.7rem;
   font-weight: 600;
+}
+
+/* Genre and keyword chips that open Discover or the keyword page. Same size
+   as the plain label; only hover and focus change. */
+.panel-genre--link {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.panel-genre--link:hover,
+.panel-keyword:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.panel-genre--link:focus-visible,
+.panel-keyword:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.panel-keyword {
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-badge);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+/* Toggle reads as a link, not a keyword. */
+.panel-keyword--toggle {
+  border-style: dashed;
+  color: var(--text-muted);
 }
 
 .panel-overview {
@@ -4440,13 +4468,30 @@ svg { stroke-width: 1.5; }
   color: var(--text-muted);
 }
 .panel-consensus { flex: 1; min-width: 0; margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); }
+.panel-awards {
+  margin: 0 0 1.1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.panel-awards span {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
 
 /* The foot bar (Watched it? / Thoughts?, stars, Review and Private note) lives
    in components/TitleFootBar.css. */
 
 @media (max-width: 560px) {
-  .panel-poster { width: 112px; height: 168px; margin-top: -32px; }
-  .panel-head { grid-template-columns: 112px 1fr; }
+  .panel-poster { width: 136px; height: 204px; margin-top: -40px; }
+  .panel-head { grid-template-columns: 136px 1fr; }
   .panel-head-text { padding-top: 0.6rem; }
   .panel-title { font-size: 1.5rem; }
   /* Two labelled pills and three icons don't fit a phone's width, and
@@ -7679,6 +7724,38 @@ a.provider-chip--link:hover {
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
+/* A Premium viewer's stat tile: the whole row opens the titles behind it. */
+.hist-stat--link { color: inherit; text-decoration: none; }
+.hist-stat-meta { display: inline-flex; align-items: baseline; gap: 8px; }
+.hist-stat-meta .app-nav-premium { margin-left: 0; }
+.hist-stat--link:hover .hist-stat-label,
+.hist-stat--link:focus-visible .hist-stat-label { color: var(--accent); }
+.hist-drill-link {
+  align-self: flex-start;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hist-drill-link:hover, .hist-drill-link:focus-visible { color: var(--accent); }
+.hist-drill-premium { margin-left: 8px; }
+.hist-drill-chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  width: fit-content;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 4px 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill, 999px);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  cursor: pointer;
+}
 .hist-sentence {
   margin: 0;
   font-family: var(--font-sans);
@@ -8017,6 +8094,12 @@ a.provider-chip--link:hover {
   .page-toolbar-date { display: none; }
   .page-toolbar, .page-toolbar.cal-toolbar { padding: 0; height: 0; margin: 0; }
   .page-toolbar.cal-toolbar--search { height: 0; padding: 0; }
+  .page-toolbar.cal-toolbar--search:has(.cal-suggest-btn) {
+    height: auto;
+    padding: 0 var(--gut) 12px;
+    margin: 0;
+    justify-content: flex-start;
+  }
   .cal-toolbar-controls { width: 100%; }
   /* A list's own page keeps its search on a phone: the bottom sheet has no
      search field, and .list-page-search already lays it out full width. */

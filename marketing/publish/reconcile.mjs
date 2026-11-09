@@ -161,7 +161,7 @@ const main = async () => {
       .from('marketing_posts')
       .select('*, marketing_post_publications(*)')
       // 'vetoed' belongs here even though a rejected post is finished as far as
-      // the website is concerned. Rejecting in Linear deliberately does NOT
+      // the website is concerned. Rejecting in Notion deliberately does NOT
       // delete anything from Buffer, so a vetoed post can still have three real
       // scheduled posts that really send — and if this query skipped it, those
       // rows would read 'scheduled' forever while the posts were live.

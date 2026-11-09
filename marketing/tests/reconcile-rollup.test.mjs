@@ -32,7 +32,7 @@ test('a post you deleted in Buffer is not a failed post', () => {
 });
 
 test('dropping every platform leaves the post alone', () => {
-  // Nothing sent and nothing is coming, but the article is Linear's business,
+  // Nothing sent and nothing is coming, but the article is Notion's business,
   // so there is no status this run is entitled to write.
   assert.equal(rollUp(rows('canceled', 'canceled', 'canceled')), null);
 });

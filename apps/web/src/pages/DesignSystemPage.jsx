@@ -384,7 +384,7 @@ export default function DesignSystemPage() {
           </div>
 
           <div className="ds-bar-item">
-            <div className="ds-bar-copy"><strong>Progress bar</strong><p>Linear completion indicator for watching progress.</p></div>
+            <div className="ds-bar-copy"><strong>Progress bar</strong><p>A steady completion indicator for watching progress.</p></div>
             <div className="progress-row ds-fake-progress">
               <div className="progress-bar"><div className="progress-fill" style={{ width: '62%' }} /></div>
               <span className="progress-label">5 / 8</span>

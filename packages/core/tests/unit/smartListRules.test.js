@@ -14,7 +14,7 @@ const rules = (over = {}) => normalizeSmartListRules({ ...defaultSmartListRules(
 const text = (parts) => parts.map(p => p.text).join(' ');
 const chips = (parts) => parts.filter(p => p.kind === 'chip').map(p => p.rule);
 
-test('Pick for Me answers become discover rules, keeping what has a rule', () => {
+test('Just Decide answers become discover rules, keeping what has a rule', () => {
   const options = { ...defaultPickerOptions({ hasServices: true }), mediaType: 'movie', maxRuntime: 120, genreIds: [53, 9648], era: '2010s', minScore: 7, language: 'fr' };
   assert.deepEqual(smartListRulesFromPicker(options, { hasServices: true }), {
     v: 1, source: 'discover', mediaType: 'movie', genreIds: [53, 9648], era: '2010s', minScore: 7,

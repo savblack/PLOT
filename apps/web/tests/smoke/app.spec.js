@@ -41,6 +41,19 @@ test('protected app route redirects anonymous users to login', async ({ page }) 
   await expect(page).toHaveURL(/\/login$/);
 });
 
+test('import and calendar email links keep their query for after sign-in', async ({ page }) => {
+  const links = [
+    '/import?utm_source=email&utm_medium=email&utm_campaign=founding_users&utm_content=imports',
+    '/calendar?suggest=upcoming&utm_source=email&utm_medium=email&utm_campaign=founding_users&utm_content=release_calendar',
+  ];
+  for (const target of links) {
+    await page.goto(target);
+    await expect(page).toHaveURL(/\/login$/);
+    const saved = await page.evaluate(() => sessionStorage.getItem('plot_auth_return'));
+    expect(JSON.parse(saved).path).toBe(target);
+  }
+});
+
 test('public profile route is reachable without auth', async ({ page }) => {
   await page.goto('/u/smoke-test-user');
   // A non-existent (or private, to an anon viewer) profile shows the placeholder.

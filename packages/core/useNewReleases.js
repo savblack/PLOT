@@ -28,7 +28,7 @@ export function buildGenreRailDefinitions(catalog) {
   (catalog?.movie || []).forEach(genre => add(genre, 'movie'));
   (catalog?.tv || []).forEach(genre => add(genre, 'tv'));
   // Horror, Romance and Thriller have no TV genre; their shows come from TMDB
-  // keywords instead (keywordGenres.js), the same as in Pick for Me.
+  // keywords instead (keywordGenres.js), the same as in Just Decide.
   for (const rail of rails.values()) {
     if (!rail.tvGenreId && TV_KEYWORD_GENRES[rail.movieGenreId]) rail.tvKeywordGenre = rail.movieGenreId;
   }

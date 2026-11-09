@@ -15,7 +15,7 @@ are fictional placeholders; posters are colour blocks, not TMDB artwork.
 
 | Board | Screen |
 | --- | --- |
-| H | Hub at `/together`, a Premium item next to Pick for Me |
+| H | Hub at `/together`, a Premium item next to Just Decide |
 | I | Who's watching? people picker |
 | J | Invite to watch together, with Suggested |
 | 0 + invite tile | Entry tile on a friend's profile, five states |
@@ -66,8 +66,8 @@ for the start page and the hub, Free and Premium). Each screen has one dark
 
 ## Ways in
 
-- Nav item Watch together (`/together`) next to Pick for Me, with a Premium
-  badge. For Free users it should open the plans page, like Pick for Me's
+- Nav item Watch together (`/together`) next to Just Decide, with a Premium
+  badge. For Free users it should open the plans page, like Just Decide's
   try-first pop-up.
 - A friend's profile (invite tile).
 - Notifications: requests, shared lists and live sessions.
@@ -76,7 +76,7 @@ for the start page and the hub, Free and Premium). Each screen has one dark
 - My Lists, for shared lists.
 - A title page's "Saved by Sam too" row.
 - Proposed, not yet designed: a "Who's watching? Just me / With someone"
-  first step in Pick for Me, and a link from the Premium plans page.
+  first step in Just Decide, and a link from the Premium plans page.
 
 ## Nav icon
 

@@ -1,7 +1,8 @@
 // Who to compare with. Phone layout of ComparePickerPage: people you follow,
 // then search. Back returns to History when this screen was opened on its own.
 import { useMemo, useState } from 'react';
-import { View, Text, TextInput, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { TextInput } from '../../components/TextInput';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

@@ -158,11 +158,6 @@ export function displayBackdropPath(item) {
   return item?.backdrop_path || item?.backdropPath || null;
 }
 
-/** @param {any} item */
-export function displayProfilePath(item) {
-  return item?.profile_path || item?.profilePath || null;
-}
-
 /**
  * People-feed rows store season 0 for a film or a whole series.
  * That sentinel is not the Specials season, so it must not select a season poster.

@@ -1,17 +1,16 @@
 /**
- * Onboarding step 3: the building moment. A fan of three posters, the wordmark
- * and one line saying what the save is writing, held only as long as the save
- * takes (with a short floor so it never flashes); then Home fades in. Web's
- * `building` step holds for its four rotating lines instead; mobile dropped
- * the fixed six-second wait on 2026-10-14.
+ * Onboarding step 3: the building moment. Their picks land on a shelf of six,
+ * then the wordmark and one line saying what the save is writing. Held only as
+ * long as the save takes, with a short floor so the shelf can fill, then Home
+ * fades in. Timing and shelf order come from @plot/core, shared with web.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
-import { buildingFan } from '@plot/core/onboardingSetup.js';
+import { BUILDING_FADE_MS, BUILDING_MIN_MS, BUILDING_SHELF_SIZE, buildingShelf } from '@plot/core/onboardingSetup.js';
 import { useImportJobs, importSourceName } from '@plot/core/importJobs.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -20,15 +19,10 @@ import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
 import PlotWordmark from '../../components/PlotWordmark';
 
 const F = ONBOARDING_FLOW;
-// The screen shows for at least this long, so a fast save still reads.
-const MIN_MS = 1500;
-const FADE_MS = 600;
-
-const SLOTS = {
-  left:  { rotate: '-9deg', x: -64, y: 10, scale: 0.88 },
-  right: { rotate: '9deg',  x: 64,  y: 10, scale: 0.88 },
-  front: { rotate: '0deg',  x: 0,   y: 0,  scale: 1 },
-} as const;
+// Each poster lands this long after the one before; the shelf is full by ~0.75s.
+const LAND_STAGGER_MS = 60;
+const LAND_MS = 450;
+const SLOT_KEYS = Array.from({ length: BUILDING_SHELF_SIZE }, (_, i) => i);
 
 export default function Building() {
   const router = useRouter();
@@ -38,6 +32,8 @@ export default function Building() {
   const flow = useOnboardingFlow();
   const { skipped } = useLocalSearchParams<{ skipped?: string }>();
   const [fade] = useState(() => new Animated.Value(1));
+  const [land] = useState(() => SLOT_KEYS.map(() => new Animated.Value(0)));
+  const [rise] = useState(() => new Animated.Value(0));
 
   const servicesCount = skipped ? 0 : flow.selectedServiceIds.length;
   // While a background import runs, the line says so first (web's first
@@ -45,22 +41,38 @@ export default function Building() {
   const { user } = useAppData();
   const { current: importing } = useImportJobs(user?.id ?? null);
   const line = importing ? IMPORT_JOBS.building.matching(importSourceName(importing.source)) : F.building.saving(flow.seeds.length, servicesCount);
-  const fan = useMemo(() => buildingFan(flow.seeds, flow.trending), [flow.seeds, flow.trending]);
+  const shelf = useMemo(() => buildingShelf(flow.seeds, flow.trending), [flow.seeds, flow.trending]);
 
-    // Save, hold at least MIN_MS, then leave for Home. Runs once.
+  // Land the posters one after another, then raise the heading. With Reduce
+  // Motion on, everything is simply there.
+  useEffect(() => {
+    let alive = true;
+    AccessibilityInfo.isReduceMotionEnabled().catch(() => false).then((reduce) => {
+      if (!alive) return;
+      if (reduce) { land.forEach(v => v.setValue(1)); rise.setValue(1); return; }
+      const ease = Easing.bezier(0.2, 0.8, 0.2, 1);
+      Animated.parallel([
+        Animated.stagger(LAND_STAGGER_MS, land.map(v => Animated.timing(v, { toValue: 1, duration: LAND_MS, easing: ease, useNativeDriver: true }))),
+        Animated.timing(rise, { toValue: 1, duration: 400, delay: 300, easing: ease, useNativeDriver: true }),
+      ]).start();
+    });
+    return () => { alive = false; };
+  }, [land, rise]);
+
+    // Save, hold at least BUILDING_MIN_MS, then leave for Home. Runs once.
     const ran = useRef(false);
     const { save, completeStep } = flow;
     useEffect(() => {
       if (ran.current) return;
       ran.current = true;
-      const floor = new Promise<void>(resolve => setTimeout(resolve, MIN_MS));
+      const floor = new Promise<void>(resolve => setTimeout(resolve, BUILDING_MIN_MS));
       const write = save({ skipServices: !!skipped });
       // A failed write goes straight back to services, where the error shows;
       // only a successful one waits out the floor.
       write.then(ok => (ok ? floor.then(() => true) : false)).then((ok) => {
         if (!ok) { router.back(); return; }
         completeStep('building');
-        Animated.timing(fade, { toValue: 0, duration: FADE_MS, easing: Easing.out(Easing.quad), useNativeDriver: true })
+        Animated.timing(fade, { toValue: 0, duration: BUILDING_FADE_MS, easing: Easing.out(Easing.quad), useNativeDriver: true })
           .start(() => router.replace('/(app)'));
       });
     // Runs exactly once, on mount; the values it reads are the ones at that moment.
@@ -69,43 +81,45 @@ export default function Building() {
 
   return (
     <Animated.View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom, opacity: fade }]}>
-      <View style={styles.fan} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        {fan.map((item: { id: number; poster_path?: string | null }, i: number) => {
-          const names = (['left', 'right', 'front'] as const).slice(-fan.length);
-          const name = names[i];
-          const slot = SLOTS[name];
-          const uri = posterUrl(item.poster_path, 'w185');
+      <View style={styles.shelf} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {SLOT_KEYS.map((i) => {
+          // Empty slots stay as quiet tiles, so the shelf is always two full rows.
+          const item: { id: number; poster_path?: string | null } | undefined = shelf[i];
+          const uri = item ? posterUrl(item.poster_path, 'w185') : null;
+          const v = land[i];
           return (
-            <View
-              key={item.id}
+            <Animated.View
+              key={item?.id ?? `empty-${i}`}
               style={[styles.card, {
-                zIndex: name === 'front' ? 2 : 1,
-                transform: [{ translateX: slot.x }, { translateY: slot.y }, { rotate: slot.rotate }, { scale: slot.scale }],
+                opacity: v,
+                transform: [
+                  { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+                  { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }) },
+                ],
               }]}
             >
               {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
-            </View>
+            </Animated.View>
           );
         })}
       </View>
 
-      <Text style={styles.heading}>{F.building.heading} <PlotWordmark size={30} color={colors.textPrimary} style={styles.wordmark} /></Text>
-      <View style={styles.lines} accessibilityRole="progressbar" accessibilityLabel={F.building.status} accessibilityLiveRegion="polite">
-        <Text style={styles.line}>{line}</Text>
-      </View>
+      <Animated.View style={[styles.caption, { opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }]}>
+        <Text style={styles.heading}>{F.building.heading} <PlotWordmark size={30} color={colors.textPrimary} style={styles.wordmark} /></Text>
+        <View style={styles.lines} accessibilityRole="progressbar" accessibilityLabel={F.building.status} accessibilityLiveRegion="polite">
+          <Text style={styles.line}>{line}</Text>
+        </View>
+      </Animated.View>
     </Animated.View>
   );
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xl, backgroundColor: colors.bg },
-  fan: { width: 220, height: 240, alignItems: 'center', justifyContent: 'center' },
-  card: {
-    position: 'absolute', width: 130, aspectRatio: 2 / 3, borderRadius: radii.md, overflow: 'hidden',
-    backgroundColor: colors.surfaceRaised,
-    // A legibility shadow rather than a frame, as web.
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 8 },
-  },
+  // Two rows of three, as web's .ob-shelf.
+  shelf: { width: 3 * 88 + 2 * 10, flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  card: { width: 88, aspectRatio: 2 / 3, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
+  caption: { alignItems: 'center', gap: spacing.md },
   heading: { fontFamily: fontFamily.display, fontSize: 30, letterSpacing: -0.6, color: colors.textPrimary },
   // An inline view sits on its bottom edge: drop the descender onto the text baseline.
   wordmark: { transform: [{ translateY: 30 * 0.19 }] },

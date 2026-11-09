@@ -37,7 +37,7 @@ function Chip({ kind, children }) {
  * The status chip and the words after it, from the same parts every time:
  * state, what it's doing or last did, when and how many.
  */
-function statusFor({ src, integration, jobs, current, connection }) {
+function statusFor({ src, integration, jobs, current, connection, trackingEnabled = false }) {
   const active = jobs.find(importJobActive);
   const finished = jobs.filter(importJobFinished);
   const last = finished.find(job => job.status !== 'cancelled') || null;
@@ -65,7 +65,7 @@ function statusFor({ src, integration, jobs, current, connection }) {
       chip = { kind: 'ok', text: T.chipConnected };
     }
     if (integration.display_name) parts.push(T.connectedAs(integration.display_name));
-    if (connection?.automatic_enabled) parts.push(T.checksDaily);
+    if (trackingEnabled && connection?.automatic_enabled) parts.push(T.checksDaily);
     if (last && last.status !== 'failed') parts.push(T.lastImport(shortDate(last.finished_at || last.created_at), countOf(last)));
     if (last?.status === 'failed') parts.push(last.last_error || IMPORT_JOBS.errors.gaveUp);
   } else if (last?.review_count > 0) {
@@ -112,7 +112,7 @@ function HistoryRow({ job, current, onFinish, onRetry, onCancel }) {
 }
 
 function SourceDetail({ src, integration, jobs, current, connection, tracking, start, premium, onClose, onImport, onRemove, onFinish, onCancel, navigateToPlans }) {
-  const status = statusFor({ src, integration, jobs, current, connection });
+  const status = statusFor({ src, integration, jobs, current, connection, trackingEnabled: tracking.enabled });
   const reviews = (tracking.reviews || []).filter(review => review.payload?.event?.source === src.id);
   const sourceJobs = jobs.filter(job => job.status !== 'cancelled' || job.id === current?.id);
   const importedTotal = jobs.reduce((sum, job) => sum + (job.imported || 0), 0);
@@ -288,7 +288,7 @@ export default function SettingsSources({ userId, premium, showConfirm }) {
               {rows.map(src => {
                 const jobs = jobsBySource[src.id] || [];
                 const integration = integrations[src.id];
-                const status = statusFor({ src, integration, jobs, current: start.current, connection: connectionFor(src.id) });
+                const status = statusFor({ src, integration, jobs, current: start.current, connection: connectionFor(src.id), trackingEnabled: tracking.enabled });
                 const needsServer = src.id === 'plex' && integration?.status === 'active' && !integration.selected_server;
                 const toMatch = !status.active && status.last?.review_count > 0 ? status.last : null;
                 return (

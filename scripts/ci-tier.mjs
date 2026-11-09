@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Print the CI tier for the current diff against origin/main.
+// Print the CI tier for the current change. Main compares its parent;
+// feature branches compare their merge-base with origin/main.
 //
 //   node scripts/ci-tier.mjs
 //   node scripts/ci-tier.mjs --write-env "$BASH_ENV"
@@ -31,8 +32,13 @@ const read = (cmd, cmdArgs) => {
 };
 
 const names = (args) => read('git', args).split('\n').filter(Boolean);
-const base = read('git', ['merge-base', 'origin/main', 'HEAD']);
-const committed = base ? names(['diff', '--name-only', base, 'HEAD']) : [];
+// On main, origin/main normally already points at HEAD. Comparing those
+// would skip every post-merge check as an empty diff.
+const base = branch === 'main'
+  ? read('git', ['rev-parse', '--verify', 'HEAD^'])
+  : read('git', ['merge-base', 'origin/main', 'HEAD']);
+// Missing history must not silently turn a code checkout into docs-only CI.
+const committed = base ? names(['diff', '--name-only', base, 'HEAD']) : names(['ls-files', '--cached']);
 const files = [...new Set([
   ...committed,
   ...names(['diff', '--name-only']),

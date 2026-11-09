@@ -1,4 +1,6 @@
 import { useEpisodeWatches, useSpecialEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
+import { EPISODE_SEARCH_LIMIT, useEpisodeSearch } from '@plot/core/episodeSearch.js';
+import { IconSearch } from './navIcons.jsx';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from './ArtworkSheet.jsx';
@@ -26,6 +28,8 @@ import { STAR_COUNT } from '../utils/ratings.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS, captureException } from '../lib/analytics.js';
 import { TalentWork } from './TalentCredits.jsx';
+import { BROWSE } from '@plot/core/copy/browse.js';
+import { browseTapProps, collapseKeywords, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
 import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
@@ -50,7 +54,7 @@ import {
 } from '@plot/core/watchingProgress.js';
 import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
-import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
+import { fetchCriticScore, reportAwardsShown, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import EpisodeRatingsEntry from './EpisodeRatingsSheet.jsx';
@@ -285,7 +289,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
         <div className="panel-upnext-actions">
           <button className="panel-pill panel-pill--primary" onClick={markWatched} disabled={pending}>
             <CheckIcon />
-            {pending ? MEDIA_PANEL.updating : MEDIA.markWatched}
+            <span className="panel-pill-label">{pending ? MEDIA_PANEL.updating : MEDIA.markWatched}</span>
           </button>
         </div>
       </div>
@@ -320,6 +324,9 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
   // A boolean, not the season list. The episode callbacks memoize on this.
   const specialsOnly = guideSeason === 0 && !seasons.some(season => Number(season?.season_number) === Number(selSeason));
   const [episodes,  setEpisodes]  = useState([]);
+  // The season `episodes` belongs to. A jump from search must wait for this
+  // to match, or it targets the same episode number in the old season.
+  const [episodesSeason, setEpisodesSeason] = useState(null);
   const [epLoading, setEpLoading] = useState(false);
   const [epError,   setEpError]   = useState(false);
   const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || specials.loading || specials.refreshing || specials.error || epLoading || epError;
@@ -334,6 +341,39 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
 
   // TVMaze air times keyed by "season-episode"
   const [tvmazeTimes, setTvmazeTimes] = useState({});
+
+  // Title search across every season (issue 1445). Opening a result switches to
+  // its season and points at the row, where ticking and rating already work.
+  const [episodeQuery, setEpisodeQuery] = useState('');
+  const [foundEp, setFoundEp] = useState(null); // { season, episode }
+  const listRef = useRef(null);
+  const search = useEpisodeSearch({
+    tvId,
+    seasonNumbers: seasons.map(s => Number(s.season_number)),
+    query: episodeQuery,
+    progress: {
+      currentSeason: currentProgress?.current_season || 0,
+      currentEpisode: currentProgress?.current_episode || 0,
+      episodeStates,
+    },
+  });
+  const openSearchResult = (result, position) => {
+    search.reportOpened(result, position);
+    userChangedSeason.current = true;
+    setSelSeason(result.season_number);
+    setSeasonMenuOpen(false);
+    setEpisodeQuery('');
+    setFoundEp({ season: result.season_number, episode: result.episode_number });
+  };
+  const foundHere = foundEp && foundEp.season === guideSeason && episodesSeason === guideSeason && !epLoading ? foundEp.episode : null;
+  useEffect(() => {
+    if (foundHere == null) return undefined;
+    const row = listRef.current?.querySelector(`[data-episode="${foundHere}"]`);
+    if (!row) return undefined;
+    row.scrollIntoView?.({ block: 'center' });
+    const timer = setTimeout(() => setFoundEp(null), 2400);
+    return () => clearTimeout(timer);
+  }, [foundHere]);
 
   // Auto-follow to new season when progress advances (e.g. after checking last ep)
   useEffect(() => {
@@ -356,10 +396,12 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
         setEpisodes([]);
         setEpError(!data);
       }
+      setEpisodesSeason(guideSeason);
       setEpLoading(false);
     }).catch(() => {
       if (cancelled) return;
       setEpisodes([]);
+      setEpisodesSeason(guideSeason);
       setEpError(true);
       setEpLoading(false);
     });
@@ -549,6 +591,22 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
   return (
     <div>
       <EpisodeRatingsEntry tvId={tvId} details={details} />
+      {seasons.length > 1 && (
+        <label className="hist-search ep-search">
+          <IconSearch />
+          <input
+            type="search"
+            value={episodeQuery}
+            onChange={e => setEpisodeQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape' && episodeQuery) { e.stopPropagation(); setEpisodeQuery(''); } }}
+            placeholder={MEDIA_PANEL.searchEpisodesPlaceholder}
+            aria-label={MEDIA_PANEL.searchEpisodesLabel}
+          />
+        </label>
+      )}
+      {search.active ? (
+        <EpisodeSearchResults search={search} onOpen={openSearchResult} />
+      ) : (<>
       {/* Season picker and the season-level action share one line: the season
           as a pill you open, the bulk action as plain text on the right. The
           chip-per-season strip it replaces grew a row for every season. */}
@@ -633,7 +691,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
           {epError ? MEDIA_PANEL.episodesLoadError : MEDIA_PANEL.noEpisodesAvailable}
         </div>
       ) : (
-        <div className="episode-list">
+        <div className="episode-list" ref={listRef}>
           {episodes.map(ep => {
             const { isActive, isCurrent, isWatched: watched } = getEpisodeGuideState({
               currentEpisode: currentEp,
@@ -651,7 +709,8 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
             return (
               <div
                 key={ep.episode_number}
-                className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}`}
+                data-episode={ep.episode_number}
+                className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}${foundHere === ep.episode_number ? ' ep-found' : ''}`}
                 onClick={isTracking && !progressBlocked && !seasonPending && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
@@ -694,6 +753,54 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
             );
           })}
         </div>
+      )}
+      </>)}
+    </div>
+  );
+}
+
+/* ── Matches from every season, shown in place of the season list ── */
+function EpisodeSearchResults({ search, onOpen }) {
+  const { results, loading, searchedSeasons, totalSeasons, failedSeasons } = search;
+  return (
+    <div className="ep-search-results">
+      {loading && (
+        <p className="ep-search-note" role="status">{MEDIA_PANEL.episodeSearchProgress(searchedSeasons, totalSeasons)}</p>
+      )}
+      {results.length > 0 ? (
+        <div className="episode-list">
+          {results.map((result, index) => {
+            const code = MEDIA_PANEL.episodeSearchCode(result.season_number, result.episode_number);
+            return (
+              <button
+                type="button"
+                key={`${result.season_number}-${result.episode_number}`}
+                className={`ep-row ep-search-row${result.isWatched ? ' watched' : ''}`}
+                onClick={() => onOpen(result, index)}
+                aria-label={MEDIA_PANEL.openEpisodeResult(code, result.name)}
+              >
+                <span className="ep-num">{code}</span>
+                <span className="ep-info">
+                  <span className="ep-title">{result.name}</span>
+                  {result.air_date && <span className="ep-air">{formatDate(result.air_date)}</span>}
+                </span>
+                {result.isWatched && (
+                  <span className="ep-search-watched" title={MEDIA.watched}>
+                    <CheckCircleIcon filled />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ) : !loading && (
+        <p className="ep-search-note">{MEDIA_PANEL.episodeSearchNoMatches}</p>
+      )}
+      {results.length >= EPISODE_SEARCH_LIMIT && (
+        <p className="ep-search-note">{MEDIA_PANEL.episodeSearchLimit(EPISODE_SEARCH_LIMIT)}</p>
+      )}
+      {!loading && failedSeasons > 0 && (
+        <p className="ep-search-note">{MEDIA_PANEL.episodeSearchSomeFailed}</p>
       )}
     </div>
   );
@@ -1116,7 +1223,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   );
 }
 
-export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose }) {
+export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose, onBrowse }) {
   const { watchlist, watching, user, profile, favorites, customLists, openPanel, refreshProfile } = useApp();
   const art = useUserArtwork();
   const followPerson = useFollowPerson();
@@ -1186,6 +1293,10 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const { shareTitle, copied: shareCopied } = useShareTitle();
 
   const [details,      setDetails]      = useState(null);
+  // Which title has its keywords expanded, so opening another title starts collapsed.
+  const [keywordsOpenFor, setKeywordsOpenFor] = useState(null);
+  const titleKey = `${itemType}:${itemId}`;
+  const keywordsOpen = keywordsOpenFor === titleKey;
   const [whereToWatch, setWhereToWatch] = useState({ streaming: [], rentBuy: [], inCinemas: false, justwatchLink: null, region: null });
   const [loading,      setLoading]      = useState(true);
   const [detailsError, setDetailsError] = useState(false);
@@ -1319,8 +1430,14 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     else setSheetSnap(next);
   }, [onClose]);
 
+  // Which details load is current. A title swap or a close starts or ends a
+  // load, so anything that resolves afterwards (the details themselves, the
+  // critic score, the review quote) knows it belongs to a title the panel no
+  // longer shows and is dropped.
+  const latestLoad = useRef({ id: 0 });
   const loadDetails = useCallback(async () => {
     if (!itemId) return;
+    const load = ++latestLoad.current.id;
     setLoading(true);
     setDetailsError(false);
     setCriticScore(null);
@@ -1331,6 +1448,9 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
       tmdb.getWatchProviders(itemId, itemType),
       fetchVerifiedAvailability({ tmdbId: itemId, mediaType: itemType, region }),
     ]);
+    // A newer title (or a close) started while this one loaded; its load owns
+    // the panel and the loading flag now.
+    if (load !== latestLoad.current.id) return;
     if (!det) {
       setDetailsError(true);
     } else {
@@ -1372,14 +1492,24 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
       // returned, so they can't join the Promise.all above. Fire-and-forget
       // rather than block the panel on a third-party lookup.
       const imdbId = det.external_ids?.imdb_id;
-      if (imdbId) fetchCriticScore(imdbId).then(setCriticScore);
-      tmdb.getReviews(itemType, itemId).then((reviews) => setAudienceQuote(pickAudienceQuote(reviews)));
+      if (imdbId) fetchCriticScore(imdbId).then((result) => {
+        if (load !== latestLoad.current.id) return;
+        setCriticScore(result);
+        reportAwardsShown(result, { tmdbId: itemId, mediaType: itemType });
+      });
+      tmdb.getReviews(itemType, itemId).then((reviews) => {
+        if (load === latestLoad.current.id) setAudienceQuote(pickAudienceQuote(reviews));
+      });
     }
     setLoading(false);
   }, [itemId, itemType, isMovie]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- details loading is encapsulated in the stable callback
-  useEffect(() => { loadDetails(); }, [loadDetails]);
+  useEffect(() => {
+    const loads = latestLoad.current;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- details loading is encapsulated in the stable callback
+    loadDetails();
+    return () => { loads.id += 1; };
+  }, [loadDetails]);
 
   const title   = details?.title || details?.name || '';
   const date    = details?.release_date || details?.first_air_date;
@@ -1393,7 +1523,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const similar = recommendationsFromDetails(details);
 
   const audienceScore = audienceScoreFromDetails(details);
-  const consensusLine = criticScore
+  const hasCriticScore = Number.isFinite(criticScore?.criticScore);
+  const consensusLine = hasCriticScore
     ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
     : null;
   const hasWatchOffers = whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas;
@@ -1427,6 +1558,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     ? (details?.credits?.crew || []).find(c => c.job === 'Director')?.name
     : (details?.created_by || [])[0]?.name;
   const genreChips = (details?.genres || []).slice(0, 2);
+  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, itemType), keywordsOpen);
+  // Without onBrowse (Storybook) the chips stay plain labels.
+  const browse = (kind, id, name, path) => {
+    track(EVENTS.BROWSE_TAPPED, browseTapProps({ kind, id, name, mediaType: itemType, source: 'title_panel' }));
+    onBrowse(path);
+  };
 
   // ── The logos the collapsed Where to watch card shows in place of its rows ──
   // With no offers anywhere it falls back to the networks, so the card still
@@ -1690,10 +1827,30 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     return !error;
                   }}
                 />
+              </div>
+              {/* Genres and keywords run the full width under the poster, so a
+                  long keyword list never leaves blank space beside it. */}
+              <div className="panel-head-tags">
                 {(genreChips.length > 0 || (chip && chip.cls !== 'chip-muted')) && (
                   <div className="panel-genres">
                     {chip && chip.cls !== 'chip-muted' && <span className={`chip ${chip.cls}`}>{chip.label}</span>}
-                    {genreChips.map(g => <span className="panel-genre" key={g.id}>{g.name}</span>)}
+                    {genreChips.map(g => onBrowse ? (
+                      <button type="button" className="panel-genre panel-genre--link" key={g.id} aria-label={BROWSE.genreLink(g.name)}
+                        onClick={() => browse('genre', g.id, g.name, `/home?${new URLSearchParams(genreBrowseParams({ mediaType: itemType, genreId: g.id }))}`)}>{g.name}</button>
+                    ) : <span className="panel-genre" key={g.id}>{g.name}</span>)}
+                  </div>
+                )}
+                {onBrowse && (keywordChips.length > 0) && (
+                  <div className="panel-genres panel-keywords" role="group" aria-label={BROWSE.keywordsLabel}>
+                    {keywordChips.map(k => (
+                      <button type="button" className="panel-keyword" key={k.id} aria-label={BROWSE.keywordLink(k.name)}
+                        onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}>{k.name}</button>
+                    ))}
+                    {(hiddenKeywords > 0 || keywordsOpen) && (
+                      <button type="button" className="panel-keyword panel-keyword--toggle" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}>
+                        {keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -1710,7 +1867,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 onClick={handleSaveFromPanel}
               >
                 {inList ? <CheckIcon /> : <BookmarkIcon />}
-                {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
+                <span className="panel-pill-label">{inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}</span>
               </button>
 
               <div className="panel-status" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
@@ -1944,15 +2101,15 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 The two numbers read as a pair, with a real audience review in
                 the space beside them rather than a consensus sentence on its
                 own line. ── */}
-            {(criticScore || Number.isFinite(audienceScore)) && (
+            {(hasCriticScore || Number.isFinite(audienceScore)) && (
               <div className="panel-scores">
-                {criticScore && (
+                {hasCriticScore && (
                   <div className="panel-score">
                     <b>{criticScore.criticScore}%</b>
                     <span>{MEDIA_PANEL.critics}</span>
                   </div>
                 )}
-                {criticScore && Number.isFinite(audienceScore) && <span className="panel-score-rule" />}
+                {hasCriticScore && Number.isFinite(audienceScore) && <span className="panel-score-rule" />}
                 {Number.isFinite(audienceScore) && (
                   <div className="panel-score">
                     <b>{audienceScore}%</b>
@@ -1968,6 +2125,14 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                   <p className="panel-consensus">{consensusLine}</p>
                 ) : null}
               </div>
+            )}
+
+            {/* Awards and nominations, as OMDb words them. Hidden when OMDb has none. */}
+            {criticScore?.awards && (
+              <p className="panel-awards">
+                <span>{MEDIA_PANEL.awards}</span>
+                {criticScore.awards}
+              </p>
             )}
 
             {/* Overview */}

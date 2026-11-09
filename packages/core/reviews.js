@@ -1,13 +1,22 @@
 import { getConfig } from './config.js';
+import { FAILED_LOADS, reportLoadFailure } from './actionFailures.js';
 
 /**
- * Fetch a title's critic score (Rotten Tomatoes %, via OMDb) by IMDb id.
- * Returns null when the resolver isn't configured, there's no IMDb id, or the
- * lookup fails/has no score — callers hide the critic pill in that case rather
- * than fabricating a number.
+ * @typedef {Object} CriticScoreResult
+ * @property {number|null} criticScore Rotten Tomatoes %, or null when OMDb has none
+ * @property {string|null} source e.g. 'Rotten Tomatoes'; null with no score
+ * @property {string|null} awards OMDb's Awards text, e.g. 'Won 4 Oscars. 159 wins & 220 nominations total'
+ */
+
+/**
+ * Fetch a title's critic score (Rotten Tomatoes %, via OMDb) and OMDb's awards
+ * text by IMDb id. Returns null when the resolver isn't configured, there's no
+ * IMDb id, the lookup fails, or it has neither a score nor awards. Either field
+ * can be null on its own (an awarded film with no RT score, say), so callers
+ * check each one and hide that row rather than fabricating a value.
  *
  * @param {string|null|undefined} imdbId
- * @returns {Promise<{criticScore: number, source: string}|null>}
+ * @returns {Promise<CriticScoreResult|null>}
  */
 export async function fetchCriticScore(imdbId) {
   const { criticScoreUrl, supabaseAnonKey } = getConfig();
@@ -18,12 +27,53 @@ export async function fetchCriticScore(imdbId) {
     const response = await fetch(url, {
       headers: supabaseAnonKey ? { Authorization: `Bearer ${supabaseAnonKey}`, apikey: supabaseAnonKey } : {},
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      reportLoadFailure(FAILED_LOADS.CRITIC_SCORE, { status: response.status });
+      return null;
+    }
     const data = await response.json();
-    return Number.isFinite(data?.criticScore) ? { criticScore: data.criticScore, source: data.source } : null;
-  } catch {
+    const criticScore = Number.isFinite(data?.criticScore) ? data.criticScore : null;
+    const awards = typeof data?.awards === 'string' && data.awards.trim() ? data.awards.trim() : null;
+    if (criticScore == null && !awards) return null;
+    return { criticScore, source: criticScore == null ? null : data.source ?? null, awards };
+  } catch (error) {
+    reportLoadFailure(FAILED_LOADS.CRITIC_SCORE, error);
     return null;
   }
+}
+
+/**
+ * Whether OMDb's awards text records at least one win, as opposed to
+ * nominations only. "Won 4 Oscars. 309 wins & 261 nominations total" and
+ * "1 win & 3 nominations" are wins; "Nominated for 1 Oscar. 2 nominations
+ * total" is not.
+ *
+ * @param {string|null|undefined} awards
+ * @returns {boolean}
+ */
+export function awardsIncludeWin(awards) {
+  if (typeof awards !== 'string') return false;
+  return /\bwon\b/i.test(awards) || /\b[1-9]\d*\s+wins?\b/i.test(awards);
+}
+
+/**
+ * Report that a title panel is showing the awards row. Call it with the
+ * fetchCriticScore result once per panel open; it does nothing when there are
+ * no awards, so callers need not check. Best-effort: analytics never throws.
+ *
+ * @param {CriticScoreResult|null|undefined} result
+ * @param {{ tmdbId?: number|null, mediaType?: string|null }} title
+ */
+export function reportAwardsShown(result, { tmdbId = null, mediaType = null } = {}) {
+  if (!result?.awards) return;
+  try {
+    getConfig().onAwardsShown?.({
+      tmdb_id: Number.isFinite(Number(tmdbId)) ? Number(tmdbId) : null,
+      media_type: mediaType ?? null,
+      won: awardsIncludeWin(result.awards),
+      has_critic_score: Number.isFinite(result.criticScore),
+    });
+  } catch { /* analytics is best-effort */ }
 }
 
 const MIN_QUOTE_LENGTH = 40;

@@ -1,4 +1,4 @@
-// Pick for Me (Premium): the tonight picker, movies and TV. Four questions,
+// Just Decide (Premium): the tonight picker, movies and TV. Four questions,
 // a filters panel, and a sentence that fills in as the viewer answers. No
 // claims about playback or tailored recommendations: results are "the plot
 // lines you asked for", i.e. the viewer's own answers.
@@ -8,7 +8,7 @@
 const CREATE_SMART_LIST = 'Create smart list';
 
 export const TONIGHT_PICKER = {
-  // Title comes from the nav label (Pick for Me); this is the page subline.
+  // Title comes from the nav label (Just Decide); this is the page subline.
   subtitle: 'Less deciding. More watching.',
   progress: (step, total) => `Question ${step} of ${total}`,
 

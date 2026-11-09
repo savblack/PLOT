@@ -1,0 +1,12 @@
+{
+  "name": "plot-whats-on-watch",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Cron Worker that checks theplot.tv/whats-on shows articles and emails when it does not.",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "test": "node --test test/*.test.mjs"
+  }
+}

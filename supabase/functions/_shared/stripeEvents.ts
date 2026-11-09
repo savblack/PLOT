@@ -8,6 +8,7 @@ export type WebhookAction =
   | 'checkout_completed'
   | 'async_payment'
   | 'checkout_expired'
+  | 'checkout_payment_failed'
   | 'sync_subscription'
   | 'sync_invoice'
   | 'trial_ending'
@@ -19,6 +20,8 @@ export function webhookAction(type: string): WebhookAction {
       return 'checkout_completed';
     case 'checkout.session.async_payment_succeeded':
       return 'async_payment';
+    case 'checkout.session.async_payment_failed':
+      return 'checkout_payment_failed';
     case 'checkout.session.expired':
       return 'checkout_expired';
     case 'customer.subscription.created':

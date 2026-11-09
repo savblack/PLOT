@@ -86,6 +86,28 @@ export function captureAttribution() {
  * acted on now. It becomes a session property, so signup events can answer both
  * “where did this person first find Plot?” and “which article converted them?”.
  */
+/**
+ * Campaign params on the URL that opened this page load.
+ *
+ * First-touch attribution above never changes. This one is the link being
+ * acted on now, including a founding-users email opened by someone who
+ * already had an older source stored. Call it at boot, before a sign-in
+ * redirect replaces the URL.
+ */
+export function currentCampaignAttribution() {
+  if (!canUseDOM()) return {};
+  const out = {};
+  try {
+    const params = new URLSearchParams(window.location.search);
+    for (const k of ATTR_KEYS) {
+      if (k === 'referrer') continue;
+      const v = clean(params.get(k));
+      if (v) out[k] = v;
+    }
+  } catch { /* no parseable search string */ }
+  return out;
+}
+
 export function currentArticleAttribution() {
   if (!canUseDOM()) return {};
   try {

@@ -25,9 +25,12 @@ only way to reach the new Guide.
   `VITE_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. No browser secret is introduced.
   Bootstrap waits up to roughly four minutes for the bucket migration before failing.
   Markets refresh independently (three concurrent workers); one failure does not stop
-  other markets. A failed/missing-channel refresh fails the workflow and retains a
-  seven-day health artifact with per-channel coverage, gaps and overlaps. GitHub workflow failure
-  notifications are the operator alert; no new outbound messaging service is installed.
+  other markets. A failed market refresh fails the workflow. An MJH snapshot can
+  publish with an empty channel; that gap prints a warning without failing the
+  workflow. Other providers still reject snapshots with missing channels. Each run
+  retains a seven-day health artifact with per-channel coverage, gaps and overlaps.
+  GitHub workflow failure notifications are the operator alert; no new outbound
+  messaging service is installed.
 - Browser requests read cached snapshots, never scrape upstream sources. Clients label
   snapshots stale after twelve hours or when coverage has expired; a failed refetch
   retains the last loaded snapshot for that region.

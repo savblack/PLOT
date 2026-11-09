@@ -4,7 +4,7 @@ These live in the Cloudflare dashboard (Security → WAF → Rate limiting rules
 not in the repo, so this file is the only record of them. Check it when
 auditing the zone.
 
-## theplot.tv `/api/newsletter` (added 2026-10-14)
+## theplot.tv `/api/newsletter` (planned rule, not active)
 
 `apps/website/functions/api/newsletter.js` proxies to the `newsletter-subscribe`
 Edge Function, which has its own DB-backed per-IP (10/h) and global (300/h)
@@ -21,8 +21,15 @@ costs Function invocations at all, and was the 2026-10-13 review's ask.
 | Action | Block |
 | Duration | 10 minutes |
 
-A real visitor submits the form once; five a minute from one address is a
-script.
+Live verification on October 18, 2026 found this rule absent. The Free plan's
+one rate-limit slot is occupied by `SSR routes per-IP`; do not replace it.
+
+A separate private Worker and website service binding are prepared in
+`apps/web/workers/newsletter-limit/`. They implement the same five-per-minute,
+ten-minute-block policy before invoking Supabase, without a WAF slot. This
+is application admission at Cloudflare, not a WAF rule. See that Worker's
+README for provisioning order and rollback. Production deployment still needs
+approval; the website handler must not ship without its required binding.
 
 ## `app.theplot.tv/save` rotating-proxy traffic (2026-10-13)
 

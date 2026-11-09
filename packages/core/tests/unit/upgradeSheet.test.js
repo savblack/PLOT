@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { upgradeSheetContent } from '../../upgradeSheet.js';
+import { onUpgradeSheetGateHit, reportUpgradeSheetGateHit, upgradeSheetContent, upgradeSheetGateFeature } from '../../upgradeSheet.js';
 import { FREE_CUSTOM_LIST_CAP } from '../../premium.js';
 
 test('the lists sheet names the free cap and fills the meter to it', () => {
@@ -14,7 +14,7 @@ test('the lists sheet names the free cap and fills the meter to it', () => {
 
 test('the lists sheet reuses the plans page rows, in order', () => {
   const labels = upgradeSheetContent('lists').also.map(row => row.label);
-  assert.deepEqual(labels, ['Pick for Me', 'Find something you both want']);
+  assert.deepEqual(labels, ['Just Decide', 'Find something you both want']);
 });
 
 test('an unknown reason returns null instead of an empty sheet', () => {
@@ -43,5 +43,25 @@ test('the smart lists sheet has no limit meter and sells the rules', () => {
   assert.ok(content.context.length > 0);
   assert.match(content.body, /keeps finding matches/);
   assert.doesNotMatch(`${content.context} ${content.title} ${content.body}`, /—/);
-  assert.deepEqual(content.also.map(row => row.label), ['Pick for Me', 'Find something you both want']);
+  assert.deepEqual(content.also.map(row => row.label), ['Just Decide', 'Find something you both want']);
+});
+
+test('upgradeSheetGateFeature maps sheet-only reasons and skips caller-tracked list gates', () => {
+  assert.equal(upgradeSheetGateFeature('themes'), 'themes');
+  assert.equal(upgradeSheetGateFeature('pins'), 'pins');
+  assert.equal(upgradeSheetGateFeature('alerts'), 'people_alerts');
+  assert.equal(upgradeSheetGateFeature('alertEmail'), 'alert_email');
+  assert.equal(upgradeSheetGateFeature('lists'), null);
+  assert.equal(upgradeSheetGateFeature('smartLists'), null);
+  assert.equal(upgradeSheetGateFeature('collaborativeLists'), null);
+  assert.equal(upgradeSheetGateFeature('nope'), null);
+
+  const hits = [];
+  const off = onUpgradeSheetGateHit((feature) => hits.push(feature));
+  reportUpgradeSheetGateHit('themes');
+  reportUpgradeSheetGateHit('lists');
+  reportUpgradeSheetGateHit('pins');
+  off();
+  reportUpgradeSheetGateHit('alerts');
+  assert.deepEqual(hits, ['themes', 'pins']);
 });

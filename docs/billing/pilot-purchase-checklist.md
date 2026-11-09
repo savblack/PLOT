@@ -81,7 +81,7 @@ Within about 10 seconds:
   new monthly price, metadata `supabase_user_id` is your ID.
 - [ ] Developers, Webhooks: `checkout.session.completed` delivered with `200`.
 - [ ] Premium works: open the live release calendar link in Settings, open a smart list or
-  Pick for Me, confirm no upgrade prompt appears.
+  Just Decide, confirm no upgrade prompt appears.
 - [ ] Analytics: PostHog shows `premium_checkout_started` and `premium_converted`. Note
   `premium_converted` fires when the trial starts, before any payment, so it counts trials.
 - [ ] Email: on day 4 (3 days before the trial ends) you should get "Your plot Premium trial

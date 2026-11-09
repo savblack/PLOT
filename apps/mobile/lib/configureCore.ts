@@ -4,10 +4,12 @@
 import 'react-native-url-polyfill/auto';
 import { configure } from '@plot/core/config.js';
 import { notifyPendingWatchQueued } from '@plot/core/watchQueued.js';
+import { onUpgradeSheetGateHit } from '@plot/core/upgradeSheet.js';
 import { secureSessionStorage } from './secureStorage';
 import { initAnalytics, track, EVENTS } from './analytics';
 
 initAnalytics();
+onUpgradeSheetGateHit((feature) => track(EVENTS.PREMIUM_GATE_HIT, { feature }));
 
 configure({
   trackingJobsEnabled: process.env.EXPO_PUBLIC_TRACKING_JOBS_ENABLED === 'true',
@@ -75,6 +77,8 @@ configure({
   // payload is already PII-free (codes and field names, never the message).
   onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
   onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
+  onEpisodeSearch: (payload) => track(EVENTS.EPISODE_SEARCH_RESULT_OPENED, payload),
+  onAwardsShown: (payload) => track(EVENTS.TITLE_AWARDS_SHOWN, payload),
   // The Tonight picker: one seam, four names, same shape as onWatchProgress.
   onTonightPicker: ({ action, ...props }) => {
     const name = {
@@ -101,7 +105,14 @@ configure({
   },
   onReview: (payload) => track(EVENTS.REVIEW_WRITTEN, payload),
   onImport: ({ stage, ...props }) => {
-    const name = { selected: EVENTS.IMPORT_SOURCE_SELECTED, started: EVENTS.IMPORT_STARTED, completed: EVENTS.IMPORT_COMPLETED, failed: EVENTS.IMPORT_FAILED }[stage];
+    const name = {
+      selected: EVENTS.IMPORT_SOURCE_SELECTED,
+      started: EVENTS.IMPORT_STARTED,
+      completed: EVENTS.IMPORT_COMPLETED,
+      failed: EVENTS.IMPORT_FAILED,
+      export_opened: EVENTS.LETTERBOXD_EXPORT_OPENED,
+      abandoned: EVENTS.LETTERBOXD_IMPORT_ABANDONED,
+    }[stage];
     if (name) track(name, props);
   },
   // The undo toast reversed a removal. Never a committed action.

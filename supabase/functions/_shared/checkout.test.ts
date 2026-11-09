@@ -6,8 +6,10 @@ function fixture(managed = true) {
   let attempt: Record<string, unknown> | null = null;
   let customer: string | null = null;
   let failPersist = false;
+  let failMetadata = false;
+  let failExpire = false;
   let creates = 0;
-  const sessions = new Map<string, { id: string; status: string; url: string; subscription?: string; managed_payments?: { enabled: boolean }; trial_period_days?: number }>();
+  const sessions = new Map<string, { id: string; status: string; url: string; subscription?: string; managed_payments?: { enabled: boolean }; trial_period_days?: number; metadata?: Record<string, string> }>();
   const subs: { status: string }[] = [];
   const admin = {
     rpc: () => {
@@ -45,11 +47,19 @@ function fixture(managed = true) {
         return sessions.get(options.idempotencyKey)!;
       },
       retrieve: async (id: string) => [...sessions.values()].find(s => s.id === id)!,
-      expire: async (id: string) => { [...sessions.values()].find(s => s.id === id)!.status = 'expired'; },
+      update: async (id: string, params: { metadata: Record<string, string> }) => {
+        if (failMetadata) throw new Error('metadata unavailable');
+        const session = [...sessions.values()].find(s => s.id === id)!;
+        session.metadata = { ...session.metadata, ...params.metadata };
+        return session;
+      },
+      expire: async (id: string) => {
+        if (failExpire) throw new Error('expiry unavailable');
+        assert([...sessions.values()].find(s => s.id === id)!.metadata?.plot_expiry_reason === 'superseded', 'replacement reason must be persisted before expiry'); [...sessions.values()].find(s => s.id === id)!.status = 'expired'; },
     } },
   };
   const call = (price = 'monthly') => subscriptionCheckout(admin as unknown as Parameters<typeof subscriptionCheckout>[0], stripe as unknown as Parameters<typeof subscriptionCheckout>[1], 'qa', price, 'https://example.invalid/settings', async () => 'portal');
-  return { call, subs, sessions, creates: () => creates, loseResponse: () => { failPersist = true; }, age: () => { attempt!.started_at = new Date(Date.now() - 25 * 3600000).toISOString(); } };
+  return { call, subs, sessions, creates: () => creates, loseResponse: () => { failPersist = true; }, loseMetadata: () => { failMetadata = true; }, loseExpiry: () => { failExpire = true; }, age: () => { attempt!.started_at = new Date(Date.now() - 25 * 3600000).toISOString(); } };
 }
 function assert(value: unknown, message: string) { if (!value) throw Error(message); }
 Deno.test('simultaneous first checkouts cannot create two sessions', async () => {
@@ -58,6 +68,7 @@ Deno.test('simultaneous first checkouts cannot create two sessions', async () =>
   assert(results.some(r => r.status === 'rejected' && r.reason instanceof CheckoutPendingError), 'losing claim has a safe retry message');
   assert(f.creates() === 1, 'one Stripe session');
   const retried = await f.call();
+  assert(retried.destination === 'checkout' && retried.session.id === 'cs_1', 'telemetry returns the reused session identity');
   assert(retried.url === 'https://checkout.example.invalid/1' && retried.destination === 'checkout', 'retry returns the same checkout session');
 });
 Deno.test('lost session persistence replays the same idempotent creation', async () => {
@@ -68,6 +79,7 @@ Deno.test('lost session persistence replays the same idempotent creation', async
 Deno.test('plan change expires the old payment link before replacing it', async () => {
   const f = fixture(); await f.call(); await f.call('yearly');
   assert([...f.sessions.values()][0].status === 'expired' && f.creates() === 2, 'old checkout must be terminal');
+  assert([...f.sessions.values()][0].metadata?.plot_expiry_reason === 'superseded', 'old link is replaced, not abandoned');
 });
 Deno.test('unconfirmed creation beyond idempotency retention fails closed', async () => {
   const f = fixture(); f.loseResponse(); await f.call().catch(() => {}); f.age();
@@ -111,4 +123,19 @@ Deno.test('returning subscribers get no second trial', async () => {
 Deno.test('a subscription that never started still gets the trial', async () => {
   const f = fixture(); f.subs.push({ status: 'incomplete_expired' }); await f.call();
   assert([...f.sessions.values()][0].trial_period_days === 7, 'incomplete_expired is not a prior subscription');
+});
+
+Deno.test('failed replacement marking leaves the old checkout usable and creates no new link', async () => {
+  const f = fixture(); await f.call(); f.loseMetadata();
+  const result = await Promise.allSettled([f.call('yearly')]);
+  assert(result[0].status === 'rejected', 'surface replacement failure');
+  assert(f.creates() === 1 && [...f.sessions.values()][0].status === 'open', 'old link remains open');
+});
+
+Deno.test('a confirmed open link loses its replacement marker when expiration fails', async () => {
+  const f = fixture(); await f.call(); f.loseExpiry();
+  const result = await Promise.allSettled([f.call('yearly')]);
+  assert(result[0].status === 'rejected' && f.creates() === 1, 'no replacement was prepared');
+  const old = [...f.sessions.values()][0];
+  assert(old.status === 'open' && !old.metadata?.plot_expiry_reason, 'natural expiry can still be counted as abandonment');
 });

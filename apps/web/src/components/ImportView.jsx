@@ -2,11 +2,13 @@ import { usePlexSource } from '@plot/core/usePlexSource.js';
 import { TRACKING } from '@plot/core/copy/tracking.js';
 import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
-import { needsDuplicateReview, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
+import { needsDuplicateReview, leftOutWatchSummary, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { markImportDone } from '../utils/finishingTouchesState.js';
+import { clearLetterboxdImport, rememberLetterboxdImport } from '../utils/letterboxdImportPrompt.js';
+import { letterboxdLeaveDecision } from '@plot/core/letterboxdImportPrompt.js';
 import { readImportJob, readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { suppressFirstWinForImport } from '../utils/firstWinCardState.js';
@@ -148,7 +150,7 @@ const PLATFORMS = [
     id: 'letterboxd',
     name: 'Letterboxd',
     color: '#00E054',
-    format: 'CSV',
+    format: 'ZIP',
     get shortInstructions() { return IMPORT_VIEW.letterboxdHint(getConfig().importAnnotationsEnabled); },
     get instructions() { return [this.shortInstructions]; },
   },
@@ -251,6 +253,8 @@ function AccountImportView() {
   const [providerLogos, setProviderLogos] = useState({});
   const [connectionResult, setConnectionResult] = useState(null);
   const fileRef = useRef(null);
+  const letterboxdVisit = useRef({ active: false, uploaded: false, exportOpened: false, reported: false });
+  const letterboxdLeaveToken = useRef(0);
   // ?job= finishes a background import: the worker wrote what needed no
   // decision and left these entries (no confident match, or a possible
   // duplicate) for the preview step.
@@ -294,6 +298,45 @@ function AccountImportView() {
     loadSimklIntegration();
   }, [loadPlexIntegration, loadTraktIntegration, loadSimklIntegration]);
 
+  useEffect(() => {
+    const onStep = step === 2 && platform?.id === 'letterboxd';
+    if (!onStep || !user?.id) return undefined;
+    // A file already chosen in this visit stays chosen if the step remounts.
+    // Remembering again would bring the reminder back after a successful read.
+    if (!letterboxdVisit.current.active && !letterboxdVisit.current.uploaded) {
+      letterboxdVisit.current = { active: true, uploaded: false, exportOpened: false, reported: false };
+    }
+    letterboxdVisit.current.active = true;
+    if (!letterboxdVisit.current.uploaded) rememberLetterboxdImport(user.id);
+    const token = ++letterboxdLeaveToken.current;
+    const onPageHide = () => {
+      const decision = letterboxdLeaveDecision(letterboxdVisit.current);
+      if (!decision) return;
+      letterboxdVisit.current.reported = true;
+      importReport.abandoned(decision);
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      const tokenAtLeave = token;
+      setTimeout(() => {
+        // A StrictMode remount bumps the token before this runs. The read has to see that.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- compare against the latest visit, not this effect's token
+        if (letterboxdLeaveToken.current !== tokenAtLeave) return;
+        letterboxdVisit.current.active = false;
+        const decision = letterboxdLeaveDecision(letterboxdVisit.current);
+        if (!decision) return;
+        letterboxdVisit.current.reported = true;
+        importReport.abandoned(decision);
+      }, 0);
+    };
+  }, [step, platform, user, importReport]);
+
+  const openLetterboxdExport = () => {
+    letterboxdVisit.current.exportOpened = true;
+    importReport.exportOpened();
+  };
+
   const connection = platform?.id === 'plex' ? plex : platform?.id === 'trakt' ? trakt : platform?.id === 'simkl' ? simkl : null;
 
   const handleConnect = useCallback(async () => {
@@ -330,7 +373,9 @@ function AccountImportView() {
     setDocumentReport([]);
     let parsed;
     try {
+      if (platform.id === 'letterboxd' && files?.length) letterboxdVisit.current.uploaded = true;
       const document = await readImportSelection(platform.id === 'trakt-export' ? 'trakt' : platform.id, Array.from(files));
+      if (platform.id === 'letterboxd') clearLetterboxdImport(user?.id);
       parsed = document.entries;
       setDocumentReport(importReportMessages(document));
       if (!parsed.length && (document.warnings.length || document.notImported.length)) { setResults([]); setStep(4); return; }
@@ -446,10 +491,11 @@ function AccountImportView() {
     setStep(5);
   }, [plan, platform, user, results, resolvingMatch, importReport, reviewJob]);
 
-  const newCount       = getConfig().importEventsEnabled ? results.filter(r => r.status === 'matched' && r.listSelected !== false && !alreadyImportedEvent(r)).length : plan.rows.length;
+  const importable     = row => row.status === 'matched' && row.listSelected !== false && !leftOutWatchSummary(row);
+  const newCount       = getConfig().importEventsEnabled ? results.filter(row => importable(row) && !alreadyImportedEvent(row)).length : plan.rows.length;
   const alreadyCount   = results[0]?.destination ? 0 : getConfig().importEventsEnabled ? results.filter(alreadyImportedEvent).length : plan.alreadyInHistory;
   const unmatchedCount = results.filter(r => r.status === 'unmatched').length;
-  const matchedCount   = results.filter(r => r.status === 'matched' && r.listSelected !== false).length;
+  const matchedCount   = results.filter(importable).length;
   const canConfirm = getConfig().importEventsEnabled ? matchedCount > 0 : newCount > 0;
 
   return (
@@ -633,7 +679,7 @@ function AccountImportView() {
               Drop your {platform.format} here
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.9rem' }}>
-              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : platform.id === 'letterboxd' ? 'diary.csv' : platform.id === 'imdb' ? IMPORT_VIEW.imdbFileName : `Your ${platform.name} export file`}
+              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : platform.id === 'letterboxd' ? IMPORT_VIEW.letterboxdDropHint : platform.id === 'imdb' ? IMPORT_VIEW.imdbFileName : `Your ${platform.name} export file`}
             </div>
             <span style={{
               fontSize: '0.78rem', fontWeight: 600,
@@ -645,6 +691,25 @@ function AccountImportView() {
           </div>
 
           {/* Condensed instructions */}
+          {platform.id === 'letterboxd' ? (
+            <div>
+              <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                How to export from {platform.name}
+              </div>
+              <ol style={{ margin: '0 0 0.75rem', paddingLeft: '1.15rem', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                {IMPORT_VIEW.letterboxdSteps.map(item => <li key={item}>{item}</li>)}
+              </ol>
+              <a
+                href={IMPORT_VIEW.letterboxdExportUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={openLetterboxdExport}
+                style={{ color: 'var(--accent)', fontWeight: 600, fontSize: '0.78rem' }}
+              >
+                {IMPORT_VIEW.letterboxdExportLink}
+              </a>
+            </div>
+          ) : (
           <div>
             <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
               How to export from {platform.name}
@@ -658,6 +723,7 @@ function AccountImportView() {
               ))}
             </div>
           </div>
+          )}
           </>}
         </>
       )}
@@ -723,12 +789,13 @@ function AccountImportView() {
             {results.slice(previewPage * 100, (previewPage + 1) * 100).map((r, offset) => {
               const i = previewPage * 100 + offset;
               const unmatched = r.status === 'unmatched';
-              const isNew = !unmatched && (getConfig().importEventsEnabled ? !alreadyImportedEvent(r) : plannedRows.has(rowByIndex.get(i)));
+              const leftOut = leftOutWatchSummary(r);
+              const isNew = !unmatched && !leftOut && (getConfig().importEventsEnabled ? !alreadyImportedEvent(r) : plannedRows.has(rowByIndex.get(i)));
               // Matched but not planned: either the user already has this
               // title, or it merged into another entry for the same title — a
               // Netflix export lists one row per episode, so a night of one
               // series arrives as several rows describing one title.
-              const alreadyHave = !unmatched && !isNew;
+              const alreadyHave = !unmatched && !leftOut && !isNew;
               const merged = !getConfig().importEventsEnabled && alreadyHave && !existingRows.some(
                 e => e.tmdb_id === r.tmdbId && e.media_type === r.mediaType);
               return (
@@ -736,7 +803,7 @@ function AccountImportView() {
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
                   padding: '0.65rem 0',
                   borderBottom: '1px solid var(--border)',
-                  opacity: alreadyHave || unmatched ? 0.45 : 1,
+                  opacity: alreadyHave || unmatched || leftOut ? 0.45 : 1,
                 }}>
                   <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', width: 18, textAlign: 'right', flexShrink: 0 }}>{i + 1}</div>
                   <PosterThumb path={r.posterPath} />
@@ -750,9 +817,9 @@ function AccountImportView() {
                       {r.annotation ? ` · ${IMPORT_VIEW.annotationLabel(r)}` : r.date ? ` · ${r.date}` : ` · ${IMPORT_VIEW.unknownDate}`}
                     </div>
                     {r.reason === 'episode_identity_required' && <p>{IMPORT_VIEW.episodeIdentityRequired}</p>}
-                    {needsDuplicateReview(r) && <div>
-                      <p>{r.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</p>
-                      <button onClick={() => setResults(current => current.map((entry, index) => index === i ? { ...entry, duplicateDecision: 'keep' } : entry))}>{IMPORT_VIEW.keepSeparateWatch}</button>
+                    {(needsDuplicateReview(r) || leftOut) && <div>
+                      <p>{leftOut && !getConfig().importEventsEnabled ? IMPORT_VIEW.overlappingSummaryOmitted : r.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</p>
+                      {(needsDuplicateReview(r) || getConfig().importEventsEnabled) && <button onClick={() => setResults(current => current.map((entry, index) => index === i ? { ...entry, duplicateDecision: 'keep' } : entry))}>{IMPORT_VIEW.keepSeparateWatch}</button>}
                     </div>}
                     {r.duplicateDecision === 'keep' && <p>{IMPORT_VIEW.duplicateConfirmed}</p>}
                     {!!r.candidates?.length && (

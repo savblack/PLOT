@@ -1,0 +1,15 @@
+{
+  "$schema": "../../../../node_modules/wrangler/config-schema.json",
+  "name": "plot-newsletter-limit",
+  "main": "src/index.js",
+  // Matches the workerd runtime installed by the repository lockfile.
+  "compatibility_date": "2026-10-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "durable_objects": {
+    "bindings": [{ "name": "NEWSLETTER_LIMITS", "class_name": "NewsletterLimit" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["NewsletterLimit"] }]
+}

@@ -1,5 +1,5 @@
 // Horror, Romance and Thriller for TV. TMDB's TV genre list has none of them,
-// so for shows they come from TMDB keywords instead. Pick for Me and New
+// so for shows they come from TMDB keywords instead. Just Decide and New
 // Releases both use this, so the two stay consistent.
 //
 // Keys are the movie genre each stands in for (its name and mood come from

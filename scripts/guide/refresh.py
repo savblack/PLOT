@@ -6,6 +6,7 @@ import datetime as dt
 import json
 import os
 from pathlib import Path
+import sys
 import urllib.request
 import urllib.error
 import time
@@ -113,7 +114,20 @@ def main():
             results.append(result)
             print(json.dumps({k: v for k, v in result.items() if k != 'channels'}))
     (output / 'health.json').write_text(json.dumps(results, indent=2))
-    if any(not r['ok'] or r.get('missingChannels') for r in results):
+    for result in results:
+        missing = result.get('missingChannels') or 0
+        if not result['ok'] or not missing:
+            continue
+        quiet = [c['channelId'] for c in result.get('channels') or [] if c.get('futureProgrammes') == 0]
+        noun = 'channel' if missing == 1 else 'channels'
+        detail = f'{missing} {noun}'
+        if quiet:
+            detail += f" ({', '.join(quiet)})"
+        print(f"warning: {result['market']} snapshot is missing future programmes for {detail}", file=sys.stderr)
+    # MJH can publish with a station that has no future programmes. The gap
+    # stays in health.json. A non-MJH gap raises in build_snapshot, so that
+    # market is ok false and fails the run.
+    if any(not r['ok'] for r in results):
         raise SystemExit(1)
 
 

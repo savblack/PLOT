@@ -1,5 +1,5 @@
 /**
- * Pick for Me — /(app)/tonight (mirrors web TonightView's phone layout).
+ * Just Decide — /(app)/tonight (mirrors web TonightView's phone layout).
  * Premium. Four questions, a Filters panel, and a bar above the tab bar with
  * the sentence and Surprise me / Go. Options, the sentence, the draw and the
  * time-of-day heading all come from @plot/core/tonightPicker.js; this file
@@ -34,6 +34,7 @@ import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { Palette, fontFamily, fontSize, spacing, posterUrl, backdropUrl } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 import PlotWordmark from '../../components/PlotWordmark';
+import { EVENTS, track } from '../../lib/analytics';
 
 type Styles = ReturnType<typeof makeStyles>;
 
@@ -459,6 +460,9 @@ function Lock({ color }: { color: string }) {
 function Locked({ picker, onUpgrade, styles, colors, dark }: {
   picker: Picker; onUpgrade: () => void; styles: Styles; colors: Palette; dark: boolean;
 }) {
+  useEffect(() => {
+    track(EVENTS.PREMIUM_GATE_HIT, { feature: 'tonight_picker' });
+  }, []);
   return (
     <View style={styles.locked}>
       <View style={{ gap: 12 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

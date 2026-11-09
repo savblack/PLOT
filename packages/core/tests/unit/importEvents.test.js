@@ -84,3 +84,10 @@ test('retry review preserves distinct source watches while retaining uncertain c
   assert.equal(possibleWatchDuplicates(summary, [event(importEventIdentity({ ...entry, eventId: 'diary:entry' }))]).length, 1);
   assert.equal(possibleWatchDuplicates(entry, [event('malformed-source-key')]).length, 1);
 });
+
+test('an omitted watched summary cannot block retrying an export with existing diary watches', async () => {
+  const { needsDuplicateReview } = await import('../../importEvents.js');
+  const entry = { status: 'matched', pendingDuplicates: [{}], duplicateCandidates: [{}] };
+  assert.equal(needsDuplicateReview(entry), false);
+  assert.equal(needsDuplicateReview({ ...entry, pendingDuplicates: [] }), true);
+});

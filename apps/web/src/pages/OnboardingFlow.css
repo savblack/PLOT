@@ -306,37 +306,28 @@
   font-size: 13px;
 }
 
-/* 3: building */
+/* 3: building. A shelf of their picks fills in, then Home fades in. */
 .ob-building {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding-top: 88px;
-  transition: opacity 0.6s ease;
+  /* Matches BUILDING_FADE_MS in @plot/core/onboardingSetup.js. */
+  transition: opacity 0.25s ease;
 }
 .ob-building.is-leaving { opacity: 0; }
-.ob-fan { position: relative; width: 260px; height: 230px; }
-.ob-fan-card {
-  position: absolute;
-  top: 22px;
-  left: 71px;
-  width: 118px;
-  height: 176px;
+.ob-shelf { display: grid; grid-template-columns: repeat(3, 84px); gap: 10px; }
+.ob-shelf-card {
+  aspect-ratio: 2 / 3;
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--surface-sunken);
-  /* Keeps the front poster legible against the two behind it. */
-  box-shadow: var(--shadow-overlay);
-  transition: left 0.6s cubic-bezier(.4,0,.2,1), top 0.6s cubic-bezier(.4,0,.2,1), transform 0.6s cubic-bezier(.4,0,.2,1);
-  animation: ob-deal 0.55s cubic-bezier(.2,.8,.2,1) both;
+  /* Each lands in turn (delays set inline); the shelf is full by ~0.75s. */
+  animation: ob-land 0.45s cubic-bezier(.2,.8,.2,1) both;
 }
-.ob-fan-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ob-fan-card.is-left { left: 22px; transform: rotate(-9deg); z-index: 1; }
-.ob-fan-card.is-right { left: 120px; transform: rotate(9deg); z-index: 2; }
-.ob-fan-card.is-front { left: 71px; top: 4px; transform: scale(1.04); z-index: 3; }
-/* Dealt in from below, one after another (delays set inline). */
-@keyframes ob-deal { from { opacity: 0; translate: 0 40px; } to { opacity: 1; translate: 0 0; } }
+.ob-shelf-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@keyframes ob-land { from { opacity: 0; translate: 0 14px; scale: 0.86; } to { opacity: 1; translate: 0 0; scale: 1; } }
 .ob-building-title {
   margin: 28px 0 0;
   font-family: var(--font-display);
@@ -347,29 +338,20 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
+  animation: ob-rise 0.4s cubic-bezier(.2,.8,.2,1) 0.3s both;
 }
-.ob-lines { position: relative; width: 100%; height: 24px; margin-top: 20px; }
-.ob-line {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 0.35s ease, transform 0.35s ease;
-  font-size: 16px;
+.ob-building-line {
+  margin: 12px 0 0;
+  min-height: 24px;
+  font-size: 15px;
   color: var(--text-secondary);
   white-space: nowrap;
+  animation: ob-rise 0.4s cubic-bezier(.2,.8,.2,1) 0.4s both;
 }
-.ob-line.is-on { opacity: 1; transform: none; }
-.ob-spin { width: 14px; height: 14px; flex-shrink: 0; color: var(--accent); animation: ob-spin 1.1s linear infinite; }
-@keyframes ob-spin { to { transform: rotate(360deg); } }
+@keyframes ob-rise { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .ob-line, .ob-building, .ob-fan-card { transition: none; animation: none; }
-  .ob-spin { animation: none; }
+  .ob-building, .ob-shelf-card, .ob-building-title, .ob-building-line { transition: none; animation: none; }
 }
 
 @media (min-width: 760px) {

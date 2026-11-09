@@ -343,3 +343,11 @@ export function serializePgService(name, options) {
   }
   return `${lines.join('\n')}\n`;
 }
+
+/** Require the CI connection to use the restricted role without public writes. */
+export function assertCiReadonlyIdentity(identity, expectedRole) {
+  if (!identity || identity.role !== expectedRole) throw new Error(`Expected database role ${expectedRole}. Refusing this connection.`);
+  if (['superuser', 'create_role', 'create_db', 'replication', 'bypass_rls', 'public_write', 'public_create', 'sequence_write'].some(flag => identity[flag] !== false)) {
+    throw new Error('The CI database role has elevated or write privileges. Refusing this connection.');
+  }
+}

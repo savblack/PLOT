@@ -28,6 +28,7 @@ export async function capturePostHogEvent(
   distinctId: string,
   properties: Record<string, unknown>,
   timestamp?: string,
+  uuid?: string,
 ) {
   const response = await fetch(POSTHOG_ENDPOINT, {
     method: 'POST',
@@ -35,6 +36,7 @@ export async function capturePostHogEvent(
     body: JSON.stringify({
       api_key: POSTHOG_TOKEN,
       event,
+      ...(uuid ? { uuid } : {}),
       properties: { distinct_id: distinctId, ...properties },
       ...(timestamp ? { timestamp } : {}),
     }),

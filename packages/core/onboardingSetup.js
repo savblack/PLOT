@@ -95,31 +95,26 @@ export function topRegionServices(results, limit = ONBOARDING_SERVICE_COUNT) {
 }
 
 /**
- * The building moment's three fanned posters, back left, back right, then the
- * one in front. Their first pick goes in front; other picks, then trending
- * titles they didn't pick, fill the two behind, so one or two picks still
- * make a full fan.
+ * The building moment's timing, shared so web and mobile hold the screen for
+ * the same length. The screen leaves as soon as the save finishes, but never
+ * before the shelf has filled (MIN), then fades into Home (FADE).
+ */
+export const BUILDING_MIN_MS = 1100;
+export const BUILDING_FADE_MS = 250;
+/** Posters on the building shelf: two rows of three. */
+export const BUILDING_SHELF_SIZE = 6;
+
+/**
+ * The building moment's shelf, in the order the posters land. Their picks go
+ * first, in the order they picked them; trending titles they didn't pick fill
+ * the rest, so one or two picks still make a full shelf.
  *
  * @template {{ id: number }} T
  * @param {T[]} picks
  * @param {T[]} trending
- * @returns {T[]} up to three, front last
+ * @returns {T[]} up to BUILDING_SHELF_SIZE
  */
-export function buildingFan(picks, trending) {
+export function buildingShelf(picks, trending) {
   const picked = new Set(picks.map(p => p.id));
-  const [front, ...rest] = picks.length ? picks : trending;
-  if (!front) return [];
-  const behind = [...rest, ...trending.filter(t => !picked.has(t.id) && t.id !== front.id)].slice(0, 2);
-  return [...behind, front];
-}
-
-/**
- * The building moment's rotating lines.
- *
- * @param {boolean} hasServices
- * @returns {string[]}
- */
-export function buildingLines(hasServices) {
-  const [first, ...rest] = ONBOARDING_FLOW.building.lines;
-  return [hasServices ? first : ONBOARDING_FLOW.building.noServicesFirstLine, ...rest];
+  return [...picks, ...trending.filter(t => !picked.has(t.id))].slice(0, BUILDING_SHELF_SIZE);
 }

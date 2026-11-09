@@ -176,5 +176,8 @@ alter role plot_ci_readonly with login password '<generate a long random one>';
 
 Then add `SUPABASE_DB_URL_READONLY` in Settings → Secrets → Actions with the
 same host and database as `SUPABASE_DB_URL`, user `plot_ci_readonly` and that
-password. Until the secret exists the workflow falls back to the owner URL and
-prints a warning on every run.
+password. If the secret is missing, the workflow stops. It never receives the
+owner URL. The checker verifies `current_user` is `plot_ci_readonly`, rejects
+elevated role flags, and checks that the role cannot create public objects or
+write public tables or sequences before inspecting write paths. A green run
+prints `Connection role verified: plot_ci_readonly`.

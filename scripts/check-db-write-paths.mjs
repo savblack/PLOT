@@ -47,8 +47,8 @@
 //   SUPABASE_DB_URL=… node scripts/check-db-write-paths.mjs   # CI, via psql
 //
 // Locally it uses SUPABASE_ACCESS_TOKEN + VITE_SUPABASE_URL from the root .env.
-// In CI it uses SUPABASE_DB_URL, the secret db-backup.yml already relies on, so
-// no new secret is needed. Read-only either way.
+// In CI it uses SUPABASE_DB_URL, which db-write-paths.yml sets from the read-only
+// SUPABASE_DB_URL_READONLY secret only (never the owner URL). Read-only either way.
 
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -58,12 +58,12 @@ import {
   colKey, resolveConflictTargets, extractTableRefs,
   extractStringConstants, extractAppConflictTargets,
   projectPendingSchema, describeDbUrlShape, parseDbConnectionOptions,
-  serializePgService,
+  serializePgService, assertCiReadonlyIdentity,
 } from './lib/dbWritePathChecks.mjs';
 
 // Two transports so this runs both locally and in CI without a new secret:
 //   SUPABASE_ACCESS_TOKEN → Supabase Management API (what the root .env has)
-//   SUPABASE_DB_URL       → psql (the secret db-backup.yml already uses)
+//   SUPABASE_DB_URL       → psql (CI passes the read-only plot_ci_readonly URL)
 // Read-only either way.
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 // Trimmed and unquoted before use. A secret pasted with surrounding quotes or a
@@ -185,6 +185,24 @@ const problems = [];
 let pendingMatches = 0;
 
 console.log(`▶ checking write paths on ${TARGET}\n`);
+
+// CI verifies the credential's actual identity before reading application schema.
+if (process.env.PLOT_DB_EXPECTED_ROLE) {
+  const [identity] = await query(`
+    select current_user as role, r.rolsuper as superuser, r.rolcreaterole as create_role,
+           r.rolcreatedb as create_db, r.rolreplication as replication, r.rolbypassrls as bypass_rls,
+           has_schema_privilege(current_user, 'public', 'CREATE') as public_create,
+           exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+                   where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm', 'f')
+                     and (has_table_privilege(current_user, c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+                          or has_any_column_privilege(current_user, c.oid, 'INSERT,UPDATE,REFERENCES'))) as public_write,
+           exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+                   where n.nspname = 'public' and c.relkind = 'S'
+                     and has_sequence_privilege(current_user, c.oid, 'USAGE,UPDATE')) as sequence_write
+    from pg_roles r where r.rolname = current_user`);
+  assertCiReadonlyIdentity(identity, process.env.PLOT_DB_EXPECTED_ROLE);
+  console.log(`Connection role verified: ${identity.role} (no elevated role flags or public writes).\n`);
+}
 
 // ── Every non-internal trigger, with its function's source ───────────────────
 const triggers = await query(`

@@ -22,7 +22,7 @@
 // post you are already looking at. BUFFER_PUSH_AS_DRAFT=0 restores the queued
 // push for a run that has been reviewed some other way.
 //
-// Linear keeps the half Buffer cannot show: the website article. Approving or
+// Notion keeps the half Buffer cannot show: the website article. Approving or
 // rejecting a card governs whether the piece goes live on theplot.tv, and
 // deliberately does NOT reach into the Buffer queue — see README. The two halves
 // are reviewed in the surface that can actually display them.
@@ -47,7 +47,7 @@ const bufferTime = (date) =>
 
 // Rendered, not yet resolved. A post is pushed once its copy and cards exist,
 // which is what 'needs_review' means here — the name is now about the ARTICLE
-// awaiting a decision in Linear, not about the social posts, which are past
+// awaiting a decision in Notion, not about the social posts, which are past
 // needing one. 'approved' is included so a post approved before the push ever
 // ran (a re-run, a manual approval) is not stranded.
 const PUSHABLE = ['needs_review', 'approved'];

@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
@@ -65,6 +65,13 @@ const TalentPage        = lazy(() => import('./pages/TalentPage.jsx'));
 const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
 const TasteOverlapPage  = lazy(() => import('./pages/TasteOverlapPage.jsx'));
 const ComparePickerPage = lazy(() => import('./pages/ComparePickerPage.jsx'));
+const BrowsePage        = lazy(() => import('./pages/BrowsePage.jsx'));
+
+// Home reads its starting filters once, so a new genre link has to remount it.
+function HomeRoute() {
+  const [params] = useSearchParams();
+  return <DiscoverView key={params.toString()} />;
+}
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 
@@ -140,7 +147,7 @@ const router = createBrowserRouter([
       { path: 'u/:username/lists', element: wrap(<ProfileSectionPage section="lists" />) },
       { path: 'u/:username/compare', element: wrap(<TasteOverlapPage />) },
       { path: 'compare',  element: wrap(<ComparePickerPage />) },
-      { path: 'home',     element: wrap(<DiscoverView />) },
+      { path: 'home',     element: wrap(<HomeRoute />) },
       { path: 'new-releases', element: wrap(<NewReleasesView />) },
       { path: 'tonight',  element: wrap(<TonightView />) },
       { path: 'guide',    element: wrap(<GuideView />) },
@@ -152,6 +159,7 @@ const router = createBrowserRouter([
       { path: 'my-lists/:key', element: wrap(<ListPage />) },
       { path: 'search',   element: wrap(<SearchView />) },
       { path: 'person/:personId', element: wrap(<TalentPage />) },
+      { path: 'browse',   element: wrap(<BrowsePage />) },
       { path: 'settings', element: wrap(<SettingsView />) },
       { path: 'settings/themes', element: wrap(<ThemesGallery />) },
       // Follow requests live on the Notifications page now (17 Sep 2026).

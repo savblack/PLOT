@@ -259,8 +259,13 @@ person, and `identify()` on signup merges the anonymous pre-signup history onto
 the account. That chain works: signups carry 20 to 176 pre-signup events.
 
 Super properties are registered under `first_*` names. Registering raw `utm_*`
-would stamp each person's first-touch source onto every event they ever fire,
-overwriting the campaign the event actually happened under.
+for the life of the person would stamp their first-touch source onto every
+event they ever fire, overwriting the campaign the event actually happened under.
+
+The params on the URL that opened this visit are a separate question. They are
+read at boot, before a sign-in redirect can replace the address, and registered
+with `register_for_session` under the raw `utm_*` names. That session ends when
+they close the tab. A later visit with a different link registers its own.
 
 Every surface forwards the visitor's real `utm_*`, click ids, `ref`, `src` and
 referrer host onto app links, with existing params winning so each page keeps
@@ -366,6 +371,45 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
 
+## Episode search
+
+The title panel's episode search (issue 1445) finds an episode by its title across
+every season. Fired from `useEpisodeSearch` in core through the
+`onEpisodeSearch` seam, so both apps report identically:
+
+| Event | When | Props |
+|---|---|---|
+| `episode_search_result_opened` | A matching episode was opened (the guide jumps to it) | `tmdb_id`, `season`, `episode`, `position` (1-based), `result_count`, `query_length`, `total_seasons` |
+
+Typing alone fires nothing; only an opened result counts, so this measures
+searches that found what the person wanted. The query text is never sent, only
+its length. Seasons that would not load are one `load_failed` per search with
+`resource: episode_search`. Logging the episode afterwards is the usual
+`episode_watched`, so the path from search to log is these two in order.
+
+## Title awards
+
+The title panel's Awards row (issue 1273) shows OMDb's awards line when a title
+has one. Fired from `reportAwardsShown` in `packages/core/reviews.js` through
+the `onAwardsShown` seam, so both apps report identically:
+
+| Event | When | Props |
+|---|---|---|
+| `title_awards_shown` | A title panel showed the Awards row | `tmdb_id`, `media_type`, `won` (at least one win, not only nominations), `has_critic_score` |
+
+It fires once per panel open, and only when the title has awards. A title with
+no awards fires nothing, so the share of title views with awards is
+`title_awards_shown` over `title_viewed`. That ratio starts low and climbs over
+the 30 days after 2026-11-09, as cached critic scores expire and are refetched
+with their awards text. The awards text itself is never sent.
+
+A failed critic-score lookup is `load_failed` with `resource: critic_score`;
+the panel hides the score and the Awards row rather than showing an error.
+
+It is a display event, not an action, so it is deliberately left out of Tier 1.
+`title_viewed` is unchanged: it still fires when the panel opens, before the
+awards lookup returns.
+
 ## Imports and onboarding
 
 Every import event goes through `createImportReporter()` in
@@ -380,6 +424,8 @@ the import page's `?from=` param.
 | `import_started` | The file parsed, or the account import began | `source`, `entry`, `count` (file rows) |
 | `import_completed` | The write finished and saved something. A Trakt account import uses the same event | `source`, `entry`, `count` when the result includes how many rows were written, `failed_count`, `duration_ms`, `write_ms` for file imports |
 | `import_failed` | The import stopped, or saved nothing | `source`, `entry`, `reason` (an `IMPORT_FAILURE_REASONS` slug), `failed_count`, `duration_ms` once it had started |
+| `letterboxd_export_opened` | They opened Letterboxd's data export from the upload step | `source` (`letterboxd`), `entry` |
+| `letterboxd_import_abandoned` | They left the upload step without a file, or dismissed the reminder | `source` (`letterboxd`), `entry`, `reason` (`left` or `dismissed`) |
 | `onboarding_completed` | Setup saved | `region`, `seed_titles_added`, `services_added`, `import_source` (null unless they took the switching-apps step), `skipped` |
 | `finishing_touches_viewed` | The Finishing touches card was on screen | `done_count`, `total`. Once per app session, after the watchlist has loaded |
 | `finishing_touch_opened` | A Finishing touches step's action was opened | `step` (`progress` / `friends` / `import` / `people`) |
@@ -398,6 +444,14 @@ from the confirm tap. Picked-but-never-uploaded is `import_source_selected`
 without a later `import_started` for the same person and source. An import
 picked in onboarding opens after setup, so its `import_source_selected` comes
 before `onboarding_completed` and its `import_started` after.
+
+Letterboxd's five moments reuse that funnel where it already means the same
+thing. Start is `import_source_selected` with `source: letterboxd`. Upload is
+`import_started`. Completion is `import_completed`. The export link is
+`letterboxd_export_opened`. Abandonment is `letterboxd_import_abandoned`.
+Opening the export page and then leaving is not abandonment: that is the
+path the link is for. A file that fails to parse is `import_failed`, and the
+reminder stays until a file is accepted or they dismiss it.
 
 ## Episode alerts (title panel)
 
@@ -540,7 +594,7 @@ follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
 ### `load_failed`
 
 A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
-`watching`, `favourites`, `smart_list`) fires `load_failed` via `reportLoadFailure()`, with
+`watching`, `favourites`, `smart_list`, `episode_search`, `critic_score`) fires `load_failed` via `reportLoadFailure()`, with
 the same `error_kind` / `error_code` / `http_status` props. It is a separate
 event on purpose: a page that fails to load is not a failed user action, and
 counting it as `action_failed` would skew every failed-write rate.

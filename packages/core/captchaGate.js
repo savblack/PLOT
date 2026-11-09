@@ -12,13 +12,106 @@
  * no token. Login, password reset, and magic link have no bypass. They
  * wait the same amount of time, then the caller shows an error instead of
  * posting an empty token.
+ *
+ * The second attempt is a retry after the widget reports an error. A
+ * timeout is not an error: resetting then would wipe an interactive
+ * challenge while the person is still solving it. Callers must ask
+ * shouldResetCaptcha before calling turnstile.reset().
  */
 
 /** How long to wait for a Turnstile token before giving up on this attempt. */
 export const CAPTCHA_TOKEN_WAIT_MS = 8000;
 
-/** How many times a submit runs the widget before bypass or the error. */
+/**
+ * How many times a submit runs the widget before bypass or the error.
+ * Attempt 1 starts the challenge. Attempt 2 runs only as a fresh challenge
+ * when attempt 1 ended in a widget error. A timeout keeps waiting on the
+ * same challenge instead of resetting it.
+ */
 export const CAPTCHA_SUBMIT_ATTEMPTS = 2;
+
+/**
+ * Whether this attempt should call turnstile.reset() before waiting.
+ * With a widget that waits for execute() (mobile), the first attempt starts
+ * the challenge. A widget that runs as soon as it renders (web) is already
+ * running one, possibly an untapped checkbox, so its first attempt resets
+ * only after an error, like every later attempt.
+ *
+ * @param {{ attempt: number, widgetErrored?: boolean, runsOnLoad?: boolean }} opts
+ * @returns {boolean}
+ */
+export function shouldResetCaptcha({ attempt, widgetErrored = false, runsOnLoad = false }) {
+  if (attempt <= 1 && !runsOnLoad) return true;
+  return Boolean(widgetErrored);
+}
+
+/**
+ * How long to keep waiting once Cloudflare has shown its "Verify you are
+ * human" checkbox. The person needs time to see it and tap it, and
+ * stopping early throws away a check they are about to pass.
+ */
+export const CAPTCHA_INTERACTIVE_WAIT_MS = 120000;
+
+/**
+ * How long sign-in and password reset wait for the invisible check.
+ * Those two have no fallback: giving up means the person cannot get in at
+ * all. On an iPhone simulator Cloudflare took 12 to 23 seconds to decide it
+ * wanted the checkbox, so the 8-second wait gave up on checks that were
+ * still running.
+ */
+export const CAPTCHA_NO_FALLBACK_WAIT_MS = 45000;
+
+/**
+ * Whether a submit with no Turnstile token still has somewhere to go.
+ * Signup and magic link go through signup-bypass. Sign-in and password
+ * reset do not.
+ *
+ * @param {'signup'|'login'|'forgot'|'magic'} mode
+ * @returns {boolean}
+ */
+export function captchaHasFallback(mode) {
+  return mode === 'signup' || mode === 'magic';
+}
+
+/**
+ * Whether one wait for a Turnstile token is over.
+ *
+ * A token or a widget error ends it at once. While the checkbox is on
+ * screen it lasts CAPTCHA_INTERACTIVE_WAIT_MS. Otherwise it lasts
+ * CAPTCHA_TOKEN_WAIT_MS when the mode has a fallback, and
+ * CAPTCHA_NO_FALLBACK_WAIT_MS when it does not.
+ *
+ * @param {object} opts
+ * @param {string | null | undefined} opts.token Current Turnstile token.
+ * @param {boolean} [opts.errored] The widget reported an error during this wait.
+ * @param {boolean} [opts.interactive] The widget is asking the person to tap it.
+ * @param {'signup'|'login'|'forgot'|'magic'} opts.mode
+ * @param {number} opts.elapsedMs Time since this wait started.
+ * @returns {boolean}
+ */
+export function captchaWaitOver({ token, errored = false, interactive = false, mode, elapsedMs }) {
+  if (token || errored) return true;
+  let limit = CAPTCHA_TOKEN_WAIT_MS;
+  if (interactive) limit = CAPTCHA_INTERACTIVE_WAIT_MS;
+  else if (!captchaHasFallback(mode)) limit = CAPTCHA_NO_FALLBACK_WAIT_MS;
+  return elapsedMs >= limit;
+}
+
+/**
+ * Whether to run another attempt after a wait ended without a token.
+ * A widget error always gets a fresh attempt. An untapped checkbox, or a
+ * long sign-in wait that ran out, does not: the next attempt would only
+ * wait on the same challenge again. Signup and magic link keep their
+ * second short wait before the fallback.
+ *
+ * @param {{ mode: 'signup'|'login'|'forgot'|'magic', errored?: boolean, interactive?: boolean }} opts
+ * @returns {boolean}
+ */
+export function captchaRetryAfterWait({ mode, errored = false, interactive = false }) {
+  if (errored) return true;
+  if (interactive) return false;
+  return captchaHasFallback(mode);
+}
 
 /**
  * @param {object} opts
@@ -38,4 +131,70 @@ export function captchaSubmitPlan({ siteKey, token, mode, blocked = false, waite
   if (mode === 'signup' && (blocked || waited)) return 'bypass';
   if (waited) return 'unavailable';
   return 'wait';
+}
+
+/**
+ * Whether a hostname is a local dev server or a per-branch Cloudflare
+ * Pages preview (`*.plot-5wr.pages.dev`), rather than a production host.
+ * Takes the hostname as an argument so core never reads `window`.
+ *
+ * @param {string | null | undefined} hostname
+ * @returns {boolean}
+ */
+export function isPreviewHostname(hostname) {
+  if (!hostname) return false;
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.plot-5wr.pages.dev')
+  );
+}
+
+/**
+ * The Turnstile site key a page should use on this host, or undefined to
+ * leave the widget off.
+ *
+ * Preview hosts skip Turnstile. They sign in against PLOT Staging, which
+ * does not enforce captcha, and the production site key is not valid on
+ * localhost or a pages.dev host, so the widget could only fail there and
+ * block sign-in. Production hosts always keep it. Supabase checks the token
+ * on the server, so leaving the widget off never weakens a project that
+ * enforces captcha: that project still refuses a request without a token.
+ *
+ * @param {object} opts
+ * @param {string | null | undefined} opts.siteKey Configured site key.
+ * @param {string | null | undefined} opts.hostname Current page hostname.
+ * @param {boolean} [opts.forceOnPreview] Keep the widget on a preview host,
+ *   for testing Turnstile itself (pair it with a Cloudflare test site key).
+ * @returns {string | undefined}
+ */
+export function captchaSiteKeyForHost({ siteKey, hostname, forceOnPreview = false }) {
+  if (!siteKey) return undefined;
+  if (isPreviewHostname(hostname) && !forceOnPreview) return undefined;
+  return siteKey;
+}
+
+/**
+ * Whether the auth form's submit button can be pressed yet.
+ *
+ * The widget starts its check as soon as the form is on screen, so the
+ * button waits for the token instead of starting the check on click. It
+ * does not wait forever: once captchaWaitOver says this wait is over (the
+ * widget errored, or the wait limit for this mode passed), the button
+ * turns on and the submit path takes over with its retry and fallback.
+ * That keeps the 2026-10 failure mode (a grey button that never turns on)
+ * from coming back.
+ *
+ * @param {object} opts
+ * @param {string | null | undefined} opts.siteKey Falsy means captcha is off.
+ * @param {string | null | undefined} opts.token Current Turnstile token.
+ * @param {boolean} [opts.errored] The widget reported an error.
+ * @param {boolean} [opts.interactive] Cloudflare is showing its checkbox.
+ * @param {'signup'|'login'|'forgot'|'magic'} opts.mode
+ * @param {number} opts.elapsedMs Time since the page started waiting for this token.
+ * @returns {boolean}
+ */
+export function captchaSubmitEnabled({ siteKey, token, errored = false, interactive = false, mode, elapsedMs }) {
+  if (!siteKey) return true;
+  return captchaWaitOver({ token, errored, interactive, mode, elapsedMs });
 }

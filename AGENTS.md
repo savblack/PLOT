@@ -393,7 +393,7 @@ file, not the `--no-verify-jwt` flag.
 
 ## Git & PRs
 
-- Branch off `main`; don't commit to `main` directly. Commit/push only when asked.
+- Branch off `main`; don't commit to `main` directly.
 - Keep changes scoped to the ticket — no unrelated refactors or file churn.
 - Conventional-commit style prefixes (`feat(...)`, `fix(...)`, `refactor(...)`) as in history.
 
@@ -403,6 +403,38 @@ file, not the `--no-verify-jwt` flag.
 - Irreversible or user-facing (schema/data migrations, anything touching live users,
   public posts, deletes, deploys to prod config) → confirm first.
 - If a ticket conflicts with this file, this file wins — flag the conflict.
+
+## Who Savannah talks to
+
+Savannah's main interface is her Grok bots. Cursor edits the repo when one of those bots has already routed the work here. It does not replace Chris, and it does not write a second morning plan.
+
+Plot is a TV and movie tracking app. The web app is at app.theplot.tv. The mobile app is on the way. She approves one prioritized plan each morning. The bots work through the day. Live payments, real user data, publishing, and sending still wait for her OK.
+
+- Chris, chief of staff and operations, sets the day's priorities and the ship queue. He builds the 5:30am plan for her approval, runs analytics, Stripe and Supabase setup, and the morning brief and close of day. He routes work to the right bot.
+- Jacob, CTO, owns the website, the web app, and the mobile app: reliability, performance, logs, errors, CI, deploys, and shipping fixes and features. He also covers security, retention, and support. Security includes secrets, who is allowed to see which data, and review of risky changes.
+- Hailey, CPO, owns the product: the core tracker, Premium, feedback, and web and mobile parity. She also owns conversion from signup to paid, and retention.
+- Alix, CMO, owns marketing, brand, social, and acquisition: SEO and articles, social posts scheduled in Buffer, and referral and share loops. She also owns traffic through to signup, including landing pages and site calls to action. She does not write the Saturday copy comparison. That job is `marketing/copy/GROK-HANDOFF.md`.
+- Kaia, conversion and community, owns activation after signup, the paywall and Stripe Checkout, trial to paid, and community replies. Those replies wait for Savannah's approval before posting.
+
+If she is asking here about the day's order, the morning plan, an analytics readout, or which bot should do something, point her to Chris when he is available. When the task is clearly Jacob, Hailey, Alix, or Kaia, name that bot in the plain opening, then do the repo work if this checkout is the right place. If Grok is unavailable or its usage allowance is exhausted, continue authorized work here from the saved record. Do not send Savannah back to a bot she cannot use or require a final handoff from it.
+
+### Keep work resumable
+
+Save progress during the task, after each meaningful result or decision and before switching tasks. Do not wait for a token warning or the end of the day. A fresh chat cannot read another chat's memory, and a new Grok chat may share the same exhausted usage allowance.
+
+Each active task needs one durable handoff outside the conversation, in its existing Notion task or Obsidian note. Keep that existing home rather than creating a second tracker, and link related records when both tools are used. Coding tasks use the worktree's `AGENT_HANDOFF.md`. Record the goal, owner, completed work with evidence links, exact next action, blockers, approvals already given and still needed, and the last updated time. Coding handoffs also record the branch, worktree, latest pushed commit, and checks passed or still pending. Keep credentials and unnecessary personal data out of these notes.
+
+The Grok bots also save context in their own memory. That memory can help when Grok is available, but another agent must not assume it can read it. Save the progress, next action, and approval record needed to continue in Notion or Obsidian as well.
+
+Chris keeps the active task list with a link to each handoff. Each bot updates its own task record directly; saving progress must not depend on Chris being available. If the shared record is unavailable, save a local handoff in the current worktree and tell Savannah where it is. Do not claim another bot has received instructions or that a shared document was updated unless that actually happened. These repo instructions apply to agents reading this file; configuring an external Grok bot to follow them is a separate step.
+
+After a real coding change, update the handoff, inspect the diff for unrelated work and secrets, and commit and push a checkpoint with `[skip ci]` in the message. Stage only the task's files. Do not open a pull request solely for a checkpoint. A checkpoint may be unfinished; record that clearly. A finished pull request still needs the required checks without `[skip ci]`. Remove `AGENT_HANDOFF.md` before merge as described in `docs/ops/agent-worktrees.md`.
+
+### Recover when a bot has already stopped
+
+Do not require the exhausted bot to write anything. Read the existing Notion records, Obsidian notes, linked artifacts, available conversation history, and current state in the relevant product. Compare timestamps and supporting evidence when records disagree; do not silently treat the newest note as proof that an action succeeded. For coding, inspect the same worktree, its diff, recent commits, and remote branch before writing. Respect the worktree ownership and claim rules; never run two writers on the same task. Reconstruct a handoff from verified evidence, label unknowns, and continue the next authorized action. Ask Savannah only for missing information that blocks progress, not for a recap the saved work already answers.
+
+Preserve the original scope and approval boundaries. Do not infer permission from a bot's plan or mark attempted work complete without evidence. Merges, production changes, payments, public posts, and sending still need Savannah's approval. On this Mac, uncommitted edits may remain in the same worktree. For a cloud session, check its saved artifacts and remote branch before concluding work is lost; restart only the part that cannot be recovered.
 
 ## How to explain the work
 
@@ -499,8 +531,10 @@ for copy, and **confirm before anything posts publicly.**
 ## Agent skills
 
 Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills`
-(via `skills-lock.json`), minus `code-structure` and minus upstream
-`new-feature` (Plot replaces isolate with a local skill). Typical flow:
+(via `skills-lock.json`), minus `code-structure`, minus upstream
+`new-feature` (Plot replaces isolate with a local skill), and minus
+`greploop` and `greploop-apps`. Those two only talk to Greptile, which is off.
+Do not add them back. Typical flow:
 
 1. **Isolate** — `/plot-worktree`: sibling worktree at
    `~/Developer/PLOT-worktrees/<task>` (never nest under this checkout; nested harness
@@ -515,15 +549,9 @@ Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills
    - [ ] Title and body through `/unslop`; body covers what changed, how
          verified, risks / follow-ups
    - [ ] `/before-and-after` only when there is a visible UI surface
-   - [ ] `/greploop` (or `/greploop-apps` for huge diffs) **only when the user
-         asks, or for larger / risky PRs** — not every tiny PR. Treat it as a
-         checklist item you invoke, not a merge gate.
-         - Cap the loop (`--max-iterations` low, default mindset: a few passes).
-         - Fix real bugs and AGENTS.md / design-system violations.
-         - Stop if Greptile is repeating style nits, disagreeing with this file,
-           or thrashing with no new substance. Report what is left; do not chase
-           5/5 for its own sake.
-         - Upstream greploop text says "until 5/5"; **this section wins**.
+   - [ ] For a permission change, a billing change, or a migration, ask a
+         different agent you already use to read the diff before the pull
+         request opens. Ordinary docs skip that.
 5. **Write for humans** — `/unslop` on commit messages, PR title/body, and
    other prose you wrote (also: no em dashes in user-facing copy).
 

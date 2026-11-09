@@ -7,7 +7,7 @@ import { localDateStr } from './date.js';
 import { reportLoadFailure, FAILED_LOADS } from './actionFailures.js';
 import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 
-// Pick for Me, the tonight picker (Premium). The viewer picks movie or TV first, then the
+// Just Decide, the tonight picker (Premium). The viewer picks movie or TV first, then the
 // options for that type (movie length, or TV format and episode length),
 // genres, era, score, language, and whether to stay within their services,
 // their watchlist, and away from kids and family titles. Go gives five
@@ -29,8 +29,6 @@ import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 // one real pick a day (the 'surprise' draw, a single title), then the upgrade
 // gate. The allowance lives in the app's own storage, like the rest of the
 // picker, so it is a nudge rather than a server-enforced limit.
-
-export const PICKER_MEDIA_TYPES = ['movie', 'tv'];
 
 /** Movie length budgets, in minutes. `null` means any length. */
 export const PICKER_RUNTIMES = [90, 120, 150, null];

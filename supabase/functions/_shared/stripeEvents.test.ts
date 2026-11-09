@@ -22,6 +22,7 @@ Deno.test('checkout completion, expiry and ignored events stay distinct', () => 
   equal(webhookAction('checkout.session.completed'), 'checkout_completed');
   equal(webhookAction('checkout.session.async_payment_succeeded'), 'async_payment');
   equal(webhookAction('checkout.session.expired'), 'checkout_expired');
+  equal(webhookAction('checkout.session.async_payment_failed'), 'checkout_payment_failed');
   equal(webhookAction('invoice.created'), 'ignore');
   equal(webhookAction('customer.created'), 'ignore');
 });

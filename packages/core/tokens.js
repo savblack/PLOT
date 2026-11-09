@@ -66,7 +66,7 @@ export const colors = {
     artworkFill: '#FF88C8',
     artworkFillHover: '#FF9FD3',
     onArtworkFill: '#292924',
-    // A marker stroke behind body text (Pick for Me's finding sentence). The
+    // A marker stroke behind body text (Just Decide's finding sentence). The
     // accent fill, except where that fill is too dark to read text over.
     highlight: '#FF88C8',
     danger: '#B9384A',

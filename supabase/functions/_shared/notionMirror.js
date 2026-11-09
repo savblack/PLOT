@@ -5,10 +5,7 @@
 // date the previous sweep recorded. Outbound then paints the page from the
 // row, including whatever the inbound pass just wrote.
 //
-// Weekly website-refresh pull requests are not pages here. They stay on the
-// Linear board. See marketing/REVIEW.md.
-
-import { BOT_MARKER, HELP_TEXT } from './linearCommands.js';
+import { BOT_MARKER, HELP_TEXT } from './reviewCommands.js';
 import { applyArticleAction, applyWeekAction } from './reviewActions.js';
 import {
   CREATE_LIMIT,
@@ -43,7 +40,7 @@ const WITH_PAGE = [
 const replyText = (body) => `${BOT_MARKER} · ${body}`;
 
 /**
- * Starts marketing-weekly-batch.yml. Same job Linear's /generate uses.
+ * Starts marketing-weekly-batch.yml from a Notion /generate comment.
  * The token is the caller's: this module does not read the environment.
  */
 export const githubDispatch = (token, repo) => async (workflow) => {

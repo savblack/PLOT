@@ -47,7 +47,7 @@ test('a valid report passes and is shaped for the insert', () => {
 
 test('empty detail becomes null, not an empty string', () => {
   // The column is nullable, and "said nothing" should not render as an empty
-  // quote block in the Linear issue.
+  // quote block in the Notion page.
   const result = validateReport({
     reportedId: 'b', reporterId: 'a', surface: 'profile', reason: 'spam', detail: '   ',
   });

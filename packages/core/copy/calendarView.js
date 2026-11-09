@@ -39,4 +39,21 @@ export const CALENDAR_VIEW = {
     title: 'Unavailable right now',
     body: 'New releases will appear here. Check back soon.',
   },
+  // The quick-add sheet on the web calendar. Mobile does not render it yet.
+  suggest: {
+    open: 'Add upcoming',
+    title: 'Fill your calendar',
+    body: 'Track a series that is already on the air, or a movie releasing soon. The dates show up here as soon as you add it.',
+    airingHeading: 'On the air',
+    airingBody: 'These series have already started, and another episode is still scheduled.',
+    moviesHeading: 'Movies coming soon',
+    moviesBody: 'Add one to your watchlist and its release date lands on your calendar.',
+    nextEpisode: (code, when) => (code ? `${code} airs ${when}` : `Next episode airs ${when}`),
+    inTheaters: (when) => `In theaters ${when}`,
+    streaming: (when) => `Streaming ${when}`,
+    added: 'Added',
+    nothingToSuggest: 'Nothing new to suggest right now.',
+    unavailable: 'Suggestions are unavailable right now.',
+    retry: 'Try again',
+  },
 };

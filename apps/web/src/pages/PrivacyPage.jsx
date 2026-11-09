@@ -49,7 +49,7 @@ export default function PrivacyPage() {
           <li><strong>JustWatch</strong>: streaming availability ("where to watch") data, delivered via the TMDB API.</li>
           <li><strong>Cloudflare</strong>: website and application hosting and content delivery. Your requests are routed through Cloudflare's infrastructure.</li>
           <li><strong>PostHog</strong>: product analytics used to understand how the Service is used.</li>
-          <li><strong>Linear</strong>: anonymised in-app feedback can be mirrored into our product backlog for support and planning.</li>
+          <li><strong>Notion</strong>: in-app feedback and reports are filed in private databases for support and moderation.</li>
           <li><strong>Resend</strong>: feedback email delivery and transactional notification support where applicable.</li>
           <li><strong>Google Fonts</strong>: typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
         </ul>

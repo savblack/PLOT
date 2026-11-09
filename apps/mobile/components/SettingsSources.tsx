@@ -56,7 +56,7 @@ function Chip({ kind, text }: { kind: ChipKind; text: string }) {
  * The status chip and the words after it, from the same parts every time:
  * state, what it's doing or last did, when and how many.
  */
-function statusFor({ src, integration, jobs, current, connection }: { src: ImportSource; integration: Integration | null; jobs: Job[]; current: Job | null; connection: Connection | null }) {
+function statusFor({ src, integration, jobs, current, connection, trackingEnabled = false }: { src: ImportSource; integration: Integration | null; jobs: Job[]; current: Job | null; connection: Connection | null; trackingEnabled?: boolean }) {
   const active = jobs.find(importJobActive) || null;
   const finished = jobs.filter(importJobFinished);
   const last = finished.find(job => job.status !== 'cancelled') || null;
@@ -84,7 +84,7 @@ function statusFor({ src, integration, jobs, current, connection }: { src: Impor
       chip = { kind: 'ok', text: T.chipConnected };
     }
     if (integration.display_name) parts.push(T.connectedAs(integration.display_name));
-    if (connection?.automatic_enabled) parts.push(T.checksDaily);
+    if (trackingEnabled && connection?.automatic_enabled) parts.push(T.checksDaily);
     if (last && last.status !== 'failed') parts.push(T.lastImport(shortDate(last.finished_at || last.created_at), countOf(last)));
     if (last?.status === 'failed') parts.push(last.last_error || IMPORT_JOBS.errors.gaveUp);
   } else if (last && last.review_count > 0) {
@@ -144,7 +144,7 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const status = statusFor({ src, integration, jobs, current, connection });
+  const status = statusFor({ src, integration, jobs, current, connection, trackingEnabled: tracking.enabled });
   const reviews = (tracking.reviews || []).filter(review => review.payload?.event?.source === src.id);
   const sourceJobs = jobs.filter(job => job.status !== 'cancelled' || job.id === current?.id);
   const importedTotal = jobs.reduce((sum, job) => sum + (job.imported || 0), 0);
@@ -332,7 +332,7 @@ export default function SettingsSources({ userId, isPremium, onPremium, onFinish
               {rows.map(src => {
                 const jobs = jobsBySource[src.id] || [];
                 const integration = integrations[src.id];
-                const status = statusFor({ src, integration, jobs, current, connection: connectionFor(src.id) });
+                const status = statusFor({ src, integration, jobs, current, connection: connectionFor(src.id), trackingEnabled: tracking.enabled });
                 const needsServer = src.id === 'plex' && integration?.status === 'active' && !integration.selected_server;
                 const toMatch = !status.active && status.last && status.last.review_count > 0 ? status.last : null;
                 return (

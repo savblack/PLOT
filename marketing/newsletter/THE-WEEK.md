@@ -22,7 +22,7 @@ Use this order:
 - What everyone's talking about. Several titles when the week has more than one conversation. One title is too little. For each title, report one thing the pages you opened support. Critics are for it, or critics are against it. Heaps of people who saw it are for it, or they are against it. Or the reviews are genuinely divided, critics against audiences, or split inside one of those groups. A divide needs a roundup, a critic score set against an audience score with the day you read it, or a thread where the replies go both ways in volume. One review and one social post are not a divide. Do not tell the reader to buy or skip the ticket off that pair.
 - Now on TV and Streaming. Put brand-new series, films, and documentaries first; returning seasons follow. Several premieres and full seasons. Name the US service for each. A catalog title arriving on Netflix is not an item. One title is too little.
 - Coming up. At least three distinct titles, the next seven days only. Verify the date and describe the premise where supported.
-- The charts. List the trending chart from the brief. Introduce it plainly for the issue date, such as "Your trending top ten for October 19, 2026." Do not explain that it is currently displayed on Plot or that it is not Plot user activity. After the tenth row, invite readers to see the full top 20 chart on Plot. Keep TMDB out of editorial prose; name it in source captions and the closing footnote. The last paragraph is the attribution footnote. The footnote names TMDB as the source of the chart and the artwork, and it says this product uses the TMDB API but is not endorsed or certified by TMDB. Use the Plot URL on each row. Do not invent a slug or a TMDB id. Do not cite a TMDB score. Copy the movement words from the brief. An em dash or en dash anywhere in the file fails the letter. Ordinary hyphens in compounds and URLs are allowed. Also the closed domestic weekend, top five, each gross linked, when those grosses are published. Leave the weekend out if they are not. Do not call a film a hit, a bomb, or the winner of the weekend unless that gross is in the letter and linked. Do not put a save link on a chart row.
+- The charts. List the trending chart from the brief. Introduce it plainly for the issue date, such as "Your trending top ten for October 19, 2026." Do not explain that it is currently displayed on Plot or that it is not Plot user activity. After the tenth row, invite readers to see the full top 20 chart on Plot. Keep TMDB out of editorial prose; name it in source captions and the closing footnote. The last paragraph is the attribution footnote. The footnote names TMDB as the source of the chart and the artwork, and it says this product uses the TMDB API but is not endorsed or certified by TMDB. Use the Plot URL on each row. Do not invent a slug or a TMDB id. Do not cite a TMDB score. Copy the movement words from the brief. An em dash or en dash anywhere in the file fails the letter. Ordinary hyphens in compounds and URLs are allowed. Include domestic weekend grosses selectively, with the context described below. Do not call a film a hit, a bomb, or the winner of the weekend unless that gross is in the letter and linked. Do not put a save link on a chart row.
 - Weekend watch. What to watch on the weekend after this letter. Mostly new titles. An older title is allowed only when the same paragraph ties it to a newer one, the way the earlier film is the thing to watch before the new series, or when a page you opened says a US service just added it, or says it leaves a US service soon. Soon means the page dates the removal after the letter's Monday. A title that already left is not a weekend watch. At most one title may already appear earlier in the letter, and only with a different reason: where it is this weekend, that it leaves, that the older related title is the one to queue. Do not repeat the review, and do not turn this section into a second pass at Coming up. The other titles are ones this section introduces. One title is too little. Each title needs its own source URL for that reason, and its own save link. Close with a warm, playful reason to save the picks before the weekend. Make the benefit concrete: Friday already has a plan, less scrolling, more watching. Avoid the generic "something to look forward to" line. Vary the wording between issues. The words are that job. They are not "sign up" or "download."
 - People on Plot is paused. Do not include the section. It waits until a later brief says the list is a pattern worth publishing. Do not fill that heading from the TMDB chart. Do not mention how many people use Plot, and do not say the audience is small, early, or growing.
 
@@ -68,11 +68,12 @@ Source links do not count toward the cap.
 
 ## File
 
-Write `issue.md` and nothing else. It starts with:
+Draft the article in `issue.md`. It starts with:
 
 ```
 ---
 subject:
+preview_text:
 date:
 author: plot
 ---
@@ -135,7 +136,6 @@ Reuse inactive Brevo template 5, "Plot weekly newsletter - master", from news@th
 ## Substack preview text
 
 Every issue includes preview_text in its front matter: one lively sentence, at most 160 characters, highlighting two or three specific things in that issue. It is the Substack description and the email preheader, so it complements the date-led subject rather than repeating it. Use the same warm editorial voice. Save it in the Notion Substack preview property so Savannah can copy it straight into Substack. Keep it outside the article body. The renderer writes a separate .preview.txt file and uses it as the hidden email preheader. Missing or overlong preview text fails the issue check. Generate it when drafting, and update it when the issue changes.
-
 
 ## Source variety between issues
 

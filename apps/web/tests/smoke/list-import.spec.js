@@ -7,7 +7,7 @@ for (const full of [false,true]) {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(`/tests/smoke/fixtures/list-import.html${full ? '?full=1' : ''}`);
-    await page.getByRole('button', { name: 'Letterboxd CSV export' }).click();
+    await page.getByRole('button', { name: 'Letterboxd ZIP export' }).click();
     await page.locator('input[type=file]').setInputFiles(file);
     await expect(page.getByText(/Import into Software History/)).toBeVisible();
     await expect(page.getByRole('checkbox', { name: 'Include this list' })).toBeChecked();

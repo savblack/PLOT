@@ -121,7 +121,7 @@ export function IconHistory() {
   );
 }
 
-// A starred list: Pick for Me's shortlist of picks.
+// A starred list: Just Decide's shortlist of picks.
 export function IconTonight() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

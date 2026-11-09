@@ -22,7 +22,11 @@ const source = {
 await fs.mkdir(out, { recursive: true });
 for (const [name, relative] of Object.entries(source)) {
   const svg = await fs.readFile(path.join(marketing, relative), 'utf8');
-  const full = await sharp(Buffer.from(svg)).resize(1024, 1024).png().toBuffer();
+  // Mark icons are full-bleed in the marketing SVG; inset the dots so the launcher tile has breathing room.
+  const padded = name.startsWith('Mark')
+    ? svg.replace(/(<rect\b[^>]*\/>)(.*)<\/svg>/s, '$1<g transform="translate(50 50) scale(0.62) translate(-50 -50)">$2</g></svg>')
+    : svg;
+  const full = await sharp(Buffer.from(padded)).resize(1024, 1024).png().toBuffer();
   const iconPath = name === 'MarkCharcoal' ? path.join(assets, 'icon.png') : path.join(out, `${name}.png`);
   await fs.writeFile(iconPath, full);
 

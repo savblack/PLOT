@@ -10,9 +10,10 @@
  */
 import { useState, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, Modal, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet,
   KeyboardAvoidingView, Platform, Switch,
 } from 'react-native';
+import { TextInput } from './TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import type { Palette } from '../lib/tokens';

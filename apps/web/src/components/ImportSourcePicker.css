@@ -91,7 +91,8 @@
 
 /* The source dialog (ResponsiveDialog: sheet on phones, dialog on desktop). */
 .isp-dialog-title { display: inline-flex; align-items: center; gap: 10px; }
-.isp-dialog-content .isp-import { margin-top: 0; padding: 4px 0 0; border: none; background: none; }
+.isp-dialog-content { padding: 20px 24px 24px; }
+.isp-dialog-content .isp-import { margin-top: 0; padding: 0; border: none; background: none; }
 .isp-import-body--lead { font-size: 14px; color: var(--text-primary); }
 .isp-drop.is-ready { border-style: solid; border-color: var(--success); background: var(--success-dim); min-height: 96px; }
 .isp-drop.is-ready > svg { width: 24px; height: 24px; color: var(--success); }

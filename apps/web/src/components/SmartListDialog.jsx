@@ -4,7 +4,7 @@
 // anything is saved; the name is written from the rules until the viewer
 // types their own.
 //
-// Opened three ways: "Create smart list" on Pick for Me (the answers become
+// Opened three ways: "Create smart list" on Just Decide (the answers become
 // the rules), "New list" then "Smart list" on My Lists (default rules), and
 // "Edit rules" on a smart list. Free viewers can build and count (B5); Create
 // hands their rules to `onLocked`, which keeps them and opens the upgrade sheet.

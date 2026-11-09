@@ -42,7 +42,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('row', { name: /Release calendar/ })).toBeVisible();
     await page.getByRole('switch', { name: 'Show only what Premium adds' }).check();
     await expect(page.getByRole('row', { name: /Release calendar/ })).toHaveCount(0);
-    await expect(page.getByRole('row', { name: /Pick for Me/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Just Decide/ })).toBeVisible();
     expect(errors).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: `/tmp/plot-premium-${width}.png` });

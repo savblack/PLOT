@@ -75,7 +75,25 @@ export function prepareImportFiles(platform, files) {
     for (const warning of parsed.warnings) document.warnings.push(warning);
     for (const omitted of parsed.notImported) document.notImported.push(omitted);
   }
-  return platform === 'letterboxd' ? combineLetterboxdRecords(document) : document;
+  const combined = platform === 'letterboxd' ? combineLetterboxdRecords(document) : document;
+  return omitUnavailableLists(platform, combined);
+}
+
+/** List membership needs the event importer. A Letterboxd export always
+ * includes a watchlist, and rejecting the whole zip there drops the diary.
+ * Leave the lists out and keep the watched history.
+ * @param {string} platform
+ * @param {{entries: any[], warnings: any[], notImported: any[]}} document
+ */
+function omitUnavailableLists(platform, document) {
+  if (platform !== 'letterboxd' || getConfig().importEventsEnabled) return document;
+  const names = [...new Set(document.entries.filter(row => row.destination).map(row => row.destination.name))];
+  if (!names.length) return document;
+  return {
+    ...document,
+    entries: document.entries.filter(row => !row.destination),
+    notImported: [...document.notImported, ...names.map(title => ({ title, reason: 'lists_unavailable' }))],
+  };
 }
 
 

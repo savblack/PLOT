@@ -6,9 +6,10 @@
  * have landed. Web does the same thing with a page redirect (usePremium.js).
  *
  * There is no in-app purchase and there will not be one (PLO-526, decided).
- * Apple lets an app link out to external purchase without an entitlement only on
- * the US storefront (@plot/core/purchaseLinkOut.js), so `allowed` is false until
- * the storefront is read and permits it, and the Upgrade control draws nothing.
+ * Upgrade and Manage subscription both open Stripe in the browser. Apple lets
+ * an app link out to external purchase without an entitlement only on the US
+ * storefront (@plot/core/purchaseLinkOut.js), so `allowed` is false until the
+ * storefront is read and permits it, and both controls draw nothing elsewhere.
  *
  * `checkoutAvailable` follows billing-availability: true open, false closed
  * (the control becomes the waitlist, as on web), null not known yet (treated as
@@ -94,6 +95,24 @@ export function usePremiumCheckout(active = true) {
     }
   }, [busy, closed, allowed]);
 
+  /** Stripe's customer portal (cancel, payment method, invoices) in the browser. */
+  const openPortal = useCallback(async (): Promise<CheckoutResult> => {
+    if (busy || !allowed) return 'failed';
+    setError(null);
+    setBusy(true);
+    try {
+      const url = await requestBillingUrl('portal');
+      awaitingReturn.current = true;
+      await Linking.openURL(url);
+      return 'opened';
+    } catch (e) {
+      awaitingReturn.current = false;
+      setBusy(false);
+      setError((e as Error)?.message || PLANS_PAGE.checkoutUnavailable);
+      return 'failed';
+    }
+  }, [busy, allowed]);
+
   /** While checkout is closed the control is the waitlist: no payment, just an email. */
   const joinWaitlist = useCallback(() => {
     void Linking.openURL(waitlistMailto(PLANS_PAGE.waitlistSubject)).catch(() => {});
@@ -102,5 +121,5 @@ export function usePremiumCheckout(active = true) {
   /** What the control says: Opening…, the waitlist, or Upgrade to Premium. */
   const label = busy ? PLANS_PAGE.premium.opening : closed ? PLANS_PAGE.waitlistAction : PLANS_PAGE.upgradeAction;
 
-  return { allowed, checkoutAvailable, closed, busy, error, label, start, joinWaitlist };
+  return { allowed, checkoutAvailable, closed, busy, error, label, start, openPortal, joinWaitlist };
 }

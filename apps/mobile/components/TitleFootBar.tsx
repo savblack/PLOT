@@ -13,8 +13,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   AccessibilityInfo, Animated, Easing, KeyboardAvoidingView, Platform, Pressable,
-  ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  ScrollView, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
+import { TextInput } from './TextInput';
 import Svg, { Line, Path, Polygon, Polyline, Rect } from 'react-native-svg';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

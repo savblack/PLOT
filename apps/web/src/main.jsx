@@ -2,9 +2,9 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { configure } from '@plot/core/config.js';
 import { notifyPendingWatchQueued } from '@plot/core/watchQueued.js';
-import { captureAttribution, currentArticleAttribution } from './utils/attribution.js';
+import { captureAttribution, currentArticleAttribution, currentCampaignAttribution } from './utils/attribution.js';
 import { analyticsAllowed } from './utils/analyticsHost.js';
-import { isSaveBotFingerprint } from './utils/saveBotFingerprint.js';
+import { isAutomatedBrowser, isSaveBotFingerprint } from './utils/saveBotFingerprint.js';
 import { isChunkError, markChunkReload, recentlyReloaded } from './utils/chunkError.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { isOpaqueBrowserException } from './utils/opaqueException.js';
@@ -106,6 +106,8 @@ configure({
   // payload is already PII-free (codes and field names, never the message).
   onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
   onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
+  onEpisodeSearch: (payload) => track(EVENTS.EPISODE_SEARCH_RESULT_OPENED, payload),
+  onAwardsShown: (payload) => track(EVENTS.TITLE_AWARDS_SHOWN, payload),
   // The Tonight picker: one seam, four names, same shape as onWatchProgress.
   onTonightPicker: ({ action, ...props }) => {
     const name = {
@@ -132,7 +134,14 @@ configure({
   },
   onReview: (payload) => track(EVENTS.REVIEW_WRITTEN, payload),
   onImport: ({ stage, ...props }) => {
-    const name = { selected: EVENTS.IMPORT_SOURCE_SELECTED, started: EVENTS.IMPORT_STARTED, completed: EVENTS.IMPORT_COMPLETED, failed: EVENTS.IMPORT_FAILED }[stage];
+    const name = {
+      selected: EVENTS.IMPORT_SOURCE_SELECTED,
+      started: EVENTS.IMPORT_STARTED,
+      completed: EVENTS.IMPORT_COMPLETED,
+      failed: EVENTS.IMPORT_FAILED,
+      export_opened: EVENTS.LETTERBOXD_EXPORT_OPENED,
+      abandoned: EVENTS.LETTERBOXD_IMPORT_ABANDONED,
+    }[stage];
     if (name) track(name, props);
   },
   // The undo toast reversed a removal. Never a committed action.
@@ -156,6 +165,9 @@ const posthogToken = !isDnt && analyticsAllowed() && import.meta.env.VITE_PUBLIC
 // so signup / activation stay traceable to their source. First-touch wins.
 const attribution = captureAttribution();
 const currentArticle = currentArticleAttribution();
+// This visit's utm_* and click ids, read before a sign-in redirect replaces
+// the URL. Session scope only, so an older first-touch source stays on first_*.
+const currentCampaign = currentCampaignAttribution();
 
 // posthog-js is the single largest chunk in the app —
 // bigger than React itself — so it's dynamically imported after the app has
@@ -236,6 +248,14 @@ if (posthogToken) {
           screenWidth: window.screen?.width,
           screenHeight: window.screen?.height,
         })) return null;
+        // Browsers that report themselves as automated never count as a /save
+        // visit either. Same per-event route check as above.
+        if (isAutomatedBrowser({
+          pathname: props?.$pathname || window.location.pathname,
+          userAgent: navigator.userAgent,
+          webdriver: navigator.webdriver,
+          languageCount: navigator.languages?.length,
+        })) return null;
         // An exception the browser masked to "Script error." carries no
         // message, filename or stack, so it can only ever be closed, never
         // diagnosed. Drop it rather than let it open an Error Tracking issue.
@@ -288,6 +308,9 @@ if (posthogToken) {
     // whose original acquisition source came from somewhere else.
     if (Object.keys(currentArticle).length > 0) {
       posthog.register_for_session(currentArticle);
+    }
+    if (Object.keys(currentCampaign).length > 0) {
+      posthog.register_for_session(currentCampaign);
     }
     _setPostHogClient(posthog);
   });

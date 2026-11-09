@@ -4,7 +4,7 @@ import {
   colKey, extractConflictTargets, extractTableRefs, resolveConflictTargets,
   extractStringConstants, extractAppConflictTargets,
   extractMigrationKeyChanges, projectPendingSchema, describeDbUrlShape,
-  parseDbConnectionOptions, serializePgService,
+  parseDbConnectionOptions, serializePgService, assertCiReadonlyIdentity,
 } from '../../../../scripts/lib/dbWritePathChecks.mjs';
 
 // These are the real definitions either side of the two-week production outage
@@ -382,4 +382,15 @@ test('pending table-level uniqueness satisfies episode upserts without accepting
   assert.ok(keys.some(key => key.key === colKey('user_id,tmdb_id,season_number,episode_number')));
   assert.equal(schema.has('unrelated'), false);
   assert.equal(keys.some(key => key.key === 'tmdb_id'), false);
+});
+
+const readonlyIdentity = { role: 'plot_ci_readonly', superuser: false, create_role: false, create_db: false, replication: false, bypass_rls: false, public_write: false, public_create: false, sequence_write: false };
+test('CI accepts the expected role only when every privilege check is explicitly false', () => {
+  assert.doesNotThrow(() => assertCiReadonlyIdentity(readonlyIdentity, 'plot_ci_readonly'));
+  assert.throws(() => assertCiReadonlyIdentity({ ...readonlyIdentity, role: 'postgres' }, 'plot_ci_readonly'), /Expected database role/);
+  assert.throws(() => assertCiReadonlyIdentity(null, 'plot_ci_readonly'), /Expected database role/);
+  for (const flag of Object.keys(readonlyIdentity).filter(key => key !== 'role')) {
+    assert.throws(() => assertCiReadonlyIdentity({ ...readonlyIdentity, [flag]: true }, 'plot_ci_readonly'), /privileges/);
+    assert.throws(() => assertCiReadonlyIdentity({ ...readonlyIdentity, [flag]: undefined }, 'plot_ci_readonly'), /privileges/);
+  }
 });

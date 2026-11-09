@@ -1,5 +1,6 @@
 import { useEpisodeWatches, useSpecialEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import { getEpisodeGuideState } from '@plot/core/episodeProgress.js';
+import { EPISODE_SEARCH_LIMIT, useEpisodeSearch, type EpisodeSearchResult } from '@plot/core/episodeSearch.js';
 import StreamingAlertsCard from './StreamingAlertsCard';
 import EpisodeAlertsCard from './EpisodeAlertsCard';
 import StreamingArrivalAsk from './StreamingArrivalAsk';
@@ -16,12 +17,13 @@ import { customListCreationError, isCustomListLimitError } from '@plot/core/cust
  */
 import { localDateStr } from '@plot/core/date.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaStatus.js';
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, type RefObject } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
-  StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Linking, Alert,
-  Platform, KeyboardAvoidingView,
+  StyleSheet, Dimensions, ActivityIndicator, Animated, Linking, Alert,
+  Platform, KeyboardAvoidingView, Keyboard, type HostInstance,
 } from 'react-native';
+import { TextInput } from './TextInput';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb, getTmdbRegion } from '../lib/tmdb';
@@ -52,6 +54,8 @@ import { EpisodeRatingsEntry } from './EpisodeRatingsSheet';
 import { updateProfile } from '@plot/core/profile.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
+import { BROWSE } from '@plot/core/copy/browse.js';
+import { browseTapProps, collapseKeywords, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
 import UpgradeSheet from './UpgradeSheet';
 import { useRouter, type Href } from 'expo-router';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -61,7 +65,7 @@ import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 import { SavedByToo } from './watch/SavedByToo';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
-import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
+import { fetchCriticScore, reportAwardsShown, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { TrailerPlayer } from './TrailerPlayer';
@@ -170,7 +174,7 @@ function IconBookmark({ saved }: { saved: boolean }) {
   );
 }
 // ── Episode guide ─────────────────────────────────────────────────────
-function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onSeasonChange }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }>; onSeasonChange?: (season: number) => void }) {
+function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onSeasonChange, scrollRef }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }>; onSeasonChange?: (season: number) => void; scrollRef?: RefObject<ScrollView | null> }) {
   const { colors } = useTheme();
   const { userId } = useAppData();
   const sparse = useEpisodeWatches(userId, tvId);
@@ -183,6 +187,9 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
   const guideSeason = guideSeasonSelection(seasons, selSeason);
   useEffect(() => { onSeasonChange?.(guideSeason); }, [guideSeason, onSeasonChange]);
   const [episodes,  setEpisodes]  = useState<any[]>([]);
+  // The season `episodes` belongs to. A jump from search must wait for this
+  // to match, or it targets the same episode number in the old season.
+  const [episodesSeason, setEpisodesSeason] = useState<number | null>(null);
   const [loading,   setLoading]   = useState(false);
   const progressBlocked = sparse.loading || sparse.refreshing || sparse.error || specials.loading || specials.refreshing || specials.error || loading;
   const [toggling,  setToggling]  = useState<number | null>(null);
@@ -196,10 +203,12 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
     tmdb.getSeason(tvId, guideSeason).then((data: any) => {
       if (cancelled) return;
       setEpisodes(data?.episodes ?? []);
+      setEpisodesSeason(guideSeason);
       setLoading(false);
     }).catch(() => {
       if (cancelled) return;
       setEpisodes([]);
+      setEpisodesSeason(guideSeason);
       setActionError(MEDIA_PANEL.episodesLoadError);
       setLoading(false);
     });
@@ -208,6 +217,51 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
 
   const curSeason = progress?.current_season || 0;
   const curEp     = progress?.current_episode || 0;
+
+  // Title search across every season (issue 1445), same matcher as web. Opening a
+  // result switches to its season and scrolls to the row, where ticking and
+  // rating already work.
+  const [episodeQuery, setEpisodeQuery] = useState('');
+  const [foundEp, setFoundEp] = useState<{ season: number; episode: number } | null>(null);
+  const rowRefs = useRef(new Map<number, View>());
+  const search = useEpisodeSearch({
+    tvId,
+    seasonNumbers: seasons.map((s: { season_number?: number }) => Number(s.season_number)),
+    query: episodeQuery,
+    progress: { currentSeason: curSeason, currentEpisode: curEp, episodeStates },
+  });
+  const openSearchResult = (result: EpisodeSearchResult, position: number) => {
+    search.reportOpened(result, position);
+    // The field keeps focus after the tap (keyboardShouldPersistTaps), and the
+    // keyboard would cover the row this scrolls to.
+    Keyboard.dismiss();
+    setSelSeason(result.season_number);
+    setSeasonMenuOpen(false);
+    setEpisodeQuery('');
+    setFoundEp({ season: result.season_number, episode: result.episode_number });
+  };
+  const foundHere = foundEp && foundEp.season === guideSeason && episodesSeason === guideSeason && !loading ? foundEp.episode : null;
+  useEffect(() => {
+    if (foundHere == null || !rowRefs.current.has(foundHere)) return undefined;
+    // Wait a frame so the new season's rows have laid out before measuring.
+    const frame = requestAnimationFrame(() => {
+      const row = rowRefs.current.get(foundHere);
+      // The content view, so y counts from the top of everything scrolled. A
+      // ref, not getInnerViewNode's numeric tag, which Fabric's measureLayout
+      // does not accept. getInnerViewRef is public but missing from RN's types.
+      const scroller = scrollRef?.current as (ScrollView & { getInnerViewRef?: () => HostInstance | null }) | null | undefined;
+      const content = scroller?.getInnerViewRef?.() ?? null;
+      if (!row || !content) return;
+      row.measureLayout(
+        content,
+        (_x, y) => scrollRef?.current?.scrollTo({ y: Math.max(0, y - 160), animated: true }),
+        () => {},
+      );
+    });
+    const timer = setTimeout(() => setFoundEp(null), 2400);
+    return () => { cancelAnimationFrame(frame); clearTimeout(timer); };
+  }, [foundHere, scrollRef]);
+
   const episodeState = (episodeNumber: number) => getEpisodeGuideState({
     currentSeason: curSeason, currentEpisode: curEp, selectedSeason: guideSeason,
     episodeNumber, episodeStates,
@@ -333,6 +387,56 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
   return (
     <View>
       <EpisodeRatingsEntry tvId={tvId} details={details} />
+      {seasons.length > 1 && (
+        <TextInput
+          style={styles.epSearchInput}
+          value={episodeQuery}
+          onChangeText={setEpisodeQuery}
+          placeholder={MEDIA_PANEL.searchEpisodesPlaceholder}
+          placeholderTextColor={colors.textMuted}
+          accessibilityLabel={MEDIA_PANEL.searchEpisodesLabel}
+          clearButtonMode="while-editing"
+          autoCorrect={false}
+          returnKeyType="search"
+        />
+      )}
+      {search.active ? (
+        <View>
+          {search.loading && (
+            <Text style={styles.epSearchNote} accessibilityLiveRegion="polite">
+              {MEDIA_PANEL.episodeSearchProgress(search.searchedSeasons, search.totalSeasons)}
+            </Text>
+          )}
+          {search.results.map((result, index) => {
+            const code = MEDIA_PANEL.episodeSearchCode(result.season_number, result.episode_number);
+            return (
+              <TouchableOpacity
+                key={`${result.season_number}-${result.episode_number}`}
+                style={[styles.epRow, result.isWatched && styles.epRowWatched]}
+                onPress={() => openSearchResult(result, index)}
+                accessibilityRole="button"
+                accessibilityLabel={MEDIA_PANEL.openEpisodeResult(code, result.name)}
+              >
+                <Text style={[styles.epCode, styles.epSearchCode]}>{code}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.epTitle, result.isWatched && styles.epTitleWatched]} numberOfLines={2}>{result.name}</Text>
+                  {result.air_date ? <Text style={styles.epAirDate}>{result.air_date}</Text> : null}
+                </View>
+                {result.isWatched && <IconCircleCheck filled />}
+              </TouchableOpacity>
+            );
+          })}
+          {!search.loading && search.results.length === 0 && (
+            <Text style={styles.epSearchNote}>{MEDIA_PANEL.episodeSearchNoMatches}</Text>
+          )}
+          {search.results.length >= EPISODE_SEARCH_LIMIT && (
+            <Text style={styles.epSearchNote}>{MEDIA_PANEL.episodeSearchLimit(EPISODE_SEARCH_LIMIT)}</Text>
+          )}
+          {!search.loading && search.failedSeasons > 0 && (
+            <Text style={styles.epSearchNote}>{MEDIA_PANEL.episodeSearchSomeFailed}</Text>
+          )}
+        </View>
+      ) : (<>
       {/* Season pill and the bulk action share one line. The chip strip it
           replaces grew a row for every season. */}
       <View style={styles.seasonRow}>
@@ -407,7 +511,11 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
           const isToggling = toggling === ep.episode_number;
           const epCode = `S${String(guideSeason).padStart(2,'0')}E${String(ep.episode_number).padStart(2,'0')}`;
           return (
-            <View key={ep.id} style={[styles.epRow, current && styles.epRowCurrent, watched && styles.epRowWatched]}>
+            <View
+              key={ep.id}
+              ref={(node) => { if (node) rowRefs.current.set(ep.episode_number, node); else rowRefs.current.delete(ep.episode_number); }}
+              style={[styles.epRow, current && styles.epRowCurrent, watched && styles.epRowWatched, foundHere === ep.episode_number && styles.epRowFound]}
+            >
               <Text style={[styles.epCode, current && styles.epCodeCurrent]}>
                 E{String(ep.episode_number).padStart(2, '0')}
               </Text>
@@ -434,6 +542,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
           );
         })
       )}
+      </>)}
     </View>
   );
 }
@@ -583,6 +692,7 @@ interface TMDBDetails extends ParentalGuideDetails {
   vote_average?: number;
   vote_count?: number;
   genres?: TMDBGenre[];
+  keywords?: { keywords?: { id: number; name: string }[]; results?: { id: number; name: string }[] };
   runtime?: number;
   episode_run_time?: number[];
   number_of_seasons?: number;
@@ -806,10 +916,14 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
   const [showListSheet, setShowListSheet] = useState(false);
   const [details,   setDetails]   = useState<TMDBDetails | null>(null);
+  // Which title has its keywords expanded, so opening another title starts collapsed.
+  const [keywordsOpenFor, setKeywordsOpenFor] = useState<string | null>(null);
+  const titleKey = `${itemType}:${itemId}`;
+  const keywordsOpen = keywordsOpenFor === titleKey;
   const [whereToWatch, setWhereToWatch] = useState<{ streaming: any[]; rentBuy: any[]; inCinemas: boolean; region: string; justwatchLink: string | null }>({ streaming: [], rentBuy: [], inCinemas: false, region: 'US', justwatchLink: null });
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(false);
-  const [criticScore,   setCriticScore]   = useState<{ criticScore: number; source: string } | null>(null);
+  const [criticScore,   setCriticScore]   = useState<{ criticScore: number | null; source: string | null; awards: string | null } | null>(null);
   const [audienceQuote, setAudienceQuote] = useState<{ text: string; author: string } | null>(null);
   const [retryKey,  setRetryKey]  = useState(0);
   const [trailerPlaying, setTrailerPlaying] = useState(false);
@@ -1028,7 +1142,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         // returned, so they can't join the Promise.all above. Fire-and-forget
         // rather than block the panel on a third-party lookup.
         const imdbId = det.external_ids?.imdb_id;
-        if (imdbId) fetchCriticScore(imdbId).then((r) => { if (!cancelled) setCriticScore(r); });
+        if (imdbId) fetchCriticScore(imdbId).then((r) => {
+          if (cancelled) return;
+          setCriticScore(r);
+          reportAwardsShown(r, { tmdbId: itemId, mediaType: itemType });
+        });
         tmdb.getReviews(itemType, itemId).then((reviews: any) => { if (!cancelled) setAudienceQuote(pickAudienceQuote(reviews)); });
       }
       setLoading(false);
@@ -1094,6 +1212,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     ).values()]
     : (details?.created_by || []).filter((person): person is CreditPerson => !!person?.id && !!person?.name)
   ).slice(0, 3);
+  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, isMovie ? 'movie' : 'tv'), keywordsOpen);
+  // Genre chips open Home with that genre set; keywords open their own list.
+  const browse = (kind: 'genre' | 'keyword', id: number, name: string, href: Href) => {
+    track(EVENTS.BROWSE_TAPPED, browseTapProps({ kind, id, name, mediaType: isMovie ? 'movie' : 'tv', source: 'title_panel' }));
+    onClose();
+    router.push(href);
+  };
   const openPerson = (id: number) => {
     onClose();
     router.push(`/(app)/person/${id}` as Href);
@@ -1115,8 +1240,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       : watched && watchedEntry?.dnf ? MEDIA_PANEL.didntFinish
       : watched ? MEDIA.watched
       : MEDIA_PANEL.status);
-  const consensusLine = criticScore
-    ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
+  const hasCriticScore = Number.isFinite(criticScore?.criticScore);
+  const consensusLine = hasCriticScore
+    ? getConsensusLine(criticScore!.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
     : null;
 
   // Prefer an official Trailer, then Teaser, then any YouTube clip (mirrors web).
@@ -1220,10 +1346,41 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     {genreChips.length > 0 && (
                       <View style={styles.genreRow}>
                         {genreChips.map(genre => (
-                          <View key={genre.id} style={styles.genreChip}>
+                          <TouchableOpacity
+                            key={genre.id}
+                            style={styles.genreChip}
+                            accessibilityRole="link"
+                            accessibilityLabel={BROWSE.genreLink(genre.name)}
+                            onPress={() => browse('genre', genre.id, genre.name, { pathname: '/(app)', params: genreBrowseParams({ mediaType: isMovie ? 'movie' : 'tv', genreId: genre.id }) })}
+                          >
                             <Text style={styles.genreChipText}>{genre.name}</Text>
-                          </View>
+                          </TouchableOpacity>
                         ))}
+                      </View>
+                    )}
+                    {keywordChips.length > 0 && (
+                      <View style={styles.genreRow} accessibilityLabel={BROWSE.keywordsLabel}>
+                        {keywordChips.map(k => (
+                          <TouchableOpacity
+                            key={k.id}
+                            style={styles.keywordChip}
+                            accessibilityRole="link"
+                            accessibilityLabel={BROWSE.keywordLink(k.name)}
+                            onPress={() => browse('keyword', k.id, k.name, { pathname: '/(app)/browse', params: keywordBrowseParams({ mediaType: isMovie ? 'movie' : 'tv', keywordId: k.id, name: k.name }) })}
+                          >
+                            <Text style={styles.keywordChipText}>{k.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                        {(hiddenKeywords > 0 || keywordsOpen) && (
+                          <TouchableOpacity
+                            style={[styles.keywordChip, { borderStyle: 'dashed' }]}
+                            accessibilityRole="button"
+                            accessibilityState={{ expanded: keywordsOpen }}
+                            onPress={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}
+                          >
+                            <Text style={styles.keywordChipText}>{keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)}</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     )}
                   </View>
@@ -1450,15 +1607,15 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     the opt-in, so this is only a way to mute it (mirrors web). */}
                 {isMovie && details && inList && <StreamingAlertsCard movie={details} />}
 
-                {(criticScore || Number.isFinite(audienceScore)) && (
+                {(hasCriticScore || Number.isFinite(audienceScore)) && (
                   <View style={styles.scoresRow}>
-                    {criticScore && (
+                    {hasCriticScore && (
                       <View>
-                        <Text style={styles.scoreValue}>{criticScore.criticScore}%</Text>
+                        <Text style={styles.scoreValue}>{criticScore!.criticScore}%</Text>
                         <Text style={styles.scoreLabel}>{MEDIA_PANEL.critics}</Text>
                       </View>
                     )}
-                    {criticScore && Number.isFinite(audienceScore) && <View style={styles.scoreRule} />}
+                    {hasCriticScore && Number.isFinite(audienceScore) && <View style={styles.scoreRule} />}
                     {Number.isFinite(audienceScore) && (
                       <View>
                         <Text style={styles.scoreValue}>{audienceScore}%</Text>
@@ -1475,6 +1632,14 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     ) : null}
                   </View>
                 )}
+
+                {/* Awards and nominations, as OMDb words them (mirrors web). */}
+                {criticScore?.awards ? (
+                  <View style={styles.awardsRow}>
+                    <Text style={styles.scoreLabel}>{MEDIA_PANEL.awards}</Text>
+                    <Text style={styles.awardsText}>{criticScore.awards}</Text>
+                  </View>
+                ) : null}
 
                 {details?.overview ? <Text style={styles.overview}>{details.overview}</Text> : null}
 
@@ -1549,6 +1714,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       watching={watching}
                       onSeriesFinished={handleSeriesFinished}
                       onSeasonChange={setPickedSeason}
+                      scrollRef={scrollRef}
                     />
                   </>
                 )}
@@ -1675,6 +1841,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
   genreChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.badge, backgroundColor: colors.accentSecondaryFill },
+  keywordChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.badge, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  keywordChipText: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textSecondary },
   genreChipText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.onAccentSecondaryFill },
   scoresRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
@@ -1684,6 +1852,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   scoreValue: { fontFamily: fontFamily.display, fontSize: 22, color: colors.textPrimary, lineHeight: 24 },
   scoreLabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginTop: 2 },
   scoreRule: { width: StyleSheet.hairlineWidth, height: 30, backgroundColor: colors.border },
+  awardsRow: {
+    gap: 2, paddingBottom: spacing.lg, marginBottom: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
+  },
+  awardsText: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, lineHeight: 17 },
   consensusLine: { flex: 1, minWidth: 0, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, lineHeight: 17 },
   overview: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginBottom: spacing.lg },
   audienceQuote: { flex: 1, minWidth: 0, borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: spacing.md },
@@ -1804,6 +1977,16 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   epRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingLeft: spacing.sm, paddingRight: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
   epRowCurrent: { backgroundColor: colors.accentDim },
   epRowWatched: { opacity: 0.45 },
+  // The episode a search result opened, until the highlight fades.
+  epRowFound: { backgroundColor: colors.accentDim, opacity: 1 },
+  epSearchInput: {
+    backgroundColor: colors.surfaceSunken, borderRadius: radii.pill,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md,
+    fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
+  },
+  epSearchNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.sm },
+  epSearchCode: { minWidth: 52 },
   epActionError: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger, marginBottom: spacing.sm },
   epCode:        { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.chipEpisode, letterSpacing: 0.4 },
   epCodeCurrent: { color: colors.accent },

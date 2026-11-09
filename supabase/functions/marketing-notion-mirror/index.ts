@@ -4,7 +4,7 @@
  * The read half of reviewing the week in Notion, and the write half as well.
  * Notion's webhooks do not say what a property used to be, so a delivery that
  * only echoed the current Status would re-apply it every time this sweep
- * rewrote the page. That is the bug that unapproved a Linear card (PLO-421).
+ * rewrote the page. An earlier mirror once unapproved a reviewed article.
  * This sweep stores the Status and Scheduled date it last wrote. A difference
  * is the only thing treated as a decision. marketing-notion-sync can wake the
  * same comparison for one page; it is not required for correctness. A missed
@@ -15,10 +15,6 @@
  * live, and for posts whose day is within three weeks. A comment does not
  * update Notion's last_edited_time, so a comment on an older page is applied
  * when the webhook delivers, or on the next tick if the page was edited too.
- *
- * Weekly website-refresh pull requests are not mirrored here. Approve and
- * reject on those cards stay on Linear, including when MARKETING_LINEAR_ENABLED
- * is turned off. That flag does not affect this function.
  *
  * The Name property is the article title. The page body does not list slash
  * commands. Comments still accept them, including /copy. The body fingerprint

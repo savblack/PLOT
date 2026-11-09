@@ -144,22 +144,6 @@ export function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
 
 export const fetchContinueWatchingTv = fetchTv;
 
-export function ContinueWatchingShelf() {
-  const { watching } = useAppData();
-  const { items } = useContinueWatching(watching.items ?? [], fetchTv);
-  if (!items.length) return null;
-  return (
-    <View style={{ marginTop: spacing.xl }}>
-      <ShelfHeader title={P.continueWatching.title} subtitle={P.continueWatching.subtitle} />
-      <PosterRail
-        data={items}
-        keyExtractor={item => String(item.tmdbId)}
-        renderItem={({ item }) => <ContinueWatchingCard item={item} />}
-      />
-    </View>
-  );
-}
-
 function shelfMeta(item: { people: { name: string }[]; date?: string | null; network?: string | null }, today: string) {
   const who = item.people.map(p => p.name).join(', ');
   const tail = item.date && item.date > today ? shortDayMonth(item.date) : item.network;

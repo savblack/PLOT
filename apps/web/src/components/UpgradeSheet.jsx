@@ -5,7 +5,8 @@
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { upgradeSheetContent } from '@plot/core/upgradeSheet.js';
+import { upgradeSheetContent, upgradeSheetGateFeature } from '@plot/core/upgradeSheet.js';
+import { EVENTS, track } from '../lib/analytics.js';
 import { useApp } from '../hooks/useApp.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
@@ -41,6 +42,10 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
   const onCloseRef = useRef(onClose);
   const returnRef = useRef(returnFocusRef);
   useEffect(() => { onCloseRef.current = onClose; returnRef.current = returnFocusRef; });
+  useEffect(() => {
+    const feature = upgradeSheetGateFeature(reason);
+    if (feature) track(EVENTS.PREMIUM_GATE_HIT, { feature });
+  }, [reason]);
 
   useEffect(() => {
     const restore = document.activeElement;

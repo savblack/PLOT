@@ -59,7 +59,7 @@ export const SMART_LISTS = Object.freeze({
   tapHint: 'Tap a rule to change it',
   matchCount: (n) => `${n} ${n === 1 ? 'match' : 'matches'}`,
 
-  // A2: naming step. From Pick for Me the title is the button's own words
+  // A2: naming step. From Just Decide the title is the button's own words
   // the same as from My Lists: newSmartList.
   fromAnswersIntro: 'Plot saves your answers, not these five picks. Each time you open the list it looks again, so new matches turn up on their own.',
   rulesFromAnswers: 'Rules, from your answers',

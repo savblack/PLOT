@@ -92,6 +92,6 @@ export const DISCOVER_VIEW = {
     body: 'Save three titles to build your plot. Start with what\u2019s trending.',
     searchLink: 'Search for something else',
   },
-  // The round floating entry to Pick for Me, bottom right above the tab bar.
-  tonightFab: 'Pick for Me',
+  // The round floating entry to Just Decide, bottom right above the tab bar.
+  tonightFab: 'Just Decide',
 };

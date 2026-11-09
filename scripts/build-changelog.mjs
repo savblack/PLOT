@@ -153,8 +153,7 @@ ${renderBucket(buckets.new, newItems)}${renderBucket(buckets.improved, improved)
 function renderMainInner(data) {
   const buckets = data.buckets || { new: 'New', improved: 'Improved', fixed: 'Fixed' };
   const entries = data.entries.map((e) => renderEntry(e, buckets)).join('\n\n');
-  return `    <p class="page-label">${escapeHtml(data.pageLabel)}</p>
-    <h1>${escapeHtml(data.h1)}</h1>
+  return `    <h1>${escapeHtml(data.h1)}</h1>
     <p class="page-meta">${escapeHtml(data.pageMeta)}</p>
 
 ${renderIntro(data.intro)}
@@ -189,7 +188,6 @@ export const CHANGELOG_PAGE = {
     title: '${escapeJsString(data.meta.title)}',
     description: '${escapeJsString(data.meta.description)}',
   },
-  pageLabel: '${escapeJsString(data.pageLabel)}',
   h1: '${escapeJsString(data.h1)}',
   pageMeta: '${escapeJsString(data.pageMeta)}',
   intro:

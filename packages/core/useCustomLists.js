@@ -32,7 +32,7 @@ import { isSmartList } from './smartLists.js';
  * never offers one. `ownedCount` counts both, as the database's cap does.
  * Rules are stored as given: callers clean them with smartLists.js
  * normalizeSmartListRules, which stays out of this hook so the app shell does
- * not load the smart list (and Pick for Me) code on every page.
+ * not load the smart list (and Just Decide) code on every page.
  *
  * @param {string|null|undefined} userId
  * @param {{ includeShared?: boolean }} [options]  Off until the shared lists

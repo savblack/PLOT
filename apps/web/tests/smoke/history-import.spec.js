@@ -258,7 +258,7 @@ test('Letterboxd ratings and watched files share a watched identity without usin
   const movie = JSON.parse(readFileSync(file, 'utf8'))[1].movie;
   const line = `2024-01-02,${movie.title},${movie.year},https://boxd.it/synthetic-watch`;
   await page.goto('/tests/smoke/fixtures/history-import.html');
-  await page.getByRole('button', { name: 'Letterboxd CSV export' }).click();
+  await page.getByRole('button', { name: 'Letterboxd ZIP export' }).click();
   await page.locator('input[type=file]').setInputFiles({ name: 'ratings.csv', mimeType: 'text/csv', buffer: Buffer.from(`Date,Name,Year,Letterboxd URI,Rating\n${line},3.5`) });
   await expect(page.getByText(/Rating: 7\/10 · 2024-01-02/)).toBeVisible();
   await page.getByRole('button', { name: 'Import →', exact: true }).click();
@@ -268,14 +268,14 @@ test('Letterboxd ratings and watched files share a watched identity without usin
   expect(events[0].watched_at).toBeNull();
   expect(events[0].date_precision).toBe('unknown');
   await page.getByRole('button', { name: 'Restart import' }).click();
-  await page.getByRole('button', { name: 'Letterboxd CSV export' }).click();
+  await page.getByRole('button', { name: 'Letterboxd ZIP export' }).click();
   await page.locator('input[type=file]').setInputFiles({ name: 'watched.csv', mimeType: 'text/csv', buffer: Buffer.from(`Date,Name,Year,Letterboxd URI\n${line}`) });
   await page.getByRole('button', { name: 'Import →', exact: true }).click();
   await expect(page.getByText('0 entries added · 1 duplicate skipped · 0 not confirmed')).toBeVisible();
   expect(JSON.parse(await page.getByTestId('saved-events').textContent())).toHaveLength(1);
 });
 
-test('Letterboxd ZIP requires review of watched summaries and retains distinct diary watches', async ({ page }) => {
+test('Letterboxd ZIP omits overlapping summaries without blocking distinct diary watches', async ({ page }) => {
   const { readFileSync } = await import('node:fs');
   const { Buffer } = await import('node:buffer');
   const { zipSync, strToU8 } = await import('fflate');
@@ -286,10 +286,10 @@ test('Letterboxd ZIP requires review of watched summaries and retains distinct d
   const input = { name: 'letterboxd.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) };
   await page.goto('/tests/smoke/fixtures/history-import.html');
   async function select() {
-    await page.getByRole('button', { name: 'Letterboxd CSV export' }).click();
+    await page.getByRole('button', { name: 'Letterboxd ZIP export' }).click();
     await page.locator('input[type=file]').setInputFiles(input);
     await expect(page.getByText(/A diary watch for this film is also selected/)).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Import →', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Import →', exact: true })).toBeEnabled();
   }
   await select();
   const choices = page.getByRole('combobox', { name: `Choose a title or leave it out: ${movie.title}` });
@@ -300,14 +300,12 @@ test('Letterboxd ZIP requires review of watched summaries and retains distinct d
   await expect(page.getByRole('button', { name: 'Import →', exact: true })).toBeEnabled();
   await choices.nth(0).selectOption({ index: 1 });
   await choices.nth(1).selectOption({ index: 1 });
-  await expect(page.getByRole('button', { name: 'Import →', exact: true })).toBeDisabled();
-  await choices.nth(2).selectOption('');
+  await expect(page.getByRole('button', { name: 'Import →', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Import →', exact: true }).click();
   await expect(page.getByText('2 entries added · 0 duplicates skipped · 0 not confirmed')).toBeVisible();
   expect(JSON.parse(await page.getByTestId('saved-events').textContent()).map(row => row.watched_on)).toEqual(['2024-01-01', '2024-01-02']);
   await page.getByRole('button', { name: 'Restart import' }).click();
   await select();
-  await page.getByRole('combobox', { name: `Choose a title or leave it out: ${movie.title}` }).nth(2).selectOption('');
   await page.getByRole('button', { name: 'Import →', exact: true }).click();
   await expect(page.getByText('0 entries added · 2 duplicates skipped · 0 not confirmed')).toBeVisible();
 });

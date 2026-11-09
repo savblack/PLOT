@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { createImportReporter } from '@plot/core/importPipeline.js';
+import { rememberLetterboxdImport, clearLetterboxdImport } from '../lib/letterboxdImportPrompt';
 import { startFileImport, startConnectionImport, useImportJobs, importJobActive, importSourceName, importPillFor } from '@plot/core/importJobs.js';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
 import { usePlexSource } from '@plot/core/usePlexSource.js';
@@ -133,6 +134,7 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
     if (!src || busy) return;
     if (jobs.jobs.some((job: { source: string; status?: string }) => job.source === id && importJobActive(job))) return;
     reporter().selected(id);
+    if (id === 'letterboxd' && userId) void rememberLetterboxdImport(userId);
     setSource(id);
     setError(null);
     setPendingFiles(null);
@@ -143,7 +145,7 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
     } else {
       setPhase('file');
     }
-  }, [busy, jobs.jobs, reporter, trakt, plex, simkl]);
+  }, [busy, jobs.jobs, reporter, trakt, plex, simkl, userId]);
 
   const close = useCallback(() => {
     if (busy) return;
@@ -188,6 +190,7 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
       }
       const { job, error: failure } = await startFileImport({ userId, source, entry, files });
       if (failure || !job) { setError(failure?.message ?? IMPORT_JOBS.onboarding.uploadFailed); setPhase('file'); return null; }
+      if (source === 'letterboxd') void clearLetterboxdImport(userId);
       reporter().report('started', { source, count: pendingRows || 0 });
       onStarted?.(source, { id: job.id });
       setPendingFiles(null);

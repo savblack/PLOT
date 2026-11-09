@@ -162,6 +162,38 @@ test('upsertProfile returns a failed update without attempting an insert', async
   assert.equal(client.__db.tables.profiles.length, 1);
 });
 
+test('onboarding reports a rejected profile write and a later retry succeeds', async () => {
+  const client = withProfiles([{ id: 'u1', onboarding_complete: false }]);
+  const failures = [];
+  configure({ onActionFailed: event => failures.push(event) });
+  client.beforeNext('profiles', 'update', () => { throw new TypeError('Failed to fetch private profile'); });
+  const args = { userId: 'u1', patch: { onboarding_complete: true } };
+
+  const failed = await upsertProfile(args);
+  assert.ok(failed.error);
+  assert.equal(client.__db.tables.profiles[0].onboarding_complete, false);
+  assert.deepEqual(failures, [{ action: 'profile_update', error_kind: 'network', fields: ['onboarding_complete'] }]);
+
+  const recovered = await upsertProfile(args);
+  assert.equal(recovered.error, null);
+  assert.equal(recovered.data.onboarding_complete, true);
+  assert.equal(failures.length, 1);
+  configure({ onActionFailed: undefined });
+});
+
+test('onboarding does not claim success when the race retry returns no profile', async () => {
+  const client = withProfiles();
+  const failures = [];
+  configure({ onActionFailed: event => failures.push(event) });
+  client.failNext('profiles', 'insert', { code: '23505', message: 'private row' });
+
+  const result = await upsertProfile({ userId: 'u1', patch: { onboarding_complete: true } });
+  assert.equal(result.data, null);
+  assert.ok(result.error);
+  assert.deepEqual(failures, [{ action: 'profile_update', error_kind: 'no_data', fields: ['onboarding_complete'] }]);
+  configure({ onActionFailed: undefined });
+});
+
 /* ── The structural half ──────────────────────────────────────────────────
    Same reasoning as the history-writer guard: concentrating the write only
    helps until the next screen open-codes its own. Thirty call sites drifted

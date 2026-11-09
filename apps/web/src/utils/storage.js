@@ -41,8 +41,3 @@ export function removeStorage(key) {
     return false;
   }
 }
-
-export function getSystemColorScheme() {
-  if (!canUseDOM() || !window.matchMedia) return 'light';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
