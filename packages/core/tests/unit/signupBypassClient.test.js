@@ -11,7 +11,7 @@ import { COMMON } from '../../copy/common.js';
 
 // A fake Supabase client that records every signup-bypass call and answers
 // from a queue. `clock` is advanced by the injected sleep, so no test waits.
-function harness({ responses = [], client } = {}) {
+function harness({ responses = [], client, timeoutMs } = {}) {
   const calls = [];
   const clock = { now: 10_000 };
   const sleeps = [];
@@ -30,6 +30,7 @@ function harness({ responses = [], client } = {}) {
     client,
     now: () => clock.now,
     sleep: async (ms) => { sleeps.push(ms); clock.now += ms; },
+    ...(timeoutMs ? { timeoutMs } : {}),
   });
   return { bypass, calls, clock, sleeps };
 }
@@ -137,6 +138,49 @@ test('a transport failure with no reason keeps the old analytics slugs', async (
   });
   const sent = await link.bypass.sendLink({ action: 'magiclink', email: 'a@example.com' });
   assert.equal(sent.reason, 'bypass_email_failed');
+});
+
+const never = () => new Promise(() => {});
+
+test('a signup POST that never answers times out with its own slug and a connection message', async () => {
+  const { bypass } = harness({
+    timeoutMs: 5,
+    responses: [{ data: { formToken: 'ft' }, error: null }, never],
+  });
+  const result = await bypass.signUp({ email: 'a@example.com', password: 'secret1' });
+  assert.equal(result.ok, false);
+  assert.equal(result.analyticsReason, 'bypass_timeout');
+  assert.equal(result.message, AUTH_PAGE.connectionFailed);
+});
+
+test('a link POST that never answers times out too', async () => {
+  const { bypass } = harness({
+    timeoutMs: 5,
+    responses: [{ data: { formToken: 'ft' }, error: null }, never],
+  });
+  const result = await bypass.sendLink({ action: 'magiclink', email: 'a@example.com' });
+  assert.equal(result.analyticsReason, 'bypass_timeout');
+  assert.equal(result.message, AUTH_PAGE.connectionFailed);
+});
+
+test('a form-token GET that never answers stops before any POST and says to check the connection', async () => {
+  const { bypass, calls } = harness({ timeoutMs: 5, responses: [never] });
+  const result = await bypass.signUp({ email: 'a@example.com', password: 'secret1' });
+  assert.equal(result.analyticsReason, 'bypass_no_form_token');
+  assert.equal(result.message, AUTH_PAGE.connectionFailed);
+  assert.equal(calls.length, 1);
+});
+
+test('an unreachable function keeps its old slug but says to check the connection', async () => {
+  const { bypass } = harness({
+    responses: [
+      { data: { formToken: 'ft' }, error: null },
+      { data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } },
+    ],
+  });
+  const result = await bypass.signUp({ email: 'a@example.com', password: 'secret1' });
+  assert.equal(result.analyticsReason, 'bypass_create_failed');
+  assert.equal(result.message, AUTH_PAGE.connectionFailed);
 });
 
 test('magic link and resend send the action and confirmSignup flag', async () => {

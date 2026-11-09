@@ -15,6 +15,24 @@
 import { COMMON } from './copy/common.js';
 import { AUTH_PAGE } from './copy/authPage.js';
 import { signupFormTokenIsStale } from './signupFormToken.js';
+import { AUTH_REQUEST_TIMEOUT_MS, AUTH_TIMEOUT_MESSAGE, withAuthTimeout } from './authTimeout.js';
+import { authErrorReason } from './authErrors.js';
+
+/**
+ * Whether a failed call never got an answer from the function: it timed out,
+ * or the browser could not reach it. Those deserve "check your connection",
+ * not "something went wrong". supabase-js reports an unreachable function as
+ * FunctionsFetchError, whose own message does not mention the network.
+ *
+ * @param {any} error
+ * @returns {boolean}
+ */
+function isTransportFailure(error) {
+  if (!error) return false;
+  if (error.name === 'FunctionsFetchError') return true;
+  const slug = authErrorReason(error.message);
+  return slug === 'timeout' || slug === 'network';
+}
 
 /**
  * signup-bypass's MIN_SUBMIT_MS is 1200. Stay above it so a real person who
@@ -80,6 +98,7 @@ export async function readBypassFailure(error, data) {
  * @param {() => number} [deps.now]
  * @param {(ms: number) => Promise<void>} [deps.sleep]
  * @param {number} [deps.minFormMs]
+ * @param {number} [deps.timeoutMs] How long one call may take. See authTimeout.js.
  */
 export function createSignupBypassClient({
   getSupabase,
@@ -87,6 +106,7 @@ export function createSignupBypassClient({
   now = () => Date.now(),
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   minFormMs = BYPASS_MIN_FORM_MS,
+  timeoutMs = AUTH_REQUEST_TIMEOUT_MS,
 }) {
   // Signed {iat} token from the function's GET endpoint: a server-observed
   // clock the POST is timed against, since a client timestamp could be claimed.
@@ -98,10 +118,21 @@ export function createSignupBypassClient({
   // Bumped on every fetch and on reset, so a slow GET cannot overwrite a
   // newer token or revive one that was dropped.
   let fetchGen = 0;
+  // Why the last token fetch came back empty, so prepare() can say so.
+  let tokenTransportFailed = false;
 
+  // Time-limited, and always answers { data, error }. This is the path people
+  // take when the captcha is blocked, and an unanswered call used to leave
+  // Create account spinning with no end (found in a local test, 2026-11-09).
   const invoke = async (method, body) => {
-    const supabase = await getSupabase();
-    return supabase.functions.invoke('signup-bypass', body ? { method, body } : { method });
+    try {
+      return await withAuthTimeout((async () => {
+        const supabase = await getSupabase();
+        return supabase.functions.invoke('signup-bypass', body ? { method, body } : { method });
+      })(), timeoutMs);
+    } catch (e) {
+      return { data: null, error: { message: e?.message || AUTH_TIMEOUT_MESSAGE } };
+    }
   };
 
   // Web callers send nothing extra, so the function keeps its existing
@@ -112,7 +143,8 @@ export function createSignupBypassClient({
   const loadFormToken = async () => {
     const gen = ++fetchGen;
     try {
-      const { data } = await invoke('GET');
+      const { data, error } = await invoke('GET');
+      if (gen === fetchGen) tokenTransportFailed = isTransportFailure(error);
       if (gen !== fetchGen || !data?.formToken) return formToken;
       formToken = data.formToken;
       formTokenAt = now();
@@ -159,7 +191,7 @@ export function createSignupBypassClient({
         superseded: false,
         reason: 'bypass_no_form_token',
         analyticsReason: 'bypass_no_form_token',
-        message: COMMON.genericError,
+        message: tokenTransportFailed ? AUTH_PAGE.connectionFailed : COMMON.genericError,
       };
     }
     await waitOutMinimum();
@@ -183,17 +215,19 @@ export function createSignupBypassClient({
     if (error || data?.error) {
       const { reason, status } = await readBypassFailure(error, data);
       if (!isCurrent()) return { ok: false, superseded: true, reason: 'superseded' };
-      // A transport failure with no reason keeps its old analytics slug.
+      // A transport failure with no reason keeps its old analytics slug. A
+      // timeout is new and gets its own, so the two can be told apart.
+      const timedOut = !reason && error?.message === AUTH_TIMEOUT_MESSAGE;
       const analyticsReason = reason
         ? `bypass_${reason}`
-        : (error ? 'bypass_create_failed' : 'bypass_unknown');
+        : (timedOut ? 'bypass_timeout' : (error ? 'bypass_create_failed' : 'bypass_unknown'));
       return {
         ok: false,
         superseded: false,
         reason: reason || 'unknown',
         analyticsReason,
         ...(status ? { status } : {}),
-        message: bypassErrorMessage(reason),
+        message: !reason && isTransportFailure(error) ? AUTH_PAGE.connectionFailed : bypassErrorMessage(reason),
       };
     }
     return { ok: true, created: Boolean(data?.requires_email_confirmation) };
@@ -227,13 +261,14 @@ export function createSignupBypassClient({
     if (error || data?.error) {
       const { reason, status } = await readBypassFailure(error, data);
       if (!isCurrent()) return { ok: false, superseded: true, reason: 'superseded' };
+      const timedOut = !reason && error?.message === AUTH_TIMEOUT_MESSAGE;
       return {
         ok: false,
         superseded: false,
         reason: reason || 'bypass_email_failed',
-        analyticsReason: reason ? `bypass_${reason}` : 'bypass_email_failed',
+        analyticsReason: reason ? `bypass_${reason}` : (timedOut ? 'bypass_timeout' : 'bypass_email_failed'),
         ...(status ? { status } : {}),
-        message: bypassErrorMessage(reason),
+        message: !reason && isTransportFailure(error) ? AUTH_PAGE.connectionFailed : bypassErrorMessage(reason),
       };
     }
     return { ok: true };
