@@ -387,6 +387,21 @@ its length. Seasons that would not load are one `load_failed` per search with
 `resource: episode_search`. Logging the episode afterwards is the usual
 `episode_watched`, so the path from search to log is these two in order.
 
+## Homepage search hand-off
+
+The theplot.tv hero is a search bar with Start tracking inside it. Submitting
+sends the visitor to `/signup?q=<title>&src=hero_search`. Web only: the
+marketing site never hands off to mobile.
+
+| Event | Where | When | Props |
+|---|---|---|---|
+| `signup_cta_clicked` | marketing site | The search bar was submitted, typed or not | `placement: hero_search`, `source: marketing`, `has_query` |
+| `signup_search_resumed` | web app | A signed-in visit opened search by itself with that title, at most once | `query_length` |
+
+The query text is never sent from either side, only whether one was typed and
+its length. The title waits in the browser for 24 hours, so a signup confirmed
+on another device or a day later does not resume it.
+
 ## Imports and onboarding
 
 Every import event goes through `createImportReporter()` in
