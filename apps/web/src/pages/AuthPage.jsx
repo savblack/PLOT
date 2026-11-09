@@ -10,8 +10,9 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Turnstile from '../components/Turnstile.jsx';
 import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { COMMON } from '../copy/common.js';
-import { AUTH_PAGE, captchaFailureCopy } from '../copy/authPage.js';
+import { AUTH_PAGE, MIN_PASSWORD_LENGTH, captchaFailureCopy } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
+import { AUTH_REQUEST_TIMEOUT_MS, AUTH_TIMEOUT_MESSAGE, withAuthTimeout } from '@plot/core/authTimeout.js';
 import { captchaRetryAfterWait, captchaSubmitPlan, captchaWaitOver, CAPTCHA_SUBMIT_ATTEMPTS, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js';
 import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
@@ -34,7 +35,27 @@ function friendlyError(msg) {
   if (msg.includes('Anonymous sign-ins are disabled'))  return AUTH_PAGE.weakPassword;
   if (msg.includes('Unable to validate email'))     return AUTH_PAGE.invalidEmail;
   if (msg.includes('rate limit') || msg.includes('too many')) return AUTH_PAGE.rateLimited;
+  // A timeout or a request that never reached Supabase. The raw text
+  // ("failed to fetch") told people nothing about what to do.
+  const reason = authErrorReason(msg);
+  if (reason === 'timeout' || reason === 'network') return AUTH_PAGE.connectionFailed;
   return msg;
+}
+
+/**
+ * Run a Supabase Auth request under the shared time limit and always come back
+ * as `{ data, error }`, so a hang or a thrown network error takes the caller's
+ * existing error path instead of leaving the button spinning.
+ *
+ * @template T
+ * @param {Promise<{ data: T, error: { message: string } | null }>} request
+ */
+async function authRequest(request) {
+  try {
+    return await withAuthTimeout(request);
+  } catch (e) {
+    return { data: null, error: { message: e?.message || AUTH_TIMEOUT_MESSAGE } };
+  }
 }
 
 /**
@@ -125,10 +146,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Password submit, magic link, OAuth, and mode switches all advance this.
   // An attempt that loses the epoch must not keep going after an await.
   const authEpochRef = useRef(0);
-  // Latched for the lifetime of this page, never reset on success: once an OAuth
-  // handoff is under way the browser is leaving, and a second /authorize would do
-  // real damage (see beginOAuth).
+  // Latched while an OAuth handoff is under way: the browser is leaving, and a
+  // second /authorize seconds later would do real damage (see beginOAuth). It
+  // releases on a failure, after AUTH_REQUEST_TIMEOUT_MS if the page never
+  // left, or when Back restores this page from the bfcache.
   const oauthStartingRef = useRef(false);
+  // Fires if the page is still here long after an OAuth handoff said it was
+  // leaving (see beginOAuth). Cleared when the page actually goes.
+  const oauthStallTimerRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -292,7 +317,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       return;
     }
     if (submittedMode !== 'forgot') {
-      if (!submittedPassword || (submittedMode === 'signup' && submittedPassword.length < 6)) {
+      if (!submittedPassword || (submittedMode === 'signup' && submittedPassword.length < MIN_PASSWORD_LENGTH)) {
         setError(AUTH_PAGE.weakPassword);
         return;
       }
@@ -329,11 +354,11 @@ export default function AuthPage({ initialMode = 'signup' }) {
     }
 
     if (submittedMode === 'login') {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await authRequest(supabase.auth.signInWithPassword({
         email: submittedEmail,
         password: submittedPassword,
         options: { captchaToken: tokenForRequest },
-      });
+      }));
       if (!attemptIsCurrent(epoch)) return;
       if (error) {
         // Sign-in failures are their own funnel — deliberately not folded into
@@ -371,11 +396,13 @@ export default function AuthPage({ initialMode = 'signup' }) {
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      // Time-limited: on 2026-10-31 this request hung for about 90 seconds
+      // before the browser gave up with "failed to fetch".
+      const { data, error } = await authRequest(supabase.auth.signUp({
         email: submittedEmail,
         password: submittedPassword,
         options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: tokenForRequest },
-      });
+      }));
       if (!attemptIsCurrent(epoch)) return;
       if (error) {
         setError(friendlyError(error.message));
@@ -482,36 +509,104 @@ export default function AuthPage({ initialMode = 'signup' }) {
     // /authorize calls inside four seconds from a single tap-happy device.
     if (oauthStartingRef.current) return;
     oauthStartingRef.current = true;
-    if (mode === 'signup') markFormStarted();
+    const authMode = mode;
+    if (authMode === 'signup') markFormStarted();
     // Cancels a password submit that is still inside the captcha wait.
-    beginAuthAttempt();
+    const epoch = beginAuthAttempt();
     setLoading(true);
     setError(null);
     try { sessionStorage.setItem('plot_auth_method', provider); } catch { /* ignore */ }
 
-    // Either failure path means we never navigated away, so undo everything the
+    // Every failure path means we never navigated away, so undo everything the
     // handoff set up — including the guard, or they could never retry.
-    const abandon = (err) => {
+    const abandon = (err, { stalled = false } = {}) => {
+      clearTimeout(oauthStallTimerRef.current);
+      oauthStallTimerRef.current = null;
       setError(friendlyError(err?.message));
       setLoading(false);
       oauthStartingRef.current = false;
-      try { sessionStorage.removeItem('plot_auth_method'); } catch { /* ignore */ }
+      // A stalled navigation may still finish. Keep the method so the callback
+      // can report it; a retry writes it again anyway.
+      if (!stalled) {
+        try { sessionStorage.removeItem('plot_auth_method'); } catch { /* ignore */ }
+      }
+      // These failures used to leave no trace: two recordings in November 2026
+      // show a Google tap that did nothing, and PostHog had no event for either.
+      track(authMode === 'signup' ? EVENTS.SIGNUP_SUBMIT_FAILED : EVENTS.LOGIN_SUBMIT_FAILED, {
+        reason: errorReason(err?.message),
+        method: provider,
+      });
     };
 
     try {
-      const supabase = await loadSupabase();
+      // Only the client load is time-limited. signInWithOAuth writes the PKCE
+      // verifier and calls location.assign, and a timeout cannot cancel that:
+      // racing it would let a late completion yank the tab to the provider
+      // after the person had already seen the error and moved on. It makes no
+      // network request, so once the client is here it finishes promptly, and
+      // the stall timer below covers a navigation that never arrives.
+      const supabase = await withAuthTimeout(loadSupabase());
+      // A late load is discarded by the rejection above. This catches an
+      // attempt that another one (an email submit, say) replaced meanwhile.
+      // No redirect ever started, so drop this tap's method marker too, or a
+      // later email confirmation would be reported as this provider. Only if
+      // it is still ours: a magic link sent meanwhile writes its own.
+      if (!attemptIsCurrent(epoch)) {
+        oauthStartingRef.current = false;
+        try {
+          if (sessionStorage.getItem('plot_auth_method') === provider) sessionStorage.removeItem('plot_auth_method');
+        } catch { /* ignore */ }
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: { redirectTo: getAuthCallbackUrl() },
       });
-      // No error means the redirect is under way and this page is on its way out.
-      if (error) abandon(error);
+      if (error) { abandon(error); return; }
+      // No error means the browser was told to leave for the provider. If the
+      // provider never loads (Supabase unreachable from this network), the
+      // page just sits here, so stop waiting after the same limit. A later tap
+      // replaces the stalled navigation and writes a fresh verifier, so it
+      // cannot cause the PKCE mismatch the guard above exists to prevent;
+      // that came from taps seconds apart, not a retry after this long.
+      oauthStallTimerRef.current = setTimeout(() => {
+        oauthStallTimerRef.current = null;
+        // Another attempt took over (an email submit, say). Release the guard
+        // quietly so this button works again, without overwriting that
+        // attempt's state.
+        if (!attemptIsCurrent(epoch)) { oauthStartingRef.current = false; return; }
+        abandon(new Error(AUTH_TIMEOUT_MESSAGE), { stalled: true });
+      }, AUTH_REQUEST_TIMEOUT_MS);
     } catch (e) {
-      // A throw (offline, client misconfigured) would otherwise leave the guard
-      // latched and every auth button dead until a manual reload.
+      // A throw (offline, client misconfigured) or a timeout would otherwise
+      // leave the guard latched and every auth button dead until a reload.
       abandon(e);
     }
   };
+
+  // The page is leaving for the provider: the stall timer must not fire if
+  // the browser keeps this page and later restores it. Coming back with Back
+  // (a bfcache restore) means the handoff is over, so unlock the buttons
+  // instead of leaving them latched from the earlier tap.
+  useEffect(() => {
+    const onPageHide = () => {
+      clearTimeout(oauthStallTimerRef.current);
+      oauthStallTimerRef.current = null;
+    };
+    const onPageShow = (e) => {
+      if (!e.persisted || !oauthStartingRef.current) return;
+      oauthStartingRef.current = false;
+      setLoading(false);
+      try { sessionStorage.removeItem('plot_auth_method'); } catch { /* ignore */ }
+    };
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pageshow', onPageShow);
+      clearTimeout(oauthStallTimerRef.current);
+    };
+  }, []);
 
   // Passwordless: email a one-time sign-in link. Works for new and returning
   // users alike; the callback completes auth and reports the method.
@@ -770,7 +865,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                         value={password}
                         onChange={e => { setPassword(e.target.value); markFormStarted(); }}
                         required
-                        minLength={6}
+                        minLength={MIN_PASSWORD_LENGTH}
                         autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                       />
                       <button

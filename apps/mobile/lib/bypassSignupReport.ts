@@ -44,14 +44,15 @@ export async function rememberBypassSignup(email: string) {
 }
 
 /**
- * Called once the emailed link has produced a session in the app. Does
- * nothing unless this device started a bypass signup for the same address,
- * so OAuth and ordinary magic-link sign-ins are reported where they always were.
+ * Called once the emailed link or code has produced a session in the app.
+ * Does nothing unless this device started a bypass signup for the same
+ * address, so OAuth and ordinary magic-link sign-ins are reported where they
+ * always were. Returns true when this session finished that signup.
  */
-export async function reportBypassSignupConfirmed(user: User | null | undefined) {
-  if (!user?.id) return;
+export async function reportBypassSignupConfirmed(user: User | null | undefined): Promise<boolean> {
+  if (!user?.id) return false;
   const store = await snapshotStore(user.id);
-  if (!pendingBypassMatches(user.email, store)) return;
+  if (!pendingBypassMatches(user.email, store)) return false;
   const plan = planAuthCallbackReport({
     user,
     sessionMethod: null,
@@ -61,4 +62,5 @@ export async function reportBypassSignupConfirmed(user: User | null | undefined)
   if (plan.event === 'user_signed_up') track(EVENTS.USER_SIGNED_UP, (plan.props ?? undefined) as AnalyticsProps | undefined);
   if (plan.rememberSignup) rememberSignupTracked(user.id, store);
   clearPendingBypassSignup(store);
+  return plan.event === 'user_signed_up' || Boolean(plan.deduped);
 }

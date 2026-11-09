@@ -18,7 +18,7 @@
  * @returns {'already_registered'|'weak_password'|'invalid_email'|'rate_limited'
  *   |'email_not_confirmed'|'invalid_credentials'|'captcha_failed'
  *   |'pkce_verifier_missing'|'pkce_verifier_mismatch'|'flow_state_expired'
- *   |'otp_expired'|'no_session'|'unknown'}
+ *   |'otp_expired'|'no_session'|'timeout'|'network'|'unknown'}
  */
 export function authErrorReason(msg) {
   if (!msg) return 'unknown';
@@ -60,5 +60,11 @@ export function authErrorReason(msg) {
   // resolveAuthCallback's own sentinel: nothing failed loudly, there was just no
   // session to be found by the time it gave up waiting.
   if (msg === 'no-session')                          return 'no_session';
+  // withAuthTimeout's sentinel (see authTimeout.js): we stopped waiting.
+  if (msg === 'auth-timeout')                        return 'timeout';
+  // The browser could not reach Supabase at all. Chrome, Firefox and Safari
+  // word it differently; all three used to land in 'unknown', which is how the
+  // 2026-10-31 "failed to fetch" signup went unexplained.
+  if (/failed to fetch|networkerror|load failed/i.test(msg)) return 'network';
   return 'unknown';
 }

@@ -1,5 +1,6 @@
 // Native inline rendering. Draft/storage logic and copy are shared with web.
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { TextInput } from './TextInput';
 import { useAppData } from '../contexts/AppDataContext';
 import { useTheme } from '../contexts/ThemeContext';
 import type { usePrivateNotes } from '@plot/core/usePrivateNotes.js';

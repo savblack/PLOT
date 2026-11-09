@@ -3,11 +3,15 @@
 // apps/web/src/copy/authPage.js re-exports it so src/copy stays the single place
 // the web app and the Storybook Content page look for copy.
 
+// Matches Supabase Auth's minimum password length for production (Email provider
+// settings) and the check in supabase/functions/signup-bypass/index.ts. Change all three together.
+export const MIN_PASSWORD_LENGTH = 8;
+
 export const AUTH_PAGE = {
   incorrectCredentials: 'Oops! Incorrect email or password.',
   activationEmailWaiting: '__warning__Almost in! Your activation email is waiting in your inbox.',
   accountAlreadyExists: 'An account with this email already exists. Try signing in instead.',
-  weakPassword: 'Password must be at least 6 characters.',
+  weakPassword: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
   invalidEmail: 'Please enter a valid email address.',
   rateLimited: 'Too many attempts. Please wait a moment and try again.',
   // Same sentence as LINK_WITHDRAWN_ERROR in supabase/functions/_shared/signupMagicLink.ts.
@@ -32,7 +36,7 @@ export const AUTH_PAGE = {
   },
 
   passwordPlaceholder: {
-    signup: 'At least 6 characters',
+    signup: `At least ${MIN_PASSWORD_LENGTH} characters`,
     login: 'Your password',
   },
   emailLabel: 'Email',
@@ -59,17 +63,15 @@ export const AUTH_PAGE = {
   checkInboxBefore: 'We sent a one-time sign-in link to ',
   checkInboxAfter: "Open it on this device and you're straight in, no password needed.",
   // Mobile's in-app inbox step (replaces the "Almost there!" alert). The email
-  // carries a link that opens the app and a six-digit code for when the link
+  // carries a link that opens the app and a numeric code for when the link
   // is opened somewhere else; both land here.
   inbox: {
     title: 'Check your inbox',
     signupBefore: 'We sent a confirmation link to ',
     magicBefore: 'We sent a sign-in link to ',
     after: '. Open it on this phone and you are straight in, or enter the code from the email below.',
-    // After a signup-bypass email, which has a link and no code.
-    linkOnlyAfter: '. Open the link in that email on this phone to finish.',
     codeLabel: 'Code from the email',
-    codePlaceholder: '6-digit code',
+    codePlaceholder: 'Code',
     confirm: 'Confirm',
     confirming: 'Confirming',
     invalidCode: 'That code did not match. Check the newest email and try again.',
@@ -108,6 +110,9 @@ export const AUTH_PAGE = {
   // Login, reset, and magic link have no bypass. Said when the widget
   // never returns a token and the submit itself has to stop.
   verificationUnavailable: 'The security check did not finish. Wait a moment and try again.',
+  // An auth request timed out or never reached the server (see
+  // @plot/core/authTimeout.js). Said instead of a spinner that never stops.
+  connectionFailed: "We couldn't reach Plot. Check your connection and try again.",
 };
 
 /**

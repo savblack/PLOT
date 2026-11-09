@@ -1,29 +1,20 @@
-import { assertEquals, assertRejects } from 'jsr:@std/assert@1';
+import { assertEquals, assertStringIncludes } from 'jsr:@std/assert@1';
 import { deliverSignupLink } from './signupMailer.ts';
 
-const fail = (m: string) => () => Promise.reject(new Error(m));
-const ok = () => Promise.resolve();
-
-Deno.test('uses Resend and skips Supabase when Resend works', async () => {
-  let supabaseCalls = 0;
+Deno.test('reports sent when Resend accepts the message', async () => {
   const logs: string[] = [];
-  const path = await deliverSignupLink(ok, () => { supabaseCalls++; return Promise.resolve(); }, (m) => logs.push(m));
-  assertEquals(path, 'resend');
-  assertEquals(supabaseCalls, 0);
+  const result = await deliverSignupLink(() => Promise.resolve(), (m) => logs.push(m));
+  assertEquals(result, 'sent');
   assertEquals(logs, ['[signup-bypass] confirmation email path: resend']);
 });
 
-Deno.test('falls back to Supabase mailer when Resend fails', async () => {
+Deno.test('reports failed when Resend fails, without throwing or trying another mailer', async () => {
   const logs: string[] = [];
-  const path = await deliverSignupLink(fail('Resend request failed (401)'), ok, (m) => logs.push(m));
-  assertEquals(path, 'supabase');
-  assertEquals(logs.at(-1), '[signup-bypass] confirmation email path: supabase');
-});
-
-Deno.test('throws only when both paths fail', async () => {
-  await assertRejects(
-    () => deliverSignupLink(fail('a'), fail('b'), () => {}),
-    Error,
-    'both confirmation email paths failed',
+  const result = await deliverSignupLink(
+    () => Promise.reject(new Error('Resend request failed (503)')),
+    (m) => logs.push(m),
   );
+  assertEquals(result, 'failed');
+  assertEquals(logs.length, 1);
+  assertStringIncludes(logs[0], 'Resend request failed (503)');
 });

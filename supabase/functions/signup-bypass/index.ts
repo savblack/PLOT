@@ -73,10 +73,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const RESEND_API_URL = 'https://api.resend.com/emails';
 const CONFIRM_FROM = 'Plot <hello@theplot.tv>';
 
-async function sendAuthEmail(email: string, actionLink: string, action: BypassAction) {
+async function sendAuthEmail(email: string, actionLink: string, action: BypassAction, code?: string) {
   const resendKey = Deno.env.get('RESEND_API_KEY');
   if (!resendKey) throw new Error('RESEND_API_KEY is not configured');
-  const mail = authLinkMail(action, actionLink);
+  const mail = authLinkMail(action, actionLink, code);
   const res = await fetch(RESEND_API_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
@@ -90,33 +90,20 @@ async function sendAuthEmail(email: string, actionLink: string, action: BypassAc
   if (!res.ok) throw new Error(`Resend request failed (${res.status})`);
 }
 
-// Fallback when Resend fails: send through Supabase's own auth mailer (the
-// project's configured SMTP). The user already exists, so shouldCreateUser is
-// off. Uses an anon-key client so the service-role client's session is untouched.
-async function sendViaSupabaseMailer(email: string, redirectTo: string) {
-  const anon = Deno.env.get('SUPABASE_ANON_KEY');
-  if (!anon) throw new Error('SUPABASE_ANON_KEY is not configured');
-  const mailer = createClient(Deno.env.get('SUPABASE_URL')!, anon, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { error } = await mailer.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
-  });
-  if (error) throw new Error(`Supabase mailer failed (${error.status ?? 'unknown'})`);
-}
-
-async function mailLink(email: string, actionLink: string, action: BypassAction, redirectTo: string): Promise<LinkResult> {
-  try {
-    await deliverSignupLink(
-      () => sendAuthEmail(email, actionLink, action),
-      () => sendViaSupabaseMailer(email, redirectTo),
-    );
-    return 'sent';
-  } catch (error) {
-    console.error('[signup-bypass] could not send auth link:', (error as Error).message);
-    return 'failed';
-  }
+// Resend only. There is no Supabase-mailer fallback: it went through the
+// captcha-gated /otp endpoint and the per-address send cooldown that
+// generateLink has just started, so it could not deliver (see signupMailer.ts).
+// A failure here is reported as `email_failed` and the caller cleans up.
+// `_redirectTo` stays in the signature because deliverMagicLink's SendLink
+// type passes it.
+function mailLink(
+  email: string,
+  actionLink: string,
+  action: BypassAction,
+  _redirectTo: string,
+  code?: string,
+): Promise<LinkResult> {
+  return deliverSignupLink(() => sendAuthEmail(email, actionLink, action, code));
 }
 
 // Deliberately fast — a real user reads the form and types for at least this
@@ -286,8 +273,10 @@ Deno.serve(async (req) => {
   const password = String(body.password || '');
   if (!EMAIL_RE.test(email)) return json({ error: 'Please enter a valid email address.', reason: 'invalid_email' }, origin, 400);
   // Resend and magic link only need the mailbox. Signup still requires a password.
-  if (action === 'signup' && password.length < 6) {
-    return json({ error: 'Password must be at least 6 characters.', reason: 'weak_password' }, origin, 400);
+  // Same minimum as MIN_PASSWORD_LENGTH in packages/core/copy/authPage.js and the
+  // production Auth setting. Edge functions cannot import core, so it is repeated here.
+  if (action === 'signup' && password.length < 8) {
+    return json({ error: 'Password must be at least 8 characters.', reason: 'weak_password' }, origin, 400);
   }
 
   // 3. Rate limit — atomic, DB-backed, shared table/RPC with admin-review's
@@ -363,7 +352,8 @@ Deno.serve(async (req) => {
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 500);
   }
 
-  const mailed = await mailLink(email, linkData.properties.action_link, 'signup', redirectTo);
+  const code = client === 'app' ? linkData.properties.email_otp || undefined : undefined;
+  const mailed = await mailLink(email, linkData.properties.action_link, 'signup', redirectTo, code);
   if (mailed !== 'sent') {
     await supabaseAdmin.auth.admin.deleteUser(created.user.id);
     return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);

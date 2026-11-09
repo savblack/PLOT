@@ -99,6 +99,8 @@ export const MEDIA_PANEL = {
   // The two scores read as a pair, with the audience review beside them.
   critics: 'Critics',
   audience: 'Audience',
+  // OMDb's awards line under the scores. The text itself is OMDb's, shown as is.
+  awards: 'Awards',
   watching: 'Watching',
   didntFinish: "Didn't finish",
   status: 'Status',

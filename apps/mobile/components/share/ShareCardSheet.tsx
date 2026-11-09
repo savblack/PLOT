@@ -3,9 +3,10 @@
 // card order come from @plot/core/shareCards.js.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, TextInput, Pressable, Modal, ScrollView, StyleSheet,
+  View, Text, Pressable, Modal, ScrollView, StyleSheet,
   ActivityIndicator, useWindowDimensions, type View as RNView,
 } from 'react-native';
+import { TextInput } from '../TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Line, Polyline } from 'react-native-svg';
 import { CARD_FORMATS, presetIndex, shareCaption } from '@plot/core/shareCards.js';

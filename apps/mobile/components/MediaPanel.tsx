@@ -20,9 +20,10 @@ import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaSta
 import { useEffect, useState, useRef, useMemo, type RefObject } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
-  StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Linking, Alert,
+  StyleSheet, Dimensions, ActivityIndicator, Animated, Linking, Alert,
   Platform, KeyboardAvoidingView, Keyboard, type HostInstance,
 } from 'react-native';
+import { TextInput } from './TextInput';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb, getTmdbRegion } from '../lib/tmdb';
@@ -922,7 +923,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const [whereToWatch, setWhereToWatch] = useState<{ streaming: any[]; rentBuy: any[]; inCinemas: boolean; region: string; justwatchLink: string | null }>({ streaming: [], rentBuy: [], inCinemas: false, region: 'US', justwatchLink: null });
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(false);
-  const [criticScore,   setCriticScore]   = useState<{ criticScore: number; source: string } | null>(null);
+  const [criticScore,   setCriticScore]   = useState<{ criticScore: number | null; source: string | null; awards: string | null } | null>(null);
   const [audienceQuote, setAudienceQuote] = useState<{ text: string; author: string } | null>(null);
   const [retryKey,  setRetryKey]  = useState(0);
   const [trailerPlaying, setTrailerPlaying] = useState(false);
@@ -1235,8 +1236,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       : watched && watchedEntry?.dnf ? MEDIA_PANEL.didntFinish
       : watched ? MEDIA.watched
       : MEDIA_PANEL.status);
-  const consensusLine = criticScore
-    ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
+  const hasCriticScore = Number.isFinite(criticScore?.criticScore);
+  const consensusLine = hasCriticScore
+    ? getConsensusLine(criticScore!.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
     : null;
 
   // Prefer an official Trailer, then Teaser, then any YouTube clip (mirrors web).
@@ -1601,15 +1603,15 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     the opt-in, so this is only a way to mute it (mirrors web). */}
                 {isMovie && details && inList && <StreamingAlertsCard movie={details} />}
 
-                {(criticScore || Number.isFinite(audienceScore)) && (
+                {(hasCriticScore || Number.isFinite(audienceScore)) && (
                   <View style={styles.scoresRow}>
-                    {criticScore && (
+                    {hasCriticScore && (
                       <View>
-                        <Text style={styles.scoreValue}>{criticScore.criticScore}%</Text>
+                        <Text style={styles.scoreValue}>{criticScore!.criticScore}%</Text>
                         <Text style={styles.scoreLabel}>{MEDIA_PANEL.critics}</Text>
                       </View>
                     )}
-                    {criticScore && Number.isFinite(audienceScore) && <View style={styles.scoreRule} />}
+                    {hasCriticScore && Number.isFinite(audienceScore) && <View style={styles.scoreRule} />}
                     {Number.isFinite(audienceScore) && (
                       <View>
                         <Text style={styles.scoreValue}>{audienceScore}%</Text>
@@ -1626,6 +1628,14 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     ) : null}
                   </View>
                 )}
+
+                {/* Awards and nominations, as OMDb words them (mirrors web). */}
+                {criticScore?.awards ? (
+                  <View style={styles.awardsRow}>
+                    <Text style={styles.scoreLabel}>{MEDIA_PANEL.awards}</Text>
+                    <Text style={styles.awardsText}>{criticScore.awards}</Text>
+                  </View>
+                ) : null}
 
                 {details?.overview ? <Text style={styles.overview}>{details.overview}</Text> : null}
 
@@ -1838,6 +1848,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   scoreValue: { fontFamily: fontFamily.display, fontSize: 22, color: colors.textPrimary, lineHeight: 24 },
   scoreLabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginTop: 2 },
   scoreRule: { width: StyleSheet.hairlineWidth, height: 30, backgroundColor: colors.border },
+  awardsRow: {
+    gap: 2, paddingBottom: spacing.lg, marginBottom: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
+  },
+  awardsText: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, lineHeight: 17 },
   consensusLine: { flex: 1, minWidth: 0, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, lineHeight: 17 },
   overview: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginBottom: spacing.lg },
   audienceQuote: { flex: 1, minWidth: 0, borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: spacing.md },
