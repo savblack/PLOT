@@ -20,7 +20,7 @@
  * function, acting for the user (_shared/workerActingUser.ts).
  *
  * Callers:
- *  - pg_cron every minute via run_import_worker_tick (service bearer): claims
+ *  - pg_cron every 5 minutes via run_import_worker_tick (service bearer): claims
  *    any due job.
  *  - the app, right after enqueueing and while Home watches the job (user
  *    JWT): claims only that user's job, so a nudge cannot run someone else's.
