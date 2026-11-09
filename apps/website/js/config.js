@@ -111,3 +111,19 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
     });
   }, true);
 })();
+
+/* The homepage search bar is a form, not a link, so its submit is counted
+   here as the same signup_cta_clicked event. has_query says whether a title
+   was typed; the title itself is never sent. */
+(function () {
+  document.addEventListener('submit', function (ev) {
+    var form = ev.target;
+    if (!form || !form.getAttribute || !/app\.theplot\.tv\/signup/.test(form.getAttribute('action') || '')) return;
+    var q = form.querySelector('input[name="q"]');
+    posthog.capture('signup_cta_clicked', {
+      placement: form.getAttribute('data-cta') || 'unknown',
+      source: 'marketing',
+      has_query: !!(q && q.value.trim()),
+    });
+  }, true);
+})();
