@@ -1431,8 +1431,9 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   }, [onClose]);
 
   // Which details load is current. A title swap or a close starts or ends a
-  // load, so a lookup that resolves afterwards (the critic score below) knows
-  // it belongs to a title the panel no longer shows.
+  // load, so anything that resolves afterwards (the details themselves, the
+  // critic score, the review quote) knows it belongs to a title the panel no
+  // longer shows and is dropped.
   const latestLoad = useRef({ id: 0 });
   const loadDetails = useCallback(async () => {
     if (!itemId) return;
@@ -1447,6 +1448,9 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
       tmdb.getWatchProviders(itemId, itemType),
       fetchVerifiedAvailability({ tmdbId: itemId, mediaType: itemType, region }),
     ]);
+    // A newer title (or a close) started while this one loaded; its load owns
+    // the panel and the loading flag now.
+    if (load !== latestLoad.current.id) return;
     if (!det) {
       setDetailsError(true);
     } else {
@@ -1493,7 +1497,9 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
         setCriticScore(result);
         reportAwardsShown(result, { tmdbId: itemId, mediaType: itemType });
       });
-      tmdb.getReviews(itemType, itemId).then((reviews) => setAudienceQuote(pickAudienceQuote(reviews)));
+      tmdb.getReviews(itemType, itemId).then((reviews) => {
+        if (load === latestLoad.current.id) setAudienceQuote(pickAudienceQuote(reviews));
+      });
     }
     setLoading(false);
   }, [itemId, itemType, isMovie]);
