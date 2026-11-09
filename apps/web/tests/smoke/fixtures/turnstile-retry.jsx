@@ -3,18 +3,19 @@ import { createRoot } from 'react-dom/client';
 import Turnstile from '../../../src/components/Turnstile.jsx';
 
 let options;
-let executed = false;
 let resets = 0;
-// A second execute on an already-executed Cloudflare widget does nothing.
-// The first challenge stays pending; the next fresh challenge returns a token.
+// Render-mode Cloudflare widget: render() starts the first challenge, which
+// stays pending here. reset() starts a fresh one; the second fresh challenge
+// returns a token. execute() is never needed in this mode, so it is counted
+// and the spec asserts it stayed at zero.
+window.__turnstileCalls = { execute: 0, execution: null };
 window.turnstile = {
-  render: (_target, value) => { options = value; return 'widget'; },
-  reset: () => { executed = false; resets++; },
-  execute: () => {
-    if (executed) return;
-    executed = true;
+  render: (_target, value) => { options = value; window.__turnstileCalls.execution = value.execution; return 'widget'; },
+  reset: () => {
+    resets++;
     if (resets > 1) options.callback('retry-token');
   },
+  execute: () => { window.__turnstileCalls.execute++; },
   remove: () => {},
 };
 
