@@ -82,6 +82,18 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
         a.href = u.toString();
       } catch { /* leave link untouched on parse error */ }
     });
+    // The homepage search bar is a GET form to signup: carry the same params
+    // as hidden fields, never overriding one the form already sets.
+    document.querySelectorAll('form[action^="https://app.theplot.tv/"]').forEach(function (form) {
+      carry.forEach(function (v, k) {
+        if (form.querySelector('input[name="' + k + '"]')) return;
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = k;
+        input.value = v;
+        form.appendChild(input);
+      });
+    });
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', forwardAttribution);

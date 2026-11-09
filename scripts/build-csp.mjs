@@ -45,7 +45,8 @@ const DIRECTIVES = [
   "connect-src 'self' https://a.theplot.tv https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://cloudflareinsights.com",
   "frame-src https://www.googletagmanager.com",
   "worker-src 'self' blob:",
-  "form-action 'self'",
+  // The homepage search bar submits to app signup (GET, ?q=).
+  "form-action 'self' https://app.theplot.tv",
   'upgrade-insecure-requests',
 ];
 
