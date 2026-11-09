@@ -126,7 +126,7 @@ function ScrollingColumn({ paths, offset, duration }: { paths: string[]; offset:
 }
 
 // 'inbox' is the step after an email sign-up or a magic-link request: the
-// email carries a link that opens the app and a six-digit code, and this
+// email carries a link that opens the app and a numeric code, and this
 // screen takes the code. It replaces the old "Almost there!" alert.
 type Mode = 'signin' | 'signup' | 'forgot' | 'inbox';
 type InboxKind = 'signup' | 'magic';
@@ -164,12 +164,16 @@ const AUTH_WEB_CALLBACK = 'https://app.theplot.tv/auth/callback';
 // Magic links and sign-up confirmations sign the user straight into a session,
 // so they come back into the app via the plot:// deep link that
 // app/(auth)/callback.tsx listens for. A link opened on another device cannot
-// open this app, which is why the same email also carries a six-digit code
+// open this app, which is why the same email also carries a numeric code
 // (see the 'inbox' mode below).
 // PRODUCTION REQUIREMENT: this resolves to plot://auth/callback — add that
 // exact URL to Supabase Dashboard → Authentication → URL Configuration →
 // Redirect URLs, or signInWithOtp will reject it and fall back to erroring.
 const AUTH_APP_CALLBACK = Linking.createURL('/auth/callback');
+
+// Supabase's email OTP length setting allows 6 to 10 digits.
+const OTP_MIN_DIGITS = 6;
+const OTP_MAX_DIGITS = 10;
 
 // Kind, Plot-voiced auth errors (mirrors web AuthPage's friendlyError).
 function friendlyAuthError(msg?: string) {
@@ -448,12 +452,17 @@ export default function AuthScreen() {
     setResendNote(sent.ok ? AUTH_PAGE.inbox.resent : sent.message);
   };
 
-  // The six-digit code from the email. GoTrue signup confirmations verify as
+  // The code from the email. Its length is a per-project Supabase setting
+  // (6 to 10 digits; Staging sends 8), so accept that whole range rather than
+  // assume 6. GoTrue signup confirmations verify as
   // 'signup'; a magic-link code, and every signup-bypass code, verifies as
   // 'email'. Neither needs captcha.
   const handleVerifyCode = async () => {
     const token = code.replace(/\D/g, '');
-    if (token.length !== 6) { setCodeError(AUTH_PAGE.inbox.invalidCode); return; }
+    if (token.length < OTP_MIN_DIGITS || token.length > OTP_MAX_DIGITS) {
+      setCodeError(AUTH_PAGE.inbox.invalidCode);
+      return;
+    }
     setCodeError(null);
     setLoading(true);
     const { data, error } = await supabase.auth.verifyOtp({
@@ -835,12 +844,12 @@ export default function AuthScreen() {
                       placeholder={AUTH_PAGE.inbox.codePlaceholder}
                       placeholderTextColor={PLACEHOLDER}
                       value={code}
-                      onChangeText={(t) => { setCode(t.replace(/\D/g, '').slice(0, 6)); setCodeError(null); }}
+                      onChangeText={(t) => { setCode(t.replace(/\D/g, '').slice(0, OTP_MAX_DIGITS)); setCodeError(null); }}
                       keyboardType="number-pad"
                       // iOS offers the code from Mail above the keyboard.
                       textContentType="oneTimeCode"
                       autoComplete="one-time-code"
-                      maxLength={6}
+                      maxLength={OTP_MAX_DIGITS}
                       returnKeyType="go"
                       onSubmitEditing={handleSubmit}
                       accessibilityLabel={AUTH_PAGE.inbox.codeLabel}

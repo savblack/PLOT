@@ -59,7 +59,7 @@ export const AUTH_PAGE = {
   checkInboxBefore: 'We sent a one-time sign-in link to ',
   checkInboxAfter: "Open it on this device and you're straight in, no password needed.",
   // Mobile's in-app inbox step (replaces the "Almost there!" alert). The email
-  // carries a link that opens the app and a six-digit code for when the link
+  // carries a link that opens the app and a numeric code for when the link
   // is opened somewhere else; both land here.
   inbox: {
     title: 'Check your inbox',
@@ -67,7 +67,7 @@ export const AUTH_PAGE = {
     magicBefore: 'We sent a sign-in link to ',
     after: '. Open it on this phone and you are straight in, or enter the code from the email below.',
     codeLabel: 'Code from the email',
-    codePlaceholder: '6-digit code',
+    codePlaceholder: 'Code',
     confirm: 'Confirm',
     confirming: 'Confirming',
     invalidCode: 'That code did not match. Check the newest email and try again.',
