@@ -65,7 +65,7 @@ import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 import { SavedByToo } from './watch/SavedByToo';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
-import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
+import { fetchCriticScore, reportAwardsShown, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { TrailerPlayer } from './TrailerPlayer';
@@ -1142,7 +1142,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         // returned, so they can't join the Promise.all above. Fire-and-forget
         // rather than block the panel on a third-party lookup.
         const imdbId = det.external_ids?.imdb_id;
-        if (imdbId) fetchCriticScore(imdbId).then((r) => { if (!cancelled) setCriticScore(r); });
+        if (imdbId) fetchCriticScore(imdbId).then((r) => {
+          if (cancelled) return;
+          setCriticScore(r);
+          reportAwardsShown(r, { tmdbId: itemId, mediaType: itemType });
+        });
         tmdb.getReviews(itemType, itemId).then((reviews: any) => { if (!cancelled) setAudienceQuote(pickAudienceQuote(reviews)); });
       }
       setLoading(false);

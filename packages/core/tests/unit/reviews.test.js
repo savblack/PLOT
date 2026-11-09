@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '../../reviews.js';
+import { fetchCriticScore, reportAwardsShown, awardsIncludeWin, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '../../reviews.js';
 import { configure } from '../../config.js';
 
 const originalFetch = globalThis.fetch;
 
 test.afterEach(() => {
   globalThis.fetch = originalFetch;
-  configure({ criticScoreUrl: '', supabaseAnonKey: '' });
+  configure({ criticScoreUrl: '', supabaseAnonKey: '', onAwardsShown: undefined, onLoadFailed: undefined });
 });
 
 test('fetchCriticScore returns null without calling fetch when criticScoreUrl is not configured', async () => {
@@ -79,6 +79,54 @@ test('fetchCriticScore treats blank or non-string awards as none', async () => {
 
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ criticScore: 60, source: 'Rotten Tomatoes', awards: 3 }) });
   assert.deepEqual(await fetchCriticScore('tt1'), { criticScore: 60, source: 'Rotten Tomatoes', awards: null });
+});
+
+test('fetchCriticScore reports a failed lookup as load_failed, and a lookup with nothing as no failure', async () => {
+  configure({ criticScoreUrl: 'https://example.test/critic' });
+  const failures = [];
+  configure({ onLoadFailed: (payload) => failures.push(payload) });
+
+  globalThis.fetch = async () => ({ ok: false, status: 503 });
+  await fetchCriticScore('tt1');
+  globalThis.fetch = async () => { throw new TypeError('Failed to fetch'); };
+  await fetchCriticScore('tt1');
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ criticScore: null, awards: null }) });
+  await fetchCriticScore('tt1');
+
+  assert.deepEqual(failures, [
+    { resource: 'critic_score', error_kind: 'server', http_status: 503 },
+    { resource: 'critic_score', error_kind: 'network' },
+  ]);
+});
+
+test('awardsIncludeWin tells wins apart from nominations only', () => {
+  assert.equal(awardsIncludeWin('Won 4 Oscars. 309 wins & 261 nominations total'), true);
+  assert.equal(awardsIncludeWin('Won 1 Primetime Emmy. 12 wins & 40 nominations total'), true);
+  assert.equal(awardsIncludeWin('1 win & 3 nominations'), true);
+  assert.equal(awardsIncludeWin('Nominated for 1 Oscar. 2 nominations total'), false);
+  assert.equal(awardsIncludeWin('2 nominations'), false);
+  assert.equal(awardsIncludeWin('0 wins & 2 nominations'), false);
+  assert.equal(awardsIncludeWin(null), false);
+});
+
+test('reportAwardsShown sends shapes through the seam only when awards are present', () => {
+  const sent = [];
+  configure({ onAwardsShown: (payload) => sent.push(payload) });
+
+  reportAwardsShown({ criticScore: 99, source: 'Rotten Tomatoes', awards: 'Won 4 Oscars. 309 wins & 261 nominations total' }, { tmdbId: 101, mediaType: 'movie' });
+  reportAwardsShown({ criticScore: null, source: null, awards: 'Nominated for 2 Emmys. 2 nominations total' }, { tmdbId: '202', mediaType: 'tv' });
+  reportAwardsShown({ criticScore: 80, source: 'Rotten Tomatoes', awards: null }, { tmdbId: 303, mediaType: 'movie' });
+  reportAwardsShown(null, { tmdbId: 404, mediaType: 'movie' });
+
+  assert.deepEqual(sent, [
+    { tmdb_id: 101, media_type: 'movie', won: true, has_critic_score: true },
+    { tmdb_id: 202, media_type: 'tv', won: false, has_critic_score: false },
+  ]);
+});
+
+test('reportAwardsShown never throws when the seam does', () => {
+  configure({ onAwardsShown: () => { throw new Error('posthog down'); } });
+  assert.doesNotThrow(() => reportAwardsShown({ criticScore: null, awards: '1 win' }, { tmdbId: 1, mediaType: 'movie' }));
 });
 
 test('pickAudienceQuote returns null with no response, no results, or no review long enough', () => {

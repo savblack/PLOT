@@ -54,7 +54,7 @@ import {
 } from '@plot/core/watchingProgress.js';
 import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
-import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
+import { fetchCriticScore, reportAwardsShown, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import EpisodeRatingsEntry from './EpisodeRatingsSheet.jsx';
@@ -1483,7 +1483,10 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
       // returned, so they can't join the Promise.all above. Fire-and-forget
       // rather than block the panel on a third-party lookup.
       const imdbId = det.external_ids?.imdb_id;
-      if (imdbId) fetchCriticScore(imdbId).then(setCriticScore);
+      if (imdbId) fetchCriticScore(imdbId).then((result) => {
+        setCriticScore(result);
+        reportAwardsShown(result, { tmdbId: itemId, mediaType: itemType });
+      });
       tmdb.getReviews(itemType, itemId).then((reviews) => setAudienceQuote(pickAudienceQuote(reviews)));
     }
     setLoading(false);
