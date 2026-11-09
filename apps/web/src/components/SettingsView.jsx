@@ -14,6 +14,7 @@ import { tmdb, setTmdbRegion } from '@plot/core/tmdb.js';
 import { supabase } from '@plot/core/supabase.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { usePremium } from '../hooks/usePremium.js';
+import { useEscapeToClose } from '../hooks/useEscapeToClose.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
@@ -75,10 +76,13 @@ function RegionPicker({ current, onSave, onClose }) {
     if (!saved) setSaving(false);
   };
 
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
+
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         <SheetHeader title={SETTINGS_VIEW.page.regionLabel} onClose={onClose} />
         <div style={{ padding: '1rem', overflow: 'auto', flex: 1 }}>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
@@ -190,10 +194,13 @@ function ClearWatchlistModal({ savedCount, watchingCount, customLists = [], onCl
     onClear({ saved: selected.saved, watching: selected.watching, customListIds: [...selected.custom] });
   };
 
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
+
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         <SheetHeader title={SETTINGS_VIEW.dangerZone.clearListsLabel} onClose={onClose} />
         <div style={{ padding: '1rem 1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 0.25rem' }}>
@@ -284,10 +291,13 @@ function TimezonePicker({ current, onSave, onClose }) {
     await onSave(chosen);
   };
 
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
+
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         <SheetHeader title={SETTINGS_VIEW.page.timezoneLabel} onClose={onClose} />
 
         <div style={{ padding: '0.75rem 1rem 0', position: 'relative' }}>
@@ -419,10 +429,13 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
     ? all.filter(p => p.provider_name.toLowerCase().includes(search.trim().toLowerCase()))
     : all;
 
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
+
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         {/* Sticky header — title + Save always visible */}
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
           <SheetHeader title={title} onClose={onClose} />
@@ -505,10 +518,13 @@ function GenrePicker({ selected, onSave, onClose }) {
     onSave(allGenres.filter(g => next.includes(g.id)).map(g => g.name));
   };
 
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
+
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
           <SheetHeader title={SETTINGS_VIEW.integrations.genresLabel} onClose={onClose} />
         </div>
@@ -983,10 +999,13 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
     track(EVENTS.FEEDBACK_SUBMITTED, { type, has_attachments: attachmentUrls.length > 0 });
   };
 
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
+
   return createPortal(
 <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
           <SheetHeader title={SETTINGS_VIEW.feedback.panelTitle} onClose={onClose} />
         </div>

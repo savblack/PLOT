@@ -7,12 +7,13 @@
 // native drag and drop, and every row also has buttons for keyboard and touch.
 //
 // Mobile parity: app/(app)/home-layout.tsx draws the same sections.
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { CARD_STYLES, UI_DENSITIES } from '@plot/core/uiPrefs.js';
 import { MAX_HOME_PINS } from '@plot/core/homeLayout.js';
 import SheetHeader from './SheetHeader.jsx';
+import { useEscapeToClose } from '../hooks/useEscapeToClose.js';
 import ReorderRows, { Chevron } from './ReorderRows.jsx';
 import './HomeLayoutSheet.css';
 
@@ -86,12 +87,14 @@ export default function HomeLayoutSheet({
   premium, pins, pinGroups, onPin, onUnpin, onNudgePin, onUpgrade,
 }) {
   const [picking, setPicking] = useState(false);
+  const sheetRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: sheetRef });
   const full = layout.pins.length >= MAX_HOME_PINS;
 
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel home-layout-sheet" role="dialog" aria-label={C.title}>
+      <div className="panel home-layout-sheet" role="dialog" aria-label={C.title} ref={sheetRef}>
         <div className="home-layout-sheet-head">
           <SheetHeader title={C.title} onClose={onClose} action={{ label: C.done, onClick: onClose }} />
         </div>

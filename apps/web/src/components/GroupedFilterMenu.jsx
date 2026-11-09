@@ -1,5 +1,6 @@
 import MobilePageControls from './MobilePageControls.jsx';
 import { useEffect, useRef, useState } from 'react';
+import { useEscapeToClose } from '../hooks/useEscapeToClose.js';
 
 function FilterIcon() {
   return (
@@ -27,6 +28,9 @@ function FilterIcon() {
 export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups, label, trigger, className, mobileControls = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  // The trigger is the wrapper's first button, whether it is ours or the
+  // caller's `trigger` render.
+  useEscapeToClose(open, () => setOpen(false), { rootRef: ref, getTrigger: () => ref.current?.querySelector('button') });
 
   useEffect(() => {
     if (!open) return;
