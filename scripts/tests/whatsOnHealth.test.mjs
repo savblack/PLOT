@@ -36,6 +36,29 @@ test('any other status is broken', () => {
   assert.equal(classifyWhatsOn(404, '').ok, false);
 });
 
+// Cloudflare turned GitHub's runner away on the first manual run (2 of 3
+// attempts). That must not read as an outage, or the alarm cries wolf.
+test('a Cloudflare refusal is blocked, not broken', () => {
+  const v = classifyWhatsOn(403, '<title>Attention Required! | Cloudflare</title>', { fromPlot: false });
+  assert.equal(v.ok, false);
+  assert.equal(v.blocked, true);
+  assert.match(v.reason, /HTTP 403, no X-Plot-Cache/);
+  assert.equal(classifyWhatsOn(429, '', { fromPlot: false }).blocked, true);
+  assert.equal(classifyWhatsOn(200, poster(25), { fromPlot: true, mitigated: 'challenge' }).blocked, true);
+});
+
+test('failures Plot itself serves are still broken, never blocked', () => {
+  // The 503 page comes through the proxy, which tags it with X-Plot-Cache.
+  const unavailable = classifyWhatsOn(503, UNAVAILABLE, { fromPlot: true });
+  assert.equal(unavailable.ok, false);
+  assert.equal(unavailable.blocked, undefined);
+  // The proxy's own 502 fallback is untagged but is not a refusal status.
+  assert.equal(classifyWhatsOn(502, UNAVAILABLE, { fromPlot: false }).blocked, undefined);
+  // A 403 that Plot did send (tagged) is a real failure.
+  assert.equal(classifyWhatsOn(403, '', { fromPlot: true }).blocked, undefined);
+  assert.equal(classifyWhatsOn(200, EMPTY_STATE, { fromPlot: true }).blocked, undefined);
+});
+
 // The check matches page text it does not own. If either page rewords it, the
 // check would silently stop recognising that failure, so pin it to the source.
 test('the matched strings still exist in the pages that render them', async () => {

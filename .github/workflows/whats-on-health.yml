@@ -14,6 +14,10 @@
 # opens (or comments on) one issue labelled whats-on-down, and the next healthy
 # run closes it. An alarm that cannot clear itself teaches people to ignore it.
 #
+# Cloudflare sometimes refuses GitHub's runners (403 without X-Plot-Cache). A
+# run where every attempt was refused is `blocked`: a warning annotation, no
+# issue, and it never closes one, because it did not see the page at all.
+#
 # No secrets and no install step: the script uses Node built-ins only.
 
 name: What's On health
@@ -67,7 +71,7 @@ jobs:
             printf '%s\n' \
               "[theplot.tv/whats-on](https://theplot.tv/whats-on) is not showing articles: ${REASON:-the check could not load it}." \
               '' \
-              'It stayed that way across 3 attempts a minute apart, so this is not a single blip.' \
+              'It stayed that way across repeated attempts a minute apart, so this is not a single blip.' \
               '' \
               'First checks:' \
               '- Call the backend directly, past the Cloudflare cache: `curl -s https://mkegtssedjyqldysvzga.supabase.co/functions/v1/marketing-feed -H "apikey: <publishable key>"`. Posters there but not on the site means a stale cached copy, which expires within the hour.' \
@@ -90,7 +94,7 @@ jobs:
           fi
 
       - name: Stand the alarm down once the page is healthy
-        if: success()
+        if: success() && steps.page.outputs.state == 'healthy'
         env:
           GH_TOKEN: ${{ github.token }}
           REASON: ${{ steps.page.outputs.reason }}
