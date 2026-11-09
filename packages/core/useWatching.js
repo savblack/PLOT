@@ -14,7 +14,7 @@ import { readWatchingActivity } from './watchingActivity.js';
 /** Put a show's episode pointer back where it was (undo toast). The old
  * updated_at goes back too, so undoing a tick does not move the show to the
  * front: the table's trigger keeps a timestamp the caller supplies
- * (20261103120000) and only stamps now() when the caller leaves it alone. */
+ * (20261110120000) and only stamps now() when the caller leaves it alone. */
 export async function restorePointer(userId, before) {
   const { error } = await supabase
     .from('watching_progress')
