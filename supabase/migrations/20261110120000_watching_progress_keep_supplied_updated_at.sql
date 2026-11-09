@@ -6,9 +6,9 @@
 -- of back to where it was.
 --
 -- Now: an update that changes updated_at keeps the caller's value; one that
--- leaves it alone still gets now(). Every current client write sets
--- updated_at itself (now() on a tick, the old value on undo), so only undo
--- behaves differently. A user can only write their own rows (RLS), so a
+-- leaves it alone still gets now(). Undo is the only client write that sends
+-- updated_at; ticks, jumps and start-watching leave it to this trigger, so
+-- the stored time is always the server's except when undo restores it. A user can only write their own rows (RLS), so a
 -- supplied timestamp can only reorder their own list, and one in the future
 -- (a fast device clock) is clamped to now().
 --
