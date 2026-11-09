@@ -1430,8 +1430,13 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     else setSheetSnap(next);
   }, [onClose]);
 
+  // Which details load is current. A title swap or a close starts or ends a
+  // load, so a lookup that resolves afterwards (the critic score below) knows
+  // it belongs to a title the panel no longer shows.
+  const latestLoad = useRef({ id: 0 });
   const loadDetails = useCallback(async () => {
     if (!itemId) return;
+    const load = ++latestLoad.current.id;
     setLoading(true);
     setDetailsError(false);
     setCriticScore(null);
@@ -1484,6 +1489,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
       // rather than block the panel on a third-party lookup.
       const imdbId = det.external_ids?.imdb_id;
       if (imdbId) fetchCriticScore(imdbId).then((result) => {
+        if (load !== latestLoad.current.id) return;
         setCriticScore(result);
         reportAwardsShown(result, { tmdbId: itemId, mediaType: itemType });
       });
@@ -1492,8 +1498,12 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     setLoading(false);
   }, [itemId, itemType, isMovie]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- details loading is encapsulated in the stable callback
-  useEffect(() => { loadDetails(); }, [loadDetails]);
+  useEffect(() => {
+    const loads = latestLoad.current;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- details loading is encapsulated in the stable callback
+    loadDetails();
+    return () => { loads.id += 1; };
+  }, [loadDetails]);
 
   const title   = details?.title || details?.name || '';
   const date    = details?.release_date || details?.first_air_date;
