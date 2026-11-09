@@ -108,6 +108,9 @@ export const AUTH_PAGE = {
   // Login, reset, and magic link have no bypass. Said when the widget
   // never returns a token and the submit itself has to stop.
   verificationUnavailable: 'The security check did not finish. Wait a moment and try again.',
+  // An auth request timed out or never reached the server (see
+  // @plot/core/authTimeout.js). Said instead of a spinner that never stops.
+  connectionFailed: "We couldn't reach Plot. Check your connection and try again.",
 };
 
 /**
