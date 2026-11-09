@@ -46,6 +46,8 @@ const PERSISTENT_FAILURE_THRESHOLD = 1;
  * @param {number}   [props.resetSignal] Bump this number to drop the current token without running a new challenge.
  * @param {number}   [props.executeSignal] Bump this number to run the challenge. The widget
  *                                      does not run on load. reset() alone does not re-run it.
+ * @param {Function} [props.onInteractive] Called when Cloudflare escalates to its "Verify you are
+ *                                      human" checkbox. No token arrives until the person taps it.
  * @param {Function} [props.onBlocked]  Called with the 1-based attempt number each time the
  *                                      widget fails to load or errors, for tracking incidence.
  * @param {Function} [props.onPersistentlyBlocked] Called with true once failures cross
@@ -61,6 +63,7 @@ export default function Turnstile({
   onToken,
   resetSignal = 0,
   executeSignal = 0,
+  onInteractive,
   onBlocked,
   onPersistentlyBlocked,
   failureMessage = AUTH_PAGE.verificationFailed,
@@ -70,6 +73,7 @@ export default function Turnstile({
   const widgetIdRef = useRef(null);
   const onTokenRef = useRef(onToken);
   const onBlockedRef = useRef(onBlocked);
+  const onInteractiveRef = useRef(onInteractive);
   const onPersistentlyBlockedRef = useRef(onPersistentlyBlocked);
   const [failCount, setFailCount] = useState(0);
   const [retryNonce, setRetryNonce] = useState(0);
@@ -80,6 +84,7 @@ export default function Turnstile({
   // Keep the latest callbacks without re-running the render effect below.
   useEffect(() => { onTokenRef.current = onToken; }, [onToken]);
   useEffect(() => { onBlockedRef.current = onBlocked; }, [onBlocked]);
+  useEffect(() => { onInteractiveRef.current = onInteractive; }, [onInteractive]);
   useEffect(() => { onPersistentlyBlockedRef.current = onPersistentlyBlocked; }, [onPersistentlyBlocked]);
 
   useEffect(() => {
@@ -126,6 +131,9 @@ export default function Turnstile({
           },
           'expired-callback': () => onTokenRef.current?.(null),
           'error-callback': () => { onTokenRef.current?.(null); reportFailure(); },
+          // The invisible check escalated to the checkbox. The token now
+          // waits on a tap, so the page must keep waiting for it.
+          'before-interactive-callback': () => onInteractiveRef.current?.(),
         });
         runExecuteRef.current();
       })
