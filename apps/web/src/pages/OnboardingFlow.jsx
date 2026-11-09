@@ -16,7 +16,7 @@ import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/cor
 import { upsertProfile } from '@plot/core/profile.js';
 import { reportLoadFailure, FAILED_LOADS } from '@plot/core/actionFailures.js';
 import {
-  ONBOARDING_PROGRESS, buildingFan, buildingLines, firstNameFromAuthUser, topRegionServices,
+  ONBOARDING_PROGRESS, BUILDING_FADE_MS, BUILDING_MIN_MS, buildingShelf, firstNameFromAuthUser, topRegionServices,
 } from '@plot/core/onboardingSetup.js';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { importSourceName } from '@plot/core/importJobs.js';
@@ -41,9 +41,6 @@ import {
 } from '@plot/core/onboardingGate.js';
 
 const F = ONBOARDING_FLOW;
-// The building moment: each line holds this long, then Home fades in.
-const LINE_MS = 1500;
-const FADE_MS = 600;
 // Step 1's grid: 8 full rows on desktop (6 across), 16 on phones (3 across).
 const TRENDING_COUNT = 48;
 const prefersReducedMotion = () =>
@@ -103,7 +100,7 @@ export default function OnboardingFlow() {
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
 
   // Building
-  const [lineIndex, setLineIndex] = useState(0);
+  const [buildingServiceCount, setBuildingServiceCount] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const nextPathRef = useRef(null);
 
@@ -317,26 +314,20 @@ export default function OnboardingFlow() {
   const startBuilding = ({ skipped = false } = {}) => {
     completeStep('services', { skipped });
     const providers = skipped ? [] : services.filter(s => selectedServiceIds.includes(s.id));
-    setLineIndex(0);
+    setBuildingServiceCount(providers.length);
     setLeaving(false);
     setStep('building');
-    const wait = new Promise(resolve => setTimeout(resolve, LINE_MS * buildingLines(true).length));
+    // Leave as soon as the save lands, but not before the shelf has filled.
+    const wait = new Promise(resolve => setTimeout(resolve, BUILDING_MIN_MS));
     Promise.all([save({ seeds: seedSelected, providers }), wait]).then(async ([ok]) => {
       if (!ok) { setStep('services'); return; }
       completeStep('building');
       nextPathRef.current = await exitPath();
       if (!nextPathRef.current) return;
       setLeaving(true);
-      setTimeout(() => navigate(nextPathRef.current, { replace: true }), prefersReducedMotion() ? 0 : FADE_MS);
+      setTimeout(() => navigate(nextPathRef.current, { replace: true }), prefersReducedMotion() ? 0 : BUILDING_FADE_MS);
     });
   };
-
-  /* ── Rotate the building lines ── */
-  useEffect(() => {
-    if (step !== 'building') return;
-    const id = setInterval(() => setLineIndex(i => Math.min(i + 1, buildingLines(true).length - 1)), LINE_MS);
-    return () => clearInterval(id);
-  }, [step]);
 
   const toggleSeed = (item) => {
     setSeedSelected(prev => (prev.some(i => i.id === item.id) ? prev.filter(i => i.id !== item.id) : [...prev, item]));
@@ -395,11 +386,11 @@ export default function OnboardingFlow() {
       }}
       building={{
         leaving,
-        fan: buildingFan(seedSelected, trending),
-        lines: importStart.current
-          ? [IMPORT_JOBS.building.matching(importSourceName(importStart.current.source)), ...buildingLines(selectedServiceIds.length > 0).slice(1)]
-          : buildingLines(selectedServiceIds.length > 0),
-        lineIndex,
+        shelf: buildingShelf(seedSelected, trending),
+        // While a background import runs, the line says so; otherwise what the one save is writing.
+        line: importStart.current
+          ? IMPORT_JOBS.building.matching(importSourceName(importStart.current.source))
+          : F.building.saving(seedSelected.length, buildingServiceCount),
       }}
     />
   );

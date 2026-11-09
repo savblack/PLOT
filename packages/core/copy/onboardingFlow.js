@@ -129,12 +129,9 @@ export const ONBOARDING_FLOW = {
   building: {
     // "Building your" then the wordmark, set in Gabarito.
     heading: 'Building your',
-    lines: ['Checking your platforms…', 'Reading the reviews…', 'Popping the popcorn…', 'Raising the curtain…'],
-    // Line one when they skipped services.
-    noServicesFirstLine: 'Checking every platform…',
     status: 'Building your Plot',
-    // Mobile shows what the one save is actually writing, and holds the screen
-    // only as long as that takes (with a short floor so it never flashes).
+    // One line saying what the save is actually writing. The screen holds only
+    // as long as that takes (with a short floor so the shelf can fill).
     saving: (titles, services) => {
       const t = titles === 0 ? '' : `${titles} ${titles === 1 ? 'title' : 'titles'}`;
       const s = services === 0 ? '' : `${services} ${services === 1 ? 'service' : 'services'}`;
