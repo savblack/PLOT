@@ -2,7 +2,7 @@
 // What's On. The model writes the letter. render-issue.mjs then checks it
 // and emits the Substack post and the email preview. Nothing is sent.
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, lstatSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -127,12 +127,35 @@ const repoRoot = () => {
   }
 };
 
+// The runner reads third-party pages, so treat what it can reach as exposed.
+// Deny the repo and, because a worktree's .env is a symlink into the main
+// checkout, the directory the .env actually resolves to.
+export function draftBlockedPaths(root = repoRoot()) {
+  const blocked = [root];
+  try {
+    const envDir = dirname(realpathSync(join(root, '.env')));
+    if (!blocked.includes(envDir)) blocked.push(envDir);
+  } catch {
+    // No .env: nothing more to deny.
+  }
+  return blocked;
+}
+
+// The runner could leave issue.md as a symlink to a file it cannot read
+// itself. Only a regular file is accepted, so this process never copies
+// something outside the draft directory into the repo.
+export function readDraft(path) {
+  if (!existsSync(path)) throw new Error('The runner finished without writing issue.md.');
+  if (!lstatSync(path).isFile()) throw new Error('issue.md is not a regular file. Refusing to read it.');
+  return readFileSync(path, 'utf8');
+}
+
 export async function writeIssue({ date = issueDate(), runner } = {}) {
   const chosen = runner || availableRunners()[0];
   if (!chosen) throw new Error('No copy runner installed. Install the codex or claude CLI.');
   const chart = await chartBrief();
   const dir = mkdtempSync(join(tmpdir(), 'plot-week-'));
-  const blocked = [repoRoot()];
+  const blocked = draftBlockedPaths();
   try {
     copyFileSync(join(HERE, 'THE-WEEK.md'), join(dir, 'THE-WEEK.md'));
     copyFileSync(join(HERE, '..', 'VOICE.md'), join(dir, 'VOICE.md'));
@@ -140,18 +163,17 @@ export async function writeIssue({ date = issueDate(), runner } = {}) {
     const previous = join(HERE, 'issues', `${date}.md`);
     if (existsSync(previous)) copyFileSync(previous, join(dir, 'PREVIOUS.md'));
     runDraft(chosen, buildPrompt({ date, chart }), { cwd: dir, blockedPaths: blocked });
-    const draftPath = join(dir, 'issue.md');
-    if (!existsSync(draftPath)) throw new Error('The runner finished without writing issue.md.');
-    const issue = parseIssue(readFileSync(draftPath, 'utf8'));
+    const draft = readDraft(join(dir, 'issue.md'));
+    const issue = parseIssue(draft);
     const problems = lintIssue(issue);
     if (problems.length) {
-      copyFileSync(draftPath, join(tmpdir(), 'the-week-failed.md'));
+      writeFileSync(join(tmpdir(), 'the-week-failed.md'), draft);
       throw new Error(`Draft failed the Substack check:\n${problems.join('\n')}`);
     }
     const issuesDir = join(HERE, 'issues');
     mkdirSync(issuesDir, { recursive: true });
     const path = join(issuesDir, `${date}.md`);
-    copyFileSync(draftPath, path);
+    writeFileSync(path, draft);
     const rendered = renderIssueFile(path);
     return { path, ...rendered };
   } finally {

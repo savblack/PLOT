@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, symlinkSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const { parseIssue, lintIssue, renderSubstack, renderEmail, renderIssueFile } =
   await import('../newsletter/render-issue.mjs');
-const { issueDate, formatChart, buildPrompt, draftCodexArgs } = await import('../newsletter/write-issue.mjs');
+const { issueDate, formatChart, buildPrompt, draftCodexArgs, draftBlockedPaths, readDraft } = await import('../newsletter/write-issue.mjs');
 const { formatPeopleBrief, peopleOnPlotBrief, sqlFilters } = await import('../newsletter/people-on-plot.mjs');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -101,6 +101,8 @@ test('the email keeps the sentences and skips the old digest pitch', () => {
   assert.equal(html.includes('Save to your Plot'), false);
   assert.equal(html.includes('GIF:'), false);
   assert.match(html, /\{\{unsubscribe_url\}\}/);
+  assert.match(html, /href="https:\/\/app\.theplot\.tv\/save\?media_type=movie&amp;tmdb_id=949&amp;src=newsletter"/);
+  assert.equal(html.includes('&amp;amp;'), false);
 });
 
 test('the same source cannot carry two titles', () => {
@@ -394,4 +396,25 @@ test('every issue needs a concise Substack preview kept outside the article', ()
   assert.equal(renderSubstack(issue).includes(issue.previewText), false);
   assert.ok(renderEmail(issue).includes(issue.previewText));
   assert.ok(lintIssue({ ...issue, previewText: 'x'.repeat(161) }).some((x) => x.includes('preview_text')));
+});
+
+test('the draft sandbox denies the directory a symlinked .env resolves to', () => {
+  const base = realpathSync(mkdtempSync(join(tmpdir(), 'week-env-')));
+  const repo = join(base, 'worktree');
+  const main = join(base, 'main');
+  mkdirSync(repo);
+  mkdirSync(main);
+  writeFileSync(join(main, '.env'), 'SECRET=1\n');
+  symlinkSync(join(main, '.env'), join(repo, '.env'));
+  assert.deepEqual(draftBlockedPaths(repo), [repo, main]);
+  assert.deepEqual(draftBlockedPaths(main), [main]);
+});
+
+test('a symlinked issue.md is refused rather than copied', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'week-draft-'));
+  writeFileSync(join(dir, 'outside.md'), 'not the draft');
+  symlinkSync(join(dir, 'outside.md'), join(dir, 'issue.md'));
+  assert.throws(() => readDraft(join(dir, 'issue.md')), /not a regular file/);
+  writeFileSync(join(dir, 'real.md'), 'draft');
+  assert.equal(readDraft(join(dir, 'real.md')), 'draft');
 });

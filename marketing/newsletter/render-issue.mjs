@@ -314,10 +314,12 @@ const weekLabel = (iso) => {
   });
 };
 
-const linkHtml = (text, url) => {
+// `escaped` is for hrefs taken from text inline() has already escaped, so a
+// query's & is not turned into &amp;amp; and dropped from the link.
+const linkHtml = (text, url, { escaped = false } = {}) => {
   const plot = /theplot\.tv/i.test(url);
   const color = plot ? PINK : INK;
-  return `<a href="${esc(url)}" style="color:${color};text-decoration:underline;">${text}</a>`;
+  return `<a href="${escaped ? url : esc(url)}" style="color:${color};text-decoration:underline;">${text}</a>`;
 };
 
 const inline = (raw) => {
@@ -330,7 +332,7 @@ const inline = (raw) => {
     const width = poster ? 180 : 536;
     return `<img src="${url}" alt="${alt}" width="${width}" style="display:block;width:${poster ? '180px' : '100%'};max-width:${width}px;height:auto;border-radius:12px;border:1px solid ${HAIR};margin:8px 0 4px;">`;
   });
-  html = html.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, (_, text, url) => linkHtml(text, url));
+  html = html.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, (_, text, url) => linkHtml(text, url, { escaped: true }));
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
   return html;
