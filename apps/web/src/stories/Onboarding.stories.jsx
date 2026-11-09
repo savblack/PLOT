@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import OnboardingScreen from '../pages/OnboardingScreen.jsx';
-import { buildingFan, buildingLines } from '@plot/core/onboardingSetup.js';
+import { buildingShelf } from '@plot/core/onboardingSetup.js';
+import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { importPillFor } from '@plot/core/importJobs.js';
 
 // A running Letterboxd job and a queued Netflix one, as import_jobs rows.
@@ -15,14 +16,8 @@ const services = ['Service One', 'Service Two', 'Service Three', 'Service Four',
   .map((name, i) => ({ id: -(i + 100), name, logo_path: null }));
 const noop = () => {};
 
-function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', lineIndex = 1, ticking = false, importSource = null, importPhase = 'pick', importError = null, jobs = [], pendingFiles = null, pendingRows = null, connectedIds = [] }) {
+function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', importSource = null, importPhase = 'pick', importError = null, jobs = [], pendingFiles = null, pendingRows = null, connectedIds = [] }) {
   const [sel, setSel] = useState(selected);
-  const [line, setLine] = useState(lineIndex);
-  useEffect(() => {
-    if (!ticking) return undefined;
-    const id = setInterval(() => setLine(i => (i + 1) % 4), 1500);
-    return () => clearInterval(id);
-  }, [ticking]);
   const [svc, setSvc] = useState(picked);
   return (
     <OnboardingScreen
@@ -57,7 +52,7 @@ function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 
         region: 'US', editingRegion: false, onEditRegion: noop, onRegion: noop, onRegionDone: noop,
         onContinue: noop,
       }}
-      building={{ leaving: false, fan: buildingFan(titles.filter(t => sel.includes(t.id)), titles), lines: buildingLines(svc.length > 0), lineIndex: line }}
+      building={{ leaving: false, shelf: buildingShelf(titles.filter(t => sel.includes(t.id)), titles), line: ONBOARDING_FLOW.building.saving(sel.length, svc.length) }}
     />
   );
 }
@@ -92,7 +87,7 @@ export const WhereDoYouWatch = { render: () => <Screen step="services" /> };
 export const WhereDoYouWatchImporting = { render: () => <Screen step="services" jobs={[runningJob, queuedJob]} /> };
 /** 2 · Nothing picked yet. */
 export const WhereDoYouWatchNonePicked = { render: () => <Screen step="services" picked={[]} /> };
-/** 3 · Building your Plot: the cards deal in, then shuffle with each line. */
-export const Building = { render: () => <Screen step="building" ticking /> };
-/** 3 · Only one title picked: trending titles fill the fan. */
-export const BuildingOnePick = { render: () => <Screen step="building" selected={[-5]} ticking /> };
+/** 3 · Building your Plot: their picks land on a shelf, one after another. */
+export const Building = { render: () => <Screen step="building" /> };
+/** 3 · Only one title picked: trending titles fill the shelf. */
+export const BuildingOnePick = { render: () => <Screen step="building" selected={[-5]} /> };
