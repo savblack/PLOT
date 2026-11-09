@@ -17,6 +17,7 @@ import {
   IconMenu, IconClose, IconSearch, IconArrowUp, IconBell, IconSettings, NAV_ICONS,
 } from './navIcons.jsx';
 import PlotLogo from './PlotLogo.jsx';
+import PremiumMark from './PremiumMark.jsx';
 
 /* ── SVG Icons ───────────────────────── */
 /* Shared with AppSidebar — see ./navIcons.jsx. */
@@ -244,7 +245,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               >
                 {Icon && <Icon />}
                 <span className="nav-drawer-label">{label}</span>
-                {premium && !isPremiumProfile(profile) && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
+                {premium && !isPremiumProfile(profile) && <PremiumMark />}
               </button>
             );
           })}

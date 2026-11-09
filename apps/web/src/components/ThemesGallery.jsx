@@ -14,6 +14,7 @@ import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { ThemeMiniaturePair } from './ThemeMiniature.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import './ThemesGallery.css';
+import PremiumMark from './PremiumMark.jsx';
 
 const A = SETTINGS_VIEW.appearance;
 const G = A.gallery;
@@ -66,7 +67,7 @@ export default function ThemesGallery() {
                   <span className="themes-card-name">{name}</span>
                   {(inUse || !isPremium) && (
                     <span className={`themes-card-tag${inUse ? ' is-active' : ''}`}>
-                      {inUse ? G.inUse : premium ? G.premium : G.free}
+                      {inUse ? G.inUse : premium ? <PremiumMark /> : G.free}
                     </span>
                   )}
                 </span>

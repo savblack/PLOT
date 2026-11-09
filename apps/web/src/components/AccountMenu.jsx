@@ -14,20 +14,12 @@ import { IconSettings } from './navIcons.jsx';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import './AccountMenu.css';
+import PremiumMark from './PremiumMark.jsx';
 
 const A = SETTINGS_VIEW.appearance;
 const S = A.switcher;
 const SUPPORT_URL = 'https://ko-fi.com/J7P123TYGK';
 const ITEM_SELECTOR = '[role="menuitem"], [role="menuitemradio"]';
-
-function LockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="account-menu-lock">
-      <rect x="5" y="11" width="14" height="10" rx="2" />
-      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-    </svg>
-  );
-}
 
 function IconProfile() {
   return (
@@ -222,7 +214,7 @@ export default function AccountMenu({
                       onClick={() => pickFamily(id)}
                     >
                       <ThemeChip family={id} selected={family === id} />
-                      {locked && <LockIcon />}
+                      {locked && <PremiumMark className="account-menu-lock" />}
                     </button>
                   );
                 })}

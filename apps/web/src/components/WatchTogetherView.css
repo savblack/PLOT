@@ -24,16 +24,6 @@
 .wt-back { align-self: flex-start; font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-decoration: none; }
 .wt-back:hover { color: var(--text-primary); }
 
-/* Same quiet pink as the Premium marker in the nav (.app-nav-premium). */
-.wt-premium {
-  flex-shrink: 0;
-  padding: 3px 8px;
-  border-radius: var(--radius-badge);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  color: var(--accent-text);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
 .wt-kicker { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text); }
 .wt-chip {
   display: inline-flex;
