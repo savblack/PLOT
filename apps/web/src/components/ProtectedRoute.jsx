@@ -11,7 +11,7 @@ import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import { readCachedSession, clearCachedSession } from '../utils/sessionCache.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 
-export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
+export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [], quiet = false }) {
   const location = useLocation();
   const isPreview = isPreviewDeployment();
   const skip = skipOnboardingCheck || isPreview;
@@ -129,6 +129,8 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
   });
 
   if (decision === 'loading') {
+    // `quiet` routes (onboarding) show only the background while auth resolves.
+    if (quiet) return <div className="app-boot-loader" aria-busy="true" />;
     return (
       <div className="app-boot-loader">
         <PlotLoader />

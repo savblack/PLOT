@@ -4,7 +4,7 @@
  * profiles.streaming_providers by the one save behind the building moment.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { reportLoadFailure, FAILED_LOADS } from '@plot/core/actionFailures.js';
@@ -81,7 +81,8 @@ export default function Services() {
       {failed ? (
         <Text style={styles.region}>{F.services.loadError}</Text>
       ) : !list ? (
-        <ActivityIndicator color={colors.accent} style={{ minHeight: 200 }} />
+        // No loader in onboarding: hold the space until the services arrive.
+        <View style={{ minHeight: 200 }} accessibilityState={{ busy: true }} />
       ) : (
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.grid}>
