@@ -29,9 +29,11 @@ Nothing for Savannah to do except review the pull request.
 - `pnpm --filter @plot/mobile run typecheck`: pass
 - eslint on the screen: 7 warnings, same 7 as main
 - `node --test packages/core/tests/unit/*.test.js`, `pnpm run test:unit`: pass
-- `pnpm run check`: see PR
+- `pnpm run check`: pass (local)
 
 ## Next
 
-Open PR referencing #1477. Not run on a device or simulator yet.
+PR: https://github.com/savblack/PLOT/pull/1499 (open, not merged).
+Latest pushed commit: see branch. Watch CI. Not run on a device or simulator yet.
+Delete this file in the last commit before merge.
 Approvals needed: merge (Savannah).
