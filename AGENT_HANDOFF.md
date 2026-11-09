@@ -4,7 +4,7 @@ Status: paused (findings written; waiting on a Search Console look)
 Branch: agent/2026-11-09-search-traffic-drop (from origin/main)
 Worktree: ~/Developer/PLOT-worktrees/2026-11-09-search-traffic-drop
 Owner: Alix (SEO and traffic to signup)
-Updated: 2026-11-10
+Updated: 2026-11-10 (Pricing description fix added)
 
 ## In plain words
 
@@ -93,8 +93,11 @@ Read-outs:
 
 Small copy issues spotted (not traffic causes; for Alix):
 - About meta description says "Premium from US$2/month"; Pricing says "$3 a month".
-  One of them is wrong.
-- Pricing meta description starts "plot is free"; prose should be "Plot".
+  Savannah confirmed this is correct ($24/year works out to $2/month). No change.
+- Pricing meta description started "plot is free". Fixed on this branch
+  (2026-11-10): `apps/website/pricing.html` and its reference catalog
+  `apps/website/copy/plans.js` now say "Plot is free". `pnpm run check` passed.
+  Not merged; needs a PR and Savannah's OK to go live.
 
 ### 3. Outside causes
 
@@ -139,4 +142,4 @@ Small copy issues spotted (not traffic causes; for Alix):
 
 ## Checks
 
-No code changed. No PR. Handoff committed as a `[skip ci]` checkpoint.
+One copy fix (Pricing meta description casing), `pnpm run check` passed. Branch brought up to date with origin/main. No PR yet. Remove this file before merge.
