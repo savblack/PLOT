@@ -9,8 +9,8 @@
     "build-storybook": "storybook build"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "^10.6.3",
-    "@storybook/html-vite": "^10.6.3",
-    "storybook": "^10.6.3"
+    "@storybook/addon-docs": "^10.6.6",
+    "@storybook/html-vite": "^10.6.6",
+    "storybook": "^10.6.6"
   }
 }
