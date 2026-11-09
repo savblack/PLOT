@@ -2,9 +2,10 @@
 // no key hints. Fetching and merging stay in useUnifiedSearch.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, TextInput, FlatList, Image, Pressable, ScrollView,
+  View, Text, FlatList, Image, Pressable, ScrollView,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
+import { TextInput } from '../../components/TextInput';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';

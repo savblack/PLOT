@@ -1,7 +1,8 @@
 // Native renderer. The account settings, dates, filtering and loading lifecycle
 // are shared with web. FlatList virtualizes large broadcast schedules.
 import { useState } from 'react';
-import { View, Text, Pressable, FlatList, ScrollView, TextInput, Modal, Linking } from 'react-native';
+import { View, Text, Pressable, FlatList, ScrollView, Modal, Linking } from 'react-native';
+import { TextInput } from './TextInput';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppData } from '../contexts/AppDataContext';

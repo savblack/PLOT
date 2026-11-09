@@ -12,9 +12,10 @@
  */
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, Image, ScrollView,
+  View, Text, TouchableOpacity, FlatList, Image, ScrollView,
   StyleSheet, ActivityIndicator, Dimensions,
 } from 'react-native';
+import { TextInput } from '../../components/TextInput';
 import { useRouter } from 'expo-router';
 import Svg, { Line } from 'react-native-svg';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
@@ -347,11 +348,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border,
     marginBottom: spacing.sm,
   },
-  // letterSpacing: 0 is explicit on purpose. Fabric recycles native text fields on iOS,
-  // and UIKit keeps a kern the new style does not mention. Right after a code sign-in
-  // this field can reuse the auth screen's code input (letterSpacing 6), which spread
-  // the placeholder out as "S e a r c h".
-  searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: 14, letterSpacing: 0, color: colors.textPrimary },
+  searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: 14, color: colors.textPrimary },
   searchTrailing: { marginLeft: spacing.sm },
   switchRow:   { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, marginBottom: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   switchMarks: { flexDirection: 'row', gap: 4 },
