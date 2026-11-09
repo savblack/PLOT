@@ -7,7 +7,7 @@ import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { USERNAME_RE } from '@plot/core/profileFields.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { logoUrl } from '../utils/images.js';
 import { tmdb, setTmdbRegion } from '@plot/core/tmdb.js';
@@ -2271,8 +2271,8 @@ export default function SettingsView() {
       </div>
 
       <div className="settings-legal-links">
-        <a className="settings-text-action" href="/terms">{COMMON.termsOfService}<span aria-hidden="true">→</span></a>
-        <a className="settings-text-action" href="/privacy">{COMMON.privacyPolicy}<span aria-hidden="true">→</span></a>
+        <Link className="settings-text-action" to="/terms">{COMMON.termsOfService}<span aria-hidden="true">→</span></Link>
+        <Link className="settings-text-action" to="/privacy">{COMMON.privacyPolicy}<span aria-hidden="true">→</span></Link>
       </div>
         </>}
       </SettingsPage>
