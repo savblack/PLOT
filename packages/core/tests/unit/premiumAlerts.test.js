@@ -91,6 +91,10 @@ test('people and season-ready alerts are live Premium features; episode alerts a
   assert.doesNotMatch(faq, /planned for Free and are not available yet/);
   assert.match(faq, /whole-season-ready alerts are available with plot Premium/);
   assert.doesNotMatch(faq, /People alerts.*still planned/);
+  // Taste overlap is live for Premium, so deeper stats are not "planned".
+  assert.doesNotMatch(faq, /Deeper stats[^.]*planned/);
+  assert.match(faq, /taste overlap/);
+  assert.doesNotMatch(PLANS_PAGE.freeFeatures.find(f => f.id === 'statistics').description, /planned/);
 });
 
 test('streaming alerts on the watchlist are a live Free feature; push is Free and email is Premium, neither built yet', () => {
