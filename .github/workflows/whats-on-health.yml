@@ -1,0 +1,105 @@
+# Every 30 minutes, load theplot.tv/whats-on as a reader would and raise an
+# issue if it shows no articles.
+#
+# WHY: on 2026-11-06 the page served its empty state ("First update lands
+# soon.") for about an hour. A failed database read had been rendered as an
+# empty 200 and edge-cached (fixed in #1463). Status codes, deploy checks and
+# the database all looked fine, so nothing alerted; Savannah noticed by
+# looking. This judges the page by its content. See scripts/check-whats-on.mjs.
+#
+# It checks the page through Cloudflare's cache on purpose: that cached copy is
+# what readers get, and it is where the empty page stuck.
+#
+# The alarm stands itself down, like supabase-deploy-guard.yml: a broken page
+# opens (or comments on) one issue labelled whats-on-down, and the next healthy
+# run closes it. An alarm that cannot clear itself teaches people to ignore it.
+#
+# No secrets and no install step: the script uses Node built-ins only.
+
+name: What's On health
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'   # every 30 minutes, off the hour to avoid the top-of-hour queue
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: whats-on-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check What's On shows articles
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Load the page
+        id: page
+        run: node scripts/check-whats-on.mjs
+
+      - name: Raise an issue so a broken page cannot go unnoticed
+        if: failure() && steps.page.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REASON: ${{ steps.page.outputs.reason }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          label='whats-on-down'
+          gh label create "$label" \
+            --color 'b60205' \
+            --description 'theplot.tv/whats-on is not showing articles' \
+            2>/dev/null || true
+
+          body=$(
+            printf '%s\n' \
+              "[theplot.tv/whats-on](https://theplot.tv/whats-on) is not showing articles: ${REASON:-the check could not load it}." \
+              '' \
+              'It stayed that way across 3 attempts a minute apart, so this is not a single blip.' \
+              '' \
+              'First checks:' \
+              '- Call the backend directly, past the Cloudflare cache: `curl -s https://mkegtssedjyqldysvzga.supabase.co/functions/v1/marketing-feed -H "apikey: <publishable key>"`. Posters there but not on the site means a stale cached copy, which expires within the hour.' \
+              '- A 503 "briefly unavailable" page means a database read is failing (see #1463). Check Supabase status and the marketing-feed logs.' \
+              '- The empty state on a 200 means the read succeeded but found no visible posts. Check `marketing_posts` statuses and `scheduled_for`.' \
+              '' \
+              'This issue closes itself on the next healthy check.' \
+              '' \
+              "Raised by [What's On health]($RUN_URL)."
+          )
+
+          existing=$(gh issue list --state open --label "$label" --limit 1 --json number --jq '.[0].number // ""')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Still broken: ${REASON:-the check could not load it}. [Run]($RUN_URL)."
+          else
+            gh issue create \
+              --title "What's On is not showing articles" \
+              --label "$label" \
+              --body "$body"
+          fi
+
+      - name: Stand the alarm down once the page is healthy
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REASON: ${{ steps.page.outputs.reason }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          existing=$(gh issue list --state open --label 'whats-on-down' --limit 1 --json number --jq '.[0].number // ""')
+          [ -n "$existing" ] || exit 0
+
+          gh issue comment "$existing" --body "Recovered: the page is showing articles again (${REASON}). Closing so the next outage opens its own issue. [Run]($RUN_URL)."
+          gh issue close "$existing"
