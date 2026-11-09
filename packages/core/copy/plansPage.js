@@ -13,7 +13,8 @@
 export const PLANS_PAGE = {
   back: '← Back',
   backToApp: '← Back to plot',
-  eyebrow: 'plot Premium',
+  // Sans, uppercased by .plans-eyebrow: not the Gabarito wordmark, so it is prose casing.
+  eyebrow: 'Plot Premium',
   title: 'Less deciding. More watching.',
   lede: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch. Make more of the time you set aside for it.',
   pendingValidation: 'Pending validation',
@@ -279,7 +280,7 @@ export const PLANS_PAGE = {
     { q: 'How many lists are included in Free?', a: 'Free includes up to five custom lists.' },
     { q: 'Can I get a refund?', a: 'The 7-day free trial is there so you can try Premium before you pay, so charges after the trial aren’t refundable and we don’t refund partial months or years. Cancel anytime and keep Premium until the end of the period you’ve paid for. If you think you were charged by mistake, email support@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.' },
     { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
-    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Premium themes are available. Deeper stats have started with taste overlap, which is available with Premium now. Widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service. Streaming alerts for films on your watchlist are free and arrive in the app. Push notifications on your phone are planned for everyone, and email alerts are planned for Premium.' },
+    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with Plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with Plot Premium on the web. Premium themes are available. Deeper stats have started with taste overlap, which is available with Premium now. Widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service. Streaming alerts for films on your watchlist are free and arrive in the app. Push notifications on your phone are planned for everyone, and email alerts are planned for Premium.' },
   ],
   fineprint: 'Prices in US dollars, taxes included. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments are processed securely by Stripe. Need a hand? support@theplot.tv',
   terms: 'Terms',

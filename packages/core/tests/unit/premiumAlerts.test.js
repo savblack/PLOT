@@ -89,7 +89,7 @@ test('people and season-ready alerts are live Premium features; episode alerts a
   const faq = PLANS_PAGE.faqs.find(item => item.q === 'Are these alerts available now?').a;
   // The alerts answer covers what is live; Free's plans are in 'What happens to Free?'.
   assert.doesNotMatch(faq, /planned for Free and are not available yet/);
-  assert.match(faq, /whole-season-ready alerts are available with plot Premium/);
+  assert.match(faq, /whole-season-ready alerts are available with Plot Premium/);
   assert.doesNotMatch(faq, /People alerts.*still planned/);
   // Taste overlap is live for Premium, so deeper stats are not "planned".
   assert.doesNotMatch(faq, /Deeper stats[^.]*planned/);

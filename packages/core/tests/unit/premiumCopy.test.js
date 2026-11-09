@@ -111,7 +111,7 @@ test('public copy does not sell automatic Plex or Trakt sync as Premium', () => 
 
 test('live calendar subscription is a Premium benefit that exists', () => {
   const alerts = PLANS_PAGE.faqs.find(item => item.q === 'Are these alerts available now?');
-  assert.match(alerts.a, /Live calendar subscription is available with plot Premium/);
+  assert.match(alerts.a, /Live calendar subscription is available with Plot Premium/);
   assert.doesNotMatch(alerts.a, /planned Premium features/);
   assert.equal(SETTINGS_VIEW.billing.calendarComingSoon, undefined);
   assert.match(SETTINGS_VIEW.calendarFeed.needsPremiumMessage, /one-time snapshot/);

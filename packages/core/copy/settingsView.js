@@ -281,7 +281,7 @@ export const SETTINGS_VIEW = {
 
   premium: {
     groupTitle: 'plot Premium',
-    youHavePremium: 'You have plot Premium',
+    youHavePremium: 'You have Plot Premium',
     thankYou: 'Thank you for keeping plot running',
     opening: 'Opening…',
     manageSubscription: 'Manage subscription',
@@ -361,7 +361,7 @@ export const SETTINGS_VIEW = {
     groupTitle: 'Calendar',
     subscribeLabel: 'Subscribe to Calendar',
     needsPremium: 'A live calendar feed needs plot Premium',
-    needsPremiumMessage: 'Live calendar subscription is included with plot Premium. The one-time snapshot on this page stays free.',
+    needsPremiumMessage: 'Live calendar subscription is included with Plot Premium. The one-time snapshot on this page stays free.',
     liveFeedPrivate: 'Live feed of your watchlist',
     getUrlHint: 'Get a URL for Google or Apple Calendar',
     requestedCalendarSubscribeMessage: 'Requested access: Calendar subscribe',
