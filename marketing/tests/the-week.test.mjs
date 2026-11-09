@@ -420,3 +420,10 @@ test('a symlinked or hard-linked issue.md is refused rather than copied', () => 
   writeFileSync(join(dir, 'real.md'), 'draft');
   assert.equal(readDraft(join(dir, 'real.md')), 'draft');
 });
+
+test('a named pipe issue.md is refused without waiting for a writer', { timeout: 5000 }, () => {
+  const dir = mkdtempSync(join(tmpdir(), 'week-fifo-'));
+  const fifo = join(dir, 'issue.md');
+  assert.equal(spawnSync('mkfifo', [fifo]).status, 0);
+  assert.throws(() => readDraft(fifo), /not a regular file/);
+});

@@ -149,7 +149,9 @@ export function readDraft(path) {
   if (!existsSync(path)) throw new Error('The runner finished without writing issue.md.');
   let fd;
   try {
-    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    // O_NONBLOCK so a named pipe opens at once and fails the check below
+    // instead of waiting for a writer.
+    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   } catch {
     throw new Error('issue.md is not a regular file. Refusing to read it.');
   }
