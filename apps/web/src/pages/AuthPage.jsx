@@ -397,10 +397,10 @@ export default function AuthPage({ initialMode = 'signup' }) {
     const tokenForRequest = captchaTokenRef.current;
 
     if (submittedMode === 'forgot') {
-      const { error } = await supabase.auth.resetPasswordForEmail(submittedEmail, {
+      const { error } = await authRequest(supabase.auth.resetPasswordForEmail(submittedEmail, {
         redirectTo: getAuthCallbackUrl(),
         captchaToken: tokenForRequest,
-      });
+      }));
       if (!attemptIsCurrent(epoch)) return;
       if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
       else {
@@ -690,10 +690,15 @@ export default function AuthPage({ initialMode = 'signup' }) {
     if (!shouldMagicLinkViaBypass({ captchaRequired, captchaToken: token, plan })) {
       const supabase = await loadSupabase();
       if (!attemptIsCurrent(epoch)) return;
-      const { error } = await supabase.auth.signInWithOtp({
+      // A timeout or network error does not fall back to signup-bypass:
+      // gotrueMailOrCaptchaFailed only matches a captcha or mailer failure.
+      // The bypass function sits behind the same unreachable Supabase host,
+      // and a late GoTrue answer may still send this link, so a second
+      // email through Resend would only add a duplicate.
+      const { error } = await authRequest(supabase.auth.signInWithOtp({
         email: submittedEmail,
         options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: token },
-      });
+      }));
       if (!attemptIsCurrent(epoch)) return;
       if (!error) {
         setLoading(false);
@@ -755,11 +760,15 @@ export default function AuthPage({ initialMode = 'signup' }) {
     // failure, goes through signup-bypass so the inbox actually gets a link.
     if (!shouldResendViaBypass({ captchaRequired, captchaToken: token })) {
       const supabase = await loadSupabase();
-      const { error } = await supabase.auth.resend({
+      if (!attemptIsCurrent(epoch)) return;
+      // Same reasoning as the magic link: a timeout shows the error state
+      // rather than sending a second email through signup-bypass.
+      const { error } = await authRequest(supabase.auth.resend({
         type: 'signup',
         email,
         options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken: token },
-      });
+      }));
+      if (!attemptIsCurrent(epoch)) return;
       if (!error) { setResendStatus('sent'); return; }
       if (!shouldResendViaBypass({ captchaRequired, captchaToken: token, error })) {
         setResendStatus('error');
