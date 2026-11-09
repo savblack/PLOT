@@ -142,6 +142,11 @@ export const EVENTS = Object.freeze({
   EPISODE_WATCHED: 'episode_watched',
   SEASON_WATCHED: 'season_watched',
   SERIES_COMPLETED: 'series_completed',
+  // Episode search on the title panel (issue 1445): the person opened a matching
+  // episode, which takes them to it in its season. Fired from useEpisodeSearch
+  // via the onEpisodeSearch seam. Props: tmdb_id, season, episode, position,
+  // result_count, query_length, total_seasons. Never the query text.
+  EPISODE_SEARCH_RESULT_OPENED: 'episode_search_result_opened',
   WATCHING_STARTED: 'watching_started',
   WATCHING_STOPPED: 'watching_stopped',
   // Undo signals. A user unlogging a watch or clearing history is a real
