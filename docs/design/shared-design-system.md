@@ -71,7 +71,7 @@ rendered page is the visual contract; this file is the prose for what code can't
   — the rendered inventory. Served at **`http://localhost:5177/design-system`** in dev
   builds only; it is intentionally not shipped to production.
 - **Shared components:** [`PlotLogo.jsx`](../../apps/web/src/components/PlotLogo.jsx),
-  [`PlotLoader.jsx`](../../apps/web/src/components/PlotLoader.jsx).
+  [`PlotLoader.jsx`](../../packages/ui/PlotLoader.jsx).
 
 ## The two spending rules
 
