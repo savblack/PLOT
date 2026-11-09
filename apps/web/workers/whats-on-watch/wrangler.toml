@@ -1,0 +1,50 @@
+# Watches that theplot.tv/whats-on is showing articles, and emails when it is
+# not (and again when it recovers). See src/index.js for why this lives on
+# Cloudflare rather than only in .github/workflows/whats-on-health.yml.
+#
+# Deploy:
+#   cd apps/web/workers/whats-on-watch
+#   npx wrangler secret put RESEND_API_KEY     # same key backup-heartbeat uses
+#   npx wrangler secret put WATCH_TOKEN        # any long random string; gates the manual endpoint
+#   npx wrangler deploy
+#
+# Check it by hand (WATCH_TOKEN is in the main checkout's .env as WHATS_ON_WATCH_TOKEN):
+#   curl -H "x-watch-token: <token>" https://whats-on-watch.<subdomain>.workers.dev
+#   curl -H "x-watch-token: <token>" "https://whats-on-watch.<subdomain>.workers.dev?test-email=1"
+# Watch live runs:  npx wrangler tail
+
+name = "whats-on-watch"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+workers_dev = true
+
+# Every 30 minutes. Cloudflare cron fires on time, unlike GitHub's schedule.
+[triggers]
+crons = ["*/30 * * * *"]
+
+# Last known state, so an outage sends one email rather than one per run.
+# Namespace "whats-on-watch-state", created 2026-11-09.
+[[kv_namespaces]]
+binding = "STATE"
+id = "13a8486a4e484b98be75cb70ce238a76"
+
+[vars]
+URL = "https://theplot.tv/whats-on"
+
+# A bad read is retried before it counts: the 503 "briefly unavailable" page
+# clears on the next request by design. 3 attempts a minute apart.
+ATTEMPTS = "3"
+WAIT_SECONDS = "60"
+
+# While an outage lasts, remind every 6 hours rather than every run.
+REMIND_HOURS = "6"
+
+# If Cloudflare refuses every attempt for this long, say once that the watcher
+# is blind. Refusals are not an outage, but a blind watcher misses real ones.
+BLIND_HOURS = "12"
+
+# Same destination and sender as backup-heartbeat, for the same reasons (see
+# its wrangler.toml): the operator's own mailbox, no forwarding hop, and a
+# sender on the Resend-verified theplot.tv domain.
+ALERT_EMAIL = "sav.black@outlook.com"
+ALERT_FROM = "Plot <hello@theplot.tv>"
