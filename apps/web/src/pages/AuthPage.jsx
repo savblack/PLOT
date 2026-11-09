@@ -528,7 +528,16 @@ export default function AuthPage({ initialMode = 'signup' }) {
       const supabase = await withAuthTimeout(loadSupabase());
       // A late load is discarded by the rejection above. This catches an
       // attempt that another one (an email submit, say) replaced meanwhile.
-      if (!attemptIsCurrent(epoch)) { oauthStartingRef.current = false; return; }
+      // No redirect ever started, so drop this tap's method marker too, or a
+      // later email confirmation would be reported as this provider. Only if
+      // it is still ours: a magic link sent meanwhile writes its own.
+      if (!attemptIsCurrent(epoch)) {
+        oauthStartingRef.current = false;
+        try {
+          if (sessionStorage.getItem('plot_auth_method') === provider) sessionStorage.removeItem('plot_auth_method');
+        } catch { /* ignore */ }
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: { redirectTo: getAuthCallbackUrl() },
