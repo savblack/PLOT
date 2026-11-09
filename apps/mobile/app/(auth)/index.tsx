@@ -20,7 +20,7 @@ import { colors, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import Turnstile from '../../components/Turnstile';
 import { track, EVENTS } from '../../lib/analytics';
 import { authErrorReason } from '@plot/core/authErrors.js';
-import { CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, captchaSubmitPlan, shouldResetCaptcha } from '@plot/core/captchaGate.js';
+import { CAPTCHA_SUBMIT_ATTEMPTS, captchaRetryAfterWait, captchaSubmitPlan, captchaWaitOver, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { shouldMagicLinkViaBypass, shouldResendViaBypass } from '@plot/core/authBypass.js';
 import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -130,6 +130,7 @@ function ScrollingColumn({ paths, offset, duration }: { paths: string[]; offset:
 // screen takes the code. It replaces the old "Almost there!" alert.
 type Mode = 'signin' | 'signup' | 'forgot' | 'inbox';
 type InboxKind = 'signup' | 'magic';
+type CaptchaMode = 'signup' | 'login' | 'forgot' | 'magic';
 
 function GoogleIcon() {
   return (
@@ -211,6 +212,8 @@ export default function AuthScreen() {
   const captchaTokenRef = useRef<string | null>(null);
   const captchaBlockedRef = useRef(false);
   const captchaErroredRef = useRef(false);
+  // Cloudflare is showing its checkbox and waits for a tap.
+  const captchaInteractiveRef = useRef(false);
   const captchaErrorCountRef = useRef(0);
   // Form token, minimum form age, and the POSTs to signup-bypass, shared with
   // web AuthPage. client: 'app' makes the emailed link open this app.
@@ -229,6 +232,7 @@ export default function AuthScreen() {
   // like web. Sign-in and password reset have no bypass and stop.
   const refreshCaptcha = () => {
     captchaTokenRef.current = null;
+    captchaInteractiveRef.current = false;
     setCaptchaNonce((n) => n + 1);
   };
 
@@ -236,8 +240,13 @@ export default function AuthScreen() {
     captchaTokenRef.current = token;
   };
 
+  const handleCaptchaInteractive = () => {
+    captchaInteractiveRef.current = true;
+  };
+
   const handleCaptchaError = () => {
     captchaTokenRef.current = null;
+    captchaInteractiveRef.current = false;
     captchaBlockedRef.current = true;
     captchaErroredRef.current = true;
     // Same event web's widget fires on each failure during signup.
@@ -246,8 +255,9 @@ export default function AuthScreen() {
   };
 
   // One attempt. A widget error ends the wait early so the retry can run.
-  // A timeout does not: the challenge may still be in flight.
-  const waitForCaptchaAttempt = (ms: number) => {
+  // A timeout does not: the challenge may still be in flight. While the
+  // checkbox is on screen the wait is long enough for someone to tap it.
+  const waitForCaptchaAttempt = (authMode: CaptchaMode) => {
     const blockedAtStart = captchaBlockedRef.current;
     if (captchaTokenRef.current) return Promise.resolve(captchaTokenRef.current);
     return new Promise<string | null>((resolve) => {
@@ -255,7 +265,14 @@ export default function AuthScreen() {
       const id = setInterval(() => {
         const token = captchaTokenRef.current;
         const failedNow = captchaErroredRef.current || (captchaBlockedRef.current && !blockedAtStart);
-        if (token || failedNow || Date.now() - started >= ms) {
+        const over = captchaWaitOver({
+          token,
+          errored: failedNow,
+          interactive: captchaInteractiveRef.current,
+          mode: authMode,
+          elapsedMs: Date.now() - started,
+        });
+        if (over) {
           clearInterval(id);
           resolve(token);
         }
@@ -265,12 +282,13 @@ export default function AuthScreen() {
 
   const requestCaptcha = () => {
     captchaTokenRef.current = null;
+    captchaInteractiveRef.current = false;
     setCaptchaExecute((n) => n + 1);
   };
 
   // Token to send, or null when captcha is off. False when both attempts
   // finished without a token. Do not post that request to GoTrue.
-  const takeCaptchaToken = async (authMode: 'signup' | 'login' | 'forgot' | 'magic') => {
+  const takeCaptchaToken = async (authMode: CaptchaMode) => {
     if (!TURNSTILE_SITE_KEY) return null;
     // Keep a token that arrived after the previous submit stopped waiting.
     if (captchaTokenRef.current) return captchaTokenRef.current;
@@ -280,7 +298,7 @@ export default function AuthScreen() {
       // on screen. Only a widget error starts a fresh attempt.
       if (shouldResetCaptcha({ attempt, widgetErrored })) requestCaptcha();
       captchaErroredRef.current = false;
-      const token = await waitForCaptchaAttempt(CAPTCHA_TOKEN_WAIT_MS);
+      const token = await waitForCaptchaAttempt(authMode);
       widgetErrored = captchaErroredRef.current;
       const plan = captchaSubmitPlan({
         siteKey: TURNSTILE_SITE_KEY,
@@ -290,6 +308,7 @@ export default function AuthScreen() {
         waited: !token,
       });
       if (plan === 'ready') return token;
+      if (!captchaRetryAfterWait({ mode: authMode, errored: widgetErrored, interactive: captchaInteractiveRef.current })) break;
     }
     return false as const;
   };
@@ -902,6 +921,7 @@ export default function AuthScreen() {
                       siteKey={TURNSTILE_SITE_KEY}
                       onToken={handleCaptchaToken}
                       onError={handleCaptchaError}
+                      onInteractive={handleCaptchaInteractive}
                       resetSignal={captchaNonce}
                       executeSignal={captchaExecute}
                     />

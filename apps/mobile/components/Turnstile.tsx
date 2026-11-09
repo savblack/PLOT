@@ -14,6 +14,11 @@ export interface TurnstileProps {
   onToken: (token: string | null) => void;
   /** Widget error (script or challenge). Distinct from an expired token. */
   onError?: () => void;
+  /**
+   * Cloudflare is showing its "Verify you are human" checkbox and will not
+   * return a token until the person taps it.
+   */
+  onInteractive?: () => void;
   resetSignal?: number;
   /**
    * Bump to run the challenge. The widget does not run when the screen opens.
@@ -58,7 +63,10 @@ const html = (siteKey: string) => `<!DOCTYPE html><html><head>
         post({ type:'token', token:t });
       },
       'expired-callback': function(){ post({ type:'token', token:null }); },
-      'error-callback': function(){ post({ type:'error' }); }
+      'error-callback': function(){ post({ type:'error' }); },
+      // Fires when the invisible check escalates to the checkbox. The token
+      // now waits on a tap, so the screen must keep waiting for it.
+      'before-interactive-callback': function(){ post({ type:'interactive' }); }
     });
     if (window.__pending) window.__execute(window.__pending);
   }
@@ -82,6 +90,7 @@ export default function Turnstile({
   siteKey,
   onToken,
   onError,
+  onInteractive,
   resetSignal = 0,
   executeSignal = 0,
   baseUrl = 'https://app.theplot.tv',
@@ -130,7 +139,8 @@ export default function Turnstile({
             else if (m?.type === 'error') {
               onToken(null);
               onError?.();
-            } else if (m?.type === 'visible') setVisible(!!m.value);
+            } else if (m?.type === 'interactive') onInteractive?.();
+            else if (m?.type === 'visible') setVisible(!!m.value);
           } catch { /* ignore non-JSON messages */ }
         }}
         style={styles.webview}

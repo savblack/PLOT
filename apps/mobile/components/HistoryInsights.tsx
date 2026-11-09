@@ -18,9 +18,11 @@ import {
   movieMinutes, formatDuration, crowdComparison, crowdSentence, recurringPeople,
   yearSentence, topGenreId,
 } from '@plot/core/historyStats.js';
+import { DRILLDOWN_STATS, type Drilldown } from '@plot/core/historyDrilldown.js';
 import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
 import { HISTORY_VIEW as T } from '@plot/core/copy/historyView.js';
 import { SHARE_CARDS } from '@plot/core/copy/shareCards.js';
+import { APP_SHELL } from '@plot/core/copy/appShell.js';
 import ShareCardSheet from './share/ShareCardSheet';
 import type { ShareCardModel } from './share/ShareCardView';
 
@@ -56,10 +58,14 @@ function ShareIcon({ what, ready, onPress, colors }: {
 }
 
 export default function HistoryInsights({
-  sharePreset, onSharePresetUsed,
+  sharePreset, onSharePresetUsed, onDrilldown, drilldownLocked = false,
 }: {
   sharePreset?: string | null;
   onSharePresetUsed?: () => void;
+  /** Premium only: set, a stat row opens the titles behind it. Unset, the rows are text. */
+  onDrilldown?: (d: Drilldown) => void;
+  /** Free viewer: the rows look the same but carry a Premium marker, and onDrilldown opens the upgrade screen. */
+  drilldownLocked?: boolean;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -97,6 +103,7 @@ export default function HistoryInsights({
   const openId = picked || sharePreset || null;
 
   const wd = favouriteWeekday(yearEntries);
+  const topGenre = topGenreId(yearEntries);
   const mins = movieMinutes(yearEntries, details);
   const sentence = yearSentence({
     count: yearEntries.length,
@@ -131,10 +138,19 @@ export default function HistoryInsights({
             <ShareIcon what={yearTitle} ready={ready(CARD_IDS.HIGHLIGHTS)} colors={colors} onPress={() => openSheet(CARD_IDS.HIGHLIGHTS)} />
           )}
         </View>
-        <Stat label={T.titles} value={String(yearEntries.length)} styles={styles} />
+        <Stat label={T.titles} value={String(yearEntries.length)} styles={styles}
+          onPress={onDrilldown && yearEntries.length ? () => onDrilldown({ stat: DRILLDOWN_STATS.TITLES, year }) : undefined}
+          a11y={T.drilldownOpen(T.drilldownTitles(year))} locked={drilldownLocked} />
         <Stat label={T.watchingMovies} value={mins.counted ? formatDuration(mins.minutes) : '–'} styles={styles} />
-        <Stat label={T.yourNight} value={wd && wd.total >= 3 ? wd.name : '–'} styles={styles} last />
+        <Stat label={T.yourNight} value={wd && wd.total >= 3 ? wd.name : '–'} styles={styles} last
+          onPress={onDrilldown && wd && wd.total >= 3 ? () => onDrilldown({ stat: DRILLDOWN_STATS.WEEKDAY, year, weekday: wd.weekday }) : undefined}
+          a11y={wd ? T.drilldownOpen(T.drilldownWeekday(wd.name)) : undefined} locked={drilldownLocked} />
         {!!sentence && <Text style={styles.sentence}>{sentence}</Text>}
+        {onDrilldown && topGenre != null && !!genreName(topGenre) && (
+          <Pressable accessibilityRole="link" onPress={() => onDrilldown({ stat: DRILLDOWN_STATS.GENRE, year, genre: topGenre })}>
+            <Text style={styles.drillLink}>{T.drilldownOpen(T.drilldownGenre(genreName(topGenre) as string))}{drilldownLocked ? `  ${APP_SHELL.premium}` : ''}</Text>
+          </Pressable>
+        )}
       </View>
 
       {group && (
@@ -249,12 +265,21 @@ export default function HistoryInsights({
   );
 }
 
-function Stat({ label, value, last, styles }: { label: string; value: string; last?: boolean; styles: ReturnType<typeof makeStyles> }) {
-  return (
-    <View style={[styles.stat, last && styles.statLast]}>
+function Stat({ label, value, last, styles, onPress, a11y, locked }: {
+  label: string; value: string; last?: boolean; styles: ReturnType<typeof makeStyles>;
+  onPress?: () => void; a11y?: string; locked?: boolean;
+}) {
+  const body = (
+    <>
       <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
+      <Text style={styles.statLabel}>{label}{locked ? `  ${APP_SHELL.premium}` : ''}</Text>
+    </>
+  );
+  if (!onPress) return <View style={[styles.stat, last && styles.statLast]}>{body}</View>;
+  return (
+    <Pressable accessibilityRole="link" accessibilityLabel={a11y} onPress={onPress} style={[styles.stat, last && styles.statLast]}>
+      {body}
+    </Pressable>
   );
 }
 
@@ -360,6 +385,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   statValue: { fontFamily: fontFamily.display, fontSize: 20, letterSpacing: -0.6, color: colors.textPrimary },
   statLabel: { fontFamily: fontFamily.sans, fontSize: 12, color: colors.textMuted },
   sentence: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 21, color: colors.textSecondary },
+  drillLink: { fontFamily: fontFamily.sans, fontSize: 12, color: colors.textSecondary, textDecorationLine: 'underline' },
   monthNav: { flexDirection: 'row' },
   monthBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   monthChevron: { fontSize: 18, color: colors.textSecondary },

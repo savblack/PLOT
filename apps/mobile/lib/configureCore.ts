@@ -77,6 +77,7 @@ configure({
   // payload is already PII-free (codes and field names, never the message).
   onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
   onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
+  onEpisodeSearch: (payload) => track(EVENTS.EPISODE_SEARCH_RESULT_OPENED, payload),
   // The Tonight picker: one seam, four names, same shape as onWatchProgress.
   onTonightPicker: ({ action, ...props }) => {
     const name = {

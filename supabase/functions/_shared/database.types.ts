@@ -232,18 +232,21 @@ export type Database = {
       }
       critic_scores: {
         Row: {
+          awards: string | null
           critic_score: number | null
           fetched_at: string
           imdb_id: string
           source: string | null
         }
         Insert: {
+          awards?: string | null
           critic_score?: number | null
           fetched_at?: string
           imdb_id: string
           source?: string | null
         }
         Update: {
+          awards?: string | null
           critic_score?: number | null
           fetched_at?: string
           imdb_id?: string

@@ -106,6 +106,9 @@
  *   reportWatchTogether for the share button), plus collaborative list
  *   invites from useListInvites. Shapes only: never user ids, usernames,
  *   list ids or invite link keys.
+ * @property {(payload: { tmdb_id: number | null, season: number, episode: number, position: number, result_count: number, query_length: number, total_seasons: number }) => void} [onEpisodeSearch]
+ *   Analytics seam — fired from useEpisodeSearch when a person opens an
+ *   episode they found by title. Carries the query's length, never its text.
  * @property {(payload: { stage: 'selected' | 'started' | 'completed' | 'failed' | 'export_opened' | 'abandoned', source: string, count?: number, failed_count?: number, reason?: string, entry?: string }) => void} [onImport]
  *   Analytics seam — a history import's lifecycle, via reportImport in
  *   importPipeline.js. `reason` is an IMPORT_FAILURE_REASONS slug, never the
@@ -155,6 +158,7 @@ const defaults = {
   onReview: undefined,
   onTonightPicker: undefined,
   onWatchTogether: undefined,
+  onEpisodeSearch: undefined,
   onImport: undefined,
   onUndo: undefined,
 };
