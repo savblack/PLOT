@@ -28,11 +28,12 @@ Run 2026-11-03 with Savannah's OK (local production copy, torn down after):
 - Second-agent review (independent subagent): approve with changes. Fixed: ticks, jumps and start-watching no longer send the device clock as updated_at; only undo does. Migration comment corrected.
 - `pnpm run staging:watching-progress-trigger-test` (new, rolled back): REPRO against the live body, then 5/5 PASS (tick stamped server now(), undo keeps old time, future clamped, restart upsert stamped now(), other user blocked by RLS).
 - Web screenshots taken against Staging (local dev server, Staging test account via `pnpm run staging:session`). Menu items wrapped; fixed `.kebab-menu-panel` / `.kebab-menu-item` in app.css (max-content, nowrap). Sort choice persists across reload; fits at 375px.
-Pending: mobile screenshots. The simulator in use was removed mid-run and the remaining one was mid-sign-in for another test, so it was left alone. Chromatic is paused (quota), so the shared kebab CSS change has no visual diff yet.
+- Mobile screenshots taken 2026-11-10 on a dedicated simulator (deleted afterwards), signed in to the Staging test account; Savannah completed the Cloudflare check. Watching shows Neagley then The Bear; the ... menu shows the four sorts with Last watched ticked, no wrapping.
+Pending: Chromatic is paused (quota), so the shared kebab CSS change has no visual diff yet.
 
 ## Next
 
-Take mobile screenshots of My Lists > Watching > ... menu on a simulator signed in to Staging. Check Chromatic for the kebab menu change once its quota is back. Delete this file in the last commit before merge.
+Check Chromatic for the kebab menu change once its quota is back. Then delete this file, mark the PR ready, and Savannah decides on merge. Delete this file in the last commit before merge.
 
 ## Approvals
 
