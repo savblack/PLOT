@@ -24,6 +24,7 @@ import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import './TonightView.css';
 import PlotLogo from './PlotLogo.jsx';
+import { SaveButton, FavoriteButton } from './TitleActions.jsx';
 
 /* Just Decide. Phone: one column, a Filters panel that folds away, and a
    sticky bar with the sentence and Pick. Desktop (>=1024px): the same 264px
@@ -480,35 +481,20 @@ function Chips({ item }) {
 function FavSave({ item, actions, variant }) {
   if (!actions) return null;
   const { watchlist, favorites, favWords } = actions;
-  const type = item.media_type || 'movie';
-  const fav = favorites.isFavorite(item.id);
-  const saved = watchlist.isInList(item.id);
-  const toggleFav = (e) => { e.stopPropagation(); favorites.toggleFavorite({ ...item, media_type: type }); };
-  const toggleSave = (e) => { e.stopPropagation(); watchlist.toggle({ ...item, media_type: type }, { source: 'tonight' }); };
-  const icon = (d, on) => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
-  );
+  const typed = { ...item, media_type: item.media_type || 'movie' };
   if (variant === 'hero') {
     return (
       <div className="discover-hero-corner-btns">
-        {FAVOURITES_ENABLED && <button type="button" className={`discover-hero-corner-btn${fav ? ' active' : ''}`} style={{ top: 10, left: 10 }} onClick={toggleFav} aria-label={fav ? favWords.un : favWords.noun}>{icon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', fav)}</button>}
-        <button type="button" className={`discover-hero-corner-btn${saved ? ' active' : ''}`} style={{ top: 10, right: 10 }} onClick={toggleSave} disabled={watchlist.loading} aria-label={saved ? MEDIA.removeFromList : MEDIA.addToList}>{icon('M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z', saved)}</button>
+        <FavoriteButton variant="hero" item={typed} favorites={favorites} favWords={favWords} style={{ top: 10, left: 10 }} />
+        <SaveButton variant="hero" item={typed} watchlist={watchlist} source="tonight" style={{ top: 10, right: 10 }} />
       </div>
     );
   }
   // Cards: Home's chart-row buttons on the right, revealed on hover.
   return (
     <span className="tonight-card-actions search-row-actions">
-      {FAVOURITES_ENABLED && (
-        <button type="button" className={`search-action-btn search-action-btn--heart${fav ? ' active' : ''}`} onClick={toggleFav}
-          data-tip={fav ? `Remove ${favWords.nounLower}` : favWords.noun} aria-label={fav ? `Remove ${item.title} from ${favWords.pluralLower}` : `Add ${item.title} to ${favWords.pluralLower}`}>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" fill={fav ? 'currentColor' : 'none'} /></svg>
-        </button>
-      )}
-      <button type="button" className={`search-action-btn${saved ? ' active' : ''}`} onClick={toggleSave} disabled={watchlist.loading}
-        data-tip={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist} aria-label={saved ? `Remove ${item.title} from list` : `Add ${item.title} to list`}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z" fill={saved ? 'currentColor' : 'none'} /></svg>
-      </button>
+      <FavoriteButton variant="row" item={typed} favorites={favorites} favWords={favWords} />
+      <SaveButton variant="row" item={typed} watchlist={watchlist} source="tonight" />
     </span>
   );
 }

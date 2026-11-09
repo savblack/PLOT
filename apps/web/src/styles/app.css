@@ -3219,7 +3219,10 @@ svg { stroke-width: 1.5; }
 .mylists-card-action--bookmark { right: 7px; }
 .mylists-card-action svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 3px rgba(0,0,0,.75)); }
 .mylists-card:hover .mylists-card-action, .mylists-card:focus-within .mylists-card-action, .mylists-card-action.active { opacity: 1; }
-.mylists-card-action.active { color: var(--accent); }
+/* Saved is the solid glyph, in the same white as the outline (design audit
+   pick 2.1: quiet, outline then solid). Only the favourite heart takes the
+   accent, which is one of its approved roles. */
+.mylists-card-action--favorite.active { color: var(--accent); }
 .mylists-card-action:hover { transform: scale(1.1); }
 .mylists-card-indicators { width: 100%; aspect-ratio: 2/3; }
 .mylists-card-indicator {
@@ -4260,7 +4263,9 @@ svg { stroke-width: 1.5; }
 .panel-pill:disabled { opacity: 0.7; cursor: default; }
 .panel-pill--primary { background: var(--accent-fill); color: var(--on-accent-fill); }
 .panel-pill--primary:hover { background: var(--accent-fill-hover); }
-.panel-pill--saved { background: var(--status-watched-dim); color: var(--status-watched); }
+/* In the watchlist: the neutral pill with the solid bookmark. Saved is shown
+   by the filled glyph, not by a colour (design audit pick 2.1). */
+.panel-pill--saved { background: var(--surface-sunken); color: var(--text-primary); }
 .panel-pill--watching { background: var(--status-watching-dim); color: var(--status-watching); }
 .panel-pill--watched { background: var(--status-watched-dim); color: var(--status-watched); }
 .panel-pill-label { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -4851,8 +4856,10 @@ a.provider-chip--link:hover {
   color: var(--text-primary);
   background: transparent;
 }
+/* The watchlist bookmark beside a row: solid when saved, in the text colour.
+   The heart below keeps the accent. */
 .search-action-btn.active {
-  color: var(--accent);
+  color: var(--text-primary);
   background: transparent;
 }
 .search-action-btn--heart.active {
@@ -6277,6 +6284,9 @@ a.provider-chip--link:hover {
   gap: 0.6rem;
 }
 .discover-hero-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.4rem 1rem;
   border: none;
   border-radius: 999px;
