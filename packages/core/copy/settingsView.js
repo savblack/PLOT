@@ -255,7 +255,7 @@ export const SETTINGS_VIEW = {
       ink: 'Ink',
     },
     lockedTheme: (name) => `${name} (Premium)`,
-    // Opens the Themes gallery (/settings/themes) from the Settings row. Premium only.
+    // Opens the Themes gallery (/settings/themes) from the Settings row, for everyone.
     preview: 'Preview',
     previewLabel: 'Preview every theme',
     // The Themes gallery page.
