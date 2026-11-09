@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, symlinkSync, realpathSync } from 'node:fs';
+import { linkSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, symlinkSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -410,11 +410,13 @@ test('the draft sandbox denies the directory a symlinked .env resolves to', () =
   assert.deepEqual(draftBlockedPaths(main), [main]);
 });
 
-test('a symlinked issue.md is refused rather than copied', () => {
+test('a symlinked or hard-linked issue.md is refused rather than copied', () => {
   const dir = mkdtempSync(join(tmpdir(), 'week-draft-'));
   writeFileSync(join(dir, 'outside.md'), 'not the draft');
   symlinkSync(join(dir, 'outside.md'), join(dir, 'issue.md'));
   assert.throws(() => readDraft(join(dir, 'issue.md')), /not a regular file/);
+  linkSync(join(dir, 'outside.md'), join(dir, 'hard.md'));
+  assert.throws(() => readDraft(join(dir, 'hard.md')), /not a regular file/);
   writeFileSync(join(dir, 'real.md'), 'draft');
   assert.equal(readDraft(join(dir, 'real.md')), 'draft');
 });

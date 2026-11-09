@@ -2,7 +2,7 @@
 // What's On. The model writes the letter. render-issue.mjs then checks it
 // and emits the Substack post and the email preview. Nothing is sent.
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, lstatSync, realpathSync } from 'node:fs';
+import { closeSync, constants, copyFileSync, fstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -141,13 +141,25 @@ export function draftBlockedPaths(root = repoRoot()) {
   return blocked;
 }
 
-// The runner could leave issue.md as a symlink to a file it cannot read
-// itself. Only a regular file is accepted, so this process never copies
-// something outside the draft directory into the repo.
+// The runner could leave issue.md as a symlink or a hard link to a file it
+// cannot read itself. Open it once without following links, check that
+// descriptor, and read from it, so a swap between the check and the read
+// cannot point this process somewhere else.
 export function readDraft(path) {
   if (!existsSync(path)) throw new Error('The runner finished without writing issue.md.');
-  if (!lstatSync(path).isFile()) throw new Error('issue.md is not a regular file. Refusing to read it.');
-  return readFileSync(path, 'utf8');
+  let fd;
+  try {
+    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+  } catch {
+    throw new Error('issue.md is not a regular file. Refusing to read it.');
+  }
+  try {
+    const stat = fstatSync(fd);
+    if (!stat.isFile() || stat.nlink !== 1) throw new Error('issue.md is not a regular file. Refusing to read it.');
+    return readFileSync(fd, 'utf8');
+  } finally {
+    closeSync(fd);
+  }
 }
 
 export async function writeIssue({ date = issueDate(), runner } = {}) {
