@@ -24,11 +24,15 @@ Run 2026-11-03 with Savannah's OK (local production copy, torn down after):
 - `db:function-diff`: only `update_watching_progress_updated_at` changes; the one removed line is the unconditional `now()`, now inside the condition. search_path kept.
 - `db:drift`: FAILS on pre-existing drift, none from this branch. Our version 20261110120000 is not taken on either project. Production never recorded 20261102120000 (main, merged 2026-11-02); production has 20261025102415 with no file on main; Staging is 4 behind and differs in objects.
 - 2026-11-10: `.env`'s `SUPABASE_DB_URL` is now a valid pooler connection string; DB scripts run as-is. Branch merged with main (31 commits) and the migration renamed 20261103120000 -> 20261110120000, because production had already applied 20261103130000 and an older-than-latest version risks being skipped on merge.
-Pending: second-agent read of the migration, screenshots, a Staging test for the trigger.
+2026-11-10 follow-up:
+- Second-agent review (independent subagent): approve with changes. Fixed: ticks, jumps and start-watching no longer send the device clock as updated_at; only undo does. Migration comment corrected.
+- `pnpm run staging:watching-progress-trigger-test` (new, rolled back): REPRO against the live body, then 5/5 PASS (tick stamped server now(), undo keeps old time, future clamped, restart upsert stamped now(), other user blocked by RLS).
+- Web screenshots taken against Staging (local dev server, Staging test account via `pnpm run staging:session`). Menu items wrapped; fixed `.kebab-menu-panel` / `.kebab-menu-item` in app.css (max-content, nowrap). Sort choice persists across reload; fits at 375px.
+Pending: mobile screenshots. The simulator in use was removed mid-run and the remaining one was mid-sign-in for another test, so it was left alone. Chromatic is paused (quota), so the shared kebab CSS change has no visual diff yet.
 
 ## Next
 
-A different agent reads the migration diff. Fix the 20261102120000 production apply separately before or alongside merge. Delete this file in the last commit before merge.
+Take mobile screenshots of My Lists > Watching > ... menu on a simulator signed in to Staging. Check Chromatic for the kebab menu change once its quota is back. Delete this file in the last commit before merge.
 
 ## Approvals
 
