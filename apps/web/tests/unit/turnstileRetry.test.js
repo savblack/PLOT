@@ -62,7 +62,7 @@ test('repeating the same signal does not reset an in-progress challenge', () => 
 });
 
 // Execute the actual form's wait policy without mounting the whole auth page.
-function webSubmit({ token = null, firstError = false, interactive = false } = {}) {
+function webSubmit({ token = null, firstError = false, interactive = false, erroredBeforeSubmit = false } = {}) {
   const source = readFileSync(new URL('../../src/pages/AuthPage.jsx', import.meta.url), 'utf8');
   const body = source.slice(source.indexOf('  const resolveCaptchaPlan = async'), source.indexOf('  // A pricing visitor'));
   let requests = 0;
@@ -70,7 +70,7 @@ function webSubmit({ token = null, firstError = false, interactive = false } = {
   const deps = {
     TURNSTILE_SITE_KEY: 'test-site', CAPTCHA_SUBMIT_ATTEMPTS,
     captchaRetryAfterWait, captchaSubmitPlan, shouldResetCaptcha,
-    captchaTokenRef: { current: token }, captchaBlockedRef: { current: false }, captchaErroredRef: { current: false },
+    captchaTokenRef: { current: token }, captchaBlockedRef: { current: false }, captchaErroredRef: { current: erroredBeforeSubmit },
     captchaInteractiveRef: { current: false },
     requestCaptcha: () => { requests++; deps.captchaTokenRef.current = null; deps.captchaInteractiveRef.current = false; },
     waitForCaptchaAttempt: async () => {
@@ -94,14 +94,15 @@ test('a late token is used on the next submit without clearing or resetting it',
 test('sign-in waits once on the same challenge, then stops without resetting it', async () => {
   const form = webSubmit();
   assert.equal(await form.submit('login'), 'unavailable');
-  assert.equal(form.requests, 1);
+  // The widget started its check on load. Submit keeps waiting on it.
+  assert.equal(form.requests, 0);
   assert.equal(form.waits, 1);
 });
 
 test('signup keeps its two short waits before signup-bypass', async () => {
   const form = webSubmit();
   assert.equal(await form.submit('signup'), 'bypass');
-  assert.equal(form.requests, 1);
+  assert.equal(form.requests, 0);
   assert.equal(form.waits, 2);
 });
 
@@ -114,7 +115,13 @@ test('an untapped checkbox is not waited on a second time', async () => {
 test('a widget error permits a fresh challenge within the same submit', async () => {
   const form = webSubmit({ firstError: true });
   assert.equal(await form.submit('login'), 'unavailable');
-  assert.equal(form.requests, 2);
+  assert.equal(form.requests, 1);
+});
+
+test('a widget that errored before the click gets a fresh challenge on the first attempt', async () => {
+  const form = webSubmit({ erroredBeforeSubmit: true });
+  assert.equal(await form.submit('login'), 'unavailable');
+  assert.equal(form.requests, 1);
 });
 
 // The page's real wait loop, run against a fake clock.

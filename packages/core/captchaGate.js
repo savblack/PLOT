@@ -32,14 +32,16 @@ export const CAPTCHA_SUBMIT_ATTEMPTS = 2;
 
 /**
  * Whether this attempt should call turnstile.reset() before waiting.
- * The first attempt starts the challenge. A later attempt resets only
- * after the widget reported an error.
+ * With a widget that waits for execute() (mobile), the first attempt starts
+ * the challenge. A widget that runs as soon as it renders (web) is already
+ * running one, possibly an untapped checkbox, so its first attempt resets
+ * only after an error, like every later attempt.
  *
- * @param {{ attempt: number, widgetErrored?: boolean }} opts
+ * @param {{ attempt: number, widgetErrored?: boolean, runsOnLoad?: boolean }} opts
  * @returns {boolean}
  */
-export function shouldResetCaptcha({ attempt, widgetErrored = false }) {
-  if (attempt <= 1) return true;
+export function shouldResetCaptcha({ attempt, widgetErrored = false, runsOnLoad = false }) {
+  if (attempt <= 1 && !runsOnLoad) return true;
   return Boolean(widgetErrored);
 }
 
@@ -129,4 +131,70 @@ export function captchaSubmitPlan({ siteKey, token, mode, blocked = false, waite
   if (mode === 'signup' && (blocked || waited)) return 'bypass';
   if (waited) return 'unavailable';
   return 'wait';
+}
+
+/**
+ * Whether a hostname is a local dev server or a per-branch Cloudflare
+ * Pages preview (`*.plot-5wr.pages.dev`), rather than a production host.
+ * Takes the hostname as an argument so core never reads `window`.
+ *
+ * @param {string | null | undefined} hostname
+ * @returns {boolean}
+ */
+export function isPreviewHostname(hostname) {
+  if (!hostname) return false;
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.plot-5wr.pages.dev')
+  );
+}
+
+/**
+ * The Turnstile site key a page should use on this host, or undefined to
+ * leave the widget off.
+ *
+ * Preview hosts skip Turnstile. They sign in against PLOT Staging, which
+ * does not enforce captcha, and the production site key is not valid on
+ * localhost or a pages.dev host, so the widget could only fail there and
+ * block sign-in. Production hosts always keep it. Supabase checks the token
+ * on the server, so leaving the widget off never weakens a project that
+ * enforces captcha: that project still refuses a request without a token.
+ *
+ * @param {object} opts
+ * @param {string | null | undefined} opts.siteKey Configured site key.
+ * @param {string | null | undefined} opts.hostname Current page hostname.
+ * @param {boolean} [opts.forceOnPreview] Keep the widget on a preview host,
+ *   for testing Turnstile itself (pair it with a Cloudflare test site key).
+ * @returns {string | undefined}
+ */
+export function captchaSiteKeyForHost({ siteKey, hostname, forceOnPreview = false }) {
+  if (!siteKey) return undefined;
+  if (isPreviewHostname(hostname) && !forceOnPreview) return undefined;
+  return siteKey;
+}
+
+/**
+ * Whether the auth form's submit button can be pressed yet.
+ *
+ * The widget starts its check as soon as the form is on screen, so the
+ * button waits for the token instead of starting the check on click. It
+ * does not wait forever: once captchaWaitOver says this wait is over (the
+ * widget errored, or the wait limit for this mode passed), the button
+ * turns on and the submit path takes over with its retry and fallback.
+ * That keeps the 2026-10 failure mode (a grey button that never turns on)
+ * from coming back.
+ *
+ * @param {object} opts
+ * @param {string | null | undefined} opts.siteKey Falsy means captcha is off.
+ * @param {string | null | undefined} opts.token Current Turnstile token.
+ * @param {boolean} [opts.errored] The widget reported an error.
+ * @param {boolean} [opts.interactive] Cloudflare is showing its checkbox.
+ * @param {'signup'|'login'|'forgot'|'magic'} opts.mode
+ * @param {number} opts.elapsedMs Time since the page started waiting for this token.
+ * @returns {boolean}
+ */
+export function captchaSubmitEnabled({ siteKey, token, errored = false, interactive = false, mode, elapsedMs }) {
+  if (!siteKey) return true;
+  return captchaWaitOver({ token, errored, interactive, mode, elapsedMs });
 }

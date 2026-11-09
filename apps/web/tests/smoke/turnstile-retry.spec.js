@@ -8,6 +8,8 @@ test('the actual web widget can retry after the previous submit stopped waiting'
   await expect(page.getByLabel('Captcha token')).toHaveText('Waiting for verification');
   await page.getByRole('button', { name: 'Submit auth attempt' }).click();
   await expect(page.getByLabel('Captcha token')).toHaveText('retry-token');
+  // The widget runs on render; a retry is reset() alone, never execute().
+  expect(await page.evaluate(() => window.__turnstileCalls)).toEqual({ execute: 0, execution: 'render' });
   expect(errors).toEqual([]);
 });
 

@@ -43,9 +43,9 @@ const PERSISTENT_FAILURE_THRESHOLD = 1;
  * @param {object}   props
  * @param {string}   [props.siteKey]    Turnstile site key; when falsy the widget is not rendered.
  * @param {Function} props.onToken      Called with the token string on success, or null on expiry/error/reset.
- * @param {number}   [props.resetSignal] Bump this number to drop the current token without running a new challenge.
- * @param {number}   [props.executeSignal] Bump this number to run the challenge. The widget
- *                                      does not run on load. reset() alone does not re-run it.
+ * @param {number}   [props.resetSignal] Bump this number to drop the used token and fetch a fresh one.
+ * @param {number}   [props.executeSignal] Bump this number to run a fresh challenge now. The widget
+ *                                      also runs on load, so this is only for retries.
  * @param {Function} [props.onInteractive] Called when Cloudflare escalates to its "Verify you are
  *                                      human" checkbox. No token arrives until the person taps it.
  * @param {Function} [props.onBlocked]  Called with the 1-based attempt number each time the
@@ -92,11 +92,12 @@ export default function Turnstile({
       const signal = executeSignalRef.current;
       if (!signal || lastExecutedRef.current === signal) return;
       const id = widgetIdRef.current;
-      if (!id || !window.turnstile?.execute) return;
+      if (!id || !window.turnstile?.reset) return;
       lastExecutedRef.current = signal;
-      try { window.turnstile.reset(id); } catch { /* widget already gone */ }
+      // The widget renders with execution "render", so reset() alone starts
+      // a fresh challenge. Calling execute() on top would ask twice.
       onTokenRef.current?.(null);
-      try { window.turnstile.execute(id); } catch { /* widget already gone */ }
+      try { window.turnstile.reset(id); } catch { /* widget already gone */ }
     };
   }, []);
 
@@ -119,10 +120,16 @@ export default function Turnstile({
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
           // Hidden unless a challenge genuinely needs interaction. The
-          // challenge itself waits for execute(), so opening the form does
-          // not start a token that can expire before the person submits.
+          // challenge starts as soon as the form is on screen, so a token is
+          // usually ready before anyone presses the button. (Until 2026-11 it
+          // waited for execute() on submit, which made people verify, fail,
+          // and go round again.) Tokens last five minutes. When one expires,
+          // Cloudflare fetches the next one itself ("refresh-expired: auto"),
+          // once per expiry, so there is no refresh loop to manage here.
           appearance: 'interaction-only',
-          execution: 'execute',
+          execution: 'render',
+          'refresh-expired': 'auto',
+          'refresh-timeout': 'auto',
           retry: 'never',
           callback: (token) => {
             onTokenRef.current?.(token);
@@ -148,7 +155,8 @@ export default function Turnstile({
   }, [siteKey, retryNonce]);
 
   // Reset to a fresh token when asked (tokens are single-use). With
-  // execution "execute", reset does not start the next challenge.
+  // execution "render", reset also starts the next challenge, so the next
+  // attempt has a token waiting.
   useEffect(() => {
     if (!resetSignal || !widgetIdRef.current || !window.turnstile) return;
     try { window.turnstile.reset(widgetIdRef.current); } catch { /* widget already gone */ }
