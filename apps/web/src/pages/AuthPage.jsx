@@ -519,13 +519,20 @@ export default function AuthPage({ initialMode = 'signup' }) {
     };
 
     try {
-      const { error } = await withAuthTimeout((async () => {
-        const supabase = await loadSupabase();
-        return supabase.auth.signInWithOAuth({
-          provider,
-          options: { redirectTo: getAuthCallbackUrl() },
-        });
-      })());
+      // Only the client load is time-limited. signInWithOAuth writes the PKCE
+      // verifier and calls location.assign, and a timeout cannot cancel that:
+      // racing it would let a late completion yank the tab to the provider
+      // after the person had already seen the error and moved on. It makes no
+      // network request, so once the client is here it finishes promptly, and
+      // the stall timer below covers a navigation that never arrives.
+      const supabase = await withAuthTimeout(loadSupabase());
+      // A late load is discarded by the rejection above. This catches an
+      // attempt that another one (an email submit, say) replaced meanwhile.
+      if (!attemptIsCurrent(epoch)) { oauthStartingRef.current = false; return; }
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: getAuthCallbackUrl() },
+      });
       if (error) { abandon(error); return; }
       // No error means the browser was told to leave for the provider. If the
       // provider never loads (Supabase unreachable from this network), the
