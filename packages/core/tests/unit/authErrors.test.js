@@ -73,3 +73,14 @@ test('authErrorReason never echoes an unrecognised provider message back as a sl
   // become an analytics property. Collapsing to 'unknown' is the guarantee.
   assert.equal(authErrorReason('Google says: consent required for scope xyz'), 'unknown');
 });
+
+test('authErrorReason maps every fetch-failure wording to network, including React Native', () => {
+  assert.equal(authErrorReason('Failed to fetch'), 'network');                                  // Chrome
+  assert.equal(authErrorReason('NetworkError when attempting to fetch resource.'), 'network'); // Firefox
+  assert.equal(authErrorReason('Load failed'), 'network');                                      // Safari
+  assert.equal(authErrorReason('Network request failed'), 'network');                           // React Native
+});
+
+test("authErrorReason maps withAuthTimeout's sentinel to timeout", () => {
+  assert.equal(authErrorReason('auth-timeout'), 'timeout');
+});

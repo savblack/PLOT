@@ -21,6 +21,7 @@ import { colors, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import Turnstile from '../../components/Turnstile';
 import { track, EVENTS } from '../../lib/analytics';
 import { authErrorReason } from '@plot/core/authErrors.js';
+import { AUTH_TIMEOUT_MESSAGE, withAuthTimeout } from '@plot/core/authTimeout.js';
 import { CAPTCHA_SUBMIT_ATTEMPTS, captchaRetryAfterWait, captchaSubmitPlan, captchaWaitOver, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { shouldMagicLinkViaBypass, shouldResendViaBypass } from '@plot/core/authBypass.js';
 import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
@@ -189,7 +190,34 @@ function friendlyAuthError(msg?: string) {
   if (msg.includes('Anonymous sign-ins are disabled'))  return AUTH_PAGE.weakPassword;
   if (msg.includes('Unable to validate email'))    return AUTH_PAGE.invalidEmail;
   if (msg.includes('rate limit') || msg.includes('too many')) return AUTH_PAGE.rateLimited;
+  // A timeout or a request that never reached Supabase. The raw text
+  // ("Network request failed") told people nothing about what to do.
+  if (isConnectionFailure(msg)) return AUTH_PAGE.connectionFailed;
   return msg;
+}
+
+// We stopped waiting (withAuthTimeout), or the phone never reached Supabase.
+function isConnectionFailure(msg?: string) {
+  const reason = authErrorReason(msg);
+  return reason === 'timeout' || reason === 'network';
+}
+
+// Run a Supabase Auth request under the shared time limit and always come back
+// as `{ error }`, so a hang or a thrown network error takes the caller's
+// existing error path instead of leaving the button spinning. Mirrors web
+// AuthPage's authRequest. The request itself is not cancelled (supabase-js
+// takes no AbortSignal here): a late success still stores the session and
+// signs the person in, and a late signup still sends its email, which a retry
+// then reports as an existing account.
+async function authRequest<R extends { error: { message: string } | null }>(
+  request: Promise<R>,
+): Promise<R | { data: null; error: { message: string } }> {
+  try {
+    return await withAuthTimeout(request);
+  } catch (e) {
+    const message = e instanceof Error && e.message ? e.message : AUTH_TIMEOUT_MESSAGE;
+    return { data: null, error: { message } };
+  }
 }
 
 export default function AuthScreen() {
@@ -411,9 +439,9 @@ export default function AuthScreen() {
       Alert.alert(AUTH_PAGE.verificationUnavailable);
       return;
     }
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await authRequest(supabase.auth.signInWithPassword({
       email: email.trim(), password, options: { captchaToken: captchaToken ?? undefined },
-    });
+    }));
     setLoading(false);
     refreshCaptcha();
     if (!error) track(EVENTS.USER_LOGGED_IN, { method: 'password' });
@@ -545,11 +573,11 @@ export default function AuthScreen() {
       await signUpViaBypass(isCurrent);
       return;
     }
-    const { error } = await supabase.auth.signUp({
+    const { error } = await authRequest(supabase.auth.signUp({
       email: email.trim(), password,
       // The confirmation link opens the app (see AUTH_APP_CALLBACK).
       options: { emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
-    });
+    }));
     setLoading(false);
     refreshCaptcha();
     if (error) {
@@ -649,22 +677,37 @@ export default function AuthScreen() {
   // fragment, and the session is set from those. Mirrors web's beginOAuth,
   // including the synchronous re-entry latch (a double tap used to leave two
   // /authorize calls behind there).
+  //
+  // The latch is a ref because googleLoading is state: a fast double tap can
+  // pass a state check twice before React re-renders. It releases in finally,
+  // so every path below must settle. The Supabase calls are time-limited for
+  // that reason. The in-app browser is not: it is a system sheet with its own
+  // Cancel / Close, and openAuthSessionAsync resolves when the person leaves
+  // it (iOS reports cancel, Android reports dismiss when the app is active
+  // again). While it is open a sign-in is genuinely under way, so releasing
+  // the latch on a timer would allow the second start the latch prevents.
+  const googleStartingRef = useRef(false);
   const handleGoogleSignIn = async () => {
-    if (googleLoading) return;
+    if (googleStartingRef.current) return;
+    googleStartingRef.current = true;
     noteSignupStarted();
     setGoogleLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // skipBrowserRedirect with the default implicit flow only builds the URL,
+      // so a late answer after a timeout has nothing to undo.
+      const { data, error } = await withAuthTimeout(supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: AUTH_APP_CALLBACK, skipBrowserRedirect: true },
-      });
+      }));
       if (error) throw error;
       if (!data.url) throw new Error('Google sign-in returned no URL');
       const result = await WebBrowser.openAuthSessionAsync(data.url, AUTH_APP_CALLBACK);
       if (result.type !== 'success') return; // cancelled or dismissed
       const tokens = sessionFromRedirect(result.url);
       if (!tokens) throw new Error('Google sign-in returned no session');
-      const { data: set, error: setError } = await supabase.auth.setSession(tokens);
+      // setSession asks Supabase for the user, which can hang with no
+      // connection. A late success still signs the person in.
+      const { data: set, error: setError } = await withAuthTimeout(supabase.auth.setSession(tokens));
       if (setError) throw setError;
       const createdMs = set.user?.created_at ? Date.parse(set.user.created_at) : 0;
       const isNew = createdMs > 0 && Date.now() - createdMs < 60_000;
@@ -672,14 +715,20 @@ export default function AuthScreen() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '';
       track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'google', reason: authErrorReason(message) });
-      Alert.alert(AUTH_PAGE.googleSignInFailed);
+      Alert.alert(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.googleSignInFailed);
     } finally {
+      googleStartingRef.current = false;
       setGoogleLoading(false);
     }
   };
 
+  // Same latch as Google, for the same reason. Apple's own sheet is not
+  // time-limited (it has Cancel, which rejects with ERR_REQUEST_CANCELED);
+  // the Supabase calls after it are.
+  const appleStartingRef = useRef(false);
   const handleAppleSignIn = async () => {
-    if (appleLoading) return;
+    if (appleStartingRef.current) return;
+    appleStartingRef.current = true;
     noteSignupStarted();
     setAppleLoading(true);
 
@@ -701,24 +750,26 @@ export default function AuthScreen() {
 
       if (!credential.identityToken) throw new Error('Apple returned no identity token');
 
-      const { data, error } = await supabase.auth.signInWithIdToken({
+      const { data, error } = await withAuthTimeout(supabase.auth.signInWithIdToken({
         provider: 'apple',
         token: credential.identityToken,
         nonce: rawNonce,
-      });
+      }));
       if (error) throw error;
 
       // Apple only returns the name on the first authorization. Preserve it in
       // auth metadata immediately; later sign-ins return null for these fields.
       if (credential.fullName) {
         const fullName = AppleAuthentication.formatFullName(credential.fullName);
-        const { error: metadataError } = await supabase.auth.updateUser({
+        // Sign-in already succeeded here, so a hang or a throw only loses the
+        // name. It must not hold the button or report a failed sign-in.
+        const metadataError = await withAuthTimeout(supabase.auth.updateUser({
           data: {
             full_name: fullName || undefined,
             given_name: credential.fullName.givenName || undefined,
             family_name: credential.fullName.familyName || undefined,
           },
-        });
+        })).then(({ error: e }) => e, (e: unknown) => e);
         if (metadataError) console.warn('[apple auth] name metadata save failed', metadataError);
       }
 
@@ -732,9 +783,10 @@ export default function AuthScreen() {
       if (code !== 'ERR_REQUEST_CANCELED') {
         const message = error instanceof Error ? error.message : '';
         track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'apple', reason: authErrorReason(message) });
-        Alert.alert(AUTH_PAGE.appleSignInFailed);
+        Alert.alert(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.appleSignInFailed);
       }
     } finally {
+      appleStartingRef.current = false;
       setAppleLoading(false);
     }
   };
