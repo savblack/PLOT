@@ -12,9 +12,10 @@ import { regionalWords } from '@plot/core/spelling.js';
 import { THEME_FAMILIES, THEME_MODES, isPremiumFamily, type ThemeFamily } from '@plot/core/themes.js';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Image, TextInput,
+  View, Text, ScrollView, TouchableOpacity, Image,
   Modal, Alert, ActivityIndicator, StyleSheet, Switch, Platform, Linking,
 } from 'react-native';
+import { TextInput } from '../../components/TextInput';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line, Polygon } from 'react-native-svg';

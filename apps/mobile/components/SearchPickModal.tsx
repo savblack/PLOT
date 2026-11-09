@@ -8,9 +8,10 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, TextInput, ScrollView, Image, TouchableOpacity,
+  View, Text, ScrollView, Image, TouchableOpacity,
   Modal, StyleSheet, ActivityIndicator,
 } from 'react-native';
+import { TextInput } from './TextInput';
 import SubTab from './SubTab';
 import { tmdb } from '../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';

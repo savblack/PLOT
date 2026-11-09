@@ -15,9 +15,10 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, TextInput, ScrollView, TouchableOpacity, Modal, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet,
   ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { TextInput } from './TextInput';
 import Svg, { Polyline } from 'react-native-svg';
 import { Avatar } from './Avatar';
 import { supabase } from '../lib/supabase';

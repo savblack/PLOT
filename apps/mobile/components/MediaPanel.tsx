@@ -20,9 +20,10 @@ import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaSta
 import { useEffect, useState, useRef, useMemo, type RefObject } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
-  StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Linking, Alert,
+  StyleSheet, Dimensions, ActivityIndicator, Animated, Linking, Alert,
   Platform, KeyboardAvoidingView, Keyboard, type HostInstance,
 } from 'react-native';
+import { TextInput } from './TextInput';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb, getTmdbRegion } from '../lib/tmdb';

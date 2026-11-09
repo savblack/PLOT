@@ -5,9 +5,10 @@ import { shareLink } from '../../lib/share';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
+  View, Text, ScrollView, FlatList, Image, TouchableOpacity,
   Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, LayoutAnimation,
 } from 'react-native';
+import { TextInput } from '../../components/TextInput';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Polyline, Line, Rect } from 'react-native-svg';
