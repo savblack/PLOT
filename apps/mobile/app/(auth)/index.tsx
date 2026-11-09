@@ -24,7 +24,7 @@ import { CAPTCHA_SUBMIT_ATTEMPTS, captchaRetryAfterWait, captchaSubmitPlan, capt
 import { shouldMagicLinkViaBypass, shouldResendViaBypass } from '@plot/core/authBypass.js';
 import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
 import { COMMON } from '@plot/core/copy/common.js';
-import { AUTH_PAGE } from '@plot/core/copy/authPage.js';
+import { AUTH_PAGE, MIN_PASSWORD_LENGTH } from '@plot/core/copy/authPage.js';
 import { SHOW_APPLE_LOGIN, SHOW_GOOGLE_LOGIN } from '../../lib/launchFeatures';
 import { hasSignedInBefore } from '../../lib/signedInBefore';
 import { rememberBypassSignup, reportBypassSignupConfirmed } from '../../lib/bypassSignupReport';
@@ -393,7 +393,7 @@ export default function AuthScreen() {
     return !bad;
   };
   const checkPassword = () => {
-    const bad = password.length < 6;
+    const bad = password.length < MIN_PASSWORD_LENGTH;
     setPasswordError(bad ? AUTH_PAGE.weakPassword : null);
     return !bad;
   };

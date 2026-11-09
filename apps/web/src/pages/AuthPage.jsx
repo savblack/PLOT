@@ -10,7 +10,7 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Turnstile from '../components/Turnstile.jsx';
 import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { COMMON } from '../copy/common.js';
-import { AUTH_PAGE, captchaFailureCopy } from '../copy/authPage.js';
+import { AUTH_PAGE, MIN_PASSWORD_LENGTH, captchaFailureCopy } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
 import { captchaSubmitPlan, CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js';
@@ -272,7 +272,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       return;
     }
     if (submittedMode !== 'forgot') {
-      if (!submittedPassword || (submittedMode === 'signup' && submittedPassword.length < 6)) {
+      if (!submittedPassword || (submittedMode === 'signup' && submittedPassword.length < MIN_PASSWORD_LENGTH)) {
         setError(AUTH_PAGE.weakPassword);
         return;
       }
@@ -750,7 +750,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                         value={password}
                         onChange={e => { setPassword(e.target.value); markFormStarted(); }}
                         required
-                        minLength={6}
+                        minLength={MIN_PASSWORD_LENGTH}
                         autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                       />
                       <button

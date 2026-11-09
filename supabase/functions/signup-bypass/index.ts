@@ -292,8 +292,10 @@ Deno.serve(async (req) => {
   const password = String(body.password || '');
   if (!EMAIL_RE.test(email)) return json({ error: 'Please enter a valid email address.', reason: 'invalid_email' }, origin, 400);
   // Resend and magic link only need the mailbox. Signup still requires a password.
-  if (action === 'signup' && password.length < 6) {
-    return json({ error: 'Password must be at least 6 characters.', reason: 'weak_password' }, origin, 400);
+  // Same minimum as MIN_PASSWORD_LENGTH in packages/core/copy/authPage.js and the
+  // production Auth setting. Edge functions cannot import core, so it is repeated here.
+  if (action === 'signup' && password.length < 8) {
+    return json({ error: 'Password must be at least 8 characters.', reason: 'weak_password' }, origin, 400);
   }
 
   // 3. Rate limit — atomic, DB-backed, shared table/RPC with admin-review's
