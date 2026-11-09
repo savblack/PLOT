@@ -347,7 +347,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border,
     marginBottom: spacing.sm,
   },
-  searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: 14, color: colors.textPrimary },
+  // letterSpacing: 0 is explicit on purpose. Fabric recycles native text fields on iOS,
+  // and UIKit keeps a kern the new style does not mention. Right after a code sign-in
+  // this field can reuse the auth screen's code input (letterSpacing 6), which spread
+  // the placeholder out as "S e a r c h".
+  searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: 14, letterSpacing: 0, color: colors.textPrimary },
   searchTrailing: { marginLeft: spacing.sm },
   switchRow:   { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, marginBottom: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   switchMarks: { flexDirection: 'row', gap: 4 },
