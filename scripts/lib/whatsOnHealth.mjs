@@ -19,14 +19,28 @@ export const MIN_POSTERS = 3;
 
 const POSTER = /https:\/\/image\.tmdb\.org\/t\/p\//g;
 
+// Statuses Cloudflare uses when it turns a client away (block, rate limit).
+// Plot never sends these from /whats-on, and every response Plot does send
+// carries X-Plot-Cache (apps/website/functions/_lib/edgeCache.js), so one of
+// these without that header is Cloudflare refusing the checker, not the page
+// being down. GitHub's runners hit this: on the first manual run, 2 of 3
+// attempts came back 403 while the site served readers normally.
+const EDGE_REFUSALS = new Set([403, 429]);
+
 /**
  * @param {number} status HTTP status of the page
  * @param {string} html   response body
- * @returns {{ ok: boolean, reason: string, posters: number }}
+ * @param {{ fromPlot?: boolean, mitigated?: string | null }} [edge]
+ *   fromPlot: the response carried X-Plot-Cache. mitigated: its cf-mitigated header.
+ * @returns {{ ok: boolean, blocked?: boolean, reason: string, posters: number }}
  */
-export function classifyWhatsOn(status, html) {
+export function classifyWhatsOn(status, html, edge = { fromPlot: true }) {
   const body = String(html || '');
   const posters = (body.match(POSTER) || []).length;
+  if (edge.mitigated || (EDGE_REFUSALS.has(status) && !edge.fromPlot)) {
+    const how = edge.mitigated ? `cf-mitigated: ${edge.mitigated}` : 'no X-Plot-Cache';
+    return { ok: false, blocked: true, reason: `Cloudflare turned the checker away (HTTP ${status}, ${how})`, posters };
+  }
   if (status !== 200) {
     const why = body.includes(UNAVAILABLE) ? ' (the "briefly unavailable" page)' : '';
     return { ok: false, reason: `HTTP ${status}${why}`, posters };
