@@ -7,7 +7,7 @@ import {
 } from '../../finishingTouches.js';
 import { greetingFor, partOfDay } from '../../greeting.js';
 import {
-  buildingFan, buildingLines, firstNameFromAuthUser, topRegionServices,
+  buildingShelf, firstNameFromAuthUser, topRegionServices,
 } from '../../onboardingSetup.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -117,19 +117,13 @@ test('services: most popular first', () => {
   assert.deepEqual(services, [{ id: -1, name: 'A', logo_path: '/a.png' }, { id: -2, name: 'B', logo_path: null }]);
 });
 
-test('building lines swap the first line when no services were picked', () => {
-  assert.match(buildingLines(true)[0], /your platforms/);
-  assert.match(buildingLines(false)[0], /every platform/);
-  assert.equal(buildingLines(true).length, 4);
-});
-
-test('the building fan is always full: first pick in front, trending fills the gaps', () => {
+test('the building shelf puts picks first, then fills with trending titles they did not pick', () => {
   const t = (id) => ({ id });
-  const trending = [t(-1), t(-2), t(-3), t(-4)];
-  assert.deepEqual(buildingFan([t(-2)], trending).map(x => x.id), [-1, -3, -2]);
-  assert.deepEqual(buildingFan([t(-9), t(-8)], trending).map(x => x.id), [-8, -1, -9]);
-  assert.deepEqual(buildingFan([t(-9), t(-8), t(-7), t(-6)], trending).map(x => x.id), [-8, -7, -9]);
-  assert.deepEqual(buildingFan([], trending).map(x => x.id), [-2, -3, -1]);
-  assert.deepEqual(buildingFan([t(-9)], []).map(x => x.id), [-9]);
-  assert.deepEqual(buildingFan([], []), []);
+  const trending = [t(-1), t(-2), t(-3), t(-4), t(-5), t(-6), t(-7)];
+  assert.deepEqual(buildingShelf([t(-2)], trending).map(x => x.id), [-2, -1, -3, -4, -5, -6]);
+  assert.deepEqual(buildingShelf([t(-9), t(-8)], trending).map(x => x.id), [-9, -8, -1, -2, -3, -4]);
+  assert.deepEqual(buildingShelf([t(-9), t(-8), t(-7), t(-6), t(-5), t(-4), t(-3)], trending).map(x => x.id), [-9, -8, -7, -6, -5, -4]);
+  assert.deepEqual(buildingShelf([], trending).map(x => x.id), [-1, -2, -3, -4, -5, -6]);
+  assert.deepEqual(buildingShelf([t(-9)], []).map(x => x.id), [-9]);
+  assert.deepEqual(buildingShelf([], []), []);
 });

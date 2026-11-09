@@ -82,6 +82,8 @@ export const FAILED_LOADS = Object.freeze({
   TONIGHT_PICKS: 'tonight_picks',
   SMART_LIST:   'smart_list',
   ONBOARDING_SERVICES: 'onboarding_services',
+  // Seasons the episode title search could not load (episodeSearch.js).
+  EPISODE_SEARCH: 'episode_search',
 });
 
 /**

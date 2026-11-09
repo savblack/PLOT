@@ -1,13 +1,21 @@
 import { getConfig } from './config.js';
 
 /**
- * Fetch a title's critic score (Rotten Tomatoes %, via OMDb) by IMDb id.
- * Returns null when the resolver isn't configured, there's no IMDb id, or the
- * lookup fails/has no score — callers hide the critic pill in that case rather
- * than fabricating a number.
+ * @typedef {Object} CriticScoreResult
+ * @property {number|null} criticScore Rotten Tomatoes %, or null when OMDb has none
+ * @property {string|null} source e.g. 'Rotten Tomatoes'; null with no score
+ * @property {string|null} awards OMDb's Awards text, e.g. 'Won 4 Oscars. 159 wins & 220 nominations total'
+ */
+
+/**
+ * Fetch a title's critic score (Rotten Tomatoes %, via OMDb) and OMDb's awards
+ * text by IMDb id. Returns null when the resolver isn't configured, there's no
+ * IMDb id, the lookup fails, or it has neither a score nor awards. Either field
+ * can be null on its own (an awarded film with no RT score, say), so callers
+ * check each one and hide that row rather than fabricating a value.
  *
  * @param {string|null|undefined} imdbId
- * @returns {Promise<{criticScore: number, source: string}|null>}
+ * @returns {Promise<CriticScoreResult|null>}
  */
 export async function fetchCriticScore(imdbId) {
   const { criticScoreUrl, supabaseAnonKey } = getConfig();
@@ -20,7 +28,10 @@ export async function fetchCriticScore(imdbId) {
     });
     if (!response.ok) return null;
     const data = await response.json();
-    return Number.isFinite(data?.criticScore) ? { criticScore: data.criticScore, source: data.source } : null;
+    const criticScore = Number.isFinite(data?.criticScore) ? data.criticScore : null;
+    const awards = typeof data?.awards === 'string' && data.awards.trim() ? data.awards.trim() : null;
+    if (criticScore == null && !awards) return null;
+    return { criticScore, source: criticScore == null ? null : data.source ?? null, awards };
   } catch {
     return null;
   }

@@ -37,8 +37,8 @@ export function _setPostHogClient(client) {
 // Re-exported so existing `EVENTS` imports from this module keep working.
 export { EVENTS };
 
-export function track(event, props) {
-  withPostHog(ph => ph.capture(event, props));
+export function track(event, props, options) {
+  withPostHog(ph => ph.capture(event, props, options));
 }
 
 // The Supabase user id is the only identifier sent. Until 2026-10-14 the

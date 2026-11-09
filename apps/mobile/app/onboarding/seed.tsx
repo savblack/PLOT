@@ -12,9 +12,10 @@
  */
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, Image, ScrollView,
+  View, Text, TouchableOpacity, FlatList, Image, ScrollView,
   StyleSheet, ActivityIndicator, Dimensions,
 } from 'react-native';
+import { TextInput } from '../../components/TextInput';
 import { useRouter } from 'expo-router';
 import Svg, { Line } from 'react-native-svg';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';

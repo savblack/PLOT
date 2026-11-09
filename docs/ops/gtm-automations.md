@@ -188,7 +188,7 @@ Guides have no Buffer rows, so this job never sees them. IndexNow is not called 
 ## 4. Notion article review
 
 The private What's On review database is the article review surface. The
-`marketing-notion-mirror` cron creates and refreshes pages every five minutes;
+`marketing-notion-mirror` cron creates and refreshes pages every hour, at :41;
 `marketing-notion-sync` handles signed webhook deliveries. Both use
 `supabase/functions/_shared/notionReview.js` and `reviewCommands.js`. The
 marketing database ID and `NOTION_TOKEN` are Supabase Edge secrets. See
@@ -203,7 +203,7 @@ links and audit rows remain in the database. Article pages still come from
 
 **What it is.** The article board. One Notion page per article, kept in step with `marketing_posts`. Production writes to What's On Articles: `https://app.notion.com/p/3f04f244aec781baaffbc1523b57ecb4` (database id `3f04f244-aec7-81ba-affb-c1523b57ecb4`). Status Review is a draft. Linear article cards are off.
 
-**Trigger.** `pg_cron` job `marketing-notion-mirror`, every 5 minutes. An optional Notion webhook on `<SUPABASE_URL>/functions/v1/marketing-notion-sync` wakes the same comparison for one page.
+**Trigger.** `pg_cron` job `marketing-notion-mirror`, every hour at :41 (`20261107120000`). An optional Notion webhook on `<SUPABASE_URL>/functions/v1/marketing-notion-sync` wakes the same comparison for one page.
 
 **Schedule.** Defined in [`supabase/migrations/20261005180000_marketing_notion_review.sql`](../../supabase/migrations/20261005180000_marketing_notion_review.sql). The cron can be scheduled before the Notion secrets exist. The function then answers 200 and writes nothing.
 
@@ -305,6 +305,24 @@ Retired on 2026-10-13. The homepage redesign removed the watch-history timeline 
 
 Signup itself is section 12.
 
+**Substack articles board (Notion).** The Monday paste into Substack is tracked
+on its own Notion database, separate from the What's On review board. Nothing
+syncs to or from it. One row per issue: Name, Status (Draft, Ready to send,
+Sent, Skipped), Send date, Substack URL, SEO title, Substack preview, Notes.
+The board already exists as "Newsletters"
+(`NOTION_SUBSTACK_DATABASE_ID=3f84f244aec78139b4e1d6741b1f6989` updates it in
+place). To build it again from nothing, use
+[`marketing/setup/notion-substack-db.mjs`](../../marketing/setup/notion-substack-db.mjs),
+same parent page as section 5a but its own integration token,
+`NOTION_TOKEN_PLOT_SUBSTACK` in the local `.env` (the review board's token is
+only in Supabase secrets). Share the parent page with that integration first.
+The API creates a table; add the Board view grouped by Status by hand.
+
+```bash
+DRY_RUN=1 node --env-file=.env marketing/setup/notion-substack-db.mjs
+node --env-file=.env marketing/setup/notion-substack-db.mjs
+```
+
 ---
 
 ## 10. Trending chart snapshot
@@ -348,7 +366,7 @@ Lifecycle mail (welcome, day 1, day 7, day 14) is a Brevo automation the owner b
 - Deep link: `https://app.theplot.tv/save?media_type=movie|tv&tmdb_id={id}&src=lifecycle`. Web opens the title panel and does not add it again. Mobile opens the panel for any `/save` link and does not add it.
 - Header image: `https://app.theplot.tv/logo-email.png` (130×72 transparent PNG of the outlined wordmark).
 - Social icons: `https://app.theplot.tv/email/icon-instagram.png`, `icon-threads.png`, and `icon-x.png` (48×48, transparent, `#6B655D`).
-- Cron `brevo-lifecycle-sync` (`17 3 * * *`, once a day at 03:17 UTC) calls `brevo-lifecycle`. It drains up to 100 pending onboarding events and 400 dirty contacts per run. Deploy that function after the migration. Create the new attributes first or Brevo drops them:
+- Cron `brevo-lifecycle-sync` (`27 */4 * * *`, every 4 hours at :27 UTC, since `20261107120000`) calls `brevo-lifecycle`. It drains up to 100 pending onboarding events and 400 dirty contacts per run. Deploy that function after the migration. Create the new attributes first or Brevo drops them:
 
 ```
 node --env-file=.env marketing/setup/brevo-lifecycle-backfill.mjs --attributes-only

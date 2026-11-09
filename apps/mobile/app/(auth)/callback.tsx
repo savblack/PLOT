@@ -38,14 +38,11 @@ export default function AuthCallback() {
       // OAuth (Google) returns the session in the URL fragment. The sign-in
       // screen normally consumes it from openAuthSessionAsync's result, but a
       // redirect that reaches the app as a plain deep link lands here instead.
+      // signup-bypass links (Admin API generateLink) arrive the same way.
       // detectSessionInUrl is off (lib/configureCore.ts), so parse it by hand.
-      const hash = url.split('#')[1];
-      if (hash) {
-        const params = new URLSearchParams(hash);
-        const access_token = params.get('access_token');
-        const refresh_token = params.get('refresh_token');
-        if (access_token && refresh_token) await supabase.auth.setSession({ access_token, refresh_token });
-      }
+      // Shared with the root layout so a link handled by both signs in, and
+      // is counted, once.
+      await consumeMagicLink(url);
     };
 
     // Get the URL that opened the app (cold start)

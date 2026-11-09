@@ -4,7 +4,7 @@ import { configure } from '@plot/core/config.js';
 import { notifyPendingWatchQueued } from '@plot/core/watchQueued.js';
 import { captureAttribution, currentArticleAttribution, currentCampaignAttribution } from './utils/attribution.js';
 import { analyticsAllowed } from './utils/analyticsHost.js';
-import { isSaveBotFingerprint } from './utils/saveBotFingerprint.js';
+import { isAutomatedBrowser, isSaveBotFingerprint } from './utils/saveBotFingerprint.js';
 import { isChunkError, markChunkReload, recentlyReloaded } from './utils/chunkError.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { isOpaqueBrowserException } from './utils/opaqueException.js';
@@ -106,6 +106,7 @@ configure({
   // payload is already PII-free (codes and field names, never the message).
   onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
   onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
+  onEpisodeSearch: (payload) => track(EVENTS.EPISODE_SEARCH_RESULT_OPENED, payload),
   // The Tonight picker: one seam, four names, same shape as onWatchProgress.
   onTonightPicker: ({ action, ...props }) => {
     const name = {
@@ -245,6 +246,14 @@ if (posthogToken) {
           referrer: document.referrer,
           screenWidth: window.screen?.width,
           screenHeight: window.screen?.height,
+        })) return null;
+        // Browsers that report themselves as automated never count as a /save
+        // visit either. Same per-event route check as above.
+        if (isAutomatedBrowser({
+          pathname: props?.$pathname || window.location.pathname,
+          userAgent: navigator.userAgent,
+          webdriver: navigator.webdriver,
+          languageCount: navigator.languages?.length,
         })) return null;
         // An exception the browser masked to "Script error." carries no
         // message, filename or stack, so it can only ever be closed, never

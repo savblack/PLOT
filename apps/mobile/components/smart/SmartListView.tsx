@@ -3,9 +3,10 @@
 // Finding matches is @plot/core/useSmartList.js.
 import { useMemo, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, Image, Switch,
+  View, Text, TouchableOpacity, ScrollView, Image, Switch,
   StyleSheet, ActivityIndicator, Alert, useWindowDimensions,
 } from 'react-native';
+import { TextInput } from '../TextInput';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';

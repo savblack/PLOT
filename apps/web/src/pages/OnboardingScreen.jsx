@@ -9,7 +9,7 @@ import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { COMMON } from '../copy/common.js';
 import { REGIONS } from '@plot/core/regions.js';
-import { ONBOARDING_PROGRESS, ONBOARDING_PROGRESS_TOTAL, findImportSource } from '@plot/core/onboardingSetup.js';
+import { BUILDING_SHELF_SIZE, ONBOARDING_PROGRESS, ONBOARDING_PROGRESS_TOTAL, findImportSource } from '@plot/core/onboardingSetup.js';
 import { importSourceName } from '@plot/core/importJobs.js';
 import ImportSourceLanes, { ImportPill } from '../components/ImportSourceLanes.jsx';
 import ImportSourceDialog from '../components/ImportSourceDialog.jsx';
@@ -55,7 +55,7 @@ function Progress({ step }) {
  *               selectedIds: number[], onToggle: (id: number) => void, region: string, editingRegion: boolean,
  *               onEditRegion: () => void, onRegion: (code: string) => void, onRegionDone: () => void,
  *               onContinue: () => void },
- *   building: { leaving: boolean, fan: any[], lines: string[], lineIndex: number },
+ *   building: { leaving: boolean, shelf: any[], line: string },
  * }} props
  */
 export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, importStep, services, building }) {
@@ -221,26 +221,22 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
         {/* ── 3 · Building your Plot ── */}
         {step === 'building' && (
           <div className={`ob-building${building.leaving ? ' is-leaving' : ''}`}>
-            <div className="ob-fan" aria-hidden="true">
-              {building.fan.map((item, i) => {
-                // A full fan shuffles: each new line brings the next poster to the front.
-                const slots = ['left', 'right', 'front'].slice(-building.fan.length);
-                const slot = building.fan.length === 3 ? slots[(i + building.lineIndex) % 3] : slots[i];
+            <div className="ob-shelf" aria-hidden="true">
+              {/* Picks land one after another; empty slots stay as quiet tiles so the shelf is always two full rows. */}
+              {Array.from({ length: BUILDING_SHELF_SIZE }, (_, i) => {
+                const item = building.shelf[i];
                 return (
-                <div key={item.id} className={`ob-fan-card is-${slot}`} style={{ animationDelay: `${i * 140}ms` }}>{item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" />}</div>
+                  <div key={item?.id ?? `empty-${i}`} className="ob-shelf-card" style={{ animationDelay: `${i * 60}ms` }}>
+                    {item?.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" />}
+                  </div>
                 );
               })}
             </div>
             <h1 className="ob-building-title">{F.building.heading} <PlotLogo style={{ fontSize: 30 }} /></h1>
-            <div className="ob-lines" role="status">
+            <p className="ob-building-line" role="status">
               <span className="ob-sr">{F.building.status}</span>
-              {building.lines.map((text, i) => (
-                <div key={text} className={`ob-line${i === building.lineIndex ? ' is-on' : ''}`} aria-hidden="true">
-                  <svg className="ob-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" /></svg>
-                  {text}
-                </div>
-              ))}
-            </div>
+              <span aria-hidden="true">{building.line}</span>
+            </p>
           </div>
         )}
       </div>

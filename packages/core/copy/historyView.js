@@ -31,6 +31,11 @@ export const HISTORY_VIEW = {
   didNotFinish: 'DNF',
   openTitle: (title) => `View details for ${title}`,
   monthTitles: (n) => `${n} ${n === 1 ? 'title' : 'titles'}`,
+  drilldownTitles: (year) => `All of ${year}`,
+  drilldownGenre: (name) => name,
+  drilldownWeekday: (name) => `${name}s`,
+  drilldownRemove: (label) => `Remove filter: ${label}`,
+  drilldownOpen: (label) => `See the titles behind ${label}`,
   previousMonth: 'Previous month',
   nextMonth: 'Next month',
 };

@@ -5,6 +5,7 @@ import {
   writePendingSave,
   readPendingSave,
   clearPendingSave,
+  skipsSavePreview,
 } from '../../src/utils/pendingSave.js';
 import { drainPendingSave } from '../../src/utils/drainPendingSave.js';
 import { fetchFromTMDBResolved, _resetTmdbCache } from '@plot/core/tmdb.js';
@@ -386,4 +387,14 @@ test('different TMDB reads share an eight-request concurrency ceiling', async ()
   } finally {
     globalThis.fetch = realFetch;
   }
+});
+
+test('skipsSavePreview is true only for sources that just showed the title', () => {
+  assert.equal(skipsSavePreview('title_page'), true);
+  assert.equal(skipsSavePreview('Title_Page'), true);
+  assert.equal(skipsSavePreview('newsletter'), false);
+  assert.equal(skipsSavePreview('chart'), false);
+  assert.equal(skipsSavePreview('whats_on_article'), false);
+  assert.equal(skipsSavePreview(undefined), false);
+  assert.equal(skipsSavePreview(null), false);
 });

@@ -1,6 +1,7 @@
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
+import { parseGenreBrowse } from '@plot/core/browse.js';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
@@ -1059,8 +1060,11 @@ const getTVDetails = (id) => tmdb.getTVDetails(id);
 export default function DiscoverView() {
   const app = useApp();
   const { genres } = useGenres();
-  const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
-  const [genreFilters, setGenreFilters] = useState([]);
+  // A genre chip on a title opens Home as /home?type=tv&genre=18.
+  const [searchParams] = useSearchParams();
+  const [start] = useState(() => parseGenreBrowse(searchParams));
+  const [typeFilters,  setTypeFilters]  = useState(start.typeFilters ?? ALL_TYPES);
+  const [genreFilters, setGenreFilters] = useState(start.genreFilters ?? []);
 
   const { openPanel, openSearch, watchlist, watching, reminders, profile, user, refreshProfile, uiPrefs } = app;
   const homeLayout = useHomeLayout({ userId: user?.id, saved: profile?.home_layout, onPersisted: refreshProfile });

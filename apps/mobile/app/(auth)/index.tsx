@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, Text, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
   Dimensions, Image, Animated, Easing, FlatList,
 } from 'react-native';
+import { TextInput } from '../../components/TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -20,11 +21,14 @@ import { colors, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import Turnstile from '../../components/Turnstile';
 import { track, EVENTS } from '../../lib/analytics';
 import { authErrorReason } from '@plot/core/authErrors.js';
-import { CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, captchaSubmitPlan } from '@plot/core/captchaGate.js';
+import { CAPTCHA_SUBMIT_ATTEMPTS, captchaRetryAfterWait, captchaSubmitPlan, captchaWaitOver, shouldResetCaptcha } from '@plot/core/captchaGate.js';
+import { shouldMagicLinkViaBypass, shouldResendViaBypass } from '@plot/core/authBypass.js';
+import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
 import { COMMON } from '@plot/core/copy/common.js';
-import { AUTH_PAGE } from '@plot/core/copy/authPage.js';
+import { AUTH_PAGE, MIN_PASSWORD_LENGTH } from '@plot/core/copy/authPage.js';
 import { SHOW_APPLE_LOGIN, SHOW_GOOGLE_LOGIN } from '../../lib/launchFeatures';
 import { hasSignedInBefore } from '../../lib/signedInBefore';
+import { rememberBypassSignup, reportBypassSignupConfirmed } from '../../lib/bypassSignupReport';
 import PlotWordmark from '../../components/PlotWordmark';
 
 // The panel's fixed palette (see the note on the tokens import): charcoal ink
@@ -123,10 +127,11 @@ function ScrollingColumn({ paths, offset, duration }: { paths: string[]; offset:
 }
 
 // 'inbox' is the step after an email sign-up or a magic-link request: the
-// email carries a link that opens the app and a six-digit code, and this
+// email carries a link that opens the app and a numeric code, and this
 // screen takes the code. It replaces the old "Almost there!" alert.
 type Mode = 'signin' | 'signup' | 'forgot' | 'inbox';
 type InboxKind = 'signup' | 'magic';
+type CaptchaMode = 'signup' | 'login' | 'forgot' | 'magic';
 
 function GoogleIcon() {
   return (
@@ -161,12 +166,16 @@ const AUTH_WEB_CALLBACK = 'https://app.theplot.tv/auth/callback';
 // Magic links and sign-up confirmations sign the user straight into a session,
 // so they come back into the app via the plot:// deep link that
 // app/(auth)/callback.tsx listens for. A link opened on another device cannot
-// open this app, which is why the same email also carries a six-digit code
+// open this app, which is why the same email also carries a numeric code
 // (see the 'inbox' mode below).
 // PRODUCTION REQUIREMENT: this resolves to plot://auth/callback — add that
 // exact URL to Supabase Dashboard → Authentication → URL Configuration →
 // Redirect URLs, or signInWithOtp will reject it and fall back to erroring.
 const AUTH_APP_CALLBACK = Linking.createURL('/auth/callback');
+
+// Supabase's email OTP length setting allows 6 to 10 digits.
+const OTP_MIN_DIGITS = 6;
+const OTP_MAX_DIGITS = 10;
 
 // Kind, Plot-voiced auth errors (mirrors web AuthPage's friendlyError).
 function friendlyAuthError(msg?: string) {
@@ -192,6 +201,9 @@ export default function AuthScreen() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [inboxKind, setInboxKind] = useState<InboxKind>('signup');
+  // Whether the newest email came from signup-bypass. Its code comes from an
+  // Admin API magic link, so it verifies as 'email' even on a signup.
+  const [inboxViaBypass, setInboxViaBypass] = useState(false);
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
   const [resendNote, setResendNote] = useState<string | null>(null);
@@ -204,12 +216,28 @@ export default function AuthScreen() {
   const [captchaExecute, setCaptchaExecute] = useState(0); // bump to run the challenge
   const captchaTokenRef = useRef<string | null>(null);
   const captchaBlockedRef = useRef(false);
+  const captchaErroredRef = useRef(false);
+  // Cloudflare is showing its checkbox and waits for a tap.
+  const captchaInteractiveRef = useRef(false);
+  const captchaErrorCountRef = useRef(0);
+  // Form token, minimum form age, and the POSTs to signup-bypass, shared with
+  // web AuthPage. client: 'app' makes the emailed link open this app.
+  const [bypassClient] = useState(() => createSignupBypassClient({ getSupabase: () => supabase, client: 'app' }));
+  // Mode switches advance this. A submit still inside the captcha wait or a
+  // bypass request must not act on a screen the person has left.
+  const attemptRef = useRef(0);
+  const beginAttempt = () => {
+    attemptRef.current += 1;
+    const attempt = attemptRef.current;
+    return () => attempt === attemptRef.current;
+  };
 
-  // The widget stays mounted and does not run until submit. Web can still
-  // create the account through signup-bypass when the widget never returns a
-  // token. This screen has no bypass client, so that case stops here.
+  // The widget stays mounted and does not run until submit. When it never
+  // returns a token, signup, resend, and magic link go through signup-bypass
+  // like web. Sign-in and password reset have no bypass and stop.
   const refreshCaptcha = () => {
     captchaTokenRef.current = null;
+    captchaInteractiveRef.current = false;
     setCaptchaNonce((n) => n + 1);
   };
 
@@ -217,22 +245,39 @@ export default function AuthScreen() {
     captchaTokenRef.current = token;
   };
 
+  const handleCaptchaInteractive = () => {
+    captchaInteractiveRef.current = true;
+  };
+
   const handleCaptchaError = () => {
     captchaTokenRef.current = null;
+    captchaInteractiveRef.current = false;
     captchaBlockedRef.current = true;
+    captchaErroredRef.current = true;
+    // Same event web's widget fires on each failure during signup.
+    captchaErrorCountRef.current += 1;
+    if (mode === 'signup') track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt: captchaErrorCountRef.current });
   };
 
   // One attempt. A widget error ends the wait early so the retry can run.
-  // A timeout does not: the challenge may still be in flight.
-  const waitForCaptchaAttempt = (ms: number) => {
+  // A timeout does not: the challenge may still be in flight. While the
+  // checkbox is on screen the wait is long enough for someone to tap it.
+  const waitForCaptchaAttempt = (authMode: CaptchaMode) => {
     const blockedAtStart = captchaBlockedRef.current;
     if (captchaTokenRef.current) return Promise.resolve(captchaTokenRef.current);
     return new Promise<string | null>((resolve) => {
       const started = Date.now();
       const id = setInterval(() => {
         const token = captchaTokenRef.current;
-        const failedNow = captchaBlockedRef.current && !blockedAtStart;
-        if (token || failedNow || Date.now() - started >= ms) {
+        const failedNow = captchaErroredRef.current || (captchaBlockedRef.current && !blockedAtStart);
+        const over = captchaWaitOver({
+          token,
+          errored: failedNow,
+          interactive: captchaInteractiveRef.current,
+          mode: authMode,
+          elapsedMs: Date.now() - started,
+        });
+        if (over) {
           clearInterval(id);
           resolve(token);
         }
@@ -242,16 +287,24 @@ export default function AuthScreen() {
 
   const requestCaptcha = () => {
     captchaTokenRef.current = null;
+    captchaInteractiveRef.current = false;
     setCaptchaExecute((n) => n + 1);
   };
 
   // Token to send, or null when captcha is off. False when both attempts
   // finished without a token. Do not post that request to GoTrue.
-  const takeCaptchaToken = async (authMode: 'signup' | 'login' | 'forgot' | 'magic') => {
+  const takeCaptchaToken = async (authMode: CaptchaMode) => {
     if (!TURNSTILE_SITE_KEY) return null;
+    // Keep a token that arrived after the previous submit stopped waiting.
+    if (captchaTokenRef.current) return captchaTokenRef.current;
+    let widgetErrored = false;
     for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
-      requestCaptcha();
-      const token = await waitForCaptchaAttempt(CAPTCHA_TOKEN_WAIT_MS);
+      // A timeout must not reset() an interactive challenge that is still
+      // on screen. Only a widget error starts a fresh attempt.
+      if (shouldResetCaptcha({ attempt, widgetErrored })) requestCaptcha();
+      captchaErroredRef.current = false;
+      const token = await waitForCaptchaAttempt(authMode);
+      widgetErrored = captchaErroredRef.current;
       const plan = captchaSubmitPlan({
         siteKey: TURNSTILE_SITE_KEY,
         token,
@@ -260,6 +313,7 @@ export default function AuthScreen() {
         waited: !token,
       });
       if (plan === 'ready') return token;
+      if (!captchaRetryAfterWait({ mode: authMode, errored: widgetErrored, interactive: captchaInteractiveRef.current })) break;
     }
     return false as const;
   };
@@ -272,8 +326,11 @@ export default function AuthScreen() {
     if (mode === 'signup') {
       track(EVENTS.SIGNUP_FORM_VIEWED);
       signupStarted.current = false;
+      // Fetched on view so the token's age reflects real time on the form
+      // if signup-bypass turns out to be needed. No side effects server-side.
+      if (TURNSTILE_SITE_KEY) void bypassClient.loadFormToken();
     }
-  }, [mode]);
+  }, [mode, bypassClient]);
 
   const noteSignupStarted = () => {
     if (mode !== 'signup' || signupStarted.current) return;
@@ -288,6 +345,9 @@ export default function AuthScreen() {
   }, []);
 
   const switchMode = (next: Mode) => {
+    beginAttempt();
+    bypassClient.reset();
+    setLoading(false);
     setEmailError(null);
     setPasswordError(null);
     setCodeError(null);
@@ -295,8 +355,9 @@ export default function AuthScreen() {
     setMode(next);
   };
 
-  const openInbox = (kind: InboxKind) => {
+  const openInbox = (kind: InboxKind, viaBypass = false) => {
     setInboxKind(kind);
+    setInboxViaBypass(viaBypass);
     setCode('');
     setCodeError(null);
     setResendNote(null);
@@ -333,7 +394,7 @@ export default function AuthScreen() {
     return !bad;
   };
   const checkPassword = () => {
-    const bad = password.length < 6;
+    const bad = password.length < MIN_PASSWORD_LENGTH;
     setPasswordError(bad ? AUTH_PAGE.weakPassword : null);
     return !bad;
   };
@@ -368,38 +429,64 @@ export default function AuthScreen() {
     }
   };
 
-  // Resend whatever the inbox step is waiting on.
+  // Resend whatever the inbox step is waiting on. A token still goes to
+  // GoTrue first. No token, or a captcha / SMTP failure, goes through
+  // signup-bypass so the inbox actually gets a link.
   const handleResend = async () => {
     const e = email.trim();
     if (!e || !isValidEmail(e)) { setResendNote(AUTH_PAGE.invalidEmail); return; }
     setResendNote(null);
-    const captchaToken = await takeCaptchaToken(inboxKind === 'signup' ? 'signup' : 'magic');
-    if (captchaToken === false) {
-      setResendNote(AUTH_PAGE.verificationUnavailable);
-      return;
+    const isCurrent = beginAttempt();
+    const captchaRequired = Boolean(TURNSTILE_SITE_KEY);
+    const taken = await takeCaptchaToken(inboxKind === 'signup' ? 'signup' : 'magic');
+    if (!isCurrent()) return;
+    const captchaToken = taken === false ? null : taken;
+    const viaBypass = (error?: { message?: string, status?: number } | null) => (inboxKind === 'signup'
+      ? shouldResendViaBypass({ captchaRequired, captchaToken, error })
+      : shouldMagicLinkViaBypass({ captchaRequired, captchaToken, error }));
+    if (!viaBypass()) {
+      const { error } = inboxKind === 'signup'
+        ? await supabase.auth.resend({
+            type: 'signup', email: e,
+            options: { emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
+          })
+        : await supabase.auth.signInWithOtp({
+            email: e,
+            options: { shouldCreateUser: true, emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
+          });
+      refreshCaptcha();
+      if (!isCurrent()) return;
+      if (!error || !viaBypass(error)) {
+        if (!error) setInboxViaBypass(false);
+        setResendNote(error ? friendlyAuthError(error.message) : AUTH_PAGE.inbox.resent);
+        return;
+      }
     }
-    const { error } = inboxKind === 'signup'
-      ? await supabase.auth.resend({
-          type: 'signup', email: e,
-          options: { emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
-        })
-      : await supabase.auth.signInWithOtp({
-          email: e,
-          options: { shouldCreateUser: true, emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
-        });
-    refreshCaptcha();
-    setResendNote(error ? friendlyAuthError(error.message) : AUTH_PAGE.inbox.resent);
+    const sent = await bypassClient.sendLink({
+      action: inboxKind === 'signup' ? 'resend' : 'magiclink',
+      email: e,
+      isCurrent,
+    });
+    if (!sent.ok && sent.superseded) return;
+    if (sent.ok) setInboxViaBypass(true);
+    setResendNote(sent.ok ? AUTH_PAGE.inbox.resent : sent.message);
   };
 
-  // The six-digit code from the email. Signup confirmations verify as
-  // 'signup'; a magic-link code verifies as 'email'. Neither needs captcha.
+  // The code from the email. Its length is a per-project Supabase setting
+  // (6 to 10 digits; Staging sends 8), so accept that whole range rather than
+  // assume 6. GoTrue signup confirmations verify as
+  // 'signup'; a magic-link code, and every signup-bypass code, verifies as
+  // 'email'. Neither needs captcha.
   const handleVerifyCode = async () => {
     const token = code.replace(/\D/g, '');
-    if (token.length !== 6) { setCodeError(AUTH_PAGE.inbox.invalidCode); return; }
+    if (token.length < OTP_MIN_DIGITS || token.length > OTP_MAX_DIGITS) {
+      setCodeError(AUTH_PAGE.inbox.invalidCode);
+      return;
+    }
     setCodeError(null);
     setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(), token, type: inboxKind === 'signup' ? 'signup' : 'email',
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email.trim(), token, type: inboxKind === 'signup' && !inboxViaBypass ? 'signup' : 'email',
     });
     setLoading(false);
     if (error) {
@@ -410,8 +497,10 @@ export default function AuthScreen() {
       setCodeError(expired ? AUTH_PAGE.inbox.expiredCode : AUTH_PAGE.inbox.invalidCode);
       return;
     }
-    // A signup already fired user_signed_up at submit; a magic-link code is a sign-in.
-    if (inboxKind === 'magic') track(EVENTS.USER_LOGGED_IN, { method: 'magic_link' });
+    // A token-backed signup already fired user_signed_up at submit. A bypass
+    // signup fires it here, the same as when its link opens the app.
+    const confirmedBypassSignup = await reportBypassSignupConfirmed(data.user);
+    if (inboxKind === 'magic' && !confirmedBypassSignup) track(EVENTS.USER_LOGGED_IN, { method: 'magic_link' });
   };
 
   const handleForgot = async () => {
@@ -443,10 +532,17 @@ export default function AuthScreen() {
     if (!emailOk || !passwordOk) return;
     setLoading(true);
     track(EVENTS.SIGNUP_SUBMIT_CLICKED);
+    const isCurrent = beginAttempt();
     const captchaToken = await takeCaptchaToken('signup');
+    if (!isCurrent()) return;
     if (captchaToken === false) {
-      setLoading(false);
-      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      // No Turnstile token after both attempts. signup-bypass creates the
+      // account without one, as web does. GoTrue never sees an empty token.
+      if (!captchaBlockedRef.current) {
+        track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt: 0, reason: 'timeout' });
+      }
+      track(EVENTS.SIGNUP_BYPASS_OFFERED);
+      await signUpViaBypass(isCurrent);
       return;
     }
     const { error } = await supabase.auth.signUp({
@@ -469,28 +565,83 @@ export default function AuthScreen() {
     }
   };
 
+  // signup-bypass checks the honeypot, form timing, and rate limits itself.
+  // A native form has no hidden field for a bot to fill, so website is empty.
+  const signUpViaBypass = async (isCurrent: () => boolean) => {
+    const submittedEmail = email.trim();
+    const result = await bypassClient.signUp({ email: submittedEmail, password, isCurrent });
+    if (!result.ok && result.superseded) return;
+    setLoading(false);
+    refreshCaptcha();
+    if (!result.ok) {
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, {
+        reason: result.analyticsReason,
+        ...(result.status ? { status: result.status } : {}),
+      });
+      if (result.reason === 'already_registered') setEmailError(result.message);
+      else Alert.alert(result.message);
+      return;
+    }
+    // created is false for the function's quiet { ok: true } (honeypot or a
+    // too-fast post). That looks like success on purpose. user_signed_up
+    // fires when the emailed link opens the app (lib/bypassSignupReport.ts).
+    if (result.created) await rememberBypassSignup(submittedEmail);
+    openInbox('signup', true);
+  };
+
+  // When Turnstile times out, or GoTrue's mailer fails the captcha / SMTP
+  // check, signup-bypass sends the same link through Resend.
   const handleMagicLink = async () => {
     noteSignupStarted();
     if (!checkEmail()) return;
     setLoading(true);
-    const captchaToken = await takeCaptchaToken('magic');
-    if (captchaToken === false) {
-      setLoading(false);
-      Alert.alert(AUTH_PAGE.verificationUnavailable);
-      return;
+    const isCurrent = beginAttempt();
+    const submittedEmail = email.trim();
+    const fromSignup = mode === 'signup';
+    const captchaRequired = Boolean(TURNSTILE_SITE_KEY);
+    const taken = await takeCaptchaToken('magic');
+    if (!isCurrent()) return;
+    const captchaToken = taken === false ? null : taken;
+    let otpError: { message: string } | null = null;
+    if (!shouldMagicLinkViaBypass({ captchaRequired, captchaToken })) {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: submittedEmail,
+        options: { shouldCreateUser: true, emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
+      });
+      refreshCaptcha();
+      if (!isCurrent()) return;
+      if (!error) {
+        setLoading(false);
+        openInbox('magic');
+        return;
+      }
+      otpError = error;
+      if (!shouldMagicLinkViaBypass({ captchaRequired, captchaToken, error })) {
+        setLoading(false);
+        track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'magic_link', reason: authErrorReason(error.message) });
+        Alert.alert(friendlyAuthError(error.message));
+        return;
+      }
     }
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { shouldCreateUser: true, emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
+    const sent = await bypassClient.sendLink({
+      action: 'magiclink',
+      email: submittedEmail,
+      confirmSignup: fromSignup,
+      isCurrent,
     });
+    if (!sent.ok && sent.superseded) return;
     setLoading(false);
     refreshCaptcha();
-    if (error) {
-      track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'magic_link', reason: authErrorReason(error.message) });
-      Alert.alert(friendlyAuthError(error.message));
-    } else {
-      openInbox('magic');
+    if (sent.ok) {
+      if (fromSignup) await rememberBypassSignup(submittedEmail);
+      openInbox('magic', true);
+      return;
     }
+    track(EVENTS.LOGIN_SUBMIT_FAILED, {
+      method: 'magic_link',
+      reason: otpError ? authErrorReason(otpError.message) : sent.reason,
+    });
+    Alert.alert(sent.message);
   };
 
   // Google through the system browser: Supabase builds the provider URL, the
@@ -713,12 +864,12 @@ export default function AuthScreen() {
                       placeholder={AUTH_PAGE.inbox.codePlaceholder}
                       placeholderTextColor={PLACEHOLDER}
                       value={code}
-                      onChangeText={(t) => { setCode(t.replace(/\D/g, '').slice(0, 6)); setCodeError(null); }}
+                      onChangeText={(t) => { setCode(t.replace(/\D/g, '').slice(0, OTP_MAX_DIGITS)); setCodeError(null); }}
                       keyboardType="number-pad"
                       // iOS offers the code from Mail above the keyboard.
                       textContentType="oneTimeCode"
                       autoComplete="one-time-code"
-                      maxLength={6}
+                      maxLength={OTP_MAX_DIGITS}
                       returnKeyType="go"
                       onSubmitEditing={handleSubmit}
                       accessibilityLabel={AUTH_PAGE.inbox.codeLabel}
@@ -784,6 +935,7 @@ export default function AuthScreen() {
                       siteKey={TURNSTILE_SITE_KEY}
                       onToken={handleCaptchaToken}
                       onError={handleCaptchaError}
+                      onInteractive={handleCaptchaInteractive}
                       resetSignal={captchaNonce}
                       executeSignal={captchaExecute}
                     />

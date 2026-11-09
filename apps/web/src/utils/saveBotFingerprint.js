@@ -11,3 +11,17 @@ export function isSaveBotFingerprint({ hostname, pathname, userAgent, referrer, 
     && screenWidth === 1920
     && screenHeight === 1080;
 }
+
+// Browsers that announce themselves as automated. A person cannot match any of
+// these: `navigator.webdriver` is true only under WebDriver/CDP automation, a
+// headless or crawler user agent names itself, and a real browser always
+// reports at least one language. Kept separate from the October fingerprint
+// above because these are signals, not one incident's exact values.
+const AUTOMATION_UA = /HeadlessChrome|PhantomJS|Puppeteer|Playwright|Selenium|(?:bot|crawler|spider)\/[\d.]+|compatible;[^)]*(?:bot|crawler|spider)|curl\/|python-requests|Go-http-client/i;
+
+export function isAutomatedBrowser({ pathname, userAgent, webdriver, languageCount } = {}) {
+  if (pathname !== '/save') return false;
+  if (webdriver === true) return true;
+  if (typeof userAgent === 'string' && AUTOMATION_UA.test(userAgent)) return true;
+  return languageCount === 0;
+}

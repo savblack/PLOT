@@ -110,7 +110,7 @@ async function kickWorker(jobId) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     await callAuthenticatedFunction('import-worker', session, { job: jobId });
-  } catch { /* the scheduler picks it up within a minute */ }
+  } catch { /* the scheduler picks it up within five minutes */ }
 }
 
 function enqueueError(error) {
