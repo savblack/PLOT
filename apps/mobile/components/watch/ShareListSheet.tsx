@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { TextInput } from '../TextInput';
 import { useRouter, type Href } from 'expo-router';
 import { personName } from '@plot/core/watchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';

@@ -154,7 +154,22 @@ export default defineConfig([
       'react-hooks/refs': 'warn',
 
       'react-hooks/set-state-in-effect': 'warn',
+
+      // iOS recycles native text fields and keeps the last one's letter
+      // spacing, so every field goes through the wrapper that resets it.
+      'no-restricted-imports': ['error', {
+        paths: [{
+          name: 'react-native',
+          importNames: ['TextInput'],
+          message: "Import TextInput from apps/mobile/components/TextInput instead. It resets letter spacing that iOS keeps from a recycled field.",
+        }],
+      }],
     },
+  },
+  {
+    // The wrapper itself is the one place that imports React Native's TextInput.
+    files: ['apps/mobile/components/TextInput.tsx'],
+    rules: { 'no-restricted-imports': 'off' },
   },
   {
     // Mobile's Metro/Babel config is CommonJS Node, not app code.

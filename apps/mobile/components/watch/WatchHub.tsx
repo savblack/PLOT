@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { TextInput } from '../TextInput';
 import { useRouter, type Href } from 'expo-router';
 import { personName, unlockedPartners } from '@plot/core/watchTogether.js';
 import { useWatchTogetherSuggestions, startWatchTogetherSession } from '@plot/core/useWatchTogether.js';

@@ -5,8 +5,9 @@
 // opens the upgrade sheet.
 import { useMemo, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, Image, Modal, Switch, StyleSheet,
+  View, Text, TouchableOpacity, ScrollView, Image, Modal, Switch, StyleSheet,
 } from 'react-native';
+import { TextInput } from '../TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { isCustomListLimitError, isSmartListPremiumError } from '@plot/core/customListCreation.js';

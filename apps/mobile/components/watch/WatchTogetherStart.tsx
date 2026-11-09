@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { TextInput } from '../TextInput';
 import Svg, { Path } from 'react-native-svg';
 import { pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
 import { useWatchTogetherExampleTitles } from '@plot/core/useWatchTogether.js';
