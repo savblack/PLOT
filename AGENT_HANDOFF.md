@@ -28,7 +28,10 @@ Prove the `backup-heartbeat` Worker can still send its alarm email (Resend), fix
 
 ## Next
 
-1. Savannah approves deploy. Then `wrangler deploy --config wrangler.toml`, rotate HEARTBEAT_TOKEN.
+1. DONE 2026-11-10: Savannah approved; deployed version 96736606-f152-45d9-bc2a-c54e60375a14 at
+   https://backup-heartbeat.sav-black.workers.dev. Rotating HEARTBEAT_TOKEN was blocked by the
+   agent's permission guard (secret-store write); nothing was written. Waiting on Savannah to run
+   the token command herself or allow it.
 2. curl `?test-email=1`. If 401: Savannah makes Resend key `backup-heartbeat` (Sending access) and
    pastes it into `wrangler secret put RESEND_API_KEY` in a terminal tab. Resend test.
 3. Savannah confirms the email arrived. Open PR, ask before merge. Delete this file before merge.
