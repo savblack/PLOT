@@ -3,11 +3,15 @@
 // apps/web/src/copy/authPage.js re-exports it so src/copy stays the single place
 // the web app and the Storybook Content page look for copy.
 
+// Matches Supabase Auth's minimum password length for production (Email provider
+// settings) and the check in supabase/functions/signup-bypass/index.ts. Change all three together.
+export const MIN_PASSWORD_LENGTH = 8;
+
 export const AUTH_PAGE = {
   incorrectCredentials: 'Oops! Incorrect email or password.',
   activationEmailWaiting: '__warning__Almost in! Your activation email is waiting in your inbox.',
   accountAlreadyExists: 'An account with this email already exists. Try signing in instead.',
-  weakPassword: 'Password must be at least 6 characters.',
+  weakPassword: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
   invalidEmail: 'Please enter a valid email address.',
   rateLimited: 'Too many attempts. Please wait a moment and try again.',
   // Same sentence as LINK_WITHDRAWN_ERROR in supabase/functions/_shared/signupMagicLink.ts.
@@ -32,7 +36,7 @@ export const AUTH_PAGE = {
   },
 
   passwordPlaceholder: {
-    signup: 'At least 6 characters',
+    signup: `At least ${MIN_PASSWORD_LENGTH} characters`,
     login: 'Your password',
   },
   emailLabel: 'Email',

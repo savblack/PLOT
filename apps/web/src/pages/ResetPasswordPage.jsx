@@ -4,7 +4,7 @@ import { supabase } from '@plot/core/supabase.js';
 import './AuthPage.css';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
-import { AUTH_PAGE } from '../copy/authPage.js';
+import { AUTH_PAGE, MIN_PASSWORD_LENGTH } from '../copy/authPage.js';
 import { RESET_PASSWORD_PAGE } from '../copy/resetPasswordPage.js';
 
 function friendlyError(msg) {
@@ -70,7 +70,7 @@ export default function ResetPasswordPage() {
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       required
-                      minLength={6}
+                      minLength={MIN_PASSWORD_LENGTH}
                       autoFocus
                       autoComplete="new-password"
                     />
