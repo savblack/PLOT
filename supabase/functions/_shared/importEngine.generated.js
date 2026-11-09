@@ -37,6 +37,7 @@ var defaults = {
   onTonightPicker: void 0,
   onWatchTogether: void 0,
   onEpisodeSearch: void 0,
+  onAwardsShown: void 0,
   onImport: void 0,
   onUndo: void 0
 };
@@ -2373,7 +2374,10 @@ var FAILED_LOADS = Object.freeze({
   SMART_LIST: "smart_list",
   ONBOARDING_SERVICES: "onboarding_services",
   // Seasons the episode title search could not load (episodeSearch.js).
-  EPISODE_SEARCH: "episode_search"
+  EPISODE_SEARCH: "episode_search",
+  // The critic-score lookup (Rotten Tomatoes % and OMDb awards) failed
+  // (reviews.js). The panel hides both rows rather than erroring.
+  CRITIC_SCORE: "critic_score"
 });
 
 // packages/core/userMedia.js

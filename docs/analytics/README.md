@@ -402,6 +402,29 @@ The query text is never sent from either side, only whether one was typed and
 its length. The title waits in the browser for 24 hours, so a signup confirmed
 on another device or a day later does not resume it.
 
+## Title awards
+
+The title panel's Awards row (issue 1273) shows OMDb's awards line when a title
+has one. Fired from `reportAwardsShown` in `packages/core/reviews.js` through
+the `onAwardsShown` seam, so both apps report identically:
+
+| Event | When | Props |
+|---|---|---|
+| `title_awards_shown` | A title panel showed the Awards row | `tmdb_id`, `media_type`, `won` (at least one win, not only nominations), `has_critic_score` |
+
+It fires once per panel open, and only when the title has awards. A title with
+no awards fires nothing, so the share of title views with awards is
+`title_awards_shown` over `title_viewed`. That ratio starts low and climbs over
+the 30 days after 2026-11-09, as cached critic scores expire and are refetched
+with their awards text. The awards text itself is never sent.
+
+A failed critic-score lookup is `load_failed` with `resource: critic_score`;
+the panel hides the score and the Awards row rather than showing an error.
+
+It is a display event, not an action, so it is deliberately left out of Tier 1.
+`title_viewed` is unchanged: it still fires when the panel opens, before the
+awards lookup returns.
+
 ## Imports and onboarding
 
 Every import event goes through `createImportReporter()` in
@@ -586,7 +609,7 @@ follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
 ### `load_failed`
 
 A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
-`watching`, `favourites`, `smart_list`, `episode_search`) fires `load_failed` via `reportLoadFailure()`, with
+`watching`, `favourites`, `smart_list`, `episode_search`, `critic_score`) fires `load_failed` via `reportLoadFailure()`, with
 the same `error_kind` / `error_code` / `http_status` props. It is a separate
 event on purpose: a page that fails to load is not a failed user action, and
 counting it as `action_failed` would skew every failed-write rate.
