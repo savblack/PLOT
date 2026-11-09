@@ -308,7 +308,10 @@ Signup itself is section 12.
 **Substack articles board (Notion).** The Monday paste into Substack is tracked
 on its own Notion database, separate from the What's On review board. Nothing
 syncs to or from it. One row per issue: Name, Status (Draft, Ready to send,
-Sent, Skipped), Send date, Substack URL, Notes. Create it with
+Sent, Skipped), Send date, Substack URL, SEO title, Substack preview, Notes.
+The board already exists as "Newsletters"
+(`NOTION_SUBSTACK_DATABASE_ID=3f84f244aec78139b4e1d6741b1f6989` updates it in
+place). To build it again from nothing, use
 [`marketing/setup/notion-substack-db.mjs`](../../marketing/setup/notion-substack-db.mjs),
 same parent page as section 5a but its own integration token,
 `NOTION_TOKEN_PLOT_SUBSTACK` in the local `.env` (the review board's token is

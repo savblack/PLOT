@@ -1,5 +1,7 @@
 // Creates the Substack articles database, or updates its properties if it
-// already exists. Same shape as the What's On review board
+// already exists. The live board is "Newsletters"
+// (3f84f244aec78139b4e1d6741b1f6989); pass that as
+// NOTION_SUBSTACK_DATABASE_ID to update it rather than create a second one. Same shape as the What's On review board
 // (marketing/setup/notion-review-db.mjs): one row per weekly issue, a Status
 // select to move across a board, a date, and a link. Nothing syncs to or from
 // this database. It is the operator's checklist for the Monday paste.
@@ -34,6 +36,8 @@ export const PROPS = {
   status: 'Status',
   sendDate: 'Send date',
   substackUrl: 'Substack URL',
+  seoTitle: 'SEO title',
+  substackPreview: 'Substack preview',
   notes: 'Notes',
 };
 
@@ -61,6 +65,8 @@ export const databaseProperties = () => ({
   },
   [PROPS.sendDate]: { date: {} },
   [PROPS.substackUrl]: { url: {} },
+  [PROPS.seoTitle]: { rich_text: {} },
+  [PROPS.substackPreview]: { rich_text: {} },
   [PROPS.notes]: { rich_text: {} },
 });
 
