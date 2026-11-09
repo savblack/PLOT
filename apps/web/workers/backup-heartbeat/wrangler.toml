@@ -17,8 +17,14 @@
 # R2 binding below grants bucket access directly, so no R2 access keys are
 # involved — unlike the workflow, which needs R2_ACCESS_KEY_ID/SECRET.
 #
-# Check it by hand (HEARTBEAT_TOKEN secret required):
+# Check it by hand (HEARTBEAT_TOKEN secret required; the value is
+# BACKUP_HEARTBEAT_TOKEN in the main checkout's .env):
 #   curl -H "x-heartbeat-token: <token>" https://backup-heartbeat.<subdomain>.workers.dev
+#
+# Prove the alarm can still email, without waiting for a missing backup. Sends
+# one clearly labelled test email to ALERT_EMAIL and answers {"sent":true}; a
+# dead Resend key answers 502 with {"sent":false,"error":"resend 401"}:
+#   curl -H "x-heartbeat-token: <token>" "https://backup-heartbeat.<subdomain>.workers.dev/?test-email=1"
 
 name = "backup-heartbeat"
 main = "src/index.js"
