@@ -13,7 +13,7 @@ import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE, MIN_PASSWORD_LENGTH, captchaFailureCopy } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
 import { AUTH_REQUEST_TIMEOUT_MS, AUTH_TIMEOUT_MESSAGE, withAuthTimeout } from '@plot/core/authTimeout.js';
-import { captchaSubmitPlan, CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, shouldResetCaptcha } from '@plot/core/captchaGate.js';
+import { captchaRetryAfterWait, captchaSubmitPlan, captchaWaitOver, CAPTCHA_SUBMIT_ATTEMPTS, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js';
 import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
@@ -136,6 +136,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Set when the widget itself errors during the current attempt. A timeout
   // leaves this false so the next wait does not call turnstile.reset().
   const captchaErroredRef = useRef(false);
+  // Cloudflare is showing its "Verify you are human" checkbox and waits for a tap.
+  const captchaInteractiveRef = useRef(false);
   const [formStarted, setFormStarted] = useState(false);
   const [website, setWebsite] = useState(''); // honeypot — real users never see or fill this
   // Form token, minimum form age, and the POSTs to signup-bypass. Shared
@@ -176,9 +178,15 @@ export default function AuthPage({ initialMode = 'signup' }) {
     captchaBlockedRef.current = blocked;
   };
 
+  const handleCaptchaInteractive = () => {
+    captchaInteractiveRef.current = true;
+  };
+
   // One attempt. A widget error ends the wait early so the retry can run.
-  // A timeout does not: the challenge may still be in flight.
-  const waitForCaptchaAttempt = (ms) => {
+  // A timeout does not: the challenge may still be in flight. How long the
+  // wait lasts comes from core: sign-in and password reset have no fallback
+  // and wait longer, and an on-screen checkbox gets time to be tapped.
+  const waitForCaptchaAttempt = (authMode) => {
     const blockedAtStart = captchaBlockedRef.current;
     if (captchaTokenRef.current) return Promise.resolve(captchaTokenRef.current);
     return new Promise((resolve) => {
@@ -186,7 +194,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
       const id = setInterval(() => {
         const token = captchaTokenRef.current;
         const failedNow = captchaErroredRef.current || (captchaBlockedRef.current && !blockedAtStart);
-        if (token || failedNow || Date.now() - started >= ms) {
+        const over = captchaWaitOver({
+          token,
+          errored: failedNow,
+          interactive: captchaInteractiveRef.current,
+          mode: authMode,
+          elapsedMs: Date.now() - started,
+        });
+        if (over) {
           clearInterval(id);
           resolve(token);
         }
@@ -196,6 +211,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
   const requestCaptcha = () => {
     captchaTokenRef.current = null;
+    captchaInteractiveRef.current = false;
     setCaptchaExecute((n) => n + 1);
   };
 
@@ -219,7 +235,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       // be solving the challenge, and reset() throws that away.
       if (shouldResetCaptcha({ attempt, widgetErrored })) requestCaptcha();
       captchaErroredRef.current = false;
-      const token = await waitForCaptchaAttempt(CAPTCHA_TOKEN_WAIT_MS);
+      const token = await waitForCaptchaAttempt(authMode);
       widgetErrored = captchaErroredRef.current;
       plan = captchaSubmitPlan({
         siteKey: TURNSTILE_SITE_KEY,
@@ -229,6 +245,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
         waited: !token,
       });
       if (plan === 'ready') return plan;
+      // An untapped checkbox, or a sign-in wait that ran out, would only
+      // wait on the same challenge again. A widget error gets a fresh one.
+      if (!captchaRetryAfterWait({ mode: authMode, errored: widgetErrored, interactive: captchaInteractiveRef.current })) break;
     }
     return plan;
   };
@@ -242,6 +261,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Turnstile tokens are single-use; clear and re-issue after every auth attempt.
   const resetCaptcha = () => {
     captchaTokenRef.current = null;
+    captchaInteractiveRef.current = false;
     setCaptchaNonce((n) => n + 1);
   };
 
@@ -870,12 +890,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
                 <Turnstile
                   siteKey={TURNSTILE_SITE_KEY}
                   onToken={handleCaptchaToken}
+                  onInteractive={handleCaptchaInteractive}
                   resetSignal={captchaNonce}
                   executeSignal={captchaExecute}
                   failureMessage={captchaCopy.failed}
                   blockedMessage={captchaCopy.blocked}
                   onBlocked={(attempt) => {
                     captchaErroredRef.current = true;
+                    captchaInteractiveRef.current = false;
                     captchaBlockedRef.current = true;
                     if (mode === 'signup') track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt });
                   }}
