@@ -17,6 +17,8 @@ import PlotLogo from '../components/PlotLogo.jsx';
 const { comparison: CMP } = PLANS_PAGE;
 
 // Comparison rows for features that already exist in the app link to them.
+// Premium members only: for a Free viewer the feature's own page is an upsell
+// that leads straight back here.
 const FEATURE_LINKS = {
   fullStats: { to: '/compare', label: PLANS_PAGE.tryTasteOverlap },
 };
@@ -238,7 +240,7 @@ export default function PlansPage() {
                     <th scope="row" className="cmp-feat">
                       {row.label}
                       {row.tag && <span className="cmp-soon">{row.tag}</span>}
-                      {FEATURE_LINKS[row.id] && <Link className="cmp-link" to={FEATURE_LINKS[row.id].to}>{FEATURE_LINKS[row.id].label} <span aria-hidden="true">→</span></Link>}
+                      {isPremium && FEATURE_LINKS[row.id] && <Link className="cmp-link" to={FEATURE_LINKS[row.id].to}>{FEATURE_LINKS[row.id].label} <span aria-hidden="true">→</span></Link>}
                     </th>
                     <td><Cell value={row.free} /></td>
                     <td><Cell value={row.premium} premium /></td>
