@@ -96,9 +96,13 @@ The What's On signup does not name a weekday until an issue has gone out.
 
 ## Editorial notes from Savannah
 
+Fill the separate Notion "SEO title" property for every issue using "This week in movies and TV, September 28", with that issue's month and day. This is for Substack's separate SEO title field; keep the issue name, subject, and preview text separate.
+
 Lead the conversation section with what the reactions add up to and why readers care. Write an editorial paragraph, not a procession of reviewer names and opposing quotes. Use source links naturally inside that explanation. Name individual critics when their particular argument matters, and support broader claims with a roundup or meaningful audience evidence. Do not force every title into a good-versus-bad comparison. Keep the distinction between critic disagreement and critic/audience disagreement clear. Unreadable social posts stay out.
 
 Say clearly when describing a character: "Chris Evans plays a movie star trying to revive his career." Do not write a joke about a character's failed comeback that sounds like criticism of the actor's performance.
+
+When a title's format could be unclear, weave a small cue into its first mention: "the film," "the new series," "the documentary film," or "the four-part documentary series." A reference to a season or episodes can do the same job. Keep it natural and brief; avoid repeating labels when the wording or section already makes the format clear. Check the actual format, especially when a film and a series share a title.
 
 Introduce older picks directly through the film or viewing idea. Avoid "For an older companion" and similar catalog language. "Make it a Carrie double feature" gives the reader a plan.
 
@@ -131,3 +135,12 @@ Reuse inactive Brevo template 5, "Plot weekly newsletter - master", from news@th
 ## Substack preview text
 
 Every issue includes preview_text in its front matter: one lively sentence, at most 160 characters, highlighting two or three specific things in that issue. It is the Substack description and the email preheader, so it complements the date-led subject rather than repeating it. Use the same warm editorial voice. Save it in the Notion Substack preview property so Savannah can copy it straight into Substack. Keep it outside the article body. The renderer writes a separate .preview.txt file and uses it as the hidden email preheader. Missing or overlong preview text fails the issue check. Generate it when drafting, and update it when the issue changes.
+
+
+## Source variety between issues
+
+Research the conversation afresh for each issue. Before drafting, inspect the preceding issues and avoid defaulting to the same publications, critics, audience communities, or opinions. A new URL repeating the same argument is not enough. Look for the title's specific conversation: performance, adaptation choices, cultural response, production decisions, or a meaningful audience reaction. Use a mix of criticism, firsthand interviews, and relevant audience discussions where each adds evidence. A filmmaker explaining an intention is not proof that viewers think the film achieves it. Keep the editorial voice; do not turn the section into alternating reviewer summaries. Use sources available by the historical issue date when backdating.
+
+Opening-weekend box office is welcome when it adds context. A debut's domestic gross, a surprising start, or a useful contrast with reception can be the lead of an In theaters entry. Keep entries brief, vary their emphasis, and avoid making every title a financial report. Always name the weekend or reporting date, territory, and whether the figure is an estimate.
+
+Never leave a gross as a bare dollar figure and assume readers know whether it is impressive. Explain its significance in the same sentence or the next, using a sourced comparison with expectations, a comparable film, the film's budget, or the weekend's competition. A chart position can explain relative turnout, but does not by itself establish profitability or a successful opening. Only call a result strong, disappointing, a hit, or a flop when the evidence supports that judgment. If no useful context is available, leave the number out. Keep this explanation brief and free of industry jargon.

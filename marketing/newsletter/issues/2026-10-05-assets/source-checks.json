@@ -1,0 +1,96 @@
+{
+  "prepared_on": "2026-10-18",
+  "issue_date": "2026-10-05",
+  "chart": {
+    "issue": "2026-10-05",
+    "snapshot": "2026-10-01",
+    "comparison": "2026-09-24",
+    "count": 10
+  },
+  "trailers": [
+    {
+      "key": "gM4LkaXwGuY",
+      "title": "THE SOCIAL RECKONING \u2013 Official Teaser Trailer (HD)",
+      "channel": "Sony Pictures Entertainment",
+      "status": 200
+    },
+    {
+      "key": "bEpTgowZ1dI",
+      "title": "Other Mommy | Official Trailer",
+      "channel": "Universal Pictures",
+      "status": 200
+    },
+    {
+      "key": "mlBfQJ8oxB0",
+      "title": "Animals | Official Trailer | Netflix",
+      "channel": "Netflix",
+      "status": 200
+    }
+  ],
+  "editorial_source_urls": [
+    "https://www.themoviedb.org/movie/1248832",
+    "https://www.thewrap.com/creative-content/movies/verity-digger-box-office-bomb/",
+    "https://www.boxofficemojo.com/weekend/2026W40/?sort=rank&sortDir=asc",
+    "https://prod.dreamworks.com/movies/forgotten-island",
+    "https://www.timeout.com/movies/digger-review-2026",
+    "https://www.bfi.org.uk/sight-and-sound/reviews/digger-unwieldy-compulsively-watchable-satire",
+    "https://www.reddit.com/r/movies/comments/1wvhx09/official_discussion_digger_spoilers/",
+    "https://www.newyorker.com/magazine/2026/10/12/east-of-eden-tv-review-netflix",
+    "https://www.themoviedb.org/tv/258165",
+    "https://www.netflix.com/tudum/articles/what-to-watch-on-netflix-september-25-2026",
+    "https://www.themoviedb.org/movie/1458857",
+    "https://media.netflix.com/en/only-on-netflix/82023496",
+    "https://www.themoviedb.org/tv/273207",
+    "https://www.aboutamazon.com/news/entertainment/prime-video-september-films-shows-sports-2026",
+    "https://www.youtube.com/watch?v=bEpTgowZ1dI",
+    "https://www.universalpictures.com/movies/other-mommy/synopsis/",
+    "https://www.youtube.com/watch?v=gM4LkaXwGuY",
+    "https://dev.sonypictures.com/movies/thesocialreckoning",
+    "https://www.youtube.com/watch?v=mlBfQJ8oxB0",
+    "https://www.netflix.com/tudum/articles/animals-ben-affleck-trailer?inapp=true%2F",
+    "https://www.themoviedb.org/tv/285322",
+    "https://www.netflix.com/tudum/articles/what-to-watch-on-netflix-october-2-2026?inapp=true",
+    "https://www.themoviedb.org/movie/1756138",
+    "https://www.netflix.com/tudum/articles/new-comedy-documentaries-2026",
+    "https://www.themoviedb.org/movie/1212763",
+    "https://press.wbd.com/us/media-release/evil-dead-burn-begins-streaming-exclusively-hbo-max-october-2"
+  ],
+  "checks": {
+    "newsletter_lint": [],
+    "preview_characters": 121,
+    "layouts": [
+      {
+        "date": "2026-10-05",
+        "width": 390,
+        "scroll": 390,
+        "images": 11,
+        "broken": [],
+        "trailers": 3,
+        "errors": []
+      },
+      {
+        "date": "2026-10-05",
+        "width": 1280,
+        "scroll": 1280,
+        "images": 11,
+        "broken": [],
+        "trailers": 3,
+        "errors": []
+      }
+    ],
+    "newsletter_tests": "node --test marketing/tests/the-week.test.mjs: 30 passed",
+    "repository_check": "Node 22.23.3, pnpm run check: passed; 178 existing lint warnings, zero errors"
+  },
+  "source_variety_revision": {
+    "date": "2026-10-18",
+    "conversation_urls": [
+      "https://www.timeout.com/movies/digger-review-2026",
+      "https://www.bfi.org.uk/sight-and-sound/reviews/digger-unwieldy-compulsively-watchable-satire",
+      "https://www.reddit.com/r/movies/comments/1wvhx09/official_discussion_digger_spoilers/",
+      "https://theplot.tv/movie/digger-1248832",
+      "https://www.newyorker.com/magazine/2026/10/12/east-of-eden-tv-review-netflix"
+    ],
+    "changes": "Rewritten angles and source mix; opening-weekend reporting added selectively. October 12 adds Carrie and updates the opener and preview. Notion changes read back and verified.",
+    "checks": "Newsletter linter passed. 30 newsletter tests passed. pnpm run check passed on Node 22.23.3; existing warnings remain."
+  }
+}

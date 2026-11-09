@@ -1,0 +1,244 @@
+{
+  "issue_date": "2026-08-03",
+  "status": "Draft",
+  "notion": {
+    "date": "2026-08-03",
+    "url": "https://app.notion.com/p/3fc4f244aec781a29dc2dc4bad6e970b?pvs=204",
+    "id": "3fc4f244-aec7-81a2-9dc2-dc4bad6e970b",
+    "verification": {
+      "date": "2026-08-03",
+      "draft": true,
+      "seo": true,
+      "preview": true,
+      "images": 6,
+      "trailers": 3,
+      "footer": 1,
+      "localPath": false,
+      "chartWarning": false
+    }
+  },
+  "publication_blockers": [
+    "Savannah to select the GIF and approve the draft."
+  ],
+  "newsletter_lint": [],
+  "chart_snapshot": "2026-07-30",
+  "media": [
+    {
+      "requested_title": "Spider-Man: Brand New Day",
+      "id": 969681,
+      "type": "movie",
+      "title": "Spider-Man: Brand New Day",
+      "date": "2026-07-31",
+      "overview": "Fighting crime full-time as Spider-Man in a world that doesn't remember him\u2014and the pressure of seeing his old friends move on without him\u2014sparks a change in Peter Parker he may not have the power to control. But that transformation might also be the only thing that can stop a shocking new threat to the city and those he loves - a powerful villain no one can even see.",
+      "backdrop": "/4tjxYg2AbOzzG9G1YuiT2NzYhlH.jpg",
+      "homepage": "https://spidermanbrandnewday.movie",
+      "runtime": 145
+    },
+    {
+      "requested_title": "The Odyssey",
+      "id": 1368337,
+      "type": "movie",
+      "title": "The Odyssey",
+      "date": "2026-07-17",
+      "overview": "Odysseus, the legendary King of Ithaca, embarks on a long and perilous journey home following the Trojan War. Throughout his voyage, he is forced to confront the whims of gods, mythological monsters, and trials that stretch both his cunning and his humanity to the breaking point.",
+      "backdrop": "/nVBzWBqHTB3XD0iqWiJLfKLo5fq.jpg",
+      "homepage": "https://www.universalpictures.com/movies/the-odyssey",
+      "runtime": 173
+    },
+    {
+      "requested_title": "I Want Your Sex",
+      "id": 1288059,
+      "type": "movie",
+      "title": "I Want Your Sex",
+      "date": "2026-07-31",
+      "overview": "When a naive young man becomes the sexual muse for a renowned and provocative artist, his dream job quickly turns dangerous as he is drawn into an obsessive world of power, betrayal, and murder.",
+      "backdrop": "/gQsjbxdjJUam7buy4U2TpVTiGSO.jpg",
+      "homepage": "https://www.magpictures.com/iwantyoursex",
+      "runtime": 90
+    },
+    {
+      "requested_title": "Batman: Caped Crusader",
+      "id": 125909,
+      "type": "tv",
+      "title": "Batman: Caped Crusader",
+      "date": "2024-08-01",
+      "overview": "Welcome to Gotham City, where the corrupt outnumber the good, criminals run rampant and law-abiding citizens live in a constant state of fear. Forged in the fire of tragedy, wealthy socialite Bruce Wayne becomes something both more and less than human\u2014the Batman. His one-man crusade for justice attracts unexpected allies within the GCPD and City Hall, but his heroic actions spawn deadly, unforeseen ramifications.",
+      "backdrop": "/vTqkpDUe1DUUPcHDpcf0RT0gIQ0.jpg",
+      "homepage": "https://www.amazon.com/dp/B0CYFLCXSQ",
+      "episodes": 20
+    },
+    {
+      "requested_title": "The Super Mario Galaxy Movie",
+      "id": 1226863,
+      "type": "movie",
+      "title": "The Super Mario Galaxy Movie",
+      "date": "2026-04-01",
+      "overview": "Having thwarted Bowser's previous plot to marry Princess Peach, Mario and Luigi now face a fresh threat in Bowser Jr., who is determined to liberate his father from captivity and restore the family legacy. Alongside companions new and old, the brothers travel across the stars to stop the young heir's crusade.",
+      "backdrop": "/kxQiIJ4gVcD3K6o14MJ72p5yRcE.jpg",
+      "homepage": "https://www.thesupermariogalaxymovie.com",
+      "runtime": 98
+    },
+    {
+      "requested_title": "One Night Only",
+      "id": 1433367,
+      "type": "movie",
+      "title": "One Night Only",
+      "date": "2026-08-07",
+      "overview": "Two love-starved strangers crash into each other on the one night of the year when single people are allowed to have sex.",
+      "backdrop": "/3afHil7EVm655wO2NS6RHxuyicE.jpg",
+      "homepage": "https://www.universalpictures.com/movies/one-night-only",
+      "runtime": 103
+    },
+    {
+      "requested_title": "The Last House",
+      "id": 1284041,
+      "type": "movie",
+      "title": "The Last House",
+      "date": "2026-08-07",
+      "overview": "A family suddenly sealed inside their home must work together to survive against dwindling resources and the ominous threat keeping them trapped.",
+      "backdrop": "/1RhfevWmWCVHtEqxWBEjPOC5KG1.jpg",
+      "homepage": "https://www.netflix.com/title/81914143",
+      "runtime": 110
+    },
+    {
+      "requested_title": "Teenage Sex and Death at Camp Miasma",
+      "id": 1240889,
+      "type": "movie",
+      "title": "Teenage Sex and Death at Camp Miasma",
+      "date": "2026-08-07",
+      "overview": "An ambitious director sets out to revive a faded slasher franchise, but her meeting with the film\u2019s reclusive original star spirals into a terrifying maze of obsession, fear, and blood-soaked delusion.",
+      "backdrop": "/d1n2ySWSanU34eEsluRjfrjRq52.jpg",
+      "homepage": "https://mubi.com/en/campmiasma",
+      "runtime": 112
+    },
+    {
+      "requested_title": "One Hundred Years of Solitude",
+      "id": 207333,
+      "type": "tv",
+      "title": "One Hundred Years of Solitude",
+      "date": "2024-12-11",
+      "overview": "In the mythical town Macondo, seven generations of the Buend\u00eda family navigate love, oblivion and the inescapability of their past \u2014 and their fate.",
+      "backdrop": "/5mcc7J07f680Q88xeLClf5SIZtt.jpg",
+      "homepage": "https://www.netflix.com/title/81087583",
+      "episodes": 16
+    },
+    {
+      "requested_title": "Big Chicken: A Fast Food Conspiracy",
+      "id": 1728056,
+      "type": "movie",
+      "title": "Big Chicken: A Fast Food Conspiracy",
+      "date": "2026-08-05",
+      "overview": "In a bold 28-day experiment, comedian Mo Gilligan tours the UK and US on a fried chicken diet to uncover the impact of the craving \u2014 and industry behind it.",
+      "backdrop": "/d4p2sqbxC2AYkuyxT7tRBSsP4IM.jpg",
+      "homepage": "https://www.netflix.com/title/81920949",
+      "runtime": 99
+    }
+  ],
+  "trailers": [
+    {
+      "issue_date": "2026-08-03",
+      "title": "The Last House",
+      "key": "MLxgaz2Zp1k",
+      "name": "Official Trailer",
+      "date": "2026-06-15T13:00:00.000Z",
+      "status": 200,
+      "video_title": "The Last House | Greta Lee and Wagner Moura | Official Trailer | Netflix",
+      "channel": "Netflix"
+    },
+    {
+      "issue_date": "2026-08-03",
+      "title": "One Night Only",
+      "key": "JRG244IfrRE",
+      "name": "Official Trailer",
+      "date": "2026-04-29T15:00:06.000Z",
+      "status": 200,
+      "video_title": "One Night Only | Official Trailer",
+      "channel": "Universal Pictures"
+    },
+    {
+      "issue_date": "2026-08-03",
+      "title": "Teenage Sex and Death at Camp Miasma",
+      "key": "dimCiC_hdoA",
+      "name": "Official Trailer",
+      "date": "2026-05-27T14:00:01.000Z",
+      "status": 200,
+      "video_title": "TEENAGE SEX AND DEATH AT CAMP MIASMA | Official Trailer | On MUBI October 2",
+      "channel": "MUBI"
+    }
+  ],
+  "source_urls": [
+    "https://www.themoviedb.org/movie/969681",
+    "https://image.tmdb.org/t/p/w780/4tjxYg2AbOzzG9G1YuiT2NzYhlH.jpg",
+    "https://image.tmdb.org/t/p/original/4tjxYg2AbOzzG9G1YuiT2NzYhlH.jpg",
+    "https://www.thewrap.com/creative-content/movies/spider-man-brand-new-day-box-office-opening-weekend/",
+    "https://www.universalpictures.com/movies/the-odyssey",
+    "https://www.magpictures.com/iwantyoursex",
+    "https://www.slantmagazine.com/film/spider-man-brand-new-day-review-tom-holland-zendaya/",
+    "https://www.techradar.com/streaming/entertainment/spider-man-brand-new-day-review",
+    "https://image.tmdb.org/t/p/w780/vTqkpDUe1DUUPcHDpcf0RT0gIQ0.jpg",
+    "https://www.themoviedb.org/tv/125909",
+    "https://bloody-disgusting.com/reviews/3961303/batman-caped-crusader-second-season-review/",
+    "https://www.reddit.com/r/DCcomics/comments/1vb9a1y/batman_caped_crusader_season_2_megathread/",
+    "https://www.aboutamazon.com/news/entertainment/batman-caped-crusader-release-date-trailer-prime-video",
+    "https://image.tmdb.org/t/p/w780/kxQiIJ4gVcD3K6o14MJ72p5yRcE.jpg",
+    "https://www.themoviedb.org/movie/1226863",
+    "https://www.peacocktv.com/blog/the-super-mario-galaxy-movie-streaming-date-revealed",
+    "https://theplot.tv/movie/the-odyssey-1368337",
+    "https://theplot.tv/movie/disclosure-day-1275779",
+    "https://theplot.tv/movie/scary-movie-1273221",
+    "https://theplot.tv/movie/masters-of-the-universe-454639",
+    "https://theplot.tv/movie/obsession-1339713",
+    "https://theplot.tv/movie/backrooms-1083381",
+    "https://theplot.tv/movie/spider-man-brand-new-day-969681",
+    "https://theplot.tv/movie/the-mandalorian-and-grogu-1228710",
+    "https://theplot.tv/movie/avengers-doomsday-1003596",
+    "https://theplot.tv/tv/agent-kim-reactivated-296206",
+    "https://theplot.tv/whats-on/chart",
+    "https://image.tmdb.org/t/p/w780/5mcc7J07f680Q88xeLClf5SIZtt.jpg",
+    "https://www.themoviedb.org/tv/207333",
+    "https://www.netflix.com/tudum/articles/one-hundred-years-of-solitude-release-date-news-cast-trailer",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=207333&src=newsletter",
+    "https://image.tmdb.org/t/p/w780/d4p2sqbxC2AYkuyxT7tRBSsP4IM.jpg",
+    "https://www.themoviedb.org/movie/1728056",
+    "https://media.netflix.com/en/only-on-netflix/81920949",
+    "https://app.theplot.tv/save?media_type=movie&tmdb_id=1728056&src=newsletter"
+  ],
+  "primary_page_checks": [
+    {
+      "url": "https://www.universalpictures.com/movies/the-odyssey",
+      "title": "The Odyssey | Movie Site &amp; Trailer | In Theaters Now",
+      "status": 200
+    },
+    {
+      "url": "https://www.magpictures.com/iwantyoursex",
+      "title": "I Want Your Sex | Olivia Wilde | Watch Now on Digital",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81920949",
+      "title": "Big Chicken: A Fast Food Conspiracy | Netflix Media Center",
+      "status": 200
+    }
+  ],
+  "editorial_review": "Written for the issue date using contemporary reviews, audience threads, release announcements, and official trailers. Review opinions are attributed; individual posts are not treated as audience-wide consensus. HTTP status alone is not evidence of a claim.",
+  "layout": [
+    {
+      "date": "2026-08-03",
+      "width": 390,
+      "scroll": 390,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    },
+    {
+      "date": "2026-08-03",
+      "width": 1280,
+      "scroll": 1280,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    }
+  ]
+}
