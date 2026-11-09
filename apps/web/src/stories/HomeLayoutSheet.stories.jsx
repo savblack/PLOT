@@ -22,7 +22,7 @@ const noop = () => {};
 function Preview({ initial = defaultHomeLayout(), error = null, premium = true }) {
   const [layout, setLayout] = useState(initial);
   const [prefs, setPrefs] = useState(defaultUiPrefs());
-  const label = (pin) => (pin.kind === 'watchlist' ? 'Want to Watch' : pin.kind === 'list' ? lists.find(l => l.id === pin.id)?.name : follows.find(f => String(f.tmdb_person_id) === pin.id)?.name);
+  const label = (pin) => (pin.kind === 'watchlist' ? 'Watchlist' : pin.kind === 'list' ? lists.find(l => l.id === pin.id)?.name : follows.find(f => String(f.tmdb_person_id) === pin.id)?.name);
   return (
     <div style={{ height: '100dvh' }}>
       <HomeLayoutSheet

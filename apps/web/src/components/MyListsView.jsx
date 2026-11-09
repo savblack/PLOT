@@ -196,7 +196,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
 
   // One index behind both the column and the covers, so the two can't drift.
   const collections = [
-    { key: 'want',      name: 'Want to Watch', items: want,                empty: 'Nothing saved yet'  },
+    { key: 'want',      name: CUSTOM_LISTS.wantToWatch, items: want,              empty: 'Nothing saved yet'  },
     ...(FAVOURITES_ENABLED ? [{ key: 'favorites', name: fw.plural, items: favorites.favorites, empty: 'Nothing hearted yet' }] : []),
     ...split.own.map(list => ({
       key: customListKey(list.id),
