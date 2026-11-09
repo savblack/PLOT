@@ -68,12 +68,20 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function RegionPicker({ current, onSave, onClose }) {
   const [chosen, setChosen] = useState(current || DEFAULT_REGION);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
+  // onSave resolves to { error }. On success the parent closes the sheet; on
+  // failure the sheet stays open and says so here, because the page's own
+  // error banner is hidden behind it.
   const handleSave = async () => {
     if (saving || chosen === current) return;
     setSaving(true);
-    const saved = await onSave(chosen).catch(() => false);
-    if (!saved) setSaving(false);
+    setError(null);
+    const result = await onSave(chosen).catch(() => ({ error: SETTINGS_VIEW.region.failedToSaveRegion }));
+    if (result?.error) {
+      setError(result.error);
+      setSaving(false);
+    }
   };
 
   const panelRef = useRef(null);
@@ -112,6 +120,7 @@ function RegionPicker({ current, onSave, onClose }) {
           </div>
         </div>
         <div className="settings-picker-footer">
+          {error && <p className="settings-picker-error" role="alert">{error}</p>}
           <button
             className="btn btn-primary btn-sm"
             onClick={handleSave}
@@ -270,6 +279,7 @@ function TimezonePicker({ current, onSave, onClose }) {
   const [query,   setQuery]   = useState('');
   const [saving,  setSaving]  = useState(false);
   const [chosen,  setChosen]  = useState(current || '');
+  const [error,   setError]   = useState(null);
 
   // Use static list — Intl.supportedValuesOf('timeZone') is unsupported in Hermes (React Native)
   const allTzs = IANA_TIMEZONES;
@@ -285,10 +295,16 @@ function TimezonePicker({ current, onSave, onClose }) {
       })
     : allTzs;
 
+  // Same contract as RegionPicker: { error } back, stay open and say so on failure.
   const handleSave = async () => {
-    if (!chosen) return;
+    if (!chosen || saving) return;
     setSaving(true);
-    await onSave(chosen);
+    setError(null);
+    const result = await onSave(chosen).catch(() => ({ error: SETTINGS_VIEW.timezone.failedToSaveTimezone }));
+    if (result?.error) {
+      setError(result.error);
+      setSaving(false);
+    }
   };
 
   const panelRef = useRef(null);
@@ -376,6 +392,7 @@ function TimezonePicker({ current, onSave, onClose }) {
         </div>
 
         <div className="settings-picker-footer">
+          {error && <p className="settings-picker-error" role="alert">{error}</p>}
           <button
             className="btn btn-primary btn-sm"
             onClick={handleSave}
@@ -1335,24 +1352,27 @@ export default function SettingsView() {
     setActionError(null);
     const { error } = await updateProfile({ userId: user.id, patch: { region: code } });
 
-    if (error) {
-      setActionError(error.message || SETTINGS_VIEW.region.failedToSaveRegion);
-      return false;
-    }
+    // Shown inside the open sheet (RegionPicker), not in the page banner behind it.
+    if (error) return { error: error.message || SETTINGS_VIEW.region.failedToSaveRegion };
 
     setTmdbRegion(code);
     refreshProfile();
     setShowRegion(false);
-    return true;
+    return { error: null };
   };
 
   const saveTimezone = async (tz) => {
-    await updateProfile({ userId: user.id, patch: { timezone: tz } });
+    setActionError(null);
+    const { error } = await updateProfile({ userId: user.id, patch: { timezone: tz } });
+    // Shown inside the open sheet (TimezonePicker), which stays open.
+    if (error) return { error: error.message || SETTINGS_VIEW.timezone.failedToSaveTimezone };
+
     setUserTimezone(tz);
     refreshProfile();
     setShowTimezone(false);
     // Clear any pending nudge dismissal so the banner doesn't re-appear
     try { localStorage.removeItem('plot_tz_dismissed'); } catch { /* storage unavailable */ }
+    return { error: null };
   };
 
   const handleClearHistory = () => {

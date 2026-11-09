@@ -72,6 +72,7 @@ export const SETTINGS_VIEW = {
   timezone: {
     savingTimezone: 'Saving timezone',
     saveTimezone: 'Save timezone',
+    failedToSaveTimezone: 'Failed to save your timezone.',
     openTimezoneSettings: 'Open timezone settings',
     searchPlaceholder: 'Search timezones…',
     useDevice: (name) => `Use device timezone · ${name}`,

@@ -5058,6 +5058,15 @@ a.provider-chip--link:hover {
   border-top: 1px solid var(--border);
   background: var(--surface);
 }
+/* A failed save, said inside the open sheet beside its Save button. */
+.settings-picker-error {
+  margin: 0 auto 0 0;
+  padding-right: 0.75rem;
+  align-self: center;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--danger);
+}
 .settings-text-action {
   display: inline-flex;
   align-items: center;
