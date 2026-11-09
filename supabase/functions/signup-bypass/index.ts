@@ -90,39 +90,20 @@ async function sendAuthEmail(email: string, actionLink: string, action: BypassAc
   if (!res.ok) throw new Error(`Resend request failed (${res.status})`);
 }
 
-// Fallback when Resend fails: send through Supabase's own auth mailer (the
-// project's configured SMTP). The user already exists, so shouldCreateUser is
-// off. Uses an anon-key client so the service-role client's session is untouched.
-async function sendViaSupabaseMailer(email: string, redirectTo: string) {
-  const anon = Deno.env.get('SUPABASE_ANON_KEY');
-  if (!anon) throw new Error('SUPABASE_ANON_KEY is not configured');
-  const mailer = createClient(Deno.env.get('SUPABASE_URL')!, anon, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { error } = await mailer.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
-  });
-  if (error) throw new Error(`Supabase mailer failed (${error.status ?? 'unknown'})`);
-}
-
-async function mailLink(
+// Resend only. There is no Supabase-mailer fallback: it went through the
+// captcha-gated /otp endpoint and the per-address send cooldown that
+// generateLink has just started, so it could not deliver (see signupMailer.ts).
+// A failure here is reported as `email_failed` and the caller cleans up.
+// `_redirectTo` stays in the signature because deliverMagicLink's SendLink
+// type passes it.
+function mailLink(
   email: string,
   actionLink: string,
   action: BypassAction,
-  redirectTo: string,
+  _redirectTo: string,
   code?: string,
 ): Promise<LinkResult> {
-  try {
-    await deliverSignupLink(
-      () => sendAuthEmail(email, actionLink, action, code),
-      () => sendViaSupabaseMailer(email, redirectTo),
-    );
-    return 'sent';
-  } catch (error) {
-    console.error('[signup-bypass] could not send auth link:', (error as Error).message);
-    return 'failed';
-  }
+  return deliverSignupLink(() => sendAuthEmail(email, actionLink, action, code));
 }
 
 // Deliberately fast — a real user reads the form and types for at least this
