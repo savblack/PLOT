@@ -71,6 +71,15 @@ test('the alerts upgrade sheet leads with alerts and has no Free cap meter', () 
   assert.deepEqual(content.also.map(r => r.label), ['Just Decide', 'Find something you both want']);
 });
 
+test('the whole-season alert sheet is about seasons, not following people', () => {
+  const content = upgradeSheetContent('seasonAlerts');
+  assert.equal(content.meter, 0);
+  assert.equal(content.context, 'Whole-season alerts are part of Premium');
+  assert.match(content.title + content.body, /season/i);
+  assert.doesNotMatch(content.context + content.title + content.body, /follow|—/i);
+  assert.deepEqual(content.also.map(r => r.label), ['Just Decide', 'Find something you both want']);
+});
+
 test('people and season-ready alerts are live Premium features; episode alerts are live on Free', () => {
   for (const id of ['peopleAlerts', 'seasonReady']) {
     assert.equal(PLANS_PAGE.premiumFeatures.find(f => f.id === id).live, true, id);

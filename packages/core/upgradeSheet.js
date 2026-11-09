@@ -8,7 +8,7 @@ import { SETTINGS_VIEW } from './copy/settingsView.js';
 import { FREE_CUSTOM_LIST_CAP } from './premium.js';
 import { isPremiumFamily } from './themes.js';
 
-/** @typedef {'lists' | 'themes' | 'pins' | 'smartLists' | 'collaborativeLists' | 'alerts' | 'alertEmail'} UpgradeReason */
+/** @typedef {'lists' | 'themes' | 'pins' | 'smartLists' | 'collaborativeLists' | 'alerts' | 'seasonAlerts' | 'alertEmail'} UpgradeReason */
 
 /**
  * @typedef {object} UpgradeSheetContent
@@ -53,6 +53,7 @@ const UNTRACKED_GATE_FEATURES = {
   themes: 'themes',
   pins: 'pins',
   alerts: 'people_alerts',
+  seasonAlerts: 'season_alerts',
   alertEmail: 'alert_email',
 };
 

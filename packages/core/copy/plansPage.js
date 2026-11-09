@@ -137,6 +137,13 @@ export const PLANS_PAGE = {
         body: 'Hear when they have something new.',
         also: ['pick', 'together'],
       },
+      // Opened from the whole-season alert toggle on a show. Following people is `alerts`.
+      seasonAlerts: {
+        context: () => 'Whole-season alerts are part of Premium',
+        title: 'Know when the whole season is ready.',
+        body: 'Premium tells you when every episode of a season is on your services, so you can watch it straight through.',
+        also: ['pick', 'together'],
+      },
       // Opened from the Also email me row in Settings > Viewing (ALERT_EMAIL_ENABLED).
       alertEmail: {
         context: () => 'Email alerts are part of Premium',
