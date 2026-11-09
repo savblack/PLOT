@@ -97,7 +97,7 @@ Small copy issues spotted (not traffic causes; for Alix):
 - Pricing meta description started "plot is free". Fixed on this branch
   (2026-11-10): `apps/website/pricing.html` and its reference catalog
   `apps/website/copy/plans.js` now say "Plot is free". `pnpm run check` passed.
-  Not merged; needs a PR and Savannah's OK to go live.
+  PR: https://github.com/savblack/PLOT/pull/1501 (open, not merged; needs Savannah's OK).
 
 ### 3. Outside causes
 
@@ -142,4 +142,4 @@ Small copy issues spotted (not traffic causes; for Alix):
 
 ## Checks
 
-One copy fix (Pricing meta description casing), `pnpm run check` passed. Branch brought up to date with origin/main. No PR yet. Remove this file before merge.
+One copy fix (Pricing meta description casing), `pnpm run check` passed. Branch brought up to date with origin/main. PR #1501 open. Remove this file in the last commit before merge.
