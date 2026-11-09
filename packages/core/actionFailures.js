@@ -84,6 +84,9 @@ export const FAILED_LOADS = Object.freeze({
   ONBOARDING_SERVICES: 'onboarding_services',
   // Seasons the episode title search could not load (episodeSearch.js).
   EPISODE_SEARCH: 'episode_search',
+  // The critic-score lookup (Rotten Tomatoes % and OMDb awards) failed
+  // (reviews.js). The panel hides both rows rather than erroring.
+  CRITIC_SCORE: 'critic_score',
 });
 
 /**

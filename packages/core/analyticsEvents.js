@@ -147,6 +147,12 @@ export const EVENTS = Object.freeze({
   // via the onEpisodeSearch seam. Props: tmdb_id, season, episode, position,
   // result_count, query_length, total_seasons. Never the query text.
   EPISODE_SEARCH_RESULT_OPENED: 'episode_search_result_opened',
+  // The title panel showed OMDb's awards line (issue 1273). Once per panel
+  // open, only when the title has awards, so its count over title_viewed is
+  // the share of title views that had awards. Fired from reportAwardsShown
+  // via the onAwardsShown seam. Props: tmdb_id, media_type, won,
+  // has_critic_score. Never the awards text.
+  TITLE_AWARDS_SHOWN: 'title_awards_shown',
   WATCHING_STARTED: 'watching_started',
   WATCHING_STOPPED: 'watching_stopped',
   // Undo signals. A user unlogging a watch or clearing history is a real
