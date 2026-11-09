@@ -32,14 +32,16 @@ export const CAPTCHA_SUBMIT_ATTEMPTS = 2;
 
 /**
  * Whether this attempt should call turnstile.reset() before waiting.
- * The first attempt starts the challenge. A later attempt resets only
- * after the widget reported an error.
+ * With a widget that waits for execute() (mobile), the first attempt starts
+ * the challenge. A widget that runs as soon as it renders (web) is already
+ * running one, possibly an untapped checkbox, so its first attempt resets
+ * only after an error, like every later attempt.
  *
- * @param {{ attempt: number, widgetErrored?: boolean }} opts
+ * @param {{ attempt: number, widgetErrored?: boolean, runsOnLoad?: boolean }} opts
  * @returns {boolean}
  */
-export function shouldResetCaptcha({ attempt, widgetErrored = false }) {
-  if (attempt <= 1) return true;
+export function shouldResetCaptcha({ attempt, widgetErrored = false, runsOnLoad = false }) {
+  if (attempt <= 1 && !runsOnLoad) return true;
   return Boolean(widgetErrored);
 }
 

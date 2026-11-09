@@ -199,6 +199,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const handleCaptchaToken = (token) => {
     captchaTokenRef.current = token;
     if (token) {
+      captchaErroredRef.current = false;
       setCaptchaHasToken(true);
       setCaptchaErrored(false);
       setCaptchaInteractive(false);
@@ -264,11 +265,13 @@ export default function AuthPage({ initialMode = 'signup' }) {
     // A challenge may finish after the previous submit stopped waiting.
     if (captchaTokenRef.current) return 'ready';
     let plan = 'wait';
-    let widgetErrored = false;
+    // The widget runs on load, so a challenge is usually already in flight.
+    // Only an error from that run earns a fresh one on the first attempt.
+    let widgetErrored = captchaErroredRef.current;
     for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
       // Reset only after a widget error. A timeout means someone may still
       // be solving the challenge, and reset() throws that away.
-      if (shouldResetCaptcha({ attempt, widgetErrored })) requestCaptcha();
+      if (shouldResetCaptcha({ attempt, widgetErrored, runsOnLoad: true })) requestCaptcha();
       captchaErroredRef.current = false;
       const token = await waitForCaptchaAttempt(authMode);
       widgetErrored = captchaErroredRef.current;

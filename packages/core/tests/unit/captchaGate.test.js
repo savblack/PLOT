@@ -70,6 +70,10 @@ test('a submit gets one retry before it gives up on the widget', () => {
 test('a timeout does not reset an interactive challenge; a widget error does', () => {
   assert.equal(shouldResetCaptcha({ attempt: 1, widgetErrored: false }), true);
   assert.equal(shouldResetCaptcha({ attempt: 2, widgetErrored: false }), false);
+  // A widget that runs on load already has a challenge in flight.
+  assert.equal(shouldResetCaptcha({ attempt: 1, widgetErrored: false, runsOnLoad: true }), false);
+  assert.equal(shouldResetCaptcha({ attempt: 1, widgetErrored: true, runsOnLoad: true }), true);
+  assert.equal(shouldResetCaptcha({ attempt: 2, widgetErrored: true, runsOnLoad: true }), true);
   assert.equal(shouldResetCaptcha({ attempt: 2, widgetErrored: true }), true);
 });
 
