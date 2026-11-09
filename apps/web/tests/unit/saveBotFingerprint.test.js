@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { isSaveBotFingerprint } from '../../src/utils/saveBotFingerprint.js';
+import { isAutomatedBrowser, isSaveBotFingerprint } from '../../src/utils/saveBotFingerprint.js';
 
 const incident = {
   hostname: 'app.theplot.tv',
@@ -38,4 +38,31 @@ test('missing browser evidence never excludes analytics', () => {
     delete partial[key];
     assert.equal(isSaveBotFingerprint(partial), false, key);
   }
+});
+
+const human = {
+  pathname: '/save',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
+  webdriver: false,
+  languageCount: 2,
+};
+
+test('flags browsers that report themselves as automated on /save', () => {
+  assert.equal(isAutomatedBrowser({ ...human, webdriver: true }), true);
+  assert.equal(isAutomatedBrowser({ ...human, userAgent: 'Mozilla/5.0 HeadlessChrome/150.0.0.0 Safari/537.36' }), true);
+  assert.equal(isAutomatedBrowser({ ...human, userAgent: 'Mozilla/5.0 (compatible; ExampleBot/2.1)' }), true);
+  assert.equal(isAutomatedBrowser({ ...human, userAgent: 'python-requests/2.32' }), true);
+  assert.equal(isAutomatedBrowser({ ...human, languageCount: 0 }), true);
+});
+
+test('real visitors and other routes are never flagged as automated', () => {
+  assert.equal(isAutomatedBrowser(human), false);
+  assert.equal(isAutomatedBrowser({ ...human, webdriver: undefined, languageCount: undefined }), false);
+  assert.equal(isAutomatedBrowser({ ...human, webdriver: true, pathname: '/signup' }), false);
+  assert.equal(isAutomatedBrowser({ ...human, userAgent: 'Mozilla/5.0 Robotics Safari/605.1.15' }), false);
+  assert.equal(isAutomatedBrowser(), false);
+});
+
+test('a phone brand with "bot" in its name is not flagged', () => {
+  assert.equal(isAutomatedBrowser({ ...human, userAgent: 'Mozilla/5.0 (Linux; Android 13; CUBOT X30) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36' }), false);
 });
