@@ -1,20 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { runAccountCleanup } from './cleanup.js'
+import Stripe from 'npm:stripe@22.6.0'
+import { removeAvatarObjects, runAccountCleanup } from './cleanup.js'
+import { stopAccountBilling } from './billingCleanup.js'
 import { deleteBrevoContact } from '../_shared/brevo.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
-
-function attachmentPathsFrom(value: unknown) {
-  if (!Array.isArray(value)) return []
-
-  return value.flatMap((entry) => {
-    if (typeof entry !== 'string') return []
-    const marker = '/storage/v1/object/public/feedback-attachments/'
-    const index = entry.indexOf(marker)
-    if (index === -1) return []
-    const path = decodeURIComponent(entry.slice(index + marker.length))
-    return /^feedback\/[0-9a-f-]{36}(?:\.[a-z0-9]{1,10})?$/i.test(path) ? [path] : []
-  })
-}
+import { attachmentPathsFrom } from '../_shared/feedbackAttachments.ts'
 
 function jsonError(message: string, status = 500, extra: Record<string, unknown> = {}) {
   return new Response(JSON.stringify({ error: message, ...extra }), {
@@ -68,13 +58,14 @@ Deno.serve(async (req) => {
 
   const userId = user.id
 
-  // Use the service role client for storage cleanup and auth deletion.
+  // The user token establishes identity. The service role can read and delete
+  // account rows that have no user-facing SELECT or DELETE policy.
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     serviceKey()
   )
 
-  const { data: feedbackRows, error: feedbackError } = await supabaseClient
+  const { data: feedbackRows, error: feedbackError } = await supabaseAdmin
     .from('feedback')
     .select('attachments')
     .eq('user_id', userId)
@@ -99,7 +90,21 @@ Deno.serve(async (req) => {
   const importFilesError = await removeImportUploads(supabaseClient, userId)
   if (importFilesError) return jsonError(importFilesError)
 
-  const cleanupError = await runAccountCleanup(supabaseClient, userId)
+  const avatarError = await removeAvatarObjects(supabaseAdmin, userId)
+  if (avatarError) return jsonError(avatarError.message || 'Failed to delete profile photos.')
+
+  // Billing stops after every storage step that can fail, so a failed attempt
+  // never leaves a live account whose subscription is already canceled.
+  try {
+    await stopAccountBilling(supabaseAdmin, () => new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+      httpClient: Stripe.createFetchHttpClient(),
+    }), userId)
+  } catch (error) {
+    console.error('delete-account: billing cleanup failed:', error instanceof Error ? error.message : error)
+    return jsonError('Could not stop account billing. Please try again.', 503)
+  }
+
+  const cleanupError = await runAccountCleanup(supabaseAdmin, userId)
   if (cleanupError) {
     return jsonError(
       cleanupError.error?.message || `Failed to delete rows from ${cleanupError.table}.`,

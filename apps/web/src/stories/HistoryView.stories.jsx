@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { HistoryPage } from '../components/HistoryView.jsx';
+import { genreCounts } from '@plot/core/historyStats.js';
 import { useFixtureTopLists, FIXTURE_PROFILE as PROFILE } from './shareCardFixtures.js';
 import profileTitles from './profileTitles.fixture.json';
 import smartListTitles from './smartListTitles.fixture.json';
@@ -57,7 +58,13 @@ const DETAILS = new Map(ENTRIES.map(entry => [`${entry.media_type}:${entry.tmdb_
 }]));
 const GENRES = [{ id: 18, name: 'Drama' }, { id: 35, name: 'Comedy' }];
 
-function FixtureHistory() {
+// The year's most common genre id is not Drama or Comedy in these fixtures, so
+// the page names it too: that is what makes the "See your <genre> titles" link show.
+const TMDB_GENRE_NAMES = { 9648: 'Mystery', 53: 'Thriller', 27: 'Horror', 28: 'Action', 878: 'Science Fiction', 80: 'Crime' };
+const TOP_GENRE_ID = genreCounts(ENTRIES)[0]?.id;
+const HISTORY_GENRES = [...GENRES, ...(GENRES.some(g => g.id === TOP_GENRE_ID) || TOP_GENRE_ID == null ? [] : [{ id: TOP_GENRE_ID, name: TMDB_GENRE_NAMES[TOP_GENRE_ID] ?? 'Other' }])];
+
+function FixtureHistory({ premium = false, drilldown = null }) {
   const [year, setYear] = useState(2026);
   const topLists = useFixtureTopLists();
   return (
@@ -67,12 +74,15 @@ function FixtureHistory() {
       entries={ENTRIES}
       details={DETAILS}
       detailsLoading={false}
-      genreList={GENRES}
+      genreList={HISTORY_GENRES}
       openPanel={noop}
       navigateTo={noop}
       activeYear={year}
       onYear={setYear}
       today={new Date(2026, 8, 16)}
+      premium={premium}
+      drilldown={drilldown}
+      onClearDrilldown={noop}
     />
   );
 }
@@ -94,6 +104,15 @@ export default {
 
 /** A fixed year of watching with TMDB-resolved title fixtures. */
 export const Live = { name: 'Year of watching', render: () => <FixtureHistory /> };
+
+/** A Premium viewer: the titles count, weekday and top genre open their lists. */
+export const PremiumTiles = { render: () => <FixtureHistory premium /> };
+
+/** Premium, after tapping the top genre: the list is narrowed and a chip says why. */
+export const GenreDrilldown = { render: () => <FixtureHistory premium drilldown={{ stat: 'genre', year: 2026, genre: TOP_GENRE_ID }} /> };
+
+/** Premium, after tapping "your night". */
+export const WeekdayDrilldown = { render: () => <FixtureHistory premium drilldown={{ stat: 'weekday', year: 2026, weekday: 5 }} /> };
 
 /** Nothing watched yet. */
 export const Empty = {

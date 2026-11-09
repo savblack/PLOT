@@ -18,7 +18,8 @@
 .panel-title-logo {
   position: absolute;
   z-index: 1;
-  left: calc(1.25rem + 144px);
+  /* Clears the poster: its width (.panel-poster in app.css) plus a gap. */
+  left: calc(1.25rem + 202px);
   right: 1rem;
   bottom: 0.75rem;
   width: auto;
@@ -28,6 +29,10 @@
   object-fit: contain;
   object-position: left center;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+
+@media (max-width: 560px) {
+  .panel-title-logo { left: calc(1.25rem + 148px); }
 }
 
 .artwork-sheet {

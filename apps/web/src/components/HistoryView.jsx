@@ -1,7 +1,11 @@
-import { useMemo, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState, useEffect, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useHistory } from '../hooks/useHistory.js';
+import { track } from '../lib/analytics.js';
+import { EVENTS } from '@plot/core/analyticsEvents.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
+import { DRILLDOWN_STATS, drilldownParams, parseDrilldown, drilldownFilter, drilldownEventProps } from '@plot/core/historyDrilldown.js';
 import { useHistoryDetails } from '../hooks/useHistoryDetails.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { groupEntriesByMonth, monthLabel } from '../utils/history.js';
@@ -28,6 +32,8 @@ import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
 import { useTopLists } from '../hooks/useTopLists.js';
 import { useSharePreset } from '../hooks/useSharePreset.js';
 import { MEDIA } from '../copy/media.js';
+import { APP_SHELL } from '../copy/appShell.js';
+import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 
 /* History is its own page: the poster shelf, one month at a time, with a
@@ -71,12 +77,34 @@ function NoteIcon() {
 
 /* ── Side cards ── */
 
-function Stat({ value, label }) {
-  return (
-    <div className="hist-stat">
+/* `drill` is { to, label, onFollow } for a Premium viewer when the number has
+   titles behind it: the whole tile becomes the link. A Free viewer gets the
+   same tile with a Premium marker, and the link goes to the plans page. */
+function Stat({ value, label, drill = null }) {
+  const body = (
+    <>
       <span className="hist-stat-value">{value}</span>
-      <span className="hist-stat-label">{label}</span>
-    </div>
+      <span className="hist-stat-meta">
+        <span className="hist-stat-label">{label}</span>
+        {drill?.locked && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
+      </span>
+    </>
+  );
+  if (!drill) return <div className="hist-stat">{body}</div>;
+  return (
+    <Link className="hist-stat hist-stat--link" to={drill.to} onClick={drill.onFollow} aria-label={T.drilldownOpen(drill.label)}>
+      {body}
+    </Link>
+  );
+}
+
+/* The filter a tile set, shown above the list so it can be taken off. */
+function DrilldownChip({ label, onRemove }) {
+  return (
+    <button type="button" className="hist-drill-chip" onClick={onRemove} aria-label={T.drilldownRemove(label)}>
+      <span>{label}</span>
+      <span aria-hidden="true">×</span>
+    </button>
   );
 }
 
@@ -98,12 +126,13 @@ function ShareIcon({ what, ready, onClick }) {
   );
 }
 
-function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName, onShare, shareReady }) {
+function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName, onShare, shareReady, drillFor }) {
   const wd = favouriteWeekday(entries);
+  const topGenre = topGenreId(entries);
   const mins = movieMinutes(entries, details);
   const sentence = yearSentence({
     count: entries.length,
-    topGenre: genreName(topGenreId(entries)),
+    topGenre: genreName(topGenre),
     weekday: wd,
     dnf: entries.filter(e => e.dnf).length,
   });
@@ -115,11 +144,21 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
         <ShareIcon what={isCurrentYear ? T.yearSoFar(year) : T.yearCardTitle(year)} ready={shareReady} onClick={onShare} />
       </div>
       <div className="hist-stats">
-        <Stat value={entries.length} label={T.titles} />
+        <Stat value={entries.length} label={T.titles}
+          drill={entries.length ? drillFor?.({ stat: DRILLDOWN_STATS.TITLES, year }, T.drilldownTitles(year)) : null} />
         <Stat value={mins.counted ? formatDuration(mins.minutes) : '–'} label={T.watchingMovies} />
-        <Stat value={wd && wd.total >= 3 ? wd.name : '–'} label={T.yourNight} />
+        <Stat value={wd && wd.total >= 3 ? wd.name : '–'} label={T.yourNight}
+          drill={wd && wd.total >= 3 ? drillFor?.({ stat: DRILLDOWN_STATS.WEEKDAY, year, weekday: wd.weekday }, T.drilldownWeekday(wd.name)) : null} />
       </div>
       {sentence && <p className="hist-sentence">{sentence}</p>}
+      {topGenre != null && genreName(topGenre) && (() => {
+        const drill = drillFor?.({ stat: DRILLDOWN_STATS.GENRE, year, genre: topGenre }, T.drilldownGenre(genreName(topGenre)));
+        return drill && (
+          <Link className="hist-drill-link" to={drill.to} onClick={drill.onFollow}>
+            {T.drilldownOpen(drill.label)}{drill.locked && <span className="app-nav-premium hist-drill-premium">{APP_SHELL.premium}</span>}
+          </Link>
+        );
+      })()}
     </div>
   );
 }
@@ -334,7 +373,7 @@ function MonthGroup({ group, allGroups, today, openPanel }) {
  * @param {Function} props.onYear
  * @param {Date}    [props.today]
  */
-export function HistoryPage({ entries, details, detailsLoading, genreList, openPanel, navigateTo, activeYear, onYear, today = new Date(), topLists, profile, sharePreset = null, onSharePresetUsed }) {
+export function HistoryPage({ entries, details, detailsLoading, genreList, openPanel, navigateTo, activeYear, onYear, today = new Date(), topLists, profile, sharePreset = null, onSharePresetUsed, premium = false, drilldown = null, onDrilldown, onClearDrilldown }) {
   const years = useMemo(() => yearsWithEntries(entries), [entries]);
   const yearEntries = useMemo(() => entriesInYear(entries, activeYear), [entries, activeYear]);
 
@@ -343,9 +382,26 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   const [reviewed, setReviewed] = useState(false);
   const [dnf, setDnf] = useState(false);
   const [query, setQuery] = useState('');
+  const genreName = (id) => genreList.find(g => g.id === id)?.name ?? null;
+
+  // A tile's filter is Premium's: a free viewer who opens a shared link sees
+  // the plain page. It replaces the side genre filter while it is on, so the
+  // chip and the list never disagree.
+  const drill = premium ? drilldown : null;
   const filtered = useMemo(
-    () => filterEntries(yearEntries, { types, genres, reviewed, dnf, query }),
-    [yearEntries, types, genres, reviewed, dnf, query],
+    () => filterEntries(yearEntries, { types, genres, reviewed, dnf, query, ...drilldownFilter(drill) }),
+    [yearEntries, types, genres, reviewed, dnf, query, drill],
+  );
+  // Where a tile goes: the same page with the filter in the URL.
+  // A Free viewer's tile goes to the plans page instead, and fires no
+  // drill-down event: nothing was drilled into.
+  const drillFor = (d, label) => (premium
+    ? { to: `/history?${new URLSearchParams(drilldownParams(d))}`, label, onFollow: () => onDrilldown?.(d) }
+    : { to: premiumPlansPath('/history'), label, locked: true });
+  const drillLabel = drill && (
+    drill.stat === DRILLDOWN_STATS.GENRE ? T.drilldownGenre(genreName(drill.genre) ?? '')
+      : drill.stat === DRILLDOWN_STATS.WEEKDAY ? T.drilldownWeekday(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][drill.weekday])
+        : T.drilldownTitles(drill.year)
   );
   const monthGroups = useMemo(() => groupEntriesByMonth(filtered), [filtered]);
   const allYearGroups = useMemo(() => groupEntriesByMonth(yearEntries), [yearEntries]);
@@ -354,8 +410,6 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   // Snap the mini month back to the newest month whenever the year or the
   // filters change what's there.
   useEffect(() => { setMonthIndex(0); }, [activeYear, monthGroups.length]); // eslint-disable-line react-hooks/set-state-in-effect
-
-  const genreName = (id) => genreList.find(g => g.id === id)?.name ?? null;
 
   // The share sheet: which card it opened on, or null when closed. A preset
   // from the URL (?share=<card>) opens it once on arrival.
@@ -467,6 +521,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
             genreName={genreName}
             onShare={canShare ? () => setShareCard(CARD_IDS.HIGHLIGHTS) : null}
             shareReady={cardReady(CARD_IDS.HIGHLIGHTS)}
+            drillFor={drillFor}
           />
           {monthGroups.length > 0 && (
             <MiniMonthCard
@@ -495,6 +550,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
         </aside>
 
         <div className="hist-stream">
+          {drill && drillLabel && <DrilldownChip label={drillLabel} onRemove={onClearDrilldown} />}
           {monthGroups.length === 0 ? (
             <div className="empty-state">
               <div className="empty-title">{T.noMatchesTitle}</div>
@@ -526,11 +582,21 @@ export default function HistoryView() {
   // ?share=<card> opens the sheet on that card once, then leaves the URL clean.
   const [sharePreset, clearSharePreset] = useSharePreset();
   const { entries, loading } = useHistory(user?.id);
+  const premium = isPremiumProfile(profile);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const drilldown = useMemo(() => parseDrilldown(searchParams), [searchParams]);
+  const clearDrilldown = useCallback(() => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      for (const k of ['stat', 'year', 'genre', 'weekday']) next.delete(k);
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
   const { genres: genreList } = useGenres();
   const today = useMemo(() => new Date(), []);
   const years = useMemo(() => yearsWithEntries(entries), [entries]);
   const [year, setYear] = useState(null);
-  const activeYear = year ?? years[0] ?? today.getFullYear();
+  const activeYear = year ?? (premium ? drilldown?.year : null) ?? years[0] ?? today.getFullYear();
   const yearEntries = useMemo(() => entriesInYear(entries, activeYear), [entries, activeYear]);
   const { details, loading: detailsLoading } = useHistoryDetails(yearEntries);
 
@@ -545,12 +611,16 @@ export default function HistoryView() {
       openPanel={openPanel}
       navigateTo={navigateTo}
       activeYear={activeYear}
-      onYear={setYear}
+      onYear={y => { clearDrilldown(); setYear(y); }}
       today={today}
       topLists={topLists}
       profile={profile}
       sharePreset={sharePreset}
       onSharePresetUsed={clearSharePreset}
+      premium={premium}
+      drilldown={drilldown}
+      onDrilldown={d => track(EVENTS.HISTORY_STAT_DRILLDOWN, drilldownEventProps(d, 'web'))}
+      onClearDrilldown={() => { setYear(activeYear); clearDrilldown(); }}
     />
   );
 }

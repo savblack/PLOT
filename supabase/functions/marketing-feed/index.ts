@@ -27,6 +27,7 @@ type Db = SupabaseClient<Database>;
 // and footer.css. Run `npm run footer` to regenerate after editing either partial.
 import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { QueryFailed, rows } from '../_shared/queryRows.ts';
 import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
 import { ARTICLE_TABLE_CSS, articleExcerpt, isArticleTable, renderArticleBlock } from '../_shared/articleBody.js';
 import { selectTmdbMatch } from '../_shared/tmdbMatch.js';
@@ -990,11 +991,11 @@ const CHART_CSS = `
 // Shared by renderChart and the homepage's Trending section — both read the
 // same latest weekly snapshot; movement is computed against the prior week.
 const fetchTrendingSnapshots = async (supabase: Db) => {
-  const { data: snaps } = await supabase
+  const snaps = rows(await supabase
     .from('marketing_trending_snapshots')
     .select('snapshot_date, items')
     .order('snapshot_date', { ascending: false })
-    .limit(2);
+    .limit(2));
   return {
     latest: snaps?.[0] || null,
     prior: (snaps?.[1]?.items as ChartItem[] | undefined) || null,
@@ -1318,7 +1319,7 @@ const SUBSCRIBE_CSS = `
 `;
 const SUBSCRIBE_HEAD = `<style>${SUBSCRIBE_CSS}</style>`;
 
-Deno.serve(async (req) => {
+const handle = async (req: Request): Promise<Response> => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return new Response('Method not allowed', { status: 405 });
   }
@@ -1347,7 +1348,7 @@ Deno.serve(async (req) => {
   // Articles sitemap: every visible /whats-on entry (proxied to theplot.tv/
   // sitemap-articles.xml). Mirrors the title-page sitemap mode.
   if (url.searchParams.get('sitemap') === '1') {
-    const { data: posts } = await baseQuery().order('scheduled_for', { ascending: false }).limit(5000);
+    const posts = rows(await baseQuery().order('scheduled_for', { ascending: false }).limit(5000));
     const urls = (posts || [])
       .map((p) => `${SITE}${FEED_PATH}/${p.slug}`)
       .map((loc) => `<url><loc>${esc(loc)}</loc><changefreq>weekly</changefreq></url>`)
@@ -1421,7 +1422,7 @@ Deno.serve(async (req) => {
       for (const w of words) {
         query = query.or(`copy->>page_title.ilike.%${w}%,copy->>page_body.ilike.%${w}%`);
       }
-      const { data: found } = await query.order('scheduled_for', { ascending: false }).limit(SEARCH_LIMIT);
+      const found = rows(await query.order('scheduled_for', { ascending: false }).limit(SEARCH_LIMIT));
       const lower = words.map((w) => w.toLowerCase());
       const inTitle = (p: FeedPost) => {
         const t = postTitle(p).toLowerCase();
@@ -1450,11 +1451,11 @@ Deno.serve(async (req) => {
     // plain chronological list below, unchanged.
     if (!type && pageNum === 1) {
       const [
-        { data: batchData },
-        { data: streamingData },
-        { data: countdownData },
-        { data: trailerData },
-        { data: onThisDayData },
+        batchResult,
+        streamingResult,
+        countdownResult,
+        trailerResult,
+        onThisDayResult,
         { latest: chartLatest, prior: chartPrior },
       ] = await Promise.all([
         baseQuery().order('scheduled_for', { ascending: false }).limit(HOME_BATCH),
@@ -1464,6 +1465,11 @@ Deno.serve(async (req) => {
         baseQuery().eq('post_type', 'on_this_day').order('scheduled_for', { ascending: false }).limit(ON_THIS_DAY_SIZE),
         fetchTrendingSnapshots(supabase),
       ]);
+      const batchData = rows(batchResult);
+      const streamingData = rows(streamingResult);
+      const countdownData = rows(countdownResult);
+      const trailerData = rows(trailerResult);
+      const onThisDayData = rows(onThisDayResult);
       // Countdowns and On this day posts have their own sidebar sections, so
       // they stay out of the feed column's lead, stories and More updates.
       const SIDEBAR_ONLY = new Set(['countdown', 'on_this_day']);
@@ -1533,7 +1539,7 @@ Deno.serve(async (req) => {
       .order('scheduled_for', { ascending: false })
       .range(offset, offset + PAGE_SIZE); // one extra row to detect another page
     if (type) query = query.eq('post_type', type);
-    const { data } = await query;
+    const data = rows(await query);
 
     const posts = ((data || []) as FeedPost[]);
     const hasMore = posts.length > PAGE_SIZE;
@@ -1559,17 +1565,17 @@ Deno.serve(async (req) => {
     `, 200, 'whats-on', SHORT_CACHE, closerSection('whats_on'));
   }
 
-  const { data: post } = await baseQuery().eq('slug', slug).maybeSingle();
+  const post = rows(await baseQuery().eq('slug', slug).maybeSingle());
   if (!post) {
     // Old per-week chart articles now live on the persistent chart page. Serve
     // it in place (canonical points at /whats-on/chart) so already-published
     // social links keep working — the proxy doesn't forward 3xx Location.
-    const { data: legacyChart } = await supabase
+    const legacyChart = rows(await supabase
       .from('marketing_posts')
       .select('post_type')
       .eq('slug', slug)
       .eq('post_type', 'trending')
-      .maybeSingle();
+      .maybeSingle());
     if (legacyChart) return await renderChart(supabase);
     return page('Not found · Plot', '', `
       <article class="post r2">
@@ -1599,13 +1605,13 @@ Deno.serve(async (req) => {
   // walks back through the whole archive and every article has at least one
   // link in. Showing the newest three instead linked only those, from every
   // page, and left the rest orphaned. The oldest posts fall back to the newest.
-  const { data: older } = await baseQuery()
+  const older = rows(await baseQuery()
     .lt('scheduled_for', typed.scheduled_for)
     .order('scheduled_for', { ascending: false })
-    .limit(3);
+    .limit(3));
   const others = (older || []).length
     ? older
-    : (await baseQuery().neq('slug', slug).order('scheduled_for', { ascending: false }).limit(3)).data;
+    : rows(await baseQuery().neq('slug', slug).order('scheduled_for', { ascending: false }).limit(3));
 
   const more = (others || []).length
     ? `<div class="more r4">
@@ -1823,4 +1829,21 @@ Deno.serve(async (req) => {
       ${subscribeForm('whats_on_article')}
     </div>
   `, 200, 'whats-on', ARTICLE_CACHE);
+};
+
+// A failed read answers 503 no-store, never a page built from no rows: the
+// Pages proxy caches any 200 that carries s-maxage, so an empty page rendered
+// from a database error would be served to everyone for up to an hour.
+Deno.serve(async (req) => {
+  try {
+    return await handle(req);
+  } catch (err) {
+    if (!(err instanceof QueryFailed)) throw err;
+    console.error('marketing-feed', err.message);
+    return page('What\'s On · Plot', '', `
+      <article class="post r2">
+        <header class="post-head"><h1>Back in a moment</h1></header>
+        <div class="post-body"><p>What's On is briefly unavailable. Please try again in a moment.</p></div>
+      </article>`, 503, 'whats-on', 'no-store');
+  }
 });

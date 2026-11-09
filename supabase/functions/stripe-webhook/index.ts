@@ -82,6 +82,27 @@ type SyncArgs = {
 };
 
 async function syncSubscription({ userId, customerId, sub, event }: SyncArgs) {
+  // Deleting the auth user cascades to the mapping row, and Stripe's
+  // cancellation webhook may arrive after that. A deleted account must not be
+  // recreated or retried.
+  const { data: mapping, error: mappingError } = await admin().from('billing_customers')
+    .select('user_id').eq('user_id', userId).maybeSingle();
+  if (mappingError) throw mappingError;
+  if (!mapping) {
+    // data can be null for a missing user, so don't destructure through it.
+    const { data, error: userError } = await admin().auth.admin.getUserById(userId);
+    const user = data?.user;
+    if (userError?.status === 404 || userError?.code === 'user_not_found' || !user && !userError) {
+      // A checkout that completed after deletion would keep charging a deleted
+      // account. Raise it so the subscription gets canceled by hand.
+      if (sub.status !== 'canceled' && sub.status !== 'incomplete_expired') {
+        reportLog('stripe-webhook', 'error', `stripe-webhook: live subscription ${sub.id} belongs to a deleted account; cancel it in Stripe`, { attributes: { stripe_event_id: event.id, stripe_customer_id: customerId } });
+      }
+      return { ignored: true };
+    }
+    if (userError) throw userError;
+  }
+
   return await reconcileBillingSnapshot(
     async () => {
       const { data, error } = await admin().from('billing_customers').select('revision').eq('user_id', userId).maybeSingle();

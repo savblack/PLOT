@@ -64,3 +64,15 @@ export function readPendingSave() {
 export function clearPendingSave() {
   removeStorage(KEY);
 }
+
+// Sources whose reader was looking at this exact title a moment ago. /save would
+// show them the same poster and summary again and ask for a second click before
+// the signup form (47 clicked Save on a title page in 45 days; 5 reached signup).
+// Newsletter, chart and shared-link visitors have not seen the title, so they
+// keep the preview.
+const SKIP_PREVIEW_SOURCES = new Set(['title_page']);
+
+/** True when /save should hand a logged-out visitor straight to signup or sign-in. */
+export function skipsSavePreview(source) {
+  return SKIP_PREVIEW_SOURCES.has(sanitizeSource(source));
+}

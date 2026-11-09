@@ -41,17 +41,18 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { usableRateCount } from '../_shared/securityGuards.js';
 import { deliverSignupLink } from '../_shared/signupMailer.ts';
-
-function allowedOrigin(origin: string | null) {
-  if (!origin) return 'https://app.theplot.tv';
-  try {
-    const { hostname, protocol } = new URL(origin);
-    if (protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) return origin;
-    if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv')) return origin;
-    if (protocol === 'https:' && hostname.endsWith('.plot-5wr.pages.dev')) return origin;
-  } catch { /* use canonical origin */ }
-  return 'https://app.theplot.tv';
-}
+import { deliverMagicLink, findAuthUserByEmail, linkDeliveryError, type LinkResult, type SignupLinkAdmin } from '../_shared/signupMagicLink.ts';
+import {
+  allowedOrigin,
+  authCallbackRedirect,
+  authLinkMail,
+  bypassAction,
+  bypassClient,
+  isExistingAccountError,
+  rateScopeFor,
+  SIGNUP_BYPASS_GLOBAL_SCOPE,
+  type BypassAction,
+} from '../_shared/signupBypass.ts';
 
 function cors(origin: string | null) {
   return {
@@ -72,17 +73,18 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const RESEND_API_URL = 'https://api.resend.com/emails';
 const CONFIRM_FROM = 'Plot <hello@theplot.tv>';
 
-async function sendConfirmationEmail(email: string, actionLink: string) {
+async function sendAuthEmail(email: string, actionLink: string, action: BypassAction) {
   const resendKey = Deno.env.get('RESEND_API_KEY');
   if (!resendKey) throw new Error('RESEND_API_KEY is not configured');
+  const mail = authLinkMail(action, actionLink);
   const res = await fetch(RESEND_API_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: CONFIRM_FROM,
       to: [email],
-      subject: 'Confirm your Plot account',
-      text: `Confirm your Plot account by opening this link:\n\n${actionLink}\n\nIf you did not request this, you can ignore this email.`,
+      subject: mail.subject,
+      text: mail.text,
     }),
   });
   if (!res.ok) throw new Error(`Resend request failed (${res.status})`);
@@ -91,7 +93,7 @@ async function sendConfirmationEmail(email: string, actionLink: string) {
 // Fallback when Resend fails: send through Supabase's own auth mailer (the
 // project's configured SMTP). The user already exists, so shouldCreateUser is
 // off. Uses an anon-key client so the service-role client's session is untouched.
-async function sendViaSupabaseMailer(email: string) {
+async function sendViaSupabaseMailer(email: string, redirectTo: string) {
   const anon = Deno.env.get('SUPABASE_ANON_KEY');
   if (!anon) throw new Error('SUPABASE_ANON_KEY is not configured');
   const mailer = createClient(Deno.env.get('SUPABASE_URL')!, anon, {
@@ -99,9 +101,22 @@ async function sendViaSupabaseMailer(email: string) {
   });
   const { error } = await mailer.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: false, emailRedirectTo: 'https://app.theplot.tv/auth/callback' },
+    options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
   });
   if (error) throw new Error(`Supabase mailer failed (${error.status ?? 'unknown'})`);
+}
+
+async function mailLink(email: string, actionLink: string, action: BypassAction, redirectTo: string): Promise<LinkResult> {
+  try {
+    await deliverSignupLink(
+      () => sendAuthEmail(email, actionLink, action),
+      () => sendViaSupabaseMailer(email, redirectTo),
+    );
+    return 'sent';
+  } catch (error) {
+    console.error('[signup-bypass] could not send auth link:', (error as Error).message);
+    return 'failed';
+  }
 }
 
 // Deliberately fast — a real user reads the form and types for at least this
@@ -118,13 +133,14 @@ const MAX_TOKEN_AGE_MS = 15 * 60 * 1000;
 
 // Deliberately low — this is an exceptional path (Turnstile already failed
 // for this browser), not the general signup rate.
-const RATE_SCOPE = 'signup-bypass';
+// Per IP, each action has its own 3/hour bucket (see rateScopeFor). Sharing
+// one bucket made signup + resend + magic link + one more retry a 429 for a
+// real person. Signup stays at 3/hour because it creates an account.
 const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const RATE_MAX_ATTEMPTS = 3;
-// Across all callers. The per-IP limit is cheap to sidestep from a pool of
-// addresses; this bounds what the whole pool can do in an hour (each attempt
-// here creates an unconfirmed account and sends an email). A real hour of
-// bypass signups is in the single digits.
+// Across all callers and actions. The per-IP limit is cheap to sidestep from
+// a pool of addresses; this bounds what the whole pool can do in an hour.
+// A real hour of bypass signups is in the single digits.
 const RATE_MAX_GLOBAL = 60;
 
 // Only accept a platform-provided connection header — X-Forwarded-For is
@@ -139,7 +155,18 @@ const clientIp = (req: Request): string | null => req.headers.get('cf-connecting
 // that split anon (user-context) vs service-role (admin) clients, there is
 // no anon/user-context case here at all.
 const SERVICE_ROLE_KEY = serviceKey();
-const supabaseAdmin = createClient<Database>(Deno.env.get('SUPABASE_URL')!, SERVICE_ROLE_KEY);
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const supabaseAdmin = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+function magicLinkAdmin(): SignupLinkAdmin {
+  const admin = supabaseAdmin.auth.admin;
+  return {
+    generateLink: (args) => admin.generateLink(args),
+    deleteUser: (id) => admin.deleteUser(id),
+    updateUserById: (id, attrs) => admin.updateUserById(id, attrs),
+    findUserByEmail: (email) => findAuthUserByEmail(SUPABASE_URL, SERVICE_ROLE_KEY, email),
+  };
+}
 
 // --- Signed form-timing token ------------------------------------------
 // HMAC-SHA256 over a base64url-encoded {iat} payload. The key is
@@ -227,7 +254,15 @@ Deno.serve(async (req) => {
 
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, origin, 405);
 
-  let body: { email?: string; password?: string; website?: string; formToken?: string };
+  let body: {
+    email?: string;
+    password?: string;
+    website?: string;
+    formToken?: string;
+    action?: string;
+    confirmSignup?: boolean;
+    client?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -244,10 +279,16 @@ Deno.serve(async (req) => {
   const issuedAt = await verifyFormToken(body.formToken);
   if (issuedAt === null || Date.now() - issuedAt < MIN_SUBMIT_MS) return json({ ok: true }, origin);
 
+  const action = bypassAction(body.action);
+  // The mobile app asks for a link that opens the app instead of the web callback.
+  const client = bypassClient(body.client);
   const email = String(body.email || '').trim().toLowerCase();
   const password = String(body.password || '');
   if (!EMAIL_RE.test(email)) return json({ error: 'Please enter a valid email address.', reason: 'invalid_email' }, origin, 400);
-  if (password.length < 6) return json({ error: 'Password must be at least 6 characters.', reason: 'weak_password' }, origin, 400);
+  // Resend and magic link only need the mailbox. Signup still requires a password.
+  if (action === 'signup' && password.length < 6) {
+    return json({ error: 'Password must be at least 6 characters.', reason: 'weak_password' }, origin, 400);
+  }
 
   // 3. Rate limit — atomic, DB-backed, shared table/RPC with admin-review's
   // login throttle and media-sync's companion-token auth, kept independent
@@ -258,8 +299,8 @@ Deno.serve(async (req) => {
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 503);
   }
   const [perIp, global] = await Promise.all([
-    supabaseAdmin.rpc('auth_note_fail', { p_scope: RATE_SCOPE, p_ip: ip, p_window_ms: RATE_WINDOW_MS }),
-    supabaseAdmin.rpc('auth_note_fail', { p_scope: `${RATE_SCOPE}-all`, p_ip: 'global', p_window_ms: RATE_WINDOW_MS }),
+    supabaseAdmin.rpc('auth_note_fail', { p_scope: rateScopeFor(action), p_ip: ip, p_window_ms: RATE_WINDOW_MS }),
+    supabaseAdmin.rpc('auth_note_fail', { p_scope: SIGNUP_BYPASS_GLOBAL_SCOPE, p_ip: 'global', p_window_ms: RATE_WINDOW_MS }),
   ]);
   const attempts = usableRateCount(perIp);
   const globalAttempts = usableRateCount(global);
@@ -276,6 +317,16 @@ Deno.serve(async (req) => {
     );
   }
 
+  // Resend and "email me a magic link" never create a second account. They
+  // send a magic link through Resend, inside the same rate limit. A missing
+  // account gets the same success body so this route is not an address oracle.
+  if (action !== 'signup') {
+    const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, action, body.confirmSignup === true, client);
+    const failure = linkDeliveryError(sent);
+    if (failure) return json({ error: failure.error, reason: failure.reason }, origin, failure.status);
+    return json({ ok: true, requires_email_confirmation: true }, origin);
+  }
+
   // Account creation deliberately stays unconfirmed. The credential capable
   // of confirming it is delivered only to the supplied mailbox below.
   const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -285,33 +336,35 @@ Deno.serve(async (req) => {
   });
   if (createError) {
     // An address that already has an account gets the same answer as a new
-    // one, and no email. Saying "already registered" here let anyone confirm
-    // whether an address is a Plot member, three guesses an hour per IP and
-    // as many as they had IPs. The normal path (supabase.auth.signUp with
-    // enumeration protection on) answers the same way, and a real owner who
-    // forgot they signed up reaches the account through "forgot password".
-    const already = /already|exists|registered/i.test(createError.message || '');
-    if (already) return json({ ok: true, requires_email_confirmation: true }, origin);
+    // one. Saying "already registered" here let anyone confirm whether an
+    // address is a Plot member. The earlier version also sent no email, so
+    // an unconfirmed person sat on "check your inbox" with nothing coming.
+    // A magic link confirms an unconfirmed account and signs in a confirmed
+    // one, and the response stays identical either way. deliverMagicLink
+    // replaces the password on an unconfirmed row only after the mailer
+    // accepts the link, so a failed send leaves the owner's password alone.
+    if (isExistingAccountError(createError.message)) {
+      const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, 'signup', true, client);
+      const failure = linkDeliveryError(sent);
+      if (failure) return json({ error: failure.error, reason: failure.reason }, origin, failure.status);
+      return json({ ok: true, requires_email_confirmation: true }, origin);
+    }
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 400);
   }
 
+  const redirectTo = authCallbackRedirect(origin, 'signup', false, client);
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
     type: 'magiclink',
     email,
-    options: { redirectTo: 'https://app.theplot.tv/auth/callback' },
+    options: { redirectTo },
   });
   if (linkError || !linkData?.properties?.action_link) {
     await supabaseAdmin.auth.admin.deleteUser(created.user.id);
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 500);
   }
 
-  try {
-    await deliverSignupLink(
-      () => sendConfirmationEmail(email, linkData.properties.action_link),
-      () => sendViaSupabaseMailer(email),
-    );
-  } catch (error) {
-    console.error('Could not send signup confirmation by any path:', (error as Error).message);
+  const mailed = await mailLink(email, linkData.properties.action_link, 'signup', redirectTo);
+  if (mailed !== 'sent') {
     await supabaseAdmin.auth.admin.deleteUser(created.user.id);
     return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
   }

@@ -128,7 +128,7 @@ export const SETTINGS_VIEW = {
     clearWatchHistoryMessage: 'This will permanently delete all your watched entries. This cannot be undone.',
     clearHistory: 'Clear history',
     deleteAccountTitle: 'Delete account?',
-    deleteAccountMessage: 'This will permanently delete your account and all your data. This cannot be undone.',
+    deleteAccountMessage: 'This will permanently delete your account and all your data. Any Plot subscription will be canceled immediately. This cannot be undone.',
     deleteAccount: 'Delete account',
     deleteAccountPhrase: 'delete account',
     revokeCalendarLinkTitle: 'Revoke calendar link?',

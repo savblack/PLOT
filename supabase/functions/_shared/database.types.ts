@@ -232,18 +232,21 @@ export type Database = {
       }
       critic_scores: {
         Row: {
+          awards: string | null
           critic_score: number | null
           fetched_at: string
           imdb_id: string
           source: string | null
         }
         Insert: {
+          awards?: string | null
           critic_score?: number | null
           fetched_at?: string
           imdb_id: string
           source?: string | null
         }
         Update: {
+          awards?: string | null
           critic_score?: number | null
           fetched_at?: string
           imdb_id?: string
@@ -3666,6 +3669,7 @@ export type Database = {
         Returns: undefined
       }
       record_kofi_tip: { Args: { p_payload: Json }; Returns: Json }
+      record_title_page_index: { Args: { p_rows: Json }; Returns: number }
       refresh_premium_badges: { Args: never; Returns: number }
       release_marketing_linear_mirror: {
         Args: { p_owner: string }

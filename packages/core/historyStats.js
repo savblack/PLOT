@@ -43,9 +43,11 @@ export function yearsWithEntries(entries) {
 
 /**
  * @param {any[]} entries
- * @param {{ types?: string[], genres?: number[], reviewed?: boolean, dnf?: boolean, query?: string }} f
+ * @param {{ types?: string[], genres?: number[], reviewed?: boolean, dnf?: boolean, query?: string, year?: number | null, weekday?: number | null }} f
  *   Empty `types`/`genres` mean "no filter". `reviewed`/`dnf` are OR'd with
- *   each other when both are on (either state qualifies).
+ *   each other when both are on (either state qualifies). `year` and
+ *   `weekday` (0 = Sunday) are what a stat tile hands over: the year card's
+ *   count and "your night" open the titles behind them.
  */
 export function filterEntries(entries, f = {}) {
   const types = f.types ?? [];
@@ -59,6 +61,12 @@ export function filterEntries(entries, f = {}) {
       if (!ok) return false;
     }
     if (q && !(e.title || '').toLowerCase().includes(q)) return false;
+    if (f.year != null || f.weekday != null) {
+      const p = calendarParts(e.watched_at);
+      if (!p) return false;
+      if (f.year != null && p.year !== f.year) return false;
+      if (f.weekday != null && p.weekday !== f.weekday) return false;
+    }
     return true;
   });
 }
@@ -142,7 +150,7 @@ export function favouriteWeekday(entries) {
   for (const e of entries) { const p = calendarParts(e.watched_at); if (p) { counts[p.weekday]++; total++; } }
   if (!total) return null;
   const top = counts.indexOf(Math.max(...counts));
-  return { name: WEEKDAYS[top], count: counts[top], total };
+  return { name: WEEKDAYS[top], weekday: top, count: counts[top], total };
 }
 
 /**

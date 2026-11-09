@@ -441,7 +441,7 @@ export const tmdb = {
 
   /* ── Details ── */
   getMovieDetails: async (id) => {
-    const movie = await fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations,videos,credits,release_dates,external_ids' });
+    const movie = await fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations,videos,credits,release_dates,external_ids,keywords' });
     return withRegionalMovieReleaseDate(movie);
   },
   getTVDetails: (id) =>
