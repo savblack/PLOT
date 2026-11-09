@@ -27,7 +27,7 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { AUTH_PAGE } from '@plot/core/copy/authPage.js';
 import { SHOW_APPLE_LOGIN, SHOW_GOOGLE_LOGIN } from '../../lib/launchFeatures';
 import { hasSignedInBefore } from '../../lib/signedInBefore';
-import { rememberBypassSignup } from '../../lib/bypassSignupReport';
+import { rememberBypassSignup, reportBypassSignupConfirmed } from '../../lib/bypassSignupReport';
 import PlotWordmark from '../../components/PlotWordmark';
 
 // The panel's fixed palette (see the note on the tokens import): charcoal ink
@@ -126,7 +126,7 @@ function ScrollingColumn({ paths, offset, duration }: { paths: string[]; offset:
 }
 
 // 'inbox' is the step after an email sign-up or a magic-link request: the
-// email carries a link that opens the app and a six-digit code, and this
+// email carries a link that opens the app and a numeric code, and this
 // screen takes the code. It replaces the old "Almost there!" alert.
 type Mode = 'signin' | 'signup' | 'forgot' | 'inbox';
 type InboxKind = 'signup' | 'magic';
@@ -165,12 +165,16 @@ const AUTH_WEB_CALLBACK = 'https://app.theplot.tv/auth/callback';
 // Magic links and sign-up confirmations sign the user straight into a session,
 // so they come back into the app via the plot:// deep link that
 // app/(auth)/callback.tsx listens for. A link opened on another device cannot
-// open this app, which is why the same email also carries a six-digit code
+// open this app, which is why the same email also carries a numeric code
 // (see the 'inbox' mode below).
 // PRODUCTION REQUIREMENT: this resolves to plot://auth/callback — add that
 // exact URL to Supabase Dashboard → Authentication → URL Configuration →
 // Redirect URLs, or signInWithOtp will reject it and fall back to erroring.
 const AUTH_APP_CALLBACK = Linking.createURL('/auth/callback');
+
+// Supabase's email OTP length setting allows 6 to 10 digits.
+const OTP_MIN_DIGITS = 6;
+const OTP_MAX_DIGITS = 10;
 
 // Kind, Plot-voiced auth errors (mirrors web AuthPage's friendlyError).
 function friendlyAuthError(msg?: string) {
@@ -196,9 +200,9 @@ export default function AuthScreen() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [inboxKind, setInboxKind] = useState<InboxKind>('signup');
-  // signup-bypass emails carry a link only, no six-digit code, so the inbox
-  // step hides the code field after one of them.
-  const [inboxLinkOnly, setInboxLinkOnly] = useState(false);
+  // Whether the newest email came from signup-bypass. Its code comes from an
+  // Admin API magic link, so it verifies as 'email' even on a signup.
+  const [inboxViaBypass, setInboxViaBypass] = useState(false);
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
   const [resendNote, setResendNote] = useState<string | null>(null);
@@ -350,9 +354,9 @@ export default function AuthScreen() {
     setMode(next);
   };
 
-  const openInbox = (kind: InboxKind, linkOnly = false) => {
+  const openInbox = (kind: InboxKind, viaBypass = false) => {
     setInboxKind(kind);
-    setInboxLinkOnly(linkOnly);
+    setInboxViaBypass(viaBypass);
     setCode('');
     setCodeError(null);
     setResendNote(null);
@@ -452,6 +456,7 @@ export default function AuthScreen() {
       refreshCaptcha();
       if (!isCurrent()) return;
       if (!error || !viaBypass(error)) {
+        if (!error) setInboxViaBypass(false);
         setResendNote(error ? friendlyAuthError(error.message) : AUTH_PAGE.inbox.resent);
         return;
       }
@@ -462,19 +467,25 @@ export default function AuthScreen() {
       isCurrent,
     });
     if (!sent.ok && sent.superseded) return;
-    if (sent.ok) setInboxLinkOnly(true);
+    if (sent.ok) setInboxViaBypass(true);
     setResendNote(sent.ok ? AUTH_PAGE.inbox.resent : sent.message);
   };
 
-  // The six-digit code from the email. Signup confirmations verify as
-  // 'signup'; a magic-link code verifies as 'email'. Neither needs captcha.
+  // The code from the email. Its length is a per-project Supabase setting
+  // (6 to 10 digits; Staging sends 8), so accept that whole range rather than
+  // assume 6. GoTrue signup confirmations verify as
+  // 'signup'; a magic-link code, and every signup-bypass code, verifies as
+  // 'email'. Neither needs captcha.
   const handleVerifyCode = async () => {
     const token = code.replace(/\D/g, '');
-    if (token.length !== 6) { setCodeError(AUTH_PAGE.inbox.invalidCode); return; }
+    if (token.length < OTP_MIN_DIGITS || token.length > OTP_MAX_DIGITS) {
+      setCodeError(AUTH_PAGE.inbox.invalidCode);
+      return;
+    }
     setCodeError(null);
     setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(), token, type: inboxKind === 'signup' ? 'signup' : 'email',
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email.trim(), token, type: inboxKind === 'signup' && !inboxViaBypass ? 'signup' : 'email',
     });
     setLoading(false);
     if (error) {
@@ -485,8 +496,10 @@ export default function AuthScreen() {
       setCodeError(expired ? AUTH_PAGE.inbox.expiredCode : AUTH_PAGE.inbox.invalidCode);
       return;
     }
-    // A signup already fired user_signed_up at submit; a magic-link code is a sign-in.
-    if (inboxKind === 'magic') track(EVENTS.USER_LOGGED_IN, { method: 'magic_link' });
+    // A token-backed signup already fired user_signed_up at submit. A bypass
+    // signup fires it here, the same as when its link opens the app.
+    const confirmedBypassSignup = await reportBypassSignupConfirmed(data.user);
+    if (inboxKind === 'magic' && !confirmedBypassSignup) track(EVENTS.USER_LOGGED_IN, { method: 'magic_link' });
   };
 
   const handleForgot = async () => {
@@ -798,7 +811,7 @@ export default function AuthScreen() {
                 <Text style={styles.panelSub}>
                   {inboxKind === 'signup' ? AUTH_PAGE.inbox.signupBefore : AUTH_PAGE.inbox.magicBefore}
                   <Text style={styles.panelSubStrong}>{email.trim()}</Text>
-                  {inboxLinkOnly ? AUTH_PAGE.inbox.linkOnlyAfter : AUTH_PAGE.inbox.after}
+                  {AUTH_PAGE.inbox.after}
                 </Text>
               ) : null}
 
@@ -842,7 +855,7 @@ export default function AuthScreen() {
 
               {/* Fields */}
               <View style={styles.fields}>
-                {mode === 'inbox' && inboxLinkOnly ? null : mode === 'inbox' ? (
+                {mode === 'inbox' ? (
                   <View style={styles.inputWrap}>
                     <Text style={styles.inputLabel}>{AUTH_PAGE.inbox.codeLabel}</Text>
                     <TextInput
@@ -850,12 +863,12 @@ export default function AuthScreen() {
                       placeholder={AUTH_PAGE.inbox.codePlaceholder}
                       placeholderTextColor={PLACEHOLDER}
                       value={code}
-                      onChangeText={(t) => { setCode(t.replace(/\D/g, '').slice(0, 6)); setCodeError(null); }}
+                      onChangeText={(t) => { setCode(t.replace(/\D/g, '').slice(0, OTP_MAX_DIGITS)); setCodeError(null); }}
                       keyboardType="number-pad"
                       // iOS offers the code from Mail above the keyboard.
                       textContentType="oneTimeCode"
                       autoComplete="one-time-code"
-                      maxLength={6}
+                      maxLength={OTP_MAX_DIGITS}
                       returnKeyType="go"
                       onSubmitEditing={handleSubmit}
                       accessibilityLabel={AUTH_PAGE.inbox.codeLabel}
@@ -927,18 +940,16 @@ export default function AuthScreen() {
                     />
                   </View>
                 ) : null}
-                {mode === 'inbox' && inboxLinkOnly ? null : (
-                  <TouchableOpacity
-                    style={[styles.cta, loading && { opacity: 0.6 }]}
-                    onPress={handleSubmit}
-                    disabled={loading}
-                    activeOpacity={0.85}
-                  >
-                    {loading
-                      ? <ActivityIndicator color="#fff" />
-                      : <Text style={styles.ctaText}>{submitLabel}</Text>}
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={[styles.cta, loading && { opacity: 0.6 }]}
+                  onPress={handleSubmit}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                >
+                  {loading
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.ctaText}>{submitLabel}</Text>}
+                </TouchableOpacity>
               </View>
 
               {/* Mode switcher — show only the opposite mode, like web .auth-toggle */}

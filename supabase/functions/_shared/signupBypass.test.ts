@@ -40,6 +40,14 @@ Deno.test('an unknown origin cannot choose the redirect host', () => {
   assertEquals(url.origin, 'https://app.theplot.tv');
 });
 
+Deno.test('an app email carries the six-digit code next to the link', () => {
+  const confirm = authLinkMail('signup', 'https://example.test/confirm', '654321');
+  assertEquals(confirm.text.includes('https://example.test/confirm'), true);
+  assertEquals(confirm.text.includes('654321'), true);
+  const magic = authLinkMail('magiclink', 'https://example.test/magic', '654321');
+  assertEquals(magic.text.includes('654321'), true);
+});
+
 Deno.test('the app gets its bare deep link for every action', () => {
   assertEquals(APP_AUTH_CALLBACK, 'plot://auth/callback');
   assertEquals(authCallbackRedirect(null, 'signup', false, 'app'), APP_AUTH_CALLBACK);
@@ -86,4 +94,5 @@ Deno.test('signup mail confirms the account and a magic link signs in', () => {
   const magic = authLinkMail('magiclink', 'https://example.test/magic');
   assertEquals(magic.subject, 'Your Plot sign-in link');
   assertEquals(magic.text.includes('https://example.test/magic'), true);
+  assertEquals(magic.text.includes('code'), false);
 });

@@ -79,15 +79,22 @@ export function authCallbackRedirect(
   return url.toString();
 }
 
-export function authLinkMail(action: BypassAction, actionLink: string): { subject: string, text: string } {
+/**
+ * The app's inbox step takes a six-digit code for a link opened on another
+ * device, so an app request carries generateLink's email_otp. Web has no code
+ * field, so its email stays link-only.
+ */
+export function authLinkMail(action: BypassAction, actionLink: string, code?: string): { subject: string, text: string } {
+  const codeLine = code ? `\n\nOn a different device? Enter this code in the Plot app instead: ${code}` : '';
+  const ignore = '\n\nIf you did not request this, you can ignore this email.';
   if (action === 'magiclink') {
     return {
       subject: 'Your Plot sign-in link',
-      text: `Sign in to Plot by opening this link:\n\n${actionLink}\n\nIf you did not request this, you can ignore this email.`,
+      text: `Sign in to Plot by opening this link:\n\n${actionLink}${codeLine}${ignore}`,
     };
   }
   return {
     subject: 'Confirm your Plot account',
-    text: `Confirm your Plot account by opening this link:\n\n${actionLink}\n\nIf you did not request this, you can ignore this email.`,
+    text: `Confirm your Plot account by opening this link:\n\n${actionLink}${codeLine}${ignore}`,
   };
 }

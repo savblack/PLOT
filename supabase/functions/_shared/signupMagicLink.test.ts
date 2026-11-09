@@ -58,18 +58,21 @@ function fixture({
         user: { id: generatedNew || missing ? 'new-user' : account?.id || 'existing-user' },
         properties: {
           action_link: 'https://example.test/verify',
+          email_otp: '123456',
           verification_type: generatedNew && calls === 1 ? 'signup' : 'magiclink',
         },
       }, error: null });
     },
     deleteUser: (id: string) => { deleted.push(id); return Promise.resolve({ data: { user: null }, error: null }); },
   } as unknown as Admin;
-  const mail = (_email: string, _link: string, action: string) => {
+  const codes: (string | undefined)[] = [];
+  const mail = (_email: string, _link: string, action: string, _redirect: string, code?: string) => {
     order.push('mail');
     mailed.push(action);
+    codes.push(code);
     return Promise.resolve(mailResult);
   };
-  return { admin, mail, deleted, redirects, mailed, passwords, order, linkTypes };
+  return { admin, mail, deleted, redirects, mailed, passwords, order, linkTypes, codes };
 }
 
 Deno.test('a failed email removes the account created implicitly by generateLink', async () => {
@@ -95,6 +98,16 @@ Deno.test('an app request sends the app deep link for new and existing accounts'
   const member = fixture({});
   assertEquals(await deliverMagicLink(member.admin, member.mail, 'member@example.test', null, 'magiclink', false, 'app'), 'sent');
   assertEquals(member.redirects.every((url) => url === 'plot://auth/callback'), true);
+});
+
+Deno.test('only an app request puts the six-digit code in the email', async () => {
+  const app = fixture({});
+  await deliverMagicLink(app.admin, app.mail, 'member@example.test', null, 'magiclink', false, 'app');
+  assertEquals(app.codes, ['123456']);
+
+  const web = fixture({});
+  await deliverMagicLink(web.admin, web.mail, 'member@example.test', null, 'magiclink', false);
+  assertEquals(web.codes, [undefined]);
 });
 
 Deno.test('failed mail never deletes an existing account', async () => {

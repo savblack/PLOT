@@ -10,7 +10,6 @@ import * as Linking from 'expo-linking';
 import type { EmailOtpType } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { consumeMagicLink } from '../../lib/magicLink';
-import { reportBypassSignupConfirmed } from '../../lib/bypassSignupReport';
 import { useTheme } from '../../contexts/ThemeContext';
 
 // The email types whose links come back into the app (see
@@ -41,16 +40,9 @@ export default function AuthCallback() {
       // redirect that reaches the app as a plain deep link lands here instead.
       // signup-bypass links (Admin API generateLink) arrive the same way.
       // detectSessionInUrl is off (lib/configureCore.ts), so parse it by hand.
-      const hash = url.split('#')[1];
-      if (hash) {
-        const params = new URLSearchParams(hash);
-        const access_token = params.get('access_token');
-        const refresh_token = params.get('refresh_token');
-        if (access_token && refresh_token) {
-          const { data } = await supabase.auth.setSession({ access_token, refresh_token });
-          await reportBypassSignupConfirmed(data.user);
-        }
-      }
+      // Shared with the root layout so a link handled by both signs in, and
+      // is counted, once.
+      await consumeMagicLink(url);
     };
 
     // Get the URL that opened the app (cold start)
