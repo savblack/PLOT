@@ -74,11 +74,16 @@ test('authErrorReason never echoes an unrecognised provider message back as a sl
   assert.equal(authErrorReason('Google says: consent required for scope xyz'), 'unknown');
 });
 
-test('authErrorReason maps every fetch-failure wording to network, including React Native', () => {
+test("authErrorReason maps every fetch-failure wording to network, including the mobile app's", () => {
   assert.equal(authErrorReason('Failed to fetch'), 'network');                                  // Chrome
   assert.equal(authErrorReason('NetworkError when attempting to fetch resource.'), 'network'); // Firefox
   assert.equal(authErrorReason('Load failed'), 'network');                                      // Safari
   assert.equal(authErrorReason('Network request failed'), 'network');                           // React Native
+  // expo/fetch on iOS, copied from the mobile app on the simulator.
+  assert.equal(
+    authErrorReason('fetch failed: UnexpectedException: Could not connect to the server. (at ExpoModulesCore/Promise.swift:56)'),
+    'network',
+  );
 });
 
 test("authErrorReason maps withAuthTimeout's sentinel to timeout", () => {

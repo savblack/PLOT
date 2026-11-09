@@ -64,8 +64,11 @@ export function authErrorReason(msg) {
   if (msg === 'auth-timeout')                        return 'timeout';
   // The browser could not reach Supabase at all. Chrome, Firefox and Safari
   // word it differently; all three used to land in 'unknown', which is how the
-  // 2026-10-31 "failed to fetch" signup went unexplained. React Native's fetch
-  // says "Network request failed", so the mobile app needs that wording too.
-  if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg)) return 'network';
+  // 2026-10-31 "failed to fetch" signup went unexplained. The mobile app's
+  // fetch (expo/fetch) prefixes its errors "fetch failed:" ("fetch failed:
+  // UnexpectedException: Could not connect to the server." on iOS, seen on
+  // the simulator), and React Native's built-in fetch says "Network request
+  // failed", so both need matching too.
+  if (/failed to fetch|fetch failed|networkerror|load failed|network request failed/i.test(msg)) return 'network';
   return 'unknown';
 }

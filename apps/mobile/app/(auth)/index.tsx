@@ -474,14 +474,14 @@ export default function AuthScreen() {
       : shouldMagicLinkViaBypass({ captchaRequired, captchaToken, error }));
     if (!viaBypass()) {
       const { error } = inboxKind === 'signup'
-        ? await supabase.auth.resend({
+        ? await authRequest(supabase.auth.resend({
             type: 'signup', email: e,
             options: { emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
-          })
-        : await supabase.auth.signInWithOtp({
+          }))
+        : await authRequest(supabase.auth.signInWithOtp({
             email: e,
             options: { shouldCreateUser: true, emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
-          });
+          }));
       refreshCaptcha();
       if (!isCurrent()) return;
       if (!error || !viaBypass(error)) {
@@ -513,16 +513,21 @@ export default function AuthScreen() {
     }
     setCodeError(null);
     setLoading(true);
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { data, error } = await authRequest(supabase.auth.verifyOtp({
       email: email.trim(), token, type: inboxKind === 'signup' && !inboxViaBypass ? 'signup' : 'email',
-    });
+    }));
     setLoading(false);
-    if (error) {
-      const expired = /expired/i.test(error.message);
+    if (error || !data) {
+      const message = error?.message ?? '';
+      const expired = /expired/i.test(message);
       track(inboxKind === 'signup' ? EVENTS.SIGNUP_SUBMIT_FAILED : EVENTS.LOGIN_SUBMIT_FAILED, {
-        method: 'email_code', reason: expired ? 'expired' : authErrorReason(error.message),
+        method: 'email_code', reason: expired ? 'expired' : authErrorReason(message),
       });
-      setCodeError(expired ? AUTH_PAGE.inbox.expiredCode : AUTH_PAGE.inbox.invalidCode);
+      // A dropped connection is not a wrong code: telling them to retype it
+      // would send them hunting for a typo that is not there.
+      setCodeError(expired ? AUTH_PAGE.inbox.expiredCode
+        : isConnectionFailure(message) ? AUTH_PAGE.connectionFailed
+        : AUTH_PAGE.inbox.invalidCode);
       return;
     }
     // A token-backed signup already fired user_signed_up at submit. A bypass
@@ -540,10 +545,10 @@ export default function AuthScreen() {
       Alert.alert(AUTH_PAGE.verificationUnavailable);
       return;
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    const { error } = await authRequest(supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: AUTH_WEB_CALLBACK,
       captchaToken: captchaToken ?? undefined,
-    });
+    }));
     setLoading(false);
     refreshCaptcha();
     if (error) Alert.alert(friendlyAuthError(error.message));
@@ -632,10 +637,10 @@ export default function AuthScreen() {
     const captchaToken = taken === false ? null : taken;
     let otpError: { message: string } | null = null;
     if (!shouldMagicLinkViaBypass({ captchaRequired, captchaToken })) {
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await authRequest(supabase.auth.signInWithOtp({
         email: submittedEmail,
         options: { shouldCreateUser: true, emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
-      });
+      }));
       refreshCaptcha();
       if (!isCurrent()) return;
       if (!error) {
@@ -690,6 +695,9 @@ export default function AuthScreen() {
   const handleGoogleSignIn = async () => {
     if (googleStartingRef.current) return;
     googleStartingRef.current = true;
+    // Captured at tap time: failures report against the screen the person
+    // started from, as web's beginOAuth does.
+    const failedEvent = mode === 'signup' ? EVENTS.SIGNUP_SUBMIT_FAILED : EVENTS.LOGIN_SUBMIT_FAILED;
     noteSignupStarted();
     setGoogleLoading(true);
     try {
@@ -714,7 +722,7 @@ export default function AuthScreen() {
       track(isNew ? EVENTS.USER_SIGNED_UP : EVENTS.USER_LOGGED_IN, { method: 'google' });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '';
-      track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'google', reason: authErrorReason(message) });
+      track(failedEvent, { method: 'google', reason: authErrorReason(message) });
       Alert.alert(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.googleSignInFailed);
     } finally {
       googleStartingRef.current = false;
@@ -729,6 +737,7 @@ export default function AuthScreen() {
   const handleAppleSignIn = async () => {
     if (appleStartingRef.current) return;
     appleStartingRef.current = true;
+    const failedEvent = mode === 'signup' ? EVENTS.SIGNUP_SUBMIT_FAILED : EVENTS.LOGIN_SUBMIT_FAILED;
     noteSignupStarted();
     setAppleLoading(true);
 
@@ -782,7 +791,7 @@ export default function AuthScreen() {
         : '';
       if (code !== 'ERR_REQUEST_CANCELED') {
         const message = error instanceof Error ? error.message : '';
-        track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'apple', reason: authErrorReason(message) });
+        track(failedEvent, { method: 'apple', reason: authErrorReason(message) });
         Alert.alert(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.appleSignInFailed);
       }
     } finally {
